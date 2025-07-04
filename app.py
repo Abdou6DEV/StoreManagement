@@ -63,7 +63,7 @@ ctk.set_default_color_theme("dark-blue")  # Built-in theme colors
 
 # === MAIN APP WINDOW ===
 app = ctk.CTk()
-app.title("REDA TECH Github")
+app.title("REDA TECH")
 app.geometry("1200x1000")
 app.minsize(1100, 650)
 
