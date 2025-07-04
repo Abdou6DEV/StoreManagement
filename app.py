@@ -1,62 +1,20 @@
+# === IMPORTS ===
 import customtkinter as ctk
 from tkinter import messagebox
-import sqlite3
 from datetime import datetime, timedelta
 from calendar import monthrange
 from datetime import datetime
 from PIL import Image
 import tkinter as tk
 
-def create_ctk_date_picker(parent, default=None):
-    today = datetime.today()
-    y, m, d = (default or today.strftime("%Y-%m-%d")).split("-")
-    y, m, d = int(y), int(m), int(d)
-
-    container = ctk.CTkFrame(parent, fg_color="transparent")
-    
-    # === Year
-    min_year, max_year = get_history_year_range()
-    years = [str(y) for y in range(min_year, max_year + 1)]
-    year_box = ctk.CTkComboBox(container, values=years, width=70)
-    year_box.set(str(y))
-    year_box.pack(side="left", padx=2)
-
-    # === Month
-    months = [f"{i:02}" for i in range(1, 13)]
-    month_box = ctk.CTkComboBox(container, values=months, width=60)
-    month_box.set(f"{m:02}")
-    month_box.pack(side="left", padx=2)
-
-    # === Day (auto adjust later)
-    def update_days(*_):
-        y = int(year_box.get())
-        m = int(month_box.get())
-        days = [f"{i:02}" for i in range(1, monthrange(y, m)[1] + 1)]
-        current_day = day_box.get()
-        day_box.configure(values=days)
-        if current_day not in days:
-            day_box.set(days[-1])
-
-    day_box = ctk.CTkComboBox(container, values=[], width=60)
-    day_box.pack(side="left", padx=2)
-    day_box.set(f"{d:02}")
-
-    year_box.bind("<<ComboboxSelected>>", update_days)
-    month_box.bind("<<ComboboxSelected>>", update_days)
-
-    update_days()
-
-    # === Return function to get full date
-    def get_date():
-        return f"{year_box.get()}-{month_box.get()}-{day_box.get()}"
-
-    container.get_date = get_date  # attach method
-    return container
-
+# === LOCAL IMPORTS ===
+from components import create_ctk_date_picker
+from database import conn, c
+from helpers import get_history_year_range, get_base_cash
+from themes import apply_theme
 
 # === THEME SETUP ===
-ctk.set_appearance_mode("dark")  # Light or dark
-ctk.set_default_color_theme("dark-blue")  # Built-in theme colors
+apply_theme()
 
 # === MAIN APP WINDOW ===
 app = ctk.CTk()
@@ -613,113 +571,6 @@ monitor_category_change()  # run loop
 # === Apply logic immediately
 toggle_bought_price()
 
-
-# === DATABASE SETUP ===
-conn = sqlite3.connect("reda_tech_store.db")
-c = conn.cursor()
-
-c.execute("""CREATE TABLE IF NOT EXISTS base_cash (
-    id INTEGER PRIMARY KEY CHECK (id = 1),
-    amount INTEGER
-)""")
-c.execute("INSERT OR IGNORE INTO base_cash (id, amount) VALUES (1, 0)")
-
-c.execute("""CREATE TABLE IF NOT EXISTS quick_sales (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    timestamp TEXT,
-    product TEXT,
-    category TEXT,
-    bought_price INTEGER,
-    sold_price INTEGER
-)""")
-c.execute("""CREATE TABLE IF NOT EXISTS purchases (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    timestamp TEXT,
-    product TEXT,
-    category TEXT,
-    quantity INTEGER,
-    cost INTEGER,
-    imei TEXT,
-    seller TEXT
-)""")
-
-# === Ensure bills table exists ===
-c.execute("""CREATE TABLE IF NOT EXISTS bills (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    timestamp TEXT,
-    category TEXT,
-    amount INTEGER,
-    notes TEXT
-)""")
-
-c.execute("""
-CREATE TABLE IF NOT EXISTS stock (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    product TEXT,
-    type TEXT,
-    qty INTEGER,
-    bought_price INTEGER,
-    selling_price INTEGER
-)
-""")
-
-c.execute("""CREATE TABLE IF NOT EXISTS credit (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    timestamp TEXT,
-    name TEXT,
-    amount INTEGER,
-    reason TEXT,
-    phone TEXT
-)""")
-
-c.execute("PRAGMA table_info(credit)")
-columns = [col[1] for col in c.fetchall()]
-if "payment_time" not in columns:
-    c.execute("ALTER TABLE credit ADD COLUMN payment_time TEXT")
-
-c.execute("""CREATE TABLE IF NOT EXISTS cash_audit (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    timestamp TEXT,
-    description TEXT,
-    amount INTEGER,
-    balance INTEGER
-)""")
-conn.commit()
-# Create indexes for performance
-c.execute("CREATE INDEX IF NOT EXISTS idx_qs_timestamp ON quick_sales(timestamp)")
-c.execute("CREATE INDEX IF NOT EXISTS idx_stock_product_type ON stock(product, type)")
-c.execute("CREATE INDEX IF NOT EXISTS idx_bills_timestamp ON bills(timestamp)")
-c.execute("CREATE INDEX IF NOT EXISTS idx_purchases_timestamp ON purchases(timestamp)")
-c.execute("CREATE INDEX IF NOT EXISTS idx_stock_product ON stock(product)")
-c.execute("CREATE INDEX IF NOT EXISTS idx_qs_timestamp ON quick_sales(timestamp)")
-
-conn.commit()
-
-c = conn.cursor()
-
-def get_history_year_range():
-    c.execute("""
-        SELECT MIN(timestamp) FROM (
-            SELECT timestamp FROM quick_sales
-            UNION ALL
-            SELECT timestamp FROM purchases
-            UNION ALL
-            SELECT timestamp FROM bills
-        )
-    """)
-    result = c.fetchone()[0]
-    if result:
-        min_year = int(result[:4])
-    else:
-        min_year = datetime.now().year
-
-    max_year = datetime.now().year
-    return min_year, max_year
-
-# === BASE CASH HELPER ===
-def get_base_cash():
-    c.execute("SELECT amount FROM base_cash WHERE id = 1")
-    return round(c.fetchone()[0] or 0, 2)
 
 # === DASHBOARD UPDATE ===
 def update_dashboard():
