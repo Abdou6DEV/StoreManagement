@@ -1,14 +1,11 @@
 import customtkinter as ctk
-from tkinter import messagebox, filedialog
+from tkinter import messagebox
 import sqlite3
 from datetime import datetime, timedelta
-import os
 from calendar import monthrange
 from datetime import datetime
-from PIL import Image, ImageTk
-import random
+from PIL import Image
 import tkinter as tk
-from tkinter import simpledialog
 
 def create_ctk_date_picker(parent, default=None):
     today = datetime.today()
