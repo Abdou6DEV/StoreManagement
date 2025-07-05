@@ -1,7 +1,9 @@
 # === Application Settings ===
 
+DB_PATH = "databases/reda_tech_store.db"
+
 APP_NAME = "REDA TECH"
-LOGO_PATH = "logo.png"
+LOGO_PATH = "images/logo.png"
 
 # Default Sizes
 LOGO_SIZE = (230, 150)

@@ -1,9 +1,7 @@
 import sqlite3
-from datetime import datetime
+from config import DB_PATH
 
 # === DATABASE SETUP ===
-DB_PATH = "reda_tech_store.db"
-
 conn = sqlite3.connect(DB_PATH)
 c = conn.cursor()
 
