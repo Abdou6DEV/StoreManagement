@@ -5,6 +5,11 @@ DB_PATH = "databases/reda_tech_store.db"
 APP_NAME = "REDA TECH"
 LOGO_PATH = "images/logo.png"
 
+# Types
+STOCK_TYPES = ["phone", "incassable", "antishock", "cable", "kit", "kit bleutooth","Baffle","Smart Watch", "casque", "chargeur", "boite chargeur", "adaptateur", "power bank", "support", "others"]
+NON_PURCHASED_TYPES = ["flash"]
+SALES_TYPES = STOCK_TYPES + NON_PURCHASED_TYPES
+
 # Default Sizes
 LOGO_SIZE = (230, 150)
 MIN_WINDOW_HEIGHT = 1200

@@ -10,7 +10,7 @@ import tkinter as tk
 # === LOCAL IMPORTS ===
 from components import create_ctk_date_picker
 from database import conn, c
-from config import APP_NAME, LOGO_PATH, LOGO_SIZE, MIN_WINDOW_HEIGHT, MIN_WINDOW_WIDTH, SIDEBAR_WIDTH, SIDEBAR_BG_COLOR, DEFAULT_HIGH_PROFIT_THRESHOLD, DEFAULT_LOW_PROFIT_THRESHOLD 
+from config import APP_NAME, LOGO_PATH, LOGO_SIZE, MIN_WINDOW_HEIGHT, MIN_WINDOW_WIDTH, SIDEBAR_WIDTH, SIDEBAR_BG_COLOR, DEFAULT_HIGH_PROFIT_THRESHOLD, DEFAULT_LOW_PROFIT_THRESHOLD, STOCK_TYPES, SALES_TYPES, NON_PURCHASED_TYPES
 from helpers import get_history_year_range, get_base_cash , set_setting , get_setting, is_descendant
 from themes import apply_theme
 
@@ -444,13 +444,12 @@ ctk.CTkLabel(row1, text="Product:", width=80).pack(side="left", padx=4)
 qs_product = ctk.CTkEntry(row1, width=140)
 qs_product.pack(side="left", padx=4)
 
-
 ctk.CTkLabel(row1, text="Category:", width=80).pack(side="left", padx=4)
 qs_category = ctk.CTkComboBox(
-    row1, values=["Phone", "Accessorie", "Flash/reparation"], width=150)
+    row1, values=SALES_TYPES, width=150)
 qs_category.pack(side="left", padx=4)
-qs_category.set("Phone")  # Default
-current_category = "phone"
+qs_category.set(SALES_TYPES[0])  # Default
+current_category = SALES_TYPES[0]
 
 qs_stock_status_lbl = ctk.CTkLabel(row1, text="", text_color="white")
 qs_stock_status_lbl.pack(side="left", padx=10)
@@ -536,17 +535,17 @@ def toggle_bought_price():
     selected = qs_category.get().strip().lower()
     current_category = selected
 
-    if "flash" in selected:
+    if selected in NON_PURCHASED_TYPES:
         if qs_bought_lbl.winfo_ismapped():
             qs_bought_lbl.pack_forget()
             qs_bought.pack_forget()
         if not qs_product.get().strip():
-            qs_product.insert(0, "Flash/Reparation")
+            qs_product.insert(0, selected)
     else:
         if not qs_bought_lbl.winfo_ismapped():
             qs_bought_lbl.pack(side="left", padx=4)
             qs_bought.pack(side="left", padx=4)
-        if qs_product.get().strip().lower() == "flash/reparation":
+        if qs_product.get().strip().lower() == selected:
             qs_product.delete(0, "end")
 
 # === BIND IT USING TRACE INSTEAD
@@ -2534,11 +2533,8 @@ stock_name = ctk.CTkEntry(top_row, placeholder_text="Product Name", width=140)
 stock_name.pack(side="left", padx=5)
 stock_name.bind("<KeyRelease>", lambda e: show_stock_suggestions_for_stock(stock_name, stock_type, stock_bought, stock_selling))
 
-stock_type_values = ["phone", "incassable", "antishock", "cable", "kit", "kit bleutooth","Baffle","Smart Watch",
-                     "casque", "chargeur", "boite chargeur", "adaptateur", "power bank", "support", "others"]
-
-stock_type = ctk.CTkComboBox(top_row, values=stock_type_values, width=130)
-stock_type.set("others")
+stock_type = ctk.CTkComboBox(top_row, values=STOCK_TYPES, width=130)
+stock_type.set(STOCK_TYPES[0]) # Set default to first type
 stock_type.pack(side="left", padx=5)
 
 stock_qty = ctk.CTkEntry(top_row, placeholder_text="Qty", width=60)
@@ -2995,5 +2991,6 @@ def initialize_app():
 def init_callback():
     initialize_app()
     app_initialized = True
+
 app.after(500, init_callback)
 app.mainloop()
