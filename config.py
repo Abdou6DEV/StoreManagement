@@ -1,0 +1,17 @@
+# === Application Settings ===
+
+APP_NAME = "REDA TECH"
+LOGO_PATH = "logo.png"
+
+# Default Sizes
+LOGO_SIZE = (230, 150)
+MIN_WINDOW_HEIGHT = 1200
+MIN_WINDOW_WIDTH = 1000
+
+# Stock Thresholds
+DEFAULT_HIGH_PROFIT_THRESHOLD = 1000
+DEFAULT_LOW_PROFIT_THRESHOLD = 200
+
+# UI Settings
+SIDEBAR_WIDTH = 200
+SIDEBAR_BG_COLOR = "#1a1a1a"

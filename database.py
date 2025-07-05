@@ -11,6 +11,7 @@ c.execute("""CREATE TABLE IF NOT EXISTS base_cash (
     id INTEGER PRIMARY KEY CHECK (id = 1),
     amount INTEGER
 )""")
+
 c.execute("INSERT OR IGNORE INTO base_cash (id, amount) VALUES (1, 0)")
 
 c.execute("""CREATE TABLE IF NOT EXISTS quick_sales (

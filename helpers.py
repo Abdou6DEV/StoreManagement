@@ -1,6 +1,17 @@
 from database import conn, c
 from datetime import datetime
 
+def is_descendant(widget, ancestor):
+    """Returns True if widget is inside ancestor (or is ancestor)."""
+    try:
+        while widget:
+            if widget == ancestor:
+                return True
+            widget = widget.master
+    except Exception:
+        return False
+    return False
+
 def get_history_year_range():
     c.execute("""
         SELECT MIN(timestamp) FROM (

@@ -10,7 +10,8 @@ import tkinter as tk
 # === LOCAL IMPORTS ===
 from components import create_ctk_date_picker
 from database import conn, c
-from helpers import get_history_year_range, get_base_cash , set_setting , get_setting
+from config import APP_NAME, LOGO_PATH, LOGO_SIZE, MIN_WINDOW_HEIGHT, MIN_WINDOW_WIDTH, SIDEBAR_WIDTH, SIDEBAR_BG_COLOR, DEFAULT_HIGH_PROFIT_THRESHOLD, DEFAULT_LOW_PROFIT_THRESHOLD 
+from helpers import get_history_year_range, get_base_cash , set_setting , get_setting, is_descendant
 from themes import apply_theme
 
 # === THEME SETUP ===
@@ -18,9 +19,8 @@ apply_theme()
 
 # === MAIN APP WINDOW ===
 app = ctk.CTk()
-app.title("REDA TECH")
-app.geometry("1200x1000")
-app.minsize(1100, 650)
+app.title(APP_NAME)
+app.minsize(MIN_WINDOW_HEIGHT, MIN_WINDOW_WIDTH)
 
 stock_selected = False
 qs_suggestion_listbox = None
@@ -35,20 +35,6 @@ qs_suggestion_listbox = None
 stock_suggestion_frame = None
 stock_suggestion_listbox = None
 app_initialized = False
-
-high_profit_threshold = 1000
-low_profit_threshold = 200
-
-def is_descendant(widget, ancestor):
-    """Returns True if widget is inside ancestor (or is ancestor)."""
-    try:
-        while widget:
-            if widget == ancestor:
-                return True
-            widget = widget.master
-    except Exception:
-        return False
-    return False
 
 def check_click_outside(event):
     global suggestion_frame, qs_suggestion_listbox
@@ -92,17 +78,16 @@ def restore_stock_from_sale_by_id(sale_id):
 
 # === FONT SETTINGS ===
 title_font = ctk.CTkFont(family="Segoe UI", size=26, weight="bold")
-default_font = ctk.CTkFont(family="Segoe UI", size=12, weight="bold")
 info_font = ctk.CTkFont(family="Segoe UI", size=14, weight="bold")
 
 # === SIDEBAR FRAME ===
-sidebar = ctk.CTkFrame(app, width=200, corner_radius=0, fg_color="#1a1a1a")
+sidebar = ctk.CTkFrame(app, width=SIDEBAR_WIDTH, corner_radius=0, fg_color=SIDEBAR_BG_COLOR)
 sidebar.pack(side="left", fill="y")
 
 # === LOGO AT TOP ===
 from PIL import Image, ImageTk
-logo_image = Image.open("logo.png").resize((230, 150))
-logo_ctk_image = ctk.CTkImage(light_image=logo_image, size=(230, 150))
+logo_image = Image.open(LOGO_PATH).resize(LOGO_SIZE)
+logo_ctk_image = ctk.CTkImage(light_image=logo_image, size=LOGO_SIZE)
 
 logo_label = ctk.CTkLabel(sidebar, text="", image=logo_ctk_image, fg_color="transparent")
 logo_label.pack(pady=(20, 10), anchor="n")
@@ -675,8 +660,8 @@ def load_today_sales():
     from helpers import get_setting  # if not already imported
 
     # ✅ Load fresh thresholds from DB
-    high_profit_threshold = int(get_setting("high_profit", 1000))
-    low_profit_threshold = int(get_setting("low_profit", 200))
+    high_profit_threshold = int(get_setting("high_profit", DEFAULT_HIGH_PROFIT_THRESHOLD))
+    low_profit_threshold = int(get_setting("low_profit", DEFAULT_LOW_PROFIT_THRESHOLD))
     
     today_sales_tree.delete(*today_sales_tree.get_children())
     today = datetime.now().strftime("%Y-%m-%d")
@@ -1845,12 +1830,12 @@ threshold_frame.pack_propagate(False)
 
 ctk.CTkLabel(threshold_frame, text="📈 High Profit Threshold:", font=info_font).pack(pady=(20, 8))
 high_profit_entry = ctk.CTkEntry(threshold_frame, width=180)
-high_profit_entry.insert(0, get_setting("high_profit", 1000))
+high_profit_entry.insert(0, get_setting("high_profit", DEFAULT_HIGH_PROFIT_THRESHOLD))
 high_profit_entry.pack()
 
 ctk.CTkLabel(threshold_frame, text="📉 Low Profit Threshold:", font=info_font).pack(pady=(20, 8))
 low_profit_entry = ctk.CTkEntry(threshold_frame, width=180)
-low_profit_entry.insert(0, get_setting("low_profit", 200))
+low_profit_entry.insert(0, get_setting("low_profit", DEFAULT_LOW_PROFIT_THRESHOLD))
 low_profit_entry.pack()
 
 def apply_threshold_changes():
