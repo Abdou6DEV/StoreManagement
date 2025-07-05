@@ -7,7 +7,7 @@ LOGO_PATH = "images/logo.png"
 
 # Types
 STOCK_TYPES = ["phone", "incassable", "antishock", "cable", "kit", "kit bleutooth","Baffle","Smart Watch", "casque", "chargeur", "boite chargeur", "adaptateur", "power bank", "support", "others"]
-NON_PURCHASED_TYPES = ["flash"]
+NON_PURCHASED_TYPES = ["flash/réparation"]
 SALES_TYPES = STOCK_TYPES + NON_PURCHASED_TYPES
 
 # Default Sizes
