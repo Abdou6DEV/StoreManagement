@@ -495,14 +495,14 @@ qs_product.bind("<KeyRelease>", update_stock_status)
 qs_category.bind("<<ComboboxSelected>>", update_stock_status)
 update_stock_status()
 def on_product_enter(event=None):
-    if "flash" in current_category:
+    if current_category in NON_PURCHASED_TYPES:
         qs_sold.focus()
     else:
         qs_bought.focus()
 
 def resolve_product_enter():
     cat = qs_category.get().lower()
-    if "flash" in cat:
+    if cat in NON_PURCHASED_TYPES:
         qs_sold.focus()
     else:
         qs_bought.focus()
@@ -893,7 +893,7 @@ def add_quick_sale():
         name = qs_product.get()
         cat = qs_category.get()
         sold = int(qs_sold.get())
-        bought = 0 if "flash" in cat.lower() else int(qs_bought.get())
+        bought = 0 if cat.lower() in NON_PURCHASED_TYPES else int(qs_bought.get())
 
         if sold < bought:
             confirm = messagebox.askyesno("Confirm Sale",
