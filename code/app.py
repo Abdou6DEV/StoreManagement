@@ -9,10 +9,13 @@ import tkinter as tk
 
 # === LOCAL IMPORTS ===
 from components import create_ctk_date_picker
-from database import conn, c
+from database import conn, c, init_database
 from config import APP_NAME, LOGO_PATH, LOGO_SIZE, MIN_WINDOW_HEIGHT, MIN_WINDOW_WIDTH, SIDEBAR_WIDTH, SIDEBAR_BG_COLOR, DEFAULT_HIGH_PROFIT_THRESHOLD, DEFAULT_LOW_PROFIT_THRESHOLD, STOCK_TYPES, SALES_TYPES, NON_PURCHASED_TYPES
 from helpers import get_history_year_range, get_base_cash , set_setting , get_setting, is_descendant
 from themes import apply_theme
+
+# === DATABASE SETUP ===
+init_database()
 
 # === THEME SETUP ===
 apply_theme()
