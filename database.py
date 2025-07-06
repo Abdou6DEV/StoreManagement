@@ -73,6 +73,13 @@ c.execute("""CREATE TABLE IF NOT EXISTS cash_audit (
     amount INTEGER,
     balance INTEGER
 )""")
+
+c.execute("""
+CREATE TABLE IF NOT EXISTS settings (
+    key TEXT PRIMARY KEY,
+    value TEXT
+)
+""")
 conn.commit()
 
 # === INDEXES ===

@@ -10,7 +10,7 @@ import tkinter as tk
 # === LOCAL IMPORTS ===
 from components import create_ctk_date_picker
 from database import conn, c
-from helpers import get_history_year_range, get_base_cash
+from helpers import get_history_year_range, get_base_cash , set_setting , get_setting
 from themes import apply_theme
 
 # === THEME SETUP ===
@@ -35,6 +35,9 @@ qs_suggestion_listbox = None
 stock_suggestion_frame = None
 stock_suggestion_listbox = None
 app_initialized = False
+
+high_profit_threshold = 1000
+low_profit_threshold = 200
 
 def is_descendant(widget, ancestor):
     """Returns True if widget is inside ancestor (or is ancestor)."""
@@ -669,10 +672,22 @@ ctk.CTkCheckBox(today_frame, text="Net Profit",
 
 # === LOAD TODAY SALES ===
 def load_today_sales():
+    from helpers import get_setting  # if not already imported
+
+    # ✅ Load fresh thresholds from DB
+    high_profit_threshold = int(get_setting("high_profit", 1000))
+    low_profit_threshold = int(get_setting("low_profit", 200))
+    
     today_sales_tree.delete(*today_sales_tree.get_children())
     today = datetime.now().strftime("%Y-%m-%d")
     start = today + " 00:00:00"
     end = today + " 23:59:59"
+
+    # Define profit color tags
+    today_sales_tree.tag_configure("high_profit", foreground="#00e676")  # green
+    today_sales_tree.tag_configure("low_profit", foreground="#ff5252")   # red
+    today_sales_tree.tag_configure("even", background="#2a2a2a")
+    today_sales_tree.tag_configure("odd", background="#1f1f1f")
 
     c.execute("SELECT id, product, category, bought_price, sold_price, timestamp FROM quick_sales WHERE timestamp BETWEEN ? AND ?", (start, end))
     rows = c.fetchall()
@@ -683,8 +698,22 @@ def load_today_sales():
             profit = float(sold) - float(bought)
         except ValueError:
             profit = 0
-        tag = 'even' if i % 2 == 0 else 'odd'
-        # Use unique iid by prefixing with table name
+
+        # Choose background tag (even/odd row)
+        base_tag = 'even' if i % 2 == 0 else 'odd'
+
+        # Choose color tag based on profit
+        if profit > high_profit_threshold:
+            profit_tag = "high_profit"
+        elif profit < low_profit_threshold:
+            profit_tag = "low_profit"
+        else:
+            profit_tag = None
+
+        tags = (base_tag,)
+        if profit_tag:
+            tags += (profit_tag,)
+
         today_sales_tree.insert("", "end", iid=f"sale_{sale_id}",
             values=(
                 product,
@@ -694,7 +723,7 @@ def load_today_sales():
                 f"{int(profit):,}".replace(",", " "),
                 time
             ),
-            tags=(tag,)
+            tags=tags
         )
 
 def show_credit_sale_popup():
@@ -1738,16 +1767,32 @@ def load_detail_history(page_delta=0):
 
     detail_page_lbl.configure(text=f"Page {detail_page + 1} of {total_pages}")
 
+
 # === SETTINGS PAGE ===
 settings = pages["settings"]
 ctk.CTkLabel(settings, text="⚙️ Settings", font=title_font).pack(pady=15)
 
-sf = ctk.CTkFrame(settings)
-sf.pack(pady=10)
+# Header bar
+settings_edit_header = ctk.CTkFrame(settings, fg_color="#2a2a2a", corner_radius=8, height=35)
+settings_edit_header.pack(fill="x", padx=30, pady=(0, 15))
+ctk.CTkLabel(settings_edit_header, text="🔧 Edit Values", font=info_font).pack(pady=3)
 
-ctk.CTkLabel(sf, text="Base Cash (DA):").grid(row=0, column=0, padx=5, sticky="e")
-base_cash_entry = ctk.CTkEntry(sf, width=150)
-base_cash_entry.grid(row=0, column=1, padx=5)
+# Main container for side-by-side layout
+settings_border = ctk.CTkFrame(settings, fg_color="#e53935", corner_radius=10)
+settings_border.pack(pady=20, padx=30)
+
+# Inner frame with slightly smaller size
+settings_main_frame = ctk.CTkFrame(settings_border, fg_color="#1a1a1a", corner_radius=8)
+settings_main_frame.pack(padx=2, pady=2)
+
+# === LEFT: Base Cash Section ===
+base_cash_frame = ctk.CTkFrame(settings_main_frame, width=300, height=200)
+base_cash_frame.grid(row=0, column=0, padx=40, pady=10)
+base_cash_frame.pack_propagate(False)
+
+ctk.CTkLabel(base_cash_frame, text="💵 Base Cash (DA):", font=info_font).pack(pady=(20, 8))
+base_cash_entry = ctk.CTkEntry(base_cash_frame, width=180)
+base_cash_entry.pack()
 
 def update_base_cash():
     try:
@@ -1758,6 +1803,133 @@ def update_base_cash():
         messagebox.showinfo("Updated", "Cash updated successfully.")
     except:
         messagebox.showerror("Error", "Invalid amount.")
+
+ctk.CTkButton(base_cash_frame, text="Update Base Cash", command=update_base_cash,
+              width=180, fg_color="#43a047", hover_color="#2e7d32", text_color="white").pack(pady=20)
+
+# === RIGHT: Profit Thresholds Section ===
+threshold_frame = ctk.CTkFrame(settings_main_frame, width=300, height=230)
+threshold_frame.grid(row=0, column=1, padx=40, pady=10)
+threshold_frame.pack_propagate(False)
+
+ctk.CTkLabel(threshold_frame, text="📈 High Profit Threshold:", font=info_font).pack(pady=(20, 8))
+high_profit_entry = ctk.CTkEntry(threshold_frame, width=180)
+high_profit_entry.insert(0, get_setting("high_profit", 1000))
+high_profit_entry.pack()
+
+ctk.CTkLabel(threshold_frame, text="📉 Low Profit Threshold:", font=info_font).pack(pady=(20, 8))
+low_profit_entry = ctk.CTkEntry(threshold_frame, width=180)
+low_profit_entry.insert(0, get_setting("low_profit", 200))
+low_profit_entry.pack()
+
+def apply_threshold_changes():
+    global high_profit_threshold, low_profit_threshold
+    try:
+        high_profit_threshold = int(high_profit_entry.get())
+        low_profit_threshold = int(low_profit_entry.get())
+
+        # ✅ Save to database
+        set_setting("high_profit", high_profit_threshold)
+        set_setting("low_profit", low_profit_threshold)
+
+        update_dashboard()
+        messagebox.showinfo("Updated", "Thresholds updated successfully.")
+    except:
+        messagebox.showerror("Error", "Please enter valid numbers.")
+
+ctk.CTkButton(threshold_frame, text="Update", command=apply_threshold_changes,
+              width=100,height=40, fg_color="#43a047", hover_color="#2e7d32", text_color="white").pack(pady=20)
+
+# === PASSWORD FRAME ===
+password_frame = ctk.CTkFrame(settings_main_frame, width=300, height=230)
+password_frame.grid(row=1, column=0, padx=20, pady=15)
+password_frame.pack_propagate(False)
+
+ctk.CTkLabel(password_frame, text="🔒 Password Settings", font=info_font).pack(pady=(20, 5))
+
+existing_password = get_setting("password", None)
+
+if existing_password is None or existing_password == "":
+    new_pass_entry = ctk.CTkEntry(password_frame, width=180, placeholder_text="Set 4-digit Password", show="*")
+    new_pass_entry.pack(pady=5)
+
+    def set_password():
+        pwd = new_pass_entry.get().strip()
+        if len(pwd) == 4 and pwd.isdigit():
+            set_setting("password", pwd)
+            messagebox.showinfo("Success", "Password set.")
+            new_pass_entry.delete(0, "end")
+        else:
+            messagebox.showerror("Error", "Password must be 4 digits.")
+
+    ctk.CTkButton(password_frame, text="Set Password", command=set_password,
+                  width=180, fg_color="#43a047", hover_color="#2e7d32", text_color="white").pack(pady=10)
+else:
+    current_pass = ctk.CTkEntry(password_frame, width=180, placeholder_text="Current Password", show="*")
+    new_pass = ctk.CTkEntry(password_frame, width=180, placeholder_text="New 4-digit Password", show="*")
+    current_pass.pack(pady=5)
+    new_pass.pack(pady=5)
+
+    def change_password():
+        cur = current_pass.get().strip()
+        new = new_pass.get().strip()
+        if cur != existing_password:
+            messagebox.showerror("Error", "Current password is incorrect.")
+            return
+        if len(new) == 4 and new.isdigit():
+            set_setting("password", new)
+            messagebox.showinfo("Updated", "Password updated successfully.")
+            current_pass.delete(0, "end")
+            new_pass.delete(0, "end")
+        else:
+            messagebox.showerror("Error", "New password must be 4 digits.")
+
+    ctk.CTkButton(password_frame, text="Update Password", command=change_password,
+                  width=180, fg_color="#ff9800", hover_color="#f57c00", text_color="white").pack(pady=10)
+
+# === STOCK SETTINGS FRAME ===
+stock_settings_frame = ctk.CTkFrame(settings_main_frame, width=300, height=230)
+stock_settings_frame.grid(row=1, column=1, padx=20, pady=15)
+stock_settings_frame.pack_propagate(False)
+
+low_stock_val = get_setting("low_stock_qty", 2)
+high_sales_val = get_setting("high_stock_sales", 8)
+
+ctk.CTkLabel(stock_settings_frame, text="⚠️Low Stock", font=info_font).pack(pady=10)
+low_stock_entry = ctk.CTkEntry(stock_settings_frame, width=180)
+low_stock_entry.insert(0, str(low_stock_val))
+low_stock_entry.pack(pady=5)
+
+ctk.CTkLabel(stock_settings_frame,text="🔸Best Stock", font=info_font).pack(pady=10)
+high_sales_entry = ctk.CTkEntry(stock_settings_frame, width=180)
+high_sales_entry.insert(0, str(high_sales_val))
+high_sales_entry.pack(pady=5)
+
+def update_stock_settings():
+    try:
+        low_val = low_stock_entry.get().strip()
+        high_val = high_sales_entry.get().strip()
+
+        if not low_val.isdigit() or not high_val.isdigit():
+            raise ValueError("Non-integer input.")
+
+        low = int(low_val)
+        high = int(high_val)
+
+        set_setting("low_stock_qty", low)
+        set_setting("high_stock_sales", high)
+
+    except Exception as e:
+        print("Validation error:", e)
+        messagebox.showerror("Error", "Please enter valid numbers.")
+        return  # stop execution here
+
+    # ✅ Moved outside the try block
+    update_dashboard()  # optional — keep if needed
+    messagebox.showinfo("Saved", "Stock thresholds updated.")
+
+ctk.CTkButton(stock_settings_frame, text="Update", command=update_stock_settings,
+              width=180, fg_color="#43a047", hover_color="#2e7d32", text_color="white").pack(pady=10)
 
 
 # === MODIFIED BILLS PAGE ===
@@ -2114,7 +2286,7 @@ def modify_credit(cid):
 # === CREDIT TAB ===
 add_credit_header = ctk.CTkFrame(credit_frame, fg_color="#2a2a2a", corner_radius=8, height=35)
 add_credit_header.pack(fill="x", pady=(5, 0), padx=20)
-ctk.CTkLabel(add_credit_header, text="➕ Add Credit Entry", font=("Arial", 13)).pack(pady=3)
+ctk.CTkLabel(add_credit_header, text="➕ Add Credit Entry", font=info_font).pack(pady=3)
 
 form_frame = ctk.CTkFrame(credit_frame, fg_color="transparent")
 form_frame.pack(pady=5, padx=20, fill="x")
@@ -2154,7 +2326,7 @@ ctk.CTkButton(btn_frame, text="💾 Save Credit", command=add_credit,
 # Add History Credit Header (new addition)
 history_credit_header = ctk.CTkFrame(credit_frame, fg_color="#2a2a2a", corner_radius=8, height=35)
 history_credit_header.pack(fill="x", pady=(10, 5), padx=20)
-ctk.CTkLabel(history_credit_header, text="🔍 History Credit's", font=("Arial", 13)).pack(pady=3)
+ctk.CTkLabel(history_credit_header, text="🔍 History Credit's", font=info_font).pack(pady=3)
 
 # === Search & Filter UI ===
 # === Filter Frame (centered layout) ===
@@ -2673,13 +2845,14 @@ def initialize_app():
     ])
 def load_stock_table(page_delta=0, force=False):
     global stock_page, app_initialized
-
+    from helpers import get_setting
     if force:
         stock_page = 0
         page_delta = 0
     if not force and not app_initialized:
         return
-
+    low_stock_qty = int(get_setting("low_stock_qty", 2))
+    high_stock_sales = int(get_setting("high_stock_sales", 8))
     available_height = stock_tree.winfo_height()
     estimated_row_height = 28
     rows_per_page = max(1, (available_height // estimated_row_height) - 1)
@@ -2720,8 +2893,8 @@ def load_stock_table(page_delta=0, force=False):
             params.extend([f"%{search_term}%", f"%{search_term}%"])
 
         if low_stock_var.get():
-            filters.append("(s.qty < 3 AND LOWER(s.type) != 'phone')")
-
+            filters.append("(s.qty < ? AND LOWER(s.type) != 'phone')")
+            params.append(low_stock_qty)
         if filters:
             query += " WHERE " + " AND ".join(filters)
 
@@ -2732,7 +2905,7 @@ def load_stock_table(page_delta=0, force=False):
         if worse_selling_var.get():
             all_rows = [row for row in all_rows if sales_map.get((row[1], row[2]), 0) == 0]
         elif best_selling_var.get():
-            all_rows = [row for row in all_rows if sales_map.get((row[1], row[2]), 0) > 8]
+            all_rows = [row for row in all_rows if sales_map.get((row[1], row[2]), 0) > high_stock_sales]
 
         start_idx = offset
         end_idx = offset + rows_per_page

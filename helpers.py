@@ -1,4 +1,4 @@
-from database import c
+from database import conn, c
 from datetime import datetime
 
 def get_history_year_range():
@@ -23,3 +23,12 @@ def get_history_year_range():
 def get_base_cash():
     c.execute("SELECT amount FROM base_cash WHERE id = 1")
     return round(c.fetchone()[0] or 0, 2)
+
+def set_setting(key, value):
+    c.execute("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)", (key, str(value)))
+    conn.commit()
+
+def get_setting(key, default=None):
+    c.execute("SELECT value FROM settings WHERE key = ?", (key,))
+    row = c.fetchone()
+    return row[0] if row else default
