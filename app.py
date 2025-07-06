@@ -1124,7 +1124,7 @@ history_container.pack(fill="both", expand=True)
 
 # === GENERAL HISTORY PAGE ===
 general_frame = ctk.CTkFrame(history_container, fg_color="transparent")
-
+highlight_enabled = ctk.BooleanVar(value=False)
 group_mode = ctk.StringVar(value="day")  # default is 'day'
 
 group_filter = ctk.CTkFrame(general_frame, fg_color="transparent")
@@ -1135,6 +1135,16 @@ ctk.CTkLabel(group_filter, text="Group By:").pack(side="left", padx=5)
 group_menu = ctk.CTkComboBox(group_filter, variable=group_mode,
                              values=["day", "month", "year"], width=100)
 group_menu.pack(side="left", padx=5)
+
+highlight_checkbox = ctk.CTkCheckBox(
+    group_filter,
+    text="Enable Highlights",
+    variable=highlight_enabled,
+    onvalue=True,
+    offvalue=False,
+    command=lambda: load_general_history(0)
+)
+highlight_checkbox.pack(side="left", padx=10)
 
 def update_date_picker(picker_frame, date_str):
     """Update the date picker with a new date"""
@@ -1242,8 +1252,10 @@ general_tree.column("profit", width=150)
 general_tree.column("purchases", width=150)
 general_tree.column("bills", width=150)
 general_tree.pack(fill="both", expand=True)
-general_tree.tag_configure('even', background="#2a2a2a")
-general_tree.tag_configure('odd', background="#1f1f1f")
+general_tree.tag_configure("above_avg", foreground="#00e676")  # Green
+general_tree.tag_configure("below_avg", foreground="#ff5252")  # Red
+general_tree.tag_configure('even', background="#2a2a2a",foreground="white")
+general_tree.tag_configure('odd', background="#1f1f1f",foreground="white")
 # === PAGINATION ===
 # === PAGINATION CONTROLS ===
 general_nav = ctk.CTkFrame(general_frame, fg_color="transparent")
@@ -1331,6 +1343,8 @@ def load_general_history(page_delta=0):
     # Execute base_query to get all rows
     c.execute(base_query)
     all_rows = c.fetchall()
+    all_profits = [float(r[2]) for r in all_rows if r[2] is not None]
+    average_profit = sum(all_profits) / len(all_profits) if all_profits else 0
     
     # Calculate total pages
     total_pages = (len(all_rows) + rows_per_page - 1) // rows_per_page
@@ -1354,13 +1368,30 @@ def load_general_history(page_delta=0):
 
     for i, row in enumerate(page_rows):
         tag = 'even' if i % 2 == 0 else 'odd'
+        profit = float(row[2])
+    
+        # Default tags
+        tags = (tag,)
+    
+        if highlight_enabled.get():  # ✅ Only apply highlights if checkbox is ON
+            threshold_percent = 0.10
+            lower_bound = average_profit * (1 - threshold_percent)
+            upper_bound = average_profit * (1 + threshold_percent)
+            lower_bound, upper_bound = min(lower_bound, upper_bound), max(lower_bound, upper_bound)
+    
+            if profit > upper_bound:
+                tags += ("above_avg",)
+            elif profit < lower_bound:
+                tags += ("below_avg",)
+    
         general_tree.insert("", "end", values=(
             row[0],
             f"{int(row[1]):,}".replace(",", " "),
             f"{int(row[2]):,}".replace(",", " "),
             f"{int(row[3]):,}".replace(",", " "),
             f"{int(row[4]):,}".replace(",", " ")
-        ), tags=(tag,))
+        ), tags=tags)
+
 
     # Update page label to show "X of Y"
     general_page_lbl.configure(text=f"Page {general_page + 1} of {total_pages}")
@@ -1778,7 +1809,7 @@ settings_edit_header.pack(fill="x", padx=30, pady=(0, 15))
 ctk.CTkLabel(settings_edit_header, text="🔧 Edit Values", font=info_font).pack(pady=3)
 
 # Main container for side-by-side layout
-settings_border = ctk.CTkFrame(settings, fg_color="#e53935", corner_radius=10)
+settings_border = ctk.CTkFrame(settings, fg_color="#43a047", corner_radius=10)
 settings_border.pack(pady=20, padx=30)
 
 # Inner frame with slightly smaller size
