@@ -96,22 +96,6 @@ CREATE TABLE IF NOT EXISTS versement (
 )
 """)
 
-try:
-    c.execute("ALTER TABLE versement ADD COLUMN product TEXT")
-except: pass
-
-try:
-    c.execute("ALTER TABLE versement ADD COLUMN category TEXT")
-except: pass
-
-try:
-    c.execute("ALTER TABLE versement ADD COLUMN total_price INTEGER")
-except: pass
-
-try:
-    c.execute("ALTER TABLE versement ADD COLUMN bought_price INTEGER")
-except: pass
-
 conn.commit()
 
 # === INDEXES ===
@@ -121,4 +105,5 @@ c.execute("CREATE INDEX IF NOT EXISTS idx_bills_timestamp ON bills(timestamp)")
 c.execute("CREATE INDEX IF NOT EXISTS idx_purchases_timestamp ON purchases(timestamp)")
 c.execute("CREATE INDEX IF NOT EXISTS idx_stock_product ON stock(product)")
 c.execute("CREATE INDEX IF NOT EXISTS idx_qs_timestamp ON quick_sales(timestamp)")
+
 conn.commit()
