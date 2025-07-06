@@ -648,9 +648,9 @@ def update_dashboard():
     overall_total_lbl.configure(text=f"Overall Revenue: {int(o_total):,}".replace(",", " ") + " DA")
     overall_profit_lbl.configure(text=f"Overall Profit: {int(o_profit):,}".replace(",", " ") + " DA")
 
-net_profit_var = ctk.BooleanVar(value=True)
+net_profit_var = ctk.BooleanVar(value=False)
 
-ctk.CTkCheckBox(today_frame, text="Net Profit",
+ctk.CTkCheckBox(today_frame, text="Net Profit (Bills Included)",
                 variable=net_profit_var,
                 command=update_dashboard).pack(anchor="w", padx=15, pady=(0, 5))
 
