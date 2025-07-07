@@ -39,6 +39,9 @@ stock_suggestion_frame = None
 stock_suggestion_listbox = None
 app_initialized = False
 
+last_product_value = ""
+last_selected_category = ""
+
 def check_click_outside(event):
     global suggestion_frame, qs_suggestion_listbox
     global stock_suggestion_frame, stock_suggestion_listbox
@@ -465,6 +468,9 @@ qs_bought = ctk.CTkEntry(row2, width=100)
 qs_bought_lbl.pack(side="left", padx=4)
 qs_bought.pack(side="left", padx=4)
 
+qs_sold_lbl = ctk.CTkLabel(row2, text="Sold Price:", width=80)
+qs_sold = ctk.CTkEntry(row2, width=100)
+
 ctk.CTkLabel(row2, text="Sold Price:", width=80).pack(side="left", padx=4)
 qs_sold = ctk.CTkEntry(row2, width=100)
 qs_sold.pack(side="left", padx=4)
@@ -524,6 +530,11 @@ def product_enter_event(event=None):
     resolve_product_enter()
 
 def on_qs_product_keyrelease(event=None):
+    global last_product_value
+    new_val = qs_product.get().strip()
+    if new_val == last_product_value:
+        return
+    last_product_value = new_val
     show_stock_suggestions(event)
     update_stock_status(event)
 
@@ -534,25 +545,24 @@ qs_sold.bind("<Return>", lambda e: add_quick_sale())       # sold → add
 
 # === CATEGORY TOGGLE LOGIC
 def toggle_bought_price():
-    global current_category
+    global current_category, last_selected_category
     selected = qs_category.get().strip().lower()
+    if selected == last_selected_category:
+        return  # no need to re-pack
+    last_selected_category = selected
     current_category = selected
 
-    # Clear all widgets from row2
     for widget in row2.winfo_children():
         widget.pack_forget()
 
-    # === Restore Bought Price widgets only if needed
     if selected not in NON_PURCHASED_TYPES:
         qs_bought_lbl.pack(side="left", padx=4)
         qs_bought.pack(side="left", padx=4)
     else:
-        # If it's a NON_PURCHASED type and product name is empty, set it
         if not qs_product.get().strip():
             qs_product.insert(0, selected)
 
-    # === Always pack Sold Price widgets
-    ctk.CTkLabel(row2, text="Sold Price:", width=80).pack(side="left", padx=4)
+    qs_sold_lbl.pack(side="left", padx=4)
     qs_sold.pack(side="left", padx=4)
 
 # === BIND IT USING TRACE INSTEAD
