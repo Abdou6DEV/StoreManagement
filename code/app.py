@@ -710,6 +710,92 @@ def load_today_sales():
             tags=tags
         )
 
+def show_add_versement_popup():
+    try:
+        name = qs_product.get().strip()
+        cat = qs_category.get().strip()
+        sold_price = int(qs_sold.get().strip())
+
+        # Fetch bought price from stock
+        c.execute("SELECT id, qty, bought_price FROM stock WHERE product = ? AND type = ?", (name, cat))
+        row = c.fetchone()
+        if not row:
+            messagebox.showerror("Missing", f"'{name}' not found in stock.")
+            return
+
+        stock_id, qty, bought_price = row
+        if qty <= 0:
+            messagebox.showwarning("Stock", f"⚠ No stock left for {name}")
+            return
+
+        # === Versement Popup ===
+        popup = ctk.CTkToplevel()
+        popup.title("Add Versement")
+        popup.geometry("420x370")
+        popup.grab_set()
+
+        ctk.CTkLabel(popup, text="Add Versement Entry", font=("Arial", 17, "bold")).pack(pady=10)
+
+        form = ctk.CTkFrame(popup, fg_color="transparent")
+        form.pack(pady=5, padx=20, fill="x")
+
+        fields = {}
+        labels = ["Name", "Phone", "Amount Versed", "Due Date"]
+        for i, label in enumerate(labels):
+            ctk.CTkLabel(form, text=label + ":", anchor="e", width=100).grid(row=i, column=0, padx=5, pady=6)
+            if label == "Due Date":
+                date_frame = ctk.CTkFrame(form, fg_color="transparent")
+                date_frame.grid(row=i, column=1, padx=5, pady=6, sticky="w")
+                picker = create_ctk_date_picker(date_frame, default=datetime.now().strftime("%Y-%m-%d"))
+                picker.pack()
+                fields["due"] = picker
+            else:
+                entry = ctk.CTkEntry(form, width=250)
+                entry.grid(row=i, column=1, padx=5, pady=6, sticky="w")
+                fields[label.lower().replace(" ", "_")] = entry
+
+        def confirm_versement():
+            try:
+                client_name = fields["name"].get().strip()
+                client_phone = fields["phone"].get().strip()
+                amount_versed = int(fields["amount_versed"].get().strip())
+                due_date = fields["due"].get_date()
+
+                if not client_name:
+                    messagebox.showwarning("Missing", "Name is required.")
+                    return
+
+                now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+                # Insert into versement table
+                c.execute("""
+                    INSERT INTO versement 
+                    (timestamp, name, amount, reason, phone, payment_time, product, category, total_price, bought_price)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (now, client_name, amount_versed, name, client_phone, due_date, name, cat, sold_price, bought_price))
+
+                # Deduct stock by 1
+                c.execute("UPDATE stock SET qty = qty - 1 WHERE id = ?", (stock_id,))
+
+                # Add money to base cash
+                c.execute("UPDATE base_cash SET amount = amount + ?", (amount_versed,))
+
+                conn.commit()
+                popup.destroy()
+                update_dashboard()
+                load_stock_table()
+                messagebox.showinfo("Saved", f"Versement added for {client_name}.")
+
+            except Exception as e:
+                messagebox.showerror("Error", f"Failed to save versement:\n{e}")
+
+        # Confirm Button
+        ctk.CTkButton(popup, text="💾 Confirm Versement", command=confirm_versement,
+                      fg_color="#FF9100", hover_color="#F57C00").pack(pady=15)
+
+    except Exception as e:
+        messagebox.showerror("Error", f"Versement setup failed:\n{e}")
+
 def show_credit_sale_popup():
     try:
         product = qs_product.get().strip()
@@ -983,18 +1069,16 @@ def modify_selected_sale():
             c.execute("SELECT id, qty FROM stock WHERE product = ? AND type = ?", (new_product, original_category))
             new_stock_row = c.fetchone()
             
-            if not new_stock_row:
-                messagebox.showwarning("⚠ Stock", f"Product '{new_product}' not found in stock.")
-                return
+            if new_stock_row:
+                new_stock_id, new_qty = new_stock_row
             
-            new_stock_id, new_qty = new_stock_row
-            
-            if new_qty <= 0:
-                messagebox.showwarning("⚠ Stock", f"No stock left for product '{new_product}'. Modification aborted.")
-                return
-
-            # Deduct stock
-            c.execute("UPDATE stock SET qty = ? WHERE id = ?", (new_qty - 1, new_stock_id))
+                if new_qty <= 0:
+                    messagebox.showwarning("⚠ Stock", f"No stock left for product '{new_product}'. Modification completed, but stock is 0.")
+                else:
+                    # Deduct stock
+                    c.execute("UPDATE stock SET qty = ? WHERE id = ?", (new_qty - 1, new_stock_id))
+            else:
+                print(f"⚠ Stock not found for '{new_product}' ({original_category}) — skipping stock deduction.")
 
             conn.commit()
             popup.destroy()
@@ -1033,6 +1117,10 @@ add_btn.pack(side="left", padx=10, pady=10)
 addc_btn = ctk.CTkButton(button_row, text="💳 Add Credit", command=show_credit_sale_popup,
                          text_color="white", fg_color="#E0A800", hover_color="#C79100", corner_radius=8)
 addc_btn.pack(side="left", padx=10, pady=10)
+
+addv_btn = ctk.CTkButton(button_row, text="📥 Add Versement", command=show_add_versement_popup,
+                         text_color="white", fg_color="#2196F3", hover_color="#1976D2", corner_radius=8)
+addv_btn.pack(side="left", padx=10, pady=10)
  
 # === SECTION: THIS MONTH ===
 month_frame = ctk.CTkFrame(right_col, corner_radius=10)
@@ -1960,6 +2048,8 @@ ctk.CTkRadioButton(money_mode_frame, text="Bills", variable=money_mode_var, valu
                    command=lambda: switch_money_mode()).pack(side="left", padx=10)
 ctk.CTkRadioButton(money_mode_frame, text="Credit", variable=money_mode_var, value="credit",
                    command=lambda: switch_money_mode()).pack(side="left", padx=10)
+ctk.CTkRadioButton(money_mode_frame, text="Versement", variable=money_mode_var, value="versement",
+                   command=lambda: switch_money_mode()).pack(side="left", padx=10)
 
 # Container for both tabs
 money_container = ctk.CTkFrame(bills, fg_color="transparent")
@@ -1968,14 +2058,16 @@ money_container.pack(fill="both", expand=True)
 # Initialize both frames (important for first load)
 bills_frame = ctk.CTkFrame(money_container, fg_color="transparent")
 credit_frame = ctk.CTkFrame(money_container, fg_color="transparent")
-
+versement_frame = ctk.CTkFrame(money_container, fg_color="transparent")
 def switch_money_mode():
     for widget in money_container.winfo_children():
         widget.pack_forget()
     if money_mode_var.get() == "bills":
         bills_frame.pack(fill="both", expand=True)
-    else:
+    elif money_mode_var.get() == "credit":
         credit_frame.pack(fill="both", expand=True)
+    else:
+        versement_frame.pack(fill="both", expand=True)
 
 app.after(100, switch_money_mode)
 
@@ -2515,7 +2607,289 @@ entries_frame.pack(fill="both", expand=True, pady=7, padx=20)
 # Initialize credit entries
 app.after(100, load_credit_entries)
 
+# === VERSEMENT TAB ===
+add_versement_header = ctk.CTkFrame(versement_frame, fg_color="#2a2a2a", corner_radius=8, height=35)
+add_versement_header.pack(fill="x", pady=(5, 0), padx=20)
+ctk.CTkLabel(add_versement_header, text="➕ Add Versement Entry", font=info_font).pack(pady=3)
 
+verse_form = ctk.CTkFrame(versement_frame, fg_color="transparent")
+verse_form.pack(pady=5, padx=20, fill="x")
+
+verse_name = ctk.CTkEntry(verse_form, placeholder_text="Client Name", width=150)
+verse_amount = ctk.CTkEntry(verse_form, placeholder_text="DA", width=100)
+verse_phone = ctk.CTkEntry(verse_form, placeholder_text="Phone", width=150)
+verse_reason = ctk.CTkEntry(verse_form, placeholder_text="Product", width=150)
+
+ctk.CTkLabel(verse_form, text="Name:").grid(row=0, column=0, padx=5, pady=3)
+verse_name.grid(row=0, column=1, padx=5, pady=3)
+
+ctk.CTkLabel(verse_form, text="Amount:").grid(row=0, column=2, padx=5, pady=3)
+verse_amount.grid(row=0, column=3, padx=5, pady=3)
+
+ctk.CTkLabel(verse_form, text="Phone:").grid(row=1, column=0, padx=5, pady=3)
+verse_phone.grid(row=1, column=1, padx=5, pady=3)
+
+ctk.CTkLabel(verse_form, text="Reason:").grid(row=1, column=2, padx=5, pady=3)
+verse_reason.grid(row=1, column=3, padx=5, pady=3)
+
+ctk.CTkLabel(verse_form, text="Due Date:").grid(row=2, column=0, padx=5, pady=3)
+verse_due_frame = ctk.CTkFrame(verse_form, fg_color="transparent")
+verse_due_frame.grid(row=2, column=1, padx=5, pady=3, sticky="w")
+verse_due = create_ctk_date_picker(verse_due_frame, default=today)
+verse_due.pack()
+
+# Button
+ctk.CTkButton(versement_frame, text="💾 Save Versement", command=lambda: add_versement(),
+              fg_color="#ff6f00", hover_color="#e65100", width=140).pack(pady=6)
+
+
+def add_versement():
+    try:
+        name = verse_name.get().strip()
+        amount = int(verse_amount.get().strip())
+        phone = verse_phone.get().strip()
+        reason = verse_reason.get().strip()
+        due = verse_due.get_date() if hasattr(verse_due, 'get_date') else None
+
+        if not name:
+            raise ValueError("Name is required")
+
+        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        c.execute("INSERT INTO versement (timestamp, name, amount, reason, phone, payment_time) VALUES (?, ?, ?, ?, ?, ?)",
+                  (now, name, amount, reason, phone, due))
+        c.execute("UPDATE base_cash SET amount = amount + ?", (amount,))
+        conn.commit()
+
+        # Clear fields
+        verse_name.delete(0, "end")
+        verse_amount.delete(0, "end")
+        verse_phone.delete(0, "end")
+        verse_reason.delete(0, "end")
+
+        load_versement_entries()
+        update_dashboard()
+        messagebox.showinfo("Saved", "Versement added successfully.")
+    except Exception as e:
+        messagebox.showerror("Error", f"Error: {e}")
+
+# === Filter UI for Versement ===
+versement_history_header = ctk.CTkFrame(versement_frame, fg_color="#2a2a2a", corner_radius=8, height=35)
+versement_history_header.pack(fill="x", pady=(10, 5), padx=20)
+ctk.CTkLabel(versement_history_header, text="🔍 History Versements", font=info_font).pack(pady=3)
+
+versement_filter_frame = ctk.CTkFrame(versement_frame, fg_color="transparent")
+versement_filter_frame.pack(pady=10)
+
+versement_filter_row = ctk.CTkFrame(versement_filter_frame, fg_color="transparent")
+versement_filter_row.pack()
+
+ctk.CTkLabel(versement_filter_row, text="🔍", font=("Arial", 20)).pack(side="left", padx=(4, 4))
+
+versement_search_entry = ctk.CTkEntry(versement_filter_row, placeholder_text="Search by name", width=150)
+versement_search_entry.pack(side="left", padx=(0, 20))
+def delayed_versement_load(_):
+    app.after(10, load_versement_entries)
+versement_search_entry.bind("<KeyRelease>", delayed_versement_load)
+
+# Checkboxes
+show_unpaid_versement = ctk.BooleanVar()
+show_ontime_versement = ctk.BooleanVar()
+show_today_versement = ctk.BooleanVar()
+
+ctk.CTkCheckBox(
+    versement_filter_row, text="Unpaid", variable=show_unpaid_versement,
+    command=lambda: load_versement_entries()).pack(side="right", padx=6)
+
+ctk.CTkCheckBox(
+    versement_filter_row, text="Still on Time", variable=show_ontime_versement,
+    command=lambda: load_versement_entries()).pack(side="right", padx=6)
+
+ctk.CTkCheckBox(
+    versement_filter_row, text="Today's Versement", variable=show_today_versement,
+    command=lambda: load_versement_entries()).pack(side="right", padx=6)
+
+# Scrollable list
+versement_entries_frame = ctk.CTkScrollableFrame(versement_frame, fg_color="transparent", height=220)
+versement_entries_frame.pack(fill="both", expand=True, pady=7, padx=20)
+
+def create_versement_entry_frame(entry):
+    vid, timestamp, name, amount, reason, phone, due, product, category, total_price, bought_price = entry
+    border_color = "#444"
+
+    # === Determine color based on due date ===
+    if due:
+        try:
+            for fmt in ("%Y-%m-%d", "%d/%m/%Y"):
+                try:
+                    due_date = datetime.strptime(due, fmt).date()
+                    break
+                except:
+                    continue
+            else:
+                due_date = None
+
+            today = datetime.now().date()
+            if due_date:
+                if due_date < today:
+                    border_color = "#e53935"  # red
+                elif due_date == today:
+                    border_color = "#FFB300"  # yellow
+                else:
+                    border_color = "#00e676"  # green
+        except:
+            pass
+
+    frame = ctk.CTkFrame(versement_entries_frame, border_width=2, border_color=border_color, corner_radius=8)
+    frame.pack(fill="x", padx=6, pady=4)
+
+    content = ctk.CTkFrame(frame, fg_color="transparent", height=50)
+    content.pack(fill="x", padx=10, pady=6)
+
+    # Common visual style
+    label_font = ("Arial", 19)
+    label_padx = 5
+    label_width = 100
+    label_height = 20
+
+    # Format date
+    date_str = datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S").strftime("%d/%m/%Y")
+
+    # === Entry Labels ===
+    ctk.CTkLabel(content, text=f"🗓 {date_str}", font=label_font, width=label_width,
+                 height=label_height, anchor="center").pack(side="left", padx=label_padx)
+
+    name_label = ctk.CTkLabel(content, text=f"👤 {name[:12]}{'..' if len(name) > 12 else ''}",
+                              font=label_font, width=label_width, height=label_height, anchor="center")
+    name_label.pack(side="left", padx=label_padx)
+    name_label.bind("<Enter>", lambda e, n=name: name_label.configure(text=f"👤 {n}"))
+    name_label.bind("<Leave>", lambda e: name_label.configure(text=f"👤 {name[:12]}{'..' if len(name) > 12 else ''}"))
+
+    if reason:
+        reason_label = ctk.CTkLabel(content, text=f"📝 {reason[:15]}{'..' if len(reason) > 15 else ''}",
+                                    font=label_font, width=label_width, height=label_height, anchor="center")
+        reason_label.pack(side="left", padx=label_padx)
+        reason_label.bind("<Enter>", lambda e, r=reason: reason_label.configure(text=f"📝 {r}"))
+        reason_label.bind("<Leave>", lambda e: reason_label.configure(text=f"📝 {reason[:15]}{'..' if len(reason) > 15 else ''}"))
+
+    if phone:
+        ctk.CTkLabel(content, text=f"📞 {phone}", font=label_font, width=label_width,
+                     height=label_height, anchor="center").pack(side="left", padx=label_padx)
+
+    ctk.CTkLabel(content, text=f"💰 {int(amount):,}".replace(",", " ") + " DA", font=label_font,
+                 text_color="#FFD600", width=label_width, height=label_height, anchor="center").pack(side="left", padx=label_padx)
+
+    if due:
+        ctk.CTkLabel(content, text=f"⏰ {due}", font=label_font,
+                     width=label_width, height=label_height, anchor="center").pack(side="left", padx=label_padx)
+
+    # === Action Buttons ===
+    btn_frame = ctk.CTkFrame(content, fg_color="transparent", width=60)
+    btn_frame.pack(side="right", padx=5)
+
+    ctk.CTkButton(btn_frame, text="Paid ✅", width=40, height=30,
+                  font=("Arial", 13),
+                  fg_color="#43a047", hover_color="#2e7d32",
+                  command=lambda: mark_versement_as_paid(vid)).pack(side="left", padx=6, pady=2)
+    
+
+def load_versement_entries():
+    for widget in versement_entries_frame.winfo_children():
+        widget.destroy()
+
+    c.execute("SELECT * FROM versement ORDER BY timestamp DESC")
+    rows = c.fetchall()
+
+    raw = versement_search_entry.get().strip()
+    keyword = raw.lower() if raw and raw.lower() not in ["search by name", "search product..."] else None
+
+    unpaid = show_unpaid_versement.get()
+    ontime = show_ontime_versement.get()
+    today_only = show_today_versement.get()
+
+    for entry in rows:
+        cid, timestamp, name, amount, reason, phone, due, product, category, total_price, bought_price = entry
+        if keyword and keyword not in name.lower().strip():
+            continue
+
+        # Determine status
+        status = None
+        if due:
+            try:
+                for fmt in ("%Y-%m-%d", "%d/%m/%Y"):
+                    try:
+                        due_date = datetime.strptime(due, fmt).date()
+                        break
+                    except:
+                        continue
+                else:
+                    due_date = None
+
+                if due_date:
+                    today = datetime.now().date()
+                    if due_date < today:
+                        status = 'red'
+                    elif due_date == today:
+                        status = 'yellow'
+                    else:
+                        status = 'green'
+            except:
+                pass
+
+        if unpaid and status != 'red':
+            continue
+        if ontime and status != 'green':
+            continue
+        if today_only and status != 'yellow':
+            continue
+
+        create_versement_entry_frame(entry)
+
+def delete_versement(vid):
+    c.execute("DELETE FROM versement WHERE id = ?", (vid,))
+    conn.commit()
+    load_versement_entries()
+    
+def mark_versement_as_paid(vid):
+    try:
+        # Fetch versement data
+        c.execute("SELECT name, amount, reason, phone, product, category, total_price, bought_price FROM versement WHERE id = ?", (vid,))
+        data = c.fetchone()
+
+        if not data:
+            messagebox.showerror("Error", "Versement entry not found.")
+            return
+
+        name, amount_versed, reason, phone, product, category, total_price, bought_price = data
+
+        confirm = messagebox.askyesno("Confirm", f"Mark '{name}' as paid and register full sale?")
+        if not confirm:
+            return
+
+        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        # Insert into quick_sales
+        c.execute("""
+            INSERT INTO quick_sales (timestamp, product, category, bought_price, sold_price)
+            VALUES (?, ?, ?, ?, ?)
+        """, (now, product, category, bought_price, total_price))
+
+        # Adjust base_cash (subtract already-versed)
+        difference = total_price - amount_versed
+        c.execute("UPDATE base_cash SET amount = amount + ?", (difference,))
+
+        # Delete versement entry
+        c.execute("DELETE FROM versement WHERE id = ?", (vid,))
+        conn.commit()
+
+        update_dashboard()
+        load_versement_entries()
+        load_today_sales()
+        messagebox.showinfo("Paid", f"Sale for '{name}' completed. Remaining {difference:,} DA was added.")
+
+    except Exception as e:
+        messagebox.showerror("Error", f"Failed to mark versement as paid:\n{e}")
+
+       
 # === STOCK TAB ===
 stock = pages["stock"] = ctk.CTkFrame(main_area, fg_color="transparent")
 stock_page = 0
@@ -2740,7 +3114,13 @@ def edit_stock_entry_popup(event):
 
     values = stock_tree.item(selected, "values")
     stock_id = selected
-    real_values = [values[0], values[1], values[2], values[3], values[5]]
+    real_values = [
+    values[0],  # Product
+    values[1],  # Type
+    values[2],  # Qty (should already be plain)
+    values[3].replace(" ", ""),  # Bought price
+    values[5].replace(" ", "")   # Selling price
+    ]
     popup = ctk.CTkToplevel()
     popup.title("Edit Stock")
     popup.geometry("400x450")

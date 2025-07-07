@@ -79,6 +79,39 @@ CREATE TABLE IF NOT EXISTS settings (
     value TEXT
 )
 """)
+
+c.execute("""
+CREATE TABLE IF NOT EXISTS versement (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    timestamp TEXT,
+    name TEXT,
+    amount INTEGER,
+    reason TEXT,
+    phone TEXT,
+    payment_time TEXT,
+    product TEXT,
+    category TEXT,
+    total_price INTEGER,
+    bought_price INTEGER
+)
+""")
+
+try:
+    c.execute("ALTER TABLE versement ADD COLUMN product TEXT")
+except: pass
+
+try:
+    c.execute("ALTER TABLE versement ADD COLUMN category TEXT")
+except: pass
+
+try:
+    c.execute("ALTER TABLE versement ADD COLUMN total_price INTEGER")
+except: pass
+
+try:
+    c.execute("ALTER TABLE versement ADD COLUMN bought_price INTEGER")
+except: pass
+
 conn.commit()
 
 # === INDEXES ===
