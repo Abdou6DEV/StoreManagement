@@ -538,18 +538,22 @@ def toggle_bought_price():
     selected = qs_category.get().strip().lower()
     current_category = selected
 
-    if selected in NON_PURCHASED_TYPES:
-        if qs_bought_lbl.winfo_ismapped():
-            qs_bought_lbl.pack_forget()
-            qs_bought.pack_forget()
+    # Clear all widgets from row2
+    for widget in row2.winfo_children():
+        widget.pack_forget()
+
+    # === Restore Bought Price widgets only if needed
+    if selected not in NON_PURCHASED_TYPES:
+        qs_bought_lbl.pack(side="left", padx=4)
+        qs_bought.pack(side="left", padx=4)
+    else:
+        # If it's a NON_PURCHASED type and product name is empty, set it
         if not qs_product.get().strip():
             qs_product.insert(0, selected)
-    else:
-        if not qs_bought_lbl.winfo_ismapped():
-            qs_bought_lbl.pack(side="left", padx=4)
-            qs_bought.pack(side="left", padx=4)
-        if qs_product.get().strip().lower() == selected:
-            qs_product.delete(0, "end")
+
+    # === Always pack Sold Price widgets
+    ctk.CTkLabel(row2, text="Sold Price:", width=80).pack(side="left", padx=4)
+    qs_sold.pack(side="left", padx=4)
 
 # === BIND IT USING TRACE INSTEAD
 def monitor_category_change():
@@ -2497,12 +2501,12 @@ def create_credit_entry_frame(entry):
         except:
             pass
 
-    frame = ctk.CTkFrame(entries_frame, border_width=2, border_color=border_color,
-                         corner_radius=8)
+    frame = ctk.CTkFrame(entries_frame, border_width=1, border_color=border_color,
+                         corner_radius=10)
     frame.pack(fill="x", padx=6, pady=4)
     
     content = ctk.CTkFrame(frame, fg_color="transparent", height=50)
-    content.pack(fill="x", padx=10, pady=6)
+    content.pack(fill="x", padx=10, pady=2)
     
     # Common style for all labels
     label_font = ("Arial", 19)
@@ -2537,7 +2541,7 @@ def create_credit_entry_frame(entry):
 
     btn_frame = ctk.CTkFrame(content, fg_color="transparent", width=60)
     btn_frame.pack(side="right", padx=5)                                                            
-    ctk.CTkButton(btn_frame, text="Modify ✏", width=40, height=30, command=lambda cid=cid: modify_credit(cid),
+    ctk.CTkButton(btn_frame, text="Edit ✏", width=40, height=30, command=lambda cid=cid: modify_credit(cid),
                   fg_color="#0288d1", hover_color="#0277bd", font=("Arial", 13)).pack(side="left", padx=6,pady=2)
 
 
@@ -2742,11 +2746,11 @@ def create_versement_entry_frame(entry):
         except:
             pass
 
-    frame = ctk.CTkFrame(versement_entries_frame, border_width=2, border_color=border_color, corner_radius=8)
+    frame = ctk.CTkFrame(versement_entries_frame, border_width=1, border_color=border_color, corner_radius=10)
     frame.pack(fill="x", padx=6, pady=4)
 
     content = ctk.CTkFrame(frame, fg_color="transparent", height=50)
-    content.pack(fill="x", padx=10, pady=6)
+    content.pack(fill="x", padx=10, pady=4)
 
     # Common visual style
     label_font = ("Arial", 19)
@@ -2789,10 +2793,10 @@ def create_versement_entry_frame(entry):
     btn_frame = ctk.CTkFrame(content, fg_color="transparent", width=60)
     btn_frame.pack(side="right", padx=5)
 
-    ctk.CTkButton(btn_frame, text="Paid ✅", width=40, height=30,
+    ctk.CTkButton(btn_frame, text="Edit ✏", width=40, height=30,
                   font=("Arial", 13),
-                  fg_color="#43a047", hover_color="#2e7d32",
-                  command=lambda: mark_versement_as_paid(vid)).pack(side="left", padx=6, pady=2)
+                  fg_color="#0288d1", hover_color="#0277bd",
+                  command=lambda: modify_versement_popup(vid)).pack(side="left", padx=6, pady=2)
     
 
 def load_versement_entries():
@@ -2846,11 +2850,6 @@ def load_versement_entries():
             continue
 
         create_versement_entry_frame(entry)
-
-def delete_versement(vid):
-    c.execute("DELETE FROM versement WHERE id = ?", (vid,))
-    conn.commit()
-    load_versement_entries()
     
 def mark_versement_as_paid(vid):
     try:
@@ -2892,6 +2891,100 @@ def mark_versement_as_paid(vid):
     except Exception as e:
         messagebox.showerror("Error", f"Failed to mark versement as paid:\n{e}")
 
+def modify_versement_popup(vid):
+    c.execute("SELECT * FROM versement WHERE id = ?", (vid,))
+    entry = c.fetchone()
+    if not entry:
+        messagebox.showerror("Error", "Versement not found.")
+        return
+
+    # Unpack entry
+    (vid, ts, name, amount, reason, phone, due,
+     product, category, total_price, bought_price) = entry
+
+    popup = ctk.CTkToplevel()
+    popup.title("Edit Versement")
+    popup.geometry("460x420")
+    popup.grab_set()
+
+    ctk.CTkLabel(popup, text="📝 Edit Versement Entry", font=("Arial", 17, "bold")).pack(pady=8)
+
+    form = ctk.CTkFrame(popup, fg_color="transparent")
+    form.pack(pady=10, padx=20)
+
+    # Fields
+    fields = []
+    labels = ["Name:", "Amount (DA):", "Phone:", "Due Date:"]
+    values = [name, str(int(amount)), phone, due or ""]
+
+    for i, (lbl, val) in enumerate(zip(labels, values)):
+        ctk.CTkLabel(form, text=lbl).grid(row=i, column=0, padx=6, pady=6, sticky="e")
+        if lbl == "Due Date:":
+            date_frame = ctk.CTkFrame(form, fg_color="transparent")
+            date_frame.grid(row=i, column=1, sticky="w")
+            due_picker = create_ctk_date_picker(date_frame, default=due or today)
+            due_picker.pack()
+            fields.append(due_picker)
+        else:
+            entry = ctk.CTkEntry(form, width=220)
+            entry.insert(0, val)
+            entry.grid(row=i, column=1, padx=5, pady=6)
+            fields.append(entry)
+
+    # Show product info (if exists)
+    if product:
+        diffirence = total_price - amount
+        prod_info = f"\nProduct: {product}\nTotal: {total_price:,} DA\nShould Pay: {diffirence:,} DA"
+        ctk.CTkLabel(popup, text=prod_info, font=("Arial", 13), text_color="#aaa").pack(pady=5)
+
+    # Action buttons
+    btn_frame = ctk.CTkFrame(popup, fg_color="transparent")
+    btn_frame.pack(pady=10)
+
+    def save_changes():
+        try:
+            new_name = fields[0].get().strip()
+            new_amount = int(fields[1].get().strip())
+            new_phone = fields[2].get().strip()
+            new_due = fields[3].get_date() if hasattr(fields[3], 'get_date') else None
+
+            # Adjust base cash if amount changed
+            delta = new_amount - amount
+            c.execute("UPDATE base_cash SET amount = amount + ?", (delta,))
+
+            # Update versement entry
+            c.execute("""
+                UPDATE versement
+                SET name=?, amount=?, phone=?, payment_time=?
+                WHERE id = ?
+            """, (new_name, new_amount, new_phone, new_due, vid))
+            conn.commit()
+            popup.destroy()
+            load_versement_entries()
+            update_dashboard()
+            messagebox.showinfo("Success", "Versement updated.")
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to update: {e}")
+
+    def complete_payment():
+        if bought_price is not None:
+            mark_versement_as_paid(vid)
+            popup.destroy()
+        else:
+            confirm = messagebox.askyesno("Confirm", f"No product info. Just remove entry and subtract {amount} DA from cash?")
+            if confirm:
+                c.execute("UPDATE base_cash SET amount = amount - ?", (amount,))
+                c.execute("DELETE FROM versement WHERE id = ?", (vid,))
+                conn.commit()
+                popup.destroy()
+                load_versement_entries()
+                update_dashboard()
+                messagebox.showinfo("Done", "Versement marked as paid. Please manually add sale.")
+
+    ctk.CTkButton(btn_frame, text="💾 Save", width=90, command=save_changes,
+                  fg_color="#0288d1", hover_color="#0277bd").pack(side="left", padx=10)
+    ctk.CTkButton(btn_frame, text="✅ Paid", width=90, command=complete_payment,
+                  fg_color="#43a047", hover_color="#2e7d32").pack(side="left", padx=10)
        
 # === STOCK TAB ===
 stock = pages["stock"] = ctk.CTkFrame(main_area, fg_color="transparent")
@@ -3183,17 +3276,37 @@ import tkinter.ttk as ttk
 
 stock_tree = ttk.Treeview(
     stock_table_frame,
-    columns=("product", "type", "qty", "bought", "total", "selling", "profit", "total_profit"),
+    columns=("product", "type", "qty", "bought", "total", "selling", "profit", "total_profit", "sold"),
     show="headings",
     height=12
 )
 
-for col, label in zip(
-    ["product", "type", "qty", "bought", "total", "selling", "profit", "total_profit"],
-    ["Product", "Type", "Qty", "Bought", "Total Bought", "Selling", "Profit", "Total Profit"]
-):
-    stock_tree.heading(col, text=label)
-    stock_tree.column(col, anchor="center", width=110)
+stock_tree.heading("product", text="Product")
+stock_tree.column("product", width=160)
+
+stock_tree.heading("type", text="Type")
+stock_tree.column("type", width=100)
+
+stock_tree.heading("qty", text="Qty")
+stock_tree.column("qty", width=10)
+
+stock_tree.heading("bought", text="Bought")
+stock_tree.column("bought", width=100)
+
+stock_tree.heading("total", text="Total Bought")
+stock_tree.column("total", width=100)
+
+stock_tree.heading("selling", text="Selling")
+stock_tree.column("selling", width=100)
+
+stock_tree.heading("profit", text="Profit")
+stock_tree.column("profit", width=100)
+
+stock_tree.heading("total_profit", text="Total Profit")
+stock_tree.column("total_profit", width=100)
+
+stock_tree.heading("sold", text="Qty Sold")
+stock_tree.column("sold", width=40)
 
 stock_tree.pack(fill="both", expand=True, padx=10, pady=10)
 stock_tree.tag_configure('even', background="#2a2a2a")
@@ -3251,6 +3364,13 @@ def load_stock_table(page_delta=0, force=False):
     available_height = stock_tree.winfo_height()
     estimated_row_height = 28
     rows_per_page = max(1, (available_height // estimated_row_height) - 1)
+    
+    c.execute("""
+    SELECT product, category, COUNT(*) 
+    FROM quick_sales 
+    GROUP BY product, category
+    """)
+    sales_map = {(p, c): count for p, c, count in c.fetchall()}
 
     temp_page = stock_page + page_delta
     if temp_page < 0:
@@ -3300,7 +3420,7 @@ def load_stock_table(page_delta=0, force=False):
         if worse_selling_var.get():
             all_rows = [row for row in all_rows if sales_map.get((row[1], row[2]), 0) == 0]
         elif best_selling_var.get():
-            all_rows = [row for row in all_rows if sales_map.get((row[1], row[2]), 0) > high_stock_sales]
+            all_rows = [row for row in all_rows if sales_map.get((row[1], row[2]), 0) >= high_stock_sales]
 
         start_idx = offset
         end_idx = offset + rows_per_page
@@ -3316,6 +3436,7 @@ def load_stock_table(page_delta=0, force=False):
 
         for i, row in enumerate(page_rows):
             tag = 'even' if i % 2 == 0 else 'odd'
+            qty_sold = sales_map.get((row[1], row[2]), 0)
             formatted_row = (
                 row[1],  # product
                 row[2],  # type
@@ -3324,7 +3445,8 @@ def load_stock_table(page_delta=0, force=False):
                 f"{int(row[5]):,}".replace(",", " "),  # total_bought
                 f"{int(row[6]):,}".replace(",", " "),  # selling_price
                 f"{int(row[7]):,}".replace(",", " "),  # profit
-                f"{int(row[8]):,}".replace(",", " ")  # total_profit
+                f"{int(row[8]):,}".replace(",", " "),  # total_profit
+                qty_sold
             )
             stock_tree.insert("", "end", values=formatted_row, tags=(tag,), iid=row[0])
 
@@ -3334,11 +3456,12 @@ def load_stock_table(page_delta=0, force=False):
             total_qty = sum(int(row[3]) for row in all_rows)
             total_bought = sum(int(row[5]) for row in all_rows)
             total_profit = sum(int(row[8]) for row in all_rows)
+            total_sold_qty = sum(sales_map.get((row[1], row[2]), 0) for row in all_rows)
         else:
-            total_qty, total_bought, total_profit = 0, 0, 0
-
+            total_qty, total_bought, total_profit,total_sold_qty = 0, 0, 0,0
+       
         total_summary_label.configure(
-            text=f"Total Items: {len(all_rows)} | Total Qty: {total_qty} | Total Value: {int(total_bought):,}".replace(",", " ") + " DA | Total Profit: " + f"{int(total_profit):,}".replace(",", " ") + " DA"
+            text=f"Total Items: {len(all_rows)}          Total Qty: {total_qty}          Total Value: {int(total_bought):,}".replace(",", " ") + " DA          Total Profit: " + f"{int(total_profit):,}".replace(",", " ") + f" DA          Sold: {total_sold_qty}"
         )
 
     except Exception as e:
@@ -3364,6 +3487,7 @@ def initialize_app():
     # Other initialization code...
     load_today_sales()
     update_dashboard()
+    load_versement_entries()
     show_page("dashboard")
     qs_product.focus_set()
     
