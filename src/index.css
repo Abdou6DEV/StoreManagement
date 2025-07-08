@@ -121,3 +121,39 @@
         @apply bg-background text-foreground;
     }
 }
+@media print {
+    @page {
+        margin: 0;
+    }
+    body {
+        margin: 0;
+    }
+    body::-webkit-scrollbar {
+        display: none;
+    }
+    #sidebar,
+    .sidebar,
+    [data-sidebar],
+    .chromium-sidebar {
+        display: none !important;
+    }
+}
+
+/* Hide sidebar in Chromium browsers */
+::-webkit-scrollbar {
+    width: 0 !important;
+    height: 0 !important;
+    display: none;
+}
+
+#sidebar,
+.sidebar,
+[data-sidebar],
+.chromium-sidebar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
