@@ -1,37 +1,40 @@
 import React from "react";
-
-const stats = [
-  {
-    label: "Annual Revenue",
-    value: "$120,000",
-    description: "Total revenue for the current year",
-  },
-  {
-    label: "Month Revenue",
-    value: "$10,500",
-    description: "Revenue generated this month",
-  },
-  {
-    label: "Current Cash",
-    value: "$3,200",
-    description: "Cash on hand (register)",
-  },
-  {
-    label: "Store Cash",
-    value: "$7,800",
-    description: "Cash in store safe",
-  },
-  {
-    label: "Total Cash",
-    value: "$11,000",
-    description: "Sum of all cash sources",
-  },
-];
+import { useTranslation } from "react-i18next";
+import "../../lib/i18n";
 
 export default function Dashboard() {
+  const { t } = useTranslation();
+  const stats = [
+    {
+      label: t("dashboard.annualRevenue"),
+      value: "$120,000",
+      description: t("dashboard.annualRevenueDesc"),
+    },
+    {
+      label: t("dashboard.monthRevenue"),
+      value: "$10,500",
+      description: t("dashboard.monthRevenueDesc"),
+    },
+    {
+      label: t("dashboard.currentCash"),
+      value: "$3,200",
+      description: t("dashboard.currentCashDesc"),
+    },
+    {
+      label: t("dashboard.storeCash"),
+      value: "$7,800",
+      description: t("dashboard.storeCashDesc"),
+    },
+    {
+      label: t("dashboard.totalCash"),
+      value: "$11,000",
+      description: t("dashboard.totalCashDesc"),
+    },
+  ];
+
   return (
-    <main className="py-8 px-4 md:px-12 flex-1 min-h-screen bg-background">
-      <h1 className="text-3xl font-extrabold mb-8 text-foreground text-center">Stats</h1>
+    <main className="py-8 px-4 md:px-12 flex-1 min-h-screen bg-background overflow-y-auto">
+      <h1 className="text-3xl font-extrabold mb-8 text-foreground text-center">{t("dashboard.title")}</h1>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
         {stats.map((stat) => (
           <div
