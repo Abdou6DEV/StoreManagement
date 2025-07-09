@@ -20,7 +20,7 @@ export default function Navigation() {
   const { theme, setLightTheme, setDarkTheme } = useTheme();
 
   return (
-    <div className="flex items-center gap-8 w-full bg-card border-b shadow-md rounded-b-xl px-8 py-4 min-h-[80px]">
+    <div className="fixed top-0 left-0 w-full z-50 flex items-center gap-8 bg-card border-b shadow-md rounded-b-xl px-8 py-4 min-h-[80px]">
       <Link to="/" className="flex items-center mr-8">
         <img src="/logo.png" alt="Store Logo" className="w-20 h-20 object-contain p-2" />
       </Link>
