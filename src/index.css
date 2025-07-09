@@ -157,3 +157,13 @@
     opacity: 0 !important;
     pointer-events: none !important;
 }
+
+[data-slot="button"] [data-theme-toggle-thumb] {
+    transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+  }
+  
+  .theme-toggle-track {
+    transition: background-color 0.3s ease;
+  }
+
+  
