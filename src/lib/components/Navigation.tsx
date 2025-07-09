@@ -11,22 +11,24 @@ import { Settings } from "lucide-react";
 import { ThemeToggleButton } from "./ui/ThemeToggleButton";
 import { useState } from 'react';
 import { useTranslation } from "react-i18next";
+import { useTheme } from "../hooks/useTheme";
 
 export default function Navigation() {
   const location = useLocation();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const { t, i18n } = useTranslation();
+  const { theme, setLightTheme, setDarkTheme } = useTheme();
 
   return (
-    <div className="flex items-center gap-4 w-full">
-      <Link to="/">
-        <img src="/logo.png" alt="Store Logo" className="w-50 p-5" />
+    <div className="flex items-center gap-8 w-full bg-card border-b shadow-md rounded-b-xl px-8 py-4 min-h-[80px]">
+      <Link to="/" className="flex items-center mr-8">
+        <img src="/logo.png" alt="Store Logo" className="w-20 h-20 object-contain p-2" />
       </Link>
 
-      <nav className="flex items-center justify-between px-4 py-2 bg-card border-b">
+      <nav className="flex-1 flex items-center justify-between">
         <div className="w-40"></div>
 
-        <h1 className="text-2xl font-bold mx-auto">
+        <h1 className="text-3xl font-extrabold tracking-tight mx-auto text-primary drop-shadow-sm">
           {location.pathname === "/"
             ? t("mainMenu.title")
             : (() => {
@@ -41,22 +43,60 @@ export default function Navigation() {
               })()}
         </h1>
 
-        <div className="flex items-center gap-2">
-          {/* Language Switcher */}
-          <button
-            className="px-2 py-1 rounded text-sm border bg-background text-foreground hover:bg-accent"
-            onClick={() => i18n.changeLanguage('en')}
-            disabled={i18n.language === 'en'}
-          >
-            EN
-          </button>
-          <button
-            className="px-2 py-1 rounded text-sm border bg-background text-foreground hover:bg-accent"
-            onClick={() => i18n.changeLanguage('fr')}
-            disabled={i18n.language === 'fr'}
-          >
-            FR
-          </button>
+        <div className="flex items-center gap-4 ml-auto">
+          {/* Theme Dropdown */}
+          <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
+            <DropdownMenuTrigger asChild>
+              <button className="px-4 py-2 rounded-lg text-base font-medium border bg-background text-foreground shadow hover:bg-accent transition-all">
+                {t("mainMenu.theme") || "Theme"}
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>{t("mainMenu.theme") || "Theme"}</DropdownMenuLabel>
+              <DropdownMenuItem
+                onClick={() => {
+                  if (theme !== "light") setLightTheme();
+                  setDropdownOpen(false);
+                }}
+                disabled={theme === "light"}
+              >
+                {t("mainMenu.light") || "Light"}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => {
+                  if (theme !== "dark") setDarkTheme();
+                  setDropdownOpen(false);
+                }}
+                disabled={theme === "dark"}
+              >
+                {t("mainMenu.dark") || "Dark"}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Language Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="px-4 py-2 rounded-lg text-base font-medium border bg-background text-foreground shadow hover:bg-accent transition-all">
+                {t("mainMenu.language") || "Language"}
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>{t("mainMenu.language") || "Language"}</DropdownMenuLabel>
+              <DropdownMenuItem
+                onClick={() => i18n.changeLanguage('en')}
+                disabled={i18n.language === 'en'}
+              >
+                EN
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => i18n.changeLanguage('fr')}
+                disabled={i18n.language === 'fr'}
+              >
+                FR
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </nav>
     </div>
