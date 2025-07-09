@@ -1,5 +1,4 @@
-import { app, BrowserWindow } from 'electron';
-import { screen } from 'electron';
+import { app, BrowserWindow, screen } from 'electron';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
 
