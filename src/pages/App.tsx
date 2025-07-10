@@ -12,10 +12,12 @@ export default function App() {
         <Route path="/" element={<MainMenu />} />
         <Route
           element={
-            <div className="flex flex-1">
+            <main className="flex flex-1">
               <Sidebar />
-              <Outlet />
-            </div>
+              <div className="flex-1 p-4">
+                <Outlet />
+              </div>
+            </main>
           }
         >
           <Route path="/dashboard" element={<Dashboard />} />
