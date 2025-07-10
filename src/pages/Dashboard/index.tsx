@@ -33,7 +33,7 @@ export default function Dashboard() {
   ];
 
   return (
-    <main className="py-8 px-4 md:px-12 flex-1 min-h-screen bg-background overflow-y-auto">
+    <main className="py-8 px-4 md:px-12 flex-1 bg-background overflow-y-auto">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
         {stats.map((stat) => (
           <div
