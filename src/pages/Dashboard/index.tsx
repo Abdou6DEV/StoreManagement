@@ -40,9 +40,15 @@ export default function Dashboard() {
             key={stat.label}
             className="p-6 bg-card rounded-xl shadow-md border flex flex-col items-start hover:shadow-lg transition-shadow duration-300"
           >
-            <div className="text-muted-foreground text-sm mb-1 font-medium">{stat.label}</div>
-            <div className="text-2xl font-bold text-card-foreground mb-2">{stat.value}</div>
-            <div className="text-xs text-muted-foreground">{stat.description}</div>
+            <div className="text-muted-foreground text-sm mb-1 font-medium">
+              {stat.label}
+            </div>
+            <div className="text-2xl font-bold text-card-foreground mb-2">
+              {stat.value}
+            </div>
+            <div className="text-xs text-muted-foreground">
+              {stat.description}
+            </div>
           </div>
         ))}
       </div>

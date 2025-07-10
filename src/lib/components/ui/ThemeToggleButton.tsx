@@ -6,7 +6,13 @@ import { cn } from "../../utils";
 
 interface ThemeToggleButtonProps {
   className?: string;
-  variant?: "default" | "ghost" | "outline" | "secondary" | "destructive" | "link";
+  variant?:
+    | "default"
+    | "ghost"
+    | "outline"
+    | "secondary"
+    | "destructive"
+    | "link";
   size?: "default" | "sm" | "lg" | "icon";
   showText?: boolean;
 }
@@ -37,14 +43,14 @@ export const ThemeToggleButton: React.FC<ThemeToggleButtonProps> = ({
           <span>{theme === "dark" ? "Dark Mode" : "Light Mode"}</span>
         )}
       </div>
-      
+
       {/* Animated switch */}
       <div className="relative inline-flex items-center">
         <div className="w-10 h-5 flex items-center rounded-full bg-red-400 p-0.5">
           <div
             className={cn(
               "bg-primary rounded-full h-4 w-4 transform transition-transform duration-300 ease-in-out",
-              theme === "dark" ? "translate-x-5" : "translate-x-0"
+              theme === "dark" ? "translate-x-5" : "translate-x-0",
             )}
           />
         </div>

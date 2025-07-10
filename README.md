@@ -3,6 +3,7 @@
 A modern desktop application for managing store operations, built with Electron, React, TypeScript, and Tailwind CSS.
 
 ## Features
+
 - Dashboard for business insights
 - Cashier and transaction processing
 - Inventory and stock management
@@ -14,21 +15,26 @@ A modern desktop application for managing store operations, built with Electron,
 ## Getting Started
 
 ### Prerequisites
+
 - [Node.js](https://nodejs.org/) (v16 or higher recommended)
 - [npm](https://www.npmjs.com/) (comes with Node.js)
 
 ### Installation
+
 ```bash
 npm install
 ```
 
 ### Development
+
 To start the app in development mode:
+
 ```bash
 npm run start
 ```
 
 ### Linting & Formatting
+
 - Lint code:
   ```bash
   npm run lint
@@ -39,12 +45,15 @@ npm run start
   ```
 
 ### Building for Production
+
 To build the Electron app:
+
 ```bash
 npm run make
 ```
 
 ## Project Structure
+
 ```
 src/
   pages/         # Main app pages (Dashboard, Customers, MainMenu, etc.)
@@ -54,4 +63,5 @@ public/          # Static assets
 ```
 
 ## License
-MIT 
+
+MIT
