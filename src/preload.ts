@@ -1,2 +1,28 @@
-// See the Electron documentation for details on how to use preload scripts:
-// https://www.electronjs.org/docs/latest/tutorial/process-model#preload-scripts
+import { contextBridge, ipcRenderer } from "electron";
+import { User } from "@prisma/client";
+
+contextBridge.exposeInMainWorld("api", {
+  database: {
+    users: {
+      getAll: () => ipcRenderer.invoke("db:users:getAll"),
+    },
+  },
+  app: {
+    getVersion: () => ipcRenderer.invoke("app:getVersion"),
+  },
+});
+
+declare global {
+  interface Window {
+    api: {
+      database: {
+        users: {
+          getAll: () => Promise<User[]>;
+        };
+      };
+      app: {
+        getVersion: () => Promise<string>;
+      };
+    };
+  }
+}

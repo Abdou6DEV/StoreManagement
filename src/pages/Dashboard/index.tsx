@@ -1,7 +1,13 @@
 import { useTranslation } from "react-i18next";
 import "../../lib/i18n";
+import { useEffect, useState } from "react";
+import { User } from "@prisma/client";
 
 export default function Dashboard() {
+  const [users, setUsers] = useState<User[]>([]);
+  useEffect(() => {
+    window.api.database.users.getAll().then((users) => setUsers(users));
+  }, []);
   const { t } = useTranslation();
   const stats = [
     {
@@ -33,6 +39,19 @@ export default function Dashboard() {
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
+      {users.map((user) => (
+        <div
+          key={user.id}
+          className="p-6 bg-card rounded-xl shadow-md border flex flex-col items-start hover:shadow-lg transition-shadow duration-300"
+        >
+          <div className="text-muted-foreground text-sm mb-1 font-medium">
+            {user.name}
+          </div>
+          <div className="text-2xl font-bold text-card-foreground mb-2">
+            {user.email}
+          </div>
+        </div>
+      ))}
       {stats.map((stat) => (
         <div
           key={stat.label}
