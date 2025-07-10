@@ -25,6 +25,18 @@ A modern desktop application for managing store operations, built with Electron,
 npm install
 ```
 
+### Database Setup
+
+After installation, you need to set up the database:
+
+```bash
+# Generate Prisma client
+npx prisma generate
+
+# Push the database schema to create tables
+npx prisma db push
+```
+
 ### Development
 
 To start the app in development mode:
