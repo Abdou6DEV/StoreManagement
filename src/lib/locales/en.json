@@ -26,9 +26,10 @@
     "zakatDesc": "Calculate and manage Zakat Al Mal contributions",
     "administrator": "Administrator",
     "administratorDesc": "Manage your app settings and configurations",
+    "preferences": "Preferences",
     "theme": "Theme",
     "language": "Language",
     "light": "Light",
     "dark": "Dark"
   }
-} 
+}
