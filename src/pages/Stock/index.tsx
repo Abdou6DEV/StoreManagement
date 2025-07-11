@@ -89,7 +89,7 @@ export default function StockPage() {
   };
 
   return (
-    <main className="py-10 px-6 md:px-12 ml-20 flex-1 space-y-10">
+    <main className="px-6 md:px-12 ml-20 flex-1 space-y-10">
       {/* === Add Stock Section === */}
       <section className="bg-card border border-border rounded-xl shadow-sm p-6 space-y-6">
         <header className="flex items-center justify-between">

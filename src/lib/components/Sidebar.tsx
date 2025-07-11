@@ -98,7 +98,7 @@ export default function Sidebar() {
     <nav
       data-collapsed={collapsed}
       className={cn(
-        "flex flex-col max-h-fit bg-card border-r shadow-md overflow-hidden rounded-xl transition-all duration-700 ease-in-out",
+        "flex flex-col max-h-fit bg-card border-r shadow-md overflow-hidden transition-all duration-700 ease-in-out",
         collapsed ? "w-14" : "w-[200px]"
       )}
     >

@@ -24,7 +24,7 @@ export default function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/clients" element={<Customers />} />
           <Route path="/stock" element={<Stock />} />
-          <Route path="/*" element={<h1 className="">to be implemented</h1>} />
+          <Route path="/*" element={<h1 className="">Soon..</h1>} />
         </Route>
       </Routes>
     </Layout>
