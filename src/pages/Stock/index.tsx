@@ -128,7 +128,7 @@ export default function StockPage() {
                   {filteredCategories.map((cat) => (
                     <li
                       key={cat}
-                      className="px-3 py-1 cursor-pointer hover:bg-muted"
+                      className="px-3 py-1 cursor-pointer bg-background hover:bg-muted"
                       onMouseDown={() => handleCategorySelect(cat)}
                     >
                       {cat}
