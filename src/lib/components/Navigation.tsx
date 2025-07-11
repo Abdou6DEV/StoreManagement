@@ -19,7 +19,7 @@ export default function Navigation() {
 
 
   return (
-    <div className="flex items-center gap-4 w-full">
+    <div className="flex items-center gap-4 w-full -ml-3">
       <Link to="/">
         <img src="/logo.png" alt="Store Logo" className="w-50 p-5" />
       </Link>
