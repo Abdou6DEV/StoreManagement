@@ -91,7 +91,7 @@ export default function Navigation() {
               {/* Language Selection */}
               <DropdownMenuSeparator />
               <DropdownMenuLabel className="font-semibold text-md">
-                {t("mainMenu.language")}
+                {t("navigation.language")}
               </DropdownMenuLabel>
               <DropdownMenuItem
                 onClick={() => i18n.changeLanguage('en')}

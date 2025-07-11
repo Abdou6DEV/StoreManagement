@@ -10,6 +10,8 @@ export default function StockPage() {
     worstSelling: false,
     search: "",
   });
+  const [currentPage, setCurrentPage] = useState(1);
+  const totalPages = 5; // Replace with dynamic value if needed
 
   const handleChange = (key: keyof typeof filters, value: boolean | string) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
@@ -119,7 +121,7 @@ export default function StockPage() {
           <button className="text-sm px-3 py-1 bg-muted rounded-md hover:bg-secondary transition">
             {t("stock.prev", "Previous")}
           </button>
-          <span className="text-sm text-muted-foreground">{t("stock.page", "Page 1 / 5")}</span>
+          <span className="text-sm text-muted-foreground">{t("stock.page")} {currentPage} / {totalPages}</span>
           <button className="text-sm px-3 py-1 bg-muted rounded-md hover:bg-secondary transition">
             {t("stock.next", "Next")}
           </button>
