@@ -1,7 +1,8 @@
 import { app, BrowserWindow, screen, ipcMain } from "electron";
 import path from "node:path";
 import started from "electron-squirrel-startup";
-import { DatabaseService } from "./database";
+import { DatabaseService } from "./lib/database";
+
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {
   app.quit();
@@ -12,6 +13,7 @@ const createWindow = async () => {
   setupDatabaseHandlers();
 
   const { width, height, x, y } = screen.getPrimaryDisplay().workArea;
+  
   // Create the browser window.
   const mainWindow = new BrowserWindow({
     x,
@@ -55,7 +57,22 @@ app.on("activate", () => {
 });
 
 function setupDatabaseHandlers() {
-  ipcMain.handle("db:users:getAll", async () => {
-    return await DatabaseService.client.user.findMany();
+  const prisma = DatabaseService.client;
+
+  ipcMain.handle("db:products:getAll", async () => {
+    return await prisma.product.findMany();
+  });
+
+  ipcMain.handle("db:products:add", async (_event, product) => {
+    // product: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>
+    return await prisma.product.create({ data: product });
+  });
+
+  ipcMain.handle("db:categories:getAll", async () => {
+    return await DatabaseService.getAllCategories();
+  });
+
+  ipcMain.handle("db:categories:ensure", async (_event, name) => {
+    return await DatabaseService.ensureCategory(name);
   });
 }

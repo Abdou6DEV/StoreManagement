@@ -1,10 +1,16 @@
 import { contextBridge, ipcRenderer } from "electron";
-import { User } from "@prisma/client";
+import { Product, Category } from "@prisma/client";
 
 contextBridge.exposeInMainWorld("api", {
   database: {
-    users: {
-      getAll: () => ipcRenderer.invoke("db:users:getAll"),
+    products: {
+      getAll: () => ipcRenderer.invoke("db:products:getAll"),
+      add: (product: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>) => ipcRenderer.invoke("db:products:add", product),
+      // Optionally, add search/filter methods here
+    },
+    categories: {
+      getAll: () => ipcRenderer.invoke("db:categories:getAll"),
+      ensure: (name: string) => ipcRenderer.invoke("db:categories:ensure", name),
     },
   },
   app: {
@@ -16,8 +22,13 @@ declare global {
   interface Window {
     api: {
       database: {
-        users: {
-          getAll: () => Promise<User[]>;
+        products: {
+          getAll: () => Promise<Product[]>;
+          add: (product: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Product>;
+        };
+        categories: {
+          getAll: () => Promise<Category[]>;
+          ensure: (name: string) => Promise<Category>;
         };
       };
       app: {

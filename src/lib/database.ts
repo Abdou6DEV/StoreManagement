@@ -33,4 +33,16 @@ export class DatabaseService {
   static get client() {
     return prisma;
   }
+
+  static async getAllCategories() {
+    return await prisma.category.findMany();
+  }
+
+  static async ensureCategory(name: string) {
+    let category = await prisma.category.findUnique({ where: { name } });
+    if (!category) {
+      category = await prisma.category.create({ data: { name } });
+    }
+    return category;
+  }
 }

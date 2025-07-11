@@ -9,13 +9,13 @@ datasource db {
 }
 
 model Category {
-  name   String  @id
-  stocks Stock[]
+  name     String    @id
+  products Product[]
 }
 
-model Stock {
+model Product {
   id           String   @id @default(uuid())
-  category     Category @relation(fields: [categoryName], references: [name])
+  name         String
   categoryName String
   quantity     Int
   bought       Int
@@ -23,4 +23,24 @@ model Stock {
   codebar      String?  @unique
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+
+  category Category   @relation(fields: [categoryName], references: [name])
+  SaleItem SaleItem[]
+}
+
+model Sale {
+  id       String     @id @default(uuid())
+  SaleItem SaleItem[]
+}
+
+model SaleItem {
+  productId String
+  quantity  Int
+  price     Int
+  SaleId    String
+
+  product Product @relation(fields: [productId], references: [id])
+  sale    Sale    @relation(fields: [SaleId], references: [id])
+
+  @@id([productId, SaleId])
 }
