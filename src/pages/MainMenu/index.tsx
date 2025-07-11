@@ -22,12 +22,12 @@ export default function MainMenu() {
       color:"text-blue-500"
     },
     { 
-      key: "History", 
+      key: "history", 
       icon: Search, 
       color:"text-cyan-500"
     },
     { 
-      key: "Finance", 
+      key: "finance", 
       icon: CreditCard, 
       color:"text-emerald-500"
     },

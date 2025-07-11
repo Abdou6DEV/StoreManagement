@@ -7,6 +7,17 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
+import {
+  Home,
+  ChartLine,
+  Users,
+  ShoppingCart,
+  CreditCard,
+  PackageSearch,
+  Calculator,
+  Search,
+  Settings as AdminIcon,
+} from "lucide-react";
 import { Settings } from "lucide-react";
 import { ThemeToggleButton } from "./ui/ThemeToggleButton";
 import { useState } from 'react';
@@ -27,18 +38,35 @@ export default function Navigation() {
       <nav className="px-8 py-3 rounded-xl border-1 border-gray-500 flex-1 flex items-center justify-between select-none">
         <div className="w-40"></div>
 
-        <h1 className="text-2xl font-bold mr-30">
-          {location.pathname === "/"
-            ? t("mainMenu.title")
-            : (() => {
-                const path = location.pathname.slice(1).split("/")[0];
-                const knownKeys = ["dashboard", "clients", "cashier", "stock", "zakat", "administrator","Finance","History"];
-                if (knownKeys.includes(path)) {
-                  return t(`mainMenu.${path}`);
-                }
-                return path.charAt(0).toUpperCase() + path.slice(1);
-              })()}
+        <h1 className="text-2xl font-bold mr-30 flex items-center gap-2">
+          {location.pathname === "/" ? (
+            <>
+              <Home className="w-8 h-8 text-primary" />
+              {t("mainMenu.title")}
+            </>
+          ) : (() => {
+            const path = location.pathname.slice(1).split("/")[0];
+        
+            const iconMap: Record<string, React.ReactNode> = {
+              dashboard: <ChartLine className="w-8 h-8 text-green-500" />,
+              clients: <Users className="w-8 h-8 text-red-500" />,
+              cashier: <ShoppingCart className="w-8 h-8 text-yellow-500" />,
+              finance: <CreditCard className="w-8 h-8 text-emerald-500" />,
+              stock: <PackageSearch className="w-8 h-8 text-blue-500" />,
+              zakat: <Calculator className="w-8 h-8 text-green-300" />,
+              administrator: <AdminIcon className= "w-8 h-8 text-orange-500" />,
+              history: <Search className="w-8 h-8 text-cyan-500" />,
+            };
+        
+            return (
+              <>
+                {iconMap[path] || null}
+                {t(`mainMenu.${path}`)}
+              </>
+            );
+          })()}
         </h1>
+
 
         <div className="flex items-center gap-4 w-40 justify-end">
           <DropdownMenu onOpenChange={setDropdownOpen}>

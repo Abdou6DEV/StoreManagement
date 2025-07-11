@@ -26,10 +26,10 @@
     "zakatDesc": "Calculate and manage Zakat Al Mal contributions",
     "administrator": "Administrator",
     "administratorDesc": "Manage your app settings and configurations",
-    "History": "History",
-    "HistoryDesc": "Check your History in general or on detail",
-    "Finance": "Finance",
-    "FinanceDesc": "Track and manage your expences , add bills"
+    "history": "History",
+    "historyDesc": "Check your History in general or on detail",
+    "finance": "Finance",
+    "financeDesc": "Track and manage your expences , add bills"
   },
   "navigation": {
     "preferences": "Preferences",

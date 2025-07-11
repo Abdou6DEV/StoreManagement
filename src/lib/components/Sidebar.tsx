@@ -42,13 +42,13 @@ const menuItems = [
     color: "text-blue-500",
   },
   {
-    key: "History",
+    key: "history",
     path: "/history",
     icon: Search,
     color: "text-cyan-500",
   },
   {
-    key: "Finance",
+    key: "finance",
     path: "/finance",
     icon: CreditCard,
     color: "text-emerald-500",

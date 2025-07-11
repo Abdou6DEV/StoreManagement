@@ -26,10 +26,10 @@
     "zakatDesc": "Calculez et gérez les contributions de la Zakat Al Mal",
     "administrator": "Administrateur",
     "administratorDesc": "Gérez les paramètres et configurations de l'application",
-    "History": "Historique",
-    "HistoryDesc": "Consultez votre historique général ou détaillé",
-    "Finance": "Finance",
-    "FinanceDesc": "Suivez et gérez vos dépenses, ajoutez des factures"
+    "history": "Historique",
+    "historyDesc": "Consultez votre historique général ou détaillé",
+    "finance": "Finance",
+    "financeDesc": "Suivez et gérez vos dépenses, ajoutez des factures"
   },
   "navigation": {
     "preferences": "Préférences",
