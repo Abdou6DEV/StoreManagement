@@ -3,6 +3,7 @@ import Layout from "../lib/components/Layout";
 import MainMenu from "./MainMenu";
 import Dashboard from "./Dashboard";
 import Customers from "./Customers";
+import Stock from "./Stock";
 import Sidebar from "../lib/components/Sidebar";
 
 export default function App() {
@@ -22,6 +23,7 @@ export default function App() {
         >
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/clients" element={<Customers />} />
+          <Route path="/stock" element={<Stock />} />
           <Route path="/*" element={<h1 className="">to be implemented</h1>} />
         </Route>
       </Routes>
