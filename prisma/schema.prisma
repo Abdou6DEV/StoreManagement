@@ -8,14 +8,19 @@ datasource db {
   url      = "file:./dev.db"
 }
 
+model Category {
+  name   String  @id
+  stocks Stock[]
+}
+
 model Stock {
-  id        String   @id @default(uuid())
-  product   String
-  type      String
-  quantity  Int
-  bought    Int
-  selling   Int
-  codebar   String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String   @id @default(uuid())
+  category     Category @relation(fields: [categoryName], references: [name])
+  categoryName String
+  quantity     Int
+  bought       Int
+  selling      Int
+  codebar      String?  @unique
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
