@@ -87,7 +87,7 @@ export default function Sidebar() {
 
     if (newState === false) {
       // Expanding
-      setTimeout(() => setShowText(true), 350); // Match animation
+      setTimeout(() => setShowText(true), 500); // Match animation
     } else {
       // Collapsing
       setShowText(false);
