@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Product } from "@prisma/client";
+import StyledNumberInput from "../../lib/components/ui/inputnumber";
 
 const initialForm = {
   name: "",
@@ -97,7 +98,7 @@ export default function StockPage() {
         </header>
 
         <form onSubmit={handleAddProduct}>
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
             <div className="flex flex-col gap-1 max-w-[220px]">
               <label className="text-sm text-muted-foreground font-medium">{t("stock.product")}</label>
               <input
@@ -139,35 +140,30 @@ export default function StockPage() {
             </div>
             <div className="flex flex-col gap-1 max-w-[220px]">
               <label className="text-sm text-muted-foreground font-medium">{t("stock.quantity")}</label>
-              <input
-                type="number"
-                placeholder={t("stock.quantity")}
+              <StyledNumberInput
                 value={form.quantity}
-                onChange={e => handleFormChange("quantity", Number(e.target.value))}
-                className="px-3 py-1.5 rounded-md border border-border bg-background text-sm focus:outline-none focus:ring focus:ring-primary/40 transition"
-                required
+                onChange={(val) => handleFormChange("quantity", val)}
+                placeholder={t("stock.quantity")}
               />
             </div>
+            
             <div className="flex flex-col gap-1 max-w-[220px]">
               <label className="text-sm text-muted-foreground font-medium">{t("stock.bought")}</label>
-              <input
-                type="number"
-                placeholder={t("stock.bought")}
+              <StyledNumberInput
                 value={form.bought}
-                onChange={e => handleFormChange("bought", Number(e.target.value))}
-                className="px-3 py-1.5 rounded-md border border-border bg-background text-sm focus:outline-none focus:ring focus:ring-primary/40 transition"
-                required
+                onChange={(val) => handleFormChange("bought", val)}
+                placeholder={t("stock.bought")}
+                step={100}
               />
             </div>
+            
             <div className="flex flex-col gap-1 max-w-[220px]">
               <label className="text-sm text-muted-foreground font-medium">{t("stock.selling")}</label>
-              <input
-                type="number"
-                placeholder={t("stock.selling")}
+              <StyledNumberInput
                 value={form.selling}
-                onChange={e => handleFormChange("selling", Number(e.target.value))}
-                className="px-3 py-1.5 rounded-md border border-border bg-background text-sm focus:outline-none focus:ring focus:ring-primary/40 transition"
-                required
+                onChange={(val) => handleFormChange("selling", val)}
+                placeholder={t("stock.selling")}
+                step={100}
               />
             </div>
             <div className="flex flex-col gap-1 max-w-[220px]">
@@ -180,8 +176,7 @@ export default function StockPage() {
                 className="px-3 py-1.5 rounded-md border border-border bg-background text-sm focus:outline-none focus:ring focus:ring-primary/40 transition"
               />
             </div>
-          </div>
-
+          
           <div className="pt-1">
             <button
               type="submit"
@@ -190,6 +185,7 @@ export default function StockPage() {
             >
               {loading ? t("stock.adding", "Adding...") : t("stock.addButton", "Add Product")}
             </button>
+          </div>
           </div>
         </form>
       </section>

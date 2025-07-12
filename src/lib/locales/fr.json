@@ -47,7 +47,7 @@
     "quantity": "Quantité",
     "bought": "Prix d'achat",
     "selling": "Prix de vente",
-    "codebar": "Code-barres",
+    "codebar": "Code-barres (optionnel)",
     "lowStock": "Stock faible",
     "bestSelling": "Meilleure vente",
     "worstSelling": "Moins bonne vente",

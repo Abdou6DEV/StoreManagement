@@ -47,7 +47,7 @@
     "quantity": "Quantity",
     "bought": "Bought Price",
     "selling": "Selling Price",
-    "codebar": "Barcode",
+    "codebar": "Barcode (optional)",
     "lowStock": "Low Stock",
     "bestSelling": "Best Selling",
     "worstSelling": "Worst Selling",
