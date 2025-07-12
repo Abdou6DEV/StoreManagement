@@ -41,6 +41,9 @@
   "stock": {
     "addTitle": "Add Stock",
     "addButton": "Add Product",
+    "editTitle": "Edit Product",
+    "updateButton": "Update Product",
+    "cancelButton": "Cancel",
     "tableTitle": "Stock List",
     "product": "Product",
     "type": "Type",
@@ -54,6 +57,10 @@
     "search": "Search...",
     "prev": "Previous",
     "next": "Next",
-    "page": "Page"
+    "page": "Page",
+    "edit": "Edit",
+    "actions": "Actions",
+    "adding": "Adding...",
+    "updating": "Updating..."
   }
 }

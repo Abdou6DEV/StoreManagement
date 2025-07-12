@@ -24,28 +24,31 @@ export default function StyledNumberInput({
   };
 
   return (
-    <div className="relative max-w-[220px]">
+    <div className="relative w-full">
       <input
         type="number"
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="w-full px-3 py-1.5 pr-8 rounded-md border border-border bg-background text-sm focus:outline-none focus:ring focus:ring-primary/30 transition"
+        className="w-full px-4 py-3 pr-10 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
         placeholder={placeholder}
+        min={min}
+        max={max}
+        step={step}
       />
-      <div className="absolute right-1.5 top-1.5 flex flex-col">
+      <div className="absolute right-1 top-1 flex flex-col">
         <button
           type="button"
           onClick={() => handleStep("up")}
-          className="w-8 h-3 flex items-center rounded hover:bg-muted"
+          className="w-8 h-4 flex items-center justify-center rounded hover:bg-muted transition-colors"
         >
-          <ChevronUp className="w-8 h-4 text-muted-foreground" />
+          <ChevronUp className="w-4 h-4 text-muted-foreground" />
         </button>
         <button
           type="button"
           onClick={() => handleStep("down")}
-          className="w-8 h-3 flex items-center justify-center rounded hover:bg-muted"
+          className="w-8 h-4 flex items-center justify-center rounded hover:bg-muted transition-colors"
         >
-          <ChevronDown className="w-8 h-4 text-muted-foreground" />
+          <ChevronDown className="w-4 h-4 text-muted-foreground" />
         </button>
       </div>
     </div>

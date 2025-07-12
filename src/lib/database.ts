@@ -20,9 +20,9 @@ export class DatabaseService {
   static async initialize() {
     try {
       await prisma.$connect();
-      console.log("Database connected successfully");
+      console.log("Database connected successfully!");
     } catch (error) {
-      console.error("Database connection failed:", error);
+      console.error("Database connection failed: ", error);
     }
   }
 

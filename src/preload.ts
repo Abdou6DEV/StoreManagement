@@ -6,6 +6,7 @@ contextBridge.exposeInMainWorld("api", {
     products: {
       getAll: () => ipcRenderer.invoke("db:products:getAll"),
       add: (product: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>) => ipcRenderer.invoke("db:products:add", product),
+      update: (id: string, data: Partial<Omit<Product, 'id' | 'createdAt' | 'updatedAt'>>) => ipcRenderer.invoke("db:products:update", { id, data }),
       // Optionally, add search/filter methods here
     },
     categories: {
@@ -25,6 +26,7 @@ declare global {
         products: {
           getAll: () => Promise<Product[]>;
           add: (product: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Product>;
+          update: (id: string, data: Partial<Omit<Product, 'id' | 'createdAt' | 'updatedAt'>>) => Promise<Product>;
         };
         categories: {
           getAll: () => Promise<Category[]>;

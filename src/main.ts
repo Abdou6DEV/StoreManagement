@@ -68,6 +68,14 @@ function setupDatabaseHandlers() {
     return await prisma.product.create({ data: product });
   });
 
+  ipcMain.handle("db:products:update", async (_event, { id, data }) => {
+    // data: Partial<Omit<Product, 'id' | 'createdAt' | 'updatedAt'>>
+    return await prisma.product.update({
+      where: { id },
+      data,
+    });
+  });
+
   ipcMain.handle("db:categories:getAll", async () => {
     return await DatabaseService.getAllCategories();
   });
