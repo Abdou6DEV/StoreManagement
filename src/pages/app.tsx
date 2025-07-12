@@ -1,10 +1,10 @@
 import { Routes, Route, Outlet } from "react-router-dom";
-import Layout from "../lib/components/Layout";
-import MainMenu from "./MainMenu";
-import Dashboard from "./Dashboard";
-import Customers from "./Customers";
-import Stock from "./Stock";
-import Sidebar from "../lib/components/Sidebar";
+import Layout from "../lib/components/layout";
+import MainMenu from "./mainMenu";
+import Dashboard from "./dashboard";
+import Customers from "./customers";
+import Stock from "./stock";
+import Sidebar from "../lib/components/sidebar";
 
 export default function App() {
   return (

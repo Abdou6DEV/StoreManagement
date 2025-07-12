@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Product } from "@prisma/client";
-import StyledNumberInput from "../../lib/components/ui/inputnumber";
+import StyledNumberInput from "../../lib/components/ui/inputNumber";
 
 const initialForm = {
   name: "",

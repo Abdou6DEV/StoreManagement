@@ -6,7 +6,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "./ui/dropdown-menu";
+} from "./ui/dropdownMenu";
 import {
   Home,
   ChartLine,
@@ -16,10 +16,9 @@ import {
   PackageSearch,
   Calculator,
   Search,
-  Settings as AdminIcon,
+  Settings,
 } from "lucide-react";
-import { Settings } from "lucide-react";
-import { ThemeToggleButton } from "./ui/ThemeToggleButton";
+import { ThemeToggleButton } from "./ui/themeToggleButton";
 import { useState } from 'react';
 import { useTranslation } from "react-i18next";
 
@@ -27,7 +26,6 @@ export default function Navigation() {
   const location = useLocation();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const { t, i18n } = useTranslation();
-
 
   return (
     <div className="flex items-center gap-4 w-full -ml-3">
@@ -54,7 +52,7 @@ export default function Navigation() {
               finance: <CreditCard className="w-8 h-8 text-emerald-500" />,
               stock: <PackageSearch className="w-8 h-8 text-blue-500" />,
               zakat: <Calculator className="w-8 h-8 text-green-300" />,
-              administrator: <AdminIcon className= "w-8 h-8 text-orange-500" />,
+              administrator: <Settings className= "w-8 h-8 text-orange-500" />,
               history: <Search className="w-8 h-8 text-cyan-500" />,
             };
         
@@ -66,7 +64,6 @@ export default function Navigation() {
             );
           })()}
         </h1>
-
 
         <div className="flex items-center gap-4 w-40 justify-end">
           <DropdownMenu onOpenChange={setDropdownOpen}>
