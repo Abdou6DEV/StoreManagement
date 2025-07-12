@@ -74,6 +74,8 @@ src/
 public/          # Static assets
 ```
 
+**Note:** All files/folders in the `/src` directory must follow camelCase naming convention.
+
 ## License
 
 MIT
