@@ -20,7 +20,7 @@ model Product {
   quantity     Int
   bought       Int
   selling      Int
-  codebar      String?  @unique
+  codebar      String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
