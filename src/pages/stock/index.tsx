@@ -38,7 +38,9 @@ export default function StockPage() {
   const [editForm, setEditForm] = useState(initialForm);
   const [editLoading, setEditLoading] = useState(false);
   const [showEditSuggestions, setShowEditSuggestions] = useState(false);
-  const [filteredEditCategories, setFilteredEditCategories] = useState<string[]>([]);
+  const [filteredEditCategories, setFilteredEditCategories] = useState<
+    string[]
+  >([]);
   const editCategoryInputRef = useRef<HTMLInputElement>(null);
 
   const fetchProducts = () => {
@@ -65,20 +67,25 @@ export default function StockPage() {
     if (key === "categoryName" && typeof value === "string") {
       const val = value.toLowerCase();
       setFilteredCategories(
-        categories.filter((cat) => cat.toLowerCase().includes(val))
+        categories.filter((cat) => cat.toLowerCase().includes(val)),
       );
       setShowSuggestions(val.length > 0 && filteredCategories.length > 0);
     }
   };
 
-  const handleEditFormChange = (key: keyof typeof editForm, value: string | number) => {
+  const handleEditFormChange = (
+    key: keyof typeof editForm,
+    value: string | number,
+  ) => {
     setEditForm((prev) => ({ ...prev, [key]: value }));
     if (key === "categoryName" && typeof value === "string") {
       const val = value.toLowerCase();
       setFilteredEditCategories(
-        categories.filter((cat) => cat.toLowerCase().includes(val))
+        categories.filter((cat) => cat.toLowerCase().includes(val)),
       );
-      setShowEditSuggestions(val.length > 0 && filteredEditCategories.length > 0);
+      setShowEditSuggestions(
+        val.length > 0 && filteredEditCategories.length > 0,
+      );
     }
   };
 
@@ -137,7 +144,7 @@ export default function StockPage() {
   const handleUpdateProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingProduct) return;
-    
+
     setEditLoading(true);
     try {
       // Ensure category exists
@@ -167,35 +174,45 @@ export default function StockPage() {
             <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
               <Package className="w-5 h-5 text-green-600 dark:text-green-400" />
             </div>
-            <h2 className="text-lg font-bold text-foreground">{t("stock.addTitle", "Add Stock")}</h2>
+            <h2 className="text-lg font-bold text-foreground">
+              {t("stock.addTitle", "Add Stock")}
+            </h2>
           </div>
         </header>
 
         <form onSubmit={handleAddProduct}>
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">{t("stock.product")}</label>
+              <label className="text-sm font-medium text-foreground">
+                {t("stock.product")}
+              </label>
               <input
                 type="text"
                 placeholder={t("stock.product")}
                 value={form.name}
-                onChange={e => handleFormChange("name", e.target.value)}
+                onChange={(e) => handleFormChange("name", e.target.value)}
                 className="w-full px-4 py-3 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all"
                 required
               />
             </div>
             <div className="space-y-2 relative">
-              <label className="text-sm font-medium text-foreground">{t("stock.type")}</label>
+              <label className="text-sm font-medium text-foreground">
+                {t("stock.type")}
+              </label>
               <input
                 type="text"
                 placeholder={t("stock.type")}
                 value={form.categoryName}
-                onChange={e => handleFormChange("categoryName", e.target.value)}
+                onChange={(e) =>
+                  handleFormChange("categoryName", e.target.value)
+                }
                 className="w-full px-4 py-3 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all"
                 required
                 autoComplete="off"
                 ref={categoryInputRef}
-                onFocus={() => setShowSuggestions(filteredCategories.length > 0)}
+                onFocus={() =>
+                  setShowSuggestions(filteredCategories.length > 0)
+                }
                 onBlur={() => setTimeout(() => setShowSuggestions(false), 100)}
               />
               {showSuggestions && filteredCategories.length > 0 && (
@@ -213,16 +230,20 @@ export default function StockPage() {
               )}
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">{t("stock.quantity")}</label>
+              <label className="text-sm font-medium text-foreground">
+                {t("stock.quantity")}
+              </label>
               <StyledNumberInput
                 value={form.quantity}
                 onChange={(val) => handleFormChange("quantity", val)}
                 placeholder={t("stock.quantity")}
               />
             </div>
-            
+
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">{t("stock.bought")}</label>
+              <label className="text-sm font-medium text-foreground">
+                {t("stock.bought")}
+              </label>
               <StyledNumberInput
                 value={form.bought}
                 onChange={(val) => handleFormChange("bought", val)}
@@ -230,9 +251,11 @@ export default function StockPage() {
                 step={100}
               />
             </div>
-            
+
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">{t("stock.selling")}</label>
+              <label className="text-sm font-medium text-foreground">
+                {t("stock.selling")}
+              </label>
               <StyledNumberInput
                 value={form.selling}
                 onChange={(val) => handleFormChange("selling", val)}
@@ -241,17 +264,19 @@ export default function StockPage() {
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">{t("stock.codebar")}</label>
+              <label className="text-sm font-medium text-foreground">
+                {t("stock.codebar")}
+              </label>
               <input
                 type="text"
                 placeholder={t("stock.codebar")}
                 value={form.codebar}
-                onChange={e => handleFormChange("codebar", e.target.value)}
+                onChange={(e) => handleFormChange("codebar", e.target.value)}
                 className="w-full px-4 py-3 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all"
               />
             </div>
           </div>
-          
+
           <div className="pt-6 border-t border-border mt-6">
             <Button
               type="submit"
@@ -279,15 +304,19 @@ export default function StockPage() {
         <section className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border-2 border-blue-200 dark:border-blue-800 rounded-xl shadow-lg p-6 space-y-6 relative">
           {/* Background pattern for visual interest */}
           <div className="absolute inset-0 bg-gradient-to-br from-blue-100/20 to-indigo-100/20 dark:from-blue-900/10 dark:to-indigo-900/10 rounded-xl pointer-events-none" />
-          
+
           <header className="flex items-center justify-between relative z-10">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
                 <Edit className="w-5 h-5 text-blue-600 dark:text-blue-400" />
               </div>
               <div>
-                <h2 className="text-xl font-bold text-foreground">{t("stock.editTitle", "Edit Product")}</h2>
-                <p className="text-sm text-muted-foreground">Editing: {editingProduct.name}</p>
+                <h2 className="text-xl font-bold text-foreground">
+                  {t("stock.editTitle", "Edit Product")}
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  Editing: {editingProduct.name}
+                </p>
               </div>
             </div>
             <Button
@@ -311,12 +340,12 @@ export default function StockPage() {
                   type="text"
                   placeholder={t("stock.product")}
                   value={editForm.name}
-                  onChange={e => handleEditFormChange("name", e.target.value)}
+                  onChange={(e) => handleEditFormChange("name", e.target.value)}
                   className="w-full px-4 py-3 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
                   required
                 />
               </div>
-              
+
               <div className="space-y-3 relative">
                 <label className="text-sm font-medium text-foreground">
                   {t("stock.type")}
@@ -325,13 +354,19 @@ export default function StockPage() {
                   type="text"
                   placeholder={t("stock.type")}
                   value={editForm.categoryName}
-                  onChange={e => handleEditFormChange("categoryName", e.target.value)}
+                  onChange={(e) =>
+                    handleEditFormChange("categoryName", e.target.value)
+                  }
                   className="w-full px-4 py-3 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
                   required
                   autoComplete="off"
                   ref={editCategoryInputRef}
-                  onFocus={() => setShowEditSuggestions(filteredEditCategories.length > 0)}
-                  onBlur={() => setTimeout(() => setShowEditSuggestions(false), 100)}
+                  onFocus={() =>
+                    setShowEditSuggestions(filteredEditCategories.length > 0)
+                  }
+                  onBlur={() =>
+                    setTimeout(() => setShowEditSuggestions(false), 100)
+                  }
                 />
                 {showEditSuggestions && filteredEditCategories.length > 0 && (
                   <ul className="absolute z-20 bg-background border border-border rounded-lg mt-1 w-full max-h-40 overflow-auto shadow-xl">
@@ -347,7 +382,7 @@ export default function StockPage() {
                   </ul>
                 )}
               </div>
-              
+
               <div className="space-y-2">
                 <label className="text-sm font-medium text-foreground">
                   {t("stock.quantity")}
@@ -358,7 +393,7 @@ export default function StockPage() {
                   placeholder={t("stock.quantity")}
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <label className="text-sm font-medium text-foreground">
                   {t("stock.bought")}
@@ -370,7 +405,7 @@ export default function StockPage() {
                   step={100}
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <label className="text-sm font-medium text-foreground mb-3">
                   {t("stock.selling")}
@@ -382,7 +417,7 @@ export default function StockPage() {
                   step={100}
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <label className="text-sm font-medium text-foreground">
                   {t("stock.codebar")}
@@ -391,12 +426,14 @@ export default function StockPage() {
                   type="text"
                   placeholder={t("stock.codebar")}
                   value={editForm.codebar}
-                  onChange={e => handleEditFormChange("codebar", e.target.value)}
+                  onChange={(e) =>
+                    handleEditFormChange("codebar", e.target.value)
+                  }
                   className="w-full px-4 py-3 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
                 />
               </div>
             </div>
-            
+
             <div className="flex gap-3 pt-6 border-t border-border mt-6">
               <Button
                 type="submit"
@@ -432,7 +469,9 @@ export default function StockPage() {
       {/* === Stock Table + Filters Combined === */}
       <section className="bg-card border border-border rounded-xl shadow-sm p-6 space-y-5">
         <div className="flex items-center justify-between border-b border-border pb-3">
-          <h2 className="text-lg font-bold text-foreground">{t("stock.tableTitle", "Stock List")}</h2>
+          <h2 className="text-lg font-bold text-foreground">
+            {t("stock.tableTitle", "Stock List")}
+          </h2>
         </div>
 
         {/* Filters Row */}
@@ -442,11 +481,16 @@ export default function StockPage() {
             { key: "bestSelling", label: t("stock.bestSelling") },
             { key: "worstSelling", label: t("stock.worstSelling") },
           ].map(({ key, label }) => (
-            <label key={key} className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer">
+            <label
+              key={key}
+              className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer"
+            >
               <input
                 type="checkbox"
                 checked={filters[key as keyof typeof filters] as boolean}
-                onChange={(e) => handleChange(key as keyof typeof filters, e.target.checked)}
+                onChange={(e) =>
+                  handleChange(key as keyof typeof filters, e.target.checked)
+                }
                 className="h-4 w-4 rounded-sm border border-border accent-red-500"
               />
               {label}
@@ -507,7 +551,9 @@ export default function StockPage() {
           <button className="text-sm px-3 py-1 bg-muted rounded-md hover:bg-secondary transition">
             {t("stock.prev", "Previous")}
           </button>
-          <span className="text-sm text-muted-foreground">{t("stock.page")} {currentPage} / {totalPages}</span>
+          <span className="text-sm text-muted-foreground">
+            {t("stock.page")} {currentPage} / {totalPages}
+          </span>
           <button className="text-sm px-3 py-1 bg-muted rounded-md hover:bg-secondary transition">
             {t("stock.next", "Next")}
           </button>

@@ -44,10 +44,16 @@ export const ThemeToggleButton: React.FC<ThemeToggleButtonProps> = ({
           <div
             className={cn(
               "rounded-full h-5 w-5 flex items-center justify-center transform transition-transform duration-300 ease-in-out",
-              isDark ? "translate-x-5 bg-black text-gray" : "-translate-x-1 bg-gray-50 text-gray"
+              isDark
+                ? "translate-x-5 bg-black text-gray"
+                : "-translate-x-1 bg-gray-50 text-gray",
             )}
           >
-            {isDark ? <Moon className="w-1 h-1 text-sky-400" /> : <Sun className="w-1 h-1 text-yellow-400" />}
+            {isDark ? (
+              <Moon className="w-1 h-1 text-sky-400" />
+            ) : (
+              <Sun className="w-1 h-1 text-yellow-400" />
+            )}
           </div>
         </div>
       </div>

@@ -19,7 +19,7 @@ import {
   Settings,
 } from "lucide-react";
 import { ThemeToggleButton } from "./ui/themeToggleButton";
-import { useState } from 'react';
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 export default function Navigation() {
@@ -42,38 +42,42 @@ export default function Navigation() {
               <Home className="w-8 h-8 text-primary" />
               {t("mainMenu.title")}
             </>
-          ) : (() => {
-            const path = location.pathname.slice(1).split("/")[0];
-        
-            const iconMap: Record<string, React.ReactNode> = {
-              dashboard: <ChartLine className="w-8 h-8 text-green-500" />,
-              clients: <Users className="w-8 h-8 text-red-500" />,
-              cashier: <ShoppingCart className="w-8 h-8 text-yellow-500" />,
-              finance: <CreditCard className="w-8 h-8 text-emerald-500" />,
-              stock: <PackageSearch className="w-8 h-8 text-blue-500" />,
-              zakat: <Calculator className="w-8 h-8 text-green-300" />,
-              administrator: <Settings className= "w-8 h-8 text-orange-500" />,
-              history: <Search className="w-8 h-8 text-cyan-500" />,
-            };
-        
-            return (
-              <>
-                {iconMap[path] || null}
-                {t(`mainMenu.${path}`)}
-              </>
-            );
-          })()}
+          ) : (
+            (() => {
+              const path = location.pathname.slice(1).split("/")[0];
+
+              const iconMap: Record<string, React.ReactNode> = {
+                dashboard: <ChartLine className="w-8 h-8 text-green-500" />,
+                clients: <Users className="w-8 h-8 text-red-500" />,
+                cashier: <ShoppingCart className="w-8 h-8 text-yellow-500" />,
+                finance: <CreditCard className="w-8 h-8 text-emerald-500" />,
+                stock: <PackageSearch className="w-8 h-8 text-blue-500" />,
+                zakat: <Calculator className="w-8 h-8 text-green-300" />,
+                administrator: <Settings className="w-8 h-8 text-orange-500" />,
+                history: <Search className="w-8 h-8 text-cyan-500" />,
+              };
+
+              return (
+                <>
+                  {iconMap[path] || null}
+                  {t(`mainMenu.${path}`)}
+                </>
+              );
+            })()
+          )}
         </h1>
 
         <div className="flex items-center gap-4 w-40 justify-end">
           <DropdownMenu onOpenChange={setDropdownOpen}>
             <DropdownMenuTrigger asChild>
               <button className="rounded-xl outline-none ring-0 hover:text-red-400 transition-all duration-300 p-1">
-                <Settings className={`
+                <Settings
+                  className={`
                   transition-transform duration-400
-                  ${dropdownOpen ? 'rotate-360 scale-110' : ''}
+                  ${dropdownOpen ? "rotate-360 scale-110" : ""}
                   hover:text-red-400
-                `} />
+                `}
+                />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="mx-4 my-2 w-56">
@@ -84,21 +88,21 @@ export default function Navigation() {
               <DropdownMenuItem asChild>
                 <ThemeToggleButton variant="ghost" showText={true} />
               </DropdownMenuItem>
-              
+
               {/* Language Selection */}
               <DropdownMenuSeparator />
               <DropdownMenuLabel className="font-semibold text-md">
                 {t("navigation.language")}
               </DropdownMenuLabel>
               <DropdownMenuItem
-                onClick={() => i18n.changeLanguage('en')}
-                disabled={i18n.language === 'en'}
+                onClick={() => i18n.changeLanguage("en")}
+                disabled={i18n.language === "en"}
               >
                 <span className="mr-2">🇬🇧</span> English
               </DropdownMenuItem>
               <DropdownMenuItem
-                onClick={() => i18n.changeLanguage('fr')}
-                disabled={i18n.language === 'fr'}
+                onClick={() => i18n.changeLanguage("fr")}
+                disabled={i18n.language === "fr"}
               >
                 <span className="mr-2">🇫🇷</span> Français
               </DropdownMenuItem>

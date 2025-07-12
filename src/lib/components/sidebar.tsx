@@ -99,7 +99,7 @@ export default function Sidebar() {
       data-collapsed={collapsed}
       className={cn(
         "flex flex-col max-h-fit bg-card border-r shadow-md overflow-hidden transition-all duration-700 ease-in-out",
-        collapsed ? "w-14" : "w-[200px]"
+        collapsed ? "w-14" : "w-[200px]",
       )}
     >
       {/* === Sidebar Links === */}
@@ -115,7 +115,7 @@ export default function Sidebar() {
             {showText && <span>{t(`mainMenu.${item.key}`)}</span>}
           </Link>
         ))}
-      
+
         {/* === Collapse Button === */}
         <button
           className="max-w-full flex gap-4 items-center rounded-xl self-end m-2 p-2 hover:bg-secondary font-semibold transition-all duration-300"

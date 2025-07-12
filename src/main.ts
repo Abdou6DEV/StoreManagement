@@ -13,7 +13,7 @@ const createWindow = async () => {
   setupDatabaseHandlers();
 
   const { width, height, x, y } = screen.getPrimaryDisplay().workArea;
-  
+
   // Create the browser window.
   const mainWindow = new BrowserWindow({
     x,
