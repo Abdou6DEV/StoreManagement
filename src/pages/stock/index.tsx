@@ -4,6 +4,21 @@ import { Product } from "@prisma/client";
 import StyledNumberInput from "../../lib/components/ui/inputNumber";
 import { Button } from "../../lib/components/ui/button";
 import { Edit, Save, X, Loader2, Package } from "lucide-react";
+import { cn } from "../../lib/utils"
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "../../lib/components/ui/command"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "../../lib/components/ui/popover"
+import { Check, ChevronsUpDown } from "lucide-react"
 
 const initialForm = {
   name: "",
@@ -13,6 +28,28 @@ const initialForm = {
   selling: 0,
   codebar: "",
 };
+const frameworks = [
+  {
+    value: "next.js",
+    label: "Next.js",
+  },
+  {
+    value: "sveltekit",
+    label: "SvelteKit",
+  },
+  {
+    value: "nuxt.js",
+    label: "Nuxt.js",
+  },
+  {
+    value: "remix",
+    label: "Remix",
+  },
+  {
+    value: "astro",
+    label: "Astro",
+  },
+]
 
 export default function StockPage() {
   const { t } = useTranslation();
@@ -57,6 +94,9 @@ export default function StockPage() {
     fetchProducts();
     fetchCategories();
   }, []);
+  useEffect(() => {
+    setFilteredCategories(categories);
+  }, [categories]);
 
   const handleChange = (key: keyof typeof filters, value: boolean | string) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
@@ -195,39 +235,62 @@ export default function StockPage() {
                 required
               />
             </div>
-            <div className="space-y-2 relative">
+            <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">
                 {t("stock.type")}
               </label>
-              <input
-                type="text"
-                placeholder={t("stock.type")}
-                value={form.categoryName}
-                onChange={(e) =>
-                  handleFormChange("categoryName", e.target.value)
-                }
-                className="w-full px-4 py-3 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all"
-                required
-                autoComplete="off"
-                ref={categoryInputRef}
-                onFocus={() =>
-                  setShowSuggestions(filteredCategories.length > 0)
-                }
-                onBlur={() => setTimeout(() => setShowSuggestions(false), 100)}
-              />
-              {showSuggestions && filteredCategories.length > 0 && (
-                <ul className="absolute z-20 bg-background border border-border rounded-lg mt-1 w-full max-h-40 overflow-auto shadow-xl">
-                  {filteredCategories.map((cat) => (
-                    <li
-                      key={cat}
-                      className="px-4 py-2 cursor-pointer hover:bg-muted transition-colors first:rounded-t-lg last:rounded-b-lg"
-                      onMouseDown={() => handleCategorySelect(cat)}
-                    >
-                      {cat}
-                    </li>
-                  ))}
-                </ul>
-              )}
+            
+              <Popover open={showSuggestions} onOpenChange={setShowSuggestions}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={showSuggestions}
+                    className="w-full justify-between px-4 py-3 rounded-lg border border-border bg-background text-sm font-normal"
+                  >
+                    {form.categoryName || t("stock.type")}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+            
+                <PopoverContent className="w-full p-0">
+                  <Command>
+                    <CommandInput
+                      placeholder={t("stock.searchType")}
+                      className="h-9"
+                      onValueChange={(value) => {
+                        const filtered = categories.filter((cat) =>
+                          cat.toLowerCase().includes(value.toLowerCase())
+                        );
+                        setFilteredCategories(filtered);
+                      }}
+                    />
+                    <CommandList>
+                      <CommandEmpty>{t("stock.noMatch", "No type found.")}</CommandEmpty>
+                      <CommandGroup>
+                        {filteredCategories.map((cat) => (
+                          <CommandItem
+                            key={cat}
+                            value={cat}
+                            onSelect={(value) => {
+                              handleFormChange("categoryName", value);
+                              setShowSuggestions(false);
+                            }}
+                          >
+                            {cat}
+                            <Check
+                              className={cn(
+                                "ml-auto h-4 w-4",
+                                form.categoryName === cat ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">
