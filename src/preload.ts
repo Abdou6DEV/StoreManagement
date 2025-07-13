@@ -12,6 +12,7 @@ contextBridge.exposeInMainWorld("api", {
         data: Partial<Omit<Product, "id" | "createdAt" | "updatedAt">>,
       ) => ipcRenderer.invoke("db:products:update", { id, data }),
       // Optionally, add search/filter methods here
+      delete: (id: string) => ipcRenderer.invoke("db:products:delete", id),
     },
     categories: {
       getAll: () => ipcRenderer.invoke("db:categories:getAll"),
@@ -37,6 +38,7 @@ declare global {
             id: string,
             data: Partial<Omit<Product, "id" | "createdAt" | "updatedAt">>,
           ) => Promise<Product>;
+          delete: (id: string) => Promise<void>;
         };
         categories: {
           getAll: () => Promise<Category[]>;

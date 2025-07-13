@@ -18,7 +18,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "../../lib/components/ui/popover"
-import { Check, ChevronsUpDown } from "lucide-react"
+import { Check, ChevronDown } from "lucide-react"
 
 const initialForm = {
   name: "",
@@ -28,28 +28,6 @@ const initialForm = {
   selling: 0,
   codebar: "",
 };
-const frameworks = [
-  {
-    value: "next.js",
-    label: "Next.js",
-  },
-  {
-    value: "sveltekit",
-    label: "SvelteKit",
-  },
-  {
-    value: "nuxt.js",
-    label: "Nuxt.js",
-  },
-  {
-    value: "remix",
-    label: "Remix",
-  },
-  {
-    value: "astro",
-    label: "Astro",
-  },
-]
 
 export default function StockPage() {
   const { t } = useTranslation();
@@ -66,9 +44,20 @@ export default function StockPage() {
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [filteredCategories, setFilteredCategories] = useState<string[]>([]);
   const categoryInputRef = useRef<HTMLInputElement>(null);
-  const totalPages = 5; // Replace with dynamic value if needed
+  const [showProductDropdown, setShowProductDropdown] = useState(false);
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
+  const [dropdownProductSearch, setDropdownProductSearch] = useState("");
+  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
+  const [filteredCategories, setFilteredCategories] = useState<string[]>([]);
+  const [dropdownCategorySearch, setDropdownCategorySearch] = useState("");
+  const itemsPerPage = 10;
+  const totalPages = Math.ceil(products.length / itemsPerPage);
+  const paginatedProducts = products.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+  const paddingRows = itemsPerPage - paginatedProducts.length;
 
   // Edit state
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -174,6 +163,16 @@ export default function StockPage() {
       codebar: product.codebar || "",
     });
   };
+  const handleDeleteProduct = async (productId: string) => {
+    if (!confirm("Are you sure you want to delete this product?")) return;
+  
+    try {
+      await window.api.database.products.delete(productId);
+      fetchProducts();
+    } catch (err) {
+      alert("Failed to delete product.");
+    }
+  };
 
   const handleCancelEdit = () => {
     setEditingProduct(null);
@@ -181,6 +180,7 @@ export default function StockPage() {
     setShowEditSuggestions(false);
   };
 
+  const [dropdownSearch, setDropdownSearch] = useState("")
   const handleUpdateProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingProduct) return;
@@ -204,7 +204,6 @@ export default function StockPage() {
       setEditLoading(false);
     }
   };
-
   return (
     <main className="px-6 md:px-12 ml-20 flex-1 space-y-10">
       {/* === Add Stock Section === */}
@@ -222,66 +221,74 @@ export default function StockPage() {
 
         <form onSubmit={handleAddProduct}>
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">
-                {t("stock.product")}
-              </label>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground">
+              {t("stock.product")}
+            </label>
+            <div className="flex items-center gap-2">
               <input
                 type="text"
                 placeholder={t("stock.product")}
                 value={form.name}
                 onChange={(e) => handleFormChange("name", e.target.value)}
-                className="w-full px-4 py-3 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all"
+                className="w-full flex-1 px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-green-500/50 focus:border-green-500 transition-all"
                 required
               />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">
-                {t("stock.type")}
-              </label>
-            
-              <Popover open={showSuggestions} onOpenChange={setShowSuggestions}>
+              <Popover open={showProductDropdown} onOpenChange={setShowProductDropdown}>
                 <PopoverTrigger asChild>
                   <Button
+                    type="button"
                     variant="outline"
-                    role="combobox"
-                    aria-expanded={showSuggestions}
-                    className="w-full justify-between px-4 py-3 rounded-lg border border-border bg-background text-sm font-normal"
+                    className="px-3 py-2"
+                    onClick={() => {
+                      setFilteredProducts(products);
+                      setDropdownProductSearch("");
+                      setShowProductDropdown(true);
+                    }}
                   >
-                    {form.categoryName || t("stock.type")}
-                    <ChevronsUpDown className="ml-2 h-4 w-4 opacity-50" />
+                    {t("stock.chooseProduct", "Choose")}
+                    <ChevronDown className="ml-2 w-4 h-4" />
                   </Button>
                 </PopoverTrigger>
-            
-                <PopoverContent className="w-full p-0">
-                  <Command>
+                <PopoverContent className="w-[250px] p-0 z-50">
+                  <Command shouldFilter={false}>
                     <CommandInput
-                      placeholder={t("stock.searchType")}
-                      className="h-9"
+                      placeholder={t("stock.searchProduct")}
+                      value={dropdownProductSearch}
                       onValueChange={(value) => {
-                        const filtered = categories.filter((cat) =>
-                          cat.toLowerCase().includes(value.toLowerCase())
+                        setDropdownProductSearch(value);
+                        setFilteredProducts(
+                          products.filter((p) =>
+                            p.name.toLowerCase().includes(value.toLowerCase())
+                          )
                         );
-                        setFilteredCategories(filtered);
                       }}
+                      className="h-9"
                     />
                     <CommandList>
-                      <CommandEmpty>{t("stock.noMatch", "No type found.")}</CommandEmpty>
+                      <CommandEmpty>{t("stock.noProduct", "No product found.")}</CommandEmpty>
                       <CommandGroup>
-                        {filteredCategories.map((cat) => (
+                        {filteredProducts.map((p) => (
                           <CommandItem
-                            key={cat}
-                            value={cat}
-                            onSelect={(value) => {
-                              handleFormChange("categoryName", value);
-                              setShowSuggestions(false);
+                            key={p.id}
+                            value={p.name}
+                            onSelect={() => {
+                              setForm({
+                                name: p.name,
+                                categoryName: p.categoryName,
+                                quantity: p.quantity,
+                                bought: p.bought,
+                                selling: p.selling,
+                                codebar: p.codebar || "",
+                              });
+                              setShowProductDropdown(false);
                             }}
                           >
-                            {cat}
+                            {p.name}
                             <Check
                               className={cn(
                                 "ml-auto h-4 w-4",
-                                form.categoryName === cat ? "opacity-100" : "opacity-0"
+                                form.name === p.name ? "opacity-100" : "opacity-0"
                               )}
                             />
                           </CommandItem>
@@ -291,6 +298,79 @@ export default function StockPage() {
                   </Command>
                 </PopoverContent>
               </Popover>
+            </div>
+          </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">
+                {t("stock.type")}
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  placeholder={t("stock.type")}
+                  value={form.categoryName}
+                  onChange={(e) => handleFormChange("categoryName", e.target.value)}
+                  className="flex-1 px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-green-500/50 focus:border-green-500 transition-all"
+                  required
+                />
+                <Popover open={showCategoryDropdown} onOpenChange={setShowCategoryDropdown}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="px-3 py-2"
+                      onClick={() => {
+                        setFilteredCategories(categories);
+                        setDropdownCategorySearch("");
+                        setShowCategoryDropdown(true);
+                      }}
+                    >
+                      {t("stock.chooseType", "Choose")}
+                      <ChevronDown className="ml-2 w-4 h-4" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[200px] p-0 z-50">
+                    <Command shouldFilter={false}>
+                      <CommandInput
+                        placeholder={t("stock.searchType")}
+                        value={dropdownCategorySearch}
+                        onValueChange={(value) => {
+                          setDropdownCategorySearch(value);
+                          setFilteredCategories(
+                            categories.filter((cat) =>
+                              cat.toLowerCase().includes(value.toLowerCase())
+                            )
+                          );
+                        }}
+                        className="h-9"
+                      />
+                      <CommandList>
+                        <CommandEmpty>{t("stock.noMatch", "No type found.")}</CommandEmpty>
+                        <CommandGroup>
+                          {filteredCategories.map((cat) => (
+                            <CommandItem
+                              key={cat}
+                              value={cat}
+                              onSelect={(value) => {
+                                handleFormChange("categoryName", value);
+                                setShowCategoryDropdown(false);
+                              }}
+                            >
+                              {cat}
+                              <Check
+                                className={cn(
+                                  "ml-auto h-4 w-4",
+                                  form.categoryName === cat ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              </div>
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">
@@ -335,7 +415,7 @@ export default function StockPage() {
                 placeholder={t("stock.codebar")}
                 value={form.codebar}
                 onChange={(e) => handleFormChange("codebar", e.target.value)}
-                className="w-full px-4 py-3 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all"
+                className="w-full px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-green-500/50 focus:border-green-500 transition-all"
               />
             </div>
           </div>
@@ -404,7 +484,7 @@ export default function StockPage() {
                   placeholder={t("stock.product")}
                   value={editForm.name}
                   onChange={(e) => handleEditFormChange("name", e.target.value)}
-                  className="w-full px-4 py-3 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
+                  className="w-full px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
                   required
                 />
               </div>
@@ -420,7 +500,7 @@ export default function StockPage() {
                   onChange={(e) =>
                     handleEditFormChange("categoryName", e.target.value)
                   }
-                  className="w-full px-4 py-3 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
+                  className="w-full px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
                   required
                   autoComplete="off"
                   ref={editCategoryInputRef}
@@ -432,7 +512,7 @@ export default function StockPage() {
                   }
                 />
                 {showEditSuggestions && filteredEditCategories.length > 0 && (
-                  <ul className="absolute z-20 bg-background border border-border rounded-lg mt-1 w-full max-h-40 overflow-auto shadow-xl">
+                  <ul className="absolute z-20 bg-card border border-border rounded-lg mt-1 w-full max-h-40 overflow-auto shadow-xl">
                     {filteredEditCategories.map((cat) => (
                       <li
                         key={cat}
@@ -492,7 +572,7 @@ export default function StockPage() {
                   onChange={(e) =>
                     handleEditFormChange("codebar", e.target.value)
                   }
-                  className="w-full px-4 py-3 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
+                  className="w-full px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
                 />
               </div>
             </div>
@@ -565,7 +645,7 @@ export default function StockPage() {
             placeholder={t("stock.search")}
             value={filters.search}
             onChange={(e) => handleChange("search", e.target.value)}
-            className="px-3 py-1.5 rounded-md border border-border bg-background text-sm focus:outline-none focus:ring focus:ring-primary/30 transition max-w-[220px]"
+            className="px-3 py-1.5 rounded-md border border-border bg-card text-sm focus:outline-none focus:ring focus:ring-primary/30 transition max-w-[220px]"
           />
         </div>
 
@@ -579,30 +659,58 @@ export default function StockPage() {
                 <th className="px-4 py-3">{t("stock.quantity")}</th>
                 <th className="px-4 py-3">{t("stock.bought")}</th>
                 <th className="px-4 py-3">{t("stock.selling")}</th>
-                <th className="px-4 py-3">{t("stock.codebar")}</th>
+                <th className="px-4 py-3">{t("stock.profit", "Profit")}</th>
+                <th className="px-4 py-3">{t("stock.totalBought", "Total Bought")}</th>
+                <th className="px-4 py-3">{t("stock.totalProfit", "Total Profit")}</th>
                 <th className="px-4 py-3">{t("stock.actions", "Actions")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {products.map((product) => (
-                <tr key={product.id} className="hover:bg-muted/40 transition">
-                  <td className="px-4 py-3">{product.name}</td>
-                  <td className="px-4 py-3">{product.categoryName}</td>
-                  <td className="px-4 py-3">{product.quantity}</td>
-                  <td className="px-4 py-3">{product.bought}</td>
-                  <td className="px-4 py-3">{product.selling}</td>
-                  <td className="px-4 py-3">{product.codebar}</td>
-                  <td className="px-4 py-3">
-                    <Button
-                      onClick={() => handleEditProduct(product)}
-                      size="sm"
-                      variant="outline"
-                      className="text-blue-600 border-blue-200 hover:bg-blue-50 dark:text-blue-400 dark:border-blue-800 dark:hover:bg-blue-950/30"
-                    >
-                      <Edit className="w-3 h-3" />
-                      {t("stock.edit", "Edit")}
-                    </Button>
+              {paginatedProducts.map((product) => {
+                const profit = product.selling - product.bought;
+                const totalBought = product.bought * product.quantity;
+                const totalProfit = profit * product.quantity;
+            
+                return (
+                  <tr key={product.id} className="h-[48px] hover:bg-muted/40 transition">
+                    <td className="px-4">{product.name}</td>
+                    <td className="px-4">{product.categoryName}</td>
+                    <td className="px-4">{product.quantity}</td>
+                    <td className="px-4">{product.bought}</td>
+                    <td className="px-4">{product.selling}</td>
+                    <td className="px-4 text-green-700">{profit}</td>
+                    <td className="px-4">{totalBought}</td>
+                    <td className="px-4 text-green-700 font-medium">{totalProfit}</td>
+                    <td className="px-4">
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={() => handleEditProduct(product)}
+                        size="sm"
+                        variant="outline"
+                        className="text-blue-600 border-blue-200 hover:bg-blue-50 dark:text-blue-400 dark:border-blue-800 dark:hover:bg-blue-950/30"
+                      >
+                        <Edit className="w-3 h-3" />
+                        {t("stock.edit", "Edit")}
+                      </Button>
+                      <Button
+                        onClick={() => handleDeleteProduct(product.id)}
+                        size="sm"
+                        variant="outline"
+                        className="text-red-600 border-red-200 hover:bg-red-50 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-950/30"
+                      >
+                        <X className="w-3 h-3" />
+                        {t("stock.delete", "Delete")}
+                      </Button>
+                    </div>
                   </td>
+                  </tr>
+                );
+              })}
+            
+              {/* ✅ Padding rows here — outside the product map */}
+              {Array.from({ length: paddingRows }).map((_, index) => (
+                <tr key={`pad-${index}`} className="h-[48px] hover:bg-transparent transition">
+                  <td className="px-4" colSpan={9}>&nbsp;</td>
                 </tr>
               ))}
             </tbody>
@@ -610,14 +718,24 @@ export default function StockPage() {
         </div>
 
         {/* Pagination */}
-        <div className="flex items-center justify-between pt-4">
-          <button className="text-sm px-3 py-1 bg-muted rounded-md hover:bg-secondary transition">
+        <div className="flex items-center justify-center gap-6 pt-4">
+          <button
+            disabled={currentPage === 1}
+            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+            className="text-sm px-4 py-2 border-1 rounded-md hover:bg-muted transition disabled:opacity-50 disabled:bg-card"
+          >
             {t("stock.prev", "Previous")}
           </button>
+        
           <span className="text-sm text-muted-foreground">
             {t("stock.page")} {currentPage} / {totalPages}
           </span>
-          <button className="text-sm px-3 py-1 bg-muted rounded-md hover:bg-secondary transition">
+        
+          <button
+            disabled={currentPage === totalPages}
+            onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+            className="text-sm px-4 py-2 border-1 rounded-md hover:bg-muted transition disabled:opacity-50 disabled:bg-card"
+          >
             {t("stock.next", "Next")}
           </button>
         </div>

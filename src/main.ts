@@ -64,15 +64,19 @@ function setupDatabaseHandlers() {
   });
 
   ipcMain.handle("db:products:add", async (_event, product) => {
-    // product: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>
     return await prisma.product.create({ data: product });
   });
 
   ipcMain.handle("db:products:update", async (_event, { id, data }) => {
-    // data: Partial<Omit<Product, 'id' | 'createdAt' | 'updatedAt'>>
     return await prisma.product.update({
       where: { id },
       data,
+    });
+  });
+
+  ipcMain.handle("db:products:delete", async (_event, id: string) => {
+    return await prisma.product.delete({
+      where: { id },
     });
   });
 
