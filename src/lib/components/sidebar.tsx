@@ -17,60 +17,15 @@ import { useState } from "react";
 import { cn } from "../utils";
 
 const menuItems = [
-  {
-    key: "title",
-    path: "/",
-    icon: Home,
-    color: "text-primary",
-  },
-  {
-    key: "cashier",
-    path: "/cashier",
-    icon: ShoppingCart,
-    color: "text-yellow-500",
-  },
-  {
-    key: "dashboard",
-    path: "/dashboard",
-    icon: ChartLine,
-    color: "text-green-500",
-  },
-  {
-    key: "stock",
-    path: "/stock",
-    icon: PackageSearch,
-    color: "text-blue-500",
-  },
-  {
-    key: "history",
-    path: "/history",
-    icon: Search,
-    color: "text-cyan-500",
-  },
-  {
-    key: "finance",
-    path: "/finance",
-    icon: CreditCard,
-    color: "text-emerald-500",
-  },
-  {
-    key: "clients",
-    path: "/clients",
-    icon: Users,
-    color: "text-red-500",
-  },
-  {
-    key: "zakat",
-    path: "/zakat",
-    icon: Calculator,
-    color: "text-green-300",
-  },
-  {
-    key: "administrator",
-    path: "/administrator",
-    icon: AdminIcon,
-    color: "text-orange-500",
-  },
+  { key: "title", path: "/", icon: Home, color: "text-primary" },
+  { key: "cashier", path: "/cashier", icon: ShoppingCart, color: "text-yellow-500" },
+  { key: "dashboard", path: "/dashboard", icon: ChartLine, color: "text-green-500" },
+  { key: "stock", path: "/stock", icon: PackageSearch, color: "text-blue-500" },
+  { key: "history", path: "/history", icon: Search, color: "text-cyan-500" },
+  { key: "finance", path: "/finance", icon: CreditCard, color: "text-emerald-500" },
+  { key: "clients", path: "/clients", icon: Users, color: "text-red-500" },
+  { key: "zakat", path: "/zakat", icon: Calculator, color: "text-green-300" },
+  { key: "administrator", path: "/administrator", icon: AdminIcon, color: "text-orange-500" },
 ];
 
 export default function Sidebar() {
@@ -86,10 +41,8 @@ export default function Sidebar() {
     localStorage.setItem("sidebarCollapsed", String(newState));
 
     if (newState === false) {
-      // Expanding
-      setTimeout(() => setShowText(true), 500); // Match animation
+      setTimeout(() => setShowText(true), 700);
     } else {
-      // Collapsing
       setShowText(false);
     }
   };
@@ -98,29 +51,36 @@ export default function Sidebar() {
     <nav
       data-collapsed={collapsed}
       className={cn(
-        "flex flex-col max-h-fit bg-card border-r shadow-md overflow-hidden transition-all duration-700 ease-in-out",
-        collapsed ? "w-14" : "w-[200px]",
+        "fixed top-0 left-0 z-50 flex flex-col bg-card border-r rounded-xl shadow-md transition-all duration-1000 ease-in-out",
+        collapsed ? "w-14" : "w-[200px]"
       )}
+      style={{
+        height: "80vh",           // ✅ screen height only
+        position: "fixed",      // ✅ not fixed, scrolls with page
+        overflow: "hidden",        // to hide animation overflow
+        top: "130px",
+        flexShrink: 0
+      }}
     >
-      {/* === Sidebar Links === */}
-      <div className="flex flex-col">
+      <div
+        className="flex flex-col overflow-y-auto py-2"
+        style={{ height: "100%" }}
+      >
         {menuItems.map((item) => (
           <Link
             data-is-active={location.pathname === item.path}
             to={item.path}
             key={item.key}
-            className="max-w-full flex gap-4 items-center rounded-xl m-2 p-2 capitalize hover:bg-secondary data-[is-active=true]:bg-secondary font-semibold data-[is-active=true]:font-bold"
+            className="max-w-full gap-4 flex items-center rounded-xl m-2 p-2 -mt-1 capitalize hover:bg-secondary data-[is-active=true]:bg-secondary font-semibold data-[is-active=true]:font-bold"
           >
             <item.icon className={`${item.color}`} />
             {showText && <span>{t(`mainMenu.${item.key}`)}</span>}
           </Link>
         ))}
 
-        {/* === Collapse Button === */}
         <button
-          className="max-w-full flex gap-4 items-center rounded-xl self-end m-2 p-2 hover:bg-secondary font-semibold transition-all duration-300"
+          className="max-w-full flex gap-4 items-center rounded-xl self-end m-2 p-2 hover:bg-secondary font-semibold transition-all duration-300 mt-auto"
           onClick={handleToggleCollapse}
-          style={{ marginTop: "50px" }} // <== 🎯 ADJUST THIS VALUE for spacing
         >
           <ChevronsLeft
             data-collapsed={collapsed}

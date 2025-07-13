@@ -28,15 +28,23 @@ export default function Navigation() {
   const { t, i18n } = useTranslation();
 
   return (
-    <div className="flex items-center gap-4 w-full -ml-3">
-      <Link to="/">
-        <img src="/logo.png" alt="Store Logo" className="w-50 p-5" />
+    <div className="w-full px-4 pt-4">
+      {/* Header Container with same border wrapping logo + nav */}
+      <div className="flex items-center justify-between rounded-xl border border-border px-6 h-20 bg-card">
+      <Link to="/" className="relative h-20 w-auto flex items-center justify-center">
+        <img
+          src="/logolight.png"
+          alt="Store Logo Light"
+          className="h-20 object-contain dark:hidden"
+        />
+        <img
+          src="/logodark.png"
+          alt="Store Logo Dark"
+          className="h-20 object-contain hidden dark:block"
+        />
       </Link>
-
-      <nav className="px-8 py-3 rounded-xl border-1 border-gray-500 flex-1 flex items-center justify-between select-none">
-        <div className="w-40"></div>
-
-        <h1 className="text-2xl font-bold mr-30 flex items-center gap-2">
+        {/* === Dynamic Page Title === */}
+        <h1 className="text-3xl font-bold flex items-center gap-3">
           {location.pathname === "/" ? (
             <>
               <Home className="w-8 h-8 text-primary" />
@@ -45,7 +53,6 @@ export default function Navigation() {
           ) : (
             (() => {
               const path = location.pathname.slice(1).split("/")[0];
-
               const iconMap: Record<string, React.ReactNode> = {
                 dashboard: <ChartLine className="w-8 h-8 text-green-500" />,
                 clients: <Users className="w-8 h-8 text-red-500" />,
@@ -56,7 +63,6 @@ export default function Navigation() {
                 administrator: <Settings className="w-8 h-8 text-orange-500" />,
                 history: <Search className="w-8 h-8 text-cyan-500" />,
               };
-
               return (
                 <>
                   {iconMap[path] || null}
@@ -66,17 +72,16 @@ export default function Navigation() {
             })()
           )}
         </h1>
-
-        <div className="flex items-center gap-4 w-40 justify-end">
+  
+        {/* === Settings Dropdown === */}
+        <div className="flex items-center gap-4">
           <DropdownMenu onOpenChange={setDropdownOpen}>
             <DropdownMenuTrigger asChild>
               <button className="rounded-xl outline-none ring-0 hover:text-red-400 transition-all duration-300 p-1">
                 <Settings
-                  className={`
-                  transition-transform duration-400
-                  ${dropdownOpen ? "rotate-360 scale-110" : ""}
-                  hover:text-red-400
-                `}
+                  className={`transition-transform duration-400 ${
+                    dropdownOpen ? "rotate-360 scale-110" : ""
+                  } hover:text-red-400`}
                 />
               </button>
             </DropdownMenuTrigger>
@@ -88,8 +93,7 @@ export default function Navigation() {
               <DropdownMenuItem asChild>
                 <ThemeToggleButton variant="ghost" showText={true} />
               </DropdownMenuItem>
-
-              {/* Language Selection */}
+  
               <DropdownMenuSeparator />
               <DropdownMenuLabel className="font-semibold text-md">
                 {t("navigation.language")}
@@ -109,7 +113,7 @@ export default function Navigation() {
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-      </nav>
+      </div>
     </div>
-  );
+  );  
 }
