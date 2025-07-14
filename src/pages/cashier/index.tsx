@@ -19,18 +19,21 @@ export default function CashierPage() {
 
   const total = useMemo(
     () => cart.reduce((sum, item) => sum + item.qty * item.price, 0),
-    [cart]
+    [cart],
   );
 
   const handleAddProduct = (product: Product) => {
-    setCart(prev => {
-      const exists = prev.find(item => item.id === product.id);
+    setCart((prev) => {
+      const exists = prev.find((item) => item.id === product.id);
       if (exists) {
-        return prev.map(item =>
-          item.id === product.id ? { ...item, qty: item.qty + 1 } : item
+        return prev.map((item) =>
+          item.id === product.id ? { ...item, qty: item.qty + 1 } : item,
         );
       }
-      return [...prev, { id: product.id, name: product.name, price: product.selling, qty: 1 }];
+      return [
+        ...prev,
+        { id: product.id, name: product.name, price: product.selling, qty: 1 },
+      ];
     });
   };
 

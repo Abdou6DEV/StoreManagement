@@ -19,7 +19,7 @@ export default function ProductSearch({ onAdd }: Props) {
   useEffect(() => {
     const search = query.trim().toLowerCase();
     const results = products.filter((p) =>
-      p.name.toLowerCase().includes(search)
+      p.name.toLowerCase().includes(search),
     );
     setFiltered(results);
     setSelectedIndex(0); // reset selection
@@ -33,9 +33,7 @@ export default function ProductSearch({ onAdd }: Props) {
       setSelectedIndex((prev) => (prev + 1) % filtered.length);
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
-      setSelectedIndex((prev) =>
-        prev === 0 ? filtered.length - 1 : prev - 1
-      );
+      setSelectedIndex((prev) => (prev === 0 ? filtered.length - 1 : prev - 1));
     } else if (e.key === "Enter") {
       e.preventDefault();
       onAdd(filtered[selectedIndex]);

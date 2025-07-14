@@ -20,7 +20,7 @@ export default function CartTable({ cart, setCart }: Props) {
   const updateQty = (index: number, newQty: number) => {
     if (newQty < 1) return;
     setCart((prev) =>
-      prev.map((item, i) => (i === index ? { ...item, qty: newQty } : item))
+      prev.map((item, i) => (i === index ? { ...item, qty: newQty } : item)),
     );
   };
 
@@ -65,7 +65,9 @@ export default function CartTable({ cart, setCart }: Props) {
             <tr
               key={item.id}
               className={`border-b border-muted transition-colors ${
-                selectedRow === index ? "bg-primary text-primary-foreground" : "hover:bg-muted"
+                selectedRow === index
+                  ? "bg-primary text-primary-foreground"
+                  : "hover:bg-muted"
               }`}
               onClick={() => setSelectedRow(index)}
             >
@@ -77,7 +79,9 @@ export default function CartTable({ cart, setCart }: Props) {
                     type="number"
                     autoFocus
                     value={item.qty}
-                    onChange={(e) => updateQty(index, parseInt(e.target.value || "1"))}
+                    onChange={(e) =>
+                      updateQty(index, parseInt(e.target.value || "1"))
+                    }
                     onBlur={() => setEditingQtyIndex(null)}
                     onKeyDown={(e) => {
                       if (e.key === "Enter") setEditingQtyIndex(null);
@@ -94,7 +98,9 @@ export default function CartTable({ cart, setCart }: Props) {
                 )}
               </td>
 
-              <td className="p-2 text-right">{item.price.toLocaleString()} DZD</td>
+              <td className="p-2 text-right">
+                {item.price.toLocaleString()} DZD
+              </td>
               <td className="p-2 text-right">
                 {(item.price * item.qty).toLocaleString()} DZD
               </td>
@@ -104,7 +110,9 @@ export default function CartTable({ cart, setCart }: Props) {
       </table>
 
       {cart.length === 0 && (
-        <div className="p-4 text-muted-foreground text-center">Cart is empty</div>
+        <div className="p-4 text-muted-foreground text-center">
+          Cart is empty
+        </div>
       )}
     </div>
   );

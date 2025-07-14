@@ -14,7 +14,7 @@ export default function PaymentSummary({
 }: Props) {
   const total = useMemo(
     () => cart.reduce((sum, item) => sum + item.price * item.qty, 0),
-    [cart]
+    [cart],
   );
 
   const change = paidAmount - total;
@@ -28,9 +28,7 @@ export default function PaymentSummary({
             <span>
               {item.qty} x {item.name}
             </span>
-            <span>
-              {(item.qty * item.price).toLocaleString()} DZD
-            </span>
+            <span>{(item.qty * item.price).toLocaleString()} DZD</span>
           </div>
         ))}
         <div className="border-t mt-2 pt-2 flex justify-between font-semibold text-foreground">
@@ -51,9 +49,11 @@ export default function PaymentSummary({
       </div>
 
       {/* Change Due */}
-      <div className={`text-center text-2xl font-bold py-2 rounded-md transition
+      <div
+        className={`text-center text-2xl font-bold py-2 rounded-md transition
         ${change >= 0 ? "text-green-500" : "text-destructive"}
-      `}>
+      `}
+      >
         {change >= 0
           ? `Change: ${change.toLocaleString()} DZD`
           : `Remaining: ${Math.abs(change).toLocaleString()} DZD`}
