@@ -703,7 +703,7 @@ export default function StockPage() {
                 }
                 setFilters(newFilters);
               }}
-              className="gap-1"
+              className="gap-3"
             >
               <ToggleGroupItem
                 value="lowStock"
