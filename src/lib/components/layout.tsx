@@ -23,7 +23,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       {/* === Main Content === */}
       <main
-        className="transition-all duration-700 px-4 pt-4"
+        className="transition-all duration-700 px-4 md:px-12 py-8 md:py-12"
         style={{
           marginLeft: collapsed ? "60px" : "200px",
         }}
