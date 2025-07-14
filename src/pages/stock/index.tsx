@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Category, Product } from "@prisma/client";
 import StyledNumberInput from "../../lib/components/ui/inputNumber";
 import { Button } from "../../lib/components/ui/button";
-import { Edit, Save, X, Loader2, Package, Check, ChevronDown, ChevronUp } from "lucide-react";
+import { Edit, Save, X, Loader2, Package, Check, ChevronDown, ChevronUp, AlertTriangle, TrendingUp, TrendingDown } from "lucide-react";
 import { cn } from "../../lib/utils"
 import {
   Command,
@@ -675,8 +675,9 @@ export default function StockPage() {
               value={filters.search}
               onChange={(e) => handleChange("search", e.target.value)}
               className="px-3 py-1.5 rounded-md border border-border bg-card text-sm focus:outline-none focus:ring focus:ring-primary/30 transition max-w-[220px]"
+              aria-label={t("stock.search")}
             />
-          
+            <div className="w-px h-6 bg-border mx-2 hidden sm:block" />
             <ToggleGroup
               type="multiple"
               variant="outline"
@@ -692,27 +693,49 @@ export default function StockPage() {
                   bestSelling: values.includes("bestSelling"),
                   worstSelling: values.includes("worstSelling"),
                 };
-          
                 // Enforce best/worst selling exclusivity
                 if (newFilters.bestSelling && newFilters.worstSelling) {
-                  // Turn off the one that was not just toggled on
                   if (!filters.bestSelling) {
                     newFilters.worstSelling = false;
                   } else {
                     newFilters.bestSelling = false;
                   }
                 }
-          
                 setFilters(newFilters);
               }}
+              className="gap-1"
             >
-              <ToggleGroupItem value="lowStock">
+              <ToggleGroupItem
+                value="lowStock"
+                aria-label={t("stock.lowStock")}
+                className={cn(
+                  "flex items-center gap-2 px-3 py-2",
+                  filters.lowStock && "bg-yellow-100 text-yellow-800 border-yellow-300 dark:bg-yellow-900/30 dark:text-yellow-200 dark:border-yellow-700"
+                )}
+              >
+                <AlertTriangle className={cn("w-4 h-4", filters.lowStock ? "text-yellow-500" : "text-muted-foreground")}/>
                 {t("stock.lowStock")}
               </ToggleGroupItem>
-              <ToggleGroupItem value="bestSelling">
+              <ToggleGroupItem
+                value="bestSelling"
+                aria-label={t("stock.bestSelling")}
+                className={cn(
+                  "flex items-center gap-2 px-3 py-2",
+                  filters.bestSelling && "bg-green-100 text-green-800 border-green-300 dark:bg-green-900/30 dark:text-green-200 dark:border-green-700"
+                )}
+              >
+                <TrendingUp className={cn("w-4 h-4", filters.bestSelling ? "text-green-600" : "text-muted-foreground")}/>
                 {t("stock.bestSelling")}
               </ToggleGroupItem>
-              <ToggleGroupItem value="worstSelling">
+              <ToggleGroupItem
+                value="worstSelling"
+                aria-label={t("stock.worstSelling")}
+                className={cn(
+                  "flex items-center gap-2 px-3 py-2",
+                  filters.worstSelling && "bg-red-100 text-red-800 border-red-300 dark:bg-red-900/30 dark:text-red-200 dark:border-red-700"
+                )}
+              >
+                <TrendingDown className={cn("w-4 h-4", filters.worstSelling ? "text-red-600" : "text-muted-foreground")}/>
                 {t("stock.worstSelling")}
               </ToggleGroupItem>
             </ToggleGroup>
