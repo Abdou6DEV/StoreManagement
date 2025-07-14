@@ -712,73 +712,74 @@ export default function StockPage() {
         </div>
 
         {/* Filters Row */}
-        <div className="flex flex-wrap gap-4 items-center">
-          <input
-            type="text"
-            placeholder={t("stock.search")}
-            value={filters.search}
-            onChange={(e) => handleChange("search", e.target.value)}
-            className="px-3 py-1.5 rounded-md border border-border bg-card text-sm focus:outline-none focus:ring focus:ring-primary/30 transition max-w-[220px]"
-            aria-label={t("stock.search")}
-          />
-          {/* Category Filter Dropdown */}
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className="px-3 py-1.5"
-                aria-label={t("stock.filterByCategory", "Filter by category")}
-              >
-                {filters.category
-                  ? filters.category
-                  : t("stock.allCategories", "All Categories")}
-                <ChevronDown className="ml-2 w-4 h-4" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-[200px] p-0 z-50">
-              <Command shouldFilter={false}>
-                <CommandInput
-                  placeholder={t("stock.searchType")}
-                  className="h-9"
-                />
-                <CommandList>
-                  <CommandGroup>
-                    <CommandItem
-                      key="all"
-                      value=""
-                      onSelect={() => handleChange("category", "")}
-                    >
-                      {t("stock.allCategories", "All Categories")}
-                      <Check
-                        className={cn(
-                          "ml-auto h-4 w-4",
-                          !filters.category ? "opacity-100" : "opacity-0",
-                        )}
-                      />
-                    </CommandItem>
-                    {categories.map((cat) => (
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex flex-wrap items-center gap-4">
+            <input
+              type="text"
+              placeholder={t("stock.search")}
+              value={filters.search}
+              onChange={(e) => handleChange("search", e.target.value)}
+              className="px-3 py-1.5 rounded-md border border-border bg-card text-sm focus:outline-none focus:ring focus:ring-primary/30 transition max-w-[220px]"
+              aria-label={t("stock.search")}
+            />
+            {/* Category Filter Dropdown */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="px-3 py-1.5"
+                  aria-label={t("stock.filterByCategory", "Filter by category")}
+                >
+                  {filters.category
+                    ? filters.category
+                    : t("stock.allCategories", "All Categories")}
+                  <ChevronDown className="ml-2 w-4 h-4" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[200px] p-0 z-50">
+                <Command shouldFilter={false}>
+                  <CommandInput
+                    placeholder={t("stock.searchType")}
+                    className="h-9"
+                  />
+                  <CommandList>
+                    <CommandGroup>
                       <CommandItem
-                        key={cat}
-                        value={cat}
-                        onSelect={() => handleChange("category", cat)}
+                        key="all"
+                        value=""
+                        onSelect={() => handleChange("category", "")}
                       >
-                        {cat}
+                        {t("stock.allCategories", "All Categories")}
                         <Check
                           className={cn(
                             "ml-auto h-4 w-4",
-                            filters.category === cat
-                              ? "opacity-100"
-                              : "opacity-0",
+                            !filters.category ? "opacity-100" : "opacity-0",
                           )}
                         />
                       </CommandItem>
-                    ))}
-                  </CommandGroup>
-                </CommandList>
-              </Command>
-            </PopoverContent>
-          </Popover>
-          <div className="w-px h-6 bg-border mx-2 hidden sm:block" />
+                      {categories.map((cat) => (
+                        <CommandItem
+                          key={cat}
+                          value={cat}
+                          onSelect={() => handleChange("category", cat)}
+                        >
+                          {cat}
+                          <Check
+                            className={cn(
+                              "ml-auto h-4 w-4",
+                              filters.category === cat
+                                ? "opacity-100"
+                                : "opacity-0",
+                            )}
+                          />
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+          </div>
           <ToggleGroup
             type="multiple"
             variant="outline"
@@ -804,7 +805,7 @@ export default function StockPage() {
               }
               setFilters(newFilters);
             }}
-            className="gap-3"
+            className="gap-1"
           >
             <ToggleGroupItem
               value="lowStock"
