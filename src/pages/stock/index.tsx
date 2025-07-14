@@ -52,6 +52,7 @@ export default function StockPage() {
     bestSelling: false,
     worstSelling: false,
     search: "",
+    category: "", // <-- add category filter
   });
   const [currentPage, setCurrentPage] = useState(1);
   const [products, setProducts] = useState<Product[]>([]);
@@ -67,14 +68,16 @@ export default function StockPage() {
   const [filteredCategories, setFilteredCategories] = useState<string[]>([]);
   const [dropdownCategorySearch, setDropdownCategorySearch] = useState("");
   const itemsPerPage = 10;
-  // Filter products based on search input
+  // Filter products based on search input and category
   const filteredList = products.filter((product) => {
     const search = filters.search.toLowerCase();
-    return (
+    const matchesSearch =
       product.name.toLowerCase().includes(search) ||
       product.categoryName.toLowerCase().includes(search) ||
-      (product.codebar && product.codebar.toLowerCase().includes(search))
-    );
+      (product.codebar && product.codebar.toLowerCase().includes(search));
+    const matchesCategory =
+      !filters.category || product.categoryName === filters.category;
+    return matchesSearch && matchesCategory;
   });
 
   const totalPages = Math.max(1, Math.ceil(filteredList.length / itemsPerPage));
@@ -718,6 +721,63 @@ export default function StockPage() {
             className="px-3 py-1.5 rounded-md border border-border bg-card text-sm focus:outline-none focus:ring focus:ring-primary/30 transition max-w-[220px]"
             aria-label={t("stock.search")}
           />
+          {/* Category Filter Dropdown */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className="px-3 py-1.5"
+                aria-label={t("stock.filterByCategory", "Filter by category")}
+              >
+                {filters.category
+                  ? filters.category
+                  : t("stock.allCategories", "All Categories")}
+                <ChevronDown className="ml-2 w-4 h-4" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[200px] p-0 z-50">
+              <Command shouldFilter={false}>
+                <CommandInput
+                  placeholder={t("stock.searchType")}
+                  className="h-9"
+                />
+                <CommandList>
+                  <CommandGroup>
+                    <CommandItem
+                      key="all"
+                      value=""
+                      onSelect={() => handleChange("category", "")}
+                    >
+                      {t("stock.allCategories", "All Categories")}
+                      <Check
+                        className={cn(
+                          "ml-auto h-4 w-4",
+                          !filters.category ? "opacity-100" : "opacity-0",
+                        )}
+                      />
+                    </CommandItem>
+                    {categories.map((cat) => (
+                      <CommandItem
+                        key={cat}
+                        value={cat}
+                        onSelect={() => handleChange("category", cat)}
+                      >
+                        {cat}
+                        <Check
+                          className={cn(
+                            "ml-auto h-4 w-4",
+                            filters.category === cat
+                              ? "opacity-100"
+                              : "opacity-0",
+                          )}
+                        />
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
           <div className="w-px h-6 bg-border mx-2 hidden sm:block" />
           <ToggleGroup
             type="multiple"
@@ -727,9 +787,9 @@ export default function StockPage() {
               .filter(([k, v]) => typeof v === "boolean" && v)
               .map(([k]) => k)}
             onValueChange={(values) => {
-              // Build new state preserving search
+              // Build new state preserving search and category
               const newFilters = {
-                ...filters, // preserves search
+                ...filters, // preserves search and category
                 lowStock: values.includes("lowStock"),
                 bestSelling: values.includes("bestSelling"),
                 worstSelling: values.includes("worstSelling"),
