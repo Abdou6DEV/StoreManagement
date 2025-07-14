@@ -19,6 +19,7 @@ import {
   PopoverTrigger,
 } from "../../lib/components/ui/popover"
 import { Check, ChevronDown } from "lucide-react"
+import { ToggleGroup, ToggleGroupItem } from "../../lib/components/ui/toggle-group"
 
 const initialForm = {
   name: "",
@@ -134,14 +135,34 @@ export default function StockPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      // Ensure category exists
       await window.api.database.categories.ensure(form.categoryName);
-      await window.api.database.products.add({
-        ...form,
-        quantity: Number(form.quantity),
-        bought: Number(form.bought),
-        selling: Number(form.selling),
-      });
+  
+      // Check if product already exists
+      const existingProduct = products.find(
+        (p) =>
+          p.name.toLowerCase() === form.name.toLowerCase().trim() &&
+          p.categoryName.toLowerCase() === form.categoryName.toLowerCase().trim()
+      );
+  
+      if (existingProduct) {
+        // If exists, update quantity
+        await window.api.database.products.update(existingProduct.id, {
+          ...existingProduct,
+          quantity: existingProduct.quantity + Number(form.quantity),
+          bought: Number(form.bought), // optional: update bought/selling price
+          selling: Number(form.selling),
+          codebar: form.codebar,
+        });
+      } else {
+        // If not exists, create new product
+        await window.api.database.products.add({
+          ...form,
+          quantity: Number(form.quantity),
+          bought: Number(form.bought),
+          selling: Number(form.selling),
+        });
+      }
+  
       setForm(initialForm);
       fetchProducts();
       fetchCategories();
@@ -151,6 +172,7 @@ export default function StockPage() {
       setLoading(false);
     }
   };
+  
 
   const handleEditProduct = (product: Product) => {
     setEditingProduct(product);
@@ -619,27 +641,6 @@ export default function StockPage() {
 
         {/* Filters Row */}
         <div className="flex flex-wrap gap-4 items-center">
-          {[
-            { key: "lowStock", label: t("stock.lowStock") },
-            { key: "bestSelling", label: t("stock.bestSelling") },
-            { key: "worstSelling", label: t("stock.worstSelling") },
-          ].map(({ key, label }) => (
-            <label
-              key={key}
-              className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer"
-            >
-              <input
-                type="checkbox"
-                checked={filters[key as keyof typeof filters] as boolean}
-                onChange={(e) =>
-                  handleChange(key as keyof typeof filters, e.target.checked)
-                }
-                className="h-4 w-4 rounded-sm border border-border accent-red-500"
-              />
-              {label}
-            </label>
-          ))}
-
           <input
             type="text"
             placeholder={t("stock.search")}
@@ -647,7 +648,48 @@ export default function StockPage() {
             onChange={(e) => handleChange("search", e.target.value)}
             className="px-3 py-1.5 rounded-md border border-border bg-card text-sm focus:outline-none focus:ring focus:ring-primary/30 transition max-w-[220px]"
           />
+        
+          <ToggleGroup
+            type="multiple"
+            variant="outline"
+            size="sm"
+            value={Object.entries(filters)
+              .filter(([k, v]) => typeof v === "boolean" && v)
+              .map(([k]) => k)}
+            onValueChange={(values) => {
+              // Build new state preserving search
+              const newFilters = {
+                ...filters, // preserves search
+                lowStock: values.includes("lowStock"),
+                bestSelling: values.includes("bestSelling"),
+                worstSelling: values.includes("worstSelling"),
+              };
+        
+              // Enforce best/worst selling exclusivity
+              if (newFilters.bestSelling && newFilters.worstSelling) {
+                // Turn off the one that was not just toggled on
+                if (!filters.bestSelling) {
+                  newFilters.worstSelling = false;
+                } else {
+                  newFilters.bestSelling = false;
+                }
+              }
+        
+              setFilters(newFilters);
+            }}
+          >
+            <ToggleGroupItem value="lowStock">
+              {t("stock.lowStock")}
+            </ToggleGroupItem>
+            <ToggleGroupItem value="bestSelling">
+              {t("stock.bestSelling")}
+            </ToggleGroupItem>
+            <ToggleGroupItem value="worstSelling">
+              {t("stock.worstSelling")}
+            </ToggleGroupItem>
+          </ToggleGroup>
         </div>
+
 
         {/* Table */}
         <div className="overflow-auto rounded-lg border border-muted">
