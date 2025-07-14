@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useStock } from "../../../lib/contexts/stockContext";
 import { Product } from "@prisma/client";
 import StyledNumberInput from "../../../lib/components/ui/inputNumber";
 import { Button } from "../../../lib/components/ui/button";
@@ -29,21 +30,15 @@ const initialForm = {
 };
 
 export default function AddStockForm({
-  products,
-  categories,
-  fetchProducts,
-  fetchCategories,
   openPanel,
   setOpenPanel,
 }: {
-  products: Product[];
-  categories: string[];
-  fetchProducts: () => void;
-  fetchCategories: () => void;
   openPanel: "add" | "edit" | null;
   setOpenPanel: React.Dispatch<React.SetStateAction<"add" | "edit" | null>>;
 }) {
   const { t } = useTranslation();
+  const { products, categories, refetchCategories, refetchProducts } =
+    useStock();
 
   const [showProductDropdown, setShowProductDropdown] = useState(false);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
@@ -89,8 +84,8 @@ export default function AddStockForm({
       }
 
       setForm(initialForm);
-      fetchProducts();
-      fetchCategories();
+      refetchProducts();
+      refetchCategories();
     } catch (err) {
       alert("Failed to add product");
     } finally {

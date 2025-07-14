@@ -1,6 +1,6 @@
-import { Product } from "@prisma/client";
 import { useTranslation } from "react-i18next";
-import { useState } from "react";
+import { useStock } from "../../../lib/contexts/stockContext";
+
 import {
   Edit,
   X,
@@ -10,7 +10,16 @@ import {
   TrendingUp,
   TrendingDown,
 } from "lucide-react";
+
+import { useState } from "react";
+
 import { cn } from "../../../lib/utils";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "../../../lib/components/ui/dialog";
 import {
   Command,
   CommandGroup,
@@ -28,19 +37,15 @@ import {
   ToggleGroupItem,
 } from "../../../lib/components/ui/toggleGroup";
 import { Button } from "../../../lib/components/ui/button";
+import EditStockForm from "./editStockForm";
 
 export const StockTable = ({
-  categories,
-  products,
-  handleEditProduct,
   handleDeleteProduct,
 }: {
-  categories: string[];
-  products: Product[];
-  handleEditProduct: (product: Product) => void;
   handleDeleteProduct: (productId: string) => void;
 }) => {
   const { t } = useTranslation();
+  const { categories, products } = useStock();
 
   const [filters, setFilters] = useState({
     lowStock: false,
@@ -50,6 +55,7 @@ export const StockTable = ({
     category: "", // <-- add category filter
   });
   const [currentPage, setCurrentPage] = useState(1);
+  const [editingProductID, setEditingProductID] = useState<string | null>(null);
 
   const handleChange = (key: keyof typeof filters, value: boolean | string) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
@@ -279,7 +285,7 @@ export const StockTable = ({
                   <td className="px-4">
                     <div className="flex gap-2">
                       <Button
-                        onClick={() => handleEditProduct(product)}
+                        onClick={() => setEditingProductID(product.id)}
                         size="sm"
                         variant="outline"
                         className="text-blue-600 border-blue-200 hover:bg-blue-50 dark:text-blue-400 dark:border-blue-800 dark:hover:bg-blue-950/30"
@@ -341,6 +347,31 @@ export const StockTable = ({
           {t("stock.next", "Next")}
         </button>
       </div>
+
+      {/* Edit Product Dialog */}
+      <Dialog modal open={!!editingProductID}>
+        <DialogContent className="min-w-1/2" showCloseButton={false}>
+          <DialogHeader>
+            <DialogTitle>
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                  <Edit className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-foreground">
+                    {t("stock.editTitle", "Edit Product")}
+                  </h2>
+                  <p className="text-sm text-muted-foreground">Editing</p>
+                </div>
+              </div>
+            </DialogTitle>
+          </DialogHeader>
+          <EditStockForm
+            productID={editingProductID}
+            setProductID={setEditingProductID}
+          />
+        </DialogContent>
+      </Dialog>
     </section>
   );
 };

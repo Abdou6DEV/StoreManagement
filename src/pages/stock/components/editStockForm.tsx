@@ -1,0 +1,169 @@
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import StyledNumberInput from "../../../lib/components/ui/inputNumber";
+import { Button } from "../../../lib/components/ui/button";
+import { Save, X, Loader2, Package } from "lucide-react";
+
+import { useStock } from "../../../lib/contexts/stockContext";
+
+export default function EditStockForm({
+  productID,
+  setProductID,
+}: {
+  productID: string | null;
+  setProductID: React.Dispatch<React.SetStateAction<string | null>>;
+}) {
+  const { t } = useTranslation();
+  const { products, refetchProducts } = useStock();
+
+  const product = products.find((p) => p.id === productID);
+
+  const [loading, setLoading] = useState(false);
+  const [form, setForm] = useState(product);
+
+  const handleEditFormChange = (
+    key: keyof typeof form,
+    value: string | number,
+  ) => {
+    setForm((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const handleUpdateProduct = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    setLoading(true);
+    try {
+      // Ensure category exists
+      await window.api.database.categories.ensure(form.categoryName);
+      await window.api.database.products.update(product.id, {
+        ...form,
+        quantity: Number(form.quantity),
+        bought: Number(form.bought),
+        selling: Number(form.selling),
+      });
+      setProductID(null);
+    } catch (err) {
+      alert("Failed to update product");
+    } finally {
+      setLoading(false);
+      refetchProducts();
+    }
+  };
+
+  return (
+    <>
+      <form onSubmit={handleUpdateProduct} className="p-6 pt-0 relative z-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground flex items-center gap-2">
+              <Package className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+              {t("stock.product")}
+            </label>
+            <input
+              type="text"
+              placeholder={t("stock.product")}
+              value={form.name}
+              onChange={(e) => handleEditFormChange("name", e.target.value)}
+              className="w-full px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
+              required
+            />
+          </div>
+
+          <div className="space-y-3 relative">
+            <label className="text-sm font-medium text-foreground">
+              {t("stock.type")}
+            </label>
+            <input
+              type="text"
+              placeholder={t("stock.type")}
+              value={form.categoryName}
+              onChange={(e) =>
+                handleEditFormChange("categoryName", e.target.value)
+              }
+              className="w-full px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
+              required
+              autoComplete="off"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground">
+              {t("stock.quantity")}
+            </label>
+            <StyledNumberInput
+              value={form.quantity}
+              onChange={(val) => handleEditFormChange("quantity", val)}
+              placeholder={t("stock.quantity")}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground">
+              {t("stock.bought")}
+            </label>
+            <StyledNumberInput
+              value={form.bought}
+              onChange={(val) => handleEditFormChange("bought", val)}
+              placeholder={t("stock.bought")}
+              step={100}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground mb-3">
+              {t("stock.selling")}
+            </label>
+            <StyledNumberInput
+              value={form.selling}
+              onChange={(val) => handleEditFormChange("selling", val)}
+              placeholder={t("stock.selling")}
+              step={100}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground">
+              {t("stock.codebar")}
+            </label>
+            <input
+              type="text"
+              placeholder={t("stock.codebar")}
+              value={form.codebar}
+              onChange={(e) => handleEditFormChange("codebar", e.target.value)}
+              className="w-full px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
+            />
+          </div>
+        </div>
+
+        <div className="flex gap-3 pt-6 border-t border-border mt-6">
+          <Button
+            type="submit"
+            disabled={loading}
+            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                {t("stock.updating", "Updating...")}
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4" />
+                {t("stock.updateButton", "Update Product")}
+              </>
+            )}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setProductID(null)}
+            className="flex-1"
+          >
+            <X className="w-4 h-4" />
+            {t("stock.cancelButton", "Cancel")}
+          </Button>
+        </div>
+      </form>
+    </>
+  );
+}

@@ -6,6 +6,7 @@ import Customers from "./customers";
 import Cashier from "./cashier";
 import Stock from "./stock";
 import Sidebar from "../lib/components/sidebar";
+import { StockProvider } from "../lib/contexts/stockContext";
 
 export default function App() {
   return (
@@ -26,6 +27,14 @@ export default function App() {
           <Route path="/clients" element={<Customers />} />
           <Route path="/stock" element={<Stock />} />
           <Route path="/cashier" element={<Cashier />} />
+          <Route
+            path="/stock"
+            element={
+              <StockProvider>
+                <Stock />
+              </StockProvider>
+            }
+          />
           <Route path="/*" element={<h1 className="">Soon..</h1>} />
         </Route>
       </Routes>
