@@ -33,7 +33,7 @@ import {
 import {
   ToggleGroup,
   ToggleGroupItem,
-} from "../../lib/components/ui/toggle-group";
+} from "../../lib/components/ui/toggleGroup";
 
 const initialForm = {
   name: "",
