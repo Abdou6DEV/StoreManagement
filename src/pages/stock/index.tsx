@@ -52,8 +52,18 @@ export default function StockPage() {
   const [filteredCategories, setFilteredCategories] = useState<string[]>([]);
   const [dropdownCategorySearch, setDropdownCategorySearch] = useState("");
   const itemsPerPage = 10;
-  const totalPages = Math.max(1, Math.ceil(products.length / itemsPerPage)); // Math.max(1, ...) ensures that even if the result is 0 (or any number less than 1), the minimum value for totalPages will be 1.
-  const paginatedProducts = products.slice(
+  // Filter products based on search input
+  const filteredList = products.filter((product) => {
+    const search = filters.search.toLowerCase();
+    return (
+      product.name.toLowerCase().includes(search) ||
+      product.categoryName.toLowerCase().includes(search) ||
+      (product.codebar && product.codebar.toLowerCase().includes(search))
+    );
+  });
+
+  const totalPages = Math.max(1, Math.ceil(filteredList.length / itemsPerPage));
+  const paginatedProducts = filteredList.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
