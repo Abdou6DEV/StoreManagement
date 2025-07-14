@@ -84,6 +84,20 @@ export default function StockPage() {
     setFilteredCategories(categories);
   }, [categories]);
 
+  // When the name changes and matches an existing product, set the type to match the existing product
+  useEffect(() => {
+    const existing = products.find(
+      (p) => p.name.toLowerCase().trim() === form.name.toLowerCase().trim(),
+    );
+    if (form.name === "") {
+      if (form.categoryName !== "") {
+        setForm((prev) => ({ ...prev, categoryName: "" }));
+      }
+    } else if (existing && form.categoryName !== existing.categoryName) {
+      setForm((prev) => ({ ...prev, categoryName: existing.categoryName }));
+    }
+  }, [form.name, products]);
+
   const handleFormChange = (key: keyof typeof form, value: string | number) => {
     setForm((prev) => ({ ...prev, [key]: value }));
     if (key === "categoryName" && typeof value === "string") {
@@ -125,7 +139,7 @@ export default function StockPage() {
       // Check if product already exists
       const existingProduct = products.find(
         (p) =>
-          p.name.toLowerCase() === form.name.toLowerCase().trim() &&
+          p.name.toLowerCase().trim() === form.name.toLowerCase().trim() &&
           p.categoryName.toLowerCase() ===
             form.categoryName.toLowerCase().trim(),
       );
@@ -217,6 +231,12 @@ export default function StockPage() {
       setEditLoading(false);
     }
   };
+
+  // Helper to check if form matches an existing product (by name only)
+  const isExistingProduct = products.some(
+    (p) => p.name.toLowerCase().trim() === form.name.toLowerCase().trim(),
+  );
+
   return (
     <main className="px-6 md:px-12 flex-1 space-y-10">
       {/* === Add Stock Section (Collapsible) === */}
@@ -305,7 +325,7 @@ export default function StockPage() {
                                   setForm({
                                     name: p.name,
                                     categoryName: p.categoryName,
-                                    quantity: p.quantity,
+                                    quantity: 0, // Set to 0 so user can specify how much to add
                                     bought: p.bought,
                                     selling: p.selling,
                                     codebar: p.codebar || "",
@@ -345,6 +365,7 @@ export default function StockPage() {
                     }
                     className="flex-1 px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-green-500/50 focus:border-green-500 transition-all"
                     required
+                    disabled={isExistingProduct}
                   />
                   <Popover
                     open={showCategoryDropdown}
@@ -432,6 +453,7 @@ export default function StockPage() {
                   onChange={(val) => handleFormChange("bought", val)}
                   placeholder={t("stock.bought")}
                   step={100}
+                  disabled={isExistingProduct}
                 />
               </div>
 
@@ -444,6 +466,7 @@ export default function StockPage() {
                   onChange={(val) => handleFormChange("selling", val)}
                   placeholder={t("stock.selling")}
                   step={100}
+                  disabled={isExistingProduct}
                 />
               </div>
               <div className="space-y-2">
@@ -456,9 +479,26 @@ export default function StockPage() {
                   value={form.codebar}
                   onChange={(e) => handleFormChange("codebar", e.target.value)}
                   className="w-full px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-green-500/50 focus:border-green-500 transition-all"
+                  disabled={isExistingProduct}
                 />
               </div>
             </div>
+
+            {/* Note for existing product */}
+            {isExistingProduct && (
+              <div className="mt-4 text-sm text-blue-600 dark:text-blue-400">
+                {(() => {
+                  const existing = products.find(
+                    (p) =>
+                      p.name.toLowerCase().trim() ===
+                      form.name.toLowerCase().trim(),
+                  );
+                  return existing
+                    ? `This product is in stock | Current quantity: ${existing.quantity}`
+                    : null;
+                })()}
+              </div>
+            )}
 
             <div className="pt-6 border-t border-border mt-6">
               <Button

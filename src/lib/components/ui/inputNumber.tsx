@@ -7,6 +7,7 @@ interface StyledNumberInputProps {
   max?: number;
   step?: number;
   placeholder?: string;
+  disabled?: boolean;
 }
 
 export default function StyledNumberInput({
@@ -16,8 +17,10 @@ export default function StyledNumberInput({
   max = 999999,
   step = 1,
   placeholder = "",
+  disabled = false,
 }: StyledNumberInputProps) {
   const handleStep = (dir: "up" | "down") => {
+    if (disabled) return;
     const newValue = dir === "up" ? value + step : value - step;
     if (newValue >= min && newValue <= max) onChange(newValue);
   };
@@ -38,12 +41,14 @@ export default function StyledNumberInput({
         min={min}
         max={max}
         step={step}
+        disabled={disabled}
       />
       <div className="absolute right-1 top-1 flex flex-col">
         <button
           type="button"
           onClick={() => handleStep("up")}
           className="w-8 h-5 flex items-center justify-center rounded hover:bg-muted transition-colors"
+          disabled={disabled}
         >
           <ChevronUp className="w-4 h-4 text-muted-foreground" />
         </button>
@@ -51,6 +56,7 @@ export default function StyledNumberInput({
           type="button"
           onClick={() => handleStep("down")}
           className="w-8 h-5 flex items-center justify-center rounded hover:bg-muted transition-colors"
+          disabled={disabled}
         >
           <ChevronDown className="w-4 h-4 text-muted-foreground" />
         </button>
