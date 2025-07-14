@@ -3,7 +3,7 @@ import Navigation from "./navigation";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(
-    localStorage.getItem("sidebarCollapsed") === "true"
+    localStorage.getItem("sidebarCollapsed") === "true",
   );
 
   useEffect(() => {

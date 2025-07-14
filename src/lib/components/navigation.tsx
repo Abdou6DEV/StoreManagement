@@ -31,18 +31,21 @@ export default function Navigation() {
     <div className="w-full px-4 pt-4">
       {/* Header Container with same border wrapping logo + nav */}
       <div className="flex items-center justify-between rounded-xl border border-border px-6 h-20 bg-card">
-      <Link to="/" className="relative h-20 w-auto flex items-center justify-center">
-        <img
-          src="/logolight.png"
-          alt="Store Logo Light"
-          className="h-20 object-contain dark:hidden"
-        />
-        <img
-          src="/logodark.png"
-          alt="Store Logo Dark"
-          className="h-20 object-contain hidden dark:block"
-        />
-      </Link>
+        <Link
+          to="/"
+          className="relative h-20 w-auto flex items-center justify-center"
+        >
+          <img
+            src="/logolight.png"
+            alt="Store Logo Light"
+            className="h-20 object-contain dark:hidden"
+          />
+          <img
+            src="/logodark.png"
+            alt="Store Logo Dark"
+            className="h-20 object-contain hidden dark:block"
+          />
+        </Link>
         {/* === Dynamic Page Title === */}
         <h1 className="text-3xl font-bold flex items-center gap-3">
           {location.pathname === "/" ? (
@@ -72,7 +75,7 @@ export default function Navigation() {
             })()
           )}
         </h1>
-  
+
         {/* === Settings Dropdown === */}
         <div className="flex items-center gap-4">
           <DropdownMenu onOpenChange={setDropdownOpen}>
@@ -93,7 +96,7 @@ export default function Navigation() {
               <DropdownMenuItem asChild>
                 <ThemeToggleButton variant="ghost" showText={true} />
               </DropdownMenuItem>
-  
+
               <DropdownMenuSeparator />
               <DropdownMenuLabel className="font-semibold text-md">
                 {t("navigation.language")}
@@ -115,5 +118,5 @@ export default function Navigation() {
         </div>
       </div>
     </div>
-  );  
+  );
 }

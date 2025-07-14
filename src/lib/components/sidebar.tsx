@@ -18,14 +18,34 @@ import { cn } from "../utils";
 
 const menuItems = [
   { key: "title", path: "/", icon: Home, color: "text-primary" },
-  { key: "cashier", path: "/cashier", icon: ShoppingCart, color: "text-yellow-500" },
-  { key: "dashboard", path: "/dashboard", icon: ChartLine, color: "text-green-500" },
+  {
+    key: "cashier",
+    path: "/cashier",
+    icon: ShoppingCart,
+    color: "text-yellow-500",
+  },
+  {
+    key: "dashboard",
+    path: "/dashboard",
+    icon: ChartLine,
+    color: "text-green-500",
+  },
   { key: "stock", path: "/stock", icon: PackageSearch, color: "text-blue-500" },
   { key: "history", path: "/history", icon: Search, color: "text-cyan-500" },
-  { key: "finance", path: "/finance", icon: CreditCard, color: "text-emerald-500" },
+  {
+    key: "finance",
+    path: "/finance",
+    icon: CreditCard,
+    color: "text-emerald-500",
+  },
   { key: "clients", path: "/clients", icon: Users, color: "text-red-500" },
   { key: "zakat", path: "/zakat", icon: Calculator, color: "text-green-300" },
-  { key: "administrator", path: "/administrator", icon: AdminIcon, color: "text-orange-500" },
+  {
+    key: "administrator",
+    path: "/administrator",
+    icon: AdminIcon,
+    color: "text-orange-500",
+  },
 ];
 
 export default function Sidebar() {
@@ -52,14 +72,14 @@ export default function Sidebar() {
       data-collapsed={collapsed}
       className={cn(
         "fixed top-0 left-0 z-50 flex flex-col bg-card border-r rounded-xl shadow-md transition-all duration-1000 ease-in-out",
-        collapsed ? "w-14" : "w-[200px]"
+        collapsed ? "w-14" : "w-[200px]",
       )}
       style={{
-        height: "80vh",           // ✅ screen height only
-        position: "fixed",      // ✅ not fixed, scrolls with page
-        overflow: "hidden",        // to hide animation overflow
+        height: "80vh", // ✅ screen height only
+        position: "fixed", // ✅ not fixed, scrolls with page
+        overflow: "hidden", // to hide animation overflow
         top: "130px",
-        flexShrink: 0
+        flexShrink: 0,
       }}
     >
       <div
