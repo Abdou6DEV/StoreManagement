@@ -39,13 +39,9 @@ import {
 import { Button } from "../../../lib/components/ui/button";
 import EditStockForm from "./editStockForm";
 
-export const StockTable = ({
-  handleDeleteProduct,
-}: {
-  handleDeleteProduct: (productId: string) => void;
-}) => {
+export const StockTable = () => {
   const { t } = useTranslation();
-  const { categories, products } = useStock();
+  const { categories, products, refetchProducts } = useStock();
 
   const [filters, setFilters] = useState({
     lowStock: false,
@@ -59,6 +55,17 @@ export const StockTable = ({
 
   const handleChange = (key: keyof typeof filters, value: boolean | string) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const handleDeleteProduct = async (productId: string) => {
+    if (!confirm("Are you sure you want to delete this product?")) return;
+
+    try {
+      await window.api.database.products.delete(productId);
+      refetchProducts();
+    } catch (err) {
+      alert("Failed to delete product.");
+    }
   };
 
   const itemsPerPage = 10;
