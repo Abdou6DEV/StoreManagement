@@ -43,7 +43,7 @@ export default function CashierPage() {
   };
 
   return (
-    <main className="h-screen w-full flex flex-col bg-background text-foreground overflow-hidden">
+    <main className="h-screen w-full flex flex-col bg-background text-foreground overflow-hidden -mt-15">
       {/* === Sticky Header for Total === */}
       <header className="sticky top-0 z-20 bg-background/80 backdrop-blur border-b border-border px-0 pb-4 shadow-sm">
         <div className="max-w-5xl mx-auto flex flex-col items-center gap-0">
@@ -53,7 +53,7 @@ export default function CashierPage() {
       </header>
 
       {/* === Main Content === */}
-      <div className="flex-1 flex flex-col lg:flex-row gap-6 px-2 sm:px-6 lg:px-8 py-6 max-w-5xl mx-auto w-full">
+      <div className="flex-1 flex flex-col lg:flex-row gap-6 px-2 sm:px-6 lg:px-8 py-6">
         {/* === LEFT: Search + Cart === */}
         <section className="w-full lg:w-1/2 flex flex-col gap-4">
           <div className="bg-card border border-border rounded-2xl shadow-lg p-6 flex flex-col gap-6 h-full min-h-[400px]">

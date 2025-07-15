@@ -32,7 +32,7 @@ export default function PaymentSummary({
             <span>Client:</span>
             <span className="truncate">{clientName}</span>
           </div>
-          <div className="border-t border-border my-2" />
+          <div className="border-t border-black dark:border-white my-2" />
         </>
       )}
 
@@ -43,7 +43,7 @@ export default function PaymentSummary({
         <span className="w-1/6 text-right">Unit</span>
         <span className="w-1/6 text-right">Total</span>
       </div>
-      <div className="border-t border-border mb-2" />
+      <div className="border-t border-black dark:border-white mb-2" />
 
       {/* === Scrollable Item List === */}
       <div className="flex-1 overflow-y-auto space-y-[2px]">
@@ -75,14 +75,14 @@ export default function PaymentSummary({
       </div>
 
       {/* === Bottom Fixed Totals Section === */}
-      <div className="pt-3 mt-3 border-t border-border space-y-2">
+      <div className="pt-3 mt-3 border-t border-black dark:border-white space-y-2">
         {discount > 0 && (
           <>
             <div className="flex justify-between text-destructive font-semibold">
               <span className="w-3/4 text-left">Discount</span>
               <span className="w-1/4 text-right">-{discount.toLocaleString()} DA</span>
             </div>
-            <div className="border-t border-border my-1" />
+            <div className="border-t border-black dark:border-white my-1" />
           </>
         )}
 
