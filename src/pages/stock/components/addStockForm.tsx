@@ -44,11 +44,11 @@ export default function AddStockForm({
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [dropdownProductSearch, setDropdownProductSearch] = useState("");
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
+  const [filteredCategories, setFilteredCategories] =
+    useState<string[]>(categories);
   const [dropdownCategorySearch, setDropdownCategorySearch] = useState("");
   const [form, setForm] = useState(initialForm);
   const [loading, setLoading] = useState(false);
-  const [filteredCategories, setFilteredCategories] =
-    useState<string[]>(categories);
 
   const handleAddProduct = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -130,12 +130,10 @@ export default function AddStockForm({
         )}
       </header>
       {openPanel && (
-        <form onSubmit={handleAddProduct} className="p-6 pt-0">
+        <form onSubmit={handleAddProduct} className="p-6 space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">
-                {t("stock.product")}
-              </label>
+            <Legend>
+              <label>{t("stock.product")}</label>
               <div className="flex items-center gap-2">
                 <input
                   type="text"
@@ -219,11 +217,9 @@ export default function AddStockForm({
                   </PopoverContent>
                 </Popover>
               </div>
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">
-                {t("stock.type")}
-              </label>
+            </Legend>
+            <Legend>
+              <label>{t("stock.type")}</label>
               <div className="flex items-center gap-2">
                 <input
                   type="text"
@@ -301,22 +297,17 @@ export default function AddStockForm({
                   </PopoverContent>
                 </Popover>
               </div>
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">
-                {t("stock.quantity")}
-              </label>
+            </Legend>
+            <Legend>
+              <label>{t("stock.quantity")}</label>
               <StyledNumberInput
                 value={form.quantity}
                 onChange={(val) => handleFormChange("quantity", val)}
                 placeholder={t("stock.quantity")}
               />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">
-                {t("stock.bought")}
-              </label>
+            </Legend>
+            <Legend>
+              <label>{t("stock.bought")}</label>
               <StyledNumberInput
                 value={form.bought}
                 onChange={(val) => handleFormChange("bought", val)}
@@ -324,12 +315,9 @@ export default function AddStockForm({
                 step={100}
                 disabled={isExistingProduct}
               />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">
-                {t("stock.selling")}
-              </label>
+            </Legend>
+            <Legend>
+              <label>{t("stock.selling")}</label>
               <StyledNumberInput
                 value={form.selling}
                 onChange={(val) => handleFormChange("selling", val)}
@@ -337,11 +325,9 @@ export default function AddStockForm({
                 step={100}
                 disabled={isExistingProduct}
               />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">
-                {t("stock.codebar")}
-              </label>
+            </Legend>
+            <Legend>
+              <label>{t("stock.codebar")}</label>
               <input
                 type="text"
                 placeholder={t("stock.codebar")}
@@ -350,12 +336,12 @@ export default function AddStockForm({
                 className="w-full px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-green-500/50 focus:border-green-500 transition-all"
                 disabled={isExistingProduct}
               />
-            </div>
+            </Legend>
           </div>
 
           {/* Note for existing product */}
           {isExistingProduct && (
-            <div className="mt-4 text-sm text-blue-600 dark:text-blue-400">
+            <div className="text-sm text-blue-600 dark:text-blue-400">
               {(() => {
                 const existing = products.find(
                   (p) =>
@@ -369,7 +355,9 @@ export default function AddStockForm({
             </div>
           )}
 
-          <div className="pt-6 border-t border-border mt-6">
+          <hr />
+
+          <div>
             <Button
               type="submit"
               disabled={loading}
@@ -391,5 +379,13 @@ export default function AddStockForm({
         </form>
       )}
     </section>
+  );
+}
+
+function Legend({ children }: { children: React.ReactNode }) {
+  return (
+    <legend className="space-y-2 text-sm [&>label]:font-medium">
+      {children}
+    </legend>
   );
 }
