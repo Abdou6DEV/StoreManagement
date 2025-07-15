@@ -51,6 +51,7 @@ export const StockTable = () => {
     category: "", // <-- add category filter
   });
   const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   const [editingProductID, setEditingProductID] = useState<string | null>(null);
 
   const handleChange = (key: keyof typeof filters, value: boolean | string) => {
@@ -68,7 +69,6 @@ export const StockTable = () => {
     }
   };
 
-  const itemsPerPage = 10;
   // Filter products based on search input and category
   const filteredList = products.filter((product) => {
     const search = filters.search.toLowerCase();
@@ -86,7 +86,6 @@ export const StockTable = () => {
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage,
   );
-  const paddingRows = itemsPerPage - paginatedProducts.length;
 
   return (
     <section className="bg-card border border-border rounded-xl shadow-sm p-6 space-y-5">
@@ -100,6 +99,55 @@ export const StockTable = () => {
       {/* Filters Row */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex flex-wrap items-center gap-4">
+          {/* Items per page selector */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">
+              {t("stock.itemsPerPage", "Items per page:")}
+            </span>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="px-3 py-1.5 min-w-[70px]"
+                  aria-label={t(
+                    "stock.selectItemsPerPage",
+                    "Select items per page",
+                  )}
+                >
+                  {itemsPerPage}
+                  <ChevronDown className="ml-2 w-4 h-4" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[120px] p-0 z-50">
+                <Command shouldFilter={false}>
+                  <CommandList>
+                    <CommandGroup>
+                      {[5, 10, 25, 50, 100].map((size) => (
+                        <CommandItem
+                          key={size}
+                          value={size.toString()}
+                          onSelect={() => {
+                            setItemsPerPage(size);
+                            setCurrentPage(1); // Reset to first page
+                          }}
+                        >
+                          {size}
+                          <Check
+                            className={cn(
+                              "ml-auto h-4 w-4",
+                              itemsPerPage === size
+                                ? "opacity-100"
+                                : "opacity-0",
+                            )}
+                          />
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+          </div>
           <input
             type="text"
             placeholder={t("stock.search")}
@@ -315,18 +363,6 @@ export const StockTable = () => {
                 </tr>
               );
             })}
-
-            {/* ✅ Padding rows here — outside the product map */}
-            {Array.from({ length: paddingRows }).map((_, index) => (
-              <tr
-                key={`pad-${index}`}
-                className="h-[48px] hover:bg-transparent transition"
-              >
-                <td className="px-4" colSpan={9}>
-                  &nbsp;
-                </td>
-              </tr>
-            ))}
           </tbody>
         </table>
       </div>

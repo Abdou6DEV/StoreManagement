@@ -73,6 +73,8 @@
     "totalProfit": "Profit Total",
     "allCategories": "Toutes les catégories",
     "filterByCategory": "Filtrer par catégorie",
+    "itemsPerPage": "Éléments par page:",
+    "selectItemsPerPage": "Sélectionner les éléments par page",
     "count": "Affichage {{val, number}} éléments"
   }
 }
