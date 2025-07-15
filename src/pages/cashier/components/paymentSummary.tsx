@@ -3,61 +3,105 @@ import type { CartItem } from "../../cashier";
 
 interface Props {
   cart: CartItem[];
-  paidAmount: number;
-  setPaidAmount: (value: number) => void;
+  clientName?: string;
+  versementAmount?: number;
+  creditAmount?: number;
+  discount?: number;
 }
 
 export default function PaymentSummary({
   cart,
-  paidAmount,
-  setPaidAmount,
+  clientName,
+  versementAmount = 0,
+  creditAmount = 0,
+  discount = 0,
 }: Props) {
-  const total = useMemo(
+  const subtotal = useMemo(
     () => cart.reduce((sum, item) => sum + item.price * item.qty, 0),
-    [cart],
+    [cart]
   );
 
-  const change = paidAmount - total;
+  const total = subtotal - discount;
 
   return (
-    <div className="space-y-4">
-      {/* Receipt Items */}
-      <div className="bg-muted rounded-lg px-4 py-3 font-mono text-sm text-muted-foreground">
-        {cart.map((item) => (
-          <div key={item.id} className="flex justify-between">
-            <span>
-              {item.qty} x {item.name}
-            </span>
-            <span>{(item.qty * item.price).toLocaleString()} DZD</span>
+    <div
+      className="font-mono text-xs text-primary bg-muted rounded-lg p-3 space-y-2
+      h-[calc(100vh-340px)] overflow-y-auto"
+    >
+      {/* === Client Info === */}
+      {clientName && (
+        <>
+          <div className="flex justify-between font-semibold">
+            <span>Client:</span>
+            <span>{clientName}</span>
           </div>
-        ))}
-        <div className="border-t mt-2 pt-2 flex justify-between font-semibold text-foreground">
-          <span>Total:</span>
-          <span>{total.toLocaleString()} DZD</span>
+          <div className="border-t border-border dark:border-white my-1" />
+        </>
+      )}
+
+      {/* === Header Row === */}
+      <div className="flex justify-between font-semibold">
+        <span className="w-1/2">Product</span>
+        <span className="w-1/6 text-right">Qty</span>
+        <span className="w-1/6 text-right">Unit</span>
+        <span className="w-1/6 text-right">Total</span>
+      </div>
+      <div className="border-t border-border dark:border-white" />
+
+      {/* === Items === */}
+      {cart.map((item) => (
+        <div
+          key={item.id}
+          className="flex justify-between border-b border-dashed border-border py-[2px]"
+        >
+          <span className="w-1/2 truncate">{item.name}</span>
+          <span className="w-1/6 text-right">{item.qty}</span>
+          <span className="w-1/6 text-right">{item.price.toLocaleString()}</span>
+          <span className="w-1/6 text-right">
+            {(item.qty * item.price).toLocaleString()}
+          </span>
         </div>
+      ))}
+
+      <div className="border-t border-border dark:border-white my-1" />
+
+      {/* === Totals Section === */}
+      <div className="flex justify-between">
+        <span className="w-3/4 text-left">Subtotal</span>
+        <span className="w-1/4 text-right">{subtotal.toLocaleString()} DA</span>
       </div>
 
-      {/* Paid Input */}
-      <div className="flex items-center justify-between gap-4">
-        <label className="text-sm text-muted-foreground">Paid</label>
-        <input
-          type="number"
-          value={paidAmount}
-          onChange={(e) => setPaidAmount(parseInt(e.target.value || "0"))}
-          className="w-32 px-3 py-2 text-lg text-right bg-background border border-border rounded-md focus:ring-2 focus:ring-primary focus:outline-none transition"
-        />
+      {discount > 0 && (
+        <div className="flex justify-between">
+          <span className="w-3/4 text-left">Discount</span>
+          <span className="w-1/4 text-right">-{discount.toLocaleString()} DA</span>
+        </div>
+      )}
+
+      <div className="border-t border-border dark:border-white my-1" />
+
+      <div className="flex justify-between font-bold text-sm">
+        <span className="w-3/4 text-left">Total</span>
+        <span className="w-1/4 text-right">{total.toLocaleString()} DA</span>
       </div>
 
-      {/* Change Due */}
-      <div
-        className={`text-center text-2xl font-bold py-2 rounded-md transition
-        ${change >= 0 ? "text-green-500" : "text-destructive"}
-      `}
-      >
-        {change >= 0
-          ? `Change: ${change.toLocaleString()} DZD`
-          : `Remaining: ${Math.abs(change).toLocaleString()} DZD`}
-      </div>
+      {versementAmount > 0 && (
+        <div className="flex justify-between">
+          <span className="w-3/4 text-left">Versement</span>
+          <span className="w-1/4 text-right">
+            {versementAmount.toLocaleString()} DA
+          </span>
+        </div>
+      )}
+
+      {creditAmount > 0 && (
+        <div className="flex justify-between">
+          <span className="w-3/4 text-left">Credit</span>
+          <span className="w-1/4 text-right">
+            {creditAmount.toLocaleString()} DA
+          </span>
+        </div>
+      )}
     </div>
   );
 }

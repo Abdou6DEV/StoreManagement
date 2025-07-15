@@ -27,6 +27,51 @@ export default function Navigation() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const { t, i18n } = useTranslation();
 
+  const isCashierPage = location.pathname.startsWith("/cashier");
+
+  if (isCashierPage) {
+    return (
+      <div className="fixed top-4 right-4 z-50">
+        <DropdownMenu onOpenChange={setDropdownOpen}>
+          <DropdownMenuTrigger asChild>
+            <button className="rounded-xl outline-none ring-0 hover:text-red-400 transition-all duration-300 p-1">
+              <Settings
+                className={`transition-transform duration-400 ${
+                  dropdownOpen ? "rotate-360 scale-110" : ""
+                } hover:text-red-400`}
+              />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="mx-4 my-2 w-56">
+            <DropdownMenuLabel className="font-semibold text-md">
+              Preferences
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem asChild>
+              <ThemeToggleButton variant="ghost" showText={true} />
+            </DropdownMenuItem>
+
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel className="font-semibold text-md">
+              {t("navigation.language")}
+            </DropdownMenuLabel>
+            <DropdownMenuItem
+              onClick={() => i18n.changeLanguage("en")}
+              disabled={i18n.language === "en"}
+            >
+              <span className="mr-2">🇬🇧</span> English
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => i18n.changeLanguage("fr")}
+              disabled={i18n.language === "fr"}
+            >
+              <span className="mr-2">🇫🇷</span> Français
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    );
+  }
   return (
     <div className="w-full px-4 pt-4">
       {/* Header Container with same border wrapping logo + nav */}

@@ -19,7 +19,7 @@ export default function CashierPage() {
 
   const total = useMemo(
     () => cart.reduce((sum, item) => sum + item.qty * item.price, 0),
-    [cart],
+    [cart]
   );
 
   const handleAddProduct = (product: Product) => {
@@ -27,12 +27,12 @@ export default function CashierPage() {
       const exists = prev.find((item) => item.id === product.id);
       if (exists) {
         return prev.map((item) =>
-          item.id === product.id ? { ...item, qty: item.qty + 1 } : item,
+          item.id === product.id ? { ...item, qty: item.qty + 1 } : item
         );
       }
       return [
         ...prev,
-        { id: product.id, name: product.name, price: product.selling, qty: 1 },
+        { id: product.id, name: product.name, price: product.selling, qty: 1 }
       ];
     });
   };
@@ -43,38 +43,40 @@ export default function CashierPage() {
   };
 
   return (
-    <div className="flex flex-col gap-6 p-6 bg-background text-foreground">
-      {/* === Big Glowing Total === */}
-      <div className="text-center text-6xl font-extrabold tracking-tight text-primary drop-shadow-md animate-fade-in">
-        {total.toLocaleString()} DZD
+    <main className="min-h-screen -mt-19 px-4 sm:px-6 lg:px-8 py-6 bg-background text-foreground">
+      {/* === BIG TOTAL DISPLAY === */}
+      <div className="my-6 select-none">
+        <hr className="border-t border-border mb-4" />
+        <div className="text-center text-5xl sm:text-6xl font-bold tracking-tight text-primary">
+          {total.toLocaleString()} DA
+        </div>
+        <hr className="border-t border-border mt-4" />
       </div>
 
-      {/* === Main Grid === */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* LEFT: Search + Cart */}
-        <div className="col-span-2 space-y-4">
-          <div className="p-4 rounded-lg border border-border bg-card shadow-sm">
+      {/* === FLEX LAYOUT: 50/50 Cart vs Summary+Actions === */}
+      <div className="flex flex-col lg:flex-row gap-6 mt-6">
+        {/* === LEFT SIDE: Product Search + Cart === */}
+        <section className="w-full lg:w-1/2">
+          <div className="rounded-lg border border-border bg-card p-4 space-y-4">
             <ProductSearch onAdd={handleAddProduct} />
-          </div>
-          <div className="rounded-lg border border-border bg-card shadow-sm overflow-hidden">
             <CartTable cart={cart} setCart={setCart} />
           </div>
-        </div>
+        </section>
 
-        {/* RIGHT: Payment Summary + Buttons */}
-        <div className="flex flex-col gap-4">
-          <div className="p-4 rounded-lg border border-border bg-card shadow-sm">
-            <PaymentSummary
-              cart={cart}
-              paidAmount={paidAmount}
-              setPaidAmount={setPaidAmount}
-            />
-          </div>
-          <div className="p-4 rounded-lg border border-border bg-card shadow-sm">
+        {/* === RIGHT SIDE: Summary + Action Buttons in one box === */}
+        <section className="w-full lg:w-1/2">
+          <div className="rounded-lg border border-border bg-card p-4 space-y-6">
+          <PaymentSummary
+            cart={cart}
+            clientName="Abdallah"
+            creditAmount={15000}
+            versementAmount={20000}
+            discount={0}
+          />
             <ActionButtons onClear={handleClear} />
           </div>
-        </div>
+        </section>
       </div>
-    </div>
+    </main>
   );
 }
