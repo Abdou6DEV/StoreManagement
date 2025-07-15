@@ -43,7 +43,7 @@ export default function CashierPage() {
   };
 
   return (
-    <main className="h-screen w-full flex flex-col bg-background text-foreground overflow-hidden -mt-15">
+    <main className="h-screen w-full flex flex-col bg-background text-foreground overflow-hidden -mt-13">
       {/* === Sticky Header for Total === */}
       <header className="sticky top-0 z-20 bg-background/80 backdrop-blur border-b border-border px-0 pb-4 shadow-sm">
         <div className="max-w-5xl mx-auto flex flex-col items-center gap-0">
