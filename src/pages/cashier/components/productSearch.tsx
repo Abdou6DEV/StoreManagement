@@ -85,7 +85,7 @@ export default function ProductSearch({ onAdd }: Props) {
 
   return (
     <div className="relative space-y-2" ref={dropdownRef}>
-      <label className="block text-sm font-medium text-muted-foreground">
+      <label className="block text-sm font-semibold text-muted-foreground mb-1">
         Search product (by name or barcode)
       </label>
       <Input
@@ -95,27 +95,26 @@ export default function ProductSearch({ onAdd }: Props) {
         onChange={(e) => setSearch(e.target.value)}
         onKeyDown={handleKeyDown}
         placeholder="Type name or scan barcode..."
-        className="text-lg px-4 py-2"
+        className="text-lg px-5 py-3 rounded-xl border-none shadow focus:ring-2 focus:ring-primary/40 bg-background"
       />
 
       {showSuggestions && suggestions.length > 0 && (
-        <div className="absolute z-20 mt-1 w-full rounded-lg border border-border bg-card shadow-xl animate-fade-in overflow-hidden">
+        <div className="absolute z-20 mt-2 w-full rounded-xl border border-border bg-card shadow-2xl animate-fade-in overflow-hidden">
           {suggestions.map((product) => (
             <button
               key={product.id}
               onClick={() => handleSelect(product)}
-              className="w-full px-4 py-2 text-left hover:bg-muted transition-all text-sm border-b border-muted last:border-none"
+              className="w-full px-5 py-3 text-left hover:bg-muted/80 transition-all text-base border-b border-muted last:border-none focus:outline-none focus:bg-primary/10"
             >
               {/* Top line: name with emoji */}
-              <div className="font-medium text-foreground">
+              <div className="font-semibold text-foreground truncate">
                 {product.name}
               </div>
 
               {/* Bottom line: type • price — quantity */}
-              <div className="text-xs text-muted-foreground flex justify-between">
+              <div className="text-xs text-muted-foreground flex justify-between mt-1">
                 <span>
-                  {product.categoryName} • price:{" "}
-                  {product.selling.toLocaleString()} DA
+                  {product.categoryName} • price: {product.selling.toLocaleString()} DA
                 </span>
                 <span>{product.quantity} in stock</span>
               </div>

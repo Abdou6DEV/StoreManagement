@@ -24,26 +24,26 @@ export default function PaymentSummary({
   const total = subtotal - discount;
 
   return (
-    <div className="font-mono text-xs text-primary bg-muted rounded-lg p-3 flex flex-col h-[calc(100vh-340px)]">
+    <div className="font-mono text-sm text-primary bg-muted rounded-xl p-4 flex flex-col h-[calc(100vh-340px)] shadow-inner border border-border">
       {/* === Client Info === */}
       {clientName && (
         <>
-          <div className="flex justify-between font-semibold">
+          <div className="flex justify-between font-semibold text-base mb-1">
             <span>Client:</span>
-            <span>{clientName}</span>
+            <span className="truncate">{clientName}</span>
           </div>
-          <div className="border-t border-border dark:border-white my-1" />
+          <div className="border-t border-border my-2" />
         </>
       )}
 
       {/* === Header Row === */}
-      <div className="flex justify-between font-semibold">
+      <div className="flex justify-between font-semibold text-xs uppercase tracking-wider mb-1">
         <span className="w-1/2">Product</span>
         <span className="w-1/6 text-right">Qty</span>
         <span className="w-1/6 text-right">Unit</span>
         <span className="w-1/6 text-right">Total</span>
       </div>
-      <div className="border-t border-border dark:border-white mb-1" />
+      <div className="border-t border-border mb-2" />
 
       {/* === Scrollable Item List === */}
       <div className="flex-1 overflow-y-auto space-y-[2px]">
@@ -51,14 +51,12 @@ export default function PaymentSummary({
           cart.map((item) => (
             <div
               key={item.id}
-              className="flex justify-between border-b border-dashed border-border py-[2px]"
+              className="flex justify-between border-b border-dashed border-border py-[2px] hover:bg-accent/40 rounded transition"
             >
-              <span className="w-1/2 truncate">{item.name}</span>
+              <span className="w-1/2 truncate font-medium">{item.name}</span>
               <span className="w-1/6 text-right">{item.qty}</span>
               <span className="w-1/6 text-right">{item.price.toLocaleString()}</span>
-              <span className="w-1/6 text-right">
-                {(item.qty * item.price).toLocaleString()}
-              </span>
+              <span className="w-1/6 text-right">{(item.qty * item.price).toLocaleString()}</span>
             </div>
           ))
         ) : (
@@ -77,10 +75,10 @@ export default function PaymentSummary({
       </div>
 
       {/* === Bottom Fixed Totals Section === */}
-      <div className="pt-2 mt-2 border-t border-border dark:border-white space-y-1">
+      <div className="pt-3 mt-3 border-t border-border space-y-2">
         {discount > 0 && (
           <>
-            <div className="flex justify-between">
+            <div className="flex justify-between text-destructive font-semibold">
               <span className="w-3/4 text-left">Discount</span>
               <span className="w-1/4 text-right">-{discount.toLocaleString()} DA</span>
             </div>
@@ -88,13 +86,13 @@ export default function PaymentSummary({
           </>
         )}
 
-        <div className="flex justify-between font-bold text-sm">
+        <div className="flex justify-between font-extrabold text-lg text-primary">
           <span className="w-3/4 text-left">Total</span>
           <span className="w-1/4 text-right">{total.toLocaleString()} DA</span>
         </div>
 
         {versementAmount > 0 && (
-          <div className="flex justify-between">
+          <div className="flex justify-between text-success font-semibold">
             <span className="w-3/4 text-left">Versement</span>
             <span className="w-1/4 text-right">
               {versementAmount.toLocaleString()} DA
@@ -103,7 +101,7 @@ export default function PaymentSummary({
         )}
 
         {creditAmount > 0 && (
-          <div className="flex justify-between">
+          <div className="flex justify-between text-warning font-semibold">
             <span className="w-3/4 text-left">Credit</span>
             <span className="w-1/4 text-right">
               {creditAmount.toLocaleString()} DA
