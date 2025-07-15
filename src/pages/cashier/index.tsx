@@ -43,7 +43,7 @@ export default function CashierPage() {
   };
 
   return (
-    <main className="h-screen w-full flex flex-col bg-background text-foreground overflow-hidden -mt-30 p-0">
+    <main className="h-screen w-full flex flex-col bg-background text-foreground overflow-hidden -mt-16 p-0">
 
       {/* === TOP TOTAL (FIXED) === */}
       <div className="flex-shrink-0 px-6 pt-0 pb-2">
