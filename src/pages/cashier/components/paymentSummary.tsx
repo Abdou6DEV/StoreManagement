@@ -21,10 +21,12 @@ export default function PaymentSummary({
     [cart]
   );
 
-  const total = subtotal - discount;
+  const total = subtotal; // Before discount
+  const paymentAmount = subtotal - discount;
+  const nbrItems = cart.reduce((sum, item) => sum + item.qty, 0);
 
   return (
-    <div className="font-mono text-sm text-primary bg-muted rounded-xl p-4 flex flex-col h-[calc(100vh-340px)] shadow-inner border border-border">
+    <div className="font-mono text-sm text-primary bg-muted rounded-xl p-4 flex flex-col h-full shadow-inner border border-border">
       {/* === Client Info === */}
       {clientName && (
         <>
@@ -45,7 +47,7 @@ export default function PaymentSummary({
       </div>
       <div className="border-t border-black dark:border-white mb-2" />
 
-      {/* === Scrollable Item List === */}
+      {/* === Scrollable Items === */}
       <div className="flex-1 overflow-y-auto space-y-[2px]">
         {cart.length > 0 ? (
           cart.map((item) => (
@@ -56,7 +58,9 @@ export default function PaymentSummary({
               <span className="w-1/2 truncate font-medium">{item.name}</span>
               <span className="w-1/6 text-right">{item.qty}</span>
               <span className="w-1/6 text-right">{item.price.toLocaleString()}</span>
-              <span className="w-1/6 text-right">{(item.qty * item.price).toLocaleString()}</span>
+              <span className="w-1/6 text-right">
+                {(item.qty * item.price).toLocaleString()}
+              </span>
             </div>
           ))
         ) : (
@@ -74,40 +78,27 @@ export default function PaymentSummary({
         )}
       </div>
 
-      {/* === Bottom Fixed Totals Section === */}
-      <div className="pt-3 mt-3 border-t border-black dark:border-white space-y-2">
-        {discount > 0 && (
-          <>
-            <div className="flex justify-between text-destructive font-semibold">
-              <span className="w-3/4 text-left">Discount</span>
-              <span className="w-1/4 text-right">-{discount.toLocaleString()} DA</span>
-            </div>
-            <div className="border-t border-black dark:border-white my-1" />
-          </>
-        )}
+      {/* === Bottom Summary Section === */}
+      <div className="pt-3 mt-3 border-t border-black dark:border-white space-y-1">
+        <div className="flex justify-between">
+          <span className="w-3/4 text-left">Nbr Items</span>
+          <span className="w-1/4 text-right">{nbrItems}</span>
+        </div>
 
-        <div className="flex justify-between font-extrabold text-lg text-primary">
+        <div className="flex justify-between">
           <span className="w-3/4 text-left">Total</span>
           <span className="w-1/4 text-right">{total.toLocaleString()} DA</span>
         </div>
 
-        {versementAmount > 0 && (
-          <div className="flex justify-between text-success font-semibold">
-            <span className="w-3/4 text-left">Versement</span>
-            <span className="w-1/4 text-right">
-              {versementAmount.toLocaleString()} DA
-            </span>
-          </div>
-        )}
+        <div className="flex justify-between">
+          <span className="w-3/4 text-left">Discount</span>
+          <span className="w-1/4 text-right">-{discount.toLocaleString()} DA</span>
+        </div>
 
-        {creditAmount > 0 && (
-          <div className="flex justify-between text-warning font-semibold">
-            <span className="w-3/4 text-left">Credit</span>
-            <span className="w-1/4 text-right">
-              {creditAmount.toLocaleString()} DA
-            </span>
-          </div>
-        )}
+        <div className="flex justify-between font-bold">
+          <span className="w-3/4 text-left">Payment Amount</span>
+          <span className="w-1/4 text-right">{paymentAmount.toLocaleString()} DA</span>
+        </div>
       </div>
     </div>
   );
