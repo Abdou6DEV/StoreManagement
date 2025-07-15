@@ -72,6 +72,7 @@
     "totalBought": "Total Achat",
     "totalProfit": "Profit Total",
     "allCategories": "Toutes les catégories",
-    "filterByCategory": "Filtrer par catégorie"
+    "filterByCategory": "Filtrer par catégorie",
+    "count": "Affichage {{val, number}} éléments"
   }
 }

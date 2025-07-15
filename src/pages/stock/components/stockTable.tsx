@@ -91,8 +91,9 @@ export const StockTable = () => {
   return (
     <section className="bg-card border border-border rounded-xl shadow-sm p-6 space-y-5">
       <div className="flex items-center justify-between border-b border-border pb-3">
-        <h2 className="text-lg font-bold text-foreground">
-          {t("stock.tableTitle", "Stock List")}
+        <h2 className="flex justify-between text-lg font-bold text-foreground flex-1">
+          <span>{t("stock.tableTitle", "Stock List")}</span>
+          <span>{t("stock.count", { val: filteredList.length })}</span>
         </h2>
       </div>
 

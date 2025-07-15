@@ -72,6 +72,7 @@
     "totalBought": "Total Bought",
     "totalProfit": "Total Profit",
     "allCategories": "All Categories",
-    "filterByCategory": "Filter by category"
+    "filterByCategory": "Filter by category",
+    "count": "Showing {{val, number}} Items"
   }
 }
