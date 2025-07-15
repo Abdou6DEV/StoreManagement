@@ -8,11 +8,11 @@ interface Props {
 }
 
 export default function CartTable({ cart, setCart }: Props) {
-  const tableRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (tableRef.current) {
-      tableRef.current.scrollTop = tableRef.current.scrollHeight;
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [cart]);
 
@@ -30,12 +30,10 @@ export default function CartTable({ cart, setCart }: Props) {
   };
 
   return (
-    <div
-      className="max-h-[400px] rounded-md"
-      ref={tableRef}
-    >
-      <table className="w-full text-left text-sm">
-        <thead className="sticky top-0 bg-muted text-muted-foreground font-medium text-xs uppercase">
+    <div className="rounded-md border border-border overflow-hidden h-[calc(100vh-290px)] flex flex-col">
+      {/* Table Header */}
+      <table className="w-full text-sm text-left">
+        <thead className="bg-muted text-muted-foreground font-medium text-xs uppercase sticky top-0 z-10">
           <tr className="border-b border-border">
             <th className="p-2">Name</th>
             <th className="p-2 text-right">Qty</th>
@@ -44,54 +42,56 @@ export default function CartTable({ cart, setCart }: Props) {
             <th className="p-2 text-right">Actions</th>
           </tr>
         </thead>
-        <tbody className="bg-card text-foreground">
-          {cart.map((item, index) => (
-            <tr
-              key={item.id}
-              className="border-b border-muted transition-colors hover:bg-accent"
-            >
-              <td className="p-2">{item.name}</td>
-
-              <td className="p-2 text-right">{item.qty}</td>
-
-              <td className="p-2 text-right">
-                {item.price.toLocaleString()} DZD
-              </td>
-
-              <td className="p-2 text-right">
-                {(item.price * item.qty).toLocaleString()} DZD
-              </td>
-
-              <td className="p-2 text-right space-x-1">
-                <button
-                  onClick={() => updateQty(index, item.qty + 1)}
-                  className="px-1 py-0 rounded bg-muted hover:bg-primary hover:text-primary-foreground transition text-xl font-semibold"
-                >
-                  +
-                </button>
-                <button
-                  onClick={() => updateQty(index, item.qty - 1)}
-                  className="px-1 py-0 rounded bg-muted hover:bg-primary hover:text-primary-foreground transition text-xl font-semibold"
-                >
-                  −
-                </button>
-                <button
-                  onClick={() => removeItem(index)}
-                  className="text-red-500 hover:text-red-700 transition align-middle"
-                >
-                  <Trash2 className="w-5 h-5 inline" />
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
       </table>
 
-      {cart.length === 0 && (
-        <div className="p-4 text-muted-foreground text-center">
-          Cart is empty
-        </div>
-      )}
+      {/* Scrollable body */}
+      <div ref={scrollRef} className="overflow-y-auto flex-1">
+        <table className="w-full text-sm text-left">
+          <tbody className="bg-card text-foreground">
+            {cart.map((item, index) => (
+              <tr
+                key={item.id}
+                className="border-b border-muted transition-colors hover:bg-accent"
+              >
+                <td className="p-2">{item.name}</td>
+                <td className="p-2 text-right">{item.qty}</td>
+                <td className="p-2 text-right">
+                  {item.price.toLocaleString()} DZD
+                </td>
+                <td className="p-2 text-right">
+                  {(item.price * item.qty).toLocaleString()} DZD
+                </td>
+                <td className="p-2 text-right space-x-1">
+                  <button
+                    onClick={() => updateQty(index, item.qty + 1)}
+                    className="px-1 py-0 rounded bg-muted hover:bg-primary hover:text-primary-foreground transition text-xl font-semibold"
+                  >
+                    +
+                  </button>
+                  <button
+                    onClick={() => updateQty(index, item.qty - 1)}
+                    className="px-1 py-0 rounded bg-muted hover:bg-primary hover:text-primary-foreground transition text-xl font-semibold"
+                  >
+                    −
+                  </button>
+                  <button
+                    onClick={() => removeItem(index)}
+                    className="text-red-500 hover:text-red-700 transition align-middle"
+                  >
+                    <Trash2 className="w-5 h-5 inline" />
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        {cart.length === 0 && (
+          <div className="p-4 text-muted-foreground text-center">
+            Cart is empty
+          </div>
+        )}
+      </div>
     </div>
   );
 }
