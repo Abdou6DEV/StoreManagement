@@ -331,29 +331,31 @@ export const StockTable = () => {
       </div>
 
       {/* Pagination */}
-      <div className="flex items-center justify-center gap-6 pt-4">
-        <button
-          disabled={currentPage === 1 || products.length === 0}
-          onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-          className="text-sm px-4 py-2 border-1 rounded-md hover:bg-muted transition disabled:opacity-50 disabled:bg-card"
-        >
-          {t("stock.prev", "Previous")}
-        </button>
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-6 pt-4">
+          <button
+            disabled={currentPage === 1 || products.length === 0}
+            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+            className="text-sm px-4 py-2 border-1 rounded-md hover:bg-muted transition disabled:opacity-50 disabled:bg-card"
+          >
+            {t("stock.prev", "Previous")}
+          </button>
 
-        <span className="text-sm text-muted-foreground">
-          {t("stock.page")} {currentPage} / {totalPages}
-        </span>
+          <span className="text-sm text-muted-foreground">
+            {t("stock.page")} {currentPage} / {totalPages}
+          </span>
 
-        <button
-          disabled={currentPage === totalPages || products.length === 0}
-          onClick={() =>
-            setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-          }
-          className="text-sm px-4 py-2 border-1 rounded-md hover:bg-muted transition disabled:opacity-50 disabled:bg-card"
-        >
-          {t("stock.next", "Next")}
-        </button>
-      </div>
+          <button
+            disabled={currentPage === totalPages || products.length === 0}
+            onClick={() =>
+              setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+            }
+            className="text-sm px-4 py-2 border-1 rounded-md hover:bg-muted transition disabled:opacity-50 disabled:bg-card"
+          >
+            {t("stock.next", "Next")}
+          </button>
+        </div>
+      )}
 
       {/* Edit Product Dialog */}
       <Dialog modal open={!!editingProductID}>
@@ -368,7 +370,11 @@ export const StockTable = () => {
                   <h2 className="text-xl font-bold text-foreground">
                     {t("stock.editTitle", "Edit Product")}
                   </h2>
-                  <p className="text-sm text-muted-foreground">Editing</p>
+                  <p className="text-sm text-muted-foreground">
+                    Editing{" "}
+                    {products.find((product) => product.id === editingProductID)
+                      ?.name || "Unknown"}
+                  </p>
                 </div>
               </div>
             </DialogTitle>
