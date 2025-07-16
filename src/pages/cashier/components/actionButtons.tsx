@@ -12,10 +12,10 @@ export default function ActionButtons({ onClear, onFinish }: Props) {
       <button
         onClick={onFinish}
         className="flex-1 flex items-center justify-center gap-2 py-4 rounded-lg bg-primary text-primary-foreground font-bold text-lg tracking-wide shadow-md hover:bg-primary/90 transition focus:outline-none focus:ring-2 focus:ring-primary/50"
-        aria-label="Finish Sale"
+        aria-label="Confirm Sale"
       >
         <CheckCircle className="w-6 h-6" />
-        <span>Finish Sale</span>
+        <span>Confirm Sale</span>
       </button>
 
       <button
