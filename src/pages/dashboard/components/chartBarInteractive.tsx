@@ -267,26 +267,58 @@ const CustomTooltip = ({
             : "bg-white border border-gray-200 rounded-lg shadow-lg p-3 min-w-[160px]"
         }
       >
-        <div className={isDark ? "border-b border-gray-800 pb-2" : "border-b border-gray-100 pb-2"}>
-            <p className={isDark ? "text-sm font-medium text-gray-100" : "text-sm font-medium text-gray-900"}>{label}</p>
+        <div
+          className={
+            isDark
+              ? "border-b border-gray-800 pb-2"
+              : "border-b border-gray-100 pb-2"
+          }
+        >
+          <p
+            className={
+              isDark
+                ? "text-sm font-medium text-gray-100"
+                : "text-sm font-medium text-gray-900"
+            }
+          >
+            {label}
+          </p>
+        </div>
+        <div className="space-y-1">
+          <div className="flex justify-between items-center">
+            <span
+              className={
+                isDark ? "text-xs text-gray-400" : "text-xs text-gray-500"
+              }
+            >
+              Value:
+            </span>
+            <span
+              className={
+                isDark
+                  ? "text-sm font-semibold text-gray-100"
+                  : "text-sm font-semibold text-gray-900"
+              }
+            >
+              {currentChart.format(value)}
+            </span>
           </div>
-          <div className="space-y-1">
-            <div className="flex justify-between items-center">
-              <span className={isDark ? "text-xs text-gray-400" : "text-xs text-gray-500"}>Value:</span>
-              <span className={isDark ? "text-sm font-semibold text-gray-100" : "text-sm font-semibold text-gray-900"}>
-                {currentChart.format(value)}
-              </span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className={isDark ? "text-xs text-gray-400" : "text-xs text-gray-500"}>{comparison}:</span>
-              <span
-                className={`text-sm font-semibold ${isPositive ? "text-green-500" : "text-red-500"}`}
-              >
-                {rate}%
-              </span>
-            </div>
+          <div className="flex justify-between items-center">
+            <span
+              className={
+                isDark ? "text-xs text-gray-400" : "text-xs text-gray-500"
+              }
+            >
+              {comparison}:
+            </span>
+            <span
+              className={`text-sm font-semibold ${isPositive ? "text-green-500" : "text-red-500"}`}
+            >
+              {rate}%
+            </span>
           </div>
         </div>
+      </div>
     );
   }
   return null;
@@ -320,7 +352,9 @@ export function ChartBarInteractive() {
   const controlBg = isDark ? "bg-[#232326]" : "bg-white";
   const controlBorder = isDark ? "border-gray-700" : "border-gray-300";
   const controlText = isDark ? "text-gray-100" : "text-gray-900";
-  const controlInactive = isDark ? "text-gray-400 hover:text-gray-200" : "text-gray-500 hover:text-gray-700";
+  const controlInactive = isDark
+    ? "text-gray-400 hover:text-gray-200"
+    : "text-gray-500 hover:text-gray-700";
   const toggleBg = isDark ? "bg-[#232326]" : "bg-gray-50";
 
   return (
@@ -328,8 +362,12 @@ export function ChartBarInteractive() {
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
         <div>
-          <h3 className={`text-xl font-semibold ${controlText}`}>{currentChart.title}</h3>
-          <p className={`text-sm mt-1 ${isDark ? "text-gray-400" : "text-gray-500"}`}>
+          <h3 className={`text-xl font-semibold ${controlText}`}>
+            {currentChart.title}
+          </h3>
+          <p
+            className={`text-sm mt-1 ${isDark ? "text-gray-400" : "text-gray-500"}`}
+          >
             {currentChart.description} - {currentPeriod.description}
           </p>
         </div>
@@ -350,7 +388,9 @@ export function ChartBarInteractive() {
           </select>
 
           {/* Time Period Toggle Buttons */}
-          <div className={`flex rounded-lg border ${controlBorder} ${toggleBg} p-1`}>
+          <div
+            className={`flex rounded-lg border ${controlBorder} ${toggleBg} p-1`}
+          >
             {Object.entries(timePeriods).map(([key, period]) => (
               <button
                 key={key}
@@ -430,7 +470,9 @@ export function ChartBarInteractive() {
                   isDark={isDark}
                 />
               }
-              cursor={{ fill: isDark ? "rgba(59,130,246,0.15)" : "rgba(59,130,246,0.1)" }}
+              cursor={{
+                fill: isDark ? "rgba(59,130,246,0.15)" : "rgba(59,130,246,0.1)",
+              }}
               position={{ x: undefined, y: undefined }}
             />
 

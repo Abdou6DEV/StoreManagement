@@ -58,7 +58,7 @@ export default function ProductSearch({ onAdd }: Props) {
     // Name-based suggestions
     if (trimmed.length > 0) {
       const filtered = allProducts.filter((p) =>
-        p.name.toLowerCase().includes(trimmed.toLowerCase())
+        p.name.toLowerCase().includes(trimmed.toLowerCase()),
       );
       setSuggestions(filtered.slice(0, 5));
       setShowSuggestions(true);
@@ -114,7 +114,8 @@ export default function ProductSearch({ onAdd }: Props) {
               {/* Bottom line: type • price — quantity */}
               <div className="text-xs text-muted-foreground flex justify-between mt-1">
                 <span>
-                  {product.categoryName} • price: {product.selling.toLocaleString()} DA
+                  {product.categoryName} • price:{" "}
+                  {product.selling.toLocaleString()} DA
                 </span>
                 <span>{product.quantity} in stock</span>
               </div>

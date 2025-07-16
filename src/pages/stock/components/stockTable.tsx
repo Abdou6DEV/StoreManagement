@@ -11,7 +11,7 @@ import {
   TrendingDown,
 } from "lucide-react";
 
-import { useState } from "react";
+import React, { useState } from "react";
 
 import { cn } from "../../../lib/utils";
 import {
@@ -86,6 +86,56 @@ export const StockTable = () => {
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage,
   );
+
+  const StockRow = React.memo(function StockRow({
+    product,
+    setEditingProductID,
+    handleDeleteProduct,
+    t,
+  }: {
+    product: Product;
+    setEditingProductID: (id: string) => void;
+    handleDeleteProduct: (id: string) => void;
+    t: any;
+  }) {
+    const profit = product.selling - product.bought;
+    const totalBought = product.bought * product.quantity;
+    const totalProfit = profit * product.quantity;
+    return (
+      <tr key={product.id} className="h-[48px] hover:bg-muted/40 transition">
+        <td className="px-4">{product.name}</td>
+        <td className="px-4">{product.categoryName}</td>
+        <td className="px-4">{product.quantity}</td>
+        <td className="px-4">{product.bought}</td>
+        <td className="px-4">{product.selling}</td>
+        <td className="px-4 text-green-700">{profit}</td>
+        <td className="px-4">{totalBought}</td>
+        <td className="px-4 text-green-700 font-medium">{totalProfit}</td>
+        <td className="px-4">
+          <div className="flex gap-2">
+            <Button
+              onClick={() => setEditingProductID(product.id)}
+              size="sm"
+              variant="outline"
+              className="text-blue-600 border-blue-200 hover:bg-blue-50 dark:text-blue-400 dark:border-blue-800 dark:hover:bg-blue-950/30"
+            >
+              <Edit className="w-3 h-3" />
+              {t("stock.edit", "Edit")}
+            </Button>
+            <Button
+              onClick={() => handleDeleteProduct(product.id)}
+              size="sm"
+              variant="outline"
+              className="text-red-600 border-red-200 hover:bg-red-50 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-950/30"
+            >
+              <X className="w-3 h-3" />
+              {t("stock.delete", "Delete")}
+            </Button>
+          </div>
+        </td>
+      </tr>
+    );
+  });
 
   return (
     <section className="bg-card border border-border rounded-xl shadow-sm p-6 space-y-5">
@@ -318,51 +368,15 @@ export const StockTable = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {paginatedProducts.map((product) => {
-              const profit = product.selling - product.bought;
-              const totalBought = product.bought * product.quantity;
-              const totalProfit = profit * product.quantity;
-
-              return (
-                <tr
-                  key={product.id}
-                  className="h-[48px] hover:bg-muted/40 transition"
-                >
-                  <td className="px-4">{product.name}</td>
-                  <td className="px-4">{product.categoryName}</td>
-                  <td className="px-4">{product.quantity}</td>
-                  <td className="px-4">{product.bought}</td>
-                  <td className="px-4">{product.selling}</td>
-                  <td className="px-4 text-green-700">{profit}</td>
-                  <td className="px-4">{totalBought}</td>
-                  <td className="px-4 text-green-700 font-medium">
-                    {totalProfit}
-                  </td>
-                  <td className="px-4">
-                    <div className="flex gap-2">
-                      <Button
-                        onClick={() => setEditingProductID(product.id)}
-                        size="sm"
-                        variant="outline"
-                        className="text-blue-600 border-blue-200 hover:bg-blue-50 dark:text-blue-400 dark:border-blue-800 dark:hover:bg-blue-950/30"
-                      >
-                        <Edit className="w-3 h-3" />
-                        {t("stock.edit", "Edit")}
-                      </Button>
-                      <Button
-                        onClick={() => handleDeleteProduct(product.id)}
-                        size="sm"
-                        variant="outline"
-                        className="text-red-600 border-red-200 hover:bg-red-50 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-950/30"
-                      >
-                        <X className="w-3 h-3" />
-                        {t("stock.delete", "Delete")}
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
+            {paginatedProducts.map((product) => (
+              <StockRow
+                key={product.id}
+                product={product}
+                setEditingProductID={setEditingProductID}
+                handleDeleteProduct={handleDeleteProduct}
+                t={t}
+              />
+            ))}
           </tbody>
         </table>
       </div>

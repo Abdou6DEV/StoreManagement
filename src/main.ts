@@ -26,6 +26,7 @@ const createWindow = async () => {
     fullscreenable: true,
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
+      contextIsolation: true,
     },
   });
 

@@ -11,19 +11,19 @@ export default function CategorySummaryTable() {
     const totalQuantity = catProducts.reduce((sum, p) => sum + p.quantity, 0);
     const totalProfit = catProducts.reduce(
       (sum, p) => sum + (p.selling - p.bought) * p.quantity,
-      0
+      0,
     );
 
     const totalBought = catProducts.reduce(
       (sum, p) => sum + p.bought * p.quantity,
-      0
+      0,
     );
 
     const totalSelling = catProducts.reduce(
       (sum, p) => sum + p.selling * p.quantity,
-      0
+      0,
     );
-    
+
     return {
       category: cat,
       totalQuantity,
@@ -44,19 +44,30 @@ export default function CategorySummaryTable() {
             <tr>
               <th className="px-4 py-3">{t("stock.type")}</th>
               <th className="px-4 py-3">{t("stock.quantity")}</th>
-              <th className="px-4 py-3">{t("stock.totalBought", "Total Bought")}</th>
-              <th className="px-4 py-3">{t("stock.totalSelling", "Total Selling")}</th>
-              <th className="px-4 py-3">{t("stock.totalProfit", "Total Profit")}</th>
+              <th className="px-4 py-3">
+                {t("stock.totalBought", "Total Bought")}
+              </th>
+              <th className="px-4 py-3">
+                {t("stock.totalSelling", "Total Selling")}
+              </th>
+              <th className="px-4 py-3">
+                {t("stock.totalProfit", "Total Profit")}
+              </th>
             </tr>
           </thead>
           <tbody>
             {summary.map((row) => (
-              <tr key={row.category} className="h-[48px] hover:bg-muted/40 transition">
+              <tr
+                key={row.category}
+                className="h-[48px] hover:bg-muted/40 transition"
+              >
                 <td className="px-4">{row.category}</td>
                 <td className="px-4">{row.totalQuantity}</td>
                 <td className="px-4">{row.totalBought}</td>
                 <td className="px-4">{row.totalSelling}</td>
-                <td className="px-4 text-green-700 font-medium">{row.totalProfit}</td>
+                <td className="px-4 text-green-700 font-medium">
+                  {row.totalProfit}
+                </td>
               </tr>
             ))}
           </tbody>
@@ -64,4 +75,4 @@ export default function CategorySummaryTable() {
       </div>
     </section>
   );
-} 
+}

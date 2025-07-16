@@ -17,18 +17,20 @@ const MAX_SESSIONS = 5;
 
 export default function CashierPage() {
   const [sessions, setSessions] = useState<CartItem[][]>(
-    Array.from({ length: MAX_SESSIONS }, (): CartItem[] => [])
+    Array.from({ length: MAX_SESSIONS }, (): CartItem[] => []),
   );
   const [activeSession, setActiveSession] = useState(0);
 
   // Ensure cart always exists
   const cart: CartItem[] = useMemo(() => {
-    return Array.isArray(sessions[activeSession]) ? sessions[activeSession] : [];
+    return Array.isArray(sessions[activeSession])
+      ? sessions[activeSession]
+      : [];
   }, [sessions, activeSession]);
 
   const total = useMemo(
     () => cart.reduce((sum, item) => sum + item.qty * item.price, 0),
-    [cart]
+    [cart],
   );
 
   const updateSession = (newCart: CartItem[]) => {
@@ -125,10 +127,12 @@ export default function CashierPage() {
           const isActive = activeSession === i;
           const hasItems = sessions[i]?.length > 0;
 
-          const baseClasses = "px-3 py-1 text-xs font-semibold rounded-md transition border";
+          const baseClasses =
+            "px-3 py-1 text-xs font-semibold rounded-md transition border";
           const active = "bg-primary text-secondary border-transparent";
           const green = "bg-green-600 text-white hover:bg-green-700";
-          const inactive = "bg-card text-muted-foreground border-border hover:bg-muted hover:text-foreground";
+          const inactive =
+            "bg-card text-muted-foreground border-border hover:bg-muted hover:text-foreground";
 
           return (
             <button

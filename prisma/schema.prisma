@@ -26,6 +26,9 @@ model Product {
 
   category Category   @relation(fields: [categoryName], references: [name])
   SaleItem SaleItem[]
+
+  @@index([name])
+  @@index([categoryName])
 }
 
 model Sale {

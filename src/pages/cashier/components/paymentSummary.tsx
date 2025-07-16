@@ -18,7 +18,7 @@ export default function PaymentSummary({
 }: Props) {
   const subtotal = useMemo(
     () => cart.reduce((sum, item) => sum + item.price * item.qty, 0),
-    [cart]
+    [cart],
   );
 
   const total = subtotal; // Before discount
@@ -49,33 +49,33 @@ export default function PaymentSummary({
 
       {/* === Scrollable Items === */}
       <div className="flex-1 overflow-y-auto space-y-[2px]">
-        {cart.length > 0 ? (
-          cart.map((item) => (
-            <div
-              key={item.id}
-              className="flex justify-between border-b border-dashed border-border py-[2px] hover:bg-accent/40 rounded transition"
-            >
-              <span className="w-1/2 truncate font-medium">{item.name}</span>
-              <span className="w-1/6 text-right">{item.qty}</span>
-              <span className="w-1/6 text-right">{item.price.toLocaleString()}</span>
-              <span className="w-1/6 text-right">
-                {(item.qty * item.price).toLocaleString()}
-              </span>
-            </div>
-          ))
-        ) : (
-          [...Array(6)].map((_, i) => (
-            <div
-              key={i}
-              className="flex justify-between py-[2px] opacity-0 pointer-events-none select-none"
-            >
-              <span className="w-1/2">Placeholder</span>
-              <span className="w-1/6 text-right">0</span>
-              <span className="w-1/6 text-right">0</span>
-              <span className="w-1/6 text-right">0</span>
-            </div>
-          ))
-        )}
+        {cart.length > 0
+          ? cart.map((item) => (
+              <div
+                key={item.id}
+                className="flex justify-between border-b border-dashed border-border py-[2px] hover:bg-accent/40 rounded transition"
+              >
+                <span className="w-1/2 truncate font-medium">{item.name}</span>
+                <span className="w-1/6 text-right">{item.qty}</span>
+                <span className="w-1/6 text-right">
+                  {item.price.toLocaleString()}
+                </span>
+                <span className="w-1/6 text-right">
+                  {(item.qty * item.price).toLocaleString()}
+                </span>
+              </div>
+            ))
+          : [...Array(6)].map((_, i) => (
+              <div
+                key={i}
+                className="flex justify-between py-[2px] opacity-0 pointer-events-none select-none"
+              >
+                <span className="w-1/2">Placeholder</span>
+                <span className="w-1/6 text-right">0</span>
+                <span className="w-1/6 text-right">0</span>
+                <span className="w-1/6 text-right">0</span>
+              </div>
+            ))}
       </div>
 
       {/* === Bottom Summary Section === */}
@@ -92,12 +92,16 @@ export default function PaymentSummary({
 
         <div className="flex justify-between">
           <span className="w-3/4 text-left">Discount</span>
-          <span className="w-1/4 text-right">-{discount.toLocaleString()} DA</span>
+          <span className="w-1/4 text-right">
+            -{discount.toLocaleString()} DA
+          </span>
         </div>
 
         <div className="flex justify-between font-bold">
           <span className="w-3/4 text-left">Payment Amount</span>
-          <span className="w-1/4 text-right">{paymentAmount.toLocaleString()} DA</span>
+          <span className="w-1/4 text-right">
+            {paymentAmount.toLocaleString()} DA
+          </span>
         </div>
       </div>
     </div>
