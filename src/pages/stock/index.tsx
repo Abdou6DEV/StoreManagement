@@ -11,7 +11,7 @@ export default function StockPage() {
   const { t } = useTranslation();
 
   return (
-    <main className="px-6 md:px-12 flex-1 space-y-10">
+    <main className="px-6 md:px-12 flex-1 space-y-4">
       <AddStockForm openPanel={openPanel} setOpenPanel={setOpenPanel} />
       <div className="flex gap-2 mb-4">
         <Button

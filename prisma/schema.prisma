@@ -24,26 +24,43 @@ model Product {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  category Category   @relation(fields: [categoryName], references: [name])
-  SaleItem SaleItem[]
+  category  Category   @relation(fields: [categoryName], references: [name])
+  saleItems SaleItem[]
 
   @@index([name])
   @@index([categoryName])
 }
 
 model Sale {
-  id       String     @id @default(uuid())
-  SaleItem SaleItem[]
+  id       String  @id @default(uuid())
+  clientId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  client    Client?    @relation(fields: [clientId], references: [id])
+  saleItems SaleItem[]
 }
 
 model SaleItem {
   productId String
   quantity  Int
-  price     Int
-  SaleId    String
+  price     Decimal
+  saleId    String
 
   product Product @relation(fields: [productId], references: [id])
-  sale    Sale    @relation(fields: [SaleId], references: [id])
+  sale    Sale    @relation(fields: [saleId], references: [id])
 
-  @@id([productId, SaleId])
+  @@id([productId, saleId])
+}
+
+model Client {
+  id        String   @id @default(uuid())
+  name      String
+  phone     String?
+  address   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sales Sale[]
 }

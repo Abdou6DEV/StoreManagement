@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import Navigation from "./navigation";
+import { useLocation } from "react-router-dom";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(
@@ -16,6 +17,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     return () => clearInterval(interval);
   }, []);
 
+  const location = useLocation();
+
   return (
     <>
       {/* === Sidebar === */}
@@ -25,7 +28,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <main
         className="transition-all duration-700 px-4 md:px-12 py-8 md:py-12"
         style={{
-          marginLeft: collapsed ? "60px" : "200px",
+          marginLeft:
+            location.pathname === "/"
+              ? 0
+              : collapsed
+              ? "60px"
+              : "200px",
         }}
       >
         {children}
