@@ -75,6 +75,9 @@
     "filterByCategory": "Filter by category",
     "itemsPerPage": "Items per page:",
     "selectItemsPerPage": "Select items per page",
-    "count": "Showing {{val, number}} Items"
+    "count": "Showing {{val, number}} Items",
+    "viewByProduct": "View by Product",
+    "viewByCategory": "View by Category",
+    "categorySummary": "Stock by Category"
   }
 }
