@@ -56,7 +56,12 @@ export default function CashierPage() {
     }
     updateSession(updated);
   };
-
+  const [clientName, setClientName] = useState("Not Registered"); // or from default
+  const handleAddClient = (name: string, phone?: string) => {
+    // Save client to DB or just log it
+    console.log("New client:", name, phone);
+    setClientName(name);
+  };
   const handleClear = () => updateSession([]);
 
   useEffect(() => {
@@ -88,7 +93,7 @@ export default function CashierPage() {
       {/* === Main Content === */}
       <div className="flex-1 flex flex-col lg:flex-row gap-4 px-2 sm:px-4 lg:px-6 py-3 overflow-hidden">
         {/* LEFT: Product + Cart */}
-        <section className="w-full lg:w-1/2 flex flex-col gap-3 overflow-hidden">
+        <section className="w-full lg:w-2/5 flex flex-col gap-3 overflow-hidden">
           <div className="bg-card border border-border rounded-xl p-3 shadow-sm h-full flex flex-col gap-3 overflow-hidden">
             <ProductSearch onAdd={handleAddProduct} />
             <div className="flex-1 overflow-auto min-h-[100px]">
@@ -105,7 +110,7 @@ export default function CashierPage() {
         </section>
 
         {/* RIGHT: Summary + Actions */}
-        <section className="w-full lg:w-1/2 flex flex-col gap-3 overflow-hidden">
+        <section className="w-full lg:w-3/5 flex flex-col gap-3 overflow-hidden">
           <div className="bg-card border border-border rounded-xl p-3 shadow-sm h-full flex flex-col gap-3 overflow-hidden">
             <div className="flex-1 overflow-auto min-h-[100px]">
               <PaymentSummary
@@ -116,7 +121,13 @@ export default function CashierPage() {
                 discount={0}
               />
             </div>
-            <ActionButtons onClear={handleClear} />
+            <ActionButtons
+              clientName={clientName}
+              setClientName={setClientName}
+              onAddClient={handleAddClient}
+              onClear={handleClear}
+              onFinish={() => {/* Your confirm logic */}}
+            />
           </div>
         </section>
       </div>
