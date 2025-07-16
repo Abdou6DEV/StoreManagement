@@ -17,7 +17,7 @@ const MAX_SESSIONS = 5;
 
 export default function CashierPage() {
   const [sessions, setSessions] = useState<CartItem[][]>(
-    Array.from({ length: MAX_SESSIONS }, () => [])
+    Array.from({ length: MAX_SESSIONS }, (): CartItem[] => [])
   );
   const [activeSession, setActiveSession] = useState(0);
 
@@ -90,7 +90,14 @@ export default function CashierPage() {
           <div className="bg-card border border-border rounded-xl p-3 shadow-sm h-full flex flex-col gap-3 overflow-hidden">
             <ProductSearch onAdd={handleAddProduct} />
             <div className="flex-1 overflow-auto min-h-[100px]">
-              <CartTable cart={cart} setCart={updateSession} />
+              <CartTable
+                cart={cart}
+                setCart={(updater) => {
+                  const result =
+                    typeof updater === "function" ? updater(cart) : updater;
+                  updateSession(result);
+                }}
+              />
             </div>
           </div>
         </section>

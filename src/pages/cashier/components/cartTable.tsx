@@ -17,7 +17,10 @@ export default function CartTable({ cart, setCart }: Props) {
   }, [cart]);
 
   const updateQty = (index: number, newQty: number) => {
-    if (newQty < 1) return;
+    if (newQty < 1) {
+      removeItem(index);
+      return;
+    }
     setCart((prev) =>
       prev.map((item, i) => (i === index ? { ...item, qty: newQty } : item))
     );
@@ -29,22 +32,20 @@ export default function CartTable({ cart, setCart }: Props) {
 
   return (
     <div className="rounded-md border border-border overflow-hidden h-full flex flex-col">
-      {/* Table Header */}
-      <table className="w-full text-sm text-left">
-        <thead className="bg-muted text-muted-foreground font-medium text-xs uppercase sticky top-0 z-10">
-          <tr className="border-b border-border">
-            <th className="p-2">Name</th>
-            <th className="p-2 text-right">Qty</th>
-            <th className="p-2 text-right">Price</th>
-            <th className="p-2 text-right">Total</th>
-            <th className="p-2 text-right">Actions</th>
-          </tr>
-        </thead>
-      </table>
-
-      {/* Scrollable Body */}
-      <div ref={scrollRef} className="overflow-y-auto flex-1">
-        <table className="w-full text-sm text-left">
+      <div
+        ref={scrollRef}
+        className="overflow-y-auto flex-1 max-h-[400px]"
+      >
+        <table className="w-full text-sm text-left table-fixed">
+          <thead className="bg-muted text-muted-foreground font-medium text-xs uppercase sticky top-0 z-10">
+            <tr className="border-b border-border">
+              <th className="p-2 w-[30%]">Name</th>
+              <th className="p-2 text-right w-[10%]">Qty</th>
+              <th className="p-2 text-right w-[20%]">Price</th>
+              <th className="p-2 text-right w-[20%]">Total</th>
+              <th className="p-2 text-right w-[20%]">Actions</th>
+            </tr>
+          </thead>
           <tbody className="bg-card text-foreground">
             {cart.length > 0 ? (
               cart.map((item, index) => (
@@ -52,15 +53,15 @@ export default function CartTable({ cart, setCart }: Props) {
                   key={item.id}
                   className="border-b border-muted transition-colors hover:bg-accent/40"
                 >
-                  <td className="p-2">{item.name}</td>
-                  <td className="p-2 text-right">{item.qty}</td>
-                  <td className="p-2 text-right">
+                  <td className="p-2 w-[30%]">{item.name}</td>
+                  <td className="p-2 text-right w-[10%]">{item.qty}</td>
+                  <td className="p-2 text-right w-[20%]">
                     {item.price.toLocaleString()} DZD
                   </td>
-                  <td className="p-2 text-right">
+                  <td className="p-2 text-right w-[20%]">
                     {(item.price * item.qty).toLocaleString()} DZD
                   </td>
-                  <td className="p-2 text-right space-x-1">
+                  <td className="p-2 text-right w-[20%] space-x-1">
                     <button
                       onClick={() => updateQty(index, item.qty + 1)}
                       className="px-1 py-0 rounded bg-muted hover:bg-primary hover:text-primary-foreground transition text-xl font-semibold"
