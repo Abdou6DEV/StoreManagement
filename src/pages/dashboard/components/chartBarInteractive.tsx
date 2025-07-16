@@ -10,6 +10,7 @@ import {
   ResponsiveContainer,
   Tooltip,
 } from "recharts";
+import { useTheme } from "../../../lib/hooks/useTheme";
 
 // Sample data for different time periods with rates
 const dailyData = Array.from({ length: 30 }, (_, i) => {
@@ -249,6 +250,7 @@ const CustomTooltip = ({
   label,
   chartType,
   comparison,
+  isDark,
 }: any) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
@@ -258,29 +260,33 @@ const CustomTooltip = ({
     const isPositive = !rate.startsWith("-");
 
     return (
-      <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-3 min-w-[160px]">
-        <div className="space-y-2">
-          <div className="border-b border-gray-100 pb-2">
-            <p className="text-sm font-medium text-gray-900">{label}</p>
+      <div
+        className={
+          isDark
+            ? "bg-[#18181b] border border-gray-700 rounded-lg shadow-lg p-3 min-w-[160px]"
+            : "bg-white border border-gray-200 rounded-lg shadow-lg p-3 min-w-[160px]"
+        }
+      >
+        <div className={isDark ? "border-b border-gray-800 pb-2" : "border-b border-gray-100 pb-2"}>
+            <p className={isDark ? "text-sm font-medium text-gray-100" : "text-sm font-medium text-gray-900"}>{label}</p>
           </div>
           <div className="space-y-1">
             <div className="flex justify-between items-center">
-              <span className="text-xs text-gray-500">Value:</span>
-              <span className="text-sm font-semibold text-gray-900">
+              <span className={isDark ? "text-xs text-gray-400" : "text-xs text-gray-500"}>Value:</span>
+              <span className={isDark ? "text-sm font-semibold text-gray-100" : "text-sm font-semibold text-gray-900"}>
                 {currentChart.format(value)}
               </span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-xs text-gray-500">{comparison}:</span>
+              <span className={isDark ? "text-xs text-gray-400" : "text-xs text-gray-500"}>{comparison}:</span>
               <span
-                className={`text-sm font-semibold ${isPositive ? "text-green-600" : "text-red-600"}`}
+                className={`text-sm font-semibold ${isPositive ? "text-green-500" : "text-red-500"}`}
               >
                 {rate}%
               </span>
             </div>
           </div>
         </div>
-      </div>
     );
   }
   return null;
@@ -291,19 +297,39 @@ export function ChartBarInteractive() {
     React.useState<keyof typeof timePeriods>("12m");
   const [chartType, setChartType] =
     React.useState<keyof typeof chartTypes>("profits");
+  const { isDark } = useTheme();
 
   const currentChart = chartTypes[chartType];
   const currentPeriod = timePeriods[timePeriod];
 
+  // Define theme-aware colors
+  const barGradientStops = isDark
+    ? [
+        { offset: "0%", color: "var(--chart-1)", opacity: 0.8 },
+        { offset: "100%", color: "var(--chart-2)", opacity: 1 },
+      ]
+    : [
+        { offset: "0%", color: "#3b82f6", opacity: 0.8 },
+        { offset: "100%", color: "#1d4ed8", opacity: 1 },
+      ];
+  const gridColor = isDark ? "#27272a" : "#f1f5f9";
+  const axisColor = isDark ? "#a1a1aa" : "#64748b";
+  const bgClass = isDark
+    ? "bg-[#18181b] border border-gray-700 text-gray-100"
+    : "bg-white border border-gray-200 text-gray-900";
+  const controlBg = isDark ? "bg-[#232326]" : "bg-white";
+  const controlBorder = isDark ? "border-gray-700" : "border-gray-300";
+  const controlText = isDark ? "text-gray-100" : "text-gray-900";
+  const controlInactive = isDark ? "text-gray-400 hover:text-gray-200" : "text-gray-500 hover:text-gray-700";
+  const toggleBg = isDark ? "bg-[#232326]" : "bg-gray-50";
+
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+    <div className={`${bgClass} rounded-xl shadow-sm p-6`}>
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
         <div>
-          <h3 className="text-xl font-semibold text-gray-900">
-            {currentChart.title}
-          </h3>
-          <p className="text-sm text-gray-500 mt-1">
+          <h3 className={`text-xl font-semibold ${controlText}`}>{currentChart.title}</h3>
+          <p className={`text-sm mt-1 ${isDark ? "text-gray-400" : "text-gray-500"}`}>
             {currentChart.description} - {currentPeriod.description}
           </p>
         </div>
@@ -316,7 +342,7 @@ export function ChartBarInteractive() {
             onChange={(e) =>
               setChartType(e.target.value as keyof typeof chartTypes)
             }
-            className="px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+            className={`px-3 py-2 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none border ${controlBorder} ${controlBg} ${controlText}`}
           >
             <option value="profits">Profits</option>
             <option value="customers">Customer Growth</option>
@@ -324,15 +350,15 @@ export function ChartBarInteractive() {
           </select>
 
           {/* Time Period Toggle Buttons */}
-          <div className="flex rounded-lg border border-gray-300 bg-gray-50 p-1">
+          <div className={`flex rounded-lg border ${controlBorder} ${toggleBg} p-1`}>
             {Object.entries(timePeriods).map(([key, period]) => (
               <button
                 key={key}
                 onClick={() => setTimePeriod(key as keyof typeof timePeriods)}
                 className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
                   timePeriod === key
-                    ? "bg-white text-gray-900 shadow-sm"
-                    : "text-gray-500 hover:text-gray-700"
+                    ? `${controlBg} ${controlText} shadow-sm`
+                    : controlInactive
                 }`}
               >
                 {key === "1m" ? "1M" : key === "12m" ? "12M" : "Years"}
@@ -356,15 +382,21 @@ export function ChartBarInteractive() {
           >
             <defs>
               <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.8} />
-                <stop offset="100%" stopColor="#1d4ed8" stopOpacity={1} />
+                {barGradientStops.map((stop) => (
+                  <stop
+                    key={stop.offset}
+                    offset={stop.offset}
+                    stopColor={stop.color}
+                    stopOpacity={stop.opacity}
+                  />
+                ))}
               </linearGradient>
             </defs>
 
             <CartesianGrid
               strokeDasharray="3 3"
               vertical={false}
-              stroke="#f1f5f9"
+              stroke={gridColor}
             />
 
             <XAxis
@@ -375,7 +407,7 @@ export function ChartBarInteractive() {
               angle={timePeriod === "1m" ? -45 : 0}
               textAnchor={timePeriod === "1m" ? "end" : "middle"}
               fontSize={12}
-              fill="#64748b"
+              fill={axisColor}
             />
 
             <YAxis
@@ -383,7 +415,7 @@ export function ChartBarInteractive() {
               axisLine={false}
               tickMargin={8}
               fontSize={12}
-              fill="#64748b"
+              fill={axisColor}
               tickFormatter={(value) => {
                 if (chartType === "customers") return `${value}`;
                 return `$${(value / 1000).toFixed(0)}k`;
@@ -395,9 +427,10 @@ export function ChartBarInteractive() {
                 <CustomTooltip
                   chartType={chartType}
                   comparison={currentPeriod.comparison}
+                  isDark={isDark}
                 />
               }
-              cursor={{ fill: "rgba(59, 130, 246, 0.1)" }}
+              cursor={{ fill: isDark ? "rgba(59,130,246,0.15)" : "rgba(59,130,246,0.1)" }}
               position={{ x: undefined, y: undefined }}
             />
 
