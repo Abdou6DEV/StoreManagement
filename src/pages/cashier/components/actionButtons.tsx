@@ -19,6 +19,8 @@ export default function ActionButtons({
   const [showPopup, setShowPopup] = useState(false);
   const [newClientName, setNewClientName] = useState("");
   const [newClientPhone, setNewClientPhone] = useState("");
+  const [newClientAddresse, setNewClientAddress] = useState("");
+  const [newClientNotes, setNewClientNotes] = useState("");
 
   return (
     <div className="flex flex-col gap-4">
@@ -101,6 +103,24 @@ export default function ActionButtons({
               value={newClientPhone}
               onChange={(e) => setNewClientPhone(e.target.value)}
               placeholder="Phone Number (optional)"
+              className="w-full rounded-md border border-border px-3 py-2 text-sm bg-background"
+            />
+            <input
+              value={newClientPhone}
+              onChange={(e) => setNewClientPhone(e.target.value)}
+              placeholder="Phone Number (optional)"
+              className="w-full rounded-md border border-border px-3 py-2 text-sm bg-background"
+            />
+            <input
+              value={newClientPhone}
+              onChange={(e) => setNewClientAddress(e.target.value)}
+              placeholder="Address (optional)"
+              className="w-full rounded-md border border-border px-3 py-2 text-sm bg-background"
+            />
+            <input
+              value={newClientPhone}
+              onChange={(e) => setNewClientNotes(e.target.value)}
+              placeholder="Notes (optional)"
               className="w-full rounded-md border border-border px-3 py-2 text-sm bg-background"
             />
       

@@ -56,7 +56,7 @@ export default function CashierPage() {
     }
     updateSession(updated);
   };
-  const [clientName, setClientName] = useState("Not Registered"); // or from default
+  const [clientName, setClientName] = useState(""); // or from default
   const handleAddClient = (name: string, phone?: string) => {
     // Save client to DB or just log it
     console.log("New client:", name, phone);
