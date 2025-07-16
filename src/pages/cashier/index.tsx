@@ -21,16 +21,22 @@ export default function CashierPage() {
   );
   const [activeSession, setActiveSession] = useState(0);
 
-  const cart = sessions[activeSession];
+  // Ensure cart always exists
+  const cart: CartItem[] = useMemo(() => {
+    return Array.isArray(sessions[activeSession]) ? sessions[activeSession] : [];
+  }, [sessions, activeSession]);
+
   const total = useMemo(
     () => cart.reduce((sum, item) => sum + item.qty * item.price, 0),
     [cart]
   );
 
   const updateSession = (newCart: CartItem[]) => {
-    setSessions((prev) =>
-      prev.map((s, i) => (i === activeSession ? newCart : s))
-    );
+    setSessions((prev) => {
+      const updated = [...prev];
+      updated[activeSession] = newCart ?? []; // Always safe
+      return updated;
+    });
   };
 
   const handleAddProduct = (product: Product) => {
@@ -83,7 +89,7 @@ export default function CashierPage() {
         <section className="w-full lg:w-1/2 flex flex-col gap-3 overflow-hidden">
           <div className="bg-card border border-border rounded-xl p-3 shadow-sm h-full flex flex-col gap-3 overflow-hidden">
             <ProductSearch onAdd={handleAddProduct} />
-            <div className="flex-1 overflow-auto">
+            <div className="flex-1 overflow-auto min-h-[100px]">
               <CartTable cart={cart} setCart={updateSession} />
             </div>
           </div>
@@ -92,7 +98,7 @@ export default function CashierPage() {
         {/* RIGHT: Summary + Actions */}
         <section className="w-full lg:w-1/2 flex flex-col gap-3 overflow-hidden">
           <div className="bg-card border border-border rounded-xl p-3 shadow-sm h-full flex flex-col gap-3 overflow-hidden">
-            <div className="flex-1 overflow-auto">
+            <div className="flex-1 overflow-auto min-h-[100px]">
               <PaymentSummary
                 cart={cart}
                 clientName="Abdallah"
@@ -110,7 +116,7 @@ export default function CashierPage() {
       <div className="h-[40px] gap-3 bg-background flex justify-center items-center px-4">
         {Array.from({ length: MAX_SESSIONS }).map((_, i) => {
           const isActive = activeSession === i;
-          const hasItems = sessions[i].length > 0;
+          const hasItems = sessions[i]?.length > 0;
 
           const baseClasses = "px-3 py-1 text-xs font-semibold rounded-md transition border";
           const active = "bg-primary text-secondary border-transparent";
