@@ -82,6 +82,14 @@ export default function CategorySummaryTable() {
                   </td>
                 </tr>
               ))}
+              {/* Total Row */}
+              <tr className="h-[48px] bg-muted/60 font-medium border-t border-border transition-colors duration-200 hover:bg-muted">
+                <td className="px-4 text-foreground">{t("stock.total", "Total")}</td>
+                <td className="px-4">{summary.reduce((sum, row) => sum + row.totalQuantity, 0)}</td>
+                <td className="px-4">{summary.reduce((sum, row) => sum + row.totalBought, 0)}</td>
+                <td className="px-4">{summary.reduce((sum, row) => sum + row.totalSelling, 0)}</td>
+                <td className="px-4 text-green-800">{summary.reduce((sum, row) => sum + row.totalProfit, 0)}</td>
+              </tr>
             </tbody>
           </table>
         </div>
