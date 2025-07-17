@@ -9,6 +9,7 @@ import {
   AlertTriangle,
   TrendingUp,
   TrendingDown,
+  Package,
 } from "lucide-react";
 
 import React, { useState } from "react";
@@ -38,6 +39,7 @@ import {
 } from "../../../lib/components/ui/toggleGroup";
 import { Button } from "../../../lib/components/ui/button";
 import EditStockForm from "./editStockForm";
+import { Product } from "@prisma/client";
 
 export const StockTable = () => {
   const { t } = useTranslation();
@@ -347,39 +349,51 @@ export const StockTable = () => {
         </ToggleGroup>
       </div>
 
-      {/* Table */}
-      <div className="overflow-auto rounded-lg border border-muted">
-        <table className="min-w-full text-sm text-left">
-          <thead className="bg-muted text-muted-foreground">
-            <tr>
-              <th className="px-4 py-3">{t("stock.product")}</th>
-              <th className="px-4 py-3">{t("stock.type")}</th>
-              <th className="px-4 py-3">{t("stock.quantity")}</th>
-              <th className="px-4 py-3">{t("stock.bought")}</th>
-              <th className="px-4 py-3">{t("stock.selling")}</th>
-              <th className="px-4 py-3">{t("stock.profit", "Profit")}</th>
-              <th className="px-4 py-3">
-                {t("stock.totalBought", "Total Bought")}
-              </th>
-              <th className="px-4 py-3">
-                {t("stock.totalProfit", "Total Profit")}
-              </th>
-              <th className="px-4 py-3">{t("stock.actions", "Actions")}</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {paginatedProducts.map((product) => (
-              <StockRow
-                key={product.id}
-                product={product}
-                setEditingProductID={setEditingProductID}
-                handleDeleteProduct={handleDeleteProduct}
-                t={t}
-              />
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {/* Table or Empty State */}
+      {paginatedProducts.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-16 gap-4 text-center">
+          <Package className="w-16 h-16 text-muted-foreground mb-2" />
+          <h3 className="text-xl font-semibold text-foreground">
+            {t("stock.emptyProductTitle")}
+          </h3>
+          <p className="text-muted-foreground max-w-md">
+            {t("stock.emptyProductDesc")}
+          </p>
+        </div>
+      ) : (
+        <div className="overflow-auto rounded-lg border border-muted">
+          <table className="min-w-full text-sm text-left">
+            <thead className="bg-muted text-muted-foreground">
+              <tr>
+                <th className="px-4 py-3">{t("stock.product")}</th>
+                <th className="px-4 py-3">{t("stock.type")}</th>
+                <th className="px-4 py-3">{t("stock.quantity")}</th>
+                <th className="px-4 py-3">{t("stock.bought")}</th>
+                <th className="px-4 py-3">{t("stock.selling")}</th>
+                <th className="px-4 py-3">{t("stock.profit", "Profit")}</th>
+                <th className="px-4 py-3">
+                  {t("stock.totalBought", "Total Bought")}
+                </th>
+                <th className="px-4 py-3">
+                  {t("stock.totalProfit", "Total Profit")}
+                </th>
+                <th className="px-4 py-3">{t("stock.actions", "Actions")}</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {paginatedProducts.map((product) => (
+                <StockRow
+                  key={product.id}
+                  product={product}
+                  setEditingProductID={setEditingProductID}
+                  handleDeleteProduct={handleDeleteProduct}
+                  t={t}
+                />
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {/* Pagination */}
       {totalPages > 1 && (

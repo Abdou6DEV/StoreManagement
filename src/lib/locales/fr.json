@@ -78,6 +78,10 @@
     "count": "Affichage {{val, number}} éléments",
     "viewByProduct": "Voir par produit",
     "viewByCategory": "Voir par catégorie",
-    "categorySummary": "Stock par catégorie"
+    "categorySummary": "Stock par catégorie",
+    "emptyProductTitle": "Aucun produit trouvé",
+    "emptyProductDesc": "Vous n'avez pas encore ajouté de produits. Commencez par ajouter votre premier produit pour gérer votre inventaire.",
+    "emptyCategoryTitle": "Aucune catégorie trouvée",
+    "emptyCategoryDesc": "Aucune catégorie ou produit disponible. Ajoutez des produits pour voir le résumé par catégorie."
   }
 }
