@@ -52,6 +52,7 @@ export const StockTable = () => {
     search: "",
     category: "", // <-- add category filter
   });
+  const [lowStockThreshold, setLowStockThreshold] = useState(5); // Default threshold
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [editingProductID, setEditingProductID] = useState<string | null>(null);
@@ -75,7 +76,7 @@ export const StockTable = () => {
     }
   };
 
-  // Filter products based on search input and category
+  // Filter products based on search input, category, and low stock
   const filteredList = products.filter((product) => {
     const search = filters.search.toLowerCase();
     const matchesSearch =
@@ -84,7 +85,8 @@ export const StockTable = () => {
       (product.codebar && product.codebar.toLowerCase().includes(search));
     const matchesCategory =
       !filters.category || product.categoryName === filters.category;
-    return matchesSearch && matchesCategory;
+    const matchesLowStock = !filters.lowStock || product.quantity <= lowStockThreshold;
+    return matchesSearch && matchesCategory && matchesLowStock;
   });
 
   const totalPages = Math.max(1, Math.ceil(filteredList.length / itemsPerPage));
@@ -279,87 +281,101 @@ export const StockTable = () => {
             </PopoverContent>
           </Popover>
         </div>
-        <ToggleGroup
-          type="multiple"
-          variant="outline"
-          size="sm"
-          value={Object.entries(filters)
-            .filter(([, v]) => typeof v === "boolean" && v)
-            .map(([k]) => k)}
-          onValueChange={(values) => {
-            // Build new state preserving search and category
-            const newFilters = {
-              ...filters, // preserves search and category
-              lowStock: values.includes("lowStock"),
-              bestSelling: values.includes("bestSelling"),
-              worstSelling: values.includes("worstSelling"),
-            };
-            // Enforce best/worst selling exclusivity
-            if (newFilters.bestSelling && newFilters.worstSelling) {
-              if (!filters.bestSelling) {
-                newFilters.worstSelling = false;
-              } else {
-                newFilters.bestSelling = false;
+        <div className="flex items-center gap-2">
+          <ToggleGroup
+            type="multiple"
+            variant="outline"
+            size="sm"
+            value={Object.entries(filters)
+              .filter(([, v]) => typeof v === "boolean" && v)
+              .map(([k]) => k)}
+            onValueChange={(values) => {
+              // Build new state preserving search and category
+              const newFilters = {
+                ...filters, // preserves search and category
+                lowStock: values.includes("lowStock"),
+                bestSelling: values.includes("bestSelling"),
+                worstSelling: values.includes("worstSelling"),
+              };
+              // Enforce best/worst selling exclusivity
+              if (newFilters.bestSelling && newFilters.worstSelling) {
+                if (!filters.bestSelling) {
+                  newFilters.worstSelling = false;
+                } else {
+                  newFilters.bestSelling = false;
+                }
               }
-            }
-            setFilters(newFilters);
-          }}
-          className="gap-1"
-        >
-          <ToggleGroupItem
-            value="lowStock"
-            aria-label={t("stock.lowStock")}
-            className={cn(
-              "flex items-center gap-2 px-3 py-2",
-              filters.lowStock &&
-                "bg-yellow-100 text-yellow-800 border-yellow-300 dark:bg-yellow-900/30 dark:text-yellow-200 dark:border-yellow-700",
-            )}
+              setFilters(newFilters);
+            }}
+            className="gap-1"
           >
-            <AlertTriangle
+            <ToggleGroupItem
+              value="lowStock"
+              aria-label={t("stock.lowStock")}
               className={cn(
-                "w-4 h-4",
-                filters.lowStock ? "text-yellow-500" : "text-muted-foreground",
+                "flex items-center gap-2 px-3 py-2",
+                filters.lowStock &&
+                  "bg-yellow-100 text-yellow-800 border-yellow-300 dark:bg-yellow-900/30 dark:text-yellow-200 dark:border-yellow-700",
               )}
-            />
-            {t("stock.lowStock")}
-          </ToggleGroupItem>
-          <ToggleGroupItem
-            value="bestSelling"
-            aria-label={t("stock.bestSelling")}
-            className={cn(
-              "flex items-center gap-2 px-3 py-2",
-              filters.bestSelling &&
-                "bg-green-100 text-green-800 border-green-300 dark:bg-green-900/30 dark:text-green-200 dark:border-green-700",
-            )}
-          >
-            <TrendingUp
+            >
+              <AlertTriangle
+                className={cn(
+                  "w-4 h-4",
+                  filters.lowStock ? "text-yellow-500" : "text-muted-foreground",
+                )}
+              />
+              {t("stock.lowStock")}
+            </ToggleGroupItem>
+            <ToggleGroupItem
+              value="bestSelling"
+              aria-label={t("stock.bestSelling")}
               className={cn(
-                "w-4 h-4",
-                filters.bestSelling
-                  ? "text-green-600"
-                  : "text-muted-foreground",
+                "flex items-center gap-2 px-3 py-2",
+                filters.bestSelling &&
+                  "bg-green-100 text-green-800 border-green-300 dark:bg-green-900/30 dark:text-green-200 dark:border-green-700",
               )}
-            />
-            {t("stock.bestSelling")}
-          </ToggleGroupItem>
-          <ToggleGroupItem
-            value="worstSelling"
-            aria-label={t("stock.worstSelling")}
-            className={cn(
-              "flex items-center gap-2 px-3 py-2",
-              filters.worstSelling &&
-                "bg-red-100 text-red-800 border-red-300 dark:bg-red-900/30 dark:text-red-200 dark:border-red-700",
-            )}
-          >
-            <TrendingDown
+            >
+              <TrendingUp
+                className={cn(
+                  "w-4 h-4",
+                  filters.bestSelling
+                    ? "text-green-600"
+                    : "text-muted-foreground",
+                )}
+              />
+              {t("stock.bestSelling")}
+            </ToggleGroupItem>
+            <ToggleGroupItem
+              value="worstSelling"
+              aria-label={t("stock.worstSelling")}
               className={cn(
-                "w-4 h-4",
-                filters.worstSelling ? "text-red-600" : "text-muted-foreground",
+                "flex items-center gap-2 px-3 py-2",
+                filters.worstSelling &&
+                  "bg-red-100 text-red-800 border-red-300 dark:bg-red-900/30 dark:text-red-200 dark:border-red-700",
               )}
+            >
+              <TrendingDown
+                className={cn(
+                  "w-4 h-4",
+                  filters.worstSelling ? "text-red-600" : "text-muted-foreground",
+                )}
+              />
+              {t("stock.worstSelling")}
+            </ToggleGroupItem>
+          </ToggleGroup>
+          {/* Low stock threshold input, only show if lowStock is active */}
+          {filters.lowStock && (
+            <input
+              type="number"
+              min={1}
+              value={lowStockThreshold}
+              onChange={e => setLowStockThreshold(Number(e.target.value) || 1)}
+              className="w-16 px-2 py-1 border rounded text-sm ml-2"
+              aria-label={t("stock.lowStockThreshold", "Low stock threshold")}
+              style={{ minWidth: 0 }}
             />
-            {t("stock.worstSelling")}
-          </ToggleGroupItem>
-        </ToggleGroup>
+          )}
+        </div>
       </div>
 
       {/* Table or Empty State */}
