@@ -4,7 +4,12 @@ import { CheckCircle, Trash2, Plus, Users } from "lucide-react";
 interface Props {
   clientName: string;
   setClientName: (val: string) => void;
-  onAddClient: (name: string, phone?: string, address?: string, notes?: string) => void;
+  onAddClient: (
+    name: string,
+    phone?: string,
+    address?: string,
+    notes?: string,
+  ) => void;
   onClear: () => void;
   onFinish?: () => void;
   setClientId: (id: string | null) => void;
@@ -32,9 +37,12 @@ export default function ActionButtons({
   }, []);
 
   // Filter suggestions based on input
-  const filteredSuggestions = clientName.length > 0
-    ? clientSuggestions.filter(c => c.name.toLowerCase().includes(clientName.toLowerCase()))
-    : [];
+  const filteredSuggestions =
+    clientName.length > 0
+      ? clientSuggestions.filter((c) =>
+          c.name.toLowerCase().includes(clientName.toLowerCase()),
+        )
+      : [];
 
   // Handle suggestion click
   const handleSuggestionClick = (name: string, id: string) => {
@@ -51,7 +59,7 @@ export default function ActionButtons({
 
   // Clear clientId if input doesn't match any client
   useEffect(() => {
-    const match = clientSuggestions.find(c => c.name === clientName);
+    const match = clientSuggestions.find((c) => c.name === clientName);
     if (!match) setClientId(null);
   }, [clientName, clientSuggestions, setClientId]);
 
@@ -62,7 +70,7 @@ export default function ActionButtons({
         <input
           ref={inputRef}
           value={clientName}
-          onChange={e => {
+          onChange={(e) => {
             setClientName(e.target.value);
             setShowSuggestions(true);
           }}
@@ -81,7 +89,11 @@ export default function ActionButtons({
                 onMouseDown={() => handleSuggestionClick(c.name, c.id)}
               >
                 {c.name}
-                {c.phone && <span className="ml-2 text-muted-foreground text-xs">{c.phone}</span>}
+                {c.phone && (
+                  <span className="ml-2 text-muted-foreground text-xs">
+                    {c.phone}
+                  </span>
+                )}
               </div>
             ))}
           </div>
@@ -144,9 +156,11 @@ export default function ActionButtons({
             {/* Title Row with Icon */}
             <div className="flex items-center gap-2">
               <Users className="w-5 h-5 text-red-600 dark:text-red-400" />
-              <h2 className="text-lg font-semibold text-foreground">Add New Client</h2>
+              <h2 className="text-lg font-semibold text-foreground">
+                Add New Client
+              </h2>
             </div>
-      
+
             {/* Inputs */}
             <input
               value={newClientName}
@@ -172,7 +186,7 @@ export default function ActionButtons({
               placeholder="Notes (optional)"
               className="w-full rounded-md border border-border px-3 py-2 text-sm bg-background"
             />
-      
+
             {/* Buttons */}
             <div className="flex justify-end gap-2">
               <button
@@ -184,7 +198,12 @@ export default function ActionButtons({
               <button
                 onClick={() => {
                   if (newClientName.trim()) {
-                    onAddClient(newClientName.trim(), newClientPhone.trim(), newClientAddresse.trim(), newClientNotes.trim());
+                    onAddClient(
+                      newClientName.trim(),
+                      newClientPhone.trim(),
+                      newClientAddresse.trim(),
+                      newClientNotes.trim(),
+                    );
                     setShowPopup(false);
                     setNewClientName("");
                     setNewClientPhone("");

@@ -5,7 +5,6 @@ import ProductSearch from "./components/productSearch";
 import CartTable from "./components/cartTable";
 import PaymentSummary from "./components/paymentSummary";
 import ActionButtons from "./components/actionButtons";
-import { useStock } from "../../lib/contexts/stockContext";
 
 export interface CartItem {
   id: string;
@@ -17,7 +16,7 @@ export interface CartItem {
 const MAX_SESSIONS = 5;
 
 export default function CashierPage() {
-  const { refetchProducts } = useStock?.() || {};
+  const [productRefreshKey, setProductRefreshKey] = useState(0);
   const [sessions, setSessions] = useState<CartItem[][]>(
     Array.from({ length: MAX_SESSIONS }, (): CartItem[] => []),
   );
@@ -60,9 +59,19 @@ export default function CashierPage() {
   };
   const [clientName, setClientName] = useState(""); // or from default
   const [clientId, setClientId] = useState<string | null>(null);
-  const handleAddClient = async (name: string, phone?: string, address?: string, notes?: string) => {
+  const handleAddClient = async (
+    name: string,
+    phone?: string,
+    address?: string,
+    notes?: string,
+  ) => {
     try {
-      const client = await window.api.database.clients.create({ name, phone, address, notes });
+      const client = await window.api.database.clients.create({
+        name,
+        phone,
+        address,
+        notes,
+      });
       setClientName(name);
       setClientId(client.id);
     } catch (err) {
@@ -85,7 +94,7 @@ export default function CashierPage() {
       updateSession([]);
       setClientName("");
       setClientId(null);
-      if (refetchProducts) await refetchProducts();
+      setProductRefreshKey((k) => k + 1); // Trigger product refresh
       alert("Sale recorded successfully");
     } catch (err) {
       alert("Failed to record sale");
@@ -123,7 +132,10 @@ export default function CashierPage() {
         {/* LEFT: Product + Cart */}
         <section className="w-full lg:w-2/5 flex flex-col gap-3 overflow-hidden">
           <div className="bg-card border border-border rounded-xl p-3 shadow-sm h-full flex flex-col gap-3 overflow-hidden">
-            <ProductSearch onAdd={handleAddProduct} />
+            <ProductSearch
+              onAdd={handleAddProduct}
+              refreshKey={productRefreshKey}
+            />
             <div className="flex-1 overflow-auto min-h-[100px]">
               <CartTable
                 cart={cart}

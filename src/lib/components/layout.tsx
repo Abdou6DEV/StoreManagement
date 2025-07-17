@@ -29,11 +29,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         className="transition-all duration-700 px-4 md:px-12 py-8 md:py-12"
         style={{
           marginLeft:
-            location.pathname === "/"
-              ? 0
-              : collapsed
-              ? "60px"
-              : "200px",
+            location.pathname === "/" ? 0 : collapsed ? "60px" : "200px",
         }}
       >
         {children}

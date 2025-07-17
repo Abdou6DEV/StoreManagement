@@ -4,6 +4,7 @@ import { Input } from "../../../lib/components/ui/input";
 
 interface Props {
   onAdd: (product: Product) => void;
+  refreshKey: number;
 }
 
 type GroupedSuggestions = {
@@ -11,14 +12,14 @@ type GroupedSuggestions = {
   items: Product[];
 }[];
 
-export default function ProductSearch({ onAdd }: Props) {
+export default function ProductSearch({ onAdd, refreshKey }: Props) {
   const [search, setSearch] = useState("");
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [highlight, setHighlight] = useState<{ catIdx: number; itemIdx: number }>({
-    catIdx: 0,
-    itemIdx: 0,
-  });
+  const [highlight, setHighlight] = useState<{
+    catIdx: number;
+    itemIdx: number;
+  }>({ catIdx: 0, itemIdx: 0 });
 
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -27,7 +28,7 @@ export default function ProductSearch({ onAdd }: Props) {
     window.api.database.products.getAll().then((products) => {
       setAllProducts(products);
     });
-  }, []);
+  }, [refreshKey]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -49,7 +50,7 @@ export default function ProductSearch({ onAdd }: Props) {
     if (!trimmed) return [];
 
     const matches = allProducts.filter((p) =>
-      p.name.toLowerCase().includes(trimmed)
+      p.name.toLowerCase().includes(trimmed),
     );
     const sliced = matches.slice(0, 50);
     const groups: Record<string, Product[]> = {};
@@ -79,7 +80,7 @@ export default function ProductSearch({ onAdd }: Props) {
   };
 
   const moveHighlight = (deltaCat: number, deltaItem: number) => {
-    let { catIdx, itemIdx } = highlight;
+    const { catIdx, itemIdx } = highlight;
     const newCat = Math.min(Math.max(0, catIdx + deltaCat), grouped.length - 1);
     const itemsLen = grouped[newCat]?.items.length || 0;
     const newItem =

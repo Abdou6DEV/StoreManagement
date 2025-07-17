@@ -46,7 +46,12 @@ export class DatabaseService {
     return category;
   }
 
-  static async createClient(data: { name: string; phone?: string; address?: string; notes?: string }) {
+  static async createClient(data: {
+    name: string;
+    phone?: string;
+    address?: string;
+    notes?: string;
+  }) {
     return await prisma.client.create({ data });
   }
 
@@ -58,7 +63,9 @@ export class DatabaseService {
     return await prisma.$transaction(async (tx) => {
       // Check stock for all items
       for (const item of data.items) {
-        const product = await tx.product.findUnique({ where: { id: item.productId } });
+        const product = await tx.product.findUnique({
+          where: { id: item.productId },
+        });
         if (!product || product.quantity < item.quantity) {
           throw new Error(`Not enough stock for product: ${item.productId}`);
         }

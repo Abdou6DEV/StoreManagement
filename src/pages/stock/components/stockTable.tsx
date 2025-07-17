@@ -56,7 +56,7 @@ export const StockTable = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [editingProductID, setEditingProductID] = useState<string | null>(null);
-  
+
   // Add state for category search input and dropdown open
   const [categorySearch, setCategorySearch] = useState("");
   const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
@@ -86,7 +86,8 @@ export const StockTable = () => {
     const matchesCategory =
       !filters.category || product.categoryName === filters.category;
     // If lowStockThreshold is empty string, treat as 0
-    const threshold = lowStockThreshold.trim() === "" ? 0 : Number(lowStockThreshold);
+    const threshold =
+      lowStockThreshold.trim() === "" ? 0 : Number(lowStockThreshold);
     const matchesLowStock = !filters.lowStock || product.quantity <= threshold;
     return matchesSearch && matchesCategory && matchesLowStock;
   });
@@ -217,10 +218,13 @@ export const StockTable = () => {
             aria-label={t("stock.search")}
           />
           {/* Category Filter Dropdown */}
-          <Popover open={categoryDropdownOpen} onOpenChange={(open) => {
-            setCategoryDropdownOpen(open);
-            if (open) setCategorySearch(""); // Reset search when opening
-          }}>
+          <Popover
+            open={categoryDropdownOpen}
+            onOpenChange={(open) => {
+              setCategoryDropdownOpen(open);
+              if (open) setCategorySearch(""); // Reset search when opening
+            }}
+          >
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
@@ -258,7 +262,9 @@ export const StockTable = () => {
                     </CommandItem>
                     {categories
                       .filter((cat) =>
-                        cat.toLowerCase().includes(categorySearch.toLowerCase())
+                        cat
+                          .toLowerCase()
+                          .includes(categorySearch.toLowerCase()),
                       )
                       .map((cat) => (
                         <CommandItem
@@ -323,7 +329,9 @@ export const StockTable = () => {
               <AlertTriangle
                 className={cn(
                   "w-4 h-4",
-                  filters.lowStock ? "text-yellow-500" : "text-muted-foreground",
+                  filters.lowStock
+                    ? "text-yellow-500"
+                    : "text-muted-foreground",
                 )}
               />
               {t("stock.lowStock")}
@@ -359,7 +367,9 @@ export const StockTable = () => {
               <TrendingDown
                 className={cn(
                   "w-4 h-4",
-                  filters.worstSelling ? "text-red-600" : "text-muted-foreground",
+                  filters.worstSelling
+                    ? "text-red-600"
+                    : "text-muted-foreground",
                 )}
               />
               {t("stock.worstSelling")}
@@ -371,7 +381,7 @@ export const StockTable = () => {
               type="number"
               min={0}
               value={lowStockThreshold}
-              onChange={e => setLowStockThreshold(e.target.value)}
+              onChange={(e) => setLowStockThreshold(e.target.value)}
               className="w-16 px-2 py-1 border rounded text-sm ml-2"
               aria-label={t("stock.lowStockThreshold", "Low stock threshold")}
               style={{ minWidth: 0 }}

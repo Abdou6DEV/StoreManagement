@@ -39,7 +39,7 @@ export default function CategorySummaryTable() {
       <h2 className="text-lg font-bold text-foreground mb-4">
         {t("stock.categorySummary", "Stock by Category")}
       </h2>
-      {(categories.length === 0 || products.length === 0) ? (
+      {categories.length === 0 || products.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 gap-4 text-center">
           <Package className="w-16 h-16 text-green-600 mb-2" />
           <h3 className="text-xl font-semibold text-foreground">
@@ -84,11 +84,21 @@ export default function CategorySummaryTable() {
               ))}
               {/* Total Row */}
               <tr className="h-[48px] bg-muted/60 font-medium border-t border-border transition-colors duration-200 hover:bg-muted">
-                <td className="px-4 text-foreground">{t("stock.total", "Total")}</td>
-                <td className="px-4">{summary.reduce((sum, row) => sum + row.totalQuantity, 0)}</td>
-                <td className="px-4">{summary.reduce((sum, row) => sum + row.totalBought, 0)}</td>
-                <td className="px-4">{summary.reduce((sum, row) => sum + row.totalSelling, 0)}</td>
-                <td className="px-4 text-green-800">{summary.reduce((sum, row) => sum + row.totalProfit, 0)}</td>
+                <td className="px-4 text-foreground">
+                  {t("stock.total", "Total")}
+                </td>
+                <td className="px-4">
+                  {summary.reduce((sum, row) => sum + row.totalQuantity, 0)}
+                </td>
+                <td className="px-4">
+                  {summary.reduce((sum, row) => sum + row.totalBought, 0)}
+                </td>
+                <td className="px-4">
+                  {summary.reduce((sum, row) => sum + row.totalSelling, 0)}
+                </td>
+                <td className="px-4 text-green-800">
+                  {summary.reduce((sum, row) => sum + row.totalProfit, 0)}
+                </td>
               </tr>
             </tbody>
           </table>

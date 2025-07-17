@@ -37,14 +37,7 @@ export default function App() {
                 </StockProvider>
               }
             />
-            <Route
-              path="/cashier"
-              element={
-                <StockProvider>
-                  <Cashier />
-                </StockProvider>
-              }
-            />
+            <Route path="/cashier" element={<Cashier />} />
             <Route path="/*" element={<h1 className="">Soon..</h1>} />
           </Route>
         </Routes>
