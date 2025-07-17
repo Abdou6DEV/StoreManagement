@@ -52,7 +52,7 @@ export const StockTable = () => {
     search: "",
     category: "", // <-- add category filter
   });
-  const [lowStockThreshold, setLowStockThreshold] = useState(5); // Default threshold
+  const [lowStockThreshold, setLowStockThreshold] = useState<string>(""); // Default threshold is empty
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [editingProductID, setEditingProductID] = useState<string | null>(null);
@@ -85,7 +85,9 @@ export const StockTable = () => {
       (product.codebar && product.codebar.toLowerCase().includes(search));
     const matchesCategory =
       !filters.category || product.categoryName === filters.category;
-    const matchesLowStock = !filters.lowStock || product.quantity <= lowStockThreshold;
+    // If lowStockThreshold is empty string, treat as 0
+    const threshold = lowStockThreshold.trim() === "" ? 0 : Number(lowStockThreshold);
+    const matchesLowStock = !filters.lowStock || product.quantity <= threshold;
     return matchesSearch && matchesCategory && matchesLowStock;
   });
 
@@ -367,12 +369,13 @@ export const StockTable = () => {
           {filters.lowStock && (
             <input
               type="number"
-              min={1}
+              min={0}
               value={lowStockThreshold}
-              onChange={e => setLowStockThreshold(Number(e.target.value) || 1)}
+              onChange={e => setLowStockThreshold(e.target.value)}
               className="w-16 px-2 py-1 border rounded text-sm ml-2"
               aria-label={t("stock.lowStockThreshold", "Low stock threshold")}
               style={{ minWidth: 0 }}
+              placeholder="0"
             />
           )}
         </div>
