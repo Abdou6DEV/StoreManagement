@@ -55,6 +55,10 @@ export const StockTable = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [editingProductID, setEditingProductID] = useState<string | null>(null);
+  
+  // Add state for category search input and dropdown open
+  const [categorySearch, setCategorySearch] = useState("");
+  const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
 
   const handleChange = (key: keyof typeof filters, value: boolean | string) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
@@ -209,7 +213,10 @@ export const StockTable = () => {
             aria-label={t("stock.search")}
           />
           {/* Category Filter Dropdown */}
-          <Popover>
+          <Popover open={categoryDropdownOpen} onOpenChange={(open) => {
+            setCategoryDropdownOpen(open);
+            if (open) setCategorySearch(""); // Reset search when opening
+          }}>
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
@@ -227,6 +234,8 @@ export const StockTable = () => {
                 <CommandInput
                   placeholder={t("stock.searchType")}
                   className="h-9"
+                  value={categorySearch}
+                  onValueChange={setCategorySearch}
                 />
                 <CommandList>
                   <CommandGroup>
@@ -243,23 +252,27 @@ export const StockTable = () => {
                         )}
                       />
                     </CommandItem>
-                    {categories.map((cat) => (
-                      <CommandItem
-                        key={cat}
-                        value={cat}
-                        onSelect={() => handleChange("category", cat)}
-                      >
-                        {cat}
-                        <Check
-                          className={cn(
-                            "ml-auto h-4 w-4",
-                            filters.category === cat
-                              ? "opacity-100"
-                              : "opacity-0",
-                          )}
-                        />
-                      </CommandItem>
-                    ))}
+                    {categories
+                      .filter((cat) =>
+                        cat.toLowerCase().includes(categorySearch.toLowerCase())
+                      )
+                      .map((cat) => (
+                        <CommandItem
+                          key={cat}
+                          value={cat}
+                          onSelect={() => handleChange("category", cat)}
+                        >
+                          {cat}
+                          <Check
+                            className={cn(
+                              "ml-auto h-4 w-4",
+                              filters.category === cat
+                                ? "opacity-100"
+                                : "opacity-0",
+                            )}
+                          />
+                        </CommandItem>
+                      ))}
                   </CommandGroup>
                 </CommandList>
               </Command>
