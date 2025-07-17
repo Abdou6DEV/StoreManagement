@@ -14,7 +14,7 @@ export default function StyledNumberInput({
   value,
   onChange,
   min = 0,
-  max = 999999,
+  max = 2_147_483_647,
   step = 1,
   placeholder = "",
   disabled = false,
