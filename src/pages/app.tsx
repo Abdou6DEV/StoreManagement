@@ -1,6 +1,7 @@
 import React, { Suspense } from "react";
 import { Routes, Route, Outlet } from "react-router-dom";
 import Layout from "../lib/components/layout";
+import ScrollToTop from "../lib/components/scrollToTop";
 const MainMenu = React.lazy(() => import("./mainMenu"));
 const Dashboard = React.lazy(() => import("./dashboard"));
 const Customers = React.lazy(() => import("./customers"));
@@ -12,6 +13,7 @@ import { StockProvider } from "../lib/contexts/stockContext";
 export default function App() {
   return (
     <Layout>
+      <ScrollToTop />
       <Suspense fallback={<div>Loading...</div>}>
         <Routes>
           <Route path="/" element={<MainMenu />} />
