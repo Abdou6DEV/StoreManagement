@@ -177,7 +177,7 @@ export default function CashierPage() {
                 className="p-2 rounded-md bg-muted hover:bg-primary hover:text-white transition"
               >
                 {showProductBrowser ? (
-                  <ChevronUp className="w-5 h-5" />
+                  <ChevronUp className="w-5 h-5"/>
                 ) : (
                   <ChevronDown className="w-5 h-5" />
                 )}
@@ -185,8 +185,8 @@ export default function CashierPage() {
             </div>
             
             {/* Product Browser with smooth slide animation */}
-            <div className={`transition-all duration-500 ease-in-out overflow-hidden ${
-              showProductBrowser ? "max-h-200" : "max-h-0"
+            <div className={`h-full transition-all duration-500 ease-in-out overflow-hidden ${
+              showProductBrowser ? "max-h-full" : "max-h-0"
             }`}>
               <div className="border border-border rounded-lg p-3 bg-background h-full flex flex-col">
                 <input
@@ -239,8 +239,8 @@ export default function CashierPage() {
               </div>
             </div>
             
-            <div className={`flex-1 overflow-auto min-h-[100px] transition-all duration-300 ${
-              showProductBrowser ? "max-h-[30vh]" : "max-h-[70vh]"
+            <div className={`flex-1 overflow-auto min-h-[0px] transition-all duration-300 ${
+              showProductBrowser ? "max-h-[0vh]" : "max-h-[70vh]"
             }`}>
               <CartTable
                 cart={cart}
