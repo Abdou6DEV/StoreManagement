@@ -88,4 +88,16 @@ function setupDatabaseHandlers() {
   ipcMain.handle("db:categories:ensure", async (_event, name) => {
     return await DatabaseService.ensureCategory(name);
   });
+
+  ipcMain.handle("db:clients:create", async (_event, data) => {
+    return await DatabaseService.createClient(data);
+  });
+
+  ipcMain.handle("db:sales:create", async (_event, data) => {
+    return await DatabaseService.createSale(data);
+  });
+
+  ipcMain.handle("db:clients:getAll", async () => {
+    return await DatabaseService.getAllClients();
+  });
 }

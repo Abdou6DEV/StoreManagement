@@ -19,6 +19,15 @@ contextBridge.exposeInMainWorld("api", {
       ensure: (name: string) =>
         ipcRenderer.invoke("db:categories:ensure", name),
     },
+    clients: {
+      create: (data: { name: string; phone?: string; address?: string; notes?: string }) =>
+        ipcRenderer.invoke("db:clients:create", data),
+      getAll: () => ipcRenderer.invoke("db:clients:getAll"),
+    },
+    sales: {
+      create: (data: { clientId?: string; items: { productId: string; quantity: number; price: number }[] }) =>
+        ipcRenderer.invoke("db:sales:create", data),
+    },
   },
   app: {
     getVersion: () => ipcRenderer.invoke("app:getVersion"),
@@ -43,6 +52,13 @@ declare global {
         categories: {
           getAll: () => Promise<Category[]>;
           ensure: (name: string) => Promise<Category>;
+        };
+        clients: {
+          create: (data: { name: string; phone?: string; address?: string; notes?: string }) => Promise<any>;
+          getAll: () => Promise<any[]>;
+        };
+        sales: {
+          create: (data: { clientId?: string; items: { productId: string; quantity: number; price: number }[] }) => Promise<any>;
         };
       };
       app: {

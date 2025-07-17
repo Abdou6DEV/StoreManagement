@@ -45,4 +45,49 @@ export class DatabaseService {
     }
     return category;
   }
+
+  static async createClient(data: { name: string; phone?: string; address?: string; notes?: string }) {
+    return await prisma.client.create({ data });
+  }
+
+  static async createSale(data: {
+    clientId?: string;
+    items: { productId: string; quantity: number; price: number }[];
+  }) {
+    // Create sale and sale items in a transaction, and decrement product quantities
+    return await prisma.$transaction(async (tx) => {
+      // Check stock for all items
+      for (const item of data.items) {
+        const product = await tx.product.findUnique({ where: { id: item.productId } });
+        if (!product || product.quantity < item.quantity) {
+          throw new Error(`Not enough stock for product: ${item.productId}`);
+        }
+      }
+      // Decrement stock
+      for (const item of data.items) {
+        await tx.product.update({
+          where: { id: item.productId },
+          data: { quantity: { decrement: item.quantity } },
+        });
+      }
+      // Create sale
+      const sale = await tx.sale.create({
+        data: {
+          clientId: data.clientId,
+          saleItems: {
+            create: data.items.map((item) => ({
+              productId: item.productId,
+              quantity: item.quantity,
+              price: item.price,
+            })),
+          },
+        },
+      });
+      return sale;
+    });
+  }
+
+  static async getAllClients() {
+    return await prisma.client.findMany();
+  }
 }

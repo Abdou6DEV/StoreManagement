@@ -1,12 +1,13 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { CheckCircle, Trash2, Plus, Users } from "lucide-react";
 
 interface Props {
   clientName: string;
   setClientName: (val: string) => void;
-  onAddClient: (name: string, phone?: string) => void;
+  onAddClient: (name: string, phone?: string, address?: string, notes?: string) => void;
   onClear: () => void;
   onFinish?: () => void;
+  setClientId: (id: string | null) => void;
 }
 
 export default function ActionButtons({
@@ -15,23 +16,76 @@ export default function ActionButtons({
   onAddClient,
   onClear,
   onFinish,
+  setClientId,
 }: Props) {
   const [showPopup, setShowPopup] = useState(false);
   const [newClientName, setNewClientName] = useState("");
   const [newClientPhone, setNewClientPhone] = useState("");
   const [newClientAddresse, setNewClientAddress] = useState("");
   const [newClientNotes, setNewClientNotes] = useState("");
+  const [clientSuggestions, setClientSuggestions] = useState<any[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    window.api.database.clients.getAll().then(setClientSuggestions);
+  }, []);
+
+  // Filter suggestions based on input
+  const filteredSuggestions = clientName.length > 0
+    ? clientSuggestions.filter(c => c.name.toLowerCase().includes(clientName.toLowerCase()))
+    : [];
+
+  // Handle suggestion click
+  const handleSuggestionClick = (name: string, id: string) => {
+    setClientName(name);
+    setClientId(id);
+    setShowSuggestions(false);
+    inputRef.current?.blur();
+  };
+
+  // Hide suggestions on blur
+  const handleBlur = () => {
+    setTimeout(() => setShowSuggestions(false), 100);
+  };
+
+  // Clear clientId if input doesn't match any client
+  useEffect(() => {
+    const match = clientSuggestions.find(c => c.name === clientName);
+    if (!match) setClientId(null);
+  }, [clientName, clientSuggestions, setClientId]);
 
   return (
     <div className="flex flex-col gap-4">
       {/* === Row 1: Client Name + Add Client + Discount + Confirm === */}
       <div className="flex flex-wrap gap-2 items-center">
         <input
+          ref={inputRef}
           value={clientName}
-          onChange={(e) => setClientName(e.target.value)}
+          onChange={e => {
+            setClientName(e.target.value);
+            setShowSuggestions(true);
+          }}
+          onFocus={() => setShowSuggestions(true)}
+          onBlur={handleBlur}
           placeholder="Customer name"
           className="flex-1 rounded-md border border-border px-3 py-2 text-sm bg-background"
         />
+        {/* Suggestions Dropdown */}
+        {showSuggestions && filteredSuggestions.length > 0 && (
+          <div className="absolute z-50 mt-12 w-[250px] bg-card border border-border rounded shadow-lg max-h-60 overflow-y-auto">
+            {filteredSuggestions.map((c) => (
+              <div
+                key={c.id}
+                className="px-4 py-2 cursor-pointer hover:bg-muted text-sm"
+                onMouseDown={() => handleSuggestionClick(c.name, c.id)}
+              >
+                {c.name}
+                {c.phone && <span className="ml-2 text-muted-foreground text-xs">{c.phone}</span>}
+              </div>
+            ))}
+          </div>
+        )}
         <button
           onClick={() => setShowPopup(true)}
           className="flex items-centered px-3 py-2 rounded-md bg-muted hover:bg-primary hover:text-primary-foreground transition text-sm"
@@ -107,19 +161,13 @@ export default function ActionButtons({
               className="w-full rounded-md border border-border px-3 py-2 text-sm bg-background"
             />
             <input
-              value={newClientPhone}
-              onChange={(e) => setNewClientPhone(e.target.value)}
-              placeholder="Phone Number (optional)"
-              className="w-full rounded-md border border-border px-3 py-2 text-sm bg-background"
-            />
-            <input
-              value={newClientPhone}
+              value={newClientAddresse}
               onChange={(e) => setNewClientAddress(e.target.value)}
               placeholder="Address (optional)"
               className="w-full rounded-md border border-border px-3 py-2 text-sm bg-background"
             />
             <input
-              value={newClientPhone}
+              value={newClientNotes}
               onChange={(e) => setNewClientNotes(e.target.value)}
               placeholder="Notes (optional)"
               className="w-full rounded-md border border-border px-3 py-2 text-sm bg-background"
@@ -136,10 +184,12 @@ export default function ActionButtons({
               <button
                 onClick={() => {
                   if (newClientName.trim()) {
-                    onAddClient(newClientName.trim(), newClientPhone.trim());
+                    onAddClient(newClientName.trim(), newClientPhone.trim(), newClientAddresse.trim(), newClientNotes.trim());
                     setShowPopup(false);
                     setNewClientName("");
                     setNewClientPhone("");
+                    setNewClientAddress("");
+                    setNewClientNotes("");
                   }
                 }}
                 className="px-4 py-2 text-sm bg-primary text-white rounded-md hover:bg-primary/80"

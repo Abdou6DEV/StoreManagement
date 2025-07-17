@@ -5,6 +5,7 @@ import ProductSearch from "./components/productSearch";
 import CartTable from "./components/cartTable";
 import PaymentSummary from "./components/paymentSummary";
 import ActionButtons from "./components/actionButtons";
+import { useStock } from "../../lib/contexts/stockContext";
 
 export interface CartItem {
   id: string;
@@ -16,6 +17,7 @@ export interface CartItem {
 const MAX_SESSIONS = 5;
 
 export default function CashierPage() {
+  const { refetchProducts } = useStock?.() || {};
   const [sessions, setSessions] = useState<CartItem[][]>(
     Array.from({ length: MAX_SESSIONS }, (): CartItem[] => []),
   );
@@ -57,12 +59,38 @@ export default function CashierPage() {
     updateSession(updated);
   };
   const [clientName, setClientName] = useState(""); // or from default
-  const handleAddClient = (name: string, phone?: string) => {
-    // Save client to DB or just log it
-    console.log("New client:", name, phone);
-    setClientName(name);
+  const [clientId, setClientId] = useState<string | null>(null);
+  const handleAddClient = async (name: string, phone?: string, address?: string, notes?: string) => {
+    try {
+      const client = await window.api.database.clients.create({ name, phone, address, notes });
+      setClientName(name);
+      setClientId(client.id);
+    } catch (err) {
+      alert("Failed to add client");
+    }
   };
   const handleClear = () => updateSession([]);
+
+  const handleFinish = async () => {
+    if (cart.length === 0) return;
+    try {
+      await window.api.database.sales.create({
+        clientId: clientId || undefined,
+        items: cart.map((item) => ({
+          productId: item.id,
+          quantity: item.qty,
+          price: item.price,
+        })),
+      });
+      updateSession([]);
+      setClientName("");
+      setClientId(null);
+      if (refetchProducts) await refetchProducts();
+      alert("Sale recorded successfully");
+    } catch (err) {
+      alert("Failed to record sale");
+    }
+  };
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -126,7 +154,8 @@ export default function CashierPage() {
               setClientName={setClientName}
               onAddClient={handleAddClient}
               onClear={handleClear}
-              onFinish={() => {/* Your confirm logic */}}
+              onFinish={handleFinish}
+              setClientId={setClientId}
             />
           </div>
         </section>
