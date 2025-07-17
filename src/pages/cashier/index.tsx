@@ -65,32 +65,35 @@ export default function CashierPage() {
   
   // FIXED: Batch add products instead of individual state updates
   const handleAddSelectedProducts = () => {
-    if (selectedProducts.length === 0) return;
-    
-    // Create a copy of the current cart to modify
-    const updatedCart = [...cart];
-    
-    selectedProducts.forEach(productId => {
-      const product = allProducts.find(p => p.id === productId);
-      if (product) {
-        const existingItem = updatedCart.find(item => item.id === product.id);
-        if (existingItem) {
-          existingItem.qty += 1;
-        } else {
-          updatedCart.push({
-            id: product.id,
-            name: product.name,
-            price: product.selling,
-            qty: 1,
-          });
-        }
+  if (selectedProducts.length === 0) return;
+  
+  // Create a copy of the current cart to modify
+  const updatedCart = [...cart];
+  
+  selectedProducts.forEach(productId => {
+    const product = allProducts.find(p => p.id === productId);
+    if (product) {
+      const existingItem = updatedCart.find(item => item.id === product.id);
+      if (existingItem) {
+        existingItem.qty += 1;
+      } else {
+        updatedCart.push({
+          id: product.id,
+          name: product.name,
+          price: product.selling,
+          qty: 1,
+        });
       }
-    });
-    
-    // Update cart state once with all changes
-    updateSession(updatedCart);
-    setSelectedProducts([]);
-  };
+    }
+  });
+  
+  // Update cart state once with all changes
+  updateSession(updatedCart);
+  setSelectedProducts([]);
+  
+  // Collapse the product browser after adding items
+  setShowProductBrowser(false);
+};
 
   const [clientName, setClientName] = useState("");
   const [clientId, setClientId] = useState<string | null>(null);
