@@ -34,8 +34,9 @@ export default function ActionButtons({
         />
         <button
           onClick={() => setShowPopup(true)}
-          className="px-3 py-2 rounded-md bg-muted hover:bg-primary hover:text-primary-foreground transition text-sm"
+          className="flex items-centered px-3 py-2 rounded-md bg-muted hover:bg-primary hover:text-primary-foreground transition text-sm"
         >
+          Add New Client
           <Plus className="w-4 h-4" />
         </button>
 
