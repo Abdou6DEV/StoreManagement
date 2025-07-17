@@ -119,7 +119,7 @@ export const StockTable = () => {
               onClick={() => setEditingProductID(product.id)}
               size="sm"
               variant="outline"
-              className="text-blue-600 border-blue-200 hover:bg-blue-50 dark:text-blue-400 dark:border-blue-800 dark:hover:bg-blue-950/30"
+              className="text-green-600 border-green-200 hover:bg-green-50 dark:text-green-400 dark:border-green-800 dark:hover:bg-green-950/30"
             >
               <Edit className="w-3 h-3" />
               {t("stock.edit", "Edit")}
@@ -352,7 +352,7 @@ export const StockTable = () => {
       {/* Table or Empty State */}
       {paginatedProducts.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 gap-4 text-center">
-          <Package className="w-16 h-16 text-muted-foreground mb-2" />
+          <Package className="w-16 h-16 text-green-600 mb-2" />
           <h3 className="text-xl font-semibold text-foreground">
             {t("stock.emptyProductTitle")}
           </h3>
@@ -428,8 +428,8 @@ export const StockTable = () => {
           <DialogHeader>
             <DialogTitle>
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                  <Edit className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                  <Edit className="w-5 h-5 text-green-600" />
                 </div>
                 <div>
                   <h2 className="text-xl font-bold text-foreground">

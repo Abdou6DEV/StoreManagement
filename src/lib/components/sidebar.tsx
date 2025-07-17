@@ -30,7 +30,7 @@ const menuItems = [
     icon: ChartLine,
     color: "text-green-500",
   },
-  { key: "stock", path: "/stock", icon: PackageSearch, color: "text-blue-500" },
+  { key: "stock", path: "/stock", icon: PackageSearch, color: "text-green-600" },
   { key: "history", path: "/history", icon: Search, color: "text-cyan-500" },
   {
     key: "finance",

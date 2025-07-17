@@ -41,7 +41,7 @@ export default function CategorySummaryTable() {
       </h2>
       {(categories.length === 0 || products.length === 0) ? (
         <div className="flex flex-col items-center justify-center py-16 gap-4 text-center">
-          <Package className="w-16 h-16 text-muted-foreground mb-2" />
+          <Package className="w-16 h-16 text-green-600 mb-2" />
           <h3 className="text-xl font-semibold text-foreground">
             {t("stock.emptyCategoryTitle")}
           </h3>

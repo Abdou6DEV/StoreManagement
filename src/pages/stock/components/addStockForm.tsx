@@ -117,7 +117,7 @@ export default function AddStockForm({
       >
         <div className="flex items-center gap-3">
           <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
-            <Package className="w-5 h-5 text-green-600 dark:text-green-400" />
+            <Package className="w-5 h-5 text-green-600" />
           </div>
           <h2 className="text-lg font-bold text-foreground">
             {t("stock.addTitle", "Add Stock")}

@@ -56,7 +56,7 @@ export default function EditStockForm({
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground flex items-center gap-2">
-              <Package className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+              <Package className="w-4 h-4 text-green-600" />
               {t("stock.product")}
             </label>
             <input
@@ -64,7 +64,7 @@ export default function EditStockForm({
               placeholder={t("stock.product")}
               value={form.name}
               onChange={(e) => handleEditFormChange("name", e.target.value)}
-              className="w-full px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
+              className="w-full px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-green-500/50 focus:border-green-500 transition-all"
               required
             />
           </div>
@@ -80,7 +80,7 @@ export default function EditStockForm({
               onChange={(e) =>
                 handleEditFormChange("categoryName", e.target.value)
               }
-              className="w-full px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
+              className="w-full px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-green-500/50 focus:border-green-500 transition-all"
               required
               autoComplete="off"
             />
@@ -130,7 +130,7 @@ export default function EditStockForm({
               placeholder={t("stock.codebar")}
               value={form.codebar}
               onChange={(e) => handleEditFormChange("codebar", e.target.value)}
-              className="w-full px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
+              className="w-full px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-green-500/50 focus:border-green-500 transition-all"
             />
           </div>
         </div>
@@ -139,7 +139,7 @@ export default function EditStockForm({
           <Button
             type="submit"
             disabled={loading}
-            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+            className="flex-1 bg-green-600 hover:bg-green-700 text-white"
           >
             {loading ? (
               <>

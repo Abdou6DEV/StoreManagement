@@ -28,7 +28,7 @@ export default function MainMenu() {
     {
       key: "stock",
       icon: PackageSearch,
-      color: "text-blue-500",
+      color: "text-green-600",
     },
     {
       key: "history",
