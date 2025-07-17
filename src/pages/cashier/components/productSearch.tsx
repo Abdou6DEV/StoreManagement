@@ -136,7 +136,7 @@ export default function ProductSearch({ onAdd, refreshKey }: Props) {
         onChange={(e) => setSearch(e.target.value)}
         onKeyDown={handleKeyDown}
         placeholder="Type name or scan barcode..."
-        className="text-lg px-5 py-3 rounded-xl border-none shadow focus:ring-2 focus:ring-primary/40 bg-background"
+        className="text-lg px-5 py-3 rounded-xl border-muted shadow focus:ring-2 focus:ring-primary bg-background"
       />
 
       {showSuggestions && grouped.length > 0 && (

@@ -63,16 +63,32 @@ export default function CashierPage() {
     updateSession(updated);
   };
   
+  // FIXED: Batch add products instead of individual state updates
   const handleAddSelectedProducts = () => {
     if (selectedProducts.length === 0) return;
+    
+    // Create a copy of the current cart to modify
+    const updatedCart = [...cart];
     
     selectedProducts.forEach(productId => {
       const product = allProducts.find(p => p.id === productId);
       if (product) {
-        handleAddProduct(product);
+        const existingItem = updatedCart.find(item => item.id === product.id);
+        if (existingItem) {
+          existingItem.qty += 1;
+        } else {
+          updatedCart.push({
+            id: product.id,
+            name: product.name,
+            price: product.selling,
+            qty: 1,
+          });
+        }
       }
     });
     
+    // Update cart state once with all changes
+    updateSession(updatedCart);
     setSelectedProducts([]);
   };
 
@@ -174,12 +190,18 @@ export default function CashierPage() {
               />
               <button
                 onClick={() => setShowProductBrowser(!showProductBrowser)}
-                className="p-2 rounded-md bg-muted hover:bg-primary hover:text-white transition"
+                className="flex h-8 p-1 mt-6 text-sm font-semibold border-1 border-border items-center rounded-md bg-muted/40 hover:bg-muted hover:text-primary transition"
               >
-                {showProductBrowser ? (
-                  <ChevronUp className="w-5 h-5"/>
-                ) : (
-                  <ChevronDown className="w-5 h-5" />
+              {showProductBrowser ? (
+                <>
+                  <span>Hide List</span>
+                  <ChevronUp className="w-4 h-4" />
+                </>
+              ) : (
+                <>
+                  <span>Show List</span>
+                  <ChevronDown className="w-4 h-4" />
+                </>
                 )}
               </button>
             </div>
@@ -197,7 +219,7 @@ export default function CashierPage() {
                   onChange={(e) => setProductFilter(e.target.value)}
                 />
                 
-                <div className="flex-1 overflow-y-auto grid grid-cols-2 gap-2">
+                <div className="flex-1 overflow-y-auto grid grid-cols-3 gap-2">
                   {filteredProducts.map((product) => (
                     <div
                       key={product.id}
@@ -208,9 +230,9 @@ export default function CashierPage() {
                             : [...prev, product.id]
                         );
                       }}
-                      className={`p-2 border rounded-md cursor-pointer transition-all flex flex-col ${
+                      className={`p-2 border rounded-md h-20 cursor-pointer transition-all flex flex-col ${
                         selectedProducts.includes(product.id)
-                          ? "border-white bg-primary/10"
+                          ? "border-primary bg-primary/10"
                           : "border-border hover:border-primary"
                       }`}
                     >
