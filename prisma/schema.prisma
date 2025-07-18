@@ -9,8 +9,10 @@ datasource db {
 }
 
 model Category {
-  name     String    @id
-  products Product[]
+  name      String    @id
+  products  Product[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 }
 
 model Product {
@@ -48,6 +50,8 @@ model SaleItem {
   quantity  Int
   price     Decimal
   saleId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   product Product @relation(fields: [productId], references: [id])
   sale    Sale    @relation(fields: [saleId], references: [id])

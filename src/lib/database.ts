@@ -62,22 +62,21 @@ export class DatabaseService {
   }) {
     // Create sale and sale items in a transaction, and decrement product quantities
     return await prisma.$transaction(async (tx) => {
-      // Check stock for all items
+      // Decrement stock, but do not allow negative quantities
       for (const item of data.items) {
         const product = await tx.product.findUnique({
           where: { id: item.productId },
         });
-        if (!product || product.quantity < item.quantity) {
-          throw new Error(`Not enough stock for product: ${item.productId}`);
+
+        if (product) {
+          const newQty = Math.max(0, product.quantity - item.quantity);
+          await tx.product.update({
+            where: { id: item.productId },
+            data: { quantity: newQty },
+          });
         }
       }
-      // Decrement stock
-      for (const item of data.items) {
-        await tx.product.update({
-          where: { id: item.productId },
-          data: { quantity: { decrement: item.quantity } },
-        });
-      }
+      
       // Create sale
       const sale = await tx.sale.create({
         data: {
