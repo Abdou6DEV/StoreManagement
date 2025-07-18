@@ -51,10 +51,10 @@ export default function CartTable({ cart, setCart }: Props) {
         <td className="p-2 w-[30%]">{item.name}</td>
         <td className="p-2 text-right w-[10%]">{item.qty}</td>
         <td className="p-2 text-right w-[20%]">
-          {item.price.toLocaleString()} DZD
+          {item.price.toLocaleString()} DZ
         </td>
         <td className="p-2 text-right w-[20%]">
-          {(item.price * item.qty).toLocaleString()} DZD
+          {(item.price * item.qty).toLocaleString()} DA
         </td>
         <td className="p-2 text-right w-[20%]">
           <div className="flex justify-end gap-1">
