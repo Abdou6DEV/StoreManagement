@@ -7,6 +7,7 @@ import ProductSearch from "./components/productSearch";
 import CartTable from "./components/cartTable";
 import PaymentSummary from "./components/paymentSummary";
 import ActionButtons from "./components/actionButtons";
+import OutOfStockWarningModal from "./components/outOfStockWarningModal";
 
 export interface CartItem {
   id: string;
@@ -28,6 +29,8 @@ export default function CashierPage() {
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [productFilter, setProductFilter] = useState("");
   const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [outOfStockItems, setOutOfStockItems] = useState<CartItem[]>([]);
+  const [showStockWarning, setShowStockWarning] = useState(false);
 
   // Ensure cart always exists
   const cart: CartItem[] = useMemo(() => {
@@ -132,15 +135,30 @@ export default function CashierPage() {
 
   const handleFinish = async () => {
     if (cart.length === 0) return;
+    
+    // Check for out-of-stock items
+    const outOfStock = cart.filter((item) => {
+      const product = allProducts.find((p) => p.id === item.id);
+      return product && item.qty > product.quantity;
+    });
+    if (outOfStock.length > 0) {
+      setOutOfStockItems(outOfStock);
+      setShowStockWarning(true);
+      return;
+    }
+    await proceedWithSale();
+  };
+
+  // Extracted sale logic for reuse
+  const proceedWithSale = async () => {
     let saleClientId = clientId;
     try {
-      // If clientName is entered but clientId is null, create the client first
       if (clientName.trim() && !clientId) {
         const client = await window.api.database.clients.create({
           name: clientName.trim(),
         });
         saleClientId = client.id;
-        setClientId(client.id); // update state for consistency
+        setClientId(client.id);
       }
       await window.api.database.sales.create({
         clientId: saleClientId || undefined,
@@ -351,6 +369,22 @@ export default function CashierPage() {
           );
         })}
       </div>
+
+      {/* === Out of Stock Warning Modal === */}
+      <OutOfStockWarningModal
+        open={showStockWarning}
+        items={outOfStockItems}
+        allProducts={allProducts}
+        onCancel={() => {
+          setShowStockWarning(false);
+          setOutOfStockItems([]);
+        }}
+        onProceed={async () => {
+          setShowStockWarning(false);
+          setOutOfStockItems([]);
+          await proceedWithSale();
+        }}
+      />
     </main>
   );
 }

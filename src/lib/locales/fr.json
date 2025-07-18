@@ -120,7 +120,11 @@
     "paymentAmount": "Montant à payer",
     "addProducts": "Ajouter des produits",
     "typeOrScan": "Tapez le nom ou scannez le code-barres...",
-    "inStock": "en stock"
+    "inStock": "en stock",
+    "outOfStockWarning": "Certains articles sont en rupture de stock !",
+    "requested": "Demandé",
+    "available": "Disponible",
+    "proceedAnyway": "Continuer quand même"
   },
   "clients": {
     "itemsPerPage": "Éléms par page:",
