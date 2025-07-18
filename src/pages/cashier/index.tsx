@@ -197,12 +197,10 @@ export default function CashierPage() {
               >
               {showProductBrowser ? (
                 <>
-                  <span>Hide List</span>
                   <ChevronUp className="w-4 h-4" />
                 </>
               ) : (
                 <>
-                  <span>Show List</span>
                   <ChevronDown className="w-4 h-4" />
                 </>
                 )}

@@ -126,7 +126,7 @@ export default function ProductSearch({ onAdd, refreshKey }: Props) {
   };
 
   return (
-    <div className="relative space-y-2" ref={dropdownRef}>
+    <div className="w-full relative space-y-2" ref={dropdownRef}>
       <label className="block text-sm font-semibold text-muted-foreground mb-1">
         Add Products
       </label>

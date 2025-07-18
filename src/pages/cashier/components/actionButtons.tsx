@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { CheckCircle, Trash2, Plus, Users } from "lucide-react";
+import { CheckCircle, Trash2, Users, UserPlus } from "lucide-react";
 
 interface Props {
   clientName: string;
@@ -100,10 +100,10 @@ export default function ActionButtons({
         )}
         <button
           onClick={() => setShowPopup(true)}
-          className="flex items-centered px-3 py-2 rounded-md bg-muted hover:bg-primary hover:text-primary-foreground transition text-sm"
+          className="flex items-centered px-3 py-2 rounded-md bg-muted text-foreground hover:bg-primary hover:text-primary-foreground transition text-sm border border-border"
         >
           Add New Client
-          <Plus className="w-4 h-4" />
+          <UserPlus className="w-4 h-4 ml-2" />
         </button>
 
         {/* Optional discount input */}
@@ -114,7 +114,7 @@ export default function ActionButtons({
 
         <button
           onClick={onFinish}
-          className="ml-auto flex items-center gap-2 px-4 py-2 rounded-md bg-primary text-primary-foreground font-semibold text-sm shadow hover:bg-primary/90"
+          className="ml-auto flex items-center gap-2 px-4 py-2 rounded-md bg-primary text-primary-foreground font-semibold text-sm shadow hover:bg-primary/90 border border-border"
         >
           <CheckCircle className="w-5 h-5" />
           Confirm
@@ -123,10 +123,10 @@ export default function ActionButtons({
 
       {/* === Row 2: Credit / Versement === */}
       <div className="flex gap-3">
-        <button className="flex-1 rounded-md bg-muted hover:bg-accent px-3 py-2 text-sm font-medium">
+        <button className="flex-1 rounded-md bg-muted hover:bg-accent px-3 py-2 text-sm font-medium border border-border">
           Add Credit
         </button>
-        <button className="flex-1 rounded-md bg-muted hover:bg-accent px-3 py-2 text-sm font-medium">
+        <button className="flex-1 rounded-md bg-muted hover:bg-accent px-3 py-2 text-sm font-medium border border-border">
           Add Versement
         </button>
       </div>
@@ -135,14 +135,14 @@ export default function ActionButtons({
       <div className="flex flex-col sm:flex-row gap-3 w-full">
         <button
           onClick={onFinish}
-          className="flex-1 flex items-center justify-center gap-2 py-4 rounded-lg bg-primary text-primary-foreground font-bold text-lg tracking-wide shadow-md hover:bg-primary/90 transition focus:outline-none focus:ring-2 focus:ring-primary/50"
+          className="flex-1 flex items-center justify-center gap-2 py-4 rounded-lg bg-primary text-primary-foreground font-bold text-lg tracking-wide shadow-md hover:bg-primary/90 transition focus:outline-none focus:ring-2 focus:ring-primary/50 border border-border"
         >
           <CheckCircle className="w-6 h-6" />
           <span>Confirm Sale</span>
         </button>
         <button
           onClick={onClear}
-          className="flex-1 flex items-center justify-center gap-2 py-4 rounded-lg bg-destructive text-white font-semibold text-lg tracking-wide shadow-md hover:bg-destructive/80 transition focus:outline-none focus:ring-2 focus:ring-destructive/50"
+          className="flex-1 flex items-center justify-center gap-2 py-4 rounded-lg bg-destructive text-white font-semibold text-lg tracking-wide shadow-md hover:bg-destructive/80 transition focus:outline-none focus:ring-2 focus:ring-destructive/50 border border-border"
         >
           <Trash2 className="w-6 h-6" />
           <span>Clear Cart</span>
@@ -191,7 +191,7 @@ export default function ActionButtons({
             <div className="flex justify-end gap-2">
               <button
                 onClick={() => setShowPopup(false)}
-                className="px-3 py-2 text-sm bg-muted rounded-md hover:bg-muted/60"
+                className="px-3 py-2 text-sm bg-muted rounded-md hover:bg-muted/60 border border-border"
               >
                 Cancel
               </button>
@@ -211,7 +211,7 @@ export default function ActionButtons({
                     setNewClientNotes("");
                   }
                 }}
-                className="px-4 py-2 text-sm bg-primary text-white rounded-md hover:bg-primary/80"
+                className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/80 border border-border"
               >
                 Add Client
               </button>
