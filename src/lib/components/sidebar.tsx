@@ -76,7 +76,7 @@ export default function Sidebar() {
     <nav
       data-collapsed={collapsed}
       className={cn(
-        "fixed top-0 left-0 z-50 flex flex-col bg-card border-r rounded-xl shadow-md transition-all duration-1000 ease-in-out",
+        "fixed top-0 left-0 z-50 flex flex-col bg-card border-r rounded-xl shadow-md transition-all transition-colors duration-300 transition-[width] duration-1000 ease-in-out",
         collapsed ? "w-14" : "w-[200px]",
       )}
       style={{
