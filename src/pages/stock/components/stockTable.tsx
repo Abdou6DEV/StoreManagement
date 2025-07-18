@@ -439,7 +439,7 @@ export const StockTable = () => {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-6 pt-4">
+        <div className="flex items-center justify-center gap-6">
           <button
             disabled={currentPage === 1 || products.length === 0}
             onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}

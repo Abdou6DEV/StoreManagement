@@ -115,7 +115,7 @@ export default function CategorySummaryTable() {
         </div>
       ) : (
         <>
-          <div className="overflow-auto rounded-lg border border-muted mt-5">
+          <div className="overflow-auto rounded-lg border border-grey-200 mt-5">
             <table className="min-w-full text-sm text-left">
               <thead className="bg-muted text-muted-foreground">
                 <tr>
@@ -147,30 +147,36 @@ export default function CategorySummaryTable() {
                     </td>
                   </tr>
                 ))}
-                {/* Total Row (always visible) */}
-                <tr className="h-[48px] bg-muted/60 font-medium border-t border-border transition-colors duration-200 hover:bg-muted">
-                  <td className="px-4 text-foreground">
-                    {t("stock.total", "Total")}
-                  </td>
-                  <td className="px-4">
-                    {summary.reduce((sum, row) => sum + row.totalQuantity, 0)}
-                  </td>
-                  <td className="px-4">
-                    {summary.reduce((sum, row) => sum + row.totalBought, 0)}
-                  </td>
-                  <td className="px-4">
-                    {summary.reduce((sum, row) => sum + row.totalSelling, 0)}
-                  </td>
-                  <td className="px-4 text-green-800">
-                    {summary.reduce((sum, row) => sum + row.totalProfit, 0)}
-                  </td>
-                </tr>
               </tbody>
             </table>
           </div>
+          {/* Total Summary Card (separated from table) */}
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mt-6 p-4 bg-muted/60 rounded-lg border border-border">
+            <span className="font-semibold text-foreground text-base">
+              {t("stock.total", "Total (All)")}:
+            </span>
+            <div className="flex flex-wrap gap-6 text-sm">
+              <span>
+                <span className="text-muted-foreground">{t("stock.quantity")}: </span>
+                <span className="font-medium">{summary.reduce((sum, row) => sum + row.totalQuantity, 0)}</span>
+              </span>
+              <span>
+                <span className="text-muted-foreground">{t("stock.totalBought", "Total Bought")}: </span>
+                <span className="font-medium">{summary.reduce((sum, row) => sum + row.totalBought, 0)}</span>
+              </span>
+              <span>
+                <span className="text-muted-foreground">{t("stock.totalSelling", "Total Selling")}: </span>
+                <span className="font-medium">{summary.reduce((sum, row) => sum + row.totalSelling, 0)}</span>
+              </span>
+              <span>
+                <span className="text-muted-foreground">{t("stock.totalProfit", "Total Profit")}: </span>
+                <span className="font-bold text-green-900">{summary.reduce((sum, row) => sum + row.totalProfit, 0)}</span>
+              </span>
+            </div>
+          </div>
           {/* Pagination controls at the bottom, centered */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-center gap-6 pt-4">
+            <div className="flex items-center justify-center gap-6">
               <button
                 disabled={currentPage === 1}
                 onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
