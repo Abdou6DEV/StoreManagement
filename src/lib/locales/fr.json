@@ -83,7 +83,7 @@
     "emptyProductDesc": "Vous n'avez pas encore ajouté de produits. Commencez par ajouter votre premier produit pour gérer votre inventaire.",
     "emptyCategoryTitle": "Aucune catégorie trouvée",
     "emptyCategoryDesc": "Aucune catégorie ou produit disponible. Ajoutez des produits pour voir le résumé par catégorie.",
-    "total": "Total"
+    "total": "Total (Toutes)"
   },
   "cashier": {
     "total": "Total",
