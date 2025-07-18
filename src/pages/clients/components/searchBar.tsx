@@ -10,15 +10,13 @@ interface SearchBarProps {
 const SearchBar: React.FC<SearchBarProps> = ({ search, setSearch }) => {
   const { t } = useTranslation();
   return (
-    <div className="flex flex-wrap items-center gap-4 mb-4">
-      <Input
-        type="text"
-        placeholder={t("clients.search", "Search clients...")}
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        className="max-w-xs"
-      />
-    </div>
+    <Input
+      type="text"
+      placeholder={t("clients.search", "Search clients...")}
+      value={search}
+      onChange={(e) => setSearch(e.target.value)}
+      className="max-w-xs"
+    />
   );
 };
 

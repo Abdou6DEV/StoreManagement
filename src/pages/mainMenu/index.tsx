@@ -62,7 +62,7 @@ export default function MainMenu() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
         {menuItems.map((item) => (
           <Link
-            to={`/${item.key.replace(/\s+/g, "-")}`}
+            to={`/${item.key}`}
             className="group p-6 border rounded-xl bg-card transition-all duration-300 flex flex-col h-full
                       hover:border-red-400 hover:-translate-y-1 hover:shadow-md"
             key={item.key}

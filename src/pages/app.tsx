@@ -4,7 +4,7 @@ import Layout from "../lib/components/layout";
 import ScrollToTop from "../lib/components/scrollToTop";
 const MainMenu = React.lazy(() => import("./mainMenu"));
 const Dashboard = React.lazy(() => import("./dashboard"));
-const Customers = React.lazy(() => import("./customers"));
+const Clients = React.lazy(() => import("./clients"));
 const Cashier = React.lazy(() => import("./cashier"));
 const Stock = React.lazy(() => import("./stock"));
 import Sidebar from "../lib/components/sidebar";
@@ -28,7 +28,7 @@ export default function App() {
             }
           >
             <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/clients" element={<Customers />} />
+            <Route path="/clients" element={<Clients />} />
             <Route
               path="/stock"
               element={

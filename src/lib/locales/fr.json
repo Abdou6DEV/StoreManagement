@@ -121,5 +121,30 @@
     "addProducts": "Ajouter des produits",
     "typeOrScan": "Tapez le nom ou scannez le code-barres...",
     "inStock": "en stock"
+  },
+  "clients": {
+    "itemsPerPage": "Éléms par page:",
+    "selectItemsPerPage": "Sélectionner les éléments par page",
+    "prev": "Précédent",
+    "next": "Suivant",
+    "page": "Page",
+    "search": "Rechercher des clients...",
+    "editing": "Modification de {{name}}",
+    "editTitle": "Modifier le client",
+    "edit": "Modifier",
+    "save": "Enregistrer",
+    "saving": "Enregistrement...",
+    "cancel": "Annuler",
+    "name": "Nom",
+    "phone": "Téléphone",
+    "address": "Adresse",
+    "notes": "Notes",
+    "actions": "Actions",
+    "delete": "Supprimer",
+    "deleteConfirm": "Êtes-vous sûr de vouloir supprimer ce client ?",
+    "deleteError": "Échec de la suppression du client",
+    "updateError": "Échec de la mise à jour du client",
+    "fetchError": "Échec de la récupération des clients",
+    "empty": "Aucun client trouvé."
   }
 }

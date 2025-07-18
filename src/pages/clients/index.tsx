@@ -24,6 +24,9 @@ export default function Customers() {
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [editLoading, setEditLoading] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   const fetchClients = async () => {
     setLoading(true);
@@ -100,13 +103,70 @@ export default function Customers() {
         client.address.toLowerCase().includes(search.toLowerCase())),
   );
 
+  // Pagination logic
+  const totalPages = Math.max(1, Math.ceil(filteredClients.length / itemsPerPage));
+  const paginatedClients = filteredClients.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage,
+  );
+
+  // Reset to page 1 when search or itemsPerPage changes
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [search, itemsPerPage]);
+
   return (
     <section className="bg-card border border-border rounded-xl shadow-sm p-6 space-y-5">
       <div className="flex items-center gap-3 mb-4">
         <Users className="w-7 h-7 text-red-500" />
         <h1 className="text-2xl font-bold">{t("clients.title", "Clients")}</h1>
       </div>
-      <SearchBar search={search} setSearch={setSearch} />
+      {/* Items per page selector and search bar in the same row */}
+      <div className="flex items-center gap-4 mb-4">
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-muted-foreground">
+            {t("clients.itemsPerPage", "Items per page:")}
+          </span>
+          <select
+            className="px-2 py-1 border rounded text-sm bg-card"
+            value={itemsPerPage}
+            onChange={(e) => {
+              setItemsPerPage(Number(e.target.value));
+              setCurrentPage(1);
+            }}
+            aria-label={t("clients.selectItemsPerPage", "Select items per page")}
+          >
+            {[5, 10, 25, 50, 100].map((size) => (
+              <option key={size} value={size}>
+                {size}
+              </option>
+            ))}
+          </select>
+        </div>
+        {/* Search bar inline */}
+        <SearchBar search={search} setSearch={setSearch} />
+        {totalPages > 1 && (
+          <div className="flex items-center gap-2">
+            <button
+              disabled={currentPage === 1 || filteredClients.length === 0}
+              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+              className="text-sm px-4 py-2 border-1 rounded-md hover:bg-muted transition disabled:opacity-50 disabled:bg-card"
+            >
+              {t("clients.prev", "Previous")}
+            </button>
+            <span className="text-sm text-muted-foreground">
+              {t("clients.page", "Page")} {currentPage} / {totalPages}
+            </span>
+            <button
+              disabled={currentPage === totalPages || filteredClients.length === 0}
+              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+              className="text-sm px-4 py-2 border-1 rounded-md hover:bg-muted transition disabled:opacity-50 disabled:bg-card"
+            >
+              {t("clients.next", "Next")}
+            </button>
+          </div>
+        )}
+      </div>
       {loading ? (
         <div className="flex items-center gap-2 text-muted-foreground">
           <Loader2 className="animate-spin" />{" "}
@@ -116,7 +176,7 @@ export default function Customers() {
         <div className="text-red-500">{error}</div>
       ) : (
         <ClientsTable
-          clients={filteredClients}
+          clients={paginatedClients}
           onEdit={handleEdit}
           onDelete={handleDelete}
           deleteLoading={deleteLoading}
