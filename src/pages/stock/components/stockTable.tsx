@@ -376,18 +376,28 @@ export const StockTable = () => {
             </ToggleGroupItem>
           </ToggleGroup>
           {/* Low stock threshold input, only show if lowStock is active */}
-          {filters.lowStock && (
-            <input
-              type="number"
-              min={0}
-              value={lowStockThreshold}
-              onChange={(e) => setLowStockThreshold(e.target.value)}
-              className="w-14 px-2 py-1 border rounded text-sm ml-2"
-              aria-label={t("stock.lowStockThreshold", "Low stock threshold")}
-              style={{ minWidth: 0 }}
-              placeholder="0"
-            />
-          )}
+          <div className="relative flex items-center">
+            <div
+              className={cn(
+                "transition-all duration-500 origin-left",
+                filters.lowStock
+                  ? "scale-100 opacity-100 ml-2"
+                  : "scale-95 opacity-0 pointer-events-none w-0 ml-0"
+              )}
+              style={{ minWidth: filters.lowStock ? '3.5rem' : 0 }}
+            >
+              <input
+                type="number"
+                min={0}
+                value={lowStockThreshold}
+                onChange={(e) => setLowStockThreshold(e.target.value)}
+                className="w-14 px-2 py-1 border rounded text-sm transition-all duration-300"
+                aria-label={t("stock.lowStockThreshold", "Low stock threshold")}
+                placeholder="0"
+                style={{ minWidth: 0 }}
+              />
+            </div>
+          </div>
         </div>
       </div>
 
