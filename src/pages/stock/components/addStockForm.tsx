@@ -20,12 +20,21 @@ import {
   PopoverTrigger,
 } from "../../../lib/components/ui/popover";
 
-const initialForm = {
+interface AddStockFormState {
+  name: string;
+  categoryName: string;
+  quantity: number | "";
+  bought: number | "";
+  selling: number | "";
+  codebar: string;
+}
+
+const initialForm: AddStockFormState = {
   name: "",
   categoryName: "",
-  quantity: 0,
-  bought: 0,
-  selling: 0,
+  quantity: "",
+  bought: "",
+  selling: "",
   codebar: "",
 };
 
@@ -47,7 +56,7 @@ export default function AddStockForm({
   const [filteredCategories, setFilteredCategories] =
     useState<string[]>(categories);
   const [dropdownCategorySearch, setDropdownCategorySearch] = useState("");
-  const [form, setForm] = useState(initialForm);
+  const [form, setForm] = useState<AddStockFormState>(initialForm);
   const [loading, setLoading] = useState(false);
 
   const handleAddProduct = async (e: React.FormEvent) => {
@@ -68,18 +77,18 @@ export default function AddStockForm({
         // If exists, update quantity
         await window.api.database.products.update(existingProduct.id, {
           ...existingProduct,
-          quantity: existingProduct.quantity + Number(form.quantity),
-          bought: Number(form.bought), // optional: update bought/selling price
-          selling: Number(form.selling),
+          quantity: existingProduct.quantity + Number(form.quantity || 0),
+          bought: Number(form.bought || 0), // optional: update bought/selling price
+          selling: Number(form.selling || 0),
           codebar: form.codebar,
         });
       } else {
         // If not exists, create new product
         await window.api.database.products.add({
           ...form,
-          quantity: Number(form.quantity),
-          bought: Number(form.bought),
-          selling: Number(form.selling),
+          quantity: Number(form.quantity || 0),
+          bought: Number(form.bought || 0),
+          selling: Number(form.selling || 0),
         });
       }
 
@@ -94,12 +103,17 @@ export default function AddStockForm({
   };
 
   const handleFormChange = (key: keyof typeof form, value: string | number) => {
-    setForm((prev) => ({ ...prev, [key]: value }));
-    if (key === "categoryName" && typeof value === "string") {
-      const val = value.toLowerCase();
-      setFilteredCategories(
-        categories.filter((cat) => cat.toLowerCase().includes(val)),
-      );
+    // For number fields, allow empty string
+    if (["quantity", "bought", "selling"].includes(key)) {
+      setForm((prev) => ({ ...prev, [key]: value === "" ? "" : typeof value === "string" ? Number(value) : value }));
+    } else {
+      setForm((prev) => ({ ...prev, [key]: value }));
+      if (key === "categoryName" && typeof value === "string") {
+        const val = value.toLowerCase();
+        setFilteredCategories(
+          categories.filter((cat) => cat.toLowerCase().includes(val)),
+        );
+      }
     }
   };
 
@@ -192,9 +206,9 @@ export default function AddStockForm({
                                 setForm({
                                   name: p.name,
                                   categoryName: p.categoryName,
-                                  quantity: 0, // Set to 0 so user can specify how much to add
-                                  bought: p.bought,
-                                  selling: p.selling,
+                                  quantity: "", // empty for user input
+                                  bought: p.bought ?? "",
+                                  selling: p.selling ?? "",
                                   codebar: p.codebar || "",
                                 });
                                 setShowProductDropdown(false);
@@ -301,7 +315,7 @@ export default function AddStockForm({
             <Legend>
               <label>{t("stock.quantity")}</label>
               <StyledNumberInput
-                value={form.quantity}
+                value={form.quantity === "" ? "" : Number(form.quantity)}
                 onChange={(val) => handleFormChange("quantity", val)}
                 placeholder={t("stock.quantity")}
               />
@@ -309,7 +323,7 @@ export default function AddStockForm({
             <Legend>
               <label>{t("stock.bought")}</label>
               <StyledNumberInput
-                value={form.bought}
+                value={form.bought === "" ? "" : Number(form.bought)}
                 onChange={(val) => handleFormChange("bought", val)}
                 placeholder={t("stock.bought")}
                 step={100}
@@ -319,7 +333,7 @@ export default function AddStockForm({
             <Legend>
               <label>{t("stock.selling")}</label>
               <StyledNumberInput
-                value={form.selling}
+                value={form.selling === "" ? "" : Number(form.selling)}
                 onChange={(val) => handleFormChange("selling", val)}
                 placeholder={t("stock.selling")}
                 step={100}

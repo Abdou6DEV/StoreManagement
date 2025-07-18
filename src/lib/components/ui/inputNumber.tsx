@@ -1,8 +1,8 @@
 import { ChevronUp, ChevronDown } from "lucide-react";
 
 interface StyledNumberInputProps {
-  value: number;
-  onChange: (value: number) => void;
+  value: number | "";
+  onChange: (value: number | "") => void;
   min?: number;
   max?: number;
   step?: number;
@@ -20,8 +20,8 @@ export default function StyledNumberInput({
   disabled = false,
 }: StyledNumberInputProps) {
   const handleStep = (dir: "up" | "down") => {
-    if (disabled) return;
-    const newValue = dir === "up" ? value + step : value - step;
+    if (disabled || value === "") return;
+    const newValue = dir === "up" ? (value as number) + step : (value as number) - step;
     if (newValue >= min && newValue <= max) onChange(newValue);
   };
 
@@ -30,7 +30,14 @@ export default function StyledNumberInput({
       <input
         type="number"
         value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
+        onChange={(e) => {
+          const val = e.target.value;
+          if (val === "") {
+            onChange("");
+          } else {
+            onChange(Number(val));
+          }
+        }}
         onFocus={(e) => {
           if (value === 0) {
             e.target.select(); // 👈 select the "0" so typing replaces it
