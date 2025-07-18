@@ -166,9 +166,12 @@ export default function ProductSearch({ onAdd, refreshKey }: Props) {
                     </div>
                     <div className="text-xs text-muted-foreground flex justify-between mt-1">
                       <span>
-                        {product.categoryName} • {t("cashier.price", "price")}: {product.selling.toLocaleString()} DA
+                        {product.categoryName} • {t("cashier.price", "price")}:{" "}
+                        {product.selling.toLocaleString()} DA
                       </span>
-                      <span>{product.quantity} {t("cashier.inStock", "in stock")}</span>
+                      <span>
+                        {product.quantity} {t("cashier.inStock", "in stock")}
+                      </span>
                     </div>
                   </button>
                 );

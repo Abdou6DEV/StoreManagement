@@ -83,7 +83,9 @@ export default function PaymentSummary({
       {/* === Bottom Summary Section === */}
       <div className="pt-3 mt-3 border-t border-black dark:border-white space-y-1">
         <div className="flex justify-between">
-          <span className="w-3/4 text-left">{t("cashier.nbrItems", "Nbr Items")}</span>
+          <span className="w-3/4 text-left">
+            {t("cashier.nbrItems", "Nbr Items")}
+          </span>
           <span className="w-1/4 text-right">{nbrItems}</span>
         </div>
 
@@ -93,14 +95,18 @@ export default function PaymentSummary({
         </div>
 
         <div className="flex justify-between">
-          <span className="w-3/4 text-left">{t("cashier.discount", "Discount")}</span>
+          <span className="w-3/4 text-left">
+            {t("cashier.discount", "Discount")}
+          </span>
           <span className="w-1/4 text-right">
             -{discount.toLocaleString()} DA
           </span>
         </div>
 
         <div className="flex justify-between font-bold">
-          <span className="w-3/4 text-left">{t("cashier.paymentAmount", "Payment Amount")}</span>
+          <span className="w-3/4 text-left">
+            {t("cashier.paymentAmount", "Payment Amount")}
+          </span>
           <span className="w-1/4 text-right">
             {paymentAmount.toLocaleString()} DA
           </span>

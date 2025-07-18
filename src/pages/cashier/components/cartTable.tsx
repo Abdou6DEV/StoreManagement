@@ -87,10 +87,18 @@ export default function CartTable({ cart, setCart }: Props) {
           <thead className="bg-muted text-muted-foreground font-medium text-xs uppercase sticky top-0 z-10">
             <tr className="border-b border-border">
               <th className="p-2 w-[30%]">{t("cashier.name", "Name")}</th>
-              <th className="p-2 text-right w-[10%]">{t("cashier.qty", "Qty")}</th>
-              <th className="p-2 text-right w-[20%]">{t("cashier.price", "Price")}</th>
-              <th className="p-2 text-right w-[20%]">{t("cashier.total", "Total")}</th>
-              <th className="p-2 text-right w-[20%]">{t("cashier.actions", "Actions")}</th>
+              <th className="p-2 text-right w-[10%]">
+                {t("cashier.qty", "Qty")}
+              </th>
+              <th className="p-2 text-right w-[20%]">
+                {t("cashier.price", "Price")}
+              </th>
+              <th className="p-2 text-right w-[20%]">
+                {t("cashier.total", "Total")}
+              </th>
+              <th className="p-2 text-right w-[20%]">
+                {t("cashier.actions", "Actions")}
+              </th>
             </tr>
           </thead>
           <tbody className="bg-card text-foreground">

@@ -64,38 +64,38 @@ export default function CashierPage() {
     }
     updateSession(updated);
   };
-  
+
   // FIXED: Batch add products instead of individual state updates
   const handleAddSelectedProducts = () => {
-  if (selectedProducts.length === 0) return;
-  
-  // Create a copy of the current cart to modify
-  const updatedCart = [...cart];
-  
-  selectedProducts.forEach(productId => {
-    const product = allProducts.find(p => p.id === productId);
-    if (product) {
-      const existingItem = updatedCart.find(item => item.id === product.id);
-      if (existingItem) {
-        existingItem.qty += 1;
-      } else {
-        updatedCart.push({
-          id: product.id,
-          name: product.name,
-          price: product.selling,
-          qty: 1,
-        });
+    if (selectedProducts.length === 0) return;
+
+    // Create a copy of the current cart to modify
+    const updatedCart = [...cart];
+
+    selectedProducts.forEach((productId) => {
+      const product = allProducts.find((p) => p.id === productId);
+      if (product) {
+        const existingItem = updatedCart.find((item) => item.id === product.id);
+        if (existingItem) {
+          existingItem.qty += 1;
+        } else {
+          updatedCart.push({
+            id: product.id,
+            name: product.name,
+            price: product.selling,
+            qty: 1,
+          });
+        }
       }
-    }
-  });
-  
-  // Update cart state once with all changes
-  updateSession(updatedCart);
-  setSelectedProducts([]);
-  
-  // Collapse the product browser after adding items
-  setShowProductBrowser(false);
-};
+    });
+
+    // Update cart state once with all changes
+    updateSession(updatedCart);
+    setSelectedProducts([]);
+
+    // Collapse the product browser after adding items
+    setShowProductBrowser(false);
+  };
 
   const [clientName, setClientName] = useState("");
   const [clientId, setClientId] = useState<string | null>(null);
@@ -168,8 +168,8 @@ export default function CashierPage() {
   // Filter products based on search
   const filteredProducts = useMemo(() => {
     if (!productFilter) return allProducts;
-    return allProducts.filter(product => 
-      product.name.toLowerCase().includes(productFilter.toLowerCase())
+    return allProducts.filter((product) =>
+      product.name.toLowerCase().includes(productFilter.toLowerCase()),
     );
   }, [allProducts, productFilter]);
 
@@ -201,40 +201,45 @@ export default function CashierPage() {
                 onClick={() => setShowProductBrowser(!showProductBrowser)}
                 className="flex h-8 p-1 mt-6 text-sm font-semibold border-1 border-border items-center rounded-md bg-muted/40 hover:bg-muted hover:text-primary transition"
               >
-              {showProductBrowser ? (
-                <>
-                  <ChevronUp className="w-4 h-4" />
-                </>
-              ) : (
-                <>
-                  <ChevronDown className="w-4 h-4" />
-                </>
+                {showProductBrowser ? (
+                  <>
+                    <ChevronUp className="w-4 h-4" />
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="w-4 h-4" />
+                  </>
                 )}
               </button>
             </div>
-            
+
             {/* Product Browser with smooth slide animation */}
-            <div className={`h-full transition-all duration-500 ease-in-out overflow-hidden ${
-              showProductBrowser ? "max-h-full" : "max-h-0"
-            }`}>
+            <div
+              className={`h-full transition-all duration-500 ease-in-out overflow-hidden ${
+                showProductBrowser ? "max-h-full" : "max-h-0"
+              }`}
+            >
               <div className="border border-border rounded-lg p-3 bg-background h-full flex flex-col">
                 <input
                   type="text"
-                  placeholder={t("cashier.filterProducts", "Filter products...")}
+                  placeholder={t(
+                    "cashier.filterProducts",
+                    "Filter products...",
+                  )}
                   className="w-full px-3 py-2 mb-3 rounded-md border border-border bg-card text-foreground"
                   value={productFilter}
                   onChange={(e) => setProductFilter(e.target.value)}
                 />
-                
+
                 <div className="flex-1 overflow-y-auto grid grid-cols-3 gap-2">
                   {filteredProducts.map((product) => (
                     <div
                       key={product.id}
                       onClick={() => {
-                        setSelectedProducts(prev => 
+                        setSelectedProducts((prev) =>
                           prev.includes(product.id)
-                            ? prev.filter(id => id !== product.id)
-                            : [...prev, product.id]
+                            ? prev.filter((id) => id !== product.id)
+                            : [...prev, product.id],
                         );
                       }}
                       className={`p-2 border rounded-md h-20 cursor-pointer transition-all flex flex-col ${
@@ -253,7 +258,7 @@ export default function CashierPage() {
                     </div>
                   ))}
                 </div>
-                
+
                 <button
                   onClick={handleAddSelectedProducts}
                   disabled={selectedProducts.length === 0}
@@ -267,10 +272,12 @@ export default function CashierPage() {
                 </button>
               </div>
             </div>
-            
-            <div className={`flex-1 overflow-auto min-h-[0px] transition-all duration-300 ${
-              showProductBrowser ? "max-h-[0vh]" : "max-h-[70vh]"
-            }`}>
+
+            <div
+              className={`flex-1 overflow-auto min-h-[0px] transition-all duration-300 ${
+                showProductBrowser ? "max-h-[0vh]" : "max-h-[70vh]"
+              }`}
+            >
               <CartTable
                 cart={cart}
                 setCart={(updater) => {

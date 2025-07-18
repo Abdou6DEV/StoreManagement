@@ -119,7 +119,7 @@ export default function ActionButtons({
           className="w-36 rounded-md border border-border px-3 py-2 text-sm bg-background"
           type="number"
           value={pendingDiscount}
-          onChange={e => setPendingDiscount(Number(e.target.value) || 0)}
+          onChange={(e) => setPendingDiscount(Number(e.target.value) || 0)}
         />
 
         <button
@@ -181,7 +181,10 @@ export default function ActionButtons({
             <input
               value={newClientPhone}
               onChange={(e) => setNewClientPhone(e.target.value)}
-              placeholder={t("cashier.phoneOptional", "Phone Number (optional)")}
+              placeholder={t(
+                "cashier.phoneOptional",
+                "Phone Number (optional)",
+              )}
               className="w-full rounded-md border border-border px-3 py-2 text-sm bg-background"
             />
             <input
