@@ -382,7 +382,7 @@ export const StockTable = () => {
               min={0}
               value={lowStockThreshold}
               onChange={(e) => setLowStockThreshold(e.target.value)}
-              className="w-16 px-2 py-1 border rounded text-sm ml-2"
+              className="w-14 px-2 py-1 border rounded text-sm ml-2"
               aria-label={t("stock.lowStockThreshold", "Low stock threshold")}
               style={{ minWidth: 0 }}
               placeholder="0"
