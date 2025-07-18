@@ -98,4 +98,15 @@ export class DatabaseService {
   static async getAllClients() {
     return await prisma.client.findMany();
   }
+
+  static async deleteClient(id: string) {
+    return await prisma.client.delete({ where: { id } });
+  }
+
+  static async updateClient(
+    id: string,
+    data: { name?: string; phone?: string; address?: string; notes?: string },
+  ) {
+    return await prisma.client.update({ where: { id }, data });
+  }
 }

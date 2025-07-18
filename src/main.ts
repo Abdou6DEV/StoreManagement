@@ -100,4 +100,12 @@ function setupDatabaseHandlers() {
   ipcMain.handle("db:clients:getAll", async () => {
     return await DatabaseService.getAllClients();
   });
+
+  ipcMain.handle("db:clients:delete", async (_event, id: string) => {
+    return await DatabaseService.deleteClient(id);
+  });
+
+  ipcMain.handle("db:clients:update", async (_event, { id, data }) => {
+    return await DatabaseService.updateClient(id, data);
+  });
 }
