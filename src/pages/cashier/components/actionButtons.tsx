@@ -14,6 +14,8 @@ interface Props {
   onClear: () => void;
   onFinish?: () => void;
   setClientId: (id: string | null) => void;
+  discount: number;
+  onDiscountChange: (val: number) => void;
 }
 
 export default function ActionButtons({
@@ -23,6 +25,8 @@ export default function ActionButtons({
   onClear,
   onFinish,
   setClientId,
+  discount,
+  onDiscountChange,
 }: Props) {
   const { t } = useTranslation();
   const [showPopup, setShowPopup] = useState(false);
@@ -33,6 +37,7 @@ export default function ActionButtons({
   const [clientSuggestions, setClientSuggestions] = useState<any[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [pendingDiscount, setPendingDiscount] = useState(discount);
 
   useEffect(() => {
     window.api.database.clients.getAll().then(setClientSuggestions);
@@ -112,14 +117,17 @@ export default function ActionButtons({
         <input
           placeholder={t("cashier.discount", "Discount (DA)")}
           className="w-36 rounded-md border border-border px-3 py-2 text-sm bg-background"
+          type="number"
+          value={pendingDiscount}
+          onChange={e => setPendingDiscount(Number(e.target.value) || 0)}
         />
 
         <button
-          onClick={onFinish}
+          onClick={() => onDiscountChange(pendingDiscount)}
           className="ml-auto flex items-center gap-2 px-4 py-2 rounded-md bg-primary text-primary-foreground font-semibold text-sm shadow hover:bg-primary/90 border border-border"
         >
           <CheckCircle className="w-5 h-5" />
-          {t("cashier.confirm", "Confirm")}
+          <span>{t("cashier.confirm", "Confirm")}</span>
         </button>
       </div>
 

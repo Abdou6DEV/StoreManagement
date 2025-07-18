@@ -32,6 +32,7 @@ contextBridge.exposeInMainWorld("api", {
       create: (data: {
         clientId?: string;
         items: { productId: string; quantity: number; price: number }[];
+        discount?: number;
       }) => ipcRenderer.invoke("db:sales:create", data),
     },
   },
@@ -72,6 +73,7 @@ declare global {
           create: (data: {
             clientId?: string;
             items: { productId: string; quantity: number; price: number }[];
+            discount?: number;
           }) => Promise<any>;
         };
       };

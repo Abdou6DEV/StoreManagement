@@ -99,6 +99,7 @@ export default function CashierPage() {
 
   const [clientName, setClientName] = useState("");
   const [clientId, setClientId] = useState<string | null>(null);
+  const [discount, setDiscount] = useState(0);
 
   // Fetch all products
   useEffect(() => {
@@ -139,10 +140,12 @@ export default function CashierPage() {
           quantity: item.qty,
           price: item.price,
         })),
+        discount,
       });
       updateSession([]);
       setClientName("");
       setClientId(null);
+      setDiscount(0);
       setProductRefreshKey((k) => k + 1);
       alert(t("cashier.saleRecorded", "Sale recorded successfully"));
     } catch (err) {
@@ -286,10 +289,10 @@ export default function CashierPage() {
             <div className="flex-1 overflow-auto min-h-[100px]">
               <PaymentSummary
                 cart={cart}
-                clientName="Abdallah"
+                clientName={clientName}
                 creditAmount={15000}
                 versementAmount={20000}
-                discount={0}
+                discount={discount}
               />
             </div>
             <ActionButtons
@@ -299,6 +302,8 @@ export default function CashierPage() {
               onClear={handleClear}
               onFinish={handleFinish}
               setClientId={setClientId}
+              discount={discount}
+              onDiscountChange={setDiscount}
             />
           </div>
         </section>

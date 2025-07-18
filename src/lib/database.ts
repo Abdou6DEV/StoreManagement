@@ -58,6 +58,7 @@ export class DatabaseService {
   static async createSale(data: {
     clientId?: string;
     items: { productId: string; quantity: number; price: number }[];
+    discount?: number;
   }) {
     // Create sale and sale items in a transaction, and decrement product quantities
     return await prisma.$transaction(async (tx) => {
@@ -81,6 +82,7 @@ export class DatabaseService {
       const sale = await tx.sale.create({
         data: {
           clientId: data.clientId,
+          discount: data.discount ?? 0,
           saleItems: {
             create: data.items.map((item) => ({
               productId: item.productId,
