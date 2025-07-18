@@ -382,9 +382,9 @@ export const StockTable = () => {
                 "transition-all duration-500 origin-left",
                 filters.lowStock
                   ? "scale-100 opacity-100 ml-2"
-                  : "scale-95 opacity-0 pointer-events-none w-0 ml-0"
+                  : "scale-95 opacity-0 pointer-events-none w-0 ml-0",
               )}
-              style={{ minWidth: filters.lowStock ? '3.5rem' : 0 }}
+              style={{ minWidth: filters.lowStock ? "3.5rem" : 0 }}
             >
               <input
                 type="number"

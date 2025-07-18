@@ -1,6 +1,6 @@
 import React from "react";
 import { Button } from "../../../lib/components/ui/button";
-import { Edit, Loader2, Trash2 } from "lucide-react";
+import { Edit, Loader2, Trash2, Users } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 interface Client {
@@ -27,8 +27,17 @@ const ClientsTable: React.FC<ClientsTableProps> = ({
   const { t } = useTranslation();
   if (clients.length === 0) {
     return (
-      <div className="text-center text-muted-foreground py-10">
-        {t("clients.empty", "No clients found.")}
+      <div className="flex flex-col items-center justify-center py-12 gap-3 text-center">
+        <Users className="w-12 h-12 text-red-500 mb-1" />
+        <h3 className="text-xl font-semibold text-foreground">
+          {t("clients.emptyTitle", "No clients found")}
+        </h3>
+        <p className="text-base text-muted-foreground max-w-md">
+          {t(
+            "clients.emptyDesc",
+            "You have not added any clients yet. Add a client to get started.",
+          )}
+        </p>
       </div>
     );
   }

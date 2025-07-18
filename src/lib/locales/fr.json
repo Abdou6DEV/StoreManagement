@@ -145,6 +145,8 @@
     "deleteError": "Échec de la suppression du client",
     "updateError": "Échec de la mise à jour du client",
     "fetchError": "Échec de la récupération des clients",
-    "empty": "Aucun client trouvé."
+    "empty": "Aucun client trouvé.",
+    "emptyTitle": "Aucun client trouvé",
+    "emptyDesc": "Vous n'avez pas encore ajouté de clients. Ajoutez un client pour commencer."
   }
 }

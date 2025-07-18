@@ -145,6 +145,8 @@
     "deleteError": "Failed to delete client",
     "updateError": "Failed to update client",
     "fetchError": "Failed to fetch clients",
-    "empty": "No clients found."
+    "empty": "No clients found.",
+    "emptyTitle": "No clients found",
+    "emptyDesc": "You have not added any clients yet. Add a client to get started."
   }
 }

@@ -104,7 +104,10 @@ export default function Customers() {
   );
 
   // Pagination logic
-  const totalPages = Math.max(1, Math.ceil(filteredClients.length / itemsPerPage));
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredClients.length / itemsPerPage),
+  );
   const paginatedClients = filteredClients.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage,
@@ -134,7 +137,10 @@ export default function Customers() {
               setItemsPerPage(Number(e.target.value));
               setCurrentPage(1);
             }}
-            aria-label={t("clients.selectItemsPerPage", "Select items per page")}
+            aria-label={t(
+              "clients.selectItemsPerPage",
+              "Select items per page",
+            )}
           >
             {[5, 10, 25, 50, 100].map((size) => (
               <option key={size} value={size}>
@@ -158,8 +164,12 @@ export default function Customers() {
               {t("clients.page", "Page")} {currentPage} / {totalPages}
             </span>
             <button
-              disabled={currentPage === totalPages || filteredClients.length === 0}
-              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+              disabled={
+                currentPage === totalPages || filteredClients.length === 0
+              }
+              onClick={() =>
+                setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+              }
               className="text-sm px-4 py-2 border-1 rounded-md hover:bg-muted transition disabled:opacity-50 disabled:bg-card"
             >
               {t("clients.next", "Next")}

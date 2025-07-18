@@ -21,7 +21,8 @@ export default function StyledNumberInput({
 }: StyledNumberInputProps) {
   const handleStep = (dir: "up" | "down") => {
     if (disabled || value === "") return;
-    const newValue = dir === "up" ? (value as number) + step : (value as number) - step;
+    const newValue =
+      dir === "up" ? (value as number) + step : (value as number) - step;
     if (newValue >= min && newValue <= max) onChange(newValue);
   };
 

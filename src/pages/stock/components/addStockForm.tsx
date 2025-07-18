@@ -105,7 +105,11 @@ export default function AddStockForm({
   const handleFormChange = (key: keyof typeof form, value: string | number) => {
     // For number fields, allow empty string
     if (["quantity", "bought", "selling"].includes(key)) {
-      setForm((prev) => ({ ...prev, [key]: value === "" ? "" : typeof value === "string" ? Number(value) : value }));
+      setForm((prev) => ({
+        ...prev,
+        [key]:
+          value === "" ? "" : typeof value === "string" ? Number(value) : value,
+      }));
     } else {
       setForm((prev) => ({ ...prev, [key]: value }));
       if (key === "categoryName" && typeof value === "string") {
