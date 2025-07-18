@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Product } from "@prisma/client";
 import { Input } from "../../../lib/components/ui/input";
+import { useTranslation } from "react-i18next";
 
 interface Props {
   onAdd: (product: Product) => void;
@@ -13,6 +14,7 @@ type GroupedSuggestions = {
 }[];
 
 export default function ProductSearch({ onAdd, refreshKey }: Props) {
+  const { t } = useTranslation();
   const [search, setSearch] = useState("");
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -128,14 +130,14 @@ export default function ProductSearch({ onAdd, refreshKey }: Props) {
   return (
     <div className="w-full relative space-y-2" ref={dropdownRef}>
       <label className="block text-sm font-semibold text-muted-foreground mb-1">
-        Add Products
+        {t("cashier.addProducts", "Add Products")}
       </label>
       <Input
         ref={inputRef}
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         onKeyDown={handleKeyDown}
-        placeholder="Type name or scan barcode..."
+        placeholder={t("cashier.typeOrScan", "Type name or scan barcode...")}
         className="text-lg px-5 py-3 rounded-xl border-muted shadow focus:ring-2 focus:ring-primary bg-background"
       />
 
@@ -164,10 +166,9 @@ export default function ProductSearch({ onAdd, refreshKey }: Props) {
                     </div>
                     <div className="text-xs text-muted-foreground flex justify-between mt-1">
                       <span>
-                        {product.categoryName} • price:{" "}
-                        {product.selling.toLocaleString()} DA
+                        {product.categoryName} • {t("cashier.price", "price")}: {product.selling.toLocaleString()} DA
                       </span>
-                      <span>{product.quantity} in stock</span>
+                      <span>{product.quantity} {t("cashier.inStock", "in stock")}</span>
                     </div>
                   </button>
                 );

@@ -1,6 +1,7 @@
 import React, { useRef, useEffect } from "react";
 import { CartItem } from "../../cashier";
 import { Trash2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface Props {
   cart: CartItem[];
@@ -9,6 +10,7 @@ interface Props {
 
 export default function CartTable({ cart, setCart }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -84,11 +86,11 @@ export default function CartTable({ cart, setCart }: Props) {
         <table className="min-w-full text-sm text-left">
           <thead className="bg-muted text-muted-foreground font-medium text-xs uppercase sticky top-0 z-10">
             <tr className="border-b border-border">
-              <th className="p-2 w-[30%]">Name</th>
-              <th className="p-2 text-right w-[10%]">Qty</th>
-              <th className="p-2 text-right w-[20%]">Price</th>
-              <th className="p-2 text-right w-[20%]">Total</th>
-              <th className="p-2 text-right w-[20%]">Actions</th>
+              <th className="p-2 w-[30%]">{t("cashier.name", "Name")}</th>
+              <th className="p-2 text-right w-[10%]">{t("cashier.qty", "Qty")}</th>
+              <th className="p-2 text-right w-[20%]">{t("cashier.price", "Price")}</th>
+              <th className="p-2 text-right w-[20%]">{t("cashier.total", "Total")}</th>
+              <th className="p-2 text-right w-[20%]">{t("cashier.actions", "Actions")}</th>
             </tr>
           </thead>
           <tbody className="bg-card text-foreground">
@@ -108,7 +110,7 @@ export default function CartTable({ cart, setCart }: Props) {
                   colSpan={5}
                   className="p-6 text-center text-muted-foreground text-sm italic"
                 >
-                  Cart is empty
+                  {t("cashier.cartEmpty", "Cart is empty")}
                 </td>
               </tr>
             )}

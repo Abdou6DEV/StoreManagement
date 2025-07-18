@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { CheckCircle, Trash2, Users, UserPlus } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface Props {
   clientName: string;
@@ -23,6 +24,7 @@ export default function ActionButtons({
   onFinish,
   setClientId,
 }: Props) {
+  const { t } = useTranslation();
   const [showPopup, setShowPopup] = useState(false);
   const [newClientName, setNewClientName] = useState("");
   const [newClientPhone, setNewClientPhone] = useState("");
@@ -76,7 +78,7 @@ export default function ActionButtons({
           }}
           onFocus={() => setShowSuggestions(true)}
           onBlur={handleBlur}
-          placeholder="Customer name"
+          placeholder={t("cashier.customerName", "Customer name")}
           className="flex-1 rounded-md border border-border px-3 py-2 text-sm bg-background"
         />
         {/* Suggestions Dropdown */}
@@ -102,13 +104,13 @@ export default function ActionButtons({
           onClick={() => setShowPopup(true)}
           className="flex items-centered px-3 py-2 rounded-md bg-muted text-foreground hover:bg-primary hover:text-primary-foreground transition text-sm border border-border"
         >
-          Add New Client
+          {t("cashier.addNewClient", "Add New Client")}
           <UserPlus className="w-4 h-4 ml-2" />
         </button>
 
         {/* Optional discount input */}
         <input
-          placeholder="Discount (DA)"
+          placeholder={t("cashier.discount", "Discount (DA)")}
           className="w-36 rounded-md border border-border px-3 py-2 text-sm bg-background"
         />
 
@@ -117,17 +119,17 @@ export default function ActionButtons({
           className="ml-auto flex items-center gap-2 px-4 py-2 rounded-md bg-primary text-primary-foreground font-semibold text-sm shadow hover:bg-primary/90 border border-border"
         >
           <CheckCircle className="w-5 h-5" />
-          Confirm
+          {t("cashier.confirm", "Confirm")}
         </button>
       </div>
 
       {/* === Row 2: Credit / Versement === */}
       <div className="flex gap-3">
         <button className="flex-1 rounded-md bg-muted hover:bg-accent px-3 py-2 text-sm font-medium border border-border">
-          Add Credit
+          {t("cashier.addCredit", "Add Credit")}
         </button>
         <button className="flex-1 rounded-md bg-muted hover:bg-accent px-3 py-2 text-sm font-medium border border-border">
-          Add Versement
+          {t("cashier.addVersement", "Add Versement")}
         </button>
       </div>
 
@@ -138,14 +140,14 @@ export default function ActionButtons({
           className="flex-1 flex items-center justify-center gap-2 py-4 rounded-lg bg-primary text-primary-foreground font-bold text-lg tracking-wide shadow-md hover:bg-primary/90 transition focus:outline-none focus:ring-2 focus:ring-primary/50 border border-border"
         >
           <CheckCircle className="w-6 h-6" />
-          <span>Confirm Sale</span>
+          <span>{t("cashier.confirmSale", "Confirm Sale")}</span>
         </button>
         <button
           onClick={onClear}
           className="flex-1 flex items-center justify-center gap-2 py-4 rounded-lg bg-destructive text-white font-semibold text-lg tracking-wide shadow-md hover:bg-destructive/80 transition focus:outline-none focus:ring-2 focus:ring-destructive/50 border border-border"
         >
           <Trash2 className="w-6 h-6" />
-          <span>Clear Cart</span>
+          <span>{t("cashier.clearCart", "Clear Cart")}</span>
         </button>
       </div>
 
@@ -157,7 +159,7 @@ export default function ActionButtons({
             <div className="flex items-center gap-2">
               <Users className="w-5 h-5 text-red-600 dark:text-red-400" />
               <h2 className="text-lg font-semibold text-foreground">
-                Add New Client
+                {t("cashier.addNewClient", "Add New Client")}
               </h2>
             </div>
 
@@ -165,25 +167,25 @@ export default function ActionButtons({
             <input
               value={newClientName}
               onChange={(e) => setNewClientName(e.target.value)}
-              placeholder="Client Name"
+              placeholder={t("cashier.clientName", "Client Name")}
               className="w-full rounded-md border border-border px-3 py-2 text-sm bg-background"
             />
             <input
               value={newClientPhone}
               onChange={(e) => setNewClientPhone(e.target.value)}
-              placeholder="Phone Number (optional)"
+              placeholder={t("cashier.phoneOptional", "Phone Number (optional)")}
               className="w-full rounded-md border border-border px-3 py-2 text-sm bg-background"
             />
             <input
               value={newClientAddresse}
               onChange={(e) => setNewClientAddress(e.target.value)}
-              placeholder="Address (optional)"
+              placeholder={t("cashier.addressOptional", "Address (optional)")}
               className="w-full rounded-md border border-border px-3 py-2 text-sm bg-background"
             />
             <input
               value={newClientNotes}
               onChange={(e) => setNewClientNotes(e.target.value)}
-              placeholder="Notes (optional)"
+              placeholder={t("cashier.notesOptional", "Notes (optional)")}
               className="w-full rounded-md border border-border px-3 py-2 text-sm bg-background"
             />
 
@@ -193,7 +195,7 @@ export default function ActionButtons({
                 onClick={() => setShowPopup(false)}
                 className="px-3 py-2 text-sm bg-muted rounded-md hover:bg-muted/60 border border-border"
               >
-                Cancel
+                {t("cashier.cancel", "Cancel")}
               </button>
               <button
                 onClick={() => {
@@ -213,7 +215,7 @@ export default function ActionButtons({
                 }}
                 className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/80 border border-border"
               >
-                Add Client
+                {t("cashier.addClient", "Add Client")}
               </button>
             </div>
           </div>

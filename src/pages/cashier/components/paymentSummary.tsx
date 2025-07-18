@@ -1,5 +1,6 @@
 import React, { useMemo } from "react";
 import type { CartItem } from "../../cashier";
+import { useTranslation } from "react-i18next";
 
 interface Props {
   cart: CartItem[];
@@ -16,6 +17,7 @@ export default function PaymentSummary({
   creditAmount = 0,
   discount = 0,
 }: Props) {
+  const { t } = useTranslation();
   const subtotal = useMemo(
     () => cart.reduce((sum, item) => sum + item.price * item.qty, 0),
     [cart],
@@ -31,7 +33,7 @@ export default function PaymentSummary({
       {clientName && (
         <>
           <div className="flex justify-between font-semibold text-base mb-1">
-            <span>Client:</span>
+            <span>{t("cashier.client", "Client:")}</span>
             <span className="truncate">{clientName}</span>
           </div>
           <div className="border-t border-black dark:border-white my-2" />
@@ -40,10 +42,10 @@ export default function PaymentSummary({
 
       {/* === Header Row === */}
       <div className="flex justify-between font-semibold text-xs uppercase tracking-wider mb-1">
-        <span className="w-1/2">Product</span>
-        <span className="w-1/6 text-right">Qty</span>
-        <span className="w-1/6 text-right">Unit</span>
-        <span className="w-1/6 text-right">Total</span>
+        <span className="w-1/2">{t("cashier.product", "Product")}</span>
+        <span className="w-1/6 text-right">{t("cashier.qty", "Qty")}</span>
+        <span className="w-1/6 text-right">{t("cashier.unit", "Unit")}</span>
+        <span className="w-1/6 text-right">{t("cashier.total", "Total")}</span>
       </div>
       <div className="border-t border-black dark:border-white mb-2" />
 
@@ -81,24 +83,24 @@ export default function PaymentSummary({
       {/* === Bottom Summary Section === */}
       <div className="pt-3 mt-3 border-t border-black dark:border-white space-y-1">
         <div className="flex justify-between">
-          <span className="w-3/4 text-left">Nbr Items</span>
+          <span className="w-3/4 text-left">{t("cashier.nbrItems", "Nbr Items")}</span>
           <span className="w-1/4 text-right">{nbrItems}</span>
         </div>
 
         <div className="flex justify-between">
-          <span className="w-3/4 text-left">Total</span>
+          <span className="w-3/4 text-left">{t("cashier.total", "Total")}</span>
           <span className="w-1/4 text-right">{total.toLocaleString()} DA</span>
         </div>
 
         <div className="flex justify-between">
-          <span className="w-3/4 text-left">Discount</span>
+          <span className="w-3/4 text-left">{t("cashier.discount", "Discount")}</span>
           <span className="w-1/4 text-right">
             -{discount.toLocaleString()} DA
           </span>
         </div>
 
         <div className="flex justify-between font-bold">
-          <span className="w-3/4 text-left">Payment Amount</span>
+          <span className="w-3/4 text-left">{t("cashier.paymentAmount", "Payment Amount")}</span>
           <span className="w-1/4 text-right">
             {paymentAmount.toLocaleString()} DA
           </span>

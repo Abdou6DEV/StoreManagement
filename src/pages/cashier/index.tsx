@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import type { Product } from "@prisma/client";
 import { ChevronDown, ChevronUp } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 import ProductSearch from "./components/productSearch";
 import CartTable from "./components/cartTable";
@@ -17,6 +18,7 @@ export interface CartItem {
 const MAX_SESSIONS = 5;
 
 export default function CashierPage() {
+  const { t } = useTranslation();
   const [productRefreshKey, setProductRefreshKey] = useState(0);
   const [sessions, setSessions] = useState<CartItem[][]>(
     Array.from({ length: MAX_SESSIONS }, (): CartItem[] => []),
@@ -105,6 +107,7 @@ export default function CashierPage() {
     });
   }, [productRefreshKey]);
 
+  // Alerts
   const handleAddClient = async (
     name: string,
     phone?: string,
@@ -121,7 +124,7 @@ export default function CashierPage() {
       setClientName(name);
       setClientId(client.id);
     } catch (err) {
-      alert("Failed to add client");
+      alert(t("cashier.failedAddClient", "Failed to add client"));
     }
   };
   const handleClear = () => updateSession([]);
@@ -141,9 +144,9 @@ export default function CashierPage() {
       setClientName("");
       setClientId(null);
       setProductRefreshKey((k) => k + 1);
-      alert("Sale recorded successfully");
+      alert(t("cashier.saleRecorded", "Sale recorded successfully"));
     } catch (err) {
-      alert("Failed to record sale");
+      alert(t("cashier.failedRecordSale", "Failed to record sale"));
     }
   };
 
@@ -173,7 +176,7 @@ export default function CashierPage() {
       <header className="shrink-0 sticky top-0 z-20 bg-background/80 backdrop-blur border-b border-border pb-2">
         <div className="max-w-5xl mx-auto text-center leading-none py-1">
           <div className="text-xs text-muted-foreground font-medium tracking-wider uppercase">
-            Total
+            {t("cashier.total", "Total")}
           </div>
           <div className="text-4xl sm:text-5xl font-extrabold tracking-tight text-primary drop-shadow-sm">
             {total.toLocaleString()} DA
@@ -214,7 +217,7 @@ export default function CashierPage() {
               <div className="border border-border rounded-lg p-3 bg-background h-full flex flex-col">
                 <input
                   type="text"
-                  placeholder="Filter products..."
+                  placeholder={t("cashier.filterProducts", "Filter products...")}
                   className="w-full px-3 py-2 mb-3 rounded-md border border-border bg-card text-foreground"
                   value={productFilter}
                   onChange={(e) => setProductFilter(e.target.value)}
@@ -242,7 +245,7 @@ export default function CashierPage() {
                         {product.selling.toLocaleString()} DA
                       </div>
                       <div className="text-xs text-muted-foreground mt-1">
-                        Stock: {product.quantity}
+                        {t("cashier.stock", "Stock")}: {product.quantity}
                       </div>
                     </div>
                   ))}
@@ -257,7 +260,7 @@ export default function CashierPage() {
                       : "bg-primary text-primary-foreground hover:bg-primary/90"
                   }`}
                 >
-                  Add to Cart ({selectedProducts.length})
+                  {t("cashier.addToCart", { count: selectedProducts.length })}
                 </button>
               </div>
             </div>
@@ -322,7 +325,7 @@ export default function CashierPage() {
                 isActive ? active : hasItems ? green : inactive
               }`}
             >
-              Page {i + 1}
+              {t("cashier.page", { number: i + 1 })}
             </button>
           );
         })}
