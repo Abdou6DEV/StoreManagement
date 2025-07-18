@@ -57,24 +57,26 @@ export default function CartTable({ cart, setCart }: Props) {
           {(item.price * item.qty).toLocaleString()} DZD
         </td>
         <td className="p-2 text-right w-[20%]">
-          <button
-            onClick={() => updateQty(index, item.qty + 1)}
-            className="px-1 py-0 rounded bg-muted hover:bg-primary hover:text-primary-foreground transition text-xl font-semibold"
-          >
-            +
-          </button>
-          <button
-            onClick={() => updateQty(index, item.qty - 1)}
-            className="px-1 py-0 rounded bg-muted hover:bg-primary hover:text-primary-foreground transition text-xl font-semibold"
-          >
-            −
-          </button>
-          <button
-            onClick={() => removeItem(index)}
-            className="text-red-500 hover:text-red-700 transition align-middle"
-          >
-            <Trash2 className="w-5 h-5 inline" />
-          </button>
+          <div className="flex justify-end gap-1">
+            <button
+              onClick={() => updateQty(index, item.qty + 1)}
+              className="px-1 py-0 rounded bg-muted hover:bg-primary hover:text-primary-foreground transition text-xl font-semibold"
+            >
+              +
+            </button>
+            <button
+              onClick={() => updateQty(index, item.qty - 1)}
+              className="px-1 py-0 rounded bg-muted hover:bg-primary hover:text-primary-foreground transition text-xl font-semibold"
+            >
+              −
+            </button>
+            <button
+              onClick={() => removeItem(index)}
+              className="text-red-500 hover:text-red-700 transition align-middle"
+            >
+              <Trash2 className="w-5 h-5 inline" />
+            </button>
+          </div>
         </td>
       </tr>
     );

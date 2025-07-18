@@ -115,7 +115,7 @@ export default function ActionButtons({
 
         {/* Optional discount input */}
         <input
-          placeholder={t("cashier.discount", "Discount (DA)")}
+          placeholder={t("cashier.discount", "Discount")}
           className="w-36 rounded-md border border-border px-3 py-2 text-sm bg-background"
           type="number"
           value={pendingDiscount}
