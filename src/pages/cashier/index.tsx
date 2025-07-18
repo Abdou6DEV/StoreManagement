@@ -132,9 +132,18 @@ export default function CashierPage() {
 
   const handleFinish = async () => {
     if (cart.length === 0) return;
+    let saleClientId = clientId;
     try {
+      // If clientName is entered but clientId is null, create the client first
+      if (clientName.trim() && !clientId) {
+        const client = await window.api.database.clients.create({
+          name: clientName.trim(),
+        });
+        saleClientId = client.id;
+        setClientId(client.id); // update state for consistency
+      }
       await window.api.database.sales.create({
-        clientId: clientId || undefined,
+        clientId: saleClientId || undefined,
         items: cart.map((item) => ({
           productId: item.id,
           quantity: item.qty,

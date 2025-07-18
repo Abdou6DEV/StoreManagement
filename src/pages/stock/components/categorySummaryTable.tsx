@@ -157,20 +157,36 @@ export default function CategorySummaryTable() {
             </span>
             <div className="flex flex-wrap gap-6 text-sm">
               <span>
-                <span className="text-muted-foreground">{t("stock.quantity")}: </span>
-                <span className="font-medium">{summary.reduce((sum, row) => sum + row.totalQuantity, 0)}</span>
+                <span className="text-muted-foreground">
+                  {t("stock.quantity")}:{" "}
+                </span>
+                <span className="font-medium">
+                  {summary.reduce((sum, row) => sum + row.totalQuantity, 0)}
+                </span>
               </span>
               <span>
-                <span className="text-muted-foreground">{t("stock.totalBought", "Total Bought")}: </span>
-                <span className="font-medium">{summary.reduce((sum, row) => sum + row.totalBought, 0)}</span>
+                <span className="text-muted-foreground">
+                  {t("stock.totalBought", "Total Bought")}:{" "}
+                </span>
+                <span className="font-medium">
+                  {summary.reduce((sum, row) => sum + row.totalBought, 0)}
+                </span>
               </span>
               <span>
-                <span className="text-muted-foreground">{t("stock.totalSelling", "Total Selling")}: </span>
-                <span className="font-medium">{summary.reduce((sum, row) => sum + row.totalSelling, 0)}</span>
+                <span className="text-muted-foreground">
+                  {t("stock.totalSelling", "Total Selling")}:{" "}
+                </span>
+                <span className="font-medium">
+                  {summary.reduce((sum, row) => sum + row.totalSelling, 0)}
+                </span>
               </span>
               <span>
-                <span className="text-muted-foreground">{t("stock.totalProfit", "Total Profit")}: </span>
-                <span className="font-bold text-green-900">{summary.reduce((sum, row) => sum + row.totalProfit, 0)}</span>
+                <span className="text-muted-foreground">
+                  {t("stock.totalProfit", "Total Profit")}:{" "}
+                </span>
+                <span className="font-bold text-green-900">
+                  {summary.reduce((sum, row) => sum + row.totalProfit, 0)}
+                </span>
               </span>
             </div>
           </div>

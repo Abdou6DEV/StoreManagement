@@ -76,7 +76,7 @@ export class DatabaseService {
           });
         }
       }
-      
+
       // Create sale
       const sale = await tx.sale.create({
         data: {
