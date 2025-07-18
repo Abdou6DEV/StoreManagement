@@ -2,12 +2,12 @@ import React, { useState, useMemo, useEffect } from "react";
 import type { Product } from "@prisma/client";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useTranslation } from "react-i18next";
-
 import ProductSearch from "./components/productSearch";
 import CartTable from "./components/cartTable";
 import PaymentSummary from "./components/paymentSummary";
 import ActionButtons from "./components/actionButtons";
 import OutOfStockWarningModal from "./components/outOfStockWarningModal";
+import ProductBrowser from "./components/productBrowser";
 
 export interface CartItem {
   id: string;
@@ -21,16 +21,14 @@ const MAX_SESSIONS = 5;
 export default function CashierPage() {
   const { t } = useTranslation();
   const [productRefreshKey, setProductRefreshKey] = useState(0);
-  const [sessions, setSessions] = useState<CartItem[][]>(
-    Array.from({ length: MAX_SESSIONS }, (): CartItem[] => []),
-  );
   const [activeSession, setActiveSession] = useState(0);
   const [showProductBrowser, setShowProductBrowser] = useState(false);
-  const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
-  const [productFilter, setProductFilter] = useState("");
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [outOfStockItems, setOutOfStockItems] = useState<CartItem[]>([]);
   const [showStockWarning, setShowStockWarning] = useState(false);
+  const [sessions, setSessions] = useState<CartItem[][]>(
+    Array.from({ length: MAX_SESSIONS }, (): CartItem[] => []),
+  );
 
   // Ensure cart always exists
   const cart: CartItem[] = useMemo(() => {
@@ -47,7 +45,7 @@ export default function CashierPage() {
   const updateSession = (newCart: CartItem[]) => {
     setSessions((prev) => {
       const updated = [...prev];
-      updated[activeSession] = newCart ?? []; // Always safe
+      updated[activeSession] = newCart ?? [];
       return updated;
     });
   };
@@ -66,38 +64,6 @@ export default function CashierPage() {
       });
     }
     updateSession(updated);
-  };
-
-  // FIXED: Batch add products instead of individual state updates
-  const handleAddSelectedProducts = () => {
-    if (selectedProducts.length === 0) return;
-
-    // Create a copy of the current cart to modify
-    const updatedCart = [...cart];
-
-    selectedProducts.forEach((productId) => {
-      const product = allProducts.find((p) => p.id === productId);
-      if (product) {
-        const existingItem = updatedCart.find((item) => item.id === product.id);
-        if (existingItem) {
-          existingItem.qty += 1;
-        } else {
-          updatedCart.push({
-            id: product.id,
-            name: product.name,
-            price: product.selling,
-            qty: 1,
-          });
-        }
-      }
-    });
-
-    // Update cart state once with all changes
-    updateSession(updatedCart);
-    setSelectedProducts([]);
-
-    // Collapse the product browser after adding items
-    setShowProductBrowser(false);
   };
 
   const [clientName, setClientName] = useState("");
@@ -131,6 +97,8 @@ export default function CashierPage() {
       alert(t("cashier.failedAddClient", "Failed to add client"));
     }
   };
+
+  // Clear the cart
   const handleClear = () => updateSession([]);
 
   const handleFinish = async () => {
@@ -141,6 +109,7 @@ export default function CashierPage() {
       const product = allProducts.find((p) => p.id === item.id);
       return product && item.qty > product.quantity;
     });
+
     if (outOfStock.length > 0) {
       setOutOfStockItems(outOfStock);
       setShowStockWarning(true);
@@ -192,14 +161,6 @@ export default function CashierPage() {
     return () => window.removeEventListener("keydown", handler);
   }, []);
 
-  // Filter products based on search
-  const filteredProducts = useMemo(() => {
-    if (!productFilter) return allProducts;
-    return allProducts.filter((product) =>
-      product.name.toLowerCase().includes(productFilter.toLowerCase()),
-    );
-  }, [allProducts, productFilter]);
-
   return (
     <main className="h-screen w-full flex flex-col bg-background text-foreground overflow-hidden -mt-13">
       {/* === Sticky Total Header === */}
@@ -240,65 +201,33 @@ export default function CashierPage() {
               </button>
             </div>
 
-            {/* Product Browser with smooth slide animation */}
-            <div
-              className={`h-full transition-all duration-500 ease-in-out overflow-hidden ${
-                showProductBrowser ? "max-h-full" : "max-h-0"
-              }`}
-            >
-              <div className="border border-border rounded-lg p-3 bg-background h-full flex flex-col">
-                <input
-                  type="text"
-                  placeholder={t(
-                    "cashier.filterProducts",
-                    "Filter products...",
-                  )}
-                  className="w-full px-3 py-2 mb-3 rounded-md border border-border bg-card text-foreground"
-                  value={productFilter}
-                  onChange={(e) => setProductFilter(e.target.value)}
-                />
-
-                <div className="flex-1 overflow-y-auto grid grid-cols-3 gap-2">
-                  {filteredProducts.map((product) => (
-                    <div
-                      key={product.id}
-                      onClick={() => {
-                        setSelectedProducts((prev) =>
-                          prev.includes(product.id)
-                            ? prev.filter((id) => id !== product.id)
-                            : [...prev, product.id],
-                        );
-                      }}
-                      className={`p-2 border rounded-md h-20 cursor-pointer transition-all flex flex-col ${
-                        selectedProducts.includes(product.id)
-                          ? "border-primary bg-primary/10"
-                          : "border-border hover:border-primary"
-                      }`}
-                    >
-                      <div className="font-medium truncate">{product.name}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {product.selling.toLocaleString()} DA
-                      </div>
-                      <div className="text-xs text-muted-foreground mt-1">
-                        {t("cashier.stock", "Stock")}: {product.quantity}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <button
-                  onClick={handleAddSelectedProducts}
-                  disabled={selectedProducts.length === 0}
-                  className={`mt-3 py-2 px-4 rounded-md font-medium ${
-                    selectedProducts.length === 0
-                      ? "bg-muted text-muted-foreground cursor-not-allowed"
-                      : "bg-primary text-primary-foreground hover:bg-primary/90"
-                  }`}
-                >
-                  {t("cashier.addToCart", { count: selectedProducts.length })}
-                </button>
-              </div>
-            </div>
+            {/* Product Browser as a separate component */}
+            <ProductBrowser
+              allProducts={allProducts}
+              show={showProductBrowser}
+              onClose={() => setShowProductBrowser(false)}
+              onAddSelectedProducts={(selectedProductIds) => {
+                // Add selected products to cart
+                const updatedCart = [...cart];
+                selectedProductIds.forEach((productId) => {
+                  const product = allProducts.find((p) => p.id === productId);
+                  if (product) {
+                    const existingItem = updatedCart.find((item) => item.id === product.id);
+                    if (existingItem) {
+                      existingItem.qty += 1;
+                    } else {
+                      updatedCart.push({
+                        id: product.id,
+                        name: product.name,
+                        price: product.selling,
+                        qty: 1,
+                      });
+                    }
+                  }
+                });
+                updateSession(updatedCart);
+              }}
+            />
 
             <div
               className={`flex-1 overflow-auto min-h-[0px] transition-all duration-300 ${
