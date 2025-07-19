@@ -35,6 +35,12 @@ export default function ActionButtons({
   const [newClientAddresse, setNewClientAddress] = useState("");
   const [newClientNotes, setNewClientNotes] = useState("");
   const [clientSuggestions, setClientSuggestions] = useState<any[]>([]);
+  const [draftDiscount, setDraftDiscount] = useState(discount);
+
+  // Keep draftDiscount in sync with prop when session changes
+  useEffect(() => {
+    setDraftDiscount(discount);
+  }, [discount]);
   
   const refreshClientSuggestions = () => {
     window.api.database.clients.getAll().then(setClientSuggestions);
@@ -118,21 +124,27 @@ export default function ActionButtons({
         </button>
 
         {/* Optional discount input */}
-        <input
-          placeholder={t("cashier.discount", "Discount")}
-          className="w-36 rounded-md border border-border px-3 py-2 text-sm bg-background"
-          type="number"
-          value={discount}
-          onChange={(e) => {
-            const val = e.target.value;
-            if (/^\d*$/.test(val)) {
-              onDiscountChange(val);
-            }
-          }}
-        />
+        <div className="flex items-center gap-2">
+          <input
+            placeholder={t("cashier.discount", "Discount")}
+            className="w-36 rounded-md border border-border px-3 py-2 text-sm bg-background"
+            type="number"
+            value={draftDiscount}
+            onChange={(e) => {
+              const val = e.target.value;
+              if (/^\d*$/.test(val)) {
+                setDraftDiscount(val);
+              }
+            }}
+          />
+        </div>
 
         <button
           className="ml-auto flex items-center gap-2 px-4 py-2 rounded-md bg-primary text-primary-foreground font-semibold text-sm shadow hover:bg-primary/90 border border-border"
+          onClick={() => {
+            onDiscountChange(draftDiscount);
+            if (onFinish) onFinish();
+          }}
         >
           <CheckCircle className="w-5 h-5" />
           <span>{t("cashier.confirm", "Confirm")}</span>

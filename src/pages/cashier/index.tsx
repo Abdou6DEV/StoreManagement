@@ -30,6 +30,7 @@ export default function CashierPage() {
   const [sessions, setSessions] = useState<CartItem[][]>(
     Array.from({ length: MAX_SESSIONS }, (): CartItem[] => []),
   );
+  const [discounts, setDiscounts] = useState<string[]>(Array.from({ length: MAX_SESSIONS }, () => ""));
   const [discountError, setDiscountError] = useState<string | null>(null);
 
   // Ensure cart always exists
@@ -70,7 +71,7 @@ export default function CashierPage() {
 
   const [clientName, setClientName] = useState("");
   const [clientId, setClientId] = useState<string | null>(null);
-  const [discount, setDiscount] = useState("");
+  const discount = discounts[activeSession];
 
   // Fetch all products
   useEffect(() => {
@@ -149,7 +150,11 @@ export default function CashierPage() {
       updateSession([]);
       setClientName("");
       setClientId(null);
-      setDiscount("");
+      setDiscounts((prev) => {
+        const updated = [...prev];
+        updated[activeSession] = "";
+        return updated;
+      });
       setProductRefreshKey((k) => k + 1);
       alert(t("cashier.saleRecorded", "Sale recorded successfully"));
     } catch (err) {
@@ -274,7 +279,13 @@ export default function CashierPage() {
               onFinish={handleFinish}
               setClientId={setClientId}
               discount={discount}
-              onDiscountChange={setDiscount}
+              onDiscountChange={(val) => {
+                setDiscounts((prev) => {
+                  const updated = [...prev];
+                  updated[activeSession] = val;
+                  return updated;
+                });
+              }}
             />
             {/* Discount Error Modal */}
             <DiscountErrorModal
