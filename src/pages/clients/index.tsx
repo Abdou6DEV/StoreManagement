@@ -13,6 +13,7 @@ interface Client {
   notes?: string;
   createdAt?: string;
   updatedAt?: string;
+  totalPurchases?: number;
 }
 
 export default function Customers() {
@@ -32,7 +33,7 @@ export default function Customers() {
     setLoading(true);
     setError(null);
     try {
-      const data = await window.api.database.clients.getAll();
+      const data = await window.api.database.clients.getAllWithTotalPurchases();
       setClients(data);
     } catch (err) {
       setError(t("clients.fetchError", "Failed to fetch clients"));

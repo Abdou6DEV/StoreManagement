@@ -124,7 +124,8 @@
     "outOfStockWarning": "Certains articles sont en rupture de stock !",
     "requested": "Demandé",
     "available": "Disponible",
-    "proceedAnyway": "Continuer quand même"
+    "proceedAnyway": "Continuer quand même",
+    "discountError": "La remise ne peut pas dépasser le montant total"
   },
   "clients": {
     "itemsPerPage": "Éléms par page:",
@@ -145,6 +146,7 @@
     "notes": "Notes",
     "actions": "Actions",
     "delete": "Supprimer",
+    "totalPurchases": "Achats totaux",
     "deleteConfirm": "Êtes-vous sûr de vouloir supprimer ce client ?",
     "deleteError": "Échec de la suppression du client",
     "updateError": "Échec de la mise à jour du client",

@@ -99,6 +99,34 @@ export class DatabaseService {
     return await prisma.client.findMany();
   }
 
+  static async getAllClientsWithTotalPurchases() {
+    const clients = await prisma.client.findMany();
+
+    const results = await Promise.all(
+      clients.map(async (client) => {
+        const sales = await prisma.sale.findMany({
+          where: { clientId: client.id },
+          include: { saleItems: true },
+        });
+
+        let totalPurchases = 0;
+        for (const sale of sales) {
+          let saleTotal = 0;
+          for (const item of sale.saleItems) {
+            saleTotal += Number(item.price) * item.quantity;
+          }
+
+          saleTotal -= sale.discount;
+          totalPurchases += saleTotal;
+        }
+
+        return { ...client, totalPurchases };
+      })
+    );
+    
+    return results;
+  }
+
   static async deleteClient(id: string) {
     return await prisma.client.delete({ where: { id } });
   }

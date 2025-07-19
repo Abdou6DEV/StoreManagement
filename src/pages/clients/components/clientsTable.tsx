@@ -9,6 +9,7 @@ interface Client {
   phone?: string;
   address?: string;
   notes?: string;
+  totalPurchases?: number;
 }
 
 interface ClientsTableProps {
@@ -50,6 +51,7 @@ const ClientsTable: React.FC<ClientsTableProps> = ({
             <th className="px-4 py-3">{t("clients.phone", "Phone")}</th>
             <th className="px-4 py-3">{t("clients.address", "Address")}</th>
             <th className="px-4 py-3">{t("clients.notes", "Notes")}</th>
+            <th className="px-4 py-3">{t("clients.totalPurchases", "Total Purchases")}</th>
             <th className="px-4 py-3">{t("clients.actions", "Actions")}</th>
           </tr>
         </thead>
@@ -63,6 +65,7 @@ const ClientsTable: React.FC<ClientsTableProps> = ({
               <td className="px-4 py-2">{client.phone || "-"}</td>
               <td className="px-4 py-2">{client.address || "-"}</td>
               <td className="px-4 py-2">{client.notes || "-"}</td>
+              <td className="px-4 py-2">{client.totalPurchases.toLocaleString() || 0} DA</td>
               <td className="px-4 py-2">
                 <div className="flex gap-2">
                   <Button

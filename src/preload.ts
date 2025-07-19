@@ -27,6 +27,7 @@ contextBridge.exposeInMainWorld("api", {
         notes?: string;
       }) => ipcRenderer.invoke("db:clients:create", data),
       getAll: () => ipcRenderer.invoke("db:clients:getAll"),
+      getAllWithTotalPurchases: () => ipcRenderer.invoke("db:clients:getAllWithTotalPurchases"),
       delete: (id: string) => ipcRenderer.invoke("db:clients:delete", id),
       update: (
         id: string,
@@ -78,6 +79,7 @@ declare global {
             notes?: string;
           }) => Promise<any>;
           getAll: () => Promise<any[]>;
+          getAllWithTotalPurchases: () => Promise<any[]>;
           delete: (id: string) => Promise<void>;
           update: (
             id: string,

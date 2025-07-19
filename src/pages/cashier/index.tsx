@@ -8,6 +8,7 @@ import PaymentSummary from "./components/paymentSummary";
 import ActionButtons from "./components/actionButtons";
 import OutOfStockWarningModal from "./components/outOfStockWarningModal";
 import ProductBrowser from "./components/productBrowser";
+import DiscountErrorModal from "./components/discountErrorModal";
 
 export interface CartItem {
   id: string;
@@ -29,6 +30,7 @@ export default function CashierPage() {
   const [sessions, setSessions] = useState<CartItem[][]>(
     Array.from({ length: MAX_SESSIONS }, (): CartItem[] => []),
   );
+  const [discountError, setDiscountError] = useState<string | null>(null);
 
   // Ensure cart always exists
   const cart: CartItem[] = useMemo(() => {
@@ -103,7 +105,13 @@ export default function CashierPage() {
 
   const handleFinish = async () => {
     if (cart.length === 0) return;
-    
+    const cartTotal = cart.reduce((sum, item) => sum + item.qty * item.price, 0);
+    if (Number(discount) > cartTotal) {
+      setDiscountError(t("cashier.discountError", "Discount cannot exceed total amount"));
+      return;
+    } else {
+      setDiscountError(null);
+    }
     // Check for out-of-stock items
     const outOfStock = cart.filter((item) => {
       const product = allProducts.find((p) => p.id === item.id);
@@ -267,6 +275,12 @@ export default function CashierPage() {
               setClientId={setClientId}
               discount={discount}
               onDiscountChange={setDiscount}
+            />
+            {/* Discount Error Modal */}
+            <DiscountErrorModal
+              open={!!discountError}
+              message={discountError || ""}
+              onClose={() => setDiscountError(null)}
             />
           </div>
         </section>

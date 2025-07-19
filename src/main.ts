@@ -108,4 +108,8 @@ function setupDatabaseHandlers() {
   ipcMain.handle("db:clients:update", async (_event, { id, data }) => {
     return await DatabaseService.updateClient(id, data);
   });
+
+  ipcMain.handle("db:clients:getAllWithTotalPurchases", async () => {
+    return await DatabaseService.getAllClientsWithTotalPurchases();
+  });
 }
