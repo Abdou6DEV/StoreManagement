@@ -20,11 +20,23 @@ const ProductBrowser: React.FC<ProductBrowserProps> = ({
   const [productFilter, setProductFilter] = useState("");
 
   const filteredProducts = useMemo(() => {
-    if (!productFilter) return allProducts;
+    let products = allProducts;
     
-    return allProducts.filter((product) =>
-      product.name.toLowerCase().includes(productFilter.toLowerCase())
-    );
+    if (productFilter) {
+      products = allProducts.filter((product) =>
+        product.name.toLowerCase().includes(productFilter.toLowerCase())
+      );
+    }
+    
+    // Sort products: those without barcode first, then those with barcode
+    return products.sort((a, b) => {
+      const aHasBarcode = a.codebar && a.codebar.trim() !== '';
+      const bHasBarcode = b.codebar && b.codebar.trim() !== '';
+      
+      if (aHasBarcode && !bHasBarcode) return 1;  // b comes first
+      if (!aHasBarcode && bHasBarcode) return -1; // a comes first
+      return 0; // both have same barcode status, maintain original order
+    });
   }, [allProducts, productFilter]);
 
   const handleAddSelectedProducts = () => {
