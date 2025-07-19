@@ -218,14 +218,16 @@ export default function PaymentSummary({
           <span className="w-1/4 text-right">{total.toLocaleString()} DA</span>
         </div>
 
-        <div className="flex justify-between">
-          <span className="w-3/4 text-left">
-            {t("cashier.discount", "Discount")}
-          </span>
-          <span className="w-1/4 text-right">
-            -{discount.toLocaleString()} DA
-          </span>
-        </div>
+        {discount > 0 && (
+          <div className="flex justify-between">
+            <span className="w-3/4 text-left">
+              {t("cashier.discount", "Discount")}
+            </span>
+            <span className="w-1/4 text-right">
+              -{discount.toLocaleString()} DA
+            </span>
+          </div>
+        )}
 
         <div className="flex justify-between font-bold">
           <span className="w-3/4 text-left">
