@@ -64,9 +64,12 @@ export default function CategorySummaryTable() {
 
   return (
     <section className="bg-card border border-border rounded-xl shadow-sm p-6 space-y-5">
-      <h2 className="text-lg font-bold text-foreground mb-4">
-        {t("stock.categorySummary", "Stock by Category")}
-      </h2>
+      <div className="flex items-center justify-between border-b border-border pb-3">
+        <h2 className="flex justify-between text-lg font-bold text-foreground flex-1">
+          <span>{t("stock.categorySummary", "Stock by Category")}</span>
+          <span>{t("stock.count", { val: filteredSummary.length })}</span>
+        </h2>
+      </div>
       {/* Controls Row: Items per page selector and search input, same line */}
       <div className="flex flex-wrap items-center gap-4 mb-2">
         {/* Items per page selector */}
