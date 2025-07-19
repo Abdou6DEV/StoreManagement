@@ -143,7 +143,6 @@ export default function ActionButtons({
           className="ml-auto flex items-center gap-2 px-4 py-2 rounded-md bg-primary text-primary-foreground font-semibold text-sm shadow hover:bg-primary/90 border border-border"
           onClick={() => {
             onDiscountChange(draftDiscount);
-            if (onFinish) onFinish();
           }}
         >
           <CheckCircle className="w-5 h-5" />
