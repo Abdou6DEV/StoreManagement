@@ -35,13 +35,18 @@ export default function ActionButtons({
   const [newClientAddresse, setNewClientAddress] = useState("");
   const [newClientNotes, setNewClientNotes] = useState("");
   const [clientSuggestions, setClientSuggestions] = useState<any[]>([]);
+  
+  const refreshClientSuggestions = () => {
+    window.api.database.clients.getAll().then(setClientSuggestions);
+  };
+
+  useEffect(() => {
+    refreshClientSuggestions();
+  }, []);
+
   const [showSuggestions, setShowSuggestions] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const [pendingDiscount, setPendingDiscount] = useState(discount);
-
-  useEffect(() => {
-    window.api.database.clients.getAll().then(setClientSuggestions);
-  }, []);
 
   // Filter suggestions based on input
   const filteredSuggestions =
@@ -209,9 +214,9 @@ export default function ActionButtons({
                 {t("cashier.cancel", "Cancel")}
               </button>
               <button
-                onClick={() => {
+                onClick={async () => {
                   if (newClientName.trim()) {
-                    onAddClient(
+                    await onAddClient(
                       newClientName.trim(),
                       newClientPhone.trim(),
                       newClientAddresse.trim(),
@@ -222,6 +227,9 @@ export default function ActionButtons({
                     setNewClientPhone("");
                     setNewClientAddress("");
                     setNewClientNotes("");
+                    
+                    // Refreshing client suggestions after the client is actually added
+                    refreshClientSuggestions();
                   }
                 }}
                 className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/80 border border-border"
