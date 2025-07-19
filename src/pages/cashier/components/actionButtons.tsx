@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { CheckCircle, Trash2, Users, UserPlus } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import DiscountErrorModal from "./discountErrorModal";
 
 interface Props {
   clientName: string;
@@ -16,6 +17,7 @@ interface Props {
   setClientId: (id: string | null) => void;
   discount: string;
   onDiscountChange: (val: string) => void;
+  cartTotal: number;
 }
 
 export default function ActionButtons({
@@ -27,6 +29,7 @@ export default function ActionButtons({
   setClientId,
   discount,
   onDiscountChange,
+  cartTotal,
 }: Props) {
   const { t } = useTranslation();
   const [showPopup, setShowPopup] = useState(false);
@@ -36,6 +39,7 @@ export default function ActionButtons({
   const [newClientNotes, setNewClientNotes] = useState("");
   const [clientSuggestions, setClientSuggestions] = useState<any[]>([]);
   const [draftDiscount, setDraftDiscount] = useState(discount);
+  const [discountError, setDiscountError] = useState<string | null>(null);
 
   // Keep draftDiscount in sync with prop when session changes
   useEffect(() => {
@@ -142,7 +146,14 @@ export default function ActionButtons({
         <button
           className="ml-auto flex items-center gap-2 px-4 py-2 rounded-md bg-primary text-primary-foreground font-semibold text-sm shadow hover:bg-primary/90 border border-border"
           onClick={() => {
-            onDiscountChange(draftDiscount);
+            // Validate discount before applying
+            if (Number(draftDiscount) > cartTotal) {
+              setDiscountError(t("cashier.discountError", "Discount cannot exceed total amount"));
+              return;
+            } else {
+              setDiscountError(null);
+              onDiscountChange(draftDiscount);
+            }
           }}
         >
           <CheckCircle className="w-5 h-5" />
@@ -254,6 +265,12 @@ export default function ActionButtons({
           </div>
         </div>
       )}
+
+      <DiscountErrorModal
+        open={!!discountError}
+        message={discountError || ""}
+        onClose={() => setDiscountError(null)}
+      />
     </div>
   );
 }

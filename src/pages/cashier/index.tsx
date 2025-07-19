@@ -286,12 +286,7 @@ export default function CashierPage() {
                   return updated;
                 });
               }}
-            />
-            {/* Discount Error Modal */}
-            <DiscountErrorModal
-              open={!!discountError}
-              message={discountError || ""}
-              onClose={() => setDiscountError(null)}
+              cartTotal={total}
             />
           </div>
         </section>
