@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import { CartItem } from "../../cashier";
 import { Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -43,13 +43,72 @@ export default function CartTable({ cart, setCart }: Props) {
     updateQty: (index: number, newQty: number) => void;
     removeItem: (index: number) => void;
   }) {
+    const [isEditing, setIsEditing] = useState(false);
+    const [editValue, setEditValue] = useState(item.qty.toString());
+    const inputRef = useRef<HTMLInputElement>(null);
+
+    const handleDoubleClick = () => {
+      setIsEditing(true);
+      setEditValue(item.qty.toString());
+    };
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const value = e.target.value;
+      if (/^\d*$/.test(value)) {
+        setEditValue(value);
+      }
+    };
+
+    const handleInputBlur = () => {
+      const newQty = parseInt(editValue);
+      if (!isNaN(newQty) && newQty > 0) {
+        updateQty(index, newQty);
+      } else {
+        setEditValue(item.qty.toString());
+      }
+      setIsEditing(false);
+    };
+
+    const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === 'Enter') {
+        handleInputBlur();
+      } else if (e.key === 'Escape') {
+        setEditValue(item.qty.toString());
+        setIsEditing(false);
+      }
+    };
+
+    useEffect(() => {
+      if (isEditing && inputRef.current) {
+        inputRef.current.focus();
+        inputRef.current.select();
+      }
+    }, [isEditing]);
+
     return (
       <tr
         key={item.id}
         className="border-b border-muted transition-colors hover:bg-accent/40"
       >
         <td className="p-2 w-[30%]">{item.name}</td>
-        <td className="p-2 text-right w-[10%]">{item.qty}</td>
+        <td 
+          className="p-2 text-right w-[10%] cursor-pointer select-none"
+          onDoubleClick={handleDoubleClick}
+        >
+          {isEditing ? (
+            <input
+              ref={inputRef}
+              type="text"
+              value={editValue}
+              onChange={handleInputChange}
+              onBlur={handleInputBlur}
+              onKeyDown={handleInputKeyDown}
+              className="w-full text-right bg-transparent border border-primary rounded px-1 py-0 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+          ) : (
+            item.qty
+          )}
+        </td>
         <td className="p-2 text-right w-[20%]">
           {item.price.toLocaleString()} DZ
         </td>
