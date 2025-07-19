@@ -41,6 +41,16 @@ export default function PaymentSummary({
     function scroll() {
       if (!el || isPaused.current) return;
       
+      // Check if content needs scrolling
+      if (el.scrollHeight <= el.clientHeight) {
+        // Content fits without scrolling, cancel animation
+        if (animationRef.current) {
+          cancelAnimationFrame(animationRef.current);
+          animationRef.current = null;
+        }
+        return;
+      }
+      
       // Smooth continuous scroll
       el.scrollTop += 0.5;
 
@@ -100,9 +110,11 @@ export default function PaymentSummary({
     el.addEventListener('touchstart', handleUserInteraction);
     el.addEventListener('wheel', handleUserInteraction);
 
-    // Start scrolling after initial 6 second delay
+    // Only start scrolling if content is taller than container
     setTimeout(() => {
-      animationRef.current = requestAnimationFrame(scroll);
+      if (el.scrollHeight > el.clientHeight) {
+        animationRef.current = requestAnimationFrame(scroll);
+      }
     }, 6000);
 
     return () => {
