@@ -31,6 +31,7 @@ export default function PaymentSummary({
   const scrollRef = React.useRef<HTMLDivElement>(null);
   const animationRef = React.useRef<number | null>(null);
   const userScrollTimeout = React.useRef<number | null>(null);
+  const transitionTimeouts = React.useRef<NodeJS.Timeout[]>([]);
   const isPaused = React.useRef(false);
   const [isTransitioning, setIsTransitioning] = React.useState(false);
 
@@ -62,23 +63,26 @@ export default function PaymentSummary({
         }
 
         // First, wait 4 seconds at the bottom
-        setTimeout(() => {
+        const timeout1 = setTimeout(() => {
           // Then start the fade transition
           setIsTransitioning(true);
           
           // After 1 second fade, reset to top
-          setTimeout(() => {
+          const timeout2 = setTimeout(() => {
             if (el) {
               el.scrollTop = 0;
               setIsTransitioning(false);
               
               // Wait 6 seconds at top before resuming scroll
-              setTimeout(() => {
+              const timeout3 = setTimeout(() => {
                 animationRef.current = requestAnimationFrame(scroll);
               }, 6000);
+              transitionTimeouts.current.push(timeout3);
             }
           }, 1000);
+          transitionTimeouts.current.push(timeout2);
         }, 4000);
+        transitionTimeouts.current.push(timeout1);
         return;
       }
 
@@ -87,13 +91,25 @@ export default function PaymentSummary({
 
     function pauseScroll() {
       isPaused.current = true;
+      // Stop any ongoing transition
+      setIsTransitioning(false);
+      
+      // Cancel animation
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
         animationRef.current = null;
       }
+      
+      // Clear all transition timeouts
+      transitionTimeouts.current.forEach(timeout => clearTimeout(timeout));
+      transitionTimeouts.current = [];
+      
+      // Clear user interaction timeout
       if (userScrollTimeout.current) {
         clearTimeout(userScrollTimeout.current);
       }
+      
+      // Set new timeout to resume
       userScrollTimeout.current = window.setTimeout(() => {
         isPaused.current = false;
         animationRef.current = requestAnimationFrame(scroll);
@@ -161,7 +177,7 @@ export default function PaymentSummary({
           ? cart.map((item) => (
               <div
                 key={item.id}
-                className={`flex justify-between border-b border-dashed border-border py-[2px] hover:bg-accent/40 rounded transition-opacity duration-1000 ${
+                className={`flex justify-between border-b border-dashed border-primary/40 py-[2px] hover:bg-accent/40 rounded transition-opacity duration-1000 ${
                   isTransitioning ? 'opacity-0' : 'opacity-100'
                 }`}
               >
