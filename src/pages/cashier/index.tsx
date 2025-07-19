@@ -102,7 +102,16 @@ export default function CashierPage() {
   };
 
   // Clear the cart
-  const handleClear = () => updateSession([]);
+  const handleClear = () => {
+    updateSession([]);
+    setDiscounts((prev) => {
+      const updated = [...prev];
+      updated[activeSession] = "";
+      return updated;
+    });
+    setClientName("");
+    setClientId(null);
+  };
 
   const handleFinish = async () => {
     if (cart.length === 0) return;

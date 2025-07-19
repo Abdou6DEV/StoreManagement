@@ -181,7 +181,10 @@ export default function ActionButtons({
           <span>{t("cashier.confirmSale", "Confirm Sale")}</span>
         </button>
         <button
-          onClick={onClear}
+          onClick={() => {
+            setDraftDiscount("");
+            onClear();
+          }}
           className="flex-1 flex items-center justify-center gap-2 py-4 rounded-lg bg-destructive text-white font-semibold text-lg tracking-wide shadow-md hover:bg-destructive/80 transition focus:outline-none focus:ring-2 focus:ring-destructive/50 border border-border"
         >
           <Trash2 className="w-6 h-6" />
