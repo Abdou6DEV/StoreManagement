@@ -14,8 +14,8 @@ interface Props {
   onClear: () => void;
   onFinish?: () => void;
   setClientId: (id: string | null) => void;
-  discount: number;
-  onDiscountChange: (val: number) => void;
+  discount: string;
+  onDiscountChange: (val: string) => void;
 }
 
 export default function ActionButtons({
@@ -46,7 +46,6 @@ export default function ActionButtons({
 
   const [showSuggestions, setShowSuggestions] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-  const [pendingDiscount, setPendingDiscount] = useState(discount);
 
   // Filter suggestions based on input
   const filteredSuggestions =
@@ -123,12 +122,16 @@ export default function ActionButtons({
           placeholder={t("cashier.discount", "Discount")}
           className="w-36 rounded-md border border-border px-3 py-2 text-sm bg-background"
           type="number"
-          value={pendingDiscount}
-          onChange={(e) => setPendingDiscount(Number(e.target.value) || 0)}
+          value={discount}
+          onChange={(e) => {
+            const val = e.target.value;
+            if (/^\d*$/.test(val)) {
+              onDiscountChange(val);
+            }
+          }}
         />
 
         <button
-          onClick={() => onDiscountChange(pendingDiscount)}
           className="ml-auto flex items-center gap-2 px-4 py-2 rounded-md bg-primary text-primary-foreground font-semibold text-sm shadow hover:bg-primary/90 border border-border"
         >
           <CheckCircle className="w-5 h-5" />
