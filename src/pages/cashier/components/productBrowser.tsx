@@ -43,7 +43,7 @@ const ProductBrowser: React.FC<ProductBrowserProps> = ({
 
   useEffect(() => {
     // Reset visible count when filter changes
-    setVisibleCount(20);
+    setVisibleCount(50);
   }, [productFilter]);
 
   const loadMoreProducts = () => {
@@ -51,7 +51,7 @@ const ProductBrowser: React.FC<ProductBrowserProps> = ({
     
     setLoadingMore(true);
     setTimeout(() => {
-      setVisibleCount(prev => prev + 20);
+      setVisibleCount(prev => prev + 50);
       setLoadingMore(false);
     }, 2000);
   };
