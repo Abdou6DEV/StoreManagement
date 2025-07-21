@@ -167,5 +167,17 @@
     "adding": "Ajout...",
     "title": "Liste des clients",
     "addError": "Échec de l'ajout du client"
+  },
+  "admin": {
+    "optionsList": "Liste des options",
+    "settingsDesc": "Gérez les paramètres opérationnels de votre magasin ci-dessous.",
+    "lowStockThreshold": "Seuil de stock bas",
+    "lowStockDesc": "Définissez la quantité minimale avant qu'un produit ne soit considéré comme en rupture de stock",
+    "storeCash": "Caisse du magasin",
+    "storeCashDesc": "Montant de caisse par défaut dans le magasin",
+    "save": "Enregistrer les paramètres",
+    "saving": "Enregistrement...",
+    "saved": "Paramètres enregistrés !",
+    "loading": "Chargement des paramètres..."
   }
 }

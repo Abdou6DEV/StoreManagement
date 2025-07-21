@@ -166,5 +166,17 @@
     "adding": "Adding...",
     "title": "Clients List",
     "addError": "Failed to add client"
+  },
+  "admin": {
+    "optionsList": "Options List",
+    "settingsDesc": "Manage your store's operational settings below.",
+    "lowStockThreshold": "Low Stock Threshold",
+    "lowStockDesc": "Set the minimum quantity before a product is considered low in stock",
+    "storeCash": "Store Cash",
+    "storeCashDesc": "Default cash amount in store",
+    "save": "Save Settings",
+    "saving": "Saving...",
+    "saved": "Settings saved!",
+    "loading": "Loading settings..."
   }
 }
