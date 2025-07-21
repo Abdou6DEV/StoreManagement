@@ -86,8 +86,8 @@ async function main() {
     });
 
     // Add items to the sale
-    for (let j = 0; j < saleItemsCount; j++) {
-      const product = faker.helpers.arrayElement(products);
+    const saleProducts = faker.helpers.arrayElements(products, saleItemsCount);
+    for (const product of saleProducts) {
       const quantity = faker.number.int({ min: 1, max: 5 });
 
       await prisma.saleItem.create({
