@@ -17,7 +17,8 @@ export default function PaymentSummary({
   creditAmount = 0,
   discount = 0,
 }: Props) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isRTL = i18n.language === "ar";
   const subtotal = useMemo(
     () => cart.reduce((sum, item) => sum + item.price * item.qty, 0),
     [cart],
@@ -205,35 +206,35 @@ export default function PaymentSummary({
       </div>
 
       {/* === Bottom Summary Section === */}
-      <div className="pt-3 mt-3 border-t border-black dark:border-white space-y-1">
+      <div
+        className="pt-3 mt-3 border-t border-black dark:border-white space-y-1"
+        style={{ direction: isRTL ? "rtl" : "ltr" }}
+      >
         <div className="flex justify-between">
-          <span className="w-3/4 text-left">
+          <span className={isRTL ? "w-3/4 text-right" : "w-3/4 text-left"}>
             {t("cashier.nbrItems", "Nbr Items")}
           </span>
-          <span className="w-1/4 text-right">{nbrItems}</span>
+          <span className={isRTL ? "w-1/4 text-left" : "w-1/4 text-right"}>{nbrItems}</span>
         </div>
-
         <div className="flex justify-between">
-          <span className="w-3/4 text-left">{t("cashier.total", "Total")}</span>
-          <span className="w-1/4 text-right">{total.toLocaleString()} DA</span>
+          <span className={isRTL ? "w-3/4 text-right" : "w-3/4 text-left"}>{t("cashier.total", "Total")}</span>
+          <span className={isRTL ? "w-1/4 text-left" : "w-1/4 text-right"}>{total.toLocaleString()} DA</span>
         </div>
-
         {discount > 0 && (
           <div className="flex justify-between">
-            <span className="w-3/4 text-left">
+            <span className={isRTL ? "w-3/4 text-right" : "w-3/4 text-left"}>
               {t("cashier.discount", "Discount")}
             </span>
-            <span className="w-1/4 text-right">
+            <span className={isRTL ? "w-1/4 text-left" : "w-1/4 text-right"}>
               -{discount.toLocaleString()} DA
             </span>
           </div>
         )}
-
         <div className="flex justify-between font-bold">
-          <span className="w-3/4 text-left">
+          <span className={isRTL ? "w-3/4 text-right" : "w-3/4 text-left"}>
             {t("cashier.paymentAmount", "Payment Amount")}
           </span>
-          <span className="w-1/4 text-right">
+          <span className={isRTL ? "w-1/4 text-left" : "w-1/4 text-right"}>
             {paymentAmount.toLocaleString()} DA
           </span>
         </div>
