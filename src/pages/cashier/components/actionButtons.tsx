@@ -7,6 +7,7 @@ import type { Locale } from "date-fns/locale";
 import type { CartItem } from "../../cashier";
 import AddCreditModal from "./AddCreditModal";
 import AddClientModal from "./AddClientModal";
+import AddVersementModal from "./AddVersementModal";
 
 // Define a type for client suggestions
 interface ClientSuggestion {
@@ -67,6 +68,14 @@ export default function ActionButtons({
   const [addClientAddress, setAddClientAddress] = useState("");
   const [addClientNotes, setAddClientNotes] = useState("");
 
+  // Add state for AddVersementModal
+  const [showVersementModal, setShowVersementModal] = useState(false);
+  const [versementClientName, setVersementClientName] = useState("");
+  const [versementClientPhone, setVersementClientPhone] = useState("");
+  const [modalVersementAmount, setModalVersementAmount] = useState(0);
+  const [versementDate, setVersementDate] = useState<Date | undefined>(undefined);
+  const [calendarVersementOpen, setCalendarVersementOpen] = useState(false);
+
   // Keep draftDiscount in sync with prop when session changes
   useEffect(() => {
     setDraftDiscount(discount);
@@ -126,6 +135,23 @@ export default function ActionButtons({
       setCreditClientPhone("");
     }
   }, [clientName, clientSuggestions, showCreditModal]);
+
+  // Helper to auto-fill client info if selected (for versement)
+  useEffect(() => {
+    if (clientName && clientSuggestions.length > 0) {
+      const match = clientSuggestions.find((c) => c.name === clientName);
+      if (match) {
+        setVersementClientName(match.name);
+        setVersementClientPhone(match.phone || "");
+      } else {
+        setVersementClientName(clientName);
+        setVersementClientPhone("");
+      }
+    } else {
+      setVersementClientName("");
+      setVersementClientPhone("");
+    }
+  }, [clientName, clientSuggestions, showVersementModal]);
 
   // Locale mapping for calendar
   const localeMap: Record<string, Locale> = {
@@ -220,7 +246,10 @@ export default function ActionButtons({
         >
           {t("cashier.addCredit", "Add Credit")}
         </button>
-        <button className="flex-1 rounded-md bg-muted hover:bg-accent px-3 py-2 text-sm font-medium border border-border">
+        <button
+          className="flex-1 rounded-md bg-muted hover:bg-accent px-3 py-2 text-sm font-medium border border-border"
+          onClick={() => setShowVersementModal(true)}
+        >
           {t("cashier.addVersement", "Add Versement")}
         </button>
       </div>
@@ -298,6 +327,30 @@ export default function ActionButtons({
         onConfirm={() => {
           setPaymentAmount(modalPaymentAmount);
           setShowCreditModal(false);
+        }}
+      />
+
+      {/* === Add Versement Modal === */}
+      <AddVersementModal
+        open={showVersementModal}
+        onClose={() => setShowVersementModal(false)}
+        clientName={versementClientName}
+        setClientName={setVersementClientName}
+        clientPhone={versementClientPhone}
+        setClientPhone={setVersementClientPhone}
+        paymentAmount={modalVersementAmount}
+        setPaymentAmount={setModalVersementAmount}
+        versementDate={versementDate}
+        setVersementDate={setVersementDate}
+        calendarOpen={calendarVersementOpen}
+        setCalendarOpen={setCalendarVersementOpen}
+        cart={cart}
+        cartTotal={cartTotal}
+        t={t as typeof t}
+        calendarLocale={calendarLocale}
+        onConfirm={() => {
+          setPaymentAmount(modalVersementAmount);
+          setShowVersementModal(false);
         }}
       />
 
