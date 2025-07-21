@@ -26,6 +26,7 @@ const ClientsTable: React.FC<ClientsTableProps> = ({
   deleteLoading,
 }) => {
   const { t } = useTranslation();
+
   if (clients.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 gap-3 text-center">
@@ -65,7 +66,7 @@ const ClientsTable: React.FC<ClientsTableProps> = ({
               <td className="px-4 py-2">{client.phone || "-"}</td>
               <td className="px-4 py-2">{client.address || "-"}</td>
               <td className="px-4 py-2">{client.notes || "-"}</td>
-              <td className="px-4 py-2">{client.totalPurchases.toLocaleString() || 0} DA</td>
+              <td className="px-4 py-2">{client.totalPurchases?.toLocaleString() || 0} DA</td>
               <td className="px-4 py-2">
                 <div className="flex gap-2">
                   <Button
@@ -87,8 +88,7 @@ const ClientsTable: React.FC<ClientsTableProps> = ({
                       <Loader2 className="w-3 h-3 animate-spin" />
                     ) : (
                       <Trash2 className="w-3 h-3" />
-                    )}{" "}
-                    {t("clients.delete", "Delete")}
+                    )} {t("clients.delete", "Delete")}
                   </Button>
                 </div>
               </td>

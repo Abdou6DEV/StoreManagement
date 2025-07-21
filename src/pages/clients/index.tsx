@@ -5,6 +5,15 @@ import ClientsTable from "./components/clientsTable";
 import EditClientDialog from "./components/editClientDialog";
 import SearchBar from "./components/searchBar";
 import AddClientForm from "./components/addClientForm";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationPrevious,
+  PaginationNext,
+  PaginationEllipsis,
+} from "../../lib/components/ui/pagination";
 
 interface Client {
   id: string;
@@ -155,31 +164,6 @@ export default function Customers() {
           </div>
           {/* Search bar inline */}
           <SearchBar search={search} setSearch={setSearch} />
-          {totalPages > 1 && (
-            <div className="flex items-center gap-2">
-              <button
-                disabled={currentPage === 1 || filteredClients.length === 0}
-                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                className="text-sm px-4 py-2 border-1 rounded-md hover:bg-muted transition disabled:opacity-50 disabled:bg-card"
-              >
-                {t("clients.prev", "Previous")}
-              </button>
-              <span className="text-sm text-muted-foreground">
-                {t("clients.page", "Page")} {currentPage} / {totalPages}
-              </span>
-              <button
-                disabled={
-                  currentPage === totalPages || filteredClients.length === 0
-                }
-                onClick={() =>
-                  setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-                }
-                className="text-sm px-4 py-2 border-1 rounded-md hover:bg-muted transition disabled:opacity-50 disabled:bg-card"
-              >
-                {t("clients.next", "Next")}
-              </button>
-            </div>
-          )}
         </div>
         {loading ? (
           <div className="flex items-center gap-2 text-muted-foreground">
@@ -189,12 +173,93 @@ export default function Customers() {
         ) : error ? (
           <div className="text-red-500">{error}</div>
         ) : (
-          <ClientsTable
-            clients={paginatedClients}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-            deleteLoading={deleteLoading}
-          />
+          <>
+            <ClientsTable
+              clients={paginatedClients}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+              deleteLoading={deleteLoading}
+            />
+            {/* Pagination Navigation (bottom, shadcn style) */}
+            {totalPages > 1 && (
+              <Pagination className="mt-6">
+                <PaginationContent>
+                  <PaginationItem>
+                    {currentPage === 1 || filteredClients.length === 0 ? (
+                      <span className="opacity-50 pointer-events-none select-none">
+                        <PaginationPrevious href="#" />
+                      </span>
+                    ) : (
+                      <PaginationPrevious
+                        onClick={e => {
+                          e.preventDefault();
+                          setCurrentPage(currentPage - 1);
+                        }}
+                        href="#"
+                      />
+                    )}
+                  </PaginationItem>
+                  {/* Page numbers with ellipsis if needed */}
+                  {(() => {
+                    const items = [];
+                    let start = Math.max(1, currentPage - 2);
+                    let end = Math.min(totalPages, currentPage + 2);
+                    if (currentPage <= 3) {
+                      end = Math.min(5, totalPages);
+                    } else if (currentPage >= totalPages - 2) {
+                      start = Math.max(1, totalPages - 4);
+                    }
+                    if (start > 1) {
+                      items.push(
+                        <PaginationItem key="start-ellipsis">
+                          <PaginationEllipsis />
+                        </PaginationItem>
+                      );
+                    }
+                    for (let i = start; i <= end; i++) {
+                      items.push(
+                        <PaginationItem key={i}>
+                          <PaginationLink
+                            isActive={i === currentPage}
+                            href="#"
+                            onClick={e => {
+                              e.preventDefault();
+                              setCurrentPage(i);
+                            }}
+                          >
+                            {i}
+                          </PaginationLink>
+                        </PaginationItem>
+                      );
+                    }
+                    if (end < totalPages) {
+                      items.push(
+                        <PaginationItem key="end-ellipsis">
+                          <PaginationEllipsis />
+                        </PaginationItem>
+                      );
+                    }
+                    return items;
+                  })()}
+                  <PaginationItem>
+                    {currentPage === totalPages || filteredClients.length === 0 ? (
+                      <span className="opacity-50 pointer-events-none select-none">
+                        <PaginationNext href="#" />
+                      </span>
+                    ) : (
+                      <PaginationNext
+                        onClick={e => {
+                          e.preventDefault();
+                          setCurrentPage(currentPage + 1);
+                        }}
+                        href="#"
+                      />
+                    )}
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            )}
+          </>
         )}
         <EditClientDialog
           client={editingClient}

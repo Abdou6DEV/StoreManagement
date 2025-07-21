@@ -172,7 +172,7 @@ export default function ActionButtons({
       {/* === Row 1: All controls in a single row, responsive width === */}
       <div className="flex flex-row flex-wrap gap-2 items-center w-full">
         {/* Client input and history button */}
-        <div className="flex items-center relative min-w-0" style={{ flex: 1 }}>
+        <div className="flex items-center relative min-w-40" style={{ flex: 1 }}>
           <input
             ref={inputRef}
             value={clientName}
@@ -206,7 +206,7 @@ export default function ActionButtons({
         {/* Show History Button (always visible, disabled if no client) */}
         <button
           type="button"
-          className={`flex items-center justify-center ml-1 px-3 py-2 rounded-md bg-muted text-foreground hover:bg-primary hover:text-primary-foreground transition text-sm border border-border flex-shrink min-w-0 ${!selectedClientId ? 'opacity-60 cursor-not-allowed' : ''}`}
+          className={`flex items-center justify-center ml-1 px-3 py-2 rounded-md bg-muted text-foreground hover:bg-primary hover:text-primary-foreground transition text-sm border border-border flex-shrink min-w-40 ${!selectedClientId ? 'opacity-60 cursor-not-allowed' : ''}`}
           disabled={!selectedClientId}
           onClick={() => {
             if (!selectedClientId) return;
