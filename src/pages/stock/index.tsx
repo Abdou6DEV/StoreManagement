@@ -6,7 +6,7 @@ import { Button } from "../../lib/components/ui/button";
 import CategorySummaryTable from "./components/categorySummaryTable";
 
 export default function StockPage() {
-  const [openPanel, setOpenPanel] = useState<"add" | "edit" | null>(null);
+  const [openPanel, setOpenPanel] = useState<"add" | null>(null);
   const [view, setView] = useState<"product" | "category">("product");
   const { t } = useTranslation();
 

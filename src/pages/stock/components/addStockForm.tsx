@@ -42,8 +42,8 @@ export default function AddStockForm({
   openPanel,
   setOpenPanel,
 }: {
-  openPanel: "add" | "edit" | null;
-  setOpenPanel: React.Dispatch<React.SetStateAction<"add" | "edit" | null>>;
+  openPanel: "add" | null;
+  setOpenPanel: React.Dispatch<React.SetStateAction<"add" | null>>;
 }) {
   const { t } = useTranslation();
   const { products, categories, refetchCategories, refetchProducts } =
@@ -147,7 +147,7 @@ export default function AddStockForm({
           <ChevronDown className="w-5 h-5 text-muted-foreground" />
         )}
       </header>
-      {openPanel && (
+      {openPanel === "add" && (
         <form onSubmit={handleAddProduct} className="p-6 space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             <Legend>

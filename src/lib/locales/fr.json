@@ -157,6 +157,11 @@
     "fetchError": "Échec de la récupération des clients",
     "empty": "Aucun client trouvé.",
     "emptyTitle": "Aucun client trouvé",
-    "emptyDesc": "Vous n'avez pas encore ajouté de clients. Ajoutez un client pour commencer."
+    "emptyDesc": "Vous n'avez pas encore ajouté de clients. Ajoutez un client pour commencer.",
+    "addButton": "Ajouter",
+    "addTitle": "Ajouter un client",
+    "adding": "Ajout...",
+    "title": "Liste des clients",
+    "addError": "Échec de l'ajout du client"
   }
 }
