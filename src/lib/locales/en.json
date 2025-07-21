@@ -36,7 +36,10 @@
     "theme": "Theme",
     "language": "Language",
     "light": "Light",
-    "dark": "Dark"
+    "dark": "Dark",
+    "english": "English",
+    "french": "French",
+    "arabic": "Arabic"
   },
   "cashier": {
     "total": "Total",

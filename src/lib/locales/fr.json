@@ -36,7 +36,10 @@
     "theme": "Thème",
     "language": "Langue",
     "light": "Clair",
-    "dark": "Sombre"
+    "dark": "Sombre",
+    "english": "Anglais",
+    "french": "Français",
+    "arabic": "Arabe"
   },
   "stock": {
     "product": "Nom du produit",

@@ -44,7 +44,7 @@ export default function Navigation() {
           </DropdownMenuTrigger>
           <DropdownMenuContent className="mx-4 my-2 w-56">
             <DropdownMenuLabel className="font-semibold text-md">
-              Preferences
+              {t("navigation.preferences")}
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
@@ -59,13 +59,19 @@ export default function Navigation() {
               onClick={() => i18n.changeLanguage("en")}
               disabled={i18n.language === "en"}
             >
-              <span className="mr-2">🇬🇧</span> English
+              <span className="mr-2">🇬🇧</span> {t("navigation.english")}
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => i18n.changeLanguage("fr")}
               disabled={i18n.language === "fr"}
             >
-              <span className="mr-2">🇫🇷</span> Français
+              <span className="mr-2">🇫🇷</span> {t("navigation.french")}
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => i18n.changeLanguage("ar")}
+              disabled={i18n.language === "ar"}
+            >
+              <span className="mr-2">🇸🇦</span> {t("navigation.arabic")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -135,7 +141,7 @@ export default function Navigation() {
             </DropdownMenuTrigger>
             <DropdownMenuContent className="mx-4 my-2 w-56">
               <DropdownMenuLabel className="font-semibold text-md">
-                Preferences
+                {t("navigation.preferences")}
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
@@ -150,13 +156,19 @@ export default function Navigation() {
                 onClick={() => i18n.changeLanguage("en")}
                 disabled={i18n.language === "en"}
               >
-                <span className="mr-2">🇬🇧</span> English
+                <span className="mr-2">🇬🇧</span> {t("navigation.english")}
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => i18n.changeLanguage("fr")}
                 disabled={i18n.language === "fr"}
               >
-                <span className="mr-2">🇫🇷</span> Français
+                <span className="mr-2">🇫🇷</span> {t("navigation.french")}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => i18n.changeLanguage("ar")}
+                disabled={i18n.language === "ar"}
+              >
+                <span className="mr-2">🇸🇦</span> {t("navigation.arabic")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
