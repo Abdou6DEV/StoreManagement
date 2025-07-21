@@ -40,7 +40,16 @@ import {
 import { Button } from "../../../lib/components/ui/button";
 import EditStockForm from "./editStockForm";
 import type { ProductWithSales } from "../../../lib/contexts/stockContext";
-import Tooltip from "../../../lib/components/ui/tooltip";
+import { Tooltip } from "../../../lib/components/ui/tooltip";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationPrevious,
+  PaginationNext,
+  PaginationEllipsis,
+} from "../../../lib/components/ui/pagination";
 
 export const StockTable = () => {
   const { t } = useTranslation();
@@ -456,29 +465,82 @@ export const StockTable = () => {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-6">
-          <button
-            disabled={currentPage === 1 || products.length === 0}
-            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-            className="text-sm px-4 py-2 border-1 rounded-md hover:bg-muted transition disabled:opacity-50 disabled:bg-card"
-          >
-            {t("stock.prev", "Previous")}
-          </button>
-
-          <span className="text-sm text-muted-foreground">
-            {t("stock.page")} {currentPage} / {totalPages}
-          </span>
-
-          <button
-            disabled={currentPage === totalPages || products.length === 0}
-            onClick={() =>
-              setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-            }
-            className="text-sm px-4 py-2 border-1 rounded-md hover:bg-muted transition disabled:opacity-50 disabled:bg-card"
-          >
-            {t("stock.next", "Next")}
-          </button>
-        </div>
+        <Pagination className="mt-6">
+          <PaginationContent>
+            <PaginationItem>
+              {currentPage === 1 || products.length === 0 ? (
+                <span className="opacity-50 pointer-events-none select-none">
+                  <PaginationPrevious href="#" />
+                </span>
+              ) : (
+                <PaginationPrevious
+                  onClick={e => {
+                    e.preventDefault();
+                    setCurrentPage(currentPage - 1);
+                  }}
+                  href="#"
+                />
+              )}
+            </PaginationItem>
+            {/* Page numbers with ellipsis if needed */}
+            {(() => {
+              const items = [];
+              let start = Math.max(1, currentPage - 2);
+              let end = Math.min(totalPages, currentPage + 2);
+              if (currentPage <= 3) {
+                end = Math.min(5, totalPages);
+              } else if (currentPage >= totalPages - 2) {
+                start = Math.max(1, totalPages - 4);
+              }
+              if (start > 1) {
+                items.push(
+                  <PaginationItem key="start-ellipsis">
+                    <PaginationEllipsis />
+                  </PaginationItem>
+                );
+              }
+              for (let i = start; i <= end; i++) {
+                items.push(
+                  <PaginationItem key={i}>
+                    <PaginationLink
+                      isActive={i === currentPage}
+                      href="#"
+                      onClick={e => {
+                        e.preventDefault();
+                        setCurrentPage(i);
+                      }}
+                    >
+                      {i}
+                    </PaginationLink>
+                  </PaginationItem>
+                );
+              }
+              if (end < totalPages) {
+                items.push(
+                  <PaginationItem key="end-ellipsis">
+                    <PaginationEllipsis />
+                  </PaginationItem>
+                );
+              }
+              return items;
+            })()}
+            <PaginationItem>
+              {currentPage === totalPages || products.length === 0 ? (
+                <span className="opacity-50 pointer-events-none select-none">
+                  <PaginationNext href="#" />
+                </span>
+              ) : (
+                <PaginationNext
+                  onClick={e => {
+                    e.preventDefault();
+                    setCurrentPage(currentPage + 1);
+                  }}
+                  href="#"
+                />
+              )}
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
       )}
 
       {/* Edit Product Dialog */}
