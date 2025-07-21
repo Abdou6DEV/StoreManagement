@@ -1,7 +1,19 @@
 import React, { useState, useEffect, useRef } from "react";
-import { CheckCircle, Trash2, Users, UserPlus } from "lucide-react";
+import { CheckCircle, Trash2, UserPlus } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import DiscountErrorModal from "./discountErrorModal";
+import { enUS, fr, arDZ } from "date-fns/locale";
+import type { Locale } from "date-fns/locale";
+import type { CartItem } from "../../cashier";
+import AddCreditModal from "./AddCreditModal";
+import AddClientModal from "./AddClientModal";
+
+// Define a type for client suggestions
+interface ClientSuggestion {
+  id: string;
+  name: string;
+  phone?: string;
+}
 
 interface Props {
   clientName: string;
@@ -18,6 +30,9 @@ interface Props {
   discount: string;
   onDiscountChange: (val: string) => void;
   cartTotal: number;
+  cart: CartItem[];
+  paymentAmount: number;
+  setPaymentAmount: (val: number) => void;
 }
 
 export default function ActionButtons({
@@ -30,16 +45,27 @@ export default function ActionButtons({
   discount,
   onDiscountChange,
   cartTotal,
+  cart,
+  paymentAmount,
+  setPaymentAmount,
 }: Props) {
-  const { t } = useTranslation();
-  const [showPopup, setShowPopup] = useState(false);
-  const [newClientName, setNewClientName] = useState("");
-  const [newClientPhone, setNewClientPhone] = useState("");
-  const [newClientAddresse, setNewClientAddress] = useState("");
-  const [newClientNotes, setNewClientNotes] = useState("");
-  const [clientSuggestions, setClientSuggestions] = useState<any[]>([]);
+  const { t, i18n } = useTranslation();
+  const [clientSuggestions, setClientSuggestions] = useState<ClientSuggestion[]>([]);
   const [draftDiscount, setDraftDiscount] = useState(discount);
   const [discountError, setDiscountError] = useState<string | null>(null);
+  const [showCreditModal, setShowCreditModal] = useState(false);
+  const [creditClientName, setCreditClientName] = useState("");
+  const [creditClientPhone, setCreditClientPhone] = useState("");
+  const [modalPaymentAmount, setModalPaymentAmount] = useState(0);
+  const [creditDate, setCreditDate] = useState<Date | undefined>(undefined);
+  const [calendarOpen, setCalendarOpen] = useState(false);
+
+  // Add state for AddClientModal
+  const [showAddClientModal, setShowAddClientModal] = useState(false);
+  const [addClientName, setAddClientName] = useState("");
+  const [addClientPhone, setAddClientPhone] = useState("");
+  const [addClientAddress, setAddClientAddress] = useState("");
+  const [addClientNotes, setAddClientNotes] = useState("");
 
   // Keep draftDiscount in sync with prop when session changes
   useEffect(() => {
@@ -84,6 +110,31 @@ export default function ActionButtons({
     if (!match) setClientId(null);
   }, [clientName, clientSuggestions, setClientId]);
 
+  // Helper to auto-fill client info if selected
+  useEffect(() => {
+    if (clientName && clientSuggestions.length > 0) {
+      const match = clientSuggestions.find((c) => c.name === clientName);
+      if (match) {
+        setCreditClientName(match.name);
+        setCreditClientPhone(match.phone || "");
+      } else {
+        setCreditClientName(clientName);
+        setCreditClientPhone("");
+      }
+    } else {
+      setCreditClientName("");
+      setCreditClientPhone("");
+    }
+  }, [clientName, clientSuggestions, showCreditModal]);
+
+  // Locale mapping for calendar
+  const localeMap: Record<string, Locale> = {
+    en: enUS,
+    fr: fr,
+    ar: arDZ,
+  };
+  const calendarLocale = localeMap[i18n.language] || enUS;
+
   return (
     <div className="flex flex-col gap-4">
       {/* === Row 1: Client Name + Add Client + Discount + Confirm === */}
@@ -120,7 +171,7 @@ export default function ActionButtons({
           </div>
         )}
         <button
-          onClick={() => setShowPopup(true)}
+          onClick={() => setShowAddClientModal(true)}
           className="flex items-centered px-3 py-2 rounded-md bg-muted text-foreground hover:bg-primary hover:text-primary-foreground transition text-sm border border-border"
         >
           {t("cashier.addNewClient", "Add New Client")}
@@ -163,7 +214,10 @@ export default function ActionButtons({
 
       {/* === Row 2: Credit / Versement === */}
       <div className="flex gap-3">
-        <button className="flex-1 rounded-md bg-muted hover:bg-accent px-3 py-2 text-sm font-medium border border-border">
+        <button
+          className="flex-1 rounded-md bg-muted hover:bg-accent px-3 py-2 text-sm font-medium border border-border"
+          onClick={() => setShowCreditModal(true)}
+        >
           {t("cashier.addCredit", "Add Credit")}
         </button>
         <button className="flex-1 rounded-md bg-muted hover:bg-accent px-3 py-2 text-sm font-medium border border-border">
@@ -192,82 +246,60 @@ export default function ActionButtons({
         </button>
       </div>
 
-      {/* === Popup Modal === */}
-      {showPopup && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="flex-1 bg-white dark:bg-zinc-900 p-6 rounded-lg shadow-lg w-full max-w-sm space-y-4">
-            {/* Title Row with Icon */}
-            <div className="flex items-center gap-2">
-              <Users className="w-5 h-5 text-red-600 dark:text-red-400" />
-              <h2 className="text-lg font-semibold text-foreground">
-                {t("cashier.addNewClient", "Add New Client")}
-              </h2>
-            </div>
+      {/* === Add Client Modal === */}
+      <AddClientModal
+        open={showAddClientModal}
+        onClose={() => setShowAddClientModal(false)}
+        clientName={addClientName}
+        setClientName={setAddClientName}
+        clientPhone={addClientPhone}
+        setClientPhone={setAddClientPhone}
+        clientAddress={addClientAddress}
+        setClientAddress={setAddClientAddress}
+        clientNotes={addClientNotes}
+        setClientNotes={setAddClientNotes}
+        t={t as typeof t}
+        onConfirm={async () => {
+          if (addClientName.trim()) {
+            await onAddClient(
+              addClientName.trim(),
+              addClientPhone.trim(),
+              addClientAddress.trim(),
+              addClientNotes.trim(),
+            );
+            setShowAddClientModal(false);
+            setAddClientName("");
+            setAddClientPhone("");
+            setAddClientAddress("");
+            setAddClientNotes("");
+            refreshClientSuggestions();
+          }
+        }}
+      />
 
-            {/* Inputs */}
-            <input
-              value={newClientName}
-              onChange={(e) => setNewClientName(e.target.value)}
-              placeholder={t("cashier.clientName", "Client Name")}
-              className="w-full rounded-md border border-border px-3 py-2 text-sm bg-background"
-            />
-            <input
-              value={newClientPhone}
-              onChange={(e) => setNewClientPhone(e.target.value)}
-              placeholder={t(
-                "cashier.phoneOptional",
-                "Phone Number (optional)",
-              )}
-              className="w-full rounded-md border border-border px-3 py-2 text-sm bg-background"
-            />
-            <input
-              value={newClientAddresse}
-              onChange={(e) => setNewClientAddress(e.target.value)}
-              placeholder={t("cashier.addressOptional", "Address (optional)")}
-              className="w-full rounded-md border border-border px-3 py-2 text-sm bg-background"
-            />
-            <input
-              value={newClientNotes}
-              onChange={(e) => setNewClientNotes(e.target.value)}
-              placeholder={t("cashier.notesOptional", "Notes (optional)")}
-              className="w-full rounded-md border border-border px-3 py-2 text-sm bg-background"
-            />
-
-            {/* Buttons */}
-            <div className="flex justify-end gap-2">
-              <button
-                onClick={() => setShowPopup(false)}
-                className="px-3 py-2 text-sm bg-muted rounded-md hover:bg-muted/60 border border-border"
-              >
-                {t("cashier.cancel", "Cancel")}
-              </button>
-              <button
-                onClick={async () => {
-                  if (newClientName.trim()) {
-                    await onAddClient(
-                      newClientName.trim(),
-                      newClientPhone.trim(),
-                      newClientAddresse.trim(),
-                      newClientNotes.trim(),
-                    );
-                    setShowPopup(false);
-                    setNewClientName("");
-                    setNewClientPhone("");
-                    setNewClientAddress("");
-                    setNewClientNotes("");
-                    
-                    // Refreshing client suggestions after the client is actually added
-                    refreshClientSuggestions();
-                  }
-                }}
-                className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/80 border border-border"
-              >
-                {t("cashier.addClient", "Add Client")}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* === Add Credit Modal === */}
+      <AddCreditModal
+        open={showCreditModal}
+        onClose={() => setShowCreditModal(false)}
+        clientName={creditClientName}
+        setClientName={setCreditClientName}
+        clientPhone={creditClientPhone}
+        setClientPhone={setCreditClientPhone}
+        paymentAmount={modalPaymentAmount}
+        setPaymentAmount={setModalPaymentAmount}
+        creditDate={creditDate}
+        setCreditDate={setCreditDate}
+        calendarOpen={calendarOpen}
+        setCalendarOpen={setCalendarOpen}
+        cart={cart}
+        cartTotal={cartTotal}
+        t={t as typeof t}
+        calendarLocale={calendarLocale}
+        onConfirm={() => {
+          setPaymentAmount(modalPaymentAmount);
+          setShowCreditModal(false);
+        }}
+      />
 
       <DiscountErrorModal
         open={!!discountError}

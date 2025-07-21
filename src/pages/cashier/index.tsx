@@ -32,6 +32,7 @@ export default function CashierPage() {
   );
   const [discounts, setDiscounts] = useState<string[]>(Array.from({ length: MAX_SESSIONS }, () => ""));
   const [discountError, setDiscountError] = useState<string | null>(null);
+  const [paymentAmount, setPaymentAmount] = useState(0);
 
   // Ensure cart always exists
   const cart: CartItem[] = useMemo(() => {
@@ -111,6 +112,7 @@ export default function CashierPage() {
     });
     setClientName("");
     setClientId(null);
+    setPaymentAmount(0); // Reset payment on clear
   };
 
   const handleFinish = async () => {
@@ -134,6 +136,7 @@ export default function CashierPage() {
       return;
     }
     await proceedWithSale();
+    setPaymentAmount(0); // Reset payment after sale
   };
 
   // Extracted sale logic for reuse
@@ -275,7 +278,7 @@ export default function CashierPage() {
               <PaymentSummary
                 cart={cart}
                 clientName={clientName}
-                creditAmount={15000}
+                paymentAmount={paymentAmount}
                 versementAmount={20000}
                 discount={Number(discount) || 0}
               />
@@ -296,6 +299,9 @@ export default function CashierPage() {
                 });
               }}
               cartTotal={total}
+              cart={cart}
+              paymentAmount={paymentAmount}
+              setPaymentAmount={setPaymentAmount}
             />
           </div>
         </section>

@@ -6,7 +6,7 @@ interface Props {
   cart: CartItem[];
   clientName?: string;
   versementAmount?: number;
-  creditAmount?: number;
+  paymentAmount?: number;
   discount?: number;
 }
 
@@ -14,7 +14,7 @@ export default function PaymentSummary({
   cart,
   clientName,
   versementAmount = 0,
-  creditAmount = 0,
+  paymentAmount = 0,
   discount = 0,
 }: Props) {
   const { t, i18n } = useTranslation();
@@ -25,7 +25,8 @@ export default function PaymentSummary({
   );
 
   const total = subtotal; // Before discount
-  const paymentAmount = subtotal - discount;
+  const credit = subtotal - discount - paymentAmount;
+  const creditDisplay = credit > 0 ? credit : 0;
   const nbrItems = cart.reduce((sum, item) => sum + item.qty, 0);
 
   // === Auto-scroll logic ===
@@ -227,6 +228,16 @@ export default function PaymentSummary({
             </span>
             <span className={isRTL ? "w-1/4 text-left" : "w-1/4 text-right"}>
               -{discount.toLocaleString()} DA
+            </span>
+          </div>
+        )}
+        {creditDisplay > 0 && (
+          <div className="flex justify-between">
+            <span className={isRTL ? "w-3/4 text-right" : "w-3/4 text-left"}>
+              {t("cashier.credit", "Credit")}
+            </span>
+            <span className={isRTL ? "w-1/4 text-left" : "w-1/4 text-right"}>
+              {creditDisplay.toLocaleString()} DA
             </span>
           </div>
         )}

@@ -81,7 +81,10 @@
     "requested": "Requested",
     "available": "Available",
     "proceedAnyway": "Proceed Anyway",
-    "discountError": "Discount cannot exceed total amount"
+    "discountError": "Discount cannot exceed total amount",
+    "dueDate": "Due Date",
+    "pickDate": "Pick a date",
+    "credit": "Credit"
   },
   "stock": {
     "product": "Product Name",
