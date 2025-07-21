@@ -40,6 +40,7 @@ import {
 import { Button } from "../../../lib/components/ui/button";
 import EditStockForm from "./editStockForm";
 import type { ProductWithSales } from "../../../lib/contexts/stockContext";
+import Tooltip from "../../../lib/components/ui/tooltip";
 
 export const StockTable = () => {
   const { t } = useTranslation();
@@ -344,63 +345,69 @@ export const StockTable = () => {
             }}
             className="gap-1"
           >
-            <ToggleGroupItem
-              value="lowStock"
-              aria-label={t("stock.lowStock")}
-              className={cn(
-                "flex items-center gap-2 px-3 py-2",
-                filters.lowStock &&
-                  "bg-yellow-100 text-yellow-800 border-yellow-300 dark:bg-yellow-900/30 dark:text-yellow-200 dark:border-yellow-700",
-              )}
-            >
-              <AlertTriangle
+            <Tooltip content={t("stock.lowStockTooltip")}> {/* Tooltip for Low Stock */}
+              <ToggleGroupItem
+                value="lowStock"
+                aria-label={t("stock.lowStock")}
                 className={cn(
-                  "w-4 h-4",
-                  filters.lowStock
-                    ? "text-yellow-500"
-                    : "text-muted-foreground",
+                  "flex items-center gap-2 px-3 py-2 transition-colors transition-bg duration-200",
+                  filters.lowStock &&
+                    "bg-yellow-100 text-yellow-800 border-yellow-300 dark:bg-yellow-900/30 dark:text-yellow-200 dark:border-yellow-700",
                 )}
-              />
-              {t("stock.lowStock")}
-            </ToggleGroupItem>
-            <ToggleGroupItem
-              value="bestSelling"
-              aria-label={t("stock.bestSelling")}
-              className={cn(
-                "flex items-center gap-2 px-3 py-2",
-                filters.bestSelling &&
-                  "bg-green-100 text-green-800 border-green-300 dark:bg-green-900/30 dark:text-green-200 dark:border-green-700",
-              )}
-            >
-              <TrendingUp
+              >
+                <AlertTriangle
+                  className={cn(
+                    "w-4 h-4 transition-colors duration-200",
+                    filters.lowStock
+                      ? "text-yellow-500"
+                      : "text-muted-foreground",
+                  )}
+                />
+                {t("stock.lowStock")}
+              </ToggleGroupItem>
+            </Tooltip>
+            <Tooltip content={t("stock.bestSellingTooltip")}> {/* Tooltip for Best Selling */}
+              <ToggleGroupItem
+                value="bestSelling"
+                aria-label={t("stock.bestSelling")}
                 className={cn(
-                  "w-4 h-4",
-                  filters.bestSelling
-                    ? "text-green-600"
-                    : "text-muted-foreground",
+                  "flex items-center gap-2 px-3 py-2 transition-colors transition-bg duration-200",
+                  filters.bestSelling &&
+                    "bg-green-100 text-green-800 border-green-300 dark:bg-green-900/30 dark:text-green-200 dark:border-green-700",
                 )}
-              />
-              {t("stock.bestSelling")}
-            </ToggleGroupItem>
-            <ToggleGroupItem
-              value="worstSelling"
-              aria-label={t("stock.worstSelling")}
-              className={cn(
-                "flex items-center gap-2 px-3 py-2",
-                filters.worstSelling &&
-                  "bg-red-100 text-red-800 border-red-300 dark:bg-red-900/30 dark:text-red-200 dark:border-red-700",
-              )}
-            >
-              <TrendingDown
+              >
+                <TrendingUp
+                  className={cn(
+                    "w-4 h-4 transition-colors duration-200",
+                    filters.bestSelling
+                      ? "text-green-600"
+                      : "text-muted-foreground",
+                  )}
+                />
+                {t("stock.bestSelling")}
+              </ToggleGroupItem>
+            </Tooltip>
+            <Tooltip content={t("stock.worstSellingTooltip")}> {/* Tooltip for Worst Selling */}
+              <ToggleGroupItem
+                value="worstSelling"
+                aria-label={t("stock.worstSelling")}
                 className={cn(
-                  "w-4 h-4",
-                  filters.worstSelling
-                    ? "text-red-600"
-                    : "text-muted-foreground",
+                  "flex items-center gap-2 px-3 py-2 transition-colors transition-bg duration-200",
+                  filters.worstSelling &&
+                    "bg-red-100 text-red-800 border-red-300 dark:bg-red-900/30 dark:text-red-200 dark:border-red-700",
                 )}
-              />
-              {t("stock.worstSelling")}
-            </ToggleGroupItem>
+              >
+                <TrendingDown
+                  className={cn(
+                    "w-4 h-4 transition-colors duration-200",
+                    filters.worstSelling
+                      ? "text-red-600"
+                      : "text-muted-foreground",
+                  )}
+                />
+                {t("stock.worstSelling")}
+              </ToggleGroupItem>
+            </Tooltip>
           </ToggleGroup>
         </div>
       </div>

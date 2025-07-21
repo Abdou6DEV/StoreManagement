@@ -88,7 +88,10 @@
     "emptyCategoryTitle": "Aucune catégorie trouvée",
     "emptyCategoryDesc": "Aucune catégorie ou produit disponible. Ajoutez des produits pour voir le résumé par catégorie.",
     "total": "Total (Toutes)",
-    "delete": "Supprimer"
+    "delete": "Supprimer",
+    "lowStockTooltip": "Afficher uniquement les produits en stock faible",
+    "bestSellingTooltip": "Trier les produits par les plus vendus d'abord",
+    "worstSellingTooltip": "Trier les produits par les moins vendus d'abord"
   },
   "cashier": {
     "total": "Total",

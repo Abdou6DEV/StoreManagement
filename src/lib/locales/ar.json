@@ -130,7 +130,10 @@
     "emptyCategoryTitle": "لم يتم العثور على فئات",
     "emptyCategoryDesc": "لا توجد فئات أو منتجات متاحة. أضف منتجات لرؤية ملخص الفئات.",
     "total": "الإجمالي (الكل)",
-    "delete": "حذف"
+    "delete": "حذف",
+    "lowStockTooltip": "عرض المنتجات ذات المخزون المنخفض فقط",
+    "bestSellingTooltip": "ترتيب المنتجات حسب الأكثر مبيعًا أولاً",
+    "worstSellingTooltip": "ترتيب المنتجات حسب الأقل مبيعًا أولاً"
   },
   "clients": {
     "itemsPerPage": "العناصر لكل صفحة:",

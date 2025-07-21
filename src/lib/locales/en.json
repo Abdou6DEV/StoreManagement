@@ -129,7 +129,10 @@
     "emptyProductDesc": "You haven't added any products yet. Start by adding your first product to manage your inventory.",
     "emptyCategoryTitle": "No categories found",
     "emptyCategoryDesc": "No categories or products are available. Add products to see category summaries.",
-    "total": "Total (All)"
+    "total": "Total (All)",
+    "lowStockTooltip": "Show only products that are low in stock",
+    "bestSellingTooltip": "Sort products by most sold first",
+    "worstSellingTooltip": "Sort products by least sold first"
   },
   "clients": {
     "itemsPerPage": "Items per page:",
