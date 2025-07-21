@@ -129,7 +129,8 @@ export const StockTable = () => {
     const { t } = useTranslation();
     const profit = product.selling - product.bought;
     const totalBought = product.bought * product.quantity;
-    const totalProfit = profit * product.quantity;
+    const totalProfit = profit * (product.totalSold ?? 0);
+    
     return (
       <tr key={product.id} className="h-[48px] hover:bg-muted/40 transition">
         <td className="px-4">{product.name}</td>
@@ -137,7 +138,7 @@ export const StockTable = () => {
         <td className="px-4">{product.quantity}</td>
         <td className="px-4">{product.bought}</td>
         <td className="px-4">{product.selling}</td>
-        <td className="px-4 text-green-700">{profit}</td>
+        <td className="px-4 text-green-700 font-medium">{profit}</td>
         <td className="px-4">{totalBought}</td>
         <td className="px-4">{product.totalSold ?? 0}</td>
         <td className="px-4 text-green-700 font-medium">{totalProfit}</td>
