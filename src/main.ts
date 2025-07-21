@@ -112,4 +112,8 @@ function setupDatabaseHandlers() {
   ipcMain.handle("db:clients:getAllWithTotalPurchases", async () => {
     return await DatabaseService.getAllClientsWithTotalPurchases();
   });
+
+  ipcMain.handle("db:products:getSalesCounts", async () => {
+    return await DatabaseService.getProductSalesCounts();
+  });
 }

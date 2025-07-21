@@ -137,4 +137,15 @@ export class DatabaseService {
   ) {
     return await prisma.client.update({ where: { id }, data });
   }
+
+  // Get total sold for each product
+  static async getProductSalesCounts() {
+    const sales = await prisma.saleItem.groupBy({
+      by: ['productId'],
+      _sum: { quantity: true },
+    });
+    
+    // Return as array of { productId, totalSold }
+    return sales.map(s => ({ productId: s.productId, totalSold: s._sum.quantity || 0 }));
+  }
 }

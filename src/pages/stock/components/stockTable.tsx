@@ -39,7 +39,7 @@ import {
 } from "../../../lib/components/ui/toggleGroup";
 import { Button } from "../../../lib/components/ui/button";
 import EditStockForm from "./editStockForm";
-import { Product } from "@prisma/client";
+import type { ProductWithSales } from "../../../lib/contexts/stockContext";
 
 export const StockTable = () => {
   const { t } = useTranslation();
@@ -92,8 +92,24 @@ export const StockTable = () => {
     return matchesSearch && matchesCategory && matchesLowStock;
   });
 
-  const totalPages = Math.max(1, Math.ceil(filteredList.length / itemsPerPage));
-  const paginatedProducts = filteredList.slice(
+  // Sort for bestSelling or worstSelling
+  const sortedList = [...filteredList];
+  if (filters.bestSelling) {
+    sortedList.sort((a, b) => {
+      const soldA = a.totalSold ?? 0;
+      const soldB = b.totalSold ?? 0;
+      return soldB - soldA;
+    });
+  } else if (filters.worstSelling) {
+    sortedList.sort((a, b) => {
+      const soldA = a.totalSold ?? 0;
+      const soldB = b.totalSold ?? 0;
+      return soldA - soldB;
+    });
+  }
+
+  const totalPages = Math.max(1, Math.ceil(sortedList.length / itemsPerPage));
+  const paginatedProducts = sortedList.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage,
   );
@@ -103,7 +119,7 @@ export const StockTable = () => {
     setEditingProductID,
     handleDeleteProduct,
   }: {
-    product: Product;
+    product: ProductWithSales;
     setEditingProductID: (id: string) => void;
     handleDeleteProduct: (id: string) => void;
   }) {
@@ -120,6 +136,7 @@ export const StockTable = () => {
         <td className="px-4">{product.selling}</td>
         <td className="px-4 text-green-700">{profit}</td>
         <td className="px-4">{totalBought}</td>
+        <td className="px-4">{product.totalSold ?? 0}</td>
         <td className="px-4 text-green-700 font-medium">{totalProfit}</td>
         <td className="px-4">
           <div className="flex gap-2">
@@ -313,6 +330,13 @@ export const StockTable = () => {
                 }
               }
               setFilters(newFilters);
+              if (
+                (filters.bestSelling !== newFilters.bestSelling && newFilters.bestSelling) ||
+                (filters.worstSelling !== newFilters.worstSelling && newFilters.worstSelling) ||
+                (filters.lowStock !== newFilters.lowStock && newFilters.lowStock)
+              ) {
+                setCurrentPage(1);
+              }
             }}
             className="gap-1"
           >
@@ -422,12 +446,9 @@ export const StockTable = () => {
                 <th className="px-4 py-3">{t("stock.bought")}</th>
                 <th className="px-4 py-3">{t("stock.selling")}</th>
                 <th className="px-4 py-3">{t("stock.profit", "Profit")}</th>
-                <th className="px-4 py-3">
-                  {t("stock.totalBought", "Total Bought")}
-                </th>
-                <th className="px-4 py-3">
-                  {t("stock.totalProfit", "Total Profit")}
-                </th>
+                <th className="px-4 py-3">{t("stock.totalBought", "Total Bought")}</th>
+                <th className="px-4 py-3">{t("stock.totalSold", "Total Sold")}</th>
+                <th className="px-4 py-3">{t("stock.totalProfit", "Total Profit")}</th>
                 <th className="px-4 py-3">{t("stock.actions", "Actions")}</th>
               </tr>
             </thead>
