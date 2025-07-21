@@ -32,6 +32,37 @@ export default function ProductSearch({ onAdd, refreshKey }: Props) {
     });
   }, [refreshKey]);
 
+  // Autofocus input on mount and when clicking on the document body (not on any input/textarea/select)
+  useEffect(() => {
+    // On mount
+    if (
+      inputRef.current &&
+      (document.activeElement === document.body ||
+        (document.activeElement &&
+          !(document.activeElement instanceof HTMLInputElement) &&
+          !(document.activeElement instanceof HTMLTextAreaElement) &&
+          !(document.activeElement instanceof HTMLSelectElement)))
+    ) {
+      inputRef.current.focus();
+    }
+    // On click
+    const handleClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (
+        inputRef.current &&
+        !(target instanceof HTMLInputElement) &&
+        !(target instanceof HTMLTextAreaElement) &&
+        !(target instanceof HTMLSelectElement)
+      ) {
+        inputRef.current.focus();
+      }
+    };
+    document.addEventListener("click", handleClick, true);
+    return () => {
+      document.removeEventListener("click", handleClick, true);
+    };
+  }, []);
+
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (

@@ -84,7 +84,8 @@
     "discountError": "Discount cannot exceed total amount",
     "dueDate": "Due Date",
     "pickDate": "Pick a date",
-    "credit": "Credit"
+    "credit": "Credit",
+    "showHistory": "Show History"
   },
   "stock": {
     "product": "Product Name",

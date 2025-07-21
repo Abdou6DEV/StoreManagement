@@ -8,6 +8,7 @@ import type { CartItem } from "../../cashier";
 import AddCreditModal from "./AddCreditModal";
 import AddClientModal from "./AddClientModal";
 import AddVersementModal from "./AddVersementModal";
+import { History } from "lucide-react";
 
 // Define a type for client suggestions
 interface ClientSuggestion {
@@ -91,6 +92,7 @@ export default function ActionButtons({
 
   const [showSuggestions, setShowSuggestions] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
 
   // Filter suggestions based on input
   const filteredSuggestions =
@@ -104,6 +106,7 @@ export default function ActionButtons({
   const handleSuggestionClick = (name: string, id: string) => {
     setClientName(name);
     setClientId(id);
+    setSelectedClientId(id);
     setShowSuggestions(false);
     inputRef.current?.blur();
   };
@@ -116,7 +119,10 @@ export default function ActionButtons({
   // Clear clientId if input doesn't match any client
   useEffect(() => {
     const match = clientSuggestions.find((c) => c.name === clientName);
-    if (!match) setClientId(null);
+    if (!match) {
+      setClientId(null);
+      setSelectedClientId(null);
+    }
   }, [clientName, clientSuggestions, setClientId]);
 
   // Helper to auto-fill client info if selected
@@ -163,65 +169,77 @@ export default function ActionButtons({
 
   return (
     <div className="flex flex-col gap-4">
-      {/* === Row 1: Client Name + Add Client + Discount + Confirm === */}
-      <div className="flex flex-wrap gap-2 items-center">
-        <input
-          ref={inputRef}
-          value={clientName}
-          onChange={(e) => {
-            setClientName(e.target.value);
-            setShowSuggestions(true);
+      {/* === Row 1: All controls in a single row, responsive width === */}
+      <div className="flex flex-row flex-wrap gap-2 items-center w-full">
+        {/* Client input and history button */}
+        <div className="flex items-center relative min-w-0" style={{ flex: 1 }}>
+          <input
+            ref={inputRef}
+            value={clientName}
+            onChange={(e) => {
+              setClientName(e.target.value);
+              setShowSuggestions(true);
+            }}
+            onFocus={() => setShowSuggestions(true)}
+            onBlur={handleBlur}
+            placeholder={t("cashier.customerName", "Customer name")}
+            className="rounded-md border border-border px-3 py-2 text-sm bg-background min-w-[120px] w-full"
+          />
+          {/* Suggestions Dropdown (below input) */}
+          {showSuggestions && filteredSuggestions.length > 0 && (
+            <div className="absolute z-50 mt-12 w-[250px] bg-card border border-border rounded shadow-lg max-h-60 overflow-y-auto">
+              {filteredSuggestions.map((c) => (
+                <div
+                  key={c.id}
+                  className="px-4 py-2 cursor-pointer hover:bg-accent text-sm"
+                  onMouseDown={() => handleSuggestionClick(c.name, c.id)}
+                >
+                  {c.name}
+                  {c.phone && (
+                    <span className="ml-2 text-muted-foreground text-xs">{c.phone}</span>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        {/* Show History Button (always visible, disabled if no client) */}
+        <button
+          type="button"
+          className={`flex items-center justify-center ml-1 px-3 py-2 rounded-md bg-muted text-foreground hover:bg-primary hover:text-primary-foreground transition text-sm border border-border flex-shrink min-w-0 ${!selectedClientId ? 'opacity-60 cursor-not-allowed' : ''}`}
+          disabled={!selectedClientId}
+          onClick={() => {
+            if (!selectedClientId) return;
+            // TODO: Show client history modal
           }}
-          onFocus={() => setShowSuggestions(true)}
-          onBlur={handleBlur}
-          placeholder={t("cashier.customerName", "Customer name")}
-          className="flex-1 rounded-md border border-border px-3 py-2 text-sm bg-background"
-        />
-        {/* Suggestions Dropdown */}
-        {showSuggestions && filteredSuggestions.length > 0 && (
-          <div className="absolute z-50 mt-12 w-[250px] bg-card border border-border rounded shadow-lg max-h-60 overflow-y-auto">
-            {filteredSuggestions.map((c) => (
-              <div
-                key={c.id}
-                className="px-4 py-2 cursor-pointer hover:bg-muted text-sm"
-                onMouseDown={() => handleSuggestionClick(c.name, c.id)}
-              >
-                {c.name}
-                {c.phone && (
-                  <span className="ml-2 text-muted-foreground text-xs">
-                    {c.phone}
-                  </span>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
+        >
+          {t("cashier.showHistory", "Show History")}
+          <History className="w-4 h-4 ml-2" />
+        </button>
+        {/* Add Client Button */}
         <button
           onClick={() => setShowAddClientModal(true)}
-          className="flex items-centered px-3 py-2 rounded-md bg-muted text-foreground hover:bg-primary hover:text-primary-foreground transition text-sm border border-border"
+          className="flex items-center px-3 py-2 rounded-md bg-muted text-foreground hover:bg-primary hover:text-primary-foreground transition text-sm border border-border ml-1 flex-shrink min-w-0"
         >
           {t("cashier.addNewClient", "Add New Client")}
           <UserPlus className="w-4 h-4 ml-2" />
         </button>
-
-        {/* Optional discount input */}
-        <div className="flex items-center gap-2">
-          <input
-            placeholder={t("cashier.discount", "Discount")}
-            className="w-36 rounded-md border border-border px-3 py-2 text-sm bg-background"
-            type="number"
-            value={draftDiscount}
-            onChange={(e) => {
-              const val = e.target.value;
-              if (/^\d*$/.test(val)) {
-                setDraftDiscount(val);
-              }
-            }}
-          />
-        </div>
-
+        {/* Discount Input */}
+        <input
+          placeholder={t("cashier.discount", "Discount")}
+          className="w-24 rounded-md border border-border px-3 py-2 text-sm bg-background ml-1 flex-shrink min-w-0"
+          type="number"
+          value={draftDiscount}
+          onChange={(e) => {
+            const val = e.target.value;
+            if (/^\d*$/.test(val)) {
+              setDraftDiscount(val);
+            }
+          }}
+        />
+        {/* Confirm Button */}
         <button
-          className="ml-auto flex items-center gap-2 px-4 py-2 rounded-md bg-primary text-primary-foreground font-semibold text-sm shadow hover:bg-primary/90 border border-border"
+          className="flex items-center gap-2 px-4 py-2 rounded-md bg-primary text-primary-foreground font-semibold text-sm shadow hover:bg-primary/90 border border-border ml-1 flex-shrink min-w-0"
           onClick={() => {
             // Validate discount before applying
             if (Number(draftDiscount) > cartTotal) {
