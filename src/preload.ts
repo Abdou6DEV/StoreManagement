@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from "electron";
-import { Product, Category } from "@prisma/client";
+import { Product, Category, Client, Sale } from "@prisma/client";
 
 contextBridge.exposeInMainWorld("api", {
   database: {
@@ -27,7 +27,8 @@ contextBridge.exposeInMainWorld("api", {
         notes?: string;
       }) => ipcRenderer.invoke("db:clients:create", data),
       getAll: () => ipcRenderer.invoke("db:clients:getAll"),
-      getAllWithTotalPurchases: () => ipcRenderer.invoke("db:clients:getAllWithTotalPurchases"),
+      getAllWithTotalPurchases: () =>
+        ipcRenderer.invoke("db:clients:getAllWithTotalPurchases"),
       delete: (id: string) => ipcRenderer.invoke("db:clients:delete", id),
       update: (
         id: string,
@@ -77,9 +78,11 @@ declare global {
             phone?: string;
             address?: string;
             notes?: string;
-          }) => Promise<any>;
-          getAll: () => Promise<any[]>;
-          getAllWithTotalPurchases: () => Promise<any[]>;
+          }) => Promise<Client>;
+          getAll: () => Promise<Client[]>;
+          getAllWithTotalPurchases: () => Promise<
+            Client & { totalPurchases: number }[]
+          >;
           delete: (id: string) => Promise<void>;
           update: (
             id: string,
@@ -89,14 +92,14 @@ declare global {
               address?: string;
               notes?: string;
             },
-          ) => Promise<any>;
+          ) => Promise<Client>;
         };
         sales: {
           create: (data: {
             clientId?: string;
             items: { productId: string; quantity: number; price: number }[];
             discount?: number;
-          }) => Promise<any>;
+          }) => Promise<Sale>;
         };
       };
       app: {

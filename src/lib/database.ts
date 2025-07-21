@@ -121,9 +121,9 @@ export class DatabaseService {
         }
 
         return { ...client, totalPurchases };
-      })
+      }),
     );
-    
+
     return results;
   }
 

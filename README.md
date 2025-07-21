@@ -35,6 +35,9 @@ npx prisma generate
 
 # Push the database schema to create tables
 npx prisma db push
+
+# Seed the database with test data (development only)
+npx prisma db seed
 ```
 
 ### Development

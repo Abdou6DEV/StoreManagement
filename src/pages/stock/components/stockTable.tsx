@@ -102,13 +102,12 @@ export const StockTable = () => {
     product,
     setEditingProductID,
     handleDeleteProduct,
-    t,
   }: {
     product: Product;
     setEditingProductID: (id: string) => void;
     handleDeleteProduct: (id: string) => void;
-    t: any;
   }) {
+    const { t } = useTranslation();
     const profit = product.selling - product.bought;
     const totalBought = product.bought * product.quantity;
     const totalProfit = profit * product.quantity;
@@ -439,7 +438,6 @@ export const StockTable = () => {
                   product={product}
                   setEditingProductID={setEditingProductID}
                   handleDeleteProduct={handleDeleteProduct}
-                  t={t}
                 />
               ))}
             </tbody>
