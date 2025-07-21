@@ -28,7 +28,7 @@ export default function Customers() {
   const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [openPanel, setOpenPanel] = useState<"add" | "edit" | null>(null);
+  const [openPanel, setOpenPanel] = useState<"add" | null>(null);
 
   const fetchClients = async () => {
     setLoading(true);
