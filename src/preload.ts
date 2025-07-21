@@ -47,6 +47,10 @@ contextBridge.exposeInMainWorld("api", {
         discount?: number;
       }) => ipcRenderer.invoke("db:sales:create", data),
     },
+    options: {
+      get: (key: string) => ipcRenderer.invoke("db:options:get", key),
+      set: (key: string, value: string) => ipcRenderer.invoke("db:options:set", { key, value }),
+    },
   },
   app: {
     getVersion: () => ipcRenderer.invoke("app:getVersion"),
@@ -101,6 +105,10 @@ declare global {
             items: { productId: string; quantity: number; price: number }[];
             discount?: number;
           }) => Promise<Sale>;
+        };
+        options: {
+          get: (key: string) => Promise<string | null>;
+          set: (key: string, value: string) => Promise<void>;
         };
       };
       app: {

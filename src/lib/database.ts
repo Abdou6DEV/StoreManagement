@@ -148,4 +148,18 @@ export class DatabaseService {
     // Return as array of { productId, totalSold }
     return sales.map(s => ({ productId: s.productId, totalSold: s._sum.quantity || 0 }));
   }
+
+  // === Option (Settings) Methods ===
+  static async getOption(key: string): Promise<string | null> {
+    const option = await prisma.option.findUnique({ where: { key } });
+    return option ? option.value : null;
+  }
+
+  static async setOption(key: string, value: string): Promise<void> {
+    await prisma.option.upsert({
+      where: { key },
+      update: { value },
+      create: { key, value },
+    });
+  }
 }

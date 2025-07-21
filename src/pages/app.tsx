@@ -7,6 +7,7 @@ const Dashboard = React.lazy(() => import("./dashboard"));
 const Clients = React.lazy(() => import("./clients"));
 const Cashier = React.lazy(() => import("./cashier"));
 const Stock = React.lazy(() => import("./stock"));
+const Administrator = React.lazy(() => import("./administrator"));
 import Sidebar from "../lib/components/sidebar";
 import { StockProvider } from "../lib/contexts/stockContext";
 import { useTranslation } from "react-i18next";
@@ -42,6 +43,7 @@ export default function App() {
                 }
               />
               <Route path="/cashier" element={<Cashier />} />
+              <Route path="/administrator" element={<Administrator />} />
               <Route path="/*" element={<h1 className="">Soon..</h1>} />
             </Route>
           </Routes>

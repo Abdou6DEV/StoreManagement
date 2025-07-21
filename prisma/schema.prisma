@@ -70,3 +70,8 @@ model Client {
 
   sales Sale[]
 }
+
+model Option {
+  key   String @id
+  value String
+}

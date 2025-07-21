@@ -12,7 +12,7 @@ import {
   Package,
 } from "lucide-react";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 import { cn } from "../../../lib/utils";
 import {
@@ -52,7 +52,7 @@ export const StockTable = () => {
     search: "",
     category: "", // <-- add category filter
   });
-  const [lowStockThreshold, setLowStockThreshold] = useState<string>(""); // Default threshold is empty
+  const [lowStockThreshold, setLowStockThreshold] = useState<number>(0); // Now a number, from DB
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [editingProductID, setEditingProductID] = useState<string | null>(null);
@@ -60,6 +60,11 @@ export const StockTable = () => {
   // Add state for category search input and dropdown open
   const [categorySearch, setCategorySearch] = useState("");
   const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
+
+  useEffect(() => {
+    window.api.database.options.get("lowStockThreshold")
+      .then(val => setLowStockThreshold(val ? Number(val) : 0));
+  }, []);
 
   const handleChange = (key: keyof typeof filters, value: boolean | string) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
@@ -85,9 +90,7 @@ export const StockTable = () => {
       (product.codebar && product.codebar.toLowerCase().includes(search));
     const matchesCategory =
       !filters.category || product.categoryName === filters.category;
-    // If lowStockThreshold is empty string, treat as 0
-    const threshold =
-      lowStockThreshold.trim() === "" ? 0 : Number(lowStockThreshold);
+    const threshold = lowStockThreshold;
     const matchesLowStock = !filters.lowStock || product.quantity <= threshold;
     return matchesSearch && matchesCategory && matchesLowStock;
   });
@@ -398,29 +401,6 @@ export const StockTable = () => {
               {t("stock.worstSelling")}
             </ToggleGroupItem>
           </ToggleGroup>
-          {/* Low stock threshold input, only show if lowStock is active */}
-          <div className="relative flex items-center">
-            <div
-              className={cn(
-                "transition-all duration-500 origin-left",
-                filters.lowStock
-                  ? "scale-100 opacity-100 ml-2"
-                  : "scale-95 opacity-0 pointer-events-none w-0 ml-0",
-              )}
-              style={{ minWidth: filters.lowStock ? "3.5rem" : 0 }}
-            >
-              <input
-                type="number"
-                min={0}
-                value={lowStockThreshold}
-                onChange={(e) => setLowStockThreshold(e.target.value)}
-                className="w-14 px-2 py-1 border rounded text-sm transition-all duration-300"
-                aria-label={t("stock.lowStockThreshold", "Low stock threshold")}
-                placeholder="0"
-                style={{ minWidth: 0 }}
-              />
-            </div>
-          </div>
         </div>
       </div>
 

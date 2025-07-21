@@ -116,4 +116,13 @@ function setupDatabaseHandlers() {
   ipcMain.handle("db:products:getSalesCounts", async () => {
     return await DatabaseService.getProductSalesCounts();
   });
+
+  ipcMain.handle("db:options:get", async (_event, key: string) => {
+    return await DatabaseService.getOption(key);
+  });
+
+  ipcMain.handle("db:options:set", async (_event, { key, value }) => {
+    await DatabaseService.setOption(key, value);
+    return true;
+  });
 }
