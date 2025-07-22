@@ -42,7 +42,7 @@ model Sale {
 
   client    Client?    @relation(fields: [clientId], references: [id])
   saleItems SaleItem[]
-  Credit    Credit[]
+  payments  Payment[]
 }
 
 model SaleItem {
@@ -68,8 +68,8 @@ model Client {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  sales  Sale[]
-  Credit Credit[]
+  sales    Sale[]
+  payments Payment[]
 }
 
 model Option {
@@ -77,16 +77,22 @@ model Option {
   value String
 }
 
-model Credit {
+enum PaymentType {
+  CREDIT
+  VERSEMENT
+}
+
+model Payment {
   saleId     String
   clientId   String
   paidAmount Int
   dueAt      DateTime
   paidAt     DateTime?
-  createdAt  DateTime  @default(now())
+  createdAt  DateTime    @default(now())
+  type       PaymentType
 
   sale   Sale   @relation(fields: [saleId], references: [id])
   client Client @relation(fields: [clientId], references: [id])
 
-  @@id([saleId, clientId])
+  @@id([saleId, clientId, type])
 }
