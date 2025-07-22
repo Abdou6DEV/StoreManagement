@@ -203,19 +203,6 @@ export default function ActionButtons({
             </div>
           )}
         </div>
-        {/* Show History Button (always visible, disabled if no client) */}
-        <button
-          type="button"
-          className={`flex items-center justify-center ml-1 px-3 py-2 rounded-md bg-muted text-foreground hover:bg-primary hover:text-primary-foreground transition text-sm border border-border flex-shrink min-w-40 ${!selectedClientId ? 'opacity-60 cursor-not-allowed' : ''}`}
-          disabled={!selectedClientId}
-          onClick={() => {
-            if (!selectedClientId) return;
-            // TODO: Show client history modal
-          }}
-        >
-          {t("cashier.showHistory", "Show History")}
-          <History className="w-4 h-4 ml-2" />
-        </button>
         {/* Add Client Button */}
         <button
           onClick={() => setShowAddClientModal(true)}
