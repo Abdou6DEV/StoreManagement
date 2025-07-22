@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from "electron";
-import { Product, Category, Client, Sale } from "@prisma/client";
+import { Product, Category, Client, Sale, Payment } from "@prisma/client";
 
 contextBridge.exposeInMainWorld("api", {
   database: {
@@ -128,7 +128,7 @@ declare global {
             dueAt: Date;
             paidAt?: Date;
             type: 'CREDIT' | 'VERSEMENT';
-          }) => Promise<any>;
+          }) => Promise<Payment>;
         };
       };
       app: {

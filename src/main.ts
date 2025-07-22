@@ -1,7 +1,12 @@
 import { app, BrowserWindow, screen, ipcMain } from "electron";
 import path from "node:path";
 import started from "electron-squirrel-startup";
-import { DatabaseService } from "./lib/database";
+import { prisma, initializePrisma } from "./lib/prismaClient";
+import { getAllCategories, ensureCategory } from "./lib/database/categories";
+import { getAllClients, getAllClientsWithTotalPurchases, createClient, deleteClient, updateClient } from "./lib/database/clients";
+import { createSale, getProductSalesCounts } from "./lib/database/sales";
+import { getOption, setOption } from "./lib/database/options";
+import { createPayment } from "./lib/database/payments";
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {
@@ -9,7 +14,7 @@ if (started) {
 }
 
 const createWindow = async () => {
-  await DatabaseService.initialize();
+  await initializePrisma();
   setupDatabaseHandlers();
 
   const { width, height, x, y } = screen.getPrimaryDisplay().workArea;
@@ -58,8 +63,6 @@ app.on("activate", () => {
 });
 
 function setupDatabaseHandlers() {
-  const prisma = DatabaseService.client;
-
   ipcMain.handle("db:products:getAll", async () => {
     return await prisma.product.findMany();
   });
@@ -82,51 +85,51 @@ function setupDatabaseHandlers() {
   });
 
   ipcMain.handle("db:categories:getAll", async () => {
-    return await DatabaseService.getAllCategories();
+    return await getAllCategories();
   });
 
   ipcMain.handle("db:categories:ensure", async (_event, name) => {
-    return await DatabaseService.ensureCategory(name);
+    return await ensureCategory(name);
   });
 
   ipcMain.handle("db:clients:create", async (_event, data) => {
-    return await DatabaseService.createClient(data);
+    return await createClient(data);
   });
 
   ipcMain.handle("db:sales:create", async (_event, data) => {
-    return await DatabaseService.createSale(data);
+    return await createSale(data);
   });
 
   ipcMain.handle("db:clients:getAll", async () => {
-    return await DatabaseService.getAllClients();
+    return await getAllClients();
   });
 
   ipcMain.handle("db:clients:delete", async (_event, id: string) => {
-    return await DatabaseService.deleteClient(id);
+    return await deleteClient(id);
   });
 
   ipcMain.handle("db:clients:update", async (_event, { id, data }) => {
-    return await DatabaseService.updateClient(id, data);
+    return await updateClient(id, data);
   });
 
   ipcMain.handle("db:clients:getAllWithTotalPurchases", async () => {
-    return await DatabaseService.getAllClientsWithTotalPurchases();
+    return await getAllClientsWithTotalPurchases();
   });
 
   ipcMain.handle("db:products:getSalesCounts", async () => {
-    return await DatabaseService.getProductSalesCounts();
+    return await getProductSalesCounts();
   });
 
   ipcMain.handle("db:options:get", async (_event, key: string) => {
-    return await DatabaseService.getOption(key);
+    return await getOption(key);
   });
 
   ipcMain.handle("db:options:set", async (_event, { key, value }) => {
-    await DatabaseService.setOption(key, value);
+    await setOption(key, value);
     return true;
   });
 
   ipcMain.handle("db:payments:create", async (_event, data) => {
-    return await DatabaseService.createPayment(data);
+    return await createPayment(data);
   });
 }
