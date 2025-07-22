@@ -34,21 +34,21 @@ model Product {
 }
 
 model Sale {
-  id       String  @id @default(uuid())
-  clientId String?
-  discount Int     @default(0)
-
+  id        String   @id @default(uuid())
+  clientId  String?
+  discount  Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   client    Client?    @relation(fields: [clientId], references: [id])
   saleItems SaleItem[]
+  Credit    Credit[]
 }
 
 model SaleItem {
   productId String
   quantity  Int
-  price     Decimal
+  price     Int
   saleId    String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -68,10 +68,25 @@ model Client {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  sales Sale[]
+  sales  Sale[]
+  Credit Credit[]
 }
 
 model Option {
   key   String @id
   value String
+}
+
+model Credit {
+  saleId     String
+  clientId   String
+  paidAmount Int
+  dueAt      DateTime
+  paidAt     DateTime?
+  createdAt  DateTime  @default(now())
+
+  sale   Sale   @relation(fields: [saleId], references: [id])
+  client Client @relation(fields: [clientId], references: [id])
+
+  @@id([saleId, clientId])
 }
