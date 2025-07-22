@@ -32,6 +32,7 @@ export default function CashierPage() {
   const [discounts, setDiscounts] = useState<string[]>(Array.from({ length: MAX_SESSIONS }, () => ""));
   const [discountError, setDiscountError] = useState<string | null>(null);
   const [paymentAmount, setPaymentAmount] = useState(0);
+  const [paymentType, setPaymentType] = useState<'cash' | 'credit' | 'versement'>('cash');
 
   // Ensure cart always exists
   const cart: CartItem[] = useMemo(() => {
@@ -79,27 +80,6 @@ export default function CashierPage() {
       setAllProducts(products);
     });
   }, [productRefreshKey]);
-
-  // Alerts
-  const handleAddClient = async (
-    name: string,
-    phone?: string,
-    address?: string,
-    notes?: string,
-  ) => {
-    try {
-      const client = await window.api.database.clients.create({
-        name,
-        phone,
-        address,
-        notes,
-      });
-      setClientName(name);
-      setClientId(client.id);
-    } catch (err) {
-      alert(t("cashier.failedAddClient", "Failed to add client"));
-    }
-  };
 
   // Clear the cart
   const handleClear = () => {
@@ -278,14 +258,13 @@ export default function CashierPage() {
                 cart={cart}
                 clientName={clientName}
                 paymentAmount={paymentAmount}
-                versementAmount={20000}
                 discount={Number(discount) || 0}
+                paymentType={paymentType}
               />
             </div>
             <ActionButtons
               clientName={clientName}
               setClientName={setClientName}
-              onAddClient={handleAddClient}
               onClear={handleClear}
               onFinish={handleFinish}
               setClientId={setClientId}
@@ -301,6 +280,8 @@ export default function CashierPage() {
               cart={cart}
               paymentAmount={paymentAmount}
               setPaymentAmount={setPaymentAmount}
+              paymentType={paymentType}
+              setPaymentType={setPaymentType}
             />
           </div>
         </section>

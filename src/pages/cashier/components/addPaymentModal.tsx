@@ -22,7 +22,7 @@ interface AddPaymentModalProps {
 const AddPaymentModal: React.FC<AddPaymentModalProps> = ({
   open,
   onClose,
-  paymentType,
+  paymentType = 'credit',
   setPaymentType,
   paymentAmount,
   setPaymentAmount,
@@ -34,49 +34,70 @@ const AddPaymentModal: React.FC<AddPaymentModalProps> = ({
   onConfirm,
 }) => {
   if (!open) return null;
+  const rest = cartTotal - Number(paymentAmount);
+  
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-card border border-border rounded-xl shadow-lg w-full max-w-md p-6 space-y-6 animate-in fade-in duration-300">
-        <div className="flex items-center gap-3 mb-2">
-          <Wallet className="w-6 h-6 text-blue-500" />
-          <h2 className="text-xl font-bold text-foreground">
-            {paymentType === 'credit'
-              ? t("cashier.addCredit", "Add Credit")
-              : t("cashier.addVersement", "Add Versement")}
-          </h2>
-        </div>
-        {/* Payment type selector */}
-        <div className="flex gap-2 mb-2">
-          <Button
-            variant={paymentType === 'credit' ? 'default' : 'outline'}
-            onClick={() => setPaymentType('credit')}
-            className="flex-1"
-          >
-            {t("cashier.credit", "Credit")}
-          </Button>
-          <Button
-            variant={paymentType === 'versement' ? 'default' : 'outline'}
-            onClick={() => setPaymentType('versement')}
-            className="flex-1"
-          >
-            {t("cashier.versement", "Versement")}
-          </Button>
-        </div>
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="relative w-full max-w-lg mx-auto animate-in fade-in zoom-in-90 duration-300">
+        <div className="bg-card border border-border rounded-2xl shadow-2xl p-8 space-y-7 flex flex-col">
+          {/* Header */}
+          <div className="flex items-center gap-3 mb-2">
+            <div className="flex items-center justify-center w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900/20">
+              <Wallet className="w-7 h-7 text-blue-500" />
+            </div>
+            <h2 className="text-2xl font-bold text-foreground">
+              {paymentType === 'credit'
+                ? t("cashier.addCredit", "Add Credit")
+                : t("cashier.addVersement", "Add Versement")}
+            </h2>
+          </div>
+
+          {/* Payment type pill toggle */}
+          <div className="flex justify-center mb-6">
+            <div className="inline-flex rounded-full bg-muted p-1 border border-border shadow-inner">
+              <button
+                type="button"
+                onClick={() => setPaymentType('credit')}
+                className={`px-6 py-2 rounded-full font-semibold text-sm transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-primary/40 ${
+                  paymentType === 'credit'
+                    ? 'bg-primary text-primary-foreground shadow'
+                    : 'text-muted-foreground hover:bg-primary/10'
+                }`}
+              >
+                {t("cashier.credit", "Credit")}
+              </button>
+              <span className="w-2" />
+              <button
+                type="button"
+                onClick={() => setPaymentType('versement')}
+                className={`px-6 py-2 rounded-full font-semibold text-sm transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-primary/40 ${
+                  paymentType === 'versement'
+                    ? 'bg-primary text-primary-foreground shadow'
+                    : 'text-muted-foreground hover:bg-primary/10'
+                }`}
+              >
+                {t("cashier.versement", "Versement")}
+              </button>
+            </div>
+          </div>
+
+          {/* Inputs */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium mb-1 text-muted-foreground">{t("cashier.paymentAmount", "Payment Amount")}</label>
+              <label className="block text-xs font-semibold mb-1 text-muted-foreground tracking-wide">
+                {t("cashier.paymentAmount", "Payment Amount")}
+              </label>
               <input
                 type="number"
                 value={paymentAmount === 0 ? "" : paymentAmount}
                 onChange={e => setPaymentAmount(Number(e.target.value) || 0)}
                 min={0}
                 placeholder={t("cashier.paymentAmount", "Payment Amount")}
-                className="w-full rounded-md border border-border px-3 py-2 h-11 text-sm bg-background focus:outline-none focus:ring-1 focus:ring-primary/50"
+                className="w-full rounded-lg border border-border px-4 py-3 h-12 text-base bg-background focus:outline-none focus:ring-2 focus:ring-primary/30 transition shadow-sm"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1 text-muted-foreground">
+              <label className="block text-xs font-semibold mb-1 text-muted-foreground tracking-wide">
                 {t("cashier.dueDate", "Due Date")}
               </label>
               <input
@@ -85,43 +106,47 @@ const AddPaymentModal: React.FC<AddPaymentModalProps> = ({
                 onChange={e => {
                   setPaymentDate(e.target.value ? new Date(e.target.value) : undefined);
                 }}
-                className="w-full rounded-md border border-border px-3 py-2 h-11 text-sm bg-background focus:outline-none focus:ring-1 focus:ring-primary/50"
+                className="w-full rounded-lg border border-border px-4 py-3 h-12 text-base bg-background focus:outline-none focus:ring-2 focus:ring-primary/30 transition shadow-sm"
               />
             </div>
           </div>
-        </div>
-        <hr />
-        {/* Info summary */}
-        <div className="grid grid-cols-2 gap-4 text-sm text-muted-foreground">
-          <div>
-            <span className="font-medium text-foreground">{t("cashier.itemsCount", "Number of items")}:</span> {cart.length}
+
+          {/* Info summary */}
+          <div className="rounded-xl bg-muted/60 border border-border px-5 py-4 grid grid-cols-2 gap-4 text-sm text-muted-foreground mt-2">
+            <div>
+              <span className="font-semibold text-foreground">{t("cashier.itemsCount", "Number of items")}:</span> {cart.length}
+            </div>
+            <div>
+              <span className="font-semibold text-foreground">{t("cashier.totalQty", "Total quantity")}:</span> {cart.reduce((sum: number, item) => sum + (item.qty || 0), 0)}
+            </div>
+            <div>
+              <span className="font-semibold text-foreground">{t("cashier.given", "Given")}:</span> {paymentAmount ? Number(paymentAmount).toLocaleString() : 0} DA
+            </div>
+            <div>
+              <span className="font-semibold text-foreground">{t("cashier.rest", "Rest")}:</span> {paymentAmount ? (cartTotal - Number(paymentAmount)).toLocaleString() : cartTotal.toLocaleString()} DA
+            </div>
+            <div className="col-span-2">
+              <span className="font-semibold text-foreground">{t("cashier.total", "Total")}:</span> {cartTotal.toLocaleString()} DA
+            </div>
           </div>
-          <div>
-            <span className="font-medium text-foreground">{t("cashier.totalQty", "Total quantity")}:</span> {cart.reduce((sum: number, item) => sum + (item.qty || 0), 0)}
+
+          {/* Actions */}
+          <div className="flex justify-end gap-3 mt-6">
+            <Button
+              variant="outline"
+              onClick={onClose}
+              className="rounded-lg px-6 py-3 font-semibold text-base border border-border shadow-sm hover:bg-muted/80 transition-all"
+            >
+              {t("cashier.cancel", "Cancel")}
+            </Button>
+            <Button
+              onClick={onConfirm}
+              disabled={paymentAmount <= 0 || !paymentDate || rest <= 0}
+              className="rounded-lg px-6 py-3 font-bold text-base shadow-md bg-primary text-primary-foreground hover:bg-primary/90 transition-all disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed"
+            >
+              {t("cashier.confirm", "Confirm")}
+            </Button>
           </div>
-          <div>
-            <span className="font-medium text-foreground">{t("cashier.given", "Given")}:</span> {paymentAmount ? Number(paymentAmount).toLocaleString() : 0} DA
-          </div>
-          <div>
-            <span className="font-medium text-foreground">{t("cashier.rest", "Rest")}:</span> {paymentAmount ? (cartTotal - Number(paymentAmount)).toLocaleString() : cartTotal.toLocaleString()} DA
-          </div>
-          <div className="col-span-2">
-            <span className="font-medium text-foreground">{t("cashier.total", "Total")}:</span> {cartTotal.toLocaleString()} DA
-          </div>
-        </div>
-        <div className="flex justify-end gap-2 mt-4">
-          <Button
-            variant="outline"
-            onClick={onClose}
-          >
-            {t("cashier.cancel", "Cancel")}
-          </Button>
-          <Button
-            onClick={onConfirm}
-            disabled={paymentAmount <= 0 || !paymentDate}
-          >
-            {t("cashier.confirm", "Confirm")}
-          </Button>
         </div>
       </div>
     </div>

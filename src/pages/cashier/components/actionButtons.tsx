@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import DiscountErrorModal from "./discountErrorModal";
 import type { CartItem } from "../../cashier";
 import AddPaymentModal from "./addPaymentModal";
+import AddClientModal from "./addClientModal";
 
 // Define a type for client suggestions
 interface ClientSuggestion {
@@ -15,12 +16,6 @@ interface ClientSuggestion {
 interface Props {
   clientName: string;
   setClientName: (val: string) => void;
-  onAddClient: (
-    name: string,
-    phone?: string,
-    address?: string,
-    notes?: string,
-  ) => void;
   onClear: () => void;
   onFinish?: () => void;
   setClientId: (id: string | null) => void;
@@ -30,12 +25,13 @@ interface Props {
   cart: CartItem[];
   paymentAmount: number;
   setPaymentAmount: (val: number) => void;
+  paymentType: 'cash' | 'credit' | 'versement';
+  setPaymentType: (type: 'cash' | 'credit' | 'versement') => void;
 }
 
 export default function ActionButtons({
   clientName,
   setClientName,
-  onAddClient,
   onClear,
   onFinish,
   setClientId,
@@ -45,18 +41,22 @@ export default function ActionButtons({
   cart,
   paymentAmount,
   setPaymentAmount,
+  paymentType,
+  setPaymentType,
 }: Props) {
   const { t, i18n } = useTranslation();
   const [clientSuggestions, setClientSuggestions] = useState<ClientSuggestion[]>([]);
   const [draftDiscount, setDraftDiscount] = useState(discount);
   const [discountError, setDiscountError] = useState<string | null>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [paymentType, setPaymentType] = useState<'credit' | 'versement'>('credit');
+  const [paymentTypeLocal, setPaymentTypeLocal] = useState<'credit' | 'versement'>(paymentType === 'versement' ? 'versement' : 'credit');
   const [paymentClientName, setPaymentClientName] = useState("");
   const [paymentClientPhone, setPaymentClientPhone] = useState("");
   const [modalPaymentAmount, setModalPaymentAmount] = useState(0);
   const [paymentDate, setPaymentDate] = useState<Date | undefined>(undefined);
-  const [calendarOpen, setCalendarOpen] = useState(false);
+  const [showAddClientModal, setShowAddClientModal] = useState(false);
+  const [clientAddress, setClientAddress] = useState("");
+  const [clientNotes, setClientNotes] = useState("");
 
   // Keep draftDiscount in sync with prop when session changes
   useEffect(() => {
@@ -161,7 +161,7 @@ export default function ActionButtons({
         </div>
         {/* Add Client Button */}
         <button
-          onClick={() => setShowPaymentModal(true)}
+          onClick={() => setShowAddClientModal(true)}
           className="flex items-center px-3 py-2 rounded-md bg-muted text-foreground hover:bg-primary hover:text-primary-foreground transition text-sm border border-border ml-1 flex-shrink min-w-0"
         >
           {t("cashier.addNewClient", "Add New Client")}
@@ -235,8 +235,11 @@ export default function ActionButtons({
       <AddPaymentModal
         open={showPaymentModal}
         onClose={() => setShowPaymentModal(false)}
-        paymentType={paymentType}
-        setPaymentType={setPaymentType}
+        paymentType={paymentTypeLocal}
+        setPaymentType={(type: 'credit' | 'versement') => {
+          setPaymentTypeLocal(type);
+          setPaymentType(type);
+        }}
         paymentAmount={modalPaymentAmount}
         setPaymentAmount={setModalPaymentAmount}
         paymentDate={paymentDate}
@@ -248,6 +251,22 @@ export default function ActionButtons({
           setPaymentAmount(modalPaymentAmount);
           setShowPaymentModal(false);
         }}
+      />
+
+      {/* === Add Client Modal === */}
+      <AddClientModal
+        open={showAddClientModal}
+        onClose={() => setShowAddClientModal(false)}
+        clientName={clientName}
+        setClientName={setClientName}
+        clientPhone={paymentClientPhone}
+        setClientPhone={setPaymentClientPhone}
+        clientAddress={clientAddress}
+        setClientAddress={setClientAddress}
+        clientNotes={clientNotes}
+        setClientNotes={setClientNotes}
+        t={t as typeof t}
+        onConfirm={() => setShowAddClientModal(false)}
       />
 
       <DiscountErrorModal
