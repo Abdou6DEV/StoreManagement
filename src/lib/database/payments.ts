@@ -1,4 +1,4 @@
-import { prisma } from '../prismaClient';
+import { prisma } from "../prismaClient";
 
 export async function createPayment(data: {
   saleId: string;
@@ -6,7 +6,7 @@ export async function createPayment(data: {
   paidAmount: number;
   dueAt: Date;
   paidAt?: Date;
-  type: 'CREDIT' | 'VERSEMENT';
+  type: "CREDIT" | "VERSEMENT";
 }) {
   return await prisma.payment.create({
     data: {
@@ -18,4 +18,4 @@ export async function createPayment(data: {
       type: data.type,
     },
   });
-} 
+}

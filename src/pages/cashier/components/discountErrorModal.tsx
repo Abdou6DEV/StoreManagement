@@ -6,7 +6,11 @@ interface DiscountErrorModalProps {
   onClose: () => void;
 }
 
-const DiscountErrorModal: React.FC<DiscountErrorModalProps> = ({ open, message, onClose }) => {
+const DiscountErrorModal: React.FC<DiscountErrorModalProps> = ({
+  open,
+  message,
+  onClose,
+}) => {
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
@@ -26,11 +30,11 @@ const DiscountErrorModal: React.FC<DiscountErrorModalProps> = ({ open, message, 
             />
           </svg>
         </div>
-        
+
         <h2 className="text-lg font-semibold text-red-600 dark:text-red-400 text-center">
           {message}
         </h2>
-        
+
         <div className="flex justify-end gap-2 w-full">
           <button
             onClick={onClose}
@@ -44,4 +48,4 @@ const DiscountErrorModal: React.FC<DiscountErrorModalProps> = ({ open, message, 
   );
 };
 
-export default DiscountErrorModal; 
+export default DiscountErrorModal;

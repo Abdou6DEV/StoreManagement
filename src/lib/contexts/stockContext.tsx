@@ -49,8 +49,13 @@ export function StockProvider({ children }: { children: ReactNode }) {
         window.api.database.products.getSalesCounts(),
       ]);
       // Merge salesCounts into products
-      const salesMap = new Map(salesCounts.map((s) => [s.productId, s.totalSold]));
-      const merged = result.map((p) => ({ ...p, totalSold: salesMap.get(p.id) || 0 }));
+      const salesMap = new Map(
+        salesCounts.map((s) => [s.productId, s.totalSold]),
+      );
+      const merged = result.map((p) => ({
+        ...p,
+        totalSold: salesMap.get(p.id) || 0,
+      }));
       setProducts(merged);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to fetch products");

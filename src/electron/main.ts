@@ -3,7 +3,13 @@ import path from "node:path";
 import started from "electron-squirrel-startup";
 import { prisma, initializePrisma } from "../lib/prismaClient";
 import { getAllCategories, ensureCategory } from "../lib/database/categories";
-import { getAllClients, getAllClientsWithTotalPurchases, createClient, deleteClient, updateClient } from "../lib/database/clients";
+import {
+  getAllClients,
+  getAllClientsWithTotalPurchases,
+  createClient,
+  deleteClient,
+  updateClient,
+} from "../lib/database/clients";
 import { createSale, getProductSalesCounts } from "../lib/database/sales";
 import { getOption, setOption } from "../lib/database/options";
 import { createPayment } from "../lib/database/payments";

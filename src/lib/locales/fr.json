@@ -135,7 +135,9 @@
     "discountError": "La remise ne peut pas dépasser le montant total",
     "dueDate": "Date d'échéance",
     "pickDate": "Choisir une date",
-    "credit": "Crédit",
+    "versement": "Versement",
+    "rest": "Reste à payer",
+    "paid": "Payé",
     "showHistory": "Afficher l'historique"
   },
   "clients": {

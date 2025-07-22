@@ -15,7 +15,7 @@ export default function addClientModal({
   clientNotes,
   setClientNotes,
   t,
-  onConfirm
+  onConfirm,
 }: {
   open: boolean;
   onClose: () => void;
@@ -42,43 +42,37 @@ export default function addClientModal({
         </div>
         <input
           value={clientName}
-          onChange={e => setClientName(e.target.value)}
+          onChange={(e) => setClientName(e.target.value)}
           placeholder={t("cashier.clientName", "Client Name")}
           className="w-full rounded-md border border-border px-3 py-2 text-sm bg-background"
         />
         <input
           value={clientPhone}
-          onChange={e => setClientPhone(e.target.value)}
+          onChange={(e) => setClientPhone(e.target.value)}
           placeholder={t("cashier.phoneOptional", "Phone Number (optional)")}
           className="w-full rounded-md border border-border px-3 py-2 text-sm bg-background"
         />
         <input
           value={clientAddress}
-          onChange={e => setClientAddress(e.target.value)}
+          onChange={(e) => setClientAddress(e.target.value)}
           placeholder={t("cashier.addressOptional", "Address (optional)")}
           className="w-full rounded-md border border-border px-3 py-2 text-sm bg-background"
         />
         <input
           value={clientNotes}
-          onChange={e => setClientNotes(e.target.value)}
+          onChange={(e) => setClientNotes(e.target.value)}
           placeholder={t("cashier.notesOptional", "Notes (optional)")}
           className="w-full rounded-md border border-border px-3 py-2 text-sm bg-background"
         />
         <div className="flex justify-end gap-2">
-          <Button
-            variant="outline"
-            onClick={onClose}
-          >
+          <Button variant="outline" onClick={onClose}>
             {t("cashier.cancel", "Cancel")}
           </Button>
-          <Button
-            onClick={onConfirm}
-            disabled={!clientName.trim()}
-          >
+          <Button onClick={onConfirm} disabled={!clientName.trim()}>
             {t("cashier.addClient", "Add Client")}
           </Button>
         </div>
       </div>
     </div>
   );
-} 
+}

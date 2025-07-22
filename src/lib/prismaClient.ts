@@ -26,4 +26,4 @@ export async function initializePrisma() {
 
 export async function disconnectPrisma() {
   await prisma.$disconnect();
-} 
+}

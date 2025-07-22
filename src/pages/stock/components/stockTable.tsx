@@ -72,8 +72,9 @@ export const StockTable = () => {
   const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
 
   useEffect(() => {
-    window.api.database.options.get("lowStockThreshold")
-      .then(val => setLowStockThreshold(val ? Number(val) : 0));
+    window.api.database.options
+      .get("lowStockThreshold")
+      .then((val) => setLowStockThreshold(val ? Number(val) : 0));
   }, []);
 
   const handleChange = (key: keyof typeof filters, value: boolean | string) => {
@@ -140,7 +141,7 @@ export const StockTable = () => {
     const profit = product.selling - product.bought;
     const totalBought = product.bought * product.quantity;
     const totalProfit = profit * (product.totalSold ?? 0);
-    
+
     return (
       <tr key={product.id} className="h-[48px] hover:bg-muted/40 transition">
         <td className="px-4">{product.name}</td>
@@ -345,16 +346,21 @@ export const StockTable = () => {
               }
               setFilters(newFilters);
               if (
-                (filters.bestSelling !== newFilters.bestSelling && newFilters.bestSelling) ||
-                (filters.worstSelling !== newFilters.worstSelling && newFilters.worstSelling) ||
-                (filters.lowStock !== newFilters.lowStock && newFilters.lowStock)
+                (filters.bestSelling !== newFilters.bestSelling &&
+                  newFilters.bestSelling) ||
+                (filters.worstSelling !== newFilters.worstSelling &&
+                  newFilters.worstSelling) ||
+                (filters.lowStock !== newFilters.lowStock &&
+                  newFilters.lowStock)
               ) {
                 setCurrentPage(1);
               }
             }}
             className="gap-1"
           >
-            <Tooltip content={t("stock.lowStockTooltip")}> {/* Tooltip for Low Stock */}
+            <Tooltip content={t("stock.lowStockTooltip")}>
+              {" "}
+              {/* Tooltip for Low Stock */}
               <ToggleGroupItem
                 value="lowStock"
                 aria-label={t("stock.lowStock")}
@@ -375,7 +381,9 @@ export const StockTable = () => {
                 {t("stock.lowStock")}
               </ToggleGroupItem>
             </Tooltip>
-            <Tooltip content={t("stock.bestSellingTooltip")}> {/* Tooltip for Best Selling */}
+            <Tooltip content={t("stock.bestSellingTooltip")}>
+              {" "}
+              {/* Tooltip for Best Selling */}
               <ToggleGroupItem
                 value="bestSelling"
                 aria-label={t("stock.bestSelling")}
@@ -396,7 +404,9 @@ export const StockTable = () => {
                 {t("stock.bestSelling")}
               </ToggleGroupItem>
             </Tooltip>
-            <Tooltip content={t("stock.worstSellingTooltip")}> {/* Tooltip for Worst Selling */}
+            <Tooltip content={t("stock.worstSellingTooltip")}>
+              {" "}
+              {/* Tooltip for Worst Selling */}
               <ToggleGroupItem
                 value="worstSelling"
                 aria-label={t("stock.worstSelling")}
@@ -443,9 +453,15 @@ export const StockTable = () => {
                 <th className="px-4 py-3">{t("stock.bought")}</th>
                 <th className="px-4 py-3">{t("stock.selling")}</th>
                 <th className="px-4 py-3">{t("stock.profit", "Profit")}</th>
-                <th className="px-4 py-3">{t("stock.totalBought", "Total Bought")}</th>
-                <th className="px-4 py-3">{t("stock.totalSold", "Total Sold")}</th>
-                <th className="px-4 py-3">{t("stock.totalProfit", "Total Profit")}</th>
+                <th className="px-4 py-3">
+                  {t("stock.totalBought", "Total Bought")}
+                </th>
+                <th className="px-4 py-3">
+                  {t("stock.totalSold", "Total Sold")}
+                </th>
+                <th className="px-4 py-3">
+                  {t("stock.totalProfit", "Total Profit")}
+                </th>
                 <th className="px-4 py-3">{t("stock.actions", "Actions")}</th>
               </tr>
             </thead>
@@ -474,7 +490,7 @@ export const StockTable = () => {
                 </span>
               ) : (
                 <PaginationPrevious
-                  onClick={e => {
+                  onClick={(e) => {
                     e.preventDefault();
                     setCurrentPage(currentPage - 1);
                   }}
@@ -496,7 +512,7 @@ export const StockTable = () => {
                 items.push(
                   <PaginationItem key="start-ellipsis">
                     <PaginationEllipsis />
-                  </PaginationItem>
+                  </PaginationItem>,
                 );
               }
               for (let i = start; i <= end; i++) {
@@ -505,21 +521,21 @@ export const StockTable = () => {
                     <PaginationLink
                       isActive={i === currentPage}
                       href="#"
-                      onClick={e => {
+                      onClick={(e) => {
                         e.preventDefault();
                         setCurrentPage(i);
                       }}
                     >
                       {i}
                     </PaginationLink>
-                  </PaginationItem>
+                  </PaginationItem>,
                 );
               }
               if (end < totalPages) {
                 items.push(
                   <PaginationItem key="end-ellipsis">
                     <PaginationEllipsis />
-                  </PaginationItem>
+                  </PaginationItem>,
                 );
               }
               return items;
@@ -531,7 +547,7 @@ export const StockTable = () => {
                 </span>
               ) : (
                 <PaginationNext
-                  onClick={e => {
+                  onClick={(e) => {
                     e.preventDefault();
                     setCurrentPage(currentPage + 1);
                   }}

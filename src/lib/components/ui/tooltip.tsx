@@ -6,7 +6,11 @@ interface TooltipProps {
   className?: string;
 }
 
-export const Tooltip: React.FC<TooltipProps> = ({ content, children, className }) => {
+export const Tooltip: React.FC<TooltipProps> = ({
+  content,
+  children,
+  className,
+}) => {
   const [visible, setVisible] = useState(false);
   const timeoutRef = useRef<number | null>(null);
 
@@ -19,7 +23,13 @@ export const Tooltip: React.FC<TooltipProps> = ({ content, children, className }
   };
 
   return (
-    <span className="relative inline-block" onMouseEnter={show} onMouseLeave={hide} onFocus={show} onBlur={hide}>
+    <span
+      className="relative inline-block"
+      onMouseEnter={show}
+      onMouseLeave={hide}
+      onFocus={show}
+      onBlur={hide}
+    >
       {children}
       <span
         className={`pointer-events-none absolute left-1/2 -translate-x-1/2 -top-2 z-50 whitespace-nowrap px-2 py-1 rounded bg-black text-white text-xs opacity-0 scale-95 transition-all duration-200 ${
@@ -36,4 +46,4 @@ export const Tooltip: React.FC<TooltipProps> = ({ content, children, className }
 export default Tooltip;
 
 // TypeScript module declaration for import resolution
-export type { TooltipProps }; 
+export type { TooltipProps };

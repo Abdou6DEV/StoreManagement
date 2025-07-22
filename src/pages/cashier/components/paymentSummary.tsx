@@ -7,7 +7,7 @@ interface Props {
   clientName?: string;
   paymentAmount?: number;
   discount?: number;
-  paymentType?: 'none' | 'credit' | 'versement';
+  paymentType?: "none" | "credit" | "versement";
 }
 
 export default function PaymentSummary({
@@ -15,7 +15,7 @@ export default function PaymentSummary({
   clientName,
   paymentAmount = 0,
   discount = 0,
-  paymentType = 'none',
+  paymentType = "none",
 }: Props) {
   const { t, i18n } = useTranslation();
   const isRTL = i18n.language === "ar";
@@ -43,7 +43,7 @@ export default function PaymentSummary({
 
     function scroll() {
       if (!el || isPaused.current) return;
-      
+
       // Check if content needs scrolling
       if (el.scrollHeight <= el.clientHeight) {
         // Content fits without scrolling, cancel animation
@@ -53,7 +53,7 @@ export default function PaymentSummary({
         }
         return;
       }
-      
+
       // Smooth continuous scroll
       el.scrollTop += 0.5;
 
@@ -68,13 +68,13 @@ export default function PaymentSummary({
         const timeout1 = setTimeout(() => {
           // Then start the fade transition
           setIsTransitioning(true);
-          
+
           // After 1 second fade, reset to top
           const timeout2 = setTimeout(() => {
             if (el) {
               el.scrollTop = 0;
               setIsTransitioning(false);
-              
+
               // Wait 6 seconds at top before resuming scroll
               const timeout3 = setTimeout(() => {
                 animationRef.current = requestAnimationFrame(scroll);
@@ -95,22 +95,22 @@ export default function PaymentSummary({
       isPaused.current = true;
       // Stop any ongoing transition
       setIsTransitioning(false);
-      
+
       // Cancel animation
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
         animationRef.current = null;
       }
-      
+
       // Clear all transition timeouts
-      transitionTimeouts.current.forEach(timeout => clearTimeout(timeout));
+      transitionTimeouts.current.forEach((timeout) => clearTimeout(timeout));
       transitionTimeouts.current = [];
-      
+
       // Clear user interaction timeout
       if (userScrollTimeout.current) {
         clearTimeout(userScrollTimeout.current);
       }
-      
+
       // Set new timeout to resume
       userScrollTimeout.current = window.setTimeout(() => {
         isPaused.current = false;
@@ -124,9 +124,9 @@ export default function PaymentSummary({
     }
 
     // Add event listeners for actual user interaction
-    el.addEventListener('mousedown', handleUserInteraction);
-    el.addEventListener('touchstart', handleUserInteraction);
-    el.addEventListener('wheel', handleUserInteraction);
+    el.addEventListener("mousedown", handleUserInteraction);
+    el.addEventListener("touchstart", handleUserInteraction);
+    el.addEventListener("wheel", handleUserInteraction);
 
     // Only start scrolling if content is taller than container
     setTimeout(() => {
@@ -142,9 +142,9 @@ export default function PaymentSummary({
       if (userScrollTimeout.current) {
         clearTimeout(userScrollTimeout.current);
       }
-      el.removeEventListener('mousedown', handleUserInteraction);
-      el.removeEventListener('touchstart', handleUserInteraction);
-      el.removeEventListener('wheel', handleUserInteraction);
+      el.removeEventListener("mousedown", handleUserInteraction);
+      el.removeEventListener("touchstart", handleUserInteraction);
+      el.removeEventListener("wheel", handleUserInteraction);
     };
   }, [cart.length]);
 
@@ -171,16 +171,13 @@ export default function PaymentSummary({
       <div className="border-t border-black dark:border-white mb-2" />
 
       {/* === Scrollable Items === */}
-      <div
-        className="flex-1 overflow-y-auto space-y-[2px]"
-        ref={scrollRef}
-      >
+      <div className="flex-1 overflow-y-auto space-y-[2px]" ref={scrollRef}>
         {cart.length > 0
           ? cart.map((item) => (
               <div
                 key={item.id}
                 className={`flex justify-between border-b border-dashed border-primary/40 py-[2px] hover:bg-accent/40 rounded transition-opacity duration-1000 ${
-                  isTransitioning ? 'opacity-0' : 'opacity-100'
+                  isTransitioning ? "opacity-0" : "opacity-100"
                 }`}
               >
                 <span className="w-1/2 truncate font-medium">{item.name}</span>
@@ -215,7 +212,9 @@ export default function PaymentSummary({
           <span className={isRTL ? "w-3/4 text-right" : "w-3/4 text-left"}>
             {t("cashier.nbrItems", "Nbr Items")}
           </span>
-          <span className={isRTL ? "w-1/4 text-left" : "w-1/4 text-right"}>{nbrItems}</span>
+          <span className={isRTL ? "w-1/4 text-left" : "w-1/4 text-right"}>
+            {nbrItems}
+          </span>
         </div>
         {discount > 0 && (
           <div className="flex justify-between">
@@ -228,7 +227,7 @@ export default function PaymentSummary({
           </div>
         )}
         {/* Update logic: if paymentType === 'none', do not show credit/versement/paid rows */}
-        {paymentType === 'credit' && (
+        {paymentType === "credit" && (
           <>
             <div className="flex justify-between">
               <span className={isRTL ? "w-3/4 text-right" : "w-3/4 text-left"}>
@@ -240,7 +239,7 @@ export default function PaymentSummary({
             </div>
             <div className="flex justify-between">
               <span className={isRTL ? "w-3/4 text-right" : "w-3/4 text-left"}>
-                {t("cashier.credit", "Credit")}
+                {t("cashier.rest", "Remaining")}
               </span>
               <span className={isRTL ? "w-1/4 text-left" : "w-1/4 text-right"}>
                 {creditDisplay.toLocaleString()} DA
@@ -248,7 +247,7 @@ export default function PaymentSummary({
             </div>
           </>
         )}
-        {paymentType === 'versement' && paymentAmount > 0 && (
+        {paymentType === "versement" && paymentAmount > 0 && (
           <>
             <div className="flex justify-between">
               <span className={isRTL ? "w-3/4 text-right" : "w-3/4 text-left"}>
@@ -270,8 +269,12 @@ export default function PaymentSummary({
         )}
         {/* Always show total at the end */}
         <div className="flex justify-between font-bold">
-          <span className={isRTL ? "w-3/4 text-right" : "w-3/4 text-left"}>{t("cashier.total", "Total")}</span>
-          <span className={isRTL ? "w-1/4 text-left" : "w-1/4 text-right"}>{total.toLocaleString()} DA</span>
+          <span className={isRTL ? "w-3/4 text-right" : "w-3/4 text-left"}>
+            {t("cashier.total", "Total")}
+          </span>
+          <span className={isRTL ? "w-1/4 text-left" : "w-1/4 text-right"}>
+            {total.toLocaleString()} DA
+          </span>
         </div>
       </div>
     </div>

@@ -70,9 +70,9 @@ export default function CartTable({ cart, setCart }: Props) {
     };
 
     const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (e.key === 'Enter') {
+      if (e.key === "Enter") {
         handleInputBlur();
-      } else if (e.key === 'Escape') {
+      } else if (e.key === "Escape") {
         setEditValue(item.qty.toString());
         setIsEditing(false);
       }
@@ -91,7 +91,7 @@ export default function CartTable({ cart, setCart }: Props) {
         className="border-b border-muted transition-colors hover:bg-accent/40"
       >
         <td className="p-2 w-[30%]">{item.name}</td>
-        <td 
+        <td
           className="p-2 text-right w-[10%] cursor-pointer select-none"
           onDoubleClick={handleDoubleClick}
         >

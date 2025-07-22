@@ -83,7 +83,9 @@
     "discountError": "Discount cannot exceed total amount",
     "dueDate": "Due Date",
     "pickDate": "Pick a date",
-    "credit": "Credit",
+    "versement": "Installment",
+    "rest": "Remaining",
+    "paid": "Paid",
     "showHistory": "Show History"
   },
   "stock": {

@@ -16,7 +16,11 @@ const initialForm = {
   notes: "",
 };
 
-export default function AddClientForm({ openPanel, setOpenPanel, onClientAdded }: AddClientFormProps) {
+export default function AddClientForm({
+  openPanel,
+  setOpenPanel,
+  onClientAdded,
+}: AddClientFormProps) {
   const { t } = useTranslation();
   const [form, setForm] = useState(initialForm);
   const [loading, setLoading] = useState(false);
@@ -142,4 +146,4 @@ function Legend({ children }: { children: React.ReactNode }) {
       {children}
     </legend>
   );
-} 
+}

@@ -1,4 +1,4 @@
-import { prisma } from '../prismaClient';
+import { prisma } from "../prismaClient";
 
 export async function getAllClients() {
   return await prisma.client.findMany();
@@ -23,7 +23,7 @@ export async function getAllClientsWithTotalPurchases() {
         saleTotal -= sale.discount;
         totalPurchases += saleTotal;
       }
-      
+
       return { ...client, totalPurchases };
     }),
   );
@@ -49,4 +49,4 @@ export async function updateClient(
   data: { name?: string; phone?: string; address?: string; notes?: string },
 ) {
   return await prisma.client.update({ where: { id }, data });
-} 
+}

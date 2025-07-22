@@ -131,11 +131,17 @@ export default function Clients() {
 
   return (
     <main className="px-6 md:px-12 flex-1 space-y-4">
-      <AddClientForm openPanel={openPanel} setOpenPanel={setOpenPanel} onClientAdded={fetchClients} />
+      <AddClientForm
+        openPanel={openPanel}
+        setOpenPanel={setOpenPanel}
+        onClientAdded={fetchClients}
+      />
       <section className="bg-card border border-border rounded-xl shadow-sm p-6 space-y-5">
         <div className="flex items-center gap-3 mb-4">
           <Users className="w-7 h-7 text-red-500" />
-          <h1 className="text-2xl font-bold">{t("clients.title", "Clients List")}</h1>
+          <h1 className="text-2xl font-bold">
+            {t("clients.title", "Clients List")}
+          </h1>
         </div>
         {/* Items per page selector and search bar in the same row */}
         <div className="flex items-center gap-4 mb-4">
@@ -191,7 +197,7 @@ export default function Clients() {
                       </span>
                     ) : (
                       <PaginationPrevious
-                        onClick={e => {
+                        onClick={(e) => {
                           e.preventDefault();
                           setCurrentPage(currentPage - 1);
                         }}
@@ -213,7 +219,7 @@ export default function Clients() {
                       items.push(
                         <PaginationItem key="start-ellipsis">
                           <PaginationEllipsis />
-                        </PaginationItem>
+                        </PaginationItem>,
                       );
                     }
                     for (let i = start; i <= end; i++) {
@@ -222,33 +228,34 @@ export default function Clients() {
                           <PaginationLink
                             isActive={i === currentPage}
                             href="#"
-                            onClick={e => {
+                            onClick={(e) => {
                               e.preventDefault();
                               setCurrentPage(i);
                             }}
                           >
                             {i}
                           </PaginationLink>
-                        </PaginationItem>
+                        </PaginationItem>,
                       );
                     }
                     if (end < totalPages) {
                       items.push(
                         <PaginationItem key="end-ellipsis">
                           <PaginationEllipsis />
-                        </PaginationItem>
+                        </PaginationItem>,
                       );
                     }
                     return items;
                   })()}
                   <PaginationItem>
-                    {currentPage === totalPages || filteredClients.length === 0 ? (
+                    {currentPage === totalPages ||
+                    filteredClients.length === 0 ? (
                       <span className="opacity-50 pointer-events-none select-none">
                         <PaginationNext href="#" />
                       </span>
                     ) : (
                       <PaginationNext
-                        onClick={e => {
+                        onClick={(e) => {
                           e.preventDefault();
                           setCurrentPage(currentPage + 1);
                         }}

@@ -2,7 +2,13 @@ import React, { useEffect, useState } from "react";
 import { Input } from "../../lib/components/ui/input";
 import { Button } from "../../lib/components/ui/button";
 import { useTranslation } from "react-i18next";
-import { Shield, Loader2, AlertCircle, DollarSign, Package } from "lucide-react";
+import {
+  Shield,
+  Loader2,
+  AlertCircle,
+  DollarSign,
+  Package,
+} from "lucide-react";
 
 export default function AdministratorPage() {
   const { t } = useTranslation();
@@ -61,7 +67,10 @@ export default function AdministratorPage() {
               {t("admin.optionsList", "Options List")}
             </h1>
             <p className="text-muted-foreground text-sm mt-1">
-              {t("admin.settingsDesc", "Manage your store's operational settings below.")}
+              {t(
+                "admin.settingsDesc",
+                "Manage your store's operational settings below.",
+              )}
             </p>
           </div>
         </div>
@@ -72,18 +81,24 @@ export default function AdministratorPage() {
               <Package className="w-6 h-6 text-green-600" />
             </div>
             <div className="flex-1 w-full">
-              <label className="block text-base font-semibold mb-2" htmlFor="lowStock">
+              <label
+                className="block text-base font-semibold mb-2"
+                htmlFor="lowStock"
+              >
                 {t("admin.lowStockThreshold", "Low Stock Threshold")}
               </label>
               <p className="text-xs text-muted-foreground mb-3">
-                {t("admin.lowStockDesc", "Set the minimum quantity before a product is considered low in stock")}
+                {t(
+                  "admin.lowStockDesc",
+                  "Set the minimum quantity before a product is considered low in stock",
+                )}
               </p>
               <Input
                 id="lowStock"
                 type="number"
                 min={0}
                 value={lowStock}
-                onChange={e => setLowStock(Number(e.target.value))}
+                onChange={(e) => setLowStock(Number(e.target.value))}
                 className="w-40 text-lg"
                 disabled={loading || saving}
                 aria-label={t("admin.lowStockThreshold", "Low Stock Threshold")}
@@ -96,21 +111,21 @@ export default function AdministratorPage() {
               <DollarSign className="w-6 h-6 text-blue-600" />
             </div>
             <div className="flex-1 w-full">
-              <label className="block text-base font-semibold mb-2" htmlFor="storeCash">
+              <label
+                className="block text-base font-semibold mb-2"
+                htmlFor="storeCash"
+              >
                 {t("admin.storeCash", "Store Cash")}
               </label>
               <p className="text-xs text-muted-foreground mb-3">
-                {t(
-                  "admin.storeCashDesc",
-                  "Default cash amount in store"
-                )}
+                {t("admin.storeCashDesc", "Default cash amount in store")}
               </p>
               <Input
                 id="storeCash"
                 type="number"
                 min={0}
                 value={storeCash}
-                onChange={e => setStoreCash(Number(e.target.value))}
+                onChange={(e) => setStoreCash(Number(e.target.value))}
                 className="w-40 text-lg"
                 disabled={loading || saving}
                 aria-label={t("admin.storeCash", "Store Cash")}
@@ -156,4 +171,4 @@ export default function AdministratorPage() {
       </section>
     </main>
   );
-} 
+}

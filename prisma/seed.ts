@@ -1,17 +1,17 @@
-import { PrismaClient } from '@prisma/client';
-import { faker } from '@faker-js/faker';
+import { PrismaClient } from "@prisma/client";
+import { faker } from "@faker-js/faker";
 
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🌱 Starting seed...');
+  console.log("🌱 Starting seed...");
 
   // Generate unique categories using Faker's commerce departments
   const categories = Array.from(
     new Set(Array.from({ length: 10 }, () => faker.commerce.department())),
   );
 
-  console.log('📂 Creating categories...');
+  console.log("📂 Creating categories...");
   // Create categories
   for (const categoryName of categories) {
     await prisma.category.upsert({
@@ -23,7 +23,7 @@ async function main() {
     });
   }
 
-  console.log('📦 Generating products...');
+  console.log("📦 Generating products...");
   // Generate 1,000 realistic test products
   for (let i = 0; i < 1000; i++) {
     const category = faker.helpers.arrayElement(categories);
@@ -56,7 +56,7 @@ async function main() {
     }
   }
 
-  console.log('👥 Creating sample clients...');
+  console.log("👥 Creating sample clients...");
   // Generate some sample clients
   for (let i = 0; i < 50; i++) {
     await prisma.client.create({
@@ -64,18 +64,23 @@ async function main() {
         name: faker.person.fullName(),
         phone: faker.phone.number(),
         address: faker.location.streetAddress({ useFullAddress: true }),
-        notes: faker.helpers.maybe(() => faker.lorem.sentence(), { probability: 0.3 }),
+        notes: faker.helpers.maybe(() => faker.lorem.sentence(), {
+          probability: 0.3,
+        }),
       },
     });
   }
 
-  console.log('🛒 Creating sample sales...');
+  console.log("🛒 Creating sample sales...");
   // Generate some sample sales
   const clients = await prisma.client.findMany();
   const products = await prisma.product.findMany();
 
   for (let i = 0; i < 200; i++) {
-    const client = faker.helpers.maybe(() => faker.helpers.arrayElement(clients), { probability: 0.7 });
+    const client = faker.helpers.maybe(
+      () => faker.helpers.arrayElement(clients),
+      { probability: 0.7 },
+    );
     const saleItemsCount = faker.number.int({ min: 1, max: 5 });
 
     const sale = await prisma.sale.create({
@@ -101,7 +106,7 @@ async function main() {
     }
   }
 
-  console.log('✅ Seed completed successfully!');
+  console.log("✅ Seed completed successfully!");
   console.log(`📊 Created:`);
   console.log(`   - ${categories.length} categories`);
   console.log(`   - 1,000 products`);
@@ -114,7 +119,7 @@ main()
     await prisma.$disconnect();
   })
   .catch(async (e) => {
-    console.error('❌ Seed failed:', e);
+    console.error("❌ Seed failed:", e);
     await prisma.$disconnect();
     process.exit(1);
   });

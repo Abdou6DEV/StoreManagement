@@ -29,10 +29,14 @@ export default function CashierPage() {
   const [sessions, setSessions] = useState<CartItem[][]>(
     Array.from({ length: MAX_SESSIONS }, (): CartItem[] => []),
   );
-  const [discounts, setDiscounts] = useState<string[]>(Array.from({ length: MAX_SESSIONS }, () => ""));
+  const [discounts, setDiscounts] = useState<string[]>(
+    Array.from({ length: MAX_SESSIONS }, () => ""),
+  );
   const [discountError, setDiscountError] = useState<string | null>(null);
   const [paymentAmount, setPaymentAmount] = useState(0);
-  const [paymentType, setPaymentType] = useState<'none' | 'credit' | 'versement'>('none');
+  const [paymentType, setPaymentType] = useState<
+    "none" | "credit" | "versement"
+  >("none");
   const [paymentDate, setPaymentDate] = useState<Date | undefined>(undefined);
 
   // Ensure cart always exists
@@ -98,9 +102,14 @@ export default function CashierPage() {
 
   const handleFinish = async () => {
     if (cart.length === 0) return;
-    const cartTotal = cart.reduce((sum, item) => sum + item.qty * item.price, 0);
+    const cartTotal = cart.reduce(
+      (sum, item) => sum + item.qty * item.price,
+      0,
+    );
     if (Number(discount) > cartTotal) {
-      setDiscountError(t("cashier.discountError", "Discount cannot exceed total amount"));
+      setDiscountError(
+        t("cashier.discountError", "Discount cannot exceed total amount"),
+      );
       return;
     } else {
       setDiscountError(null);
@@ -144,7 +153,7 @@ export default function CashierPage() {
 
       // Add payment if payment info is present and valid
       if (
-        paymentType !== 'none' &&
+        paymentType !== "none" &&
         paymentAmount > 0 &&
         paymentDate &&
         saleClientId
@@ -155,7 +164,7 @@ export default function CashierPage() {
           paidAmount: paymentAmount,
           dueAt: paymentDate,
           paidAt: undefined, // Do not set paidAt for either credit or versement
-          type: paymentType === 'credit' ? 'CREDIT' : 'VERSEMENT',
+          type: paymentType === "credit" ? "CREDIT" : "VERSEMENT",
         });
       }
       updateSession([]);
@@ -229,7 +238,9 @@ export default function CashierPage() {
                 selectedProductIds.forEach((productId) => {
                   const product = allProducts.find((p) => p.id === productId);
                   if (product) {
-                    const existingItem = updatedCart.find((item) => item.id === product.id);
+                    const existingItem = updatedCart.find(
+                      (item) => item.id === product.id,
+                    );
                     if (existingItem) {
                       existingItem.qty += 1;
                     } else {
@@ -246,9 +257,7 @@ export default function CashierPage() {
               }}
             />
 
-            <div
-              className="flex-1 overflow-auto min-h-[0px] transition-all duration-300"
-            >
+            <div className="flex-1 overflow-auto min-h-[0px] transition-all duration-300">
               <CartTable
                 cart={cart}
                 setCart={(updater) => {

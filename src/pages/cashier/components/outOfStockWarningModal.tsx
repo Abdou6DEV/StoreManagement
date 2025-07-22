@@ -11,10 +11,16 @@ interface Props {
   onProceed: () => void;
 }
 
-const OutOfStockWarningModal: React.FC<Props> = ({ open, items, allProducts, onCancel, onProceed }) => {
+const OutOfStockWarningModal: React.FC<Props> = ({
+  open,
+  items,
+  allProducts,
+  onCancel,
+  onProceed,
+}) => {
   const { t } = useTranslation();
   if (!open) return null;
-  
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <div className="bg-white dark:bg-zinc-900 p-6 rounded-lg shadow-lg w-full max-w-md space-y-4">
@@ -26,7 +32,10 @@ const OutOfStockWarningModal: React.FC<Props> = ({ open, items, allProducts, onC
             const product = allProducts.find((p) => p.id === item.id);
             return (
               <li key={item.id}>
-                <span className="font-medium">{item.name}</span>: {t("cashier.requested", "Requested")}: {item.qty}, {t("cashier.available", "Available")}: {product ? product.quantity : 0}
+                <span className="font-medium">{item.name}</span>:{" "}
+                {t("cashier.requested", "Requested")}: {item.qty},{" "}
+                {t("cashier.available", "Available")}:{" "}
+                {product ? product.quantity : 0}
               </li>
             );
           })}
@@ -50,4 +59,4 @@ const OutOfStockWarningModal: React.FC<Props> = ({ open, items, allProducts, onC
   );
 };
 
-export default OutOfStockWarningModal; 
+export default OutOfStockWarningModal;

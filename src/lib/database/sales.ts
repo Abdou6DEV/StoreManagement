@@ -1,4 +1,4 @@
-import { prisma } from '../prismaClient';
+import { prisma } from "../prismaClient";
 
 export async function createSale(data: {
   clientId?: string;
@@ -33,16 +33,19 @@ export async function createSale(data: {
         },
       },
     });
-    
+
     return sale;
   });
 }
 
 export async function getProductSalesCounts() {
   const sales = await prisma.saleItem.groupBy({
-    by: ['productId'],
+    by: ["productId"],
     _sum: { quantity: true },
   });
 
-  return sales.map(s => ({ productId: s.productId, totalSold: s._sum.quantity || 0 }));
-} 
+  return sales.map((s) => ({
+    productId: s.productId,
+    totalSold: s._sum.quantity || 0,
+  }));
+}

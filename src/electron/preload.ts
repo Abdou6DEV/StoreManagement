@@ -49,7 +49,8 @@ contextBridge.exposeInMainWorld("api", {
     },
     options: {
       get: (key: string) => ipcRenderer.invoke("db:options:get", key),
-      set: (key: string, value: string) => ipcRenderer.invoke("db:options:set", { key, value }),
+      set: (key: string, value: string) =>
+        ipcRenderer.invoke("db:options:set", { key, value }),
     },
     payments: {
       create: (data: {
@@ -58,7 +59,7 @@ contextBridge.exposeInMainWorld("api", {
         paidAmount: number;
         dueAt: Date;
         paidAt?: Date;
-        type: 'CREDIT' | 'VERSEMENT';
+        type: "CREDIT" | "VERSEMENT";
       }) => ipcRenderer.invoke("db:payments:create", data),
     },
   },
@@ -81,7 +82,9 @@ declare global {
             data: Partial<Omit<Product, "id" | "createdAt" | "updatedAt">>,
           ) => Promise<Product>;
           delete: (id: string) => Promise<void>;
-          getSalesCounts: () => Promise<{ productId: string; totalSold: number }[]>;
+          getSalesCounts: () => Promise<
+            { productId: string; totalSold: number }[]
+          >;
         };
         categories: {
           getAll: () => Promise<Category[]>;
@@ -127,7 +130,7 @@ declare global {
             paidAmount: number;
             dueAt: Date;
             paidAt?: Date;
-            type: 'CREDIT' | 'VERSEMENT';
+            type: "CREDIT" | "VERSEMENT";
           }) => Promise<Payment>;
         };
       };

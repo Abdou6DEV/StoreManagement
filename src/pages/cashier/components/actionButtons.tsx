@@ -25,8 +25,8 @@ interface Props {
   cart: CartItem[];
   paymentAmount: number;
   setPaymentAmount: (val: number) => void;
-  paymentType: 'none' | 'credit' | 'versement';
-  setPaymentType: (type: 'none' | 'credit' | 'versement') => void;
+  paymentType: "none" | "credit" | "versement";
+  setPaymentType: (type: "none" | "credit" | "versement") => void;
   paymentDate: Date | undefined;
   setPaymentDate: (val: Date | undefined) => void;
 }
@@ -49,15 +49,21 @@ export default function ActionButtons({
   setPaymentDate,
 }: Props) {
   const { t, i18n } = useTranslation();
-  const [clientSuggestions, setClientSuggestions] = useState<ClientSuggestion[]>([]);
+  const [clientSuggestions, setClientSuggestions] = useState<
+    ClientSuggestion[]
+  >([]);
   const [draftDiscount, setDraftDiscount] = useState(discount);
   const [discountError, setDiscountError] = useState<string | null>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [paymentTypeLocal, setPaymentTypeLocal] = useState<'credit' | 'versement'>(paymentType === 'versement' ? 'versement' : 'credit');
+  const [paymentTypeLocal, setPaymentTypeLocal] = useState<
+    "credit" | "versement"
+  >(paymentType === "versement" ? "versement" : "credit");
   const [paymentClientName, setPaymentClientName] = useState("");
   const [paymentClientPhone, setPaymentClientPhone] = useState("");
   const [modalPaymentAmount, setModalPaymentAmount] = useState(0);
-  const [paymentDateLocal, setPaymentDateLocal] = useState<Date | undefined>(paymentDate);
+  const [paymentDateLocal, setPaymentDateLocal] = useState<Date | undefined>(
+    paymentDate,
+  );
   const [showAddClientModal, setShowAddClientModal] = useState(false);
   const [clientAddress, setClientAddress] = useState("");
   const [clientNotes, setClientNotes] = useState("");
@@ -66,7 +72,7 @@ export default function ActionButtons({
   useEffect(() => {
     setDraftDiscount(discount);
   }, [discount]);
-  
+
   const refreshClientSuggestions = () => {
     window.api.database.clients.getAll().then(setClientSuggestions);
   };
@@ -142,7 +148,10 @@ export default function ActionButtons({
       {/* === Row 1: All controls in a single row, responsive width === */}
       <div className="flex flex-row flex-wrap gap-2 items-center w-full">
         {/* Client input and history button */}
-        <div className="flex items-center relative min-w-40" style={{ flex: 1 }}>
+        <div
+          className="flex items-center relative min-w-40"
+          style={{ flex: 1 }}
+        >
           <input
             ref={inputRef}
             value={clientName}
@@ -166,7 +175,9 @@ export default function ActionButtons({
                 >
                   {c.name}
                   {c.phone && (
-                    <span className="ml-2 text-muted-foreground text-xs">{c.phone}</span>
+                    <span className="ml-2 text-muted-foreground text-xs">
+                      {c.phone}
+                    </span>
                   )}
                 </div>
               ))}
@@ -200,7 +211,12 @@ export default function ActionButtons({
           onClick={() => {
             // Validate discount before applying
             if (Number(draftDiscount) > cartTotal) {
-              setDiscountError(t("cashier.discountError", "Discount cannot exceed total amount"));
+              setDiscountError(
+                t(
+                  "cashier.discountError",
+                  "Discount cannot exceed total amount",
+                ),
+              );
               return;
             } else {
               setDiscountError(null);

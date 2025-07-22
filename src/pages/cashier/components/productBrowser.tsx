@@ -25,17 +25,17 @@ const ProductBrowser: React.FC<ProductBrowserProps> = ({
 
   const filteredProducts = useMemo(() => {
     let products = allProducts;
-    
+
     if (productFilter) {
       products = allProducts.filter((product) =>
-        product.name.toLowerCase().includes(productFilter.toLowerCase())
+        product.name.toLowerCase().includes(productFilter.toLowerCase()),
       );
     }
-    
+
     return products.sort((a, b) => {
-      const aHasBarcode = a.codebar && a.codebar.trim() !== '';
-      const bHasBarcode = b.codebar && b.codebar.trim() !== '';
-      
+      const aHasBarcode = a.codebar && a.codebar.trim() !== "";
+      const bHasBarcode = b.codebar && b.codebar.trim() !== "";
+
       if (aHasBarcode && !bHasBarcode) return 1;
       if (!aHasBarcode && bHasBarcode) return -1;
       return 0;
@@ -50,7 +50,7 @@ const ProductBrowser: React.FC<ProductBrowserProps> = ({
     if (visibleCount >= filteredProducts.length) return;
     setLoadingMore(true);
     setTimeout(() => {
-      setVisibleCount(prev => prev + 50);
+      setVisibleCount((prev) => prev + 50);
       setLoadingMore(false);
     }, 2000);
   };
@@ -102,7 +102,7 @@ const ProductBrowser: React.FC<ProductBrowserProps> = ({
           value={productFilter}
           onChange={(e) => setProductFilter(e.target.value)}
         />
-        <div 
+        <div
           className="flex-1 overflow-y-auto grid grid-cols-3 gap-2"
           onScroll={handleScroll}
           style={{ minHeight: 200 }}
@@ -114,7 +114,7 @@ const ProductBrowser: React.FC<ProductBrowserProps> = ({
                 setSelectedProducts((prev) =>
                   prev.includes(product.id)
                     ? prev.filter((id) => id !== product.id)
-                    : [...prev, product.id]
+                    : [...prev, product.id],
                 );
               }}
               className={`p-2 border rounded-md h-20 cursor-pointer transition-all flex flex-col ${
@@ -134,25 +134,25 @@ const ProductBrowser: React.FC<ProductBrowserProps> = ({
           ))}
 
           {/* Loading skeletons */}
-          {loadingMore && (
+          {loadingMore &&
             Array.from({ length: 100 }).map((_, index) => (
-              <div 
-                key={`skeleton-${index}`} 
+              <div
+                key={`skeleton-${index}`}
                 className="p-2 border rounded-md h-20 flex flex-col gap-2"
               >
                 <Skeleton className="h-4 w-3/4" />
                 <Skeleton className="h-3 w-1/2" />
                 <Skeleton className="h-3 w-1/3 mt-1" />
               </div>
-            ))
-          )}
+            ))}
 
           {/* Show message when all products are loaded */}
-          {visibleCount >= filteredProducts.length && filteredProducts.length > 0 && (
-            <div className="col-span-3 text-center py-4 text-sm text-muted-foreground">
-              {t("cashier.allProductsLoaded", "All products loaded")}
-            </div>
-          )}
+          {visibleCount >= filteredProducts.length &&
+            filteredProducts.length > 0 && (
+              <div className="col-span-3 text-center py-4 text-sm text-muted-foreground">
+                {t("cashier.allProductsLoaded", "All products loaded")}
+              </div>
+            )}
         </div>
         <button
           onClick={handleAddSelectedProducts}
