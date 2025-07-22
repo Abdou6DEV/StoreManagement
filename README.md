@@ -71,7 +71,7 @@ npm run make
 
 ```
 src/
-  pages/         # Main app pages (Dashboard, Customers, MainMenu, etc.)
+  pages/         # Main app pages (Dashboard, Clients, MainMenu, etc.)
   lib/           # Shared components, contexts, hooks, utils
   index.css      # Tailwind and global styles
 public/          # Static assets

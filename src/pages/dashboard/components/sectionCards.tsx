@@ -98,7 +98,7 @@ export function SectionCards() {
       icon: ReceiptIcon,
     },
     {
-      label: "Customer Credit",
+      label: "Client Credit",
       value: "$12,890",
       description: "Accounts receivable",
       trend: { value: "+$890", isPositive: true },

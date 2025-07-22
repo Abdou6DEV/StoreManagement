@@ -1,14 +1,13 @@
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { CheckCircle, Trash2, UserPlus } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import DiscountErrorModal from "./discountErrorModal";
 import { enUS, fr, arDZ } from "date-fns/locale";
 import type { Locale } from "date-fns/locale";
 import type { CartItem } from "../../cashier";
-import AddCreditModal from "./AddCreditModal";
-import AddClientModal from "./AddClientModal";
-import AddVersementModal from "./AddVersementModal";
-import { History } from "lucide-react";
+import AddCreditModal from "./addCreditModal";
+import AddClientModal from "./addClientModal";
+import AddVersementModal from "./addVersementModal";
 
 // Define a type for client suggestions
 interface ClientSuggestion {
@@ -182,7 +181,7 @@ export default function ActionButtons({
             }}
             onFocus={() => setShowSuggestions(true)}
             onBlur={handleBlur}
-            placeholder={t("cashier.customerName", "Customer name")}
+            placeholder={t("cashier.clientName", "Client name")}
             className="rounded-md border border-border px-3 py-2 text-sm bg-background min-w-[120px] w-full"
           />
           {/* Suggestions Dropdown (below input) */}

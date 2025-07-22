@@ -26,7 +26,7 @@ interface Client {
   totalPurchases?: number;
 }
 
-export default function Customers() {
+export default function Clients() {
   const { t } = useTranslation();
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
