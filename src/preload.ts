@@ -51,6 +51,16 @@ contextBridge.exposeInMainWorld("api", {
       get: (key: string) => ipcRenderer.invoke("db:options:get", key),
       set: (key: string, value: string) => ipcRenderer.invoke("db:options:set", { key, value }),
     },
+    payments: {
+      create: (data: {
+        saleId: string;
+        clientId: string;
+        paidAmount: number;
+        dueAt: Date;
+        paidAt?: Date;
+        type: 'CREDIT' | 'VERSEMENT';
+      }) => ipcRenderer.invoke("db:payments:create", data),
+    },
   },
   app: {
     getVersion: () => ipcRenderer.invoke("app:getVersion"),
@@ -109,6 +119,16 @@ declare global {
         options: {
           get: (key: string) => Promise<string | null>;
           set: (key: string, value: string) => Promise<void>;
+        };
+        payments: {
+          create: (data: {
+            saleId: string;
+            clientId: string;
+            paidAmount: number;
+            dueAt: Date;
+            paidAt?: Date;
+            type: 'CREDIT' | 'VERSEMENT';
+          }) => Promise<any>;
         };
       };
       app: {

@@ -7,7 +7,7 @@ interface Props {
   clientName?: string;
   paymentAmount?: number;
   discount?: number;
-  paymentType?: 'cash' | 'credit' | 'versement';
+  paymentType?: 'none' | 'credit' | 'versement';
 }
 
 export default function PaymentSummary({
@@ -15,7 +15,7 @@ export default function PaymentSummary({
   clientName,
   paymentAmount = 0,
   discount = 0,
-  paymentType = 'cash',
+  paymentType = 'none',
 }: Props) {
   const { t, i18n } = useTranslation();
   const isRTL = i18n.language === "ar";
@@ -227,16 +227,9 @@ export default function PaymentSummary({
             </span>
           </div>
         )}
-        {creditDisplay > 0 && paymentType === 'credit' && (
+        {/* Update logic: if paymentType === 'none', do not show credit/versement/paid rows */}
+        {paymentType === 'credit' && (
           <>
-            <div className="flex justify-between">
-              <span className={isRTL ? "w-3/4 text-right" : "w-3/4 text-left"}>
-                {t("cashier.credit", "Credit")}
-              </span>
-              <span className={isRTL ? "w-1/4 text-left" : "w-1/4 text-right"}>
-                {creditDisplay.toLocaleString()} DA
-              </span>
-            </div>
             <div className="flex justify-between">
               <span className={isRTL ? "w-3/4 text-right" : "w-3/4 text-left"}>
                 {t("cashier.paid", "Paid")}
@@ -245,17 +238,35 @@ export default function PaymentSummary({
                 {paymentAmount.toLocaleString()} DA
               </span>
             </div>
+            <div className="flex justify-between">
+              <span className={isRTL ? "w-3/4 text-right" : "w-3/4 text-left"}>
+                {t("cashier.credit", "Credit")}
+              </span>
+              <span className={isRTL ? "w-1/4 text-left" : "w-1/4 text-right"}>
+                {creditDisplay.toLocaleString()} DA
+              </span>
+            </div>
           </>
         )}
         {paymentType === 'versement' && paymentAmount > 0 && (
-          <div className="flex justify-between">
-            <span className={isRTL ? "w-3/4 text-right" : "w-3/4 text-left"}>
-              {t("cashier.versement", "Versement")}
-            </span>
-            <span className={isRTL ? "w-1/4 text-left" : "w-1/4 text-right"}>
-              {paymentAmount.toLocaleString()} DA
-            </span>
-          </div>
+          <>
+            <div className="flex justify-between">
+              <span className={isRTL ? "w-3/4 text-right" : "w-3/4 text-left"}>
+                {t("cashier.versement", "Versement")}
+              </span>
+              <span className={isRTL ? "w-1/4 text-left" : "w-1/4 text-right"}>
+                {paymentAmount.toLocaleString()} DA
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className={isRTL ? "w-3/4 text-right" : "w-3/4 text-left"}>
+                {t("cashier.rest", "Rest")}
+              </span>
+              <span className={isRTL ? "w-1/4 text-left" : "w-1/4 text-right"}>
+                {creditDisplay.toLocaleString()} DA
+              </span>
+            </div>
+          </>
         )}
         {/* Always show total at the end */}
         <div className="flex justify-between font-bold">

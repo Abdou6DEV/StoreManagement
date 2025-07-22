@@ -32,7 +32,8 @@ export default function CashierPage() {
   const [discounts, setDiscounts] = useState<string[]>(Array.from({ length: MAX_SESSIONS }, () => ""));
   const [discountError, setDiscountError] = useState<string | null>(null);
   const [paymentAmount, setPaymentAmount] = useState(0);
-  const [paymentType, setPaymentType] = useState<'cash' | 'credit' | 'versement'>('cash');
+  const [paymentType, setPaymentType] = useState<'none' | 'credit' | 'versement'>('none');
+  const [paymentDate, setPaymentDate] = useState<Date | undefined>(undefined);
 
   // Ensure cart always exists
   const cart: CartItem[] = useMemo(() => {
@@ -92,6 +93,7 @@ export default function CashierPage() {
     setClientName("");
     setClientId(null);
     setPaymentAmount(0); // Reset payment on clear
+    setPaymentDate(undefined);
   };
 
   const handleFinish = async () => {
@@ -116,6 +118,7 @@ export default function CashierPage() {
     }
     await proceedWithSale();
     setPaymentAmount(0); // Reset payment after sale
+    setPaymentDate(undefined);
   };
 
   // Extracted sale logic for reuse
@@ -129,7 +132,7 @@ export default function CashierPage() {
         saleClientId = client.id;
         setClientId(client.id);
       }
-      await window.api.database.sales.create({
+      const sale = await window.api.database.sales.create({
         clientId: saleClientId || undefined,
         items: cart.map((item) => ({
           productId: item.id,
@@ -138,6 +141,23 @@ export default function CashierPage() {
         })),
         discount: Number(discount) || 0,
       });
+
+      // Add payment if payment info is present and valid
+      if (
+        paymentType !== 'none' &&
+        paymentAmount > 0 &&
+        paymentDate &&
+        saleClientId
+      ) {
+        await window.api.database.payments.create({
+          saleId: sale.id,
+          clientId: saleClientId,
+          paidAmount: paymentAmount,
+          dueAt: paymentDate,
+          paidAt: undefined, // Do not set paidAt for either credit or versement
+          type: paymentType === 'credit' ? 'CREDIT' : 'VERSEMENT',
+        });
+      }
       updateSession([]);
       setClientName("");
       setClientId(null);
@@ -282,6 +302,8 @@ export default function CashierPage() {
               setPaymentAmount={setPaymentAmount}
               paymentType={paymentType}
               setPaymentType={setPaymentType}
+              paymentDate={paymentDate}
+              setPaymentDate={setPaymentDate}
             />
           </div>
         </section>

@@ -25,8 +25,10 @@ interface Props {
   cart: CartItem[];
   paymentAmount: number;
   setPaymentAmount: (val: number) => void;
-  paymentType: 'cash' | 'credit' | 'versement';
-  setPaymentType: (type: 'cash' | 'credit' | 'versement') => void;
+  paymentType: 'none' | 'credit' | 'versement';
+  setPaymentType: (type: 'none' | 'credit' | 'versement') => void;
+  paymentDate: Date | undefined;
+  setPaymentDate: (val: Date | undefined) => void;
 }
 
 export default function ActionButtons({
@@ -43,6 +45,8 @@ export default function ActionButtons({
   setPaymentAmount,
   paymentType,
   setPaymentType,
+  paymentDate,
+  setPaymentDate,
 }: Props) {
   const { t, i18n } = useTranslation();
   const [clientSuggestions, setClientSuggestions] = useState<ClientSuggestion[]>([]);
@@ -53,7 +57,7 @@ export default function ActionButtons({
   const [paymentClientName, setPaymentClientName] = useState("");
   const [paymentClientPhone, setPaymentClientPhone] = useState("");
   const [modalPaymentAmount, setModalPaymentAmount] = useState(0);
-  const [paymentDate, setPaymentDate] = useState<Date | undefined>(undefined);
+  const [paymentDateLocal, setPaymentDateLocal] = useState<Date | undefined>(paymentDate);
   const [showAddClientModal, setShowAddClientModal] = useState(false);
   const [clientAddress, setClientAddress] = useState("");
   const [clientNotes, setClientNotes] = useState("");
@@ -122,6 +126,16 @@ export default function ActionButtons({
       setPaymentClientPhone("");
     }
   }, [clientName, clientSuggestions, showPaymentModal]);
+
+  // Keep local payment date in sync with prop
+  useEffect(() => {
+    setPaymentDateLocal(paymentDate);
+  }, [paymentDate]);
+
+  // When local payment date changes (from modal), update parent
+  useEffect(() => {
+    setPaymentDate(paymentDateLocal);
+  }, [paymentDateLocal, setPaymentDate]);
 
   return (
     <div className="flex flex-col gap-4">
@@ -203,7 +217,9 @@ export default function ActionButtons({
       <div className="flex gap-3">
         <button
           className="flex-1 rounded-xl bg-blue-500 text-white px-5 py-3 text-base font-medium shadow-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 transition duration-150 disabled:bg-blue-300 disabled:text-white/70 disabled:cursor-not-allowed"
-          onClick={() => setShowPaymentModal(true)}
+          onClick={() => {
+            setShowPaymentModal(true);
+          }}
           disabled={!clientName.trim()}
         >
           {t("cashier.addPayment", "Add Payment")}
@@ -236,19 +252,18 @@ export default function ActionButtons({
         open={showPaymentModal}
         onClose={() => setShowPaymentModal(false)}
         paymentType={paymentTypeLocal}
-        setPaymentType={(type: 'credit' | 'versement') => {
-          setPaymentTypeLocal(type);
-          setPaymentType(type);
-        }}
+        setPaymentType={setPaymentTypeLocal} // Only update local state
         paymentAmount={modalPaymentAmount}
-        setPaymentAmount={setModalPaymentAmount}
-        paymentDate={paymentDate}
-        setPaymentDate={setPaymentDate}
+        setPaymentAmount={setModalPaymentAmount} // Only update local state
+        paymentDate={paymentDateLocal}
+        setPaymentDate={setPaymentDateLocal} // Only update local state
         cart={cart}
         cartTotal={cartTotal}
         t={t as typeof t}
         onConfirm={() => {
+          setPaymentType(paymentTypeLocal);
           setPaymentAmount(modalPaymentAmount);
+          setPaymentDate(paymentDateLocal);
           setShowPaymentModal(false);
         }}
       />

@@ -125,4 +125,8 @@ function setupDatabaseHandlers() {
     await DatabaseService.setOption(key, value);
     return true;
   });
+
+  ipcMain.handle("db:payments:create", async (_event, data) => {
+    return await DatabaseService.createPayment(data);
+  });
 }
