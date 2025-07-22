@@ -1,10 +1,6 @@
-import React from "react";
 import { Users } from "lucide-react";
 import { Button } from "../../../lib/components/ui/button";
-import { Popover, PopoverTrigger, PopoverContent } from "../../../lib/components/ui/popover";
-import { Calendar } from "../../../lib/components/ui/calendar";
 import type { CartItem } from "../index";
-import type { Locale } from "date-fns/locale";
 import type { TFunction } from "i18next";
 
 export default function AddVersementModal({
@@ -18,12 +14,9 @@ export default function AddVersementModal({
   setPaymentAmount,
   versementDate,
   setVersementDate,
-  calendarOpen,
-  setCalendarOpen,
   cart,
   cartTotal,
   t,
-  calendarLocale,
   onConfirm
 }: {
   open: boolean;
@@ -36,12 +29,9 @@ export default function AddVersementModal({
   setPaymentAmount: (val: number) => void;
   versementDate: Date | undefined;
   setVersementDate: (val: Date | undefined) => void;
-  calendarOpen: boolean;
-  setCalendarOpen: (val: boolean) => void;
   cart: CartItem[];
   cartTotal: number;
   t: TFunction;
-  calendarLocale: Locale;
   onConfirm: () => void;
 }) {
   if (!open) return null;
@@ -89,25 +79,14 @@ export default function AddVersementModal({
             </div>
             <div>
               <label className="block text-sm font-medium mb-1 text-muted-foreground">{t("cashier.versementDate", "Versement Date")}</label>
-              <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={"w-full justify-start text-left font-normal h-11 px-3 " + (!versementDate ? "text-muted-foreground" : "")}
-                  >
-                    {versementDate ? versementDate.toLocaleDateString() : t("cashier.pickDate", "Pick a date")}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="p-0 w-auto" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={versementDate}
-                    onSelect={setVersementDate}
-                    initialFocus
-                    locale={calendarLocale}
-                  />
-                </PopoverContent>
-              </Popover>
+              <input
+                type="date"
+                value={versementDate ? versementDate.toISOString().substring(0, 10) : ""}
+                onChange={e => {
+                  setVersementDate(e.target.value ? new Date(e.target.value) : undefined);
+                }}
+                className="w-full rounded-md border border-border px-3 py-2 h-11 text-sm bg-background focus:outline-none focus:ring-1 focus:ring-primary/50"
+              />
             </div>
           </div>
         </div>

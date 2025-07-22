@@ -2,8 +2,6 @@ import { useState, useEffect, useRef } from "react";
 import { CheckCircle, Trash2, UserPlus } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import DiscountErrorModal from "./discountErrorModal";
-import { enUS, fr, arDZ } from "date-fns/locale";
-import type { Locale } from "date-fns/locale";
 import type { CartItem } from "../../cashier";
 import AddCreditModal from "./addCreditModal";
 import AddClientModal from "./addClientModal";
@@ -157,14 +155,6 @@ export default function ActionButtons({
       setVersementClientPhone("");
     }
   }, [clientName, clientSuggestions, showVersementModal]);
-
-  // Locale mapping for calendar
-  const localeMap: Record<string, Locale> = {
-    en: enUS,
-    fr: fr,
-    ar: arDZ,
-  };
-  const calendarLocale = localeMap[i18n.language] || enUS;
 
   return (
     <div className="flex flex-col gap-4">
@@ -322,12 +312,9 @@ export default function ActionButtons({
         setPaymentAmount={setModalPaymentAmount}
         creditDate={creditDate}
         setCreditDate={setCreditDate}
-        calendarOpen={calendarOpen}
-        setCalendarOpen={setCalendarOpen}
         cart={cart}
         cartTotal={cartTotal}
         t={t as typeof t}
-        calendarLocale={calendarLocale}
         onConfirm={() => {
           setPaymentAmount(modalPaymentAmount);
           setShowCreditModal(false);
@@ -346,12 +333,9 @@ export default function ActionButtons({
         setPaymentAmount={setModalVersementAmount}
         versementDate={versementDate}
         setVersementDate={setVersementDate}
-        calendarOpen={calendarVersementOpen}
-        setCalendarOpen={setCalendarVersementOpen}
         cart={cart}
         cartTotal={cartTotal}
         t={t as typeof t}
-        calendarLocale={calendarLocale}
         onConfirm={() => {
           setPaymentAmount(modalVersementAmount);
           setShowVersementModal(false);
