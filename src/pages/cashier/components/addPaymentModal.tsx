@@ -1,70 +1,68 @@
-import { Users } from "lucide-react";
+import { Wallet } from "lucide-react";
 import { Button } from "../../../lib/components/ui/button";
 import type { CartItem } from "../index";
 import type { TFunction } from "i18next";
+import React from "react";
 
-export default function AddCreditModal({
-  open,
-  onClose,
-  clientName,
-  setClientName,
-  clientPhone,
-  setClientPhone,
-  paymentAmount,
-  setPaymentAmount,
-  creditDate,
-  setCreditDate,
-  cart,
-  cartTotal,
-  t,
-  onConfirm
-}: {
+interface AddPaymentModalProps {
   open: boolean;
   onClose: () => void;
-  clientName: string;
-  setClientName: (val: string) => void;
-  clientPhone: string;
-  setClientPhone: (val: string) => void;
+  paymentType: 'credit' | 'versement';
+  setPaymentType: (type: 'credit' | 'versement') => void;
   paymentAmount: number;
   setPaymentAmount: (val: number) => void;
-  creditDate: Date | undefined;
-  setCreditDate: (val: Date | undefined) => void;
+  paymentDate: Date | undefined;
+  setPaymentDate: (val: Date | undefined) => void;
   cart: CartItem[];
   cartTotal: number;
   t: TFunction;
   onConfirm: () => void;
-}) {
+}
+
+const AddPaymentModal: React.FC<AddPaymentModalProps> = ({
+  open,
+  onClose,
+  paymentType,
+  setPaymentType,
+  paymentAmount,
+  setPaymentAmount,
+  paymentDate,
+  setPaymentDate,
+  cart,
+  cartTotal,
+  t,
+  onConfirm,
+}) => {
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <div className="bg-card border border-border rounded-xl shadow-lg w-full max-w-md p-6 space-y-6 animate-in fade-in duration-300">
         <div className="flex items-center gap-3 mb-2">
-          <Users className="w-6 h-6 text-red-600" />
+          <Wallet className="w-6 h-6 text-blue-500" />
           <h2 className="text-xl font-bold text-foreground">
-            {t("cashier.addCredit", "Add Credit")}
+            {paymentType === 'credit'
+              ? t("cashier.addCredit", "Add Credit")
+              : t("cashier.addVersement", "Add Versement")}
           </h2>
         </div>
+        {/* Payment type selector */}
+        <div className="flex gap-2 mb-2">
+          <Button
+            variant={paymentType === 'credit' ? 'default' : 'outline'}
+            onClick={() => setPaymentType('credit')}
+            className="flex-1"
+          >
+            {t("cashier.credit", "Credit")}
+          </Button>
+          <Button
+            variant={paymentType === 'versement' ? 'default' : 'outline'}
+            onClick={() => setPaymentType('versement')}
+            className="flex-1"
+          >
+            {t("cashier.versement", "Versement")}
+          </Button>
+        </div>
         <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-1 text-muted-foreground">{t("cashier.clientName", "Client Name")}</label>
-              <input
-                value={clientName}
-                onChange={e => setClientName(e.target.value)}
-                placeholder={t("cashier.clientName", "Client Name")}
-                className="w-full rounded-md border border-border px-3 py-2 h-11 text-sm bg-background focus:outline-none focus:ring-1 focus:ring-primary/50"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1 text-muted-foreground">{t("cashier.phoneOptional", "Phone Number (optional)")}</label>
-              <input
-                value={clientPhone}
-                onChange={e => setClientPhone(e.target.value)}
-                placeholder={t("cashier.phoneOptional", "Phone Number (optional)")}
-                className="w-full rounded-md border border-border px-3 py-2 h-11 text-sm bg-background focus:outline-none focus:ring-1 focus:ring-primary/50"
-              />
-            </div>
-          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium mb-1 text-muted-foreground">{t("cashier.paymentAmount", "Payment Amount")}</label>
@@ -78,12 +76,14 @@ export default function AddCreditModal({
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1 text-muted-foreground">{t("cashier.dueDate", "Due Date")}</label>
+              <label className="block text-sm font-medium mb-1 text-muted-foreground">
+                {t("cashier.dueDate", "Due Date")}
+              </label>
               <input
                 type="date"
-                value={creditDate ? creditDate.toISOString().substring(0, 10) : ""}
+                value={paymentDate ? paymentDate.toISOString().substring(0, 10) : ""}
                 onChange={e => {
-                  setCreditDate(e.target.value ? new Date(e.target.value) : undefined);
+                  setPaymentDate(e.target.value ? new Date(e.target.value) : undefined);
                 }}
                 className="w-full rounded-md border border-border px-3 py-2 h-11 text-sm bg-background focus:outline-none focus:ring-1 focus:ring-primary/50"
               />
@@ -91,7 +91,7 @@ export default function AddCreditModal({
           </div>
         </div>
         <hr />
-        {/* Improved Info summary */}
+        {/* Info summary */}
         <div className="grid grid-cols-2 gap-4 text-sm text-muted-foreground">
           <div>
             <span className="font-medium text-foreground">{t("cashier.itemsCount", "Number of items")}:</span> {cart.length}
@@ -118,7 +118,7 @@ export default function AddCreditModal({
           </Button>
           <Button
             onClick={onConfirm}
-            disabled={paymentAmount <= 0 || !creditDate}
+            disabled={paymentAmount <= 0 || !paymentDate}
           >
             {t("cashier.confirm", "Confirm")}
           </Button>
@@ -126,4 +126,6 @@ export default function AddCreditModal({
       </div>
     </div>
   );
-} 
+};
+
+export default AddPaymentModal; 

@@ -94,5 +94,5 @@ model Payment {
   sale   Sale   @relation(fields: [saleId], references: [id])
   client Client @relation(fields: [clientId], references: [id])
 
-  @@id([saleId, clientId, type])
+  @@id([saleId, clientId])
 }

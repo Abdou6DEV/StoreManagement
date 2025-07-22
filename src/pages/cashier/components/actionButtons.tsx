@@ -3,9 +3,7 @@ import { CheckCircle, Trash2, UserPlus } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import DiscountErrorModal from "./discountErrorModal";
 import type { CartItem } from "../../cashier";
-import AddCreditModal from "./addCreditModal";
-import AddClientModal from "./addClientModal";
-import AddVersementModal from "./addVersementModal";
+import AddPaymentModal from "./addPaymentModal";
 
 // Define a type for client suggestions
 interface ClientSuggestion {
@@ -52,27 +50,13 @@ export default function ActionButtons({
   const [clientSuggestions, setClientSuggestions] = useState<ClientSuggestion[]>([]);
   const [draftDiscount, setDraftDiscount] = useState(discount);
   const [discountError, setDiscountError] = useState<string | null>(null);
-  const [showCreditModal, setShowCreditModal] = useState(false);
-  const [creditClientName, setCreditClientName] = useState("");
-  const [creditClientPhone, setCreditClientPhone] = useState("");
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [paymentType, setPaymentType] = useState<'credit' | 'versement'>('credit');
+  const [paymentClientName, setPaymentClientName] = useState("");
+  const [paymentClientPhone, setPaymentClientPhone] = useState("");
   const [modalPaymentAmount, setModalPaymentAmount] = useState(0);
-  const [creditDate, setCreditDate] = useState<Date | undefined>(undefined);
+  const [paymentDate, setPaymentDate] = useState<Date | undefined>(undefined);
   const [calendarOpen, setCalendarOpen] = useState(false);
-
-  // Add state for AddClientModal
-  const [showAddClientModal, setShowAddClientModal] = useState(false);
-  const [addClientName, setAddClientName] = useState("");
-  const [addClientPhone, setAddClientPhone] = useState("");
-  const [addClientAddress, setAddClientAddress] = useState("");
-  const [addClientNotes, setAddClientNotes] = useState("");
-
-  // Add state for AddVersementModal
-  const [showVersementModal, setShowVersementModal] = useState(false);
-  const [versementClientName, setVersementClientName] = useState("");
-  const [versementClientPhone, setVersementClientPhone] = useState("");
-  const [modalVersementAmount, setModalVersementAmount] = useState(0);
-  const [versementDate, setVersementDate] = useState<Date | undefined>(undefined);
-  const [calendarVersementOpen, setCalendarVersementOpen] = useState(false);
 
   // Keep draftDiscount in sync with prop when session changes
   useEffect(() => {
@@ -127,34 +111,17 @@ export default function ActionButtons({
     if (clientName && clientSuggestions.length > 0) {
       const match = clientSuggestions.find((c) => c.name === clientName);
       if (match) {
-        setCreditClientName(match.name);
-        setCreditClientPhone(match.phone || "");
+        setPaymentClientName(match.name);
+        setPaymentClientPhone(match.phone || "");
       } else {
-        setCreditClientName(clientName);
-        setCreditClientPhone("");
+        setPaymentClientName(clientName);
+        setPaymentClientPhone("");
       }
     } else {
-      setCreditClientName("");
-      setCreditClientPhone("");
+      setPaymentClientName("");
+      setPaymentClientPhone("");
     }
-  }, [clientName, clientSuggestions, showCreditModal]);
-
-  // Helper to auto-fill client info if selected (for versement)
-  useEffect(() => {
-    if (clientName && clientSuggestions.length > 0) {
-      const match = clientSuggestions.find((c) => c.name === clientName);
-      if (match) {
-        setVersementClientName(match.name);
-        setVersementClientPhone(match.phone || "");
-      } else {
-        setVersementClientName(clientName);
-        setVersementClientPhone("");
-      }
-    } else {
-      setVersementClientName("");
-      setVersementClientPhone("");
-    }
-  }, [clientName, clientSuggestions, showVersementModal]);
+  }, [clientName, clientSuggestions, showPaymentModal]);
 
   return (
     <div className="flex flex-col gap-4">
@@ -194,7 +161,7 @@ export default function ActionButtons({
         </div>
         {/* Add Client Button */}
         <button
-          onClick={() => setShowAddClientModal(true)}
+          onClick={() => setShowPaymentModal(true)}
           className="flex items-center px-3 py-2 rounded-md bg-muted text-foreground hover:bg-primary hover:text-primary-foreground transition text-sm border border-border ml-1 flex-shrink min-w-0"
         >
           {t("cashier.addNewClient", "Add New Client")}
@@ -232,19 +199,14 @@ export default function ActionButtons({
         </button>
       </div>
 
-      {/* === Row 2: Credit / Versement === */}
+      {/* === Row 2: Payment === */}
       <div className="flex gap-3">
         <button
-          className="flex-1 rounded-md bg-muted hover:bg-accent px-3 py-2 text-sm font-medium border border-border"
-          onClick={() => setShowCreditModal(true)}
+          className="flex-1 rounded-xl bg-blue-500 text-white px-5 py-3 text-base font-medium shadow-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 transition duration-150 disabled:bg-blue-300 disabled:text-white/70 disabled:cursor-not-allowed"
+          onClick={() => setShowPaymentModal(true)}
+          disabled={!clientName.trim()}
         >
-          {t("cashier.addCredit", "Add Credit")}
-        </button>
-        <button
-          className="flex-1 rounded-md bg-muted hover:bg-accent px-3 py-2 text-sm font-medium border border-border"
-          onClick={() => setShowVersementModal(true)}
-        >
-          {t("cashier.addVersement", "Add Versement")}
+          {t("cashier.addPayment", "Add Payment")}
         </button>
       </div>
 
@@ -269,76 +231,22 @@ export default function ActionButtons({
         </button>
       </div>
 
-      {/* === Add Client Modal === */}
-      <AddClientModal
-        open={showAddClientModal}
-        onClose={() => setShowAddClientModal(false)}
-        clientName={addClientName}
-        setClientName={setAddClientName}
-        clientPhone={addClientPhone}
-        setClientPhone={setAddClientPhone}
-        clientAddress={addClientAddress}
-        setClientAddress={setAddClientAddress}
-        clientNotes={addClientNotes}
-        setClientNotes={setAddClientNotes}
-        t={t as typeof t}
-        onConfirm={async () => {
-          if (addClientName.trim()) {
-            await onAddClient(
-              addClientName.trim(),
-              addClientPhone.trim(),
-              addClientAddress.trim(),
-              addClientNotes.trim(),
-            );
-            setShowAddClientModal(false);
-            setAddClientName("");
-            setAddClientPhone("");
-            setAddClientAddress("");
-            setAddClientNotes("");
-            refreshClientSuggestions();
-          }
-        }}
-      />
-
-      {/* === Add Credit Modal === */}
-      <AddCreditModal
-        open={showCreditModal}
-        onClose={() => setShowCreditModal(false)}
-        clientName={creditClientName}
-        setClientName={setCreditClientName}
-        clientPhone={creditClientPhone}
-        setClientPhone={setCreditClientPhone}
+      {/* === Add Payment Modal === */}
+      <AddPaymentModal
+        open={showPaymentModal}
+        onClose={() => setShowPaymentModal(false)}
+        paymentType={paymentType}
+        setPaymentType={setPaymentType}
         paymentAmount={modalPaymentAmount}
         setPaymentAmount={setModalPaymentAmount}
-        creditDate={creditDate}
-        setCreditDate={setCreditDate}
+        paymentDate={paymentDate}
+        setPaymentDate={setPaymentDate}
         cart={cart}
         cartTotal={cartTotal}
         t={t as typeof t}
         onConfirm={() => {
           setPaymentAmount(modalPaymentAmount);
-          setShowCreditModal(false);
-        }}
-      />
-
-      {/* === Add Versement Modal === */}
-      <AddVersementModal
-        open={showVersementModal}
-        onClose={() => setShowVersementModal(false)}
-        clientName={versementClientName}
-        setClientName={setVersementClientName}
-        clientPhone={versementClientPhone}
-        setClientPhone={setVersementClientPhone}
-        paymentAmount={modalVersementAmount}
-        setPaymentAmount={setModalVersementAmount}
-        versementDate={versementDate}
-        setVersementDate={setVersementDate}
-        cart={cart}
-        cartTotal={cartTotal}
-        t={t as typeof t}
-        onConfirm={() => {
-          setPaymentAmount(modalVersementAmount);
-          setShowVersementModal(false);
+          setShowPaymentModal(false);
         }}
       />
 
