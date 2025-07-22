@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import type { Product } from "@prisma/client";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ShoppingCart } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import ProductSearch from "./components/productSearch";
 import CartTable from "./components/cartTable";
@@ -210,25 +210,18 @@ export default function CashierPage() {
                 refreshKey={productRefreshKey}
               />
               <button
-                onClick={() => setShowProductBrowser(!showProductBrowser)}
-                className="flex h-8 p-1 mt-6 text-sm font-semibold border-1 border-border items-center rounded-md bg-muted/40 hover:bg-muted hover:text-primary transition"
+                onClick={() => setShowProductBrowser(true)}
+                className="flex h-8 w-8 p-1 mt-6 text-sm font-semibold border-1 border-border items-center justify-center rounded-md bg-muted/40 hover:bg-muted hover:text-primary transition"
+                aria-label={t("cashier.browseProducts", "Browse Products")}
               >
-                {showProductBrowser ? (
-                  <>
-                    <ChevronUp className="w-4 h-4" />
-                  </>
-                ) : (
-                  <>
-                    <ChevronDown className="w-4 h-4" />
-                  </>
-                )}
+                <ShoppingCart className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Product Browser as a separate component */}
+            {/* Product Browser as a modal */}
             <ProductBrowser
               allProducts={allProducts}
-              show={showProductBrowser}
+              open={showProductBrowser}
               onClose={() => setShowProductBrowser(false)}
               onAddSelectedProducts={(selectedProductIds) => {
                 // Add selected products to cart
@@ -254,9 +247,7 @@ export default function CashierPage() {
             />
 
             <div
-              className={`flex-1 overflow-auto min-h-[0px] transition-all duration-300 ${
-                showProductBrowser ? "max-h-[0vh]" : "max-h-[70vh]"
-              }`}
+              className="flex-1 overflow-auto min-h-[0px] transition-all duration-300"
             >
               <CartTable
                 cart={cart}
