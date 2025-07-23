@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Skeleton } from "../../../lib/components/ui/skeleton";
 import { useStock } from "../../../lib/contexts/stockContext";
 import type { CartItem } from "../index";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface ProductBrowserProps {
   allProducts: Product[];
@@ -34,6 +35,39 @@ const ProductBrowser: React.FC<ProductBrowserProps> = ({
   const incrementDecrementTimer = useRef<NodeJS.Timeout | null>(null);
   const currentProductId = useRef<string | null>(null);
   const currentAction = useRef<'inc' | 'dec' | null>(null);
+
+  const tabsContainerRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  const scrollTabs = (direction: 'left' | 'right') => {
+    const container = tabsContainerRef.current;
+    if (!container) return;
+    // Get the first 3 visible buttons and sum their widths
+    const btns = Array.from(container.querySelectorAll('button'));
+    let scrollAmount = 0;
+    for (let i = 0; i < 3 && i < btns.length; i++) {
+      scrollAmount += (btns[i] as HTMLElement).offsetWidth;
+    }
+    if (scrollAmount === 0) scrollAmount = 120; // fallback
+    if (direction === 'left') {
+      container.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+    } else {
+      container.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+    }
+  };
+
+  useEffect(() => {
+    const container = tabsContainerRef.current;
+    if (!container) return;
+    const updateScroll = () => {
+      setCanScrollLeft(container.scrollLeft > 0);
+      setCanScrollRight(container.scrollLeft + container.clientWidth < container.scrollWidth - 1);
+    };
+    updateScroll();
+    container.addEventListener('scroll', updateScroll);
+    return () => container.removeEventListener('scroll', updateScroll);
+  }, [categories]);
 
   useEffect(() => {
     if (open && filterInputRef.current) {
@@ -132,22 +166,46 @@ const ProductBrowser: React.FC<ProductBrowserProps> = ({
             value={productFilter}
             onChange={(e) => setProductFilter(e.target.value)}
           />
-          <div className="flex gap-1 bg-muted rounded-md p-1 border border-border">
+          <div className="w-full flex items-center gap-2">
             <button
-              className={`px-3 py-1 rounded-md font-medium transition-colors text-sm ${selectedCategory === "All" ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-accent"}`}
-              onClick={() => setSelectedCategory("All")}
+              type="button"
+              className={`flex items-center justify-center w-8 h-8 text-primary hover:text-primary/80 transition ${!canScrollLeft ? 'opacity-40 cursor-not-allowed' : ''}`}
+              onClick={() => scrollTabs('left')}
+              tabIndex={-1}
+              aria-label="Scroll categories left"
+              disabled={!canScrollLeft}
             >
-              {t("cashier.all", "All")}
+              <ChevronLeft className="w-5 h-5" />
             </button>
-            {categories.map((cat) => (
-              <button
-                key={cat}
-                className={`px-3 py-1 rounded-md font-medium transition-colors text-sm ${selectedCategory === cat ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-accent"}`}
-                onClick={() => setSelectedCategory(cat)}
-              >
-                {cat}
-              </button>
-            ))}
+            <div className="overflow-x-auto flex-1 max-w-[65vw]">
+              <div ref={tabsContainerRef} className="flex gap-1 bg-muted rounded-md p-1 border border-border whitespace-nowrap min-w-full overflow-x-auto scrollbar-thin">
+                <button
+                  className={`px-3 py-1 rounded-md font-medium transition-colors text-sm ${selectedCategory === "All" ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-accent"}`}
+                  onClick={() => setSelectedCategory("All")}
+                >
+                  {t("cashier.all", "All")}
+                </button>
+                {categories.map((cat) => (
+                  <button
+                    key={cat}
+                    className={`px-3 py-1 rounded-md font-medium transition-colors text-sm ${selectedCategory === cat ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-accent"}`}
+                    onClick={() => setSelectedCategory(cat)}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <button
+              type="button"
+              className={`flex items-center justify-center w-8 h-8 text-primary hover:text-primary/80 transition ${!canScrollRight ? 'opacity-40 cursor-not-allowed' : ''}`}
+              onClick={() => scrollTabs('right')}
+              tabIndex={-1}
+              aria-label="Scroll categories right"
+              disabled={!canScrollRight}
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
           </div>
         </div>
         <div
