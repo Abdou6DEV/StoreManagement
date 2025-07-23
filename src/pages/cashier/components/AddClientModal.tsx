@@ -1,4 +1,4 @@
-import React from "react";
+import { useRef, useEffect } from "react";
 import { Users } from "lucide-react";
 import { Button } from "../../../lib/components/ui/button";
 import type { TFunction } from "i18next";
@@ -31,6 +31,14 @@ export default function addClientModal({
   onConfirm: () => void;
 }) {
   if (!open) return null;
+
+  const nameInputRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (open && nameInputRef.current) {
+      nameInputRef.current.focus();
+    }
+  }, [open]);
+  
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <div className="flex-1 bg-white dark:bg-zinc-900 p-6 rounded-lg shadow-lg w-full max-w-sm space-y-4">
@@ -41,6 +49,7 @@ export default function addClientModal({
           </h2>
         </div>
         <input
+          ref={nameInputRef}
           value={clientName}
           onChange={(e) => setClientName(e.target.value)}
           placeholder={t("cashier.clientName", "Client Name")}

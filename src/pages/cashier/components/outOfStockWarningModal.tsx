@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import type { CartItem } from "../index";
 import type { Product } from "@prisma/client";
@@ -21,6 +21,13 @@ const OutOfStockWarningModal: React.FC<Props> = ({
   const { t } = useTranslation();
   if (!open) return null;
 
+  const cancelBtnRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (open && cancelBtnRef.current) {
+      cancelBtnRef.current.focus();
+    }
+  }, [open]);
+  
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <div className="bg-white dark:bg-zinc-900 p-6 rounded-lg shadow-lg w-full max-w-md space-y-4">
@@ -42,6 +49,7 @@ const OutOfStockWarningModal: React.FC<Props> = ({
         </ul>
         <div className="flex justify-end gap-2">
           <button
+            ref={cancelBtnRef}
             onClick={onCancel}
             className="px-4 py-2 text-sm bg-muted rounded-md hover:bg-muted/60 border border-border"
           >

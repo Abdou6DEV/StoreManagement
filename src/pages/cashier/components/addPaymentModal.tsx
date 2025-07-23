@@ -2,7 +2,7 @@ import { Wallet } from "lucide-react";
 import { Button } from "../../../lib/components/ui/button";
 import type { CartItem } from "../index";
 import type { TFunction } from "i18next";
-import React from "react";
+import React, { useRef, useEffect } from "react";
 
 interface AddPaymentModalProps {
   open: boolean;
@@ -35,6 +35,13 @@ const AddPaymentModal: React.FC<AddPaymentModalProps> = ({
 }) => {
   if (!open) return null;
   const rest = cartTotal - Number(paymentAmount);
+  
+  const amountInputRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (open && amountInputRef.current) {
+      amountInputRef.current.focus();
+    }
+  }, [open]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
@@ -88,6 +95,7 @@ const AddPaymentModal: React.FC<AddPaymentModalProps> = ({
                 {t("cashier.paymentAmount", "Payment Amount")}
               </label>
               <input
+                ref={amountInputRef}
                 type="number"
                 value={paymentAmount === 0 ? "" : paymentAmount}
                 onChange={(e) => setPaymentAmount(Number(e.target.value) || 0)}

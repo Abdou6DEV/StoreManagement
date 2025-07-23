@@ -22,6 +22,13 @@ const ProductBrowser: React.FC<ProductBrowserProps> = ({
   const [visibleCount, setVisibleCount] = useState(20);
   const [loadingMore, setLoadingMore] = useState(false);
   const modalRef = useRef<HTMLDivElement>(null);
+  const filterInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (open && filterInputRef.current) {
+      filterInputRef.current.focus();
+    }
+  }, [open]);
 
   const filteredProducts = useMemo(() => {
     let products = allProducts;
@@ -96,6 +103,7 @@ const ProductBrowser: React.FC<ProductBrowserProps> = ({
     >
       <div className="w-full max-w-3xl bg-white dark:bg-zinc-900 border border-border rounded-2xl shadow-2xl p-6 flex flex-col animate-in fade-in zoom-in-90 duration-300 max-h-[90vh] overflow-hidden">
         <input
+          ref={filterInputRef}
           type="text"
           placeholder={t("cashier.filterProducts", "Filter products...")}
           className="w-full px-3 py-2 mb-3 rounded-md border border-border bg-card text-foreground"
