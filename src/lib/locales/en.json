@@ -199,7 +199,7 @@
     "loading": "Loading settings..."
   },
   "history": {
-    "title": "Sales History",
+    "title": "Sales & Payments History",
     "itemsPerPage": "Items per page:",
     "selectItemsPerPage": "Select items per page",
     "searchPlaceholder": "Search by client, phone, product, sale ID, or payment status (cash, paid, partial, pending)...",
@@ -249,5 +249,9 @@
     "amountPaid": "Amount Paid",
     "paymentDate": "Payment Date",
     "fullyPaid": "Fully Paid"
+  },
+  "pagination": {
+    "next": "Next",
+    "prev": "Previous"
   }
 }
