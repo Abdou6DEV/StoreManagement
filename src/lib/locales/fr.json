@@ -253,7 +253,9 @@
     "cashPaymentDesc": "Cette vente a été réglée en espèces au moment de l'achat",
     "amountPaid": "Montant payé",
     "paymentDate": "Date de paiement",
-    "fullyPaid": "Entièrement payé"
+    "fullyPaid": "Entièrement payé",
+    "method": "Méthode",
+    "amount": "Montant"
   },
   "pagination": {
     "next": "Suivant",

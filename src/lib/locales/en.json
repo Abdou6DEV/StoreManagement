@@ -248,7 +248,9 @@
     "cashPaymentDesc": "This sale was completed with cash payment at the time of purchase",
     "amountPaid": "Amount Paid",
     "paymentDate": "Payment Date",
-    "fullyPaid": "Fully Paid"
+    "fullyPaid": "Fully Paid",
+    "method": "Method",
+    "amount": "Amount"
   },
   "pagination": {
     "next": "Next",

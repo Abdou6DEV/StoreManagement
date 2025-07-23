@@ -20,7 +20,8 @@ interface PaymentsTableProps {
 }
 
 const PaymentsTable: React.FC<PaymentsTableProps> = ({ payments }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isRTL = i18n.language === "ar";
 
   const formatDate = (date: string | Date | undefined) => {
     if (!date) return "-";
@@ -73,7 +74,7 @@ const PaymentsTable: React.FC<PaymentsTableProps> = ({ payments }) => {
 
   return (
     <div className="overflow-auto rounded-lg border border-muted">
-      <table className="min-w-full text-sm text-left">
+      <table className="min-w-full text-sm" dir={isRTL ? 'rtl' : 'ltr'} style={{ direction: isRTL ? 'rtl' : 'ltr', textAlign: isRTL ? 'right' : 'left' }}>
         <thead className="bg-muted text-muted-foreground">
           <tr>
             <th className="px-4 py-3">{t("history.date", "Date")}</th>
@@ -96,10 +97,21 @@ const PaymentsTable: React.FC<PaymentsTableProps> = ({ payments }) => {
                     ? "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
                     : "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400"
                     }`}>
-                    <CreditCard className="w-3 h-3 inline mr-1" />
-                    {payment.type === "CREDIT"
-                      ? t("history.credit", "Credit")
-                      : t("history.installment", "Installment")}
+                    {isRTL ? (
+                      <>
+                        {payment.type === "CREDIT"
+                          ? t("history.credit", "Credit")
+                          : t("history.installment", "Installment")}
+                        <CreditCard className="w-3 h-3 inline ml-1 mr-1" />
+                      </>
+                    ) : (
+                      <>
+                        <CreditCard className="w-3 h-3 inline mr-1 ml-1" />
+                        {payment.type === "CREDIT"
+                          ? t("history.credit", "Credit")
+                          : t("history.installment", "Installment")}
+                      </>
+                    )}
                   </span>
                 </td>
                 <td className="px-4 py-3">

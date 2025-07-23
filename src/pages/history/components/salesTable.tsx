@@ -23,7 +23,8 @@ interface SalesTableProps {
 }
 
 const SalesTable: React.FC<SalesTableProps> = ({ sales }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isRTL = i18n.language === "ar";
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
   const toggleExpanded = (saleId: string) => {
@@ -106,7 +107,7 @@ const SalesTable: React.FC<SalesTableProps> = ({ sales }) => {
 
   return (
     <div className="overflow-auto rounded-lg border border-muted">
-      <table className="min-w-full text-sm text-left">
+      <table className="min-w-full text-sm" dir={isRTL ? 'rtl' : 'ltr'} style={{ direction: isRTL ? 'rtl' : 'ltr', textAlign: isRTL ? 'right' : 'left' }}>
         <thead className="bg-muted text-muted-foreground">
           <tr>
             <th className="px-4 py-3 w-8"></th>
@@ -177,17 +178,31 @@ const SalesTable: React.FC<SalesTableProps> = ({ sales }) => {
                 <td className="px-4 py-3">
                   {sale.isPaidInCash ? (
                     <div className="flex items-center gap-2">
-                      <DollarSign className="w-4 h-4 text-emerald-500" />
-                      <span className="font-medium text-emerald-600">
-                        {t("history.cash", "Cash")}
-                      </span>
+                      {isRTL ? (
+                        <>
+                          {t("history.cash", "Cash")}
+                          <DollarSign className="w-4 h-4 text-emerald-500 ml-1" />
+                        </>
+                      ) : (
+                        <>
+                          <DollarSign className="w-4 h-4 text-emerald-500 mr-1" />
+                          {t("history.cash", "Cash")}
+                        </>
+                      )}
                     </div>
                   ) : (
                     <div className="flex items-center gap-2">
-                      <CreditCard className="w-4 h-4 text-muted-foreground" />
-                      <span className="font-medium">
-                        {formatCurrency(sale.totalPaid)}
-                      </span>
+                      {isRTL ? (
+                        <>
+                          {formatCurrency(sale.totalPaid)}
+                          <CreditCard className="w-4 h-4 text-muted-foreground ml-1" />
+                        </>
+                      ) : (
+                        <>
+                          <CreditCard className="w-4 h-4 text-muted-foreground mr-1" />
+                          {formatCurrency(sale.totalPaid)}
+                        </>
+                      )}
                     </div>
                   )}
                   {!sale.isPaidInCash && sale.remainingAmount > 0 && (
@@ -394,13 +409,27 @@ const SalesTable: React.FC<SalesTableProps> = ({ sales }) => {
                                                   : "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400"
                                               }`}
                                             >
-                                              <CreditCard className="w-3 h-3" />
-                                              {payment.type === "CREDIT"
-                                                ? t("history.credit", "Credit")
-                                                : t(
-                                                    "history.installment",
-                                                    "Installment",
-                                                  )}
+                                              {isRTL ? (
+                                                <>
+                                                  {payment.type === "CREDIT"
+                                                    ? t("history.credit", "Credit")
+                                                    : t(
+                                                        "history.installment",
+                                                        "Installment",
+                                                      )}
+                                                  <CreditCard className="w-3 h-3 ml-1" />
+                                                </>
+                                              ) : (
+                                                <>
+                                                  <CreditCard className="w-3 h-3 mr-1" />
+                                                  {payment.type === "CREDIT"
+                                                    ? t("history.credit", "Credit")
+                                                    : t(
+                                                        "history.installment",
+                                                        "Installment",
+                                                      )}
+                                                </>
+                                              )}
                                             </span>
                                           </div>
                                           {payment.paidAt ? (

@@ -253,7 +253,9 @@
     "cashPaymentDesc": "تمت هذه العملية بالدفع نقداً عند الشراء",
     "amountPaid": "المبلغ المدفوع",
     "paymentDate": "تاريخ الدفع",
-    "fullyPaid": "مدفوع بالكامل"
+    "fullyPaid": "مدفوع بالكامل",
+    "method": "طريقة",
+    "amount": "المبلغ"
   },
   "pagination": {
     "next": "التالي",
