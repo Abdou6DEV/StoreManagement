@@ -82,7 +82,10 @@ export const StockTable = () => {
   };
 
   const handleDeleteProduct = async (productId: string) => {
-    if (!confirm("Are you sure you want to delete this product?")) return;
+    const warning =
+      "Are you sure you want to delete this product?\n\n" +
+      "\u26A0\uFE0F WARNING: This will also delete all sales records (SaleItems) related to this product. This action cannot be undone.";
+    if (!confirm(warning)) return;
 
     try {
       await window.api.database.products.delete(productId);
