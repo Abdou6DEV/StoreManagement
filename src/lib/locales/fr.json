@@ -161,6 +161,7 @@
     "delete": "Supprimer",
     "totalPurchases": "Achats totaux",
     "deleteConfirm": "Êtes-vous sûr de vouloir supprimer ce client ?",
+    "deleteWarning": "Attention : La suppression de ce client entraînera également la suppression de tous les paiements et ventes associés. Cette action est irréversible",
     "deleteError": "Échec de la suppression du client",
     "updateError": "Échec de la mise à jour du client",
     "fetchError": "Échec de la récupération des clients",

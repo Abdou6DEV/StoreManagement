@@ -41,7 +41,7 @@ const PaymentsModal: React.FC<PaymentsModalProps> = ({ client, onClose }) => {
     setError(null);
     window.api.database.payments
       .getByClient(client.id)
-      .then((data) => setPayments(data))
+      .then((data) => setPayments(data as any))
       .catch(() => setError(t("clients.paymentsError", "Failed to fetch payments")))
       .finally(() => setLoading(false));
   }, [client.id, t]);
