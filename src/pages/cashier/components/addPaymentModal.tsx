@@ -43,6 +43,12 @@ const AddPaymentModal: React.FC<AddPaymentModalProps> = ({
     }
   }, [open]);
 
+  const tomorrow = (() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    return d.toISOString().substring(0, 10);
+  })();
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <div className="relative w-full max-w-lg mx-auto animate-in fade-in zoom-in-90 duration-300">
@@ -113,6 +119,7 @@ const AddPaymentModal: React.FC<AddPaymentModalProps> = ({
                 value={
                   paymentDate ? paymentDate.toISOString().substring(0, 10) : ""
                 }
+                min={tomorrow}
                 onChange={(e) => {
                   setPaymentDate(
                     e.target.value ? new Date(e.target.value) : undefined,
