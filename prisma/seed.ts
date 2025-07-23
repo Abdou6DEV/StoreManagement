@@ -75,6 +75,7 @@ async function main() {
   // Generate some sample sales
   const clients = await prisma.client.findMany();
   const products = await prisma.product.findMany();
+  const sales = [];
 
   for (let i = 0; i < 200; i++) {
     const client = faker.helpers.maybe(
@@ -89,6 +90,7 @@ async function main() {
         discount: faker.number.int({ min: 0, max: 20 }),
       },
     });
+    sales.push({ ...sale, clientId: client?.id });
 
     // Add items to the sale
     const saleProducts = faker.helpers.arrayElements(products, saleItemsCount);
@@ -106,12 +108,44 @@ async function main() {
     }
   }
 
+  // === Generate random payments for some sales ===
+  console.log("💳 Creating random payments...");
+  let paymentCount = 0;
+  for (const sale of sales) {
+    // Only create payments for sales with a client
+    if (!sale.clientId) continue;
+    // 60% of sales get a payment
+    if (faker.datatype.boolean() && faker.datatype.boolean()) continue;
+    // Only one payment per sale
+    const paidAmount = faker.number.int({ min: 100, max: 10000 });
+    const type = faker.helpers.arrayElement(["CREDIT", "VERSEMENT"]);
+    const dueDate = faker.date.soon({ days: 30 });
+    // 50% chance paidAt is set, and always between now and dueDate
+    let paidAt = null;
+    if (faker.datatype.boolean()) {
+      paidAt = faker.date.between({ from: new Date(), to: dueDate });
+    }
+    await prisma.payment.create({
+      data: {
+        saleId: sale.id,
+        clientId: sale.clientId,
+        paidAmount,
+        dueAt: dueDate,
+        paidAt,
+        type,
+      },
+    });
+    paymentCount++;
+  }
+  console.log(`   - ${paymentCount} payments`);
+
   console.log("✅ Seed completed successfully!");
   console.log(`📊 Created:`);
   console.log(`   - ${categories.length} categories`);
   console.log(`   - 1,000 products`);
   console.log(`   - 50 clients`);
   console.log(`   - 200 sales with items`);
+  console.log(`   - ${paymentCount} payments`);
 }
 
 main()

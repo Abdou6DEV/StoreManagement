@@ -61,10 +61,9 @@ export default function Clients() {
   const handleDelete = async (id: string) => {
     if (
       !window.confirm(
-        t(
-          "clients.deleteConfirm",
-          "Are you sure you want to delete this client?",
-        ),
+        t("clients.deleteConfirm", "Are you sure you want to delete this client?") +
+        "\n\n" +
+        t("clients.deleteWarning", "Warning: Deleting this client will also delete all related payments and sales. This action cannot be undone.")
       )
     )
       return;
