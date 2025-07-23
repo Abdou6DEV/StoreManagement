@@ -37,8 +37,7 @@ const ProductBrowser: React.FC<ProductBrowserProps> = ({
   const currentAction = useRef<'inc' | 'dec' | null>(null);
 
   const tabsContainerRef = useRef<HTMLDivElement>(null);
-  const [canScrollLeft, setCanScrollLeft] = useState(false);
-  const [canScrollRight, setCanScrollRight] = useState(false);
+  // Remove canScrollLeft, canScrollRight, updateChevronState, and related useEffect
 
   const scrollTabs = (direction: 'left' | 'right') => {
     const container = tabsContainerRef.current;
@@ -57,17 +56,28 @@ const ProductBrowser: React.FC<ProductBrowserProps> = ({
     }
   };
 
+  // Chevron state update helper
+  // Remove canScrollLeft, canScrollRight, updateChevronState, and related useEffect
+
   useEffect(() => {
     const container = tabsContainerRef.current;
     if (!container) return;
-    const updateScroll = () => {
-      setCanScrollLeft(container.scrollLeft > 0);
-      setCanScrollRight(container.scrollLeft + container.clientWidth < container.scrollWidth - 1);
-    };
-    updateScroll();
-    container.addEventListener('scroll', updateScroll);
-    return () => container.removeEventListener('scroll', updateScroll);
+    // No chevron state logic needed
+    return () => {};
   }, [categories]);
+
+  // Reset chevrons and scroll position when browser opens
+  useEffect(() => {
+    if (open) {
+      const container = tabsContainerRef.current;
+      if (container) {
+        container.scrollLeft = 0;
+        setTimeout(() => {
+          // No chevron state logic needed
+        }, 0);
+      }
+    }
+  }, [open, categories]);
 
   useEffect(() => {
     if (open && filterInputRef.current) {
@@ -169,15 +179,14 @@ const ProductBrowser: React.FC<ProductBrowserProps> = ({
           <div className="w-full flex items-center gap-2">
             <button
               type="button"
-              className={`flex items-center justify-center w-8 h-8 text-primary hover:text-primary/80 transition ${!canScrollLeft ? 'opacity-40 cursor-not-allowed' : ''}`}
+              className="flex items-center justify-center w-8 h-8 text-primary hover:text-primary/80 transition"
               onClick={() => scrollTabs('left')}
               tabIndex={-1}
               aria-label="Scroll categories left"
-              disabled={!canScrollLeft}
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
-            <div className="overflow-x-auto flex-1 max-w-[65vw]">
+            <div className="overflow-x-auto flex-1 max-w-[50vw]">
               <div ref={tabsContainerRef} className="flex gap-1 bg-muted rounded-md p-1 border border-border whitespace-nowrap min-w-full overflow-x-auto scrollbar-thin">
                 <button
                   className={`px-3 py-1 rounded-md font-medium transition-colors text-sm ${selectedCategory === "All" ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-accent"}`}
@@ -198,11 +207,10 @@ const ProductBrowser: React.FC<ProductBrowserProps> = ({
             </div>
             <button
               type="button"
-              className={`flex items-center justify-center w-8 h-8 text-primary hover:text-primary/80 transition ${!canScrollRight ? 'opacity-40 cursor-not-allowed' : ''}`}
+              className="flex items-center justify-center w-8 h-8 text-primary hover:text-primary/80 transition"
               onClick={() => scrollTabs('right')}
               tabIndex={-1}
               aria-label="Scroll categories right"
-              disabled={!canScrollRight}
             >
               <ChevronRight className="w-5 h-5" />
             </button>
