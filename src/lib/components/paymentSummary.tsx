@@ -151,7 +151,7 @@ export default function PaymentSummary({
   }, [cart.length]);
 
   return (
-    <div className={`font-mono text-sm text-primary bg-muted rounded-xl p-4 flex flex-col shadow-inner border border-border max-w-full w-full ${className}`}>
+    <div className={`font-mono text-sm text-primary bg-muted rounded-xl p-4 flex flex-col shadow-inner border border-border max-w-full w-full h-[70vh] ${className}`}>
       {/* === Client Info === */}
       {clientName && (
         <>

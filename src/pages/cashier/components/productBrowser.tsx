@@ -32,9 +32,6 @@ const ProductBrowser: React.FC<ProductBrowserProps> = ({
   const [initialCartIds, setInitialCartIds] = useState<string[]>([]);
 
   // Long-press timer refs and state
-  const incrementDecrementTimer = useRef<NodeJS.Timeout | null>(null);
-  const currentProductId = useRef<string | null>(null);
-  const currentAction = useRef<'inc' | 'dec' | null>(null);
 
   const tabsContainerRef = useRef<HTMLDivElement>(null);
   // Remove canScrollLeft, canScrollRight, updateChevronState, and related useEffect
@@ -61,13 +58,7 @@ const ProductBrowser: React.FC<ProductBrowserProps> = ({
 
   useEffect(() => {
     const container = tabsContainerRef.current;
-    if (!container) return;
     // No chevron state logic needed
-    return () => {};
-  }, [categories]);
-
-  // Reset chevrons and scroll position when browser opens
-  useEffect(() => {
     if (open) {
       const container = tabsContainerRef.current;
       if (container) {
@@ -154,6 +145,10 @@ const ProductBrowser: React.FC<ProductBrowserProps> = ({
       onClose();
     }
   };
+
+  const [editingQtyProductId, setEditingQtyProductId] = useState<string | null>(null);
+  const [editingQtyValue, setEditingQtyValue] = useState<string>("");
+  const editingQtyInputRef = useRef<HTMLInputElement>(null);
 
   if (!open) return null;
 
@@ -276,8 +271,54 @@ const ProductBrowser: React.FC<ProductBrowserProps> = ({
                         >
                           -
                         </button>
-                        <span className="px-2 text-base font-semibold select-none">
-                          {cartItem.qty}
+                        <span
+                          className="px-2 text-base font-semibold select-none cursor-pointer"
+                          onClick={e => e.stopPropagation()}
+                          onDoubleClick={e => {
+                            e.stopPropagation();
+                            setEditingQtyProductId(product.id);
+                            setEditingQtyValue(cartItem.qty.toString());
+                          }}
+                        >
+                          {editingQtyProductId === product.id ? (
+                            <input
+                              ref={editingQtyInputRef}
+                              type="text"
+                              value={editingQtyValue}
+                              onChange={e => {
+                                if (/^\d*$/.test(e.target.value)) {
+                                  setEditingQtyValue(e.target.value);
+                                }
+                              }}
+                              onBlur={() => {
+                                const newQty = parseInt(editingQtyValue);
+                                if (!isNaN(newQty) && newQty > 0) {
+                                  setCart(prev => prev.map(item =>
+                                    item.id === product.id ? { ...item, qty: newQty } : item
+                                  ));
+                                }
+                                setEditingQtyProductId(null);
+                              }}
+                              onKeyDown={e => {
+                                if (e.key === "Enter") {
+                                  const newQty = parseInt(editingQtyValue);
+                                  if (!isNaN(newQty) && newQty > 0) {
+                                    setCart(prev => prev.map(item =>
+                                      item.id === product.id ? { ...item, qty: newQty } : item
+                                    ));
+                                  }
+                                  setEditingQtyProductId(null);
+                                } else if (e.key === "Escape") {
+                                  setEditingQtyProductId(null);
+                                }
+                              }}
+                              className="w-12 text-center bg-white dark:bg-zinc-900 border border-primary rounded px-1 py-0 text-base focus:outline-none focus:ring-1 focus:ring-primary"
+                              style={{ minWidth: 32 }}
+                              onClick={e => e.stopPropagation()}
+                            />
+                          ) : (
+                            cartItem.qty
+                          )}
                         </span>
                         <button
                           className="w-8 h-8 rounded-full bg-muted text-primary hover:bg-primary hover:text-primary-foreground text-base font-bold shadow flex items-center justify-center border border-border"
