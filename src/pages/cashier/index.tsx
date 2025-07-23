@@ -32,7 +32,6 @@ export default function CashierPage() {
   const [discounts, setDiscounts] = useState<string[]>(
     Array.from({ length: MAX_SESSIONS }, () => ""),
   );
-  const [discountError, setDiscountError] = useState<string | null>(null);
   const [paymentAmount, setPaymentAmount] = useState(0);
   const [paymentType, setPaymentType] = useState<
     "none" | "credit" | "versement"
@@ -107,12 +106,7 @@ export default function CashierPage() {
       0,
     );
     if (Number(discount) > cartTotal) {
-      setDiscountError(
-        t("cashier.discountError", "Discount cannot exceed total amount"),
-      );
       return;
-    } else {
-      setDiscountError(null);
     }
     // Check for out-of-stock items
     const outOfStock = cart.filter((item) => {

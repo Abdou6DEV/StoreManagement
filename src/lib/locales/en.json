@@ -80,7 +80,6 @@
     "requested": "Requested",
     "available": "Available",
     "proceedAnyway": "Proceed Anyway",
-    "discountError": "Discount cannot exceed total amount",
     "dueDate": "Due Date",
     "pickDate": "Pick a date",
     "versement": "Installment",

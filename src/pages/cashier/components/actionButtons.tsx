@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { CheckCircle, Trash2, UserPlus } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import DiscountErrorModal from "./discountErrorModal";
 import type { CartItem } from "../../cashier";
 import AddPaymentModal from "./addPaymentModal";
 import AddClientModal from "./addClientModal";
@@ -48,12 +47,11 @@ export default function ActionButtons({
   paymentDate,
   setPaymentDate,
 }: Props) {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const [clientSuggestions, setClientSuggestions] = useState<
     ClientSuggestion[]
   >([]);
   const [draftDiscount, setDraftDiscount] = useState(discount);
-  const [discountError, setDiscountError] = useState<string | null>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [paymentTypeLocal, setPaymentTypeLocal] = useState<
     "credit" | "versement"
@@ -67,6 +65,7 @@ export default function ActionButtons({
   const [showAddClientModal, setShowAddClientModal] = useState(false);
   const [clientAddress, setClientAddress] = useState("");
   const [clientNotes, setClientNotes] = useState("");
+  const [discountFocused, setDiscountFocused] = useState(false);
 
   // Keep draftDiscount in sync with prop when session changes
   useEffect(() => {
@@ -195,7 +194,12 @@ export default function ActionButtons({
         {/* Discount Input */}
         <input
           placeholder={t("cashier.discount", "Discount")}
-          className="w-24 rounded-md border border-border px-3 py-2 text-sm bg-background ml-1 flex-shrink min-w-0"
+          className={`w-24 rounded-md border px-3 py-2 text-sm bg-background ml-1 flex-shrink min-w-0
+            ${Number(draftDiscount) > cartTotal
+              ? discountFocused
+                ? 'border-red-500 ring-3 ring-red-500'
+                : 'border-red-500'
+              : 'border-border'}`}
           type="number"
           value={draftDiscount}
           onChange={(e) => {
@@ -204,25 +208,21 @@ export default function ActionButtons({
               setDraftDiscount(val);
             }
           }}
+          onFocus={() => setDiscountFocused(true)}
+          onBlur={() => setDiscountFocused(false)}
         />
         {/* Confirm Button */}
         <button
-          className="flex items-center gap-2 px-4 py-2 rounded-md bg-primary text-primary-foreground font-semibold text-sm shadow hover:bg-primary/90 border border-border ml-1 flex-shrink min-w-0"
+          className={`flex items-center gap-2 px-4 py-2 rounded-md font-semibold text-sm shadow border border-border ml-1 flex-shrink min-w-0 ${(Number(draftDiscount) > cartTotal || draftDiscount === "") ? 'bg-muted text-muted-foreground cursor-not-allowed' : 'bg-primary text-primary-foreground hover:bg-primary/90'}`}
           onClick={() => {
             // Validate discount before applying
-            if (Number(draftDiscount) > cartTotal) {
-              setDiscountError(
-                t(
-                  "cashier.discountError",
-                  "Discount cannot exceed total amount",
-                ),
-              );
+            if (Number(draftDiscount) > cartTotal || draftDiscount === "") {
               return;
             } else {
-              setDiscountError(null);
               onDiscountChange(draftDiscount);
             }
           }}
+          disabled={Number(draftDiscount) > cartTotal || draftDiscount === ""}
         >
           <CheckCircle className="w-5 h-5" />
           <span>{t("cashier.confirm", "Confirm")}</span>
@@ -298,12 +298,6 @@ export default function ActionButtons({
         setClientNotes={setClientNotes}
         t={t as typeof t}
         onConfirm={() => setShowAddClientModal(false)}
-      />
-
-      <DiscountErrorModal
-        open={!!discountError}
-        message={discountError || ""}
-        onClose={() => setDiscountError(null)}
       />
     </div>
   );
