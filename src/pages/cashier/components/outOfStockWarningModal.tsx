@@ -19,15 +19,15 @@ const OutOfStockWarningModal: React.FC<Props> = ({
   onProceed,
 }) => {
   const { t } = useTranslation();
-  if (!open) return null;
-
   const cancelBtnRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     if (open && cancelBtnRef.current) {
       cancelBtnRef.current.focus();
     }
   }, [open]);
-  
+
+  if (!open) return null;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <div className="bg-white dark:bg-zinc-900 p-6 rounded-lg shadow-lg w-full max-w-md space-y-4">
@@ -41,8 +41,7 @@ const OutOfStockWarningModal: React.FC<Props> = ({
               <li key={item.id}>
                 <span className="font-medium">{item.name}</span>:{" "}
                 {t("cashier.requested", "Requested")}: {item.qty},{" "}
-                {t("cashier.available", "Available")}:{" "}
-                {product ? product.quantity : 0}
+                {t("cashier.available", "Available")}: {product ? product.quantity : 0}
               </li>
             );
           })}
