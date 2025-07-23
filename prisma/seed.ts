@@ -117,7 +117,11 @@ async function main() {
     // 60% of sales get a payment
     if (faker.datatype.boolean() && faker.datatype.boolean()) continue;
     // Only one payment per sale
-    const paidAmount = faker.number.int({ min: 100, max: 10000 });
+    // Calculate the sale's total (after discount)
+    const saleItems = await prisma.saleItem.findMany({ where: { saleId: sale.id } });
+    const saleTotal = saleItems.reduce((sum, item) => sum + item.price * item.quantity, 0) - sale.discount;
+    // Paid amount is always <= saleTotal, and at least 0
+    const paidAmount = saleTotal > 0 ? faker.number.int({ min: 0, max: saleTotal }) : 0;
     const type = faker.helpers.arrayElement(["CREDIT", "VERSEMENT"]);
     const dueDate = faker.date.soon({ days: 30 });
     // 50% chance paidAt is set, and always between now and dueDate
