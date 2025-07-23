@@ -3,7 +3,6 @@ import { useTranslation } from "react-i18next";
 import StyledNumberInput from "../../../lib/components/ui/inputNumber";
 import { Button } from "../../../lib/components/ui/button";
 import { Save, X, Loader2, Package } from "lucide-react";
-
 import { useStock } from "../../../lib/contexts/stockContext";
 
 export default function EditStockForm({
@@ -33,13 +32,18 @@ export default function EditStockForm({
 
     setLoading(true);
     try {
-      // Ensure category exists
+      // Ensure category exists, create if not exists
       await window.api.database.categories.ensure(form.categoryName);
+
+      const { name, categoryName, quantity, bought, selling, codebar } = form;
+
       await window.api.database.products.update(product.id, {
-        ...form,
-        quantity: Number(form.quantity),
-        bought: Number(form.bought),
-        selling: Number(form.selling),
+        name,
+        categoryName,
+        quantity: Number(quantity),
+        bought: Number(bought),
+        selling: Number(selling),
+        codebar,
       });
       setProductID(null);
     } catch (err) {

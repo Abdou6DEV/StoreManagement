@@ -3,6 +3,7 @@ import path from "node:path";
 import started from "electron-squirrel-startup";
 import { prisma, initializePrisma } from "../lib/prismaClient";
 import { getAllCategories, ensureCategory } from "../lib/database/categories";
+import { updateProduct } from "../lib/database/products";
 import {
   getAllClients,
   getAllClientsWithTotalPurchases,
@@ -78,10 +79,7 @@ function setupDatabaseHandlers() {
   });
 
   ipcMain.handle("db:products:update", async (_event, { id, data }) => {
-    return await prisma.product.update({
-      where: { id },
-      data,
-    });
+    return await updateProduct(id, data);
   });
 
   ipcMain.handle("db:products:delete", async (_event, id: string) => {
