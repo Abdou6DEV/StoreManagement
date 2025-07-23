@@ -65,7 +65,6 @@ export default function ActionButtons({
   const [showAddClientModal, setShowAddClientModal] = useState(false);
   const [clientAddress, setClientAddress] = useState("");
   const [clientNotes, setClientNotes] = useState("");
-  const [discountFocused, setDiscountFocused] = useState(false);
 
   // Keep draftDiscount in sync with prop when session changes
   useEffect(() => {
@@ -196,10 +195,9 @@ export default function ActionButtons({
           placeholder={t("cashier.discount", "Discount")}
           className={`w-24 rounded-md border px-3 py-2 text-sm bg-background ml-1 flex-shrink min-w-0
             ${Number(draftDiscount) > cartTotal
-              ? discountFocused
-                ? 'border-red-500 ring-3 ring-red-500'
-                : 'border-red-500'
-              : 'border-border'}`}
+              ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
+              : 'border-border focus:border-primary focus:ring-primary/50'
+            } focus:outline-none focus:ring-1 transition-all'`}
           type="number"
           value={draftDiscount}
           onChange={(e) => {
@@ -208,8 +206,6 @@ export default function ActionButtons({
               setDraftDiscount(val);
             }
           }}
-          onFocus={() => setDiscountFocused(true)}
-          onBlur={() => setDiscountFocused(false)}
         />
         {/* Confirm Button */}
         <button
