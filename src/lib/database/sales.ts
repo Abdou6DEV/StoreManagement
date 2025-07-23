@@ -49,3 +49,52 @@ export async function getProductSalesCounts() {
     totalSold: s._sum.quantity || 0,
   }));
 }
+
+export async function getAllSales() {
+  const sales = await prisma.sale.findMany({
+    include: {
+      client: true,
+      saleItems: {
+        include: {
+          product: true,
+        },
+      },
+      payments: true,
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
+
+  return sales.map((sale) => {
+    const totalAmount = sale.saleItems.reduce(
+      (sum, item) => sum + item.price * item.quantity,
+      0,
+    );
+    const totalWithDiscount = totalAmount - sale.discount;
+
+    // If no payments recorded, it was paid in cash
+    const totalPaid =
+      sale.payments.length > 0
+        ? sale.payments.reduce(
+            (sum, payment) => sum + (payment.paidAmount || 0),
+            0,
+          )
+        : totalWithDiscount; // Cash payment - full amount paid
+
+    const totalItems = sale.saleItems.reduce(
+      (sum, item) => sum + item.quantity,
+      0,
+    );
+
+    return {
+      ...sale,
+      totalAmount,
+      totalWithDiscount,
+      totalPaid,
+      totalItems,
+      remainingAmount: totalWithDiscount - totalPaid,
+      isPaidInCash: sale.payments.length === 0,
+    };
+  });
+}

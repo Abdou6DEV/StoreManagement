@@ -1,5 +1,26 @@
 import { contextBridge, ipcRenderer } from "electron";
-import { Product, Category, Client, Sale, Payment } from "@prisma/client";
+import {
+  Product,
+  Category,
+  Client,
+  Sale,
+  SaleItem,
+  Payment,
+} from "@prisma/client";
+
+type SaleWithDetails = Sale & {
+  client?: Client;
+  saleItems: (SaleItem & {
+    product: Product;
+  })[];
+  payments: Payment[];
+  totalAmount: number;
+  totalWithDiscount: number;
+  totalPaid: number;
+  totalItems: number;
+  remainingAmount: number;
+  isPaidInCash: boolean;
+};
 
 contextBridge.exposeInMainWorld("api", {
   database: {
@@ -46,6 +67,7 @@ contextBridge.exposeInMainWorld("api", {
         items: { productId: string; quantity: number; price: number }[];
         discount?: number;
       }) => ipcRenderer.invoke("db:sales:create", data),
+      getAll: () => ipcRenderer.invoke("db:sales:getAll"),
     },
     options: {
       get: (key: string) => ipcRenderer.invoke("db:options:get", key),
@@ -61,7 +83,8 @@ contextBridge.exposeInMainWorld("api", {
         paidAt?: Date;
         type: "CREDIT" | "VERSEMENT";
       }) => ipcRenderer.invoke("db:payments:create", data),
-      getByClient: (clientId: string) => ipcRenderer.invoke("db:payments:getByClient", clientId),
+      getByClient: (clientId: string) =>
+        ipcRenderer.invoke("db:payments:getByClient", clientId),
     },
   },
   app: {
@@ -119,6 +142,7 @@ declare global {
             items: { productId: string; quantity: number; price: number }[];
             discount?: number;
           }) => Promise<Sale>;
+          getAll: () => Promise<SaleWithDetails[]>;
         };
         options: {
           get: (key: string) => Promise<string | null>;

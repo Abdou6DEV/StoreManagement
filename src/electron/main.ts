@@ -11,7 +11,11 @@ import {
   deleteClient,
   updateClient,
 } from "../lib/database/clients";
-import { createSale, getProductSalesCounts } from "../lib/database/sales";
+import {
+  createSale,
+  getProductSalesCounts,
+  getAllSales,
+} from "../lib/database/sales";
 import { getOption, setOption } from "../lib/database/options";
 import { createPayment, getPaymentsByClient } from "../lib/database/payments";
 
@@ -137,7 +141,14 @@ function setupDatabaseHandlers() {
     return await createPayment(data);
   });
 
-  ipcMain.handle("db:payments:getByClient", async (_event, clientId: string) => {
-    return await getPaymentsByClient(clientId);
+  ipcMain.handle(
+    "db:payments:getByClient",
+    async (_event, clientId: string) => {
+      return await getPaymentsByClient(clientId);
+    },
+  );
+
+  ipcMain.handle("db:sales:getAll", async () => {
+    return await getAllSales();
   });
 }
