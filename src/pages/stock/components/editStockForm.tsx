@@ -105,7 +105,6 @@ export default function EditStockForm({
               value={form.bought}
               onChange={(val) => handleEditFormChange("bought", val)}
               placeholder={t("stock.bought")}
-              step={100}
             />
           </div>
 
@@ -117,7 +116,6 @@ export default function EditStockForm({
               value={form.selling}
               onChange={(val) => handleEditFormChange("selling", val)}
               placeholder={t("stock.selling")}
-              step={100}
             />
           </div>
 

@@ -330,7 +330,6 @@ export default function AddStockForm({
                 value={form.bought === "" ? "" : Number(form.bought)}
                 onChange={(val) => handleFormChange("bought", val)}
                 placeholder={t("stock.bought")}
-                step={100}
                 disabled={isExistingProduct}
               />
             </Legend>
@@ -340,7 +339,6 @@ export default function AddStockForm({
                 value={form.selling === "" ? "" : Number(form.selling)}
                 onChange={(val) => handleFormChange("selling", val)}
                 placeholder={t("stock.selling")}
-                step={100}
                 disabled={isExistingProduct}
               />
             </Legend>
