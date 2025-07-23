@@ -255,7 +255,9 @@
     "paymentDate": "تاريخ الدفع",
     "fullyPaid": "مدفوع بالكامل",
     "method": "طريقة",
-    "amount": "المبلغ"
+    "amount": "المبلغ",
+    "details": "تفاصيل",
+    "show": "عرض"
   },
   "pagination": {
     "next": "التالي",

@@ -250,7 +250,9 @@
     "paymentDate": "Payment Date",
     "fullyPaid": "Fully Paid",
     "method": "Method",
-    "amount": "Amount"
+    "amount": "Amount",
+    "details": "Details",
+    "show": "Show"
   },
   "pagination": {
     "next": "Next",
