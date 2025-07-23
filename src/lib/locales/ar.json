@@ -85,7 +85,8 @@
     "versement": "دفعة",
     "rest": "المتبقي",
     "paid": "مدفوع",
-    "showHistory": "عرض السجل"
+    "showHistory": "عرض السجل",
+    "all": "الكل"
   },
   "stock": {
     "product": "اسم المنتج",

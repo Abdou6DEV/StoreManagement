@@ -85,7 +85,8 @@
     "versement": "Installment",
     "rest": "Remaining",
     "paid": "Paid",
-    "showHistory": "Show History"
+    "showHistory": "Show History",
+    "all": "All"
   },
   "stock": {
     "product": "Product Name",

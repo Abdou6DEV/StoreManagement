@@ -137,7 +137,8 @@
     "versement": "Versement",
     "rest": "Reste à payer",
     "paid": "Payé",
-    "showHistory": "Afficher l'historique"
+    "showHistory": "Afficher l'historique",
+    "all": "Tout"
   },
   "clients": {
     "itemsPerPage": "Éléms par page:",

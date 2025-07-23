@@ -226,28 +226,10 @@ export default function CashierPage() {
               allProducts={allProducts}
               open={showProductBrowser}
               onClose={() => setShowProductBrowser(false)}
-              onAddSelectedProducts={(selectedProductIds) => {
-                // Add selected products to cart
-                const updatedCart = [...cart];
-                selectedProductIds.forEach((productId) => {
-                  const product = allProducts.find((p) => p.id === productId);
-                  if (product) {
-                    const existingItem = updatedCart.find(
-                      (item) => item.id === product.id,
-                    );
-                    if (existingItem) {
-                      existingItem.qty += 1;
-                    } else {
-                      updatedCart.push({
-                        id: product.id,
-                        name: product.name,
-                        price: product.selling,
-                        qty: 1,
-                      });
-                    }
-                  }
-                });
-                updateSession(updatedCart);
+              cart={cart}
+              setCart={(updater) => {
+                const result = typeof updater === "function" ? updater(cart) : updater;
+                updateSession(result);
               }}
             />
 

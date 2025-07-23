@@ -20,33 +20,28 @@ export default function App() {
       <Layout>
         <ScrollToTop />
         <Suspense fallback={<div>Loading...</div>}>
-          <Routes>
-            <Route path="/" element={<MainMenu />} />
-            <Route
-              element={
-                <main className="flex flex-1">
-                  <Sidebar />
-                  <div className="flex-1 p-4">
-                    <Outlet />
-                  </div>
-                </main>
-              }
-            >
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/clients" element={<Clients />} />
+          <StockProvider>
+            <Routes>
+              <Route path="/" element={<MainMenu />} />
               <Route
-                path="/stock"
                 element={
-                  <StockProvider>
-                    <Stock />
-                  </StockProvider>
+                  <main className="flex flex-1">
+                    <Sidebar />
+                    <div className="flex-1 p-4">
+                      <Outlet />
+                    </div>
+                  </main>
                 }
-              />
-              <Route path="/cashier" element={<Cashier />} />
-              <Route path="/administrator" element={<Administrator />} />
-              <Route path="/*" element={<h1 className="">Soon..</h1>} />
-            </Route>
-          </Routes>
+              >
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/clients" element={<Clients />} />
+                <Route path="/stock" element={<Stock />} />
+                <Route path="/cashier" element={<Cashier />} />
+                <Route path="/administrator" element={<Administrator />} />
+                <Route path="/*" element={<h1 className="">Soon..</h1>} />
+              </Route>
+            </Routes>
+          </StockProvider>
         </Suspense>
       </Layout>
     </div>
