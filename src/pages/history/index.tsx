@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { Search, Loader2 } from "lucide-react";
+import { Loader2, Receipt } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import SalesTable from "./components/salesTable";
 import SearchBar from "./components/searchBar";
+import PaymentsTable from "./components/paymentsTable";
 import {
   Pagination,
   PaginationContent,
@@ -20,11 +21,13 @@ type SaleWithDetails = Awaited<
 export default function History() {
   const { t } = useTranslation();
   const [sales, setSales] = useState<SaleWithDetails[]>([]);
+  const [payments, setPayments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [view, setView] = useState<'sales' | 'payments'>('sales');
 
   const fetchSales = async () => {
     setLoading(true);
@@ -32,7 +35,6 @@ export default function History() {
     try {
       const data = await window.api.database.sales.getAll();
       setSales(data);
-      console.log(data);
     } catch (err) {
       setError(t("history.fetchError", "Failed to fetch sales history"));
     } finally {
@@ -40,10 +42,28 @@ export default function History() {
     }
   };
 
-  useEffect(() => {
-    fetchSales();
-  }, []);
+  const fetchPayments = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await window.api.database.payments.getAll();
+      setPayments(data);
+    } catch (err) {
+      setError(t("history.fetchPaymentsError", "Failed to fetch payment history"));
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
+    if (view === 'sales') {
+      fetchSales();
+    } else {
+      fetchPayments();
+    }
+  }, [view]);
+
+  // Filtering logic
   const filteredSales = sales.filter((sale) => {
     const searchLower = search.toLowerCase();
     return (
@@ -70,12 +90,26 @@ export default function History() {
     );
   });
 
+  const filteredPayments = payments.filter((payment) => {
+    const searchLower = search.toLowerCase();
+    return (
+      payment.id?.toLowerCase().includes(searchLower) ||
+      payment.saleId?.toLowerCase().includes(searchLower) ||
+      payment.client?.name?.toLowerCase().includes(searchLower) ||
+      payment.client?.phone?.toLowerCase().includes(searchLower) ||
+      payment.type?.toLowerCase().includes(searchLower)
+    );
+  });
+
   // Pagination logic
-  const totalPages = Math.max(
-    1,
-    Math.ceil(filteredSales.length / itemsPerPage),
-  );
+  const totalSalesPages = Math.max(1, Math.ceil(filteredSales.length / itemsPerPage));
   const paginatedSales = filteredSales.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage,
+  );
+
+  const totalPaymentsPages = Math.max(1, Math.ceil(filteredPayments.length / itemsPerPage));
+  const paginatedPayments = filteredPayments.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage,
   );
@@ -83,16 +117,32 @@ export default function History() {
   // Reset to page 1 when search or itemsPerPage changes
   React.useEffect(() => {
     setCurrentPage(1);
-  }, [search, itemsPerPage]);
+  }, [search, itemsPerPage, view]);
 
   return (
     <main className="px-6 md:px-12 flex-1 space-y-4">
       <section className="bg-card border border-border rounded-xl shadow-sm p-6 space-y-5">
         <div className="flex items-center gap-3 mb-4">
-          <Search className="w-7 h-7 text-cyan-500" />
+          <Receipt className="w-7 h-7 text-cyan-500" />
           <h1 className="text-2xl font-bold">
-            {t("history.title", "Sales History")}
+            {t("history.title", "Sales & Payment History")}
           </h1>
+        </div>
+
+        {/* Toggle between Sales and Payments */}
+        <div className="flex gap-2 mb-4">
+          <button
+            className={`px-4 py-2 rounded-md font-medium border ${view === 'sales' ? 'bg-primary text-white' : 'bg-card text-foreground border-border'}`}
+            onClick={() => setView('sales')}
+          >
+            {t('history.salesTab', 'Sales History')}
+          </button>
+          <button
+            className={`px-4 py-2 rounded-md font-medium border ${view === 'payments' ? 'bg-primary text-white' : 'bg-card text-foreground border-border'}`}
+            onClick={() => setView('payments')}
+          >
+            {t('history.paymentsTab', 'Payment History')}
+          </button>
         </div>
 
         {/* Items per page selector and search bar in the same row */}
@@ -126,20 +176,24 @@ export default function History() {
         {loading ? (
           <div className="flex items-center gap-2 text-muted-foreground">
             <Loader2 className="animate-spin" />
-            {t("history.loading", "Loading sales history...")}
+            {t("history.loading", view === 'sales' ? "Loading sales history..." : "Loading payment history...")}
           </div>
         ) : error ? (
           <div className="text-red-500">{error}</div>
         ) : (
           <>
-            <SalesTable sales={paginatedSales} />
+            {view === 'sales' ? (
+              <SalesTable sales={paginatedSales} />
+            ) : (
+              <PaymentsTable payments={paginatedPayments} />
+            )}
 
             {/* Pagination Navigation */}
-            {totalPages > 1 && (
+            {(view === 'sales' ? totalSalesPages : totalPaymentsPages) > 1 && (
               <Pagination className="mt-6">
                 <PaginationContent>
                   <PaginationItem>
-                    {currentPage === 1 || filteredSales.length === 0 ? (
+                    {currentPage === 1 || (view === 'sales' ? filteredSales.length : filteredPayments.length) === 0 ? (
                       <span className="opacity-50 pointer-events-none select-none">
                         <PaginationPrevious href="#" />
                       </span>
@@ -156,6 +210,7 @@ export default function History() {
                   {/* Page numbers with ellipsis if needed */}
                   {(() => {
                     const items = [];
+                    const totalPages = view === 'sales' ? totalSalesPages : totalPaymentsPages;
                     let start = Math.max(1, currentPage - 2);
                     let end = Math.min(totalPages, currentPage + 2);
                     if (currentPage <= 3) {
@@ -196,8 +251,7 @@ export default function History() {
                     return items;
                   })()}
                   <PaginationItem>
-                    {currentPage === totalPages ||
-                    filteredSales.length === 0 ? (
+                    {currentPage === (view === 'sales' ? totalSalesPages : totalPaymentsPages) || (view === 'sales' ? filteredSales.length : filteredPayments.length) === 0 ? (
                       <span className="opacity-50 pointer-events-none select-none">
                         <PaginationNext href="#" />
                       </span>

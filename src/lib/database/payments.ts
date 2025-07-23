@@ -26,3 +26,13 @@ export async function getPaymentsByClient(clientId: string) {
     orderBy: { createdAt: "desc" },
   });
 }
+
+export async function getAllPayments() {
+  return await prisma.payment.findMany({
+    include: {
+      client: true,
+      sale: true,
+    },
+    orderBy: { createdAt: "desc" },
+  });
+}
