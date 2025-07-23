@@ -4,7 +4,7 @@ import { ShoppingCart } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import ProductSearch from "./components/productSearch";
 import CartTable from "./components/cartTable";
-import PaymentSummary from "./components/paymentSummary";
+import PaymentSummary from '../../lib/components/paymentSummary';
 import ActionButtons from "./components/actionButtons";
 import OutOfStockWarningModal from "./components/outOfStockWarningModal";
 import ProductBrowser from "./components/productBrowser";
@@ -256,6 +256,7 @@ export default function CashierPage() {
                 paymentAmount={paymentAmount}
                 discount={Number(discount) || 0}
                 paymentType={paymentType}
+                className="h-full"
               />
             </div>
             <ActionButtons

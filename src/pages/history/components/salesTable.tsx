@@ -13,6 +13,7 @@ import {
   DollarSign,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import PaymentSummary from '../../../lib/components/paymentSummary';
 
 type SaleWithDetails = Awaited<
   ReturnType<typeof window.api.database.sales.getAll>
@@ -233,62 +234,26 @@ const SalesTable: React.FC<SalesTableProps> = ({ sales }) => {
                 <tr className="bg-muted/20">
                   <td colSpan={7} className="p-4">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                      {/* Sale Items */}
+                      {/* Sale Items & Summary (replaced with PaymentSummary) */}
                       <div className="space-y-3">
                         <h4 className="font-semibold text-foreground flex items-center gap-2">
                           <Package className="w-4 h-4" />
                           {t("history.saleItems", "Sale Items")}
                         </h4>
-                        <div className="bg-card rounded-lg border p-3 space-y-2">
-                          {sale.saleItems.map((item, index) => (
-                            <div
-                              key={index}
-                              className="flex justify-between items-center"
-                            >
-                              <div className="flex-1">
-                                <div className="font-medium">
-                                  {item.product.name}
-                                </div>
-                                <div className="text-xs text-muted-foreground">
-                                  {item.product.categoryName}
-                                </div>
-                              </div>
-                              <div className="text-right">
-                                <div className="font-medium">
-                                  {item.quantity} x {formatCurrency(item.price)}
-                                </div>
-                                <div className="text-xs text-muted-foreground">
-                                  = {formatCurrency(item.quantity * item.price)}
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                          {sale.discount > 0 && (
-                            <div className="pt-2 border-t border-border">
-                              <div className="flex justify-between items-center">
-                                <span className="text-muted-foreground">
-                                  {t("history.subtotal", "Subtotal")}:
-                                </span>
-                                <span>{formatCurrency(sale.totalAmount)}</span>
-                              </div>
-                              <div className="flex justify-between items-center text-green-600">
-                                <span>
-                                  {t("history.discount", "Discount")}:
-                                </span>
-                                <span>-{formatCurrency(sale.discount)}</span>
-                              </div>
-                              <div className="flex justify-between items-center font-semibold pt-1 border-t border-border">
-                                <span>{t("history.total", "Total")}:</span>
-                                <span>
-                                  {formatCurrency(sale.totalWithDiscount)}
-                                </span>
-                              </div>
-                            </div>
-                          )}
-                        </div>
+                        <PaymentSummary
+                          cart={sale.saleItems.map(item => ({
+                            id: item.product.id,
+                            name: item.product.name,
+                            price: item.price,
+                            qty: item.quantity,
+                          }))}
+                          clientName={sale.client?.name}
+                          discount={sale.discount}
+                          paymentAmount={sale.totalPaid}
+                          paymentType={sale.isPaidInCash ? "none" : (sale.payments.length > 0 && sale.payments[0].type === "VERSEMENT" ? "versement" : "credit")}
+                        />
                       </div>
-
-                      {/* Payments & Client Info */}
+                      {/* Payments & Client Info (unchanged) */}
                       <div className="space-y-3">
                         {/* Client Details */}
                         {sale.client && (
