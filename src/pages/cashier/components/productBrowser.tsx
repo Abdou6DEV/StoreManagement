@@ -72,7 +72,7 @@ const ProductBrowser: React.FC<ProductBrowserProps> = ({
     setTimeout(() => {
       setVisibleCount((prev) => prev + 50);
       setLoadingMore(false);
-    }, 2000);
+    }, 500); // was 2000, now 500 for faster loading
   };
 
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
@@ -148,7 +148,7 @@ const ProductBrowser: React.FC<ProductBrowserProps> = ({
             return (
               <div key={product.id} className="relative">
                 <div
-                  className={`p-2 border rounded-md h-20 cursor-pointer transition-all flex flex-col justify-between relative overflow-hidden w-full h-full ${
+                  className={`p-2 border rounded-md h-20 cursor-pointer transition-all flex flex-col justify-between relative overflow-hidden w-full ${
                     cartItem
                       ? "border-primary bg-primary/10"
                       : "border-border hover:border-primary"
