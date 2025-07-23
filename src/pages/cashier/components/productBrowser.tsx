@@ -28,6 +28,7 @@ const ProductBrowser: React.FC<ProductBrowserProps> = ({
   const filterInputRef = useRef<HTMLInputElement>(null);
   const { categories } = useStock();
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
+  const [initialCartIds, setInitialCartIds] = useState<string[]>([]);
 
   // Long-press timer refs and state
   const incrementDecrementTimer = useRef<NodeJS.Timeout | null>(null);
@@ -39,6 +40,17 @@ const ProductBrowser: React.FC<ProductBrowserProps> = ({
       filterInputRef.current.focus();
     }
   }, [open]);
+
+  useEffect(() => {
+    if (open) {
+      setInitialCartIds(cart.map(item => item.id));
+    }
+  }, [open]);
+
+  const handleCancel = () => {
+    setCart(prev => prev.filter(item => initialCartIds.includes(item.id)));
+    onClose();
+  };
 
   const filteredProducts = useMemo(() => {
     let products = allProducts;
@@ -245,12 +257,20 @@ const ProductBrowser: React.FC<ProductBrowserProps> = ({
               </div>
             )}
         </div>
-        <button
-          onClick={onClose}
-          className="mt-2 py-2 px-4 rounded-md font-medium bg-primary text-primary-foreground hover:bg-primary/90 border border-border"
-        >
-          {t("cashier.confirm", "Confirm")}
-        </button>
+        <div className="flex justify-center gap-2 mt-2">
+          <button
+            onClick={onClose}
+            className="py-2 px-4 rounded-md font-medium bg-primary text-primary-foreground hover:bg-primary/90 border border-border"
+          >
+            {t("cashier.confirm", "Confirm")}
+          </button>
+          <button
+            onClick={handleCancel}
+            className="py-2 px-4 rounded-md font-medium bg-muted text-foreground hover:bg-muted/80 border border-border"
+          >
+            {t("cashier.cancel", "Cancel")}
+          </button>
+        </div>
       </div>
     </div>
   );
