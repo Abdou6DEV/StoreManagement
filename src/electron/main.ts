@@ -13,7 +13,7 @@ import {
 } from "../lib/database/clients";
 import { createSale, getProductSalesCounts } from "../lib/database/sales";
 import { getOption, setOption } from "../lib/database/options";
-import { createPayment } from "../lib/database/payments";
+import { createPayment, getPaymentsByClient } from "../lib/database/payments";
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {
@@ -135,5 +135,9 @@ function setupDatabaseHandlers() {
 
   ipcMain.handle("db:payments:create", async (_event, data) => {
     return await createPayment(data);
+  });
+
+  ipcMain.handle("db:payments:getByClient", async (_event, clientId: string) => {
+    return await getPaymentsByClient(clientId);
   });
 }

@@ -17,6 +17,7 @@ interface ClientsTableProps {
   onEdit: (client: Client) => void;
   onDelete: (id: string) => void;
   deleteLoading: string | null;
+  onViewPayments: (client: Client) => void;
 }
 
 const ClientsTable: React.FC<ClientsTableProps> = ({
@@ -24,6 +25,7 @@ const ClientsTable: React.FC<ClientsTableProps> = ({
   onEdit,
   onDelete,
   deleteLoading,
+  onViewPayments,
 }) => {
   const { t } = useTranslation();
 
@@ -43,6 +45,7 @@ const ClientsTable: React.FC<ClientsTableProps> = ({
       </div>
     );
   }
+  
   return (
     <div className="overflow-auto rounded-lg border border-muted">
       <table className="min-w-full text-sm text-left">
@@ -80,6 +83,14 @@ const ClientsTable: React.FC<ClientsTableProps> = ({
                     className="text-green-600 border-green-200 hover:bg-green-50 dark:text-green-400 dark:border-green-800 dark:hover:bg-green-950/30"
                   >
                     <Edit className="w-3 h-3" /> {t("clients.edit", "Edit")}
+                  </Button>
+                  <Button
+                    onClick={() => onViewPayments(client)}
+                    size="sm"
+                    variant="outline"
+                    className="text-blue-600 border-blue-200 hover:bg-blue-50 dark:text-blue-400 dark:border-blue-800 dark:hover:bg-blue-950/30"
+                  >
+                    <Users className="w-3 h-3" /> {t("clients.viewPayments", "Payments")}
                   </Button>
                   <Button
                     onClick={() => onDelete(client.id)}

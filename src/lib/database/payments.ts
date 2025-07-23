@@ -19,3 +19,10 @@ export async function createPayment(data: {
     },
   });
 }
+
+export async function getPaymentsByClient(clientId: string) {
+  return await prisma.payment.findMany({
+    where: { clientId },
+    orderBy: { createdAt: "desc" },
+  });
+}

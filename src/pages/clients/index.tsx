@@ -5,6 +5,7 @@ import ClientsTable from "./components/clientsTable";
 import EditClientDialog from "./components/editClientDialog";
 import SearchBar from "./components/searchBar";
 import AddClientForm from "./components/addClientForm";
+import PaymentsModal from "./components/paymentsModal";
 import {
   Pagination,
   PaginationContent,
@@ -38,6 +39,7 @@ export default function Clients() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [openPanel, setOpenPanel] = useState<"add" | null>(null);
+  const [paymentsClient, setPaymentsClient] = useState<Client | null>(null);
 
   const fetchClients = async () => {
     setLoading(true);
@@ -185,6 +187,7 @@ export default function Clients() {
               onEdit={handleEdit}
               onDelete={handleDelete}
               deleteLoading={deleteLoading}
+              onViewPayments={setPaymentsClient}
             />
             {/* Pagination Navigation (bottom, shadcn style) */}
             {totalPages > 1 && (
@@ -275,6 +278,10 @@ export default function Clients() {
           onSubmit={handleEditSubmit}
           loading={editLoading}
         />
+        {/* PaymentsModal will be rendered here when paymentsClient is set */}
+        {paymentsClient && (
+          <PaymentsModal client={paymentsClient} onClose={() => setPaymentsClient(null)} />
+        )}
       </section>
     </main>
   );

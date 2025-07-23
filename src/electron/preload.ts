@@ -61,6 +61,7 @@ contextBridge.exposeInMainWorld("api", {
         paidAt?: Date;
         type: "CREDIT" | "VERSEMENT";
       }) => ipcRenderer.invoke("db:payments:create", data),
+      getByClient: (clientId: string) => ipcRenderer.invoke("db:payments:getByClient", clientId),
     },
   },
   app: {
@@ -132,6 +133,7 @@ declare global {
             paidAt?: Date;
             type: "CREDIT" | "VERSEMENT";
           }) => Promise<Payment>;
+          getByClient: (clientId: string) => Promise<Payment[]>;
         };
       };
       app: {
