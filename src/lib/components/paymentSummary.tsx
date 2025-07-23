@@ -26,7 +26,7 @@ export default function PaymentSummary({
     [cart],
   );
 
-  const total = subtotal; // Before discount
+  const total = Math.max(subtotal - discount, 0); // After discount
   const credit = subtotal - discount - paymentAmount;
   const creditDisplay = credit > 0 ? credit : 0;
   const nbrItems = cart.reduce((sum, item) => sum + item.qty, 0);
