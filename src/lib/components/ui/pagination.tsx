@@ -71,16 +71,20 @@ function PaginationPrevious({
   ...props
 }: React.ComponentProps<typeof PaginationLink>) {
   const { t, i18n } = useTranslation();
-  const isRtl = (typeof document !== 'undefined' && document.dir === 'rtl') || i18n.language === 'ar';
+  const isRtl =
+    (typeof document !== "undefined" && document.dir === "rtl") ||
+    i18n.language === "ar";
   return (
     <PaginationLink
-      aria-label={t('pagination.prev', 'Go to previous page')}
+      aria-label={t("pagination.prev", "Go to previous page")}
       size="default"
       className={cn("gap-1 px-2.5 sm:pl-2.5", className)}
       {...props}
     >
       {isRtl ? <ChevronRightIcon /> : <ChevronLeftIcon />}
-      <span className="hidden sm:block">{t('pagination.prev', 'Previous')}</span>
+      <span className="hidden sm:block">
+        {t("pagination.prev", "Previous")}
+      </span>
     </PaginationLink>
   );
 }
@@ -90,15 +94,17 @@ function PaginationNext({
   ...props
 }: React.ComponentProps<typeof PaginationLink>) {
   const { t, i18n } = useTranslation();
-  const isRtl = (typeof document !== 'undefined' && document.dir === 'rtl') || i18n.language === 'ar';
+  const isRtl =
+    (typeof document !== "undefined" && document.dir === "rtl") ||
+    i18n.language === "ar";
   return (
     <PaginationLink
-      aria-label={t('pagination.next', 'Go to next page')}
+      aria-label={t("pagination.next", "Go to next page")}
       size="default"
       className={cn("gap-1 px-2.5 sm:pr-2.5", className)}
       {...props}
     >
-      <span className="hidden sm:block">{t('pagination.next', 'Next')}</span>
+      <span className="hidden sm:block">{t("pagination.next", "Next")}</span>
       {isRtl ? <ChevronLeftIcon /> : <ChevronRightIcon />}
     </PaginationLink>
   );

@@ -36,20 +36,20 @@ const ProductBrowser: React.FC<ProductBrowserProps> = ({
   const tabsContainerRef = useRef<HTMLDivElement>(null);
   // Remove canScrollLeft, canScrollRight, updateChevronState, and related useEffect
 
-  const scrollTabs = (direction: 'left' | 'right') => {
+  const scrollTabs = (direction: "left" | "right") => {
     const container = tabsContainerRef.current;
     if (!container) return;
     // Get the first 3 visible buttons and sum their widths
-    const btns = Array.from(container.querySelectorAll('button'));
+    const btns = Array.from(container.querySelectorAll("button"));
     let scrollAmount = 0;
     for (let i = 0; i < 3 && i < btns.length; i++) {
       scrollAmount += (btns[i] as HTMLElement).offsetWidth;
     }
     if (scrollAmount === 0) scrollAmount = 120; // fallback
-    if (direction === 'left') {
-      container.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+    if (direction === "left") {
+      container.scrollBy({ left: -scrollAmount, behavior: "smooth" });
     } else {
-      container.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+      container.scrollBy({ left: scrollAmount, behavior: "smooth" });
     }
   };
 
@@ -78,12 +78,12 @@ const ProductBrowser: React.FC<ProductBrowserProps> = ({
 
   useEffect(() => {
     if (open) {
-      setInitialCartIds(cart.map(item => item.id));
+      setInitialCartIds(cart.map((item) => item.id));
     }
   }, [open]);
 
   const handleCancel = () => {
-    setCart(prev => prev.filter(item => initialCartIds.includes(item.id)));
+    setCart((prev) => prev.filter((item) => initialCartIds.includes(item.id)));
     onClose();
   };
 
@@ -96,7 +96,9 @@ const ProductBrowser: React.FC<ProductBrowserProps> = ({
       );
     }
     if (selectedCategory !== "All") {
-      products = products.filter((product) => product.categoryName === selectedCategory);
+      products = products.filter(
+        (product) => product.categoryName === selectedCategory,
+      );
     }
 
     return products.sort((a, b) => {
@@ -146,7 +148,9 @@ const ProductBrowser: React.FC<ProductBrowserProps> = ({
     }
   };
 
-  const [editingQtyProductId, setEditingQtyProductId] = useState<string | null>(null);
+  const [editingQtyProductId, setEditingQtyProductId] = useState<string | null>(
+    null,
+  );
   const [editingQtyValue, setEditingQtyValue] = useState<string>("");
   const editingQtyInputRef = useRef<HTMLInputElement>(null);
 
@@ -175,14 +179,17 @@ const ProductBrowser: React.FC<ProductBrowserProps> = ({
             <button
               type="button"
               className="flex items-center justify-center w-8 h-8 text-primary hover:text-primary/80 transition"
-              onClick={() => scrollTabs('left')}
+              onClick={() => scrollTabs("left")}
               tabIndex={-1}
               aria-label="Scroll categories left"
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
             <div className="overflow-x-auto flex-1 max-w-[50vw]">
-              <div ref={tabsContainerRef} className="flex gap-1 bg-muted rounded-md p-1 border border-border whitespace-nowrap min-w-full overflow-x-auto scrollbar-thin">
+              <div
+                ref={tabsContainerRef}
+                className="flex gap-1 bg-muted rounded-md p-1 border border-border whitespace-nowrap min-w-full overflow-x-auto scrollbar-thin"
+              >
                 <button
                   className={`px-3 py-1 rounded-md font-medium transition-colors text-sm ${selectedCategory === "All" ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-accent"}`}
                   onClick={() => setSelectedCategory("All")}
@@ -203,7 +210,7 @@ const ProductBrowser: React.FC<ProductBrowserProps> = ({
             <button
               type="button"
               className="flex items-center justify-center w-8 h-8 text-primary hover:text-primary/80 transition"
-              onClick={() => scrollTabs('right')}
+              onClick={() => scrollTabs("right")}
               tabIndex={-1}
               aria-label="Scroll categories right"
             >
@@ -238,12 +245,16 @@ const ProductBrowser: React.FC<ProductBrowserProps> = ({
                         },
                       ]);
                     } else {
-                      setCart((prev) => prev.filter((item) => item.id !== product.id));
+                      setCart((prev) =>
+                        prev.filter((item) => item.id !== product.id),
+                      );
                     }
                   }}
                 >
                   <div className="flex flex-col gap-0.5 flex-1 min-h-0 justify-center h-full">
-                    <div className="font-medium truncate leading-tight">{product.name}</div>
+                    <div className="font-medium truncate leading-tight">
+                      {product.name}
+                    </div>
                     <div className="text-sm text-muted-foreground leading-tight">
                       {product.selling.toLocaleString()} DA
                     </div>
@@ -256,16 +267,18 @@ const ProductBrowser: React.FC<ProductBrowserProps> = ({
                       <div className="flex items-center gap-2 pointer-events-auto z-20">
                         <button
                           className="w-8 h-8 rounded-full bg-muted text-primary hover:bg-primary hover:text-primary-foreground text-base font-bold shadow flex items-center justify-center border border-border"
-                          onClick={e => {
+                          onClick={(e) => {
                             e.stopPropagation();
                             setCart((prev) =>
-                              prev.map((item) =>
-                                item.id === product.id && item.qty > 1
-                                  ? { ...item, qty: item.qty - 1 }
-                                  : item.id === product.id && item.qty === 1
-                                  ? null
-                                  : item
-                              ).filter(Boolean)
+                              prev
+                                .map((item) =>
+                                  item.id === product.id && item.qty > 1
+                                    ? { ...item, qty: item.qty - 1 }
+                                    : item.id === product.id && item.qty === 1
+                                      ? null
+                                      : item,
+                                )
+                                .filter(Boolean),
                             );
                           }}
                         >
@@ -273,8 +286,8 @@ const ProductBrowser: React.FC<ProductBrowserProps> = ({
                         </button>
                         <span
                           className="px-2 text-base font-semibold select-none cursor-pointer"
-                          onClick={e => e.stopPropagation()}
-                          onDoubleClick={e => {
+                          onClick={(e) => e.stopPropagation()}
+                          onDoubleClick={(e) => {
                             e.stopPropagation();
                             setEditingQtyProductId(product.id);
                             setEditingQtyValue(cartItem.qty.toString());
@@ -285,7 +298,7 @@ const ProductBrowser: React.FC<ProductBrowserProps> = ({
                               ref={editingQtyInputRef}
                               type="text"
                               value={editingQtyValue}
-                              onChange={e => {
+                              onChange={(e) => {
                                 if (/^\d*$/.test(e.target.value)) {
                                   setEditingQtyValue(e.target.value);
                                 }
@@ -293,19 +306,27 @@ const ProductBrowser: React.FC<ProductBrowserProps> = ({
                               onBlur={() => {
                                 const newQty = parseInt(editingQtyValue);
                                 if (!isNaN(newQty) && newQty > 0) {
-                                  setCart(prev => prev.map(item =>
-                                    item.id === product.id ? { ...item, qty: newQty } : item
-                                  ));
+                                  setCart((prev) =>
+                                    prev.map((item) =>
+                                      item.id === product.id
+                                        ? { ...item, qty: newQty }
+                                        : item,
+                                    ),
+                                  );
                                 }
                                 setEditingQtyProductId(null);
                               }}
-                              onKeyDown={e => {
+                              onKeyDown={(e) => {
                                 if (e.key === "Enter") {
                                   const newQty = parseInt(editingQtyValue);
                                   if (!isNaN(newQty) && newQty > 0) {
-                                    setCart(prev => prev.map(item =>
-                                      item.id === product.id ? { ...item, qty: newQty } : item
-                                    ));
+                                    setCart((prev) =>
+                                      prev.map((item) =>
+                                        item.id === product.id
+                                          ? { ...item, qty: newQty }
+                                          : item,
+                                      ),
+                                    );
                                   }
                                   setEditingQtyProductId(null);
                                 } else if (e.key === "Escape") {
@@ -314,7 +335,7 @@ const ProductBrowser: React.FC<ProductBrowserProps> = ({
                               }}
                               className="w-12 text-center bg-white dark:bg-zinc-900 border border-primary rounded px-1 py-0 text-base focus:outline-none focus:ring-1 focus:ring-primary"
                               style={{ minWidth: 32 }}
-                              onClick={e => e.stopPropagation()}
+                              onClick={(e) => e.stopPropagation()}
                             />
                           ) : (
                             cartItem.qty
@@ -322,14 +343,14 @@ const ProductBrowser: React.FC<ProductBrowserProps> = ({
                         </span>
                         <button
                           className="w-8 h-8 rounded-full bg-muted text-primary hover:bg-primary hover:text-primary-foreground text-base font-bold shadow flex items-center justify-center border border-border"
-                          onClick={e => {
+                          onClick={(e) => {
                             e.stopPropagation();
                             setCart((prev) =>
                               prev.map((item) =>
                                 item.id === product.id
                                   ? { ...item, qty: item.qty + 1 }
-                                  : item
-                              )
+                                  : item,
+                              ),
                             );
                           }}
                         >

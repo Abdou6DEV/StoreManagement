@@ -129,7 +129,9 @@ export default function PaymentSummary({
   }, []);
 
   return (
-    <div className={`font-mono text-sm text-primary bg-muted rounded-xl p-4 flex flex-col shadow-inner border border-border max-w-full w-full h-[70vh] ${className}`}>
+    <div
+      className={`font-mono text-sm text-primary bg-muted rounded-xl p-4 flex flex-col shadow-inner border border-border max-w-full w-full h-[70vh] ${className}`}
+    >
       {/* === Client Info === */}
       {clientName && (
         <>
@@ -151,7 +153,10 @@ export default function PaymentSummary({
       <div className="border-t border-black dark:border-white mb-2" />
 
       {/* === Scrollable Items === */}
-      <div className={`flex-1 overflow-y-auto overflow-x-hidden space-y-[2px] transition-opacity duration-500 ${isFading ? 'opacity-0' : 'opacity-100'}`} ref={scrollRef}>
+      <div
+        className={`flex-1 overflow-y-auto overflow-x-hidden space-y-[2px] transition-opacity duration-500 ${isFading ? "opacity-0" : "opacity-100"}`}
+        ref={scrollRef}
+      >
         {cart.length > 0
           ? cart.map((item) => (
               <div

@@ -14,10 +14,14 @@ export default function Dashboard() {
         <button
           className="flex items-center gap-2 px-3 py-2 rounded-md border bg-card text-foreground hover:bg-accent transition-all shadow-sm"
           onClick={() => setShowChart((prev) => !prev)}
-          title={showChart ? t("dashboard.hideChart") : t("dashboard.showChart")}
+          title={
+            showChart ? t("dashboard.hideChart") : t("dashboard.showChart")
+          }
         >
           <BarChart2 className="w-4 h-4" />
-          <span className="text-sm font-medium">{showChart ? t("dashboard.hideChart") : t("dashboard.showChart")}</span>
+          <span className="text-sm font-medium">
+            {showChart ? t("dashboard.hideChart") : t("dashboard.showChart")}
+          </span>
         </button>
       </div>
       {showChart && (

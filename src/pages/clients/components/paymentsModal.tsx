@@ -7,7 +7,14 @@ import {
   DialogDescription,
 } from "../../../lib/components/ui/dialog";
 import { Button } from "../../../lib/components/ui/button";
-import { Loader2, X, CreditCard, ArrowDownCircle, ArrowUpCircle, CheckCircle } from "lucide-react";
+import {
+  Loader2,
+  X,
+  CreditCard,
+  ArrowDownCircle,
+  ArrowUpCircle,
+  CheckCircle,
+} from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 interface Payment {
@@ -39,9 +46,12 @@ const PaymentsModal: React.FC<PaymentsModalProps> = ({ client, onClose }) => {
   const handleMarkAsPaid = async (saleId: string, clientId: string) => {
     await window.api.database.payments.markAsPaid(saleId, clientId, new Date());
     setLoading(true);
-    window.api.database.payments.getByClient(client.id)
+    window.api.database.payments
+      .getByClient(client.id)
       .then((data) => setPayments(data as any))
-      .catch(() => setError(t("clients.paymentsError", "Failed to fetch payments")))
+      .catch(() =>
+        setError(t("clients.paymentsError", "Failed to fetch payments")),
+      )
       .finally(() => setLoading(false));
   };
 
@@ -51,22 +61,32 @@ const PaymentsModal: React.FC<PaymentsModalProps> = ({ client, onClose }) => {
     window.api.database.payments
       .getByClient(client.id)
       .then((data) => setPayments(data as any))
-      .catch(() => setError(t("clients.paymentsError", "Failed to fetch payments")))
+      .catch(() =>
+        setError(t("clients.paymentsError", "Failed to fetch payments")),
+      )
       .finally(() => setLoading(false));
   }, [client.id, t]);
 
   return (
     <Dialog modal open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent showCloseButton={false} style={{ maxWidth: '60vw' }}>
+      <DialogContent showCloseButton={false} style={{ maxWidth: "60vw" }}>
         <DialogHeader>
           <DialogTitle>
             <div className="flex items-center gap-3">
               <CreditCard className="w-5 h-5 text-blue-600" />
-              <span>{t("clients.paymentsTitle", { name: client.name, defaultValue: "Payments for {{name}}" })}</span>
+              <span>
+                {t("clients.paymentsTitle", {
+                  name: client.name,
+                  defaultValue: "Payments for {{name}}",
+                })}
+              </span>
             </div>
           </DialogTitle>
           <DialogDescription>
-            {t("clients.paymentsDesc", "View all credits and versements for this client.")}
+            {t(
+              "clients.paymentsDesc",
+              "View all credits and versements for this client.",
+            )}
           </DialogDescription>
         </DialogHeader>
         <Button
@@ -80,7 +100,8 @@ const PaymentsModal: React.FC<PaymentsModalProps> = ({ client, onClose }) => {
         <div className="mt-4">
           {loading ? (
             <div className="flex items-center gap-2 text-muted-foreground">
-              <Loader2 className="animate-spin" /> {t("clients.paymentsLoading", "Loading payments...")}
+              <Loader2 className="animate-spin" />{" "}
+              {t("clients.paymentsLoading", "Loading payments...")}
             </div>
           ) : error ? (
             <div className="text-red-500">{error}</div>
@@ -93,11 +114,21 @@ const PaymentsModal: React.FC<PaymentsModalProps> = ({ client, onClose }) => {
               <table className="min-w-full text-sm text-left">
                 <thead className="bg-muted text-muted-foreground">
                   <tr>
-                    <th className="px-4 py-3">{t("clients.paymentType", "Type")}</th>
-                    <th className="px-4 py-3">{t("clients.paymentAmount", "Amount")}</th>
-                    <th className="px-4 py-3">{t("clients.paymentDueAt", "Due At")}</th>
-                    <th className="px-4 py-3">{t("clients.paymentPaidAt", "Paid At")}</th>
-                    <th className="px-4 py-3">{t("clients.paymentCreatedAt", "Created At")}</th>
+                    <th className="px-4 py-3">
+                      {t("clients.paymentType", "Type")}
+                    </th>
+                    <th className="px-4 py-3">
+                      {t("clients.paymentAmount", "Amount")}
+                    </th>
+                    <th className="px-4 py-3">
+                      {t("clients.paymentDueAt", "Due At")}
+                    </th>
+                    <th className="px-4 py-3">
+                      {t("clients.paymentPaidAt", "Paid At")}
+                    </th>
+                    <th className="px-4 py-3">
+                      {t("clients.paymentCreatedAt", "Created At")}
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -105,7 +136,10 @@ const PaymentsModal: React.FC<PaymentsModalProps> = ({ client, onClose }) => {
                     <tr key={i} className="hover:bg-muted/40 transition">
                       <td className="px-4 py-2 font-medium flex items-center gap-2">
                         <ArrowUpCircle className="w-4 h-4 text-red-500" />
-                        {t(`clients.paymentType_${p.type.toLowerCase()}`, p.type)}
+                        {t(
+                          `clients.paymentType_${p.type.toLowerCase()}`,
+                          p.type,
+                        )}
                       </td>
                       <td className="px-4 py-2">
                         {p.paidAmount.toLocaleString()} DA
@@ -115,16 +149,28 @@ const PaymentsModal: React.FC<PaymentsModalProps> = ({ client, onClose }) => {
                       </td>
                       <td className="px-4 py-3 flex items-center gap-2">
                         {p.paidAt ? (
-                          <><CheckCircle className="w-4 h-4 text-green-500" /> {new Date(p.paidAt).toLocaleDateString()}</>
+                          <>
+                            <CheckCircle className="w-4 h-4 text-green-500" />{" "}
+                            {new Date(p.paidAt).toLocaleDateString()}
+                          </>
                         ) : (
-                          <Button size="sm" variant="outline" className="text-green-700 border-green-500 hover:bg-green-50 flex items-center gap-1" onClick={() => handleMarkAsPaid(p.saleId, p.clientId)}>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-green-700 border-green-500 hover:bg-green-50 flex items-center gap-1"
+                            onClick={() =>
+                              handleMarkAsPaid(p.saleId, p.clientId)
+                            }
+                          >
                             <CheckCircle className="w-4 h-4 text-green-500" />
                             {t("clients.markAsPaid", "Mark as Paid")}
                           </Button>
                         )}
                       </td>
                       <td className="px-4 py-2">
-                        {p.createdAt ? new Date(p.createdAt).toLocaleDateString() : "-"}
+                        {p.createdAt
+                          ? new Date(p.createdAt).toLocaleDateString()
+                          : "-"}
                       </td>
                     </tr>
                   ))}
@@ -138,4 +184,4 @@ const PaymentsModal: React.FC<PaymentsModalProps> = ({ client, onClose }) => {
   );
 };
 
-export default PaymentsModal; 
+export default PaymentsModal;

@@ -17,7 +17,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ search, setSearch }) => {
         type="text"
         placeholder={t(
           "history.searchPlaceholder",
-          "Search by client, phone, product, or sale ID..."
+          "Search by client, phone, product, or sale ID...",
         )}
         value={search}
         onChange={(e) => setSearch(e.target.value)}

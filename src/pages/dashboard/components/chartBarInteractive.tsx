@@ -13,7 +13,11 @@ import {
 } from "recharts";
 import { useTheme } from "../../../lib/hooks/useTheme";
 
-function getPeriodLabel(type: "day" | "month" | "year", value: number, idx: number) {
+function getPeriodLabel(
+  type: "day" | "month" | "year",
+  value: number,
+  idx: number,
+) {
   if (type === "day") {
     const date = new Date();
     date.setDate(date.getDate() - (29 - idx));
@@ -21,7 +25,18 @@ function getPeriodLabel(type: "day" | "month" | "year", value: number, idx: numb
   }
   if (type === "month") {
     return [
-      "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
     ][value];
   }
   return value.toString();
@@ -29,8 +44,12 @@ function getPeriodLabel(type: "day" | "month" | "year", value: number, idx: numb
 
 export function ChartBarInteractive() {
   const { t } = useTranslation();
-  const [timePeriod, setTimePeriod] = React.useState<"1m" | "12m" | "years">("12m");
-  const [chartType, setChartType] = React.useState<"profits" | "clients" | "sales">("profits");
+  const [timePeriod, setTimePeriod] = React.useState<"1m" | "12m" | "years">(
+    "12m",
+  );
+  const [chartType, setChartType] = React.useState<
+    "profits" | "clients" | "sales"
+  >("profits");
   const [chartData, setChartData] = React.useState({
     "1m": [],
     "12m": [],
@@ -67,13 +86,21 @@ export function ChartBarInteractive() {
             d.getDate() === date.getDate()
           );
         });
-        const profits = daySales.reduce((sum: number, s: any) =>
-          sum + (s.saleItems?.reduce(
-            (itemSum: number, item: any) =>
-              itemSum + ((item.price - (item.product?.bought || 0)) * item.quantity),
-            0
-          ) || 0), 0);
-        const salesTotal = daySales.reduce((sum: number, s: any) => sum + (s.totalWithDiscount || 0), 0);
+        const profits = daySales.reduce(
+          (sum: number, s: any) =>
+            sum +
+            (s.saleItems?.reduce(
+              (itemSum: number, item: any) =>
+                itemSum +
+                (item.price - (item.product?.bought || 0)) * item.quantity,
+              0,
+            ) || 0),
+          0,
+        );
+        const salesTotal = daySales.reduce(
+          (sum: number, s: any) => sum + (s.totalWithDiscount || 0),
+          0,
+        );
         return {
           period: getPeriodLabel("day", 0, idx),
           profits,
@@ -87,19 +114,31 @@ export function ChartBarInteractive() {
       const monthly = months.map((monthIdx) => {
         const monthSales = sales.filter((s: any) => {
           const d = new Date(s.createdAt);
-          return d.getFullYear() === now.getFullYear() && d.getMonth() === monthIdx;
+          return (
+            d.getFullYear() === now.getFullYear() && d.getMonth() === monthIdx
+          );
         });
         const monthClients = clients.filter((c: any) => {
           const d = new Date(c.createdAt);
-          return d.getFullYear() === now.getFullYear() && d.getMonth() === monthIdx;
+          return (
+            d.getFullYear() === now.getFullYear() && d.getMonth() === monthIdx
+          );
         });
-        const profits = monthSales.reduce((sum: number, s: any) =>
-          sum + (s.saleItems?.reduce(
-            (itemSum: number, item: any) =>
-              itemSum + ((item.price - (item.product?.bought || 0)) * item.quantity),
-            0
-          ) || 0), 0);
-        const salesTotal = monthSales.reduce((sum: number, s: any) => sum + (s.totalWithDiscount || 0), 0);
+        const profits = monthSales.reduce(
+          (sum: number, s: any) =>
+            sum +
+            (s.saleItems?.reduce(
+              (itemSum: number, item: any) =>
+                itemSum +
+                (item.price - (item.product?.bought || 0)) * item.quantity,
+              0,
+            ) || 0),
+          0,
+        );
+        const salesTotal = monthSales.reduce(
+          (sum: number, s: any) => sum + (s.totalWithDiscount || 0),
+          0,
+        );
         return {
           period: getPeriodLabel("month", monthIdx, monthIdx),
           profits,
@@ -119,13 +158,21 @@ export function ChartBarInteractive() {
           const d = new Date(c.createdAt);
           return d.getFullYear() === year;
         });
-        const profits = yearSales.reduce((sum: number, s: any) =>
-          sum + (s.saleItems?.reduce(
-            (itemSum: number, item: any) =>
-              itemSum + ((item.price - (item.product?.bought || 0)) * item.quantity),
-            0
-          ) || 0), 0);
-        const salesTotal = yearSales.reduce((sum: number, s: any) => sum + (s.totalWithDiscount || 0), 0);
+        const profits = yearSales.reduce(
+          (sum: number, s: any) =>
+            sum +
+            (s.saleItems?.reduce(
+              (itemSum: number, item: any) =>
+                itemSum +
+                (item.price - (item.product?.bought || 0)) * item.quantity,
+              0,
+            ) || 0),
+          0,
+        );
+        const salesTotal = yearSales.reduce(
+          (sum: number, s: any) => sum + (s.totalWithDiscount || 0),
+          0,
+        );
         return {
           period: year.toString(),
           profits,
@@ -250,7 +297,11 @@ export function ChartBarInteractive() {
                     : controlInactive
                 }`}
               >
-                {key === "1m" ? t("dashboard.1M") : key === "12m" ? t("dashboard.12M") : t("dashboard.years")}
+                {key === "1m"
+                  ? t("dashboard.1M")
+                  : key === "12m"
+                    ? t("dashboard.12M")
+                    : t("dashboard.years")}
               </button>
             ))}
           </div>
@@ -316,13 +367,49 @@ export function ChartBarInteractive() {
                 if (active && payload && payload.length) {
                   const value = payload[0].value;
                   return (
-                    <div className={isDark ? "bg-[#18181b] border border-gray-700 rounded-lg shadow-lg p-3 min-w-[120px]" : "bg-white border border-gray-200 rounded-lg shadow-lg p-3 min-w-[120px]"}>
-                      <div className={isDark ? "border-b border-gray-800 pb-2" : "border-b border-gray-100 pb-2"}>
-                        <p className={isDark ? "text-sm font-medium text-gray-100" : "text-sm font-medium text-gray-900"}>{label}</p>
+                    <div
+                      className={
+                        isDark
+                          ? "bg-[#18181b] border border-gray-700 rounded-lg shadow-lg p-3 min-w-[120px]"
+                          : "bg-white border border-gray-200 rounded-lg shadow-lg p-3 min-w-[120px]"
+                      }
+                    >
+                      <div
+                        className={
+                          isDark
+                            ? "border-b border-gray-800 pb-2"
+                            : "border-b border-gray-100 pb-2"
+                        }
+                      >
+                        <p
+                          className={
+                            isDark
+                              ? "text-sm font-medium text-gray-100"
+                              : "text-sm font-medium text-gray-900"
+                          }
+                        >
+                          {label}
+                        </p>
                       </div>
                       <div className="flex justify-between items-center mt-2">
-                        <span className={isDark ? "text-xs text-gray-400" : "text-xs text-gray-500"}>Value:</span>
-                        <span className={isDark ? "text-sm font-semibold text-gray-100" : "text-sm font-semibold text-gray-900"}>{currentChart.format(value)}</span>
+                        <span
+                          className={
+                            isDark
+                              ? "text-xs text-gray-400"
+                              : "text-xs text-gray-500"
+                          }
+                        >
+                          Value:
+                        </span>
+                        <span
+                          className={
+                            isDark
+                              ? "text-sm font-semibold text-gray-100"
+                              : "text-sm font-semibold text-gray-900"
+                          }
+                        >
+                          {currentChart.format(value)}
+                        </span>
                       </div>
                     </div>
                   );

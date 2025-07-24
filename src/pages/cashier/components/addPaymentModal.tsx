@@ -35,7 +35,7 @@ const AddPaymentModal: React.FC<AddPaymentModalProps> = ({
 }) => {
   if (!open) return null;
   const rest = cartTotal - Number(paymentAmount);
-  
+
   const amountInputRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
     if (open && amountInputRef.current) {
@@ -107,7 +107,7 @@ const AddPaymentModal: React.FC<AddPaymentModalProps> = ({
                 onChange={(e) => setPaymentAmount(Number(e.target.value) || 0)}
                 min={0}
                 placeholder={t("cashier.paymentAmount", "Payment Amount")}
-                className={`w-full rounded-lg border px-4 py-3 h-12 text-base bg-background focus:outline-none transition shadow-sm ${rest < 0 ? 'border-red-500 focus:ring-1 focus:ring-red-500' : 'border-border'}`}
+                className={`w-full rounded-lg border px-4 py-3 h-12 text-base bg-background focus:outline-none transition shadow-sm ${rest < 0 ? "border-red-500 focus:ring-1 focus:ring-red-500" : "border-border"}`}
               />
             </div>
             <div>

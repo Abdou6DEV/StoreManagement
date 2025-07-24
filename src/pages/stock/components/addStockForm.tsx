@@ -227,17 +227,18 @@ export default function AddStockForm({
                         className="h-9"
                       />
                       <CommandList
-                        onScroll={e => {
+                        onScroll={(e) => {
                           const el = e.currentTarget;
                           if (
-                            el.scrollTop + el.clientHeight >= el.scrollHeight - 10 &&
+                            el.scrollTop + el.clientHeight >=
+                              el.scrollHeight - 10 &&
                             hasMoreProducts &&
                             !loadingMoreProducts
                           ) {
                             handleLoadMoreProducts();
                           }
                         }}
-                        style={{ maxHeight: 350, overflowY: 'auto' }}
+                        style={{ maxHeight: 350, overflowY: "auto" }}
                       >
                         <CommandEmpty>
                           {t("stock.noProduct", "No product found.")}

@@ -4,7 +4,7 @@ import { ShoppingCart } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import ProductSearch from "./components/productSearch";
 import CartTable from "./components/cartTable";
-import PaymentSummary from '../../lib/components/paymentSummary';
+import PaymentSummary from "../../lib/components/paymentSummary";
 import ActionButtons from "./components/actionButtons";
 import OutOfStockWarningModal from "./components/outOfStockWarningModal";
 import ProductBrowser from "./components/productBrowser";
@@ -228,7 +228,8 @@ export default function CashierPage() {
               onClose={() => setShowProductBrowser(false)}
               cart={cart}
               setCart={(updater) => {
-                const result = typeof updater === "function" ? updater(cart) : updater;
+                const result =
+                  typeof updater === "function" ? updater(cart) : updater;
                 updateSession(result);
               }}
             />

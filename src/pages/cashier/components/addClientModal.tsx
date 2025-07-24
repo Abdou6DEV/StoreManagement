@@ -38,7 +38,7 @@ export default function addClientModal({
       nameInputRef.current.focus();
     }
   }, [open]);
-  
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <div className="flex-1 bg-white dark:bg-zinc-900 p-6 rounded-lg shadow-lg w-full max-w-sm space-y-4">

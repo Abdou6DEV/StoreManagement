@@ -11,7 +11,7 @@ import {
   Eye,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import SalesDetailsModal from './salesDetailsModal';
+import SalesDetailsModal from "./salesDetailsModal";
 
 type SaleWithDetails = Awaited<
   ReturnType<typeof window.api.database.sales.getAll>
@@ -25,7 +25,9 @@ const SalesTable: React.FC<SalesTableProps> = ({ sales }) => {
   const { t, i18n } = useTranslation();
   const isRTL = i18n.language === "ar";
   // Remove expandedRows and toggleExpanded
-  const [selectedSale, setSelectedSale] = useState<SaleWithDetails | null>(null);
+  const [selectedSale, setSelectedSale] = useState<SaleWithDetails | null>(
+    null,
+  );
   const [modalOpen, setModalOpen] = useState(false);
 
   const formatDate = (date: string | Date) => {
@@ -98,7 +100,14 @@ const SalesTable: React.FC<SalesTableProps> = ({ sales }) => {
 
   return (
     <div className="overflow-auto rounded-lg border border-muted">
-      <table className="min-w-full text-sm" dir={isRTL ? 'rtl' : 'ltr'} style={{ direction: isRTL ? 'rtl' : 'ltr', textAlign: isRTL ? 'right' : 'left' }}>
+      <table
+        className="min-w-full text-sm"
+        dir={isRTL ? "rtl" : "ltr"}
+        style={{
+          direction: isRTL ? "rtl" : "ltr",
+          textAlign: isRTL ? "right" : "left",
+        }}
+      >
         <thead className="bg-muted text-muted-foreground">
           <tr>
             {/* Restore a small spacer column */}
@@ -188,7 +197,7 @@ const SalesTable: React.FC<SalesTableProps> = ({ sales }) => {
                   )}
                   {!sale.isPaidInCash && sale.remainingAmount > 0 && (
                     <div className="text-xs text-red-500">
-                      {t("history.remaining", "Remaining")}: {" "}
+                      {t("history.remaining", "Remaining")}:{" "}
                       {formatCurrency(sale.remainingAmount)}
                     </div>
                   )}

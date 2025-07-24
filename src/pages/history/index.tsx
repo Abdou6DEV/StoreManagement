@@ -27,7 +27,7 @@ export default function History() {
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [view, setView] = useState<'sales' | 'payments'>('sales');
+  const [view, setView] = useState<"sales" | "payments">("sales");
 
   const fetchSales = async () => {
     setLoading(true);
@@ -49,14 +49,16 @@ export default function History() {
       const data = await window.api.database.payments.getAll();
       setPayments(data);
     } catch (err) {
-      setError(t("history.fetchPaymentsError", "Failed to fetch payment history"));
+      setError(
+        t("history.fetchPaymentsError", "Failed to fetch payment history"),
+      );
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (view === 'sales') {
+    if (view === "sales") {
       fetchSales();
     } else {
       fetchPayments();
@@ -102,13 +104,19 @@ export default function History() {
   });
 
   // Pagination logic
-  const totalSalesPages = Math.max(1, Math.ceil(filteredSales.length / itemsPerPage));
+  const totalSalesPages = Math.max(
+    1,
+    Math.ceil(filteredSales.length / itemsPerPage),
+  );
   const paginatedSales = filteredSales.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage,
   );
 
-  const totalPaymentsPages = Math.max(1, Math.ceil(filteredPayments.length / itemsPerPage));
+  const totalPaymentsPages = Math.max(
+    1,
+    Math.ceil(filteredPayments.length / itemsPerPage),
+  );
   const paginatedPayments = filteredPayments.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage,
@@ -132,16 +140,16 @@ export default function History() {
         {/* Toggle between Sales and Payments */}
         <div className="flex gap-2 mb-4">
           <button
-            className={`px-4 py-2 rounded-md font-medium border ${view === 'sales' ? 'bg-primary text-white' : 'bg-card text-foreground border-border'}`}
-            onClick={() => setView('sales')}
+            className={`px-4 py-2 rounded-md font-medium border ${view === "sales" ? "bg-primary text-white" : "bg-card text-foreground border-border"}`}
+            onClick={() => setView("sales")}
           >
-            {t('history.salesTab', 'Sales History')}
+            {t("history.salesTab", "Sales History")}
           </button>
           <button
-            className={`px-4 py-2 rounded-md font-medium border ${view === 'payments' ? 'bg-primary text-white' : 'bg-card text-foreground border-border'}`}
-            onClick={() => setView('payments')}
+            className={`px-4 py-2 rounded-md font-medium border ${view === "payments" ? "bg-primary text-white" : "bg-card text-foreground border-border"}`}
+            onClick={() => setView("payments")}
           >
-            {t('history.paymentsTab', 'Payment History')}
+            {t("history.paymentsTab", "Payment History")}
           </button>
         </div>
 
@@ -176,24 +184,32 @@ export default function History() {
         {loading ? (
           <div className="flex items-center gap-2 text-muted-foreground">
             <Loader2 className="animate-spin" />
-            {t("history.loading", view === 'sales' ? "Loading sales history..." : "Loading payment history...")}
+            {t(
+              "history.loading",
+              view === "sales"
+                ? "Loading sales history..."
+                : "Loading payment history...",
+            )}
           </div>
         ) : error ? (
           <div className="text-red-500">{error}</div>
         ) : (
           <>
-            {view === 'sales' ? (
+            {view === "sales" ? (
               <SalesTable sales={paginatedSales} />
             ) : (
               <PaymentsTable payments={paginatedPayments} />
             )}
 
             {/* Pagination Navigation */}
-            {(view === 'sales' ? totalSalesPages : totalPaymentsPages) > 1 && (
+            {(view === "sales" ? totalSalesPages : totalPaymentsPages) > 1 && (
               <Pagination className="mt-6">
                 <PaginationContent>
                   <PaginationItem>
-                    {currentPage === 1 || (view === 'sales' ? filteredSales.length : filteredPayments.length) === 0 ? (
+                    {currentPage === 1 ||
+                    (view === "sales"
+                      ? filteredSales.length
+                      : filteredPayments.length) === 0 ? (
                       <span className="opacity-50 pointer-events-none select-none">
                         <PaginationPrevious href="#" />
                       </span>
@@ -210,7 +226,8 @@ export default function History() {
                   {/* Page numbers with ellipsis if needed */}
                   {(() => {
                     const items = [];
-                    const totalPages = view === 'sales' ? totalSalesPages : totalPaymentsPages;
+                    const totalPages =
+                      view === "sales" ? totalSalesPages : totalPaymentsPages;
                     let start = Math.max(1, currentPage - 2);
                     let end = Math.min(totalPages, currentPage + 2);
                     if (currentPage <= 3) {
@@ -251,7 +268,13 @@ export default function History() {
                     return items;
                   })()}
                   <PaginationItem>
-                    {currentPage === (view === 'sales' ? totalSalesPages : totalPaymentsPages) || (view === 'sales' ? filteredSales.length : filteredPayments.length) === 0 ? (
+                    {currentPage ===
+                      (view === "sales"
+                        ? totalSalesPages
+                        : totalPaymentsPages) ||
+                    (view === "sales"
+                      ? filteredSales.length
+                      : filteredPayments.length) === 0 ? (
                       <span className="opacity-50 pointer-events-none select-none">
                         <PaginationNext href="#" />
                       </span>

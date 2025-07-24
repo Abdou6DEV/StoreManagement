@@ -1,5 +1,11 @@
 import { useState, useEffect, useRef } from "react";
-import { CheckCircle, Trash2, UserPlus, Printer, Calculator } from "lucide-react";
+import {
+  CheckCircle,
+  Trash2,
+  UserPlus,
+  Printer,
+  Calculator,
+} from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { CartItem } from "../../cashier";
 import AddPaymentModal from "./addPaymentModal";
@@ -193,12 +199,16 @@ export default function ActionButtons({
           onClick={() => setShowAddClientModal(true)}
           className="flex-1 flex items-center justify-center px-2 py-2 rounded-md bg-muted text-foreground hover:bg-primary hover:text-primary-foreground transition text-sm border border-border min-w-0"
         >
-          <UserPlus className={`w-4 h-4 mr-1 ml-1 ${i18n.language === 'ar' ? ' scale-x-[-1]' : ''}`} />
-          <span className="hidden sm:inline whitespace-nowrap">{t("cashier.addNewClient", "Add New Client")}</span>
+          <UserPlus
+            className={`w-4 h-4 mr-1 ml-1 ${i18n.language === "ar" ? " scale-x-[-1]" : ""}`}
+          />
+          <span className="hidden sm:inline whitespace-nowrap">
+            {t("cashier.addNewClient", "Add New Client")}
+          </span>
         </button>
         <input
           placeholder={t("cashier.discount", "Discount")}
-          className={`flex-1 w-28 rounded-md border px-3 py-2 text-sm bg-background border-border focus:border-primary focus:ring-primary/50 focus:outline-none focus:ring-1 transition-all min-w-0 ${Number(draftDiscount) > cartTotal ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}`}
+          className={`flex-1 w-28 rounded-md border px-3 py-2 text-sm bg-background border-border focus:border-primary focus:ring-primary/50 focus:outline-none focus:ring-1 transition-all min-w-0 ${Number(draftDiscount) > cartTotal ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""}`}
           type="number"
           value={draftDiscount}
           onChange={(e) => {
@@ -220,7 +230,9 @@ export default function ActionButtons({
           }}
           disabled={!clientName.trim()}
         >
-          <span className="whitespace-nowrap">{t("cashier.addPayment", "Add Payment")}</span>
+          <span className="whitespace-nowrap">
+            {t("cashier.addPayment", "Add Payment")}
+          </span>
         </button>
       </div>
       <div className="flex flex-row gap-2 w-full">
@@ -229,14 +241,18 @@ export default function ActionButtons({
           className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg border border-blue-500 bg-primary text-primary-foreground font-bold text-base tracking-wide shadow-md hover:bg-primary/90 transition focus:outline-none focus:ring-2 focus:ring-primary/50 min-w-0"
         >
           <CheckCircle className="w-6 h-6" />
-          <span className="hidden sm:inline whitespace-nowrap">{t("cashier.confirmSale", "Confirm Sale")}</span>
+          <span className="hidden sm:inline whitespace-nowrap">
+            {t("cashier.confirmSale", "Confirm Sale")}
+          </span>
         </button>
         <button
           onClick={onConfirmWithReceipt}
           className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg border border-blue-500 bg-primary text-primary-foreground font-bold text-base tracking-wide shadow-md hover:bg-primary/90 transition focus:outline-none focus:ring-2 focus:ring-primary/50 min-w-0"
         >
           <Printer className="w-6 h-6" />
-          <span className="hidden sm:inline whitespace-nowrap">{t("cashier.confirmWithReceipt", "Receipt")}</span>
+          <span className="hidden sm:inline whitespace-nowrap">
+            {t("cashier.confirmWithReceipt", "Receipt")}
+          </span>
         </button>
         <button
           onClick={() => {
@@ -246,7 +262,9 @@ export default function ActionButtons({
           className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg border border-blue-500 bg-destructive text-white font-semibold text-base tracking-wide shadow-md hover:bg-destructive/80 transition focus:outline-none focus:ring-2 focus:ring-destructive/50 min-w-0"
         >
           <Trash2 className="w-6 h-6" />
-          <span className="hidden sm:inline whitespace-nowrap">{t("cashier.clearCart", "Clear Cart")}</span>
+          <span className="hidden sm:inline whitespace-nowrap">
+            {t("cashier.clearCart", "Clear Cart")}
+          </span>
         </button>
         <button
           onClick={() => setShowCalculatorModal(true)}
@@ -289,7 +307,10 @@ export default function ActionButtons({
         t={t as typeof t}
         onConfirm={handleAddClient}
       />
-      <CalculatorModal open={showCalculatorModal} onClose={() => setShowCalculatorModal(false)} />
+      <CalculatorModal
+        open={showCalculatorModal}
+        onClose={() => setShowCalculatorModal(false)}
+      />
     </div>
   );
 }

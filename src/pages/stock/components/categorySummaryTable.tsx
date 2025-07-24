@@ -2,9 +2,18 @@ import React, { useState } from "react";
 import { useStock } from "../../../lib/contexts/stockContext";
 import { useTranslation } from "react-i18next";
 import { Package } from "lucide-react";
-import { Popover, PopoverContent, PopoverTrigger } from "../../../lib/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "../../../lib/components/ui/popover";
 import { Button } from "../../../lib/components/ui/button";
-import { Command, CommandGroup, CommandItem, CommandList } from "../../../lib/components/ui/command";
+import {
+  Command,
+  CommandGroup,
+  CommandItem,
+  CommandList,
+} from "../../../lib/components/ui/command";
 import { Check, ChevronDown } from "lucide-react";
 import { cn } from "../../../lib/utils";
 
@@ -85,12 +94,18 @@ export default function CategorySummaryTable() {
           <span className="text-sm text-muted-foreground">
             {t("stock.itemsPerPage", "Items per page:")}
           </span>
-          <Popover open={itemsPerPagePopoverOpen} onOpenChange={setItemsPerPagePopoverOpen}>
+          <Popover
+            open={itemsPerPagePopoverOpen}
+            onOpenChange={setItemsPerPagePopoverOpen}
+          >
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
                 className="px-3 py-1.5 min-w-[70px]"
-                aria-label={t("stock.selectItemsPerPage", "Select items per page")}
+                aria-label={t(
+                  "stock.selectItemsPerPage",
+                  "Select items per page",
+                )}
               >
                 {itemsPerPage}
                 <ChevronDown className="ml-2 w-4 h-4" />
@@ -114,7 +129,7 @@ export default function CategorySummaryTable() {
                         <Check
                           className={cn(
                             "ml-auto h-4 w-4",
-                            itemsPerPage === size ? "opacity-100" : "opacity-0"
+                            itemsPerPage === size ? "opacity-100" : "opacity-0",
                           )}
                         />
                       </CommandItem>

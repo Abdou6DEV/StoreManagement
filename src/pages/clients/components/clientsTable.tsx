@@ -45,7 +45,7 @@ const ClientsTable: React.FC<ClientsTableProps> = ({
       </div>
     );
   }
-  
+
   return (
     <div className="overflow-auto rounded-lg border border-muted">
       <table className="min-w-full text-sm text-left">
@@ -90,7 +90,8 @@ const ClientsTable: React.FC<ClientsTableProps> = ({
                     variant="outline"
                     className="text-blue-600 border-blue-200 hover:bg-blue-50 dark:text-blue-400 dark:border-blue-800 dark:hover:bg-blue-950/30"
                   >
-                    <Users className="w-3 h-3" /> {t("clients.viewPayments", "Payments")}
+                    <Users className="w-3 h-3" />{" "}
+                    {t("clients.viewPayments", "Payments")}
                   </Button>
                   <Button
                     onClick={() => onDelete(client.id)}

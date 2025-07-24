@@ -43,13 +43,15 @@ const PaymentsTable: React.FC<PaymentsTableProps> = ({ payments }) => {
     if (payment.paidAt) {
       return {
         text: t("history.paid", "Paid"),
-        color: "text-green-600 bg-green-50 dark:text-green-400 dark:bg-green-950/30",
+        color:
+          "text-green-600 bg-green-50 dark:text-green-400 dark:bg-green-950/30",
         icon: <CheckCircle className="w-4 h-4" />,
       };
     } else {
       return {
         text: t("history.pending", "Pending"),
-        color: "text-yellow-600 bg-yellow-50 dark:text-yellow-400 dark:bg-yellow-950/30",
+        color:
+          "text-yellow-600 bg-yellow-50 dark:text-yellow-400 dark:bg-yellow-950/30",
         icon: <Clock className="w-4 h-4" />,
       };
     }
@@ -65,7 +67,7 @@ const PaymentsTable: React.FC<PaymentsTableProps> = ({ payments }) => {
         <p className="text-base text-muted-foreground max-w-md">
           {t(
             "history.noPaymentsDesc",
-            "No payments match your search criteria or there are no payments yet."
+            "No payments match your search criteria or there are no payments yet.",
           )}
         </p>
       </div>
@@ -74,7 +76,14 @@ const PaymentsTable: React.FC<PaymentsTableProps> = ({ payments }) => {
 
   return (
     <div className="overflow-auto rounded-lg border border-muted">
-      <table className="min-w-full text-sm" dir={isRTL ? 'rtl' : 'ltr'} style={{ direction: isRTL ? 'rtl' : 'ltr', textAlign: isRTL ? 'right' : 'left' }}>
+      <table
+        className="min-w-full text-sm"
+        dir={isRTL ? "rtl" : "ltr"}
+        style={{
+          direction: isRTL ? "rtl" : "ltr",
+          textAlign: isRTL ? "right" : "left",
+        }}
+      >
         <thead className="bg-muted text-muted-foreground">
           <tr>
             <th className="px-4 py-3">{t("history.date", "Date")}</th>
@@ -89,14 +98,24 @@ const PaymentsTable: React.FC<PaymentsTableProps> = ({ payments }) => {
           {payments.map((payment) => {
             const status = getStatus(payment);
             return (
-              <tr key={payment.saleId + payment.clientId + payment.createdAt} className="hover:bg-muted/40 transition">
-                <td className="px-4 py-3 font-medium">{formatDate(payment.createdAt)}</td>
-                <td className="px-4 py-3 font-medium">{formatCurrency(payment.paidAmount)}</td>
+              <tr
+                key={payment.saleId + payment.clientId + payment.createdAt}
+                className="hover:bg-muted/40 transition"
+              >
+                <td className="px-4 py-3 font-medium">
+                  {formatDate(payment.createdAt)}
+                </td>
+                <td className="px-4 py-3 font-medium">
+                  {formatCurrency(payment.paidAmount)}
+                </td>
                 <td className="px-4 py-3">
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${payment.type === "CREDIT"
-                    ? "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
-                    : "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400"
-                    }`}>
+                  <span
+                    className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      payment.type === "CREDIT"
+                        ? "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
+                        : "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400"
+                    }`}
+                  >
                     {isRTL ? (
                       <>
                         {payment.type === "CREDIT"
@@ -116,20 +135,33 @@ const PaymentsTable: React.FC<PaymentsTableProps> = ({ payments }) => {
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">
-                    <span className={status.color.split(" ")[0]}>{status.icon}</span>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${status.color}`}>{status.text}</span>
+                    <span className={status.color.split(" ")[0]}>
+                      {status.icon}
+                    </span>
+                    <span
+                      className={`px-2 py-1 rounded-full text-xs font-medium ${status.color}`}
+                    >
+                      {status.text}
+                    </span>
                   </div>
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">
                     <User className="w-4 h-4 text-muted-foreground" />
-                    <span>{payment.client?.name || t("history.guestClient", "Guest")}</span>
+                    <span>
+                      {payment.client?.name ||
+                        t("history.guestClient", "Guest")}
+                    </span>
                   </div>
                   {payment.client?.phone && (
-                    <div className="text-xs text-muted-foreground">{payment.client.phone}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {payment.client.phone}
+                    </div>
                   )}
                 </td>
-                <td className="px-4 py-3 font-mono text-xs">{payment.sale?.id || payment.saleId}</td>
+                <td className="px-4 py-3 font-mono text-xs">
+                  {payment.sale?.id || payment.saleId}
+                </td>
               </tr>
             );
           })}
@@ -139,4 +171,4 @@ const PaymentsTable: React.FC<PaymentsTableProps> = ({ payments }) => {
   );
 };
 
-export default PaymentsTable; 
+export default PaymentsTable;

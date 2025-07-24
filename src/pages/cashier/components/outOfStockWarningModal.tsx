@@ -41,7 +41,8 @@ const OutOfStockWarningModal: React.FC<Props> = ({
               <li key={item.id}>
                 <span className="font-medium">{item.name}</span>:{" "}
                 {t("cashier.requested", "Requested")}: {item.qty},{" "}
-                {t("cashier.available", "Available")}: {product ? product.quantity : 0}
+                {t("cashier.available", "Available")}:{" "}
+                {product ? product.quantity : 0}
               </li>
             );
           })}

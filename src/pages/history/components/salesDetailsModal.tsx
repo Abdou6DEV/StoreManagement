@@ -1,10 +1,26 @@
 import React from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "../../../lib/components/ui/dialog";
-import { User, Package, CreditCard, Receipt, DollarSign, CheckCircle, Clock } from "lucide-react";
-import PaymentSummary from '../../../lib/components/paymentSummary';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogClose,
+} from "../../../lib/components/ui/dialog";
+import {
+  User,
+  Package,
+  CreditCard,
+  Receipt,
+  DollarSign,
+  CheckCircle,
+  Clock,
+} from "lucide-react";
+import PaymentSummary from "../../../lib/components/paymentSummary";
 import { useTranslation } from "react-i18next";
 
-type SaleWithDetails = Awaited<ReturnType<typeof window.api.database.sales.getAll>>[0];
+type SaleWithDetails = Awaited<
+  ReturnType<typeof window.api.database.sales.getAll>
+>[0];
 
 interface SalesDetailsModalProps {
   sale: SaleWithDetails | null;
@@ -12,7 +28,11 @@ interface SalesDetailsModalProps {
   onClose: () => void;
 }
 
-const SalesDetailsModal: React.FC<SalesDetailsModalProps> = ({ sale, open, onClose }) => {
+const SalesDetailsModal: React.FC<SalesDetailsModalProps> = ({
+  sale,
+  open,
+  onClose,
+}) => {
   const { t, i18n } = useTranslation();
   const isRTL = i18n.language === "ar";
 
@@ -35,14 +55,20 @@ const SalesDetailsModal: React.FC<SalesDetailsModalProps> = ({ sale, open, onClo
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent showCloseButton={false} className="overflow-y-auto" style={{ maxWidth: '90vw', width: '90vw' }}>
+      <DialogContent
+        showCloseButton={false}
+        className="overflow-y-auto"
+        style={{ maxWidth: "90vw", width: "90vw" }}
+      >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 justify-center text-center w-full">
             <Receipt className="w-6 h-6 text-cyan-500" />
             {t("history.saleDetails", "Sale Details")}
           </DialogTitle>
           <DialogClose asChild>
-            <button className="absolute right-4 top-4 text-muted-foreground text-2xl font-bold">×</button>
+            <button className="absolute right-4 top-4 text-muted-foreground text-2xl font-bold">
+              ×
+            </button>
           </DialogClose>
         </DialogHeader>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-4">
@@ -53,7 +79,7 @@ const SalesDetailsModal: React.FC<SalesDetailsModalProps> = ({ sale, open, onClo
               {t("history.saleItems", "Sale Items")}
             </h4>
             <PaymentSummary
-              cart={sale.saleItems.map(item => ({
+              cart={sale.saleItems.map((item) => ({
                 id: item.product.id,
                 name: item.product.name,
                 price: item.price,
@@ -62,7 +88,14 @@ const SalesDetailsModal: React.FC<SalesDetailsModalProps> = ({ sale, open, onClo
               clientName={sale.client?.name}
               discount={sale.discount}
               paymentAmount={sale.totalPaid}
-              paymentType={sale.isPaidInCash ? "none" : (sale.payments.length > 0 && sale.payments[0].type === "VERSEMENT" ? "versement" : "credit")}
+              paymentType={
+                sale.isPaidInCash
+                  ? "none"
+                  : sale.payments.length > 0 &&
+                      sale.payments[0].type === "VERSEMENT"
+                    ? "versement"
+                    : "credit"
+              }
             />
           </div>
           {/* Payments & Client Info */}
@@ -109,7 +142,10 @@ const SalesDetailsModal: React.FC<SalesDetailsModalProps> = ({ sale, open, onClo
                       {t("history.paidInCash", "Paid in Cash")}
                     </h4>
                     <p className="text-muted-foreground text-sm mb-6 max-w-md mx-auto">
-                      {t("history.cashPaymentDesc", "This sale was completed with cash payment at the time of purchase")}
+                      {t(
+                        "history.cashPaymentDesc",
+                        "This sale was completed with cash payment at the time of purchase",
+                      )}
                     </p>
                     <div className="bg-gradient-to-r from-emerald-50 to-green-50 dark:from-emerald-900/20 dark:to-green-900/20 rounded-xl p-6 border border-emerald-200 dark:border-emerald-800">
                       <div className="flex justify-between items-center mb-4">
@@ -141,15 +177,22 @@ const SalesDetailsModal: React.FC<SalesDetailsModalProps> = ({ sale, open, onClo
                 ) : sale.payments.length > 0 ? (
                   <div className="space-y-3">
                     {sale.payments.map((payment, index) => (
-                      <div key={index} className="border rounded-lg p-3 bg-muted/30">
+                      <div
+                        key={index}
+                        className="border rounded-lg p-3 bg-muted/30"
+                      >
                         <div className="flex justify-between items-start mb-2">
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">
                               <span className="font-semibold text-lg">
                                 {formatCurrency(payment.paidAmount)}
                               </span>
-                              <span className={`px-2 py-1 rounded text-xs font-medium ${payment.paidAt ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400" : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"}`}>
-                                {payment.paidAt ? t("history.paid", "Paid") : t("history.pending", "Pending")}
+                              <span
+                                className={`px-2 py-1 rounded text-xs font-medium ${payment.paidAt ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400" : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"}`}
+                              >
+                                {payment.paidAt
+                                  ? t("history.paid", "Paid")
+                                  : t("history.pending", "Pending")}
                               </span>
                             </div>
                             <div className="text-sm text-muted-foreground space-y-1">
@@ -157,16 +200,28 @@ const SalesDetailsModal: React.FC<SalesDetailsModalProps> = ({ sale, open, onClo
                                 <span className="font-medium">
                                   {t("history.paymentType", "Type")}:
                                 </span>
-                                <span className={`flex items-center gap-1 px-2 py-1 rounded text-xs ${payment.type === "CREDIT" ? "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400" : "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400"}`}>
+                                <span
+                                  className={`flex items-center gap-1 px-2 py-1 rounded text-xs ${payment.type === "CREDIT" ? "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400" : "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400"}`}
+                                >
                                   {isRTL ? (
                                     <>
-                                      {payment.type === "CREDIT" ? t("history.credit", "Credit") : t("history.installment", "Installment")}
+                                      {payment.type === "CREDIT"
+                                        ? t("history.credit", "Credit")
+                                        : t(
+                                            "history.installment",
+                                            "Installment",
+                                          )}
                                       <CreditCard className="w-3 h-3 ml-1" />
                                     </>
                                   ) : (
                                     <>
                                       <CreditCard className="w-3 h-3 mr-1" />
-                                      {payment.type === "CREDIT" ? t("history.credit", "Credit") : t("history.installment", "Installment")}
+                                      {payment.type === "CREDIT"
+                                        ? t("history.credit", "Credit")
+                                        : t(
+                                            "history.installment",
+                                            "Installment",
+                                          )}
                                     </>
                                   )}
                                 </span>
@@ -175,19 +230,22 @@ const SalesDetailsModal: React.FC<SalesDetailsModalProps> = ({ sale, open, onClo
                                 <div className="flex items-center gap-2">
                                   <CheckCircle className="w-4 h-4 text-green-500" />
                                   <span>
-                                    {t("history.paidOn", "Paid on")}: {formatDate(payment.paidAt)}
+                                    {t("history.paidOn", "Paid on")}:{" "}
+                                    {formatDate(payment.paidAt)}
                                   </span>
                                 </div>
                               ) : (
                                 <div className="flex items-center gap-2">
                                   <Clock className="w-4 h-4 text-yellow-500" />
                                   <span>
-                                    {t("history.dueDate", "Due")}: {formatDate(payment.dueAt)}
+                                    {t("history.dueDate", "Due")}:{" "}
+                                    {formatDate(payment.dueAt)}
                                   </span>
                                 </div>
                               )}
                               <div className="text-xs opacity-75">
-                                {t("history.createdOn", "Created")}: {formatDate(payment.createdAt)}
+                                {t("history.createdOn", "Created")}:{" "}
+                                {formatDate(payment.createdAt)}
                               </div>
                             </div>
                           </div>
@@ -201,7 +259,9 @@ const SalesDetailsModal: React.FC<SalesDetailsModalProps> = ({ sale, open, onClo
                           <span className="text-muted-foreground">
                             {t("history.totalPayments", "Total Payments")}:
                           </span>
-                          <span className="font-medium">{sale.payments.length}</span>
+                          <span className="font-medium">
+                            {sale.payments.length}
+                          </span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">
@@ -226,7 +286,11 @@ const SalesDetailsModal: React.FC<SalesDetailsModalProps> = ({ sale, open, onClo
                                 {t("history.progress", "Progress")}:
                               </span>
                               <span className="font-medium">
-                                {Math.round((sale.totalPaid / sale.totalWithDiscount) * 100)}%
+                                {Math.round(
+                                  (sale.totalPaid / sale.totalWithDiscount) *
+                                    100,
+                                )}
+                                %
                               </span>
                             </div>
                           </>
@@ -236,13 +300,22 @@ const SalesDetailsModal: React.FC<SalesDetailsModalProps> = ({ sale, open, onClo
                       {sale.remainingAmount > 0 && (
                         <div className="mt-3">
                           <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                            <span>{t("history.paymentProgress", "Payment Progress")}</span>
-                            <span>{Math.round((sale.totalPaid / sale.totalWithDiscount) * 100)}%</span>
+                            <span>
+                              {t("history.paymentProgress", "Payment Progress")}
+                            </span>
+                            <span>
+                              {Math.round(
+                                (sale.totalPaid / sale.totalWithDiscount) * 100,
+                              )}
+                              %
+                            </span>
                           </div>
                           <div className="w-full bg-gray-200 rounded-full h-2 dark:bg-gray-700">
                             <div
                               className="bg-green-600 h-2 rounded-full transition-all duration-300"
-                              style={{ width: `${Math.min((sale.totalPaid / sale.totalWithDiscount) * 100, 100)}%` }}
+                              style={{
+                                width: `${Math.min((sale.totalPaid / sale.totalWithDiscount) * 100, 100)}%`,
+                              }}
                             ></div>
                           </div>
                         </div>
@@ -256,7 +329,10 @@ const SalesDetailsModal: React.FC<SalesDetailsModalProps> = ({ sale, open, onClo
                       {t("history.noPayments", "No payments recorded")}
                     </div>
                     <div className="text-xs text-muted-foreground mt-1">
-                      {t("history.noPaymentHistory", "This sale has no payment history yet")}
+                      {t(
+                        "history.noPaymentHistory",
+                        "This sale has no payment history yet",
+                      )}
                     </div>
                   </div>
                 )}
@@ -302,4 +378,4 @@ const SalesDetailsModal: React.FC<SalesDetailsModalProps> = ({ sale, open, onClo
   );
 };
 
-export default SalesDetailsModal; 
+export default SalesDetailsModal;
