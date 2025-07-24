@@ -1,263 +1,184 @@
+import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
-  TrendingDownIcon,
-  TrendingUpIcon,
   PackageIcon,
   DollarSignIcon,
   CreditCardIcon,
   AlertTriangleIcon,
-  BanknoteIcon,
-  WalletIcon,
-  ReceiptIcon,
-  ShoppingCartIcon,
+  WalletIcon
 } from "lucide-react";
 
 export function SectionCards() {
-  const salesStats = [
-    {
-      label: "Today",
-      revenue: "$2,450",
-      profit: "$890",
-      itemsSold: "47",
-      profitRating: "+12.5%",
-      trend: { value: "+8.2%", isPositive: true },
-      description: "vs yesterday",
-    },
-    {
-      label: "This Month",
-      revenue: "$45,231",
-      profit: "$18,450",
-      itemsSold: "1,247",
-      profitRating: "+15.3%",
-      trend: { value: "+15.3%", isPositive: true },
-      description: "vs last month",
-    },
-    {
-      label: "This Year",
-      revenue: "$487,650",
-      profit: "$195,200",
-      itemsSold: "12,890",
-      profitRating: "+22.1%",
-      trend: { value: "+22.1%", isPositive: true },
-      description: "vs last year",
-    },
-    {
-      label: "Overall",
-      revenue: "$1,245,780",
-      profit: "$456,890",
-      itemsSold: "34,567",
-      profitRating: "+18.7%",
-      trend: { value: "+18.7%", isPositive: true },
-      description: "total performance",
-    },
-  ];
+  const { t } = useTranslation();
+  const [salesStats, setSalesStats] = useState<any[]>([]);
+  const [stockStats, setStockStats] = useState<any[]>([]);
+  const [clientStats, setClientStats] = useState<any[]>([]);
 
-  const stockStats = [
-    {
-      label: "Total Products",
-      value: "1,247",
-      description: "In inventory",
-      trend: { value: "+12", isPositive: true },
-      icon: PackageIcon,
-    },
-    {
-      label: "Low Stock Items",
-      value: "23",
-      description: "Need reorder",
-      trend: { value: "+5", isPositive: false },
-      icon: AlertTriangleIcon,
-    },
-    {
-      label: "Stock Value",
-      value: "$127,450",
-      description: "Total inventory",
-      trend: { value: "+5.2%", isPositive: true },
-      icon: DollarSignIcon,
-    },
-    {
-      label: "Out of Stock",
-      value: "8",
-      description: "Items unavailable",
-      trend: { value: "-3", isPositive: true },
-      icon: PackageIcon,
-    },
-  ];
+  useEffect(() => {
+    async function fetchStats() {
+      const [sales, products, payments, clients] = await Promise.all([
+        window.api.database.sales.getAll(),
+        window.api.database.products.getAll(),
+        window.api.database.payments.getAll(),
+        window.api.database.clients.getAll(),
+      ]);
 
-  const financeStats = [
-    {
-      label: "Store Cash",
-      value: "$34,250",
-      description: "Available funds",
-      trend: { value: "+$2,100", isPositive: true },
-      icon: WalletIcon,
-    },
-    {
-      label: "Outstanding Bills",
-      value: "$8,450",
-      description: "Due this month",
-      trend: { value: "-$1,200", isPositive: true },
-      icon: ReceiptIcon,
-    },
-    {
-      label: "Client Credit",
-      value: "$12,890",
-      description: "Accounts receivable",
-      trend: { value: "+$890", isPositive: true },
-      icon: CreditCardIcon,
-    },
-    {
-      label: "Monthly Expenses",
-      value: "$15,670",
-      description: "Operating costs",
-      trend: { value: "+$340", isPositive: false },
-      icon: BanknoteIcon,
-    },
-  ];
-
-  const renderSalesCards = () => (
-    <div className="space-y-4">
-      <h2 className="text-lg font-semibold text-foreground">Sales Overview</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {salesStats.map((stat) => (
-          <div
-            key={stat.label}
-            className="p-6 bg-card rounded-xl shadow-md border flex flex-col items-start hover:shadow-lg transition-shadow duration-300 relative"
-          >
-            <div className="flex items-center justify-between w-full">
-              <div className="text-muted-foreground text-xs font-medium">
-                {stat.label}
-              </div>
-              <ShoppingCartIcon className="h-4 w-4 text-muted-foreground" />
-            </div>
-            <div className="space-y-1 mt-2 w-full">
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">Revenue</span>
-                <span className="text-sm font-semibold">{stat.revenue}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">Profit</span>
-                <span className="text-sm font-semibold text-green-600">
-                  {stat.profit}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">
-                  Items Sold
-                </span>
-                <span className="text-sm font-semibold">{stat.itemsSold}</span>
-              </div>
-            </div>
-            <div className="absolute right-4 top-4">
-              <div
-                className={`flex gap-1 rounded-lg text-xs px-2 py-1 border ${
-                  stat.trend.isPositive
-                    ? "text-green-600 border-green-200 bg-green-50"
-                    : "text-red-600 border-red-200 bg-red-50"
-                }`}
-              >
-                {stat.trend.isPositive ? (
-                  <TrendingUpIcon className="w-3 h-3" />
-                ) : (
-                  <TrendingDownIcon className="w-3 h-3" />
-                )}
-                {stat.profitRating}
-              </div>
-            </div>
-            <div className="text-xs text-muted-foreground mt-2">
-              {stat.description}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-
-  const renderStockCards = () => (
-    <div className="space-y-4">
-      <h2 className="text-lg font-semibold text-foreground">
-        Inventory Status
-      </h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {stockStats.map((stat) => {
-          const IconComponent = stat.icon;
+      function calcSalesStats(labelKey: string, filterFn: (date: Date) => boolean) {
+        const filtered = sales.filter((s: any) => filterFn(s.createdAt));
+        const revenue = filtered.reduce((sum: number, s: any) => sum + (s.totalWithDiscount || 0), 0);
+        const profit = filtered.reduce((sum: number, s: any) => {
           return (
-            <div
-              key={stat.label}
-              className="p-6 bg-card rounded-xl shadow-md border flex flex-col items-start hover:shadow-lg transition-shadow duration-300 relative"
-            >
-              <div className="flex items-center justify-between w-full">
-                <div className="text-muted-foreground text-xs font-medium">
-                  {stat.label}
-                </div>
-                <IconComponent className="h-4 w-4 text-muted-foreground" />
-              </div>
-              <div className="text-2xl font-bold text-card-foreground mb-2 mt-2">
-                {stat.value}
-              </div>
-              <div className="absolute right-4 top-4">
-                <div
-                  className={`flex gap-1 rounded-lg text-xs px-2 py-1 border ${
-                    stat.trend.isPositive
-                      ? "text-green-600 border-green-200 bg-green-50"
-                      : "text-red-600 border-red-200 bg-red-50"
-                  }`}
-                >
-                  {stat.trend.isPositive ? (
-                    <TrendingUpIcon className="w-3 h-3" />
-                  ) : (
-                    <TrendingDownIcon className="w-3 h-3" />
-                  )}
-                  {stat.trend.value}
-                </div>
-              </div>
-              <div className="text-xs text-muted-foreground">
-                {stat.description}
-              </div>
-            </div>
+            sum +
+            (s.saleItems?.reduce(
+              (itemSum: number, item: any) =>
+                itemSum + ((item.price - (item.product?.bought || 0)) * item.quantity),
+              0
+            ) || 0)
           );
-        })}
-      </div>
-    </div>
-  );
+        }, 0);
+        const itemsSold = filtered.reduce((sum: number, s: any) => sum + (s.totalItems || 0), 0);
+        return {
+          labelKey: `dashboard.${labelKey}`,
+          revenue: `${revenue.toLocaleString()} DA`,
+          profit: `${profit.toLocaleString()} DA`,
+          itemsSold: itemsSold.toLocaleString(),
+        };
+      }
+      const isToday = (date: Date) => {
+        const d = new Date(date);
+        const now = new Date();
+        return (
+          d.getFullYear() === now.getFullYear() &&
+          d.getMonth() === now.getMonth() &&
+          d.getDate() === now.getDate()
+        );
+      };
+      const isThisMonth = (date: Date) => {
+        const d = new Date(date);
+        const now = new Date();
+        return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+      };
+      const isThisYear = (date: Date) => {
+        const d = new Date(date);
+        const now = new Date();
+        return d.getFullYear() === now.getFullYear();
+      };
+      const todayStats = calcSalesStats("today", isToday);
+      const monthStats = calcSalesStats("thisMonth", isThisMonth);
+      const yearStats = calcSalesStats("thisYear", isThisYear);
+      const overallStats = calcSalesStats("overall", () => true);
+      setSalesStats([todayStats, monthStats, yearStats, overallStats]);
 
-  const renderFinanceCards = () => (
+      const totalProducts = products.length;
+      const lowStockItems = products.filter((p: any) => p.quantity <= 5 && p.quantity > 0).length;
+      const outOfStock = products.filter((p: any) => p.quantity === 0).length;
+      const stockValue = products.reduce((sum: number, p: any) => sum + (p.bought * p.quantity), 0);
+      setStockStats([
+        {
+          labelKey: "dashboard.totalProducts",
+          value: totalProducts.toLocaleString(),
+          descriptionKey: "dashboard.inInventory",
+          icon: PackageIcon,
+        },
+        {
+          labelKey: "dashboard.lowStockItems",
+          value: lowStockItems.toLocaleString(),
+          descriptionKey: "dashboard.needReorder",
+          icon: AlertTriangleIcon,
+        },
+        {
+          labelKey: "dashboard.stockValue",
+          value: `${stockValue.toLocaleString()} DA`,
+          descriptionKey: "dashboard.totalInventory",
+          icon: DollarSignIcon,
+        },
+        {
+          labelKey: "dashboard.outOfStock",
+          value: outOfStock.toLocaleString(),
+          descriptionKey: "dashboard.itemsUnavailable",
+          icon: PackageIcon,
+        },
+      ]);
+
+      const numberOfClients = clients.length;
+      const totalCredit = payments.filter((p: any) => p.type === "CREDIT");
+      const totalVersement = payments.filter((p: any) => p.type === "VERSEMENT");
+      const unpaidCredit = totalCredit.filter((p: any) => !p.paidAt).length;
+      const unpaidVersement = totalVersement.filter((p: any) => !p.paidAt).length;
+      setClientStats([
+        {
+          labelKey: "dashboard.numberOfClients",
+          value: numberOfClients.toLocaleString(),
+          descriptionKey: "dashboard.totalRegisteredClients",
+          icon: CreditCardIcon,
+        },
+        {
+          labelKey: "dashboard.totalNumberOfCredit",
+          value: totalCredit.length.toLocaleString(),
+          descriptionKey: "dashboard.numberOfCreditPayments",
+          icon: CreditCardIcon,
+        },
+        {
+          labelKey: "dashboard.totalNumberOfVersement",
+          value: totalVersement.length.toLocaleString(),
+          descriptionKey: "dashboard.numberOfVersementPayments",
+          icon: WalletIcon,
+        },
+        {
+          labelKey: "dashboard.unpaidCredit",
+          value: unpaidCredit.toLocaleString(),
+          descriptionKey: "dashboard.unpaidCreditPayments",
+          icon: CreditCardIcon,
+        },
+        {
+          labelKey: "dashboard.unpaidVersement",
+          value: unpaidVersement.toLocaleString(),
+          descriptionKey: "dashboard.unpaidVersementPayments",
+          icon: WalletIcon,
+        },
+      ]);
+    }
+    fetchStats();
+  }, []);
+
+  const renderSection = (titleKey: string, cards: any[]) => (
     <div className="space-y-4">
-      <h2 className="text-lg font-semibold text-foreground">Finance Status</h2>
+      <h2 className="text-lg font-semibold text-foreground mb-2">{t(`dashboard.${titleKey}`)}</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {financeStats.map((stat) => {
+        {cards.map((stat) => {
           const IconComponent = stat.icon;
           return (
             <div
-              key={stat.label}
-              className="p-6 bg-card rounded-xl shadow-md border flex flex-col items-start hover:shadow-lg transition-shadow duration-300 relative"
+              key={stat.labelKey}
+              className="p-6 bg-card rounded-xl shadow-md border flex flex-col items-start space-y-1 hover:shadow-lg transition-shadow duration-300 relative"
             >
               <div className="flex items-center justify-between w-full">
                 <div className="text-muted-foreground text-xs font-medium">
-                  {stat.label}
+                  {t(stat.labelKey)}
                 </div>
-                <IconComponent className="h-4 w-4 text-muted-foreground" />
+                {IconComponent && <IconComponent className="h-4 w-4 text-muted-foreground" />}
               </div>
-              <div className="text-2xl font-bold text-card-foreground mb-2 mt-2">
-                {stat.value}
-              </div>
-              <div className="absolute right-4 top-4">
-                <div
-                  className={`flex gap-1 rounded-lg text-xs px-2 py-1 border ${
-                    stat.trend.isPositive
-                      ? "text-green-600 border-green-200 bg-green-50"
-                      : "text-red-600 border-red-200 bg-red-50"
-                  }`}
-                >
-                  {stat.trend.isPositive ? (
-                    <TrendingUpIcon className="w-3 h-3" />
-                  ) : (
-                    <TrendingDownIcon className="w-3 h-3" />
-                  )}
-                  {stat.trend.value}
+              {stat.revenue && (
+                <div className="flex items-center justify-between w-full mt-2">
+                  <span className="text-xs text-muted-foreground">{t("dashboard.revenue")}</span>
+                  <span className="text-sm font-semibold">{stat.revenue}</span>
                 </div>
-              </div>
-              <div className="text-xs text-muted-foreground">
-                {stat.description}
-              </div>
+              )}
+              {stat.profit && (
+                <div className="flex items-center justify-between w-full">
+                  <span className="text-xs text-muted-foreground">{t("dashboard.profit")}</span>
+                  <span className="text-sm font-semibold text-green-600">{stat.profit}</span>
+                </div>
+              )}
+              {stat.itemsSold && (
+                <div className="flex items-center justify-between w-full">
+                  <span className="text-xs text-muted-foreground">{t("dashboard.itemsSold")}</span>
+                  <span className="text-sm font-semibold">{stat.itemsSold}</span>
+                </div>
+              )}
+              {stat.value && !stat.revenue && !stat.profit && !stat.itemsSold && (
+                <div className="text-2xl font-bold text-card-foreground mb-2 mt-2">{stat.value}</div>
+              )}
             </div>
           );
         })}
@@ -267,9 +188,9 @@ export function SectionCards() {
 
   return (
     <div className="space-y-8">
-      {renderSalesCards()}
-      {renderStockCards()}
-      {renderFinanceCards()}
+      {renderSection("overviewSection", salesStats)}
+      {renderSection("stockStatsSection", stockStats)}
+      {renderSection("clientStatsSection", clientStats)}
     </div>
   );
 }
