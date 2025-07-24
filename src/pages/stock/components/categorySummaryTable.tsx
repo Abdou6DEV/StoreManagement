@@ -2,6 +2,11 @@ import React, { useState } from "react";
 import { useStock } from "../../../lib/contexts/stockContext";
 import { useTranslation } from "react-i18next";
 import { Package } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "../../../lib/components/ui/popover";
+import { Button } from "../../../lib/components/ui/button";
+import { Command, CommandGroup, CommandItem, CommandList } from "../../../lib/components/ui/command";
+import { Check, ChevronDown } from "lucide-react";
+import { cn } from "../../../lib/utils";
 
 export default function CategorySummaryTable() {
   const { t } = useTranslation();
@@ -13,6 +18,9 @@ export default function CategorySummaryTable() {
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+
+  // Add state for Popover open
+  const [itemsPerPagePopoverOpen, setItemsPerPagePopoverOpen] = useState(false);
 
   // Aggregate data by category
   const summary = categories.map((cat) => {
@@ -72,26 +80,50 @@ export default function CategorySummaryTable() {
       </div>
       {/* Controls Row: Items per page selector and search input, same line */}
       <div className="flex flex-wrap items-center gap-4 mb-2">
-        {/* Items per page selector */}
+        {/* Items per page selector (Popover+Command) */}
         <div className="flex items-center gap-2">
           <span className="text-sm text-muted-foreground">
             {t("stock.itemsPerPage", "Items per page:")}
           </span>
-          <select
-            className="px-2 py-1 border rounded text-sm bg-card"
-            value={itemsPerPage}
-            onChange={(e) => {
-              setItemsPerPage(Number(e.target.value));
-              setCurrentPage(1);
-            }}
-            aria-label={t("stock.selectItemsPerPage", "Select items per page")}
-          >
-            {[5, 10, 25, 50, 100].map((size) => (
-              <option key={size} value={size}>
-                {size}
-              </option>
-            ))}
-          </select>
+          <Popover open={itemsPerPagePopoverOpen} onOpenChange={setItemsPerPagePopoverOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className="px-3 py-1.5 min-w-[70px]"
+                aria-label={t("stock.selectItemsPerPage", "Select items per page")}
+              >
+                {itemsPerPage}
+                <ChevronDown className="ml-2 w-4 h-4" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[120px] p-0 z-50">
+              <Command shouldFilter={false}>
+                <CommandList>
+                  <CommandGroup>
+                    {[5, 10, 25, 50, 100].map((size) => (
+                      <CommandItem
+                        key={size}
+                        value={size.toString()}
+                        onSelect={() => {
+                          setItemsPerPage(size);
+                          setCurrentPage(1);
+                          setItemsPerPagePopoverOpen(false);
+                        }}
+                      >
+                        {size}
+                        <Check
+                          className={cn(
+                            "ml-auto h-4 w-4",
+                            itemsPerPage === size ? "opacity-100" : "opacity-0"
+                          )}
+                        />
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
         </div>
         {/* Category search input */}
         <input
