@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useTranslation } from "react-i18next";
 import {
   Bar,
   BarChart,
@@ -12,324 +13,172 @@ import {
 } from "recharts";
 import { useTheme } from "../../../lib/hooks/useTheme";
 
-// Sample data for different time periods with rates
-const dailyData = Array.from({ length: 30 }, (_, i) => {
-  const day = i + 1;
-  const baseProfit = Math.floor(Math.random() * 2000) + 500;
-  const baseClients = Math.floor(Math.random() * 50) + 10;
-  const baseSales = Math.floor(Math.random() * 5000) + 1000;
-
-  return {
-    period: `Day ${day}`,
-    profits: baseProfit,
-    clients: baseClients,
-    sales: baseSales,
-    profitsRate: (Math.random() * 40 - 20).toFixed(1),
-    clientsRate: (Math.random() * 30 - 10).toFixed(1),
-    salesRate: (Math.random() * 25 - 12.5).toFixed(1),
-  };
-});
-
-const monthlyData = [
-  {
-    period: "Jan",
-    profits: 12500,
-    clients: 145,
-    sales: 45600,
-    profitsRate: "+8.2",
-    clientsRate: "+12.5",
-    salesRate: "+5.3",
-  },
-  {
-    period: "Feb",
-    profits: 15200,
-    clients: 189,
-    sales: 52300,
-    profitsRate: "+21.6",
-    clientsRate: "+30.3",
-    salesRate: "+14.7",
-  },
-  {
-    period: "Mar",
-    profits: 18900,
-    clients: 234,
-    sales: 48900,
-    profitsRate: "+24.3",
-    clientsRate: "+23.8",
-    salesRate: "-6.5",
-  },
-  {
-    period: "Apr",
-    profits: 16700,
-    clients: 198,
-    sales: 56700,
-    profitsRate: "-11.6",
-    clientsRate: "-15.4",
-    salesRate: "+16.0",
-  },
-  {
-    period: "May",
-    profits: 21300,
-    clients: 267,
-    sales: 61200,
-    profitsRate: "+27.5",
-    clientsRate: "+34.8",
-    salesRate: "+7.9",
-  },
-  {
-    period: "Jun",
-    profits: 19800,
-    clients: 245,
-    sales: 58800,
-    profitsRate: "-7.0",
-    clientsRate: "-8.2",
-    salesRate: "-3.9",
-  },
-  {
-    period: "Jul",
-    profits: 23400,
-    clients: 289,
-    sales: 64500,
-    profitsRate: "+18.2",
-    clientsRate: "+18.0",
-    salesRate: "+9.7",
-  },
-  {
-    period: "Aug",
-    profits: 25100,
-    clients: 312,
-    sales: 67200,
-    profitsRate: "+7.3",
-    clientsRate: "+8.0",
-    salesRate: "+4.2",
-  },
-  {
-    period: "Sep",
-    profits: 22800,
-    clients: 298,
-    sales: 62800,
-    profitsRate: "-9.2",
-    clientsRate: "-4.5",
-    salesRate: "-6.5",
-  },
-  {
-    period: "Oct",
-    profits: 26500,
-    clients: 334,
-    sales: 71500,
-    profitsRate: "+16.2",
-    clientsRate: "+12.1",
-    salesRate: "+13.9",
-  },
-  {
-    period: "Nov",
-    profits: 28200,
-    clients: 356,
-    sales: 74200,
-    profitsRate: "+6.4",
-    clientsRate: "+6.6",
-    salesRate: "+3.8",
-  },
-  {
-    period: "Dec",
-    profits: 31000,
-    clients: 389,
-    sales: 78900,
-    profitsRate: "+9.9",
-    clientsRate: "+9.3",
-    salesRate: "+6.3",
-  },
-];
-
-const yearlyData = [
-  {
-    period: "2019",
-    profits: 185000,
-    clients: 2100,
-    sales: 650000,
-    profitsRate: "+15.2",
-    clientsRate: "+18.5",
-    salesRate: "+12.3",
-  },
-  {
-    period: "2020",
-    profits: 165000,
-    clients: 1890,
-    sales: 580000,
-    profitsRate: "-10.8",
-    clientsRate: "-10.0",
-    salesRate: "-10.8",
-  },
-  {
-    period: "2021",
-    profits: 220000,
-    clients: 2450,
-    sales: 720000,
-    profitsRate: "+33.3",
-    clientsRate: "+29.6",
-    salesRate: "+24.1",
-  },
-  {
-    period: "2022",
-    profits: 275000,
-    clients: 2890,
-    sales: 850000,
-    profitsRate: "+25.0",
-    clientsRate: "+18.0",
-    salesRate: "+18.1",
-  },
-  {
-    period: "2023",
-    profits: 315000,
-    clients: 3200,
-    sales: 920000,
-    profitsRate: "+14.5",
-    clientsRate: "+10.7",
-    salesRate: "+8.2",
-  },
-  {
-    period: "2024",
-    profits: 287000,
-    clients: 3100,
-    sales: 890000,
-    profitsRate: "-8.9",
-    clientsRate: "-3.1",
-    salesRate: "-3.3",
-  },
-];
-
-const chartTypes = {
-  profits: {
-    title: "Profit Analysis",
-    description: "Track profit trends over time",
-    format: (value: number) => `$${value.toLocaleString()}`,
-    dataKey: "profits" as const,
-    rateKey: "profitsRate" as const,
-  },
-  clients: {
-    title: "Client Growth",
-    description: "Monitor client acquisition",
-    format: (value: number) => `${value} clients`,
-    dataKey: "clients" as const,
-    rateKey: "clientsRate" as const,
-  },
-  sales: {
-    title: "Sales Performance",
-    description: "Total sales revenue tracking",
-    format: (value: number) => `$${value.toLocaleString()}`,
-    dataKey: "sales" as const,
-    rateKey: "salesRate" as const,
-  },
-};
-
-const timePeriods = {
-  "1m": {
-    data: dailyData,
-    label: "1 Month (Daily)",
-    description: "Last 30 days",
-    comparison: "vs previous day",
-  },
-  "12m": {
-    data: monthlyData,
-    label: "12 Months",
-    description: "Current year months",
-    comparison: "vs previous month",
-  },
-  years: {
-    data: yearlyData,
-    label: "Years",
-    description: "Yearly performance",
-    comparison: "vs previous year",
-  },
-};
-
-// Custom tooltip component that follows cursor
-const CustomTooltip = ({
-  active,
-  payload,
-  label,
-  chartType,
-  comparison,
-  isDark,
-}: any) => {
-  if (active && payload && payload.length) {
-    const data = payload[0].payload;
-    const currentChart = chartTypes[chartType as keyof typeof chartTypes];
-    const value = data[currentChart.dataKey];
-    const rate = data[currentChart.rateKey];
-    const isPositive = !rate.startsWith("-");
-
-    return (
-      <div
-        className={
-          isDark
-            ? "bg-[#18181b] border border-gray-700 rounded-lg shadow-lg p-3 min-w-[160px]"
-            : "bg-white border border-gray-200 rounded-lg shadow-lg p-3 min-w-[160px]"
-        }
-      >
-        <div
-          className={
-            isDark
-              ? "border-b border-gray-800 pb-2"
-              : "border-b border-gray-100 pb-2"
-          }
-        >
-          <p
-            className={
-              isDark
-                ? "text-sm font-medium text-gray-100"
-                : "text-sm font-medium text-gray-900"
-            }
-          >
-            {label}
-          </p>
-        </div>
-        <div className="space-y-1">
-          <div className="flex justify-between items-center">
-            <span
-              className={
-                isDark ? "text-xs text-gray-400" : "text-xs text-gray-500"
-              }
-            >
-              Value:
-            </span>
-            <span
-              className={
-                isDark
-                  ? "text-sm font-semibold text-gray-100"
-                  : "text-sm font-semibold text-gray-900"
-              }
-            >
-              {currentChart.format(value)}
-            </span>
-          </div>
-          <div className="flex justify-between items-center">
-            <span
-              className={
-                isDark ? "text-xs text-gray-400" : "text-xs text-gray-500"
-              }
-            >
-              {comparison}:
-            </span>
-            <span
-              className={`text-sm font-semibold ${isPositive ? "text-green-500" : "text-red-500"}`}
-            >
-              {rate}%
-            </span>
-          </div>
-        </div>
-      </div>
-    );
+function getPeriodLabel(type: "day" | "month" | "year", value: number, idx: number) {
+  if (type === "day") {
+    const date = new Date();
+    date.setDate(date.getDate() - (29 - idx));
+    return `${date.getDate()}/${date.getMonth() + 1}`;
   }
-  return null;
-};
+  if (type === "month") {
+    return [
+      "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+    ][value];
+  }
+  return value.toString();
+}
 
 export function ChartBarInteractive() {
-  const [timePeriod, setTimePeriod] =
-    React.useState<keyof typeof timePeriods>("12m");
-  const [chartType, setChartType] =
-    React.useState<keyof typeof chartTypes>("profits");
+  const { t } = useTranslation();
+  const [timePeriod, setTimePeriod] = React.useState<"1m" | "12m" | "years">("12m");
+  const [chartType, setChartType] = React.useState<"profits" | "clients" | "sales">("profits");
+  const [chartData, setChartData] = React.useState({
+    "1m": [],
+    "12m": [],
+    years: [],
+  });
   const { isDark } = useTheme();
+
+  React.useEffect(() => {
+    async function fetchData() {
+      const [sales, clients] = await Promise.all([
+        window.api.database.sales.getAll(),
+        window.api.database.clients.getAll(),
+      ]);
+      // --- 1m: Last 30 days ---
+      const days = Array.from({ length: 30 }, (_, i) => {
+        const date = new Date();
+        date.setDate(date.getDate() - (29 - i));
+        return date;
+      });
+      const daily = days.map((date, idx) => {
+        const daySales = sales.filter((s: any) => {
+          const d = new Date(s.createdAt);
+          return (
+            d.getFullYear() === date.getFullYear() &&
+            d.getMonth() === date.getMonth() &&
+            d.getDate() === date.getDate()
+          );
+        });
+        const dayClients = clients.filter((c: any) => {
+          const d = new Date(c.createdAt);
+          return (
+            d.getFullYear() === date.getFullYear() &&
+            d.getMonth() === date.getMonth() &&
+            d.getDate() === date.getDate()
+          );
+        });
+        const profits = daySales.reduce((sum: number, s: any) =>
+          sum + (s.saleItems?.reduce(
+            (itemSum: number, item: any) =>
+              itemSum + ((item.price - (item.product?.bought || 0)) * item.quantity),
+            0
+          ) || 0), 0);
+        const salesTotal = daySales.reduce((sum: number, s: any) => sum + (s.totalWithDiscount || 0), 0);
+        return {
+          period: getPeriodLabel("day", 0, idx),
+          profits,
+          clients: dayClients.length,
+          sales: salesTotal,
+        };
+      });
+      // --- 12m: Current year, by month ---
+      const now = new Date();
+      const months = Array.from({ length: 12 }, (_, i) => i);
+      const monthly = months.map((monthIdx) => {
+        const monthSales = sales.filter((s: any) => {
+          const d = new Date(s.createdAt);
+          return d.getFullYear() === now.getFullYear() && d.getMonth() === monthIdx;
+        });
+        const monthClients = clients.filter((c: any) => {
+          const d = new Date(c.createdAt);
+          return d.getFullYear() === now.getFullYear() && d.getMonth() === monthIdx;
+        });
+        const profits = monthSales.reduce((sum: number, s: any) =>
+          sum + (s.saleItems?.reduce(
+            (itemSum: number, item: any) =>
+              itemSum + ((item.price - (item.product?.bought || 0)) * item.quantity),
+            0
+          ) || 0), 0);
+        const salesTotal = monthSales.reduce((sum: number, s: any) => sum + (s.totalWithDiscount || 0), 0);
+        return {
+          period: getPeriodLabel("month", monthIdx, monthIdx),
+          profits,
+          clients: monthClients.length,
+          sales: salesTotal,
+        };
+      });
+      // --- years: Last 6 years ---
+      const startYear = now.getFullYear() - 5;
+      const years = Array.from({ length: 6 }, (_, i) => startYear + i);
+      const yearly = years.map((year) => {
+        const yearSales = sales.filter((s: any) => {
+          const d = new Date(s.createdAt);
+          return d.getFullYear() === year;
+        });
+        const yearClients = clients.filter((c: any) => {
+          const d = new Date(c.createdAt);
+          return d.getFullYear() === year;
+        });
+        const profits = yearSales.reduce((sum: number, s: any) =>
+          sum + (s.saleItems?.reduce(
+            (itemSum: number, item: any) =>
+              itemSum + ((item.price - (item.product?.bought || 0)) * item.quantity),
+            0
+          ) || 0), 0);
+        const salesTotal = yearSales.reduce((sum: number, s: any) => sum + (s.totalWithDiscount || 0), 0);
+        return {
+          period: year.toString(),
+          profits,
+          clients: yearClients.length,
+          sales: salesTotal,
+        };
+      });
+      setChartData({ "1m": daily, "12m": monthly, years: yearly });
+    }
+    fetchData();
+  }, []);
+
+  const chartTypes = {
+    profits: {
+      title: t("dashboard.chartProfitsTitle"),
+      description: t("dashboard.chartProfitsDesc"),
+      format: (value: number) => `${value.toLocaleString()} DA`,
+      dataKey: "profits" as const,
+      label: t("dashboard.profits"),
+    },
+    clients: {
+      title: t("dashboard.chartClientsTitle"),
+      description: t("dashboard.chartClientsDesc"),
+      format: (value: number) => `${value} ${t("dashboard.clients")}`,
+      dataKey: "clients" as const,
+      label: t("dashboard.clients"),
+    },
+    sales: {
+      title: t("dashboard.chartSalesTitle"),
+      description: t("dashboard.chartSalesDesc"),
+      format: (value: number) => `${value.toLocaleString()} DA`,
+      dataKey: "sales" as const,
+      label: t("dashboard.sales"),
+    },
+  };
+
+  const timePeriods = {
+    "1m": {
+      data: chartData["1m"],
+      label: "1 Month (Daily)",
+      description: "Last 30 days",
+    },
+    "12m": {
+      data: chartData["12m"],
+      label: "12 Months",
+      description: "Current year months",
+    },
+    years: {
+      data: chartData["years"],
+      label: "Years",
+      description: "Yearly performance",
+    },
+  };
 
   const currentChart = chartTypes[chartType];
   const currentPeriod = timePeriods[timePeriod];
@@ -382,9 +231,9 @@ export function ChartBarInteractive() {
             }
             className={`px-3 py-2 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none border ${controlBorder} ${controlBg} ${controlText}`}
           >
-            <option value="profits">Profits</option>
-            <option value="clients">Client Growth</option>
-            <option value="sales">Sales</option>
+            <option value="profits">{chartTypes.profits.label}</option>
+            <option value="clients">{chartTypes.clients.label}</option>
+            <option value="sales">{chartTypes.sales.label}</option>
           </select>
 
           {/* Time Period Toggle Buttons */}
@@ -401,7 +250,7 @@ export function ChartBarInteractive() {
                     : controlInactive
                 }`}
               >
-                {key === "1m" ? "1M" : key === "12m" ? "12M" : "Years"}
+                {key === "1m" ? t("dashboard.1M") : key === "12m" ? t("dashboard.12M") : t("dashboard.years")}
               </button>
             ))}
           </div>
@@ -458,18 +307,28 @@ export function ChartBarInteractive() {
               fill={axisColor}
               tickFormatter={(value) => {
                 if (chartType === "clients") return `${value}`;
-                return `$${(value / 1000).toFixed(0)}k`;
+                return `${(value / 1000).toFixed(0)}k DA`;
               }}
             />
 
             <Tooltip
-              content={
-                <CustomTooltip
-                  chartType={chartType}
-                  comparison={currentPeriod.comparison}
-                  isDark={isDark}
-                />
-              }
+              content={({ active, payload, label }) => {
+                if (active && payload && payload.length) {
+                  const value = payload[0].value;
+                  return (
+                    <div className={isDark ? "bg-[#18181b] border border-gray-700 rounded-lg shadow-lg p-3 min-w-[120px]" : "bg-white border border-gray-200 rounded-lg shadow-lg p-3 min-w-[120px]"}>
+                      <div className={isDark ? "border-b border-gray-800 pb-2" : "border-b border-gray-100 pb-2"}>
+                        <p className={isDark ? "text-sm font-medium text-gray-100" : "text-sm font-medium text-gray-900"}>{label}</p>
+                      </div>
+                      <div className="flex justify-between items-center mt-2">
+                        <span className={isDark ? "text-xs text-gray-400" : "text-xs text-gray-500"}>Value:</span>
+                        <span className={isDark ? "text-sm font-semibold text-gray-100" : "text-sm font-semibold text-gray-900"}>{currentChart.format(value)}</span>
+                      </div>
+                    </div>
+                  );
+                }
+                return null;
+              }}
               cursor={{
                 fill: isDark ? "rgba(59,130,246,0.15)" : "rgba(59,130,246,0.1)",
               }}
