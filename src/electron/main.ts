@@ -17,7 +17,7 @@ import {
   getAllSales,
 } from "../lib/database/sales";
 import { getOption, setOption } from "../lib/database/options";
-import { createPayment, getPaymentsByClient, getAllPayments } from "../lib/database/payments";
+import { createPayment, getPaymentsByClient, getAllPayments, updatePaymentPaidAt } from "../lib/database/payments";
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {
@@ -150,6 +150,10 @@ function setupDatabaseHandlers() {
 
   ipcMain.handle("db:payments:getAll", async () => {
     return await getAllPayments();
+  });
+
+  ipcMain.handle("db:payments:updatePaidAt", async (_event, { saleId, clientId, paidAt }) => {
+    return await updatePaymentPaidAt(saleId, clientId, paidAt);
   });
 
   ipcMain.handle("db:sales:getAll", async () => {

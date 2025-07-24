@@ -36,3 +36,10 @@ export async function getAllPayments() {
     orderBy: { createdAt: "desc" },
   });
 }
+
+export async function updatePaymentPaidAt(saleId: string, clientId: string, paidAt: Date) {
+  return await prisma.payment.update({
+    where: { saleId_clientId: { saleId, clientId } },
+    data: { paidAt },
+  });
+}

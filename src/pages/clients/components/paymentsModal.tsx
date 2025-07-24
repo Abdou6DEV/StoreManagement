@@ -7,7 +7,7 @@ import {
   DialogDescription,
 } from "../../../lib/components/ui/dialog";
 import { Button } from "../../../lib/components/ui/button";
-import { Loader2, X, CreditCard, ArrowDownCircle, ArrowUpCircle } from "lucide-react";
+import { Loader2, X, CreditCard, ArrowDownCircle, ArrowUpCircle, CheckCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 interface Payment {
@@ -36,6 +36,15 @@ const PaymentsModal: React.FC<PaymentsModalProps> = ({ client, onClose }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const handleMarkAsPaid = async (saleId: string, clientId: string) => {
+    await window.api.database.payments.markAsPaid(saleId, clientId, new Date());
+    setLoading(true);
+    window.api.database.payments.getByClient(client.id)
+      .then((data) => setPayments(data as any))
+      .catch(() => setError(t("clients.paymentsError", "Failed to fetch payments")))
+      .finally(() => setLoading(false));
+  };
+
   useEffect(() => {
     setLoading(true);
     setError(null);
@@ -48,7 +57,7 @@ const PaymentsModal: React.FC<PaymentsModalProps> = ({ client, onClose }) => {
 
   return (
     <Dialog modal open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-2xl" showCloseButton={false}>
+      <DialogContent showCloseButton={false} style={{ maxWidth: '60vw' }}>
         <DialogHeader>
           <DialogTitle>
             <div className="flex items-center gap-3">
@@ -108,8 +117,15 @@ const PaymentsModal: React.FC<PaymentsModalProps> = ({ client, onClose }) => {
                       <td className="px-4 py-2">
                         {p.dueAt ? new Date(p.dueAt).toLocaleDateString() : "-"}
                       </td>
-                      <td className="px-4 py-2">
-                        {p.paidAt ? new Date(p.paidAt).toLocaleDateString() : "-"}
+                      <td className="px-4 py-3 flex items-center gap-2">
+                        {p.paidAt ? (
+                          <><CheckCircle className="w-4 h-4 text-green-500" /> {new Date(p.paidAt).toLocaleDateString()}</>
+                        ) : (
+                          <Button size="sm" variant="outline" className="text-green-700 border-green-500 hover:bg-green-50 flex items-center gap-1" onClick={() => handleMarkAsPaid(p.saleId, p.clientId)}>
+                            <CheckCircle className="w-4 h-4 text-green-500" />
+                            {t("clients.markAsPaid", "Mark as Paid")}
+                          </Button>
+                        )}
                       </td>
                       <td className="px-4 py-2">
                         {p.createdAt ? new Date(p.createdAt).toLocaleDateString() : "-"}
