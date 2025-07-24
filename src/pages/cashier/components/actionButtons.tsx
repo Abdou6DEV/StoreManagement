@@ -50,7 +50,7 @@ export default function ActionButtons({
   setPaymentDate,
   onConfirmWithReceipt,
 }: Props) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [clientSuggestions, setClientSuggestions] = useState<
     ClientSuggestion[]
   >([]);
@@ -207,7 +207,7 @@ export default function ActionButtons({
           className="flex items-center px-2 py-2 rounded-md bg-muted text-foreground hover:bg-primary hover:text-primary-foreground transition text-sm border border-border min-w-[40px]"
           style={{ flexShrink: 0 }}
         >
-          <UserPlus className="w-4 h-4 mr-1" />
+          <UserPlus className={`w-4 h-4 mr-1 ml-1 ${i18n.language === 'ar' ? ' scale-x-[-1]' : ''}`} />
           <span className="hidden sm:inline whitespace-nowrap">{t("cashier.addNewClient", "Add New Client")}</span>
         </button>
         {/* Discount Input */}
