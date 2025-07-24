@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from "react";
-import { CheckCircle, Trash2, UserPlus, Printer } from "lucide-react";
+import { CheckCircle, Trash2, UserPlus, Printer, Calculator } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { CartItem } from "../../cashier";
 import AddPaymentModal from "./addPaymentModal";
 import AddClientModal from "./addClientModal";
+import CalculatorModal from "./calculatorModal";
 
 // Define a type for client suggestions
 interface ClientSuggestion {
@@ -67,6 +68,7 @@ export default function ActionButtons({
   const [showAddClientModal, setShowAddClientModal] = useState(false);
   const [clientAddress, setClientAddress] = useState("");
   const [clientNotes, setClientNotes] = useState("");
+  const [showCalculatorModal, setShowCalculatorModal] = useState(false);
 
   // Keep draftDiscount in sync with prop when session changes
   useEffect(() => {
@@ -250,7 +252,7 @@ export default function ActionButtons({
         </button>
       </div>
 
-      {/* === Row 2: Confirm Sale, Confirm with Receipt, Clear Cart === */}
+      {/* === Row 2: Confirm Sale, Confirm with Receipt, Clear Cart, Calculator === */}
       <div className="flex flex-row gap-2 w-full">
         <button
           onClick={onFinish}
@@ -275,6 +277,14 @@ export default function ActionButtons({
         >
           <Trash2 className="w-6 h-6" />
           <span className="hidden sm:inline whitespace-nowrap">{t("cashier.clearCart", "Clear Cart")}</span>
+        </button>
+        {/* Calculator Icon Button (small, not flex-1) */}
+        <button
+          onClick={() => setShowCalculatorModal(true)}
+          className="w-10 h-10 flex items-center justify-center rounded-md bg-muted text-foreground hover:bg-accent transition focus:outline-none focus:ring-2 focus:ring-accent/50 border border-border ml-2"
+          title={t("cashier.calculator", "Calculator")}
+        >
+          <Calculator className="w-5 h-5" />
         </button>
       </div>
 
@@ -314,6 +324,8 @@ export default function ActionButtons({
         t={t as typeof t}
         onConfirm={handleAddClient}
       />
+      {/* === Calculator Modal === */}
+      <CalculatorModal open={showCalculatorModal} onClose={() => setShowCalculatorModal(false)} />
     </div>
   );
 }
