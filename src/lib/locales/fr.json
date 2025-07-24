@@ -175,7 +175,8 @@
     "rest": "Reste à payer",
     "paid": "Payé",
     "showHistory": "Afficher l'historique",
-    "all": "Tout"
+    "all": "Tout",
+    "addPayment": "Ajouter un paiement"
   },
   "clients": {
     "itemsPerPage": "Éléms par page:",

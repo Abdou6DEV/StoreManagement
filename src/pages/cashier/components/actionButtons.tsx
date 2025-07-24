@@ -6,7 +6,6 @@ import AddPaymentModal from "./addPaymentModal";
 import AddClientModal from "./addClientModal";
 import CalculatorModal from "./calculatorModal";
 
-// Define a type for client suggestions
 interface ClientSuggestion {
   id: string;
   name: string;
@@ -70,7 +69,6 @@ export default function ActionButtons({
   const [clientNotes, setClientNotes] = useState("");
   const [showCalculatorModal, setShowCalculatorModal] = useState(false);
 
-  // Keep draftDiscount in sync with prop when session changes
   useEffect(() => {
     setDraftDiscount(discount);
   }, [discount]);
@@ -87,7 +85,6 @@ export default function ActionButtons({
   const inputRef = useRef<HTMLInputElement>(null);
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
 
-  // Filter suggestions based on input
   const filteredSuggestions =
     clientName.length > 0
       ? clientSuggestions.filter((c) =>
@@ -95,7 +92,6 @@ export default function ActionButtons({
         )
       : [];
 
-  // Handle suggestion click
   const handleSuggestionClick = (name: string, id: string) => {
     setClientName(name);
     setClientId(id);
@@ -104,12 +100,10 @@ export default function ActionButtons({
     inputRef.current?.blur();
   };
 
-  // Hide suggestions on blur
   const handleBlur = () => {
     setTimeout(() => setShowSuggestions(false), 100);
   };
 
-  // Clear clientId if input doesn't match any client
   useEffect(() => {
     const match = clientSuggestions.find((c) => c.name === clientName);
     if (!match) {
@@ -118,7 +112,6 @@ export default function ActionButtons({
     }
   }, [clientName, clientSuggestions, setClientId]);
 
-  // Helper to auto-fill client info if selected
   useEffect(() => {
     if (clientName && clientSuggestions.length > 0) {
       const match = clientSuggestions.find((c) => c.name === clientName);
@@ -135,12 +128,10 @@ export default function ActionButtons({
     }
   }, [clientName, clientSuggestions, showPaymentModal]);
 
-  // Keep local payment date in sync with prop
   useEffect(() => {
     setPaymentDateLocal(paymentDate);
   }, [paymentDate]);
 
-  // When local payment date changes (from modal), update parent
   useEffect(() => {
     setPaymentDate(paymentDateLocal);
   }, [paymentDateLocal, setPaymentDate]);
@@ -165,9 +156,7 @@ export default function ActionButtons({
 
   return (
     <div className="flex flex-col gap-3 w-full">
-      {/* === Row 1: All controls in a single row, responsive width === */}
       <div className="flex flex-wrap items-center gap-2 w-full">
-        {/* Client input and history button */}
         <div className="relative flex items-center min-w-[180px] max-w-[220px] flex-1">
           <input
             ref={inputRef}
@@ -181,7 +170,6 @@ export default function ActionButtons({
             placeholder={t("cashier.clientName", "Client name")}
             className="rounded-md border border-border px-3 py-2 text-sm bg-background w-full min-w-0"
           />
-          {/* Suggestions Dropdown (below input) */}
           {showSuggestions && filteredSuggestions.length > 0 && (
             <div className="absolute left-0 z-50 mt-1 w-full min-w-[180px] max-w-[320px] bg-card border border-border rounded shadow-lg max-h-60 overflow-y-auto">
               {filteredSuggestions.map((c) => (
@@ -201,69 +189,51 @@ export default function ActionButtons({
             </div>
           )}
         </div>
-        {/* Add Client Button */}
         <button
           onClick={() => setShowAddClientModal(true)}
-          className="flex items-center px-2 py-2 rounded-md bg-muted text-foreground hover:bg-primary hover:text-primary-foreground transition text-sm border border-border min-w-[40px]"
-          style={{ flexShrink: 0 }}
+          className="flex-1 flex items-center justify-center px-2 py-2 rounded-md bg-muted text-foreground hover:bg-primary hover:text-primary-foreground transition text-sm border border-border min-w-0"
         >
           <UserPlus className={`w-4 h-4 mr-1 ml-1 ${i18n.language === 'ar' ? ' scale-x-[-1]' : ''}`} />
           <span className="hidden sm:inline whitespace-nowrap">{t("cashier.addNewClient", "Add New Client")}</span>
         </button>
-        {/* Discount Input */}
         <input
           placeholder={t("cashier.discount", "Discount")}
-          className={`w-20 rounded-md border px-3 py-2 text-sm bg-background border-border focus:border-primary focus:ring-primary/50 focus:outline-none focus:ring-1 transition-all min-w-0 ${Number(draftDiscount) > cartTotal ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}`}
+          className={`flex-1 w-28 rounded-md border px-3 py-2 text-sm bg-background border-border focus:border-primary focus:ring-primary/50 focus:outline-none focus:ring-1 transition-all min-w-0 ${Number(draftDiscount) > cartTotal ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}`}
           type="number"
           value={draftDiscount}
           onChange={(e) => {
             const val = e.target.value;
             if (/^\d*$/.test(val)) {
               setDraftDiscount(val);
+              if (val === "") {
+                onDiscountChange("0");
+              } else if (Number(val) <= cartTotal) {
+                onDiscountChange(val);
+              }
             }
           }}
-          style={{ flexShrink: 0 }}
         />
-        {/* Confirm Button */}
         <button
-          className={`flex items-center gap-2 px-3 py-2 rounded-md font-semibold text-sm shadow border border-border bg-primary text-primary-foreground hover:bg-primary/90 transition min-w-[40px] ${Number(draftDiscount) > cartTotal || draftDiscount === "" ? 'opacity-60 cursor-not-allowed' : ''}`}
-          onClick={() => {
-            if (Number(draftDiscount) > cartTotal || draftDiscount === "") {
-              return;
-            } else {
-              onDiscountChange(draftDiscount);
-            }
-          }}
-          disabled={Number(draftDiscount) > cartTotal || draftDiscount === ""}
-          style={{ flexShrink: 0 }}
-        >
-          <CheckCircle className="w-5 h-5" />
-        </button>
-        {/* Add Payment Button (moved here) */}
-        <button
-          className="flex items-center rounded-xl bg-blue-500 text-white px-4 py-2 text-base font-medium shadow-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 transition duration-150 disabled:bg-blue-300 disabled:text-white/70 disabled:cursor-not-allowed min-w-0"
+          className="flex-1 flex items-center justify-center rounded-lg bg-blue-500 text-white px-4 py-2 text-base font-medium shadow-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 transition duration-150 disabled:bg-blue-300 disabled:text-white/70 disabled:cursor-not-allowed min-w-0"
           onClick={() => {
             setShowPaymentModal(true);
           }}
           disabled={!clientName.trim()}
-          style={{ flexShrink: 0 }}
         >
           <span className="whitespace-nowrap">{t("cashier.addPayment", "Add Payment")}</span>
         </button>
       </div>
-
-      {/* === Row 2: Confirm Sale, Confirm with Receipt, Clear Cart, Calculator === */}
       <div className="flex flex-row gap-2 w-full">
         <button
           onClick={onFinish}
-          className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg bg-primary text-primary-foreground font-bold text-base tracking-wide shadow-md hover:bg-primary/90 transition focus:outline-none focus:ring-2 focus:ring-primary/50 border border-border min-w-0"
+          className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg border border-blue-500 bg-primary text-primary-foreground font-bold text-base tracking-wide shadow-md hover:bg-primary/90 transition focus:outline-none focus:ring-2 focus:ring-primary/50 min-w-0"
         >
           <CheckCircle className="w-6 h-6" />
           <span className="hidden sm:inline whitespace-nowrap">{t("cashier.confirmSale", "Confirm Sale")}</span>
         </button>
         <button
           onClick={onConfirmWithReceipt}
-          className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg bg-primary text-primary-foreground font-bold text-base tracking-wide shadow-md hover:bg-primary/90 transition focus:outline-none focus:ring-2 focus:ring-primary/50 border border-border min-w-0"
+          className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg border border-blue-500 bg-primary text-primary-foreground font-bold text-base tracking-wide shadow-md hover:bg-primary/90 transition focus:outline-none focus:ring-2 focus:ring-primary/50 min-w-0"
         >
           <Printer className="w-6 h-6" />
           <span className="hidden sm:inline whitespace-nowrap">{t("cashier.confirmWithReceipt", "Receipt")}</span>
@@ -273,31 +243,28 @@ export default function ActionButtons({
             setDraftDiscount("");
             onClear();
           }}
-          className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg bg-destructive text-white font-semibold text-base tracking-wide shadow-md hover:bg-destructive/80 transition focus:outline-none focus:ring-2 focus:ring-destructive/50 border border-border min-w-0"
+          className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg border border-blue-500 bg-destructive text-white font-semibold text-base tracking-wide shadow-md hover:bg-destructive/80 transition focus:outline-none focus:ring-2 focus:ring-destructive/50 min-w-0"
         >
           <Trash2 className="w-6 h-6" />
           <span className="hidden sm:inline whitespace-nowrap">{t("cashier.clearCart", "Clear Cart")}</span>
         </button>
-        {/* Calculator Icon Button (small, not flex-1) */}
         <button
           onClick={() => setShowCalculatorModal(true)}
-          className="w-10 h-10 flex items-center justify-center rounded-md bg-muted text-foreground hover:bg-accent transition focus:outline-none focus:ring-2 focus:ring-accent/50 border border-border ml-2"
+          className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg border border-blue-500 bg-blue-500 text-white text-base font-medium shadow-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 transition duration-150 disabled:bg-blue-300 disabled:text-white/70 disabled:cursor-not-allowed min-w-0"
           title={t("cashier.calculator", "Calculator")}
         >
           <Calculator className="w-5 h-5" />
         </button>
       </div>
-
-      {/* === Add Payment Modal === */}
       <AddPaymentModal
         open={showPaymentModal}
         onClose={() => setShowPaymentModal(false)}
         paymentType={paymentTypeLocal}
-        setPaymentType={setPaymentTypeLocal} // Only update local state
+        setPaymentType={setPaymentTypeLocal}
         paymentAmount={modalPaymentAmount}
-        setPaymentAmount={setModalPaymentAmount} // Only update local state
+        setPaymentAmount={setModalPaymentAmount}
         paymentDate={paymentDateLocal}
-        setPaymentDate={setPaymentDateLocal} // Only update local state
+        setPaymentDate={setPaymentDateLocal}
         cart={cart}
         cartTotal={cartTotal}
         t={t as typeof t}
@@ -308,8 +275,6 @@ export default function ActionButtons({
           setShowPaymentModal(false);
         }}
       />
-
-      {/* === Add Client Modal === */}
       <AddClientModal
         open={showAddClientModal}
         onClose={() => setShowAddClientModal(false)}
@@ -324,7 +289,6 @@ export default function ActionButtons({
         t={t as typeof t}
         onConfirm={handleAddClient}
       />
-      {/* === Calculator Modal === */}
       <CalculatorModal open={showCalculatorModal} onClose={() => setShowCalculatorModal(false)} />
     </div>
   );

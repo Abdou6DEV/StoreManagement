@@ -123,7 +123,8 @@
     "rest": "Remaining",
     "paid": "Paid",
     "showHistory": "Show History",
-    "all": "All"
+    "all": "All",
+    "addPayment": "Add Payment"
   },
   "stock": {
     "product": "Product Name",
