@@ -143,6 +143,24 @@ export default function ActionButtons({
     setPaymentDate(paymentDateLocal);
   }, [paymentDateLocal, setPaymentDate]);
 
+  const handleAddClient = async () => {
+    if (!clientName.trim()) return;
+    try {
+      const client = await window.api.database.clients.create({
+        name: clientName.trim(),
+        phone: paymentClientPhone.trim() || undefined,
+        address: clientAddress.trim() || undefined,
+        notes: clientNotes.trim() || undefined,
+      });
+      setClientName(client.name);
+      setClientId(client.id);
+      refreshClientSuggestions();
+      setShowAddClientModal(false);
+    } catch (err) {
+      alert(t("cashier.failedAddClient", "Failed to add client"));
+    }
+  };
+
   return (
     <div className="flex flex-col gap-3 w-full">
       {/* === Row 1: All controls in a single row, responsive width === */}
@@ -294,7 +312,7 @@ export default function ActionButtons({
         clientNotes={clientNotes}
         setClientNotes={setClientNotes}
         t={t as typeof t}
-        onConfirm={() => setShowAddClientModal(false)}
+        onConfirm={handleAddClient}
       />
     </div>
   );
