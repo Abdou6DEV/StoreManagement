@@ -104,11 +104,7 @@ const PaymentsModal: React.FC<PaymentsModalProps> = ({ client, onClose }) => {
                   {payments.map((p, i) => (
                     <tr key={i} className="hover:bg-muted/40 transition">
                       <td className="px-4 py-2 font-medium flex items-center gap-2">
-                        {p.type === "CREDIT" ? (
-                          <ArrowUpCircle className="w-4 h-4 text-red-500" />
-                        ) : (
-                          <ArrowDownCircle className="w-4 h-4 text-green-500" />
-                        )}
+                        <ArrowUpCircle className="w-4 h-4 text-red-500" />
                         {t(`clients.paymentType_${p.type.toLowerCase()}`, p.type)}
                       </td>
                       <td className="px-4 py-2">
