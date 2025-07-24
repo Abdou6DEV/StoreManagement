@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import { Delete } from "lucide-react";
 
 interface CalculatorModalProps {
   open: boolean;
@@ -159,7 +160,7 @@ const CalculatorModal: React.FC<CalculatorModalProps> = ({ open, onClose }) => {
         <div
           ref={inputRef}
           tabIndex={0}
-          className="bg-card rounded-xl p-4 mb-3 text-right text-4xl font-mono border border-border min-h-[64px] w-[320px] outline-none select-text shadow-inner focus:ring-2 focus:ring-primary/30 text-foreground"
+          className="bg-card rounded-xl p-4 mb-3 text-right text-4xl font-mono border border-border min-h-[64px] w-[320px] max-w-full outline-none select-text shadow-inner focus:ring-2 focus:ring-primary/30 text-foreground overflow-x-auto whitespace-nowrap scrollbar-thin scrollbar-thumb-muted"
           style={{ letterSpacing: "1.5px" }}
           aria-label="Calculator display"
         >
@@ -169,7 +170,9 @@ const CalculatorModal: React.FC<CalculatorModalProps> = ({ open, onClose }) => {
         <div className="grid grid-cols-4 gap-2 mt-1">
           {/* Top row: C, ⌫, %, ÷ */}
           <button className={`${buttonBase} ${funcButton}`} onClick={handleClear} aria-label="Clear">C</button>
-          <button className={`${buttonBase} ${funcButton}`} onClick={handleBackspace} aria-label="Backspace">⌫</button>
+          <button className={`${buttonBase} ${funcButton} flex items-center justify-center`} onClick={handleBackspace} aria-label="Backspace">
+            <Delete className="w-6 h-6" />
+          </button>
           <button className={`${buttonBase} ${funcButton}`} onClick={() => handleInput("%")} aria-label="Percent">%</button>
           <button className={`${buttonBase} ${opButton}${lastOp === "/" ? ` ${opButtonActive}` : ""}`} onClick={() => handleInput("/")} aria-label="Divide">÷</button>
 
