@@ -37,118 +37,96 @@ export default function PaymentSummary({
   const userScrollTimeout = React.useRef<number | null>(null);
   const transitionTimeouts = React.useRef<NodeJS.Timeout[]>([]);
   const isPaused = React.useRef(false);
-  const [isTransitioning, setIsTransitioning] = React.useState(false);
+  const [isFading, setIsFading] = React.useState(false);
 
+  // Helper to clear all timers/animations and reset fade
+  function clearAllScrollTimers() {
+    if (animationRef.current) {
+      cancelAnimationFrame(animationRef.current);
+      animationRef.current = null;
+    }
+    transitionTimeouts.current.forEach((timeout) => clearTimeout(timeout));
+    transitionTimeouts.current = [];
+    if (userScrollTimeout.current) {
+      clearTimeout(userScrollTimeout.current);
+      userScrollTimeout.current = null;
+    }
+    setIsFading(false); // Always reset fade
+  }
+
+  // The main auto-scroll function with fade, bottom wait, and top wait
+  function startAutoScroll() {
+    const el = scrollRef.current;
+    if (!el) return;
+    if (isPaused.current) return;
+
+    function scrollStep() {
+      if (!el || isPaused.current) return;
+      // If at bottom, wait, then fade out, reset to top, fade in, wait at top, and continue
+      if (el.scrollTop >= el.scrollHeight - el.clientHeight) {
+        // Wait at bottom so user can see all items
+        const waitAtBottom = setTimeout(() => {
+          setIsFading(true);
+          // Fade out, then reset to top and fade in
+          const fadeOut = setTimeout(() => {
+            el.scrollTop = 0;
+            setIsFading(false);
+            // Wait at top before resuming scrolling
+            const waitAtTop = setTimeout(() => {
+              animationRef.current = requestAnimationFrame(scrollStep);
+            }, 1000); // Wait at top
+            transitionTimeouts.current.push(waitAtTop);
+          }, 600); // Fade duration
+          transitionTimeouts.current.push(fadeOut);
+        }, 2000); // Wait at bottom
+        transitionTimeouts.current.push(waitAtBottom);
+        return;
+      }
+      el.scrollTop += 0.5;
+      animationRef.current = requestAnimationFrame(scrollStep);
+    }
+    animationRef.current = requestAnimationFrame(scrollStep);
+  }
+
+  // On cart change: reset scroll, clear timers, and start fresh after a short delay
+  React.useEffect(() => {
+    const el = scrollRef.current;
+    clearAllScrollTimers();
+    if (!el) return;
+    el.scrollTop = 0;
+    isPaused.current = false;
+    // Only start auto-scroll if content is taller than container
+    if (el.scrollHeight > el.clientHeight) {
+      const timeout = setTimeout(() => {
+        startAutoScroll();
+      }, 1000);
+      transitionTimeouts.current.push(timeout);
+    }
+    // eslint-disable-next-line
+  }, [cart]);
+
+  // User interaction: pause scroll, resume after delay, always reset fade
   React.useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
-
-    function scroll() {
-      if (!el || isPaused.current) return;
-
-      // Check if content needs scrolling
-      if (el.scrollHeight <= el.clientHeight) {
-        // Content fits without scrolling, cancel animation
-        if (animationRef.current) {
-          cancelAnimationFrame(animationRef.current);
-          animationRef.current = null;
-        }
-        return;
-      }
-
-      // Smooth continuous scroll
-      el.scrollTop += 0.5;
-
-      // If we hit the bottom, wait 4 seconds then transition
-      if (el.scrollTop >= el.scrollHeight - el.clientHeight) {
-        if (animationRef.current) {
-          cancelAnimationFrame(animationRef.current);
-          animationRef.current = null;
-        }
-
-        // First, wait 4 seconds at the bottom
-        const timeout1 = setTimeout(() => {
-          // Then start the fade transition
-          setIsTransitioning(true);
-
-          // After 1 second fade, reset to top
-          const timeout2 = setTimeout(() => {
-            if (el) {
-              el.scrollTop = 0;
-              setIsTransitioning(false);
-
-              // Wait 6 seconds at top before resuming scroll
-              const timeout3 = setTimeout(() => {
-                animationRef.current = requestAnimationFrame(scroll);
-              }, 6000);
-              transitionTimeouts.current.push(timeout3);
-            }
-          }, 1000);
-          transitionTimeouts.current.push(timeout2);
-        }, 4000);
-        transitionTimeouts.current.push(timeout1);
-        return;
-      }
-
-      animationRef.current = requestAnimationFrame(scroll);
-    }
-
     function pauseScroll() {
       isPaused.current = true;
-      // Stop any ongoing transition
-      setIsTransitioning(false);
-
-      // Cancel animation
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-        animationRef.current = null;
-      }
-
-      // Clear all transition timeouts
-      transitionTimeouts.current.forEach((timeout) => clearTimeout(timeout));
-      transitionTimeouts.current = [];
-
-      // Clear user interaction timeout
-      if (userScrollTimeout.current) {
-        clearTimeout(userScrollTimeout.current);
-      }
-
-      // Set new timeout to resume
+      clearAllScrollTimers();
+      setIsFading(false);
       userScrollTimeout.current = window.setTimeout(() => {
         isPaused.current = false;
-        animationRef.current = requestAnimationFrame(scroll);
-      }, 5000);
+        startAutoScroll();
+      }, 4000); // Resume after 4s
     }
-
-    // Handle user interaction through mouse/touch events
-    function handleUserInteraction() {
-      pauseScroll();
-    }
-
-    // Add event listeners for actual user interaction
-    el.addEventListener("mousedown", handleUserInteraction);
-    el.addEventListener("touchstart", handleUserInteraction);
-    el.addEventListener("wheel", handleUserInteraction);
-
-    // Only start scrolling if content is taller than container
-    setTimeout(() => {
-      if (el.scrollHeight > el.clientHeight) {
-        animationRef.current = requestAnimationFrame(scroll);
-      }
-    }, 6000);
-
+    el.addEventListener("mousedown", pauseScroll);
+    el.addEventListener("touchstart", pauseScroll);
+    el.addEventListener("wheel", pauseScroll);
     return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
-      if (userScrollTimeout.current) {
-        clearTimeout(userScrollTimeout.current);
-      }
-      el.removeEventListener("mousedown", handleUserInteraction);
-      el.removeEventListener("touchstart", handleUserInteraction);
-      el.removeEventListener("wheel", handleUserInteraction);
+      el.removeEventListener("mousedown", pauseScroll);
+      el.removeEventListener("touchstart", pauseScroll);
+      el.removeEventListener("wheel", pauseScroll);
     };
-  }, [cart.length]);
+  }, []);
 
   return (
     <div className={`font-mono text-sm text-primary bg-muted rounded-xl p-4 flex flex-col shadow-inner border border-border max-w-full w-full h-[70vh] ${className}`}>
@@ -173,14 +151,14 @@ export default function PaymentSummary({
       <div className="border-t border-black dark:border-white mb-2" />
 
       {/* === Scrollable Items === */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden space-y-[2px]" ref={scrollRef}>
+      <div className={`flex-1 overflow-y-auto overflow-x-hidden space-y-[2px] transition-opacity duration-500 ${isFading ? 'opacity-0' : 'opacity-100'}`} ref={scrollRef}>
         {cart.length > 0
           ? cart.map((item) => (
               <div
                 key={item.id}
-                className={`flex justify-between border-b border-dashed border-primary/40 py-[2px] hover:bg-accent/40 rounded transition-opacity duration-1000 ${
-                  isTransitioning ? "opacity-0" : "opacity-100"
-                }`}
+                className={
+                  "flex justify-between border-b border-dashed border-primary/40 py-[2px] hover:bg-accent/40 rounded transition-opacity duration-1000 opacity-100"
+                }
               >
                 <span className="w-1/2 truncate font-medium">{item.name}</span>
                 <span className="w-1/6 text-right">{item.qty}</span>
