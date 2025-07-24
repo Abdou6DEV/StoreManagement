@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useStock } from "../../../lib/contexts/stockContext";
 import { Product } from "@prisma/client";
@@ -19,6 +19,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "../../../lib/components/ui/popover";
+import { Skeleton } from "../../../lib/components/ui/skeleton";
 
 interface AddStockFormState {
   name: string;
@@ -58,6 +59,34 @@ export default function AddStockForm({
   const [dropdownCategorySearch, setDropdownCategorySearch] = useState("");
   const [form, setForm] = useState<AddStockFormState>(initialForm);
   const [loading, setLoading] = useState(false);
+
+  // For infinite scroll in product dropdown
+  const PAGE_SIZE = 50;
+  const [productPage, setProductPage] = useState(1);
+  const [loadingMoreProducts, setLoadingMoreProducts] = useState(false);
+  const [hasMoreProducts, setHasMoreProducts] = useState(true);
+
+  // Reset product dropdown paging when opening or searching
+  React.useEffect(() => {
+    setProductPage(1);
+    setHasMoreProducts(true);
+  }, [showProductDropdown, dropdownProductSearch]);
+
+  // Compute paginated products
+  const paginatedProducts = filteredProducts.slice(0, productPage * PAGE_SIZE);
+  React.useEffect(() => {
+    setHasMoreProducts(filteredProducts.length > paginatedProducts.length);
+  }, [filteredProducts, paginatedProducts]);
+
+  // Handler for loading more products
+  const handleLoadMoreProducts = () => {
+    if (!hasMoreProducts || loadingMoreProducts) return;
+    setLoadingMoreProducts(true);
+    setTimeout(() => {
+      setProductPage((prev) => prev + 1);
+      setLoadingMoreProducts(false);
+    }, 500); // Simulate async load
+  };
 
   const handleAddProduct = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -197,12 +226,24 @@ export default function AddStockForm({
                         }}
                         className="h-9"
                       />
-                      <CommandList>
+                      <CommandList
+                        onScroll={e => {
+                          const el = e.currentTarget;
+                          if (
+                            el.scrollTop + el.clientHeight >= el.scrollHeight - 10 &&
+                            hasMoreProducts &&
+                            !loadingMoreProducts
+                          ) {
+                            handleLoadMoreProducts();
+                          }
+                        }}
+                        style={{ maxHeight: 350, overflowY: 'auto' }}
+                      >
                         <CommandEmpty>
                           {t("stock.noProduct", "No product found.")}
                         </CommandEmpty>
                         <CommandGroup>
-                          {filteredProducts.map((p) => (
+                          {paginatedProducts.map((p) => (
                             <CommandItem
                               key={p.id}
                               value={p.name}
@@ -229,6 +270,12 @@ export default function AddStockForm({
                               />
                             </CommandItem>
                           ))}
+                          {loadingMoreProducts &&
+                            Array.from({ length: 5 }).map((_, i) => (
+                              <div key={i} className="px-4 py-2">
+                                <Skeleton className="h-5 w-full" />
+                              </div>
+                            ))}
                         </CommandGroup>
                       </CommandList>
                     </Command>

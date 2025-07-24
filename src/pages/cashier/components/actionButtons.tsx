@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { CheckCircle, Trash2, UserPlus } from "lucide-react";
+import { CheckCircle, Trash2, UserPlus, Printer } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { CartItem } from "../../cashier";
 import AddPaymentModal from "./addPaymentModal";
@@ -28,6 +28,7 @@ interface Props {
   setPaymentType: (type: "none" | "credit" | "versement") => void;
   paymentDate: Date | undefined;
   setPaymentDate: (val: Date | undefined) => void;
+  onConfirmWithReceipt?: () => void;
 }
 
 export default function ActionButtons({
@@ -46,6 +47,7 @@ export default function ActionButtons({
   setPaymentType,
   paymentDate,
   setPaymentDate,
+  onConfirmWithReceipt,
 }: Props) {
   const { t } = useTranslation();
   const [clientSuggestions, setClientSuggestions] = useState<
@@ -142,14 +144,11 @@ export default function ActionButtons({
   }, [paymentDateLocal, setPaymentDate]);
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-3 w-full">
       {/* === Row 1: All controls in a single row, responsive width === */}
-      <div className="flex flex-row flex-wrap gap-2 items-center w-full">
+      <div className="flex flex-wrap items-center gap-2 w-full">
         {/* Client input and history button */}
-        <div
-          className="flex items-center relative min-w-40"
-          style={{ flex: 1 }}
-        >
+        <div className="relative flex items-center min-w-[180px] max-w-[220px] flex-1">
           <input
             ref={inputRef}
             value={clientName}
@@ -160,11 +159,11 @@ export default function ActionButtons({
             onFocus={() => setShowSuggestions(true)}
             onBlur={handleBlur}
             placeholder={t("cashier.clientName", "Client name")}
-            className="rounded-md border border-border px-3 py-2 text-sm bg-background min-w-[120px] w-full"
+            className="rounded-md border border-border px-3 py-2 text-sm bg-background w-full min-w-0"
           />
           {/* Suggestions Dropdown (below input) */}
           {showSuggestions && filteredSuggestions.length > 0 && (
-            <div className="absolute z-50 mt-12 w-[250px] bg-card border border-border rounded shadow-lg max-h-60 overflow-y-auto">
+            <div className="absolute left-0 z-50 mt-1 w-full min-w-[180px] max-w-[320px] bg-card border border-border rounded shadow-lg max-h-60 overflow-y-auto">
               {filteredSuggestions.map((c) => (
                 <div
                   key={c.id}
@@ -185,19 +184,16 @@ export default function ActionButtons({
         {/* Add Client Button */}
         <button
           onClick={() => setShowAddClientModal(true)}
-          className="flex items-center px-3 py-2 rounded-md bg-muted text-foreground hover:bg-primary hover:text-primary-foreground transition text-sm border border-border ml-1 flex-shrink min-w-0"
+          className="flex items-center px-2 py-2 rounded-md bg-muted text-foreground hover:bg-primary hover:text-primary-foreground transition text-sm border border-border min-w-[40px]"
+          style={{ flexShrink: 0 }}
         >
-          {t("cashier.addNewClient", "Add New Client")}
-          <UserPlus className="w-4 h-4 ml-2" />
+          <UserPlus className="w-4 h-4 mr-1" />
+          <span className="hidden sm:inline whitespace-nowrap">{t("cashier.addNewClient", "Add New Client")}</span>
         </button>
         {/* Discount Input */}
         <input
           placeholder={t("cashier.discount", "Discount")}
-          className={`w-24 rounded-md border px-3 py-2 text-sm bg-background ml-1 flex-shrink min-w-0
-            ${Number(draftDiscount) > cartTotal
-              ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
-              : 'border-border focus:border-primary focus:ring-primary/50'
-            } focus:outline-none focus:ring-1 transition-all'`}
+          className={`w-20 rounded-md border px-3 py-2 text-sm bg-background border-border focus:border-primary focus:ring-primary/50 focus:outline-none focus:ring-1 transition-all min-w-0 ${Number(draftDiscount) > cartTotal ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}`}
           type="number"
           value={draftDiscount}
           onChange={(e) => {
@@ -206,12 +202,12 @@ export default function ActionButtons({
               setDraftDiscount(val);
             }
           }}
+          style={{ flexShrink: 0 }}
         />
         {/* Confirm Button */}
         <button
-          className={`flex items-center gap-2 px-4 py-2 rounded-md font-semibold text-sm shadow border border-border ml-1 flex-shrink min-w-0 ${(Number(draftDiscount) > cartTotal || draftDiscount === "") ? 'bg-muted text-muted-foreground cursor-not-allowed' : 'bg-primary text-primary-foreground hover:bg-primary/90'}`}
+          className={`flex items-center gap-2 px-3 py-2 rounded-md font-semibold text-sm shadow border border-border bg-primary text-primary-foreground hover:bg-primary/90 transition min-w-[40px] ${Number(draftDiscount) > cartTotal || draftDiscount === "" ? 'opacity-60 cursor-not-allowed' : ''}`}
           onClick={() => {
-            // Validate discount before applying
             if (Number(draftDiscount) > cartTotal || draftDiscount === "") {
               return;
             } else {
@@ -219,43 +215,48 @@ export default function ActionButtons({
             }
           }}
           disabled={Number(draftDiscount) > cartTotal || draftDiscount === ""}
+          style={{ flexShrink: 0 }}
         >
           <CheckCircle className="w-5 h-5" />
-          <span>{t("cashier.confirm", "Confirm")}</span>
         </button>
-      </div>
-
-      {/* === Row 2: Payment === */}
-      <div className="flex gap-3">
+        {/* Add Payment Button (moved here) */}
         <button
-          className="flex-1 rounded-xl bg-blue-500 text-white px-5 py-3 text-base font-medium shadow-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 transition duration-150 disabled:bg-blue-300 disabled:text-white/70 disabled:cursor-not-allowed"
+          className="flex items-center rounded-xl bg-blue-500 text-white px-4 py-2 text-base font-medium shadow-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 transition duration-150 disabled:bg-blue-300 disabled:text-white/70 disabled:cursor-not-allowed min-w-0"
           onClick={() => {
             setShowPaymentModal(true);
           }}
           disabled={!clientName.trim()}
+          style={{ flexShrink: 0 }}
         >
-          {t("cashier.addPayment", "Add Payment")}
+          <span className="whitespace-nowrap">{t("cashier.addPayment", "Add Payment")}</span>
         </button>
       </div>
 
-      {/* === Row 3: Existing Confirm & Clear === */}
-      <div className="flex flex-col sm:flex-row gap-3 w-full">
+      {/* === Row 2: Confirm Sale, Confirm with Receipt, Clear Cart === */}
+      <div className="flex flex-row gap-2 w-full">
         <button
           onClick={onFinish}
-          className="flex-1 flex items-center justify-center gap-2 py-4 rounded-lg bg-primary text-primary-foreground font-bold text-lg tracking-wide shadow-md hover:bg-primary/90 transition focus:outline-none focus:ring-2 focus:ring-primary/50 border border-border"
+          className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg bg-primary text-primary-foreground font-bold text-base tracking-wide shadow-md hover:bg-primary/90 transition focus:outline-none focus:ring-2 focus:ring-primary/50 border border-border min-w-0"
         >
           <CheckCircle className="w-6 h-6" />
-          <span>{t("cashier.confirmSale", "Confirm Sale")}</span>
+          <span className="hidden sm:inline whitespace-nowrap">{t("cashier.confirmSale", "Confirm Sale")}</span>
+        </button>
+        <button
+          onClick={onConfirmWithReceipt}
+          className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg bg-primary text-primary-foreground font-bold text-base tracking-wide shadow-md hover:bg-primary/90 transition focus:outline-none focus:ring-2 focus:ring-primary/50 border border-border min-w-0"
+        >
+          <Printer className="w-6 h-6" />
+          <span className="hidden sm:inline whitespace-nowrap">{t("cashier.confirmWithReceipt", "Receipt")}</span>
         </button>
         <button
           onClick={() => {
             setDraftDiscount("");
             onClear();
           }}
-          className="flex-1 flex items-center justify-center gap-2 py-4 rounded-lg bg-destructive text-white font-semibold text-lg tracking-wide shadow-md hover:bg-destructive/80 transition focus:outline-none focus:ring-2 focus:ring-destructive/50 border border-border"
+          className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg bg-destructive text-white font-semibold text-base tracking-wide shadow-md hover:bg-destructive/80 transition focus:outline-none focus:ring-2 focus:ring-destructive/50 border border-border min-w-0"
         >
           <Trash2 className="w-6 h-6" />
-          <span>{t("cashier.clearCart", "Clear Cart")}</span>
+          <span className="hidden sm:inline whitespace-nowrap">{t("cashier.clearCart", "Clear Cart")}</span>
         </button>
       </div>
 
