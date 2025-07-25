@@ -6,18 +6,16 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "./ui/dropdownMenu";
+} from "./dropdownMenu";
 import {
   Home,
   ChartLine,
   Users,
   ShoppingCart,
-  CreditCard,
   PackageSearch,
-  Search,
-  Settings,
+  Settings
 } from "lucide-react";
-import { ThemeToggleButton } from "./ui/themeToggleButton";
+import { ThemeToggleButton } from "./themeToggleButton";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 

@@ -2,8 +2,8 @@ import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useStock } from "../../../lib/contexts/stockContext";
 import { Product } from "@prisma/client";
-import StyledNumberInput from "../../../lib/components/ui/inputNumber";
-import { Button } from "../../../lib/components/ui/button";
+import StyledNumberInput from "../../../lib/components/inputNumber";
+import { Button } from "../../../lib/components/button";
 import { Loader2, Package, Check, ChevronDown, ChevronUp } from "lucide-react";
 import { cn } from "../../../lib/utils";
 import {
@@ -13,13 +13,13 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from "../../../lib/components/ui/command";
+} from "../../../lib/components/command";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "../../../lib/components/ui/popover";
-import { Skeleton } from "../../../lib/components/ui/skeleton";
+} from "../../../lib/components/popover";
+import { Skeleton } from "../../../lib/components/skeleton";
 import type { AddStockFormState } from "../../../types";
 
 const initialForm: AddStockFormState = {

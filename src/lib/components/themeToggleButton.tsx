@@ -1,8 +1,8 @@
 import React from "react";
 import { Button } from "./button";
 import { Sun, Moon } from "lucide-react";
-import { useTheme } from "../../hooks/useTheme";
-import { cn } from "../../utils";
+import { useTheme } from "../hooks/useTheme";
+import { cn } from "../utils";
 import { useTranslation } from "react-i18next";
 
 interface ThemeToggleButtonProps {

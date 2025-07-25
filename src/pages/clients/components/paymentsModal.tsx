@@ -6,8 +6,8 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from "../../../lib/components/ui/dialog";
-import { Button } from "../../../lib/components/ui/button";
+} from "../../../lib/components/dialog";
+import { Button } from "../../../lib/components/button";
 import {
   Loader2,
   X,

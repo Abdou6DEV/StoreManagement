@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Button } from "../../../lib/components/ui/button";
+import { Button } from "../../../lib/components/button";
 import { Loader2, Users, ChevronDown, ChevronUp } from "lucide-react";
 
 interface AddClientFormProps {

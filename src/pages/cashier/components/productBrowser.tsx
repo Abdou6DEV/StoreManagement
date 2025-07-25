@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import type { Product } from "@prisma/client";
 import { useTranslation } from "react-i18next";
-import { Skeleton } from "../../../lib/components/ui/skeleton";
+import { Skeleton } from "../../../lib/components/skeleton";
 import { useStock } from "../../../lib/contexts/stockContext";
 import type { CartItem } from "../../../types";
 import { ChevronLeft, ChevronRight } from "lucide-react";

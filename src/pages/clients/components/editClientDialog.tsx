@@ -4,9 +4,9 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "../../../lib/components/ui/dialog";
-import { Input } from "../../../lib/components/ui/input";
-import { Button } from "../../../lib/components/ui/button";
+} from "../../../lib/components/dialog";
+import { Input } from "../../../lib/components/input";
+import { Button } from "../../../lib/components/button";
 import { Edit, X, Save, Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { Client } from "../../../types";

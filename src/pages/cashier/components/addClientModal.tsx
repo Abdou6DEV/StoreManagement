@@ -1,6 +1,6 @@
 import { useRef, useEffect } from "react";
 import { Users } from "lucide-react";
-import { Button } from "../../../lib/components/ui/button";
+import { Button } from "../../../lib/components/button";
 import type { TFunction } from "i18next";
 
 export default function AddClientModal({

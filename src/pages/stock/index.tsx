@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { StockTable } from "./components/stockTable";
 import AddStockForm from "./components/addStockForm";
-import { Button } from "../../lib/components/ui/button";
+import { Button } from "../../lib/components/button";
 import CategorySummaryTable from "./components/categorySummaryTable";
 
 export default function StockPage() {

@@ -1,5 +1,5 @@
 import { Wallet } from "lucide-react";
-import { Button } from "../../../lib/components/ui/button";
+import { Button } from "../../../lib/components/button";
 import type { CartItem } from "../../../types";
 import type { TFunction } from "i18next";
 import React, { useRef, useEffect } from "react";

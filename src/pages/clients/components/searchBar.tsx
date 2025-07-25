@@ -1,5 +1,5 @@
 import React from "react";
-import { Input } from "../../../lib/components/ui/input";
+import { Input } from "../../../lib/components/input";
 import { useTranslation } from "react-i18next";
 
 interface SearchBarProps {

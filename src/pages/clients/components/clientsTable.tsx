@@ -1,5 +1,5 @@
 import React from "react";
-import { Button } from "../../../lib/components/ui/button";
+import { Button } from "../../../lib/components/button";
 import { Edit, Loader2, Trash2, Users } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { Client } from "../../../types";

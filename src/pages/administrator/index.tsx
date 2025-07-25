@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { Input } from "../../lib/components/ui/input";
-import { Button } from "../../lib/components/ui/button";
+import { Input } from "../../lib/components/input";
+import { Button } from "../../lib/components/button";
 import { useTranslation } from "react-i18next";
 import {
   Shield,

@@ -5,14 +5,14 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "../../../lib/components/ui/popover";
-import { Button } from "../../../lib/components/ui/button";
+} from "../../../lib/components/popover";
+import { Button } from "../../../lib/components/button";
 import {
   Command,
   CommandGroup,
   CommandItem,
   CommandList,
-} from "../../../lib/components/ui/command";
+} from "../../../lib/components/command";
 import { Package, Check, ChevronDown } from "lucide-react";
 import { cn } from "../../../lib/utils";
 

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import StyledNumberInput from "../../../lib/components/ui/inputNumber";
-import { Button } from "../../../lib/components/ui/button";
+import StyledNumberInput from "../../../lib/components/inputNumber";
+import { Button } from "../../../lib/components/button";
 import { Save, X, Loader2, Package } from "lucide-react";
 import { useStock } from "../../../lib/contexts/stockContext";
 

@@ -14,7 +14,7 @@ import {
   PaginationPrevious,
   PaginationNext,
   PaginationEllipsis,
-} from "../../lib/components/ui/pagination";
+} from "../../lib/components/pagination";
 import type { Client } from "../../types";
 
 export default function Clients() {

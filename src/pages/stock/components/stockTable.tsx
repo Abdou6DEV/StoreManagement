@@ -20,27 +20,27 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "../../../lib/components/ui/dialog";
+} from "../../../lib/components/dialog";
 import {
   Command,
   CommandGroup,
   CommandInput,
   CommandItem,
   CommandList,
-} from "../../../lib/components/ui/command";
+} from "../../../lib/components/command";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "../../../lib/components/ui/popover";
+} from "../../../lib/components/popover";
 import {
   ToggleGroup,
   ToggleGroupItem,
-} from "../../../lib/components/ui/toggleGroup";
-import { Button } from "../../../lib/components/ui/button";
+} from "../../../lib/components/toggleGroup";
+import { Button } from "../../../lib/components/button";
 import EditStockForm from "./editStockForm";
 import type { ProductWithSales } from "../../../types";
-import { Tooltip } from "../../../lib/components/ui/tooltip";
+import { Tooltip } from "../../../lib/components/tooltip";
 import {
   Pagination,
   PaginationContent,
@@ -49,7 +49,7 @@ import {
   PaginationPrevious,
   PaginationNext,
   PaginationEllipsis,
-} from "../../../lib/components/ui/pagination";
+} from "../../../lib/components/pagination";
 
 export const StockTable = () => {
   const { t } = useTranslation();
@@ -446,7 +446,7 @@ export const StockTable = () => {
           </p>
         </div>
       ) : (
-        <div className="overflow-auto rounded-lg border border-muted">
+        <div className="table-container overflow-auto rounded-lg border border-muted">
           <table className="min-w-full text-sm text-left">
             <thead className="bg-muted text-muted-foreground">
               <tr>

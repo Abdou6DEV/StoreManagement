@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Product } from "@prisma/client";
-import { Input } from "../../../lib/components/ui/input";
+import { Input } from "../../../lib/components/input";
 import { useTranslation } from "react-i18next";
 
 interface Props {
