@@ -15,17 +15,18 @@ export function SectionCards() {
   const [clientStats, setClientStats] = useState<any[]>([]);
 
   const formatCurrency = (amount: number) =>
-    `${amount.toLocaleString()} ${t('currency')}`;
+    `${amount.toLocaleString()} ${t("currency")}`;
 
   useEffect(() => {
     async function fetchStats() {
-      const [sales, products, payments, clients, lowStockThreshold] = await Promise.all([
-        window.api.database.sales.getAll(),
-        window.api.database.products.getAll(),
-        window.api.database.payments.getAll(),
-        window.api.database.clients.getAll(),
-        window.api.database.options.get("lowStockThreshold"),
-      ]);
+      const [sales, products, payments, clients, lowStockThreshold] =
+        await Promise.all([
+          window.api.database.sales.getAll(),
+          window.api.database.products.getAll(),
+          window.api.database.payments.getAll(),
+          window.api.database.clients.getAll(),
+          window.api.database.options.get("lowStockThreshold"),
+        ]);
 
       function calcSalesStats(
         labelKey: string,

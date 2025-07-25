@@ -2,15 +2,16 @@ import React, { Suspense } from "react";
 import { Routes, Route, Outlet } from "react-router-dom";
 import Layout from "../lib/components/layout";
 import ScrollToTop from "../lib/components/scrollToTop";
+import Sidebar from "../lib/components/sidebar";
+import { StockProvider } from "../lib/contexts/stockContext";
+import { useTranslation } from "react-i18next";
+
 const MainMenu = React.lazy(() => import("./mainMenu"));
 const Dashboard = React.lazy(() => import("./dashboard"));
 const Clients = React.lazy(() => import("./clients"));
 const Cashier = React.lazy(() => import("./cashier"));
 const Stock = React.lazy(() => import("./stock"));
 const Administrator = React.lazy(() => import("./administrator"));
-import Sidebar from "../lib/components/sidebar";
-import { StockProvider } from "../lib/contexts/stockContext";
-import { useTranslation } from "react-i18next";
 
 export default function App() {
   const { i18n } = useTranslation();

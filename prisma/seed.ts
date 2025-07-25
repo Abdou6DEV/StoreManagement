@@ -75,7 +75,10 @@ async function main() {
       { probability: 0.7 },
     );
     const saleItemsCount = faker.number.int({ min: 1, max: 5 });
-    const saleCreatedAt = faker.date.between({ from: twoYearsAgo, to: new Date() });
+    const saleCreatedAt = faker.date.between({
+      from: twoYearsAgo,
+      to: new Date(),
+    });
     const sale = await prisma.sale.create({
       data: {
         clientId: client?.id,

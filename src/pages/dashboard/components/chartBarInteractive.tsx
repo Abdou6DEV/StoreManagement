@@ -15,7 +15,7 @@ function getPeriodLabel(
   type: "day" | "month" | "year",
   value: number,
   idx: number,
-  t: (key: string) => string
+  t: (key: string) => string,
 ) {
   if (type === "day") {
     return (idx + 1).toString();
@@ -173,8 +173,7 @@ export function ChartBarInteractive() {
     profits: {
       title: t("dashboard.chartProfitsTitle"),
       description: t("dashboard.chartProfitsDesc"),
-      format: (value: number) =>
-        `${value.toLocaleString()} ${t('currency')}`,
+      format: (value: number) => `${value.toLocaleString()} ${t("currency")}`,
       dataKey: "profits" as const,
       label: t("dashboard.profits"),
     },
@@ -188,8 +187,7 @@ export function ChartBarInteractive() {
     sales: {
       title: t("dashboard.chartSalesTitle"),
       description: t("dashboard.chartSalesDesc"),
-      format: (value: number) =>
-        `${value.toLocaleString()} ${t('currency')}`,
+      format: (value: number) => `${value.toLocaleString()} ${t("currency")}`,
       dataKey: "sales" as const,
       label: t("dashboard.sales"),
     },
