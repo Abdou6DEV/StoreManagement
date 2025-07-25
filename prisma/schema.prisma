@@ -8,6 +8,12 @@ datasource db {
   url      = "file:./dev.db"
 }
 
+enum PaymentType {
+  CASH
+  CREDIT
+  VERSEMENT
+}
+
 model Category {
   name      String    @id
   products  Product[]
@@ -17,7 +23,7 @@ model Category {
 
 model Product {
   id           String   @id @default(uuid())
-  name         String
+  name         String   @unique
   categoryName String
   quantity     Int
   bought       Int
@@ -28,9 +34,6 @@ model Product {
 
   category  Category   @relation(fields: [categoryName], references: [name])
   saleItems SaleItem[]
-
-  @@index([name])
-  @@index([categoryName])
 }
 
 model Sale {
@@ -41,22 +44,23 @@ model Sale {
   updatedAt DateTime @updatedAt
 
   client    Client?    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  payment   Payment?
   saleItems SaleItem[]
-  payments  Payment[]
 }
 
 model SaleItem {
+  id        String   @id @default(uuid())
   productId String
+  saleId    String
   quantity  Int
   price     Int
-  saleId    String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
   sale    Sale    @relation(fields: [saleId], references: [id])
 
-  @@id([productId, saleId])
+  @@unique([productId, saleId])
 }
 
 model Client {
@@ -77,22 +81,26 @@ model Option {
   value String
 }
 
-enum PaymentType {
-  CREDIT
-  VERSEMENT
+model Payment {
+  id             String      @id @default(uuid())
+  saleId         String      @unique
+  clientId       String
+  type           PaymentType
+  paidAt         DateTime?
+  dueAt          DateTime?
+  requiredAmount Int
+  createdAt      DateTime    @default(now())
+
+  sale         Sale          @relation(fields: [saleId], references: [id])
+  client       Client        @relation(fields: [clientId], references: [id])
+  paymentItems PaymentItem[]
 }
 
-model Payment {
-  saleId     String
-  clientId   String
+model PaymentItem {
+  id         String   @id @default(uuid())
+  paymentId  String
   paidAmount Int
-  dueAt      DateTime
-  paidAt     DateTime?
-  createdAt  DateTime    @default(now())
-  type       PaymentType
+  createdAt  DateTime @default(now())
 
-  sale   Sale   @relation(fields: [saleId], references: [id])
-  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
-
-  @@id([saleId, clientId])
+  payment Payment @relation(fields: [paymentId], references: [id])
 }
