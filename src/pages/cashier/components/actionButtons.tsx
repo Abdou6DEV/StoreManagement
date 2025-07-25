@@ -171,7 +171,7 @@ export default function ActionButtons({
             className="rounded-md border border-border px-3 py-2 text-sm bg-background w-full min-w-0"
           />
           {showSuggestions && filteredSuggestions.length > 0 && (
-            <div className="absolute left-0 z-50 mt-1 w-full min-w-[180px] max-w-[320px] bg-card border border-border rounded shadow-lg max-h-60 overflow-y-auto">
+            <div className="absolute left-0 bottom-full mb-1 z-50 w-full min-w-[180px] max-w-[320px] bg-card border border-border rounded shadow-lg max-h-60 overflow-y-auto">
               {filteredSuggestions.map((c) => (
                 <div
                   key={c.id}
