@@ -1,7 +1,7 @@
 import { prisma } from "./prismaClient";
 
 export async function updateProduct(id: string, data: any) {
-  const { categoryName, ...rest } = data;
+  const { categoryName, totalSold, createdAt, updatedAt, ...rest } = data;
   const updateData: any = { ...rest };
 
   if (categoryName) {

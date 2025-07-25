@@ -97,7 +97,8 @@ export default function AddStockForm({
       if (existingProduct) {
         // If exists, update quantity
         await window.api.database.products.update(existingProduct.id, {
-          ...existingProduct,
+          name: existingProduct.name,
+          categoryName: existingProduct.categoryName,
           quantity: existingProduct.quantity + Number(form.quantity || 0),
           bought: Number(form.bought || 0), // optional: update bought/selling price
           selling: Number(form.selling || 0),

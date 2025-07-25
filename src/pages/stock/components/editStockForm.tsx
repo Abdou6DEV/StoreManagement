@@ -18,7 +18,12 @@ export default function EditStockForm({
   const product = products.find((p) => p.id === productID);
 
   const [loading, setLoading] = useState(false);
-  const [form, setForm] = useState(product);
+  const [form, setForm] = useState(() => {
+    if (!product) return null;
+    // Only include editable fields, exclude totalSold and other computed fields
+    const { totalSold, ...editableFields } = product;
+    return editableFields;
+  });
 
   const handleEditFormChange = (
     key: keyof typeof form,
@@ -29,6 +34,8 @@ export default function EditStockForm({
 
   const handleUpdateProduct = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!form || !product) return;
 
     setLoading(true);
     try {
@@ -53,6 +60,10 @@ export default function EditStockForm({
       refetchProducts();
     }
   };
+
+  if (!form || !product) {
+    return null;
+  }
 
   return (
     <>
