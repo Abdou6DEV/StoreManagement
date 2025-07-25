@@ -60,7 +60,7 @@ const SalesTable: React.FC<SalesTableProps> = ({ sales }) => {
     } else if (sale.remainingAmount <= 0) {
       return t("history.paid", "Paid");
     } else if (sale.totalPaid > 0) {
-      return t("history.partial", "Partial");
+      return t("history.unpaid", "Unpaid");
     } else {
       return t("history.pending", "Pending");
     }

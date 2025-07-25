@@ -295,7 +295,8 @@
     "method": "طريقة",
     "amount": "المبلغ",
     "details": "تفاصيل",
-    "show": "عرض"
+    "show": "عرض",
+    "unpaid": "غير مدفوع"
   },
   "pagination": {
     "next": "التالي",

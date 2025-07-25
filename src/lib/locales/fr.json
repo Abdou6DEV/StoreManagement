@@ -295,7 +295,8 @@
     "method": "Méthode",
     "amount": "Montant",
     "details": "Détails",
-    "show": "Afficher"
+    "show": "Afficher",
+    "unpaid": "Impayé"
   },
   "pagination": {
     "next": "Suivant",

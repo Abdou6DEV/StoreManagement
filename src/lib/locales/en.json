@@ -290,7 +290,8 @@
     "method": "Method",
     "amount": "Amount",
     "details": "Details",
-    "show": "Show"
+    "show": "Show",
+    "unpaid": "Unpaid"
   },
   "pagination": {
     "next": "Next",

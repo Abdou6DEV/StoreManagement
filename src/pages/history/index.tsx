@@ -66,31 +66,37 @@ export default function History() {
   }, [view]);
 
   // Filtering logic
-  const filteredSales = sales.filter((sale) => {
-    const searchLower = search.toLowerCase();
-    return (
-      sale.id.toLowerCase().includes(searchLower) ||
-      sale.client?.name.toLowerCase().includes(searchLower) ||
-      sale.client?.phone?.toLowerCase().includes(searchLower) ||
-      sale.saleItems.some((item) =>
-        item.product.name.toLowerCase().includes(searchLower),
-      ) ||
-      (sale.isPaidInCash &&
-        ("cash".includes(searchLower) ||
-          "paid".includes(searchLower) ||
-          "full".includes(searchLower))) ||
-      (!sale.isPaidInCash &&
-        sale.remainingAmount <= 0 &&
-        "paid".includes(searchLower)) ||
-      (!sale.isPaidInCash &&
-        sale.totalPaid > 0 &&
-        sale.remainingAmount > 0 &&
-        "partial".includes(searchLower)) ||
-      (!sale.isPaidInCash &&
-        sale.totalPaid === 0 &&
-        "pending".includes(searchLower))
-    );
-  });
+  const filteredSales = sales
+    // Exclude sales with any payment of type 'VERSEMENT'
+    .filter((sale) =>
+      !Array.isArray(sale.payments) ||
+      !sale.payments.some((payment) => payment.type === "VERSEMENT")
+    )
+    .filter((sale) => {
+      const searchLower = search.toLowerCase();
+      return (
+        sale.id.toLowerCase().includes(searchLower) ||
+        sale.client?.name.toLowerCase().includes(searchLower) ||
+        sale.client?.phone?.toLowerCase().includes(searchLower) ||
+        sale.saleItems.some((item) =>
+          item.product.name.toLowerCase().includes(searchLower),
+        ) ||
+        (sale.isPaidInCash &&
+          ("cash".includes(searchLower) ||
+            "paid".includes(searchLower) ||
+            "full".includes(searchLower))) ||
+        (!sale.isPaidInCash &&
+          sale.remainingAmount <= 0 &&
+          "paid".includes(searchLower)) ||
+        (!sale.isPaidInCash &&
+          sale.totalPaid > 0 &&
+          sale.remainingAmount > 0 &&
+          "unpaid".includes(searchLower)) ||
+        (!sale.isPaidInCash &&
+          sale.totalPaid === 0 &&
+          "pending".includes(searchLower))
+      );
+    });
 
   const filteredPayments = payments.filter((payment) => {
     const searchLower = search.toLowerCase();
