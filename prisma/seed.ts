@@ -48,6 +48,8 @@ async function main() {
   }
 
   console.log("👥 Creating sample clients...");
+  const twoYearsAgo = new Date();
+  twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
   for (let i = 0; i < 50; i++) {
     await prisma.client.create({
       data: {
@@ -57,6 +59,7 @@ async function main() {
         notes: faker.helpers.maybe(() => faker.lorem.sentence(), {
           probability: 0.3,
         }),
+        createdAt: faker.date.between({ from: twoYearsAgo, to: new Date() }),
       },
     });
   }
@@ -72,10 +75,12 @@ async function main() {
       { probability: 0.7 },
     );
     const saleItemsCount = faker.number.int({ min: 1, max: 5 });
+    const saleCreatedAt = faker.date.between({ from: twoYearsAgo, to: new Date() });
     const sale = await prisma.sale.create({
       data: {
         clientId: client?.id,
         discount: faker.number.int({ min: 0, max: 20 }),
+        createdAt: saleCreatedAt,
       },
     });
     sales.push({ ...sale, clientId: client?.id });
