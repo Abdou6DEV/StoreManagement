@@ -20,15 +20,7 @@ import {
   PopoverTrigger,
 } from "../../../lib/components/ui/popover";
 import { Skeleton } from "../../../lib/components/ui/skeleton";
-
-interface AddStockFormState {
-  name: string;
-  categoryName: string;
-  quantity: number | "";
-  bought: number | "";
-  selling: number | "";
-  codebar: string;
-}
+import type { AddStockFormState } from "../../../types";
 
 const initialForm: AddStockFormState = {
   name: "",
@@ -200,7 +192,7 @@ export default function AddStockForm({
                       variant="outline"
                       className="px-3 py-2"
                       onClick={() => {
-                        setFilteredProducts(products);
+                        setFilteredProducts(products as any);
                         setDropdownProductSearch("");
                         setShowProductDropdown(true);
                       }}
@@ -221,7 +213,7 @@ export default function AddStockForm({
                               p.name
                                 .toLowerCase()
                                 .includes(value.toLowerCase()),
-                            ),
+                            ) as any,
                           );
                         }}
                         className="h-9"

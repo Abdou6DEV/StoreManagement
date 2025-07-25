@@ -1,7 +1,7 @@
 import { app, BrowserWindow, screen, ipcMain } from "electron";
 import path from "node:path";
 import started from "electron-squirrel-startup";
-import { prisma, initializePrisma } from "../lib/prismaClient";
+import { prisma, initializePrisma } from "../lib/database/prismaClient";
 import { getAllCategories, ensureCategory } from "../lib/database/categories";
 import { updateProduct } from "../lib/database/products";
 import {

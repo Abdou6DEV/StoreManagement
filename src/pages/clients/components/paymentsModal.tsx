@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import type { Payment, Client } from "../../../types";
 import {
   Dialog,
   DialogContent,
@@ -11,26 +12,10 @@ import {
   Loader2,
   X,
   CreditCard,
-  ArrowDownCircle,
   ArrowUpCircle,
   CheckCircle,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-
-interface Payment {
-  saleId: string;
-  clientId: string;
-  paidAmount: number;
-  dueAt: string;
-  paidAt?: string;
-  createdAt: string;
-  type: "CREDIT" | "VERSEMENT";
-}
-
-interface Client {
-  id: string;
-  name: string;
-}
 
 interface PaymentsModalProps {
   client: Client;

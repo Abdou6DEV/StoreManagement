@@ -2,15 +2,7 @@ import React from "react";
 import { Button } from "../../../lib/components/ui/button";
 import { Edit, Loader2, Trash2, Users } from "lucide-react";
 import { useTranslation } from "react-i18next";
-
-interface Client {
-  id: string;
-  name: string;
-  phone?: string;
-  address?: string;
-  notes?: string;
-  totalPurchases?: number;
-}
+import type { Client } from "../../../types";
 
 interface ClientsTableProps {
   clients: Client[];

@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import type { Product } from "@prisma/client";
+import type { Product, CartItem } from "../../types";
 import { ShoppingCart } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import ProductSearch from "./components/productSearch";
@@ -8,13 +8,6 @@ import PaymentSummary from "../../lib/components/paymentSummary";
 import ActionButtons from "./components/actionButtons";
 import OutOfStockWarningModal from "./components/outOfStockWarningModal";
 import ProductBrowser from "./components/productBrowser";
-
-export interface CartItem {
-  id: string;
-  name: string;
-  price: number;
-  qty: number;
-}
 
 const MAX_SESSIONS = 5;
 
@@ -81,7 +74,7 @@ export default function CashierPage() {
   // Fetch all products
   useEffect(() => {
     window.api.database.products.getAll().then((products) => {
-      setAllProducts(products);
+      setAllProducts(products as any);
     });
   }, [productRefreshKey]);
 
@@ -209,7 +202,7 @@ export default function CashierPage() {
           <div className="bg-card border border-border rounded-xl p-3 shadow-sm h-full flex flex-col gap-3 overflow-hidden">
             <div className="flex items-center gap-2">
               <ProductSearch
-                onAdd={handleAddProduct}
+                onAdd={handleAddProduct as any}
                 refreshKey={productRefreshKey}
               />
               <button
@@ -223,7 +216,7 @@ export default function CashierPage() {
 
             {/* Product Browser as a modal */}
             <ProductBrowser
-              allProducts={allProducts}
+              allProducts={allProducts as any}
               open={showProductBrowser}
               onClose={() => setShowProductBrowser(false)}
               cart={cart}
@@ -318,7 +311,7 @@ export default function CashierPage() {
       <OutOfStockWarningModal
         open={showStockWarning}
         items={outOfStockItems}
-        allProducts={allProducts}
+        allProducts={allProducts as any}
         onCancel={() => {
           setShowStockWarning(false);
           setOutOfStockItems([]);

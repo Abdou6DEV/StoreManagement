@@ -9,14 +9,7 @@ import { Input } from "../../../lib/components/ui/input";
 import { Button } from "../../../lib/components/ui/button";
 import { Edit, X, Save, Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-
-interface Client {
-  id: string;
-  name: string;
-  phone?: string;
-  address?: string;
-  notes?: string;
-}
+import type { Client } from "../../../types";
 
 interface EditClientDialogProps {
   client: Client | null;

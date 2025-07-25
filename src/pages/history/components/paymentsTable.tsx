@@ -1,19 +1,7 @@
 import React from "react";
-import { CreditCard, CheckCircle, Clock, User, Receipt } from "lucide-react";
+import { CreditCard, CheckCircle, Clock, User } from "lucide-react";
 import { useTranslation } from "react-i18next";
-
-interface PaymentWithDetails {
-  id: string;
-  saleId: string;
-  clientId: string;
-  paidAmount: number;
-  dueAt: string;
-  paidAt?: string;
-  createdAt: string;
-  type: "CREDIT" | "VERSEMENT";
-  client: { name: string; phone?: string };
-  sale: { id: string };
-}
+import type { PaymentWithDetails } from "../../../types";
 
 interface PaymentsTableProps {
   payments: PaymentWithDetails[];

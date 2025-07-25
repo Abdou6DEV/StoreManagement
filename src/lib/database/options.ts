@@ -1,4 +1,4 @@
-import { prisma } from "../prismaClient";
+import { prisma } from "./prismaClient";
 
 export async function getOption(key: string): Promise<string | null> {
   const option = await prisma.option.findUnique({ where: { key } });

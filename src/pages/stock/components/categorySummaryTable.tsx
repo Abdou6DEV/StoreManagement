@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { useStock } from "../../../lib/contexts/stockContext";
 import { useTranslation } from "react-i18next";
-import { Package } from "lucide-react";
 import {
   Popover,
   PopoverContent,
@@ -14,7 +13,7 @@ import {
   CommandItem,
   CommandList,
 } from "../../../lib/components/ui/command";
-import { Check, ChevronDown } from "lucide-react";
+import { Package, Check, ChevronDown } from "lucide-react";
 import { cn } from "../../../lib/utils";
 
 export default function CategorySummaryTable() {

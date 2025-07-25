@@ -1,4 +1,4 @@
-import { prisma } from "../prismaClient";
+import { prisma } from "./prismaClient";
 
 export async function createPayment(data: {
   saleId: string;

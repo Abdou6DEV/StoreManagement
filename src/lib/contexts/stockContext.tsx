@@ -5,21 +5,7 @@ import {
   useEffect,
   ReactNode,
 } from "react";
-
-import { Product } from "@prisma/client";
-
-export interface ProductWithSales extends Product {
-  totalSold?: number;
-}
-
-interface StockContextType {
-  categories: string[];
-  products: ProductWithSales[];
-  loading: boolean;
-  error: string | null;
-  refetchCategories: () => Promise<void>;
-  refetchProducts: () => Promise<void>;
-}
+import type { ProductWithSales, StockContextType } from "../../types";
 
 const StockContext = createContext<StockContextType | undefined>(undefined);
 
@@ -56,7 +42,7 @@ export function StockProvider({ children }: { children: ReactNode }) {
         ...p,
         totalSold: salesMap.get(p.id) || 0,
       }));
-      setProducts(merged);
+      setProducts(merged as any);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to fetch products");
       console.error("Error fetching products:", err);

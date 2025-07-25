@@ -15,17 +15,7 @@ import {
   PaginationNext,
   PaginationEllipsis,
 } from "../../lib/components/ui/pagination";
-
-interface Client {
-  id: string;
-  name: string;
-  phone?: string;
-  address?: string;
-  notes?: string;
-  createdAt?: string;
-  updatedAt?: string;
-  totalPurchases?: number;
-}
+import type { Client } from "../../types";
 
 export default function Clients() {
   const { t } = useTranslation();

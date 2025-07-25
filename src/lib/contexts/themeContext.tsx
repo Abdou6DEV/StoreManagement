@@ -5,13 +5,7 @@ import React, {
   useState,
   ReactNode,
 } from "react";
-
-type Theme = "light" | "dark";
-
-interface ThemeContextType {
-  theme: Theme;
-  toggleTheme: () => void;
-}
+import type { Theme, ThemeContextType } from "../../types";
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 

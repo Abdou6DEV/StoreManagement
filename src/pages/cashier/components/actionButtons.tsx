@@ -7,16 +7,10 @@ import {
   Calculator,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import type { CartItem } from "../../cashier";
+import type { CartItem, ClientSuggestion } from "../../../types";
 import AddPaymentModal from "./addPaymentModal";
 import AddClientModal from "./addClientModal";
 import CalculatorModal from "./calculatorModal";
-
-interface ClientSuggestion {
-  id: string;
-  name: string;
-  phone?: string;
-}
 
 interface Props {
   clientName: string;

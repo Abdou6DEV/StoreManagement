@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import type { CartItem } from "../../pages/cashier";
+import type { CartItem } from "../../types";
 import { useTranslation } from "react-i18next";
 
 interface Props {
