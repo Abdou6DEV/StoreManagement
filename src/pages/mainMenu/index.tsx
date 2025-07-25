@@ -46,11 +46,6 @@ export default function MainMenu() {
       color: "text-red-500",
     },
     {
-      key: "zakat",
-      icon: Calculator,
-      color: "text-green-300",
-    },
-    {
       key: "administrator",
       icon: AdminIcon,
       color: "text-orange-500",

@@ -8,7 +8,6 @@ A modern desktop application for managing store operations, built with Electron,
 - Cashier and transaction processing
 - Inventory and stock management
 - Client management (debts, payments, orders)
-- Zakat Al Mal calculator
 - Admin/settings panel
 - Responsive UI with dark mode support
 

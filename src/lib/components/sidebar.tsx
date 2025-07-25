@@ -44,7 +44,6 @@ const menuItems = [
     color: "text-emerald-500",
   },
   { key: "clients", path: "/clients", icon: Users, color: "text-red-500" },
-  { key: "zakat", path: "/zakat", icon: Calculator, color: "text-green-300" },
   {
     key: "administrator",
     path: "/administrator",
