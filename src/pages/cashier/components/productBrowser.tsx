@@ -3,7 +3,7 @@ import type { Product } from "@prisma/client";
 import { useTranslation } from "react-i18next";
 import { Skeleton } from "../../../lib/components/ui/skeleton";
 import { useStock } from "../../../lib/contexts/stockContext";
-import type { CartItem } from "../index";
+import type { CartItem } from "../../../types";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface ProductBrowserProps {
@@ -154,14 +154,9 @@ const ProductBrowser: React.FC<ProductBrowserProps> = ({
   const [editingQtyValue, setEditingQtyValue] = useState<string>("");
   const editingQtyInputRef = useRef<HTMLInputElement>(null);
 
-  if (!open) return null;
-
-  // Remove all refs and handlers related to long-press auto-increment/decrement
-  // Only keep the onClick handlers for + and - buttons to increment/decrement by 1 per click
-
   return (
     <div
-      className="fixed inset-0 z-50 w-full flex items-center justify-center bg-black/50"
+      className={`fixed inset-0 z-50 w-full flex items-center justify-center bg-black/50 ${!open ? "hidden" : ""}`}
       ref={modalRef}
       onMouseDown={handleBackdropClick}
     >

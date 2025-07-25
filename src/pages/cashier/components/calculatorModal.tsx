@@ -126,11 +126,10 @@ const CalculatorModal: React.FC<CalculatorModalProps> = ({ open, onClose }) => {
     }
   };
 
-  if (!open) return null;
   const lastOp = getLastOperator();
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center transition-all duration-300">
+    <div className={`fixed inset-0 z-50 flex items-center justify-center transition-all duration-300 ${!open ? "hidden" : ""}`}>
       {/* Black semi-transparent overlay */}
       <div className="absolute inset-0 bg-black/40" />
       {/* Calculator Card */}

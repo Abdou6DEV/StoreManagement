@@ -30,8 +30,6 @@ export default function AddClientModal({
   t: TFunction;
   onConfirm: () => void;
 }) {
-  if (!open) return null;
-
   const nameInputRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
     if (open && nameInputRef.current) {
@@ -40,7 +38,7 @@ export default function AddClientModal({
   }, [open]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+    <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black/50 ${!open ? "hidden" : ""}`}>
       <div className="flex-1 bg-white dark:bg-zinc-900 p-6 rounded-lg shadow-lg w-full max-w-sm space-y-4">
         <div className="flex items-center gap-2">
           <Users className="w-5 h-5 text-red-600 dark:text-red-400" />

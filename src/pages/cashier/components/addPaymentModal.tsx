@@ -1,6 +1,6 @@
 import { Wallet } from "lucide-react";
 import { Button } from "../../../lib/components/ui/button";
-import type { CartItem } from "../index";
+import type { CartItem } from "../../../types";
 import type { TFunction } from "i18next";
 import React, { useRef, useEffect } from "react";
 
@@ -33,7 +33,6 @@ const AddPaymentModal: React.FC<AddPaymentModalProps> = ({
   t,
   onConfirm,
 }) => {
-  if (!open) return null;
   const rest = cartTotal - Number(paymentAmount);
 
   const amountInputRef = useRef<HTMLInputElement>(null);
@@ -50,7 +49,7 @@ const AddPaymentModal: React.FC<AddPaymentModalProps> = ({
   })();
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+    <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black/50 ${!open ? "hidden" : ""}`}>
       <div className="relative w-full max-w-lg mx-auto animate-in fade-in zoom-in-90 duration-300">
         <div className="bg-card border border-border rounded-2xl shadow-2xl p-8 space-y-7 flex flex-col">
           {/* Header */}

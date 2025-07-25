@@ -1,6 +1,6 @@
 import React, { useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import type { CartItem } from "../index";
+import type { CartItem } from "../../../types";
 import type { Product } from "@prisma/client";
 
 interface Props {
@@ -26,10 +26,8 @@ const OutOfStockWarningModal: React.FC<Props> = ({
     }
   }, [open]);
 
-  if (!open) return null;
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+    <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black/50 ${!open ? "hidden" : ""}`}>
       <div className="bg-white dark:bg-zinc-900 p-6 rounded-lg shadow-lg w-full max-w-md space-y-4">
         <h2 className="text-lg font-semibold text-red-600 dark:text-red-400">
           {t("cashier.outOfStockWarning", "Some items are out of stock!")}

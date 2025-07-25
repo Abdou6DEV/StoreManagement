@@ -39,7 +39,7 @@ import {
 } from "../../../lib/components/ui/toggleGroup";
 import { Button } from "../../../lib/components/ui/button";
 import EditStockForm from "./editStockForm";
-import type { ProductWithSales } from "../../../lib/contexts/stockContext";
+import type { ProductWithSales } from "../../../types";
 import { Tooltip } from "../../../lib/components/ui/tooltip";
 import {
   Pagination,
