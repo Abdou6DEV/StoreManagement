@@ -1,9 +1,9 @@
 import { app, BrowserWindow, screen, ipcMain } from "electron";
 import path from "node:path";
 import started from "electron-squirrel-startup";
-import { prisma, initializePrisma } from "../lib/database/prismaClient";
+import { initializePrisma } from "../lib/database/prismaClient";
 import { getAllCategories, ensureCategory } from "../lib/database/categories";
-import { updateProduct } from "../lib/database/products";
+import { updateProduct, getAllProducts, addProduct, deleteProduct } from "../lib/database/products";
 import {
   getAllClients,
   getAllClientsWithTotalPurchases,
@@ -80,11 +80,11 @@ app.on("activate", () => {
 
 function setupDatabaseHandlers() {
   ipcMain.handle("db:products:getAll", async () => {
-    return await prisma.product.findMany();
+    return await getAllProducts();
   });
 
   ipcMain.handle("db:products:add", async (_event, product) => {
-    return await prisma.product.create({ data: product });
+    return await addProduct(product);
   });
 
   ipcMain.handle("db:products:update", async (_event, { id, data }) => {
@@ -92,9 +92,7 @@ function setupDatabaseHandlers() {
   });
 
   ipcMain.handle("db:products:delete", async (_event, id: string) => {
-    return await prisma.product.delete({
-      where: { id },
-    });
+    return await deleteProduct(id);
   });
 
   ipcMain.handle("db:categories:getAll", async () => {
