@@ -50,6 +50,9 @@ const SalesDetailsModal: React.FC<SalesDetailsModalProps> = ({
     return `${amount.toLocaleString()} DA`;
   };
 
+  // Determine if all payments of sale are paid
+  const allPaymentsPaid = sale.payments.length > 0 && sale.payments.every((p) => p.paidAt);
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent
@@ -182,7 +185,7 @@ const SalesDetailsModal: React.FC<SalesDetailsModalProps> = ({
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">
                               <span className="font-semibold text-lg">
-                                {formatCurrency(payment.paidAmount)}
+                                {formatCurrency(sale.remainingAmount)}
                               </span>
                               <span
                                 className={`px-2 py-1 rounded text-xs font-medium ${payment.paidAt ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400" : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"}`}
@@ -250,74 +253,69 @@ const SalesDetailsModal: React.FC<SalesDetailsModalProps> = ({
                       </div>
                     ))}
                     {/* Payment Summary */}
-                    <div className="border-t pt-3 mt-3">
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">
-                            {t("history.totalPayments", "Total Payments")}:
-                          </span>
-                          <span className="font-medium">
-                            {sale.payments.length}
-                          </span>
+                    {!allPaymentsPaid && (
+                      <div className="border-t pt-3 mt-3">
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          {/* Only show Paid Amount if not allPaymentsPaid */}
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">
+                              {t("history.paidAmount", "Paid Amount")}:
+                            </span>
+                            <span className="font-medium text-green-600">
+                              {formatCurrency(sale.totalPaid)}
+                            </span>
+                          </div>
+                          {/* Only show outstanding and progress if not fully paid */}
+                          {sale.remainingAmount > 0 && (
+                            <>
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">
+                                  {t("history.outstanding", "Outstanding")}:
+                                </span>
+                                <span className="font-medium text-red-600">
+                                  {formatCurrency(sale.remainingAmount)}
+                                </span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">
+                                  {t("history.progress", "Progress")}:
+                                </span>
+                                <span className="font-medium">
+                                  {Math.round(
+                                    (sale.totalPaid / sale.totalWithDiscount) * 100,
+                                  )}
+                                  %
+                                </span>
+                              </div>
+                            </>
+                          )}
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">
-                            {t("history.paidAmount", "Paid Amount")}:
-                          </span>
-                          <span className="font-medium text-green-600">
-                            {formatCurrency(sale.totalPaid)}
-                          </span>
-                        </div>
+                        {/* Progress Bar */}
                         {sale.remainingAmount > 0 && (
-                          <>
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">
-                                {t("history.outstanding", "Outstanding")}:
+                          <div className="mt-3">
+                            <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                              <span>
+                                {t("history.paymentProgress", "Payment Progress")}
                               </span>
-                              <span className="font-medium text-red-600">
-                                {formatCurrency(sale.remainingAmount)}
-                              </span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">
-                                {t("history.progress", "Progress")}:
-                              </span>
-                              <span className="font-medium">
+                              <span>
                                 {Math.round(
-                                  (sale.totalPaid / sale.totalWithDiscount) *
-                                    100,
+                                  (sale.totalPaid / sale.totalWithDiscount) * 100,
                                 )}
                                 %
                               </span>
                             </div>
-                          </>
+                            <div className="w-full bg-gray-200 rounded-full h-2 dark:bg-gray-700">
+                              <div
+                                className="bg-green-600 h-2 rounded-full transition-all duration-300"
+                                style={{
+                                  width: `${Math.min((sale.totalPaid / sale.totalWithDiscount) * 100, 100)}%`,
+                                }}
+                              ></div>
+                            </div>
+                          </div>
                         )}
                       </div>
-                      {/* Progress Bar */}
-                      {sale.remainingAmount > 0 && (
-                        <div className="mt-3">
-                          <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                            <span>
-                              {t("history.paymentProgress", "Payment Progress")}
-                            </span>
-                            <span>
-                              {Math.round(
-                                (sale.totalPaid / sale.totalWithDiscount) * 100,
-                              )}
-                              %
-                            </span>
-                          </div>
-                          <div className="w-full bg-gray-200 rounded-full h-2 dark:bg-gray-700">
-                            <div
-                              className="bg-green-600 h-2 rounded-full transition-all duration-300"
-                              style={{
-                                width: `${Math.min((sale.totalPaid / sale.totalWithDiscount) * 100, 100)}%`,
-                              }}
-                            ></div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
+                    )}
                   </div>
                 ) : (
                   <div className="text-center py-4">
@@ -353,10 +351,10 @@ const SalesDetailsModal: React.FC<SalesDetailsModalProps> = ({
                     {t("history.totalPaid", "Total Paid")}:
                   </span>
                   <span className="font-medium text-green-600">
-                    {formatCurrency(sale.totalPaid)}
+                    {formatCurrency(sale.totalAmount - sale.discount)}
                   </span>
                 </div>
-                {sale.remainingAmount > 0 && (
+                {sale.payments[0]?.paidAt == null && (
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">
                       {t("history.remaining", "Remaining")}:

@@ -2,9 +2,7 @@ import React, { useState } from "react";
 import {
   Receipt,
   User,
-  CreditCard,
   Package,
-  Clock,
   CheckCircle,
   AlertCircle,
   DollarSign,
@@ -45,10 +43,8 @@ const SalesTable: React.FC<SalesTableProps> = ({ sales }) => {
   const getPaymentStatusColor = (sale: SaleWithDetails) => {
     if (sale.isPaidInCash) {
       return "text-emerald-600 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-950/30";
-    } else if (sale.remainingAmount <= 0) {
+    } else if (sale.payments.some((p) => p.paidAt != null)) {
       return "text-green-600 bg-green-50 dark:text-green-400 dark:bg-green-950/30";
-    } else if (sale.totalPaid > 0) {
-      return "text-yellow-600 bg-yellow-50 dark:text-yellow-400 dark:bg-yellow-950/30";
     } else {
       return "text-red-600 bg-red-50 dark:text-red-400 dark:bg-red-950/30";
     }
@@ -57,24 +53,20 @@ const SalesTable: React.FC<SalesTableProps> = ({ sales }) => {
   const getPaymentStatusText = (sale: SaleWithDetails) => {
     if (sale.isPaidInCash) {
       return t("history.paidCash", "Paid (Cash)");
-    } else if (sale.remainingAmount <= 0) {
+    } else if (sale.payments.some((p) => p.paidAt != null)) {
       return t("history.paid", "Paid");
-    } else if (sale.totalPaid > 0) {
-      return t("history.unpaid", "Unpaid");
     } else {
-      return t("history.pending", "Pending");
+      return t("history.unpaid", "Unpaid");
     }
   };
 
   const getPaymentStatusIcon = (sale: SaleWithDetails) => {
     if (sale.isPaidInCash) {
       return <DollarSign className="w-4 h-4 text-emerald-500" />;
-    } else if (sale.remainingAmount <= 0) {
+    } else if (sale.payments.some((p) => p.paidAt != null)) {
       return <CheckCircle className="w-4 h-4" />;
-    } else if (sale.totalPaid > 0) {
-      return <AlertCircle className="w-4 h-4" />;
     } else {
-      return <Clock className="w-4 h-4" />;
+      return <AlertCircle className="w-4 h-4" />;
     }
   };
 
@@ -113,7 +105,8 @@ const SalesTable: React.FC<SalesTableProps> = ({ sales }) => {
             <th className="px-4 py-3">{t("history.client", "Client")}</th>
             <th className="px-4 py-3">{t("history.items", "Items")}</th>
             <th className="px-4 py-3">{t("history.total", "Total")}</th>
-            <th className="px-4 py-3">{t("history.payment", "Payment")}</th>
+            {/* Replace Payment column with Profit */}
+            <th className="px-4 py-3">{t("stock.profit", "Profit")}</th>
             <th className="px-4 py-3">{t("history.status", "Status")}</th>
             <th className="px-4 py-3">{t("history.details", "Details")}</th>
           </tr>
@@ -162,42 +155,16 @@ const SalesTable: React.FC<SalesTableProps> = ({ sales }) => {
                     )}
                   </div>
                 </td>
+                {/* Profit column (green text) */}
                 <td className="px-4 py-3">
-                  {sale.isPaidInCash ? (
-                    <div className="flex items-center gap-2">
-                      {isRTL ? (
-                        <>
-                          {t("history.cash", "Cash")}
-                          <DollarSign className="w-4 h-4 text-emerald-500 ml-1" />
-                        </>
-                      ) : (
-                        <>
-                          <DollarSign className="w-4 h-4 text-emerald-500 mr-1" />
-                          {t("history.cash", "Cash")}
-                        </>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      {isRTL ? (
-                        <>
-                          {formatCurrency(sale.totalPaid)}
-                          <CreditCard className="w-4 h-4 text-muted-foreground ml-1" />
-                        </>
-                      ) : (
-                        <>
-                          <CreditCard className="w-4 h-4 text-muted-foreground mr-1" />
-                          {formatCurrency(sale.totalPaid)}
-                        </>
-                      )}
-                    </div>
-                  )}
-                  {!sale.isPaidInCash && sale.remainingAmount > 0 && (
-                    <div className="text-xs text-red-500">
-                      {t("history.remaining", "Remaining")}:{" "}
-                      {formatCurrency(sale.remainingAmount)}
-                    </div>
-                  )}
+                  <span className="text-green-600 font-semibold">
+                    {formatCurrency(
+                      sale.saleItems.reduce((sum, item) => {
+                        const bought = item.product?.bought ?? 0;
+                        return sum + (item.price - bought) * item.quantity;
+                      }, 0)
+                    )}
+                  </span>
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">
