@@ -36,12 +36,12 @@ export const ThemeToggleButton: React.FC<ThemeToggleButtonProps> = ({
       onClick={toggleTheme}
       aria-label={`Switch to ${isDark ? "light" : "dark"} mode`}
     >
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 rtl:flex-row-reverse">
         {showText && <span>{isDark ? t("navigation.darkMode") : t("navigation.lightMode")}</span>}
       </div>
 
       {/* Animated switch with neutral icons */}
-      <div className="relative inline-flex items-center">
+      <div className="relative inline-flex items-center rtl:order-first">
         <div className="w-10 h-5 flex items-center rounded-full bg-gray-300 dark:bg-gray-600 p-0.5 transition-colors duration-300">
           <div
             className={cn(

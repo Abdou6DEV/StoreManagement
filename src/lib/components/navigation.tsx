@@ -14,7 +14,6 @@ import {
   ShoppingCart,
   CreditCard,
   PackageSearch,
-  Calculator,
   Search,
   Settings,
 } from "lucide-react";
@@ -28,6 +27,7 @@ export default function Navigation() {
   const { t, i18n } = useTranslation();
 
   const isCashierPage = location.pathname.startsWith("/cashier");
+  const isRTL = i18n.language === "ar";
 
   if (isCashierPage) {
     return (
@@ -42,7 +42,7 @@ export default function Navigation() {
               />
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent className="mx-4 my-2 w-56">
+          <DropdownMenuContent className={`mx-4 my-2 w-56 ${isRTL ? 'text-right' : ''}`}>
             <DropdownMenuLabel className="font-semibold text-md">
               {t("navigation.preferences")}
             </DropdownMenuLabel>
@@ -58,20 +58,23 @@ export default function Navigation() {
             <DropdownMenuItem
               onClick={() => i18n.changeLanguage("en")}
               disabled={i18n.language === "en"}
+              className={isRTL ? 'flex-row-reverse' : ''}
             >
-              <span className="mr-2">🇬🇧</span> {t("navigation.english")}
+              <span className={isRTL ? 'ml-2' : 'mr-2'}>🇬🇧</span> {t("navigation.english")}
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => i18n.changeLanguage("fr")}
               disabled={i18n.language === "fr"}
+              className={isRTL ? 'flex-row-reverse' : ''}
             >
-              <span className="mr-2">🇫🇷</span> {t("navigation.french")}
+              <span className={isRTL ? 'ml-2' : 'mr-2'}>🇫🇷</span> {t("navigation.french")}
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => i18n.changeLanguage("ar")}
               disabled={i18n.language === "ar"}
+              className={isRTL ? 'flex-row-reverse' : ''}
             >
-              <span className="mr-2">🇸🇦</span> {t("navigation.arabic")}
+              <span className={isRTL ? 'ml-2' : 'mr-2'}>🇸🇦</span> {t("navigation.arabic")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -138,7 +141,7 @@ export default function Navigation() {
                 />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="mx-4 my-2 w-56">
+            <DropdownMenuContent className={`mx-4 my-2 w-56 ${isRTL ? 'text-right' : ''}`}>
               <DropdownMenuLabel className="font-semibold text-md">
                 {t("navigation.preferences")}
               </DropdownMenuLabel>
@@ -154,20 +157,23 @@ export default function Navigation() {
               <DropdownMenuItem
                 onClick={() => i18n.changeLanguage("en")}
                 disabled={i18n.language === "en"}
+                className={isRTL ? 'flex-row-reverse' : ''}
               >
-                <span className="mr-2">🇬🇧</span> {t("navigation.english")}
+                <span className={isRTL ? 'ml-2' : 'mr-2'}>🇬🇧</span> {t("navigation.english")}
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => i18n.changeLanguage("fr")}
                 disabled={i18n.language === "fr"}
+                className={isRTL ? 'flex-row-reverse' : ''}
               >
-                <span className="mr-2">🇫🇷</span> {t("navigation.french")}
+                <span className={isRTL ? 'ml-2' : 'mr-2'}>🇫🇷</span> {t("navigation.french")}
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => i18n.changeLanguage("ar")}
                 disabled={i18n.language === "ar"}
+                className={isRTL ? 'flex-row-reverse' : ''}
               >
-                <span className="mr-2">🇸🇦</span> {t("navigation.arabic")}
+                <span className={isRTL ? 'ml-2' : 'mr-2'}>🇸🇦</span> {t("navigation.arabic")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
