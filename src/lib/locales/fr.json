@@ -47,7 +47,26 @@
     "sales": "Ventes",
     "1M": "1 Mois",
     "12M": "12 Mois",
-    "years": "Années"
+    "years": "Années",
+    "last30Days": "30 derniers jours",
+    "currentYearMonths": "Mois de l'année en cours",
+    "yearlyPerformance": "Performance annuelle",
+    "months": {
+      "0": "Janv",
+      "1": "Févr",
+      "2": "Mars",
+      "3": "Avr",
+      "4": "Mai",
+      "5": "Juin",
+      "6": "Juil",
+      "7": "Août",
+      "8": "Sept",
+      "9": "Oct",
+      "10": "Nov",
+      "11": "Déc"
+    },
+    "valueLabel": "Valeur :",
+    "thousand": "k"
   },
   "mainMenu": {
     "title": "Menu Principal",
@@ -238,5 +257,6 @@
   "pagination": {
     "next": "Suivant",
     "prev": "Précédent"
-  }
+  },
+  "currency": "DA"
 }

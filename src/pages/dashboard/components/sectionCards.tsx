@@ -9,10 +9,13 @@ import {
 } from "lucide-react";
 
 export function SectionCards() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [salesStats, setSalesStats] = useState<any[]>([]);
   const [stockStats, setStockStats] = useState<any[]>([]);
   const [clientStats, setClientStats] = useState<any[]>([]);
+
+  const formatCurrency = (amount: number) =>
+    `${amount.toLocaleString()} ${t('currency')}`;
 
   useEffect(() => {
     async function fetchStats() {
@@ -49,8 +52,8 @@ export function SectionCards() {
         );
         return {
           labelKey: `dashboard.${labelKey}`,
-          revenue: `${revenue.toLocaleString()} DA`,
-          profit: `${profit.toLocaleString()} DA`,
+          revenue: formatCurrency(revenue),
+          profit: formatCurrency(profit),
           itemsSold: itemsSold.toLocaleString(),
         };
       }
@@ -106,7 +109,7 @@ export function SectionCards() {
         },
         {
           labelKey: "dashboard.stockValue",
-          value: `${stockValue.toLocaleString()} DA`,
+          value: formatCurrency(stockValue),
           descriptionKey: "dashboard.totalInventory",
           icon: DollarSignIcon,
         },
@@ -161,7 +164,7 @@ export function SectionCards() {
       ]);
     }
     fetchStats();
-  }, []);
+  }, [i18n.language]);
 
   const renderSection = (titleKey: string, cards: any[]) => (
     <div className="space-y-4">

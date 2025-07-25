@@ -17,33 +17,19 @@ function getPeriodLabel(
   type: "day" | "month" | "year",
   value: number,
   idx: number,
+  t: (key: string) => string
 ) {
   if (type === "day") {
-    const date = new Date();
-    date.setDate(date.getDate() - (29 - idx));
-    return `${date.getDate()}/${date.getMonth() + 1}`;
+    return (idx + 1).toString();
   }
   if (type === "month") {
-    return [
-      "Jan",
-      "Feb",
-      "Mar",
-      "Apr",
-      "May",
-      "Jun",
-      "Jul",
-      "Aug",
-      "Sep",
-      "Oct",
-      "Nov",
-      "Dec",
-    ][value];
+    return t(`dashboard.months.${value}`);
   }
   return value.toString();
 }
 
 export function ChartBarInteractive() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [timePeriod, setTimePeriod] = React.useState<"1m" | "12m" | "years">(
     "12m",
   );
@@ -102,7 +88,7 @@ export function ChartBarInteractive() {
           0,
         );
         return {
-          period: getPeriodLabel("day", 0, idx),
+          period: getPeriodLabel("day", 0, idx, t),
           profits,
           clients: dayClients.length,
           sales: salesTotal,
@@ -140,7 +126,7 @@ export function ChartBarInteractive() {
           0,
         );
         return {
-          period: getPeriodLabel("month", monthIdx, monthIdx),
+          period: getPeriodLabel("month", monthIdx, monthIdx, t),
           profits,
           clients: monthClients.length,
           sales: salesTotal,
@@ -183,13 +169,14 @@ export function ChartBarInteractive() {
       setChartData({ "1m": daily, "12m": monthly, years: yearly });
     }
     fetchData();
-  }, []);
+  }, [i18n.language]);
 
   const chartTypes = {
     profits: {
       title: t("dashboard.chartProfitsTitle"),
       description: t("dashboard.chartProfitsDesc"),
-      format: (value: number) => `${value.toLocaleString()} DA`,
+      format: (value: number) =>
+        `${value.toLocaleString()} ${t('currency')}`,
       dataKey: "profits" as const,
       label: t("dashboard.profits"),
     },
@@ -203,7 +190,8 @@ export function ChartBarInteractive() {
     sales: {
       title: t("dashboard.chartSalesTitle"),
       description: t("dashboard.chartSalesDesc"),
-      format: (value: number) => `${value.toLocaleString()} DA`,
+      format: (value: number) =>
+        `${value.toLocaleString()} ${t('currency')}`,
       dataKey: "sales" as const,
       label: t("dashboard.sales"),
     },
@@ -212,18 +200,18 @@ export function ChartBarInteractive() {
   const timePeriods = {
     "1m": {
       data: chartData["1m"],
-      label: "1 Month (Daily)",
-      description: "Last 30 days",
+      label: t("dashboard.1M"),
+      description: t("dashboard.last30Days"),
     },
     "12m": {
       data: chartData["12m"],
-      label: "12 Months",
-      description: "Current year months",
+      label: t("dashboard.12M"),
+      description: t("dashboard.currentYearMonths"),
     },
     years: {
       data: chartData["years"],
-      label: "Years",
-      description: "Yearly performance",
+      label: t("dashboard.years"),
+      description: t("dashboard.yearlyPerformance"),
     },
   };
 
@@ -358,8 +346,9 @@ export function ChartBarInteractive() {
               fill={axisColor}
               tickFormatter={(value) => {
                 if (chartType === "clients") return `${value}`;
-                return `${(value / 1000).toFixed(0)}k DA`;
+                return `${(value / 1000).toFixed(0)} ${t("dashboard.thousand")}`;
               }}
+              textAnchor={i18n.language === "ar" ? "start" : "end"}
             />
 
             <Tooltip
@@ -373,6 +362,7 @@ export function ChartBarInteractive() {
                           ? "bg-[#18181b] border border-gray-700 rounded-lg shadow-lg p-3 min-w-[120px]"
                           : "bg-white border border-gray-200 rounded-lg shadow-lg p-3 min-w-[120px]"
                       }
+                      dir={i18n.language === "ar" ? "rtl" : undefined}
                     >
                       <div
                         className={
@@ -399,13 +389,13 @@ export function ChartBarInteractive() {
                               : "text-xs text-gray-500"
                           }
                         >
-                          Value:
+                          {t("dashboard.valueLabel")}
                         </span>
                         <span
                           className={
                             isDark
-                              ? "text-sm font-semibold text-gray-100"
-                              : "text-sm font-semibold text-gray-900"
+                              ? "text-sm text-gray-100 mx-1"
+                              : "text-sm text-gray-900 mx-1"
                           }
                         >
                           {currentChart.format(value)}
