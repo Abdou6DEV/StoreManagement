@@ -19,11 +19,12 @@ export function SectionCards() {
 
   useEffect(() => {
     async function fetchStats() {
-      const [sales, products, payments, clients] = await Promise.all([
+      const [sales, products, payments, clients, lowStockThreshold] = await Promise.all([
         window.api.database.sales.getAll(),
         window.api.database.products.getAll(),
         window.api.database.payments.getAll(),
         window.api.database.clients.getAll(),
+        window.api.database.options.get("lowStockThreshold"),
       ]);
 
       function calcSalesStats(
@@ -86,8 +87,9 @@ export function SectionCards() {
       setSalesStats([todayStats, monthStats, yearStats, overallStats]);
 
       const totalProducts = products.length;
+      const threshold = lowStockThreshold ? Number(lowStockThreshold) : 5; // Default to 5 if not set
       const lowStockItems = products.filter(
-        (p: any) => p.quantity <= 5 && p.quantity > 0,
+        (p: any) => p.quantity <= threshold && p.quantity > 0,
       ).length;
       const outOfStock = products.filter((p: any) => p.quantity === 0).length;
       const stockValue = products.reduce(
