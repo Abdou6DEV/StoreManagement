@@ -93,7 +93,9 @@
     "dark": "Sombre",
     "english": "Anglais",
     "french": "Français",
-    "arabic": "Arabe"
+    "arabic": "Arabe",
+    "lightMode": "Mode Clair",
+    "darkMode": "Mode Sombre"
   },
   "stock": {
     "product": "Nom du produit",

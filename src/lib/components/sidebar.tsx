@@ -4,7 +4,6 @@ import {
   ShoppingCart,
   CreditCard,
   PackageSearch,
-  Calculator,
   Search,
   Settings as AdminIcon,
   Home,

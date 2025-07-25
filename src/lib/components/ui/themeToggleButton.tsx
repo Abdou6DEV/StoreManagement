@@ -3,6 +3,7 @@ import { Button } from "./button";
 import { Sun, Moon } from "lucide-react";
 import { useTheme } from "../../hooks/useTheme";
 import { cn } from "../../utils";
+import { useTranslation } from "react-i18next";
 
 interface ThemeToggleButtonProps {
   className?: string;
@@ -24,6 +25,7 @@ export const ThemeToggleButton: React.FC<ThemeToggleButtonProps> = ({
   showText = true,
 }) => {
   const { theme, toggleTheme } = useTheme();
+  const { t } = useTranslation();
   const isDark = theme === "dark";
 
   return (
@@ -35,7 +37,7 @@ export const ThemeToggleButton: React.FC<ThemeToggleButtonProps> = ({
       aria-label={`Switch to ${isDark ? "light" : "dark"} mode`}
     >
       <div className="flex items-center gap-2">
-        {showText && <span>{isDark ? "Dark Mode" : "Light Mode"}</span>}
+        {showText && <span>{isDark ? t("navigation.darkMode") : t("navigation.lightMode")}</span>}
       </div>
 
       {/* Animated switch with neutral icons */}

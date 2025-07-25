@@ -93,7 +93,9 @@
     "dark": "Dark",
     "english": "English",
     "french": "French",
-    "arabic": "Arabic"
+    "arabic": "Arabic",
+    "lightMode": "Light Mode",
+    "darkMode": "Dark Mode"
   },
   "cashier": {
     "total": "Total",

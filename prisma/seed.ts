@@ -7,7 +7,7 @@ async function main() {
   console.log("🌱 Starting seed...");
 
   const categories = Array.from(
-    new Set(Array.from({ length: 10 }, () => faker.commerce.department())),
+    new Set(Array.from({ length: 50 }, () => faker.commerce.department())),
   );
 
   console.log("📂 Creating categories...");
