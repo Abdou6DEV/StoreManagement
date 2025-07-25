@@ -114,10 +114,8 @@ export default function Navigation() {
                 dashboard: <ChartLine className="w-8 h-8 text-green-500" />,
                 clients: <Users className="w-8 h-8 text-red-500" />,
                 cashier: <ShoppingCart className="w-8 h-8 text-yellow-500" />,
-                finance: <CreditCard className="w-8 h-8 text-emerald-500" />,
                 stock: <PackageSearch className="w-8 h-8 text-green-600" />,
                 administrator: <Settings className="w-8 h-8 text-orange-500" />,
-                history: <Search className="w-8 h-8 text-cyan-500" />,
               };
               return (
                 <>

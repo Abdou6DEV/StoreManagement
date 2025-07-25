@@ -79,11 +79,7 @@
     "clients": "العملاء",
     "clientsDesc": "إضافة العملاء، إدارة الديون، المدفوعات والطلبات",
     "administrator": "المسؤول",
-    "administratorDesc": "إدارة إعدادات وتكوينات التطبيق",
-    "history": "السجل",
-    "historyDesc": "تحقق من السجل العام أو التفصيلي",
-    "finance": "المالية",
-    "financeDesc": "تتبع وإدارة النفقات، إضافة الفواتير"
+    "administratorDesc": "إدارة إعدادات وتكوينات التطبيق"
   },
   "navigation": {
     "preferences": "التفضيلات",

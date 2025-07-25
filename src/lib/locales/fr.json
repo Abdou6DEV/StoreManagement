@@ -79,11 +79,7 @@
     "clients": "Clients",
     "clientsDesc": "Ajoutez des clients, gérez les dettes, paiements et commandes",
     "administrator": "Administrateur",
-    "administratorDesc": "Gérez les paramètres et configurations de l'application",
-    "history": "Historique",
-    "historyDesc": "Consultez votre historique général ou détaillé",
-    "finance": "Finance",
-    "financeDesc": "Suivez et gérez vos dépenses, ajoutez des factures"
+    "administratorDesc": "Gérez les paramètres et configurations de l'application"
   },
   "navigation": {
     "preferences": "Préférences",

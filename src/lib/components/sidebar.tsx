@@ -35,13 +35,6 @@ const menuItems = [
     icon: PackageSearch,
     color: "text-green-600",
   },
-  { key: "history", path: "/history", icon: Search, color: "text-cyan-500" },
-  {
-    key: "finance",
-    path: "/finance",
-    icon: CreditCard,
-    color: "text-emerald-500",
-  },
   { key: "clients", path: "/clients", icon: Users, color: "text-red-500" },
   {
     key: "administrator",

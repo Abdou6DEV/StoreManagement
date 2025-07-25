@@ -31,16 +31,6 @@ export default function MainMenu() {
       color: "text-green-600",
     },
     {
-      key: "history",
-      icon: Search,
-      color: "text-cyan-500",
-    },
-    {
-      key: "finance",
-      icon: CreditCard,
-      color: "text-emerald-500",
-    },
-    {
       key: "clients",
       icon: Users,
       color: "text-red-500",

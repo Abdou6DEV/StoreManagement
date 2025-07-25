@@ -79,11 +79,7 @@
     "clients": "Clients",
     "clientsDesc": "Add clients, manage debts, payments, and orders",
     "administrator": "Administrator",
-    "administratorDesc": "Manage your app settings and configurations",
-    "history": "History",
-    "historyDesc": "Check your History in general or on detail",
-    "finance": "Finance",
-    "financeDesc": "Track and manage your expences , add bills"
+    "administratorDesc": "Manage your app settings and configurations"
   },
   "navigation": {
     "preferences": "Preferences",
