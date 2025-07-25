@@ -24,7 +24,7 @@ async function main() {
   console.log("📦 Generating products...");
   for (let i = 0; i < 1000; i++) {
     const category = faker.helpers.arrayElement(categories);
-    const productName = faker.commerce.productName();
+    const productName = `${faker.commerce.productName()} ${faker.string.alphanumeric(4)}`;
     const boughtPrice = faker.commerce.price({
       min: 50,
       max: 2000,
@@ -53,7 +53,7 @@ async function main() {
   for (let i = 0; i < 50; i++) {
     await prisma.client.create({
       data: {
-        name: faker.person.fullName(),
+        name: `${faker.person.fullName()} ${faker.string.alphanumeric(3)}`,
         phone: faker.phone.number(),
         address: faker.location.streetAddress({ useFullAddress: true }),
         notes: faker.helpers.maybe(() => faker.lorem.sentence(), {

@@ -42,8 +42,11 @@ export async function updatePaymentPaidAt(
   clientId: string,
   paidAt: Date,
 ) {
-  return await prisma.payment.update({
-    where: { saleId_clientId: { saleId, clientId } },
+  return await prisma.payment.updateMany({
+    where: { 
+      saleId: saleId,
+      clientId: clientId 
+    },
     data: { paidAt },
   });
 }

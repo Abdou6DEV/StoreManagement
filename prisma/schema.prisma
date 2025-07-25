@@ -8,6 +8,11 @@ datasource db {
   url      = "file:./dev.db"
 }
 
+enum PaymentType {
+  CREDIT
+  VERSEMENT
+}
+
 model Category {
   name      String    @id
   products  Product[]
@@ -43,17 +48,17 @@ model Sale {
 }
 
 model SaleItem {
+  id        String   @id @default(uuid())
   productId String
+  saleId    String
   quantity  Int
   price     Int
-  saleId    String
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 
   product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
   sale    Sale    @relation(fields: [saleId], references: [id])
 
-  @@id([productId, saleId])
+  @@unique([productId, saleId])
 }
 
 model Client {
@@ -74,12 +79,8 @@ model Option {
   value String
 }
 
-enum PaymentType {
-  CREDIT
-  VERSEMENT
-}
-
 model Payment {
+  id         String      @id @default(uuid())
   saleId     String
   clientId   String
   paidAmount Int
@@ -90,6 +91,4 @@ model Payment {
 
   sale   Sale   @relation(fields: [saleId], references: [id])
   client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
-
-  @@id([saleId, clientId])
 }
