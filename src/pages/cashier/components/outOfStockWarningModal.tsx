@@ -27,7 +27,9 @@ const OutOfStockWarningModal: React.FC<Props> = ({
   }, [open]);
 
   return (
-    <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black/50 ${!open ? "hidden" : ""}`}>
+    <div
+      className={`fixed inset-0 z-50 flex items-center justify-center bg-black/50 ${!open ? "hidden" : ""}`}
+    >
       <div className="bg-white dark:bg-zinc-900 p-6 rounded-lg shadow-lg w-full max-w-md space-y-4">
         <h2 className="text-lg font-semibold text-red-600 dark:text-red-400">
           {t("cashier.outOfStockWarning", "Some items are out of stock!")}

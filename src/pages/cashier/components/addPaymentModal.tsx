@@ -49,7 +49,9 @@ const AddPaymentModal: React.FC<AddPaymentModalProps> = ({
   })();
 
   return (
-    <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black/50 ${!open ? "hidden" : ""}`}>
+    <div
+      className={`fixed inset-0 z-50 flex items-center justify-center bg-black/50 ${!open ? "hidden" : ""}`}
+    >
       <div className="relative w-full max-w-lg mx-auto animate-in fade-in zoom-in-90 duration-300">
         <div className="bg-card border border-border rounded-2xl shadow-2xl p-8 space-y-7 flex flex-col">
           {/* Header */}
