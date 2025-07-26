@@ -16,7 +16,8 @@ import {
   Settings,
 } from "lucide-react";
 import { ThemeToggleButton } from "./themeToggleButton";
-import { useState } from "react";
+import { FullscreenToggleButton } from "./fullscreenToggleButton";
+import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 
 export default function Navigation() {
@@ -50,13 +51,19 @@ export default function Navigation() {
             <DropdownMenuItem asChild>
               <ThemeToggleButton variant="ghost" showText={true} />
             </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <FullscreenToggleButton variant="ghost" showText={true} />
+            </DropdownMenuItem>
 
             <DropdownMenuSeparator />
             <DropdownMenuLabel className="font-semibold text-md">
               {t("navigation.language")}
             </DropdownMenuLabel>
             <DropdownMenuItem
-              onClick={() => i18n.changeLanguage("en")}
+              onClick={(e) => {
+                e.preventDefault();
+                i18n.changeLanguage("en");
+              }}
               disabled={i18n.language === "en"}
               className={isRTL ? "flex-row-reverse" : ""}
             >
@@ -64,7 +71,10 @@ export default function Navigation() {
               {t("navigation.english")}
             </DropdownMenuItem>
             <DropdownMenuItem
-              onClick={() => i18n.changeLanguage("fr")}
+              onClick={(e) => {
+                e.preventDefault();
+                i18n.changeLanguage("fr");
+              }}
               disabled={i18n.language === "fr"}
               className={isRTL ? "flex-row-reverse" : ""}
             >
@@ -72,7 +82,10 @@ export default function Navigation() {
               {t("navigation.french")}
             </DropdownMenuItem>
             <DropdownMenuItem
-              onClick={() => i18n.changeLanguage("ar")}
+              onClick={(e) => {
+                e.preventDefault();
+                i18n.changeLanguage("ar");
+              }}
               disabled={i18n.language === "ar"}
               className={isRTL ? "flex-row-reverse" : ""}
             >
@@ -152,13 +165,19 @@ export default function Navigation() {
               <DropdownMenuItem asChild>
                 <ThemeToggleButton variant="ghost" showText={true} />
               </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <FullscreenToggleButton variant="ghost" showText={true} />
+              </DropdownMenuItem>
 
               <DropdownMenuSeparator />
               <DropdownMenuLabel className="font-semibold text-md">
                 {t("navigation.language")}
               </DropdownMenuLabel>
               <DropdownMenuItem
-                onClick={() => i18n.changeLanguage("en")}
+                onClick={(e) => {
+                  e.preventDefault();
+                  i18n.changeLanguage("en");
+                }}
                 disabled={i18n.language === "en"}
                 className={isRTL ? "flex-row-reverse" : ""}
               >
@@ -166,7 +185,10 @@ export default function Navigation() {
                 {t("navigation.english")}
               </DropdownMenuItem>
               <DropdownMenuItem
-                onClick={() => i18n.changeLanguage("fr")}
+                onClick={(e) => {
+                  e.preventDefault();
+                  i18n.changeLanguage("fr");
+                }}
                 disabled={i18n.language === "fr"}
                 className={isRTL ? "flex-row-reverse" : ""}
               >
@@ -174,7 +196,10 @@ export default function Navigation() {
                 {t("navigation.french")}
               </DropdownMenuItem>
               <DropdownMenuItem
-                onClick={() => i18n.changeLanguage("ar")}
+                onClick={(e) => {
+                  e.preventDefault();
+                  i18n.changeLanguage("ar");
+                }}
                 disabled={i18n.language === "ar"}
                 className={isRTL ? "flex-row-reverse" : ""}
               >

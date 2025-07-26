@@ -91,7 +91,9 @@
     "french": "Français",
     "arabic": "Arabe",
     "lightMode": "Mode Clair",
-    "darkMode": "Mode Sombre"
+    "darkMode": "Mode Sombre",
+    "fullscreen": "Plein écran",
+    "exitFullscreen": "Quitter le plein écran"
   },
   "stock": {
     "product": "Nom du produit",

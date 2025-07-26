@@ -91,7 +91,9 @@
     "french": "الفرنسية",
     "arabic": "العربية",
     "lightMode": "الوضع الفاتح",
-    "darkMode": "الوضع الداكن"
+    "darkMode": "الوضع الداكن",
+    "fullscreen": "ملء الشاشة",
+    "exitFullscreen": "الخروج من ملء الشاشة"
   },
   "cashier": {
     "total": "الإجمالي",
