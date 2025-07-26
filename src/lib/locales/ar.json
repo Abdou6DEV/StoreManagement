@@ -97,7 +97,7 @@
     "total": "الإجمالي",
     "filterProducts": "تصفية المنتجات...",
     "stock": "المخزون",
-    "addToCart": "أضف إلى السلة ({{count}})",
+    "addToCart": "أضف إلى السلة",
     "page": "الصفحة {{number}}",
     "failedAddClient": "فشل في إضافة العميل",
     "saleRecorded": "تم تسجيل البيع بنجاح",

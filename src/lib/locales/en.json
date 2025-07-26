@@ -97,7 +97,7 @@
     "total": "Total",
     "filterProducts": "Filter products...",
     "stock": "Stock",
-    "addToCart": "Add to Cart ({{count}})",
+    "addToCart": "Add to Cart",
     "page": "Page {{number}}",
     "failedAddClient": "Failed to add client",
     "saleRecorded": "Sale recorded successfully",

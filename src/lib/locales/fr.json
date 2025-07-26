@@ -149,7 +149,7 @@
     "total": "Total",
     "filterProducts": "Filtrer les produits...",
     "stock": "Stock",
-    "addToCart": "Ajouter au panier ({{count}})",
+    "addToCart": "Ajouter au panier",
     "page": "Page {{number}}",
     "failedAddClient": "Échec de l'ajout du client",
     "saleRecorded": "Vente enregistrée avec succès",

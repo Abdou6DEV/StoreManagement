@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import type { Product } from "@prisma/client";
 import type { CartItem } from "../../types";
-import { ShoppingCart } from "lucide-react";
+import { ShoppingCart, PlusCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import ProductSearch from "./components/productSearch";
 import CartTable from "./components/cartTable";
@@ -9,6 +9,7 @@ import PaymentSummary from "../../lib/components/paymentSummary";
 import ActionButtons from "./components/actionButtons";
 import OutOfStockWarningModal from "./components/outOfStockWarningModal";
 import ProductBrowser from "./components/productBrowser";
+import AddManualProductModal from "./components/addManualProductModal";
 
 const MAX_SESSIONS = 5;
 
@@ -31,6 +32,7 @@ export default function CashierPage() {
     "none" | "credit" | "versement"
   >("none");
   const [paymentDate, setPaymentDate] = useState<Date | undefined>(undefined);
+  const [showManualProductModal, setShowManualProductModal] = useState(false);
 
   // Ensure cart always exists
   const cart: CartItem[] = useMemo(() => {
@@ -66,6 +68,10 @@ export default function CashierPage() {
       });
     }
     updateSession(updated);
+  };
+
+  const handleAddManualProduct = (product: CartItem) => {
+    updateSession([...cart, product]);
   };
 
   const [clientName, setClientName] = useState("");
@@ -179,6 +185,9 @@ export default function CashierPage() {
       } else if (e.key === "F1") {
         e.preventDefault(); // Prevent browser help
         setShowProductBrowser((prev) => !prev);
+      } else if (e.key === "F2") {
+        e.preventDefault(); // Prevent browser help
+        setShowManualProductModal((prev) => !prev);
       }
     };
     window.addEventListener("keydown", handler);
@@ -215,6 +224,13 @@ export default function CashierPage() {
                 aria-label={t("cashier.browseProducts", "Browse Products")}
               >
                 <ShoppingCart className="w-5 h-5" />
+              </button>
+              <button
+                onClick={() => setShowManualProductModal(true)}
+                className="flex h-8 w-8 p-1 mt-6 text-sm font-semibold border-1 border-border items-center justify-center rounded-md bg-muted/40 hover:bg-muted hover:text-primary transition"
+                aria-label={t("cashier.addManualProduct", "Add Manual Product")}
+              >
+                <PlusCircle className="w-4 h-4" />
               </button>
             </div>
 
@@ -325,6 +341,12 @@ export default function CashierPage() {
           setOutOfStockItems([]);
           await proceedWithSale();
         }}
+      />
+
+      <AddManualProductModal
+        open={showManualProductModal}
+        onClose={() => setShowManualProductModal(false)}
+        onAdd={handleAddManualProduct}
       />
     </main>
   );
