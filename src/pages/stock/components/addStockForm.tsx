@@ -1,10 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useStock } from "../../../lib/contexts/stockContext";
 import { Product } from "@prisma/client";
 import StyledNumberInput from "../../../lib/components/inputNumber";
 import { Button } from "../../../lib/components/button";
-import { Loader2, Package, Check, ChevronDown, ChevronUp } from "lucide-react";
+import { Loader2, Package, Check, ChevronDown, ChevronUp, QrCode } from "lucide-react";
 import { cn } from "../../../lib/utils";
 import {
   Command,
@@ -19,7 +19,12 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "../../../lib/components/popover";
+import { Tooltip } from "../../../lib/components/tooltip";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../../lib/components/dialog";
 import { Skeleton } from "../../../lib/components/skeleton";
+import { BarcodeGeneratorButton } from "./barcodeGeneratorButton";
+import { BarcodePrintModal } from "./barcodePrintModal";
+import { generateUniqueBarcode, printBarcodeLabel } from "../../../lib/utils/barcodeUtils";
 import type { AddStockFormState } from "../../../types";
 
 const initialForm: AddStockFormState = {
@@ -51,6 +56,8 @@ export default function AddStockForm({
   const [dropdownCategorySearch, setDropdownCategorySearch] = useState("");
   const [form, setForm] = useState<AddStockFormState>(initialForm);
   const [loading, setLoading] = useState(false);
+  const [generatingBarcode, setGeneratingBarcode] = useState(false);
+  const [showPrintModal, setShowPrintModal] = useState(false);
 
   // For infinite scroll in product dropdown
   const PAGE_SIZE = 50;
@@ -142,6 +149,27 @@ export default function AddStockForm({
       }
     }
   };
+
+  // Generate unique EAN-13 barcode for stock items
+  const handleGenerateBarcode = async () => {
+    setGeneratingBarcode(true);
+    try {
+      const existingBarcodes = products.map(p => p.codebar);
+      const newBarcode = await generateUniqueBarcode(existingBarcodes);
+      setForm(prev => ({ ...prev, codebar: newBarcode }));
+    } catch (error) {
+      console.error("Error generating barcode:", error);
+    } finally {
+      setGeneratingBarcode(false);
+    }
+  };
+
+  // Handle print barcode
+  const handlePrintBarcode = () => {
+    printBarcodeLabel(form.name, form.selling, form.codebar);
+  };
+
+
 
   // Helper to check if form matches an existing product (by name only)
   const isExistingProduct = products.some(
@@ -385,14 +413,23 @@ export default function AddStockForm({
             </Legend>
             <Legend>
               <label>{t("stock.codebar")}</label>
-              <input
-                type="text"
-                placeholder={t("stock.codebar")}
-                value={form.codebar}
-                onChange={(e) => handleFormChange("codebar", e.target.value)}
-                className="w-full px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-green-500/50 focus:border-green-500 transition-all"
-                disabled={isExistingProduct}
-              />
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  placeholder={t("stock.codebar")}
+                  value={form.codebar}
+                  onChange={(e) => handleFormChange("codebar", e.target.value)}
+                  className="flex-1 px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-green-500/50 focus:border-green-500 transition-all"
+                  disabled={isExistingProduct}
+                />
+                <BarcodeGeneratorButton
+                  codebar={form.codebar}
+                  onGenerate={handleGenerateBarcode}
+                  onPrint={() => setShowPrintModal(true)}
+                  disabled={isExistingProduct}
+                  generatingBarcode={generatingBarcode}
+                />
+              </div>
             </Legend>
           </div>
 
@@ -435,6 +472,16 @@ export default function AddStockForm({
           </div>
         </form>
       )}
+
+      {/* Print Barcode Modal */}
+      <BarcodePrintModal
+        open={showPrintModal}
+        onOpenChange={setShowPrintModal}
+        productName={form.name}
+        productPrice={form.selling}
+        codebar={form.codebar}
+        onPrint={handlePrintBarcode}
+      />
     </section>
   );
 }
