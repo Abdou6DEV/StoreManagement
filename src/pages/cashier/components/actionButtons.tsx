@@ -257,8 +257,12 @@ export default function ActionButtons({
           </span>
         </button>
         <button
-          onClick={onConfirmWithReceipt}
-          className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg border border-blue-500 bg-primary text-primary-foreground font-bold text-base tracking-wide shadow-md hover:bg-primary/90 transition focus:outline-none focus:ring-2 focus:ring-primary/50 min-w-0"
+          onClick={() => {
+            console.log("Receipt button clicked", { cart, onConfirmWithReceipt: !!onConfirmWithReceipt });
+            onConfirmWithReceipt?.();
+          }}
+          disabled={cart.length === 0}
+          className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg border border-blue-500 bg-primary text-primary-foreground font-bold text-base tracking-wide shadow-md hover:bg-primary/90 transition focus:outline-none focus:ring-2 focus:ring-primary/50 min-w-0 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Printer className="w-6 h-6" />
           <span className="hidden sm:inline whitespace-nowrap">

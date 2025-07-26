@@ -139,7 +139,15 @@
     "paid": "Paid",
     "showHistory": "Show History",
     "all": "All",
-    "addPayment": "Add Payment"
+    "addPayment": "Add Payment",
+    "confirmWithReceipt": "Receipt",
+    "receipt": "Receipt",
+    "print": "Print",
+    "printing": "Printing...",
+    "printSuccess": "Receipt sent to printer",
+    "printError": "Failed to print receipt",
+    "close": "Close",
+    "calculator": "Calculator"
   },
   "stock": {
     "product": "Product Name",

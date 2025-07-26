@@ -139,7 +139,15 @@
     "paid": "مدفوع",
     "showHistory": "عرض السجل",
     "all": "الكل",
-    "addPayment": "إضافة دفعة"
+    "addPayment": "إضافة دفعة",
+    "confirmWithReceipt": "إيصال",
+    "receipt": "إيصال",
+    "print": "طباعة",
+    "printing": "جارٍ الطباعة...",
+    "printSuccess": "تم إرسال الإيصال إلى الطابعة",
+    "printError": "فشل في طباعة الإيصال",
+    "close": "إغلاق",
+    "calculator": "آلة حاسبة"
   },
   "stock": {
     "product": "اسم المنتج",

@@ -10,6 +10,7 @@ import ActionButtons from "./components/actionButtons";
 import OutOfStockWarningModal from "./components/outOfStockWarningModal";
 import ProductBrowser from "./components/productBrowser";
 import AddManualProductModal from "./components/addManualProductModal";
+import ReceiptModal from "./components/receiptModal";
 
 const MAX_SESSIONS = 5;
 
@@ -33,6 +34,16 @@ export default function CashierPage() {
   >("none");
   const [paymentDate, setPaymentDate] = useState<Date | undefined>(undefined);
   const [showManualProductModal, setShowManualProductModal] = useState(false);
+  const [showReceiptModal, setShowReceiptModal] = useState(false);
+  const [lastSaleId, setLastSaleId] = useState<string | undefined>(undefined);
+  const [receiptData, setReceiptData] = useState<{
+    cart: CartItem[];
+    clientName: string;
+    discount: number;
+    paymentAmount: number;
+    paymentType: "none" | "credit" | "versement";
+    paymentDate?: Date;
+  } | null>(null);
 
   // Ensure cart always exists
   const cart: CartItem[] = useMemo(() => {
@@ -124,6 +135,55 @@ export default function CashierPage() {
     setPaymentDate(undefined);
   };
 
+  const handleFinishWithReceipt = async () => {
+    console.log("handleFinishWithReceipt called", { cart, clientName, discount });
+    if (cart.length === 0) {
+      console.log("Cart is empty, returning");
+      return;
+    }
+    
+    const cartTotal = cart.reduce(
+      (sum, item) => sum + item.qty * item.price,
+      0,
+    );
+    if (Number(discount) > cartTotal) {
+      console.log("Discount too high, returning");
+      return;
+    }
+    // Check for out-of-stock items
+    const outOfStock = cart.filter((item) => {
+      const product = allProducts.find((p) => p.id === item.id);
+      return product && item.qty > product.quantity;
+    });
+
+    if (outOfStock.length > 0) {
+      setOutOfStockItems(outOfStock);
+      setShowStockWarning(true);
+      return;
+    }
+    
+    // Store receipt data before clearing cart
+    setReceiptData({
+      cart: [...cart],
+      clientName,
+      discount: Number(discount) || 0,
+      paymentAmount,
+      paymentType,
+      paymentDate,
+    });
+    
+    // Proceed with sale and get the sale ID
+    const saleId = await proceedWithSaleWithReceipt();
+    console.log("Sale completed, saleId:", saleId);
+    if (saleId) {
+      setLastSaleId(saleId);
+      setShowReceiptModal(true);
+      console.log("Receipt modal should be shown");
+    }
+    setPaymentAmount(0); // Reset payment after sale
+    setPaymentDate(undefined);
+  };
+
   // Extracted sale logic for reuse
   const proceedWithSale = async () => {
     let saleClientId = clientId;
@@ -173,6 +233,59 @@ export default function CashierPage() {
       alert(t("cashier.saleRecorded", "Sale recorded successfully"));
     } catch (err) {
       alert(t("cashier.failedRecordSale", "Failed to record sale"));
+    }
+  };
+
+  // Sale logic that returns the sale ID for receipt
+  const proceedWithSaleWithReceipt = async (): Promise<string | undefined> => {
+    let saleClientId = clientId;
+    try {
+      if (clientName.trim() && !clientId) {
+        const client = await window.api.database.clients.create({
+          name: clientName.trim(),
+        });
+        saleClientId = client.id;
+        setClientId(client.id);
+      }
+      const sale = await window.api.database.sales.create({
+        clientId: saleClientId || undefined,
+        items: cart.map((item) => ({
+          productId: item.id,
+          quantity: item.qty,
+          price: item.price,
+        })),
+        discount: Number(discount) || 0,
+      });
+
+      // Add payment if payment info is present and valid
+      if (
+        paymentType !== "none" &&
+        paymentAmount > 0 &&
+        paymentDate &&
+        saleClientId
+      ) {
+        await window.api.database.payments.create({
+          saleId: sale.id,
+          clientId: saleClientId,
+          paidAmount: paymentAmount,
+          dueAt: paymentDate,
+          paidAt: undefined, // Do not set paidAt for either credit or versement
+          type: paymentType === "credit" ? "CREDIT" : "VERSEMENT",
+        });
+      }
+      updateSession([]);
+      setClientName("");
+      setClientId(null);
+      setDiscounts((prev) => {
+        const updated = [...prev];
+        updated[activeSession] = "";
+        return updated;
+      });
+      setProductRefreshKey((k) => k + 1);
+      return sale.id;
+    } catch (err) {
+      alert(t("cashier.failedRecordSale", "Failed to record sale"));
+      return undefined;
     }
   };
 
@@ -278,6 +391,7 @@ export default function CashierPage() {
               setClientName={setClientName}
               onClear={handleClear}
               onFinish={handleFinish}
+              onConfirmWithReceipt={handleFinishWithReceipt}
               setClientId={setClientId}
               discount={discount}
               onDiscountChange={(val) => {
@@ -347,6 +461,22 @@ export default function CashierPage() {
         open={showManualProductModal}
         onClose={() => setShowManualProductModal(false)}
         onAdd={handleAddManualProduct}
+      />
+
+      <ReceiptModal
+        open={showReceiptModal}
+        onClose={() => {
+          setShowReceiptModal(false);
+          setReceiptData(null);
+          setLastSaleId(undefined);
+        }}
+        cart={receiptData?.cart || []}
+        clientName={receiptData?.clientName || ""}
+        discount={receiptData?.discount || 0}
+        paymentAmount={receiptData?.paymentAmount || 0}
+        paymentType={receiptData?.paymentType || "none"}
+        paymentDate={receiptData?.paymentDate}
+        saleId={lastSaleId}
       />
     </main>
   );

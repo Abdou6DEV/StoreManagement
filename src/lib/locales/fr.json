@@ -191,7 +191,15 @@
     "paid": "Payé",
     "showHistory": "Afficher l'historique",
     "all": "Tout",
-    "addPayment": "Ajouter un paiement"
+    "addPayment": "Ajouter un paiement",
+    "confirmWithReceipt": "Reçu",
+    "receipt": "Reçu",
+    "print": "Imprimer",
+    "printing": "Impression...",
+    "printSuccess": "Reçu envoyé à l'imprimante",
+    "printError": "Échec de l'impression du reçu",
+    "close": "Fermer",
+    "calculator": "Calculatrice"
   },
   "clients": {
     "itemsPerPage": "Éléms par page:",
