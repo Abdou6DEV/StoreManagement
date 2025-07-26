@@ -100,142 +100,130 @@ export default function ActionButtons({
     setClientId(id);
     setSelectedClientId(id);
     setShowSuggestions(false);
-    inputRef.current?.blur();
   };
 
   const handleBlur = () => {
-    setTimeout(() => setShowSuggestions(false), 100);
+    setTimeout(() => {
+      setShowSuggestions(false);
+    }, 200);
   };
 
-  useEffect(() => {
-    const match = clientSuggestions.find((c) => c.name === clientName);
-    if (!match) {
-      setClientId(null);
-      setSelectedClientId(null);
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && filteredSuggestions.length > 0) {
+      const firstSuggestion = filteredSuggestions[0];
+      handleSuggestionClick(firstSuggestion.name, firstSuggestion.id);
     }
-  }, [clientName, clientSuggestions, setClientId]);
-
-  useEffect(() => {
-    if (clientName && clientSuggestions.length > 0) {
-      const match = clientSuggestions.find((c) => c.name === clientName);
-      if (match) {
-        setPaymentClientName(match.name);
-        setPaymentClientPhone(match.phone || "");
-      } else {
-        setPaymentClientName(clientName);
-        setPaymentClientPhone("");
-      }
-    } else {
-      setPaymentClientName("");
-      setPaymentClientPhone("");
-    }
-  }, [clientName, clientSuggestions, showPaymentModal]);
-
-  useEffect(() => {
-    setPaymentDateLocal(paymentDate);
-  }, [paymentDate]);
-
-  useEffect(() => {
-    setPaymentDate(paymentDateLocal);
-  }, [paymentDateLocal, setPaymentDate]);
+  };
 
   const handleAddClient = async () => {
-    if (!clientName.trim()) return;
+    if (!paymentClientName.trim()) return;
+
     try {
-      const client = await window.api.database.clients.create({
-        name: clientName.trim(),
-        phone: paymentClientPhone.trim() || undefined,
-        address: clientAddress.trim() || undefined,
-        notes: clientNotes.trim() || undefined,
+      const newClient = await window.api.database.clients.create({
+        name: paymentClientName,
+        phone: paymentClientPhone || undefined,
+        address: clientAddress || undefined,
+        notes: clientNotes || undefined,
       });
-      setClientName(client.name);
-      setClientId(client.id);
-      refreshClientSuggestions();
+
+      setClientName(newClient.name);
+      setClientId(newClient.id);
+      setSelectedClientId(newClient.id);
       setShowAddClientModal(false);
-    } catch (err) {
-      alert(t("cashier.failedAddClient", "Failed to add client"));
+      setPaymentClientName("");
+      setPaymentClientPhone("");
+      setClientAddress("");
+      setClientNotes("");
+      refreshClientSuggestions();
+    } catch (error) {
+      console.error("Failed to create client:", error);
     }
   };
 
   return (
-    <div className="flex flex-col gap-3 w-full">
-      <div className="flex flex-wrap items-center gap-2 w-full">
-        <div className="relative flex items-center min-w-[180px] max-w-[220px] flex-1">
+    <div className="flex flex-col gap-4 p-4 bg-background border-t border-border">
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center gap-2">
+          <UserPlus className="w-4 h-4 text-muted-foreground" />
+          <label className="text-sm font-medium text-muted-foreground">
+            {t("cashier.client", "Client")}
+          </label>
+        </div>
+        <div className="relative">
           <input
             ref={inputRef}
+            type="text"
             value={clientName}
             onChange={(e) => {
               setClientName(e.target.value);
+              setClientId(null);
+              setSelectedClientId(null);
               setShowSuggestions(true);
             }}
             onFocus={() => setShowSuggestions(true)}
             onBlur={handleBlur}
-            placeholder={t("cashier.clientName", "Client name")}
-            className="rounded-md border border-border px-3 py-2 text-sm bg-background w-full min-w-0"
+            onKeyDown={handleKeyDown}
+            placeholder={t("cashier.clientPlaceholder", "Enter client name...")}
+            className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
           />
           {showSuggestions && filteredSuggestions.length > 0 && (
-            <div className="absolute left-0 bottom-full mb-1 z-50 w-full min-w-[180px] max-w-[320px] bg-card border border-border rounded shadow-lg max-h-60 overflow-y-auto">
-              {filteredSuggestions.map((c) => (
-                <div
-                  key={c.id}
-                  className="px-4 py-2 cursor-pointer hover:bg-accent text-sm"
-                  onMouseDown={() => handleSuggestionClick(c.name, c.id)}
+            <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-background border border-border rounded-md shadow-lg max-h-48 overflow-y-auto">
+              {filteredSuggestions.map((client) => (
+                <button
+                  key={client.id}
+                  onClick={() => handleSuggestionClick(client.name, client.id)}
+                  className="w-full px-3 py-2 text-left hover:bg-muted focus:bg-muted focus:outline-none"
                 >
-                  {c.name}
-                  {c.phone && (
-                    <span className="ml-2 text-muted-foreground text-xs">
-                      {c.phone}
-                    </span>
+                  <div className="font-medium">{client.name}</div>
+                  {client.phone && (
+                    <div className="text-sm text-muted-foreground">
+                      {client.phone}
+                    </div>
                   )}
-                </div>
+                </button>
               ))}
             </div>
           )}
         </div>
-        {selectedClientId ? (
-          <button
-            onClick={() => setShowHistoryModal(true)}
-            className="flex-1 flex items-center justify-center px-2 py-2 rounded-md bg-muted text-foreground hover:bg-primary hover:text-primary-foreground transition text-sm border border-border min-w-0"
-          >
-            <Clock
-              className={`w-4 h-4 mr-1 ml-1 flex-shrink-0 ${i18n.language === "ar" ? " scale-x-[-1]" : ""}`}
-            />
-            <span className="hidden sm:inline whitespace-nowrap truncate max-w-[150px]">
-              {t("cashier.showHistory", "Show History")}
-            </span>
-          </button>
-        ) : (
-          <button
-            onClick={() => setShowAddClientModal(true)}
-            className="flex-1 flex items-center justify-center px-2 py-2 rounded-md bg-muted text-foreground hover:bg-primary hover:text-primary-foreground transition text-sm border border-border min-w-0"
-          >
-            <UserPlus
-              className={`w-4 h-4 mr-1 ml-1 ${i18n.language === "ar" ? " scale-x-[-1]" : ""}`}
-            />
-            <span className="hidden sm:inline whitespace-nowrap">
-              {t("cashier.addNewClient", "Add New Client")}
-            </span>
-          </button>
+        {selectedClientId && (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowHistoryModal(true)}
+              className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800 transition"
+            >
+              <Clock className="w-3 h-3" />
+              {t("cashier.viewHistory", "View History")}
+            </button>
+          </div>
         )}
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium text-muted-foreground">
+            {t("cashier.discount", "Discount")}
+          </span>
+        </div>
         <input
-          placeholder={t("cashier.discount", "Discount")}
-          className={`flex-1 w-28 rounded-md border px-3 py-2 text-sm bg-background border-border focus:border-primary focus:ring-primary/50 focus:outline-none focus:ring-1 transition-all min-w-0 ${Number(draftDiscount) > cartTotal ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""}`}
           type="number"
           value={draftDiscount}
-          onChange={(e) => {
-            const val = e.target.value;
-            if (/^\d*$/.test(val)) {
-              setDraftDiscount(val);
-              if (val === "") {
-                onDiscountChange("0");
-              } else if (Number(val) <= cartTotal) {
-                onDiscountChange(val);
-              }
-            }
-          }}
+          onChange={(e) => setDraftDiscount(e.target.value)}
+          onBlur={() => onDiscountChange(draftDiscount)}
+          placeholder="0"
+          className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
         />
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center justify-between">
+          <span className="text-lg font-bold">
+            {t("cashier.total", "Total")}
+          </span>
+          <span className="text-lg font-bold">
+            {cartTotal - parseFloat(draftDiscount || "0")} DA
+          </span>
+        </div>
         <button
-          className="flex-1 flex items-center justify-center rounded-lg bg-blue-500 text-white px-4 py-2 text-base font-medium shadow-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 transition duration-150 disabled:bg-blue-300 disabled:text-white/70 disabled:cursor-not-allowed min-w-0"
           onClick={() => {
             setShowPaymentModal(true);
           }}
@@ -261,8 +249,7 @@ export default function ActionButtons({
             console.log("Receipt button clicked", { cart, onConfirmWithReceipt: !!onConfirmWithReceipt });
             onConfirmWithReceipt?.();
           }}
-          disabled={cart.length === 0}
-          className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg border border-blue-500 bg-primary text-primary-foreground font-bold text-base tracking-wide shadow-md hover:bg-primary/90 transition focus:outline-none focus:ring-2 focus:ring-primary/50 min-w-0 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg border border-blue-500 bg-primary text-primary-foreground font-bold text-base tracking-wide shadow-md hover:bg-primary/90 transition focus:outline-none focus:ring-2 focus:ring-primary/50 min-w-0"
         >
           <Printer className="w-6 h-6" />
           <span className="hidden sm:inline whitespace-nowrap">
