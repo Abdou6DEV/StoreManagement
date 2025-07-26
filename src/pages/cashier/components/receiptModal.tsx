@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { X, Printer } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { CartItem } from "../../../types";
+import JsBarcode from "jsbarcode";
 
 interface Props {
   open: boolean;
@@ -50,28 +51,47 @@ export default function ReceiptModal({
     }
   }, [open, receiptNumber]);
 
-  // Simple barcode generation (no external dependencies)
+  // Real scannable barcode generation
   const generateBarcode = () => {
     if (!barcodeRef.current) return;
 
-    const shortText = receiptNumber.substring(0, 6).toUpperCase();
+    const shortText = receiptNumber.substring(0, 12).toUpperCase();
     const svg = barcodeRef.current;
     
     // Clear previous content
     svg.innerHTML = '';
     
-    // Create barcode pattern
+    try {
+      JsBarcode(svg, shortText, {
+        format: "CODE128",
+        width: 1.5,
+        height: 30,
+        displayValue: false,
+        background: "#ffffff",
+        lineColor: "#000000",
+        margin: 0
+      });
+    } catch (error) {
+      console.error("Failed to generate barcode:", error);
+      // Fallback to simple visual barcode
+      generateFallbackBarcode(shortText, svg);
+    }
+  };
+
+  // Fallback barcode for error cases
+  const generateFallbackBarcode = (text: string, svg: SVGSVGElement) => {
+    svg.innerHTML = '';
+    
+    // Create simple visual barcode pattern
     let barcodeData = '';
-    for (const char of shortText) {
+    for (const char of text) {
       const code = char.charCodeAt(0);
-      const barCount = (code % 3) + 2; // 2-4 bars per character
+      const barCount = (code % 3) + 2;
       barcodeData += '1'.repeat(barCount) + '0';
     }
     
-    // Add start and stop patterns
     barcodeData = '1010' + barcodeData + '1010';
     
-    // Create SVG elements
     const barWidth = 2;
     const barHeight = 30;
     let x = 0;
@@ -89,7 +109,6 @@ export default function ReceiptModal({
       x += barWidth;
     }
     
-    // Set SVG width
     svg.setAttribute('width', x.toString());
     svg.setAttribute('height', barHeight.toString());
   };
@@ -121,8 +140,6 @@ export default function ReceiptModal({
   };
 
   const generateReceiptHTML = () => {
-    const barcodeSvg = barcodeRef.current?.outerHTML || '';
-    
     return `
       <!DOCTYPE html>
       <html>
@@ -169,24 +186,58 @@ export default function ReceiptModal({
               .item { 
                 display: flex; 
                 justify-content: space-between; 
-                margin-bottom: 4px; 
+                align-items: flex-start;
+                margin-bottom: 6px; 
                 font-size: 11px; 
+                line-height: 1.2;
+                min-height: 16px;
               }
               .item-name { 
                 flex: 1; 
-                margin-right: 10px;
+                margin-right: 8px;
+                word-wrap: break-word;
+                word-break: break-word;
+                white-space: normal;
+                line-height: 1.2;
               }
               .item-qty { 
                 text-align: center; 
-                width: 25px; 
+                width: 20px; 
+                margin-right: 12px;
+                font-weight: bold;
               }
               .item-price { 
                 text-align: right; 
-                width: 40px; 
+                width: 35px; 
+                margin-right: 8px;
               }
               .item-total { 
                 text-align: right; 
-                width: 50px; 
+                width: 45px; 
+                font-weight: bold;
+              }
+              .items-header {
+                display: flex;
+                justify-content: space-between;
+                margin-bottom: 8px;
+                font-size: 11px;
+                font-weight: bold;
+                border-bottom: 1px solid #000;
+                padding-bottom: 4px;
+              }
+              .header-qty {
+                text-align: center;
+                width: 20px;
+                margin-right: 12px;
+              }
+              .header-price {
+                text-align: right;
+                width: 35px;
+                margin-right: 8px;
+              }
+              .header-total {
+                text-align: right;
+                width: 45px;
               }
               .totals { 
                 font-size: 12px; 
@@ -207,11 +258,12 @@ export default function ReceiptModal({
               }
               .barcode { 
                 text-align: center; 
-                margin: 15px 0; 
+                margin: 25px 0; 
+                padding: 15px 0;
               }
               .barcode-text { 
                 font-size: 10px; 
-                margin-top: 5px; 
+                margin-top: 8px; 
               }
               .welcome { 
                 text-align: center; 
@@ -250,12 +302,18 @@ export default function ReceiptModal({
             
             <!-- Items -->
             <div class="items">
+              <div class="items-header">
+                <div class="item-name">ITEM</div>
+                <div class="header-qty">QTY</div>
+                <div class="header-price">PRICE</div>
+                <div class="header-total">TOTAL</div>
+              </div>
               ${cart.map(item => `
                 <div class="item">
-                  <div class="item-name">${item.name}</div>
+                  <div class="item-name">${item.name.replace(/\n/g, ' ')}</div>
                   <div class="item-qty">${item.qty}</div>
-                  <div class="item-price">${item.price}</div>
-                  <div class="item-total">${item.qty * item.price}</div>
+                  <div class="item-price">${item.price.toLocaleString()}</div>
+                  <div class="item-total">${(item.qty * item.price).toLocaleString()}</div>
                 </div>
               `).join('')}
             </div>
@@ -266,17 +324,17 @@ export default function ReceiptModal({
             <div class="totals">
               <div class="total-row">
                 <span>Subtotal:</span>
-                <span>${total} DA</span>
+                <span>${total.toLocaleString()} DA</span>
               </div>
               ${discount > 0 ? `
                 <div class="total-row">
                   <span>Discount:</span>
-                  <span>-${discount} DA</span>
+                  <span>-${discount.toLocaleString()} DA</span>
                 </div>
               ` : ''}
               <div class="total-row">
                 <span>Total:</span>
-                <span>${finalTotal} DA</span>
+                <span>${finalTotal.toLocaleString()} DA</span>
               </div>
             </div>
             
@@ -285,17 +343,33 @@ export default function ReceiptModal({
               <div class="payment-info">
                 <div class="divider"></div>
                 <div>Payment Type: ${paymentType === 'credit' ? 'Credit' : 'Versement'}</div>
-                <div>Amount Paid: ${paymentAmount} DA</div>
+                <div>Amount Paid: ${paymentAmount.toLocaleString()} DA</div>
                 <div>Due Date: ${paymentDate ? paymentDate.toLocaleDateString() : 'N/A'}</div>
-                <div>Remaining: ${finalTotal - paymentAmount} DA</div>
+                <div>Remaining: ${(finalTotal - paymentAmount).toLocaleString()} DA</div>
               </div>
             ` : ''}
             
-            <!-- Barcode -->
+                        <!-- Barcode -->
             <div class="barcode">
-              ${barcodeSvg}
-              <div class="barcode-text">ID: ${receiptNumber.substring(0, 6)}</div>
+              <svg id="barcode-print" style="width: 80%; max-width: 200px; margin: 0 auto; display: block; height: 40px;"></svg>
+              <div class="barcode-text">ID: ${receiptNumber.substring(0, 12)}</div>
             </div>
+            
+            <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+            <script>
+              // Generate real barcode for print
+              if (typeof JsBarcode !== 'undefined') {
+                JsBarcode("#barcode-print", "${receiptNumber.substring(0, 12)}", {
+                  format: "CODE128",
+                  width: 1.5,
+                  height: 30,
+                  displayValue: false,
+                  background: "#ffffff",
+                  lineColor: "#000000",
+                  margin: 0
+                });
+              }
+            </script>
             
             <!-- Welcome Message -->
             <div class="welcome">
@@ -352,12 +426,19 @@ export default function ReceiptModal({
 
             {/* Items */}
             <div className="mb-4">
+              {/* Items Header */}
+              <div className="flex justify-between items-center mb-2 pb-1 border-b border-black dark:border-white">
+                <span className="flex-1 mr-2 text-xs font-bold">ITEM</span>
+                <span className="w-5 text-center text-xs font-bold mr-3">QTY</span>
+                <span className="w-9 text-right text-xs font-bold mr-2">PRICE</span>
+                <span className="w-12 text-right text-xs font-bold">TOTAL</span>
+              </div>
               {cart.map((item) => (
-                <div key={item.id} className="flex justify-between mb-1">
-                  <span className="flex-1">{item.name}</span>
-                  <span className="w-8 text-center">{item.qty}</span>
-                  <span className="w-12 text-right">{item.price}</span>
-                  <span className="w-16 text-right">{item.qty * item.price}</span>
+                <div key={item.id} className="flex justify-between items-start mb-2 min-h-[16px]">
+                  <span className="flex-1 mr-2 text-xs break-words leading-tight">{item.name}</span>
+                  <span className="w-5 text-center font-bold text-xs mr-3 flex-shrink-0">{item.qty}</span>
+                  <span className="w-9 text-right text-xs mr-2 flex-shrink-0">{item.price.toLocaleString()}</span>
+                  <span className="w-12 text-right font-bold text-xs flex-shrink-0">{(item.qty * item.price).toLocaleString()}</span>
                 </div>
               ))}
             </div>
@@ -368,17 +449,17 @@ export default function ReceiptModal({
             <div className="font-bold">
               <div className="flex justify-between mb-1">
                 <span>Subtotal:</span>
-                <span>{total} DA</span>
+                <span>{total.toLocaleString()} DA</span>
               </div>
               {discount > 0 && (
                 <div className="flex justify-between mb-1">
                   <span>Discount:</span>
-                  <span>-{discount} DA</span>
+                  <span>-{discount.toLocaleString()} DA</span>
                 </div>
               )}
               <div className="flex justify-between">
                 <span>Total:</span>
-                <span>{finalTotal} DA</span>
+                <span>{finalTotal.toLocaleString()} DA</span>
               </div>
             </div>
 
@@ -388,23 +469,23 @@ export default function ReceiptModal({
                 <div className="border-t border-black dark:border-white my-2" />
                 <div className="text-xs">
                   <div>Payment Type: {paymentType === 'credit' ? 'Credit' : 'Versement'}</div>
-                  <div>Amount Paid: {paymentAmount} DA</div>
+                  <div>Amount Paid: {paymentAmount.toLocaleString()} DA</div>
                   <div>Due Date: {paymentDate ? paymentDate.toLocaleDateString() : 'N/A'}</div>
-                  <div>Remaining: {finalTotal - paymentAmount} DA</div>
+                  <div>Remaining: {(finalTotal - paymentAmount).toLocaleString()} DA</div>
                 </div>
               </>
             )}
 
-            {/* Barcode */}
-            <div className="border-t border-black dark:border-white my-2" />
-            <div className="text-center my-3 flex flex-col items-center">
-              <svg 
-                ref={barcodeRef} 
-                className="barcode-svg"
-                style={{ height: '30px' }}
-              />
-              <div className="text-xs mt-1">ID: {receiptNumber.substring(0, 6)}</div>
-            </div>
+                               {/* Barcode */}
+                   <div className="border-t border-black dark:border-white my-4" />
+                   <div className="text-center my-6 flex flex-col items-center py-4">
+                     <svg 
+                       ref={barcodeRef} 
+                       className="barcode-svg"
+                       style={{ height: '40px' }}
+                     />
+                     <div className="text-xs mt-2">ID: {receiptNumber.substring(0, 12)}</div>
+                   </div>
 
             {/* Welcome Message */}
             <div className="border-t border-black dark:border-white my-2" />
