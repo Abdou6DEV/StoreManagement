@@ -5,12 +5,14 @@ import {
   UserPlus,
   Printer,
   Calculator,
+  Clock,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { CartItem, ClientSuggestion } from "../../../types";
 import AddPaymentModal from "./addPaymentModal";
 import AddClientModal from "./addClientModal";
 import CalculatorModal from "./calculatorModal";
+import PaymentsModal from "../../clients/components/paymentsModal";
 
 interface Props {
   clientName: string;
@@ -68,6 +70,7 @@ export default function ActionButtons({
   const [clientAddress, setClientAddress] = useState("");
   const [clientNotes, setClientNotes] = useState("");
   const [showCalculatorModal, setShowCalculatorModal] = useState(false);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
 
   useEffect(() => {
     setDraftDiscount(discount);
@@ -189,17 +192,31 @@ export default function ActionButtons({
             </div>
           )}
         </div>
-        <button
-          onClick={() => setShowAddClientModal(true)}
-          className="flex-1 flex items-center justify-center px-2 py-2 rounded-md bg-muted text-foreground hover:bg-primary hover:text-primary-foreground transition text-sm border border-border min-w-0"
-        >
-          <UserPlus
-            className={`w-4 h-4 mr-1 ml-1 ${i18n.language === "ar" ? " scale-x-[-1]" : ""}`}
-          />
-          <span className="hidden sm:inline whitespace-nowrap">
-            {t("cashier.addNewClient", "Add New Client")}
-          </span>
-        </button>
+        {selectedClientId ? (
+          <button
+            onClick={() => setShowHistoryModal(true)}
+            className="flex-1 flex items-center justify-center px-2 py-2 rounded-md bg-muted text-foreground hover:bg-primary hover:text-primary-foreground transition text-sm border border-border min-w-0"
+          >
+            <Clock
+              className={`w-4 h-4 mr-1 ml-1 flex-shrink-0 ${i18n.language === "ar" ? " scale-x-[-1]" : ""}`}
+            />
+            <span className="hidden sm:inline whitespace-nowrap truncate max-w-[150px]">
+              {t("cashier.showHistory", "Show History")}
+            </span>
+          </button>
+        ) : (
+          <button
+            onClick={() => setShowAddClientModal(true)}
+            className="flex-1 flex items-center justify-center px-2 py-2 rounded-md bg-muted text-foreground hover:bg-primary hover:text-primary-foreground transition text-sm border border-border min-w-0"
+          >
+            <UserPlus
+              className={`w-4 h-4 mr-1 ml-1 ${i18n.language === "ar" ? " scale-x-[-1]" : ""}`}
+            />
+            <span className="hidden sm:inline whitespace-nowrap">
+              {t("cashier.addNewClient", "Add New Client")}
+            </span>
+          </button>
+        )}
         <input
           placeholder={t("cashier.discount", "Discount")}
           className={`flex-1 w-28 rounded-md border px-3 py-2 text-sm bg-background border-border focus:border-primary focus:ring-primary/50 focus:outline-none focus:ring-1 transition-all min-w-0 ${Number(draftDiscount) > cartTotal ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""}`}
@@ -305,6 +322,12 @@ export default function ActionButtons({
         open={showCalculatorModal}
         onClose={() => setShowCalculatorModal(false)}
       />
+      {selectedClientId && showHistoryModal && (
+        <PaymentsModal
+          client={clientSuggestions.find((c) => c.id === selectedClientId)!}
+          onClose={() => setShowHistoryModal(false)}
+        />
+      )}
     </div>
   );
 }
