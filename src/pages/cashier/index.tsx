@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
-import type { Product, CartItem } from "../../types";
+import type { Product } from "@prisma/client";
+import type { CartItem } from "../../types";
 import { ShoppingCart } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import ProductSearch from "./components/productSearch";
@@ -175,6 +176,9 @@ export default function CashierPage() {
         setActiveSession((prev) => (prev - 1 + MAX_SESSIONS) % MAX_SESSIONS);
       } else if (e.key === "ArrowRight") {
         setActiveSession((prev) => (prev + 1) % MAX_SESSIONS);
+      } else if (e.key === "F1") {
+        e.preventDefault(); // Prevent browser help
+        setShowProductBrowser((prev) => !prev);
       }
     };
     window.addEventListener("keydown", handler);

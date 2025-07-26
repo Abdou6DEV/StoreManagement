@@ -262,7 +262,7 @@ export default function ActionButtons({
         </button>
         <button
           onClick={() => setShowCalculatorModal(true)}
-          className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg border border-blue-500 bg-blue-500 text-white text-base font-medium shadow-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 transition duration-150 disabled:bg-blue-300 disabled:text-white/70 disabled:cursor-not-allowed min-w-0"
+          className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg border border-blue-500 bg-blue-500 text-white text-base font-medium shadow-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 transition duration-150 disabled:bg-blue-300 disabled:text-white/70 disabled:cursor-not-allowed max-w-10"
           title={t("cashier.calculator", "Calculator")}
         >
           <Calculator className="w-5 h-5" />
