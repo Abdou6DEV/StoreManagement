@@ -114,9 +114,9 @@ export default function CashierPage() {
   }, []);
 
   return (
-    <main className="h-screen w-full flex flex-col bg-background text-foreground overflow-hidden -mt-13">
-      {/* === Sticky Total Header === */}
-      <header className="shrink-0 sticky top-0 z-20 bg-background/80 backdrop-blur border-b border-border pb-2">
+    <main className="h-screen w-full flex flex-col bg-background text-foreground overflow-hidden">
+      {/* === Sticky Total Hader === */}
+      <header className="z-20 bg-background/80 backdrop-blur pb-2">
         <div className="max-w-5xl mx-auto text-center leading-none py-1">
           <div className="text-xs text-muted-foreground font-medium tracking-wider uppercase">
             {t("cashier.total", "Total")}
@@ -128,7 +128,7 @@ export default function CashierPage() {
       </header>
 
       {/* === Main Content === */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col">
         {/* Session Content */}
         {Array.from({ length: MAX_SESSIONS }).map((_, sessionIndex) => (
           <CashierSession
@@ -152,33 +152,32 @@ export default function CashierPage() {
             isActive={activeSession === sessionIndex}
           />
         ))}
-      </div>
+        {/* === Session Selector === */}
+        <div className="gap-3 bg-background flex justify-center items-center px-4">
+          {Array.from({ length: MAX_SESSIONS }).map((_, i) => {
+            const isActive = activeSession === i;
+            const hasItems = sessionCarts[i]?.length > 0;
 
-      {/* === Session Selector === */}
-      <div className="h-[40px] gap-3 bg-background flex justify-center items-center px-4 border-t border-border">
-        {Array.from({ length: MAX_SESSIONS }).map((_, i) => {
-          const isActive = activeSession === i;
-          const hasItems = sessionCarts[i]?.length > 0;
+            const baseClasses =
+              "px-3 py-1 text-xs font-semibold rounded-md transition border";
+            const active = "bg-primary text-secondary border-transparent";
+            const green = "bg-green-600 text-white hover:bg-green-700";
+            const inactive =
+              "bg-card text-muted-foreground border-border hover:bg-muted hover:text-foreground";
 
-          const baseClasses =
-            "px-3 py-1 text-xs font-semibold rounded-md transition border";
-          const active = "bg-primary text-secondary border-transparent";
-          const green = "bg-green-600 text-white hover:bg-green-700";
-          const inactive =
-            "bg-card text-muted-foreground border-border hover:bg-muted hover:text-foreground";
-
-          return (
-            <button
-              key={i}
-              onClick={() => setActiveSession(i)}
-              className={`${baseClasses} ${
-                isActive ? active : hasItems ? green : inactive
-              }`}
-            >
-              {t("cashier.page", { number: i + 1 })}
-            </button>
-          );
-        })}
+            return (
+              <button
+                key={i}
+                onClick={() => setActiveSession(i)}
+                className={`${baseClasses} ${
+                  isActive ? active : hasItems ? green : inactive
+                }`}
+              >
+                {t("cashier.page", { number: i + 1 })}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Product Browser as a modal */}
