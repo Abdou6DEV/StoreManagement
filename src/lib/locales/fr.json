@@ -159,7 +159,9 @@
     "productNameFallback": "Nom du produit",
     "priceFallback": "Prix",
     "cancel": "Annuler",
-    "printLabel": "Imprimer l'étiquette"
+    "printLabel": "Imprimer l'étiquette",
+    "filters": "Filtres",
+    "activeFilters": "Actifs :"
   },
   "cashier": {
     "total": "Total",

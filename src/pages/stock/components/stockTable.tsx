@@ -11,6 +11,8 @@ import {
   TrendingDown,
   Package,
   QrCode,
+  Filter,
+  ChevronRight,
 } from "lucide-react";
 
 import React, { useState, useEffect } from "react";
@@ -82,6 +84,82 @@ export const StockTable = () => {
   const handleChange = (key: keyof typeof filters, value: boolean | string) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
   };
+
+  // Helper function to get active filters summary
+  const getActiveFiltersSummary = () => {
+    const activeFilters = [];
+    
+    if (filters.lowStock) {
+      activeFilters.push(t("stock.lowStock"));
+    }
+    if (filters.bestSelling) {
+      activeFilters.push(t("stock.bestSelling"));
+    }
+    if (filters.worstSelling) {
+      activeFilters.push(t("stock.worstSelling"));
+    }
+    if (filters.noBarcode) {
+      activeFilters.push(t("stock.noBarcode"));
+    }
+    if (filters.category) {
+      activeFilters.push(filters.category);
+    }
+    if (filters.search) {
+      activeFilters.push(`${t("stock.search")}: "${filters.search}"`);
+    }
+    
+    return activeFilters;
+  };
+
+  // Helper function to get active filter count
+  const getActiveFilterCount = () => {
+    let count = 0;
+    if (filters.lowStock) count++;
+    if (filters.bestSelling) count++;
+    if (filters.worstSelling) count++;
+    if (filters.noBarcode) count++;
+    return count;
+  };
+
+  // Helper function to toggle a filter
+  const toggleFilter = (filterKey: 'lowStock' | 'bestSelling' | 'worstSelling' | 'noBarcode') => {
+    const newFilters = {
+      ...filters,
+      [filterKey]: !filters[filterKey],
+    };
+    
+    // Enforce best/worst selling exclusivity
+    if (newFilters.bestSelling && newFilters.worstSelling) {
+      if (!filters.bestSelling) {
+        newFilters.worstSelling = false;
+      } else {
+        newFilters.bestSelling = false;
+      }
+    }
+    
+    setFilters(newFilters);
+    setCurrentPage(1);
+  };
+
+  // Helper function to remove a filter by name
+  const removeFilter = (filterName: string) => {
+    const newFilters = { ...filters };
+    
+    if (filterName === t("stock.lowStock")) {
+      newFilters.lowStock = false;
+    } else if (filterName === t("stock.bestSelling")) {
+      newFilters.bestSelling = false;
+    } else if (filterName === t("stock.worstSelling")) {
+      newFilters.worstSelling = false;
+    } else if (filterName === t("stock.noBarcode")) {
+      newFilters.noBarcode = false;
+    }
+    
+    setFilters(newFilters);
+    setCurrentPage(1);
+  };
+
+
 
   const handleDeleteProduct = async (productId: string) => {
     const warning =
@@ -326,141 +404,113 @@ export const StockTable = () => {
             </PopoverContent>
           </Popover>
         </div>
-        <div className="flex items-center gap-2">
-          <ToggleGroup
-            type="multiple"
-            variant="outline"
-            size="sm"
-            value={Object.entries(filters)
-              .filter(([, v]) => typeof v === "boolean" && v)
-              .map(([k]) => k)}
-            onValueChange={(values) => {
-              // Build new state preserving search and category
-              const newFilters = {
-                ...filters, // preserves search and category
-                lowStock: values.includes("lowStock"),
-                bestSelling: values.includes("bestSelling"),
-                worstSelling: values.includes("worstSelling"),
-                noBarcode: values.includes("noBarcode"),
-              };
-              // Enforce best/worst selling exclusivity
-              if (newFilters.bestSelling && newFilters.worstSelling) {
-                if (!filters.bestSelling) {
-                  newFilters.worstSelling = false;
-                } else {
-                  newFilters.bestSelling = false;
-                }
-              }
-              setFilters(newFilters);
-              if (
-                (filters.bestSelling !== newFilters.bestSelling &&
-                  newFilters.bestSelling) ||
-                (filters.worstSelling !== newFilters.worstSelling &&
-                  newFilters.worstSelling) ||
-                (filters.lowStock !== newFilters.lowStock &&
-                  newFilters.lowStock) ||
-                (filters.noBarcode !== newFilters.noBarcode &&
-                  newFilters.noBarcode)
-              ) {
-                setCurrentPage(1);
-              }
-            }}
-            className="gap-1"
-          >
-            <Tooltip content={t("stock.lowStockTooltip")}>
-              {" "}
-              {/* Tooltip for Low Stock */}
-              <ToggleGroupItem
-                value="lowStock"
-                aria-label={t("stock.lowStock")}
-                className={cn(
-                  "flex items-center gap-2 px-3 py-2 transition-colors transition-bg duration-200",
-                  filters.lowStock &&
-                    "bg-yellow-100 text-yellow-800 border-yellow-300 dark:bg-yellow-900/30 dark:text-yellow-200 dark:border-yellow-700",
-                )}
-              >
-                <AlertTriangle
-                  className={cn(
-                    "w-4 h-4 transition-colors duration-200",
-                    filters.lowStock
-                      ? "text-yellow-500"
-                      : "text-muted-foreground",
-                  )}
-                />
-                {t("stock.lowStock")}
-              </ToggleGroupItem>
-            </Tooltip>
-            <Tooltip content={t("stock.bestSellingTooltip")}>
-              {" "}
-              {/* Tooltip for Best Selling */}
-              <ToggleGroupItem
-                value="bestSelling"
-                aria-label={t("stock.bestSelling")}
-                className={cn(
-                  "flex items-center gap-2 px-3 py-2 transition-colors transition-bg duration-200",
-                  filters.bestSelling &&
-                    "bg-green-100 text-green-800 border-green-300 dark:bg-green-900/30 dark:text-green-200 dark:border-green-700",
-                )}
-              >
-                <TrendingUp
-                  className={cn(
-                    "w-4 h-4 transition-colors duration-200",
-                    filters.bestSelling
-                      ? "text-green-600"
-                      : "text-muted-foreground",
-                  )}
-                />
-                {t("stock.bestSelling")}
-              </ToggleGroupItem>
-            </Tooltip>
-            <Tooltip content={t("stock.worstSellingTooltip")}>
-              {" "}
-              {/* Tooltip for Worst Selling */}
-              <ToggleGroupItem
-                value="worstSelling"
-                aria-label={t("stock.worstSelling")}
-                className={cn(
-                  "flex items-center gap-2 px-3 py-2 transition-colors transition-bg duration-200",
-                  filters.worstSelling &&
-                    "bg-red-100 text-red-800 border-red-300 dark:bg-red-900/30 dark:text-red-200 dark:border-red-700",
-                )}
-              >
-                <TrendingDown
-                  className={cn(
-                    "w-4 h-4 transition-colors duration-200",
-                    filters.worstSelling
-                      ? "text-red-600"
-                      : "text-muted-foreground",
-                  )}
-                />
-                {t("stock.worstSelling")}
-              </ToggleGroupItem>
-            </Tooltip>
-            <Tooltip content={t("stock.noBarcodeTooltip")}>
-              {" "}
-              {/* Tooltip for No Barcode */}
-              <ToggleGroupItem
-                value="noBarcode"
-                aria-label={t("stock.noBarcode")}
-                className={cn(
-                  "flex items-center gap-2 px-3 py-2 transition-colors transition-bg duration-200",
-                  filters.noBarcode &&
-                    "bg-orange-100 text-orange-800 border-orange-300 dark:bg-orange-900/30 dark:text-orange-200 dark:border-orange-700",
-                )}
-              >
-                <QrCode
-                  className={cn(
-                    "w-4 h-4 transition-colors duration-200",
-                    filters.noBarcode
-                      ? "text-orange-600"
-                      : "text-muted-foreground",
-                  )}
-                />
-                {t("stock.noBarcode")}
-              </ToggleGroupItem>
-            </Tooltip>
-          </ToggleGroup>
-        </div>
+        
+                 {/* Filters Section */}
+         <Popover>
+           <PopoverTrigger asChild>
+             <Button
+               variant="outline"
+               className="px-3 py-1.5 min-w-[120px] justify-start"
+               aria-label={t("stock.filters", "Filters")}
+             >
+               <Filter className="w-4 h-4 mr-2" />
+               {getActiveFilterCount() > 0 ? (
+                 <div className="flex items-center gap-1 flex-wrap">
+                   {getActiveFiltersSummary().slice(0, 2).map((filter, index) => (
+                     <span
+                       key={index}
+                       className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium bg-primary/10 text-primary border border-primary/20"
+                     >
+                       {filter}
+                       <button
+                         type="button"
+                         onClick={(e) => {
+                           e.stopPropagation();
+                           removeFilter(filter);
+                         }}
+                         className="ml-1 hover:bg-primary/20 rounded-full w-3 h-3 flex items-center justify-center"
+                       >
+                         <X className="w-2 h-2" />
+                       </button>
+                     </span>
+                   ))}
+                   {getActiveFilterCount() > 2 && (
+                     <span className="text-xs text-muted-foreground">
+                       +{getActiveFilterCount() - 2}
+                     </span>
+                   )}
+                 </div>
+               ) : (
+                 t("stock.filters", "Filters")
+               )}
+               <ChevronDown className="ml-auto w-4 h-4" />
+             </Button>
+           </PopoverTrigger>
+           <PopoverContent className="w-[200px] p-0 z-50">
+             <Command shouldFilter={false}>
+               <CommandList>
+                 <CommandGroup>
+                   <CommandItem
+                     value="lowStock"
+                     onSelect={() => toggleFilter("lowStock")}
+                     className="flex items-center gap-2 px-3 py-2"
+                   >
+                     <AlertTriangle className={cn(
+                       "w-4 h-4",
+                       filters.lowStock ? "text-yellow-600" : "text-muted-foreground"
+                     )} />
+                     <span className="flex-1">{t("stock.lowStock")}</span>
+                     {filters.lowStock && (
+                       <Check className="w-4 h-4 text-yellow-600" />
+                     )}
+                   </CommandItem>
+                   <CommandItem
+                     value="bestSelling"
+                     onSelect={() => toggleFilter("bestSelling")}
+                     className="flex items-center gap-2 px-3 py-2"
+                   >
+                     <TrendingUp className={cn(
+                       "w-4 h-4",
+                       filters.bestSelling ? "text-green-600" : "text-muted-foreground"
+                     )} />
+                     <span className="flex-1">{t("stock.bestSelling")}</span>
+                     {filters.bestSelling && (
+                       <Check className="w-4 h-4 text-green-600" />
+                     )}
+                   </CommandItem>
+                   <CommandItem
+                     value="worstSelling"
+                     onSelect={() => toggleFilter("worstSelling")}
+                     className="flex items-center gap-2 px-3 py-2"
+                   >
+                     <TrendingDown className={cn(
+                       "w-4 h-4",
+                       filters.worstSelling ? "text-red-600" : "text-muted-foreground"
+                     )} />
+                     <span className="flex-1">{t("stock.worstSelling")}</span>
+                     {filters.worstSelling && (
+                       <Check className="w-4 h-4 text-red-600" />
+                     )}
+                   </CommandItem>
+                   <CommandItem
+                     value="noBarcode"
+                     onSelect={() => toggleFilter("noBarcode")}
+                     className="flex items-center gap-2 px-3 py-2"
+                   >
+                     <QrCode className={cn(
+                       "w-4 h-4",
+                       filters.noBarcode ? "text-orange-600" : "text-muted-foreground"
+                     )} />
+                     <span className="flex-1">{t("stock.noBarcode")}</span>
+                     {filters.noBarcode && (
+                       <Check className="w-4 h-4 text-orange-600" />
+                     )}
+                   </CommandItem>
+                 </CommandGroup>
+               </CommandList>
+             </Command>
+           </PopoverContent>
+         </Popover>
       </div>
 
       {/* Table or Empty State */}

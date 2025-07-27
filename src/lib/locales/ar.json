@@ -218,7 +218,9 @@
     "productNameFallback": "اسم المنتج",
     "priceFallback": "السعر",
     "cancel": "إلغاء",
-    "printLabel": "طباعة الملصق"
+    "printLabel": "طباعة الملصق",
+    "filters": "المرشحات",
+    "activeFilters": "نشط:"
   },
   "clients": {
     "itemsPerPage": "العناصر لكل صفحة:",

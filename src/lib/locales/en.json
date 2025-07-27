@@ -217,7 +217,9 @@
     "productNameFallback": "Product Name",
     "priceFallback": "Price",
     "cancel": "Cancel",
-    "printLabel": "Print Label"
+    "printLabel": "Print Label",
+    "filters": "Filters",
+    "activeFilters": "Active:"
   },
   "clients": {
     "itemsPerPage": "Items per page:",
