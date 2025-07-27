@@ -205,6 +205,8 @@
     "lowStockTooltip": "عرض المنتجات ذات المخزون المنخفض فقط",
     "bestSellingTooltip": "ترتيب المنتجات حسب الأكثر مبيعًا أولاً",
     "worstSellingTooltip": "ترتيب المنتجات حسب الأقل مبيعًا أولاً",
+    "noBarcode": "بدون رمز شريطي",
+    "noBarcodeTooltip": "عرض المنتجات بدون رموز شريطية فقط",
     "barcodeGenerating": "جاري إنشاء الرمز الشريطي الفريد...",
     "barcodePrint": "طباعة ملصق الرمز الشريطي لهذا المنتج",
     "barcodeGenerate": "إنشاء رمز شريطي EAN-13 فريد",

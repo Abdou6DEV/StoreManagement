@@ -10,6 +10,7 @@ import {
   TrendingUp,
   TrendingDown,
   Package,
+  QrCode,
 } from "lucide-react";
 
 import React, { useState, useEffect } from "react";
@@ -59,6 +60,7 @@ export const StockTable = () => {
     lowStock: false,
     bestSelling: false,
     worstSelling: false,
+    noBarcode: false,
     search: "",
     category: "", // <-- add category filter
   });
@@ -95,7 +97,7 @@ export const StockTable = () => {
     }
   };
 
-  // Filter products based on search input, category, and low stock
+  // Filter products based on search input, category, low stock, and barcode
   const filteredList = products.filter((product) => {
     const search = filters.search.toLowerCase();
     const matchesSearch =
@@ -106,7 +108,8 @@ export const StockTable = () => {
       !filters.category || product.categoryName === filters.category;
     const threshold = lowStockThreshold;
     const matchesLowStock = !filters.lowStock || product.quantity <= threshold;
-    return matchesSearch && matchesCategory && matchesLowStock;
+    const matchesNoBarcode = !filters.noBarcode || !product.codebar || product.codebar.trim() === "";
+    return matchesSearch && matchesCategory && matchesLowStock && matchesNoBarcode;
   });
 
   // Sort for bestSelling or worstSelling
@@ -338,6 +341,7 @@ export const StockTable = () => {
                 lowStock: values.includes("lowStock"),
                 bestSelling: values.includes("bestSelling"),
                 worstSelling: values.includes("worstSelling"),
+                noBarcode: values.includes("noBarcode"),
               };
               // Enforce best/worst selling exclusivity
               if (newFilters.bestSelling && newFilters.worstSelling) {
@@ -354,7 +358,9 @@ export const StockTable = () => {
                 (filters.worstSelling !== newFilters.worstSelling &&
                   newFilters.worstSelling) ||
                 (filters.lowStock !== newFilters.lowStock &&
-                  newFilters.lowStock)
+                  newFilters.lowStock) ||
+                (filters.noBarcode !== newFilters.noBarcode &&
+                  newFilters.noBarcode)
               ) {
                 setCurrentPage(1);
               }
@@ -428,6 +434,29 @@ export const StockTable = () => {
                   )}
                 />
                 {t("stock.worstSelling")}
+              </ToggleGroupItem>
+            </Tooltip>
+            <Tooltip content={t("stock.noBarcodeTooltip")}>
+              {" "}
+              {/* Tooltip for No Barcode */}
+              <ToggleGroupItem
+                value="noBarcode"
+                aria-label={t("stock.noBarcode")}
+                className={cn(
+                  "flex items-center gap-2 px-3 py-2 transition-colors transition-bg duration-200",
+                  filters.noBarcode &&
+                    "bg-orange-100 text-orange-800 border-orange-300 dark:bg-orange-900/30 dark:text-orange-200 dark:border-orange-700",
+                )}
+              >
+                <QrCode
+                  className={cn(
+                    "w-4 h-4 transition-colors duration-200",
+                    filters.noBarcode
+                      ? "text-orange-600"
+                      : "text-muted-foreground",
+                  )}
+                />
+                {t("stock.noBarcode")}
               </ToggleGroupItem>
             </Tooltip>
           </ToggleGroup>

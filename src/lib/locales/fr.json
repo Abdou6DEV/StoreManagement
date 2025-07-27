@@ -146,6 +146,8 @@
     "lowStockTooltip": "Afficher uniquement les produits en stock faible",
     "bestSellingTooltip": "Trier les produits par les plus vendus d'abord",
     "worstSellingTooltip": "Trier les produits par les moins vendus d'abord",
+    "noBarcode": "Sans Code-barres",
+    "noBarcodeTooltip": "Afficher uniquement les produits sans code-barres",
     "barcodeGenerating": "Génération du code-barres unique...",
     "barcodePrint": "Imprimer l'étiquette de code-barres pour ce produit",
     "barcodeGenerate": "Générer un code-barres EAN-13 unique",
