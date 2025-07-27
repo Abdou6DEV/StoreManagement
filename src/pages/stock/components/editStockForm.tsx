@@ -4,6 +4,9 @@ import StyledNumberInput from "../../../lib/components/inputNumber";
 import { Button } from "../../../lib/components/button";
 import { Save, X, Loader2, Package } from "lucide-react";
 import { useStock } from "../../../lib/contexts/stockContext";
+import { BarcodeGeneratorButton } from "./barcodeGeneratorButton";
+import { BarcodePrintModal } from "./barcodePrintModal";
+import { generateUniqueBarcode, printBarcodeLabel } from "../../../lib/utils/barcodeUtils";
 
 export default function EditStockForm({
   productID,
@@ -18,6 +21,8 @@ export default function EditStockForm({
   const product = products.find((p) => p.id === productID);
 
   const [loading, setLoading] = useState(false);
+  const [generatingBarcode, setGeneratingBarcode] = useState(false);
+  const [showPrintModal, setShowPrintModal] = useState(false);
   const [form, setForm] = useState(() => {
     if (!product) return null;
     // Only include editable fields, exclude totalSold and other computed fields
@@ -30,6 +35,25 @@ export default function EditStockForm({
     value: string | number,
   ) => {
     setForm((prev) => ({ ...prev, [key]: value }));
+  };
+
+  // Generate unique EAN-13 barcode for stock items
+  const handleGenerateBarcode = async () => {
+    setGeneratingBarcode(true);
+    try {
+      const existingBarcodes = products.map(p => p.codebar);
+      const newBarcode = await generateUniqueBarcode(existingBarcodes);
+      setForm(prev => ({ ...prev, codebar: newBarcode }));
+    } catch (error) {
+      console.error("Error generating barcode:", error);
+    } finally {
+      setGeneratingBarcode(false);
+    }
+  };
+
+  // Handle print barcode
+  const handlePrintBarcode = () => {
+    printBarcodeLabel(form.name, form.selling, form.codebar);
   };
 
   const handleUpdateProduct = async (e: React.FormEvent) => {
@@ -138,13 +162,21 @@ export default function EditStockForm({
             <label className="text-sm font-medium text-foreground">
               {t("stock.codebar")}
             </label>
-            <input
-              type="text"
-              placeholder={t("stock.codebar")}
-              value={form.codebar}
-              onChange={(e) => handleEditFormChange("codebar", e.target.value)}
-              className="w-full px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-green-500/50 focus:border-green-500 transition-all"
-            />
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                placeholder={t("stock.codebar")}
+                value={form.codebar}
+                onChange={(e) => handleEditFormChange("codebar", e.target.value)}
+                className="flex-1 px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-green-500/50 focus:border-green-500 transition-all"
+              />
+              <BarcodeGeneratorButton
+                codebar={form.codebar}
+                onGenerate={handleGenerateBarcode}
+                onPrint={() => setShowPrintModal(true)}
+                generatingBarcode={generatingBarcode}
+              />
+            </div>
           </div>
         </div>
 
@@ -177,6 +209,16 @@ export default function EditStockForm({
           </Button>
         </div>
       </form>
+
+      {/* Print Barcode Modal */}
+      <BarcodePrintModal
+        open={showPrintModal}
+        onOpenChange={setShowPrintModal}
+        productName={form.name}
+        productPrice={form.selling}
+        codebar={form.codebar}
+        onPrint={handlePrintBarcode}
+      />
     </>
   );
 }

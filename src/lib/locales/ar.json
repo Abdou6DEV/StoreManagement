@@ -204,7 +204,19 @@
     "delete": "حذف",
     "lowStockTooltip": "عرض المنتجات ذات المخزون المنخفض فقط",
     "bestSellingTooltip": "ترتيب المنتجات حسب الأكثر مبيعًا أولاً",
-    "worstSellingTooltip": "ترتيب المنتجات حسب الأقل مبيعًا أولاً"
+    "worstSellingTooltip": "ترتيب المنتجات حسب الأقل مبيعًا أولاً",
+    "barcodeGenerating": "جاري إنشاء الرمز الشريطي الفريد...",
+    "barcodePrint": "طباعة ملصق الرمز الشريطي لهذا المنتج",
+    "barcodeGenerate": "إنشاء رمز شريطي EAN-13 فريد",
+    "generating": "جارٍ الإنشاء...",
+    "print": "طباعة",
+    "generate": "إنشاء",
+    "printBarcodeTitle": "طباعة ملصق الرمز الشريطي",
+    "barcodePreviewText": "معاينة ملصق الرمز الشريطي الذي سيتم طباعته:",
+    "productNameFallback": "اسم المنتج",
+    "priceFallback": "السعر",
+    "cancel": "إلغاء",
+    "printLabel": "طباعة الملصق"
   },
   "clients": {
     "itemsPerPage": "العناصر لكل صفحة:",

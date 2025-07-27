@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../../lib/components/dialog";
 import { Button } from "../../../lib/components/button";
 
@@ -19,6 +20,8 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
   codebar,
   onPrint,
 }) => {
+  const { t } = useTranslation();
+
   // Generate barcode preview in modal
   useEffect(() => {
     if (open && codebar) {
@@ -78,12 +81,12 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-4xl">
         <DialogHeader>
-          <DialogTitle>Print Barcode Label</DialogTitle>
+          <DialogTitle>{t("stock.printBarcodeTitle")}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
           <div className="text-center">
             <div className="text-sm text-muted-foreground mb-4">
-              Preview of the barcode label that will be printed:
+              {t("stock.barcodePreviewText")}
             </div>
             
             {/* Actual Label Preview - exactly as it will be printed */}
@@ -92,10 +95,10 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
                 {/* Product Info Section */}
                 <div className="text-center">
                   <div className="text-xs font-medium leading-tight" style={{ fontSize: '28px', lineHeight: '1.2', marginBottom: '2px' }}>
-                    {productName || 'Product Name'}
+                    {productName || t("stock.productNameFallback")}
                   </div>
                   <div className="text-xs font-black" style={{ fontSize: '42px' }}>
-                    {productPrice ? Number(productPrice).toLocaleString() + ' DA' : 'Price'}
+                    {productPrice ? Number(productPrice).toLocaleString() + ' DA' : t("stock.priceFallback")}
                   </div>
                 </div>
                 
@@ -115,10 +118,10 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
               variant="outline"
               onClick={() => onOpenChange(false)}
             >
-              Cancel
+              {t("stock.cancel")}
             </Button>
             <Button onClick={handlePrint}>
-              Print Label
+              {t("stock.printLabel")}
             </Button>
           </div>
         </div>

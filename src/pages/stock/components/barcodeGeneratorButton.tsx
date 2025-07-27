@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "../../../lib/components/button";
 import { Tooltip } from "../../../lib/components/tooltip";
 import { Loader2, QrCode } from "lucide-react";
@@ -18,6 +19,7 @@ export const BarcodeGeneratorButton: React.FC<BarcodeGeneratorButtonProps> = ({
   disabled = false,
   generatingBarcode,
 }) => {
+  const { t } = useTranslation();
   const handleClick = () => {
     if (codebar) {
       onPrint();
@@ -28,21 +30,21 @@ export const BarcodeGeneratorButton: React.FC<BarcodeGeneratorButtonProps> = ({
 
   const getTooltipContent = () => {
     if (generatingBarcode) {
-      return "Generating unique barcode...";
+      return t("stock.barcodeGenerating");
     } else if (codebar) {
-      return "Print barcode label for this product";
+      return t("stock.barcodePrint");
     } else {
-      return "Generate unique EAN-13 barcode";
+      return t("stock.barcodeGenerate");
     }
   };
 
   const getButtonText = () => {
     if (generatingBarcode) {
-      return "Generating...";
+      return t("stock.generating");
     } else if (codebar) {
-      return "Print";
+      return t("stock.print");
     } else {
-      return "Generate";
+      return t("stock.generate");
     }
   };
 

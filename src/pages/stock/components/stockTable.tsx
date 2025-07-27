@@ -564,7 +564,7 @@ export const StockTable = () => {
 
       {/* Edit Product Dialog */}
       <Dialog modal open={!!editingProductID}>
-        <DialogContent className="min-w-1/2" showCloseButton={false}>
+        <DialogContent className="min-w-5/7" showCloseButton={false}>
           <DialogHeader>
             <DialogTitle>
               <div className="flex items-center gap-3">

@@ -145,7 +145,19 @@
     "delete": "Supprimer",
     "lowStockTooltip": "Afficher uniquement les produits en stock faible",
     "bestSellingTooltip": "Trier les produits par les plus vendus d'abord",
-    "worstSellingTooltip": "Trier les produits par les moins vendus d'abord"
+    "worstSellingTooltip": "Trier les produits par les moins vendus d'abord",
+    "barcodeGenerating": "Génération du code-barres unique...",
+    "barcodePrint": "Imprimer l'étiquette de code-barres pour ce produit",
+    "barcodeGenerate": "Générer un code-barres EAN-13 unique",
+    "generating": "Génération...",
+    "print": "Imprimer",
+    "generate": "Générer",
+    "printBarcodeTitle": "Imprimer l'étiquette de code-barres",
+    "barcodePreviewText": "Aperçu de l'étiquette de code-barres qui sera imprimée :",
+    "productNameFallback": "Nom du produit",
+    "priceFallback": "Prix",
+    "cancel": "Annuler",
+    "printLabel": "Imprimer l'étiquette"
   },
   "cashier": {
     "total": "Total",

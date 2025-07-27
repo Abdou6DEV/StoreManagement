@@ -203,7 +203,19 @@
     "total": "Total (All)",
     "lowStockTooltip": "Show only products that are low in stock",
     "bestSellingTooltip": "Sort products by most sold first",
-    "worstSellingTooltip": "Sort products by least sold first"
+    "worstSellingTooltip": "Sort products by least sold first",
+    "barcodeGenerating": "Generating unique barcode...",
+    "barcodePrint": "Print barcode label for this product",
+    "barcodeGenerate": "Generate unique EAN-13 barcode",
+    "generating": "Generating...",
+    "print": "Print",
+    "generate": "Generate",
+    "printBarcodeTitle": "Print Barcode Label",
+    "barcodePreviewText": "Preview of the barcode label that will be printed:",
+    "productNameFallback": "Product Name",
+    "priceFallback": "Price",
+    "cancel": "Cancel",
+    "printLabel": "Print Label"
   },
   "clients": {
     "itemsPerPage": "Items per page:",
