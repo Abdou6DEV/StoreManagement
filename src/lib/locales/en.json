@@ -219,6 +219,7 @@
     "cancel": "Cancel",
     "printLabel": "Print Label",
     "filters": "Filters",
+    "filtersTooltip": "Filter products by various criteria",
     "activeFilters": "Active:"
   },
   "clients": {

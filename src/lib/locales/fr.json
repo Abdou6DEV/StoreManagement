@@ -161,6 +161,7 @@
     "cancel": "Annuler",
     "printLabel": "Imprimer l'étiquette",
     "filters": "Filtres",
+    "filtersTooltip": "Filtrer les produits selon différents critères",
     "activeFilters": "Actifs :"
   },
   "cashier": {
