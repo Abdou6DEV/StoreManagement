@@ -148,6 +148,9 @@
     "printing": "جارٍ الطباعة...",
     "printSuccess": "تم إرسال الإيصال إلى الطابعة",
     "printError": "فشل في طباعة الإيصال",
+    "preview": "معاينة",
+    "previewError": "فشل في فتح نافذة المعاينة",
+    "printPreview": "معاينة الطباعة",
     "close": "إغلاق",
     "calculator": "آلة حاسبة"
   },

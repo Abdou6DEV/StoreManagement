@@ -200,6 +200,9 @@
     "printing": "Impression...",
     "printSuccess": "Reçu envoyé à l'imprimante",
     "printError": "Échec de l'impression du reçu",
+    "preview": "Aperçu",
+    "previewError": "Échec de l'ouverture de la fenêtre d'aperçu",
+    "printPreview": "Aperçu d'impression",
     "close": "Fermer",
     "calculator": "Calculatrice"
   },

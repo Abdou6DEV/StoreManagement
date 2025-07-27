@@ -148,6 +148,9 @@
     "printing": "Printing...",
     "printSuccess": "Receipt sent to printer",
     "printError": "Failed to print receipt",
+    "preview": "Preview",
+    "previewError": "Failed to open preview window",
+    "printPreview": "Print Preview",
     "close": "Close",
     "calculator": "Calculator"
   },
