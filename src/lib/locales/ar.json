@@ -221,7 +221,11 @@
     "printLabel": "طباعة الملصق",
     "filters": "المرشحات",
     "filtersTooltip": "تصفية المنتجات حسب معايير مختلفة",
-    "activeFilters": "نشط:"
+    "activeFilters": "نشط:",
+    "chooseProductTooltip": "اختر من المنتجات الموجودة",
+    "chooseTypeTooltip": "اختر من الفئات الموجودة",
+    "viewByProductTooltip": "عرض المخزون منظم حسب المنتجات الفردية",
+    "viewByCategoryTooltip": "عرض المخزون منظم حسب فئات المنتجات"
   },
   "clients": {
     "itemsPerPage": "العناصر لكل صفحة:",

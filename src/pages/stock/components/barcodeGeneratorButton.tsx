@@ -49,7 +49,7 @@ export const BarcodeGeneratorButton: React.FC<BarcodeGeneratorButtonProps> = ({
   };
 
   return (
-    <Tooltip content={getTooltipContent()}>
+    <Tooltip content={getTooltipContent()} portal={false}>
       <Button
         type="button"
         variant="outline"

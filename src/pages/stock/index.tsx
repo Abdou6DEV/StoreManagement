@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { StockTable } from "./components/stockTable";
 import AddStockForm from "./components/addStockForm";
 import { Button } from "../../lib/components/button";
+import { Tooltip } from "../../lib/components/tooltip";
 import CategorySummaryTable from "./components/categorySummaryTable";
 
 export default function StockPage() {
@@ -15,18 +16,22 @@ export default function StockPage() {
       <AddStockForm openPanel={openPanel} setOpenPanel={setOpenPanel} />
 
       <div className="flex gap-2 mb-4 items-center">
-        <Button
-          variant={view === "product" ? "default" : "outline"}
-          onClick={() => setView("product")}
-        >
-          {t("stock.viewByProduct", "View by Product")}
-        </Button>
-        <Button
-          variant={view === "category" ? "default" : "outline"}
-          onClick={() => setView("category")}
-        >
-          {t("stock.viewByCategory", "View by Category")}
-        </Button>
+        <Tooltip content={t("stock.viewByProductTooltip", "View stock organized by individual products")} portal={false}>
+          <Button
+            variant={view === "product" ? "default" : "outline"}
+            onClick={() => setView("product")}
+          >
+            {t("stock.viewByProduct", "View by Product")}
+          </Button>
+        </Tooltip>
+        <Tooltip content={t("stock.viewByCategoryTooltip", "View stock organized by product categories")} portal={false}>
+          <Button
+            variant={view === "category" ? "default" : "outline"}
+            onClick={() => setView("category")}
+          >
+            {t("stock.viewByCategory", "View by Category")}
+          </Button>
+        </Tooltip>
       </div>
 
       {view === "product" ? <StockTable /> : <CategorySummaryTable />}

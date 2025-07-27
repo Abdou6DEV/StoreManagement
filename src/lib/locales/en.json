@@ -220,7 +220,11 @@
     "printLabel": "Print Label",
     "filters": "Filters",
     "filtersTooltip": "Filter products by various criteria",
-    "activeFilters": "Active:"
+    "activeFilters": "Active:",
+    "chooseProductTooltip": "Choose from existing products",
+    "chooseTypeTooltip": "Choose from existing categories",
+    "viewByProductTooltip": "View stock organized by individual products",
+    "viewByCategoryTooltip": "View stock organized by product categories"
   },
   "clients": {
     "itemsPerPage": "Items per page:",

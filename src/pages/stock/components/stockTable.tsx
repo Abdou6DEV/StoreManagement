@@ -480,10 +480,11 @@ export const StockTable = () => {
                  content={t("stock.lowStockTooltip", "Show products with quantity below threshold")}
                  position="left"
                  delay={100}
-                 portal={true}
+                 portal={false}
                >
                  <div
-                   className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-accent "
+                   className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-accent"
+                   style={{ width: '100%', minWidth: '198px' }}
                    onClick={() => toggleFilter("lowStock")}
                  >
                    <AlertTriangle className={cn(
@@ -500,10 +501,11 @@ export const StockTable = () => {
                  content={t("stock.bestSellingTooltip", "Show products with highest sales")}
                  position="left"
                  delay={100}
-                 portal={true}
+                 portal={false}
                >
                  <div
-                   className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-accent w-full"
+                   className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-accent"
+                   style={{ width: '100%', minWidth: '198px' }}
                    onClick={() => toggleFilter("bestSelling")}
                  >
                    <TrendingUp className={cn(
@@ -520,10 +522,11 @@ export const StockTable = () => {
                  content={t("stock.worstSellingTooltip", "Show products with lowest sales")}
                  position="left"
                  delay={100}
-                 portal={true}
+                 portal={false}
                >
                  <div
-                   className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-accent w-full"
+                   className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-accent"
+                   style={{ width: '100%', minWidth: '198px' }}
                    onClick={() => toggleFilter("worstSelling")}
                  >
                    <TrendingDown className={cn(
@@ -540,10 +543,11 @@ export const StockTable = () => {
                  content={t("stock.noBarcodeTooltip", "Show products without barcode")}
                  position="left"
                  delay={100}
-                 portal={true}
+                 portal={false}
                >
                  <div
-                   className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-accent w-full"
+                   className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-accent"
+                   style={{ width: '100%', minWidth: '200px' }}
                    onClick={() => toggleFilter("noBarcode")}
                  >
                    <QrCode className={cn(

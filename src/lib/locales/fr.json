@@ -162,7 +162,11 @@
     "printLabel": "Imprimer l'étiquette",
     "filters": "Filtres",
     "filtersTooltip": "Filtrer les produits selon différents critères",
-    "activeFilters": "Actifs :"
+    "activeFilters": "Actifs :",
+    "chooseProductTooltip": "Choisir parmi les produits existants",
+    "chooseTypeTooltip": "Choisir parmi les catégories existantes",
+    "viewByProductTooltip": "Voir le stock organisé par produits individuels",
+    "viewByCategoryTooltip": "Voir le stock organisé par catégories de produits"
   },
   "cashier": {
     "total": "Total",

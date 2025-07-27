@@ -110,17 +110,13 @@ export const Tooltip: React.FC<TooltipProps> = ({
   const tooltipElement = (
     <div
       className={cn(
-        "pointer-events-none fixed z-[99999] whitespace-nowrap px-2 py-1 rounded",
+        "pointer-events-none absolute z-[99999] whitespace-nowrap px-2 py-1 rounded",
         "bg-black text-white text-xs",
         "opacity-0 scale-90 transition-all duration-150 ease-out",
         visible && "opacity-100 scale-100",
-        getPositionClasses(),
+        "left-1/2 -translate-x-1/2 bottom-full mb-2",
         className
       )}
-      style={{
-        left: tooltipPosition.x,
-        top: tooltipPosition.y,
-      }}
       role="tooltip"
     >
       {content}
@@ -130,7 +126,7 @@ export const Tooltip: React.FC<TooltipProps> = ({
   return (
     <span
       ref={triggerRef}
-      className="relative block w-full"
+      className="relative inline-block"
       onMouseEnter={show}
       onMouseLeave={hide}
       onFocus={show}
