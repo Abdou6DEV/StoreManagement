@@ -170,7 +170,9 @@
     "existingProductNote": "Ce produit est en stock - Quantité actuelle : {{quantity}}",
     "toastAddError": "Échec de l'ajout du produit",
     "toastUpdateError": "Échec de la mise à jour du produit",
-    "toastDeleteError": "Échec de la suppression du produit"
+    "toastDeleteError": "Échec de la suppression du produit",
+    "confirmDeleteTitle": "Supprimer le produit",
+    "confirmDeleteMessage": "Êtes-vous sûr de vouloir supprimer '{{name}}'? Cela supprimera également tous les enregistrements de vente liés à ce produit. Cette action ne peut pas être annulée."
   },
   "cashier": {
     "total": "Total",
@@ -267,6 +269,9 @@
     "adding": "Ajout...",
     "title": "Liste des clients",
     "addError": "Échec de l'ajout du client",
+    "addSuccess": "Client ajouté avec succès",
+    "updateSuccess": "Client mis à jour avec succès",
+    "deleteSuccess": "Client supprimé avec succès",
     "viewPayments": "Paiements",
     "paymentsTitle": "Paiements pour {{name}}",
     "paymentsDesc": "Voir tous les crédits et versements pour ce client",
@@ -279,7 +284,9 @@
     "paymentAmount": "Montant",
     "paymentDueAt": "Échéance",
     "paymentPaidAt": "Payé le",
-    "paymentCreatedAt": "Créé le"
+    "paymentCreatedAt": "Créé le",
+    "confirmDeleteTitle": "Supprimer le client",
+    "confirmDeleteMessage": "Êtes-vous sûr de vouloir supprimer '{{name}}' ?\n\nAttention : La suppression de ce client supprimera également tous les paiements et ventes associés. Cette action ne peut pas être annulée."
   },
   "admin": {
     "optionsList": "Liste des options",
@@ -297,18 +304,5 @@
     "next": "Suivant",
     "prev": "Précédent"
   },
-  "currency": "DA",
-  "stock": {
-    "toastAddSuccess": "Produit ajouté avec succès",
-    "toastUpdateSuccess": "Produit mis à jour avec succès",
-    "toastDeleteSuccess": "Produit supprimé avec succès"
-  },
-  "clients": {
-    "addSuccess": "Client ajouté avec succès",
-    "addError": "Échec de l'ajout du client",
-    "updateSuccess": "Client mis à jour avec succès",
-    "updateError": "Échec de la mise à jour du client",
-    "deleteSuccess": "Client supprimé avec succès",
-    "deleteError": "Échec de la suppression du client"
-  }
+  "currency": "DA"
 }

@@ -15,8 +15,9 @@ import {
   PaginationNext,
   PaginationEllipsis,
 } from "../../lib/components/pagination";
-import type { Client } from "../../types";
+import type { Client } from "@prisma/client";
 import { useToast } from "../../lib/contexts/toastContext";
+import { ConfirmDialog } from "../../lib/components/confirmDialog";
 
 export default function Clients() {
   const { t } = useTranslation();
@@ -32,6 +33,11 @@ export default function Clients() {
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [openPanel, setOpenPanel] = useState<"add" | null>(null);
   const [paymentsClient, setPaymentsClient] = useState<Client | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<{
+    open: boolean;
+    clientId: string | null;
+    clientName: string;
+  }>({ open: false, clientId: null, clientName: "" });
 
   const fetchClients = async () => {
     setLoading(true);
@@ -51,23 +57,22 @@ export default function Clients() {
   }, []);
 
   const handleDelete = async (id: string) => {
-    if (
-      !window.confirm(
-        t(
-          "clients.deleteConfirm",
-          "Are you sure you want to delete this client?",
-        ) +
-          "\n\n" +
-          t(
-            "clients.deleteWarning",
-            "Warning: Deleting this client will also delete all related payments and sales. This action cannot be undone.",
-          ),
-      )
-    )
-      return;
-    setDeleteLoading(id);
+    const client = clients.find((c) => c.id === id);
+    if (!client) return;
+    
+    setConfirmDelete({
+      open: true,
+      clientId: id,
+      clientName: client.name,
+    });
+  };
+
+  const confirmDeleteClient = async () => {
+    if (!confirmDelete.clientId) return;
+    
+    setDeleteLoading(confirmDelete.clientId);
     try {
-      await window.api.database.clients.delete(id);
+      await window.api.database.clients.delete(confirmDelete.clientId);
       await fetchClients();
       showToast(t("clients.deleteSuccess", "Client deleted successfully"), "success");
     } catch (err) {
@@ -285,6 +290,18 @@ export default function Clients() {
           />
         )}
       </section>
+      {/* Confirm Delete Dialog */}
+      <ConfirmDialog
+        open={confirmDelete.open}
+        onOpenChange={(open) => setConfirmDelete(prev => ({ ...prev, open }))}
+        title={t("clients.confirmDeleteTitle", "Delete Client")}
+        message={t("clients.confirmDeleteMessage", "Are you sure you want to delete '{{name}}'? Warning: Deleting this client will also delete all related payments and sales. This action cannot be undone.", { name: confirmDelete.clientName })}
+        confirmText={t("clients.delete", "Delete")}
+        cancelText={t("clients.cancel", "Cancel")}
+        variant="danger"
+        onConfirm={confirmDeleteClient}
+        loading={!!deleteLoading}
+      />
     </main>
   );
 }

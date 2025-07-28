@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { useStock } from "../../../lib/contexts/stockContext";
 import { useToast } from "../../../lib/contexts/toastContext";
+import { ConfirmDialog } from "../../../lib/components/confirmDialog";
 
 import {
   Edit,
@@ -74,6 +75,11 @@ export const StockTable = () => {
   const [editingProductID, setEditingProductID] = useState<string | null>(null);
   const [categorySearch, setCategorySearch] = useState("");
   const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState<{
+    open: boolean;
+    productId: string | null;
+    productName: string;
+  }>({ open: false, productId: null, productName: "" });
 
   useEffect(() => {
     window.api.database.options
@@ -162,13 +168,21 @@ export const StockTable = () => {
   };
 
   const handleDeleteProduct = async (productId: string) => {
-    const warning =
-      "Are you sure you want to delete this product?\n\n" +
-      "\u26A0\uFE0F WARNING: This will also delete all sales records (SaleItems) related to this product. This action cannot be undone.";
-    if (!confirm(warning)) return;
+    const product = products.find((p) => p.id === productId);
+    if (!product) return;
+    
+    setConfirmDelete({
+      open: true,
+      productId,
+      productName: product.name,
+    });
+  };
 
+  const confirmDeleteProduct = async () => {
+    if (!confirmDelete.productId) return;
+    
     try {
-      await window.api.database.products.delete(productId);
+      await window.api.database.products.delete(confirmDelete.productId);
       showToast(t("stock.toastDeleteSuccess", "Product deleted successfully!"), "success");
       refetchProducts();
     } catch (err) {
@@ -730,6 +744,18 @@ export const StockTable = () => {
           />
         </DialogContent>
       </Dialog>
+
+      {/* Confirm Delete Dialog */}
+      <ConfirmDialog
+        open={confirmDelete.open}
+        onOpenChange={(open) => setConfirmDelete(prev => ({ ...prev, open }))}
+        title={t("stock.confirmDeleteTitle", "Delete Product")}
+        message={t("stock.confirmDeleteMessage", "Are you sure you want to delete '{{name}}'? This will also delete all sales records related to this product. This action cannot be undone.", { name: confirmDelete.productName })}
+        confirmText={t("stock.delete", "Delete")}
+        cancelText={t("stock.cancel", "Cancel")}
+        variant="danger"
+        onConfirm={confirmDeleteProduct}
+      />
     </section>
   );
 };

@@ -235,7 +235,9 @@
     "toastDeleteSuccess": "تم حذف المنتج بنجاح",
     "toastAddError": "فشل في إضافة المنتج",
     "toastUpdateError": "فشل في تحديث المنتج",
-    "toastDeleteError": "فشل في حذف المنتج"
+    "toastDeleteError": "فشل في حذف المنتج",
+    "confirmDeleteTitle": "حذف المنتج",
+    "confirmDeleteMessage": "هل أنت متأكد من أنك تريد حذف '{{name}}'؟ سيؤدي هذا أيضًا إلى حذف جميع سجلات المبيعات المتعلقة بهذا المنتج. لا يمكن التراجع عن هذا الإجراء."
   },
   "clients": {
     "itemsPerPage": "العناصر لكل صفحة:",
@@ -286,7 +288,8 @@
     "addSuccess": "تمت إضافة العميل بنجاح",
     "updateSuccess": "تم تحديث العميل بنجاح",
     "deleteSuccess": "تم حذف العميل بنجاح",
-    "deleteError": "فشل في حذف العميل"
+    "confirmDeleteTitle": "حذف العميل",
+    "confirmDeleteMessage": "هل أنت متأكد من أنك تريد حذف '{{name}}'؟ تحذير: حذف هذا العميل سيؤدي أيضًا إلى حذف جميع المدفوعات والمبيعات المرتبطة. لا يمكن التراجع عن هذا الإجراء."
   },
   "admin": {
     "optionsList": "قائمة الخيارات",

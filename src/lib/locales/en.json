@@ -233,7 +233,9 @@
     "toastDeleteSuccess": "Product deleted successfully",
     "toastAddError": "Failed to add product",
     "toastUpdateError": "Failed to update product",
-    "toastDeleteError": "Failed to delete product"
+    "toastDeleteError": "Failed to delete product",
+    "confirmDeleteTitle": "Delete Product",
+    "confirmDeleteMessage": "Are you sure you want to delete '{{name}}'? This will also delete all sales records related to this product. This action cannot be undone."
   },
   "clients": {
     "itemsPerPage": "Items per page:",
@@ -270,9 +272,7 @@
     "addSuccess": "Client added successfully",
     "addError": "Failed to add client",
     "updateSuccess": "Client updated successfully",
-    "updateError": "Failed to update client",
     "deleteSuccess": "Client deleted successfully",
-    "deleteError": "Failed to delete client",
     "viewPayments": "Payments",
     "paymentsTitle": "Payments for {{name}}",
     "paymentsDesc": "View all credits and versements for this client",
@@ -285,7 +285,9 @@
     "paymentAmount": "Amount",
     "paymentDueAt": "Due At",
     "paymentPaidAt": "Paid At",
-    "paymentCreatedAt": "Created At"
+    "paymentCreatedAt": "Created At",
+    "confirmDeleteTitle": "Delete Client",
+    "confirmDeleteMessage": "Are you sure you want to delete '{{name}}'? Warning: Deleting this client will also delete all related payments and sales. This action cannot be undone."
   },
   "admin": {
     "optionsList": "Options List",
