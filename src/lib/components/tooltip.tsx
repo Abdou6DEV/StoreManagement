@@ -1,6 +1,7 @@
 import React, { ReactNode, useState, useRef } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "../utils";
+import { useTooltip } from "../contexts/tooltipContext";
 
 interface TooltipProps {
   content: ReactNode;
@@ -17,12 +18,15 @@ export const Tooltip: React.FC<TooltipProps> = ({
   delay = 200,
   position = "top",
 }) => {
+  const { showTooltips } = useTooltip();
   const [visible, setVisible] = useState(false);
   const [tooltipCoords, setTooltipCoords] = useState({ x: -1000, y: -1000 });
   const timeoutRef = useRef<number | null>(null);
   const triggerRef = useRef<HTMLSpanElement>(null);
 
   const show = () => {
+    if (!showTooltips) return;
+    
     // Calculate position immediately
     updatePosition();
 

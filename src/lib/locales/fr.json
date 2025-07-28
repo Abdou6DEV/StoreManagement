@@ -93,7 +93,9 @@
     "lightMode": "Mode Clair",
     "darkMode": "Mode Sombre",
     "fullscreen": "Plein écran",
-    "exitFullscreen": "Quitter le plein écran"
+    "exitFullscreen": "Quitter le plein écran",
+    "tooltipsOn": "Infobulles Activées",
+    "tooltipsOff": "Infobulles Désactivées"
   },
   "stock": {
     "product": "Nom du produit",

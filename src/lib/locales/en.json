@@ -93,7 +93,9 @@
     "lightMode": "Light Mode",
     "darkMode": "Dark Mode",
     "fullscreen": "Fullscreen",
-    "exitFullscreen": "Exit Fullscreen"
+    "exitFullscreen": "Exit Fullscreen",
+    "tooltipsOn": "Tooltips On",
+    "tooltipsOff": "Tooltips Off"
   },
   "cashier": {
     "total": "Total",

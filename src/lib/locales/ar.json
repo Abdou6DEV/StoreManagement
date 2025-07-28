@@ -93,7 +93,9 @@
     "lightMode": "الوضع الفاتح",
     "darkMode": "الوضع الداكن",
     "fullscreen": "ملء الشاشة",
-    "exitFullscreen": "الخروج من ملء الشاشة"
+    "exitFullscreen": "الخروج من ملء الشاشة",
+    "tooltipsOn": "تفعيل التلميحات",
+    "tooltipsOff": "إلغاء التلميحات"
   },
   "cashier": {
     "total": "الإجمالي",

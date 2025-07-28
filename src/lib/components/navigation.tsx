@@ -17,7 +17,8 @@ import {
 } from "lucide-react";
 import { ThemeToggleButton } from "./themeToggleButton";
 import { FullscreenToggleButton } from "./fullscreenToggleButton";
-import { useState, useEffect } from "react";
+import { TooltipToggleButton } from "./tooltipToggleButton";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 export default function Navigation() {
@@ -53,6 +54,9 @@ export default function Navigation() {
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
               <FullscreenToggleButton variant="ghost" showText={true} />
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <TooltipToggleButton variant="ghost" showText={true} />
             </DropdownMenuItem>
 
             <DropdownMenuSeparator />
@@ -167,6 +171,9 @@ export default function Navigation() {
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <FullscreenToggleButton variant="ghost" showText={true} />
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <TooltipToggleButton variant="ghost" showText={true} />
               </DropdownMenuItem>
 
               <DropdownMenuSeparator />

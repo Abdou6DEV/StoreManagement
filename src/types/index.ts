@@ -46,3 +46,8 @@ export interface ThemeContextType {
   theme: Theme;
   toggleTheme: () => void;
 }
+
+export interface TooltipContextType {
+  showTooltips: boolean;
+  toggleTooltips: () => void;
+}

@@ -468,7 +468,6 @@ export const StockTable = () => {
                 )}
                 <ChevronDown className="ml-auto w-4 h-4" />
               </Button>
-              {/* Custom tooltip that doesn't interfere with clicks */}
               <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-full z-[9999] whitespace-nowrap px-2 py-1 rounded bg-black text-white text-xs opacity-0 scale-95 transition-all duration-200">
                 {t(
                   "stock.filtersTooltip",

@@ -3,6 +3,10 @@
 export const handleTooltipEnter = (e: React.MouseEvent<HTMLButtonElement>) => {
   const tooltip = e.currentTarget.nextElementSibling as HTMLElement;
   if (tooltip) {
+    // Check if tooltips are enabled
+    const showTooltips = localStorage.getItem("showTooltips") !== "false";
+    if (!showTooltips) return;
+
     // Clear any existing timeout
     if ((e.currentTarget as any).tooltipTimeout) {
       clearTimeout((e.currentTarget as any).tooltipTimeout);

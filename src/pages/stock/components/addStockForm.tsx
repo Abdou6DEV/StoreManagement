@@ -239,13 +239,12 @@ export default function AddStockForm({
                         {t("stock.chooseProduct", "Choose")}
                         <ChevronDown className="ml-2 w-4 h-4" />
                       </Button>
-                      {/* Custom tooltip that doesn't interfere with Popover */}
-                      <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-full mb-2 z-[9999] whitespace-nowrap px-2 py-1 rounded bg-black text-white text-xs opacity-0 scale-90 transition-all duration-150 ease-out">
-                        {t(
-                          "stock.chooseProductTooltip",
-                          "Choose from existing products",
-                        )}
-                      </div>
+                       <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-full mb-2 z-[9999] whitespace-nowrap px-2 py-1 rounded bg-black text-white text-xs opacity-0 scale-90 transition-all duration-150 ease-out">
+                         {t(
+                           "stock.chooseProductTooltip",
+                           "Choose from existing products",
+                         )}
+                       </div>
                     </div>
                   </PopoverTrigger>
                   <PopoverContent className="w-[250px] p-0 z-50">
@@ -369,13 +368,13 @@ export default function AddStockForm({
                         {t("stock.chooseType", "Choose")}
                         <ChevronDown className="ml-2 w-4 h-4" />
                       </Button>
-                      {/* Custom tooltip that doesn't interfere with Popover */}
-                      <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-full mb-2 z-[9999] whitespace-nowrap px-2 py-1 rounded bg-black text-white text-xs opacity-0 scale-90 transition-all duration-150 ease-out">
-                        {t(
-                          "stock.chooseTypeTooltip",
-                          "Choose from existing categories",
-                        )}
-                      </div>
+                                           {/* Custom tooltip that doesn't interfere with Popover */}
+                     <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-full mb-2 z-[9999] whitespace-nowrap px-2 py-1 rounded bg-black text-white text-xs opacity-0 scale-90 transition-all duration-150 ease-out">
+                       {t(
+                         "stock.chooseTypeTooltip",
+                         "Choose from existing categories",
+                       )}
+                     </div>
                     </div>
                   </PopoverTrigger>
                   <PopoverContent className="w-[200px] p-0 z-50">
