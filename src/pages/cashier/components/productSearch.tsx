@@ -159,10 +159,7 @@ export default function ProductSearch({ onAdd, refreshKey }: Props) {
   };
 
   return (
-    <div className="w-full relative space-y-2" ref={dropdownRef}>
-      <label className="block text-sm font-semibold text-muted-foreground mb-1">
-        {t("cashier.addProducts", "Add Products")}
-      </label>
+    <div className="w-full relative" ref={dropdownRef}>
       <Input
         ref={inputRef}
         value={search}

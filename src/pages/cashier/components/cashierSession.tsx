@@ -7,6 +7,7 @@ import ProductSearch from "./productSearch";
 import CartTable from "./cartTable";
 import PaymentSummary from "../../../lib/components/paymentSummary";
 import ActionButtons from "./actionButtons";
+import { Tooltip } from "../../../lib/components/tooltip";
 
 interface CashierSessionProps {
   allProducts: Product[];
@@ -296,20 +297,22 @@ export default function CashierSession({
               onAdd={handleAddProduct as any}
               refreshKey={productRefreshKey}
             />
+            <Tooltip content={t("cashier.tooltipBrowseProducts", "Browse Products")} position="top"> 
             <button
               onClick={onShowProductBrowser}
-              className="flex h-8 w-8 p-1 mt-6 text-sm font-semibold border-1 border-border items-center justify-center rounded-md bg-muted/40 hover:bg-muted hover:text-primary transition"
-              aria-label={t("cashier.browseProducts", "Browse Products")}
+              className="flex h-8 w-8 p-1 text-sm font-semibold border-1 border-border items-center justify-center rounded-md bg-muted/40 hover:bg-muted hover:text-primary transition"
             >
               <ShoppingCart className="w-5 h-5" />
             </button>
+            </Tooltip>
+            <Tooltip content={t("cashier.tooltipAddManualProduct", "Add Products Manually")} position="top"> 
             <button
               onClick={onShowManualProductModal}
-              className="flex h-8 w-8 p-1 mt-6 text-sm font-semibold border-1 border-border items-center justify-center rounded-md bg-muted/40 hover:bg-muted hover:text-primary transition"
-              aria-label={t("cashier.addManualProduct", "Add Manual Product")}
+              className="flex h-8 w-8 p-1 text-sm font-semibold border-1 border-border items-center justify-center rounded-md bg-muted/40 hover:bg-muted hover:text-primary transition"
             >
               <PlusCircle className="w-4 h-4" />
             </button>
+            </Tooltip>
           </div>
 
           <div className="flex-1 overflow-auto min-h-[0px] transition-all duration-300">

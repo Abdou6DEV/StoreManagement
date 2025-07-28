@@ -6,29 +6,30 @@ interface TooltipProps {
   content: ReactNode;
   children: ReactNode;
   className?: string;
-  position?: "top" | "bottom" | "left" | "right";
   delay?: number;
-  portal?: boolean;
+  position?: "top" | "bottom" | "left" | "right";
 }
 
 export const Tooltip: React.FC<TooltipProps> = ({
   content,
   children,
   className,
-  position = "top",
   delay = 300,
-  portal = true,
+  position = "top",
 }) => {
   const [visible, setVisible] = useState(false);
-  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
+  const [tooltipCoords, setTooltipCoords] = useState({ x: -1000, y: -1000 });
   const timeoutRef = useRef<number | null>(null);
   const triggerRef = useRef<HTMLSpanElement>(null);
 
   const show = () => {
+    // Calculate position immediately
+    updatePosition();
+    
+    // Start animation after a small delay to ensure positioning is complete
     timeoutRef.current = window.setTimeout(() => {
       setVisible(true);
-      updatePosition();
-    }, delay);
+    }, 50);
   };
 
   const hide = () => {
@@ -37,91 +38,31 @@ export const Tooltip: React.FC<TooltipProps> = ({
   };
 
   const updatePosition = () => {
-    if (triggerRef.current) {
-      const rect = triggerRef.current.getBoundingClientRect();
+    if (!triggerRef.current) return;
+    
+    const rect = triggerRef.current.getBoundingClientRect();
+    const margin = 8;
+    
+    let x = rect.left + rect.width / 2;
+    let y = rect.top + rect.height / 2;
 
-      let x = rect.left + rect.width / 2;
-      let y = rect.top;
-
-      switch (position) {
-        case "top":
-          y = rect.top - 8;
-          break;
-        case "bottom":
-          y = rect.bottom + 8;
-          break;
-        case "left":
-          x = rect.left - 8;
-          y = rect.top + rect.height / 2;
-          break;
-        case "right":
-          x = rect.right + 8;
-          y = rect.top + rect.height / 2;
-          break;
-      }
-
-      setTooltipPosition({ x, y });
-    }
-  };
-
-  useEffect(() => {
-    if (visible) {
-      updatePosition();
-      window.addEventListener('scroll', updatePosition);
-      window.addEventListener('resize', updatePosition);
-      
-      return () => {
-        window.removeEventListener('scroll', updatePosition);
-        window.removeEventListener('resize', updatePosition);
-      };
-    }
-  }, [visible, position]);
-
-  const getPositionClasses = () => {
     switch (position) {
       case "top":
-        return "left-1/2 -translate-x-1/2 -translate-y-full";
+        y = rect.top - margin;
+        break;
       case "bottom":
-        return "left-1/2 -translate-x-1/2 top-full mt-2";
+        y = rect.bottom + margin;
+        break;
       case "left":
-        return "top-1/2 -translate-y-1/2 -translate-x-full";
+        x = rect.left - margin;
+        break;
       case "right":
-        return "top-1/2 -translate-y-1/2 left-full ml-2";
-      default:
-        return "left-1/2 -translate-x-1/2 -translate-y-full";
+        x = rect.right + margin;
+        break;
     }
-  };
 
-  const getArrowClasses = () => {
-    switch (position) {
-      case "top":
-        return "top-full left-1/2 -translate-x-1/2 border-t-gray-900";
-      case "bottom":
-        return "bottom-full left-1/2 -translate-x-1/2 border-b-gray-900";
-      case "left":
-        return "left-full top-1/2 -translate-y-1/2 border-l-gray-900";
-      case "right":
-        return "right-full top-1/2 -translate-y-1/2 border-r-gray-900";
-      default:
-        return "top-full left-1/2 -translate-x-1/2 border-t-gray-900";
-    }
+    setTooltipCoords({ x, y });
   };
-
-  const tooltipElement = (
-    <div
-      className={cn(
-        "pointer-events-none absolute z-[99999] whitespace-nowrap px-2 py-1 rounded",
-        "bg-black text-white text-xs",
-        "opacity-0 scale-90 transition-all duration-150 ease-out",
-        visible && "opacity-100 scale-100",
-        "left-1/2 -translate-x-1/2 bottom-full mb-2",
-        className
-      )}
-      role="tooltip"
-    >
-      {content}
-    </div>
-  );
 
   return (
     <span
@@ -133,13 +74,33 @@ export const Tooltip: React.FC<TooltipProps> = ({
       onBlur={hide}
     >
       {children}
-      {portal && createPortal(tooltipElement, document.body)}
-      {!portal && tooltipElement}
+      {createPortal(
+        <div
+          className={cn(
+            "fixed z-[9999] px-2 py-1 rounded bg-black text-white text-xs whitespace-nowrap shadow-lg pointer-events-none",
+            "opacity-0 scale-90 transition-all duration-200 ease-out",
+            visible && "opacity-100 scale-100",
+            className
+          )}
+          style={{
+            left: `${tooltipCoords.x}px`,
+            top: `${tooltipCoords.y}px`,
+            transform: position === "top" ? "translate(-50%, -100%)" : 
+                       position === "bottom" ? "translate(-50%, 0)" :
+                       position === "left" ? "translate(-100%, -50%)" :
+                       "translate(0, -50%)",
+            visibility: visible ? 'visible' : 'hidden',
+          }}
+          role="tooltip"
+        >
+          {content}
+        </div>,
+        document.body
+      )}
     </span>
   );
 };
 
 export default Tooltip;
 
-// TypeScript module declaration for import resolution
 export type { TooltipProps };

@@ -16,7 +16,7 @@ export default function StockPage() {
       <AddStockForm openPanel={openPanel} setOpenPanel={setOpenPanel} />
 
       <div className="flex gap-2 mb-4 items-center">
-        <Tooltip content={t("stock.viewByProductTooltip", "View stock organized by individual products")} portal={false}>
+        <Tooltip content={t("stock.viewByProductTooltip", "View stock organized by individual products")} position="top">
           <Button
             variant={view === "product" ? "default" : "outline"}
             onClick={() => setView("product")}
@@ -24,14 +24,14 @@ export default function StockPage() {
             {t("stock.viewByProduct", "View by Product")}
           </Button>
         </Tooltip>
-        <Tooltip content={t("stock.viewByCategoryTooltip", "View stock organized by product categories")} portal={false}>
+        <Tooltip content={t("stock.viewByCategoryTooltip", "View stock organized by product categories")} position="top">
           <Button
             variant={view === "category" ? "default" : "outline"}
             onClick={() => setView("category")}
           >
             {t("stock.viewByCategory", "View by Category")}
           </Button>
-        </Tooltip>
+        </Tooltip>    
       </div>
 
       {view === "product" ? <StockTable /> : <CategorySummaryTable />}

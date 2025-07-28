@@ -479,8 +479,7 @@ export const StockTable = () => {
                <Tooltip 
                  content={t("stock.lowStockTooltip", "Show products with quantity below threshold")}
                  position="left"
-                 delay={100}
-                 portal={false}
+                 
                >
                  <div
                    className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-accent"
@@ -500,8 +499,7 @@ export const StockTable = () => {
                <Tooltip 
                  content={t("stock.bestSellingTooltip", "Show products with highest sales")}
                  position="left"
-                 delay={100}
-                 portal={false}
+                 
                >
                  <div
                    className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-accent"
@@ -521,8 +519,7 @@ export const StockTable = () => {
                <Tooltip 
                  content={t("stock.worstSellingTooltip", "Show products with lowest sales")}
                  position="left"
-                 delay={100}
-                 portal={false}
+                 
                >
                  <div
                    className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-accent"
@@ -542,8 +539,7 @@ export const StockTable = () => {
                <Tooltip 
                  content={t("stock.noBarcodeTooltip", "Show products without barcode")}
                  position="left"
-                 delay={100}
-                 portal={false}
+                 
                >
                  <div
                    className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-accent"
