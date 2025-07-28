@@ -167,7 +167,10 @@
     "chooseTypeTooltip": "Choisir parmi les catégories existantes",
     "viewByProductTooltip": "Voir le stock organisé par produits individuels",
     "viewByCategoryTooltip": "Voir le stock organisé par catégories de produits",
-    "existingProductNote": "Ce produit est en stock - Quantité actuelle : {{quantity}}"
+    "existingProductNote": "Ce produit est en stock - Quantité actuelle : {{quantity}}",
+    "toastAddError": "Échec de l'ajout du produit",
+    "toastUpdateError": "Échec de la mise à jour du produit",
+    "toastDeleteError": "Échec de la suppression du produit"
   },
   "cashier": {
     "total": "Total",
@@ -226,7 +229,10 @@
     "previewError": "Échec de l'ouverture de la fenêtre d'aperçu",
     "printPreview": "Aperçu d'impression",
     "close": "Fermer",
-    "calculator": "Calculatrice"
+    "calculator": "Calculatrice",
+    "clientAdded": "Client ajouté avec succès",
+    "saleError": "Échec de l'enregistrement de la vente",
+    "clientError": "Échec de l'ajout du client"
   },
   "clients": {
     "itemsPerPage": "Éléms par page:",
@@ -291,5 +297,18 @@
     "next": "Suivant",
     "prev": "Précédent"
   },
-  "currency": "DA"
+  "currency": "DA",
+  "stock": {
+    "toastAddSuccess": "Produit ajouté avec succès",
+    "toastUpdateSuccess": "Produit mis à jour avec succès",
+    "toastDeleteSuccess": "Produit supprimé avec succès"
+  },
+  "clients": {
+    "addSuccess": "Client ajouté avec succès",
+    "addError": "Échec de l'ajout du client",
+    "updateSuccess": "Client mis à jour avec succès",
+    "updateError": "Échec de la mise à jour du client",
+    "deleteSuccess": "Client supprimé avec succès",
+    "deleteError": "Échec de la suppression du client"
+  }
 }

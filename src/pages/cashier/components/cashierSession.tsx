@@ -8,6 +8,7 @@ import CartTable from "./cartTable";
 import PaymentSummary from "../../../lib/components/paymentSummary";
 import ActionButtons from "./actionButtons";
 import { Tooltip } from "../../../lib/components/tooltip";
+import { useToast } from "../../../lib/contexts/toastContext";
 
 interface CashierSessionProps {
   allProducts: Product[];
@@ -44,6 +45,7 @@ export default function CashierSession({
   isActive,
 }: CashierSessionProps) {
   const { t } = useTranslation();
+  const { showToast } = useToast();
 
   // Session-specific state
   const [discount, setDiscount] = useState("");
@@ -216,9 +218,9 @@ export default function CashierSession({
       setPaymentType("none");
       setPaymentDate(undefined);
       setProductRefreshKey((k: number) => k + 1);
-      alert(t("cashier.saleRecorded", "Sale recorded successfully"));
+      showToast(t("cashier.saleRecorded", "Sale recorded successfully"), "success");
     } catch (err) {
-      alert(t("cashier.failedRecordSale", "Failed to record sale"));
+      showToast(t("cashier.saleError", "Failed to record sale"), "error");
     }
   };
 
@@ -280,9 +282,10 @@ export default function CashierSession({
       setPaymentType("none");
       setPaymentDate(undefined);
       setProductRefreshKey((k: number) => k + 1);
+      showToast(t("cashier.saleRecorded", "Sale recorded successfully"), "success");
       return sale.id;
     } catch (err) {
-      alert(t("cashier.failedRecordSale", "Failed to record sale"));
+      showToast(t("cashier.saleError", "Failed to record sale"), "error");
       return undefined;
     }
   };

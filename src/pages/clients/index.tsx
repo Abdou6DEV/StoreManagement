@@ -16,9 +16,11 @@ import {
   PaginationEllipsis,
 } from "../../lib/components/pagination";
 import type { Client } from "../../types";
+import { useToast } from "../../lib/contexts/toastContext";
 
 export default function Clients() {
   const { t } = useTranslation();
+  const { showToast } = useToast();
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -67,8 +69,9 @@ export default function Clients() {
     try {
       await window.api.database.clients.delete(id);
       await fetchClients();
+      showToast(t("clients.deleteSuccess", "Client deleted successfully"), "success");
     } catch (err) {
-      alert(t("clients.deleteError", "Failed to delete client"));
+      showToast(t("clients.deleteError", "Failed to delete client"), "error");
     } finally {
       setDeleteLoading(null);
     }
@@ -95,8 +98,9 @@ export default function Clients() {
       });
       setEditingClient(null);
       await fetchClients();
+      showToast(t("clients.updateSuccess", "Client updated successfully"), "success");
     } catch (err) {
-      alert(t("clients.updateError", "Failed to update client"));
+      showToast(t("clients.updateError", "Failed to update client"), "error");
     } finally {
       setEditLoading(false);
     }

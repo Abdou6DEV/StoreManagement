@@ -10,6 +10,7 @@ import {
   generateUniqueBarcode,
   printBarcodeLabel,
 } from "../../../lib/utils/barcodeUtils";
+import { useToast } from "../../../lib/contexts/toastContext";
 
 export default function EditStockForm({
   productID,
@@ -20,6 +21,7 @@ export default function EditStockForm({
 }) {
   const { t } = useTranslation();
   const { products, refetchProducts } = useStock();
+  const { showToast } = useToast();
 
   const product = products.find((p) => p.id === productID);
 
@@ -79,9 +81,10 @@ export default function EditStockForm({
         selling: Number(selling),
         codebar,
       });
+      showToast(t("stock.toastUpdateSuccess", "Product updated successfully!"), "success");
       setProductID(null);
     } catch (err) {
-      alert("Failed to update product");
+      showToast(t("stock.toastUpdateError", "Failed to update product"), "error");
     } finally {
       setLoading(false);
       refetchProducts();

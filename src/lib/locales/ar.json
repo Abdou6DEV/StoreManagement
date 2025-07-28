@@ -152,7 +152,10 @@
     "previewError": "فشل في فتح نافذة المعاينة",
     "printPreview": "معاينة الطباعة",
     "close": "إغلاق",
-    "calculator": "آلة حاسبة"
+    "calculator": "آلة حاسبة",
+    "clientAdded": "تمت إضافة العميل بنجاح",
+    "saleError": "فشل في تسجيل البيع",
+    "clientError": "فشل في إضافة العميل"
   },
   "stock": {
     "product": "اسم المنتج",
@@ -226,7 +229,13 @@
     "chooseTypeTooltip": "اختر من الفئات الموجودة",
     "viewByProductTooltip": "عرض المخزون منظم حسب المنتجات الفردية",
     "viewByCategoryTooltip": "عرض المخزون منظم حسب فئات المنتجات",
-    "existingProductNote": "هذا المنتج متوفر في المخزون - الكمية الحالية: {{quantity}}"
+    "existingProductNote": "هذا المنتج متوفر في المخزون - الكمية الحالية: {{quantity}}",
+    "toastAddSuccess": "تمت إضافة المنتج بنجاح",
+    "toastUpdateSuccess": "تم تحديث المنتج بنجاح",
+    "toastDeleteSuccess": "تم حذف المنتج بنجاح",
+    "toastAddError": "فشل في إضافة المنتج",
+    "toastUpdateError": "فشل في تحديث المنتج",
+    "toastDeleteError": "فشل في حذف المنتج"
   },
   "clients": {
     "itemsPerPage": "العناصر لكل صفحة:",
@@ -273,7 +282,11 @@
     "paymentAmount": "المبلغ",
     "paymentDueAt": "تاريخ الاستحقاق",
     "paymentPaidAt": "تاريخ الدفع",
-    "paymentCreatedAt": "تاريخ الإنشاء"
+    "paymentCreatedAt": "تاريخ الإنشاء",
+    "addSuccess": "تمت إضافة العميل بنجاح",
+    "updateSuccess": "تم تحديث العميل بنجاح",
+    "deleteSuccess": "تم حذف العميل بنجاح",
+    "deleteError": "فشل في حذف العميل"
   },
   "admin": {
     "optionsList": "قائمة الخيارات",

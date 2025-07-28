@@ -13,6 +13,7 @@ import AddPaymentModal from "./addPaymentModal";
 import AddClientModal from "./addClientModal";
 import CalculatorModal from "./calculatorModal";
 import PaymentsModal from "../../clients/components/paymentsModal";
+import { useToast } from "../../../lib/contexts/toastContext";
 
 interface Props {
   clientName: string;
@@ -52,6 +53,7 @@ export default function ActionButtons({
   onConfirmWithReceipt,
 }: Props) {
   const { t, i18n } = useTranslation();
+  const { showToast } = useToast();
   const [clientSuggestions, setClientSuggestions] = useState<
     ClientSuggestion[]
   >([]);
@@ -152,8 +154,9 @@ export default function ActionButtons({
       setClientId(client.id);
       refreshClientSuggestions();
       setShowAddClientModal(false);
+      showToast(t("cashier.clientAdded", "Client added successfully"), "success");
     } catch (err) {
-      alert(t("cashier.failedAddClient", "Failed to add client"));
+      showToast(t("cashier.clientError", "Failed to add client"), "error");
     }
   };
 

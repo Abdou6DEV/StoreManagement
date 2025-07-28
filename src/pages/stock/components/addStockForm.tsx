@@ -31,6 +31,7 @@ import {
   handleTooltipLeave,
 } from "../../../lib/utils/tooltipUtils";
 import type { AddStockFormState } from "../../../types";
+import { useToast } from "../../../lib/contexts/toastContext";
 
 const initialForm: AddStockFormState = {
   name: "",
@@ -51,6 +52,7 @@ export default function AddStockForm({
   const { t } = useTranslation();
   const { products, categories, refetchCategories, refetchProducts } =
     useStock();
+  const { showToast } = useToast();
 
   const [showProductDropdown, setShowProductDropdown] = useState(false);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
@@ -116,6 +118,7 @@ export default function AddStockForm({
           selling: Number(form.selling || 0),
           codebar: form.codebar,
         });
+        showToast(t("stock.toastUpdateSuccess", "Product updated successfully!"), "success");
       } else {
         // If not exists, create new product
         await window.api.database.products.add({
@@ -124,13 +127,14 @@ export default function AddStockForm({
           bought: Number(form.bought || 0),
           selling: Number(form.selling || 0),
         });
+        showToast(t("stock.toastAddSuccess", "Product added successfully!"), "success");
       }
 
       setForm(initialForm);
       refetchProducts();
       refetchCategories();
     } catch (err) {
-      alert("Failed to add product");
+      showToast(t("stock.toastAddError", "Failed to add product"), "error");
     } finally {
       setLoading(false);
     }

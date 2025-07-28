@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { useStock } from "../../../lib/contexts/stockContext";
+import { useToast } from "../../../lib/contexts/toastContext";
 
 import {
   Edit,
@@ -57,6 +58,7 @@ import {
 export const StockTable = () => {
   const { t } = useTranslation();
   const { categories, products, refetchProducts } = useStock();
+  const { showToast } = useToast();
 
   const [filters, setFilters] = useState({
     lowStock: false,
@@ -167,9 +169,10 @@ export const StockTable = () => {
 
     try {
       await window.api.database.products.delete(productId);
+      showToast(t("stock.toastDeleteSuccess", "Product deleted successfully!"), "success");
       refetchProducts();
     } catch (err) {
-      alert("Failed to delete product.");
+      showToast(t("stock.toastDeleteError", "Failed to delete product"), "error");
     }
   };
 

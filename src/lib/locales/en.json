@@ -152,7 +152,9 @@
     "previewError": "Failed to open preview window",
     "printPreview": "Print Preview",
     "close": "Close",
-    "calculator": "Calculator"
+    "calculator": "Calculator",
+    "clientAdded": "Client added successfully",
+    "saleError": "Failed to record sale"
   },
   "stock": {
     "product": "Product Name",
@@ -225,7 +227,13 @@
     "chooseTypeTooltip": "Choose from existing categories",
     "viewByProductTooltip": "View stock organized by individual products",
     "viewByCategoryTooltip": "View stock organized by product categories",
-    "existingProductNote": "This product is in stock - Current quantity: {{quantity}}"
+    "existingProductNote": "This product is in stock - Current quantity: {{quantity}}",
+    "toastAddSuccess": "Product added successfully",
+    "toastUpdateSuccess": "Product updated successfully",
+    "toastDeleteSuccess": "Product deleted successfully",
+    "toastAddError": "Failed to add product",
+    "toastUpdateError": "Failed to update product",
+    "toastDeleteError": "Failed to delete product"
   },
   "clients": {
     "itemsPerPage": "Items per page:",
@@ -259,7 +267,12 @@
     "addTitle": "Add Client",
     "adding": "Adding...",
     "title": "Clients List",
+    "addSuccess": "Client added successfully",
     "addError": "Failed to add client",
+    "updateSuccess": "Client updated successfully",
+    "updateError": "Failed to update client",
+    "deleteSuccess": "Client deleted successfully",
+    "deleteError": "Failed to delete client",
     "viewPayments": "Payments",
     "paymentsTitle": "Payments for {{name}}",
     "paymentsDesc": "View all credits and versements for this client",
