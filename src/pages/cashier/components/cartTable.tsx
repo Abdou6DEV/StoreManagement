@@ -143,7 +143,7 @@ export default function CartTable({ cart, setCart }: Props) {
 
   return (
     <div className="rounded-md border border-border overflow-hidden h-full flex flex-col">
-      <div ref={scrollRef} className="overflow-y-auto flex-1">
+      <div ref={scrollRef} className="overflow-y-auto flex-1 min-h-0">
         <table className="min-w-full text-sm text-left">
           <thead className="bg-muted text-muted-foreground font-medium text-xs uppercase sticky top-0 z-10">
             <tr className="border-b border-border">

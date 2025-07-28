@@ -64,6 +64,19 @@ export default function CashierPage() {
     });
   }, [productRefreshKey]);
 
+  // Control scrolling behavior for cashier page
+  useEffect(() => {
+    // Disable scrolling when component mounts
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+    
+    // Re-enable scrolling when component unmounts
+    return () => {
+      document.body.style.overflow = 'auto';
+      document.documentElement.style.overflow = 'auto';
+    };
+  }, []);
+
   const handleOutOfStock = (items: CartItem[]) => {
     setOutOfStockItems(items);
     setShowStockWarning(true);
@@ -114,10 +127,10 @@ export default function CashierPage() {
   }, []);
 
   return (
-    <main className="h-screen w-full flex flex-col bg-background text-foreground overflow-hidden">
-      {/* === Sticky Total Hader === */}
-      <header className="z-20 bg-background/80 backdrop-blur pb-2">
-        <div className="max-w-5xl mx-auto text-center leading-none py-1">
+    <main className="h-screen w-full -mt-13 flex flex-col bg-background text-foreground overflow-hidden">
+      {/* === Sticky Total Header === */}
+      <header className="z-20 bg-background/80 backdrop-blur flex-shrink-0">
+        <div className="max-w-5xl mx-auto text-center leading-none py-0">
           <div className="text-xs text-muted-foreground font-medium tracking-wider uppercase">
             {t("cashier.total", "Total")}
           </div>
@@ -128,7 +141,7 @@ export default function CashierPage() {
       </header>
 
       {/* === Main Content === */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col min-h-0">
         {/* Session Content */}
         {Array.from({ length: MAX_SESSIONS }).map((_, sessionIndex) => (
           <CashierSession
@@ -153,7 +166,7 @@ export default function CashierPage() {
           />
         ))}
         {/* === Session Selector === */}
-        <div className="gap-3 bg-background flex justify-center items-center px-4">
+        <div className="gap-3 bg-background flex justify-center items-center px-4 py-4 flex-shrink-0">
           {Array.from({ length: MAX_SESSIONS }).map((_, i) => {
             const isActive = activeSession === i;
             const hasItems = sessionCarts[i]?.length > 0;

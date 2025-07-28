@@ -265,10 +265,10 @@ export default function CashierSession({
   }
 
   return (
-    <div className="flex-1 flex flex-col lg:flex-row gap-4 px-2 sm:px-4 lg:px-6 py-3 overflow-hidden">
+    <div className="flex-1 flex flex-col lg:flex-row gap-2 overflow-hidden">
       {/* LEFT: Product + Cart */}
-      <section className="w-full lg:w-2/5 flex flex-col gap-3 overflow-hidden">
-        <div className="bg-card border border-border rounded-xl p-3 shadow-sm h-full flex flex-col gap-3 overflow-hidden">
+      <section className="w-full lg:w-2/5 flex flex-col gap-2 overflow-hidden">
+        <div className="bg-card border border-border rounded-xl p-3 shadow-sm h-full flex flex-col gap-2 overflow-hidden">
           <div className="flex items-center gap-2">
             <ProductSearch
               onAdd={handleAddProduct as any}
@@ -297,8 +297,8 @@ export default function CashierSession({
       </section>
 
       {/* RIGHT: Summary + Actions */}
-      <section className="w-full lg:w-3/5 flex flex-col gap-3 overflow-hidden">
-        <div className="bg-card border border-border rounded-xl p-3 shadow-sm h-full flex flex-col gap-3 overflow-hidden">
+      <section className="w-full lg:w-3/5 flex flex-col gap-2 overflow-hidden">
+        <div className="bg-card border border-border rounded-xl p-3 shadow-sm h-full flex flex-col gap-2 overflow-hidden">
           <div className="flex-1 overflow-auto min-h-[100px]">
             <PaymentSummary
               cart={cart}

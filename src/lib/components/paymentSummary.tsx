@@ -130,31 +130,31 @@ export default function PaymentSummary({
 
   return (
     <div
-      className={`font-mono text-sm text-primary bg-muted rounded-xl p-4 flex flex-col shadow-inner border border-border max-w-full w-full h-[70vh] ${className}`}
+      className={`font-mono text-sm text-primary bg-muted rounded-xl p-4 flex flex-col shadow-inner border border-border max-w-full w-full h-full ${className}`}
     >
       {/* === Client Info === */}
       {clientName && (
         <>
-          <div className="flex justify-between font-semibold text-base mb-1">
+          <div className="flex justify-between font-semibold text-base mb-1 flex-shrink-0">
             <span>{t("cashier.client", "Client:")}</span>
             <span className="truncate">{clientName}</span>
           </div>
-          <div className="border-t border-black dark:border-white my-2" />
+          <div className="border-t border-black dark:border-white my-2 flex-shrink-0" />
         </>
       )}
 
       {/* === Header Row === */}
-      <div className="flex justify-between font-semibold text-xs uppercase tracking-wider mb-1">
+      <div className="flex justify-between font-semibold text-xs uppercase tracking-wider mb-1 flex-shrink-0">
         <span className="w-1/2">{t("cashier.product", "Product")}</span>
         <span className="w-1/6 text-right">{t("cashier.qty", "Qty")}</span>
         <span className="w-1/6 text-right">{t("cashier.unit", "Unit")}</span>
         <span className="w-1/6 text-right">{t("cashier.total", "Total")}</span>
       </div>
-      <div className="border-t border-black dark:border-white mb-2" />
+      <div className="border-t border-black dark:border-white mb-2 flex-shrink-0" />
 
       {/* === Scrollable Items === */}
       <div
-        className={`flex-1 overflow-y-auto overflow-x-hidden space-y-[2px] transition-opacity duration-500 ${isFading ? "opacity-0" : "opacity-100"}`}
+        className={`flex-1 overflow-y-auto overflow-x-hidden space-y-[2px] transition-opacity duration-500 min-h-0 ${isFading ? "opacity-0" : "opacity-100"}`}
         ref={scrollRef}
       >
         {cart.length > 0
@@ -190,7 +190,7 @@ export default function PaymentSummary({
 
       {/* === Bottom Summary Section === */}
       <div
-        className="pt-3 mt-3 border-t border-black dark:border-white space-y-1"
+        className="pt-3 mt-3 border-t border-black dark:border-white space-y-1 flex-shrink-0"
         style={{ direction: isRTL ? "rtl" : "ltr" }}
       >
         <div className="flex justify-between">
