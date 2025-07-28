@@ -7,6 +7,7 @@ import ProductBrowser from "./components/productBrowser";
 import AddManualProductModal from "./components/addManualProductModal";
 import ReceiptModal from "./components/receiptModal";
 import CashierSession from "./components/cashierSession";
+import { Tooltip } from "../../lib/components/tooltip";
 
 const MAX_SESSIONS = 5;
 
@@ -179,15 +180,24 @@ export default function CashierPage() {
               "bg-card text-muted-foreground border-border hover:bg-muted hover:text-foreground";
 
             return (
-              <button
+              <Tooltip
                 key={i}
-                onClick={() => setActiveSession(i)}
-                className={`${baseClasses} ${
-                  isActive ? active : hasItems ? green : inactive
-                }`}
+                content={
+                  hasItems
+                    ? t("cashier.tooltipSessionWithItems", "Session {{number}} - Has {{count}} items in cart", { number: i + 1, count: sessionCarts[i]?.length || 0 })
+                    : t("cashier.tooltipSessionEmpty", "Session {{number}} - Empty cart, ready for new transaction", { number: i + 1 })
+                }
+                position="top"
               >
-                {t("cashier.page", { number: i + 1 })}
-              </button>
+                <button
+                  onClick={() => setActiveSession(i)}
+                  className={`${baseClasses} ${
+                    isActive ? active : hasItems ? green : inactive
+                  }`}
+                >
+                  {t("cashier.page", { number: i + 1 })}
+                </button>
+              </Tooltip>
             );
           })}
         </div>

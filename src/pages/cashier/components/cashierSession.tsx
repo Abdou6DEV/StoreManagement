@@ -305,7 +305,7 @@ export default function CashierSession({
               refreshKey={productRefreshKey}
             />
             <Tooltip
-              content={t("cashier.tooltipBrowseProducts", "Browse Products")}
+              content={t("cashier.tooltipBrowseProducts", "Browse Products (F1)")}
               position="top"
             >
               <button
@@ -318,7 +318,7 @@ export default function CashierSession({
             <Tooltip
               content={t(
                 "cashier.tooltipAddManualProduct",
-                "Add Products Manually",
+                "Add Products Manually (F2)",
               )}
               position="top"
             >
