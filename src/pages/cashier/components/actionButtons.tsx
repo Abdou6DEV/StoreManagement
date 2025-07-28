@@ -219,7 +219,7 @@ export default function ActionButtons({
               <UserPlus
                 className={`w-4 h-4 mr-1 ml-1 ${i18n.language === "ar" ? " scale-x-[-1]" : ""}`}
               />
-              <span className="hidden sm:inline whitespace-nowrap">
+              <span className="hidden sm:inline whitespace-nowrap truncate max-w-[150px]">
                 {t("cashier.addNewClient", "Add New Client")}
               </span>
             </button>
