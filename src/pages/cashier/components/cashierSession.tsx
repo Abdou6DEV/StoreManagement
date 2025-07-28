@@ -162,12 +162,23 @@ export default function CashierSession({
     let saleClientId = clientId;
     try {
       if (clientName.trim() && !clientId) {
-        const client = await window.api.database.clients.create({
-          name: clientName.trim(),
-        });
-        saleClientId = client.id;
-        setClientId(client.id);
+        // First try to find an existing client with this name
+        const allClients = await window.api.database.clients.getAll();
+        const existingClient = allClients.find(c => c.name === clientName.trim());
+        
+        if (existingClient) {
+          saleClientId = existingClient.id;
+          setClientId(existingClient.id);
+        } else {
+          // Only create a new client if one doesn't exist
+          const client = await window.api.database.clients.create({
+            name: clientName.trim(),
+          });
+          saleClientId = client.id;
+          setClientId(client.id);
+        }
       }
+
       const sale = await window.api.database.sales.create({
         clientId: saleClientId || undefined,
         items: cart.map((item) => ({
@@ -213,12 +224,23 @@ export default function CashierSession({
     let saleClientId = clientId;
     try {
       if (clientName.trim() && !clientId) {
-        const client = await window.api.database.clients.create({
-          name: clientName.trim(),
-        });
-        saleClientId = client.id;
-        setClientId(client.id);
+        // First try to find an existing client with this name
+        const allClients = await window.api.database.clients.getAll();
+        const existingClient = allClients.find(c => c.name === clientName.trim());
+        
+        if (existingClient) {
+          saleClientId = existingClient.id;
+          setClientId(existingClient.id);
+        } else {
+          // Only create a new client if one doesn't exist
+          const client = await window.api.database.clients.create({
+            name: clientName.trim(),
+          });
+          saleClientId = client.id;
+          setClientId(client.id);
+        }
       }
+      
       const sale = await window.api.database.sales.create({
         clientId: saleClientId || undefined,
         items: cart.map((item) => ({
