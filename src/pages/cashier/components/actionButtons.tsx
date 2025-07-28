@@ -243,7 +243,7 @@ export default function ActionButtons({
           }}
         />
         <button
-          className="flex-1 flex items-center justify-center rounded-lg bg-blue-500 text-white px-4 py-2 text-base font-medium shadow-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 transition duration-150 disabled:bg-blue-300 disabled:text-white/70 disabled:cursor-not-allowed min-w-0 w-full"
+          className="flex-1 flex items-center justify-center rounded-lg bg-primary text-primary-foreground px-4 py-2 text-base font-medium shadow-md hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary/50 transition duration-150 disabled:bg-primary/50 disabled:text-primary-foreground/70 disabled:cursor-not-allowed min-w-0 w-full"
           onClick={() => {
             setShowPaymentModal(true);
           }}
