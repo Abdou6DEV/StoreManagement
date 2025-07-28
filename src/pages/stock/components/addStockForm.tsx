@@ -448,7 +448,6 @@ export default function AddStockForm({
                   codebar={form.codebar}
                   onGenerate={handleGenerateBarcode}
                   onPrint={() => setShowPrintModal(true)}
-                  disabled={isExistingProduct}
                   generatingBarcode={generatingBarcode}
                 />
               </div>
