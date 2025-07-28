@@ -6,7 +6,10 @@ import { Save, X, Loader2, Package } from "lucide-react";
 import { useStock } from "../../../lib/contexts/stockContext";
 import { BarcodeGeneratorButton } from "./barcodeGeneratorButton";
 import { BarcodePrintModal } from "./barcodePrintModal";
-import { generateUniqueBarcode, printBarcodeLabel } from "../../../lib/utils/barcodeUtils";
+import {
+  generateUniqueBarcode,
+  printBarcodeLabel,
+} from "../../../lib/utils/barcodeUtils";
 
 export default function EditStockForm({
   productID,
@@ -41,9 +44,9 @@ export default function EditStockForm({
   const handleGenerateBarcode = async () => {
     setGeneratingBarcode(true);
     try {
-      const existingBarcodes = products.map(p => p.codebar);
+      const existingBarcodes = products.map((p) => p.codebar);
       const newBarcode = await generateUniqueBarcode(existingBarcodes);
-      setForm(prev => ({ ...prev, codebar: newBarcode }));
+      setForm((prev) => ({ ...prev, codebar: newBarcode }));
     } catch (error) {
       console.error("Error generating barcode:", error);
     } finally {
@@ -167,7 +170,9 @@ export default function EditStockForm({
                 type="text"
                 placeholder={t("stock.codebar")}
                 value={form.codebar}
-                onChange={(e) => handleEditFormChange("codebar", e.target.value)}
+                onChange={(e) =>
+                  handleEditFormChange("codebar", e.target.value)
+                }
                 className="flex-1 px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-green-500/50 focus:border-green-500 transition-all"
               />
               <BarcodeGeneratorButton

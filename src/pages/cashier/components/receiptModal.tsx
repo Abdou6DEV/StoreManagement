@@ -35,7 +35,7 @@ export default function ReceiptModal({
   const storeInfo = {
     name: "Store Management",
     address: "Your Store Address",
-    phone: "Phone: +1234567890"
+    phone: "Phone: +1234567890",
   };
 
   // Calculate totals
@@ -57,10 +57,10 @@ export default function ReceiptModal({
 
     const shortText = receiptNumber.substring(0, 12).toUpperCase();
     const svg = barcodeRef.current;
-    
+
     // Clear previous content
-    svg.innerHTML = '';
-    
+    svg.innerHTML = "";
+
     try {
       JsBarcode(svg, shortText, {
         format: "CODE128",
@@ -69,7 +69,7 @@ export default function ReceiptModal({
         displayValue: false,
         background: "#ffffff",
         lineColor: "#000000",
-        margin: 0
+        margin: 0,
       });
     } catch (error) {
       console.error("Failed to generate barcode:", error);
@@ -80,37 +80,40 @@ export default function ReceiptModal({
 
   // Fallback barcode for error cases
   const generateFallbackBarcode = (text: string, svg: SVGSVGElement) => {
-    svg.innerHTML = '';
-    
+    svg.innerHTML = "";
+
     // Create simple visual barcode pattern
-    let barcodeData = '';
+    let barcodeData = "";
     for (const char of text) {
       const code = char.charCodeAt(0);
       const barCount = (code % 3) + 2;
-      barcodeData += '1'.repeat(barCount) + '0';
+      barcodeData += "1".repeat(barCount) + "0";
     }
-    
-    barcodeData = '1010' + barcodeData + '1010';
-    
+
+    barcodeData = "1010" + barcodeData + "1010";
+
     const barWidth = 2;
     const barHeight = 30;
     let x = 0;
-    
+
     for (let i = 0; i < barcodeData.length; i++) {
-      if (barcodeData[i] === '1') {
-        const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-        rect.setAttribute('x', x.toString());
-        rect.setAttribute('y', '0');
-        rect.setAttribute('width', barWidth.toString());
-        rect.setAttribute('height', barHeight.toString());
-        rect.setAttribute('fill', '#000000');
+      if (barcodeData[i] === "1") {
+        const rect = document.createElementNS(
+          "http://www.w3.org/2000/svg",
+          "rect",
+        );
+        rect.setAttribute("x", x.toString());
+        rect.setAttribute("y", "0");
+        rect.setAttribute("width", barWidth.toString());
+        rect.setAttribute("height", barHeight.toString());
+        rect.setAttribute("fill", "#000000");
         svg.appendChild(rect);
       }
       x += barWidth;
     }
-    
-    svg.setAttribute('width', x.toString());
-    svg.setAttribute('height', barHeight.toString());
+
+    svg.setAttribute("width", x.toString());
+    svg.setAttribute("height", barHeight.toString());
   };
 
   const handlePrint = async () => {
@@ -132,7 +135,7 @@ export default function ReceiptModal({
         alert(t("cashier.printSuccess", "Receipt sent to printer"));
       };
     } catch (error) {
-      console.error('Print error:', error);
+      console.error("Print error:", error);
       alert(t("cashier.printError", "Failed to print receipt"));
     } finally {
       setIsPrinting(false);
@@ -322,7 +325,7 @@ export default function ReceiptModal({
             </div>
             
             <!-- Client Info -->
-            ${clientName ? `<div class="client-info">Client: ${clientName}</div>` : ''}
+            ${clientName ? `<div class="client-info">Client: ${clientName}</div>` : ""}
             
             <div class="divider"></div>
             
@@ -334,14 +337,18 @@ export default function ReceiptModal({
                 <div class="header-price">PRICE</div>
                 <div class="header-total">TOTAL</div>
               </div>
-              ${cart.map(item => `
+              ${cart
+                .map(
+                  (item) => `
                 <div class="item">
-                  <div class="item-name">${item.name.replace(/\n/g, ' ')}</div>
+                  <div class="item-name">${item.name.replace(/\n/g, " ")}</div>
                   <div class="item-qty">${item.qty}</div>
                   <div class="item-price">${item.price.toLocaleString()}</div>
                   <div class="item-total">${(item.qty * item.price).toLocaleString()}</div>
                 </div>
-              `).join('')}
+              `,
+                )
+                .join("")}
             </div>
             
             <div class="divider"></div>
@@ -352,12 +359,16 @@ export default function ReceiptModal({
                 <span>Subtotal:</span>
                 <span>${total.toLocaleString()} DA</span>
               </div>
-              ${discount > 0 ? `
+              ${
+                discount > 0
+                  ? `
                 <div class="total-row">
                   <span>Discount:</span>
                   <span>-${discount.toLocaleString()} DA</span>
                 </div>
-              ` : ''}
+              `
+                  : ""
+              }
               <div class="total-row">
                 <span>Total:</span>
                 <span>${finalTotal.toLocaleString()} DA</span>
@@ -365,15 +376,19 @@ export default function ReceiptModal({
             </div>
             
             <!-- Payment Info -->
-            ${paymentType !== 'none' && paymentAmount > 0 ? `
+            ${
+              paymentType !== "none" && paymentAmount > 0
+                ? `
               <div class="payment-info">
                 <div class="divider"></div>
-                <div>Payment Type: ${paymentType === 'credit' ? 'Credit' : 'Versement'}</div>
+                <div>Payment Type: ${paymentType === "credit" ? "Credit" : "Versement"}</div>
                 <div>Amount Paid: ${paymentAmount.toLocaleString()} DA</div>
-                <div>Due Date: ${paymentDate ? paymentDate.toLocaleDateString() : 'N/A'}</div>
+                <div>Due Date: ${paymentDate ? paymentDate.toLocaleDateString() : "N/A"}</div>
                 <div>Remaining: ${(finalTotal - paymentAmount).toLocaleString()} DA</div>
               </div>
-            ` : ''}
+            `
+                : ""
+            }
             
             <!-- Barcode -->
             <div class="barcode">
@@ -601,7 +616,7 @@ export default function ReceiptModal({
             </div>
             
             <!-- Client Info -->
-            ${clientName ? `<div class="client-info">Client: ${clientName}</div>` : ''}
+            ${clientName ? `<div class="client-info">Client: ${clientName}</div>` : ""}
             
             <div class="divider"></div>
             
@@ -613,14 +628,18 @@ export default function ReceiptModal({
                 <div class="header-price">PRICE</div>
                 <div class="header-total">TOTAL</div>
               </div>
-              ${cart.map(item => `
+              ${cart
+                .map(
+                  (item) => `
                 <div class="item">
-                  <div class="item-name">${item.name.replace(/\n/g, ' ')}</div>
+                  <div class="item-name">${item.name.replace(/\n/g, " ")}</div>
                   <div class="item-qty">${item.qty}</div>
                   <div class="item-price">${item.price.toLocaleString()}</div>
                   <div class="item-total">${(item.qty * item.price).toLocaleString()}</div>
                 </div>
-              `).join('')}
+              `,
+                )
+                .join("")}
             </div>
             
             <div class="divider"></div>
@@ -631,12 +650,16 @@ export default function ReceiptModal({
                 <span>Subtotal:</span>
                 <span>${total.toLocaleString()} DA</span>
               </div>
-              ${discount > 0 ? `
+              ${
+                discount > 0
+                  ? `
                 <div class="total-row">
                   <span>Discount:</span>
                   <span>-${discount.toLocaleString()} DA</span>
                 </div>
-              ` : ''}
+              `
+                  : ""
+              }
               <div class="total-row">
                 <span>Total:</span>
                 <span>${finalTotal.toLocaleString()} DA</span>
@@ -644,15 +667,19 @@ export default function ReceiptModal({
             </div>
             
             <!-- Payment Info -->
-            ${paymentType !== 'none' && paymentAmount > 0 ? `
+            ${
+              paymentType !== "none" && paymentAmount > 0
+                ? `
               <div class="payment-info">
                 <div class="divider"></div>
-                <div>Payment Type: ${paymentType === 'credit' ? 'Credit' : 'Versement'}</div>
+                <div>Payment Type: ${paymentType === "credit" ? "Credit" : "Versement"}</div>
                 <div>Amount Paid: ${paymentAmount.toLocaleString()} DA</div>
-                <div>Due Date: ${paymentDate ? paymentDate.toLocaleDateString() : 'N/A'}</div>
+                <div>Due Date: ${paymentDate ? paymentDate.toLocaleDateString() : "N/A"}</div>
                 <div>Remaining: ${(finalTotal - paymentAmount).toLocaleString()} DA</div>
               </div>
-            ` : ''}
+            `
+                : ""
+            }
             
             <!-- Barcode -->
             <div class="barcode">
@@ -710,8 +737,12 @@ export default function ReceiptModal({
             {/* Store Header */}
             <div className="text-center mb-4">
               <div className="font-bold text-lg">{storeInfo.name}</div>
-              <div className="text-xs text-muted-foreground">{storeInfo.address}</div>
-              <div className="text-xs text-muted-foreground">{storeInfo.phone}</div>
+              <div className="text-xs text-muted-foreground">
+                {storeInfo.address}
+              </div>
+              <div className="text-xs text-muted-foreground">
+                {storeInfo.phone}
+              </div>
             </div>
 
             {/* Date and Time */}
@@ -734,16 +765,31 @@ export default function ReceiptModal({
               {/* Items Header */}
               <div className="flex justify-between items-center mb-2 pb-1 border-b border-black dark:border-white">
                 <span className="flex-1 mr-2 text-xs font-bold">ITEM</span>
-                <span className="w-5 text-center text-xs font-bold mr-3">QTY</span>
-                <span className="w-9 text-right text-xs font-bold mr-2">PRICE</span>
+                <span className="w-5 text-center text-xs font-bold mr-3">
+                  QTY
+                </span>
+                <span className="w-9 text-right text-xs font-bold mr-2">
+                  PRICE
+                </span>
                 <span className="w-12 text-right text-xs font-bold">TOTAL</span>
               </div>
               {cart.map((item) => (
-                <div key={item.id} className="flex justify-between items-start mb-2 min-h-[16px]">
-                  <span className="flex-1 mr-2 text-xs break-words leading-tight">{item.name}</span>
-                  <span className="w-5 text-center font-bold text-xs mr-3 flex-shrink-0">{item.qty}</span>
-                  <span className="w-9 text-right text-xs mr-2 flex-shrink-0">{item.price.toLocaleString()}</span>
-                  <span className="w-12 text-right font-bold text-xs flex-shrink-0">{(item.qty * item.price).toLocaleString()}</span>
+                <div
+                  key={item.id}
+                  className="flex justify-between items-start mb-2 min-h-[16px]"
+                >
+                  <span className="flex-1 mr-2 text-xs break-words leading-tight">
+                    {item.name}
+                  </span>
+                  <span className="w-5 text-center font-bold text-xs mr-3 flex-shrink-0">
+                    {item.qty}
+                  </span>
+                  <span className="w-9 text-right text-xs mr-2 flex-shrink-0">
+                    {item.price.toLocaleString()}
+                  </span>
+                  <span className="w-12 text-right font-bold text-xs flex-shrink-0">
+                    {(item.qty * item.price).toLocaleString()}
+                  </span>
                 </div>
               ))}
             </div>
@@ -769,28 +815,39 @@ export default function ReceiptModal({
             </div>
 
             {/* Payment Info */}
-            {paymentType !== 'none' && paymentAmount > 0 && (
+            {paymentType !== "none" && paymentAmount > 0 && (
               <>
                 <div className="border-t border-black dark:border-white my-2" />
                 <div className="text-xs">
-                  <div>Payment Type: {paymentType === 'credit' ? 'Credit' : 'Versement'}</div>
+                  <div>
+                    Payment Type:{" "}
+                    {paymentType === "credit" ? "Credit" : "Versement"}
+                  </div>
                   <div>Amount Paid: {paymentAmount.toLocaleString()} DA</div>
-                  <div>Due Date: {paymentDate ? paymentDate.toLocaleDateString() : 'N/A'}</div>
-                  <div>Remaining: {(finalTotal - paymentAmount).toLocaleString()} DA</div>
+                  <div>
+                    Due Date:{" "}
+                    {paymentDate ? paymentDate.toLocaleDateString() : "N/A"}
+                  </div>
+                  <div>
+                    Remaining: {(finalTotal - paymentAmount).toLocaleString()}{" "}
+                    DA
+                  </div>
                 </div>
               </>
             )}
 
-                               {/* Barcode */}
-                   <div className="border-t border-black dark:border-white my-4" />
-                   <div className="text-center my-6 flex flex-col items-center py-4">
-                     <svg 
-                       ref={barcodeRef} 
-                       className="barcode-svg"
-                       style={{ height: '40px' }}
-                     />
-                     <div className="text-xs mt-2">ID: {receiptNumber.substring(0, 12)}</div>
-                   </div>
+            {/* Barcode */}
+            <div className="border-t border-black dark:border-white my-4" />
+            <div className="text-center my-6 flex flex-col items-center py-4">
+              <svg
+                ref={barcodeRef}
+                className="barcode-svg"
+                style={{ height: "40px" }}
+              />
+              <div className="text-xs mt-2">
+                ID: {receiptNumber.substring(0, 12)}
+              </div>
+            </div>
 
             {/* Welcome Message */}
             <div className="border-t border-black dark:border-white my-2" />
@@ -823,7 +880,9 @@ export default function ReceiptModal({
             className="flex-1 flex items-center justify-center gap-2 py-2 px-4 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition disabled:opacity-50"
           >
             <Printer className="w-4 h-4" />
-            {isPrinting ? t("cashier.printing", "Printing...") : t("cashier.print", "Print")}
+            {isPrinting
+              ? t("cashier.printing", "Printing...")
+              : t("cashier.print", "Print")}
           </button>
           <button
             onClick={onClose}
@@ -835,4 +894,4 @@ export default function ReceiptModal({
       </div>
     </div>
   );
-} 
+}

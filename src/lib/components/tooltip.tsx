@@ -25,7 +25,7 @@ export const Tooltip: React.FC<TooltipProps> = ({
   const show = () => {
     // Calculate position immediately
     updatePosition();
-    
+
     // Start animation after the configured delay
     timeoutRef.current = window.setTimeout(() => {
       setVisible(true);
@@ -39,16 +39,19 @@ export const Tooltip: React.FC<TooltipProps> = ({
 
   const updatePosition = () => {
     if (!triggerRef.current) return;
-    
+
     const rect = triggerRef.current.getBoundingClientRect();
     const margin = 8;
-    
+
     // Get the effective position considering RTL
     const isRTL = document.documentElement.getAttribute("dir") === "rtl";
-    const effectivePosition = isRTL && (position === "left" || position === "right") 
-      ? (position === "left" ? "right" : "left") 
-      : position;
-    
+    const effectivePosition =
+      isRTL && (position === "left" || position === "right")
+        ? position === "left"
+          ? "right"
+          : "left"
+        : position;
+
     let x = rect.left + rect.width / 2;
     let y = rect.top + rect.height / 2;
 
@@ -86,32 +89,41 @@ export const Tooltip: React.FC<TooltipProps> = ({
             "fixed z-[9999] px-2 py-1 rounded bg-black text-white text-xs whitespace-nowrap shadow-lg pointer-events-none",
             "opacity-0 scale-90 transition-all duration-200 ease-out",
             visible && "opacity-100 scale-100",
-            className
+            className,
           )}
-                     style={{
-             left: `${tooltipCoords.x}px`,
-             top: `${tooltipCoords.y}px`,
-             transform: (() => {
-               const isRTL = document.documentElement.getAttribute("dir") === "rtl";
-               const effectivePosition = isRTL && (position === "left" || position === "right") 
-                 ? (position === "left" ? "right" : "left") 
-                 : position;
-               
-               switch (effectivePosition) {
-                 case "top": return "translate(-50%, -100%)";
-                 case "bottom": return "translate(-50%, 0)";
-                 case "left": return "translate(-100%, -50%)";
-                 case "right": return "translate(0, -50%)";
-                 default: return "translate(-50%, -100%)";
-               }
-             })(),
-             visibility: visible ? 'visible' : 'hidden',
-           }}
+          style={{
+            left: `${tooltipCoords.x}px`,
+            top: `${tooltipCoords.y}px`,
+            transform: (() => {
+              const isRTL =
+                document.documentElement.getAttribute("dir") === "rtl";
+              const effectivePosition =
+                isRTL && (position === "left" || position === "right")
+                  ? position === "left"
+                    ? "right"
+                    : "left"
+                  : position;
+
+              switch (effectivePosition) {
+                case "top":
+                  return "translate(-50%, -100%)";
+                case "bottom":
+                  return "translate(-50%, 0)";
+                case "left":
+                  return "translate(-100%, -50%)";
+                case "right":
+                  return "translate(0, -50%)";
+                default:
+                  return "translate(-50%, -100%)";
+              }
+            })(),
+            visibility: visible ? "visible" : "hidden",
+          }}
           role="tooltip"
         >
           {content}
         </div>,
-        document.body
+        document.body,
       )}
     </span>
   );

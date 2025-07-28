@@ -1,7 +1,11 @@
 // Generate unique EAN-13 barcode for stock items
-export const generateUniqueBarcode = async (existingBarcodes: string[]): Promise<string> => {
+export const generateUniqueBarcode = async (
+  existingBarcodes: string[],
+): Promise<string> => {
   // Get all existing barcodes
-  const filteredBarcodes = existingBarcodes.filter(codebar => codebar && codebar.length >= 8);
+  const filteredBarcodes = existingBarcodes.filter(
+    (codebar) => codebar && codebar.length >= 8,
+  );
 
   // Generate EAN-13 barcode (13 digits)
   let newBarcode: string;
@@ -12,10 +16,12 @@ export const generateUniqueBarcode = async (existingBarcodes: string[]): Promise
     // Start with country code (for Algeria: 613)
     const countryCode = "613";
     // Generate 9 random digits
-    const randomDigits = Math.floor(Math.random() * 1000000000).toString().padStart(9, '0');
+    const randomDigits = Math.floor(Math.random() * 1000000000)
+      .toString()
+      .padStart(9, "0");
     // Combine to get 12 digits
     const barcode12 = countryCode + randomDigits;
-    
+
     // Calculate EAN-13 check digit
     let sum = 0;
     for (let i = 0; i < 12; i++) {
@@ -23,10 +29,10 @@ export const generateUniqueBarcode = async (existingBarcodes: string[]): Promise
       sum += digit * (i % 2 === 0 ? 1 : 3);
     }
     const checkDigit = (10 - (sum % 10)) % 10;
-    
+
     // Complete EAN-13 barcode
     newBarcode = barcode12 + checkDigit;
-    
+
     attempts++;
     if (attempts >= maxAttempts) {
       // Show error in console instead of alert
@@ -39,8 +45,12 @@ export const generateUniqueBarcode = async (existingBarcodes: string[]): Promise
 };
 
 // Print barcode label
-export const printBarcodeLabel = (productName: string, productPrice: number | string, codebar: string) => {
-  const printWindow = window.open('', '_blank');
+export const printBarcodeLabel = (
+  productName: string,
+  productPrice: number | string,
+  codebar: string,
+) => {
+  const printWindow = window.open("", "_blank");
   if (!printWindow) return;
 
   const printContent = `
@@ -144,8 +154,8 @@ export const printBarcodeLabel = (productName: string, productPrice: number | st
       <body>
         <div class="label">
           <div class="product-info">
-            <div class="product-name">${productName || 'Product Name'}</div>
-            <div class="product-price">${productPrice ? Number(productPrice).toLocaleString() + ' DA' : 'Price'}</div>
+            <div class="product-name">${productName || "Product Name"}</div>
+            <div class="product-price">${productPrice ? Number(productPrice).toLocaleString() + " DA" : "Price"}</div>
           </div>
           <div class="barcode-container">
             <svg id="barcode-label" style="width: 100%; height: 30px;"></svg>
@@ -173,9 +183,9 @@ export const printBarcodeLabel = (productName: string, productPrice: number | st
   printWindow.document.write(printContent);
   printWindow.document.close();
   printWindow.focus();
-  
+
   setTimeout(() => {
     printWindow.print();
     printWindow.close();
   }, 500);
-}; 
+};

@@ -23,7 +23,9 @@ export const FullscreenToggleButton: React.FC<FullscreenToggleButtonProps> = ({
   size = "default",
   showText = true,
 }) => {
-  const [isFullscreen, setIsFullscreen] = useState(!!document.fullscreenElement);
+  const [isFullscreen, setIsFullscreen] = useState(
+    !!document.fullscreenElement,
+  );
   const { t } = useTranslation();
 
   // Listen for fullscreen changes
@@ -32,8 +34,9 @@ export const FullscreenToggleButton: React.FC<FullscreenToggleButtonProps> = ({
       setIsFullscreen(!!document.fullscreenElement);
     };
 
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () =>
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
   }, []);
 
   const toggleFullscreen = () => {
@@ -55,7 +58,9 @@ export const FullscreenToggleButton: React.FC<FullscreenToggleButtonProps> = ({
       <div className="flex items-center gap-2 rtl:flex-row-reverse">
         {showText && (
           <span>
-            {isFullscreen ? t("navigation.exitFullscreen", "Exit Fullscreen") : t("navigation.fullscreen", "Fullscreen")}
+            {isFullscreen
+              ? t("navigation.exitFullscreen", "Exit Fullscreen")
+              : t("navigation.fullscreen", "Fullscreen")}
           </span>
         )}
       </div>
@@ -70,4 +75,4 @@ export const FullscreenToggleButton: React.FC<FullscreenToggleButtonProps> = ({
       </div>
     </Button>
   );
-}; 
+};

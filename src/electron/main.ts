@@ -3,7 +3,12 @@ import path from "node:path";
 import started from "electron-squirrel-startup";
 import { initializePrisma } from "../lib/database/prismaClient";
 import { getAllCategories, ensureCategory } from "../lib/database/categories";
-import { updateProduct, getAllProducts, addProduct, deleteProduct } from "../lib/database/products";
+import {
+  updateProduct,
+  getAllProducts,
+  addProduct,
+  deleteProduct,
+} from "../lib/database/products";
 import {
   getAllClients,
   getAllClientsWithTotalPurchases,

@@ -10,7 +10,7 @@ export const handleTooltipEnter = (e: React.MouseEvent<HTMLButtonElement>) => {
 
     // Set new timeout
     (e.currentTarget as any).tooltipTimeout = setTimeout(() => {
-      tooltip.classList.add('opacity-100', 'scale-100');
+      tooltip.classList.add("opacity-100", "scale-100");
     }, 200);
   }
 };
@@ -25,6 +25,6 @@ export const handleTooltipLeave = (e: React.MouseEvent<HTMLButtonElement>) => {
     }
 
     // Hide tooltip immediately
-    tooltip.classList.remove('opacity-100', 'scale-100');
+    tooltip.classList.remove("opacity-100", "scale-100");
   }
-}; 
+};

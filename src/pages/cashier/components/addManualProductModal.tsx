@@ -1,6 +1,11 @@
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../../lib/components/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "../../../lib/components/dialog";
 import { Button } from "../../../lib/components/button";
 import StyledNumberInput from "../../../lib/components/inputNumber";
 import { X } from "lucide-react";
@@ -27,15 +32,20 @@ export default function AddManualProductModal({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!manualProduct.name.trim() || !manualProduct.type.trim() || !manualProduct.sold) return;
-    
+    if (
+      !manualProduct.name.trim() ||
+      !manualProduct.type.trim() ||
+      !manualProduct.sold
+    )
+      return;
+
     onAdd({
       id: `manual-${Date.now()}`,
       name: manualProduct.name,
       price: manualProduct.sold,
       qty: 1,
     });
-    
+
     // Reset form
     setManualProduct({ name: "", type: "", bought: 0, sold: 0 });
     onClose();
@@ -54,7 +64,10 @@ export default function AddManualProductModal({
             {t("cashier.addManualProduct", "Add Manual Product")}
           </DialogTitle>
           <p className="text-sm text-muted-foreground mt-1">
-            {t("cashier.addManualProductDesc", "Add a product that is not in your inventory")}
+            {t(
+              "cashier.addManualProductDesc",
+              "Add a product that is not in your inventory",
+            )}
           </p>
         </DialogHeader>
         <Button
@@ -77,8 +90,13 @@ export default function AddManualProductModal({
                   type="text"
                   className="w-full px-3 py-2.5 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                   value={manualProduct.name}
-                  onChange={e => setManualProduct(p => ({ ...p, name: e.target.value }))}
-                  placeholder={t("cashier.enterProductName", "Enter product name")}
+                  onChange={(e) =>
+                    setManualProduct((p) => ({ ...p, name: e.target.value }))
+                  }
+                  placeholder={t(
+                    "cashier.enterProductName",
+                    "Enter product name",
+                  )}
                   required
                 />
               </Legend>
@@ -90,7 +108,9 @@ export default function AddManualProductModal({
                   type="text"
                   className="w-full px-3 py-2.5 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                   value={manualProduct.type}
-                  onChange={e => setManualProduct(p => ({ ...p, type: e.target.value }))}
+                  onChange={(e) =>
+                    setManualProduct((p) => ({ ...p, type: e.target.value }))
+                  }
                   placeholder={t("cashier.enterType", "Enter product type")}
                   required
                 />
@@ -112,7 +132,12 @@ export default function AddManualProductModal({
                   <div className="w-full">
                     <StyledNumberInput
                       value={manualProduct.bought}
-                      onChange={val => setManualProduct(p => ({ ...p, bought: val === "" ? 0 : val }))}
+                      onChange={(val) =>
+                        setManualProduct((p) => ({
+                          ...p,
+                          bought: val === "" ? 0 : val,
+                        }))
+                      }
                       min={0}
                       placeholder="0"
                     />
@@ -125,7 +150,12 @@ export default function AddManualProductModal({
                   <div className="w-full">
                     <StyledNumberInput
                       value={manualProduct.sold}
-                      onChange={val => setManualProduct(p => ({ ...p, sold: val === "" ? 0 : val }))}
+                      onChange={(val) =>
+                        setManualProduct((p) => ({
+                          ...p,
+                          sold: val === "" ? 0 : val,
+                        }))
+                      }
                       min={0}
                       placeholder="0"
                     />
@@ -157,6 +187,8 @@ export default function AddManualProductModal({
 
 function Legend({ children }: { children: React.ReactNode }) {
   return (
-    <legend className="space-y-2 text-sm [&>label]:font-medium">{children}</legend>
+    <legend className="space-y-2 text-sm [&>label]:font-medium">
+      {children}
+    </legend>
   );
-} 
+}

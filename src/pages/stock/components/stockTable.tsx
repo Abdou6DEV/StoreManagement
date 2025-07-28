@@ -40,7 +40,10 @@ import { Button } from "../../../lib/components/button";
 import EditStockForm from "./editStockForm";
 import type { ProductWithSales } from "../../../types";
 import { Tooltip } from "../../../lib/components/tooltip";
-import { handleTooltipEnter, handleTooltipLeave } from "../../../lib/utils/tooltipUtils";
+import {
+  handleTooltipEnter,
+  handleTooltipLeave,
+} from "../../../lib/utils/tooltipUtils";
 import {
   Pagination,
   PaginationContent,
@@ -70,8 +73,6 @@ export const StockTable = () => {
   const [categorySearch, setCategorySearch] = useState("");
   const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
 
-
-
   useEffect(() => {
     window.api.database.options
       .get("lowStockThreshold")
@@ -85,7 +86,7 @@ export const StockTable = () => {
   // Helper function to get active filters summary
   const getActiveFiltersSummary = () => {
     const activeFilters = [];
-    
+
     if (filters.lowStock) {
       activeFilters.push(t("stock.lowStock"));
     }
@@ -104,7 +105,7 @@ export const StockTable = () => {
     if (filters.search) {
       activeFilters.push(`${t("stock.search")}: "${filters.search}"`);
     }
-    
+
     return activeFilters;
   };
 
@@ -119,12 +120,14 @@ export const StockTable = () => {
   };
 
   // Helper function to toggle a filter
-  const toggleFilter = (filterKey: 'lowStock' | 'bestSelling' | 'worstSelling' | 'noBarcode') => {
+  const toggleFilter = (
+    filterKey: "lowStock" | "bestSelling" | "worstSelling" | "noBarcode",
+  ) => {
     const newFilters = {
       ...filters,
       [filterKey]: !filters[filterKey],
     };
-    
+
     // Enforce best/worst selling exclusivity
     if (newFilters.bestSelling && newFilters.worstSelling) {
       if (!filters.bestSelling) {
@@ -133,7 +136,7 @@ export const StockTable = () => {
         newFilters.bestSelling = false;
       }
     }
-    
+
     setFilters(newFilters);
     setCurrentPage(1);
   };
@@ -141,7 +144,7 @@ export const StockTable = () => {
   // Helper function to remove a filter by name
   const removeFilter = (filterName: string) => {
     const newFilters = { ...filters };
-    
+
     if (filterName === t("stock.lowStock")) {
       newFilters.lowStock = false;
     } else if (filterName === t("stock.bestSelling")) {
@@ -151,12 +154,10 @@ export const StockTable = () => {
     } else if (filterName === t("stock.noBarcode")) {
       newFilters.noBarcode = false;
     }
-    
+
     setFilters(newFilters);
     setCurrentPage(1);
   };
-
-
 
   const handleDeleteProduct = async (productId: string) => {
     const warning =
@@ -183,8 +184,11 @@ export const StockTable = () => {
       !filters.category || product.categoryName === filters.category;
     const threshold = lowStockThreshold;
     const matchesLowStock = !filters.lowStock || product.quantity <= threshold;
-    const matchesNoBarcode = !filters.noBarcode || !product.codebar || product.codebar.trim() === "";
-    return matchesSearch && matchesCategory && matchesLowStock && matchesNoBarcode;
+    const matchesNoBarcode =
+      !filters.noBarcode || !product.codebar || product.codebar.trim() === "";
+    return (
+      matchesSearch && matchesCategory && matchesLowStock && matchesNoBarcode
+    );
   });
 
   // Sort for bestSelling or worstSelling
@@ -401,141 +405,170 @@ export const StockTable = () => {
             </PopoverContent>
           </Popover>
         </div>
-        
-                 {/* Filters Section */}
-         <Popover>
-           <PopoverTrigger asChild>
-             <div className="relative inline-block">
-               <Button
-                 variant="outline"
-                 className="px-3 py-1.5 min-w-[120px] justify-start"
-                 aria-label={t("stock.filters", "Filters")}
-                 onMouseEnter={handleTooltipEnter}
-                 onMouseLeave={handleTooltipLeave}
-               >
-                 <Filter className="w-4 h-4 mr-2" />
-                 {getActiveFilterCount() > 0 ? (
-                   <div className="flex items-center gap-1 flex-wrap">
-                     {getActiveFiltersSummary().slice(0, 2).map((filter, index) => (
-                       <span
-                         key={index}
-                         className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium bg-primary/10 text-primary border border-primary/20"
-                       >
-                         {filter}
-                         <button
-                           type="button"
-                           onClick={(e) => {
-                             e.stopPropagation();
-                             removeFilter(filter);
-                           }}
-                           className="ml-1 hover:bg-primary/20 rounded-full w-3 h-3 flex items-center justify-center"
-                         >
-                           <X className="w-2 h-2" />
-                         </button>
-                       </span>
-                     ))}
-                     {getActiveFilterCount() > 2 && (
-                       <span className="text-xs text-muted-foreground">
-                         +{getActiveFilterCount() - 2}
-                       </span>
-                     )}
-                   </div>
-                 ) : (
-                   t("stock.filters", "Filters")
-                 )}
-                 <ChevronDown className="ml-auto w-4 h-4" />
-               </Button>
-               {/* Custom tooltip that doesn't interfere with clicks */}
-               <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-full z-[9999] whitespace-nowrap px-2 py-1 rounded bg-black text-white text-xs opacity-0 scale-95 transition-all duration-200">
-                 {t("stock.filtersTooltip", "Filter products by various criteria")}
-               </div>
-             </div>
-           </PopoverTrigger>
-           <PopoverContent className="w-[200px] p-0 z-50">
-             <div className="py-1">
-               <Tooltip 
-                 content={t("stock.lowStockTooltip", "Show products with quantity below threshold")}
-                 position="left"
-                 
-               >
-                 <div
-                   className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-accent"
-                   style={{ width: '100%', minWidth: '198px' }}
-                   onClick={() => toggleFilter("lowStock")}
-                 >
-                   <AlertTriangle className={cn(
-                     "w-4 h-4",
-                     filters.lowStock ? "text-yellow-600" : "text-muted-foreground"
-                   )} />
-                   <span className="flex-1">{t("stock.lowStock")}</span>
-                   {filters.lowStock && (
-                     <Check className="w-4 h-4 text-yellow-600" />
-                   )}
-                 </div>
-               </Tooltip>
-               <Tooltip 
-                 content={t("stock.bestSellingTooltip", "Show products with highest sales")}
-                 position="left"
-                 
-               >
-                 <div
-                   className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-accent"
-                   style={{ width: '100%', minWidth: '198px' }}
-                   onClick={() => toggleFilter("bestSelling")}
-                 >
-                   <TrendingUp className={cn(
-                     "w-4 h-4",
-                     filters.bestSelling ? "text-green-600" : "text-muted-foreground"
-                   )} />
-                   <span className="flex-1">{t("stock.bestSelling")}</span>
-                   {filters.bestSelling && (
-                     <Check className="w-4 h-4 text-green-600" />
-                   )}
-                 </div>
-               </Tooltip>
-               <Tooltip 
-                 content={t("stock.worstSellingTooltip", "Show products with lowest sales")}
-                 position="left"
-                 
-               >
-                 <div
-                   className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-accent"
-                   style={{ width: '100%', minWidth: '198px' }}
-                   onClick={() => toggleFilter("worstSelling")}
-                 >
-                   <TrendingDown className={cn(
-                     "w-4 h-4",
-                     filters.worstSelling ? "text-red-600" : "text-muted-foreground"
-                   )} />
-                   <span className="flex-1">{t("stock.worstSelling")}</span>
-                   {filters.worstSelling && (
-                     <Check className="w-4 h-4 text-red-600" />
-                   )}
-                 </div>
-               </Tooltip>
-               <Tooltip 
-                 content={t("stock.noBarcodeTooltip", "Show products without barcode")}
-                 position="left"
-                 
-               >
-                 <div
-                   className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-accent"
-                   style={{ width: '100%', minWidth: '200px' }}
-                   onClick={() => toggleFilter("noBarcode")}
-                 >
-                   <QrCode className={cn(
-                     "w-4 h-4",
-                     filters.noBarcode ? "text-orange-600" : "text-muted-foreground"
-                   )} />
-                   <span className="flex-1">{t("stock.noBarcode")}</span>
-                   {filters.noBarcode && (
-                     <Check className="w-4 h-4 text-orange-600" />
-                   )}
-                 </div>
-               </Tooltip>
-             </div>
-           </PopoverContent>
-         </Popover>
+
+        {/* Filters Section */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <div className="relative inline-block">
+              <Button
+                variant="outline"
+                className="px-3 py-1.5 min-w-[120px] justify-start"
+                aria-label={t("stock.filters", "Filters")}
+                onMouseEnter={handleTooltipEnter}
+                onMouseLeave={handleTooltipLeave}
+              >
+                <Filter className="w-4 h-4 mr-2" />
+                {getActiveFilterCount() > 0 ? (
+                  <div className="flex items-center gap-1 flex-wrap">
+                    {getActiveFiltersSummary()
+                      .slice(0, 2)
+                      .map((filter, index) => (
+                        <span
+                          key={index}
+                          className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium bg-primary/10 text-primary border border-primary/20"
+                        >
+                          {filter}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              removeFilter(filter);
+                            }}
+                            className="ml-1 hover:bg-primary/20 rounded-full w-3 h-3 flex items-center justify-center"
+                          >
+                            <X className="w-2 h-2" />
+                          </button>
+                        </span>
+                      ))}
+                    {getActiveFilterCount() > 2 && (
+                      <span className="text-xs text-muted-foreground">
+                        +{getActiveFilterCount() - 2}
+                      </span>
+                    )}
+                  </div>
+                ) : (
+                  t("stock.filters", "Filters")
+                )}
+                <ChevronDown className="ml-auto w-4 h-4" />
+              </Button>
+              {/* Custom tooltip that doesn't interfere with clicks */}
+              <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-full z-[9999] whitespace-nowrap px-2 py-1 rounded bg-black text-white text-xs opacity-0 scale-95 transition-all duration-200">
+                {t(
+                  "stock.filtersTooltip",
+                  "Filter products by various criteria",
+                )}
+              </div>
+            </div>
+          </PopoverTrigger>
+          <PopoverContent className="w-[200px] p-0 z-50">
+            <div className="py-1">
+              <Tooltip
+                content={t(
+                  "stock.lowStockTooltip",
+                  "Show products with quantity below threshold",
+                )}
+                position="left"
+              >
+                <div
+                  className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-accent"
+                  style={{ width: "100%", minWidth: "198px" }}
+                  onClick={() => toggleFilter("lowStock")}
+                >
+                  <AlertTriangle
+                    className={cn(
+                      "w-4 h-4",
+                      filters.lowStock
+                        ? "text-yellow-600"
+                        : "text-muted-foreground",
+                    )}
+                  />
+                  <span className="flex-1">{t("stock.lowStock")}</span>
+                  {filters.lowStock && (
+                    <Check className="w-4 h-4 text-yellow-600" />
+                  )}
+                </div>
+              </Tooltip>
+              <Tooltip
+                content={t(
+                  "stock.bestSellingTooltip",
+                  "Show products with highest sales",
+                )}
+                position="left"
+              >
+                <div
+                  className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-accent"
+                  style={{ width: "100%", minWidth: "198px" }}
+                  onClick={() => toggleFilter("bestSelling")}
+                >
+                  <TrendingUp
+                    className={cn(
+                      "w-4 h-4",
+                      filters.bestSelling
+                        ? "text-green-600"
+                        : "text-muted-foreground",
+                    )}
+                  />
+                  <span className="flex-1">{t("stock.bestSelling")}</span>
+                  {filters.bestSelling && (
+                    <Check className="w-4 h-4 text-green-600" />
+                  )}
+                </div>
+              </Tooltip>
+              <Tooltip
+                content={t(
+                  "stock.worstSellingTooltip",
+                  "Show products with lowest sales",
+                )}
+                position="left"
+              >
+                <div
+                  className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-accent"
+                  style={{ width: "100%", minWidth: "198px" }}
+                  onClick={() => toggleFilter("worstSelling")}
+                >
+                  <TrendingDown
+                    className={cn(
+                      "w-4 h-4",
+                      filters.worstSelling
+                        ? "text-red-600"
+                        : "text-muted-foreground",
+                    )}
+                  />
+                  <span className="flex-1">{t("stock.worstSelling")}</span>
+                  {filters.worstSelling && (
+                    <Check className="w-4 h-4 text-red-600" />
+                  )}
+                </div>
+              </Tooltip>
+              <Tooltip
+                content={t(
+                  "stock.noBarcodeTooltip",
+                  "Show products without barcode",
+                )}
+                position="left"
+              >
+                <div
+                  className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-accent"
+                  style={{ width: "100%", minWidth: "200px" }}
+                  onClick={() => toggleFilter("noBarcode")}
+                >
+                  <QrCode
+                    className={cn(
+                      "w-4 h-4",
+                      filters.noBarcode
+                        ? "text-orange-600"
+                        : "text-muted-foreground",
+                    )}
+                  />
+                  <span className="flex-1">{t("stock.noBarcode")}</span>
+                  {filters.noBarcode && (
+                    <Check className="w-4 h-4 text-orange-600" />
+                  )}
+                </div>
+              </Tooltip>
+            </div>
+          </PopoverContent>
+        </Popover>
       </div>
 
       {/* Table or Empty State */}

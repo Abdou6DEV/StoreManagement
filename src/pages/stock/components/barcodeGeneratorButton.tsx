@@ -71,4 +71,4 @@ export const BarcodeGeneratorButton: React.FC<BarcodeGeneratorButtonProps> = ({
       </Button>
     </Tooltip>
   );
-}; 
+};

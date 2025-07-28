@@ -165,8 +165,10 @@ export default function CashierSession({
       if (clientName.trim() && !clientId) {
         // First try to find an existing client with this name
         const allClients = await window.api.database.clients.getAll();
-        const existingClient = allClients.find(c => c.name === clientName.trim());
-        
+        const existingClient = allClients.find(
+          (c) => c.name === clientName.trim(),
+        );
+
         if (existingClient) {
           saleClientId = existingClient.id;
           setClientId(existingClient.id);
@@ -227,8 +229,10 @@ export default function CashierSession({
       if (clientName.trim() && !clientId) {
         // First try to find an existing client with this name
         const allClients = await window.api.database.clients.getAll();
-        const existingClient = allClients.find(c => c.name === clientName.trim());
-        
+        const existingClient = allClients.find(
+          (c) => c.name === clientName.trim(),
+        );
+
         if (existingClient) {
           saleClientId = existingClient.id;
           setClientId(existingClient.id);
@@ -241,7 +245,7 @@ export default function CashierSession({
           setClientId(client.id);
         }
       }
-      
+
       const sale = await window.api.database.sales.create({
         clientId: saleClientId || undefined,
         items: cart.map((item) => ({
@@ -297,21 +301,30 @@ export default function CashierSession({
               onAdd={handleAddProduct as any}
               refreshKey={productRefreshKey}
             />
-            <Tooltip content={t("cashier.tooltipBrowseProducts", "Browse Products")} position="top"> 
-            <button
-              onClick={onShowProductBrowser}
-              className="flex h-8 w-8 p-1 text-sm font-semibold border-1 border-border items-center justify-center rounded-md bg-muted/40 hover:bg-muted hover:text-primary transition"
+            <Tooltip
+              content={t("cashier.tooltipBrowseProducts", "Browse Products")}
+              position="top"
             >
-              <ShoppingCart className="w-5 h-5" />
-            </button>
+              <button
+                onClick={onShowProductBrowser}
+                className="flex h-8 w-8 p-1 text-sm font-semibold border-1 border-border items-center justify-center rounded-md bg-muted/40 hover:bg-muted hover:text-primary transition"
+              >
+                <ShoppingCart className="w-5 h-5" />
+              </button>
             </Tooltip>
-            <Tooltip content={t("cashier.tooltipAddManualProduct", "Add Products Manually")} position="top"> 
-            <button
-              onClick={onShowManualProductModal}
-              className="flex h-8 w-8 p-1 text-sm font-semibold border-1 border-border items-center justify-center rounded-md bg-muted/40 hover:bg-muted hover:text-primary transition"
+            <Tooltip
+              content={t(
+                "cashier.tooltipAddManualProduct",
+                "Add Products Manually",
+              )}
+              position="top"
             >
-              <PlusCircle className="w-4 h-4" />
-            </button>
+              <button
+                onClick={onShowManualProductModal}
+                className="flex h-8 w-8 p-1 text-sm font-semibold border-1 border-border items-center justify-center rounded-md bg-muted/40 hover:bg-muted hover:text-primary transition"
+              >
+                <PlusCircle className="w-4 h-4" />
+              </button>
             </Tooltip>
           </div>
 

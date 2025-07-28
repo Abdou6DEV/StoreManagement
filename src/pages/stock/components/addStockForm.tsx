@@ -22,8 +22,14 @@ import {
 import { Skeleton } from "../../../lib/components/skeleton";
 import { BarcodeGeneratorButton } from "./barcodeGeneratorButton";
 import { BarcodePrintModal } from "./barcodePrintModal";
-import { generateUniqueBarcode, printBarcodeLabel } from "../../../lib/utils/barcodeUtils";
-import { handleTooltipEnter, handleTooltipLeave } from "../../../lib/utils/tooltipUtils";
+import {
+  generateUniqueBarcode,
+  printBarcodeLabel,
+} from "../../../lib/utils/barcodeUtils";
+import {
+  handleTooltipEnter,
+  handleTooltipLeave,
+} from "../../../lib/utils/tooltipUtils";
 import type { AddStockFormState } from "../../../types";
 
 const initialForm: AddStockFormState = {
@@ -153,9 +159,9 @@ export default function AddStockForm({
   const handleGenerateBarcode = async () => {
     setGeneratingBarcode(true);
     try {
-      const existingBarcodes = products.map(p => p.codebar);
+      const existingBarcodes = products.map((p) => p.codebar);
       const newBarcode = await generateUniqueBarcode(existingBarcodes);
-      setForm(prev => ({ ...prev, codebar: newBarcode }));
+      setForm((prev) => ({ ...prev, codebar: newBarcode }));
     } catch (error) {
       console.error("Error generating barcode:", error);
     } finally {
@@ -167,8 +173,6 @@ export default function AddStockForm({
   const handlePrintBarcode = () => {
     printBarcodeLabel(form.name, form.selling, form.codebar);
   };
-
-
 
   // Helper to check if form matches an existing product (by name only)
   const isExistingProduct = products.some(
@@ -220,20 +224,23 @@ export default function AddStockForm({
                         type="button"
                         variant="outline"
                         className="px-3 py-2"
-                                                 onClick={() => {
-                           setFilteredProducts(products as any);
-                           setDropdownProductSearch("");
-                           setShowProductDropdown(true);
-                         }}
-                         onMouseEnter={handleTooltipEnter}
-                         onMouseLeave={handleTooltipLeave}
+                        onClick={() => {
+                          setFilteredProducts(products as any);
+                          setDropdownProductSearch("");
+                          setShowProductDropdown(true);
+                        }}
+                        onMouseEnter={handleTooltipEnter}
+                        onMouseLeave={handleTooltipLeave}
                       >
                         {t("stock.chooseProduct", "Choose")}
                         <ChevronDown className="ml-2 w-4 h-4" />
                       </Button>
                       {/* Custom tooltip that doesn't interfere with Popover */}
                       <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-full mb-2 z-[9999] whitespace-nowrap px-2 py-1 rounded bg-black text-white text-xs opacity-0 scale-90 transition-all duration-150 ease-out">
-                        {t("stock.chooseProductTooltip", "Choose from existing products")}
+                        {t(
+                          "stock.chooseProductTooltip",
+                          "Choose from existing products",
+                        )}
                       </div>
                     </div>
                   </PopoverTrigger>
@@ -313,7 +320,11 @@ export default function AddStockForm({
               </div>
             </Legend>
             <Legend>
-              <label className={isExistingProduct ? "text-muted-foreground" : ""}>{t("stock.type")}</label>
+              <label
+                className={isExistingProduct ? "text-muted-foreground" : ""}
+              >
+                {t("stock.type")}
+              </label>
               <div className="flex items-center gap-2">
                 <input
                   type="text"
@@ -341,22 +352,25 @@ export default function AddStockForm({
                         variant="outline"
                         className="px-3 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
                         disabled={isExistingProduct}
-                                                 onClick={() => {
-                           if (!isExistingProduct) {
-                             setFilteredCategories(categories);
-                             setDropdownCategorySearch("");
-                             setShowCategoryDropdown(true);
-                           }
-                         }}
-                         onMouseEnter={handleTooltipEnter}
-                         onMouseLeave={handleTooltipLeave}
+                        onClick={() => {
+                          if (!isExistingProduct) {
+                            setFilteredCategories(categories);
+                            setDropdownCategorySearch("");
+                            setShowCategoryDropdown(true);
+                          }
+                        }}
+                        onMouseEnter={handleTooltipEnter}
+                        onMouseLeave={handleTooltipLeave}
                       >
                         {t("stock.chooseType", "Choose")}
                         <ChevronDown className="ml-2 w-4 h-4" />
                       </Button>
                       {/* Custom tooltip that doesn't interfere with Popover */}
                       <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-full mb-2 z-[9999] whitespace-nowrap px-2 py-1 rounded bg-black text-white text-xs opacity-0 scale-90 transition-all duration-150 ease-out">
-                        {t("stock.chooseTypeTooltip", "Choose from existing categories")}
+                        {t(
+                          "stock.chooseTypeTooltip",
+                          "Choose from existing categories",
+                        )}
                       </div>
                     </div>
                   </PopoverTrigger>
@@ -416,7 +430,11 @@ export default function AddStockForm({
               />
             </Legend>
             <Legend>
-              <label className={isExistingProduct ? "text-muted-foreground" : ""}>{t("stock.bought")}</label>
+              <label
+                className={isExistingProduct ? "text-muted-foreground" : ""}
+              >
+                {t("stock.bought")}
+              </label>
               <StyledNumberInput
                 value={form.bought === "" ? "" : Number(form.bought)}
                 onChange={(val) => handleFormChange("bought", val)}
@@ -425,7 +443,11 @@ export default function AddStockForm({
               />
             </Legend>
             <Legend>
-              <label className={isExistingProduct ? "text-muted-foreground" : ""}>{t("stock.selling")}</label>
+              <label
+                className={isExistingProduct ? "text-muted-foreground" : ""}
+              >
+                {t("stock.selling")}
+              </label>
               <StyledNumberInput
                 value={form.selling === "" ? "" : Number(form.selling)}
                 onChange={(val) => handleFormChange("selling", val)}
@@ -434,7 +456,11 @@ export default function AddStockForm({
               />
             </Legend>
             <Legend>
-              <label className={isExistingProduct ? "text-muted-foreground" : ""}>{t("stock.codebar")}</label>
+              <label
+                className={isExistingProduct ? "text-muted-foreground" : ""}
+              >
+                {t("stock.codebar")}
+              </label>
               <div className="flex items-center gap-2">
                 <input
                   type="text"
@@ -464,7 +490,9 @@ export default function AddStockForm({
                     form.name.toLowerCase().trim(),
                 );
                 return existing
-                  ? t("stock.existingProductNote", { quantity: existing.quantity })
+                  ? t("stock.existingProductNote", {
+                      quantity: existing.quantity,
+                    })
                   : null;
               })()}
             </div>

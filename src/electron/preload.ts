@@ -94,7 +94,7 @@ contextBridge.exposeInMainWorld("api", {
         }),
     },
   },
-    app: {
+  app: {
     getVersion: () => ipcRenderer.invoke("app:getVersion"),
   },
 });
