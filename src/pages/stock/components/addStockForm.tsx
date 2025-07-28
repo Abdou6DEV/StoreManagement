@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useStock } from "../../../lib/contexts/stockContext";
 import { Product } from "@prisma/client";
 import StyledNumberInput from "../../../lib/components/inputNumber";
 import { Button } from "../../../lib/components/button";
-import { Loader2, Package, Check, ChevronDown, ChevronUp, QrCode } from "lucide-react";
+import { Loader2, Package, Check, ChevronDown, ChevronUp } from "lucide-react";
 import { cn } from "../../../lib/utils";
 import {
   Command,
@@ -19,12 +19,11 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "../../../lib/components/popover";
-import { Tooltip } from "../../../lib/components/tooltip";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../../lib/components/dialog";
 import { Skeleton } from "../../../lib/components/skeleton";
 import { BarcodeGeneratorButton } from "./barcodeGeneratorButton";
 import { BarcodePrintModal } from "./barcodePrintModal";
 import { generateUniqueBarcode, printBarcodeLabel } from "../../../lib/utils/barcodeUtils";
+import { handleTooltipEnter, handleTooltipLeave } from "../../../lib/utils/tooltipUtils";
 import type { AddStockFormState } from "../../../types";
 
 const initialForm: AddStockFormState = {
@@ -221,36 +220,13 @@ export default function AddStockForm({
                         type="button"
                         variant="outline"
                         className="px-3 py-2"
-                        onClick={() => {
-                          setFilteredProducts(products as any);
-                          setDropdownProductSearch("");
-                          setShowProductDropdown(true);
-                        }}
-                        onMouseEnter={(e) => {
-                          const tooltip = e.currentTarget.nextElementSibling as HTMLElement;
-                          if (tooltip) {
-                            // Clear any existing timeout
-                            if ((e.currentTarget as any).tooltipTimeout) {
-                              clearTimeout((e.currentTarget as any).tooltipTimeout);
-                            }
-                            // Set new timeout
-                            (e.currentTarget as any).tooltipTimeout = setTimeout(() => {
-                              tooltip.classList.add('opacity-100', 'scale-100');
-                            }, 150);
-                          }
-                        }}
-                        onMouseLeave={(e) => {
-                          const tooltip = e.currentTarget.nextElementSibling as HTMLElement;
-                          if (tooltip) {
-                            // Clear timeout immediately
-                            if ((e.currentTarget as any).tooltipTimeout) {
-                              clearTimeout((e.currentTarget as any).tooltipTimeout);
-                              (e.currentTarget as any).tooltipTimeout = null;
-                            }
-                            // Hide tooltip immediately
-                            tooltip.classList.remove('opacity-100', 'scale-100');
-                          }
-                        }}
+                                                 onClick={() => {
+                           setFilteredProducts(products as any);
+                           setDropdownProductSearch("");
+                           setShowProductDropdown(true);
+                         }}
+                         onMouseEnter={handleTooltipEnter}
+                         onMouseLeave={handleTooltipLeave}
                       >
                         {t("stock.chooseProduct", "Choose")}
                         <ChevronDown className="ml-2 w-4 h-4" />
@@ -352,7 +328,11 @@ export default function AddStockForm({
                 />
                 <Popover
                   open={showCategoryDropdown}
-                  onOpenChange={setShowCategoryDropdown}
+                  onOpenChange={(open) => {
+                    if (!isExistingProduct || !open) {
+                      setShowCategoryDropdown(open);
+                    }
+                  }}
                 >
                   <PopoverTrigger asChild>
                     <div className="relative inline-block">
@@ -360,36 +340,16 @@ export default function AddStockForm({
                         type="button"
                         variant="outline"
                         className="px-3 py-2"
-                        onClick={() => {
-                          setFilteredCategories(categories);
-                          setDropdownCategorySearch("");
-                          setShowCategoryDropdown(true);
-                        }}
-                        onMouseEnter={(e) => {
-                          const tooltip = e.currentTarget.nextElementSibling as HTMLElement;
-                          if (tooltip) {
-                            // Clear any existing timeout
-                            if ((e.currentTarget as any).tooltipTimeout) {
-                              clearTimeout((e.currentTarget as any).tooltipTimeout);
-                            }
-                            // Set new timeout
-                            (e.currentTarget as any).tooltipTimeout = setTimeout(() => {
-                              tooltip.classList.add('opacity-100', 'scale-100');
-                            }, 150);
-                          }
-                        }}
-                        onMouseLeave={(e) => {
-                          const tooltip = e.currentTarget.nextElementSibling as HTMLElement;
-                          if (tooltip) {
-                            // Clear timeout immediately
-                            if ((e.currentTarget as any).tooltipTimeout) {
-                              clearTimeout((e.currentTarget as any).tooltipTimeout);
-                              (e.currentTarget as any).tooltipTimeout = null;
-                            }
-                            // Hide tooltip immediately
-                            tooltip.classList.remove('opacity-100', 'scale-100');
-                          }
-                        }}
+                        disabled={isExistingProduct}
+                                                 onClick={() => {
+                           if (!isExistingProduct) {
+                             setFilteredCategories(categories);
+                             setDropdownCategorySearch("");
+                             setShowCategoryDropdown(true);
+                           }
+                         }}
+                         onMouseEnter={handleTooltipEnter}
+                         onMouseLeave={handleTooltipLeave}
                       >
                         {t("stock.chooseType", "Choose")}
                         <ChevronDown className="ml-2 w-4 h-4" />

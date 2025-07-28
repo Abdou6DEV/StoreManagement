@@ -12,7 +12,6 @@ import {
   Package,
   QrCode,
   Filter,
-  ChevronRight,
 } from "lucide-react";
 
 import React, { useState, useEffect } from "react";
@@ -41,6 +40,7 @@ import { Button } from "../../../lib/components/button";
 import EditStockForm from "./editStockForm";
 import type { ProductWithSales } from "../../../types";
 import { Tooltip } from "../../../lib/components/tooltip";
+import { handleTooltipEnter, handleTooltipLeave } from "../../../lib/utils/tooltipUtils";
 import {
   Pagination,
   PaginationContent,
@@ -61,16 +61,16 @@ export const StockTable = () => {
     worstSelling: false,
     noBarcode: false,
     search: "",
-    category: "", // <-- add category filter
+    category: "",
   });
   const [lowStockThreshold, setLowStockThreshold] = useState<number>(0); // Now a number, from DB
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [editingProductID, setEditingProductID] = useState<string | null>(null);
-
-  // Add state for category search input and dropdown open
   const [categorySearch, setCategorySearch] = useState("");
   const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
+
+
 
   useEffect(() => {
     window.api.database.options
@@ -410,31 +410,8 @@ export const StockTable = () => {
                  variant="outline"
                  className="px-3 py-1.5 min-w-[120px] justify-start"
                  aria-label={t("stock.filters", "Filters")}
-                 onMouseEnter={(e) => {
-                   const tooltip = e.currentTarget.nextElementSibling as HTMLElement;
-                   if (tooltip) {
-                     // Clear any existing timeout
-                     if ((e.currentTarget as any).tooltipTimeout) {
-                       clearTimeout((e.currentTarget as any).tooltipTimeout);
-                     }
-                     // Set new timeout
-                     (e.currentTarget as any).tooltipTimeout = setTimeout(() => {
-                       tooltip.classList.add('opacity-100', 'scale-100');
-                     }, 200);
-                   }
-                 }}
-                 onMouseLeave={(e) => {
-                   const tooltip = e.currentTarget.nextElementSibling as HTMLElement;
-                   if (tooltip) {
-                     // Clear timeout immediately
-                     if ((e.currentTarget as any).tooltipTimeout) {
-                       clearTimeout((e.currentTarget as any).tooltipTimeout);
-                       (e.currentTarget as any).tooltipTimeout = null;
-                     }
-                     // Hide tooltip immediately
-                     tooltip.classList.remove('opacity-100', 'scale-100');
-                   }
-                 }}
+                 onMouseEnter={handleTooltipEnter}
+                 onMouseLeave={handleTooltipLeave}
                >
                  <Filter className="w-4 h-4 mr-2" />
                  {getActiveFilterCount() > 0 ? (
