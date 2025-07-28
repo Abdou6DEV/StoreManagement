@@ -224,7 +224,8 @@
     "chooseProductTooltip": "Choose from existing products",
     "chooseTypeTooltip": "Choose from existing categories",
     "viewByProductTooltip": "View stock organized by individual products",
-    "viewByCategoryTooltip": "View stock organized by product categories"
+    "viewByCategoryTooltip": "View stock organized by product categories",
+    "existingProductNote": "This product is in stock - Current quantity: {{quantity}}"
   },
   "clients": {
     "itemsPerPage": "Items per page:",

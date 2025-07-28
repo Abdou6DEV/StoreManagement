@@ -166,7 +166,8 @@
     "chooseProductTooltip": "Choisir parmi les produits existants",
     "chooseTypeTooltip": "Choisir parmi les catégories existantes",
     "viewByProductTooltip": "Voir le stock organisé par produits individuels",
-    "viewByCategoryTooltip": "Voir le stock organisé par catégories de produits"
+    "viewByCategoryTooltip": "Voir le stock organisé par catégories de produits",
+    "existingProductNote": "Ce produit est en stock - Quantité actuelle : {{quantity}}"
   },
   "cashier": {
     "total": "Total",

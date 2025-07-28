@@ -33,7 +33,7 @@ export default function StyledNumberInput({
             e.target.select(); // 👈 select the "0" so typing replaces it
           }
         }}
-        className="w-full px-4 py-3 pr-10 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-primary/50 transition-all"
+        className="w-full px-4 py-3 pr-10 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-primary/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-muted/50"
         placeholder={placeholder}
         min={min}
         max={max}

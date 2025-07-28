@@ -225,7 +225,8 @@
     "chooseProductTooltip": "اختر من المنتجات الموجودة",
     "chooseTypeTooltip": "اختر من الفئات الموجودة",
     "viewByProductTooltip": "عرض المخزون منظم حسب المنتجات الفردية",
-    "viewByCategoryTooltip": "عرض المخزون منظم حسب فئات المنتجات"
+    "viewByCategoryTooltip": "عرض المخزون منظم حسب فئات المنتجات",
+    "existingProductNote": "هذا المنتج متوفر في المخزون - الكمية الحالية: {{quantity}}"
   },
   "clients": {
     "itemsPerPage": "العناصر لكل صفحة:",

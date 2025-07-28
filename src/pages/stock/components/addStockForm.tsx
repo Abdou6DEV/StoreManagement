@@ -313,7 +313,7 @@ export default function AddStockForm({
               </div>
             </Legend>
             <Legend>
-              <label>{t("stock.type")}</label>
+              <label className={isExistingProduct ? "text-muted-foreground" : ""}>{t("stock.type")}</label>
               <div className="flex items-center gap-2">
                 <input
                   type="text"
@@ -322,7 +322,7 @@ export default function AddStockForm({
                   onChange={(e) =>
                     handleFormChange("categoryName", e.target.value)
                   }
-                  className="flex-1 px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-green-500/50 focus:border-green-500 transition-all"
+                  className="flex-1 px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-green-500/50 focus:border-green-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-muted/50"
                   required
                   disabled={isExistingProduct}
                 />
@@ -339,7 +339,7 @@ export default function AddStockForm({
                       <Button
                         type="button"
                         variant="outline"
-                        className="px-3 py-2"
+                        className="px-3 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
                         disabled={isExistingProduct}
                                                  onClick={() => {
                            if (!isExistingProduct) {
@@ -416,7 +416,7 @@ export default function AddStockForm({
               />
             </Legend>
             <Legend>
-              <label>{t("stock.bought")}</label>
+              <label className={isExistingProduct ? "text-muted-foreground" : ""}>{t("stock.bought")}</label>
               <StyledNumberInput
                 value={form.bought === "" ? "" : Number(form.bought)}
                 onChange={(val) => handleFormChange("bought", val)}
@@ -425,7 +425,7 @@ export default function AddStockForm({
               />
             </Legend>
             <Legend>
-              <label>{t("stock.selling")}</label>
+              <label className={isExistingProduct ? "text-muted-foreground" : ""}>{t("stock.selling")}</label>
               <StyledNumberInput
                 value={form.selling === "" ? "" : Number(form.selling)}
                 onChange={(val) => handleFormChange("selling", val)}
@@ -434,14 +434,14 @@ export default function AddStockForm({
               />
             </Legend>
             <Legend>
-              <label>{t("stock.codebar")}</label>
+              <label className={isExistingProduct ? "text-muted-foreground" : ""}>{t("stock.codebar")}</label>
               <div className="flex items-center gap-2">
                 <input
                   type="text"
                   placeholder={t("stock.codebar")}
                   value={form.codebar}
                   onChange={(e) => handleFormChange("codebar", e.target.value)}
-                  className="flex-1 px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-green-500/50 focus:border-green-500 transition-all"
+                  className="flex-1 px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-green-500/50 focus:border-green-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-muted/50"
                   disabled={isExistingProduct}
                 />
                 <BarcodeGeneratorButton
@@ -456,7 +456,7 @@ export default function AddStockForm({
 
           {/* Note for existing product */}
           {isExistingProduct && (
-            <div className="text-sm text-blue-600 dark:text-blue-400">
+            <div className="text-sm text-green-600 dark:text-green-400 font-medium">
               {(() => {
                 const existing = products.find(
                   (p) =>
@@ -464,7 +464,7 @@ export default function AddStockForm({
                     form.name.toLowerCase().trim(),
                 );
                 return existing
-                  ? `This product is in stock | Current quantity: ${existing.quantity}`
+                  ? t("stock.existingProductNote", { quantity: existing.quantity })
                   : null;
               })()}
             </div>
