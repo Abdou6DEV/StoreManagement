@@ -257,7 +257,7 @@ export default function ActionButtons({
       <div className="flex flex-row gap-2 w-full">
         <button
           onClick={onFinish}
-          className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg border border-blue-500 bg-primary text-primary-foreground font-bold text-base tracking-wide shadow-md hover:bg-primary/90 transition focus:outline-none focus:ring-2 focus:ring-primary/50 min-w-0 w-full"
+          className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg bg-primary text-primary-foreground font-bold text-base tracking-wide shadow-md hover:bg-primary/90 transition focus:outline-none focus:ring-2 focus:ring-primary/50 min-w-0 w-full"
         >
           <CheckCircle className="w-6 h-6" />
           <span className="hidden sm:inline whitespace-nowrap">
@@ -272,7 +272,7 @@ export default function ActionButtons({
             });
             onConfirmWithReceipt?.();
           }}
-          className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg border border-blue-500 bg-primary text-primary-foreground font-bold text-base tracking-wide shadow-md hover:bg-primary/90 transition focus:outline-none focus:ring-2 focus:ring-primary/50 min-w-0 w-full"
+          className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg bg-primary text-primary-foreground font-bold text-base tracking-wide shadow-md hover:bg-primary/90 transition focus:outline-none focus:ring-2 focus:ring-primary/50 min-w-0 w-full"
         >
           <Printer className="w-6 h-6" />
           <span className="hidden sm:inline whitespace-nowrap">
@@ -284,7 +284,7 @@ export default function ActionButtons({
             setDraftDiscount("");
             onClear();
           }}
-          className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg border border-blue-500 bg-destructive text-white font-semibold text-base tracking-wide shadow-md hover:bg-destructive/80 transition focus:outline-none focus:ring-2 focus:ring-destructive/50 min-w-0 w-full"
+          className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg bg-destructive text-white font-semibold text-base tracking-wide shadow-md hover:bg-destructive/80 transition focus:outline-none focus:ring-2 focus:ring-destructive/50 min-w-0 w-full"
         >
           <Trash2 className="w-6 h-6" />
           <span className="hidden sm:inline whitespace-nowrap">
@@ -293,7 +293,7 @@ export default function ActionButtons({
         </button>
         <button
           onClick={() => setShowCalculatorModal(true)}
-          className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg border border-blue-500 bg-blue-500 text-white text-base font-medium shadow-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 transition duration-150 disabled:bg-blue-300 disabled:text-white/70 disabled:cursor-not-allowed max-w-10 w-full"
+          className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg bg-blue-500 text-white text-base font-medium shadow-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 transition duration-150 disabled:bg-blue-300 disabled:text-white/70 disabled:cursor-not-allowed max-w-10 w-full"
           title={t("cashier.calculator", "Calculator")}
         >
           <Calculator className="w-5 h-5" />
