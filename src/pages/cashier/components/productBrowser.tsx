@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef } from "react";
+import React, { useState, useMemo, useEffect, useRef, forwardRef, useImperativeHandle } from "react";
 import type { Product } from "@prisma/client";
 import { useTranslation } from "react-i18next";
 import { Skeleton } from "../../../lib/components/skeleton";
@@ -14,13 +14,13 @@ interface ProductBrowserProps {
   setCart: React.Dispatch<React.SetStateAction<CartItem[]>>;
 }
 
-const ProductBrowser: React.FC<ProductBrowserProps> = ({
+const ProductBrowser = forwardRef<{ handleClose: () => void }, ProductBrowserProps>(({
   allProducts,
   open,
   onClose,
   cart,
   setCart,
-}) => {
+}, ref) => {
   const { t } = useTranslation();
   const [productFilter, setProductFilter] = useState("");
   const [visibleCount, setVisibleCount] = useState(20);
@@ -30,6 +30,7 @@ const ProductBrowser: React.FC<ProductBrowserProps> = ({
   const { categories } = useStock();
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [initialCartIds, setInitialCartIds] = useState<string[]>([]);
+  const [isClosing, setIsClosing] = useState(false);
 
   // Long-press timer refs and state
 
@@ -79,12 +80,26 @@ const ProductBrowser: React.FC<ProductBrowserProps> = ({
   useEffect(() => {
     if (open) {
       setInitialCartIds(cart.map((item) => item.id));
+      setIsClosing(false);
     }
   }, [open]);
 
+  const handleClose = () => {
+    setIsClosing(true);
+    setTimeout(() => {
+      onClose();
+      setIsClosing(false);
+    }, 300); // Match the duration of the animation
+  };
+
+  // Expose handleClose method to parent component
+  useImperativeHandle(ref, () => ({
+    handleClose,
+  }), [handleClose]);
+
   const handleCancel = () => {
     setCart((prev) => prev.filter((item) => initialCartIds.includes(item.id)));
-    onClose();
+    handleClose();
   };
 
   const filteredProducts = useMemo(() => {
@@ -136,15 +151,15 @@ const ProductBrowser: React.FC<ProductBrowserProps> = ({
   useEffect(() => {
     if (!open) return;
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") handleClose();
     };
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [open, onClose]);
+  }, [open, handleClose]);
 
   const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (modalRef.current && e.target === modalRef.current) {
-      onClose();
+      handleClose();
     }
   };
 
@@ -156,11 +171,17 @@ const ProductBrowser: React.FC<ProductBrowserProps> = ({
 
   return (
     <div
-      className={`fixed inset-0 z-50 w-full flex items-center justify-center bg-black/50 ${!open ? "hidden" : ""}`}
+      className={`fixed inset-0 z-50 w-full flex items-center justify-center bg-black/50 transition-opacity duration-300 ${
+        !open ? "hidden" : ""
+      } ${isClosing ? "opacity-0" : "opacity-100"}`}
       ref={modalRef}
       onMouseDown={handleBackdropClick}
     >
-      <div className="w-full max-w-7xl bg-white dark:bg-zinc-900 border border-border rounded-2xl shadow-2xl p-6 flex flex-col animate-in fade-in zoom-in-90 duration-300 max-h-[95vh] overflow-hidden">
+      <div className={`w-full max-w-7xl bg-white dark:bg-zinc-900 border border-border rounded-2xl shadow-2xl p-6 flex flex-col max-h-[95vh] overflow-hidden transition-all duration-300 ${
+        isClosing 
+          ? "animate-out fade-out zoom-out-90" 
+          : "animate-in fade-in zoom-in-90"
+      }`}>
         <div className="flex items-center gap-4 mb-3">
           <input
             ref={filterInputRef}
@@ -382,7 +403,7 @@ const ProductBrowser: React.FC<ProductBrowserProps> = ({
         </div>
         <div className="flex justify-center gap-2 mt-2">
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="py-2 px-4 rounded-md font-medium bg-primary text-primary-foreground hover:bg-primary/90 border border-border"
           >
             {t("cashier.confirm", "Confirm")}
@@ -397,6 +418,6 @@ const ProductBrowser: React.FC<ProductBrowserProps> = ({
       </div>
     </div>
   );
-};
+});
 
 export default ProductBrowser;

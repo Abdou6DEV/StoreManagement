@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { Product } from "@prisma/client";
 import type { CartItem } from "../../types";
 import { useTranslation } from "react-i18next";
@@ -18,6 +18,7 @@ export default function CashierPage() {
   const [activeSession, setActiveSession] = useState(0);
   const [showProductBrowser, setShowProductBrowser] = useState(false);
   const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const productBrowserRef = useRef<{ handleClose: () => void }>(null);
   const [outOfStockItems, setOutOfStockItems] = useState<CartItem[]>([]);
   const [showStockWarning, setShowStockWarning] = useState(false);
   const [showManualProductModal, setShowManualProductModal] = useState(false);
@@ -144,7 +145,11 @@ export default function CashierPage() {
         setActiveSession((prev) => (prev + 1) % MAX_SESSIONS);
       } else if (e.key === "F1") {
         e.preventDefault(); // Prevent browser help
-        setShowProductBrowser((prev) => !prev);
+        if (showProductBrowser) {
+          productBrowserRef.current?.handleClose();
+        } else {
+          setShowProductBrowser(true);
+        }
       } else if (e.key === "F2") {
         e.preventDefault(); // Prevent browser help
         setShowManualProductModal((prev) => !prev);
@@ -152,7 +157,7 @@ export default function CashierPage() {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, []);
+  }, [showProductBrowser]);
 
   return (
     <main className="h-screen w-full -mt-13 flex flex-col bg-background text-foreground overflow-hidden">
@@ -272,6 +277,7 @@ export default function CashierPage() {
 
       {/* Product Browser as a modal */}
       <ProductBrowser
+        ref={productBrowserRef}
         allProducts={allProducts as any}
         open={showProductBrowser}
         onClose={() => setShowProductBrowser(false)}
