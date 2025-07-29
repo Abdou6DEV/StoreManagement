@@ -159,15 +159,20 @@ export default function CashierPage() {
       {/* === Enhanced Total Header === */}
       <header className="z-20 bg-gradient-to-r from-background via-background/95 to-background/90 backdrop-blur-md flex-shrink-0">
         <div className="max-w-6xl mx-auto px-4 pb-3">
-          <div className={`flex items-center ${isRTL ? 'flex-row-reverse' : 'justify-between'}`}>
-
+          <div
+            className={`flex items-center ${isRTL ? "flex-row-reverse" : "justify-between"}`}
+          >
             <div className="flex-1 text-center">
               <div className="flex items-center justify-center gap-3">
-                <div className={`text-xs text-muted-foreground font-medium tracking-wider uppercase bg-muted/50 px-3 py-1 rounded-full border border-border/50 transition-all duration-300 ${currentCart.length > 0 ? 'bg-primary/20 border-primary/30 text-primary animate-pulse' : ''}`}>
+                <div
+                  className={`text-xs text-muted-foreground font-medium tracking-wider uppercase bg-muted/50 px-3 py-1 rounded-full border border-border/50 transition-all duration-300 ${currentCart.length > 0 ? "bg-primary/20 border-primary/30 text-primary animate-pulse" : ""}`}
+                >
                   {t("cashier.total", "Total")}
                 </div>
                 <div className="flex items-baseline gap-1">
-                  <span className={`text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-primary drop-shadow-sm transition-all duration-300 ${isTotalAnimating ? 'scale-110 text-primary/80' : 'scale-100'}`}>
+                  <span
+                    className={`text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-primary drop-shadow-sm transition-all duration-300 ${isTotalAnimating ? "scale-110 text-primary/80" : "scale-100"}`}
+                  >
                     {total.toLocaleString()}
                   </span>
                   <span className="text-lg sm:text-xl lg:text-2xl font-bold text-muted-foreground">
@@ -176,8 +181,10 @@ export default function CashierPage() {
                 </div>
               </div>
             </div>
-            
-            <div className={`flex items-center gap-2 text-xs text-muted-foreground ${isRTL ? 'justify-start' : 'justify-end'}`}>
+
+            <div
+              className={`flex items-center gap-2 text-xs text-muted-foreground ${isRTL ? "justify-start" : "justify-end"}`}
+            >
               <div className="bg-muted/50 px-2 py-1 rounded-md border border-border/50">
                 {t("cashier.session", "Page")} {activeSession + 1}
               </div>
@@ -185,7 +192,6 @@ export default function CashierPage() {
                 {currentCart.length} {t("cashier.products", "Products")}
               </div>
             </div>
-
           </div>
         </div>
       </header>
@@ -214,7 +220,9 @@ export default function CashierPage() {
             onShowManualProductModal={() => setShowManualProductModal(true)}
             isActive={activeSession === sessionIndex}
             discount={sessionDiscounts[sessionIndex] || ""}
-            setDiscount={(newDiscount: string) => updateSessionDiscount(sessionIndex, newDiscount)}
+            setDiscount={(newDiscount: string) =>
+              updateSessionDiscount(sessionIndex, newDiscount)
+            }
           />
         ))}
         {/* === Session Selector === */}
@@ -235,8 +243,16 @@ export default function CashierPage() {
                 key={i}
                 content={
                   hasItems
-                    ? t("cashier.tooltipSessionWithItems", "Session {{number}} - Has {{count}} items in cart", { number: i + 1, count: sessionCarts[i]?.length || 0 })
-                    : t("cashier.tooltipSessionEmpty", "Session {{number}} - Empty cart, ready for new transaction", { number: i + 1 })
+                    ? t(
+                        "cashier.tooltipSessionWithItems",
+                        "Session {{number}} - Has {{count}} items in cart",
+                        { number: i + 1, count: sessionCarts[i]?.length || 0 },
+                      )
+                    : t(
+                        "cashier.tooltipSessionEmpty",
+                        "Session {{number}} - Empty cart, ready for new transaction",
+                        { number: i + 1 },
+                      )
                 }
                 position="top"
               >

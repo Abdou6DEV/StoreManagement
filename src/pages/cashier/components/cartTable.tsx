@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from "react";
-import { CartItem } from "../../cashier";
+import type { CartItem } from "../../../types";
 import { Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
