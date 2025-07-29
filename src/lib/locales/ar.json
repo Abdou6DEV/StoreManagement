@@ -99,6 +99,8 @@
   },
   "cashier": {
     "total": "الإجمالي",
+    "session": "الصفحة",
+    "products": "المنتجات",
     "filterProducts": "تصفية المنتجات...",
     "stock": "المخزون",
     "addToCart": "أضف إلى السلة",

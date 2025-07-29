@@ -178,6 +178,8 @@
   },
   "cashier": {
     "total": "Total",
+    "session": "Page",
+    "products": "Produits",
     "filterProducts": "Filtrer les produits...",
     "stock": "Stock",
     "addToCart": "Ajouter au panier",

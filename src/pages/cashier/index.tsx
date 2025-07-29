@@ -12,7 +12,8 @@ import { Tooltip } from "../../lib/components/tooltip";
 const MAX_SESSIONS = 5;
 
 export default function CashierPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isRTL = i18n.language === "ar";
   const [productRefreshKey, setProductRefreshKey] = useState(0);
   const [activeSession, setActiveSession] = useState(0);
   const [showProductBrowser, setShowProductBrowser] = useState(false);
@@ -36,20 +37,46 @@ export default function CashierPage() {
     Array.from({ length: MAX_SESSIONS }, (): CartItem[] => []),
   );
 
-  // Get the current session's cart
-  const currentCart = sessionCarts[activeSession] || [];
+  // State for each session's discount
+  const [sessionDiscounts, setSessionDiscounts] = useState<string[]>(
+    Array.from({ length: MAX_SESSIONS }, (): string => ""),
+  );
 
-  // Calculate total for current session
-  const total = currentCart.reduce(
+  // Get the current session's cart and discount
+  const currentCart = sessionCarts[activeSession] || [];
+  const currentDiscount = sessionDiscounts[activeSession] || "";
+
+  // Calculate total for current session with discount applied
+  const subtotal = currentCart.reduce(
     (sum, item) => sum + item.qty * item.price,
     0,
   );
+  const total = Math.max(subtotal - Number(currentDiscount) || 0, 0);
+
+  // Animation state for total changes
+  const [isTotalAnimating, setIsTotalAnimating] = useState(false);
+
+  // Animate total when it changes
+  useEffect(() => {
+    setIsTotalAnimating(true);
+    const timer = setTimeout(() => setIsTotalAnimating(false), 300);
+    return () => clearTimeout(timer);
+  }, [total]);
 
   // Update cart for specific session
   const updateSessionCart = (sessionIndex: number, newCart: CartItem[]) => {
     setSessionCarts((prev) => {
       const updated = [...prev];
       updated[sessionIndex] = newCart;
+      return updated;
+    });
+  };
+
+  // Update discount for specific session
+  const updateSessionDiscount = (sessionIndex: number, newDiscount: string) => {
+    setSessionDiscounts((prev) => {
+      const updated = [...prev];
+      updated[sessionIndex] = newDiscount;
       return updated;
     });
   };
@@ -129,14 +156,36 @@ export default function CashierPage() {
 
   return (
     <main className="h-screen w-full -mt-13 flex flex-col bg-background text-foreground overflow-hidden">
-      {/* === Sticky Total Header === */}
-      <header className="z-20 bg-background/80 backdrop-blur flex-shrink-0">
-        <div className="max-w-5xl mx-auto text-center leading-none py-0">
-          <div className="text-xs text-muted-foreground font-medium tracking-wider uppercase">
-            {t("cashier.total", "Total")}
-          </div>
-          <div className="text-4xl sm:text-5xl font-extrabold tracking-tight text-primary drop-shadow-sm">
-            {total.toLocaleString()} DA
+      {/* === Enhanced Total Header === */}
+      <header className="z-20 bg-gradient-to-r from-background via-background/95 to-background/90 backdrop-blur-md flex-shrink-0">
+        <div className="max-w-6xl mx-auto px-4 pb-3">
+          <div className={`flex items-center ${isRTL ? 'flex-row-reverse' : 'justify-between'}`}>
+
+            <div className="flex-1 text-center">
+              <div className="flex items-center justify-center gap-3">
+                <div className={`text-xs text-muted-foreground font-medium tracking-wider uppercase bg-muted/50 px-3 py-1 rounded-full border border-border/50 transition-all duration-300 ${currentCart.length > 0 ? 'bg-primary/20 border-primary/30 text-primary animate-pulse' : ''}`}>
+                  {t("cashier.total", "Total")}
+                </div>
+                <div className="flex items-baseline gap-1">
+                  <span className={`text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-primary drop-shadow-sm transition-all duration-300 ${isTotalAnimating ? 'scale-110 text-primary/80' : 'scale-100'}`}>
+                    {total.toLocaleString()}
+                  </span>
+                  <span className="text-lg sm:text-xl lg:text-2xl font-bold text-muted-foreground">
+                    DA
+                  </span>
+                </div>
+              </div>
+            </div>
+            
+            <div className={`flex items-center gap-2 text-xs text-muted-foreground ${isRTL ? 'justify-start' : 'justify-end'}`}>
+              <div className="bg-muted/50 px-2 py-1 rounded-md border border-border/50">
+                {t("cashier.session", "Page")} {activeSession + 1}
+              </div>
+              <div className="bg-muted/50 px-2 py-1 rounded-md border border-border/50">
+                {currentCart.length} {t("cashier.products", "Products")}
+              </div>
+            </div>
+
           </div>
         </div>
       </header>
@@ -164,10 +213,12 @@ export default function CashierPage() {
             onShowProductBrowser={() => setShowProductBrowser(true)}
             onShowManualProductModal={() => setShowManualProductModal(true)}
             isActive={activeSession === sessionIndex}
+            discount={sessionDiscounts[sessionIndex] || ""}
+            setDiscount={(newDiscount: string) => updateSessionDiscount(sessionIndex, newDiscount)}
           />
         ))}
         {/* === Session Selector === */}
-        <div className="gap-3 bg-background flex justify-center items-center px-4 py-4 flex-shrink-0">
+        <div className="gap-3 bg-background flex justify-center items-center px-4 pb-5 pt-3 flex-shrink-0">
           {Array.from({ length: MAX_SESSIONS }).map((_, i) => {
             const isActive = activeSession === i;
             const hasItems = sessionCarts[i]?.length > 0;

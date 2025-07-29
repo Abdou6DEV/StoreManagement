@@ -99,6 +99,8 @@
   },
   "cashier": {
     "total": "Total",
+    "session": "Page",
+    "products": "Products",
     "filterProducts": "Filter products...",
     "stock": "Stock",
     "addToCart": "Add to Cart",

@@ -29,6 +29,8 @@ interface CashierSessionProps {
   onShowProductBrowser: () => void;
   onShowManualProductModal: () => void;
   isActive: boolean;
+  discount: string;
+  setDiscount: (discount: string) => void;
 }
 
 export default function CashierSession({
@@ -43,12 +45,13 @@ export default function CashierSession({
   onShowProductBrowser,
   onShowManualProductModal,
   isActive,
+  discount,
+  setDiscount,
 }: CashierSessionProps) {
   const { t } = useTranslation();
   const { showToast } = useToast();
 
   // Session-specific state
-  const [discount, setDiscount] = useState("");
   const [clientName, setClientName] = useState("");
   const [clientId, setClientId] = useState<string | null>(null);
   const [paymentAmount, setPaymentAmount] = useState(0);
