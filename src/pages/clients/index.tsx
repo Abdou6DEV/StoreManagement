@@ -59,7 +59,7 @@ export default function Clients() {
   const handleDelete = async (id: string) => {
     const client = clients.find((c) => c.id === id);
     if (!client) return;
-    
+
     setConfirmDelete({
       open: true,
       clientId: id,
@@ -69,12 +69,15 @@ export default function Clients() {
 
   const confirmDeleteClient = async () => {
     if (!confirmDelete.clientId) return;
-    
+
     setDeleteLoading(confirmDelete.clientId);
     try {
       await window.api.database.clients.delete(confirmDelete.clientId);
       await fetchClients();
-      showToast(t("clients.deleteSuccess", "Client deleted successfully"), "success");
+      showToast(
+        t("clients.deleteSuccess", "Client deleted successfully"),
+        "success",
+      );
     } catch (err) {
       showToast(t("clients.deleteError", "Failed to delete client"), "error");
     } finally {
@@ -103,7 +106,10 @@ export default function Clients() {
       });
       setEditingClient(null);
       await fetchClients();
-      showToast(t("clients.updateSuccess", "Client updated successfully"), "success");
+      showToast(
+        t("clients.updateSuccess", "Client updated successfully"),
+        "success",
+      );
     } catch (err) {
       showToast(t("clients.updateError", "Failed to update client"), "error");
     } finally {
@@ -293,9 +299,13 @@ export default function Clients() {
       {/* Confirm Delete Dialog */}
       <ConfirmDialog
         open={confirmDelete.open}
-        onOpenChange={(open) => setConfirmDelete(prev => ({ ...prev, open }))}
+        onOpenChange={(open) => setConfirmDelete((prev) => ({ ...prev, open }))}
         title={t("clients.confirmDeleteTitle", "Delete Client")}
-        message={t("clients.confirmDeleteMessage", "Are you sure you want to delete '{{name}}'? Warning: Deleting this client will also delete all related payments and sales. This action cannot be undone.", { name: confirmDelete.clientName })}
+        message={t(
+          "clients.confirmDeleteMessage",
+          "Are you sure you want to delete '{{name}}'? Warning: Deleting this client will also delete all related payments and sales. This action cannot be undone.",
+          { name: confirmDelete.clientName },
+        )}
         confirmText={t("clients.delete", "Delete")}
         cancelText={t("clients.cancel", "Cancel")}
         variant="danger"

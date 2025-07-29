@@ -170,7 +170,7 @@ export const StockTable = () => {
   const handleDeleteProduct = async (productId: string) => {
     const product = products.find((p) => p.id === productId);
     if (!product) return;
-    
+
     setConfirmDelete({
       open: true,
       productId,
@@ -180,13 +180,19 @@ export const StockTable = () => {
 
   const confirmDeleteProduct = async () => {
     if (!confirmDelete.productId) return;
-    
+
     try {
       await window.api.database.products.delete(confirmDelete.productId);
-      showToast(t("stock.toastDeleteSuccess", "Product deleted successfully!"), "success");
+      showToast(
+        t("stock.toastDeleteSuccess", "Product deleted successfully!"),
+        "success",
+      );
       refetchProducts();
     } catch (err) {
-      showToast(t("stock.toastDeleteError", "Failed to delete product"), "error");
+      showToast(
+        t("stock.toastDeleteError", "Failed to delete product"),
+        "error",
+      );
     }
   };
 
@@ -747,9 +753,13 @@ export const StockTable = () => {
       {/* Confirm Delete Dialog */}
       <ConfirmDialog
         open={confirmDelete.open}
-        onOpenChange={(open) => setConfirmDelete(prev => ({ ...prev, open }))}
+        onOpenChange={(open) => setConfirmDelete((prev) => ({ ...prev, open }))}
         title={t("stock.confirmDeleteTitle", "Delete Product")}
-        message={t("stock.confirmDeleteMessage", "Are you sure you want to delete '{{name}}'? This will also delete all sales records related to this product. This action cannot be undone.", { name: confirmDelete.productName })}
+        message={t(
+          "stock.confirmDeleteMessage",
+          "Are you sure you want to delete '{{name}}'? This will also delete all sales records related to this product. This action cannot be undone.",
+          { name: confirmDelete.productName },
+        )}
         confirmText={t("stock.delete", "Delete")}
         cancelText={t("stock.cancel", "Cancel")}
         variant="danger"

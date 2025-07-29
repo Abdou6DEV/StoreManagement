@@ -1,4 +1,11 @@
-import React, { createContext, useContext, useState, useCallback, useRef, useEffect } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useRef,
+  useEffect,
+} from "react";
 
 export type ToastType = "success" | "error" | "info";
 
@@ -16,7 +23,9 @@ const ToastContext = createContext<ToastContextProps | undefined>(undefined);
 
 let toastId = 0;
 
-export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const timeoutRefs = useRef<{ [id: number]: NodeJS.Timeout }>({});
 
@@ -28,11 +37,14 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   }, []);
 
-  const showToast = useCallback((message: string, type: ToastType = "success") => {
-    const id = ++toastId;
-    setToasts((toasts) => [...toasts, { id, message, type }]);
-    timeoutRefs.current[id] = setTimeout(() => removeToast(id), 3500);
-  }, [removeToast]);
+  const showToast = useCallback(
+    (message: string, type: ToastType = "success") => {
+      const id = ++toastId;
+      setToasts((toasts) => [...toasts, { id, message, type }]);
+      timeoutRefs.current[id] = setTimeout(() => removeToast(id), 3500);
+    },
+    [removeToast],
+  );
 
   useEffect(() => {
     return () => {
@@ -68,4 +80,4 @@ export function useToast() {
   const ctx = useContext(ToastContext);
   if (!ctx) throw new Error("useToast must be used within a ToastProvider");
   return ctx;
-} 
+}

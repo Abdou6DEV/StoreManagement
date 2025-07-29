@@ -18,8 +18,8 @@ export default function App() {
   const { i18n } = useTranslation();
   const dir = i18n.language === "ar" ? "rtl" : "ltr";
   return (
-      <div dir={dir} style={{ direction: dir, width: "100%", height: "100%" }}>
-        <ToastProvider>
+    <div dir={dir} style={{ direction: dir, width: "100%", height: "100%" }}>
+      <ToastProvider>
         <Layout>
           <ScrollToTop />
           <Suspense fallback={<div>Loading...</div>}>
@@ -47,7 +47,7 @@ export default function App() {
             </StockProvider>
           </Suspense>
         </Layout>
-        </ToastProvider>
-      </div>
+      </ToastProvider>
+    </div>
   );
 }

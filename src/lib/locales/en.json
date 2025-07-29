@@ -161,8 +161,8 @@
     "saleError": "Failed to record sale",
     "tooltipShowHistory": "View client's payment history and past transactions",
     "tooltipAddNewClient": "Create a new client profile with contact information",
-            "tooltipBrowseProducts": "Browse Products (F1)",
-        "tooltipAddManualProduct": "Add Products Manually (F2)",
+    "tooltipBrowseProducts": "Browse Products (F1)",
+    "tooltipAddManualProduct": "Add Products Manually (F2)",
     "tooltipSessionWithItems": "Session {{number}} - Has {{count}} items in cart",
     "tooltipSessionEmpty": "Session {{number}} - Empty cart, ready for new transaction"
   },

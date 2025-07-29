@@ -26,7 +26,7 @@ export const Tooltip: React.FC<TooltipProps> = ({
 
   const show = () => {
     if (!showTooltips) return;
-    
+
     // Calculate position immediately
     updatePosition();
 

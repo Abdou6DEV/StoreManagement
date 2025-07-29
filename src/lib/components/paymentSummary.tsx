@@ -215,9 +215,9 @@ export default function PaymentSummary({
 
     return (
       <tr className="border-b border-dashed border-primary/40 hover:bg-accent/40 transition-colors group">
-        <td className="py-[2px] px-2 font-medium truncate">{item.name}</td>
+        <td className="py-2 px-2 font-medium truncate">{item.name}</td>
         <td
-          className="py-[2px] px-2 text-right cursor-pointer select-none hover:bg-primary/20 rounded"
+          className="py-2 px-2 text-right cursor-pointer select-none hover:bg-primary/20 rounded"
           onDoubleClick={handleDoubleClick}
         >
           {isEditing ? (
@@ -234,13 +234,11 @@ export default function PaymentSummary({
             item.qty
           )}
         </td>
-        <td className="py-[2px] px-2 text-right">
-          {item.price.toLocaleString()}
-        </td>
-        <td className="py-[2px] px-2 text-right">
+        <td className="py-2 px-2 text-right">{item.price.toLocaleString()}</td>
+        <td className="py-2 px-2 text-right">
           {(item.qty * item.price).toLocaleString()}
         </td>
-        <td className="py-[2px] px-2 text-right">
+        <td className="py-2 px-2 text-right">
           <div className="flex gap-0.5 justify-end">
             <button
               onClick={() => updateQty(index, item.qty + 1)}
@@ -343,14 +341,14 @@ export default function PaymentSummary({
                       key={item.id}
                       className="border-b border-dashed border-primary/40 hover:bg-accent/40 transition-colors"
                     >
-                      <td className="py-[2px] px-2 font-medium truncate">
+                      <td className="py-2 px-2 font-medium truncate">
                         {item.name}
                       </td>
-                      <td className="py-[2px] px-2 text-right">{item.qty}</td>
-                      <td className="py-[2px] px-2 text-right">
+                      <td className="py-2 px-2 text-right">{item.qty}</td>
+                      <td className="py-2 px-2 text-right">
                         {item.price.toLocaleString()}
                       </td>
-                      <td className="py-[2px] px-2 text-right">
+                      <td className="py-2 px-2 text-right">
                         {(item.qty * item.price).toLocaleString()}
                       </td>
                     </tr>
@@ -361,13 +359,11 @@ export default function PaymentSummary({
                     key={i}
                     className="opacity-0 pointer-events-none select-none"
                   >
-                    <td className="py-[2px] px-2">Placeholder</td>
-                    <td className="py-[2px] px-2 text-right">0</td>
-                    <td className="py-[2px] px-2 text-right">0</td>
-                    <td className="py-[2px] px-2 text-right">0</td>
-                    {interactive && (
-                      <td className="py-[2px] px-2 text-right"></td>
-                    )}
+                    <td className="py-2 px-2">Placeholder</td>
+                    <td className="py-2 px-2 text-right">0</td>
+                    <td className="py-2 px-2 text-right">0</td>
+                    <td className="py-2 px-2 text-right">0</td>
+                    {interactive && <td className="py-2 px-2 text-right"></td>}
                   </tr>
                 ))}
           </tbody>

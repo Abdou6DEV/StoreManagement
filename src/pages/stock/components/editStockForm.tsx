@@ -81,10 +81,16 @@ export default function EditStockForm({
         selling: Number(selling),
         codebar,
       });
-      showToast(t("stock.toastUpdateSuccess", "Product updated successfully!"), "success");
+      showToast(
+        t("stock.toastUpdateSuccess", "Product updated successfully!"),
+        "success",
+      );
       setProductID(null);
     } catch (err) {
-      showToast(t("stock.toastUpdateError", "Failed to update product"), "error");
+      showToast(
+        t("stock.toastUpdateError", "Failed to update product"),
+        "error",
+      );
     } finally {
       setLoading(false);
       refetchProducts();

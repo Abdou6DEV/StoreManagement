@@ -13,7 +13,9 @@ interface TooltipProviderProps {
   children: ReactNode;
 }
 
-export const TooltipProvider: React.FC<TooltipProviderProps> = ({ children }) => {
+export const TooltipProvider: React.FC<TooltipProviderProps> = ({
+  children,
+}) => {
   const [showTooltips, setShowTooltips] = useState<boolean>(() => {
     // Check localStorage first
     const savedTooltipPreference = localStorage.getItem("showTooltips");
@@ -47,4 +49,4 @@ export const useTooltip = () => {
     throw new Error("useTooltip must be used within a TooltipProvider");
   }
   return context;
-}; 
+};

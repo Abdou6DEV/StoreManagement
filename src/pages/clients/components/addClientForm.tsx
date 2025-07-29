@@ -43,7 +43,10 @@ export default function AddClientForm({
       });
       setForm(initialForm);
       onClientAdded();
-      showToast(t("clients.addSuccess", "Client added successfully"), "success");
+      showToast(
+        t("clients.addSuccess", "Client added successfully"),
+        "success",
+      );
     } catch (err) {
       showToast(t("clients.addError", "Failed to add client"), "error");
     } finally {

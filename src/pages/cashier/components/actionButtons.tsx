@@ -155,7 +155,10 @@ export default function ActionButtons({
       setClientId(client.id);
       refreshClientSuggestions();
       setShowAddClientModal(false);
-      showToast(t("cashier.clientAdded", "Client added successfully"), "success");
+      showToast(
+        t("cashier.clientAdded", "Client added successfully"),
+        "success",
+      );
     } catch (err) {
       showToast(t("cashier.clientError", "Failed to add client"), "error");
     }
@@ -197,7 +200,12 @@ export default function ActionButtons({
           )}
         </div>
         {selectedClientId ? (
-          <Tooltip content={t("cashier.tooltipShowHistory", "View client's payment history and past transactions")}>
+          <Tooltip
+            content={t(
+              "cashier.tooltipShowHistory",
+              "View client's payment history and past transactions",
+            )}
+          >
             <button
               onClick={() => setShowHistoryModal(true)}
               className="flex-1 flex items-center justify-center px-2 py-2 rounded-md bg-muted text-foreground hover:bg-primary hover:text-primary-foreground transition text-sm border border-border min-w-0 w-full"
@@ -211,7 +219,12 @@ export default function ActionButtons({
             </button>
           </Tooltip>
         ) : (
-          <Tooltip content={t("cashier.tooltipAddNewClient", "Create a new client profile with contact information")}>
+          <Tooltip
+            content={t(
+              "cashier.tooltipAddNewClient",
+              "Create a new client profile with contact information",
+            )}
+          >
             <button
               onClick={() => setShowAddClientModal(true)}
               className="flex-1 flex items-center justify-center px-2 py-2 rounded-md bg-muted text-foreground hover:bg-primary hover:text-primary-foreground transition text-sm border border-border min-w-0 w-full"
@@ -242,11 +255,17 @@ export default function ActionButtons({
             }
           }}
         />
-        <Tooltip 
+        <Tooltip
           content={
-            !clientName.trim() 
-              ? t("cashier.tooltipAddPaymentDisabled", "Choose a client to add a payment")
-              : t("cashier.tooltipAddPaymentEnabled", "Add a credit or versement or by facility")
+            !clientName.trim()
+              ? t(
+                  "cashier.tooltipAddPaymentDisabled",
+                  "Choose a client to add a payment",
+                )
+              : t(
+                  "cashier.tooltipAddPaymentEnabled",
+                  "Add a credit or versement or by facility",
+                )
           }
         >
           <button

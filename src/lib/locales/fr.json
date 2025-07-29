@@ -241,8 +241,8 @@
     "clientError": "Échec de l'ajout du client",
     "tooltipShowHistory": "Voir l'historique des paiements et des transactions passées du client",
     "tooltipAddNewClient": "Créer un nouveau profil client avec les informations de contact",
-            "tooltipBrowseProducts": "Parcourir les produits (F1)",
-        "tooltipAddManualProduct": "Ajouter des produits manuellement (F2)",
+    "tooltipBrowseProducts": "Parcourir les produits (F1)",
+    "tooltipAddManualProduct": "Ajouter des produits manuellement (F2)",
     "tooltipSessionWithItems": "Session {{number}} - Contient {{count}} articles dans le panier",
     "tooltipSessionEmpty": "Session {{number}} - Panier vide, prêt pour une nouvelle transaction"
   },

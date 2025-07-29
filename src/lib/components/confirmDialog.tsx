@@ -1,10 +1,5 @@
 import React from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "./dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./dialog";
 import { Button } from "./button";
 import { AlertTriangle, Info, XCircle } from "lucide-react";
 
@@ -88,11 +83,7 @@ export function ConfirmDialog({
             {message}
           </p>
           <div className="flex gap-3 justify-end">
-            <Button
-              variant="outline"
-              onClick={handleCancel}
-              disabled={loading}
-            >
+            <Button variant="outline" onClick={handleCancel} disabled={loading}>
               {cancelText}
             </Button>
             <Button
@@ -114,4 +105,4 @@ export function ConfirmDialog({
       </DialogContent>
     </Dialog>
   );
-} 
+}

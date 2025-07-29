@@ -38,7 +38,9 @@ export const TooltipToggleButton: React.FC<TooltipToggleButtonProps> = ({
       <div className="flex items-center gap-2 rtl:flex-row-reverse">
         {showText && (
           <span>
-            {showTooltips ? t("navigation.tooltipsOn") : t("navigation.tooltipsOff")}
+            {showTooltips
+              ? t("navigation.tooltipsOn")
+              : t("navigation.tooltipsOff")}
           </span>
         )}
       </div>
@@ -64,4 +66,4 @@ export const TooltipToggleButton: React.FC<TooltipToggleButtonProps> = ({
       </div>
     </Button>
   );
-}; 
+};
