@@ -4,7 +4,6 @@ import type { CartItem } from "../../../types";
 import { ShoppingCart, PlusCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import ProductSearch from "./productSearch";
-import CartTable from "./cartTable";
 import PaymentSummary from "../../../lib/components/paymentSummary";
 import ActionButtons from "./actionButtons";
 import { Tooltip } from "../../../lib/components/tooltip";
@@ -221,7 +220,10 @@ export default function CashierSession({
       setPaymentType("none");
       setPaymentDate(undefined);
       setProductRefreshKey((k: number) => k + 1);
-      showToast(t("cashier.saleRecorded", "Sale recorded successfully"), "success");
+      showToast(
+        t("cashier.saleRecorded", "Sale recorded successfully"),
+        "success",
+      );
     } catch (err) {
       showToast(t("cashier.saleError", "Failed to record sale"), "error");
     }
@@ -285,7 +287,10 @@ export default function CashierSession({
       setPaymentType("none");
       setPaymentDate(undefined);
       setProductRefreshKey((k: number) => k + 1);
-      showToast(t("cashier.saleRecorded", "Sale recorded successfully"), "success");
+      showToast(
+        t("cashier.saleRecorded", "Sale recorded successfully"),
+        "success",
+      );
       return sale.id;
     } catch (err) {
       showToast(t("cashier.saleError", "Failed to record sale"), "error");
@@ -298,17 +303,20 @@ export default function CashierSession({
   }
 
   return (
-    <div className="flex-1 flex flex-col lg:flex-row gap-2 overflow-hidden">
-      {/* LEFT: Product + Cart */}
-      <section className="w-full lg:w-2/5 flex flex-col gap-2 overflow-hidden">
-        <div className="bg-card border border-border rounded-xl p-3 shadow-sm h-full flex flex-col gap-2 overflow-hidden">
+    <div className="flex-1 flex flex-col gap-2 overflow-hidden">
+      {/* TOP: Product Search and Browse/Manual Buttons */}
+      <section className="flex-shrink-0">
+        <div className="bg-card border border-border rounded-xl p-3 shadow-sm">
           <div className="flex items-center gap-2">
             <ProductSearch
-              onAdd={handleAddProduct as any}
+              onAdd={handleAddProduct}
               refreshKey={productRefreshKey}
             />
             <Tooltip
-              content={t("cashier.tooltipBrowseProducts", "Browse Products (F1)")}
+              content={t(
+                "cashier.tooltipBrowseProducts",
+                "Browse Products (F1)",
+              )}
               position="top"
             >
               <button
@@ -333,26 +341,28 @@ export default function CashierSession({
               </button>
             </Tooltip>
           </div>
-
-          <div className="flex-1 overflow-auto min-h-[0px] transition-all duration-300">
-            <CartTable cart={cart} setCart={setCart} />
-          </div>
         </div>
       </section>
 
-      {/* RIGHT: Summary + Actions */}
-      <section className="w-full lg:w-3/5 flex flex-col gap-2 overflow-hidden">
-        <div className="bg-card border border-border rounded-xl p-3 shadow-sm h-full flex flex-col gap-2 overflow-hidden">
-          <div className="flex-1 overflow-auto min-h-[100px]">
-            <PaymentSummary
-              cart={cart}
-              clientName={clientName}
-              paymentAmount={paymentAmount}
-              discount={Number(discount) || 0}
-              paymentType={paymentType}
-              className="h-full"
-            />
-          </div>
+      {/* MIDDLE: Interactive Payment Summary (Cart + Summary) */}
+      <section className="flex-1 overflow-hidden">
+        <div className="bg-card shadow-sm h-full flex flex-col gap-2 overflow-hidden">
+          <PaymentSummary
+            cart={cart}
+            clientName={clientName}
+            paymentAmount={paymentAmount}
+            discount={Number(discount) || 0}
+            paymentType={paymentType}
+            className="h-full"
+            interactive={true}
+            setCart={setCart}
+          />
+        </div>
+      </section>
+
+      {/* BOTTOM: Action Buttons */}
+      <section className="flex-shrink-0">
+        <div className="bg-card border border-border rounded-xl p-3 shadow-sm">
           <ActionButtons
             clientName={clientName}
             setClientName={setClientName}

@@ -1,6 +1,7 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useRef, useEffect, useState } from "react";
 import type { CartItem } from "../../types";
 import { useTranslation } from "react-i18next";
+import { Trash2 } from "lucide-react";
 
 interface Props {
   cart: CartItem[];
@@ -9,6 +10,8 @@ interface Props {
   discount?: number;
   paymentType?: "none" | "credit" | "versement";
   className?: string;
+  interactive?: boolean;
+  setCart?: React.Dispatch<React.SetStateAction<CartItem[]>>;
 }
 
 export default function PaymentSummary({
@@ -18,6 +21,8 @@ export default function PaymentSummary({
   discount = 0,
   paymentType = "none",
   className = "",
+  interactive = false,
+  setCart,
 }: Props) {
   const { t, i18n } = useTranslation();
   const isRTL = i18n.language === "ar";
@@ -31,7 +36,7 @@ export default function PaymentSummary({
   const creditDisplay = credit > 0 ? credit : 0;
   const nbrItems = cart.reduce((sum, item) => sum + item.qty, 0);
 
-  // === Auto-scroll logic ===
+  // === Auto-scroll logic (only for non-interactive mode) ===
   const scrollRef = React.useRef<HTMLDivElement>(null);
   const animationRef = React.useRef<number | null>(null);
   const userScrollTimeout = React.useRef<number | null>(null);
@@ -88,8 +93,10 @@ export default function PaymentSummary({
     animationRef.current = requestAnimationFrame(scrollStep);
   }
 
-  // On cart change: reset scroll, clear timers, and start fresh after a short delay
+  // On cart change: reset scroll, clear timers, and start fresh after a short delay (non-interactive only)
   React.useEffect(() => {
+    if (interactive) return; // Skip auto-scroll for interactive mode
+
     const el = scrollRef.current;
     clearAllScrollTimers();
     if (!el) return;
@@ -103,10 +110,12 @@ export default function PaymentSummary({
       transitionTimeouts.current.push(timeout);
     }
     // eslint-disable-next-line
-  }, [cart]);
+  }, [cart, interactive]);
 
-  // User interaction: pause scroll, resume after delay, always reset fade
+  // User interaction: pause scroll, resume after delay, always reset fade (non-interactive only)
   React.useEffect(() => {
+    if (interactive) return; // Skip auto-scroll for interactive mode
+
     const el = scrollRef.current;
     if (!el) return;
     function pauseScroll() {
@@ -129,7 +138,140 @@ export default function PaymentSummary({
       el.removeEventListener("touchstart", pauseScroll);
       el.removeEventListener("wheel", pauseScroll);
     };
-  }, []);
+  }, [interactive]);
+
+  // Interactive mode functions
+  const updateQty = (index: number, newQty: number) => {
+    if (!interactive || !setCart) return;
+
+    if (newQty < 1) {
+      removeItem(index);
+      return;
+    }
+    setCart((prev) =>
+      prev.map((item, i) => (i === index ? { ...item, qty: newQty } : item)),
+    );
+  };
+
+  const removeItem = (index: number) => {
+    if (!interactive || !setCart) return;
+
+    setCart((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  // Interactive Row Component
+  const InteractiveRow = React.memo(function InteractiveRow({
+    item,
+    index,
+    updateQty,
+    removeItem,
+  }: {
+    item: CartItem;
+    index: number;
+    updateQty: (index: number, newQty: number) => void;
+    removeItem: (index: number) => void;
+  }) {
+    const [isEditing, setIsEditing] = useState(false);
+    const [editValue, setEditValue] = useState(item.qty.toString());
+    const inputRef = useRef<HTMLInputElement>(null);
+
+    const handleDoubleClick = () => {
+      setIsEditing(true);
+      setEditValue(item.qty.toString());
+    };
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const value = e.target.value;
+      if (/^\d*$/.test(value)) {
+        setEditValue(value);
+      }
+    };
+
+    const handleInputBlur = () => {
+      const newQty = parseInt(editValue);
+      if (!isNaN(newQty) && newQty > 0) {
+        updateQty(index, newQty);
+      } else {
+        setEditValue(item.qty.toString());
+      }
+      setIsEditing(false);
+    };
+
+    const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === "Enter") {
+        handleInputBlur();
+      } else if (e.key === "Escape") {
+        setEditValue(item.qty.toString());
+        setIsEditing(false);
+      }
+    };
+
+    useEffect(() => {
+      if (isEditing && inputRef.current) {
+        inputRef.current.focus();
+        inputRef.current.select();
+      }
+    }, [isEditing]);
+
+    return (
+      <tr className="border-b border-dashed border-primary/40 hover:bg-accent/40 transition-colors group">
+        <td className="py-[2px] px-2 font-medium truncate">{item.name}</td>
+        <td
+          className="py-[2px] px-2 text-right cursor-pointer select-none hover:bg-primary/20 rounded"
+          onDoubleClick={handleDoubleClick}
+        >
+          {isEditing ? (
+            <input
+              ref={inputRef}
+              type="text"
+              value={editValue}
+              onChange={handleInputChange}
+              onBlur={handleInputBlur}
+              onKeyDown={handleInputKeyDown}
+              className="w-full text-right bg-transparent border border-primary rounded px-1 py-0 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+          ) : (
+            item.qty
+          )}
+        </td>
+        <td className="py-[2px] px-2 text-right">
+          {item.price.toLocaleString()}
+        </td>
+        <td className="py-[2px] px-2 text-right">
+          {(item.qty * item.price).toLocaleString()}
+        </td>
+        <td className="py-[2px] px-2 text-right">
+          <div className="flex gap-0.5 justify-end">
+            <button
+              onClick={() => updateQty(index, item.qty + 1)}
+              className="w-4 h-4 rounded bg-muted hover:bg-primary hover:text-primary-foreground transition text-xs font-bold flex items-center justify-center"
+            >
+              +
+            </button>
+            <button
+              onClick={() => updateQty(index, item.qty - 1)}
+              className="w-4 h-4 rounded bg-muted hover:bg-primary hover:text-primary-foreground transition text-xs font-bold flex items-center justify-center"
+            >
+              −
+            </button>
+            <button
+              onClick={() => removeItem(index)}
+              className="w-4 h-4 rounded text-red-500 hover:text-red-700 hover:bg-red-100 transition flex items-center justify-center"
+            >
+              <Trash2 className="w-3 h-3" />
+            </button>
+          </div>
+        </td>
+      </tr>
+    );
+  });
+
+  // Auto-scroll to bottom when new items are added in interactive mode
+  useEffect(() => {
+    if (interactive && scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [cart, interactive]);
 
   return (
     <div
@@ -146,49 +288,90 @@ export default function PaymentSummary({
         </>
       )}
 
-      {/* === Header Row === */}
-      <div className="flex justify-between font-semibold text-xs uppercase tracking-wider mb-1 flex-shrink-0">
-        <span className="w-1/2">{t("cashier.product", "Product")}</span>
-        <span className="w-1/6 text-right">{t("cashier.qty", "Qty")}</span>
-        <span className="w-1/6 text-right">{t("cashier.unit", "Unit")}</span>
-        <span className="w-1/6 text-right">{t("cashier.total", "Total")}</span>
-      </div>
-      <div className="border-t border-black dark:border-white mb-2 flex-shrink-0" />
-
-      {/* === Scrollable Items === */}
+      {/* === Table Container === */}
       <div
-        className={`flex-1 overflow-y-auto overflow-x-hidden space-y-[2px] transition-opacity duration-500 min-h-0 ${isFading ? "opacity-0" : "opacity-100"}`}
+        className={`flex-1 overflow-y-auto overflow-x-hidden min-h-0 ${
+          interactive
+            ? "opacity-100"
+            : `transition-opacity duration-500 ${isFading ? "opacity-0" : "opacity-100"}`
+        }`}
         ref={scrollRef}
       >
-        {cart.length > 0
-          ? cart.map((item) => (
-              <div
-                key={item.id}
-                className={
-                  "flex justify-between border-b border-dashed border-primary/40 py-[2px] hover:bg-accent/40 rounded transition-opacity duration-1000 opacity-100"
-                }
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="font-semibold text-xs uppercase tracking-wider border-b border-black dark:border-white">
+              <th
+                className={`text-left py-2 px-2 ${interactive ? "w-[35%]" : "w-1/2"}`}
               >
-                <span className="w-1/2 truncate font-medium">{item.name}</span>
-                <span className="w-1/6 text-right">{item.qty}</span>
-                <span className="w-1/6 text-right">
-                  {item.price.toLocaleString()}
-                </span>
-                <span className="w-1/6 text-right">
-                  {(item.qty * item.price).toLocaleString()}
-                </span>
-              </div>
-            ))
-          : [...Array(6)].map((_, i) => (
-              <div
-                key={i}
-                className="flex justify-between py-[2px] opacity-0 pointer-events-none select-none"
+                {t("cashier.product", "Product")}
+              </th>
+              <th
+                className={`text-right py-2 px-2 ${interactive ? "w-[15%]" : "w-1/6"}`}
               >
-                <span className="w-1/2">Placeholder</span>
-                <span className="w-1/6 text-right">0</span>
-                <span className="w-1/6 text-right">0</span>
-                <span className="w-1/6 text-right">0</span>
-              </div>
-            ))}
+                {t("cashier.qty", "Qty")}
+              </th>
+              <th
+                className={`text-right py-2 px-2 ${interactive ? "w-[15%]" : "w-1/6"}`}
+              >
+                {t("cashier.unit", "Unit")}
+              </th>
+              <th
+                className={`text-right py-2 px-2 ${interactive ? "w-[15%]" : "w-1/6"}`}
+              >
+                {t("cashier.total", "Total")}
+              </th>
+              {interactive && (
+                <th className="text-right py-2 px-2 w-[20%]">
+                  {t("cashier.actions", "Actions")}
+                </th>
+              )}
+            </tr>
+          </thead>
+          <tbody>
+            {cart.length > 0
+              ? cart.map((item, index) =>
+                  interactive ? (
+                    <InteractiveRow
+                      key={item.id}
+                      item={item}
+                      index={index}
+                      updateQty={updateQty}
+                      removeItem={removeItem}
+                    />
+                  ) : (
+                    <tr
+                      key={item.id}
+                      className="border-b border-dashed border-primary/40 hover:bg-accent/40 transition-colors"
+                    >
+                      <td className="py-[2px] px-2 font-medium truncate">
+                        {item.name}
+                      </td>
+                      <td className="py-[2px] px-2 text-right">{item.qty}</td>
+                      <td className="py-[2px] px-2 text-right">
+                        {item.price.toLocaleString()}
+                      </td>
+                      <td className="py-[2px] px-2 text-right">
+                        {(item.qty * item.price).toLocaleString()}
+                      </td>
+                    </tr>
+                  ),
+                )
+              : [...Array(6)].map((_, i) => (
+                  <tr
+                    key={i}
+                    className="opacity-0 pointer-events-none select-none"
+                  >
+                    <td className="py-[2px] px-2">Placeholder</td>
+                    <td className="py-[2px] px-2 text-right">0</td>
+                    <td className="py-[2px] px-2 text-right">0</td>
+                    <td className="py-[2px] px-2 text-right">0</td>
+                    {interactive && (
+                      <td className="py-[2px] px-2 text-right"></td>
+                    )}
+                  </tr>
+                ))}
+          </tbody>
+        </table>
       </div>
 
       {/* === Bottom Summary Section === */}
