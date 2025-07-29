@@ -246,9 +246,7 @@ export default function ActionButtons({
           content={
             !clientName.trim() 
               ? t("cashier.tooltipAddPaymentDisabled", "Choose a client to add a payment")
-              : t("cashier.tooltipAddPaymentEnabled", "Add a credit or versement or by facility
-                
-                ")
+              : t("cashier.tooltipAddPaymentEnabled", "Add a credit or versement or by facility")
           }
         >
           <button
