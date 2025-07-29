@@ -67,11 +67,12 @@ export default function AddClientModal({
           placeholder={t("cashier.addressOptional", "Address (optional)")}
           className="w-full rounded-md border border-border px-3 py-2 text-sm bg-background"
         />
-        <input
+        <textarea
           value={clientNotes}
           onChange={(e) => setClientNotes(e.target.value)}
           placeholder={t("cashier.notesOptional", "Notes (optional)")}
-          className="w-full rounded-md border border-border px-3 py-2 text-sm bg-background"
+          className="w-full rounded-md border border-border px-3 py-2 text-sm bg-background resize-none"
+          rows={3}
         />
         <div className="flex justify-end gap-2">
           <Button variant="outline" onClick={onClose}>
