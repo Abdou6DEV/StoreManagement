@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import type { Payment, Client } from "../../../types";
+import type { Payment, Client } from "@prisma/client";
 import {
   Dialog,
   DialogContent,
