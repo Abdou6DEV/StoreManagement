@@ -74,11 +74,11 @@ export default function PaymentSummary({
             // Wait at top before resuming scrolling
             const waitAtTop = setTimeout(() => {
               animationRef.current = requestAnimationFrame(scrollStep);
-            }, 1000); // Wait at top
+            }, 6000); // Wait at top
             transitionTimeouts.current.push(waitAtTop);
-          }, 600); // Fade duration
+          }, 500); // Fade duration
           transitionTimeouts.current.push(fadeOut);
-        }, 2000); // Wait at bottom
+        }, 6000); // Wait at bottom
         transitionTimeouts.current.push(waitAtBottom);
         return;
       }
@@ -115,7 +115,10 @@ export default function PaymentSummary({
       setIsFading(false);
       userScrollTimeout.current = window.setTimeout(() => {
         isPaused.current = false;
-        startAutoScroll();
+        // Only resume auto-scroll if content is actually scrollable
+        if (el.scrollHeight > el.clientHeight) {
+          startAutoScroll();
+        }
       }, 4000); // Resume after 4s
     }
     el.addEventListener("mousedown", pauseScroll);
