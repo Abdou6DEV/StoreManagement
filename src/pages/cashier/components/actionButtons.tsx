@@ -242,17 +242,27 @@ export default function ActionButtons({
             }
           }}
         />
-        <button
-          className="flex-1 flex items-center justify-center rounded-lg bg-primary text-primary-foreground px-4 py-2 text-base font-medium shadow-md hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary/50 transition duration-150 disabled:bg-primary/50 disabled:text-primary-foreground/70 disabled:cursor-not-allowed min-w-0 w-full"
-          onClick={() => {
-            setShowPaymentModal(true);
-          }}
-          disabled={!clientName.trim()}
+        <Tooltip 
+          content={
+            !clientName.trim() 
+              ? t("cashier.tooltipAddPaymentDisabled", "Choose a client to add a payment")
+              : t("cashier.tooltipAddPaymentEnabled", "Add a credit or versement or by facility
+                
+                ")
+          }
         >
-          <span className="whitespace-nowrap">
-            {t("cashier.addPayment", "Add Payment")}
-          </span>
-        </button>
+          <button
+            className="flex-1 flex items-center justify-center rounded-lg bg-primary text-primary-foreground px-4 py-2 text-base font-medium shadow-md hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary/50 transition duration-150 disabled:bg-primary/50 disabled:text-primary-foreground/70 disabled:cursor-not-allowed min-w-0 w-full"
+            onClick={() => {
+              setShowPaymentModal(true);
+            }}
+            disabled={!clientName.trim()}
+          >
+            <span className="whitespace-nowrap">
+              {t("cashier.addPayment", "Add Payment")}
+            </span>
+          </button>
+        </Tooltip>
       </div>
       <div className="flex flex-row gap-2 w-full">
         <button
