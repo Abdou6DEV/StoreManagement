@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import type { Product } from "@prisma/client";
+import type { ProductWithSales } from "../../types";
 import type { CartItem } from "../../types";
 import { useTranslation } from "react-i18next";
 import OutOfStockWarningModal from "./components/outOfStockWarningModal";
@@ -17,7 +18,7 @@ export default function CashierPage() {
   const [productRefreshKey, setProductRefreshKey] = useState(0);
   const [activeSession, setActiveSession] = useState(0);
   const [showProductBrowser, setShowProductBrowser] = useState(false);
-  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [allProducts, setAllProducts] = useState<ProductWithSales[]>([]);
   const productBrowserRef = useRef<{ handleClose: () => void }>(null);
   const [outOfStockItems, setOutOfStockItems] = useState<CartItem[]>([]);
   const [showStockWarning, setShowStockWarning] = useState(false);
@@ -86,11 +87,34 @@ export default function CashierPage() {
     updateSessionCart(activeSession, [...currentCart, product]);
   };
 
-  // Fetch all products
+  // Fetch all products with sales counts
   useEffect(() => {
-    window.api.database.products.getAll().then((products) => {
-      setAllProducts(products as any);
-    });
+    const fetchProductsWithSales = async () => {
+      try {
+        const [products, salesCounts] = await Promise.all([
+          window.api.database.products.getAll(),
+          window.api.database.products.getSalesCounts(),
+        ]);
+        
+        // Merge salesCounts into products
+        const salesMap = new Map(
+          salesCounts.map((s) => [s.productId, s.totalSold]),
+        );
+        const merged = products.map((p) => ({
+          ...p,
+          totalSold: salesMap.get(p.id) || 0,
+        }));
+        
+        setAllProducts(merged as ProductWithSales[]);
+      } catch (error) {
+        console.error("Error fetching products with sales:", error);
+        // Fallback to basic products if sales fetch fails
+        const products = await window.api.database.products.getAll();
+        setAllProducts(products.map(p => ({ ...p, totalSold: 0 })) as ProductWithSales[]);
+      }
+    };
+
+    fetchProductsWithSales();
   }, [productRefreshKey]);
 
   // Control scrolling behavior for cashier page

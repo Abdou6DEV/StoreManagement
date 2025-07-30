@@ -1,12 +1,12 @@
 import React, { useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import type { CartItem } from "../../../types";
-import type { Product } from "@prisma/client";
+import type { ProductWithSales } from "../../../types";
 
 interface Props {
   open: boolean;
   items: CartItem[];
-  allProducts: Product[];
+  allProducts: ProductWithSales[];
   onCancel: () => void;
   onProceed: () => void;
 }

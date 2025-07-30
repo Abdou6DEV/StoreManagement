@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef, forwardRef, useImperativeHandle } from "react";
-import type { Product } from "@prisma/client";
+import type { ProductWithSales } from "../../../types";
 import { useTranslation } from "react-i18next";
 import { Skeleton } from "../../../lib/components/skeleton";
 import { useStock } from "../../../lib/contexts/stockContext";
@@ -7,7 +7,7 @@ import type { CartItem } from "../../../types";
 import { ChevronLeft, ChevronRight, Star } from "lucide-react";
 
 interface ProductBrowserProps {
-  allProducts: Product[];
+  allProducts: ProductWithSales[];
   open: boolean;
   onClose: () => void;
   cart: CartItem[];

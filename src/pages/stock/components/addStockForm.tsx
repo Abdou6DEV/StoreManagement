@@ -245,7 +245,7 @@ export default function AddStockForm({
                         {t("stock.chooseProduct", "Choose")}
                         <ChevronDown className="ml-2 w-4 h-4" />
                       </Button>
-                      <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-full mb-2 z-[9999] whitespace-nowrap px-2 py-1 rounded bg-black text-white text-xs opacity-0 scale-90 transition-all duration-150 ease-out">
+                      <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-full mb-2 z-[9999] whitespace-nowrap px-2 py-1 rounded bg-black text-white dark:bg-white dark:text-black text-xs opacity-0 scale-90 transition-all duration-150 ease-out">
                         {t(
                           "stock.chooseProductTooltip",
                           "Choose from existing products",
@@ -375,7 +375,7 @@ export default function AddStockForm({
                         <ChevronDown className="ml-2 w-4 h-4" />
                       </Button>
                       {/* Custom tooltip that doesn't interfere with Popover */}
-                      <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-full mb-2 z-[9999] whitespace-nowrap px-2 py-1 rounded bg-black text-white text-xs opacity-0 scale-90 transition-all duration-150 ease-out">
+                      <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-full mb-2 z-[9999] whitespace-nowrap px-2 py-1 rounded bg-black text-white dark:bg-white dark:text-black text-xs opacity-0 scale-90 transition-all duration-150 ease-out">
                         {t(
                           "stock.chooseTypeTooltip",
                           "Choose from existing categories",

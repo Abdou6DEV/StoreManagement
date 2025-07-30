@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import type { Product } from "@prisma/client";
+import type { ProductWithSales } from "../../../types";
 import type { CartItem } from "../../../types";
 import { ShoppingCart, PlusCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -11,7 +11,7 @@ import { Tooltip } from "../../../lib/components/tooltip";
 import { useToast } from "../../../lib/contexts/toastContext";
 
 interface CashierSessionProps {
-  allProducts: Product[];
+  allProducts: ProductWithSales[];
   productRefreshKey: number;
   setProductRefreshKey: (key: number | ((prev: number) => number)) => void;
   cart: CartItem[];
@@ -65,7 +65,7 @@ export default function CashierSession({
     [cart],
   );
 
-  const handleAddProduct = (product: Product) => {
+  const handleAddProduct = (product: ProductWithSales) => {
     const updated = [...cart];
     const exists = updated.find((item) => item.id === product.id);
     if (exists) {

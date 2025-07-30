@@ -90,7 +90,8 @@ export const Tooltip: React.FC<TooltipProps> = ({
       {createPortal(
         <div
           className={cn(
-            "fixed z-[9999] px-2 py-1 rounded bg-black text-white text-xs whitespace-nowrap shadow-lg pointer-events-none",
+            "fixed z-[9999] px-2 py-1 rounded text-xs whitespace-nowrap shadow-lg pointer-events-none",
+            "bg-black text-white dark:bg-white dark:text-black",
             "opacity-0 scale-90 transition-all duration-200 ease-out",
             visible && "opacity-100 scale-100",
             className,

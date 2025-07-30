@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useMemo } from "react";
-import type { Product } from "@prisma/client";
+import type { ProductWithSales } from "../../../types";
 import type { CartItem } from "../../../types";
 import { useTranslation } from "react-i18next";
 import { Star } from "lucide-react";
 
 interface FavoritesBrowserProps {
-  allProducts: Product[];
+  allProducts: ProductWithSales[];
   cart: CartItem[];
   setCart: React.Dispatch<React.SetStateAction<CartItem[]>>;
   productRefreshKey: number;
@@ -74,14 +74,14 @@ const FavoritesBrowser: React.FC<FavoritesBrowserProps> = ({
       .filter(product => !favorites.includes(product.id)) // Exclude favorites
       .sort((a, b) => {
         // Sort by sold quantity (highest first)
-        const soldA = (a as any).totalSold ?? 0;
-        const soldB = (b as any).totalSold ?? 0;
+        const soldA = a.totalSold ?? 0;
+        const soldB = b.totalSold ?? 0;
         return soldB - soldA;
       })
       .slice(0, 10); // Show top 10
   }, [allProducts, favorites]);
 
-  const handleAddToCart = (product: Product) => {
+  const handleAddToCart = (product: ProductWithSales) => {
     const updated = [...cart];
     const exists = updated.find((item) => item.id === product.id);
     if (exists) {
@@ -122,7 +122,7 @@ const FavoritesBrowser: React.FC<FavoritesBrowserProps> = ({
     return item ? item.qty : 0;
   };
 
-  const handleQuantityChange = (product: Product, newQty: number) => {
+  const handleQuantityChange = (product: ProductWithSales, newQty: number) => {
     if (newQty <= 0) {
       setCart(prev => prev.filter(item => item.id !== product.id));
     } else {

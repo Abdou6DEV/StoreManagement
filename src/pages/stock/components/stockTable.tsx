@@ -451,16 +451,15 @@ export const StockTable = () => {
                           className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium bg-primary/10 text-primary border border-primary/20"
                         >
                           {filter}
-                          <button
-                            type="button"
+                          <span
                             onClick={(e) => {
                               e.stopPropagation();
                               removeFilter(filter);
                             }}
-                            className="ml-1 hover:bg-primary/20 rounded-full w-3 h-3 flex items-center justify-center"
+                            className="ml-1 hover:bg-primary/20 rounded-full w-3 h-3 flex items-center justify-center cursor-pointer"
                           >
                             <X className="w-2 h-2" />
-                          </button>
+                          </span>
                         </span>
                       ))}
                     {getActiveFilterCount() > 2 && (
@@ -474,7 +473,7 @@ export const StockTable = () => {
                 )}
                 <ChevronDown className="ml-auto w-4 h-4" />
               </Button>
-              <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-full z-[9999] whitespace-nowrap px-2 py-1 rounded bg-black text-white text-xs opacity-0 scale-95 transition-all duration-200">
+              <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-full z-[9999] whitespace-nowrap px-2 py-1 rounded bg-black text-white dark:bg-white dark:text-black text-xs opacity-0 scale-95 transition-all duration-200">
                 {t(
                   "stock.filtersTooltip",
                   "Filter products by various criteria",
