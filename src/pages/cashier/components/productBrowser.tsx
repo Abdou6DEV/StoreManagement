@@ -89,18 +89,21 @@ const ProductBrowser = forwardRef<
       setIsClosing(false);
     }
   }, [open]);
-
-  // Load favorites from localStorage
+  
   useEffect(() => {
-    const savedFavorites = localStorage.getItem("cashier-favorites");
-    if (savedFavorites) {
-      try {
-        setFavorites(JSON.parse(savedFavorites));
-      } catch (error) {
-        console.error("Error loading favorites:", error);
+    if (open) {
+      const savedFavorites = localStorage.getItem("cashier-favorites");
+      if (savedFavorites) {
+        try {
+          setFavorites(JSON.parse(savedFavorites));
+        } catch (error) {
+          console.error("Error loading favorites:", error);
+        }
+      } else {
+        setFavorites([]);
       }
     }
-  }, []);
+  }, [open]);
 
   const toggleFavorite = (productId: string) => {
     setFavorites((prev) => {
