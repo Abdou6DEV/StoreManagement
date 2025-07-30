@@ -162,8 +162,8 @@ function setupDatabaseHandlers() {
 
   ipcMain.handle(
     "db:payments:updatePaidAt",
-    async (_event, { saleId, clientId, paidAt }) => {
-      return await updatePaymentPaidAt(saleId, clientId, paidAt);
+    async (_event, { saleId, clientId, paidDate }) => {
+      return await updatePaymentPaidAt(saleId, clientId, paidDate);
     },
   );
 

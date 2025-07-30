@@ -692,21 +692,21 @@ async function main() {
     const saleTotal =
       saleItems.reduce((sum, item) => sum + item.price * item.quantity, 0) -
       sale.discount;
-    const paidAmount =
+    const givenAmount =
       saleTotal > 0 ? faker.number.int({ min: 0, max: saleTotal }) : 0;
     const type = faker.helpers.arrayElement(["CREDIT", "VERSEMENT"]);
     const dueDate = faker.date.soon({ days: 30 });
-    let paidAt = null;
+    let paidDate = null;
     if (faker.datatype.boolean()) {
-      paidAt = faker.date.between({ from: new Date(), to: dueDate });
+      paidDate = faker.date.between({ from: new Date(), to: dueDate });
     }
     await prisma.payment.create({
       data: {
         saleId: sale.id,
         clientId: sale.clientId,
-        paidAmount,
-        dueAt: dueDate,
-        paidAt,
+        givenAmount,
+        dueDate: dueDate,
+        paidDate,
         type,
       },
     });

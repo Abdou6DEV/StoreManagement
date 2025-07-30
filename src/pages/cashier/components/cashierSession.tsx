@@ -207,9 +207,9 @@ export default function CashierSession({
         await window.api.database.payments.create({
           saleId: sale.id,
           clientId: saleClientId,
-          paidAmount: paymentAmount,
-          dueAt: paymentDate,
-          paidAt: undefined, // Do not set paidAt for either credit or versement
+          givenAmount: paymentAmount,
+          dueDate: paymentDate,
+          paidDate: undefined, // Do not set paidDate for either credit or versement
           type: paymentType === "credit" ? "CREDIT" : "VERSEMENT",
         });
       }
@@ -274,9 +274,9 @@ export default function CashierSession({
         await window.api.database.payments.create({
           saleId: sale.id,
           clientId: saleClientId,
-          paidAmount: paymentAmount,
-          dueAt: paymentDate,
-          paidAt: undefined, // Do not set paidAt for either credit or versement
+          givenAmount: paymentAmount,
+          dueDate: paymentDate,
+          paidDate: undefined, // Do not set paidDate for either credit or versement
           type: paymentType === "credit" ? "CREDIT" : "VERSEMENT",
         });
       }

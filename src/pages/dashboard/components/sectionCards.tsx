@@ -129,9 +129,9 @@ export function SectionCards() {
       const totalVersement = payments.filter(
         (p: any) => p.type === "VERSEMENT",
       );
-      const unpaidCredit = totalCredit.filter((p: any) => !p.paidAt).length;
+      const unpaidCredit = totalCredit.filter((p: any) => !p.paidDate).length;
       const unpaidVersement = totalVersement.filter(
-        (p: any) => !p.paidAt,
+        (p: any) => !p.paidDate,
       ).length;
       setClientStats([
         {

@@ -3,18 +3,18 @@ import { prisma } from "./prismaClient";
 export async function createPayment(data: {
   saleId: string;
   clientId: string;
-  paidAmount: number;
-  dueAt: Date;
-  paidAt?: Date;
+  givenAmount: number;
+  dueDate: Date;
+  paidDate?: Date;
   type: "CREDIT" | "VERSEMENT";
 }) {
   return await prisma.payment.create({
     data: {
       saleId: data.saleId,
       clientId: data.clientId,
-      paidAmount: data.paidAmount,
-      dueAt: data.dueAt,
-      paidAt: data.paidAt,
+      givenAmount: data.givenAmount,
+      dueDate: data.dueDate,
+      paidDate: data.paidDate,
       type: data.type,
     },
   });
@@ -40,13 +40,13 @@ export async function getAllPayments() {
 export async function updatePaymentPaidAt(
   saleId: string,
   clientId: string,
-  paidAt: Date,
+  paidDate: Date,
 ) {
   return await prisma.payment.updateMany({
     where: {
       saleId: saleId,
       clientId: clientId,
     },
-    data: { paidAt },
+    data: { paidDate },
   });
 }
