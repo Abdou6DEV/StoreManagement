@@ -249,7 +249,7 @@ export default function CashierPage() {
       {/* === Main Content === */}
       <div className="flex-1 flex min-h-0">
         {/* LEFT: Favorites Browser (2/5) */}
-        <div className="w-2/5 flex-shrink-0 flex flex-col gap-2 p-2 h-full">
+        <div className="w-2/5 flex-shrink-0 flex flex-col gap-2 h-full px-2">
           {/* Search and Browse/Manual Buttons */}
           <div className="bg-card border border-border rounded-xl p-3 shadow-sm flex-shrink-0">
             <div className="flex items-center justify-center gap-2">
@@ -337,7 +337,7 @@ export default function CashierPage() {
       </div>
 
       {/* Session Selector - Full Width */}
-      <div className="gap-3 bg-background flex justify-center items-center px-4 py-3 flex-shrink-0">
+      <div className="gap-3 bg-background flex justify-center items-center px-4 py-4 flex-shrink-0">
         {Array.from({ length: MAX_SESSIONS }).map((_, i) => {
           const isActive = activeSession === i;
           const hasItems = sessionCarts[i]?.length > 0;

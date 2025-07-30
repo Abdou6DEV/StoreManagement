@@ -253,7 +253,7 @@ const FavoritesBrowser: React.FC<FavoritesBrowserProps> = ({
             <div className="text-xs font-medium text-muted-foreground mb-2">
               {t("cashier.frequentlyUsed", "Frequently Used")}
             </div>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               {frequentlyUsedProducts.map((product) => (
                 <div
                   key={product.id}
