@@ -9,7 +9,7 @@ import CashierSession from "./components/cashierSession";
 import FavoritesBrowser from "./components/favoritesBrowser";
 import ProductSearch from "./components/productSearch";
 import { Tooltip } from "../../lib/components/tooltip";
-import { ShoppingCart, PlusCircle } from "lucide-react";
+import { ShoppingCart, PlusCircle, Plus } from "lucide-react";
 
 const MAX_SESSIONS = 5;
 
@@ -35,15 +35,42 @@ export default function CashierPage() {
     paymentDate?: Date;
   } | null>(null);
 
+  // Track number of active sessions (start with 1)
+  const [sessionCount, setSessionCount] = useState(1);
+
   // State for each session - separate cart for each session
-  const [sessionCarts, setSessionCarts] = useState<CartItem[][]>(
-    Array.from({ length: MAX_SESSIONS }, (): CartItem[] => []),
-  );
+  const [sessionCarts, setSessionCarts] = useState<CartItem[][]>([[]]);
 
   // State for each session's discount
-  const [sessionDiscounts, setSessionDiscounts] = useState<string[]>(
-    Array.from({ length: MAX_SESSIONS }, (): string => ""),
-  );
+  const [sessionDiscounts, setSessionDiscounts] = useState<string[]>([""]);
+
+  // Function to add a new session
+  const addNewSession = () => {
+    if (sessionCount < MAX_SESSIONS) {
+      setSessionCount((prev) => prev + 1);
+      setSessionCarts((prev) => [...prev, []]);
+      setSessionDiscounts((prev) => [...prev, ""]);
+      setActiveSession(sessionCount); // Switch to the new session
+    }
+  };
+
+  // Function to remove a session
+  const removeSession = (sessionIndex: number) => {
+    if (sessionCount > 1) {
+      setSessionCount((prev) => prev - 1);
+      setSessionCarts((prev) =>
+        prev.filter((_, index) => index !== sessionIndex),
+      );
+      setSessionDiscounts((prev) =>
+        prev.filter((_, index) => index !== sessionIndex),
+      );
+
+      // Adjust active session if necessary
+      if (activeSession >= sessionIndex) {
+        setActiveSession((prev) => Math.max(0, prev - 1));
+      }
+    }
+  };
 
   // Get the current session's cart and discount
   const currentCart = sessionCarts[activeSession] || [];
@@ -183,9 +210,9 @@ export default function CashierPage() {
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "ArrowLeft") {
-        setActiveSession((prev) => (prev - 1 + MAX_SESSIONS) % MAX_SESSIONS);
+        setActiveSession((prev) => (prev - 1 + sessionCount) % sessionCount);
       } else if (e.key === "ArrowRight") {
-        setActiveSession((prev) => (prev + 1) % MAX_SESSIONS);
+        setActiveSession((prev) => (prev + 1) % sessionCount);
       } else if (e.key === "F1") {
         e.preventDefault(); // Prevent browser help
         if (showProductBrowser) {
@@ -200,7 +227,7 @@ export default function CashierPage() {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [showProductBrowser]);
+  }, [showProductBrowser, sessionCount]);
 
   return (
     <main className="h-screen w-full -mt-13 flex flex-col bg-background text-foreground overflow-hidden">
@@ -305,7 +332,7 @@ export default function CashierPage() {
         {/* RIGHT: Session Content (3/5) */}
         <div className="w-3/5 flex flex-col min-h-0 h-full">
           {/* Session Content */}
-          {Array.from({ length: MAX_SESSIONS }).map((_, sessionIndex) => (
+          {Array.from({ length: sessionCount }).map((_, sessionIndex) => (
             <CashierSession
               key={sessionIndex}
               allProducts={allProducts}
@@ -336,7 +363,7 @@ export default function CashierPage() {
 
       {/* Session Selector - Full Width */}
       <div className="gap-3 bg-background flex justify-center items-center px-4 py-4 flex-shrink-0">
-        {Array.from({ length: MAX_SESSIONS }).map((_, i) => {
+        {Array.from({ length: sessionCount }).map((_, i) => {
           const isActive = activeSession === i;
           const hasItems = sessionCarts[i]?.length > 0;
 
@@ -348,34 +375,67 @@ export default function CashierPage() {
             "bg-card text-muted-foreground border-border hover:bg-muted hover:text-foreground";
 
           return (
-            <Tooltip
-              key={i}
-              content={
-                hasItems
-                  ? t(
-                      "cashier.tooltipSessionWithItems",
-                      "Session {{number}} - Has {{count}} items in cart",
-                      { number: i + 1, count: sessionCarts[i]?.length || 0 },
-                    )
-                  : t(
-                      "cashier.tooltipSessionEmpty",
-                      "Session {{number}} - Empty cart, ready for new transaction",
-                      { number: i + 1 },
-                    )
-              }
-              position="top"
-            >
-              <button
-                onClick={() => setActiveSession(i)}
-                className={`${baseClasses} ${
-                  isActive ? active : hasItems ? green : inactive
-                }`}
+            <div key={i} className="flex items-center gap-1">
+              <Tooltip
+                content={
+                  hasItems
+                    ? t(
+                        "cashier.tooltipSessionWithItems",
+                        "Session {{number}} - Has {{count}} items in cart",
+                        { number: i + 1, count: sessionCarts[i]?.length || 0 },
+                      )
+                    : t(
+                        "cashier.tooltipSessionEmpty",
+                        "Session {{number}} - Empty cart, ready for new transaction",
+                        { number: i + 1 },
+                      )
+                }
+                position="top"
               >
-                {t("cashier.page", { number: i + 1 })}
-              </button>
-            </Tooltip>
+                <button
+                  onClick={() => setActiveSession(i)}
+                  className={`${baseClasses} ${
+                    isActive ? active : hasItems ? green : inactive
+                  }`}
+                >
+                  {t("cashier.page", { number: i + 1 })}
+                </button>
+              </Tooltip>
+              {sessionCount > 1 && (
+                <Tooltip
+                  content={t(
+                    "cashier.tooltipRemoveSession",
+                    "Remove this session",
+                  )}
+                  position="top"
+                >
+                  <button
+                    onClick={() => removeSession(i)}
+                    className="w-5 h-5 text-xs text-muted-foreground hover:text-red-500 hover:bg-red-100 rounded-full flex items-center justify-center transition"
+                  >
+                    ×
+                  </button>
+                </Tooltip>
+              )}
+            </div>
           );
         })}
+
+        {/* Add New Session Button */}
+        {sessionCount < MAX_SESSIONS && (
+          <Tooltip
+            content={t("cashier.tooltipAddSession", "Add new session")}
+            position="top"
+          >
+            <button
+              onClick={addNewSession}
+              className="px-3 py-1 text-xs font-semibold rounded-md transition border border-dashed border-primary/50 text-primary hover:bg-primary/10 hover:border-primary flex items-center gap-1"
+            >
+              <Plus className="w-3 h-3" />
+              {t("cashier.addSession", "Add")}
+            </button>
+          </Tooltip>
+        )}
       </div>
 
       {/* Product Browser as a modal */}
