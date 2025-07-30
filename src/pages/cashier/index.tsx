@@ -1,14 +1,12 @@
 import { useState, useEffect, useRef } from "react";
-import type { Product } from "@prisma/client";
-import type { ProductWithSales } from "../../types";
-import type { CartItem } from "../../types";
+import type { ProductWithSales, CartItem } from "../../types";
 import { useTranslation } from "react-i18next";
 import OutOfStockWarningModal from "./components/outOfStockWarningModal";
 import ProductBrowser from "./components/productBrowser";
 import AddManualProductModal from "./components/addManualProductModal";
 import ReceiptModal from "./components/receiptModal";
 import CashierSession from "./components/cashierSession";
-import FavoritesBrowser from "./components/favoritesBrowser";
+import TabbedBrowser from "./components/tabbedBrowser";
 import ProductSearch from "./components/productSearch";
 import { Tooltip } from "../../lib/components/tooltip";
 import { ShoppingCart, PlusCircle } from "lucide-react";
@@ -288,12 +286,12 @@ export default function CashierPage() {
             </div>
           </div>
 
-          {/* Favorites Browser */}
+          {/* Tabbed Browser */}
           <div className="flex-1 min-h-0">
-            <FavoritesBrowser
+            <TabbedBrowser
               allProducts={allProducts}
               cart={currentCart}
-              setCart={(newCart) => {
+              setCart={(newCart: CartItem[] | ((prev: CartItem[]) => CartItem[])) => {
                 const cart =
                   typeof newCart === "function"
                     ? newCart(currentCart)
@@ -383,7 +381,7 @@ export default function CashierPage() {
       {/* Product Browser as a modal */}
       <ProductBrowser
         ref={productBrowserRef}
-        allProducts={allProducts as any}
+        allProducts={allProducts}
         open={showProductBrowser}
         onClose={() => setShowProductBrowser(false)}
         cart={currentCart}
@@ -398,7 +396,7 @@ export default function CashierPage() {
       <OutOfStockWarningModal
         open={showStockWarning}
         items={outOfStockItems}
-        allProducts={allProducts as any}
+        allProducts={allProducts}
         onCancel={() => {
           setShowStockWarning(false);
           setOutOfStockItems([]);

@@ -149,7 +149,7 @@ const FavoritesBrowser: React.FC<FavoritesBrowserProps> = ({
   };
 
   return (
-    <div className="bg-card border border-border rounded-xl p-3 shadow-sm h-full overflow-hidden flex flex-col">
+    <div className="h-full overflow-hidden flex flex-col p-3">
       <div className="flex-1 overflow-y-auto space-y-3">
         {/* Favorites Section */}
         {favoriteProducts.length > 0 && (

@@ -42,7 +42,7 @@ export function StockProvider({ children }: { children: ReactNode }) {
         ...p,
         totalSold: salesMap.get(p.id) || 0,
       }));
-      setProducts(merged as any);
+      setProducts(merged);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to fetch products");
       console.error("Error fetching products:", err);
