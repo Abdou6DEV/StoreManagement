@@ -156,7 +156,7 @@ const FavoritesBrowser: React.FC<FavoritesBrowserProps> = ({
               <Star className="w-4 h-4 text-yellow-500" />
               {favoriteProducts.length} {t("cashier.favorites", "favorites")}
             </div>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-3 gap-1">
               {favoriteProducts.map((product) => (
                 <div
                   key={product.id}
@@ -169,7 +169,7 @@ const FavoritesBrowser: React.FC<FavoritesBrowserProps> = ({
                 >
                   <div className="flex items-start justify-between w-full">
                     <div className="flex flex-col gap-0.5 flex-1 min-w-0 justify-center h-full">
-                      <div className="font-medium break-words leading-tight">
+                      <div className="font-semibold text-sm break-words leading-tight">
                         {product.name}
                       </div>
                       <div className="text-sm text-muted-foreground leading-tight">
@@ -253,7 +253,7 @@ const FavoritesBrowser: React.FC<FavoritesBrowserProps> = ({
             <div className="text-xs font-medium text-muted-foreground mb-2">
               {t("cashier.frequentlyUsed", "Frequently Used")}
             </div>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-3 gap-1">
               {frequentlyUsedProducts.map((product) => (
                 <div
                   key={product.id}
@@ -266,7 +266,7 @@ const FavoritesBrowser: React.FC<FavoritesBrowserProps> = ({
                 >
                   <div className="flex items-start justify-between w-full">
                     <div className="flex flex-col gap-0.5 flex-1 min-w-0 justify-center h-full">
-                      <div className="font-medium break-words leading-tight">
+                      <div className="font-semibold text-sm break-words leading-tight">
                         {product.name}
                       </div>
                       <div className="text-sm text-muted-foreground leading-tight">
