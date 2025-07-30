@@ -6,12 +6,11 @@ import React, {
   forwardRef,
   useImperativeHandle,
 } from "react";
-import type { ProductWithSales } from "../../../types";
+import type { ProductWithSales, CartItem } from "../../../types";
 import { useTranslation } from "react-i18next";
 import { Skeleton } from "../../../lib/components/skeleton";
 import { useStock } from "../../../lib/contexts/stockContext";
-import type { CartItem } from "../../../types";
-import { ChevronLeft, ChevronRight, Star } from "lucide-react";
+import { ChevronLeft, ChevronRight, Star, Plus, Minus } from "lucide-react";
 import { Tooltip } from "../../../lib/components/tooltip";
 
 interface ProductBrowserProps {
@@ -89,7 +88,7 @@ const ProductBrowser = forwardRef<
       setIsClosing(false);
     }
   }, [open]);
-  
+
   useEffect(() => {
     if (open) {
       const savedFavorites = localStorage.getItem("cashier-favorites");
@@ -352,9 +351,9 @@ const ProductBrowser = forwardRef<
                   </div>
                   {cartItem && (
                     <div className="absolute left-0 right-0 bottom-2 flex items-center justify-center z-10 pointer-events-none">
-                      <div className="flex items-center gap-2 pointer-events-auto z-20">
+                      <div className="flex items-center gap-1.5 pointer-events-auto z-20 bg-background/95 backdrop-blur-sm rounded-lg px-2 py-1.5 shadow-lg border border-border">
                         <button
-                          className="w-8 h-8 rounded-full bg-muted text-primary hover:bg-primary hover:text-primary-foreground text-base font-bold shadow flex items-center justify-center border border-border"
+                          className="w-7 h-7 rounded-full bg-muted hover:bg-primary hover:text-primary-foreground text-muted-foreground transition-all duration-200 flex items-center justify-center border border-border hover:border-primary hover:scale-105 active:scale-95"
                           onClick={(e) => {
                             e.stopPropagation();
                             setCart((prev) =>
@@ -370,10 +369,10 @@ const ProductBrowser = forwardRef<
                             );
                           }}
                         >
-                          -
+                          <Minus className="w-3.5 h-3.5" />
                         </button>
                         <span
-                          className="px-2 text-base font-semibold select-none cursor-pointer"
+                          className="px-2.5 text-sm font-semibold select-none cursor-pointer text-foreground min-w-[2rem] text-center"
                           onClick={(e) => e.stopPropagation()}
                           onDoubleClick={(e) => {
                             e.stopPropagation();
@@ -430,7 +429,7 @@ const ProductBrowser = forwardRef<
                           )}
                         </span>
                         <button
-                          className="w-8 h-8 rounded-full bg-muted text-primary hover:bg-primary hover:text-primary-foreground text-base font-bold shadow flex items-center justify-center border border-border"
+                          className="w-7 h-7 rounded-full bg-muted hover:bg-primary hover:text-primary-foreground text-muted-foreground transition-all duration-200 flex items-center justify-center border border-border hover:border-primary hover:scale-105 active:scale-95"
                           onClick={(e) => {
                             e.stopPropagation();
                             setCart((prev) =>
@@ -442,7 +441,7 @@ const ProductBrowser = forwardRef<
                             );
                           }}
                         >
-                          +
+                          <Plus className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </div>

@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
-import type { ProductWithSales } from "../../../types";
-import type { CartItem } from "../../../types";
+import type { ProductWithSales, CartItem } from "../../../types";
 import { useTranslation } from "react-i18next";
-import { Star } from "lucide-react";
+import { Star, Plus, Minus } from "lucide-react";
 import { Tooltip } from "../../../lib/components/tooltip";
 
 interface FavoritesBrowserProps {
@@ -84,19 +83,22 @@ const FavoritesBrowser: React.FC<FavoritesBrowserProps> = ({
   }, [allProducts, favorites]);
 
   const handleAddToCart = (product: ProductWithSales) => {
-    const updated = [...cart];
-    const exists = updated.find((item) => item.id === product.id);
+    const exists = cart.find((item) => item.id === product.id);
     if (exists) {
-      exists.qty += 1;
+      // If product is already in cart, remove it
+      setCart((prev) => prev.filter((item) => item.id !== product.id));
     } else {
-      updated.push({
-        id: product.id,
-        name: product.name,
-        price: product.selling,
-        qty: 1,
-      });
+      // If product is not in cart, add it
+      setCart((prev) => [
+        ...prev,
+        {
+          id: product.id,
+          name: product.name,
+          price: product.selling,
+          qty: 1,
+        },
+      ]);
     }
-    setCart(updated);
   };
 
   const toggleFavorite = (productId: string) => {
@@ -210,9 +212,9 @@ const FavoritesBrowser: React.FC<FavoritesBrowserProps> = ({
 
                   {isInCart(product.id) && (
                     <div className="absolute left-0 right-0 bottom-2 flex items-center justify-center z-10 pointer-events-none">
-                      <div className="flex items-center gap-2 pointer-events-auto z-20">
+                      <div className="flex items-center gap-1.5 pointer-events-auto z-20 bg-background/95 backdrop-blur-sm rounded-lg px-2 py-1.5 shadow-lg border border-border">
                         <button
-                          className="w-8 h-8 rounded-full bg-muted text-primary hover:bg-primary hover:text-primary-foreground text-base font-bold shadow flex items-center justify-center border border-border"
+                          className="w-7 h-7 rounded-full bg-muted hover:bg-primary hover:text-primary-foreground text-muted-foreground transition-all duration-200 flex items-center justify-center border border-border hover:border-primary hover:scale-105 active:scale-95"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleQuantityChange(
@@ -221,13 +223,13 @@ const FavoritesBrowser: React.FC<FavoritesBrowserProps> = ({
                             );
                           }}
                         >
-                          -
+                          <Minus className="w-3.5 h-3.5" />
                         </button>
-                        <span className="px-2 text-base font-semibold select-none cursor-pointer">
+                        <span className="px-2.5 text-sm font-semibold select-none cursor-pointer text-foreground min-w-[2rem] text-center">
                           {getCartQuantity(product.id)}
                         </span>
                         <button
-                          className="w-8 h-8 rounded-full bg-muted text-primary hover:bg-primary hover:text-primary-foreground text-base font-bold shadow flex items-center justify-center border border-border"
+                          className="w-7 h-7 rounded-full bg-muted hover:bg-primary hover:text-primary-foreground text-muted-foreground transition-all duration-200 flex items-center justify-center border border-border hover:border-primary hover:scale-105 active:scale-95"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleQuantityChange(
@@ -236,7 +238,7 @@ const FavoritesBrowser: React.FC<FavoritesBrowserProps> = ({
                             );
                           }}
                         >
-                          +
+                          <Plus className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </div>
@@ -307,9 +309,9 @@ const FavoritesBrowser: React.FC<FavoritesBrowserProps> = ({
 
                   {isInCart(product.id) && (
                     <div className="absolute left-0 right-0 bottom-2 flex items-center justify-center z-10 pointer-events-none">
-                      <div className="flex items-center gap-2 pointer-events-auto z-20">
+                      <div className="flex items-center gap-1.5 pointer-events-auto z-20 bg-background/95 backdrop-blur-sm rounded-lg px-2 py-1.5 shadow-lg border border-border">
                         <button
-                          className="w-8 h-8 rounded-full bg-muted text-primary hover:bg-primary hover:text-primary-foreground text-base font-bold shadow flex items-center justify-center border border-border"
+                          className="w-7 h-7 rounded-full bg-muted hover:bg-primary hover:text-primary-foreground text-muted-foreground transition-all duration-200 flex items-center justify-center border border-border hover:border-primary hover:scale-105 active:scale-95"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleQuantityChange(
@@ -318,13 +320,13 @@ const FavoritesBrowser: React.FC<FavoritesBrowserProps> = ({
                             );
                           }}
                         >
-                          -
+                          <Minus className="w-3.5 h-3.5" />
                         </button>
-                        <span className="px-2 text-base font-semibold select-none cursor-pointer">
+                        <span className="px-2.5 text-sm font-semibold select-none cursor-pointer text-foreground min-w-[2rem] text-center">
                           {getCartQuantity(product.id)}
                         </span>
                         <button
-                          className="w-8 h-8 rounded-full bg-muted text-primary hover:bg-primary hover:text-primary-foreground text-base font-bold shadow flex items-center justify-center border border-border"
+                          className="w-7 h-7 rounded-full bg-muted hover:bg-primary hover:text-primary-foreground text-muted-foreground transition-all duration-200 flex items-center justify-center border border-border hover:border-primary hover:scale-105 active:scale-95"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleQuantityChange(
@@ -333,7 +335,7 @@ const FavoritesBrowser: React.FC<FavoritesBrowserProps> = ({
                             );
                           }}
                         >
-                          +
+                          <Plus className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </div>

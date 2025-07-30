@@ -1,7 +1,6 @@
 import React, { useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import type { CartItem } from "../../../types";
-import type { ProductWithSales } from "../../../types";
+import type { CartItem, ProductWithSales } from "../../../types";
 
 interface Props {
   open: boolean;

@@ -42,13 +42,13 @@ const PaymentsModal: React.FC<PaymentsModalProps> = ({ client, onClose }) => {
   const handleMarkAsPaid = async (paymentId: string) => {
     try {
       await window.api.database.payments.markAsPaid(paymentId, new Date());
-      
-      setPayments(prevPayments => 
-        prevPayments.map(payment => 
-          payment.id === paymentId 
+
+      setPayments((prevPayments) =>
+        prevPayments.map((payment) =>
+          payment.id === paymentId
             ? { ...payment, paidDate: new Date() }
-            : payment
-        )
+            : payment,
+        ),
       );
 
       showToast(
@@ -67,12 +67,10 @@ const PaymentsModal: React.FC<PaymentsModalProps> = ({ client, onClose }) => {
     try {
       await window.api.database.payments.markAsPaid(paymentId, null);
 
-      setPayments(prevPayments => 
-        prevPayments.map(payment => 
-          payment.id === paymentId 
-            ? { ...payment, paidDate: null }
-            : payment
-        )
+      setPayments((prevPayments) =>
+        prevPayments.map((payment) =>
+          payment.id === paymentId ? { ...payment, paidDate: null } : payment,
+        ),
       );
 
       showToast(
@@ -92,12 +90,12 @@ const PaymentsModal: React.FC<PaymentsModalProps> = ({ client, onClose }) => {
       await window.api.database.payments.updateAmount(paymentId, editAmount);
       setEditingPayment(null);
 
-      setPayments(prevPayments => 
-        prevPayments.map(payment => 
-          payment.id === paymentId 
+      setPayments((prevPayments) =>
+        prevPayments.map((payment) =>
+          payment.id === paymentId
             ? { ...payment, givenAmount: editAmount }
-            : payment
-        )
+            : payment,
+        ),
       );
 
       showToast(
@@ -143,7 +141,9 @@ const PaymentsModal: React.FC<PaymentsModalProps> = ({ client, onClose }) => {
             <th className="px-4 py-3">
               {t("clients.paymentAmount", "Amount")}
             </th>
-            <th className="px-4 py-3">{t("clients.paymentDueDate", "Due Date")}</th>
+            <th className="px-4 py-3">
+              {t("clients.paymentDueDate", "Due Date")}
+            </th>
             <th className="px-4 py-3">
               {t("clients.paymentPaidDate", "Paid Date")}
             </th>
@@ -189,17 +189,17 @@ const PaymentsModal: React.FC<PaymentsModalProps> = ({ client, onClose }) => {
                       {t("cashier.currency", "DA")}
                     </span>
                     {!payment.paidDate && (
-                                          <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        setEditingPayment(payment.id);
-                        setEditAmount(payment.givenAmount);
-                      }}
-                      className="h-6 px-1"
-                    >
-                      <Edit className="w-3 h-3" />
-                    </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setEditingPayment(payment.id);
+                          setEditAmount(payment.givenAmount);
+                        }}
+                        className="h-6 px-1"
+                      >
+                        <Edit className="w-3 h-3" />
+                      </Button>
                     )}
                   </div>
                 )}
@@ -209,21 +209,21 @@ const PaymentsModal: React.FC<PaymentsModalProps> = ({ client, onClose }) => {
                   ? new Date(payment.dueDate).toLocaleDateString()
                   : "-"}
               </td>
-                             <td className="px-4 py-2">
-                 {payment.paidDate ? (
-                   <div className="flex items-center gap-2">
-                     <CheckCircle className="w-4 h-4 text-green-500" />
-                     {new Date(payment.paidDate).toLocaleDateString()}
-                   </div>
-                                   ) : (
-                    <div className="flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-orange-600" />
-                      <span className="text-orange-700 font-medium bg-orange-100 px-2 py-1 rounded-full text-xs">
-                        {t("clients.pending", "Pending")}
-                      </span>
-                    </div>
-                  )}
-               </td>
+              <td className="px-4 py-2">
+                {payment.paidDate ? (
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4 text-green-500" />
+                    {new Date(payment.paidDate).toLocaleDateString()}
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-orange-600" />
+                    <span className="text-orange-700 font-medium bg-orange-100 px-2 py-1 rounded-full text-xs">
+                      {t("clients.pending", "Pending")}
+                    </span>
+                  </div>
+                )}
+              </td>
               <td className="px-4 py-2">
                 {payment.createdAt
                   ? new Date(payment.createdAt).toLocaleDateString()
