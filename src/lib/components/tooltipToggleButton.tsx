@@ -52,14 +52,14 @@ export const TooltipToggleButton: React.FC<TooltipToggleButtonProps> = ({
             className={cn(
               "rounded-full h-5 w-5 flex items-center justify-center transform transition-transform duration-300 ease-in-out",
               showTooltips
-                ? "translate-x-5 bg-green-500 text-white"
-                : "-translate-x-1 bg-gray-50 text-gray-500",
+                ? "translate-x-5 bg-secondary text-green-500"
+                : "-translate-x-1 bg-secondary text-green-500",
             )}
           >
             {showTooltips ? (
-              <MessageSquare className="w-1 h-1" />
+              <MessageSquare className="w-3 h-3 text-green-500" />
             ) : (
-              <MessageSquareOff className="w-1 h-1" />
+              <MessageSquareOff className="w-3 h-3 text-green-500" />
             )}
           </div>
         </div>

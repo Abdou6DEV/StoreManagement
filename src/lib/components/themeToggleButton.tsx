@@ -51,8 +51,8 @@ export const ThemeToggleButton: React.FC<ThemeToggleButtonProps> = ({
             className={cn(
               "rounded-full h-5 w-5 flex items-center justify-center transform transition-transform duration-300 ease-in-out",
               isDark
-                ? "translate-x-5 bg-black text-gray"
-                : "-translate-x-1 bg-gray-50 text-gray",
+                ? "translate-x-5 bg-secondary text-gray"
+                : "-translate-x-1 bg-secondary text-gray",
             )}
           >
             {isDark ? (
