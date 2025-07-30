@@ -389,7 +389,7 @@ export default function PaymentSummary({
               {t("cashier.discount", "Discount")}
             </span>
             <span className={isRTL ? "w-1/4 text-left" : "w-1/4 text-right"}>
-              -{discount.toLocaleString()} DA
+              -{discount.toLocaleString()} {t("cashier.currency", "DA")}
             </span>
           </div>
         )}
@@ -401,7 +401,7 @@ export default function PaymentSummary({
                 {t("cashier.paid", "Paid")}
               </span>
               <span className={isRTL ? "w-1/4 text-left" : "w-1/4 text-right"}>
-                {paymentAmount.toLocaleString()} DA
+                {paymentAmount.toLocaleString()} {t("cashier.currency", "DA")}
               </span>
             </div>
             <div className="flex justify-between">
@@ -409,7 +409,7 @@ export default function PaymentSummary({
                 {t("cashier.rest", "Remaining")}
               </span>
               <span className={isRTL ? "w-1/4 text-left" : "w-1/4 text-right"}>
-                {creditDisplay.toLocaleString()} DA
+                {creditDisplay.toLocaleString()} {t("cashier.currency", "DA")}
               </span>
             </div>
           </>
@@ -421,7 +421,7 @@ export default function PaymentSummary({
                 {t("cashier.versement", "Versement")}
               </span>
               <span className={isRTL ? "w-1/4 text-left" : "w-1/4 text-right"}>
-                {paymentAmount.toLocaleString()} DA
+                {paymentAmount.toLocaleString()} {t("cashier.currency", "DA")}
               </span>
             </div>
             <div className="flex justify-between">
@@ -429,7 +429,7 @@ export default function PaymentSummary({
                 {t("cashier.rest", "Rest")}
               </span>
               <span className={isRTL ? "w-1/4 text-left" : "w-1/4 text-right"}>
-                {creditDisplay.toLocaleString()} DA
+                {creditDisplay.toLocaleString()} {t("cashier.currency", "DA")}
               </span>
             </div>
           </>
@@ -440,7 +440,7 @@ export default function PaymentSummary({
             {t("cashier.total", "Total")}
           </span>
           <span className={isRTL ? "w-1/4 text-left" : "w-1/4 text-right"}>
-            {total.toLocaleString()} DA
+            {total.toLocaleString()} {t("cashier.currency", "DA")}
           </span>
         </div>
       </div>

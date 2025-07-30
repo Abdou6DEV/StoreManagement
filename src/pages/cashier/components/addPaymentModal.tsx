@@ -149,7 +149,7 @@ const AddPaymentModal: React.FC<AddPaymentModalProps> = ({
               <span className="font-semibold text-foreground">
                 {t("cashier.given", "Given")}:
               </span>{" "}
-              {paymentAmount ? Number(paymentAmount).toLocaleString() : 0} DA
+              {paymentAmount ? Number(paymentAmount).toLocaleString() : 0} {t("cashier.currency", "DA")}
             </div>
             <div>
               <span className="font-semibold text-foreground">
@@ -158,13 +158,13 @@ const AddPaymentModal: React.FC<AddPaymentModalProps> = ({
               {paymentAmount
                 ? (cartTotal - Number(paymentAmount)).toLocaleString()
                 : cartTotal.toLocaleString()}{" "}
-              DA
+              {t("cashier.currency", "DA")}
             </div>
             <div className="col-span-2">
               <span className="font-semibold text-foreground">
                 {t("cashier.total", "Total")}:
               </span>{" "}
-              {cartTotal.toLocaleString()} DA
+              {cartTotal.toLocaleString()} {t("cashier.currency", "DA")}
             </div>
           </div>
 

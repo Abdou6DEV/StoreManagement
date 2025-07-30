@@ -205,7 +205,7 @@ export default function CashierPage() {
                     {total.toLocaleString()}
                   </span>
                   <span className="text-lg sm:text-xl lg:text-2xl font-bold text-muted-foreground">
-                    DA
+                    {t("cashier.currency", "DA")}
                   </span>
                 </div>
               </div>

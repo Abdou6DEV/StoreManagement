@@ -64,7 +64,7 @@ const ClientsTable: React.FC<ClientsTableProps> = ({
               <td className="px-4 py-2">{client.address || "-"}</td>
               <td className="px-4 py-2">{client.notes || "-"}</td>
               <td className="px-4 py-2">
-                {client.totalPurchases?.toLocaleString() || 0} DA
+                {client.totalPurchases?.toLocaleString() || 0} {t("cashier.currency", "DA")}
               </td>
               <td className="px-4 py-2">
                 <div className="flex gap-2">

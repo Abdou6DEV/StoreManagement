@@ -165,7 +165,15 @@
     "tooltipBrowseProducts": "تصفح المنتجات (F1)",
     "tooltipAddManualProduct": "إضافة منتجات يدويًا (F2)",
     "tooltipSessionWithItems": "الجلسة {{number}} - تحتوي على {{count}} عنصر في السلة",
-    "tooltipSessionEmpty": "الجلسة {{number}} - سلة فارغة، جاهزة لمعاملة جديدة"
+    "tooltipSessionEmpty": "الجلسة {{number}} - سلة فارغة، جاهزة لمعاملة جديدة",
+    "addToFavorites": "إضافة إلى المفضلة",
+    "removeFromFavorites": "إزالة من المفضلة",
+    "currency": "دج",
+    "favorites": "المفضلة",
+    "frequentlyUsed": "المستخدمة بكثرة",
+    "noFavorites": "لا توجد مفضلات بعد",
+    "addFavoritesHint": "انقر على أيقونة النجمة على المنتجات لإضافتها إلى المفضلة",
+    "allProductsLoaded": "تم تحميل جميع المنتجات"
   },
   "stock": {
     "product": "اسم المنتج",
@@ -199,6 +207,7 @@
     "edit": "تعديل",
     "profit": "الربح",
     "totalBought": "إجمالي الشراء",
+    "totalSelling": "إجمالي البيع",
     "totalSold": "إجمالي المبيعات",
     "totalProfit": "إجمالي الربح",
     "allCategories": "كل الفئات",

@@ -5,6 +5,7 @@ import { Skeleton } from "../../../lib/components/skeleton";
 import { useStock } from "../../../lib/contexts/stockContext";
 import type { CartItem } from "../../../types";
 import { ChevronLeft, ChevronRight, Star } from "lucide-react";
+import { Tooltip } from "../../../lib/components/tooltip";
 
 interface ProductBrowserProps {
   allProducts: ProductWithSales[];
@@ -302,25 +303,33 @@ const ProductBrowser = forwardRef<{ handleClose: () => void }, ProductBrowserPro
                         {product.name}
                       </div>
                       <div className="text-sm text-muted-foreground leading-tight">
-                        {product.selling.toLocaleString()} DA
+                        {product.selling.toLocaleString()} {t("cashier.currency", "DA")}
                       </div>
                       <div className="text-xs text-muted-foreground leading-tight">
                         {t("cashier.stock", "Stock")}: {product.quantity}
                       </div>
                     </div>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleFavorite(product.id);
-                      }}
-                      className={`ml-1 transition ${
+                    <Tooltip
+                      content={
                         favorites.includes(product.id)
-                          ? "text-yellow-500 hover:text-yellow-600"
-                          : "text-gray-400 hover:text-yellow-500"
-                      }`}
+                          ? t("cashier.removeFromFavorites", "Remove from favorites")
+                          : t("cashier.addToFavorites", "Add to favorites")
+                      }
                     >
-                      <Star className={`w-3 h-3 ${favorites.includes(product.id) ? "fill-current" : ""}`} />
-                    </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleFavorite(product.id);
+                        }}
+                        className={`ml-1 transition ${
+                          favorites.includes(product.id)
+                            ? "text-yellow-500 hover:text-yellow-600"
+                            : "text-gray-400 hover:text-yellow-500"
+                        }`}
+                      >
+                        <Star className={`w-4 h-4 ${favorites.includes(product.id) ? "fill-current" : ""}`} />
+                      </button>
+                    </Tooltip>
                   </div>
                   {cartItem && (
                     <div className="absolute left-0 right-0 bottom-2 flex items-center justify-center z-10 pointer-events-none">

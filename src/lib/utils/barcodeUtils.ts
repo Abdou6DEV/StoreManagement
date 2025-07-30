@@ -49,6 +49,7 @@ export const printBarcodeLabel = (
   productName: string,
   productPrice: number | string,
   codebar: string,
+  currency: string = "DA",
 ) => {
   const printWindow = window.open("", "_blank");
   if (!printWindow) return;
@@ -155,7 +156,7 @@ export const printBarcodeLabel = (
         <div class="label">
           <div class="product-info">
             <div class="product-name">${productName || "Product Name"}</div>
-            <div class="product-price">${productPrice ? Number(productPrice).toLocaleString() + " DA" : "Price"}</div>
+            <div class="product-price">${productPrice ? Number(productPrice).toLocaleString() + " " + currency : "Price"}</div>
           </div>
           <div class="barcode-container">
             <svg id="barcode-label" style="width: 100%; height: 30px;"></svg>

@@ -58,7 +58,7 @@ export default function EditStockForm({
 
   // Handle print barcode
   const handlePrintBarcode = () => {
-    printBarcodeLabel(form.name, form.selling, form.codebar);
+    printBarcodeLabel(form.name, form.selling, form.codebar, t("cashier.currency", "DA"));
   };
 
   const handleUpdateProduct = async (e: React.FormEvent) => {

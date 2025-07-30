@@ -357,21 +357,21 @@ export default function ReceiptModal({
             <div class="totals">
               <div class="total-row">
                 <span>Subtotal:</span>
-                <span>${total.toLocaleString()} DA</span>
+                <span>${total.toLocaleString()} ${t("cashier.currency", "DA")}</span>
               </div>
               ${
                 discount > 0
                   ? `
                 <div class="total-row">
                   <span>Discount:</span>
-                  <span>-${discount.toLocaleString()} DA</span>
+                  <span>-${discount.toLocaleString()} ${t("cashier.currency", "DA")}</span>
                 </div>
               `
                   : ""
               }
               <div class="total-row">
                 <span>Total:</span>
-                <span>${finalTotal.toLocaleString()} DA</span>
+                <span>${finalTotal.toLocaleString()} ${t("cashier.currency", "DA")}</span>
               </div>
             </div>
             
@@ -382,9 +382,9 @@ export default function ReceiptModal({
               <div class="payment-info">
                 <div class="divider"></div>
                 <div>Payment Type: ${paymentType === "credit" ? "Credit" : "Versement"}</div>
-                <div>Amount Paid: ${paymentAmount.toLocaleString()} DA</div>
+                <div>Amount Paid: ${paymentAmount.toLocaleString()} ${t("cashier.currency", "DA")}</div>
                 <div>Due Date: ${paymentDate ? paymentDate.toLocaleDateString() : "N/A"}</div>
-                <div>Remaining: ${(finalTotal - paymentAmount).toLocaleString()} DA</div>
+                <div>Remaining: ${(finalTotal - paymentAmount).toLocaleString()} ${t("cashier.currency", "DA")}</div>
               </div>
             `
                 : ""
@@ -648,21 +648,21 @@ export default function ReceiptModal({
             <div class="totals">
               <div class="total-row">
                 <span>Subtotal:</span>
-                <span>${total.toLocaleString()} DA</span>
+                <span>${total.toLocaleString()} ${t("cashier.currency", "DA")}</span>
               </div>
               ${
                 discount > 0
                   ? `
                 <div class="total-row">
                   <span>Discount:</span>
-                  <span>-${discount.toLocaleString()} DA</span>
+                  <span>-${discount.toLocaleString()} ${t("cashier.currency", "DA")}</span>
                 </div>
               `
                   : ""
               }
               <div class="total-row">
                 <span>Total:</span>
-                <span>${finalTotal.toLocaleString()} DA</span>
+                <span>${finalTotal.toLocaleString()} ${t("cashier.currency", "DA")}</span>
               </div>
             </div>
             
@@ -673,9 +673,9 @@ export default function ReceiptModal({
               <div class="payment-info">
                 <div class="divider"></div>
                 <div>Payment Type: ${paymentType === "credit" ? "Credit" : "Versement"}</div>
-                <div>Amount Paid: ${paymentAmount.toLocaleString()} DA</div>
+                <div>Amount Paid: ${paymentAmount.toLocaleString()} ${t("cashier.currency", "DA")}</div>
                 <div>Due Date: ${paymentDate ? paymentDate.toLocaleDateString() : "N/A"}</div>
-                <div>Remaining: ${(finalTotal - paymentAmount).toLocaleString()} DA</div>
+                <div>Remaining: ${(finalTotal - paymentAmount).toLocaleString()} ${t("cashier.currency", "DA")}</div>
               </div>
             `
                 : ""
@@ -800,17 +800,17 @@ export default function ReceiptModal({
             <div className="font-bold">
               <div className="flex justify-between mb-1">
                 <span>Subtotal:</span>
-                <span>{total.toLocaleString()} DA</span>
+                <span>{total.toLocaleString()} {t("cashier.currency", "DA")}</span>
               </div>
               {discount > 0 && (
                 <div className="flex justify-between mb-1">
                   <span>Discount:</span>
-                  <span>-{discount.toLocaleString()} DA</span>
+                  <span>-{discount.toLocaleString()} {t("cashier.currency", "DA")}</span>
                 </div>
               )}
               <div className="flex justify-between">
                 <span>Total:</span>
-                <span>{finalTotal.toLocaleString()} DA</span>
+                <span>{finalTotal.toLocaleString()} {t("cashier.currency", "DA")}</span>
               </div>
             </div>
 
@@ -823,14 +823,14 @@ export default function ReceiptModal({
                     Payment Type:{" "}
                     {paymentType === "credit" ? "Credit" : "Versement"}
                   </div>
-                  <div>Amount Paid: {paymentAmount.toLocaleString()} DA</div>
+                  <div>Amount Paid: {paymentAmount.toLocaleString()} {t("cashier.currency", "DA")}</div>
                   <div>
                     Due Date:{" "}
                     {paymentDate ? paymentDate.toLocaleDateString() : "N/A"}
                   </div>
                   <div>
                     Remaining: {(finalTotal - paymentAmount).toLocaleString()}{" "}
-                    DA
+                    {t("cashier.currency", "DA")}
                   </div>
                 </div>
               </>

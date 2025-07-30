@@ -127,7 +127,7 @@ const PaymentsModal: React.FC<PaymentsModalProps> = ({ client, onClose }) => {
                         )}
                       </td>
                       <td className="px-4 py-2">
-                        {p.paidAmount.toLocaleString()} DA
+                        {p.paidAmount.toLocaleString()} {t("cashier.currency", "DA")}
                       </td>
                       <td className="px-4 py-2">
                         {p.dueAt ? new Date(p.dueAt).toLocaleDateString() : "-"}

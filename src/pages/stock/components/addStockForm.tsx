@@ -181,7 +181,7 @@ export default function AddStockForm({
 
   // Handle print barcode
   const handlePrintBarcode = () => {
-    printBarcodeLabel(form.name, form.selling, form.codebar);
+    printBarcodeLabel(form.name, form.selling, form.codebar, t("cashier.currency", "DA"));
   };
 
   // Helper to check if form matches an existing product (by name only)
