@@ -10,7 +10,7 @@ import type { ProductWithSales, CartItem } from "../../../types";
 import { useTranslation } from "react-i18next";
 import { Skeleton } from "../../../lib/components/skeleton";
 import { useStock } from "../../../lib/contexts/stockContext";
-import { ChevronLeft, ChevronRight, Star, Plus, Minus } from "lucide-react";
+import { ChevronLeft, ChevronRight, Star, Plus, Minus, CheckCircle } from "lucide-react";
 import { Tooltip } from "../../../lib/components/tooltip";
 
 interface ProductBrowserProps {
@@ -467,8 +467,18 @@ const ProductBrowser = forwardRef<
           {/* Show message when all products are loaded */}
           {visibleCount >= filteredProducts.length &&
             filteredProducts.length > 0 && (
-              <div className="col-span-3 text-center py-4 text-sm text-muted-foreground">
-                {t("cashier.allProductsLoaded", "All products loaded")}
+              <div className="col-span-4 flex items-center justify-center py-8">
+                <div className="flex flex-col items-center gap-3 p-6 bg-muted/50 rounded-xl border border-border/50">
+                  <CheckCircle className="w-8 h-8 text-green-500" />
+                  <div className="text-center">
+                    <p className="font-medium text-foreground">
+                      {t("cashier.allProductsLoaded", "All products loaded")}
+                    </p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {t("cashier.productsCount", "{{count}} products available", { count: filteredProducts.length })}
+                    </p>
+                  </div>
+                </div>
               </div>
             )}
         </div>
