@@ -59,7 +59,7 @@ export async function getAllSales() {
           product: true,
         },
       },
-      payments: true,
+      payment: true,
     },
     orderBy: {
       createdAt: "desc",
@@ -73,14 +73,10 @@ export async function getAllSales() {
     );
     const totalWithDiscount = totalAmount - sale.discount;
 
-    // If no payments recorded, it was paid in cash
-    const totalPaid =
-      sale.payments.length > 0
-        ? sale.payments.reduce(
-            (sum, payment) => sum + (payment.paidAmount || 0),
-            0,
-          )
-        : totalWithDiscount; // Cash payment - full amount paid
+    // If no payment recorded, it was paid in cash
+    const totalPaid = sale.payment
+      ? sale.payment.givenAmount || 0
+      : totalWithDiscount; // Cash payment - full amount paid
 
     const totalItems = sale.saleItems.reduce(
       (sum, item) => sum + item.quantity,
@@ -94,7 +90,7 @@ export async function getAllSales() {
       totalPaid,
       totalItems,
       remainingAmount: totalWithDiscount - totalPaid,
-      isPaidInCash: sale.payments.length === 0,
+      isPaidInCash: !sale.payment,
     };
   });
 }

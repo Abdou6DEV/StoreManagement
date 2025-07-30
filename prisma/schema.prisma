@@ -14,45 +14,49 @@ enum PaymentType {
 }
 
 model Category {
-  name      String    @id
-  products  Product[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  name     String    @id
+  products Product[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Product {
-  id           String   @id @default(uuid())
-  name         String   @unique
+  id           String  @id @default(uuid())
+  name         String  @unique
   categoryName String
   quantity     Int
   bought       Int
   selling      Int
   codebar      String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   category  Category   @relation(fields: [categoryName], references: [name], onDelete: Cascade)
   saleItems SaleItem[]
 }
 
 model Sale {
-  id        String   @id @default(uuid())
-  clientId  String?
-  discount  Int      @default(0)
+  id       String  @id @default(uuid())
+  clientId String?
+  discount Int     @default(0)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   client    Client?    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  payment   Payment?
   saleItems SaleItem[]
-  payments  Payment[]
 }
 
 model SaleItem {
-  id        String   @id @default(uuid())
+  id        String @id @default(uuid())
   productId String
   saleId    String
   quantity  Int
   price     Int
+
   createdAt DateTime @default(now())
 
   product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
@@ -62,11 +66,12 @@ model SaleItem {
 }
 
 model Client {
-  id        String   @id @default(uuid())
-  name      String   @unique
-  phone     String?
-  address   String?
-  notes     String?
+  id      String  @id @default(uuid())
+  name    String  @unique
+  phone   String?
+  address String?
+  notes   String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -77,17 +82,20 @@ model Client {
 model Option {
   key   String @id
   value String
+
+  createdAt DateTime @default(now())
 }
 
 model Payment {
-  id         String      @id @default(uuid())
-  saleId     String
-  clientId   String
-  paidAmount Int
-  dueAt      DateTime
-  paidAt     DateTime?
-  createdAt  DateTime    @default(now())
-  type       PaymentType
+  id          String      @id @default(uuid())
+  saleId      String      @unique
+  clientId    String
+  givenAmount Int
+  dueDate     DateTime
+  paidDate    DateTime?
+  type        PaymentType
+
+  createdAt DateTime @default(now())
 
   sale   Sale   @relation(fields: [saleId], references: [id], onDelete: Cascade)
   client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)

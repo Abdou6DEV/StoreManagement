@@ -127,16 +127,16 @@ const PaymentsModal: React.FC<PaymentsModalProps> = ({ client, onClose }) => {
                         )}
                       </td>
                       <td className="px-4 py-2">
-                        {p.paidAmount.toLocaleString()} {t("cashier.currency", "DA")}
+                        {p.givenAmount.toLocaleString()} {t("cashier.currency", "DA")}
                       </td>
                       <td className="px-4 py-2">
-                        {p.dueAt ? new Date(p.dueAt).toLocaleDateString() : "-"}
+                        {p.dueDate ? new Date(p.dueDate).toLocaleDateString() : "-"}
                       </td>
                       <td className="px-4 py-3 flex items-center gap-2">
-                        {p.paidAt ? (
+                        {p.paidDate ? (
                           <>
                             <CheckCircle className="w-4 h-4 text-green-500" />{" "}
-                            {new Date(p.paidAt).toLocaleDateString()}
+                            {new Date(p.paidDate).toLocaleDateString()}
                           </>
                         ) : (
                           <Button

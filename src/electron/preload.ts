@@ -13,7 +13,7 @@ type SaleWithDetails = Sale & {
   saleItems: (SaleItem & {
     product: Product;
   })[];
-  payments: Payment[];
+  payment?: Payment;
   totalAmount: number;
   totalWithDiscount: number;
   totalPaid: number;
@@ -78,19 +78,19 @@ contextBridge.exposeInMainWorld("api", {
       create: (data: {
         saleId: string;
         clientId: string;
-        paidAmount: number;
-        dueAt: Date;
-        paidAt?: Date;
+        givenAmount: number;
+        dueDate: Date;
+        paidDate?: Date;
         type: "CREDIT" | "VERSEMENT";
       }) => ipcRenderer.invoke("db:payments:create", data),
       getByClient: (clientId: string) =>
         ipcRenderer.invoke("db:payments:getByClient", clientId),
       getAll: () => ipcRenderer.invoke("db:payments:getAll"),
-      markAsPaid: (saleId: string, clientId: string, paidAt: Date) =>
+      markAsPaid: (saleId: string, clientId: string, paidDate: Date) =>
         ipcRenderer.invoke("db:payments:updatePaidAt", {
           saleId,
           clientId,
-          paidAt,
+          paidDate,
         }),
     },
   },
@@ -159,9 +159,9 @@ declare global {
           create: (data: {
             saleId: string;
             clientId: string;
-            paidAmount: number;
-            dueAt: Date;
-            paidAt?: Date;
+            givenAmount: number;
+            dueDate: Date;
+            paidDate?: Date;
             type: "CREDIT" | "VERSEMENT";
           }) => Promise<Payment>;
           getByClient: (clientId: string) => Promise<Payment[]>;
@@ -169,7 +169,7 @@ declare global {
           markAsPaid: (
             saleId: string,
             clientId: string,
-            paidAt: Date,
+            paidDate: Date,
           ) => Promise<void>;
         };
       };
