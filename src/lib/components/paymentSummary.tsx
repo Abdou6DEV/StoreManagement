@@ -215,9 +215,9 @@ export default function PaymentSummary({
 
     return (
       <tr className="border-b border-dashed border-primary/40 hover:bg-accent/40 transition-colors group">
-        <td className="py-2 px-2 font-medium truncate">{item.name}</td>
+        <td className="py-1 px-2 font-medium truncate">{item.name}</td>
         <td
-          className="py-2 px-2 text-right cursor-pointer select-none hover:bg-primary/20 rounded"
+          className="py-0 px-2 text-right cursor-pointer select-none hover:bg-primary/20 rounded"
           onDoubleClick={handleDoubleClick}
         >
           {isEditing ? (
@@ -234,29 +234,29 @@ export default function PaymentSummary({
             item.qty
           )}
         </td>
-        <td className="py-2 px-2 text-right">{item.price.toLocaleString()}</td>
-        <td className="py-2 px-2 text-right">
+        <td className="py-1 px-2 text-right">{item.price.toLocaleString()}</td>
+        <td className="py-1 px-2 text-right">
           {(item.qty * item.price).toLocaleString()}
         </td>
-        <td className="py-2 px-2 text-right">
-          <div className="flex gap-0.5 justify-end">
+        <td className="py-1 px-2 text-right">
+          <div className="flex gap-1 justify-end">
             <button
               onClick={() => updateQty(index, item.qty + 1)}
-              className="w-4 h-4 rounded bg-muted hover:bg-primary hover:text-primary-foreground transition text-xs font-bold flex items-center justify-center"
+              className="w-6 h-6 rounded bg-muted hover:bg-primary hover:text-primary-foreground transition text-sm font-bold flex items-center justify-center"
             >
               +
             </button>
             <button
               onClick={() => updateQty(index, item.qty - 1)}
-              className="w-4 h-4 rounded bg-muted hover:bg-primary hover:text-primary-foreground transition text-xs font-bold flex items-center justify-center"
+              className="w-6 h-6 rounded bg-muted hover:bg-primary hover:text-primary-foreground transition text-sm font-bold flex items-center justify-center"
             >
               −
             </button>
             <button
               onClick={() => removeItem(index)}
-              className="w-4 h-4 rounded text-red-500 hover:text-red-700 hover:bg-red-100 transition flex items-center justify-center"
+              className="w-6 h-6 rounded text-red-500 hover:text-red-700 hover:bg-red-100 transition flex items-center justify-center"
             >
-              <Trash2 className="w-3 h-3" />
+              <Trash2 className="w-4 h-4" />
             </button>
           </div>
         </td>

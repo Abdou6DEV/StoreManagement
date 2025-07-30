@@ -12,7 +12,7 @@ import {
 import { Link, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import "../../lib/i18n";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { cn } from "../utils";
 
 const menuItems = [
@@ -50,17 +50,43 @@ export default function Sidebar() {
   const savedCollapsedState = localStorage.getItem("sidebarCollapsed");
   const [collapsed, setCollapsed] = useState(savedCollapsedState === "true");
   const [showText, setShowText] = useState(!collapsed);
+  const [isDisabled, setIsDisabled] = useState(false);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const textTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleToggleCollapse = () => {
+    // Prevent rapid clicks during transition
+    if (isDisabled) return;
+
+    // Clear any existing timeouts
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+    if (textTimeoutRef.current) {
+      clearTimeout(textTimeoutRef.current);
+      textTimeoutRef.current = null;
+    }
+
     const newState = !collapsed;
     setCollapsed(newState);
     localStorage.setItem("sidebarCollapsed", String(newState));
 
     if (newState === false) {
-      setTimeout(() => setShowText(true), 700);
+      // Expanding: show text after animation completes
+      textTimeoutRef.current = setTimeout(() => {
+        setShowText(true);
+      }, 700);
     } else {
+      // Collapsing: hide text immediately
       setShowText(false);
     }
+
+    // Disable button for 1 second
+    setIsDisabled(true);
+    timeoutRef.current = setTimeout(() => {
+      setIsDisabled(false);
+    }, 1000);
   };
 
   return (
@@ -97,6 +123,7 @@ export default function Sidebar() {
         <button
           className="max-w-full flex gap-4 items-center rounded-xl self-end m-2 p-2 hover:bg-secondary font-semibold transition-all duration-300 mt-auto"
           onClick={handleToggleCollapse}
+          disabled={isDisabled}
         >
           <ChevronsLeft
             data-collapsed={collapsed}

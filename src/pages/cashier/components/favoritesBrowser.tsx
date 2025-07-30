@@ -146,23 +146,13 @@ const FavoritesBrowser: React.FC<FavoritesBrowserProps> = ({
 
   return (
     <div className="bg-card border border-border rounded-xl p-3 shadow-sm h-full overflow-hidden flex flex-col">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-          <Star className="w-4 h-4 text-yellow-500" />
-          {t("cashier.favorites", "Favorites & Quick Add")}
-        </h3>
-        <div className="text-xs text-muted-foreground">
-          {favoriteProducts.length} {t("cashier.favorites", "favorites")}
-        </div>
-      </div>
-
       <div className="flex-1 overflow-y-auto space-y-3">
         {/* Favorites Section */}
         {favoriteProducts.length > 0 && (
           <div>
             <div className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1">
               <Star className="w-3 h-3 text-yellow-500" />
-              {t("cashier.favorites", "Favorites")}
+              {favoriteProducts.length} {t("cashier.favorites", "favorites")}
             </div>
                          <div className="grid grid-cols-2 gap-2">
                {favoriteProducts.map((product) => (
