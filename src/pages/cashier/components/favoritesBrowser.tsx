@@ -9,14 +9,12 @@ interface FavoritesBrowserProps {
   allProducts: ProductWithSales[];
   cart: CartItem[];
   setCart: React.Dispatch<React.SetStateAction<CartItem[]>>;
-  productRefreshKey: number;
 }
 
 const FavoritesBrowser: React.FC<FavoritesBrowserProps> = ({
   allProducts,
   cart,
   setCart,
-  productRefreshKey,
 }) => {
   const { t } = useTranslation();
   const [favorites, setFavorites] = useState<string[]>([]);

@@ -1,13 +1,9 @@
 import { useState, useMemo } from "react";
 import type { ProductWithSales } from "../../../types";
 import type { CartItem } from "../../../types";
-import { ShoppingCart, PlusCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import ProductSearch from "./productSearch";
 import PaymentSummary from "../../../lib/components/paymentSummary";
 import ActionButtons from "./actionButtons";
-import FavoritesBrowser from "./favoritesBrowser";
-import { Tooltip } from "../../../lib/components/tooltip";
 import { useToast } from "../../../lib/contexts/toastContext";
 
 interface CashierSessionProps {
@@ -304,97 +300,43 @@ export default function CashierSession({
   }
 
   return (
-    <div className="flex-1 flex flex-col gap-2 overflow-hidden">
-      {/* MAIN CONTENT: Favorites Browser (Left) + Payment Summary + Action Buttons (Right) */}
-      <section className="flex-1 flex gap-2 overflow-hidden">
-        {/* LEFT: Search + Favorites Browser (2/5) */}
-        <div className="w-2/5 flex-shrink-0 flex flex-col gap-2">
-          {/* Search and Browse/Manual Buttons */}
-          <div className="bg-card border border-border rounded-xl p-3 shadow-sm">
-            <div className="flex items-center justify-center gap-2">
-              <ProductSearch
-                onAdd={handleAddProduct}
-                refreshKey={productRefreshKey}
-              />
-              <Tooltip
-                content={t(
-                  "cashier.tooltipBrowseProducts",
-                  "Browse Products (F1)",
-                )}
-                position="top"
-              >
-                <button
-                  onClick={onShowProductBrowser}
-                  className="flex h-8 w-8 p-1 text-sm font-semibold border-1 border-border items-center justify-center rounded-md bg-muted/40 hover:bg-muted hover:text-primary transition"
-                >
-                  <ShoppingCart className="w-5 h-5" />
-                </button>
-              </Tooltip>
-              <Tooltip
-                content={t(
-                  "cashier.tooltipAddManualProduct",
-                  "Add Products Manually (F2)",
-                )}
-                position="top"
-              >
-                <button
-                  onClick={onShowManualProductModal}
-                  className="flex h-8 w-8 p-1 text-sm font-semibold border-1 border-border items-center justify-center rounded-md bg-muted/40 hover:bg-muted hover:text-primary transition"
-                >
-                  <PlusCircle className="w-4 h-4" />
-                </button>
-              </Tooltip>
-            </div>
-          </div>
-
-          {/* Favorites Browser */}
-          <div className="flex-1 min-h-0">
-            <FavoritesBrowser
-              allProducts={allProducts}
-              cart={cart}
-              setCart={setCart}
-              productRefreshKey={productRefreshKey}
-            />
-          </div>
+    <div className={`flex flex-col gap-2 overflow-hidden ${isActive ? 'flex-1 h-full' : 'hidden'}`}>
+      {/* Payment Summary + Action Buttons */}
+      <section className="flex-1 flex flex-col gap-2 overflow-hidden">
+        {/* Payment Summary (Cart + Summary) */}
+        <div className="flex-1 bg-card shadow-sm rounded-xl overflow-hidden">
+          <PaymentSummary
+            cart={cart}
+            clientName={clientName}
+            paymentAmount={paymentAmount}
+            discount={Number(discount) || 0}
+            paymentType={paymentType}
+            className="h-full"
+            interactive={true}
+            setCart={setCart}
+          />
         </div>
 
-        {/* RIGHT: Payment Summary + Action Buttons (3/5) */}
-        <div className="w-3/5 flex flex-col gap-2 overflow-hidden">
-          {/* Payment Summary (Cart + Summary) */}
-          <div className="flex-1 bg-card shadow-sm rounded-xl overflow-hidden">
-            <PaymentSummary
-              cart={cart}
-              clientName={clientName}
-              paymentAmount={paymentAmount}
-              discount={Number(discount) || 0}
-              paymentType={paymentType}
-              className="h-full"
-              interactive={true}
-              setCart={setCart}
-            />
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex-shrink-0 bg-card border border-border rounded-xl p-3 shadow-sm">
-            <ActionButtons
-              clientName={clientName}
-              setClientName={setClientName}
-              onClear={handleClear}
-              onFinish={handleFinish}
-              onConfirmWithReceipt={handleFinishWithReceipt}
-              setClientId={setClientId}
-              discount={discount}
-              onDiscountChange={setDiscount}
-              cartTotal={total}
-              cart={cart}
-              paymentAmount={paymentAmount}
-              setPaymentAmount={setPaymentAmount}
-              paymentType={paymentType}
-              setPaymentType={setPaymentType}
-              paymentDate={paymentDate}
-              setPaymentDate={setPaymentDate}
-            />
-          </div>
+        {/* Action Buttons */}
+        <div className="flex-shrink-0 bg-card border border-border rounded-xl p-3 shadow-sm">
+          <ActionButtons
+            clientName={clientName}
+            setClientName={setClientName}
+            onClear={handleClear}
+            onFinish={handleFinish}
+            onConfirmWithReceipt={handleFinishWithReceipt}
+            setClientId={setClientId}
+            discount={discount}
+            onDiscountChange={setDiscount}
+            cartTotal={total}
+            cart={cart}
+            paymentAmount={paymentAmount}
+            setPaymentAmount={setPaymentAmount}
+            paymentType={paymentType}
+            setPaymentType={setPaymentType}
+            paymentDate={paymentDate}
+            setPaymentDate={setPaymentDate}
+          />
         </div>
       </section>
     </div>
