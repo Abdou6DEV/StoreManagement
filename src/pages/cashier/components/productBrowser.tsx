@@ -10,7 +10,14 @@ import type { ProductWithSales, CartItem } from "../../../types";
 import { useTranslation } from "react-i18next";
 import { Skeleton } from "../../../lib/components/skeleton";
 import { useStock } from "../../../lib/contexts/stockContext";
-import { ChevronLeft, ChevronRight, Star, Plus, Minus, CheckCircle } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Star,
+  Plus,
+  Minus,
+  CheckCircle,
+} from "lucide-react";
 import { Tooltip } from "../../../lib/components/tooltip";
 
 interface ProductBrowserProps {
@@ -475,7 +482,11 @@ const ProductBrowser = forwardRef<
                       {t("cashier.allProductsLoaded", "All products loaded")}
                     </p>
                     <p className="text-sm text-muted-foreground mt-1">
-                      {t("cashier.productsCount", "{{count}} products available", { count: filteredProducts.length })}
+                      {t(
+                        "cashier.productsCount",
+                        "{{count}} products available",
+                        { count: filteredProducts.length },
+                      )}
                     </p>
                   </div>
                 </div>
