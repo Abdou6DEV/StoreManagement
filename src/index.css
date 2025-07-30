@@ -125,7 +125,9 @@
     @apply bg-background text-foreground;
   }
   /* Re-enable text selection for inputs and textareas */
-  input, textarea, [contenteditable="true"] {
+  input,
+  textarea,
+  [contenteditable="true"] {
     -webkit-user-select: text;
     -moz-user-select: text;
     -ms-user-select: text;

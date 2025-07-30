@@ -114,7 +114,7 @@ export default function CashierPage() {
           window.api.database.products.getAll(),
           window.api.database.products.getSalesCounts(),
         ]);
-        
+
         // Merge salesCounts into products
         const salesMap = new Map(
           salesCounts.map((s) => [s.productId, s.totalSold]),
@@ -123,13 +123,15 @@ export default function CashierPage() {
           ...p,
           totalSold: salesMap.get(p.id) || 0,
         }));
-        
+
         setAllProducts(merged as ProductWithSales[]);
       } catch (error) {
         console.error("Error fetching products with sales:", error);
         // Fallback to basic products if sales fetch fails
         const products = await window.api.database.products.getAll();
-        setAllProducts(products.map(p => ({ ...p, totalSold: 0 })) as ProductWithSales[]);
+        setAllProducts(
+          products.map((p) => ({ ...p, totalSold: 0 })) as ProductWithSales[],
+        );
       }
     };
 

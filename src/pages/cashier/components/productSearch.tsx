@@ -193,10 +193,11 @@ export default function ProductSearch({ onAdd, refreshKey }: Props) {
                       {product.name}
                     </div>
                     <div className="text-xs text-muted-foreground flex justify-between mt-1">
-                                              <span>
-                          {product.categoryName} • {t("cashier.price", "price")}:{" "}
-                          {product.selling.toLocaleString()} {t("cashier.currency", "DA")}
-                        </span>
+                      <span>
+                        {product.categoryName} • {t("cashier.price", "price")}:{" "}
+                        {product.selling.toLocaleString()}{" "}
+                        {t("cashier.currency", "DA")}
+                      </span>
                       <span>
                         {product.quantity} {t("cashier.inStock", "in stock")}
                       </span>

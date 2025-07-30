@@ -300,7 +300,9 @@ export default function CashierSession({
   }
 
   return (
-    <div className={`flex flex-col gap-2 overflow-hidden ${isActive ? 'flex-1 h-full' : 'hidden'}`}>
+    <div
+      className={`flex flex-col gap-2 overflow-hidden ${isActive ? "flex-1 h-full" : "hidden"}`}
+    >
       {/* Payment Summary + Action Buttons */}
       <section className="flex-1 flex flex-col gap-2 overflow-hidden">
         {/* Payment Summary (Cart + Summary) */}

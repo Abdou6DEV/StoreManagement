@@ -119,7 +119,9 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
                     style={{ fontSize: "42px" }}
                   >
                     {productPrice
-                      ? Number(productPrice).toLocaleString() + " " + t("cashier.currency", "DA")
+                      ? Number(productPrice).toLocaleString() +
+                        " " +
+                        t("cashier.currency", "DA")
                       : t("stock.priceFallback")}
                   </div>
                 </div>

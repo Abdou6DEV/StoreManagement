@@ -149,7 +149,8 @@ const AddPaymentModal: React.FC<AddPaymentModalProps> = ({
               <span className="font-semibold text-foreground">
                 {t("cashier.given", "Given")}:
               </span>{" "}
-              {paymentAmount ? Number(paymentAmount).toLocaleString() : 0} {t("cashier.currency", "DA")}
+              {paymentAmount ? Number(paymentAmount).toLocaleString() : 0}{" "}
+              {t("cashier.currency", "DA")}
             </div>
             <div>
               <span className="font-semibold text-foreground">

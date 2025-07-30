@@ -27,6 +27,7 @@ import {
   getPaymentsByClient,
   getAllPayments,
   updatePaymentPaidAt,
+  updatePaymentAmount,
 } from "../lib/database/payments";
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
@@ -164,6 +165,13 @@ function setupDatabaseHandlers() {
     "db:payments:updatePaidAt",
     async (_event, { paymentId, paidDate }) => {
       return await updatePaymentPaidAt(paymentId, paidDate);
+    },
+  );
+
+  ipcMain.handle(
+    "db:payments:updateAmount",
+    async (_event, { paymentId, givenAmount }) => {
+      return await updatePaymentAmount(paymentId, givenAmount);
     },
   );
 

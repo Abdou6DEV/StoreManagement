@@ -1,4 +1,11 @@
-import React, { useState, useMemo, useEffect, useRef, forwardRef, useImperativeHandle } from "react";
+import React, {
+  useState,
+  useMemo,
+  useEffect,
+  useRef,
+  forwardRef,
+  useImperativeHandle,
+} from "react";
 import type { ProductWithSales } from "../../../types";
 import { useTranslation } from "react-i18next";
 import { Skeleton } from "../../../lib/components/skeleton";
@@ -15,13 +22,10 @@ interface ProductBrowserProps {
   setCart: React.Dispatch<React.SetStateAction<CartItem[]>>;
 }
 
-const ProductBrowser = forwardRef<{ handleClose: () => void }, ProductBrowserProps>(({
-  allProducts,
-  open,
-  onClose,
-  cart,
-  setCart,
-}, ref) => {
+const ProductBrowser = forwardRef<
+  { handleClose: () => void },
+  ProductBrowserProps
+>(({ allProducts, open, onClose, cart, setCart }, ref) => {
   const { t } = useTranslation();
   const [productFilter, setProductFilter] = useState("");
   const [visibleCount, setVisibleCount] = useState(20);
@@ -99,17 +103,17 @@ const ProductBrowser = forwardRef<{ handleClose: () => void }, ProductBrowserPro
   }, []);
 
   const toggleFavorite = (productId: string) => {
-    setFavorites(prev => {
-      const newFavorites = prev.includes(productId) 
-        ? prev.filter(id => id !== productId)
+    setFavorites((prev) => {
+      const newFavorites = prev.includes(productId)
+        ? prev.filter((id) => id !== productId)
         : [...prev, productId];
-      
+
       // Save to localStorage
       localStorage.setItem("cashier-favorites", JSON.stringify(newFavorites));
-      
+
       // Dispatch custom event to notify other components
       window.dispatchEvent(new CustomEvent("favorites-updated"));
-      
+
       return newFavorites;
     });
   };
@@ -123,9 +127,13 @@ const ProductBrowser = forwardRef<{ handleClose: () => void }, ProductBrowserPro
   };
 
   // Expose handleClose method to parent component
-  useImperativeHandle(ref, () => ({
-    handleClose,
-  }), [handleClose]);
+  useImperativeHandle(
+    ref,
+    () => ({
+      handleClose,
+    }),
+    [handleClose],
+  );
 
   const handleCancel = () => {
     setCart((prev) => prev.filter((item) => initialCartIds.includes(item.id)));
@@ -207,11 +215,13 @@ const ProductBrowser = forwardRef<{ handleClose: () => void }, ProductBrowserPro
       ref={modalRef}
       onMouseDown={handleBackdropClick}
     >
-      <div className={`w-full max-w-7xl bg-white dark:bg-zinc-900 border border-border rounded-2xl shadow-2xl p-6 flex flex-col max-h-[95vh] overflow-hidden transition-all duration-300 ${
-        isClosing 
-          ? "animate-out fade-out zoom-out-90" 
-          : "animate-in fade-in zoom-in-90"
-      }`}>
+      <div
+        className={`w-full max-w-7xl bg-white dark:bg-zinc-900 border border-border rounded-2xl shadow-2xl p-6 flex flex-col max-h-[95vh] overflow-hidden transition-all duration-300 ${
+          isClosing
+            ? "animate-out fade-out zoom-out-90"
+            : "animate-in fade-in zoom-in-90"
+        }`}
+      >
         <div className="flex items-center gap-4 mb-3">
           <input
             ref={filterInputRef}
@@ -303,7 +313,8 @@ const ProductBrowser = forwardRef<{ handleClose: () => void }, ProductBrowserPro
                         {product.name}
                       </div>
                       <div className="text-sm text-muted-foreground leading-tight">
-                        {product.selling.toLocaleString()} {t("cashier.currency", "DA")}
+                        {product.selling.toLocaleString()}{" "}
+                        {t("cashier.currency", "DA")}
                       </div>
                       <div className="text-xs text-muted-foreground leading-tight">
                         {t("cashier.stock", "Stock")}: {product.quantity}
@@ -312,7 +323,10 @@ const ProductBrowser = forwardRef<{ handleClose: () => void }, ProductBrowserPro
                     <Tooltip
                       content={
                         favorites.includes(product.id)
-                          ? t("cashier.removeFromFavorites", "Remove from favorites")
+                          ? t(
+                              "cashier.removeFromFavorites",
+                              "Remove from favorites",
+                            )
                           : t("cashier.addToFavorites", "Add to favorites")
                       }
                     >
@@ -327,7 +341,9 @@ const ProductBrowser = forwardRef<{ handleClose: () => void }, ProductBrowserPro
                             : "text-gray-400 hover:text-yellow-500"
                         }`}
                       >
-                        <Star className={`w-4 h-4 ${favorites.includes(product.id) ? "fill-current" : ""}`} />
+                        <Star
+                          className={`w-4 h-4 ${favorites.includes(product.id) ? "fill-current" : ""}`}
+                        />
                       </button>
                     </Tooltip>
                   </div>
