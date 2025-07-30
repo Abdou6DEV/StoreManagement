@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import ProductSearch from "./productSearch";
 import PaymentSummary from "../../../lib/components/paymentSummary";
 import ActionButtons from "./actionButtons";
+import FavoritesBrowser from "./favoritesBrowser";
 import { Tooltip } from "../../../lib/components/tooltip";
 import { useToast } from "../../../lib/contexts/toastContext";
 
@@ -304,10 +305,10 @@ export default function CashierSession({
 
   return (
     <div className="flex-1 flex flex-col gap-2 overflow-hidden">
-      {/* TOP: Product Search and Browse/Manual Buttons */}
+      {/* TOP: Product Search and Browse/Manual Buttons (Centered) */}
       <section className="flex-shrink-0">
         <div className="bg-card border border-border rounded-xl p-3 shadow-sm">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center justify-center gap-2">
             <ProductSearch
               onAdd={handleAddProduct}
               refreshKey={productRefreshKey}
@@ -344,43 +345,55 @@ export default function CashierSession({
         </div>
       </section>
 
-      {/* MIDDLE: Interactive Payment Summary (Cart + Summary) */}
-      <section className="flex-1 overflow-hidden">
-        <div className="bg-card shadow-sm h-full flex flex-col gap-2 overflow-hidden">
-          <PaymentSummary
+      {/* MAIN CONTENT: Favorites Browser (Left) + Payment Summary + Action Buttons (Right) */}
+      <section className="flex-1 flex gap-2 overflow-hidden">
+        {/* LEFT: Favorites Browser (2/5) */}
+        <div className="w-2/5 flex-shrink-0">
+          <FavoritesBrowser
+            allProducts={allProducts}
             cart={cart}
-            clientName={clientName}
-            paymentAmount={paymentAmount}
-            discount={Number(discount) || 0}
-            paymentType={paymentType}
-            className="h-full"
-            interactive={true}
             setCart={setCart}
+            productRefreshKey={productRefreshKey}
           />
         </div>
-      </section>
 
-      {/* BOTTOM: Action Buttons */}
-      <section className="flex-shrink-0">
-        <div className="bg-card border border-border rounded-xl p-3 shadow-sm">
-          <ActionButtons
-            clientName={clientName}
-            setClientName={setClientName}
-            onClear={handleClear}
-            onFinish={handleFinish}
-            onConfirmWithReceipt={handleFinishWithReceipt}
-            setClientId={setClientId}
-            discount={discount}
-            onDiscountChange={setDiscount}
-            cartTotal={total}
-            cart={cart}
-            paymentAmount={paymentAmount}
-            setPaymentAmount={setPaymentAmount}
-            paymentType={paymentType}
-            setPaymentType={setPaymentType}
-            paymentDate={paymentDate}
-            setPaymentDate={setPaymentDate}
-          />
+        {/* RIGHT: Payment Summary + Action Buttons (3/5) */}
+        <div className="w-3/5 flex flex-col gap-2 overflow-hidden">
+          {/* Payment Summary (Cart + Summary) */}
+          <div className="flex-1 bg-card shadow-sm rounded-xl overflow-hidden">
+            <PaymentSummary
+              cart={cart}
+              clientName={clientName}
+              paymentAmount={paymentAmount}
+              discount={Number(discount) || 0}
+              paymentType={paymentType}
+              className="h-full"
+              interactive={true}
+              setCart={setCart}
+            />
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex-shrink-0 bg-card border border-border rounded-xl p-3 shadow-sm">
+            <ActionButtons
+              clientName={clientName}
+              setClientName={setClientName}
+              onClear={handleClear}
+              onFinish={handleFinish}
+              onConfirmWithReceipt={handleFinishWithReceipt}
+              setClientId={setClientId}
+              discount={discount}
+              onDiscountChange={setDiscount}
+              cartTotal={total}
+              cart={cart}
+              paymentAmount={paymentAmount}
+              setPaymentAmount={setPaymentAmount}
+              paymentType={paymentType}
+              setPaymentType={setPaymentType}
+              paymentDate={paymentDate}
+              setPaymentDate={setPaymentDate}
+            />
+          </div>
         </div>
       </section>
     </div>

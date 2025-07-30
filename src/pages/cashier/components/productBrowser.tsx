@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Skeleton } from "../../../lib/components/skeleton";
 import { useStock } from "../../../lib/contexts/stockContext";
 import type { CartItem } from "../../../types";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Star } from "lucide-react";
 
 interface ProductBrowserProps {
   allProducts: Product[];
@@ -31,6 +31,7 @@ const ProductBrowser = forwardRef<{ handleClose: () => void }, ProductBrowserPro
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [initialCartIds, setInitialCartIds] = useState<string[]>([]);
   const [isClosing, setIsClosing] = useState(false);
+  const [favorites, setFavorites] = useState<string[]>([]);
 
   // Long-press timer refs and state
 
@@ -83,6 +84,34 @@ const ProductBrowser = forwardRef<{ handleClose: () => void }, ProductBrowserPro
       setIsClosing(false);
     }
   }, [open]);
+
+  // Load favorites from localStorage
+  useEffect(() => {
+    const savedFavorites = localStorage.getItem("cashier-favorites");
+    if (savedFavorites) {
+      try {
+        setFavorites(JSON.parse(savedFavorites));
+      } catch (error) {
+        console.error("Error loading favorites:", error);
+      }
+    }
+  }, []);
+
+  const toggleFavorite = (productId: string) => {
+    setFavorites(prev => {
+      const newFavorites = prev.includes(productId) 
+        ? prev.filter(id => id !== productId)
+        : [...prev, productId];
+      
+      // Save to localStorage
+      localStorage.setItem("cashier-favorites", JSON.stringify(newFavorites));
+      
+      // Dispatch custom event to notify other components
+      window.dispatchEvent(new CustomEvent("favorites-updated"));
+      
+      return newFavorites;
+    });
+  };
 
   const handleClose = () => {
     setIsClosing(true);
@@ -235,7 +264,7 @@ const ProductBrowser = forwardRef<{ handleClose: () => void }, ProductBrowserPro
           </div>
         </div>
         <div
-          className="overflow-y-auto grid grid-cols-5 gap-2 h-[600px]"
+          className="overflow-y-auto grid grid-cols-4 gap-2 h-[600px]"
           onScroll={handleScroll}
           style={{ minHeight: 200 }}
         >
@@ -244,7 +273,7 @@ const ProductBrowser = forwardRef<{ handleClose: () => void }, ProductBrowserPro
             return (
               <div key={product.id} className="relative">
                 <div
-                  className={`p-2 border rounded-md h-20 cursor-pointer transition-all flex flex-col justify-between relative overflow-hidden w-full ${
+                  className={`p-2 border rounded-md min-h-[80px] cursor-pointer transition-all flex flex-col justify-between relative overflow-hidden w-full ${
                     cartItem
                       ? "border-primary bg-primary/10"
                       : "border-border hover:border-primary"
@@ -267,16 +296,31 @@ const ProductBrowser = forwardRef<{ handleClose: () => void }, ProductBrowserPro
                     }
                   }}
                 >
-                  <div className="flex flex-col gap-0.5 flex-1 min-h-0 justify-center h-full">
-                    <div className="font-medium truncate leading-tight">
-                      {product.name}
+                  <div className="flex items-start justify-between w-full">
+                    <div className="flex flex-col gap-0.5 flex-1 min-w-0 justify-center h-full">
+                      <div className="font-medium break-words leading-tight">
+                        {product.name}
+                      </div>
+                      <div className="text-sm text-muted-foreground leading-tight">
+                        {product.selling.toLocaleString()} DA
+                      </div>
+                      <div className="text-xs text-muted-foreground leading-tight">
+                        {t("cashier.stock", "Stock")}: {product.quantity}
+                      </div>
                     </div>
-                    <div className="text-sm text-muted-foreground leading-tight">
-                      {product.selling.toLocaleString()} DA
-                    </div>
-                    <div className="text-xs text-muted-foreground leading-tight">
-                      {t("cashier.stock", "Stock")}: {product.quantity}
-                    </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleFavorite(product.id);
+                      }}
+                      className={`ml-1 transition ${
+                        favorites.includes(product.id)
+                          ? "text-yellow-500 hover:text-yellow-600"
+                          : "text-gray-400 hover:text-yellow-500"
+                      }`}
+                    >
+                      <Star className={`w-3 h-3 ${favorites.includes(product.id) ? "fill-current" : ""}`} />
+                    </button>
                   </div>
                   {cartItem && (
                     <div className="absolute left-0 right-0 bottom-2 flex items-center justify-center z-10 pointer-events-none">
