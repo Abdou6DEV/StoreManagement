@@ -1,7 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import type { Product } from "@prisma/client";
-import type { ProductWithSales } from "../../types";
-import type { CartItem } from "../../types";
+import type { ProductWithSales, CartItem } from "../../types";
 import { useTranslation } from "react-i18next";
 import OutOfStockWarningModal from "./components/outOfStockWarningModal";
 import ProductBrowser from "./components/productBrowser";
@@ -383,7 +381,7 @@ export default function CashierPage() {
       {/* Product Browser as a modal */}
       <ProductBrowser
         ref={productBrowserRef}
-        allProducts={allProducts as any}
+        allProducts={allProducts}
         open={showProductBrowser}
         onClose={() => setShowProductBrowser(false)}
         cart={currentCart}
@@ -398,7 +396,7 @@ export default function CashierPage() {
       <OutOfStockWarningModal
         open={showStockWarning}
         items={outOfStockItems}
-        allProducts={allProducts as any}
+        allProducts={allProducts}
         onCancel={() => {
           setShowStockWarning(false);
           setOutOfStockItems([]);

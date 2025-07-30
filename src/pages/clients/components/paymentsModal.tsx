@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import type { Payment, Client } from "@prisma/client";
+import type { Payment } from "@prisma/client";
 import {
   Dialog,
   DialogContent,
@@ -21,9 +21,10 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useToast } from "../../../lib/contexts/toastContext";
+import { ClientSuggestion } from "../../../types";
 
 interface PaymentsModalProps {
-  client: Client;
+  client: ClientSuggestion;
   onClose: () => void;
 }
 
@@ -115,7 +116,7 @@ const PaymentsModal: React.FC<PaymentsModalProps> = ({ client, onClose }) => {
     setError(null);
     try {
       const data = await window.api.database.payments.getByClient(client.id);
-      setPayments(data as any);
+      setPayments(data);
     } catch (err) {
       setError(t("clients.paymentsError", "Failed to fetch payments"));
     } finally {
@@ -129,7 +130,6 @@ const PaymentsModal: React.FC<PaymentsModalProps> = ({ client, onClose }) => {
 
   const PaymentTable = ({
     payments,
-    type,
   }: {
     payments: Payment[];
     type: "CREDIT" | "VERSEMENT";

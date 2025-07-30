@@ -49,7 +49,7 @@ export const printBarcodeLabel = (
   productName: string,
   productPrice: number | string,
   codebar: string,
-  currency: string = "DA",
+  currency = "DA",
 ) => {
   const printWindow = window.open("", "_blank");
   if (!printWindow) return;
@@ -61,24 +61,24 @@ export const printBarcodeLabel = (
         <title>Barcode Label</title>
         <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
         <style>
-          body { 
-            margin: 0; 
-            padding: 10px; 
+          body {
+            margin: 0;
+            padding: 10px;
             font-family: Arial, sans-serif;
           }
-          .label { 
-            width: 132px; 
-            height: 98px; 
-            border: 1px solid #000; 
-            padding: 4px; 
-            display: flex; 
-            flex-direction: column; 
+          .label {
+            width: 132px;
+            height: 98px;
+            border: 1px solid #000;
+            padding: 4px;
+            display: flex;
+            flex-direction: column;
             justify-content: flex-start;
             background: white;
             margin: 0 auto;
           }
-          .product-info { 
-            text-align: center; 
+          .product-info {
+            text-align: center;
             line-height: 1.2;
           }
           .product-name {
@@ -94,34 +94,34 @@ export const printBarcodeLabel = (
             color: black;
             margin-bottom: 2px;
           }
-          .barcode-container { 
-            text-align: center; 
+          .barcode-container {
+            text-align: center;
             margin-top: 2px;
             overflow: hidden;
             max-width: 100%;
           }
-          .barcode-text { 
-            font-size: 24px; 
+          .barcode-text {
+            font-size: 24px;
             margin-top: 0;
             text-align: center;
             font-family: monospace;
           }
           @media print {
             body { margin: 0; padding: 10px; }
-            .label { 
-              width: 132px; 
-              height: 98px; 
-              border: 1px solid #000; 
-              padding: 4px; 
-              display: flex; 
-              flex-direction: column; 
+            .label {
+              width: 132px;
+              height: 98px;
+              border: 1px solid #000;
+              padding: 4px;
+              display: flex;
+              flex-direction: column;
               justify-content: flex-start;
               font-family: Arial, sans-serif;
               background: white;
               margin: 0 auto;
             }
-            .product-info { 
-              text-align: center; 
+            .product-info {
+              text-align: center;
               line-height: 1.2;
             }
             .product-name {
@@ -137,14 +137,14 @@ export const printBarcodeLabel = (
               color: black;
               margin-bottom: 2px;
             }
-            .barcode-container { 
-              text-align: center; 
+            .barcode-container {
+              text-align: center;
               margin-top: 2px;
               overflow: hidden;
               max-width: 100%;
             }
-            .barcode-text { 
-              font-size: 24px; 
+            .barcode-text {
+              font-size: 24px;
               margin-top: 0;
               text-align: center;
               font-family: monospace;

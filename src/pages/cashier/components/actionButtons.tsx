@@ -45,7 +45,6 @@ export default function ActionButtons({
   onDiscountChange,
   cartTotal,
   cart,
-  paymentAmount,
   setPaymentAmount,
   paymentType,
   setPaymentType,
@@ -63,7 +62,6 @@ export default function ActionButtons({
   const [paymentTypeLocal, setPaymentTypeLocal] = useState<
     "credit" | "versement"
   >(paymentType === "versement" ? "versement" : "credit");
-  const [paymentClientName, setPaymentClientName] = useState("");
   const [paymentClientPhone, setPaymentClientPhone] = useState("");
   const [modalPaymentAmount, setModalPaymentAmount] = useState(0);
   const [paymentDateLocal, setPaymentDateLocal] = useState<Date | undefined>(
@@ -122,14 +120,11 @@ export default function ActionButtons({
     if (clientName && clientSuggestions.length > 0) {
       const match = clientSuggestions.find((c) => c.name === clientName);
       if (match) {
-        setPaymentClientName(match.name);
         setPaymentClientPhone(match.phone || "");
       } else {
-        setPaymentClientName(clientName);
         setPaymentClientPhone("");
       }
     } else {
-      setPaymentClientName("");
       setPaymentClientPhone("");
     }
   }, [clientName, clientSuggestions, showPaymentModal]);
@@ -365,7 +360,7 @@ export default function ActionButtons({
       />
       {selectedClientId && showHistoryModal && (
         <PaymentsModal
-          client={clientSuggestions.find((c) => c.id === selectedClientId)!}
+          client={clientSuggestions.find((c) => c.id === selectedClientId)}
           onClose={() => setShowHistoryModal(false)}
         />
       )}

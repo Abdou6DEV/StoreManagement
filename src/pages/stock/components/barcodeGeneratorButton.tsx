@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "../../../lib/components/button";
 import { Tooltip } from "../../../lib/components/tooltip";
@@ -49,7 +49,7 @@ export const BarcodeGeneratorButton: React.FC<BarcodeGeneratorButtonProps> = ({
   };
 
   return (
-    <Tooltip content={getTooltipContent()} portal={false}>
+    <Tooltip content={getTooltipContent()}>
       <Button
         type="button"
         variant="outline"

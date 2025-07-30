@@ -2,10 +2,7 @@ import {
   ChartLine,
   Users,
   ShoppingCart,
-  CreditCard,
   PackageSearch,
-  Calculator,
-  Search,
   Settings as AdminIcon,
 } from "lucide-react";
 import { Link } from "react-router-dom";

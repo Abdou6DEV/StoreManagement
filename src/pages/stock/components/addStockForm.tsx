@@ -240,7 +240,7 @@ export default function AddStockForm({
                         variant="outline"
                         className="px-3 py-2"
                         onClick={() => {
-                          setFilteredProducts(products as any);
+                          setFilteredProducts(products);
                           setDropdownProductSearch("");
                           setShowProductDropdown(true);
                         }}
@@ -270,7 +270,7 @@ export default function AddStockForm({
                               p.name
                                 .toLowerCase()
                                 .includes(value.toLowerCase()),
-                            ) as any,
+                            ),
                           );
                         }}
                         className="h-9"

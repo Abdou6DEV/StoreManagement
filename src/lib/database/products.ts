@@ -1,10 +1,11 @@
+import { Product } from "@prisma/client";
 import { prisma } from "./prismaClient";
 
 export async function getAllProducts() {
   return await prisma.product.findMany();
 }
 
-export async function addProduct(product: any) {
+export async function addProduct(product: Product) {
   return await prisma.product.create({ data: product });
 }
 
@@ -15,7 +16,7 @@ export async function deleteProduct(id: string) {
 }
 
 export async function updateProduct(id: string, data: any) {
-  const { categoryName, totalSold, createdAt, updatedAt, ...rest } = data;
+  const { categoryName, ...rest } = data;
   const updateData: any = { ...rest };
 
   if (categoryName) {
