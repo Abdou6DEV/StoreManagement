@@ -17,6 +17,7 @@ import {
   CheckCircle,
   Edit,
   Save,
+  Clock,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useToast } from "../../../lib/contexts/toastContext";
@@ -41,7 +42,15 @@ const PaymentsModal: React.FC<PaymentsModalProps> = ({ client, onClose }) => {
   const handleMarkAsPaid = async (paymentId: string) => {
     try {
       await window.api.database.payments.markAsPaid(paymentId, new Date());
-      await refreshPayments();
+      
+      setPayments(prevPayments => 
+        prevPayments.map(payment => 
+          payment.id === paymentId 
+            ? { ...payment, paidDate: new Date() }
+            : payment
+        )
+      );
+
       showToast(
         t("clients.paymentMarkedAsPaid", "Payment marked as paid"),
         "success",
@@ -57,7 +66,15 @@ const PaymentsModal: React.FC<PaymentsModalProps> = ({ client, onClose }) => {
   const handleMarkAsUnpaid = async (paymentId: string) => {
     try {
       await window.api.database.payments.markAsPaid(paymentId, null);
-      await refreshPayments();
+
+      setPayments(prevPayments => 
+        prevPayments.map(payment => 
+          payment.id === paymentId 
+            ? { ...payment, paidDate: null }
+            : payment
+        )
+      );
+
       showToast(
         t("clients.paymentMarkedAsUnpaid", "Payment marked as unpaid"),
         "success",
@@ -74,7 +91,15 @@ const PaymentsModal: React.FC<PaymentsModalProps> = ({ client, onClose }) => {
     try {
       await window.api.database.payments.updateAmount(paymentId, editAmount);
       setEditingPayment(null);
-      await refreshPayments();
+
+      setPayments(prevPayments => 
+        prevPayments.map(payment => 
+          payment.id === paymentId 
+            ? { ...payment, givenAmount: editAmount }
+            : payment
+        )
+      );
+
       showToast(
         t("clients.paymentAmountUpdated", "Payment amount updated"),
         "success",
@@ -118,9 +143,9 @@ const PaymentsModal: React.FC<PaymentsModalProps> = ({ client, onClose }) => {
             <th className="px-4 py-3">
               {t("clients.paymentAmount", "Amount")}
             </th>
-            <th className="px-4 py-3">{t("clients.paymentDueAt", "Due At")}</th>
+            <th className="px-4 py-3">{t("clients.paymentDueDate", "Due Date")}</th>
             <th className="px-4 py-3">
-              {t("clients.paymentPaidAt", "Paid At")}
+              {t("clients.paymentPaidDate", "Paid Date")}
             </th>
             <th className="px-4 py-3">
               {t("clients.paymentCreatedAt", "Created At")}
@@ -139,6 +164,7 @@ const PaymentsModal: React.FC<PaymentsModalProps> = ({ client, onClose }) => {
                       value={editAmount}
                       onChange={(e) => setEditAmount(Number(e.target.value))}
                       className="w-20 h-8 text-sm"
+                      autoFocus
                     />
                     <Button
                       size="sm"
@@ -163,17 +189,17 @@ const PaymentsModal: React.FC<PaymentsModalProps> = ({ client, onClose }) => {
                       {t("cashier.currency", "DA")}
                     </span>
                     {!payment.paidDate && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          setEditingPayment(payment.id);
-                          setEditAmount(payment.givenAmount);
-                        }}
-                        className="h-6 px-1"
-                      >
-                        <Edit className="w-3 h-3" />
-                      </Button>
+                                          <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setEditingPayment(payment.id);
+                        setEditAmount(payment.givenAmount);
+                      }}
+                      className="h-6 px-1"
+                    >
+                      <Edit className="w-3 h-3" />
+                    </Button>
                     )}
                   </div>
                 )}
@@ -183,16 +209,21 @@ const PaymentsModal: React.FC<PaymentsModalProps> = ({ client, onClose }) => {
                   ? new Date(payment.dueDate).toLocaleDateString()
                   : "-"}
               </td>
-              <td className="px-4 py-2">
-                {payment.paidDate ? (
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-green-500" />
-                    {new Date(payment.paidDate).toLocaleDateString()}
-                  </div>
-                ) : (
-                  <span className="text-muted-foreground">-</span>
-                )}
-              </td>
+                             <td className="px-4 py-2">
+                 {payment.paidDate ? (
+                   <div className="flex items-center gap-2">
+                     <CheckCircle className="w-4 h-4 text-green-500" />
+                     {new Date(payment.paidDate).toLocaleDateString()}
+                   </div>
+                                   ) : (
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-orange-600" />
+                      <span className="text-orange-700 font-medium bg-orange-100 px-2 py-1 rounded-full text-xs">
+                        {t("clients.pending", "Pending")}
+                      </span>
+                    </div>
+                  )}
+               </td>
               <td className="px-4 py-2">
                 {payment.createdAt
                   ? new Date(payment.createdAt).toLocaleDateString()
