@@ -28,8 +28,8 @@ const PaymentsModal: React.FC<PaymentsModalProps> = ({ client, onClose }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const handleMarkAsPaid = async (saleId: string, clientId: string) => {
-    await window.api.database.payments.markAsPaid(saleId, clientId, new Date());
+  const handleMarkAsPaid = async (paymentId: string) => {
+    await window.api.database.payments.markAsPaid(paymentId, new Date());
     setLoading(true);
     window.api.database.payments
       .getByClient(client.id)
@@ -144,7 +144,7 @@ const PaymentsModal: React.FC<PaymentsModalProps> = ({ client, onClose }) => {
                             variant="outline"
                             className="text-green-700 border-green-500 hover:bg-green-50 flex items-center gap-1"
                             onClick={() =>
-                              handleMarkAsPaid(p.saleId, p.clientId)
+                              handleMarkAsPaid(p.id)
                             }
                           >
                             <CheckCircle className="w-4 h-4 text-green-500" />

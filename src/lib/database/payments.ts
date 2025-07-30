@@ -38,15 +38,11 @@ export async function getAllPayments() {
 }
 
 export async function updatePaymentPaidAt(
-  saleId: string,
-  clientId: string,
+  paymentId: string,
   paidDate: Date,
 ) {
-  return await prisma.payment.updateMany({
-    where: {
-      saleId: saleId,
-      clientId: clientId,
-    },
+  return await prisma.payment.update({
+    where: { id: paymentId },
     data: { paidDate },
   });
 }
