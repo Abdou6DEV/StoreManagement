@@ -141,7 +141,7 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
   const currentDiscount = isEditing ? editedDiscount : sale.discount;
 
   return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-background border border-border/50 rounded-2xl shadow-xl max-w-5xl w-full max-h-[95vh] overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-border/30">
