@@ -6,7 +6,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "../../../lib/components/dialog";
-import { Purchase, Seller } from "@prisma/client";
+import { Client, Purchase, Sale, SaleItem, Seller } from "@prisma/client";
 
 interface ProductInfoModalProps {
   open: boolean;
@@ -115,14 +115,14 @@ export const ProductInfoModal = ({
                     <span>
                       {t("stock.totalQuantityPurchased", "Total Quantity")}:{" "}
                       {productData.purchases.reduce(
-                        (sum: number, item: any) => sum + item.quantity,
+                        (sum: number, item: Purchase) => sum + item.quantity,
                         0,
                       )}
                     </span>
                     <span>
                       {t("stock.totalCost", "Total Cost")}:{" "}
                       {productData.purchases.reduce(
-                        (sum: number, item: any) =>
+                        (sum: number, item: Purchase) =>
                           sum + item.quantity * item.price,
                         0,
                       )}
@@ -233,14 +233,14 @@ export const ProductInfoModal = ({
                     <span>
                       {t("stock.totalQuantitySold", "Total Quantity")}:{" "}
                       {productData.saleItems.reduce(
-                        (sum: number, item: any) => sum + item.quantity,
+                        (sum: number, item: SaleItem) => sum + item.quantity,
                         0,
                       )}
                     </span>
                     <span>
                       {t("stock.totalRevenue", "Total Revenue")}:{" "}
                       {productData.saleItems.reduce(
-                        (sum: number, item: any) =>
+                        (sum: number, item: SaleItem) =>
                           sum + item.quantity * item.price,
                         0,
                       )}
@@ -277,7 +277,12 @@ export const ProductInfoModal = ({
                       </thead>
                       <tbody className="divide-y divide-border">
                         {productData.saleItems.map(
-                          (saleItem: any, index: number) => (
+                          (
+                            saleItem: SaleItem & {
+                              sale: Sale & { client: Client };
+                            },
+                            index: number,
+                          ) => (
                             <tr
                               key={index}
                               className="hover:bg-muted/30 transition-colors border-b border-border/50 last:border-0"

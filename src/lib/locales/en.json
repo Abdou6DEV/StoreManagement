@@ -98,7 +98,6 @@
     "tooltipsOff": "Tooltips Off"
   },
   "cashier": {
-    "total": "Total",
     "session": "Page",
     "products": "Products",
     "filterProducts": "Filter products...",
@@ -126,7 +125,7 @@
     "price": "Price",
     "actions": "Actions",
     "cartEmpty": "Cart is empty",
-    "client": "Client:",
+
     "product": "Product",
     "unit": "Unit",
     "nbrItems": "Nbr Items",
@@ -184,7 +183,7 @@
     "noMatchingSales": "No matching sales found",
     "saleDetails": "Sale Details",
     "printReceipt": "Print Receipt",
-    "items": "Items",
+
     "quantity": "Qty",
     "subtotal": "Subtotal",
     "total": "Total",
