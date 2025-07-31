@@ -38,12 +38,12 @@ contextBridge.exposeInMainWorld("api", {
         ipcRenderer.invoke("db:products:getWithPurchaseHistory", id),
       createWithPurchase: (data: {
         productData: any;
-        purchaseData: { sellerId?: string; quantity: number };
+        purchaseData: { sellerId?: string; quantity: number; price: number };
       }) => ipcRenderer.invoke("db:products:createWithPurchase", data),
       updateWithPurchase: (data: {
         productId: string;
         additionalQuantity: number;
-        purchaseData: { sellerId?: string; quantity: number };
+        purchaseData: { sellerId?: string; quantity: number; price: number };
       }) => ipcRenderer.invoke("db:products:updateWithPurchase", data),
     },
     categories: {
@@ -134,6 +134,7 @@ contextBridge.exposeInMainWorld("api", {
         productId: string;
         sellerId?: string;
         quantity: number;
+        price: number;
       }) => ipcRenderer.invoke("db:purchases:create", data),
       update: (
         id: string,
@@ -141,6 +142,7 @@ contextBridge.exposeInMainWorld("api", {
           productId?: string;
           sellerId?: string;
           quantity?: number;
+          price?: number;
         },
       ) => ipcRenderer.invoke("db:purchases:update", { id, data }),
       delete: (id: string) => ipcRenderer.invoke("db:purchases:delete", id),
@@ -176,12 +178,20 @@ declare global {
           getWithPurchaseHistory: (id: string) => Promise<any>;
           createWithPurchase: (data: {
             productData: any;
-            purchaseData: { sellerId?: string; quantity: number };
+            purchaseData: {
+              sellerId?: string;
+              quantity: number;
+              price: number;
+            };
           }) => Promise<any>;
           updateWithPurchase: (data: {
             productId: string;
             additionalQuantity: number;
-            purchaseData: { sellerId?: string; quantity: number };
+            purchaseData: {
+              sellerId?: string;
+              quantity: number;
+              price: number;
+            };
           }) => Promise<any>;
         };
         categories: {
@@ -265,6 +275,7 @@ declare global {
             productId: string;
             sellerId?: string;
             quantity: number;
+            price: number;
           }) => Promise<any>;
           update: (
             id: string,
@@ -272,6 +283,7 @@ declare global {
               productId?: string;
               sellerId?: string;
               quantity?: number;
+              price?: number;
             },
           ) => Promise<any>;
           delete: (id: string) => Promise<void>;

@@ -120,6 +120,7 @@ model Purchase {
   productId String
   sellerId  String?
   quantity  Int
+  price     Int
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

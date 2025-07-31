@@ -42,6 +42,18 @@ export async function getProductWithPurchaseHistory(id: string) {
           createdAt: "desc",
         },
       },
+      saleItems: {
+        include: {
+          sale: {
+            include: {
+              client: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+      },
     },
   });
 }
@@ -51,6 +63,7 @@ export async function createProductWithPurchase(
   purchaseData: {
     sellerId?: string;
     quantity: number;
+    price: number;
   },
 ) {
   return await prisma.$transaction(async (tx) => {
@@ -65,6 +78,7 @@ export async function createProductWithPurchase(
         productId: product.id,
         sellerId: purchaseData.sellerId || null,
         quantity: purchaseData.quantity,
+        price: purchaseData.price,
       },
     });
 
@@ -78,6 +92,7 @@ export async function updateProductWithPurchase(
   purchaseData: {
     sellerId?: string;
     quantity: number;
+    price: number;
   },
 ) {
   return await prisma.$transaction(async (tx) => {
@@ -97,6 +112,7 @@ export async function updateProductWithPurchase(
         productId: productId,
         sellerId: purchaseData.sellerId || null,
         quantity: purchaseData.quantity,
+        price: purchaseData.price,
       },
     });
 

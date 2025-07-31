@@ -710,12 +710,12 @@ async function main() {
 
     // Wrap product creation, purchases, and quantity update in a transaction
     await prisma.$transaction(async (tx) => {
-      // Create the product
+      // Create the product with initial quantity of 0
       const createdProduct = await tx.product.create({
         data: {
           name: productName,
           categoryName: category,
-          quantity: faker.number.int({ min: 1, max: 150 }),
+          quantity: 0,
           bought: Number(boughtPrice),
           selling: sellingPrice,
           codebar: faker.string.numeric(12),
@@ -724,7 +724,7 @@ async function main() {
 
       // Create multiple purchases for the product
       const numPurchases = faker.number.int({ min: 1, max: 4 });
-      let totalPurchased = 0;
+      let currentQuantity = 0;
 
       for (let j = 0; j < numPurchases; j++) {
         const seller = faker.helpers.maybe(
@@ -733,7 +733,7 @@ async function main() {
         );
 
         const purchaseQuantity = faker.number.int({ min: 5, max: 50 });
-        totalPurchased += purchaseQuantity;
+        currentQuantity += purchaseQuantity;
 
         const purchaseDate = faker.date.between({
           from: twoYearsAgo,
@@ -745,25 +745,21 @@ async function main() {
             productId: createdProduct.id,
             sellerId: seller?.id || null,
             quantity: purchaseQuantity,
+            price: Number(boughtPrice),
             createdAt: purchaseDate,
             updatedAt: purchaseDate,
           },
         });
+
+        // Update product quantity after each purchase
+        await tx.product.update({
+          where: { id: createdProduct.id },
+          data: { quantity: currentQuantity },
+        });
       }
 
-      // Update product quantity to reflect total purchases minus some sold items
-      const soldQuantity = faker.number.int({
-        min: 0,
-        max: Math.floor(totalPurchased * 0.7),
-      });
-      const remainingQuantity = Math.max(0, totalPurchased - soldQuantity);
-
-      const updatedProduct = await tx.product.update({
-        where: { id: createdProduct.id },
-        data: { quantity: remainingQuantity },
-      });
-
-      return updatedProduct;
+      // Don't simulate sales here - let actual sale items handle quantity reduction
+      return createdProduct;
     });
 
     if ((i + 1) % 100 === 0) {
@@ -820,14 +816,34 @@ async function main() {
     sales.push({ ...sale, clientId: client?.id });
     const saleProducts = faker.helpers.arrayElements(products, saleItemsCount);
     for (const product of saleProducts) {
-      const quantity = faker.number.int({ min: 1, max: 5 });
-      await prisma.saleItem.create({
-        data: {
-          productId: product.id,
-          saleId: sale.id,
-          quantity,
-          price: product.selling,
-        },
+      const maxQuantity = Math.min(5, product.quantity); // Don't sell more than available
+      if (maxQuantity <= 0) continue; // Skip if no stock
+
+      const quantity = faker.number.int({ min: 1, max: maxQuantity });
+
+      // Use transaction to create sale item and update product quantity
+      await prisma.$transaction(async (tx) => {
+        await tx.saleItem.create({
+          data: {
+            productId: product.id,
+            saleId: sale.id,
+            quantity,
+            price: product.selling,
+          },
+        });
+
+        // Update product quantity by reducing it
+        await tx.product.update({
+          where: { id: product.id },
+          data: {
+            quantity: {
+              decrement: quantity,
+            },
+          },
+        });
+
+        // Update local product object to reflect new quantity
+        product.quantity -= quantity;
       });
     }
   }

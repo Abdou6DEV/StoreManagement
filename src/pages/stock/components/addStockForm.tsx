@@ -128,9 +128,11 @@ export default function AddStockForm({
       );
 
       const quantity = Number(form.quantity || 0);
+      const boughtPrice = Number(form.bought || 0);
       const purchaseData = {
         sellerId: form.sellerId || undefined,
         quantity: quantity,
+        price: boughtPrice,
       };
 
       if (existingProduct) {
