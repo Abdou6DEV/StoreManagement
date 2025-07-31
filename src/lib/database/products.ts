@@ -28,3 +28,94 @@ export async function updateProduct(id: string, data: any) {
     data: updateData,
   });
 }
+
+export async function getProductWithPurchaseHistory(id: string) {
+  return await prisma.product.findUnique({
+    where: { id },
+    include: {
+      category: true,
+      purchases: {
+        include: {
+          seller: true,
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+      },
+      saleItems: {
+        include: {
+          sale: {
+            include: {
+              client: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+      },
+    },
+  });
+}
+
+export async function createProductWithPurchase(
+  productData: Omit<Product, "id" | "createdAt" | "updatedAt">,
+  purchaseData: {
+    sellerId?: string;
+    quantity: number;
+    price: number;
+  },
+) {
+  return await prisma.$transaction(async (tx) => {
+    // Create the product
+    const product = await tx.product.create({
+      data: productData,
+    });
+
+    // Create the purchase record
+    await tx.purchase.create({
+      data: {
+        productId: product.id,
+        sellerId: purchaseData.sellerId || null,
+        quantity: purchaseData.quantity,
+        price: purchaseData.price,
+      },
+    });
+
+    return product;
+  });
+}
+
+export async function updateProductWithPurchase(
+  productId: string,
+  additionalQuantity: number,
+  purchaseData: {
+    sellerId?: string;
+    quantity: number;
+    price: number;
+  },
+) {
+  return await prisma.$transaction(async (tx) => {
+    // Update product quantity
+    const product = await tx.product.update({
+      where: { id: productId },
+      data: {
+        quantity: {
+          increment: additionalQuantity,
+        },
+      },
+    });
+
+    // Create the purchase record
+    await tx.purchase.create({
+      data: {
+        productId: productId,
+        sellerId: purchaseData.sellerId || null,
+        quantity: purchaseData.quantity,
+        price: purchaseData.price,
+      },
+    });
+
+    return product;
+  });
+}

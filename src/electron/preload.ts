@@ -34,6 +34,17 @@ contextBridge.exposeInMainWorld("api", {
       ) => ipcRenderer.invoke("db:products:update", { id, data }),
       delete: (id: string) => ipcRenderer.invoke("db:products:delete", id),
       getSalesCounts: () => ipcRenderer.invoke("db:products:getSalesCounts"),
+      getWithPurchaseHistory: (id: string) =>
+        ipcRenderer.invoke("db:products:getWithPurchaseHistory", id),
+      createWithPurchase: (data: {
+        productData: any;
+        purchaseData: { sellerId?: string; quantity: number; price: number };
+      }) => ipcRenderer.invoke("db:products:createWithPurchase", data),
+      updateWithPurchase: (data: {
+        productId: string;
+        additionalQuantity: number;
+        purchaseData: { sellerId?: string; quantity: number; price: number };
+      }) => ipcRenderer.invoke("db:products:updateWithPurchase", data),
     },
     categories: {
       getAll: () => ipcRenderer.invoke("db:categories:getAll"),
@@ -97,6 +108,50 @@ contextBridge.exposeInMainWorld("api", {
           givenAmount,
         }),
     },
+    sellers: {
+      getAll: () => ipcRenderer.invoke("db:sellers:getAll"),
+      create: (data: {
+        name: string;
+        phone?: string;
+        email?: string;
+        address?: string;
+      }) => ipcRenderer.invoke("db:sellers:create", data),
+      update: (
+        id: string,
+        data: {
+          name?: string;
+          phone?: string;
+          email?: string;
+          address?: string;
+        },
+      ) => ipcRenderer.invoke("db:sellers:update", { id, data }),
+      delete: (id: string) => ipcRenderer.invoke("db:sellers:delete", id),
+      getById: (id: string) => ipcRenderer.invoke("db:sellers:getById", id),
+    },
+    purchases: {
+      getAll: () => ipcRenderer.invoke("db:purchases:getAll"),
+      create: (data: {
+        productId: string;
+        sellerId?: string;
+        quantity: number;
+        price: number;
+      }) => ipcRenderer.invoke("db:purchases:create", data),
+      update: (
+        id: string,
+        data: {
+          productId?: string;
+          sellerId?: string;
+          quantity?: number;
+          price?: number;
+        },
+      ) => ipcRenderer.invoke("db:purchases:update", { id, data }),
+      delete: (id: string) => ipcRenderer.invoke("db:purchases:delete", id),
+      getById: (id: string) => ipcRenderer.invoke("db:purchases:getById", id),
+      getByProduct: (productId: string) =>
+        ipcRenderer.invoke("db:purchases:getByProduct", productId),
+      getBySeller: (sellerId: string) =>
+        ipcRenderer.invoke("db:purchases:getBySeller", sellerId),
+    },
   },
   app: {
     getVersion: () => ipcRenderer.invoke("app:getVersion"),
@@ -120,6 +175,24 @@ declare global {
           getSalesCounts: () => Promise<
             { productId: string; totalSold: number }[]
           >;
+          getWithPurchaseHistory: (id: string) => Promise<any>;
+          createWithPurchase: (data: {
+            productData: any;
+            purchaseData: {
+              sellerId?: string;
+              quantity: number;
+              price: number;
+            };
+          }) => Promise<any>;
+          updateWithPurchase: (data: {
+            productId: string;
+            additionalQuantity: number;
+            purchaseData: {
+              sellerId?: string;
+              quantity: number;
+              price: number;
+            };
+          }) => Promise<any>;
         };
         categories: {
           getAll: () => Promise<Category[]>;
@@ -175,6 +248,48 @@ declare global {
             paymentId: string,
             givenAmount: number,
           ) => Promise<void>;
+        };
+        sellers: {
+          getAll: () => Promise<any[]>;
+          create: (data: {
+            name: string;
+            phone?: string;
+            email?: string;
+            address?: string;
+          }) => Promise<any>;
+          update: (
+            id: string,
+            data: {
+              name?: string;
+              phone?: string;
+              email?: string;
+              address?: string;
+            },
+          ) => Promise<any>;
+          delete: (id: string) => Promise<void>;
+          getById: (id: string) => Promise<any>;
+        };
+        purchases: {
+          getAll: () => Promise<any[]>;
+          create: (data: {
+            productId: string;
+            sellerId?: string;
+            quantity: number;
+            price: number;
+          }) => Promise<any>;
+          update: (
+            id: string,
+            data: {
+              productId?: string;
+              sellerId?: string;
+              quantity?: number;
+              price?: number;
+            },
+          ) => Promise<any>;
+          delete: (id: string) => Promise<void>;
+          getById: (id: string) => Promise<any>;
+          getByProduct: (productId: string) => Promise<any[]>;
+          getBySeller: (sellerId: string) => Promise<any[]>;
         };
       };
       app: {

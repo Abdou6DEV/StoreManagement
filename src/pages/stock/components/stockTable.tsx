@@ -5,6 +5,7 @@ import { ConfirmDialog } from "../../../lib/components/confirmDialog";
 
 import {
   Edit,
+  Info,
   X,
   Check,
   ChevronDown,
@@ -19,12 +20,7 @@ import {
 import React, { useState, useEffect } from "react";
 
 import { cn } from "../../../lib/utils";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "../../../lib/components/dialog";
+
 import {
   Command,
   CommandGroup,
@@ -39,7 +35,8 @@ import {
 } from "../../../lib/components/popover";
 
 import { Button } from "../../../lib/components/button";
-import EditStockForm from "./editStockForm";
+import { ProductInfoModal } from "./productInfoModal";
+import { EditProductModal } from "./editProductModal";
 import type { ProductWithSales } from "../../../types";
 import { Tooltip } from "../../../lib/components/tooltip";
 import {
@@ -80,6 +77,12 @@ export const StockTable = () => {
     productId: string | null;
     productName: string;
   }>({ open: false, productId: null, productName: "" });
+  const [productInfo, setProductInfo] = useState<{
+    open: boolean;
+    productId: string | null;
+    data: any | null;
+    loading: boolean;
+  }>({ open: false, productId: null, data: null, loading: false });
 
   useEffect(() => {
     window.api.database.options
@@ -178,6 +181,34 @@ export const StockTable = () => {
     });
   };
 
+  const handleViewProductInfo = async (productId: string) => {
+    setProductInfo({
+      open: true,
+      productId,
+      data: null,
+      loading: true,
+    });
+
+    try {
+      const productData =
+        await window.api.database.products.getWithPurchaseHistory(productId);
+      setProductInfo((prev) => ({
+        ...prev,
+        data: productData,
+        loading: false,
+      }));
+    } catch (error) {
+      showToast(
+        t("stock.toastInfoError", "Failed to load product information"),
+        "error",
+      );
+      setProductInfo((prev) => ({
+        ...prev,
+        loading: false,
+      }));
+    }
+  };
+
   const confirmDeleteProduct = async () => {
     if (!confirmDelete.productId) return;
 
@@ -240,10 +271,12 @@ export const StockTable = () => {
     product,
     setEditingProductID,
     handleDeleteProduct,
+    handleViewProductInfo,
   }: {
     product: ProductWithSales;
     setEditingProductID: (id: string) => void;
     handleDeleteProduct: (id: string) => void;
+    handleViewProductInfo: (id: string) => void;
   }) {
     const { t } = useTranslation();
     const profit = product.selling - product.bought;
@@ -263,6 +296,15 @@ export const StockTable = () => {
         <td className="px-4 text-green-700 font-medium">{totalProfit}</td>
         <td className="px-4">
           <div className="flex gap-2">
+            <Button
+              onClick={() => handleViewProductInfo(product.id)}
+              size="sm"
+              variant="outline"
+              className="text-blue-600 border-blue-200 hover:bg-blue-50 dark:text-blue-400 dark:border-blue-800 dark:hover:bg-blue-950/30"
+            >
+              <Info className="w-3 h-3" />
+              {t("stock.info", "Info")}
+            </Button>
             <Button
               onClick={() => setEditingProductID(product.id)}
               size="sm"
@@ -633,6 +675,7 @@ export const StockTable = () => {
                   product={product}
                   setEditingProductID={setEditingProductID}
                   handleDeleteProduct={handleDeleteProduct}
+                  handleViewProductInfo={handleViewProductInfo}
                 />
               ))}
             </tbody>
@@ -720,34 +763,14 @@ export const StockTable = () => {
         </Pagination>
       )}
 
-      {/* Edit Product Dialog */}
-      <Dialog modal open={!!editingProductID}>
-        <DialogContent className="min-w-5/7" showCloseButton={false}>
-          <DialogHeader>
-            <DialogTitle>
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
-                  <Edit className="w-5 h-5 text-green-600" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-bold text-foreground">
-                    {t("stock.editTitle", "Edit Product")}
-                  </h2>
-                  <p className="text-sm text-muted-foreground">
-                    Editing{" "}
-                    {products.find((product) => product.id === editingProductID)
-                      ?.name || "Unknown"}
-                  </p>
-                </div>
-              </div>
-            </DialogTitle>
-          </DialogHeader>
-          <EditStockForm
-            productID={editingProductID}
-            setProductID={setEditingProductID}
-          />
-        </DialogContent>
-      </Dialog>
+      {/* Edit Product Modal */}
+      <EditProductModal
+        open={!!editingProductID}
+        onOpenChange={(open) => !open && setEditingProductID(null)}
+        productId={editingProductID}
+        setProductId={setEditingProductID}
+        products={products}
+      />
 
       {/* Confirm Delete Dialog */}
       <ConfirmDialog
@@ -763,6 +786,22 @@ export const StockTable = () => {
         cancelText={t("stock.cancel", "Cancel")}
         variant="danger"
         onConfirm={confirmDeleteProduct}
+      />
+
+      {/* Product Info Modal */}
+      <ProductInfoModal
+        open={productInfo.open}
+        onOpenChange={(open) =>
+          !open &&
+          setProductInfo({
+            open: false,
+            productId: null,
+            data: null,
+            loading: false,
+          })
+        }
+        productData={productInfo.data}
+        loading={productInfo.loading}
       />
     </section>
   );
