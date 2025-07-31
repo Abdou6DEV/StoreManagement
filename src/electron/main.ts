@@ -23,6 +23,7 @@ import {
   createSale,
   getProductSalesCounts,
   getAllSales,
+  updateSale,
 } from "../lib/database/sales";
 import { getOption, setOption } from "../lib/database/options";
 import {
@@ -221,6 +222,10 @@ function setupDatabaseHandlers() {
 
   ipcMain.handle("db:sales:getAll", async () => {
     return await getAllSales();
+  });
+
+  ipcMain.handle("db:sales:update", async (_event, { id, data }) => {
+    return await updateSale(id, data);
   });
 
   // Sellers handlers

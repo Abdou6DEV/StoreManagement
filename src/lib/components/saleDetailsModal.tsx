@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { X, Printer, Eye, Calendar, User, ShoppingBag, DollarSign, Receipt, Tag, CreditCard, Banknote, Edit } from "lucide-react";
+import { X, Printer, Calendar, User, ShoppingBag, DollarSign, Receipt, CreditCard, Banknote, Edit, Save, X as CancelIcon } from "lucide-react";
 import PaymentSummary from "./paymentSummary";
+import { useToast } from "../contexts/toastContext";
 
 interface SaleItem {
   id: string;
@@ -34,6 +35,7 @@ interface SaleDetailsModalProps {
   onClose: () => void;
   onPrint?: (sale: Sale) => void;
   onModify?: (sale: Sale) => void;
+  onSaleUpdated?: (updatedSale: Sale) => void;
 }
 
 const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({ 
@@ -41,10 +43,28 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
   isOpen, 
   onClose, 
   onPrint,
-  onModify
+  onModify,
+  onSaleUpdated
 }) => {
   const { t } = useTranslation();
+  const { showToast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
+  const [editedCart, setEditedCart] = useState<any[]>([]);
+  const [editedDiscount, setEditedDiscount] = useState(0);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Initialize edit state when sale changes
+  useEffect(() => {
+    if (sale && isEditing) {
+      setEditedCart(sale.saleItems.map(item => ({
+        id: item.productId,
+        name: item.product.name,
+        price: item.price,
+        qty: item.quantity
+      })));
+      setEditedDiscount(sale.discount);
+    }
+  }, [sale, isEditing]);
 
   if (!isOpen || !sale) return null;
 
@@ -56,17 +76,69 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
     return new Date(date).toLocaleString();
   };
 
-  const formatDate = (date: Date) => {
-    return new Date(date).toLocaleDateString();
-  };
-
   const handlePrint = () => {
     onPrint?.(sale);
   };
 
   const handleModify = () => {
-    setIsEditing(!isEditing);
+    if (isEditing) {
+      // Cancel editing
+      setIsEditing(false);
+      setEditedCart([]);
+      setEditedDiscount(0);
+    } else {
+      // Start editing
+      setIsEditing(true);
+    }
   };
+
+  const handleSave = async () => {
+    if (!sale) return;
+
+    // Validate that the cart is not empty
+    if (editedCart.length === 0) {
+      showToast(t("cashier.emptySaleError", "Cannot save empty sale. Please add at least one item."), "error");
+      return;
+    }
+
+    // Validate that all items have valid quantities
+    const invalidItems = editedCart.filter(item => item.qty <= 0);
+    if (invalidItems.length > 0) {
+      showToast(t("cashier.invalidQuantityError", "All items must have a quantity greater than 0."), "error");
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const updatedSale = await window.api.database.sales.update(sale.id, {
+        clientId: sale.client?.name ? undefined : undefined, // Keep existing client
+        items: editedCart.map(item => ({
+          productId: item.id,
+          quantity: item.qty,
+          price: item.price
+        })),
+        discount: editedDiscount
+      });
+
+      showToast(t("cashier.saleUpdated", "Sale updated successfully"), "success");
+      setIsEditing(false);
+      onSaleUpdated?.(updatedSale);
+    } catch (error) {
+      console.error("Error updating sale:", error);
+      showToast(t("cashier.saleUpdateError", "Failed to update sale"), "error");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const currentCart = isEditing ? editedCart : sale.saleItems.map(item => ({
+    id: item.productId,
+    name: item.product.name,
+    price: item.price,
+    qty: item.quantity
+  }));
+
+  const currentDiscount = isEditing ? editedDiscount : sale.discount;
 
   return (
          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-2">
@@ -79,7 +151,7 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
             </div>
             <div>
               <h2 className="text-xl font-bold text-foreground">
-                {t("cashier.saleDetails", "Sale Details")}
+                {isEditing ? t("cashier.editSale", "Edit Sale") : t("cashier.saleDetails", "Sale Details")}
               </h2>
               <p className="text-sm text-muted-foreground">
                 {t("cashier.saleId", "Sale ID")}: {sale.id}
@@ -87,19 +159,40 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
             </div>
           </div>
                      <div className="flex items-center gap-2">
-                           <button
-                onClick={handleModify}
-                className={`p-3 hover:bg-muted rounded-lg transition-colors group ${
-                  isEditing ? 'bg-blue-500/10' : ''
-                }`}
-                title={isEditing ? t("cashier.cancelEdit", "Cancel Edit") : t("cashier.modifySale", "Modify Sale")}
-              >
-                <Edit className={`w-5 h-5 transition-colors ${
-                  isEditing 
-                    ? 'text-blue-500' 
-                    : 'text-muted-foreground group-hover:text-blue-500'
-                }`} />
-              </button>
+                           {isEditing ? (
+                             <>
+                               <button
+                                 onClick={handleSave}
+                                 disabled={isSaving || editedCart.length === 0 || editedCart.some(item => item.qty <= 0)}
+                                 className="p-3 hover:bg-muted rounded-lg transition-colors group bg-green-500/10 disabled:opacity-50 disabled:cursor-not-allowed"
+                                 title={
+                                   editedCart.length === 0 
+                                     ? t("cashier.emptySaleError", "Cannot save empty sale. Please add at least one item.")
+                                     : editedCart.some(item => item.qty <= 0)
+                                     ? t("cashier.invalidQuantityError", "All items must have a quantity greater than 0.")
+                                     : t("cashier.saveChanges", "Save Changes")
+                                 }
+                               >
+                                 <Save className="w-5 h-5 text-green-500" />
+                               </button>
+                               <button
+                                 onClick={handleModify}
+                                 disabled={isSaving}
+                                 className="p-3 hover:bg-muted rounded-lg transition-colors group"
+                                 title={t("cashier.cancelEdit", "Cancel Edit")}
+                               >
+                                 <CancelIcon className="w-5 h-5 text-muted-foreground group-hover:text-destructive transition-colors" />
+                               </button>
+                             </>
+                           ) : (
+                             <button
+                               onClick={handleModify}
+                               className="p-3 hover:bg-muted rounded-lg transition-colors group"
+                               title={t("cashier.modifySale", "Modify Sale")}
+                             >
+                               <Edit className="w-5 h-5 text-muted-foreground group-hover:text-blue-500 transition-colors" />
+                             </button>
+                           )}
              <button
                onClick={handlePrint}
                className="p-3 hover:bg-muted rounded-lg transition-colors group"
@@ -182,7 +275,7 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
                       {t("cashier.discount", "Discount")}
                     </div>
                     <div className="font-medium text-green-600">
-                      {formatCurrency(sale.discount)}
+                      {formatCurrency(currentDiscount)}
                     </div>
                   </div>
                   <div className="bg-muted/30 rounded-lg p-4">
@@ -207,7 +300,7 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
                     {t("cashier.totalItems", "Total Items")}
                   </div>
                   <div className="font-medium text-lg">
-                    {sale.totalItems} {t("cashier.items", "items")}
+                    {currentCart.reduce((sum, item) => sum + item.qty, 0)} {t("cashier.items", "items")}
                   </div>
                 </div>
               </div>
@@ -225,17 +318,13 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
                    </h3>
                                      <div className="flex-1 border border-border/30 rounded-lg overflow-hidden bg-transparent">
                      <PaymentSummary
-                       cart={sale.saleItems.map(item => ({
-                         id: item.id,
-                         name: item.product.name,
-                         price: item.price,
-                         qty: item.quantity
-                       }))}
+                       cart={currentCart}
                        clientName={sale.client?.name}
                        paymentAmount={sale.totalPaid}
-                       discount={sale.discount}
+                       discount={currentDiscount}
                        paymentType={sale.isPaidInCash ? "none" : (sale.totalPaid < sale.totalWithDiscount ? "versement" : "credit")}
                        interactive={isEditing}
+                       setCart={isEditing ? setEditedCart : undefined}
                      />
                    </div>
                 </div>

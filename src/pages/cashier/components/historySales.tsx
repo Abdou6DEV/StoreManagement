@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { Clock, User, ShoppingBag, DollarSign, Search, Eye } from "lucide-react";
+import { Clock, User, ShoppingBag, Search, Eye } from "lucide-react";
 import { Input } from "../../../lib/components/input";
 import SaleDetailsModal from "../../../lib/components/saleDetailsModal";
+import { useStock } from "../../../lib/contexts/stockContext";
 
 interface SaleItem {
   id: string;
@@ -35,25 +36,26 @@ interface HistorySalesProps {
 
 const HistorySales: React.FC<HistorySalesProps> = ({ onSaleSelect }) => {
   const { t } = useTranslation();
+  const { refetchProducts } = useStock();
   const [sales, setSales] = useState<Sale[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
   const [showModal, setShowModal] = useState(false);
 
-  useEffect(() => {
-    const fetchSales = async () => {
-      try {
-        setLoading(true);
-        const salesData = await window.api.database.sales.getAll();
-        setSales(salesData.slice(0, 50)); // Show last 50 sales for better filtering
-      } catch (error) {
-        console.error("Error fetching sales:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchSales = async () => {
+    try {
+      setLoading(true);
+      const salesData = await window.api.database.sales.getAll();
+      setSales(salesData.slice(0, 50)); // Show last 50 sales for better filtering
+    } catch (error) {
+      console.error("Error fetching sales:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchSales();
   }, []);
 
@@ -112,10 +114,6 @@ const HistorySales: React.FC<HistorySalesProps> = ({ onSaleSelect }) => {
     return `${amount.toLocaleString()} ${t("currency")}`;
   };
 
-  const formatFullDate = (date: Date) => {
-    return new Date(date).toLocaleString();
-  };
-
   const handleSaleClick = (sale: Sale) => {
     setSelectedSale(sale);
     setShowModal(true);
@@ -128,11 +126,30 @@ const HistorySales: React.FC<HistorySalesProps> = ({ onSaleSelect }) => {
   };
 
   const handleModifySale = (sale: Sale) => {
-    // TODO: Implement modify functionality
+    // This is now handled in the modal
     console.log("Modifying sale:", sale.id);
   };
 
+  const handleSaleUpdated = async (updatedSale: Sale) => {
+    // Update the sale in the local state
+    setSales(prevSales => 
+      prevSales.map(sale => 
+        sale.id === updatedSale.id ? updatedSale : sale
+      )
+    );
+    
+    // Update the selected sale if it's the same one
+    if (selectedSale?.id === updatedSale.id) {
+      setSelectedSale(updatedSale);
+    }
 
+    // Refresh stock context to update product quantities and sales counts
+    try {
+      await refetchProducts();
+    } catch (error) {
+      console.error("Error refreshing stock context:", error);
+    }
+  };
 
   if (loading) {
     return (
@@ -236,6 +253,7 @@ const HistorySales: React.FC<HistorySalesProps> = ({ onSaleSelect }) => {
           onClose={() => setShowModal(false)}
           onPrint={handlePrintReceipt}
           onModify={handleModifySale}
+          onSaleUpdated={handleSaleUpdated}
         />
     </div>
   );

@@ -195,7 +195,20 @@
     "loading": "جارٍ التحميل...",
     "saleId": "معرف البيع",
     "date": "التاريخ",
-    "more": "المزيد"
+    "more": "المزيد",
+    "editSale": "تعديل البيع",
+    "saveChanges": "حفظ التغييرات",
+    "cancelEdit": "إلغاء التعديل",
+    "modifySale": "تعديل البيع",
+    "saleUpdated": "تم تحديث البيع بنجاح",
+    "saleUpdateError": "فشل في تحديث البيع",
+    "editPaymentSummary": "تعديل ملخص الدفع",
+    "view": "عرض",
+    "paymentInformation": "معلومات الدفع",
+    "paymentMethod": "طريقة الدفع",
+    "totalPaid": "إجمالي المدفوع",
+    "itemsSummary": "ملخص العناصر",
+    "totalItems": "إجمالي العناصر"
   },
   "stock": {
     "product": "اسم المنتج",
