@@ -215,9 +215,9 @@ export default function PaymentSummary({
 
     return (
       <tr className="border-b border-dashed border-primary/40 hover:bg-accent/40 transition-colors group">
-        <td className="py-1 px-2 font-medium truncate">{item.name}</td>
+        <td className="py-2 px-2 font-medium truncate">{item.name}</td>
         <td
-          className="py-0 px-2 text-right cursor-pointer select-none hover:bg-primary/20 rounded"
+          className="py-2 px-2 text-right cursor-pointer select-none hover:bg-primary/20 rounded"
           onDoubleClick={handleDoubleClick}
         >
           {isEditing ? (
