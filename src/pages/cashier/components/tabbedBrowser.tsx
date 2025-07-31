@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Star, Clock } from "lucide-react";
 import FavoritesBrowser from "./favoritesBrowser";
-import HistorySales from "./historySales";
+import HistoryBrowser from "./historyBrowser";
 import type { ProductWithSales, CartItem } from "../../../types";
 
 interface TabbedBrowserProps {
@@ -32,7 +32,7 @@ const TabbedBrowser: React.FC<TabbedBrowserProps> = ({
       id: "history" as TabType,
       label: t("cashier.history", "History"),
       icon: Clock,
-      count: 0, // Will be updated by HistorySales
+      count: 0, // Will be updated by HistoryBrowser
     },
   ];
 
@@ -85,7 +85,7 @@ const TabbedBrowser: React.FC<TabbedBrowserProps> = ({
         
         {activeTab === "history" && (
           <div className="h-full p-3 overflow-y-auto">
-            <HistorySales onSaleSelect={handleSaleSelect} />
+            <HistoryBrowser onSaleSelect={handleSaleSelect} />
           </div>
         )}
       </div>

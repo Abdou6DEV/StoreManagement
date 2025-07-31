@@ -30,11 +30,11 @@ interface Sale {
   isPaidInCash: boolean;
 }
 
-interface HistorySalesProps {
+interface HistoryBrowserProps {
   onSaleSelect?: (sale: Sale) => void;
 }
 
-const HistorySales: React.FC<HistorySalesProps> = ({ onSaleSelect }) => {
+const HistoryBrowser: React.FC<HistoryBrowserProps> = ({ onSaleSelect }) => {
   const { t } = useTranslation();
   const { refetchProducts } = useStock();
   const [sales, setSales] = useState<Sale[]>([]);
@@ -259,4 +259,4 @@ const HistorySales: React.FC<HistorySalesProps> = ({ onSaleSelect }) => {
   );
 };
 
-export default HistorySales; 
+export default HistoryBrowser; 
