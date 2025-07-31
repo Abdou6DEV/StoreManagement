@@ -186,7 +186,6 @@
 
     "quantity": "Qty",
     "subtotal": "Subtotal",
-    "total": "Total",
     "remaining": "Remaining",
     "cash": "Cash",
     "credit": "Credit",
@@ -194,8 +193,6 @@
     "loading": "Loading...",
     "saleId": "Sale ID",
     "date": "Date",
-    "client": "Client",
-    "items": "items",
     "more": "more"
   },
   "stock": {
