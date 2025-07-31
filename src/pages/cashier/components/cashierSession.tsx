@@ -61,22 +61,6 @@ export default function CashierSession({
     [cart],
   );
 
-  const handleAddProduct = (product: ProductWithSales) => {
-    const updated = [...cart];
-    const exists = updated.find((item) => item.id === product.id);
-    if (exists) {
-      exists.qty += 1;
-    } else {
-      updated.push({
-        id: product.id,
-        name: product.name,
-        price: product.selling,
-        qty: 1,
-      });
-    }
-    setCart(updated);
-  };
-
   // Clear the cart and reset session state
   const handleClear = () => {
     setCart([]);
