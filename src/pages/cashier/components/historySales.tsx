@@ -169,7 +169,7 @@ const HistorySales: React.FC<HistorySalesProps> = ({ onSaleSelect }) => {
             placeholder={t("cashier.searchSalesOrScan", "Search sales or scan the receipt barcode...")}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-9 text-sm"
+            className="pl-9 text-sm border-1 border-border hover:border-primary/50 focus:border-primary transition-colors"
           />
         </div>
       </div>
