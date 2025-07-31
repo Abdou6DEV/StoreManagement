@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Product, Seller } from "@prisma/client";
 import { faker } from "@faker-js/faker";
 
 const prisma = new PrismaClient();
@@ -568,6 +568,78 @@ function generateUniqueClientName(): string {
   return name;
 }
 
+function generateUniqueSellerName(): string {
+  const companyTypes = [
+    "Corp",
+    "Inc",
+    "LLC",
+    "Ltd",
+    "Group",
+    "Industries",
+    "Enterprise",
+    "Solutions",
+    "Supply Co",
+    "Trading Co",
+    "Imports",
+    "Exports",
+    "Wholesale",
+    "Distribution",
+    "Manufacturing",
+  ];
+
+  const businessNames = [
+    "Global",
+    "Prime",
+    "Elite",
+    "Supreme",
+    "Universal",
+    "Metro",
+    "Central",
+    "Advanced",
+    "Professional",
+    "Quality",
+    "Reliable",
+    "Trusted",
+    "Premier",
+    "Superior",
+    "Excellence",
+    "Innovation",
+    "Precision",
+    "Dynamic",
+    "Strategic",
+    "Optimal",
+  ];
+
+  const industryTerms = [
+    "Tech",
+    "Pro",
+    "Max",
+    "Plus",
+    "Direct",
+    "Source",
+    "Market",
+    "Trade",
+    "Commerce",
+    "Business",
+    "Supply",
+    "Systems",
+    "Networks",
+    "Partners",
+    "Associates",
+  ];
+
+  const name1 = faker.helpers.arrayElement(businessNames);
+  const name2 = faker.helpers.arrayElement(industryTerms);
+  const type = faker.helpers.arrayElement(companyTypes);
+
+  let name = `${name1} ${name2} ${type}`;
+
+  // Add unique identifier to prevent conflicts
+  name += ` ${faker.string.alphanumeric(3).toUpperCase()}`;
+
+  return name;
+}
+
 async function main() {
   console.log("🌱 Starting seed...");
 
@@ -582,8 +654,42 @@ async function main() {
     });
   }
 
-  console.log("📦 Generating products...");
+  console.log("🏪 Creating sellers...");
+  const usedSellerNames = new Set<string>();
+  const sellers: Seller[] = [];
+
+  for (let i = 0; i < 30; i++) {
+    let sellerName: string;
+    do {
+      sellerName = generateUniqueSellerName();
+    } while (usedSellerNames.has(sellerName));
+
+    usedSellerNames.add(sellerName);
+
+    const seller = await prisma.seller.create({
+      data: {
+        name: sellerName,
+        phone: faker.helpers.maybe(() => faker.phone.number(), {
+          probability: 0.8,
+        }),
+        email: faker.helpers.maybe(() => faker.internet.email(), {
+          probability: 0.7,
+        }),
+        address: faker.helpers.maybe(
+          () => faker.location.streetAddress({ useFullAddress: true }),
+          { probability: 0.6 },
+        ),
+      },
+    });
+
+    sellers.push(seller);
+  }
+
+  console.log("📦 Generating products and purchases...");
   const usedProductNames = new Set<string>();
+  let products: Product[] = [];
+  const twoYearsAgo = new Date();
+  twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
 
   for (let i = 0; i < 1000; i++) {
     let productName: string;
@@ -602,25 +708,70 @@ async function main() {
     const markupPercentage = faker.number.float({ min: 1.1, max: 1.8 });
     const sellingPrice = Math.floor(Number(boughtPrice) * markupPercentage);
 
-    await prisma.product.create({
-      data: {
-        name: productName,
-        categoryName: category,
-        quantity: faker.number.int({ min: 1, max: 150 }),
-        bought: Number(boughtPrice),
-        selling: sellingPrice,
-        codebar: faker.string.numeric(12),
-      },
+    // Wrap product creation, purchases, and quantity update in a transaction
+    await prisma.$transaction(async (tx) => {
+      // Create the product
+      const createdProduct = await tx.product.create({
+        data: {
+          name: productName,
+          categoryName: category,
+          quantity: faker.number.int({ min: 1, max: 150 }),
+          bought: Number(boughtPrice),
+          selling: sellingPrice,
+          codebar: faker.string.numeric(12),
+        },
+      });
+
+      // Create multiple purchases for the product
+      const numPurchases = faker.number.int({ min: 1, max: 4 });
+      let totalPurchased = 0;
+
+      for (let j = 0; j < numPurchases; j++) {
+        const seller = faker.helpers.maybe(
+          () => faker.helpers.arrayElement(sellers),
+          { probability: 0.85 }, // 85% chance to have a seller, 15% chance for no seller
+        );
+
+        const purchaseQuantity = faker.number.int({ min: 5, max: 50 });
+        totalPurchased += purchaseQuantity;
+
+        const purchaseDate = faker.date.between({
+          from: twoYearsAgo,
+          to: new Date(),
+        });
+
+        await tx.purchase.create({
+          data: {
+            productId: createdProduct.id,
+            sellerId: seller?.id || null,
+            quantity: purchaseQuantity,
+            createdAt: purchaseDate,
+            updatedAt: purchaseDate,
+          },
+        });
+      }
+
+      // Update product quantity to reflect total purchases minus some sold items
+      const soldQuantity = faker.number.int({
+        min: 0,
+        max: Math.floor(totalPurchased * 0.7),
+      });
+      const remainingQuantity = Math.max(0, totalPurchased - soldQuantity);
+
+      const updatedProduct = await tx.product.update({
+        where: { id: createdProduct.id },
+        data: { quantity: remainingQuantity },
+      });
+
+      return updatedProduct;
     });
 
     if ((i + 1) % 100 === 0) {
-      console.log(`Generated ${i + 1} products...`);
+      console.log(`Generated ${i + 1} products with purchases...`);
     }
   }
 
   console.log("👥 Creating sample clients...");
-  const twoYearsAgo = new Date();
-  twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
   const usedClientNames = new Set<string>();
 
   for (let i = 0; i < 50; i++) {
@@ -646,7 +797,7 @@ async function main() {
 
   console.log("🛒 Creating sample sales...");
   const clients = await prisma.client.findMany();
-  const products = await prisma.product.findMany();
+  products = await prisma.product.findMany();
   const sales = [];
 
   for (let i = 0; i < 200; i++) {
@@ -717,7 +868,9 @@ async function main() {
   console.log("✅ Seed completed successfully!");
   console.log(`📊 Created:`);
   console.log(`   - ${predefinedCategories.length} categories`);
+  console.log(`   - 30 sellers`);
   console.log(`   - 1,000 products`);
+  console.log(`   - Multiple purchases per product (1-4 purchases each)`);
   console.log(`   - 50 clients`);
   console.log(`   - 200 sales with items`);
   console.log(`   - ${paymentCount} payments`);

@@ -40,6 +40,7 @@ const initialForm: AddStockFormState = {
   bought: "",
   selling: "",
   codebar: "",
+  sellerId: "",
 };
 
 export default function AddStockForm({
@@ -61,6 +62,10 @@ export default function AddStockForm({
   const [filteredCategories, setFilteredCategories] =
     useState<string[]>(categories);
   const [dropdownCategorySearch, setDropdownCategorySearch] = useState("");
+  const [showSellerDropdown, setShowSellerDropdown] = useState(false);
+  const [sellers, setSellers] = useState<any[]>([]);
+  const [filteredSellers, setFilteredSellers] = useState<any[]>([]);
+  const [dropdownSellerSearch, setDropdownSellerSearch] = useState("");
   const [form, setForm] = useState<AddStockFormState>(initialForm);
   const [loading, setLoading] = useState(false);
   const [generatingBarcode, setGeneratingBarcode] = useState(false);
@@ -94,6 +99,20 @@ export default function AddStockForm({
     }, 500); // Simulate async load
   };
 
+  // Fetch sellers on component mount
+  React.useEffect(() => {
+    const fetchSellers = async () => {
+      try {
+        const sellersData = await window.api.database.sellers.getAll();
+        setSellers(sellersData);
+        setFilteredSellers(sellersData);
+      } catch (error) {
+        console.error("Failed to fetch sellers:", error);
+      }
+    };
+    fetchSellers();
+  }, []);
+
   const handleAddProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -108,27 +127,37 @@ export default function AddStockForm({
             form.categoryName.toLowerCase().trim(),
       );
 
+      const quantity = Number(form.quantity || 0);
+      const purchaseData = {
+        sellerId: form.sellerId || undefined,
+        quantity: quantity,
+      };
+
       if (existingProduct) {
-        // If exists, update quantity
-        await window.api.database.products.update(existingProduct.id, {
-          name: existingProduct.name,
-          categoryName: existingProduct.categoryName,
-          quantity: existingProduct.quantity + Number(form.quantity || 0),
-          bought: Number(form.bought || 0), // optional: update bought/selling price
-          selling: Number(form.selling || 0),
-          codebar: form.codebar,
+        // If exists, update quantity with purchase tracking
+        await window.api.database.products.updateWithPurchase({
+          productId: existingProduct.id,
+          additionalQuantity: quantity,
+          purchaseData: purchaseData,
         });
         showToast(
           t("stock.toastUpdateSuccess", "Product updated successfully!"),
           "success",
         );
       } else {
-        // If not exists, create new product
-        await window.api.database.products.add({
-          ...form,
-          quantity: Number(form.quantity || 0),
+        // If not exists, create new product with purchase tracking
+        const productData = {
+          name: form.name,
+          categoryName: form.categoryName,
+          quantity: quantity,
           bought: Number(form.bought || 0),
           selling: Number(form.selling || 0),
+          codebar: form.codebar,
+        };
+
+        await window.api.database.products.createWithPurchase({
+          productData: productData,
+          purchaseData: purchaseData,
         });
         showToast(
           t("stock.toastAddSuccess", "Product added successfully!"),
@@ -305,6 +334,7 @@ export default function AddStockForm({
                                   bought: p.bought ?? "",
                                   selling: p.selling ?? "",
                                   codebar: p.codebar || "",
+                                  sellerId: "", // reset seller selection
                                 });
                                 setShowProductDropdown(false);
                               }}
@@ -422,6 +452,136 @@ export default function AddStockForm({
                                 className={cn(
                                   "ml-auto h-4 w-4",
                                   form.categoryName === cat
+                                    ? "opacity-100"
+                                    : "opacity-0",
+                                )}
+                              />
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </Legend>
+            <Legend>
+              <label>{t("stock.seller", "Seller")}</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  placeholder={t("stock.seller", "Seller")}
+                  value={
+                    sellers.find((s) => s.id === form.sellerId)?.name || ""
+                  }
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setDropdownSellerSearch(value);
+                    setFilteredSellers(
+                      sellers.filter((s) =>
+                        s.name.toLowerCase().includes(value.toLowerCase()),
+                      ),
+                    );
+                    // Clear sellerId if text doesn't match any seller
+                    const matchingSeller = sellers.find(
+                      (s) => s.name.toLowerCase() === value.toLowerCase(),
+                    );
+                    handleFormChange("sellerId", matchingSeller?.id || "");
+                  }}
+                  className="flex-1 px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-green-500/50 focus:border-green-500 transition-all"
+                />
+                <Popover
+                  open={showSellerDropdown}
+                  onOpenChange={setShowSellerDropdown}
+                >
+                  <PopoverTrigger asChild>
+                    <div className="relative inline-block">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="px-3 py-2"
+                        onClick={() => {
+                          setFilteredSellers(sellers);
+                          setDropdownSellerSearch("");
+                          setShowSellerDropdown(true);
+                        }}
+                        onMouseEnter={handleTooltipEnter}
+                        onMouseLeave={handleTooltipLeave}
+                      >
+                        {t("stock.chooseSeller", "Choose")}
+                        <ChevronDown className="ml-2 w-4 h-4" />
+                      </Button>
+                      <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-full mb-2 z-[9999] whitespace-nowrap px-2 py-1 rounded bg-black text-white dark:bg-white dark:text-black text-xs opacity-0 scale-90 transition-all duration-150 ease-out">
+                        {t(
+                          "stock.chooseSellerTooltip",
+                          "Choose from existing sellers",
+                        )}
+                      </div>
+                    </div>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[250px] p-0 z-50">
+                    <Command shouldFilter={false}>
+                      <CommandInput
+                        placeholder={t(
+                          "stock.searchSeller",
+                          "Search seller...",
+                        )}
+                        value={dropdownSellerSearch}
+                        onValueChange={(value) => {
+                          setDropdownSellerSearch(value);
+                          setFilteredSellers(
+                            sellers.filter((s) =>
+                              s.name
+                                .toLowerCase()
+                                .includes(value.toLowerCase()),
+                            ),
+                          );
+                        }}
+                        className="h-9"
+                      />
+                      <CommandList
+                        style={{ maxHeight: 200, overflowY: "auto" }}
+                      >
+                        <CommandEmpty>
+                          {t("stock.noSeller", "No seller found.")}
+                        </CommandEmpty>
+                        <CommandGroup>
+                          <CommandItem
+                            value=""
+                            onSelect={() => {
+                              handleFormChange("sellerId", "");
+                              setShowSellerDropdown(false);
+                            }}
+                          >
+                            {t("stock.noSeller", "No Seller")}
+                            <Check
+                              className={cn(
+                                "ml-auto h-4 w-4",
+                                !form.sellerId ? "opacity-100" : "opacity-0",
+                              )}
+                            />
+                          </CommandItem>
+                          {filteredSellers.map((seller) => (
+                            <CommandItem
+                              key={seller.id}
+                              value={seller.name}
+                              onSelect={() => {
+                                handleFormChange("sellerId", seller.id);
+                                setShowSellerDropdown(false);
+                              }}
+                            >
+                              <div className="flex flex-col">
+                                <span>{seller.name}</span>
+                                {seller.phone && (
+                                  <span className="text-xs text-muted-foreground">
+                                    {seller.phone}
+                                  </span>
+                                )}
+                              </div>
+                              <Check
+                                className={cn(
+                                  "ml-auto h-4 w-4",
+                                  form.sellerId === seller.id
                                     ? "opacity-100"
                                     : "opacity-0",
                                 )}

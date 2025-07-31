@@ -1,4 +1,4 @@
-import type { Product, Payment } from "@prisma/client";
+import type { Product, Payment, Client } from "@prisma/client";
 
 export interface CartItem {
   id: string;
@@ -24,6 +24,7 @@ export interface AddStockFormState {
   bought: number | "";
   selling: number | "";
   codebar: string;
+  sellerId: string;
 }
 
 export interface PaymentWithDetails extends Payment {
@@ -51,3 +52,5 @@ export interface TooltipContextType {
   showTooltips: boolean;
   toggleTooltips: () => void;
 }
+
+export type { Client };

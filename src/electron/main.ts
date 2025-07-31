@@ -8,6 +8,9 @@ import {
   getAllProducts,
   addProduct,
   deleteProduct,
+  getProductWithPurchaseHistory,
+  createProductWithPurchase,
+  updateProductWithPurchase,
 } from "../lib/database/products";
 import {
   getAllClients,
@@ -29,6 +32,22 @@ import {
   updatePaymentPaidAt,
   updatePaymentAmount,
 } from "../lib/database/payments";
+import {
+  getAllSellers,
+  createSeller,
+  updateSeller,
+  deleteSeller,
+  getSellerById,
+} from "../lib/database/sellers";
+import {
+  getAllPurchases,
+  createPurchase,
+  updatePurchase,
+  deletePurchase,
+  getPurchaseById,
+  getPurchasesByProduct,
+  getPurchasesBySeller,
+} from "../lib/database/purchases";
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {
@@ -100,6 +119,31 @@ function setupDatabaseHandlers() {
   ipcMain.handle("db:products:delete", async (_event, id: string) => {
     return await deleteProduct(id);
   });
+
+  ipcMain.handle(
+    "db:products:getWithPurchaseHistory",
+    async (_event, id: string) => {
+      return await getProductWithPurchaseHistory(id);
+    },
+  );
+
+  ipcMain.handle(
+    "db:products:createWithPurchase",
+    async (_event, { productData, purchaseData }) => {
+      return await createProductWithPurchase(productData, purchaseData);
+    },
+  );
+
+  ipcMain.handle(
+    "db:products:updateWithPurchase",
+    async (_event, { productId, additionalQuantity, purchaseData }) => {
+      return await updateProductWithPurchase(
+        productId,
+        additionalQuantity,
+        purchaseData,
+      );
+    },
+  );
 
   ipcMain.handle("db:categories:getAll", async () => {
     return await getAllCategories();
@@ -178,4 +222,60 @@ function setupDatabaseHandlers() {
   ipcMain.handle("db:sales:getAll", async () => {
     return await getAllSales();
   });
+
+  // Sellers handlers
+  ipcMain.handle("db:sellers:getAll", async () => {
+    return await getAllSellers();
+  });
+
+  ipcMain.handle("db:sellers:create", async (_event, data) => {
+    return await createSeller(data);
+  });
+
+  ipcMain.handle("db:sellers:update", async (_event, { id, data }) => {
+    return await updateSeller(id, data);
+  });
+
+  ipcMain.handle("db:sellers:delete", async (_event, id: string) => {
+    return await deleteSeller(id);
+  });
+
+  ipcMain.handle("db:sellers:getById", async (_event, id: string) => {
+    return await getSellerById(id);
+  });
+
+  // Purchases handlers
+  ipcMain.handle("db:purchases:getAll", async () => {
+    return await getAllPurchases();
+  });
+
+  ipcMain.handle("db:purchases:create", async (_event, data) => {
+    return await createPurchase(data);
+  });
+
+  ipcMain.handle("db:purchases:update", async (_event, { id, data }) => {
+    return await updatePurchase(id, data);
+  });
+
+  ipcMain.handle("db:purchases:delete", async (_event, id: string) => {
+    return await deletePurchase(id);
+  });
+
+  ipcMain.handle("db:purchases:getById", async (_event, id: string) => {
+    return await getPurchaseById(id);
+  });
+
+  ipcMain.handle(
+    "db:purchases:getByProduct",
+    async (_event, productId: string) => {
+      return await getPurchasesByProduct(productId);
+    },
+  );
+
+  ipcMain.handle(
+    "db:purchases:getBySeller",
+    async (_event, sellerId: string) => {
+      return await getPurchasesBySeller(sellerId);
+    },
+  );
 }
