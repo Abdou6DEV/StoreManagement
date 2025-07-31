@@ -1,6 +1,19 @@
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { X, Printer, Calendar, User, ShoppingBag, DollarSign, Receipt, CreditCard, Banknote, Edit, Save, X as CancelIcon } from "lucide-react";
+import {
+  X,
+  Printer,
+  Calendar,
+  User,
+  ShoppingBag,
+  DollarSign,
+  Receipt,
+  CreditCard,
+  Banknote,
+  Edit,
+  Save,
+  X as CancelIcon,
+} from "lucide-react";
 import PaymentSummary from "./paymentSummary";
 import { useToast } from "../contexts/toastContext";
 import { Sale } from "../../types";
@@ -14,13 +27,13 @@ interface SaleDetailsModalProps {
   onSaleUpdated?: (updatedSale: Sale) => void;
 }
 
-const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({ 
-  sale, 
-  isOpen, 
-  onClose, 
+const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
+  sale,
+  isOpen,
+  onClose,
   onPrint,
   onModify,
-  onSaleUpdated
+  onSaleUpdated,
 }) => {
   const { t } = useTranslation();
   const { showToast } = useToast();
@@ -32,12 +45,14 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
   // Initialize edit state when sale changes
   useEffect(() => {
     if (sale && isEditing) {
-      setEditedCart(sale.saleItems.map(item => ({
-        id: item.productId,
-        name: item.product.name,
-        price: item.price,
-        qty: item.quantity
-      })));
+      setEditedCart(
+        sale.saleItems.map((item) => ({
+          id: item.productId,
+          name: item.product.name,
+          price: item.price,
+          qty: item.quantity,
+        })),
+      );
       setEditedDiscount(sale.discount);
     }
   }, [sale, isEditing]);
@@ -73,14 +88,26 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
 
     // Validate that the cart is not empty
     if (editedCart.length === 0) {
-      showToast(t("cashier.emptySaleError", "Cannot save empty sale. Please add at least one item."), "error");
+      showToast(
+        t(
+          "cashier.emptySaleError",
+          "Cannot save empty sale. Please add at least one item.",
+        ),
+        "error",
+      );
       return;
     }
 
     // Validate that all items have valid quantities
-    const invalidItems = editedCart.filter(item => item.qty <= 0);
+    const invalidItems = editedCart.filter((item) => item.qty <= 0);
     if (invalidItems.length > 0) {
-      showToast(t("cashier.invalidQuantityError", "All items must have a quantity greater than 0."), "error");
+      showToast(
+        t(
+          "cashier.invalidQuantityError",
+          "All items must have a quantity greater than 0.",
+        ),
+        "error",
+      );
       return;
     }
 
@@ -88,15 +115,18 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
     try {
       const updatedSale = await window.api.database.sales.update(sale.id, {
         clientId: sale.client?.name ? undefined : undefined, // Keep existing client
-        items: editedCart.map(item => ({
+        items: editedCart.map((item) => ({
           productId: item.id,
           quantity: item.qty,
-          price: item.price
+          price: item.price,
         })),
-        discount: editedDiscount
+        discount: editedDiscount,
       });
 
-      showToast(t("cashier.saleUpdated", "Sale updated successfully"), "success");
+      showToast(
+        t("cashier.saleUpdated", "Sale updated successfully"),
+        "success",
+      );
       setIsEditing(false);
       onSaleUpdated?.(updatedSale);
     } catch (error) {
@@ -107,12 +137,14 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
     }
   };
 
-  const currentCart = isEditing ? editedCart : sale.saleItems.map(item => ({
-    id: item.productId,
-    name: item.product.name,
-    price: item.price,
-    qty: item.quantity
-  }));
+  const currentCart = isEditing
+    ? editedCart
+    : sale.saleItems.map((item) => ({
+        id: item.productId,
+        name: item.product.name,
+        price: item.price,
+        qty: item.quantity,
+      }));
 
   const currentDiscount = isEditing ? editedDiscount : sale.discount;
 
@@ -127,27 +159,37 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
             </div>
             <div>
               <h2 className="text-lg font-semibold text-foreground">
-                {isEditing ? t("cashier.editSale", "Edit Sale") : t("cashier.saleDetails", "Sale Details")}
+                {isEditing
+                  ? t("cashier.editSale", "Edit Sale")
+                  : t("cashier.saleDetails", "Sale Details")}
               </h2>
-              <p className="text-sm text-muted-foreground mt-0.5">
-                {sale.id}
-              </p>
+              <p className="text-sm text-muted-foreground mt-0.5">{sale.id}</p>
             </div>
           </div>
-          
+
           <div className="flex items-center gap-1">
             {isEditing ? (
               <>
                 <button
                   onClick={handleSave}
-                  disabled={isSaving || editedCart.length === 0 || editedCart.some(item => item.qty <= 0)}
+                  disabled={
+                    isSaving ||
+                    editedCart.length === 0 ||
+                    editedCart.some((item) => item.qty <= 0)
+                  }
                   className="p-2.5 hover:bg-green-500/10 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   title={
-                    editedCart.length === 0 
-                      ? t("cashier.emptySaleError", "Cannot save empty sale. Please add at least one item.")
-                      : editedCart.some(item => item.qty <= 0)
-                      ? t("cashier.invalidQuantityError", "All items must have a quantity greater than 0.")
-                      : t("cashier.saveChanges", "Save Changes")
+                    editedCart.length === 0
+                      ? t(
+                          "cashier.emptySaleError",
+                          "Cannot save empty sale. Please add at least one item.",
+                        )
+                      : editedCart.some((item) => item.qty <= 0)
+                        ? t(
+                            "cashier.invalidQuantityError",
+                            "All items must have a quantity greater than 0.",
+                          )
+                        : t("cashier.saveChanges", "Save Changes")
                   }
                 >
                   <Save className="w-4 h-4 text-green-600" />
@@ -202,7 +244,9 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
                     <div className="text-xs text-muted-foreground mb-1">
                       {t("cashier.date", "Date")}
                     </div>
-                    <div className="text-sm font-medium">{formatFullDate(sale.createdAt)}</div>
+                    <div className="text-sm font-medium">
+                      {formatFullDate(sale.createdAt)}
+                    </div>
                   </div>
                   {sale.client && (
                     <div className="p-3 bg-muted/20 rounded-lg">
@@ -210,7 +254,9 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
                         <User className="w-3 h-3" />
                         {t("cashier.client", "Client")}
                       </div>
-                      <div className="text-sm font-medium">{sale.client.name}</div>
+                      <div className="text-sm font-medium">
+                        {sale.client.name}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -234,10 +280,9 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
                         <CreditCard className="w-3 h-3 text-blue-600" />
                       )}
                       <span className="text-sm font-medium">
-                        {sale.isPaidInCash 
-                          ? t("cashier.cash", "Cash") 
-                          : t("cashier.credit", "Credit")
-                        }
+                        {sale.isPaidInCash
+                          ? t("cashier.cash", "Cash")
+                          : t("cashier.credit", "Credit")}
                       </span>
                     </div>
                   </div>
@@ -263,7 +308,8 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
                     {t("cashier.totalItems", "Total Items")}
                   </div>
                   <div className="text-sm font-medium">
-                    {currentCart.reduce((sum, item) => sum + item.qty, 0)} {t("cashier.items", "items")}
+                    {currentCart.reduce((sum, item) => sum + item.qty, 0)}{" "}
+                    {t("cashier.items", "items")}
                   </div>
                 </div>
               </div>
@@ -275,7 +321,9 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
             <div className="h-full flex flex-col">
               <h3 className="text-sm font-medium text-muted-foreground mb-4 flex items-center gap-2">
                 <DollarSign className="w-4 h-4" />
-                {isEditing ? t("cashier.editPaymentSummary", "Edit Payment Summary") : t("cashier.paymentSummary", "Payment Summary")}
+                {isEditing
+                  ? t("cashier.editPaymentSummary", "Edit Payment Summary")
+                  : t("cashier.paymentSummary", "Payment Summary")}
               </h3>
               <div className="flex-1 border border-border/30 rounded-lg overflow-hidden">
                 <PaymentSummary
@@ -283,7 +331,13 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
                   clientName={sale.client?.name}
                   paymentAmount={sale.totalPaid}
                   discount={currentDiscount}
-                  paymentType={sale.isPaidInCash ? "none" : (sale.totalPaid < sale.totalWithDiscount ? "versement" : "credit")}
+                  paymentType={
+                    sale.isPaidInCash
+                      ? "none"
+                      : sale.totalPaid < sale.totalWithDiscount
+                        ? "versement"
+                        : "credit"
+                  }
                   interactive={isEditing}
                   setCart={isEditing ? setEditedCart : undefined}
                 />
@@ -296,4 +350,4 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
   );
 };
 
-export default SaleDetailsModal; 
+export default SaleDetailsModal;

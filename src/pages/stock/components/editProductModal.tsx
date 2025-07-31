@@ -40,10 +40,14 @@ export const EditProductModal = ({
                 <Edit className="w-5 h-5 text-green-600" />
               </div>
               <div>
-                <h2 className={`text-xl font-bold text-foreground ${isRTL ? "text-right" : "text-left"}`}>
+                <h2
+                  className={`text-xl font-bold text-foreground ${isRTL ? "text-right" : "text-left"}`}
+                >
                   {t("stock.editTitle", "Edit Product")}
                 </h2>
-                <p className={`text-sm text-muted-foreground ${isRTL ? "text-right" : "text-left"}`}>
+                <p
+                  className={`text-sm text-muted-foreground ${isRTL ? "text-right" : "text-left"}`}
+                >
                   Editing {currentProduct?.name || "Unknown"}
                 </p>
               </div>

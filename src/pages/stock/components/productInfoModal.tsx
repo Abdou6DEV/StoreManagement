@@ -36,7 +36,7 @@ export const ProductInfoModal = ({
               <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
                 <Info className="w-5 h-5 text-blue-600" />
               </div>
-              <div className={isRTL ? 'text-right' : 'text-left'}>
+              <div className={isRTL ? "text-right" : "text-left"}>
                 <h2 className="text-xl font-bold text-foreground">
                   {t("stock.productInfo", "Product Information")}
                 </h2>
@@ -56,7 +56,7 @@ export const ProductInfoModal = ({
           <div className="space-y-6">
             {/* Product Details */}
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 p-4 bg-muted/30 rounded-lg">
-              <div className={isRTL ? 'text-right' : 'text-left'}>
+              <div className={isRTL ? "text-right" : "text-left"}>
                 <label className="text-sm font-medium text-muted-foreground">
                   {t("stock.productName", "Product Name")}
                 </label>
@@ -64,13 +64,13 @@ export const ProductInfoModal = ({
                   {productData.name}
                 </p>
               </div>
-              <div className={isRTL ? 'text-right' : 'text-left'}>
+              <div className={isRTL ? "text-right" : "text-left"}>
                 <label className="text-sm font-medium text-muted-foreground">
                   {t("stock.category", "Category")}
                 </label>
                 <p className="text-foreground">{productData.categoryName}</p>
               </div>
-              <div className={isRTL ? 'text-right' : 'text-left'}>
+              <div className={isRTL ? "text-right" : "text-left"}>
                 <label className="text-sm font-medium text-muted-foreground">
                   {t("stock.currentStock", "Current Stock")}
                 </label>
@@ -78,19 +78,19 @@ export const ProductInfoModal = ({
                   {productData.quantity}
                 </p>
               </div>
-              <div className={isRTL ? 'text-right' : 'text-left'}>
+              <div className={isRTL ? "text-right" : "text-left"}>
                 <label className="text-sm font-medium text-muted-foreground">
                   {t("stock.boughtPrice", "Bought Price")}
                 </label>
                 <p className="text-foreground">{productData.bought}</p>
               </div>
-              <div className={isRTL ? 'text-right' : 'text-left'}>
+              <div className={isRTL ? "text-right" : "text-left"}>
                 <label className="text-sm font-medium text-muted-foreground">
                   {t("stock.sellingPrice", "Selling Price")}
                 </label>
                 <p className="text-foreground">{productData.selling}</p>
               </div>
-              <div className={isRTL ? 'text-right' : 'text-left'}>
+              <div className={isRTL ? "text-right" : "text-left"}>
                 <label className="text-sm font-medium text-muted-foreground">
                   {t("stock.barcode", "Barcode")}
                 </label>
@@ -103,12 +103,16 @@ export const ProductInfoModal = ({
             {/* Purchase History */}
             <div>
               <div className="flex items-center justify-between mb-4">
-                <h3 className={`text-lg font-semibold flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                <h3
+                  className={`text-lg font-semibold flex items-center gap-2 ${isRTL ? "flex-row-reverse" : ""}`}
+                >
                   <Package className="w-5 h-5" />
                   {t("stock.purchaseHistory", "Purchase History")}
                 </h3>
                 {productData.purchases && productData.purchases.length > 0 && (
-                  <div className={`flex gap-4 text-sm text-muted-foreground ${isRTL ? 'flex-row-reverse' : ''}`}>
+                  <div
+                    className={`flex gap-4 text-sm text-muted-foreground ${isRTL ? "flex-row-reverse" : ""}`}
+                  >
                     <span>
                       {t("stock.totalPurchases", "Total Purchases")}:{" "}
                       {productData.purchases.length}
@@ -138,22 +142,34 @@ export const ProductInfoModal = ({
                     <table className="w-full table-auto">
                       <thead className="bg-muted/50 border-b border-border">
                         <tr>
-                          <th className={`px-4 py-3 text-sm font-semibold text-foreground ${isRTL ? 'text-right' : 'text-left'}`}>
+                          <th
+                            className={`px-4 py-3 text-sm font-semibold text-foreground ${isRTL ? "text-right" : "text-left"}`}
+                          >
                             {t("stock.purchaseId", "Purchase ID")}
                           </th>
-                          <th className={`px-4 py-3 text-sm font-semibold text-foreground ${isRTL ? 'text-right' : 'text-left'}`}>
+                          <th
+                            className={`px-4 py-3 text-sm font-semibold text-foreground ${isRTL ? "text-right" : "text-left"}`}
+                          >
                             {t("stock.date", "Date")}
                           </th>
-                          <th className={`px-4 py-3 text-sm font-semibold text-foreground ${isRTL ? 'text-right' : 'text-left'}`}>
+                          <th
+                            className={`px-4 py-3 text-sm font-semibold text-foreground ${isRTL ? "text-right" : "text-left"}`}
+                          >
                             {t("stock.seller", "Seller")}
                           </th>
-                          <th className={`px-4 py-3 text-sm font-semibold text-foreground ${isRTL ? 'text-right' : 'text-left'}`}>
+                          <th
+                            className={`px-4 py-3 text-sm font-semibold text-foreground ${isRTL ? "text-right" : "text-left"}`}
+                          >
                             {t("stock.quantity", "Quantity")}
                           </th>
-                          <th className={`px-4 py-3 text-sm font-semibold text-foreground ${isRTL ? 'text-right' : 'text-left'}`}>
+                          <th
+                            className={`px-4 py-3 text-sm font-semibold text-foreground ${isRTL ? "text-right" : "text-left"}`}
+                          >
                             {t("stock.price", "Price")}
                           </th>
-                          <th className={`px-4 py-3 text-sm font-semibold text-foreground ${isRTL ? 'text-right' : 'text-left'}`}>
+                          <th
+                            className={`px-4 py-3 text-sm font-semibold text-foreground ${isRTL ? "text-right" : "text-left"}`}
+                          >
                             {t("stock.total", "Total")}
                           </th>
                         </tr>
@@ -168,15 +184,21 @@ export const ProductInfoModal = ({
                               key={index}
                               className="hover:bg-muted/30 transition-colors border-b border-border/50 last:border-0"
                             >
-                              <td className={`px-4 py-3 text-sm font-mono text-blue-600 font-medium ${isRTL ? 'text-right' : 'text-left'}`}>
+                              <td
+                                className={`px-4 py-3 text-sm font-mono text-blue-600 font-medium ${isRTL ? "text-right" : "text-left"}`}
+                              >
                                 #{purchase.id.slice(-8)}
                               </td>
-                              <td className={`px-4 py-3 text-sm text-foreground ${isRTL ? 'text-right' : 'text-left'}`}>
+                              <td
+                                className={`px-4 py-3 text-sm text-foreground ${isRTL ? "text-right" : "text-left"}`}
+                              >
                                 {new Date(
                                   purchase.createdAt,
                                 ).toLocaleDateString()}
                               </td>
-                              <td className={`px-4 py-3 text-sm text-foreground ${isRTL ? 'text-right' : 'text-left'}`}>
+                              <td
+                                className={`px-4 py-3 text-sm text-foreground ${isRTL ? "text-right" : "text-left"}`}
+                              >
                                 {purchase.seller?.name ||
                                   t("stock.noSeller", "No Seller")}
                               </td>
@@ -186,10 +208,14 @@ export const ProductInfoModal = ({
                                   {purchase.quantity}
                                 </span>
                               </td>
-                              <td className={`px-4 py-3 text-sm text-foreground ${isRTL ? 'text-right' : 'text-left'}`}>
+                              <td
+                                className={`px-4 py-3 text-sm text-foreground ${isRTL ? "text-right" : "text-left"}`}
+                              >
                                 {purchase.price || "N/A"}
                               </td>
-                              <td className={`px-4 py-3 text-sm font-medium text-blue-600 ${isRTL ? 'text-right' : 'text-left'}`}>
+                              <td
+                                className={`px-4 py-3 text-sm font-medium text-blue-600 ${isRTL ? "text-right" : "text-left"}`}
+                              >
                                 {purchase.quantity * (purchase.price || 0)}
                               </td>
                             </tr>
@@ -200,7 +226,9 @@ export const ProductInfoModal = ({
                   </div>
                 </div>
               ) : (
-                <div className={`text-center py-12 text-muted-foreground bg-muted/20 rounded-lg border-2 border-dashed ${isRTL ? 'text-right' : 'text-center'}`}>
+                <div
+                  className={`text-center py-12 text-muted-foreground bg-muted/20 rounded-lg border-2 border-dashed ${isRTL ? "text-right" : "text-center"}`}
+                >
                   <Package className="w-16 h-16 mx-auto mb-4 opacity-30" />
                   <p className="text-lg font-medium mb-2">
                     {t(
@@ -221,12 +249,16 @@ export const ProductInfoModal = ({
             {/* Sales History */}
             <div>
               <div className="flex items-center justify-between mb-4">
-                <h3 className={`text-lg font-semibold flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                <h3
+                  className={`text-lg font-semibold flex items-center gap-2 ${isRTL ? "flex-row-reverse" : ""}`}
+                >
                   <ShoppingCart className="w-5 h-5" />
                   {t("stock.salesHistory", "Sales History")}
                 </h3>
                 {productData.saleItems && productData.saleItems.length > 0 && (
-                  <div className={`flex gap-4 text-sm text-muted-foreground ${isRTL ? 'flex-row-reverse' : ''}`}>
+                  <div
+                    className={`flex gap-4 text-sm text-muted-foreground ${isRTL ? "flex-row-reverse" : ""}`}
+                  >
                     <span>
                       {t("stock.totalSales", "Total Sales")}:{" "}
                       {productData.saleItems.length}
@@ -256,22 +288,34 @@ export const ProductInfoModal = ({
                     <table className="w-full table-auto">
                       <thead className="bg-muted/50 border-b border-border">
                         <tr>
-                          <th className={`px-4 py-3 text-sm font-semibold text-foreground ${isRTL ? 'text-right' : 'text-left'}`}>
+                          <th
+                            className={`px-4 py-3 text-sm font-semibold text-foreground ${isRTL ? "text-right" : "text-left"}`}
+                          >
                             {t("stock.saleId", "Sale ID")}
                           </th>
-                          <th className={`px-4 py-3 text-sm font-semibold text-foreground ${isRTL ? 'text-right' : 'text-left'}`}>
+                          <th
+                            className={`px-4 py-3 text-sm font-semibold text-foreground ${isRTL ? "text-right" : "text-left"}`}
+                          >
                             {t("stock.date", "Date")}
                           </th>
-                          <th className={`px-4 py-3 text-sm font-semibold text-foreground ${isRTL ? 'text-right' : 'text-left'}`}>
+                          <th
+                            className={`px-4 py-3 text-sm font-semibold text-foreground ${isRTL ? "text-right" : "text-left"}`}
+                          >
                             {t("stock.client", "Client")}
                           </th>
-                          <th className={`px-4 py-3 text-sm font-semibold text-foreground ${isRTL ? 'text-right' : 'text-left'}`}>
+                          <th
+                            className={`px-4 py-3 text-sm font-semibold text-foreground ${isRTL ? "text-right" : "text-left"}`}
+                          >
                             {t("stock.quantity", "Quantity")}
                           </th>
-                          <th className={`px-4 py-3 text-sm font-semibold text-foreground ${isRTL ? 'text-right' : 'text-left'}`}>
+                          <th
+                            className={`px-4 py-3 text-sm font-semibold text-foreground ${isRTL ? "text-right" : "text-left"}`}
+                          >
                             {t("stock.price", "Price")}
                           </th>
-                          <th className={`px-4 py-3 text-sm font-semibold text-foreground ${isRTL ? 'text-right' : 'text-left'}`}>
+                          <th
+                            className={`px-4 py-3 text-sm font-semibold text-foreground ${isRTL ? "text-right" : "text-left"}`}
+                          >
                             {t("stock.total", "Total")}
                           </th>
                         </tr>
@@ -288,15 +332,21 @@ export const ProductInfoModal = ({
                               key={index}
                               className="hover:bg-muted/30 transition-colors border-b border-border/50 last:border-0"
                             >
-                              <td className={`px-4 py-3 text-sm font-mono text-blue-600 font-medium ${isRTL ? 'text-right' : 'text-left'}`}>
+                              <td
+                                className={`px-4 py-3 text-sm font-mono text-blue-600 font-medium ${isRTL ? "text-right" : "text-left"}`}
+                              >
                                 #{saleItem.sale.id.slice(-8)}
                               </td>
-                              <td className={`px-4 py-3 text-sm text-foreground ${isRTL ? 'text-right' : 'text-left'}`}>
+                              <td
+                                className={`px-4 py-3 text-sm text-foreground ${isRTL ? "text-right" : "text-left"}`}
+                              >
                                 {new Date(
                                   saleItem.sale.createdAt,
                                 ).toLocaleDateString()}
                               </td>
-                              <td className={`px-4 py-3 text-sm text-foreground ${isRTL ? 'text-right' : 'text-left'}`}>
+                              <td
+                                className={`px-4 py-3 text-sm text-foreground ${isRTL ? "text-right" : "text-left"}`}
+                              >
                                 {saleItem.sale.client?.name ||
                                   t("stock.noClient", "No Client")}
                               </td>
@@ -306,10 +356,14 @@ export const ProductInfoModal = ({
                                   {saleItem.quantity}
                                 </span>
                               </td>
-                              <td className={`px-4 py-3 text-sm text-foreground ${isRTL ? 'text-right' : 'text-left'}`}>
+                              <td
+                                className={`px-4 py-3 text-sm text-foreground ${isRTL ? "text-right" : "text-left"}`}
+                              >
                                 {saleItem.price}
                               </td>
-                              <td className={`px-4 py-3 text-sm font-medium text-green-600 ${isRTL ? 'text-right' : 'text-left'}`}>
+                              <td
+                                className={`px-4 py-3 text-sm font-medium text-green-600 ${isRTL ? "text-right" : "text-left"}`}
+                              >
                                 {saleItem.quantity * saleItem.price}
                               </td>
                             </tr>
@@ -320,7 +374,9 @@ export const ProductInfoModal = ({
                   </div>
                 </div>
               ) : (
-                <div className={`text-center py-12 text-muted-foreground bg-muted/20 rounded-lg border-2 border-dashed ${isRTL ? 'text-right' : 'text-center'}`}>
+                <div
+                  className={`text-center py-12 text-muted-foreground bg-muted/20 rounded-lg border-2 border-dashed ${isRTL ? "text-right" : "text-center"}`}
+                >
                   <ShoppingCart className="w-16 h-16 mx-auto mb-4 opacity-30" />
                   <p className="text-lg font-medium mb-2 text-center">
                     {t("stock.noSalesHistory", "No sales history available")}
@@ -330,7 +386,9 @@ export const ProductInfoModal = ({
             </div>
           </div>
         ) : (
-          <div className={`text-center py-8 text-muted-foreground ${isRTL ? 'text-right' : 'text-center'}`}>
+          <div
+            className={`text-center py-8 text-muted-foreground ${isRTL ? "text-right" : "text-center"}`}
+          >
             <p>
               {t(
                 "stock.errorLoadingProduct",

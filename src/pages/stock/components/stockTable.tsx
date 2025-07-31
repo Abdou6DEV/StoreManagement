@@ -303,7 +303,7 @@ export const StockTable = () => {
               className="text-blue-600 border-blue-200 hover:bg-blue-50 dark:text-blue-400 dark:border-blue-800 dark:hover:bg-blue-950/30"
             >
               <Info className="w-3 h-3" />
-              {t("stock.info", "Info")}
+              {t("stock.view", "View")}
             </Button>
             <Button
               onClick={() => setEditingProductID(product.id)}

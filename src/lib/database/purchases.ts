@@ -13,13 +13,18 @@ export async function getAllPurchases() {
   });
 }
 
-export async function createPurchase(data: Omit<Purchase, "id" | "createdAt" | "updatedAt">) {
+export async function createPurchase(
+  data: Omit<Purchase, "id" | "createdAt" | "updatedAt">,
+) {
   return await prisma.purchase.create({
     data,
   });
 }
 
-export async function updatePurchase(id: string, data: Partial<Omit<Purchase, "id" | "createdAt" | "updatedAt">>) {
+export async function updatePurchase(
+  id: string,
+  data: Partial<Omit<Purchase, "id" | "createdAt" | "updatedAt">>,
+) {
   return await prisma.purchase.update({
     where: { id },
     data,

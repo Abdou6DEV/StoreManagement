@@ -9,13 +9,18 @@ export async function getAllSellers() {
   });
 }
 
-export async function createSeller(data: Omit<Seller, "id" | "createdAt" | "updatedAt">) {
+export async function createSeller(
+  data: Omit<Seller, "id" | "createdAt" | "updatedAt">,
+) {
   return await prisma.seller.create({
     data,
   });
 }
 
-export async function updateSeller(id: string, data: Partial<Omit<Seller, "id" | "createdAt" | "updatedAt">>) {
+export async function updateSeller(
+  id: string,
+  data: Partial<Omit<Seller, "id" | "createdAt" | "updatedAt">>,
+) {
   return await prisma.seller.update({
     where: { id },
     data,

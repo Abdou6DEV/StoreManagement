@@ -318,7 +318,9 @@ export default function CashierPage() {
             <TabbedBrowser
               allProducts={allProducts}
               cart={currentCart}
-              setCart={(newCart: CartItem[] | ((prev: CartItem[]) => CartItem[])) => {
+              setCart={(
+                newCart: CartItem[] | ((prev: CartItem[]) => CartItem[]),
+              ) => {
                 const cart =
                   typeof newCart === "function"
                     ? newCart(currentCart)

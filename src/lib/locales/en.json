@@ -296,7 +296,7 @@
     "toastDeleteError": "Failed to delete product",
     "confirmDeleteTitle": "Delete Product",
     "confirmDeleteMessage": "Are you sure you want to delete '{{name}}'? This will also delete all sales records related to this product. This action cannot be undone.",
-    "info": "Info",
+    "view": "View",
     "productInfo": "Product Information",
     "productName": "Product Name",
     "category": "Category",

@@ -48,7 +48,7 @@ const TabbedBrowser: React.FC<TabbedBrowserProps> = ({
         {tabs.map((tab) => {
           const IconComponent = tab.icon;
           const isActive = activeTab === tab.id;
-          
+
           return (
             <button
               key={tab.id}
@@ -82,7 +82,7 @@ const TabbedBrowser: React.FC<TabbedBrowserProps> = ({
             />
           </div>
         )}
-        
+
         {activeTab === "history" && (
           <div className="h-full p-3 overflow-y-auto">
             <HistoryBrowser onSaleSelect={handleSaleSelect} />
@@ -93,4 +93,4 @@ const TabbedBrowser: React.FC<TabbedBrowserProps> = ({
   );
 };
 
-export default TabbedBrowser; 
+export default TabbedBrowser;

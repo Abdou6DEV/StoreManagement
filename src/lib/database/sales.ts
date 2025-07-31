@@ -38,11 +38,14 @@ export async function createSale(data: {
   });
 }
 
-export async function updateSale(saleId: string, data: {
-  clientId?: string;
-  items: { productId: string; quantity: number; price: number }[];
-  discount?: number;
-}) {
+export async function updateSale(
+  saleId: string,
+  data: {
+    clientId?: string;
+    items: { productId: string; quantity: number; price: number }[];
+    discount?: number;
+  },
+) {
   return await prisma.$transaction(async (tx) => {
     // Get the original sale with items
     const originalSale = await tx.sale.findUnique({
@@ -119,14 +122,14 @@ export async function updateSale(saleId: string, data: {
       (sum, item) => sum + item.price * item.quantity,
       0,
     );
-    
+
     const totalWithDiscount = totalAmount - updatedSale.discount;
-    
+
     const totalPaid = updatedSale.payment
       ? updatedSale.payment.givenAmount || 0
       : totalWithDiscount;
-    
-      const totalItems = updatedSale.saleItems.reduce(
+
+    const totalItems = updatedSale.saleItems.reduce(
       (sum, item) => sum + item.quantity,
       0,
     );
