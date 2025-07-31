@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import i18n from "i18next";
 import { Edit } from "lucide-react";
 import {
   Dialog,
@@ -25,6 +26,7 @@ export const EditProductModal = ({
   products,
 }: EditProductModalProps) => {
   const { t } = useTranslation();
+  const isRTL = i18n.language === "ar";
 
   const currentProduct = products.find((product) => product.id === productId);
 
@@ -38,10 +40,10 @@ export const EditProductModal = ({
                 <Edit className="w-5 h-5 text-green-600" />
               </div>
               <div>
-                <h2 className="text-xl font-bold text-foreground">
+                <h2 className={`text-xl font-bold text-foreground ${isRTL ? "text-right" : "text-left"}`}>
                   {t("stock.editTitle", "Edit Product")}
                 </h2>
-                <p className="text-sm text-muted-foreground">
+                <p className={`text-sm text-muted-foreground ${isRTL ? "text-right" : "text-left"}`}>
                   Editing {currentProduct?.name || "Unknown"}
                 </p>
               </div>
