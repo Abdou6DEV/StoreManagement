@@ -3,31 +3,7 @@ import { useTranslation } from "react-i18next";
 import { X, Printer, Calendar, User, ShoppingBag, DollarSign, Receipt, CreditCard, Banknote, Edit, Save, X as CancelIcon } from "lucide-react";
 import PaymentSummary from "./paymentSummary";
 import { useToast } from "../contexts/toastContext";
-
-interface SaleItem {
-  id: string;
-  productId: string;
-  quantity: number;
-  price: number;
-  product: {
-    name: string;
-  };
-}
-
-interface Sale {
-  id: string;
-  createdAt: Date;
-  client?: {
-    name: string;
-  } | null;
-  saleItems: SaleItem[];
-  totalAmount: number;
-  totalWithDiscount: number;
-  totalPaid: number;
-  totalItems: number;
-  discount: number;
-  isPaidInCash: boolean;
-}
+import { Sale } from "../../types";
 
 interface SaleDetailsModalProps {
   sale: Sale | null;

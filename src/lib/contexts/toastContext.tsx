@@ -6,14 +6,7 @@ import React, {
   useRef,
   useEffect,
 } from "react";
-
-export type ToastType = "success" | "error" | "info";
-
-export interface Toast {
-  id: number;
-  message: string;
-  type: ToastType;
-}
+import { ToastType, Toast } from "../../types";
 
 interface ToastContextProps {
   showToast: (message: string, type?: ToastType) => void;

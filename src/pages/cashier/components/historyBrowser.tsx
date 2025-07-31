@@ -4,31 +4,7 @@ import { Clock, User, ShoppingBag, Search, Eye } from "lucide-react";
 import { Input } from "../../../lib/components/input";
 import SaleDetailsModal from "../../../lib/components/saleDetailsModal";
 import { useStock } from "../../../lib/contexts/stockContext";
-
-interface SaleItem {
-  id: string;
-  productId: string;
-  quantity: number;
-  price: number;
-  product: {
-    name: string;
-  };
-}
-
-interface Sale {
-  id: string;
-  createdAt: Date;
-  client?: {
-    name: string;
-  } | null;
-  saleItems: SaleItem[];
-  totalAmount: number;
-  totalWithDiscount: number;
-  totalPaid: number;
-  totalItems: number;
-  discount: number;
-  isPaidInCash: boolean;
-}
+import { Sale } from "../../../types";
 
 interface HistoryBrowserProps {
   onSaleSelect?: (sale: Sale) => void;
