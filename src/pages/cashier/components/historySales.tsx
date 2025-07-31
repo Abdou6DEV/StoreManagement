@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { Clock, User, ShoppingBag, DollarSign, Search, X, Printer, Eye } from "lucide-react";
+import { Clock, User, ShoppingBag, DollarSign, Search, Eye } from "lucide-react";
 import { Input } from "../../../lib/components/input";
-import PaymentSummary from "../../../lib/components/paymentSummary";
+import SaleDetailsModal from "../../../lib/components/saleDetailsModal";
 
 interface SaleItem {
   id: string;
@@ -61,6 +61,16 @@ const HistorySales: React.FC<HistorySalesProps> = ({ onSaleSelect }) => {
   const filteredSales = useMemo(() => {
     let filtered = sales;
 
+    // Apply time filter - show only last week's sales
+    const now = new Date();
+    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    oneWeekAgo.setHours(0, 0, 0, 0);
+
+    filtered = filtered.filter((sale) => {
+      const saleDate = new Date(sale.createdAt);
+      return saleDate >= oneWeekAgo;
+    });
+
     // Apply search filter
     if (searchTerm.trim()) {
       const searchLower = searchTerm.toLowerCase();
@@ -112,12 +122,17 @@ const HistorySales: React.FC<HistorySalesProps> = ({ onSaleSelect }) => {
     onSaleSelect?.(sale);
   };
 
-  const handlePrintReceipt = () => {
-    if (selectedSale) {
-      // TODO: Implement print functionality
-      console.log("Printing receipt for sale:", selectedSale.id);
-    }
+  const handlePrintReceipt = (sale: Sale) => {
+    // TODO: Implement print functionality
+    console.log("Printing receipt for sale:", sale.id);
   };
+
+  const handleModifySale = (sale: Sale) => {
+    // TODO: Implement modify functionality
+    console.log("Modifying sale:", sale.id);
+  };
+
+
 
   if (loading) {
     return (
@@ -214,75 +229,14 @@ const HistorySales: React.FC<HistorySalesProps> = ({ onSaleSelect }) => {
          )}
        </div>
 
-      {/* Sale Details Modal */}
-      {showModal && selectedSale && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-background border border-border rounded-lg shadow-lg max-w-2xl w-full mx-4 max-h-[90vh] overflow-hidden">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between p-4 border-b border-border">
-              <div className="flex items-center gap-2">
-                <Eye className="w-5 h-5 text-primary" />
-                <h3 className="text-lg font-semibold">
-                  {t("cashier.saleDetails", "Sale Details")}
-                </h3>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={handlePrintReceipt}
-                  className="p-2 hover:bg-muted rounded-md transition-colors"
-                  title={t("cashier.printReceipt", "Print Receipt")}
-                >
-                  <Printer className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => setShowModal(false)}
-                  className="p-2 hover:bg-muted rounded-md transition-colors"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-
-                         {/* Modal Content */}
-             <div className="p-4 overflow-y-auto max-h-[calc(90vh-120px)]">
-               {/* Sale Info */}
-               <div className="grid grid-cols-2 gap-4 mb-6">
-                                   <div>
-                    <div className="text-sm text-muted-foreground">{t("cashier.saleId", "Sale ID")}</div>
-                    <div className="font-medium">{selectedSale.id}</div>
-                  </div>
-                  <div>
-                    <div className="text-sm text-muted-foreground">{t("cashier.date", "Date")}</div>
-                    <div className="font-medium">{formatFullDate(selectedSale.createdAt)}</div>
-                  </div>
-                  {selectedSale.client && (
-                    <div>
-                      <div className="text-sm text-muted-foreground">{t("cashier.client", "Client")}</div>
-                      <div className="font-medium">{selectedSale.client.name}</div>
-                    </div>
-                  )}
-               </div>
-
-               {/* Payment Summary */}
-               <div className="mb-6">
-                 <PaymentSummary
-                   cart={selectedSale.saleItems.map(item => ({
-                     id: item.id,
-                     name: item.product.name,
-                     price: item.price,
-                     qty: item.quantity
-                   }))}
-                   clientName={selectedSale.client?.name}
-                   paymentAmount={selectedSale.totalPaid}
-                   discount={selectedSale.discount}
-                   paymentType={selectedSale.isPaidInCash ? "none" : (selectedSale.totalPaid < selectedSale.totalWithDiscount ? "versement" : "credit")}
-                   interactive={false}
-                 />
-               </div>
-             </div>
-          </div>
-        </div>
-      )}
+                           {/* Sale Details Modal */}
+        <SaleDetailsModal
+          sale={selectedSale}
+          isOpen={showModal}
+          onClose={() => setShowModal(false)}
+          onPrint={handlePrintReceipt}
+          onModify={handleModifySale}
+        />
     </div>
   );
 };
