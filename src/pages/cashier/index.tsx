@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import type { ProductWithSales, CartItem } from "../../types";
 import { useTranslation } from "react-i18next";
-import OutOfStockWarningModal from "./components/outOfStockWarningModal";
+import { Plus, ShoppingCart, PlusCircle } from "lucide-react";
 import ProductBrowser from "./components/productBrowser";
 import AddManualProductModal from "./components/addManualProductModal";
 import ReceiptModal from "./components/receiptModal";
@@ -9,7 +9,7 @@ import CashierSession from "./components/cashierSession";
 import TabbedBrowser from "./components/tabbedBrowser";
 import ProductSearch from "./components/productSearch";
 import { Tooltip } from "../../lib/components/tooltip";
-import { ShoppingCart, PlusCircle, Plus } from "lucide-react";
+import { ConfirmDialog } from "../../lib/components/confirmDialog";
 
 const MAX_SESSIONS = 5;
 
@@ -453,15 +453,23 @@ export default function CashierPage() {
       />
 
       {/* === Out of Stock Warning Modal === */}
-      <OutOfStockWarningModal
+      <ConfirmDialog
         open={showStockWarning}
-        items={outOfStockItems}
-        allProducts={allProducts}
-        onCancel={() => {
-          setShowStockWarning(false);
-          setOutOfStockItems([]);
+        onOpenChange={(open) => {
+          if (!open) {
+            setShowStockWarning(false);
+            setOutOfStockItems([]);
+          }
         }}
-        onProceed={proceedWithOutOfStockSale}
+        onConfirm={proceedWithOutOfStockSale}
+        title={t("cashier.outOfStockTitle", "Out of Stock Warning")}
+        message={t(
+          "cashier.outOfStockMessage",
+          "Some items in your cart are out of stock. Would you like to proceed with the sale despite this?",
+        )}
+        confirmText={t("cashier.proceedAnyway", "Proceed Anyway")}
+        cancelText={t("cashier.cancel", "Cancel")}
+        variant="danger"
       />
 
       <AddManualProductModal

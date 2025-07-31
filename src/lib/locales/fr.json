@@ -246,6 +246,8 @@
     "typeOrScan": "Tapez le nom ou scannez le code-barres...",
     "inStock": "en stock",
     "outOfStockWarning": "Certains articles sont en rupture de stock !",
+    "outOfStockTitle": "Avertissement - Rupture de Stock",
+    "outOfStockMessage": "Certains articles de votre panier sont en rupture de stock. Souhaitez-vous continuer avec la vente malgré cela ?",
     "requested": "Demandé",
     "available": "Disponible",
     "proceedAnyway": "Continuer quand même",

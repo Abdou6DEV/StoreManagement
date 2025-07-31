@@ -133,6 +133,8 @@
     "typeOrScan": "Type name or scan barcode...",
     "inStock": "in stock",
     "outOfStockWarning": "Some items are out of stock!",
+    "outOfStockTitle": "Out of Stock Warning",
+    "outOfStockMessage": "Some items in your cart are out of stock. Would you like to proceed with the sale despite this?",
     "requested": "Requested",
     "available": "Available",
     "proceedAnyway": "Proceed Anyway",

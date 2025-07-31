@@ -135,6 +135,8 @@
     "typeOrScan": "اكتب الاسم أو امسح الباركود...",
     "inStock": "متوفر",
     "outOfStockWarning": "بعض العناصر غير متوفرة!",
+    "outOfStockTitle": "تحذير - نفاد المخزون",
+    "outOfStockMessage": "بعض العناصر في سلة التسوق غير متوفرة. هل تريد المتابعة مع البيع رغم ذلك؟",
     "requested": "المطلوب",
     "available": "المتوفر",
     "proceedAnyway": "المتابعة على أي حال",
