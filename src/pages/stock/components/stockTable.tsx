@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { useStock } from "../../../lib/contexts/stockContext";
 import { useToast } from "../../../lib/contexts/toastContext";
-import { ConfirmDialog } from "../../../lib/components/confirmDialog";
+import { ConfirmModal } from "../../../lib/components/Modal";
 
 import {
   Edit,
@@ -773,9 +773,9 @@ export const StockTable = () => {
       />
 
       {/* Confirm Delete Dialog */}
-      <ConfirmDialog
+      <ConfirmModal
         open={confirmDelete.open}
-        onOpenChange={(open) => setConfirmDelete((prev) => ({ ...prev, open }))}
+        onClose={() => setConfirmDelete((prev) => ({ ...prev, open: false }))}
         title={t("stock.confirmDeleteTitle", "Delete Product")}
         message={t(
           "stock.confirmDeleteMessage",

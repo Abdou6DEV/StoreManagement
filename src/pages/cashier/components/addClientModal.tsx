@@ -1,6 +1,6 @@
 import { useRef, useEffect } from "react";
 import { Users } from "lucide-react";
-import { Button } from "../../../lib/components/button";
+import { FormModal } from "../../../lib/components/Modal";
 import type { TFunction } from "i18next";
 
 export default function AddClientModal({
@@ -31,58 +31,94 @@ export default function AddClientModal({
   onConfirm: () => void;
 }) {
   const nameInputRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
     if (open && nameInputRef.current) {
-      nameInputRef.current.focus();
+      setTimeout(() => {
+        nameInputRef.current?.focus();
+      }, 100);
     }
   }, [open]);
 
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (clientName.trim()) {
+      onConfirm();
+    }
+  };
+
   return (
-    <div
-      className={`fixed inset-0 z-50 flex items-center justify-center bg-black/50 ${!open ? "hidden" : ""}`}
+    <FormModal
+      open={open}
+      onClose={onClose}
+      title={t("cashier.addNewClient", "Add New Client")}
+      subtitle={t(
+        "cashier.addClientDesc",
+        "Enter client information to add them to your database",
+      )}
+      icon={<Users className="w-5 h-5 text-blue-600" />}
+      size="sm"
+      className="max-w-sm"
+      onSubmit={handleSubmit}
+      submitText={t("cashier.addClient", "Add Client")}
+      cancelText={t("cashier.cancel", "Cancel")}
+      submitDisabled={!clientName.trim()}
     >
-      <div className="flex-1 bg-white dark:bg-zinc-900 p-6 rounded-lg shadow-lg w-full max-w-sm space-y-4">
-        <div className="flex items-center gap-2">
-          <Users className="w-5 h-5 text-red-600 dark:text-red-400" />
-          <h2 className="text-lg font-semibold text-foreground">
-            {t("cashier.addNewClient", "Add New Client")}
-          </h2>
+      <div className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium mb-2 text-foreground">
+            {t("cashier.clientName", "Client Name")} *
+          </label>
+          <input
+            ref={nameInputRef}
+            type="text"
+            value={clientName}
+            onChange={(e) => setClientName(e.target.value)}
+            placeholder={t("cashier.enterClientName", "Enter client name")}
+            className="w-full rounded-md border border-border px-3 py-2 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all"
+            required
+          />
         </div>
-        <input
-          ref={nameInputRef}
-          value={clientName}
-          onChange={(e) => setClientName(e.target.value)}
-          placeholder={t("cashier.clientName", "Client Name")}
-          className="w-full rounded-md border border-border px-3 py-2 text-sm bg-background"
-        />
-        <input
-          value={clientPhone}
-          onChange={(e) => setClientPhone(e.target.value)}
-          placeholder={t("cashier.phoneOptional", "Phone Number (optional)")}
-          className="w-full rounded-md border border-border px-3 py-2 text-sm bg-background"
-        />
-        <input
-          value={clientAddress}
-          onChange={(e) => setClientAddress(e.target.value)}
-          placeholder={t("cashier.addressOptional", "Address (optional)")}
-          className="w-full rounded-md border border-border px-3 py-2 text-sm bg-background"
-        />
-        <textarea
-          value={clientNotes}
-          onChange={(e) => setClientNotes(e.target.value)}
-          placeholder={t("cashier.notesOptional", "Notes (optional)")}
-          className="w-full rounded-md border border-border px-3 py-2 text-sm bg-background resize-none"
-          rows={3}
-        />
-        <div className="flex justify-end gap-2">
-          <Button variant="outline" onClick={onClose}>
-            {t("cashier.cancel", "Cancel")}
-          </Button>
-          <Button onClick={onConfirm} disabled={!clientName.trim()}>
-            {t("cashier.addClient", "Add Client")}
-          </Button>
+
+        <div>
+          <label className="block text-sm font-medium mb-2 text-foreground">
+            {t("cashier.phoneNumber", "Phone Number")}
+          </label>
+          <input
+            type="tel"
+            value={clientPhone}
+            onChange={(e) => setClientPhone(e.target.value)}
+            placeholder={t("cashier.phoneOptional", "Phone Number (optional)")}
+            className="w-full rounded-md border border-border px-3 py-2 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-2 text-foreground">
+            {t("cashier.address", "Address")}
+          </label>
+          <input
+            type="text"
+            value={clientAddress}
+            onChange={(e) => setClientAddress(e.target.value)}
+            placeholder={t("cashier.addressOptional", "Address (optional)")}
+            className="w-full rounded-md border border-border px-3 py-2 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-2 text-foreground">
+            {t("cashier.notes", "Notes")}
+          </label>
+          <textarea
+            value={clientNotes}
+            onChange={(e) => setClientNotes(e.target.value)}
+            placeholder={t("cashier.notesOptional", "Notes (optional)")}
+            className="w-full rounded-md border border-border px-3 py-2 text-sm bg-background text-foreground resize-none focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all"
+            rows={3}
+          />
         </div>
       </div>
-    </div>
+    </FormModal>
   );
 }

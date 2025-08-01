@@ -1,5 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Delete } from "lucide-react";
+import { Delete, Calculator } from "lucide-react";
+import { Modal } from "../../../lib/components/Modal";
+import { Button } from "../../../lib/components/button";
 
 interface CalculatorModalProps {
   open: boolean;
@@ -95,20 +97,6 @@ const CalculatorModal: React.FC<CalculatorModalProps> = ({ open, onClose }) => {
     setExpression("");
   };
 
-  const handleSign = () => {
-    const match = expression.match(/(.*?)([\d.]+)$/);
-    if (match) {
-      const [_, before, num] = match;
-      if (num.startsWith("-")) {
-        setExpression(before + num.slice(1));
-        setDisplay((prev) => prev.replace(/-([\d.]+)$/, "$1"));
-      } else {
-        setExpression(before + "-" + num);
-        setDisplay((prev) => prev.replace(/([\d.]+)$/, "-$1"));
-      }
-    }
-  };
-
   const handleMemory = (type: "M+" | "M-" | "MR" | "MC") => {
     if (type === "M+") {
       const val = Number(display);
@@ -129,27 +117,30 @@ const CalculatorModal: React.FC<CalculatorModalProps> = ({ open, onClose }) => {
   const lastOp = getLastOperator();
 
   return (
-    <div
-      className={`fixed inset-0 z-50 flex items-center justify-center transition-all duration-300 ${!open ? "hidden" : ""}`}
+    <Modal
+      open={open}
+      onClose={onClose}
+      type="overlay"
+      className="bg-card rounded-2xl shadow-2xl border border-border p-6 min-w-[340px] max-w-[95vw] flex flex-col items-center"
+      closeOnEscape={true}
     >
-      {/* Black semi-transparent overlay */}
-      <div className="absolute inset-0 bg-black/40" />
-      {/* Calculator Card */}
-      <div className="relative z-10 bg-card rounded-2xl shadow-2xl border border-border p-6 min-w-[340px] max-w-[95vw] flex flex-col items-center animate-fadeIn">
-        {/* Header row: Title and Close button */}
-        <div className="flex w-full items-center justify-between mb-2">
-          <div className="flex-1 text-center text-lg font-bold text-foreground select-none">
+      <div className="space-y-4">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-bold flex items-center gap-2">
+            <Calculator className="w-5 h-5" />
             Calculator
-          </div>
-          <button
+          </h2>
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={onClose}
-            className="text-2xl font-bold px-3 py-1 rounded-full text-foreground hover:bg-muted focus:ring-2 focus:ring-primary focus:outline-none transition-all duration-150 ml-2"
-            aria-label="Close calculator"
-            style={{ lineHeight: 1 }}
+            className="h-8 w-8 p-0"
           >
             ×
-          </button>
+          </Button>
         </div>
+
         {/* Memory row */}
         <div className="flex flex-row w-full justify-between mb-2">
           <button
@@ -181,22 +172,25 @@ const CalculatorModal: React.FC<CalculatorModalProps> = ({ open, onClose }) => {
             MC
           </button>
         </div>
+
         {/* Expression display */}
         <div className="w-full text-right text-base text-muted-foreground font-mono pr-1 select-text min-h-[24px] tracking-wide">
           {expression || <span className="opacity-30">0</span>}
         </div>
+
         {/* Main display */}
         <div
           ref={inputRef}
           tabIndex={0}
-          className="bg-card rounded-xl p-4 mb-3 text-right text-4xl font-mono border border-border min-h-[64px] w-[320px] max-w-full outline-none select-text shadow-inner focus:ring-2 focus:ring-primary/30 text-foreground overflow-x-auto whitespace-nowrap scrollbar-thin scrollbar-thumb-muted"
+          className="bg-muted/30 rounded p-4 text-right font-mono text-2xl min-h-[60px] flex items-center justify-end w-full"
           style={{ letterSpacing: "1.5px" }}
           aria-label="Calculator display"
         >
           {display}
         </div>
-        {/* Calculator buttons grid: 5 rows, 4 columns, = in rightmost column below + */}
-        <div className="grid grid-cols-4 gap-2 mt-1">
+
+        {/* Calculator buttons */}
+        <div className="grid grid-cols-4 gap-2">
           {/* Top row: C, ⌫, %, ÷ */}
           <button
             className={`${buttonBase} ${funcButton}`}
@@ -317,7 +311,7 @@ const CalculatorModal: React.FC<CalculatorModalProps> = ({ open, onClose }) => {
             +
           </button>
 
-          {/* Fifth row: (, 0, ., = */}
+          {/* Fifth row: (, 0, ), = */}
           <button
             className={`${buttonBase} ${funcButton}`}
             onClick={() => handleInput("(")}
@@ -333,7 +327,7 @@ const CalculatorModal: React.FC<CalculatorModalProps> = ({ open, onClose }) => {
             0
           </button>
           <button
-            className={buttonBase}
+            className={`${buttonBase} ${funcButton}`}
             onClick={() => handleInput(")")}
             aria-label="Right parenthesis"
           >
@@ -347,18 +341,12 @@ const CalculatorModal: React.FC<CalculatorModalProps> = ({ open, onClose }) => {
             =
           </button>
         </div>
+
         <div className="mt-4 text-xs text-muted-foreground w-full text-right tracking-wide">
           Memory: {memory}
         </div>
       </div>
-      <style>{`
-        .animate-fadeIn { animation: fadeInModal 0.35s cubic-bezier(.4,0,.2,1); }
-        @keyframes fadeInModal {
-          from { opacity: 0; transform: translateY(30px) scale(0.98); }
-          to { opacity: 1; transform: translateY(0) scale(1); }
-        }
-      `}</style>
-    </div>
+    </Modal>
   );
 };
 

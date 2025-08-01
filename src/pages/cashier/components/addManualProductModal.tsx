@@ -1,14 +1,8 @@
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "../../../lib/components/dialog";
-import { Button } from "../../../lib/components/button";
+import { FormModal } from "../../../lib/components/Modal";
 import StyledNumberInput from "../../../lib/components/inputNumber";
-import { X } from "lucide-react";
+import { Plus } from "lucide-react";
 import type { CartItem } from "../../../types";
 
 interface AddManualProductModalProps {
@@ -57,131 +51,109 @@ export default function AddManualProductModal({
   };
 
   return (
-    <Dialog modal open={open} onOpenChange={(open) => !open && handleClose()}>
-      <DialogContent showCloseButton={false} style={{ maxWidth: 500 }}>
-        <DialogHeader className="pb-4">
-          <DialogTitle className="text-xl font-semibold">
-            {t("cashier.addManualProduct", "Add Manual Product")}
-          </DialogTitle>
-          <p className="text-sm text-muted-foreground mt-1">
-            {t(
-              "cashier.addManualProductDesc",
-              "Add a product that is not in your inventory",
-            )}
-          </p>
-        </DialogHeader>
-        <Button
-          variant="outline"
-          size="sm"
-          className="absolute top-4 right-4 h-8 w-8 p-0"
-          onClick={handleClose}
-        >
-          <X className="w-4 h-4" />
-        </Button>
-        <form className="space-y-6" onSubmit={handleSubmit}>
-          {/* Product Information Section */}
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Legend>
-                <label className="text-sm font-medium text-foreground">
-                  {t("cashier.productName", "Product Name")} *
-                </label>
-                <input
-                  type="text"
-                  className="w-full px-3 py-2.5 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                  value={manualProduct.name}
-                  onChange={(e) =>
-                    setManualProduct((p) => ({ ...p, name: e.target.value }))
-                  }
-                  placeholder={t(
-                    "cashier.enterProductName",
-                    "Enter product name",
-                  )}
-                  required
-                />
-              </Legend>
-              <Legend>
-                <label className="text-sm font-medium text-foreground">
-                  {t("cashier.type", "Type")} *
-                </label>
-                <input
-                  type="text"
-                  className="w-full px-3 py-2.5 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                  value={manualProduct.type}
-                  onChange={(e) =>
-                    setManualProduct((p) => ({ ...p, type: e.target.value }))
-                  }
-                  placeholder={t("cashier.enterType", "Enter product type")}
-                  required
-                />
-              </Legend>
-            </div>
-          </div>
+    <FormModal
+      open={open}
+      onClose={handleClose}
+      title={t("cashier.addManualProduct", "Add Manual Product")}
+      subtitle={t(
+        "cashier.addManualProductDesc",
+        "Add a product that is not in your inventory",
+      )}
+      icon={<Plus className="w-5 h-5 text-green-500" />}
+      size="lg"
+      className="max-w-md"
+      onSubmit={handleSubmit}
+      submitText={t("cashier.addToCart", "Add to Cart")}
+      cancelText={t("common.cancel", "Cancel")}
+      submitDisabled={
+        !manualProduct.name.trim() ||
+        !manualProduct.type.trim() ||
+        !manualProduct.sold
+      }
+    >
+      {/* Product Information Section */}
+      <div className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Legend>
+            <label className="text-sm font-medium text-foreground">
+              {t("cashier.productName", "Product Name")} *
+            </label>
+            <input
+              type="text"
+              className="w-full px-3 py-2.5 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+              value={manualProduct.name}
+              onChange={(e) =>
+                setManualProduct((p) => ({ ...p, name: e.target.value }))
+              }
+              placeholder={t("cashier.enterProductName", "Enter product name")}
+              required
+            />
+          </Legend>
+          <Legend>
+            <label className="text-sm font-medium text-foreground">
+              {t("cashier.type", "Type")} *
+            </label>
+            <input
+              type="text"
+              className="w-full px-3 py-2.5 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+              value={manualProduct.type}
+              onChange={(e) =>
+                setManualProduct((p) => ({ ...p, type: e.target.value }))
+              }
+              placeholder={t("cashier.enterType", "Enter product type")}
+              required
+            />
+          </Legend>
+        </div>
+      </div>
 
-          {/* Pricing Section */}
-          <div className="space-y-4">
-            <div className="border-t border-border pt-4">
-              <h3 className="text-sm font-semibold text-foreground mb-4">
-                {t("cashier.pricing", "Pricing Information")}
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Legend>
-                  <label className="text-sm font-medium text-foreground">
-                    {t("cashier.boughtPrice", "Bought Price")}
-                  </label>
-                  <div className="w-full">
-                    <StyledNumberInput
-                      value={manualProduct.bought}
-                      onChange={(val) =>
-                        setManualProduct((p) => ({
-                          ...p,
-                          bought: val === "" ? 0 : val,
-                        }))
-                      }
-                      min={0}
-                      placeholder="0"
-                    />
-                  </div>
-                </Legend>
-                <Legend>
-                  <label className="text-sm font-medium text-foreground">
-                    {t("cashier.soldPrice", "Sold Price")} *
-                  </label>
-                  <div className="w-full">
-                    <StyledNumberInput
-                      value={manualProduct.sold}
-                      onChange={(val) =>
-                        setManualProduct((p) => ({
-                          ...p,
-                          sold: val === "" ? 0 : val,
-                        }))
-                      }
-                      min={0}
-                      placeholder="0"
-                    />
-                  </div>
-                </Legend>
+      {/* Pricing Section */}
+      <div className="space-y-4">
+        <div className="border-t border-border pt-4">
+          <h3 className="text-sm font-semibold text-foreground mb-4">
+            {t("cashier.pricing", "Pricing Information")}
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Legend>
+              <label className="text-sm font-medium text-foreground">
+                {t("cashier.boughtPrice", "Bought Price")}
+              </label>
+              <div className="w-full">
+                <StyledNumberInput
+                  value={manualProduct.bought}
+                  onChange={(val) =>
+                    setManualProduct((p) => ({
+                      ...p,
+                      bought: val === "" ? 0 : val,
+                    }))
+                  }
+                  min={0}
+                  placeholder="0"
+                />
               </div>
-            </div>
+            </Legend>
+            <Legend>
+              <label className="text-sm font-medium text-foreground">
+                {t("cashier.soldPrice", "Sold Price")} *
+              </label>
+              <div className="w-full">
+                <StyledNumberInput
+                  value={manualProduct.sold}
+                  onChange={(val) =>
+                    setManualProduct((p) => ({
+                      ...p,
+                      sold: val === "" ? 0 : val,
+                    }))
+                  }
+                  min={0}
+                  placeholder="0"
+                />
+              </div>
+            </Legend>
           </div>
-
-          {/* Action Buttons */}
-          <div className="flex gap-3 pt-4 border-t border-border">
-            <Button
-              type="button"
-              variant="outline"
-              className="flex-1"
-              onClick={handleClose}
-            >
-              {t("common.cancel", "Cancel")}
-            </Button>
-            <Button type="submit" className="flex-1">
-              {t("cashier.addToCart", "Add to Cart")}
-            </Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
+        </div>
+      </div>
+    </FormModal>
   );
 }
 

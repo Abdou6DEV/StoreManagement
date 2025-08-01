@@ -32,7 +32,6 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
   isOpen,
   onClose,
   onPrint,
-  onModify,
   onSaleUpdated,
 }) => {
   const { t } = useTranslation();
@@ -227,124 +226,123 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
             </button>
           </div>
         </div>
-
-        {/* Content */}
-        <div className="flex h-[calc(95vh-100px)]">
-          {/* Left Panel - Sale Info */}
-          <div className="w-1/3 p-6 border-r border-border/30">
-            <div className="space-y-8">
-              {/* Sale Information */}
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground mb-4 flex items-center gap-2">
-                  <Calendar className="w-4 h-4" />
-                  {t("cashier.saleInformation", "Sale Information")}
-                </h3>
-                <div className="space-y-3">
-                  <div className="p-3 bg-muted/20 rounded-lg">
-                    <div className="text-xs text-muted-foreground mb-1">
-                      {t("cashier.date", "Date")}
-                    </div>
-                    <div className="text-sm font-medium">
-                      {formatFullDate(sale.createdAt)}
-                    </div>
-                  </div>
-                  {sale.client && (
-                    <div className="p-3 bg-muted/20 rounded-lg">
-                      <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
-                        <User className="w-3 h-3" />
-                        {t("cashier.client", "Client")}
-                      </div>
-                      <div className="text-sm font-medium">
-                        {sale.client.name}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Payment Information */}
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground mb-4 flex items-center gap-2">
-                  <CreditCard className="w-4 h-4" />
-                  {t("cashier.paymentInformation", "Payment Information")}
-                </h3>
-                <div className="space-y-3">
-                  <div className="p-3 bg-muted/20 rounded-lg">
-                    <div className="text-xs text-muted-foreground mb-1">
-                      {t("cashier.paymentMethod", "Payment Method")}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {sale.isPaidInCash ? (
-                        <Banknote className="w-3 h-3 text-green-600" />
-                      ) : (
-                        <CreditCard className="w-3 h-3 text-blue-600" />
-                      )}
-                      <span className="text-sm font-medium">
-                        {sale.isPaidInCash
-                          ? t("cashier.cash", "Cash")
-                          : t("cashier.credit", "Credit")}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="p-3 bg-primary/5 rounded-lg border border-primary/20">
-                    <div className="text-xs text-muted-foreground mb-1">
-                      {t("cashier.totalPaid", "Total Paid")}
-                    </div>
-                    <div className="text-lg font-bold text-primary">
-                      {formatCurrency(sale.totalPaid)}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Items Summary */}
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground mb-4 flex items-center gap-2">
-                  <ShoppingBag className="w-4 h-4" />
-                  {t("cashier.itemsSummary", "Items Summary")}
-                </h3>
+      {/* Content */}
+      <div className="flex h-[calc(95vh-100px)]">
+        {/* Left Panel - Sale Info */}
+        <div className="w-1/3 p-6 border-r border-border/30">
+          <div className="space-y-8">
+            {/* Sale Information */}
+            <div>
+              <h3 className="text-sm font-medium text-muted-foreground mb-4 flex items-center gap-2">
+                <Calendar className="w-4 h-4" />
+                {t("cashier.saleInformation", "Sale Information")}
+              </h3>
+              <div className="space-y-3">
                 <div className="p-3 bg-muted/20 rounded-lg">
                   <div className="text-xs text-muted-foreground mb-1">
-                    {t("cashier.totalItems", "Total Items")}
+                    {t("cashier.date", "Date")}
                   </div>
                   <div className="text-sm font-medium">
-                    {currentCart.reduce((sum, item) => sum + item.qty, 0)}{" "}
-                    {t("cashier.items", "items")}
+                    {formatFullDate(sale.createdAt)}
+                  </div>
+                </div>
+                {sale.client && (
+                  <div className="p-3 bg-muted/20 rounded-lg">
+                    <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
+                      <User className="w-3 h-3" />
+                      {t("cashier.client", "Client")}
+                    </div>
+                    <div className="text-sm font-medium">
+                      {sale.client.name}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Payment Information */}
+            <div>
+              <h3 className="text-sm font-medium text-muted-foreground mb-4 flex items-center gap-2">
+                <CreditCard className="w-4 h-4" />
+                {t("cashier.paymentInformation", "Payment Information")}
+              </h3>
+              <div className="space-y-3">
+                <div className="p-3 bg-muted/20 rounded-lg">
+                  <div className="text-xs text-muted-foreground mb-1">
+                    {t("cashier.paymentMethod", "Payment Method")}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {sale.isPaidInCash ? (
+                      <Banknote className="w-3 h-3 text-green-600" />
+                    ) : (
+                      <CreditCard className="w-3 h-3 text-blue-600" />
+                    )}
+                    <span className="text-sm font-medium">
+                      {sale.isPaidInCash
+                        ? t("cashier.cash", "Cash")
+                        : t("cashier.credit", "Credit")}
+                    </span>
+                  </div>
+                </div>
+                <div className="p-3 bg-primary/5 rounded-lg border border-primary/20">
+                  <div className="text-xs text-muted-foreground mb-1">
+                    {t("cashier.totalPaid", "Total Paid")}
+                  </div>
+                  <div className="text-lg font-bold text-primary">
+                    {formatCurrency(sale.totalPaid)}
                   </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* Right Panel - Payment Summary */}
-          <div className="w-2/3 p-6">
-            <div className="h-full flex flex-col">
+            {/* Items Summary */}
+            <div>
               <h3 className="text-sm font-medium text-muted-foreground mb-4 flex items-center gap-2">
-                <DollarSign className="w-4 h-4" />
-                {isEditing
-                  ? t("cashier.editPaymentSummary", "Edit Payment Summary")
-                  : t("cashier.paymentSummary", "Payment Summary")}
+                <ShoppingBag className="w-4 h-4" />
+                {t("cashier.itemsSummary", "Items Summary")}
               </h3>
-              <div className="flex-1 border border-border/30 rounded-lg overflow-hidden">
-                <PaymentSummary
-                  cart={currentCart}
-                  clientName={sale.client?.name}
-                  paymentAmount={sale.totalPaid}
-                  discount={currentDiscount}
-                  paymentType={
-                    sale.isPaidInCash
-                      ? "none"
-                      : sale.totalPaid < sale.totalWithDiscount
-                        ? "versement"
-                        : "credit"
-                  }
-                  interactive={isEditing}
-                  setCart={isEditing ? setEditedCart : undefined}
-                />
+              <div className="p-3 bg-muted/20 rounded-lg">
+                <div className="text-xs text-muted-foreground mb-1">
+                  {t("cashier.totalItems", "Total Items")}
+                </div>
+                <div className="text-sm font-medium">
+                  {currentCart.reduce((sum, item) => sum + item.qty, 0)}{" "}
+                  {t("cashier.items", "items")}
+                </div>
               </div>
             </div>
           </div>
         </div>
+
+        {/* Right Panel - Payment Summary */}
+        <div className="w-2/3 p-6">
+          <div className="h-full flex flex-col">
+            <h3 className="text-sm font-medium text-muted-foreground mb-4 flex items-center gap-2">
+              <DollarSign className="w-4 h-4" />
+              {isEditing
+                ? t("cashier.editPaymentSummary", "Edit Payment Summary")
+                : t("cashier.paymentSummary", "Payment Summary")}
+            </h3>
+            <div className="flex-1 border border-border/30 rounded-lg overflow-hidden">
+              <PaymentSummary
+                cart={currentCart}
+                clientName={sale.client?.name}
+                paymentAmount={sale.totalPaid}
+                discount={currentDiscount}
+                paymentType={
+                  sale.isPaidInCash
+                    ? "none"
+                    : sale.totalPaid < sale.totalWithDiscount
+                      ? "versement"
+                      : "credit"
+                }
+                interactive={isEditing}
+                setCart={isEditing ? setEditedCart : undefined}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
       </div>
     </div>
   );

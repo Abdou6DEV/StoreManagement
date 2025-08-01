@@ -1,12 +1,6 @@
 import React, { useEffect, useState } from "react";
 import type { Payment } from "@prisma/client";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "../../../lib/components/dialog";
+import { Modal } from "../../../lib/components/Modal";
 import { Button } from "../../../lib/components/button";
 import { Input } from "../../../lib/components/input";
 import {
@@ -262,92 +256,73 @@ const PaymentsModal: React.FC<PaymentsModalProps> = ({ client, onClose }) => {
   );
 
   return (
-    <Dialog modal open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent
-        showCloseButton={false}
-        style={{ maxWidth: "80vw", maxHeight: "80vh" }}
-      >
-        <DialogHeader>
-          <DialogTitle>
-            <div className="flex items-center gap-3">
-              <CreditCard className="w-5 h-5 text-red-500" />
-              <span>
-                {t("clients.paymentsTitle", {
-                  name: client.name,
-                  defaultValue: "Payments for {{name}}",
-                })}
-              </span>
-            </div>
-          </DialogTitle>
-          <DialogDescription>
-            {t(
-              "clients.paymentsDesc",
-              "View and manage all credits and versements for this client.",
-            )}
-          </DialogDescription>
-        </DialogHeader>
-        <Button
-          variant="outline"
-          size="sm"
-          className="absolute top-4 right-4"
-          onClick={onClose}
-        >
-          <X className="w-4 h-4" />
-        </Button>
-
-        <div className="mt-4 space-y-6 max-h-[60vh] overflow-y-auto">
-          {loading ? (
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Loader2 className="animate-spin" />{" "}
-              {t("clients.paymentsLoading", "Loading payments...")}
-            </div>
-          ) : error ? (
-            <div className="text-red-500">{error}</div>
-          ) : payments.length === 0 ? (
-            <div className="text-muted-foreground text-center py-8">
-              {t("clients.noPayments", "No payments found for this client.")}
-            </div>
-          ) : (
-            <>
-              {/* Credits Section */}
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <ArrowUpCircle className="w-5 h-5 text-red-500" />
-                  <h3 className="text-lg font-semibold">
-                    {t("clients.credits", "Credits")} ({credits.length})
-                  </h3>
-                </div>
-                {credits.length > 0 ? (
-                  <PaymentTable payments={credits} type="CREDIT" />
-                ) : (
-                  <div className="text-muted-foreground text-center py-4 border border-dashed rounded-lg">
-                    {t("clients.noCredits", "No credits found")}
-                  </div>
-                )}
+    <Modal
+      open={true}
+      onClose={onClose}
+      title={t("clients.paymentsTitle", {
+        name: client.name,
+        defaultValue: "Payments for {{name}}",
+      })}
+      subtitle={t(
+        "clients.paymentsDesc",
+        "View and manage all credits and versements for this client.",
+      )}
+      icon={<CreditCard className="w-5 h-5 text-red-500" />}
+      size="full"
+      className="max-w-[80vw] max-h-[80vh]"
+      showFooter={false}
+    >
+      <div className="space-y-6 max-h-[60vh] overflow-y-auto">
+        {loading ? (
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Loader2 className="animate-spin" />{" "}
+            {t("clients.paymentsLoading", "Loading payments...")}
+          </div>
+        ) : error ? (
+          <div className="text-red-500">{error}</div>
+        ) : payments.length === 0 ? (
+          <div className="text-muted-foreground text-center py-8">
+            {t("clients.noPayments", "No payments found for this client.")}
+          </div>
+        ) : (
+          <>
+            {/* Credits Section */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <ArrowUpCircle className="w-5 h-5 text-red-500" />
+                <h3 className="text-lg font-semibold">
+                  {t("clients.credits", "Credits")} ({credits.length})
+                </h3>
               </div>
-
-              {/* Versements Section */}
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <ArrowUpCircle className="w-5 h-5 text-red-500" />
-                  <h3 className="text-lg font-semibold">
-                    {t("clients.versements", "Versements")} ({versements.length}
-                    )
-                  </h3>
+              {credits.length > 0 ? (
+                <PaymentTable payments={credits} type="CREDIT" />
+              ) : (
+                <div className="text-muted-foreground text-center py-4 border border-dashed rounded-lg">
+                  {t("clients.noCredits", "No credits found")}
                 </div>
-                {versements.length > 0 ? (
-                  <PaymentTable payments={versements} type="VERSEMENT" />
-                ) : (
-                  <div className="text-muted-foreground text-center py-4 border border-dashed rounded-lg">
-                    {t("clients.noVersements", "No versements found")}
-                  </div>
-                )}
+              )}
+            </div>
+
+            {/* Versements Section */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <ArrowUpCircle className="w-5 h-5 text-red-500" />
+                <h3 className="text-lg font-semibold">
+                  {t("clients.versements", "Versements")} ({versements.length})
+                </h3>
               </div>
-            </>
-          )}
-        </div>
-      </DialogContent>
-    </Dialog>
+              {versements.length > 0 ? (
+                <PaymentTable payments={versements} type="VERSEMENT" />
+              ) : (
+                <div className="text-muted-foreground text-center py-4 border border-dashed rounded-lg">
+                  {t("clients.noVersements", "No versements found")}
+                </div>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+    </Modal>
   );
 };
 

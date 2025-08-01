@@ -1,12 +1,7 @@
 import React, { useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "../../../lib/components/dialog";
-import { Button } from "../../../lib/components/button";
+import { Modal } from "../../../lib/components/Modal";
+import { Printer } from "lucide-react";
 
 interface BarcodePrintModalProps {
   open: boolean;
@@ -85,66 +80,73 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-4xl">
-        <DialogHeader>
-          <DialogTitle>{t("stock.printBarcodeTitle")}</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4">
-          <div className="text-center">
-            <div className="text-sm text-muted-foreground mb-4">
-              {t("stock.barcodePreviewText")}
-            </div>
-
-            {/* Actual Label Preview - exactly as it will be printed */}
-            <div
-              className="inline-block border-2 border-gray-400 bg-white p-6"
-              style={{ width: "600px", height: "240px" }}
-            >
-              <div className="h-full flex flex-col justify-between">
-                {/* Product Info Section */}
-                <div className="text-center">
-                  <div
-                    className="text-xs font-medium leading-tight"
-                    style={{
-                      fontSize: "28px",
-                      lineHeight: "1.2",
-                      marginBottom: "2px",
-                    }}
-                  >
-                    {productName || t("stock.productNameFallback")}
-                  </div>
-                  <div
-                    className="text-xs font-black"
-                    style={{ fontSize: "42px" }}
-                  >
-                    {productPrice
-                      ? Number(productPrice).toLocaleString() +
-                        " " +
-                        t("cashier.currency", "DA")
-                      : t("stock.priceFallback")}
-                  </div>
+    <Modal
+      open={open}
+      onClose={() => onOpenChange(false)}
+      title={t("stock.printBarcodeTitle", "Print Barcode")}
+      subtitle={t(
+        "stock.barcodePreviewText",
+        "Preview how the barcode label will look when printed",
+      )}
+      icon={<Printer className="w-5 h-5 text-blue-600" />}
+      size="xl"
+      className="max-w-4xl"
+      actions={[
+        {
+          label: t("stock.cancel", "Cancel"),
+          onClick: () => onOpenChange(false),
+          variant: "outline",
+        },
+        {
+          label: t("stock.printLabel", "Print Label"),
+          onClick: handlePrint,
+        },
+      ]}
+    >
+      <div className="space-y-4">
+        <div className="text-center">
+          {/* Actual Label Preview - exactly as it will be printed */}
+          <div
+            className="inline-block border-2 border-gray-400 bg-white p-6"
+            style={{ width: "600px", height: "240px" }}
+          >
+            <div className="h-full flex flex-col justify-between">
+              {/* Product Info Section */}
+              <div className="text-center">
+                <div
+                  className="text-xs font-medium leading-tight"
+                  style={{
+                    fontSize: "28px",
+                    lineHeight: "1.2",
+                    marginBottom: "2px",
+                  }}
+                >
+                  {productName || t("stock.productNameFallback")}
                 </div>
-
-                {/* Barcode Section */}
-                <div className="text-center">
-                  <svg
-                    id="barcode-preview"
-                    className="w-full h-[105px] mx-auto"
-                    style={{ minHeight: "105px" }}
-                  ></svg>
+                <div
+                  className="text-xs font-black"
+                  style={{ fontSize: "42px" }}
+                >
+                  {productPrice
+                    ? Number(productPrice).toLocaleString() +
+                      " " +
+                      t("cashier.currency", "DA")
+                    : t("stock.priceFallback")}
                 </div>
+              </div>
+
+              {/* Barcode Section */}
+              <div className="text-center">
+                <svg
+                  id="barcode-preview"
+                  className="w-full h-[105px] mx-auto"
+                  style={{ minHeight: "105px" }}
+                ></svg>
               </div>
             </div>
           </div>
-          <div className="flex gap-2 justify-end">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
-              {t("stock.cancel")}
-            </Button>
-            <Button onClick={handlePrint}>{t("stock.printLabel")}</Button>
-          </div>
         </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </Modal>
   );
 };

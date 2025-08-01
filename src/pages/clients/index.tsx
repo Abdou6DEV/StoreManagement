@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Users, Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import ClientsTable from "./components/clientsTable";
-import EditClientDialog from "./components/editClientDialog";
+import EditClientDialog from "./components/editClientModal";
 import SearchBar from "./components/searchBar";
 import AddClientForm from "./components/addClientForm";
 import PaymentsModal from "./components/paymentsModal";
