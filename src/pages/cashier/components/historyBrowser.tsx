@@ -22,8 +22,9 @@ const HistoryBrowser: React.FC<HistoryBrowserProps> = ({ onSaleSelect }) => {
   const fetchSales = async () => {
     try {
       setLoading(true);
-      const salesData = await window.api.database.sales.getAll();
-      setSales(salesData.slice(0, 50)); // Show last 50 sales for better filtering
+      // Use optimized function - only fetches last week's sales from database
+      const result = await window.api.database.sales.getRecent({ limit: 100 });
+      setSales(result.sales);
     } catch (error) {
       console.error("Error fetching sales:", error);
     } finally {
@@ -35,43 +36,30 @@ const HistoryBrowser: React.FC<HistoryBrowserProps> = ({ onSaleSelect }) => {
     fetchSales();
   }, []);
 
-  // Filter and search sales
+  // Filter and search sales (only search filter needed since date is already filtered)
   const filteredSales = useMemo(() => {
-    let filtered = sales;
-
-    // Apply time filter - show only last week's sales
-    const now = new Date();
-    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    oneWeekAgo.setHours(0, 0, 0, 0);
-
-    filtered = filtered.filter((sale) => {
-      const saleDate = new Date(sale.createdAt);
-      return saleDate >= oneWeekAgo;
-    });
-
-    // Apply search filter
-    if (searchTerm.trim()) {
-      const searchLower = searchTerm.toLowerCase();
-      filtered = filtered.filter((sale) => {
-        // Search in client name
-        if (sale.client?.name.toLowerCase().includes(searchLower)) return true;
-
-        // Search in product names
-        if (
-          sale.saleItems.some((item) =>
-            item.product.name.toLowerCase().includes(searchLower),
-          )
-        )
-          return true;
-
-        // Search in sale ID
-        if (sale.id.toLowerCase().includes(searchLower)) return true;
-
-        return false;
-      });
+    if (!searchTerm.trim()) {
+      return sales; // No search term, return all recent sales
     }
 
-    return filtered;
+    const searchLower = searchTerm.toLowerCase();
+    return sales.filter((sale) => {
+      // Search in client name
+      if (sale.client?.name.toLowerCase().includes(searchLower)) return true;
+
+      // Search in product names
+      if (
+        sale.saleItems.some((item) =>
+          item.product.name.toLowerCase().includes(searchLower),
+        )
+      )
+        return true;
+
+      // Search in sale ID
+      if (sale.id.toLowerCase().includes(searchLower)) return true;
+
+      return false;
+    });
   }, [sales, searchTerm]);
 
   const formatDate = (date: Date) => {
@@ -130,16 +118,6 @@ const HistoryBrowser: React.FC<HistoryBrowserProps> = ({ onSaleSelect }) => {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-muted-foreground text-sm">
-          {t("cashier.loading", "Loading...")}
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="h-full flex flex-col">
       {/* Search Bar */}
@@ -160,7 +138,13 @@ const HistoryBrowser: React.FC<HistoryBrowserProps> = ({ onSaleSelect }) => {
 
       {/* Sales List */}
       <div className="flex-1 overflow-y-auto p-3">
-        {filteredSales.length === 0 ? (
+        {loading ? (
+          <div className="flex items-center justify-center h-full">
+            <div className="text-muted-foreground text-sm">
+              {t("cashier.loading", "Loading...")}
+            </div>
+          </div>
+        ) : filteredSales.length === 0 ? (
           <div className="text-center py-4 text-muted-foreground">
             <Clock className="w-10 h-10 mx-auto mb-2 text-muted-foreground/50" />
             <div className="text-sm">

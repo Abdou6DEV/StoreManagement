@@ -24,6 +24,7 @@ import {
   getProductSalesCounts,
   getAllSales,
   updateSale,
+  getRecentSales,
 } from "../lib/database/sales";
 import { getOption, setOption } from "../lib/database/options";
 import {
@@ -222,6 +223,10 @@ function setupDatabaseHandlers() {
 
   ipcMain.handle("db:sales:getAll", async () => {
     return await getAllSales();
+  });
+
+  ipcMain.handle("db:sales:getRecent", async (_event, { limit, offset }) => {
+    return await getRecentSales(limit, offset);
   });
 
   ipcMain.handle("db:sales:update", async (_event, { id, data }) => {

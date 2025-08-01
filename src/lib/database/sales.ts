@@ -202,3 +202,92 @@ export async function getAllSales() {
     };
   });
 }
+
+export async function getRecentSales(limit = 50, offset = 0) {
+  // Calculate date filter - last 7 days
+  const oneWeekAgo = new Date();
+  oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+  oneWeekAgo.setHours(0, 0, 0, 0);
+
+  // Get total count first
+  const totalCount = await prisma.sale.count({
+    where: {
+      createdAt: {
+        gte: oneWeekAgo
+      }
+    }
+  });
+
+  const sales = await prisma.sale.findMany({
+    where: {
+      createdAt: {
+        gte: oneWeekAgo
+      }
+    },
+    include: {
+      client: {
+        select: {
+          id: true,
+          name: true
+        }
+      },
+      saleItems: {
+        select: {
+          id: true,
+          quantity: true,
+          price: true,
+          product: {
+            select: {
+              id: true,
+              name: true
+            }
+          }
+        }
+      },
+      payment: {
+        select: {
+          id: true,
+          givenAmount: true
+        }
+      }
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+    take: limit,
+    skip: offset,
+  });
+
+  const salesWithTotals = sales.map((sale) => {
+    const totalAmount = sale.saleItems.reduce(
+      (sum, item) => sum + item.price * item.quantity,
+      0,
+    );
+    const totalWithDiscount = totalAmount - sale.discount;
+
+    const totalPaid = sale.payment
+      ? sale.payment.givenAmount || 0
+      : totalWithDiscount;
+
+    const totalItems = sale.saleItems.reduce(
+      (sum, item) => sum + item.quantity,
+      0,
+    );
+
+    return {
+      ...sale,
+      totalAmount,
+      totalWithDiscount,
+      totalPaid,
+      totalItems,
+      remainingAmount: totalWithDiscount - totalPaid,
+      isPaidInCash: !sale.payment,
+    };
+  });
+
+  return {
+    sales: salesWithTotals,
+    totalCount,
+    hasMore: offset + limit < totalCount
+  };
+}
