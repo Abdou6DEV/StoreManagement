@@ -158,7 +158,7 @@ const FavoritesBrowser: React.FC<FavoritesBrowserProps> = ({
               <Star className="w-4 h-4 text-yellow-500" />
               {favoriteProducts.length} {t("cashier.favorites", "favorites")}
             </div>
-            <div className="grid grid-cols-3 gap-1">
+            <div className="grid grid-cols-3 gap-2">
               {favoriteProducts.map((product) => (
                 <ProductCard
                   key={product.id}

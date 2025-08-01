@@ -13,12 +13,9 @@ import { useStock } from "../../../lib/contexts/stockContext";
 import {
   ChevronLeft,
   ChevronRight,
-  Star,
-  Plus,
-  Minus,
   CheckCircle,
 } from "lucide-react";
-import { Tooltip } from "../../../lib/components/tooltip";
+import ProductCard from "./productCard";
 
 interface ProductBrowserProps {
   allProducts: ProductWithSales[];
@@ -210,11 +207,7 @@ const ProductBrowser = forwardRef<
     }
   };
 
-  const [editingQtyProductId, setEditingQtyProductId] = useState<string | null>(
-    null,
-  );
-  const [editingQtyValue, setEditingQtyValue] = useState<string>("");
-  const editingQtyInputRef = useRef<HTMLInputElement>(null);
+
 
   return (
     <div
@@ -225,7 +218,7 @@ const ProductBrowser = forwardRef<
       onMouseDown={handleBackdropClick}
     >
       <div
-        className={`w-full max-w-7xl bg-white dark:bg-zinc-900 border border-border rounded-2xl shadow-2xl p-6 flex flex-col max-h-[95vh] overflow-hidden transition-all duration-300 ${
+        className={`w-full max-w-7xl bg-card border border-border rounded-2xl shadow-2xl p-6 flex flex-col max-h-[95vh] overflow-hidden transition-all duration-300 ${
           isClosing
             ? "animate-out fade-out zoom-out-90"
             : "animate-in fade-in zoom-in-90"
@@ -284,22 +277,25 @@ const ProductBrowser = forwardRef<
           </div>
         </div>
         <div
-          className="overflow-y-auto grid grid-cols-4 gap-2 h-[600px]"
+          className="overflow-y-auto grid grid-cols-5 gap-1 h-[600px]"
           onScroll={handleScroll}
           style={{ minHeight: 200 }}
         >
-          {filteredProducts.slice(0, visibleCount).map((product) => {
-            const cartItem = cart.find((item) => item.id === product.id);
-            return (
-              <div key={product.id} className="relative">
-                <div
-                  className={`p-2 border rounded-md min-h-[80px] cursor-pointer transition-all flex flex-col justify-between relative overflow-hidden w-full ${
-                    cartItem
-                      ? "border-primary bg-primary/10"
-                      : "border-border hover:border-primary"
-                  }`}
-                  onClick={() => {
-                    if (!cartItem) {
+                     {filteredProducts.slice(0, visibleCount).map((product) => (
+             <ProductCard
+               key={product.id}
+               product={product}
+               favorites={favorites}
+               isInCart={(id) => cart.some((item) => item.id === id)}
+               getCartQuantity={(id) => {
+                 const item = cart.find((item) => item.id === id);
+                 return item ? item.qty : 0;
+               }}
+               handleAddToCart={(product) => {
+                 const exists = cart.find((item) => item.id === product.id);
+                 if (exists) {
+                   setCart((prev) => prev.filter((item) => item.id !== product.id));
+                 } else {
                       setCart((prev) => [
                         ...prev,
                         {
@@ -309,165 +305,44 @@ const ProductBrowser = forwardRef<
                           qty: 1,
                         },
                       ]);
-                    } else {
-                      setCart((prev) =>
-                        prev.filter((item) => item.id !== product.id),
-                      );
-                    }
-                  }}
-                >
-                  <div className="flex items-start justify-between w-full">
-                    <div className="flex flex-col gap-0.5 flex-1 min-w-0 justify-center h-full">
-                      <div className="font-medium break-words leading-tight">
-                        {product.name}
-                      </div>
-                      <div className="text-sm text-muted-foreground leading-tight">
-                        {product.selling.toLocaleString()}{" "}
-                        {t("cashier.currency", "DA")}
-                      </div>
-                      <div className="text-xs text-muted-foreground leading-tight">
-                        {t("cashier.stock", "Stock")}: {product.quantity}
-                      </div>
-                    </div>
-                    <Tooltip
-                      content={
-                        favorites.includes(product.id)
-                          ? t(
-                              "cashier.removeFromFavorites",
-                              "Remove from favorites",
-                            )
-                          : t("cashier.addToFavorites", "Add to favorites")
-                      }
-                    >
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggleFavorite(product.id);
-                        }}
-                        className={`ml-1 transition ${
-                          favorites.includes(product.id)
-                            ? "text-yellow-500 hover:text-yellow-600"
-                            : "text-gray-400 hover:text-yellow-500"
-                        }`}
-                      >
-                        <Star
-                          className={`w-4 h-4 ${favorites.includes(product.id) ? "fill-current" : ""}`}
-                        />
-                      </button>
-                    </Tooltip>
-                  </div>
-                  {cartItem && (
-                    <div className="absolute left-0 right-0 bottom-2 flex items-center justify-center z-10 pointer-events-none">
-                      <div className="flex items-center gap-1.5 pointer-events-auto z-20 bg-background/95 backdrop-blur-sm rounded-lg px-2 py-1.5 shadow-lg border border-border">
-                        <button
-                          className="w-7 h-7 rounded-full bg-muted hover:bg-primary hover:text-primary-foreground text-muted-foreground transition-all duration-200 flex items-center justify-center border border-border hover:border-primary hover:scale-105 active:scale-95"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setCart((prev) =>
-                              prev
-                                .map((item) =>
-                                  item.id === product.id && item.qty > 1
-                                    ? { ...item, qty: item.qty - 1 }
-                                    : item.id === product.id && item.qty === 1
-                                      ? null
-                                      : item,
-                                )
-                                .filter(Boolean),
-                            );
-                          }}
-                        >
-                          <Minus className="w-3.5 h-3.5" />
-                        </button>
-                        <span
-                          className="px-2.5 text-sm font-semibold select-none cursor-pointer text-foreground min-w-[2rem] text-center"
-                          onClick={(e) => e.stopPropagation()}
-                          onDoubleClick={(e) => {
-                            e.stopPropagation();
-                            setEditingQtyProductId(product.id);
-                            setEditingQtyValue(cartItem.qty.toString());
-                          }}
-                        >
-                          {editingQtyProductId === product.id ? (
-                            <input
-                              ref={editingQtyInputRef}
-                              type="text"
-                              value={editingQtyValue}
-                              onChange={(e) => {
-                                if (/^\d*$/.test(e.target.value)) {
-                                  setEditingQtyValue(e.target.value);
-                                }
-                              }}
-                              onBlur={() => {
-                                const newQty = parseInt(editingQtyValue);
-                                if (!isNaN(newQty) && newQty > 0) {
-                                  setCart((prev) =>
-                                    prev.map((item) =>
-                                      item.id === product.id
-                                        ? { ...item, qty: newQty }
-                                        : item,
-                                    ),
-                                  );
-                                }
-                                setEditingQtyProductId(null);
-                              }}
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter") {
-                                  const newQty = parseInt(editingQtyValue);
-                                  if (!isNaN(newQty) && newQty > 0) {
-                                    setCart((prev) =>
-                                      prev.map((item) =>
-                                        item.id === product.id
-                                          ? { ...item, qty: newQty }
-                                          : item,
-                                      ),
-                                    );
-                                  }
-                                  setEditingQtyProductId(null);
-                                } else if (e.key === "Escape") {
-                                  setEditingQtyProductId(null);
-                                }
-                              }}
-                              className="w-12 text-center bg-white dark:bg-zinc-900 border border-primary rounded px-1 py-0 text-base focus:outline-none focus:ring-1 focus:ring-primary"
-                              style={{ minWidth: 32 }}
-                              onClick={(e) => e.stopPropagation()}
-                            />
-                          ) : (
-                            cartItem.qty
-                          )}
-                        </span>
-                        <button
-                          className="w-7 h-7 rounded-full bg-muted hover:bg-primary hover:text-primary-foreground text-muted-foreground transition-all duration-200 flex items-center justify-center border border-border hover:border-primary hover:scale-105 active:scale-95"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setCart((prev) =>
-                              prev.map((item) =>
-                                item.id === product.id
-                                  ? { ...item, qty: item.qty + 1 }
-                                  : item,
-                              ),
-                            );
-                          }}
-                        >
-                          <Plus className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+                 }
+               }}
+               handleQuantityChange={(product, newQty) => {
+                 if (newQty <= 0) {
+                   setCart((prev) => prev.filter((item) => item.id !== product.id));
+                 } else {
+                   setCart((prev) => {
+                     const updated = [...prev];
+                     const exists = updated.find((item) => item.id === product.id);
+                     if (exists) {
+                       exists.qty = newQty;
+                     } else {
+                       updated.push({
+                         id: product.id,
+                         name: product.name,
+                         price: product.selling,
+                         qty: newQty,
+                       });
+                     }
+                     return updated;
+                   });
+                 }
+               }}
+               toggleFavorite={toggleFavorite}
+             />
+           ))}
 
           {/* Loading skeletons */}
           {loadingMore &&
             Array.from({ length: 100 }).map((_, index) => (
               <div
                 key={`skeleton-${index}`}
-                className="p-2 border rounded-md h-20 flex flex-col gap-2"
+                 className="p-3 border rounded-lg h-[180px] flex flex-col gap-2"
               >
+                 <Skeleton className="h-24 w-full rounded-md" />
                 <Skeleton className="h-4 w-3/4" />
                 <Skeleton className="h-3 w-1/2" />
-                <Skeleton className="h-3 w-1/3 mt-1" />
+                <Skeleton className="h-3 w-1/3" />
               </div>
             ))}
 
