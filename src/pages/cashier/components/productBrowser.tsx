@@ -277,7 +277,7 @@ const ProductBrowser = forwardRef<
           </div>
         </div>
         <div
-          className="overflow-y-auto grid grid-cols-5 gap-1 h-[600px]"
+          className="overflow-y-auto grid grid-cols-5 gap-3 h-[600px]"
           onScroll={handleScroll}
           style={{ minHeight: 200 }}
         >
@@ -337,9 +337,9 @@ const ProductBrowser = forwardRef<
             Array.from({ length: 100 }).map((_, index) => (
               <div
                 key={`skeleton-${index}`}
-                 className="p-3 border rounded-lg h-[180px] flex flex-col gap-2"
+                 className="p-4 border rounded-lg h-[200px] flex flex-col gap-2"
               >
-                 <Skeleton className="h-24 w-full rounded-md" />
+                 <Skeleton className="h-20 w-full rounded-md" />
                 <Skeleton className="h-4 w-3/4" />
                 <Skeleton className="h-3 w-1/2" />
                 <Skeleton className="h-3 w-1/3" />

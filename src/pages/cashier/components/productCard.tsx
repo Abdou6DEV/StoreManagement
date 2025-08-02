@@ -45,22 +45,29 @@ export default function ProductCard({
   return (
          <div
        key={product.id}
-                       className={`p-3 border rounded-lg h-[180px] cursor-pointer transition-all flex flex-col justify-between relative overflow-hidden w-full ${
+                                               className={`p-4 border rounded-lg h-[200px] cursor-pointer transition-all flex flex-col justify-between relative overflow-hidden w-full ${
           isInCart(product.id)
             ? "border-primary bg-primary/10"
             : "border-border hover:border-primary hover:shadow-md"
         }`}
-      onClick={() => handleAddToCart(product)}
-    >
-             {/* Product Image/Icon Area */}
-       <div className="flex items-center justify-center w-full h-24 mb-2 bg-muted/30 rounded-md overflow-hidden flex-shrink-0">
+             onClick={() => handleAddToCart(product)}
+     >
+              {/* Stock Quantity Badge */}
+              <div className="absolute top-2 right-2 z-10">
+                <div className="bg-green-500 text-white text-xs font-semibold px-2 py-1 rounded-full shadow-sm">
+                  {product.quantity}
+                </div>
+              </div>
+              
+              {/* Product Image/Icon Area */}
+                <div className="flex items-center justify-center w-full h-20 mb-3 bg-muted/30 rounded-md overflow-hidden flex-shrink-0">
          {/* Placeholder for future image implementation */}
          <Image className="w-12 h-12 text-muted-foreground" />
        </div>
 
              {/* Product Info */}
        <div className="flex items-start justify-between w-full flex-1">
-                  <div className="flex flex-col gap-1 flex-1 min-w-0">
+                  <div className="flex flex-col gap-2 flex-1 min-w-0">
                          {isTextTruncated ? (
                <Tooltip
                  content={product.name}
@@ -94,14 +101,11 @@ export default function ProductCard({
                  {product.name}
                </div>
              )}
-            <div className="flex items-center justify-between flex-shrink-0">
-              <div className="text-sm font-semibold text-green-600 leading-tight">
-                {product.selling.toLocaleString()} {t("cashier.currency", "DA")}
-              </div>
-              <div className="text-xs text-muted-foreground leading-tight">
-                {t("cashier.stock", "Stock")}: {product.quantity}
-              </div>
-            </div>
+                         <div className="flex items-center justify-between flex-shrink-0 mt-auto">
+               <div className="text-sm font-semibold text-green-600 leading-tight">
+                 {product.selling.toLocaleString()} {t("cashier.currency", "DA")}
+               </div>
+             </div>
           </div>
         <Tooltip
           content={

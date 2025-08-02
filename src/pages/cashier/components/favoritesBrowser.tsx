@@ -150,7 +150,7 @@ const FavoritesBrowser: React.FC<FavoritesBrowserProps> = ({
 
   return (
     <div className="h-full overflow-hidden flex flex-col p-3">
-      <div className="flex-1 overflow-y-auto space-y-3">
+      <div className="flex-1 overflow-y-auto space-y-6">
         {/* Favorites Section */}
         {favoriteProducts.length > 0 && (
           <div>
@@ -158,7 +158,7 @@ const FavoritesBrowser: React.FC<FavoritesBrowserProps> = ({
               <Star className="w-4 h-4 text-yellow-500" />
               {favoriteProducts.length} {t("cashier.favorites", "favorites")}
             </div>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-3 gap-3">
               {favoriteProducts.map((product) => (
                 <ProductCard
                   key={product.id}
@@ -181,7 +181,7 @@ const FavoritesBrowser: React.FC<FavoritesBrowserProps> = ({
             <div className="text-xs font-medium text-muted-foreground mb-2">
               {t("cashier.frequentlyUsed", "Frequently Used")}
             </div>
-            <div className="grid grid-cols-3 gap-1">
+            <div className="grid grid-cols-3 gap-3">
               {frequentlyUsedProducts.map((product) => (
                 <ProductCard
                   key={product.id}
