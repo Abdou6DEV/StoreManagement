@@ -45,7 +45,7 @@ export default function ProductCard({
   return (
     <div
       key={product.id}
-      className={`p-4 border rounded-lg h-[200px] cursor-pointer transition-all flex flex-col justify-between relative overflow-hidden w-full ${
+      className={`p-5 border rounded-lg h-[220px] cursor-pointer transition-all flex flex-col justify-between relative overflow-hidden w-full ${
         isInCart(product.id)
           ? "border-primary bg-primary/10"
           : "border-border hover:border-primary hover:shadow-md"
@@ -53,14 +53,14 @@ export default function ProductCard({
       onClick={() => handleAddToCart(product)}
     >
       {/* Stock Quantity Badge */}
-      <div className="absolute top-2 right-2 z-10">
-        <div className="bg-green-500 text-white text-xs font-semibold px-2 py-1 rounded-full shadow-sm">
+      <div className="absolute top-3 right-3 z-10">
+        <div className="bg-gray-600 text-white text-xs font-semibold px-2.5 py-1.5 rounded-full shadow-sm">
           {product.quantity}
         </div>
       </div>
 
       {/* Product Image/Icon Area */}
-      <div className="flex items-center justify-center w-full h-20 mb-3 bg-muted/30 rounded-md overflow-hidden flex-shrink-0">
+      <div className="flex items-center justify-center w-full h-24 mb-4 bg-muted/30 rounded-md overflow-hidden flex-shrink-0">
         {product.photo ? (
           <img
             src={product.photo}
@@ -74,14 +74,16 @@ export default function ProductCard({
             }}
           />
         ) : null}
-        <Image
-          className={`w-12 h-12 text-muted-foreground ${product.photo ? "hidden" : ""}`}
-        />
+        <div className={`w-full h-full flex items-center justify-center bg-gray-200 dark:bg-gray-400 ${product.photo ? "hidden" : ""}`}>
+          <Image
+            className="w-12 h-12 text-gray-600 dark:text-gray-300"
+          />
+        </div>
       </div>
 
       {/* Product Info */}
-      <div className="flex items-start justify-between w-full flex-1">
-        <div className="flex flex-col gap-2 flex-1 min-w-0">
+      <div className="flex items-start justify-between w-full flex-1 gap-3">
+        <div className="flex flex-col gap-3 flex-1 min-w-0">
           {isTextTruncated ? (
             <Tooltip content={product.name} position="top" className="max-w-xs">
               <div
@@ -129,7 +131,7 @@ export default function ProductCard({
               e.stopPropagation();
               toggleFavorite(product.id);
             }}
-            className={`ml-1 transition ${
+            className={`transition ${
               favorites.includes(product.id)
                 ? "text-yellow-500 hover:text-yellow-600"
                 : "text-gray-400 hover:text-yellow-500"
@@ -143,8 +145,8 @@ export default function ProductCard({
       </div>
 
       {isInCart(product.id) && (
-        <div className="absolute left-0 right-0 bottom-2 flex items-center justify-center z-10 pointer-events-none">
-          <div className="flex items-center gap-1.5 pointer-events-auto z-20 bg-background/95 backdrop-blur-sm rounded-lg px-2 py-1.5 shadow-lg border border-border">
+        <div className="absolute left-0 right-0 bottom-3 flex items-center justify-center z-10 pointer-events-none">
+          <div className="flex items-center gap-2 pointer-events-auto z-20 bg-background/95 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg border border-border">
             <button
               className="w-7 h-7 rounded-full bg-muted hover:bg-primary hover:text-primary-foreground text-muted-foreground transition-all duration-200 flex items-center justify-center border border-border hover:border-primary hover:scale-105 active:scale-95"
               onClick={(e) => {
