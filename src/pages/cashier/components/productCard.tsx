@@ -45,7 +45,7 @@ export default function ProductCard({
   return (
     <div
       key={product.id}
-      className={`p-5 border rounded-lg h-[220px] cursor-pointer transition-all flex flex-col justify-between relative overflow-hidden w-full ${
+      className={`p-3 border rounded-lg h-[180px] cursor-pointer transition-all flex flex-col justify-between relative overflow-hidden w-full ${
         isInCart(product.id)
           ? "border-primary bg-primary/10"
           : "border-border hover:border-primary hover:shadow-md"
@@ -68,7 +68,7 @@ export default function ProductCard({
       </div>
 
       {/* Product Image/Icon Area */}
-      <div className="flex items-center justify-center w-full h-24 mb-4 bg-muted/30 rounded-md overflow-hidden flex-shrink-0">
+      <div className="flex items-center justify-center w-full h-20 mb-3 bg-muted/30 rounded-md overflow-hidden flex-shrink-0">
         {product.photo ? (
           <img
             src={product.photo}
@@ -90,8 +90,8 @@ export default function ProductCard({
       </div>
 
       {/* Product Info */}
-      <div className="flex items-start justify-between w-full flex-1 gap-3">
-        <div className="flex flex-col gap-3 flex-1 min-w-0">
+              <div className="flex items-start justify-between w-full flex-1 gap-2">
+        <div className="flex flex-col gap-2 flex-1 min-w-0">
           {isTextTruncated ? (
             <Tooltip content={product.name} position="top" className="max-w-xs">
               <div
