@@ -180,31 +180,31 @@ const HistoryBrowser: React.FC<HistoryBrowserProps> = ({
             {filteredSales.map((sale, index) => (
               <div
                 key={sale.id}
-                className={`bg-card border border-border rounded-lg p-3 hover:bg-muted/30 transition-all duration-300 ${
+                className={`bg-card border border-border rounded-lg p-4 hover:bg-muted/30 hover:shadow-md transition-all duration-300 ${
                   refreshing && index === 0 ? "animate-pulse bg-primary/5" : ""
                 }`}
               >
                 {/* Header with date, client, and total */}
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Clock className="w-4 h-4" />
                       {formatDate(sale.createdAt)}
                     </div>
                     {sale.client && (
-                      <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <User className="w-4 h-4" />
                         {sale.client.name}
                       </div>
                     )}
                   </div>
-                  <div className="flex items-center gap-1 font-semibold text-green-500">
+                  <div className="flex items-center gap-2 font-semibold text-green-600">
                     {formatCurrency(sale.totalWithDiscount)}
                   </div>
                 </div>
 
                 {/* Sale items preview */}
-                <div className="mb-2">
+                <div className="mb-3">
                   <div className="text-sm font-medium text-foreground line-clamp-1">
                     {sale.saleItems
                       .slice(0, 2)
@@ -217,7 +217,7 @@ const HistoryBrowser: React.FC<HistoryBrowserProps> = ({
 
                 {/* Footer with items count and view button */}
                 <div className="flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-1 text-orange-500">
+                  <div className="flex items-center gap-2 text-orange-600">
                     <ShoppingBag className="w-4 h-4" />
                     {sale.totalItems} {t("cashier.items", "items")}
                   </div>
@@ -226,7 +226,7 @@ const HistoryBrowser: React.FC<HistoryBrowserProps> = ({
                       e.stopPropagation();
                       handleSaleClick(sale);
                     }}
-                    className="px-3 py-1 text-primary border border-primary/30 text-xs rounded-md hover:bg-primary/10 hover:border-primary/50 transition-all duration-200 flex items-center gap-1"
+                    className="px-3 py-1.5 text-primary border border-primary/30 text-xs rounded-md hover:bg-primary/10 hover:border-primary/50 transition-all duration-200 flex items-center gap-1.5"
                   >
                     <Eye className="w-3 h-3" />
                     {t("cashier.view", "View")}
