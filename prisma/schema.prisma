@@ -29,6 +29,7 @@ model Product {
   bought       Int
   selling      Int
   codebar      String?
+  photo        String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

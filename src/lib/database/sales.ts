@@ -213,23 +213,23 @@ export async function getRecentSales(limit = 50, offset = 0) {
   const totalCount = await prisma.sale.count({
     where: {
       createdAt: {
-        gte: oneWeekAgo
-      }
-    }
+        gte: oneWeekAgo,
+      },
+    },
   });
 
   const sales = await prisma.sale.findMany({
     where: {
       createdAt: {
-        gte: oneWeekAgo
-      }
+        gte: oneWeekAgo,
+      },
     },
     include: {
       client: {
         select: {
           id: true,
-          name: true
-        }
+          name: true,
+        },
       },
       saleItems: {
         select: {
@@ -239,17 +239,17 @@ export async function getRecentSales(limit = 50, offset = 0) {
           product: {
             select: {
               id: true,
-              name: true
-            }
-          }
-        }
+              name: true,
+            },
+          },
+        },
       },
       payment: {
         select: {
           id: true,
-          givenAmount: true
-        }
-      }
+          givenAmount: true,
+        },
+      },
     },
     orderBy: {
       createdAt: "desc",
@@ -288,6 +288,6 @@ export async function getRecentSales(limit = 50, offset = 0) {
   return {
     sales: salesWithTotals,
     totalCount,
-    hasMore: offset + limit < totalCount
+    hasMore: offset + limit < totalCount,
   };
 }

@@ -314,6 +314,8 @@
     "chooseSeller": "Choose",
     "chooseSellerTooltip": "Choose from existing sellers",
     "searchSeller": "Search seller...",
+    "photo": "Product Photo",
+    "uploadPhoto": "Upload product photo",
     "salesHistory": "Sales History",
     "client": "Client",
     "price": "Price",
@@ -408,6 +410,12 @@
   "pagination": {
     "next": "Next",
     "prev": "Previous"
+  },
+  "imageUpload": {
+    "clickToUpload": "Click to upload or drag and drop",
+    "selectImageFile": "Please select an image file",
+    "imageSizeLimit": "Image size must be less than 5MB",
+    "failedToProcess": "Failed to process image. Please try again."
   },
   "currency": "DA"
 }

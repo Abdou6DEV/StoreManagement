@@ -10,11 +10,7 @@ import type { ProductWithSales, CartItem } from "../../../types";
 import { useTranslation } from "react-i18next";
 import { Skeleton } from "../../../lib/components/skeleton";
 import { useStock } from "../../../lib/contexts/stockContext";
-import {
-  ChevronLeft,
-  ChevronRight,
-  CheckCircle,
-} from "lucide-react";
+import { ChevronLeft, ChevronRight, CheckCircle } from "lucide-react";
 import ProductCard from "./productCard";
 
 interface ProductBrowserProps {
@@ -207,8 +203,6 @@ const ProductBrowser = forwardRef<
     }
   };
 
-
-
   return (
     <div
       className={`fixed inset-0 z-50 w-full flex items-center justify-center bg-black/50 transition-opacity duration-300 ${
@@ -281,65 +275,71 @@ const ProductBrowser = forwardRef<
           onScroll={handleScroll}
           style={{ minHeight: 200 }}
         >
-                     {filteredProducts.slice(0, visibleCount).map((product) => (
-             <ProductCard
-               key={product.id}
-               product={product}
-               favorites={favorites}
-               isInCart={(id) => cart.some((item) => item.id === id)}
-               getCartQuantity={(id) => {
-                 const item = cart.find((item) => item.id === id);
-                 return item ? item.qty : 0;
-               }}
-               handleAddToCart={(product) => {
-                 const exists = cart.find((item) => item.id === product.id);
-                 if (exists) {
-                   setCart((prev) => prev.filter((item) => item.id !== product.id));
-                 } else {
-                      setCart((prev) => [
-                        ...prev,
-                        {
-                          id: product.id,
-                          name: product.name,
-                          price: product.selling,
-                          qty: 1,
-                        },
-                      ]);
-                 }
-               }}
-               handleQuantityChange={(product, newQty) => {
-                 if (newQty <= 0) {
-                   setCart((prev) => prev.filter((item) => item.id !== product.id));
-                 } else {
-                   setCart((prev) => {
-                     const updated = [...prev];
-                     const exists = updated.find((item) => item.id === product.id);
-                     if (exists) {
-                       exists.qty = newQty;
-                     } else {
-                       updated.push({
-                         id: product.id,
-                         name: product.name,
-                         price: product.selling,
-                         qty: newQty,
-                       });
-                     }
-                     return updated;
-                   });
-                 }
-               }}
-               toggleFavorite={toggleFavorite}
-             />
-           ))}
+          {filteredProducts.slice(0, visibleCount).map((product) => (
+            <ProductCard
+              key={product.id}
+              product={product}
+              favorites={favorites}
+              isInCart={(id) => cart.some((item) => item.id === id)}
+              getCartQuantity={(id) => {
+                const item = cart.find((item) => item.id === id);
+                return item ? item.qty : 0;
+              }}
+              handleAddToCart={(product) => {
+                const exists = cart.find((item) => item.id === product.id);
+                if (exists) {
+                  setCart((prev) =>
+                    prev.filter((item) => item.id !== product.id),
+                  );
+                } else {
+                  setCart((prev) => [
+                    ...prev,
+                    {
+                      id: product.id,
+                      name: product.name,
+                      price: product.selling,
+                      qty: 1,
+                    },
+                  ]);
+                }
+              }}
+              handleQuantityChange={(product, newQty) => {
+                if (newQty <= 0) {
+                  setCart((prev) =>
+                    prev.filter((item) => item.id !== product.id),
+                  );
+                } else {
+                  setCart((prev) => {
+                    const updated = [...prev];
+                    const exists = updated.find(
+                      (item) => item.id === product.id,
+                    );
+                    if (exists) {
+                      exists.qty = newQty;
+                    } else {
+                      updated.push({
+                        id: product.id,
+                        name: product.name,
+                        price: product.selling,
+                        qty: newQty,
+                      });
+                    }
+                    return updated;
+                  });
+                }
+              }}
+              toggleFavorite={toggleFavorite}
+            />
+          ))}
 
           {/* Loading skeletons */}
           {loadingMore &&
             Array.from({ length: 100 }).map((_, index) => (
               <div
                 key={`skeleton-${index}`}
-                 className="p-4 border rounded-lg h-[200px] flex flex-col gap-2"
+                className="p-4 border rounded-lg h-[200px] flex flex-col gap-2"
               >
-                 <Skeleton className="h-20 w-full rounded-md" />
+                <Skeleton className="h-20 w-full rounded-md" />
                 <Skeleton className="h-4 w-3/4" />
                 <Skeleton className="h-3 w-1/2" />
                 <Skeleton className="h-3 w-1/3" />

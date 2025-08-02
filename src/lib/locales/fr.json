@@ -194,6 +194,8 @@
     "chooseSeller": "Choisir",
     "chooseSellerTooltip": "Choisir parmi les vendeurs existants",
     "searchSeller": "Rechercher un vendeur...",
+    "photo": "Photo du produit",
+    "uploadPhoto": "Télécharger la photo du produit",
     "salesHistory": "Historique des ventes",
     "client": "Client",
     "price": "Prix",
@@ -403,6 +405,12 @@
   "pagination": {
     "next": "Suivant",
     "prev": "Précédent"
+  },
+  "imageUpload": {
+    "clickToUpload": "Cliquez pour télécharger ou glissez-déposez",
+    "selectImageFile": "Veuillez sélectionner un fichier image",
+    "imageSizeLimit": "La taille de l'image doit être inférieure à 5MB",
+    "failedToProcess": "Échec du traitement de l'image. Veuillez réessayer."
   },
   "currency": "DA"
 }

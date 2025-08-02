@@ -37,6 +37,23 @@ export const ProductInfoModal = ({
         </div>
       ) : productData ? (
         <div className="space-y-6">
+          {/* Product Photo */}
+          {productData.photo && (
+            <div className="flex justify-center">
+              <div className="relative w-48 h-48 rounded-lg overflow-hidden border border-border">
+                <img
+                  src={productData.photo}
+                  alt={productData.name}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = "none";
+                  }}
+                />
+              </div>
+            </div>
+          )}
+
           {/* Product Details */}
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4 p-4 bg-muted/30 rounded-lg">
             <div className={isRTL ? "text-right" : "text-left"}>

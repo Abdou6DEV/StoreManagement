@@ -59,7 +59,9 @@ export async function getProductWithPurchaseHistory(id: string) {
 }
 
 export async function createProductWithPurchase(
-  productData: Omit<Product, "id" | "createdAt" | "updatedAt">,
+  productData: Omit<Product, "id" | "createdAt" | "updatedAt"> & {
+    photo?: string | null;
+  },
   purchaseData: {
     sellerId?: string;
     quantity: number;

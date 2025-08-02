@@ -79,7 +79,8 @@ contextBridge.exposeInMainWorld("api", {
         discount?: number;
       }) => ipcRenderer.invoke("db:sales:create", data),
       getAll: () => ipcRenderer.invoke("db:sales:getAll"),
-      getRecent: (options?: { limit?: number; offset?: number }) => ipcRenderer.invoke("db:sales:getRecent", options),
+      getRecent: (options?: { limit?: number; offset?: number }) =>
+        ipcRenderer.invoke("db:sales:getRecent", options),
       update: (
         id: string,
         data: {
@@ -236,7 +237,14 @@ declare global {
             discount?: number;
           }) => Promise<Sale>;
           getAll: () => Promise<SaleWithDetails[]>;
-          getRecent: (options?: { limit?: number; offset?: number }) => Promise<{ sales: SaleWithDetails[]; totalCount: number; hasMore: boolean }>;
+          getRecent: (options?: {
+            limit?: number;
+            offset?: number;
+          }) => Promise<{
+            sales: SaleWithDetails[];
+            totalCount: number;
+            hasMore: boolean;
+          }>;
           update: (
             id: string,
             data: {

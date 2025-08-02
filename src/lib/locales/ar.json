@@ -312,6 +312,8 @@
     "chooseSeller": "اختر",
     "chooseSellerTooltip": "اختر من البائعين الموجودين",
     "searchSeller": "ابحث عن بائع...",
+    "photo": "صورة المنتج",
+    "uploadPhoto": "رفع صورة المنتج",
     "salesHistory": "تاريخ المبيعات",
     "client": "العميل",
     "price": "السعر",
@@ -406,6 +408,12 @@
   "pagination": {
     "next": "التالي",
     "prev": "السابق"
+  },
+  "imageUpload": {
+    "clickToUpload": "انقر للرفع أو اسحب وأفلت",
+    "selectImageFile": "يرجى اختيار ملف صورة",
+    "imageSizeLimit": "يجب أن يكون حجم الصورة أقل من 5MB",
+    "failedToProcess": "فشل في معالجة الصورة. يرجى المحاولة مرة أخرى."
   },
   "currency": "دج"
 }

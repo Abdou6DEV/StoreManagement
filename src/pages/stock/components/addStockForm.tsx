@@ -22,6 +22,7 @@ import {
 import { Skeleton } from "../../../lib/components/skeleton";
 import { BarcodeGeneratorButton } from "./barcodeGeneratorButton";
 import { BarcodePrintModal } from "./barcodePrintModal";
+import { ImageUpload } from "../../../lib/components/imageUpload";
 import {
   generateUniqueBarcode,
   printBarcodeLabel,
@@ -41,6 +42,7 @@ const initialForm: AddStockFormState = {
   selling: "",
   codebar: "",
   sellerId: "",
+  photo: null,
 };
 
 export default function AddStockForm({
@@ -155,6 +157,7 @@ export default function AddStockForm({
           bought: Number(form.bought || 0),
           selling: Number(form.selling || 0),
           codebar: form.codebar,
+          photo: form.photo,
         };
 
         await window.api.database.products.createWithPurchase({
@@ -177,7 +180,10 @@ export default function AddStockForm({
     }
   };
 
-  const handleFormChange = (key: keyof typeof form, value: string | number) => {
+  const handleFormChange = (
+    key: keyof typeof form,
+    value: string | number | string | null,
+  ) => {
     // For number fields, allow empty string
     if (["quantity", "bought", "selling"].includes(key)) {
       setForm((prev) => ({
@@ -337,6 +343,7 @@ export default function AddStockForm({
                                   selling: p.selling ?? "",
                                   codebar: p.codebar || "",
                                   sellerId: "", // reset seller selection
+                                  photo: (p as any).photo || null,
                                 });
                                 setShowProductDropdown(false);
                               }}
@@ -653,6 +660,18 @@ export default function AddStockForm({
                   generatingBarcode={generatingBarcode}
                 />
               </div>
+            </Legend>
+            <Legend>
+              <label>{t("stock.photo", "Product Photo")}</label>
+              <ImageUpload
+                value={form.photo}
+                onChange={(value) => handleFormChange("photo", value)}
+                placeholder={t("stock.uploadPhoto")}
+                disabled={isExistingProduct}
+                maxWidth={200}
+                maxHeight={200}
+                quality={0.8}
+              />
             </Legend>
           </div>
 

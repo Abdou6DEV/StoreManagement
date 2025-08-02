@@ -6,6 +6,7 @@ import { Save, X, Loader2, Package } from "lucide-react";
 import { useStock } from "../../../lib/contexts/stockContext";
 import { BarcodeGeneratorButton } from "./barcodeGeneratorButton";
 import { BarcodePrintModal } from "./barcodePrintModal";
+import { ImageUpload } from "../../../lib/components/imageUpload";
 import {
   generateUniqueBarcode,
   printBarcodeLabel,
@@ -37,7 +38,7 @@ export default function EditStockForm({
 
   const handleEditFormChange = (
     key: keyof typeof form,
-    value: string | number,
+    value: string | number | string | null,
   ) => {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
@@ -76,7 +77,8 @@ export default function EditStockForm({
       // Ensure category exists, create if not exists
       await window.api.database.categories.ensure(form.categoryName);
 
-      const { name, categoryName, quantity, bought, selling, codebar } = form;
+      const { name, categoryName, quantity, bought, selling, codebar, photo } =
+        form;
 
       await window.api.database.products.update(product.id, {
         name,
@@ -85,6 +87,7 @@ export default function EditStockForm({
         bought: Number(bought),
         selling: Number(selling),
         codebar,
+        photo,
       });
       showToast(
         t("stock.toastUpdateSuccess", "Product updated successfully!"),
@@ -196,6 +199,19 @@ export default function EditStockForm({
                 generatingBarcode={generatingBarcode}
               />
             </div>
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground">
+              {t("stock.photo", "Product Photo")}
+            </label>
+            <ImageUpload
+              value={form.photo}
+              onChange={(value) => handleEditFormChange("photo", value)}
+              placeholder={t("stock.uploadPhoto")}
+              maxWidth={200}
+              maxHeight={200}
+              quality={0.8}
+            />
           </div>
         </div>
 

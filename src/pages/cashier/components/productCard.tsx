@@ -38,75 +38,85 @@ export default function ProductCard({
 
     checkTextTruncation();
     // Re-check on window resize
-    window.addEventListener('resize', checkTextTruncation);
-    return () => window.removeEventListener('resize', checkTextTruncation);
+    window.addEventListener("resize", checkTextTruncation);
+    return () => window.removeEventListener("resize", checkTextTruncation);
   }, [product.name]);
 
   return (
-         <div
-       key={product.id}
-                                               className={`p-4 border rounded-lg h-[200px] cursor-pointer transition-all flex flex-col justify-between relative overflow-hidden w-full ${
-          isInCart(product.id)
-            ? "border-primary bg-primary/10"
-            : "border-border hover:border-primary hover:shadow-md"
-        }`}
-             onClick={() => handleAddToCart(product)}
-     >
-              {/* Stock Quantity Badge */}
-              <div className="absolute top-2 right-2 z-10">
-                <div className="bg-green-500 text-white text-xs font-semibold px-2 py-1 rounded-full shadow-sm">
-                  {product.quantity}
-                </div>
-              </div>
-              
-              {/* Product Image/Icon Area */}
-                <div className="flex items-center justify-center w-full h-20 mb-3 bg-muted/30 rounded-md overflow-hidden flex-shrink-0">
-         {/* Placeholder for future image implementation */}
-         <Image className="w-12 h-12 text-muted-foreground" />
-       </div>
+    <div
+      key={product.id}
+      className={`p-4 border rounded-lg h-[200px] cursor-pointer transition-all flex flex-col justify-between relative overflow-hidden w-full ${
+        isInCart(product.id)
+          ? "border-primary bg-primary/10"
+          : "border-border hover:border-primary hover:shadow-md"
+      }`}
+      onClick={() => handleAddToCart(product)}
+    >
+      {/* Stock Quantity Badge */}
+      <div className="absolute top-2 right-2 z-10">
+        <div className="bg-green-500 text-white text-xs font-semibold px-2 py-1 rounded-full shadow-sm">
+          {product.quantity}
+        </div>
+      </div>
 
-             {/* Product Info */}
-       <div className="flex items-start justify-between w-full flex-1">
-                  <div className="flex flex-col gap-2 flex-1 min-w-0">
-                         {isTextTruncated ? (
-               <Tooltip
-                 content={product.name}
-                 position="top"
-                 className="max-w-xs"
-               >
-                 <div 
-                   ref={nameRef}
-                   className="font-medium text-sm break-words leading-tight min-h-[2.5rem] max-h-[2.5rem] flex-1 overflow-hidden cursor-pointer"
-                   style={{
-                     display: '-webkit-box',
-                     WebkitLineClamp: 2,
-                     WebkitBoxOrient: 'vertical',
-                     lineHeight: '1.25rem'
-                   }}
-                 >
-                   {product.name}
-                 </div>
-               </Tooltip>
-             ) : (
-               <div 
-                 ref={nameRef}
-                 className="font-medium text-sm break-words leading-tight min-h-[2.5rem] max-h-[2.5rem] flex-1 overflow-hidden"
-                 style={{
-                   display: '-webkit-box',
-                   WebkitLineClamp: 2,
-                   WebkitBoxOrient: 'vertical',
-                   lineHeight: '1.25rem'
-                 }}
-               >
-                 {product.name}
-               </div>
-             )}
-                         <div className="flex items-center justify-between flex-shrink-0 mt-auto">
-               <div className="text-sm font-semibold text-green-600 leading-tight">
-                 {product.selling.toLocaleString()} {t("cashier.currency", "DA")}
-               </div>
-             </div>
+      {/* Product Image/Icon Area */}
+      <div className="flex items-center justify-center w-full h-20 mb-3 bg-muted/30 rounded-md overflow-hidden flex-shrink-0">
+        {product.photo ? (
+          <img
+            src={product.photo}
+            alt={product.name}
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              // Fallback to icon if image fails to load
+              const target = e.target as HTMLImageElement;
+              target.style.display = "none";
+              target.nextElementSibling?.classList.remove("hidden");
+            }}
+          />
+        ) : null}
+        <Image
+          className={`w-12 h-12 text-muted-foreground ${product.photo ? "hidden" : ""}`}
+        />
+      </div>
+
+      {/* Product Info */}
+      <div className="flex items-start justify-between w-full flex-1">
+        <div className="flex flex-col gap-2 flex-1 min-w-0">
+          {isTextTruncated ? (
+            <Tooltip content={product.name} position="top" className="max-w-xs">
+              <div
+                ref={nameRef}
+                className="font-medium text-sm break-words leading-tight min-h-[2.5rem] max-h-[2.5rem] flex-1 overflow-hidden cursor-pointer"
+                style={{
+                  display: "-webkit-box",
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: "vertical",
+                  lineHeight: "1.25rem",
+                }}
+              >
+                {product.name}
+              </div>
+            </Tooltip>
+          ) : (
+            <div
+              ref={nameRef}
+              className="font-medium text-sm break-words leading-tight min-h-[2.5rem] max-h-[2.5rem] flex-1 overflow-hidden"
+              style={{
+                display: "-webkit-box",
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: "vertical",
+                lineHeight: "1.25rem",
+              }}
+            >
+              {product.name}
+            </div>
+          )}
+          <div className="flex items-center justify-between flex-shrink-0 mt-auto">
+            <div className="text-sm font-semibold text-green-600 leading-tight">
+              {product.selling.toLocaleString()} {t("cashier.currency", "DA")}
+            </div>
           </div>
+        </div>
         <Tooltip
           content={
             favorites.includes(product.id)

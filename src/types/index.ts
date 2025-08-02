@@ -29,6 +29,7 @@ export interface AddStockFormState {
   selling: number | "";
   codebar: string;
   sellerId: string;
+  photo: string | null;
 }
 
 export interface PaymentWithDetails extends Payment {
