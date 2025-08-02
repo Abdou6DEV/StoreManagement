@@ -12,7 +12,7 @@ import {
   Banknote,
   Edit,
   Save,
-  X as CancelIcon,
+  RotateCcw,
 } from "lucide-react";
 import PaymentSummary from "./paymentSummary";
 import { useToast } from "../contexts/toastContext";
@@ -196,10 +196,10 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
                 <button
                   onClick={handleModify}
                   disabled={isSaving}
-                  className="p-2.5 hover:bg-muted/50 rounded-lg transition-colors"
+                  className="p-2.5 hover:bg-orange-500/10 rounded-lg transition-colors border border-orange-200/50"
                   title={t("cashier.cancelEdit", "Cancel Edit")}
                 >
-                  <CancelIcon className="w-4 h-4 text-muted-foreground" />
+                  <RotateCcw className="w-4 h-4 text-orange-600" />
                 </button>
               </>
             ) : (
