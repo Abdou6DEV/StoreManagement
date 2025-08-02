@@ -418,7 +418,8 @@
     "clickToUpload": "Click to upload or drag and drop",
     "selectImageFile": "Please select an image file",
     "imageSizeLimit": "Image size must be less than 5MB",
-    "failedToProcess": "Failed to process image. Please try again."
+    "failedToProcess": "Failed to process image. Please try again.",
+    "removeImage": "Remove image"
   },
   "currency": "DA"
 }

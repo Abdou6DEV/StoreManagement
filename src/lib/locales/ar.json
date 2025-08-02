@@ -415,7 +415,8 @@
     "clickToUpload": "انقر للرفع أو اسحب وأفلت",
     "selectImageFile": "يرجى اختيار ملف صورة",
     "imageSizeLimit": "يجب أن يكون حجم الصورة أقل من 5MB",
-    "failedToProcess": "فشل في معالجة الصورة. يرجى المحاولة مرة أخرى."
+    "failedToProcess": "فشل في معالجة الصورة. يرجى المحاولة مرة أخرى.",
+    "removeImage": "إزالة الصورة"
   },
   "currency": "دج"
 }

@@ -412,7 +412,8 @@
     "clickToUpload": "Cliquez pour télécharger ou glissez-déposez",
     "selectImageFile": "Veuillez sélectionner un fichier image",
     "imageSizeLimit": "La taille de l'image doit être inférieure à 5MB",
-    "failedToProcess": "Échec du traitement de l'image. Veuillez réessayer."
+    "failedToProcess": "Échec du traitement de l'image. Veuillez réessayer.",
+    "removeImage": "Supprimer l'image"
   },
   "currency": "DA"
 }

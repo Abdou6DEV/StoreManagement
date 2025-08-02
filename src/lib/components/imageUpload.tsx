@@ -1,5 +1,5 @@
 import React, { useState, useRef } from "react";
-import { Image as ImageIcon } from "lucide-react";
+import { Image as ImageIcon, X } from "lucide-react";
 import { cn } from "../utils";
 import { useTranslation } from "react-i18next";
 
@@ -127,6 +127,11 @@ export function ImageUpload({
     }
   };
 
+  const handleRemoveImage = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onChange(null);
+  };
+
   return (
     <div className={cn("space-y-2", className)}>
       <input
@@ -145,6 +150,14 @@ export function ImageUpload({
             alt="Product"
             className="w-full h-32 object-cover rounded-lg border border-border"
           />
+          <button
+            type="button"
+            onClick={handleRemoveImage}
+            className="absolute top-2 right-2 p-1 bg-red-500 hover:bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow-lg"
+            title={t("imageUpload.removeImage")}
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
       ) : (
         <div
