@@ -1,10 +1,8 @@
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import { Printer, Eye, FileText } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Modal } from "../../../lib/components/Modal";
-
 import type { CartItem } from "../../../types";
-import JsBarcode from "jsbarcode";
 
 interface Props {
   open: boolean;
@@ -31,7 +29,6 @@ export default function ReceiptModal({
 }: Props) {
   const { t } = useTranslation();
   const [isPrinting, setIsPrinting] = useState(false);
-  const barcodeRef = useRef<SVGSVGElement>(null);
 
   // Store information (configurable via props or use defaults)
   const storeInfo = {
@@ -45,78 +42,6 @@ export default function ReceiptModal({
   const finalTotal = total - discount;
   const currentDate = new Date();
   const receiptNumber = saleId || `TEMP-${Date.now()}`;
-
-  // Generate barcode when modal opens
-  useEffect(() => {
-    if (open && barcodeRef.current && receiptNumber) {
-      generateBarcode();
-    }
-  }, [open, receiptNumber]);
-
-  // Real scannable barcode generation
-  const generateBarcode = () => {
-    if (!barcodeRef.current) return;
-
-    const shortText = receiptNumber.substring(0, 12).toUpperCase();
-    const svg = barcodeRef.current;
-
-    // Clear previous content
-    svg.innerHTML = "";
-
-    try {
-      JsBarcode(svg, shortText, {
-        format: "CODE128",
-        width: 1.5,
-        height: 30,
-        displayValue: false,
-        background: "#ffffff",
-        lineColor: "#000000",
-        margin: 0,
-      });
-    } catch (error) {
-      console.error("Failed to generate barcode:", error);
-      // Fallback to simple visual barcode
-      generateFallbackBarcode(shortText, svg);
-    }
-  };
-
-  // Fallback barcode for error cases
-  const generateFallbackBarcode = (text: string, svg: SVGSVGElement) => {
-    svg.innerHTML = "";
-
-    // Create simple visual barcode pattern
-    let barcodeData = "";
-    for (const char of text) {
-      const code = char.charCodeAt(0);
-      const barCount = (code % 3) + 2;
-      barcodeData += "1".repeat(barCount) + "0";
-    }
-
-    barcodeData = "1010" + barcodeData + "1010";
-
-    const barWidth = 2;
-    const barHeight = 30;
-    let x = 0;
-
-    for (let i = 0; i < barcodeData.length; i++) {
-      if (barcodeData[i] === "1") {
-        const rect = document.createElementNS(
-          "http://www.w3.org/2000/svg",
-          "rect",
-        );
-        rect.setAttribute("x", x.toString());
-        rect.setAttribute("y", "0");
-        rect.setAttribute("width", barWidth.toString());
-        rect.setAttribute("height", barHeight.toString());
-        rect.setAttribute("fill", "#000000");
-        svg.appendChild(rect);
-      }
-      x += barWidth;
-    }
-
-    svg.setAttribute("width", x.toString());
-    svg.setAttribute("height", barHeight.toString());
-  };
 
   const handlePrint = async () => {
     setIsPrinting(true);
@@ -155,275 +80,6 @@ export default function ReceiptModal({
     previewWindow.document.write(receiptHTML);
     previewWindow.document.close();
     previewWindow.focus();
-  };
-
-  const handlePrintPreview = () => {
-    const printPreviewWindow = window.open("", "_blank");
-    if (!printPreviewWindow) {
-      alert(t("cashier.previewError", "Failed to open print preview window"));
-      return;
-    }
-
-    const printPreviewHTML = generatePrintPreviewHTML();
-    printPreviewWindow.document.write(printPreviewHTML);
-    printPreviewWindow.document.close();
-    printPreviewWindow.focus();
-  };
-
-  const generatePrintPreviewHTML = () => {
-    return `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <meta charset="utf-8">
-          <title>Print Preview - Exact Printer Output</title>
-          <style>
-            body {
-              margin: 0;
-              padding: 10px;
-              font-family: 'Courier New', monospace;
-              font-size: 12px;
-              background: white;
-            }
-            .receipt {
-              width: 80mm;
-              margin: 0 auto;
-              max-width: 100%;
-            }
-            .header {
-              text-align: center;
-              margin-bottom: 15px;
-            }
-            .store-name {
-              font-size: 16px;
-              font-weight: bold;
-              margin-bottom: 8px;
-            }
-            .store-info {
-              font-size: 11px;
-              margin-bottom: 5px;
-            }
-            .receipt-info {
-              font-size: 11px;
-              margin-bottom: 10px;
-            }
-            .divider {
-              border-top: 1px solid #000;
-              margin: 10px 0;
-            }
-            .items {
-              margin-bottom: 10px;
-            }
-            .item {
-              display: flex;
-              justify-content: space-between;
-              align-items: flex-start;
-              margin-bottom: 6px;
-              font-size: 11px;
-              line-height: 1.2;
-              min-height: 16px;
-            }
-            .item-name {
-              flex: 1;
-              margin-right: 8px;
-              word-wrap: break-word;
-              word-break: break-word;
-              white-space: normal;
-              line-height: 1.2;
-            }
-            .item-qty {
-              text-align: center;
-              width: 20px;
-              margin-right: 12px;
-              font-weight: bold;
-            }
-            .item-price {
-              text-align: right;
-              width: 35px;
-              margin-right: 8px;
-            }
-            .item-total {
-              text-align: right;
-              width: 45px;
-              font-weight: bold;
-            }
-            .items-header {
-              display: flex;
-              justify-content: space-between;
-              margin-bottom: 8px;
-              font-size: 11px;
-              font-weight: bold;
-              border-bottom: 1px solid #000;
-              padding-bottom: 4px;
-            }
-            .header-qty {
-              text-align: center;
-              width: 20px;
-              margin-right: 12px;
-            }
-            .header-price {
-              text-align: right;
-              width: 35px;
-              margin-right: 8px;
-            }
-            .header-total {
-              text-align: right;
-              width: 45px;
-            }
-            .totals {
-              font-size: 12px;
-              font-weight: bold;
-            }
-            .total-row {
-              display: flex;
-              justify-content: space-between;
-              margin-bottom: 4px;
-            }
-            .payment-info {
-              margin-top: 10px;
-              font-size: 11px;
-            }
-            .client-info {
-              margin-bottom: 10px;
-              font-size: 11px;
-            }
-            .barcode {
-              text-align: center;
-              margin: 25px 0;
-              padding: 15px 0;
-            }
-            .barcode-text {
-              font-size: 10px;
-              margin-top: 8px;
-            }
-            .welcome {
-              text-align: center;
-              margin-top: 15px;
-              font-size: 11px;
-              font-weight: bold;
-            }
-            .barcode-svg {
-              width: 80%;
-              max-width: 180px;
-              margin: 0 auto;
-              display: block;
-              height: 40px;
-            }
-          </style>
-        </head>
-        <body>
-          <div class="receipt">
-            <!-- Store Header -->
-            <div class="header">
-              <div class="store-name">${storeInfo.name}</div>
-              <div class="store-info">${storeInfo.address}</div>
-              <div class="store-info">${storeInfo.phone}</div>
-            </div>
-
-            <!-- Date and Time -->
-            <div class="receipt-info">
-              <div>Date: ${currentDate.toLocaleDateString()}</div>
-              <div>Time: ${currentDate.toLocaleTimeString()}</div>
-            </div>
-
-            <!-- Client Info -->
-            ${clientName ? `<div class="client-info">Client: ${clientName}</div>` : ""}
-
-            <div class="divider"></div>
-
-            <!-- Items -->
-            <div class="items">
-              <div class="items-header">
-                <div class="item-name">ITEM</div>
-                <div class="header-qty">QTY</div>
-                <div class="header-price">PRICE</div>
-                <div class="header-total">TOTAL</div>
-              </div>
-              ${cart
-                .map(
-                  (item) => `
-                <div class="item">
-                  <div class="item-name">${item.name.replace(/\n/g, " ")}</div>
-                  <div class="item-qty">${item.qty}</div>
-                  <div class="item-price">${item.price.toLocaleString()}</div>
-                  <div class="item-total">${(item.qty * item.price).toLocaleString()}</div>
-                </div>
-              `,
-                )
-                .join("")}
-            </div>
-
-            <div class="divider"></div>
-
-            <!-- Totals -->
-            <div class="totals">
-              <div class="total-row">
-                <span>Subtotal:</span>
-                <span>${total.toLocaleString()} ${t("cashier.currency", "DA")}</span>
-              </div>
-              ${
-                discount > 0
-                  ? `
-                <div class="total-row">
-                  <span>Discount:</span>
-                  <span>-${discount.toLocaleString()} ${t("cashier.currency", "DA")}</span>
-                </div>
-              `
-                  : ""
-              }
-              <div class="total-row">
-                <span>Total:</span>
-                <span>${finalTotal.toLocaleString()} ${t("cashier.currency", "DA")}</span>
-              </div>
-            </div>
-
-            <!-- Payment Info -->
-            ${
-              paymentType !== "none" && paymentAmount > 0
-                ? `
-              <div class="payment-info">
-                <div class="divider"></div>
-                <div>Payment Type: ${paymentType === "credit" ? "Credit" : "Versement"}</div>
-                <div>Amount Paid: ${paymentAmount.toLocaleString()} ${t("cashier.currency", "DA")}</div>
-                <div>Due Date: ${paymentDate ? paymentDate.toLocaleDateString() : "N/A"}</div>
-                <div>Remaining: ${(finalTotal - paymentAmount).toLocaleString()} ${t("cashier.currency", "DA")}</div>
-              </div>
-            `
-                : ""
-            }
-
-            <!-- Barcode -->
-            <div class="barcode">
-              <svg id="barcode-print-preview" class="barcode-svg"></svg>
-              <div class="barcode-text">ID: ${receiptNumber.substring(0, 12)}</div>
-            </div>
-
-            <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
-            <script>
-              // Generate real barcode for print preview
-              if (typeof JsBarcode !== 'undefined') {
-                JsBarcode("#barcode-print-preview", "${receiptNumber.substring(0, 12)}", {
-                  format: "CODE128",
-                  width: 1.5,
-                  height: 30,
-                  displayValue: false,
-                  background: "#ffffff",
-                  lineColor: "#000000",
-                  margin: 0
-                });
-              }
-            </script>
-
-            <!-- Welcome Message -->
-            <div class="welcome">
-              <div>Thank you for your purchase!</div>
-              <div>Please come again</div>
-              <div style="margin-top: 5px;">We appreciate your business</div>
-            </div>
-          </div>
-        </body>
-      </html>
-    `;
   };
 
   const generateReceiptHTML = () => {
@@ -559,13 +215,13 @@ export default function ReceiptModal({
               font-size: 11px;
               color: #000;
             }
-            .barcode {
+            .receipt-id {
               text-align: center;
               margin: 25px 0;
               padding: 15px 0;
               border-top: 1px solid #000;
             }
-            .barcode-text {
+            .receipt-id-text {
               font-size: 10px;
               margin-top: 8px;
               color: #000;
@@ -576,13 +232,6 @@ export default function ReceiptModal({
               font-size: 11px;
               font-weight: bold;
               color: #000;
-            }
-            .barcode-svg {
-              width: 80%;
-              max-width: 180px;
-              margin: 0 auto;
-              display: block;
-              height: 40px;
             }
             @media print {
               body {
@@ -683,27 +332,10 @@ export default function ReceiptModal({
                 : ""
             }
 
-            <!-- Barcode -->
-            <div class="barcode">
-              <svg id="barcode-print" class="barcode-svg"></svg>
-              <div class="barcode-text">ID: ${receiptNumber.substring(0, 12)}</div>
+            <!-- Receipt ID -->
+            <div class="receipt-id">
+              <div class="receipt-id-text">ID: ${receiptNumber.substring(0, 12)}</div>
             </div>
-
-            <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
-            <script>
-              // Generate real barcode for print
-              if (typeof JsBarcode !== 'undefined') {
-                JsBarcode("#barcode-print", "${receiptNumber.substring(0, 12)}", {
-                  format: "CODE128",
-                  width: 1.5,
-                  height: 30,
-                  displayValue: false,
-                  background: "#ffffff",
-                  lineColor: "#000000",
-                  margin: 0
-                });
-              }
-            </script>
 
             <!-- Welcome Message -->
             <div class="welcome">
@@ -726,20 +358,14 @@ export default function ReceiptModal({
       title={t("cashier.receipt", "Receipt")}
       subtitle={t("cashier.receiptPreview", "Preview and print your receipt")}
       icon={<FileText className="w-5 h-5 text-blue-600" />}
-      size="md"
-      className="max-w-md"
+      size="lg"
+      className="max-w-2xl"
       actions={[
         {
           label: t("cashier.preview", "Preview"),
           onClick: handlePreview,
           variant: "outline",
           icon: <Eye className="w-4 h-4" />,
-        },
-        {
-          label: t("cashier.printPreview", "Print Preview"),
-          onClick: handlePrintPreview,
-          variant: "secondary",
-          icon: <FileText className="w-4 h-4" />,
         },
         {
           label: t("cashier.print", "Print"),
@@ -750,8 +376,8 @@ export default function ReceiptModal({
         },
       ]}
     >
-      <div className="overflow-y-auto max-h-[60vh]">
-        <div className="font-mono text-sm bg-muted rounded-lg p-4 border border-border">
+      <div className="overflow-y-auto max-h-[70vh]">
+        <div className="font-mono text-sm bg-muted rounded-lg p-6 border border-border">
           {/* Store Header */}
           <div className="text-center mb-4">
             <div className="font-bold text-lg">{storeInfo.name}</div>
@@ -794,7 +420,7 @@ export default function ReceiptModal({
             {cart.map((item) => (
               <div
                 key={item.id}
-                className="flex justify-between items-start mb-2 min-h-[16px]"
+                className="flex justify-between items-start mb-1 min-h-[14px]"
               >
                 <span className="flex-1 mr-2 text-xs break-words leading-tight">
                   {item.name}
@@ -815,7 +441,7 @@ export default function ReceiptModal({
           <div className="border-t border-black dark:border-white my-2" />
 
           {/* Totals */}
-          <div className="font-bold">
+          <div className="font-bold mb-2">
             <div className="flex justify-between mb-1">
               <span>Subtotal:</span>
               <span>
@@ -842,7 +468,7 @@ export default function ReceiptModal({
           {paymentType !== "none" && paymentAmount > 0 && (
             <>
               <div className="border-t border-black dark:border-white my-2" />
-              <div className="text-xs">
+              <div className="text-xs space-y-1">
                 <div>
                   Payment Type:{" "}
                   {paymentType === "credit" ? "Credit" : "Versement"}
@@ -863,14 +489,9 @@ export default function ReceiptModal({
             </>
           )}
 
-          {/* Barcode */}
-          <div className="border-t border-black dark:border-white my-4" />
-          <div className="text-center my-6 flex flex-col items-center py-4">
-            <svg
-              ref={barcodeRef}
-              className="barcode-svg"
-              style={{ height: "40px" }}
-            />
+          {/* Receipt ID */}
+          <div className="border-t border-black dark:border-white my-2" />
+          <div className="text-center my-3 flex flex-col items-center py-2">
             <div className="text-xs mt-2">
               ID: {receiptNumber.substring(0, 12)}
             </div>
@@ -878,7 +499,7 @@ export default function ReceiptModal({
 
           {/* Welcome Message */}
           <div className="border-t border-black dark:border-white my-2" />
-          <div className="text-center text-xs font-bold">
+          <div className="text-center text-xs font-bold mt-2">
             <div>Thank you for your purchase!</div>
             <div>Please come again</div>
             <div className="mt-1">We appreciate your business</div>
