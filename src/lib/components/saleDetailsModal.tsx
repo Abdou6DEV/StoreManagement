@@ -280,7 +280,9 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
                       <span className="text-sm font-medium">
                         {sale.isPaidInCash
                           ? t("cashier.cash", "Cash")
-                          : t("cashier.credit", "Credit")}
+                          : sale.payment?.type === "VERSEMENT"
+                            ? t("cashier.versement", "Versement")
+                            : t("cashier.credit", "Credit")}
                       </span>
                     </div>
                   </div>
@@ -332,7 +334,7 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
                   paymentType={
                     sale.isPaidInCash
                       ? "none"
-                      : sale.totalPaid < sale.totalWithDiscount
+                      : sale.payment?.type === "VERSEMENT"
                         ? "versement"
                         : "credit"
                   }

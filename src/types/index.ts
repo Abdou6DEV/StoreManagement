@@ -81,6 +81,11 @@ export interface Sale {
   totalItems: number;
   discount: number;
   isPaidInCash: boolean;
+  payment?: {
+    id: string;
+    givenAmount: number;
+    type: "CREDIT" | "VERSEMENT";
+  };
 }
 
 export interface Toast {

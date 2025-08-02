@@ -113,7 +113,13 @@ export async function updateSale(
             product: true,
           },
         },
-        payment: true,
+        payment: {
+          select: {
+            id: true,
+            givenAmount: true,
+            type: true,
+          },
+        },
       },
     });
 
@@ -167,7 +173,13 @@ export async function getAllSales() {
           product: true,
         },
       },
-      payment: true,
+      payment: {
+        select: {
+          id: true,
+          givenAmount: true,
+          type: true,
+        },
+      },
     },
     orderBy: {
       createdAt: "desc",
@@ -248,6 +260,7 @@ export async function getRecentSales(limit = 50, offset = 0) {
         select: {
           id: true,
           givenAmount: true,
+          type: true,
         },
       },
     },
