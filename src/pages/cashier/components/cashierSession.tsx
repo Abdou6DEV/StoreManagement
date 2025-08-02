@@ -306,6 +306,7 @@ export default function CashierSession({
             paymentType={paymentType}
             className="h-full"
             interactive={true}
+            allowDiscountEdit={false}
             setCart={setCart}
           />
         </div>

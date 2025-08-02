@@ -110,6 +110,28 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
       return;
     }
 
+    // Calculate subtotal and validate discount
+    const subtotal = editedCart.reduce(
+      (sum, item) => sum + item.price * item.qty,
+      0,
+    );
+
+    const isCashSale = sale.isPaidInCash;
+    const maxAllowedDiscount = isCashSale
+      ? subtotal
+      : subtotal - sale.totalPaid;
+
+    if (editedDiscount > maxAllowedDiscount) {
+      showToast(
+        t(
+          "cashier.invalidDiscountError",
+          "Discount cannot exceed the remaining amount to be paid.",
+        ),
+        "error",
+      );
+      return;
+    }
+
     setIsSaving(true);
     try {
       const updatedSale = await window.api.database.sales.update(sale.id, {
@@ -339,7 +361,9 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
                         : "credit"
                   }
                   interactive={isEditing}
+                  allowDiscountEdit={isEditing}
                   setCart={isEditing ? setEditedCart : undefined}
+                  setDiscount={isEditing ? setEditedDiscount : undefined}
                 />
               </div>
             </div>

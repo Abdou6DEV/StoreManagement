@@ -54,12 +54,16 @@ export default function ProductCard({
     >
       {/* Stock Quantity Badge */}
       <div className="absolute top-3 right-3 z-10">
-        <div className={`text-xs font-semibold px-2.5 py-1.5 rounded-full shadow-sm ${
-          isInCart(product.id)
-            ? "bg-primary text-primary-foreground"
-            : "bg-gray-600 text-white"
-        }`}>
-          {isInCart(product.id) ? product.quantity - getCartQuantity(product.id) : product.quantity}
+        <div
+          className={`text-xs font-semibold px-2.5 py-1.5 rounded-full shadow-sm ${
+            isInCart(product.id)
+              ? "bg-primary text-primary-foreground"
+              : "bg-gray-600 text-white"
+          }`}
+        >
+          {isInCart(product.id)
+            ? product.quantity - getCartQuantity(product.id)
+            : product.quantity}
         </div>
       </div>
 

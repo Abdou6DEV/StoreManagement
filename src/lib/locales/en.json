@@ -187,6 +187,7 @@
 
     "quantity": "Qty",
     "subtotal": "Subtotal",
+    "newTotal": "New Total",
     "remaining": "Remaining",
     "cash": "Cash",
     "credit": "Credit",

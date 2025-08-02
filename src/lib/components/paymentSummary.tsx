@@ -11,7 +11,9 @@ interface Props {
   paymentType?: "none" | "credit" | "versement";
   className?: string;
   interactive?: boolean;
+  allowDiscountEdit?: boolean;
   setCart?: React.Dispatch<React.SetStateAction<CartItem[]>>;
+  setDiscount?: (discount: number) => void;
 }
 
 export default function PaymentSummary({
@@ -22,7 +24,9 @@ export default function PaymentSummary({
   paymentType = "none",
   className = "",
   interactive = false,
+  allowDiscountEdit = false,
   setCart,
+  setDiscount,
 }: Props) {
   const { t, i18n } = useTranslation();
   const isRTL = i18n.language === "ar";
@@ -31,7 +35,12 @@ export default function PaymentSummary({
     [cart],
   );
 
-  const total = Math.max(subtotal - discount, 0); // After discount
+  // For cash sales, total is subtotal - discount (amount to pay)
+  // For credit/versement, total is remaining amount after payment
+  const total =
+    paymentType === "none"
+      ? Math.max(subtotal - discount, 0)
+      : Math.max(subtotal - discount - paymentAmount, 0);
   const credit = subtotal - discount - paymentAmount;
   const creditDisplay = credit > 0 ? credit : 0;
   const nbrItems = cart.reduce((sum, item) => sum + item.qty, 0);
@@ -271,6 +280,36 @@ export default function PaymentSummary({
     }
   }, [cart, interactive]);
 
+  // Discount input handler function
+  const handleDiscountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    if (/^\d*$/.test(val)) {
+      // For cash sales, max discount is subtotal
+      // For credit/versement, max discount is subtotal - paymentAmount
+      const maxAllowedDiscount =
+        paymentType === "none" ? subtotal : subtotal - paymentAmount;
+      const newDiscount =
+        val === "" ? 0 : Math.max(0, Math.min(Number(val), maxAllowedDiscount));
+      setDiscount?.(newDiscount);
+    }
+  };
+
+  // Get discount input styling based on validation
+  const getDiscountInputStyling = () => {
+    const isInvalid =
+      discount > (paymentType === "none" ? subtotal : subtotal - paymentAmount);
+    return `flex-1 text-right bg-transparent border rounded px-1 py-0 text-sm focus:outline-none focus:ring-1 transition-all ${
+      isInvalid
+        ? "border-red-500 focus:border-red-500 focus:ring-red-500/50"
+        : "border-primary/30 focus:border-primary focus:ring-primary/50"
+    }`;
+  };
+
+  // Get max discount value for input validation
+  const getMaxDiscount = () => {
+    return paymentType === "none" ? subtotal : subtotal - paymentAmount;
+  };
+
   return (
     <div
       className={`font-mono text-sm text-primary bg-muted rounded-xl p-4 flex flex-col shadow-inner border border-border max-w-full w-full h-full ${className}`}
@@ -383,6 +422,41 @@ export default function PaymentSummary({
             {nbrItems}
           </span>
         </div>
+        {/* Show subtotal only when there's a discount, or for cash sales without discount (bold) */}
+        {(discount > 0 || (paymentType === "none" && discount === 0)) && (
+          <div
+            className={`flex justify-between ${paymentType === "none" && discount === 0 ? "font-bold" : ""}`}
+          >
+            <span className={isRTL ? "w-3/4 text-right" : "w-3/4 text-left"}>
+              {t("cashier.subtotal", "Subtotal")}
+            </span>
+            <span className={isRTL ? "w-1/4 text-left" : "w-1/4 text-right"}>
+              {subtotal.toLocaleString()} {t("cashier.currency", "DA")}
+            </span>
+          </div>
+        )}
+        {/* Show payment information (Paid/Versement) */}
+        {paymentType === "credit" && (
+          <div className="flex justify-between">
+            <span className={isRTL ? "w-3/4 text-right" : "w-3/4 text-left"}>
+              {t("cashier.paid", "Paid")}
+            </span>
+            <span className={isRTL ? "w-1/4 text-left" : "w-1/4 text-right"}>
+              {paymentAmount.toLocaleString()} {t("cashier.currency", "DA")}
+            </span>
+          </div>
+        )}
+        {paymentType === "versement" && paymentAmount > 0 && (
+          <div className="flex justify-between">
+            <span className={isRTL ? "w-3/4 text-right" : "w-3/4 text-left"}>
+              {t("cashier.versement", "Versement")}
+            </span>
+            <span className={isRTL ? "w-1/4 text-left" : "w-1/4 text-right"}>
+              {paymentAmount.toLocaleString()} {t("cashier.currency", "DA")}
+            </span>
+          </div>
+        )}
+        {/* Show discount after payment information */}
         {discount > 0 && (
           <div className="flex justify-between">
             <span className={isRTL ? "w-3/4 text-right" : "w-3/4 text-left"}>
@@ -393,56 +467,59 @@ export default function PaymentSummary({
             </span>
           </div>
         )}
-        {/* Update logic: if paymentType === 'none', do not show credit/versement/paid rows */}
-        {paymentType === "credit" && (
-          <>
-            <div className="flex justify-between">
-              <span className={isRTL ? "w-3/4 text-right" : "w-3/4 text-left"}>
-                {t("cashier.paid", "Paid")}
+        {allowDiscountEdit && (
+          <div className="flex justify-between items-center">
+            <span
+              className={`${isRTL ? "w-3/4 text-right" : "w-3/4 text-left"} flex items-center gap-1`}
+            >
+              {t("cashier.discount", "Discount")}
+              <span className="text-xs text-muted-foreground">
+                ({t("cashier.editable", "editable")})
               </span>
-              <span className={isRTL ? "w-1/4 text-left" : "w-1/4 text-right"}>
-                {paymentAmount.toLocaleString()} {t("cashier.currency", "DA")}
+            </span>
+            <div
+              className={`${isRTL ? "w-1/4 text-left" : "w-1/4 text-right"} flex items-center gap-1`}
+            >
+              <input
+                type="number"
+                value={discount}
+                onChange={handleDiscountChange}
+                className={getDiscountInputStyling()}
+                min="0"
+                max={getMaxDiscount()}
+                placeholder="0"
+              />
+              <span className="text-xs text-muted-foreground">
+                {t("cashier.currency", "DA")}
               </span>
             </div>
-            <div className="flex justify-between">
-              <span className={isRTL ? "w-3/4 text-right" : "w-3/4 text-left"}>
-                {t("cashier.rest", "Remaining")}
-              </span>
-              <span className={isRTL ? "w-1/4 text-left" : "w-1/4 text-right"}>
-                {creditDisplay.toLocaleString()} {t("cashier.currency", "DA")}
-              </span>
-            </div>
-          </>
+          </div>
         )}
-        {paymentType === "versement" && paymentAmount > 0 && (
-          <>
-            <div className="flex justify-between">
-              <span className={isRTL ? "w-3/4 text-right" : "w-3/4 text-left"}>
-                {t("cashier.versement", "Versement")}
-              </span>
-              <span className={isRTL ? "w-1/4 text-left" : "w-1/4 text-right"}>
-                {paymentAmount.toLocaleString()} {t("cashier.currency", "DA")}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className={isRTL ? "w-3/4 text-right" : "w-3/4 text-left"}>
-                {t("cashier.rest", "Rest")}
-              </span>
-              <span className={isRTL ? "w-1/4 text-left" : "w-1/4 text-right"}>
-                {creditDisplay.toLocaleString()} {t("cashier.currency", "DA")}
-              </span>
-            </div>
-          </>
+        {/* Show remaining after discount for credit/versement sales */}
+        {(paymentType === "credit" ||
+          (paymentType === "versement" && paymentAmount > 0)) && (
+          <div className="flex justify-between font-bold">
+            <span className={isRTL ? "w-3/4 text-right" : "w-3/4 text-left"}>
+              {paymentType === "credit"
+                ? t("cashier.rest", "Remaining")
+                : t("cashier.rest", "Rest")}
+            </span>
+            <span className={isRTL ? "w-1/4 text-left" : "w-1/4 text-right"}>
+              {creditDisplay.toLocaleString()} {t("cashier.currency", "DA")}
+            </span>
+          </div>
         )}
-        {/* Always show total at the end */}
-        <div className="flex justify-between font-bold">
-          <span className={isRTL ? "w-3/4 text-right" : "w-3/4 text-left"}>
-            {t("cashier.total", "Total")}
-          </span>
-          <span className={isRTL ? "w-1/4 text-left" : "w-1/4 text-right"}>
-            {total.toLocaleString()} {t("cashier.currency", "DA")}
-          </span>
-        </div>
+        {/* Show new total only for cash sales with discount */}
+        {paymentType === "none" && discount > 0 && (
+          <div className="flex justify-between font-bold">
+            <span className={isRTL ? "w-3/4 text-right" : "w-3/4 text-left"}>
+              {t("cashier.newTotal", "New Total")}
+            </span>
+            <span className={isRTL ? "w-1/4 text-left" : "w-1/4 text-right"}>
+              {total.toLocaleString()} {t("cashier.currency", "DA")}
+            </span>
+          </div>
+        )}
       </div>
     </div>
   );
