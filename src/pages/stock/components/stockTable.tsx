@@ -110,6 +110,7 @@ export const StockTable = () => {
     if (filters.noBarcode) {
       activeFilters.push(t("stock.noBarcode"));
     }
+
     if (filters.category) {
       activeFilters.push(filters.category);
     }
@@ -127,6 +128,7 @@ export const StockTable = () => {
     if (filters.bestSelling) count++;
     if (filters.worstSelling) count++;
     if (filters.noBarcode) count++;
+
     return count;
   };
 

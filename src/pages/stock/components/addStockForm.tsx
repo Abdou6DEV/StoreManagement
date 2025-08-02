@@ -20,13 +20,7 @@ import {
   PopoverTrigger,
 } from "../../../lib/components/popover";
 import { Skeleton } from "../../../lib/components/skeleton";
-import { BarcodeGeneratorButton } from "./barcodeGeneratorButton";
-import { BarcodePrintModal } from "./barcodePrintModal";
 import { ImageUpload } from "../../../lib/components/imageUpload";
-import {
-  generateUniqueBarcode,
-  printBarcodeLabel,
-} from "../../../lib/utils/barcodeUtils";
 import {
   handleTooltipEnter,
   handleTooltipLeave,
@@ -70,8 +64,6 @@ export default function AddStockForm({
   const [dropdownSellerSearch, setDropdownSellerSearch] = useState("");
   const [form, setForm] = useState<AddStockFormState>(initialForm);
   const [loading, setLoading] = useState(false);
-  const [generatingBarcode, setGeneratingBarcode] = useState(false);
-  const [showPrintModal, setShowPrintModal] = useState(false);
 
   // For infinite scroll in product dropdown
   const PAGE_SIZE = 50;
@@ -202,29 +194,7 @@ export default function AddStockForm({
     }
   };
 
-  // Generate unique EAN-13 barcode for stock items
-  const handleGenerateBarcode = async () => {
-    setGeneratingBarcode(true);
-    try {
-      const existingBarcodes = products.map((p) => p.codebar);
-      const newBarcode = await generateUniqueBarcode(existingBarcodes);
-      setForm((prev) => ({ ...prev, codebar: newBarcode }));
-    } catch (error) {
-      console.error("Error generating barcode:", error);
-    } finally {
-      setGeneratingBarcode(false);
-    }
-  };
 
-  // Handle print barcode
-  const handlePrintBarcode = () => {
-    printBarcodeLabel(
-      form.name,
-      form.selling,
-      form.codebar,
-      t("cashier.currency", "DA"),
-    );
-  };
 
   // Helper to check if form matches an existing product (by name only)
   const isExistingProduct = products.some(
@@ -653,12 +623,7 @@ export default function AddStockForm({
                   className="flex-1 px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-green-500/50 focus:border-green-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-muted/50"
                   disabled={isExistingProduct}
                 />
-                <BarcodeGeneratorButton
-                  codebar={form.codebar}
-                  onGenerate={handleGenerateBarcode}
-                  onPrint={() => setShowPrintModal(true)}
-                  generatingBarcode={generatingBarcode}
-                />
+
               </div>
             </Legend>
             <Legend>
@@ -717,15 +682,7 @@ export default function AddStockForm({
         </form>
       )}
 
-      {/* Print Barcode Modal */}
-      <BarcodePrintModal
-        open={showPrintModal}
-        onOpenChange={setShowPrintModal}
-        productName={form.name}
-        productPrice={form.selling}
-        codebar={form.codebar}
-        onPrint={handlePrintBarcode}
-      />
+
     </section>
   );
 }

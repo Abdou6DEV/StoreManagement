@@ -90,7 +90,7 @@ export default function ProductCard({
       </div>
 
       {/* Product Info */}
-              <div className="flex items-start justify-between w-full flex-1 gap-2">
+      <div className="flex items-start justify-between w-full flex-1 gap-2">
         <div className="flex flex-col gap-2 flex-1 min-w-0">
           {isTextTruncated ? (
             <Tooltip content={product.name} position="top" className="max-w-xs">
