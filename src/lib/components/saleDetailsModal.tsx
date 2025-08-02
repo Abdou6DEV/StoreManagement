@@ -46,7 +46,7 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
     if (sale && isEditing) {
       setEditedCart(
         sale.saleItems.map((item) => ({
-          id: item.productId,
+          id: item.product.id,
           name: item.product.name,
           price: item.price,
           qty: item.quantity,
@@ -139,7 +139,7 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
   const currentCart = isEditing
     ? editedCart
     : sale.saleItems.map((item) => ({
-        id: item.productId,
+        id: item.product.id,
         name: item.product.name,
         price: item.price,
         qty: item.quantity,

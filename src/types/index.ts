@@ -60,10 +60,10 @@ export type { Client };
 
 export interface SaleItem {
   id: string;
-  productId: string;
   quantity: number;
   price: number;
   product: {
+    id: string;
     name: string;
   };
 }
