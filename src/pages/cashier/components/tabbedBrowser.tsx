@@ -9,6 +9,7 @@ interface TabbedBrowserProps {
   allProducts: ProductWithSales[];
   cart: CartItem[];
   setCart: React.Dispatch<React.SetStateAction<CartItem[]>>;
+  salesRefreshKey?: number;
 }
 
 type TabType = "favorites" | "history";
@@ -17,6 +18,7 @@ const TabbedBrowser: React.FC<TabbedBrowserProps> = ({
   allProducts,
   cart,
   setCart,
+  salesRefreshKey,
 }) => {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<TabType>("favorites");
@@ -73,21 +75,24 @@ const TabbedBrowser: React.FC<TabbedBrowserProps> = ({
 
       {/* Tab Content */}
       <div className="flex-1 overflow-hidden">
-        {activeTab === "favorites" && (
-          <div className="h-full">
-            <FavoritesBrowser
-              allProducts={allProducts}
-              cart={cart}
-              setCart={setCart}
-            />
-          </div>
-        )}
+        <div
+          className={`h-full ${activeTab === "favorites" ? "block" : "hidden"}`}
+        >
+          <FavoritesBrowser
+            allProducts={allProducts}
+            cart={cart}
+            setCart={setCart}
+          />
+        </div>
 
-        {activeTab === "history" && (
-          <div className="h-full p-3 overflow-y-auto">
-            <HistoryBrowser onSaleSelect={handleSaleSelect} />
-          </div>
-        )}
+        <div
+          className={`h-full p-3 overflow-y-auto ${activeTab === "history" ? "block" : "hidden"}`}
+        >
+          <HistoryBrowser
+            onSaleSelect={handleSaleSelect}
+            salesRefreshKey={salesRefreshKey}
+          />
+        </div>
       </div>
     </div>
   );

@@ -22,6 +22,7 @@ interface CashierSessionProps {
     paymentDate?: Date;
   }) => void;
   onSaleComplete: (saleId?: string) => void;
+  onSaleCompleted: (saleId?: string) => void;
   onShowProductBrowser: () => void;
   onShowManualProductModal: () => void;
   isActive: boolean;
@@ -38,6 +39,7 @@ export default function CashierSession({
   onOutOfStock,
   onReceiptData,
   onSaleComplete,
+  onSaleCompleted,
   onShowProductBrowser,
   onShowManualProductModal,
   isActive,
@@ -93,7 +95,10 @@ export default function CashierSession({
       return;
     }
 
-    await proceedWithSale();
+    const saleId = await proceedWithSale();
+    if (saleId) {
+      onSaleCompleted(saleId);
+    }
     setPaymentAmount(0);
     setPaymentType("none");
     setPaymentDate(undefined);
@@ -205,8 +210,10 @@ export default function CashierSession({
         t("cashier.saleRecorded", "Sale recorded successfully"),
         "success",
       );
+      return sale.id;
     } catch (err) {
       showToast(t("cashier.saleError", "Failed to record sale"), "error");
+      return undefined;
     }
   };
 

@@ -8,33 +8,44 @@ import { Sale } from "../../../types";
 
 interface HistoryBrowserProps {
   onSaleSelect?: (sale: Sale) => void;
+  salesRefreshKey?: number;
 }
 
-const HistoryBrowser: React.FC<HistoryBrowserProps> = ({ onSaleSelect }) => {
+const HistoryBrowser: React.FC<HistoryBrowserProps> = ({
+  onSaleSelect,
+  salesRefreshKey,
+}) => {
   const { t } = useTranslation();
   const { refetchProducts } = useStock();
   const [sales, setSales] = useState<Sale[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
   const [showModal, setShowModal] = useState(false);
 
   const fetchSales = async () => {
     try {
-      setLoading(true);
-      // Use optimized function - only fetches last week's sales from database
+      // Don't show loading state if we already have data (smoother refresh)
+      if (sales.length === 0) {
+        setLoading(true);
+      } else {
+        setRefreshing(true);
+      }
+
       const result = await window.api.database.sales.getRecent({ limit: 100 });
       setSales(result.sales);
     } catch (error) {
       console.error("Error fetching sales:", error);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
   useEffect(() => {
     fetchSales();
-  }, []);
+  }, [salesRefreshKey]);
 
   // Filter and search sales (only search filter needed since date is already filtered)
   const filteredSales = useMemo(() => {
@@ -133,6 +144,11 @@ const HistoryBrowser: React.FC<HistoryBrowserProps> = ({ onSaleSelect }) => {
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-9 text-sm border-1 border-border hover:border-primary/50 focus:border-primary transition-colors"
           />
+          {refreshing && (
+            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+              <div className="w-4 h-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin"></div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -161,10 +177,12 @@ const HistoryBrowser: React.FC<HistoryBrowserProps> = ({ onSaleSelect }) => {
           </div>
         ) : (
           <div className="space-y-3">
-            {filteredSales.map((sale) => (
+            {filteredSales.map((sale, index) => (
               <div
                 key={sale.id}
-                className="bg-card border border-border rounded-lg p-3 hover:bg-muted/30 transition-colors"
+                className={`bg-card border border-border rounded-lg p-3 hover:bg-muted/30 transition-all duration-300 ${
+                  refreshing && index === 0 ? "animate-pulse bg-primary/5" : ""
+                }`}
               >
                 {/* Header with date, client, and total */}
                 <div className="flex items-center justify-between mb-2">

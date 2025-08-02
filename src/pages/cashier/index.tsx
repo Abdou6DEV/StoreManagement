@@ -17,6 +17,7 @@ export default function CashierPage() {
   const { t, i18n } = useTranslation();
   const isRTL = i18n.language === "ar";
   const [productRefreshKey, setProductRefreshKey] = useState(0);
+  const [salesRefreshKey, setSalesRefreshKey] = useState(0);
   const [activeSession, setActiveSession] = useState(0);
   const [showProductBrowser, setShowProductBrowser] = useState(false);
   const [allProducts, setAllProducts] = useState<ProductWithSales[]>([]);
@@ -197,6 +198,13 @@ export default function CashierPage() {
       setLastSaleId(saleId);
       setShowReceiptModal(true);
     }
+
+    // Refresh sales history when a sale is completed
+    setSalesRefreshKey((prev) => prev + 1);
+  };
+
+  const handleSaleCompleted = (saleId?: string) => {
+    setSalesRefreshKey((prev) => prev + 1);
   };
 
   // Proceed with sale despite out of stock warning
@@ -327,6 +335,7 @@ export default function CashierPage() {
                     : newCart;
                 updateSessionCart(activeSession, cart);
               }}
+              salesRefreshKey={salesRefreshKey}
             />
           </div>
         </div>
@@ -351,6 +360,7 @@ export default function CashierPage() {
               onOutOfStock={handleOutOfStock}
               onReceiptData={handleReceiptData}
               onSaleComplete={handleSaleComplete}
+              onSaleCompleted={handleSaleCompleted}
               onShowProductBrowser={() => setShowProductBrowser(true)}
               onShowManualProductModal={() => setShowManualProductModal(true)}
               isActive={activeSession === sessionIndex}
