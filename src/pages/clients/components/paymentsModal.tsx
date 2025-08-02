@@ -3,6 +3,7 @@ import type { Payment } from "@prisma/client";
 import { Modal } from "../../../lib/components/Modal";
 import { Button } from "../../../lib/components/button";
 import { Input } from "../../../lib/components/input";
+import { ConfirmDialog } from "../../../lib/components/confirmDialog";
 import {
   Loader2,
   X,
@@ -30,6 +31,10 @@ const PaymentsModal: React.FC<PaymentsModalProps> = ({ client, onClose }) => {
   const [error, setError] = useState<string | null>(null);
   const [editingPayment, setEditingPayment] = useState<string | null>(null);
   const [editAmount, setEditAmount] = useState<number>(0);
+  const [confirmUnpaidDialog, setConfirmUnpaidDialog] = useState<{
+    open: boolean;
+    paymentId: string | null;
+  }>({ open: false, paymentId: null });
 
   const credits = payments.filter((p) => p.type === "CREDIT");
   const versements = payments.filter((p) => p.type === "VERSEMENT");
@@ -77,6 +82,17 @@ const PaymentsModal: React.FC<PaymentsModalProps> = ({ client, onClose }) => {
         t("clients.paymentUnmarkError", "Failed to mark payment as unpaid"),
         "error",
       );
+    }
+  };
+
+  const handleMarkAsUnpaidConfirm = (paymentId: string) => {
+    setConfirmUnpaidDialog({ open: true, paymentId });
+  };
+
+  const handleConfirmMarkAsUnpaid = async () => {
+    if (confirmUnpaidDialog.paymentId) {
+      await handleMarkAsUnpaid(confirmUnpaidDialog.paymentId);
+      setConfirmUnpaidDialog({ open: false, paymentId: null });
     }
   };
 
@@ -240,7 +256,7 @@ const PaymentsModal: React.FC<PaymentsModalProps> = ({ client, onClose }) => {
                       size="sm"
                       variant="outline"
                       className="text-orange-700 border-orange-500 hover:bg-orange-50 flex items-center gap-1"
-                      onClick={() => handleMarkAsUnpaid(payment.id)}
+                      onClick={() => handleMarkAsUnpaidConfirm(payment.id)}
                     >
                       <X className="w-4 h-4 text-orange-500" />
                       {t("clients.markAsUnpaid", "Mark as Unpaid")}
@@ -322,6 +338,22 @@ const PaymentsModal: React.FC<PaymentsModalProps> = ({ client, onClose }) => {
           </>
         )}
       </div>
+
+      <ConfirmDialog
+        open={confirmUnpaidDialog.open}
+        onOpenChange={(open) =>
+          setConfirmUnpaidDialog({ open, paymentId: null })
+        }
+        title={t("clients.confirmMarkAsUnpaid", "Confirm Mark as Unpaid")}
+        message={t(
+          "clients.confirmMarkAsUnpaidMessage",
+          "Are you sure you want to mark this payment as unpaid? This action cannot be undone.",
+        )}
+        confirmText={t("clients.markAsUnpaid", "Mark as Unpaid")}
+        cancelText={t("clients.cancel", "Cancel")}
+        variant="warning"
+        onConfirm={handleConfirmMarkAsUnpaid}
+      />
     </Modal>
   );
 };

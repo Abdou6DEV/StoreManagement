@@ -388,7 +388,9 @@
     "noCredits": "Aucun crédit trouvé",
     "noVersements": "Aucun versement trouvé",
     "confirmDeleteTitle": "Supprimer le client",
-    "confirmDeleteMessage": "Êtes-vous sûr de vouloir supprimer '{{name}}' ?\n\nAttention : La suppression de ce client supprimera également tous les paiements et ventes associés. Cette action ne peut pas être annulée."
+    "confirmDeleteMessage": "Êtes-vous sûr de vouloir supprimer '{{name}}' ?\n\nAttention : La suppression de ce client supprimera également tous les paiements et ventes associés. Cette action ne peut pas être annulée.",
+    "confirmMarkAsUnpaid": "Confirmer le marquage comme non payé",
+    "confirmMarkAsUnpaidMessage": "Êtes-vous sûr de vouloir marquer ce paiement comme non payé ?"
   },
   "admin": {
     "optionsList": "Liste des options",

@@ -393,7 +393,9 @@
     "noCredits": "No credits found",
     "noVersements": "No versements found",
     "confirmDeleteTitle": "Delete Client",
-    "confirmDeleteMessage": "Are you sure you want to delete '{{name}}'? Warning: Deleting this client will also delete all related payments and sales. This action cannot be undone."
+    "confirmDeleteMessage": "Are you sure you want to delete '{{name}}'? Warning: Deleting this client will also delete all related payments and sales. This action cannot be undone.",
+    "confirmMarkAsUnpaid": "Confirm Mark as Unpaid",
+    "confirmMarkAsUnpaidMessage": "Are you sure you want to mark this payment as unpaid?"
   },
   "admin": {
     "optionsList": "Options List",

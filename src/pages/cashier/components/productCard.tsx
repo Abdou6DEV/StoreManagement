@@ -74,10 +74,10 @@ export default function ProductCard({
             }}
           />
         ) : null}
-        <div className={`w-full h-full flex items-center justify-center bg-gray-200 dark:bg-gray-400 ${product.photo ? "hidden" : ""}`}>
-          <Image
-            className="w-12 h-12 text-gray-600 dark:text-gray-300"
-          />
+        <div
+          className={`w-full h-full flex items-center justify-center bg-gray-200 dark:bg-gray-400 ${product.photo ? "hidden" : ""}`}
+        >
+          <Image className="w-12 h-12 text-gray-600 dark:text-gray-300" />
         </div>
       </div>
 
