@@ -6,6 +6,7 @@ import {
   Sale,
   SaleItem,
   Payment,
+  Seller,
 } from "@prisma/client";
 
 type SaleWithDetails = Sale & {
@@ -125,26 +126,28 @@ contextBridge.exposeInMainWorld("api", {
           givenAmount,
         }),
     },
-    sellers: {
-      getAll: () => ipcRenderer.invoke("db:sellers:getAll"),
-      create: (data: {
-        name: string;
-        phone?: string;
-        email?: string;
-        address?: string;
-      }) => ipcRenderer.invoke("db:sellers:create", data),
-      update: (
-        id: string,
-        data: {
-          name?: string;
-          phone?: string;
-          email?: string;
-          address?: string;
+            sellers: {
+          getAll: () => ipcRenderer.invoke("db:sellers:getAll"),
+          create: (data: {
+            name: string;
+            phone?: string;
+            email?: string;
+            address?: string;
+            notes?: string;
+          }) => ipcRenderer.invoke("db:sellers:create", data),
+          update: (
+            id: string,
+            data: {
+              name?: string;
+              phone?: string;
+              email?: string;
+              address?: string;
+              notes?: string;
+            },
+          ) => ipcRenderer.invoke("db:sellers:update", { id, data }),
+          delete: (id: string) => ipcRenderer.invoke("db:sellers:delete", id),
+          getById: (id: string) => ipcRenderer.invoke("db:sellers:getById", id),
         },
-      ) => ipcRenderer.invoke("db:sellers:update", { id, data }),
-      delete: (id: string) => ipcRenderer.invoke("db:sellers:delete", id),
-      getById: (id: string) => ipcRenderer.invoke("db:sellers:getById", id),
-    },
     purchases: {
       getAll: () => ipcRenderer.invoke("db:purchases:getAll"),
       create: (data: {
@@ -291,13 +294,14 @@ declare global {
           ) => Promise<void>;
         };
         sellers: {
-          getAll: () => Promise<any[]>;
+          getAll: () => Promise<Seller[]>;
           create: (data: {
             name: string;
             phone?: string;
             email?: string;
             address?: string;
-          }) => Promise<any>;
+            notes?: string;
+          }) => Promise<Seller>;
           update: (
             id: string,
             data: {
@@ -305,10 +309,11 @@ declare global {
               phone?: string;
               email?: string;
               address?: string;
+              notes?: string;
             },
-          ) => Promise<any>;
+          ) => Promise<Seller>;
           delete: (id: string) => Promise<void>;
-          getById: (id: string) => Promise<any>;
+          getById: (id: string) => Promise<Seller>;
         };
         purchases: {
           getAll: () => Promise<any[]>;

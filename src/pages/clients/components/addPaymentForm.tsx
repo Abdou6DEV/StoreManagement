@@ -17,8 +17,8 @@ import {
 import { cn } from "../../../lib/utils";
 
 interface AddPaymentFormProps {
-  openPanel: "add" | "addPayment" | null;
-  setOpenPanel: React.Dispatch<React.SetStateAction<"add" | "addPayment" | null>>;
+  openPanel: "add" | "addPayment" | "addSupplier" | null;
+  setOpenPanel: React.Dispatch<React.SetStateAction<"add" | "addPayment" | "addSupplier" | null>>;
   onPaymentAdded: () => void;
   selectedClientId?: string;
   selectedClientName?: string;

@@ -1,11 +1,15 @@
 import React, { useEffect, useState } from "react";
-import { Users, Loader2, CreditCard, ChevronDown, Check } from "lucide-react";
+import { Users, Loader2, CreditCard, ChevronDown, Check, Package } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import ClientsTable from "./components/clientsTable";
 import EditClientDialog from "./components/editClientModal";
 import SearchBar from "./components/searchBar";
 import AddClientForm from "./components/addClientForm";
 import AddPaymentForm from "./components/addPaymentForm";
+import AddSupplierForm from "./components/addSupplierForm";
+import SuppliersTable from "./components/suppliersTable";
+import EditSupplierModal from "./components/editSupplierModal";
+import SupplierSearchBar from "./components/supplierSearchBar";
 import PaymentsModal from "./components/paymentsModal";
 import AllPaymentsView from "./components/allPaymentsView";
 import {
@@ -28,7 +32,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "../../lib/components/popover";
-import type { Client } from "@prisma/client";
+import type { Client, Seller } from "@prisma/client";
 import type { ClientWithTotalPurchases } from "../../types";
 import { useToast } from "../../lib/contexts/toastContext";
 import { ConfirmDialog } from "../../lib/components/confirmDialog";
@@ -47,14 +51,33 @@ export default function Clients() {
   const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [openPanel, setOpenPanel] = useState<"add" | "addPayment" | null>(null);
+  const [openPanel, setOpenPanel] = useState<"add" | "addPayment" | "addSupplier" | null>(null);
   const [paymentsClient, setPaymentsClient] = useState<Client | null>(null);
   const [viewMode, setViewMode] = useState<"clients" | "payments">("clients");
+  const [activeTab, setActiveTab] = useState<"clients" | "suppliers">("clients");
+  
+  // Suppliers state
+  const [suppliers, setSuppliers] = useState<Seller[]>([]);
+  const [suppliersLoading, setSuppliersLoading] = useState(true);
+  const [suppliersError, setSuppliersError] = useState<string | null>(null);
+  const [suppliersSearch, setSuppliersSearch] = useState("");
+  const [editingSupplier, setEditingSupplier] = useState<Seller | null>(null);
+  const [editSupplierLoading, setEditSupplierLoading] = useState(false);
+  const [deleteSupplierLoading, setDeleteSupplierLoading] = useState<string | null>(null);
+  const [suppliersCurrentPage, setSuppliersCurrentPage] = useState(1);
+  const [suppliersItemsPerPage, setSuppliersItemsPerPage] = useState(10);
+  
   const [confirmDelete, setConfirmDelete] = useState<{
     open: boolean;
     clientId: string | null;
     clientName: string;
   }>({ open: false, clientId: null, clientName: "" });
+  
+  const [confirmDeleteSupplier, setConfirmDeleteSupplier] = useState<{
+    open: boolean;
+    supplierId: string | null;
+    supplierName: string;
+  }>({ open: false, supplierId: null, supplierName: "" });
 
   const fetchClients = async () => {
     setLoading(true);
@@ -69,8 +92,22 @@ export default function Clients() {
     }
   };
 
+  const fetchSuppliers = async () => {
+    setSuppliersLoading(true);
+    setSuppliersError(null);
+    try {
+      const data = await window.api.database.sellers.getAll();
+      setSuppliers(data);
+    } catch (err) {
+      setSuppliersError(t("suppliers.fetchError", "Failed to fetch suppliers"));
+    } finally {
+      setSuppliersLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchClients();
+    fetchSuppliers();
   }, []);
 
   const handleDelete = async (id: string) => {
@@ -134,6 +171,69 @@ export default function Clients() {
     }
   };
 
+  // Suppliers handlers
+  const handleDeleteSupplier = async (id: string) => {
+    const supplier = suppliers.find((s) => s.id === id);
+    if (!supplier) return;
+
+    setConfirmDeleteSupplier({
+      open: true,
+      supplierId: id,
+      supplierName: supplier.name,
+    });
+  };
+
+  const confirmDeleteSupplierAction = async () => {
+    if (!confirmDeleteSupplier.supplierId) return;
+
+    setDeleteSupplierLoading(confirmDeleteSupplier.supplierId);
+    try {
+      await window.api.database.sellers.delete(confirmDeleteSupplier.supplierId);
+      await fetchSuppliers();
+      showToast(
+        t("suppliers.deleteSuccess", "Supplier deleted successfully"),
+        "success",
+      );
+    } catch (err) {
+      showToast(t("suppliers.deleteError", "Failed to delete supplier"), "error");
+    } finally {
+      setDeleteSupplierLoading(null);
+    }
+  };
+
+  const handleEditSupplier = (supplier: Seller) => {
+    setEditingSupplier(supplier);
+  };
+
+  const handleEditSupplierChange = (key: keyof Seller, value: string) => {
+    setEditingSupplier((prev) => (prev ? { ...prev, [key]: value } : prev));
+  };
+
+  const handleEditSupplierSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingSupplier) return;
+    setEditSupplierLoading(true);
+    try {
+      await window.api.database.sellers.update(editingSupplier.id, {
+        name: editingSupplier.name,
+        phone: editingSupplier.phone,
+        email: editingSupplier.email,
+        address: editingSupplier.address,
+        notes: editingSupplier.notes,
+      });
+      setEditingSupplier(null);
+      await fetchSuppliers();
+      showToast(
+        t("suppliers.updateSuccess", "Supplier updated successfully"),
+        "success",
+      );
+    } catch (err) {
+      showToast(t("suppliers.updateError", "Failed to update supplier"), "error");
+    } finally {
+      setEditSupplierLoading(false);
+    }
+  };
+
   const filteredClients = clients.filter(
     (client) =>
       client.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -158,42 +258,277 @@ export default function Clients() {
     setCurrentPage(1);
   }, [search, itemsPerPage]);
 
+  // Suppliers filtering and pagination
+  const filteredSuppliers = suppliers.filter(
+    (supplier) =>
+      supplier.name.toLowerCase().includes(suppliersSearch.toLowerCase()) ||
+      (supplier.phone &&
+        supplier.phone.toLowerCase().includes(suppliersSearch.toLowerCase())) ||
+      (supplier.email &&
+        supplier.email.toLowerCase().includes(suppliersSearch.toLowerCase())) ||
+      (supplier.address &&
+        supplier.address.toLowerCase().includes(suppliersSearch.toLowerCase())),
+  );
+
+  const suppliersTotalPages = Math.max(
+    1,
+    Math.ceil(filteredSuppliers.length / suppliersItemsPerPage),
+  );
+  const paginatedSuppliers = filteredSuppliers.slice(
+    (suppliersCurrentPage - 1) * suppliersItemsPerPage,
+    suppliersCurrentPage * suppliersItemsPerPage,
+  );
+
+  // Reset suppliers page when search or itemsPerPage changes
+  React.useEffect(() => {
+    setSuppliersCurrentPage(1);
+  }, [suppliersSearch, suppliersItemsPerPage]);
+
   return (
     <main className="px-6 md:px-12 flex-1 space-y-4">
-      <AddClientForm
-        openPanel={openPanel}
-        setOpenPanel={setOpenPanel}
-        onClientAdded={fetchClients}
-      />
-      <AddPaymentForm
-        openPanel={openPanel}
-        setOpenPanel={setOpenPanel}
-        onPaymentAdded={fetchClients}
-      />
-      <section className="bg-card border border-border rounded-xl shadow-sm p-6 space-y-5">
-        {viewMode === "clients" ? (
-          <>
+      {/* Tab Navigation */}
+      <div className="flex bg-card rounded-t-xl overflow-hidden">
+        <button
+          onClick={() => setActiveTab("clients")}
+          className={`flex-1 px-6 py-4 font-medium transition-all duration-200 ${
+            activeTab === "clients"
+              ? "text-red-600 bg-background border-b-2 border-red-600"
+              : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+          }`}
+        >
+          <div className="flex items-center justify-center gap-2">
+            <Users className="w-5 h-5" />
+            {t("clients.title", "Clients")}
+          </div>
+        </button>
+        <button
+          onClick={() => setActiveTab("suppliers")}
+          className={`flex-1 px-6 py-4 font-medium transition-all duration-200 ${
+            activeTab === "suppliers"
+              ? "text-blue-600 bg-background border-b-2 border-blue-600"
+              : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+          }`}
+        >
+          <div className="flex items-center justify-center gap-2">
+            <Package className="w-5 h-5" />
+            {t("suppliers.title", "Suppliers")}
+          </div>
+        </button>
+      </div>
+
+      {/* Clients Tab Content */}
+      {activeTab === "clients" && (
+        <div className="space-y-4">
+          <AddClientForm
+            openPanel={openPanel}
+            setOpenPanel={setOpenPanel}
+            onClientAdded={fetchClients}
+          />
+          <AddPaymentForm
+            openPanel={openPanel}
+            setOpenPanel={setOpenPanel}
+            onPaymentAdded={fetchClients}
+          />
+          
+          {viewMode === "clients" ? (
+            <div className="bg-card border border-border rounded-xl shadow-sm p-6 space-y-4">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <Users className="w-7 h-7 text-red-500" />
+                  <h1 className="text-2xl font-bold">
+                    {t("clients.title", "Clients List")}
+                  </h1>
+                </div>
+                <Button
+                  onClick={() => setViewMode("payments")}
+                  variant="outline"
+                  className="flex items-center gap-2"
+                >
+                  <CreditCard className="w-4 h-4" />
+                  {t("clients.viewAllPayments", "View All Payments")}
+                </Button>
+              </div>
+              {/* Items per page selector and search bar in the same row */}
+              <div className="flex items-center gap-4 mb-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">
+                    {t("clients.itemsPerPage", "Items per page:")}
+                  </span>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="px-3 py-1.5 min-w-[70px]"
+                        aria-label={t(
+                          "clients.selectItemsPerPage",
+                          "Select items per page",
+                        )}
+                      >
+                        {itemsPerPage}
+                        <ChevronDown className="ml-2 w-4 h-4" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[120px] p-0 z-50">
+                      <Command shouldFilter={false}>
+                        <CommandList>
+                          <CommandGroup>
+                            {[5, 10, 25, 50, 100].map((size) => (
+                              <CommandItem
+                                key={size}
+                                value={size.toString()}
+                                onSelect={() => {
+                                  setItemsPerPage(size);
+                                  setCurrentPage(1); // Reset to first page
+                                }}
+                              >
+                                {size}
+                                <Check
+                                  className={cn(
+                                    "ml-auto h-4 w-4",
+                                    itemsPerPage === size
+                                      ? "opacity-100"
+                                      : "opacity-0",
+                                  )}
+                                />
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+                {/* Search bar inline */}
+                <SearchBar search={search} setSearch={setSearch} />
+              </div>
+              {loading ? (
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Loader2 className="animate-spin" />{" "}
+                  {t("clients.loading", "Loading clients...")}
+                </div>
+              ) : error ? (
+                <div className="text-red-500">{error}</div>
+              ) : (
+                <>
+                  <ClientsTable
+                    clients={paginatedClients}
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
+                    deleteLoading={deleteLoading}
+                    onViewPayments={setPaymentsClient}
+                  />
+                  {/* Pagination Navigation (bottom, shadcn style) */}
+                  {totalPages > 1 && (
+                    <Pagination className="mt-6">
+                      <PaginationContent>
+                        <PaginationItem>
+                          {currentPage === 1 || filteredClients.length === 0 ? (
+                            <span className="opacity-50 pointer-events-none select-none">
+                              <PaginationPrevious href="#" />
+                            </span>
+                          ) : (
+                            <PaginationPrevious
+                              onClick={(e) => {
+                                e.preventDefault();
+                                setCurrentPage(currentPage - 1);
+                              }}
+                              href="#"
+                            />
+                          )}
+                        </PaginationItem>
+                        {/* Page numbers with ellipsis if needed */}
+                        {(() => {
+                          const items = [];
+                          let start = Math.max(1, currentPage - 2);
+                          let end = Math.min(totalPages, currentPage + 2);
+                          if (currentPage <= 3) {
+                            end = Math.min(5, totalPages);
+                          } else if (currentPage >= totalPages - 2) {
+                            start = Math.max(1, totalPages - 4);
+                          }
+                          if (start > 1) {
+                            items.push(
+                              <PaginationItem key="start-ellipsis">
+                                <PaginationEllipsis />
+                              </PaginationItem>,
+                            );
+                          }
+                          for (let i = start; i <= end; i++) {
+                            items.push(
+                              <PaginationItem key={i}>
+                                <PaginationLink
+                                  isActive={i === currentPage}
+                                  href="#"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    setCurrentPage(i);
+                                  }}
+                                >
+                                  {i}
+                                </PaginationLink>
+                              </PaginationItem>,
+                            );
+                          }
+                          if (end < totalPages) {
+                            items.push(
+                              <PaginationItem key="end-ellipsis">
+                                <PaginationEllipsis />
+                              </PaginationItem>,
+                            );
+                          }
+                          return items;
+                        })()}
+                        <PaginationItem>
+                          {currentPage === totalPages ||
+                          filteredClients.length === 0 ? (
+                            <span className="opacity-50 pointer-events-none select-none">
+                              <PaginationNext href="#" />
+                            </span>
+                          ) : (
+                            <PaginationNext
+                              onClick={(e) => {
+                                e.preventDefault();
+                                setCurrentPage(currentPage + 1);
+                              }}
+                              href="#"
+                            />
+                          )}
+                        </PaginationItem>
+                      </PaginationContent>
+                    </Pagination>
+                  )}
+                </>
+              )}
+            </div>
+          ) : (
+            <AllPaymentsView onBack={() => setViewMode("clients")} />
+          )}
+        </div>
+      )}
+
+      {/* Suppliers Tab Content */}
+      {activeTab === "suppliers" && (
+        <div className="space-y-4">
+          <AddSupplierForm
+            openPanel={openPanel}
+            setOpenPanel={setOpenPanel}
+            onSupplierAdded={fetchSuppliers}
+          />
+          
+          <div className="bg-card border border-border rounded-xl shadow-sm p-6 space-y-4">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
-                <Users className="w-7 h-7 text-red-500" />
+                <Package className="w-7 h-7 text-blue-500" />
                 <h1 className="text-2xl font-bold">
-                  {t("clients.title", "Clients List")}
+                  {t("suppliers.title", "Suppliers List")}
                 </h1>
               </div>
-              <Button
-                onClick={() => setViewMode("payments")}
-                variant="outline"
-                className="flex items-center gap-2"
-              >
-                <CreditCard className="w-4 h-4" />
-                {t("clients.viewAllPayments", "View All Payments")}
-              </Button>
             </div>
             {/* Items per page selector and search bar in the same row */}
             <div className="flex items-center gap-4 mb-4">
               <div className="flex items-center gap-2">
                 <span className="text-sm text-muted-foreground">
-                  {t("clients.itemsPerPage", "Items per page:")}
+                  {t("suppliers.itemsPerPage", "Items per page:")}
                 </span>
                 <Popover>
                   <PopoverTrigger asChild>
@@ -201,11 +536,11 @@ export default function Clients() {
                       variant="outline"
                       className="px-3 py-1.5 min-w-[70px]"
                       aria-label={t(
-                        "clients.selectItemsPerPage",
+                        "suppliers.selectItemsPerPage",
                         "Select items per page",
                       )}
                     >
-                      {itemsPerPage}
+                      {suppliersItemsPerPage}
                       <ChevronDown className="ml-2 w-4 h-4" />
                     </Button>
                   </PopoverTrigger>
@@ -218,15 +553,15 @@ export default function Clients() {
                               key={size}
                               value={size.toString()}
                               onSelect={() => {
-                                setItemsPerPage(size);
-                                setCurrentPage(1); // Reset to first page
+                                setSuppliersItemsPerPage(size);
+                                setSuppliersCurrentPage(1);
                               }}
                             >
                               {size}
                               <Check
                                 className={cn(
                                   "ml-auto h-4 w-4",
-                                  itemsPerPage === size
+                                  suppliersItemsPerPage === size
                                     ? "opacity-100"
                                     : "opacity-0",
                                 )}
@@ -240,30 +575,29 @@ export default function Clients() {
                 </Popover>
               </div>
               {/* Search bar inline */}
-              <SearchBar search={search} setSearch={setSearch} />
+              <SupplierSearchBar search={suppliersSearch} setSearch={setSuppliersSearch} />
             </div>
-            {loading ? (
+            {suppliersLoading ? (
               <div className="flex items-center gap-2 text-muted-foreground">
                 <Loader2 className="animate-spin" />{" "}
-                {t("clients.loading", "Loading clients...")}
+                {t("suppliers.loading", "Loading suppliers...")}
               </div>
-            ) : error ? (
-              <div className="text-red-500">{error}</div>
+            ) : suppliersError ? (
+              <div className="text-red-500">{suppliersError}</div>
             ) : (
               <>
-                <ClientsTable
-                  clients={paginatedClients}
-                  onEdit={handleEdit}
-                  onDelete={handleDelete}
-                  deleteLoading={deleteLoading}
-                  onViewPayments={setPaymentsClient}
+                <SuppliersTable
+                  suppliers={paginatedSuppliers}
+                  onEdit={handleEditSupplier}
+                  onDelete={handleDeleteSupplier}
+                  deleteLoading={deleteSupplierLoading}
                 />
-                {/* Pagination Navigation (bottom, shadcn style) */}
-                {totalPages > 1 && (
+                {/* Pagination Navigation for suppliers */}
+                {suppliersTotalPages > 1 && (
                   <Pagination className="mt-6">
                     <PaginationContent>
                       <PaginationItem>
-                        {currentPage === 1 || filteredClients.length === 0 ? (
+                        {suppliersCurrentPage === 1 || filteredSuppliers.length === 0 ? (
                           <span className="opacity-50 pointer-events-none select-none">
                             <PaginationPrevious href="#" />
                           </span>
@@ -271,7 +605,7 @@ export default function Clients() {
                           <PaginationPrevious
                             onClick={(e) => {
                               e.preventDefault();
-                              setCurrentPage(currentPage - 1);
+                              setSuppliersCurrentPage(suppliersCurrentPage - 1);
                             }}
                             href="#"
                           />
@@ -280,12 +614,12 @@ export default function Clients() {
                       {/* Page numbers with ellipsis if needed */}
                       {(() => {
                         const items = [];
-                        let start = Math.max(1, currentPage - 2);
-                        let end = Math.min(totalPages, currentPage + 2);
-                        if (currentPage <= 3) {
-                          end = Math.min(5, totalPages);
-                        } else if (currentPage >= totalPages - 2) {
-                          start = Math.max(1, totalPages - 4);
+                        let start = Math.max(1, suppliersCurrentPage - 2);
+                        let end = Math.min(suppliersTotalPages, suppliersCurrentPage + 2);
+                        if (suppliersCurrentPage <= 3) {
+                          end = Math.min(5, suppliersTotalPages);
+                        } else if (suppliersCurrentPage >= suppliersTotalPages - 2) {
+                          start = Math.max(1, suppliersTotalPages - 4);
                         }
                         if (start > 1) {
                           items.push(
@@ -298,11 +632,11 @@ export default function Clients() {
                           items.push(
                             <PaginationItem key={i}>
                               <PaginationLink
-                                isActive={i === currentPage}
+                                isActive={i === suppliersCurrentPage}
                                 href="#"
                                 onClick={(e) => {
                                   e.preventDefault();
-                                  setCurrentPage(i);
+                                  setSuppliersCurrentPage(i);
                                 }}
                               >
                                 {i}
@@ -310,7 +644,7 @@ export default function Clients() {
                             </PaginationItem>,
                           );
                         }
-                        if (end < totalPages) {
+                        if (end < suppliersTotalPages) {
                           items.push(
                             <PaginationItem key="end-ellipsis">
                               <PaginationEllipsis />
@@ -320,8 +654,8 @@ export default function Clients() {
                         return items;
                       })()}
                       <PaginationItem>
-                        {currentPage === totalPages ||
-                        filteredClients.length === 0 ? (
+                        {suppliersCurrentPage === suppliersTotalPages ||
+                        filteredSuppliers.length === 0 ? (
                           <span className="opacity-50 pointer-events-none select-none">
                             <PaginationNext href="#" />
                           </span>
@@ -329,7 +663,7 @@ export default function Clients() {
                           <PaginationNext
                             onClick={(e) => {
                               e.preventDefault();
-                              setCurrentPage(currentPage + 1);
+                              setSuppliersCurrentPage(suppliersCurrentPage + 1);
                             }}
                             href="#"
                           />
@@ -340,25 +674,30 @@ export default function Clients() {
                 )}
               </>
             )}
-          </>
-        ) : (
-          <AllPaymentsView onBack={() => setViewMode("clients")} />
-        )}
-        <EditClientDialog
-          client={editingClient}
-          onChange={handleEditChange}
-          onClose={() => setEditingClient(null)}
-          onSubmit={handleEditSubmit}
-          loading={editLoading}
+          </div>
+        </div>
+      )}
+      <EditClientDialog
+        client={editingClient}
+        onChange={handleEditChange}
+        onClose={() => setEditingClient(null)}
+        onSubmit={handleEditSubmit}
+        loading={editLoading}
+      />
+      <EditSupplierModal
+        supplier={editingSupplier}
+        onChange={handleEditSupplierChange}
+        onClose={() => setEditingSupplier(null)}
+        onSubmit={handleEditSupplierSubmit}
+        loading={editSupplierLoading}
+      />
+      {/* PaymentsModal will be rendered here when paymentsClient is set */}
+      {paymentsClient && (
+        <PaymentsModal
+          client={paymentsClient}
+          onClose={() => setPaymentsClient(null)}
         />
-        {/* PaymentsModal will be rendered here when paymentsClient is set */}
-        {paymentsClient && (
-          <PaymentsModal
-            client={paymentsClient}
-            onClose={() => setPaymentsClient(null)}
-          />
-        )}
-      </section>
+      )}
       {/* Confirm Delete Dialog */}
       <ConfirmDialog
         open={confirmDelete.open}
@@ -374,6 +713,22 @@ export default function Clients() {
         variant="danger"
         onConfirm={confirmDeleteClient}
         loading={!!deleteLoading}
+      />
+      {/* Confirm Delete Supplier Dialog */}
+      <ConfirmDialog
+        open={confirmDeleteSupplier.open}
+        onOpenChange={(open) => setConfirmDeleteSupplier((prev) => ({ ...prev, open }))}
+        title={t("suppliers.confirmDeleteTitle", "Delete Supplier")}
+        message={t(
+          "suppliers.confirmDeleteMessage",
+          "Are you sure you want to delete '{{name}}'? Warning: Deleting this supplier will also delete all related purchases. This action cannot be undone.",
+          { name: confirmDeleteSupplier.supplierName },
+        )}
+        confirmText={t("suppliers.delete", "Delete")}
+        cancelText={t("suppliers.cancel", "Cancel")}
+        variant="danger"
+        onConfirm={confirmDeleteSupplierAction}
+        loading={!!deleteSupplierLoading}
       />
     </main>
   );
