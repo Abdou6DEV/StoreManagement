@@ -320,7 +320,8 @@ export default function CategorySummaryTable() {
                   return items;
                 })()}
                 <PaginationItem>
-                  {currentPage === totalPages || filteredSummary.length === 0 ? (
+                  {currentPage === totalPages ||
+                  filteredSummary.length === 0 ? (
                     <span className="opacity-50 pointer-events-none select-none">
                       <PaginationNext href="#" />
                     </span>

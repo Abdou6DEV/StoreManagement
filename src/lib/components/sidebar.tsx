@@ -70,6 +70,13 @@ export default function Sidebar() {
     setCollapsed(newState);
     localStorage.setItem("sidebarCollapsed", String(newState));
 
+    // Dispatch custom event to notify layout with state data
+    window.dispatchEvent(
+      new CustomEvent("sidebarStateChanged", {
+        detail: { collapsed: newState },
+      }),
+    );
+
     if (newState === false) {
       // Expanding: show text after animation completes
       textTimeoutRef.current = setTimeout(() => {

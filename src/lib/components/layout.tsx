@@ -8,13 +8,25 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   );
 
   useEffect(() => {
-    const checkSidebarState = () => {
-      const collapsed = localStorage.getItem("sidebarCollapsed") === "true";
-      setCollapsed(collapsed);
+    const handleSidebarChange = (event: CustomEvent) => {
+      const newCollapsed = event.detail?.collapsed;
+      if (newCollapsed !== undefined) {
+        setCollapsed(newCollapsed);
+      }
     };
 
-    const interval = setInterval(checkSidebarState, 300);
-    return () => clearInterval(interval);
+    // Listen for custom sidebar change events
+    window.addEventListener(
+      "sidebarStateChanged",
+      handleSidebarChange as EventListener,
+    );
+
+    return () => {
+      window.removeEventListener(
+        "sidebarStateChanged",
+        handleSidebarChange as EventListener,
+      );
+    };
   }, []);
 
   const location = useLocation();
@@ -26,7 +38,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       {/* === Main Content === */}
       <main
-        className="transition-[margin-left] duration-300 ease-in-out px-4 md:px-12 py-8 md:py-12 min-h-screen overflow-y-auto"
+        className="transition-[margin-left] duration-500 ease-in-out px-4 md:px-12 py-8 md:py-12 min-h-screen overflow-y-auto"
         style={{
           marginLeft:
             location.pathname === "/" ? 0 : collapsed ? "60px" : "200px",
