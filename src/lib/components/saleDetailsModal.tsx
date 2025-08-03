@@ -41,7 +41,17 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
   const [editedDiscount, setEditedDiscount] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Initialize edit state when sale changes
+  // Reset edit state when modal opens/closes
+  useEffect(() => {
+    if (isOpen && sale) {
+      // Reset edit mode when modal opens
+      setIsEditing(false);
+      setEditedCart([]);
+      setEditedDiscount(0);
+    }
+  }, [isOpen, sale]);
+
+  // Initialize edit state when sale changes and editing starts
   useEffect(() => {
     if (sale && isEditing) {
       setEditedCart(

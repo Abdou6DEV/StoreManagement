@@ -180,7 +180,8 @@ const HistoryBrowser: React.FC<HistoryBrowserProps> = ({
             {filteredSales.map((sale, index) => (
               <div
                 key={sale.id}
-                className={`bg-card border border-border rounded-lg p-4 hover:bg-muted/30 hover:shadow-md transition-all duration-300 ${
+                onClick={() => handleSaleClick(sale)}
+                className={`bg-card border border-border rounded-lg p-4 hover:bg-muted/30 hover:shadow-md transition-all duration-300 cursor-pointer ${
                   refreshing && index === 0 ? "animate-pulse bg-primary/5" : ""
                 }`}
               >
@@ -221,16 +222,10 @@ const HistoryBrowser: React.FC<HistoryBrowserProps> = ({
                     <ShoppingBag className="w-4 h-4" />
                     {sale.totalItems} {t("cashier.items", "items")}
                   </div>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleSaleClick(sale);
-                    }}
-                    className="px-3 py-1.5 text-primary border border-primary/30 text-xs rounded-md hover:bg-primary/10 hover:border-primary/50 transition-all duration-200 flex items-center gap-1.5"
-                  >
+                  <div className="px-3 py-1.5 text-primary border border-primary/30 text-xs rounded-md bg-primary/5 flex items-center gap-1.5">
                     <Eye className="w-3 h-3" />
                     {t("cashier.view", "View")}
-                  </button>
+                  </div>
                 </div>
               </div>
             ))}
