@@ -38,15 +38,35 @@ export function ImageUpload({
         // Calculate new dimensions while maintaining aspect ratio
         let { width, height } = img;
 
-        if (width > height) {
-          if (width > maxWidth) {
-            height = (height * maxWidth) / width;
-            width = maxWidth;
-          }
-        } else {
-          if (height > maxHeight) {
-            width = (width * maxHeight) / height;
-            height = maxHeight;
+        // Calculate aspect ratio
+        const aspectRatio = width / height;
+
+        // Check if image needs resizing
+        const needsResize = width > maxWidth || height > maxHeight;
+
+        if (needsResize) {
+          if (width > height) {
+            // Landscape image
+            if (width > maxWidth) {
+              width = maxWidth;
+              height = width / aspectRatio;
+            }
+            // Check if height still exceeds maxHeight after width adjustment
+            if (height > maxHeight) {
+              height = maxHeight;
+              width = height * aspectRatio;
+            }
+          } else {
+            // Portrait or square image
+            if (height > maxHeight) {
+              height = maxHeight;
+              width = height * aspectRatio;
+            }
+            // Check if width still exceeds maxWidth after height adjustment
+            if (width > maxWidth) {
+              width = maxWidth;
+              height = width / aspectRatio;
+            }
           }
         }
 
@@ -79,11 +99,7 @@ export function ImageUpload({
       return;
     }
 
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      alert(t("imageUpload.imageSizeLimit"));
-      return;
-    }
+    // File size validation removed since we resize images anyway
 
     try {
       const resizedImage = await resizeImage(file);
