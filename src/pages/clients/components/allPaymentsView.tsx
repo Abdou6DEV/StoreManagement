@@ -5,6 +5,7 @@ import {
   Loader2,
   CreditCard,
   ArrowUpCircle,
+  Users,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useToast } from "../../../lib/contexts/toastContext";
@@ -157,7 +158,8 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({ onBack }) => {
             {t("clients.allPaymentsTitle", "All Credits & Versements")}
           </h1>
         </div>
-        <Button onClick={onBack} variant="outline">
+        <Button onClick={onBack} variant="outline" className="flex items-center gap-2">
+          <Users className="w-4 h-4" />
           {t("clients.backToClients", "Back to Clients")}
         </Button>
       </div>
