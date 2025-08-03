@@ -8,6 +8,15 @@ import type { PaymentWithClient } from "../../../types";
 import PaymentFilters from "./paymentFilters";
 import PaymentTable from "./paymentTable";
 import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationPrevious,
+  PaginationNext,
+  PaginationEllipsis,
+} from "../../../lib/components/pagination";
+import {
   isOverdue,
   isDueSoon,
   getFilteredPayments,
@@ -39,6 +48,14 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({ onBack }) => {
     open: boolean;
     paymentId: string | null;
   }>({ open: false, paymentId: null });
+
+  // Pagination state for credits
+  const [creditsCurrentPage, setCreditsCurrentPage] = useState(1);
+  const [creditsItemsPerPage, setCreditsItemsPerPage] = useState(10);
+
+  // Pagination state for versements
+  const [versementsCurrentPage, setVersementsCurrentPage] = useState(1);
+  const [versementsItemsPerPage, setVersementsItemsPerPage] = useState(10);
 
   const credits = payments.filter((p) => p.type === "CREDIT");
   const versements = payments.filter((p) => p.type === "VERSEMENT");
@@ -157,6 +174,32 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({ onBack }) => {
     dateFilter,
   );
 
+  // Pagination logic for credits
+  const creditsTotalPages = Math.max(
+    1,
+    Math.ceil(filteredCredits.length / creditsItemsPerPage),
+  );
+  const paginatedCredits = filteredCredits.slice(
+    (creditsCurrentPage - 1) * creditsItemsPerPage,
+    creditsCurrentPage * creditsItemsPerPage,
+  );
+
+  // Pagination logic for versements
+  const versementsTotalPages = Math.max(
+    1,
+    Math.ceil(filteredVersements.length / versementsItemsPerPage),
+  );
+  const paginatedVersements = filteredVersements.slice(
+    (versementsCurrentPage - 1) * versementsItemsPerPage,
+    versementsCurrentPage * versementsItemsPerPage,
+  );
+
+  // Reset to page 1 when filters change
+  React.useEffect(() => {
+    setCreditsCurrentPage(1);
+    setVersementsCurrentPage(1);
+  }, [search, statusFilter, typeFilter, dateFilter]);
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -212,19 +255,100 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({ onBack }) => {
               </h3>
             </div>
             {filteredCredits.length > 0 ? (
-              <PaymentTable
-                payments={filteredCredits}
-                type="CREDIT"
-                editingPayment={editingPayment}
-                editAmount={editAmount}
-                setEditingPayment={setEditingPayment}
-                setEditAmount={setEditAmount}
-                handleUpdateAmount={handleUpdateAmount}
-                onMarkAsPaid={handleMarkAsPaid}
-                onMarkAsUnpaidConfirm={handleMarkAsUnpaidConfirm}
-                isOverdue={isOverdue}
-                isDueSoon={isDueSoon}
-              />
+              <>
+                <PaymentTable
+                  payments={paginatedCredits}
+                  type="CREDIT"
+                  editingPayment={editingPayment}
+                  editAmount={editAmount}
+                  setEditingPayment={setEditingPayment}
+                  setEditAmount={setEditAmount}
+                  handleUpdateAmount={handleUpdateAmount}
+                  onMarkAsPaid={handleMarkAsPaid}
+                  onMarkAsUnpaidConfirm={handleMarkAsUnpaidConfirm}
+                  isOverdue={isOverdue}
+                  isDueSoon={isDueSoon}
+                />
+                {/* Pagination for Credits */}
+                {creditsTotalPages > 1 && (
+                  <Pagination className="mt-6">
+                    <PaginationContent>
+                      <PaginationItem>
+                        {creditsCurrentPage === 1 || filteredCredits.length === 0 ? (
+                          <span className="opacity-50 pointer-events-none select-none">
+                            <PaginationPrevious href="#" />
+                          </span>
+                        ) : (
+                          <PaginationPrevious
+                            onClick={(e) => {
+                              e.preventDefault();
+                              setCreditsCurrentPage(creditsCurrentPage - 1);
+                            }}
+                            href="#"
+                          />
+                        )}
+                      </PaginationItem>
+                      {/* Page numbers with ellipsis if needed */}
+                      {(() => {
+                        const items = [];
+                        let start = Math.max(1, creditsCurrentPage - 2);
+                        let end = Math.min(creditsTotalPages, creditsCurrentPage + 2);
+                        if (creditsCurrentPage <= 3) {
+                          end = Math.min(5, creditsTotalPages);
+                        } else if (creditsCurrentPage >= creditsTotalPages - 2) {
+                          start = Math.max(1, creditsTotalPages - 4);
+                        }
+                        if (start > 1) {
+                          items.push(
+                            <PaginationItem key="start-ellipsis">
+                              <PaginationEllipsis />
+                            </PaginationItem>,
+                          );
+                        }
+                        for (let i = start; i <= end; i++) {
+                          items.push(
+                            <PaginationItem key={i}>
+                              <PaginationLink
+                                isActive={i === creditsCurrentPage}
+                                href="#"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  setCreditsCurrentPage(i);
+                                }}
+                              >
+                                {i}
+                              </PaginationLink>
+                            </PaginationItem>,
+                          );
+                        }
+                        if (end < creditsTotalPages) {
+                          items.push(
+                            <PaginationItem key="end-ellipsis">
+                              <PaginationEllipsis />
+                            </PaginationItem>,
+                          );
+                        }
+                        return items;
+                      })()}
+                      <PaginationItem>
+                        {creditsCurrentPage === creditsTotalPages || filteredCredits.length === 0 ? (
+                          <span className="opacity-50 pointer-events-none select-none">
+                            <PaginationNext href="#" />
+                          </span>
+                        ) : (
+                          <PaginationNext
+                            onClick={(e) => {
+                              e.preventDefault();
+                              setCreditsCurrentPage(creditsCurrentPage + 1);
+                            }}
+                            href="#"
+                          />
+                        )}
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                )}
+              </>
             ) : (
               <div className="text-muted-foreground text-center py-4 border border-dashed rounded-lg">
                 {t("clients.noCredits", "No credits found")}
@@ -242,19 +366,100 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({ onBack }) => {
               </h3>
             </div>
             {filteredVersements.length > 0 ? (
-              <PaymentTable
-                payments={filteredVersements}
-                type="VERSEMENT"
-                editingPayment={editingPayment}
-                editAmount={editAmount}
-                setEditingPayment={setEditingPayment}
-                setEditAmount={setEditAmount}
-                handleUpdateAmount={handleUpdateAmount}
-                onMarkAsPaid={handleMarkAsPaid}
-                onMarkAsUnpaidConfirm={handleMarkAsUnpaidConfirm}
-                isOverdue={isOverdue}
-                isDueSoon={isDueSoon}
-              />
+              <>
+                <PaymentTable
+                  payments={paginatedVersements}
+                  type="VERSEMENT"
+                  editingPayment={editingPayment}
+                  editAmount={editAmount}
+                  setEditingPayment={setEditingPayment}
+                  setEditAmount={setEditAmount}
+                  handleUpdateAmount={handleUpdateAmount}
+                  onMarkAsPaid={handleMarkAsPaid}
+                  onMarkAsUnpaidConfirm={handleMarkAsUnpaidConfirm}
+                  isOverdue={isOverdue}
+                  isDueSoon={isDueSoon}
+                />
+                {/* Pagination for Versements */}
+                {versementsTotalPages > 1 && (
+                  <Pagination className="mt-6">
+                    <PaginationContent>
+                      <PaginationItem>
+                        {versementsCurrentPage === 1 || filteredVersements.length === 0 ? (
+                          <span className="opacity-50 pointer-events-none select-none">
+                            <PaginationPrevious href="#" />
+                          </span>
+                        ) : (
+                          <PaginationPrevious
+                            onClick={(e) => {
+                              e.preventDefault();
+                              setVersementsCurrentPage(versementsCurrentPage - 1);
+                            }}
+                            href="#"
+                          />
+                        )}
+                      </PaginationItem>
+                      {/* Page numbers with ellipsis if needed */}
+                      {(() => {
+                        const items = [];
+                        let start = Math.max(1, versementsCurrentPage - 2);
+                        let end = Math.min(versementsTotalPages, versementsCurrentPage + 2);
+                        if (versementsCurrentPage <= 3) {
+                          end = Math.min(5, versementsTotalPages);
+                        } else if (versementsCurrentPage >= versementsTotalPages - 2) {
+                          start = Math.max(1, versementsTotalPages - 4);
+                        }
+                        if (start > 1) {
+                          items.push(
+                            <PaginationItem key="start-ellipsis">
+                              <PaginationEllipsis />
+                            </PaginationItem>,
+                          );
+                        }
+                        for (let i = start; i <= end; i++) {
+                          items.push(
+                            <PaginationItem key={i}>
+                              <PaginationLink
+                                isActive={i === versementsCurrentPage}
+                                href="#"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  setVersementsCurrentPage(i);
+                                }}
+                              >
+                                {i}
+                              </PaginationLink>
+                            </PaginationItem>,
+                          );
+                        }
+                        if (end < versementsTotalPages) {
+                          items.push(
+                            <PaginationItem key="end-ellipsis">
+                              <PaginationEllipsis />
+                            </PaginationItem>,
+                          );
+                        }
+                        return items;
+                      })()}
+                      <PaginationItem>
+                        {versementsCurrentPage === versementsTotalPages || filteredVersements.length === 0 ? (
+                          <span className="opacity-50 pointer-events-none select-none">
+                            <PaginationNext href="#" />
+                          </span>
+                        ) : (
+                          <PaginationNext
+                            onClick={(e) => {
+                              e.preventDefault();
+                              setVersementsCurrentPage(versementsCurrentPage + 1);
+                            }}
+                            href="#"
+                          />
+                        )}
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                )}
+              </>
             ) : (
               <div className="text-muted-foreground text-center py-4 border border-dashed rounded-lg">
                 {t("clients.noVersements", "No versements found")}
