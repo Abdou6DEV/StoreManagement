@@ -437,7 +437,7 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
               </div>
             </div>
 
-            <p className="text-sm text-foreground mb-6">
+            <p className="text-sm text-muted-foreground mb-6">
               {t(
                 "cashier.deleteSaleMessage",
                 "Are you sure you want to delete this sale? This will restore the product quantities to your inventory.",
