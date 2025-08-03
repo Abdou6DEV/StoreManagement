@@ -31,6 +31,7 @@ import {
   createPayment,
   getPaymentsByClient,
   getAllPayments,
+  getAllPaymentsWithClientInfo,
   updatePaymentPaidAt,
   updatePaymentAmount,
 } from "../lib/database/payments";
@@ -205,6 +206,10 @@ function setupDatabaseHandlers() {
 
   ipcMain.handle("db:payments:getAll", async () => {
     return await getAllPayments();
+  });
+
+  ipcMain.handle("db:payments:getAllWithClientInfo", async () => {
+    return await getAllPaymentsWithClientInfo();
   });
 
   ipcMain.handle(

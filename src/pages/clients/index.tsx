@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { Users, Loader2 } from "lucide-react";
+import { Users, Loader2, CreditCard } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import ClientsTable from "./components/clientsTable";
 import EditClientDialog from "./components/editClientModal";
 import SearchBar from "./components/searchBar";
 import AddClientForm from "./components/addClientForm";
 import PaymentsModal from "./components/paymentsModal";
+import AllPaymentsView from "./components/allPaymentsView";
 import {
   Pagination,
   PaginationContent,
@@ -18,6 +19,7 @@ import {
 import type { Client } from "@prisma/client";
 import { useToast } from "../../lib/contexts/toastContext";
 import { ConfirmDialog } from "../../lib/components/confirmDialog";
+import { Button } from "../../lib/components/button";
 
 export default function Clients() {
   const { t } = useTranslation();
@@ -33,6 +35,7 @@ export default function Clients() {
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [openPanel, setOpenPanel] = useState<"add" | null>(null);
   const [paymentsClient, setPaymentsClient] = useState<Client | null>(null);
+  const [viewMode, setViewMode] = useState<"clients" | "payments">("clients");
   const [confirmDelete, setConfirmDelete] = useState<{
     open: boolean;
     clientId: string | null;
@@ -149,137 +152,153 @@ export default function Clients() {
         onClientAdded={fetchClients}
       />
       <section className="bg-card border border-border rounded-xl shadow-sm p-6 space-y-5">
-        <div className="flex items-center gap-3 mb-4">
-          <Users className="w-7 h-7 text-red-500" />
-          <h1 className="text-2xl font-bold">
-            {t("clients.title", "Clients List")}
-          </h1>
-        </div>
-        {/* Items per page selector and search bar in the same row */}
-        <div className="flex items-center gap-4 mb-4">
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">
-              {t("clients.itemsPerPage", "Items per page:")}
-            </span>
-            <select
-              className="px-2 py-1 border rounded text-sm bg-card"
-              value={itemsPerPage}
-              onChange={(e) => {
-                setItemsPerPage(Number(e.target.value));
-                setCurrentPage(1);
-              }}
-              aria-label={t(
-                "clients.selectItemsPerPage",
-                "Select items per page",
-              )}
-            >
-              {[5, 10, 25, 50, 100].map((size) => (
-                <option key={size} value={size}>
-                  {size}
-                </option>
-              ))}
-            </select>
-          </div>
-          {/* Search bar inline */}
-          <SearchBar search={search} setSearch={setSearch} />
-        </div>
-        {loading ? (
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Loader2 className="animate-spin" />{" "}
-            {t("clients.loading", "Loading clients...")}
-          </div>
-        ) : error ? (
-          <div className="text-red-500">{error}</div>
-        ) : (
+        {viewMode === "clients" ? (
           <>
-            <ClientsTable
-              clients={paginatedClients}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-              deleteLoading={deleteLoading}
-              onViewPayments={setPaymentsClient}
-            />
-            {/* Pagination Navigation (bottom, shadcn style) */}
-            {totalPages > 1 && (
-              <Pagination className="mt-6">
-                <PaginationContent>
-                  <PaginationItem>
-                    {currentPage === 1 || filteredClients.length === 0 ? (
-                      <span className="opacity-50 pointer-events-none select-none">
-                        <PaginationPrevious href="#" />
-                      </span>
-                    ) : (
-                      <PaginationPrevious
-                        onClick={(e) => {
-                          e.preventDefault();
-                          setCurrentPage(currentPage - 1);
-                        }}
-                        href="#"
-                      />
-                    )}
-                  </PaginationItem>
-                  {/* Page numbers with ellipsis if needed */}
-                  {(() => {
-                    const items = [];
-                    let start = Math.max(1, currentPage - 2);
-                    let end = Math.min(totalPages, currentPage + 2);
-                    if (currentPage <= 3) {
-                      end = Math.min(5, totalPages);
-                    } else if (currentPage >= totalPages - 2) {
-                      start = Math.max(1, totalPages - 4);
-                    }
-                    if (start > 1) {
-                      items.push(
-                        <PaginationItem key="start-ellipsis">
-                          <PaginationEllipsis />
-                        </PaginationItem>,
-                      );
-                    }
-                    for (let i = start; i <= end; i++) {
-                      items.push(
-                        <PaginationItem key={i}>
-                          <PaginationLink
-                            isActive={i === currentPage}
-                            href="#"
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <Users className="w-7 h-7 text-red-500" />
+                <h1 className="text-2xl font-bold">
+                  {t("clients.title", "Clients List")}
+                </h1>
+              </div>
+              <Button
+                onClick={() => setViewMode("payments")}
+                variant="outline"
+                className="flex items-center gap-2"
+              >
+                <CreditCard className="w-4 h-4" />
+                {t("clients.viewAllPayments", "View All Payments")}
+              </Button>
+            </div>
+            {/* Items per page selector and search bar in the same row */}
+            <div className="flex items-center gap-4 mb-4">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">
+                  {t("clients.itemsPerPage", "Items per page:")}
+                </span>
+                <select
+                  className="px-2 py-1 border rounded text-sm bg-card"
+                  value={itemsPerPage}
+                  onChange={(e) => {
+                    setItemsPerPage(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                  aria-label={t(
+                    "clients.selectItemsPerPage",
+                    "Select items per page",
+                  )}
+                >
+                  {[5, 10, 25, 50, 100].map((size) => (
+                    <option key={size} value={size}>
+                      {size}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {/* Search bar inline */}
+              <SearchBar search={search} setSearch={setSearch} />
+            </div>
+            {loading ? (
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Loader2 className="animate-spin" />{" "}
+                {t("clients.loading", "Loading clients...")}
+              </div>
+            ) : error ? (
+              <div className="text-red-500">{error}</div>
+            ) : (
+              <>
+                <ClientsTable
+                  clients={paginatedClients}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                  deleteLoading={deleteLoading}
+                  onViewPayments={setPaymentsClient}
+                />
+                {/* Pagination Navigation (bottom, shadcn style) */}
+                {totalPages > 1 && (
+                  <Pagination className="mt-6">
+                    <PaginationContent>
+                      <PaginationItem>
+                        {currentPage === 1 || filteredClients.length === 0 ? (
+                          <span className="opacity-50 pointer-events-none select-none">
+                            <PaginationPrevious href="#" />
+                          </span>
+                        ) : (
+                          <PaginationPrevious
                             onClick={(e) => {
                               e.preventDefault();
-                              setCurrentPage(i);
+                              setCurrentPage(currentPage - 1);
                             }}
-                          >
-                            {i}
-                          </PaginationLink>
-                        </PaginationItem>,
-                      );
-                    }
-                    if (end < totalPages) {
-                      items.push(
-                        <PaginationItem key="end-ellipsis">
-                          <PaginationEllipsis />
-                        </PaginationItem>,
-                      );
-                    }
-                    return items;
-                  })()}
-                  <PaginationItem>
-                    {currentPage === totalPages ||
-                    filteredClients.length === 0 ? (
-                      <span className="opacity-50 pointer-events-none select-none">
-                        <PaginationNext href="#" />
-                      </span>
-                    ) : (
-                      <PaginationNext
-                        onClick={(e) => {
-                          e.preventDefault();
-                          setCurrentPage(currentPage + 1);
-                        }}
-                        href="#"
-                      />
-                    )}
-                  </PaginationItem>
-                </PaginationContent>
-              </Pagination>
+                            href="#"
+                          />
+                        )}
+                      </PaginationItem>
+                      {/* Page numbers with ellipsis if needed */}
+                      {(() => {
+                        const items = [];
+                        let start = Math.max(1, currentPage - 2);
+                        let end = Math.min(totalPages, currentPage + 2);
+                        if (currentPage <= 3) {
+                          end = Math.min(5, totalPages);
+                        } else if (currentPage >= totalPages - 2) {
+                          start = Math.max(1, totalPages - 4);
+                        }
+                        if (start > 1) {
+                          items.push(
+                            <PaginationItem key="start-ellipsis">
+                              <PaginationEllipsis />
+                            </PaginationItem>,
+                          );
+                        }
+                        for (let i = start; i <= end; i++) {
+                          items.push(
+                            <PaginationItem key={i}>
+                              <PaginationLink
+                                isActive={i === currentPage}
+                                href="#"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  setCurrentPage(i);
+                                }}
+                              >
+                                {i}
+                              </PaginationLink>
+                            </PaginationItem>,
+                          );
+                        }
+                        if (end < totalPages) {
+                          items.push(
+                            <PaginationItem key="end-ellipsis">
+                              <PaginationEllipsis />
+                            </PaginationItem>,
+                          );
+                        }
+                        return items;
+                      })()}
+                      <PaginationItem>
+                        {currentPage === totalPages ||
+                        filteredClients.length === 0 ? (
+                          <span className="opacity-50 pointer-events-none select-none">
+                            <PaginationNext href="#" />
+                          </span>
+                        ) : (
+                          <PaginationNext
+                            onClick={(e) => {
+                              e.preventDefault();
+                              setCurrentPage(currentPage + 1);
+                            }}
+                            href="#"
+                          />
+                        )}
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                )}
+              </>
             )}
           </>
+        ) : (
+          <AllPaymentsView onBack={() => setViewMode("clients")} />
         )}
         <EditClientDialog
           client={editingClient}

@@ -37,6 +37,27 @@ export async function getAllPayments() {
   });
 }
 
+export async function getAllPaymentsWithClientInfo() {
+  return await prisma.payment.findMany({
+    include: {
+      client: {
+        select: {
+          id: true,
+          name: true,
+          phone: true,
+        },
+      },
+      sale: {
+        select: {
+          id: true,
+          createdAt: true,
+        },
+      },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+}
+
 export async function updatePaymentPaidAt(paymentId: string, paidDate: Date) {
   return await prisma.payment.update({
     where: { id: paymentId },
