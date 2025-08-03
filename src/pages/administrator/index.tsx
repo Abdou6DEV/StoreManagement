@@ -55,28 +55,20 @@ export default function AdministratorPage() {
   };
 
   return (
-    <main className="max-w-2xl mx-auto px-2 md:px-0">
-      <section className="bg-card border border-border rounded-2xl shadow-lg p-4 sm:p-6 md:p-8 space-y-8">
-        {/* Header with icon and subtitle */}
-        <div className="flex items-center gap-4 border-b border-border pb-5 mb-2">
-          <div className="p-3 bg-orange-100 dark:bg-orange-900/30 rounded-xl">
-            <Shield className="w-7 h-7 text-orange-600" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">
-              {t("admin.optionsList", "Options List")}
-            </h1>
-            <p className="text-muted-foreground text-sm mt-1">
-              {t(
-                "admin.settingsDesc",
-                "Manage your store's operational settings below.",
-              )}
-            </p>
-          </div>
+    <main className="px-6 md:px-12 flex-1 space-y-4">
+      <section className="bg-card border border-border rounded-xl shadow-sm p-6 space-y-5">
+        {/* Header */}
+        <div className="flex items-center gap-3">
+          <Shield className="w-7 h-7 text-orange-500" />
+          <h1 className="text-2xl font-bold">
+            {t("admin.optionsList", "Options List")}
+          </h1>
         </div>
-        <form onSubmit={handleSave} className="space-y-0">
+
+        {/* Settings Form */}
+        <form onSubmit={handleSave} className="space-y-6">
           {/* Low Stock Threshold Setting */}
-          <div className="flex flex-col md:flex-row items-start md:items-center gap-3 bg-muted/40 border border-border rounded-lg py-6 px-5 mb-6 mt-6">
+          <div className="flex flex-col md:flex-row items-start md:items-center gap-4 bg-muted/40 border border-border rounded-lg p-6">
             <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
               <Package className="w-6 h-6 text-green-600" />
             </div>
@@ -87,7 +79,7 @@ export default function AdministratorPage() {
               >
                 {t("admin.lowStockThreshold", "Low Stock Threshold")}
               </label>
-              <p className="text-xs text-muted-foreground mb-3">
+              <p className="text-sm text-muted-foreground mb-3">
                 {t(
                   "admin.lowStockDesc",
                   "Set the minimum quantity before a product is considered low in stock",
@@ -105,9 +97,10 @@ export default function AdministratorPage() {
               />
             </div>
           </div>
+
           {/* Store Cash Setting */}
-          <div className="flex flex-col md:flex-row items-start md:items-center gap-3 bg-muted/40 border border-border rounded-lg py-6 px-5 mb-6">
-            <div className="p-2 pl bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
+          <div className="flex flex-col md:flex-row items-start md:items-center gap-4 bg-muted/40 border border-border rounded-lg p-6">
+            <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
               <DollarSign className="w-6 h-6 text-blue-600" />
             </div>
             <div className="flex-1 w-full">
@@ -117,7 +110,7 @@ export default function AdministratorPage() {
               >
                 {t("admin.storeCash", "Store Cash")}
               </label>
-              <p className="text-xs text-muted-foreground mb-3">
+              <p className="text-sm text-muted-foreground mb-3">
                 {t("admin.storeCashDesc", "Default cash amount in store")}
               </p>
               <Input
@@ -132,8 +125,9 @@ export default function AdministratorPage() {
               />
             </div>
           </div>
+
           {/* Save Button and Feedback */}
-          <div className="flex flex-col md:flex-row items-center gap-4 pt-6 mt-2 border-t border-border">
+          <div className="flex flex-col md:flex-row items-center gap-4 pt-6 border-t border-border">
             <Button
               type="submit"
               disabled={loading || saving}
@@ -148,6 +142,8 @@ export default function AdministratorPage() {
                 <>{t("admin.save", "Save Settings")}</>
               )}
             </Button>
+
+            {/* Status Messages */}
             {loading && (
               <span className="flex items-center gap-2 text-muted-foreground text-sm">
                 <Loader2 className="w-4 h-4 animate-spin" />

@@ -74,24 +74,24 @@ export default function Sidebar() {
       // Expanding: show text after animation completes
       textTimeoutRef.current = setTimeout(() => {
         setShowText(true);
-      }, 700);
+      }, 500);
     } else {
       // Collapsing: hide text immediately
       setShowText(false);
     }
 
-    // Disable button for 1 second
+    // Disable button for 0.5 seconds
     setIsDisabled(true);
     timeoutRef.current = setTimeout(() => {
       setIsDisabled(false);
-    }, 1000);
+    }, 500);
   };
 
   return (
     <nav
       data-collapsed={collapsed}
       className={cn(
-        "fixed top-0 left-0 z-50 flex flex-col bg-card border-r rounded-xl shadow-md transition-all duration-1000 ease-in-out",
+        "fixed top-0 left-0 z-50 flex flex-col bg-card border-r rounded-xl shadow-md transition-[width] duration-500 ease-in-out",
         collapsed ? "w-14" : "w-[200px]",
       )}
       style={{
@@ -125,7 +125,7 @@ export default function Sidebar() {
         >
           <ChevronsLeft
             data-collapsed={collapsed}
-            className="data-[collapsed=true]:rotate-180 transition-all duration-600"
+            className="data-[collapsed=true]:rotate-180 transition-transform duration-300 ease-in-out"
           />
         </button>
       </div>
