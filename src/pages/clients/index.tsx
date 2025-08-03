@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Users, Loader2, CreditCard } from "lucide-react";
+import { Users, Loader2, CreditCard, ChevronDown, Check } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import ClientsTable from "./components/clientsTable";
 import EditClientDialog from "./components/editClientModal";
@@ -16,15 +16,28 @@ import {
   PaginationNext,
   PaginationEllipsis,
 } from "../../lib/components/pagination";
+import {
+  Command,
+  CommandGroup,
+  CommandItem,
+  CommandList,
+} from "../../lib/components/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "../../lib/components/popover";
 import type { Client } from "@prisma/client";
+import type { ClientWithTotalPurchases } from "../../types";
 import { useToast } from "../../lib/contexts/toastContext";
 import { ConfirmDialog } from "../../lib/components/confirmDialog";
 import { Button } from "../../lib/components/button";
+import { cn } from "../../lib/utils";
 
 export default function Clients() {
   const { t } = useTranslation();
   const { showToast } = useToast();
-  const [clients, setClients] = useState<Client[]>([]);
+  const [clients, setClients] = useState<ClientWithTotalPurchases[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
@@ -47,7 +60,7 @@ export default function Clients() {
     setError(null);
     try {
       const data = await window.api.database.clients.getAllWithTotalPurchases();
-      setClients(data as any);
+      setClients(data as unknown as ClientWithTotalPurchases[]);
     } catch (err) {
       setError(t("clients.fetchError", "Failed to fetch clients"));
     } finally {
@@ -176,24 +189,49 @@ export default function Clients() {
                 <span className="text-sm text-muted-foreground">
                   {t("clients.itemsPerPage", "Items per page:")}
                 </span>
-                <select
-                  className="px-2 py-1 border rounded text-sm bg-card"
-                  value={itemsPerPage}
-                  onChange={(e) => {
-                    setItemsPerPage(Number(e.target.value));
-                    setCurrentPage(1);
-                  }}
-                  aria-label={t(
-                    "clients.selectItemsPerPage",
-                    "Select items per page",
-                  )}
-                >
-                  {[5, 10, 25, 50, 100].map((size) => (
-                    <option key={size} value={size}>
-                      {size}
-                    </option>
-                  ))}
-                </select>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="px-3 py-1.5 min-w-[70px]"
+                      aria-label={t(
+                        "clients.selectItemsPerPage",
+                        "Select items per page",
+                      )}
+                    >
+                      {itemsPerPage}
+                      <ChevronDown className="ml-2 w-4 h-4" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[120px] p-0 z-50">
+                    <Command shouldFilter={false}>
+                      <CommandList>
+                        <CommandGroup>
+                          {[5, 10, 25, 50, 100].map((size) => (
+                            <CommandItem
+                              key={size}
+                              value={size.toString()}
+                              onSelect={() => {
+                                setItemsPerPage(size);
+                                setCurrentPage(1); // Reset to first page
+                              }}
+                            >
+                              {size}
+                              <Check
+                                className={cn(
+                                  "ml-auto h-4 w-4",
+                                  itemsPerPage === size
+                                    ? "opacity-100"
+                                    : "opacity-0",
+                                )}
+                              />
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
               {/* Search bar inline */}
               <SearchBar search={search} setSearch={setSearch} />

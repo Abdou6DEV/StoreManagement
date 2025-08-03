@@ -1,7 +1,20 @@
 import React from "react";
 import { Input } from "../../../lib/components/input";
-import { Filter, Search } from "lucide-react";
+import { Filter, Search, ChevronDown, Check } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { Button } from "../../../lib/components/button";
+import {
+  Command,
+  CommandGroup,
+  CommandItem,
+  CommandList,
+} from "../../../lib/components/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "../../../lib/components/popover";
+import { cn } from "../../../lib/utils";
 
 interface PaymentFiltersProps {
   search: string;
@@ -58,15 +71,66 @@ const PaymentFilters: React.FC<PaymentFiltersProps> = ({
           <label className="text-sm font-medium">
             {t("clients.status", "Status")}
           </label>
-          <select
-            className="w-full px-3 py-2 border rounded-md bg-card"
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as any)}
-          >
-            <option value="all">{t("clients.allStatus", "All Status")}</option>
-            <option value="paid">{t("clients.paid", "Paid")}</option>
-            <option value="unpaid">{t("clients.unpaid", "Unpaid")}</option>
-          </select>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className="w-full justify-between"
+                aria-label={t("clients.selectStatus", "Select status")}
+              >
+                {statusFilter === "all"
+                  ? t("clients.allStatus", "All Status")
+                  : statusFilter === "paid"
+                  ? t("clients.paid", "Paid")
+                  : t("clients.unpaid", "Unpaid")}
+                <ChevronDown className="ml-2 w-4 h-4" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[200px] p-0 z-50">
+              <Command shouldFilter={false}>
+                <CommandList>
+                  <CommandGroup>
+                    <CommandItem
+                      value="all"
+                      onSelect={() => setStatusFilter("all")}
+                    >
+                      {t("clients.allStatus", "All Status")}
+                      <Check
+                        className={cn(
+                          "ml-auto h-4 w-4",
+                          statusFilter === "all" ? "opacity-100" : "opacity-0",
+                        )}
+                      />
+                    </CommandItem>
+                    <CommandItem
+                      value="paid"
+                      onSelect={() => setStatusFilter("paid")}
+                    >
+                      {t("clients.paid", "Paid")}
+                      <Check
+                        className={cn(
+                          "ml-auto h-4 w-4",
+                          statusFilter === "paid" ? "opacity-100" : "opacity-0",
+                        )}
+                      />
+                    </CommandItem>
+                    <CommandItem
+                      value="unpaid"
+                      onSelect={() => setStatusFilter("unpaid")}
+                    >
+                      {t("clients.unpaid", "Unpaid")}
+                      <Check
+                        className={cn(
+                          "ml-auto h-4 w-4",
+                          statusFilter === "unpaid" ? "opacity-100" : "opacity-0",
+                        )}
+                      />
+                    </CommandItem>
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
         </div>
 
         {/* Type Filter */}
@@ -74,17 +138,66 @@ const PaymentFilters: React.FC<PaymentFiltersProps> = ({
           <label className="text-sm font-medium">
             {t("clients.type", "Type")}
           </label>
-          <select
-            className="w-full px-3 py-2 border rounded-md bg-card"
-            value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value as any)}
-          >
-            <option value="all">{t("clients.allTypes", "All Types")}</option>
-            <option value="CREDIT">{t("clients.credits", "Credits")}</option>
-            <option value="VERSEMENT">
-              {t("clients.versements", "Versements")}
-            </option>
-          </select>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className="w-full justify-between"
+                aria-label={t("clients.selectType", "Select type")}
+              >
+                {typeFilter === "all"
+                  ? t("clients.allTypes", "All Types")
+                  : typeFilter === "CREDIT"
+                  ? t("clients.credits", "Credits")
+                  : t("clients.versements", "Versements")}
+                <ChevronDown className="ml-2 w-4 h-4" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[200px] p-0 z-50">
+              <Command shouldFilter={false}>
+                <CommandList>
+                  <CommandGroup>
+                    <CommandItem
+                      value="all"
+                      onSelect={() => setTypeFilter("all")}
+                    >
+                      {t("clients.allTypes", "All Types")}
+                      <Check
+                        className={cn(
+                          "ml-auto h-4 w-4",
+                          typeFilter === "all" ? "opacity-100" : "opacity-0",
+                        )}
+                      />
+                    </CommandItem>
+                    <CommandItem
+                      value="CREDIT"
+                      onSelect={() => setTypeFilter("CREDIT")}
+                    >
+                      {t("clients.credits", "Credits")}
+                      <Check
+                        className={cn(
+                          "ml-auto h-4 w-4",
+                          typeFilter === "CREDIT" ? "opacity-100" : "opacity-0",
+                        )}
+                      />
+                    </CommandItem>
+                    <CommandItem
+                      value="VERSEMENT"
+                      onSelect={() => setTypeFilter("VERSEMENT")}
+                    >
+                      {t("clients.versements", "Versements")}
+                      <Check
+                        className={cn(
+                          "ml-auto h-4 w-4",
+                          typeFilter === "VERSEMENT" ? "opacity-100" : "opacity-0",
+                        )}
+                      />
+                    </CommandItem>
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
         </div>
 
         {/* Date Filter */}
@@ -92,15 +205,66 @@ const PaymentFilters: React.FC<PaymentFiltersProps> = ({
           <label className="text-sm font-medium">
             {t("clients.dateFilter", "Date Filter")}
           </label>
-          <select
-            className="w-full px-3 py-2 border rounded-md bg-card"
-            value={dateFilter}
-            onChange={(e) => setDateFilter(e.target.value as any)}
-          >
-            <option value="all">{t("clients.allDates", "All Dates")}</option>
-            <option value="overdue">{t("clients.overdue", "Overdue")}</option>
-            <option value="dueSoon">{t("clients.dueSoon", "Due Soon")}</option>
-          </select>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className="w-full justify-between"
+                aria-label={t("clients.selectDateFilter", "Select date filter")}
+              >
+                {dateFilter === "all"
+                  ? t("clients.allDates", "All Dates")
+                  : dateFilter === "overdue"
+                  ? t("clients.overdue", "Overdue")
+                  : t("clients.dueSoon", "Due Soon")}
+                <ChevronDown className="ml-2 w-4 h-4" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[200px] p-0 z-50">
+              <Command shouldFilter={false}>
+                <CommandList>
+                  <CommandGroup>
+                    <CommandItem
+                      value="all"
+                      onSelect={() => setDateFilter("all")}
+                    >
+                      {t("clients.allDates", "All Dates")}
+                      <Check
+                        className={cn(
+                          "ml-auto h-4 w-4",
+                          dateFilter === "all" ? "opacity-100" : "opacity-0",
+                        )}
+                      />
+                    </CommandItem>
+                    <CommandItem
+                      value="overdue"
+                      onSelect={() => setDateFilter("overdue")}
+                    >
+                      {t("clients.overdue", "Overdue")}
+                      <Check
+                        className={cn(
+                          "ml-auto h-4 w-4",
+                          dateFilter === "overdue" ? "opacity-100" : "opacity-0",
+                        )}
+                      />
+                    </CommandItem>
+                    <CommandItem
+                      value="dueSoon"
+                      onSelect={() => setDateFilter("dueSoon")}
+                    >
+                      {t("clients.dueSoon", "Due Soon")}
+                      <Check
+                        className={cn(
+                          "ml-auto h-4 w-4",
+                          dateFilter === "dueSoon" ? "opacity-100" : "opacity-0",
+                        )}
+                      />
+                    </CommandItem>
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
         </div>
       </div>
     </div>
