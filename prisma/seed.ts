@@ -716,6 +716,9 @@ async function main() {
           () => faker.location.streetAddress({ useFullAddress: true }),
           { probability: 0.6 },
         ),
+        notes: faker.helpers.maybe(() => faker.lorem.sentence(), {
+          probability: 0.4,
+        }),
       },
     });
 
