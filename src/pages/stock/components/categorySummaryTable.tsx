@@ -13,7 +13,16 @@ import {
   CommandItem,
   CommandList,
 } from "../../../lib/components/command";
-import { Package, Check, ChevronDown } from "lucide-react";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationPrevious,
+  PaginationNext,
+  PaginationEllipsis,
+} from "../../../lib/components/pagination";
+import { Package, Check, ChevronDown, Folder } from "lucide-react";
 import { cn } from "../../../lib/utils";
 
 export default function CategorySummaryTable() {
@@ -162,6 +171,16 @@ export default function CategorySummaryTable() {
             {t("stock.emptyCategoryDesc")}
           </p>
         </div>
+      ) : filteredSummary.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-16 gap-4 text-center">
+          <Folder className="w-16 h-16 text-green-600 mb-2" />
+          <h3 className="text-xl font-semibold text-foreground">
+            {t("stock.emptyCategoryTitle")}
+          </h3>
+          <p className="text-muted-foreground max-w-md">
+            {t("stock.emptyCategoryDesc")}
+          </p>
+        </div>
       ) : (
         <>
           <div className="overflow-auto rounded-lg border border-grey-200 mt-5">
@@ -241,27 +260,82 @@ export default function CategorySummaryTable() {
           </div>
           {/* Pagination controls at the bottom, centered */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-center gap-6">
-              <button
-                disabled={currentPage === 1}
-                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                className="text-sm px-4 py-2 border-1 rounded-md hover:bg-muted transition disabled:opacity-50 disabled:bg-card"
-              >
-                {t("stock.prev", "Previous")}
-              </button>
-              <span className="text-sm text-muted-foreground">
-                {t("stock.page")} {currentPage} / {totalPages}
-              </span>
-              <button
-                disabled={currentPage === totalPages}
-                onClick={() =>
-                  setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-                }
-                className="text-sm px-4 py-2 border-1 rounded-md hover:bg-muted transition disabled:opacity-50 disabled:bg-card"
-              >
-                {t("stock.next", "Next")}
-              </button>
-            </div>
+            <Pagination className="mt-6">
+              <PaginationContent>
+                <PaginationItem>
+                  {currentPage === 1 || filteredSummary.length === 0 ? (
+                    <span className="opacity-50 pointer-events-none select-none">
+                      <PaginationPrevious href="#" />
+                    </span>
+                  ) : (
+                    <PaginationPrevious
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setCurrentPage(currentPage - 1);
+                      }}
+                      href="#"
+                    />
+                  )}
+                </PaginationItem>
+                {/* Page numbers with ellipsis if needed */}
+                {(() => {
+                  const items = [];
+                  let start = Math.max(1, currentPage - 2);
+                  let end = Math.min(totalPages, currentPage + 2);
+                  if (currentPage <= 3) {
+                    end = Math.min(5, totalPages);
+                  } else if (currentPage >= totalPages - 2) {
+                    start = Math.max(1, totalPages - 4);
+                  }
+                  if (start > 1) {
+                    items.push(
+                      <PaginationItem key="start-ellipsis">
+                        <PaginationEllipsis />
+                      </PaginationItem>,
+                    );
+                  }
+                  for (let i = start; i <= end; i++) {
+                    items.push(
+                      <PaginationItem key={i}>
+                        <PaginationLink
+                          isActive={i === currentPage}
+                          href="#"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setCurrentPage(i);
+                          }}
+                        >
+                          {i}
+                        </PaginationLink>
+                      </PaginationItem>,
+                    );
+                  }
+                  if (end < totalPages) {
+                    items.push(
+                      <PaginationItem key="end-ellipsis">
+                        <PaginationEllipsis />
+                      </PaginationItem>,
+                    );
+                  }
+                  return items;
+                })()}
+                <PaginationItem>
+                  {currentPage === totalPages || filteredSummary.length === 0 ? (
+                    <span className="opacity-50 pointer-events-none select-none">
+                      <PaginationNext href="#" />
+                    </span>
+                  ) : (
+                    <PaginationNext
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setCurrentPage(currentPage + 1);
+                      }}
+                      href="#"
+                    />
+                  )}
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
           )}
         </>
       )}
