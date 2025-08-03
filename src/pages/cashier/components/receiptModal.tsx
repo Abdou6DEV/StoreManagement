@@ -311,10 +311,16 @@ export default function ReceiptModal({
               `
                   : ""
               }
-              <div class="total-row">
-                <span>Total:</span>
-                <span>${finalTotal.toLocaleString()} ${t("cashier.currency", "DA")}</span>
-              </div>
+              ${
+                discount > 0 || (paymentType !== "none" && paymentAmount > 0)
+                  ? `
+                <div class="total-row">
+                  <span>New Total:</span>
+                  <span>${finalTotal.toLocaleString()} ${t("cashier.currency", "DA")}</span>
+                </div>
+              `
+                  : ""
+              }
             </div>
 
             <!-- Payment Info -->
@@ -456,12 +462,14 @@ export default function ReceiptModal({
                 </span>
               </div>
             )}
-            <div className="flex justify-between">
-              <span>Total:</span>
-              <span>
-                {finalTotal.toLocaleString()} {t("cashier.currency", "DA")}
-              </span>
-            </div>
+            {(discount > 0 || (paymentType !== "none" && paymentAmount > 0)) && (
+              <div className="flex justify-between">
+                <span>New Total:</span>
+                <span>
+                  {finalTotal.toLocaleString()} {t("cashier.currency", "DA")}
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Payment Info */}
