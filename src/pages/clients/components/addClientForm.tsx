@@ -1,12 +1,12 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "../../../lib/components/button";
 import { Loader2, Users, ChevronDown, ChevronUp } from "lucide-react";
 import { useToast } from "../../../lib/contexts/toastContext";
 
 interface AddClientFormProps {
-  openPanel: "add" | null;
-  setOpenPanel: React.Dispatch<React.SetStateAction<"add" | null>>;
+  openPanel: "add" | "addPayment" | null;
+  setOpenPanel: React.Dispatch<React.SetStateAction<"add" | "addPayment" | null>>;
   onClientAdded: () => void;
 }
 
@@ -135,7 +135,7 @@ export default function AddClientForm({
               ) : (
                 <>
                   <Users className="w-4 h-4" />
-                  {t("clients.addButton", "Add")}
+                  {t("clients.addButton", "Add Client")}
                 </>
               )}
             </Button>

@@ -5,6 +5,7 @@ import ClientsTable from "./components/clientsTable";
 import EditClientDialog from "./components/editClientModal";
 import SearchBar from "./components/searchBar";
 import AddClientForm from "./components/addClientForm";
+import AddPaymentForm from "./components/addPaymentForm";
 import PaymentsModal from "./components/paymentsModal";
 import AllPaymentsView from "./components/allPaymentsView";
 import {
@@ -46,7 +47,7 @@ export default function Clients() {
   const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [openPanel, setOpenPanel] = useState<"add" | null>(null);
+  const [openPanel, setOpenPanel] = useState<"add" | "addPayment" | null>(null);
   const [paymentsClient, setPaymentsClient] = useState<Client | null>(null);
   const [viewMode, setViewMode] = useState<"clients" | "payments">("clients");
   const [confirmDelete, setConfirmDelete] = useState<{
@@ -163,6 +164,11 @@ export default function Clients() {
         openPanel={openPanel}
         setOpenPanel={setOpenPanel}
         onClientAdded={fetchClients}
+      />
+      <AddPaymentForm
+        openPanel={openPanel}
+        setOpenPanel={setOpenPanel}
+        onPaymentAdded={fetchClients}
       />
       <section className="bg-card border border-border rounded-xl shadow-sm p-6 space-y-5">
         {viewMode === "clients" ? (

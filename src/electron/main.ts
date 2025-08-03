@@ -21,6 +21,7 @@ import {
 } from "../lib/database/clients";
 import {
   createSale,
+  createDummySale,
   getProductSalesCounts,
   getAllSales,
   updateSale,
@@ -163,6 +164,10 @@ function setupDatabaseHandlers() {
 
   ipcMain.handle("db:sales:create", async (_event, data) => {
     return await createSale(data);
+  });
+
+  ipcMain.handle("db:sales:createDummy", async (_event, data) => {
+    return await createDummySale(data);
   });
 
   ipcMain.handle("db:clients:getAll", async () => {
