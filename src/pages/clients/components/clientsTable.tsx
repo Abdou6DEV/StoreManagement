@@ -1,15 +1,15 @@
 import React from "react";
 import { Button } from "../../../lib/components/button";
-import { Edit, Loader2, Trash2, Users } from "lucide-react";
+import { Edit, Loader2, Trash2, CreditCard } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import type { Client } from "../../../types";
+import type { ClientWithTotalPurchases } from "../../../types";
 
 interface ClientsTableProps {
-  clients: Client[];
-  onEdit: (client: Client) => void;
+  clients: ClientWithTotalPurchases[];
+  onEdit: (client: ClientWithTotalPurchases) => void;
   onDelete: (id: string) => void;
   deleteLoading: string | null;
-  onViewPayments: (client: Client) => void;
+  onViewPayments: (client: ClientWithTotalPurchases) => void;
 }
 
 const ClientsTable: React.FC<ClientsTableProps> = ({
@@ -24,7 +24,7 @@ const ClientsTable: React.FC<ClientsTableProps> = ({
   if (clients.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 gap-3 text-center">
-        <Users className="w-12 h-12 text-red-500 mb-1" />
+        <CreditCard className="w-12 h-12 text-red-500 mb-1" />
         <h3 className="text-xl font-semibold text-foreground">
           {t("clients.emptyTitle", "No clients found")}
         </h3>
@@ -70,21 +70,20 @@ const ClientsTable: React.FC<ClientsTableProps> = ({
               <td className="px-4 py-2">
                 <div className="flex gap-2">
                   <Button
-                    onClick={() => onEdit(client)}
-                    size="sm"
-                    variant="outline"
-                    className="text-green-600 border-green-200 hover:bg-green-50 dark:text-green-400 dark:border-green-800 dark:hover:bg-green-950/30"
-                  >
-                    <Edit className="w-3 h-3" /> {t("clients.edit", "Edit")}
-                  </Button>
-                  <Button
                     onClick={() => onViewPayments(client)}
                     size="sm"
                     variant="outline"
                     className="text-blue-600 border-blue-200 hover:bg-blue-50 dark:text-blue-400 dark:border-blue-800 dark:hover:bg-blue-950/30"
                   >
-                    <Users className="w-3 h-3" />{" "}
-                    {t("clients.viewPayments", "Payments")}
+                    <CreditCard className="w-3 h-3" />
+                  </Button>
+                  <Button
+                    onClick={() => onEdit(client)}
+                    size="sm"
+                    variant="outline"
+                    className="text-green-600 border-green-200 hover:bg-green-50 dark:text-green-400 dark:border-green-800 dark:hover:bg-green-950/30"
+                  >
+                    <Edit className="w-3 h-3" />
                   </Button>
                   <Button
                     onClick={() => onDelete(client.id)}
@@ -97,8 +96,7 @@ const ClientsTable: React.FC<ClientsTableProps> = ({
                       <Loader2 className="w-3 h-3 animate-spin" />
                     ) : (
                       <Trash2 className="w-3 h-3" />
-                    )}{" "}
-                    {t("clients.delete", "Delete")}
+                    )}
                   </Button>
                 </div>
               </td>

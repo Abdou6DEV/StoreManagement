@@ -305,7 +305,6 @@ export const StockTable = () => {
               className="text-blue-600 border-blue-200 hover:bg-blue-50 dark:text-blue-400 dark:border-blue-800 dark:hover:bg-blue-950/30"
             >
               <Info className="w-3 h-3" />
-              {t("stock.view", "View")}
             </Button>
             <Button
               onClick={() => setEditingProductID(product.id)}
@@ -314,7 +313,6 @@ export const StockTable = () => {
               className="text-green-600 border-green-200 hover:bg-green-50 dark:text-green-400 dark:border-green-800 dark:hover:bg-green-950/30"
             >
               <Edit className="w-3 h-3" />
-              {t("stock.edit", "Edit")}
             </Button>
             <Button
               onClick={() => handleDeleteProduct(product.id)}
@@ -323,7 +321,6 @@ export const StockTable = () => {
               className="text-red-600 border-red-200 hover:bg-red-50 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-950/30"
             >
               <X className="w-3 h-3" />
-              {t("stock.delete", "Delete")}
             </Button>
           </div>
         </td>

@@ -1,9 +1,10 @@
-import type { Product, Payment } from "@prisma/client";
+import type { Product, Payment, Client } from "@prisma/client";
 
 export type ToastType = "success" | "error" | "info";
 export type Theme = "light" | "dark";
 export type ModalSize = "sm" | "md" | "lg" | "xl" | "full" | "auto";
 export type ModalType = "dialog" | "overlay";
+export type ClientWithTotalPurchases = Client & { totalPurchases: number };
 
 export interface CartItem {
   id: string;
