@@ -285,7 +285,7 @@ const PaymentsModal: React.FC<PaymentsModalProps> = ({ client, onClose }) => {
       )}
       icon={<CreditCard className="w-5 h-5 text-red-500" />}
       size="full"
-      className="max-w-[80vw] max-h-[80vh]"
+      className="max-w-[60vw] max-h-[80vh]"
       showFooter={false}
     >
       <div className="space-y-6 max-h-[60vh] overflow-y-auto">
