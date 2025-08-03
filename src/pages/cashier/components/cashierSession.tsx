@@ -139,7 +139,7 @@ export default function CashierSession({
     });
 
     // Proceed with sale and get the sale ID
-    const saleId = await proceedWithSaleWithReceipt();
+    const saleId = await proceedWithSale();
     if (saleId) {
       onSaleComplete(saleId);
     }
@@ -148,77 +148,8 @@ export default function CashierSession({
     setPaymentDate(undefined);
   };
 
-  // Extracted sale logic for reuse
-  const proceedWithSale = async () => {
-    let saleClientId = clientId;
-    try {
-      if (clientName.trim() && !clientId) {
-        // First try to find an existing client with this name
-        const allClients = await window.api.database.clients.getAll();
-        const existingClient = allClients.find(
-          (c) => c.name === clientName.trim(),
-        );
-
-        if (existingClient) {
-          saleClientId = existingClient.id;
-          setClientId(existingClient.id);
-        } else {
-          // Only create a new client if one doesn't exist
-          const client = await window.api.database.clients.create({
-            name: clientName.trim(),
-          });
-          saleClientId = client.id;
-          setClientId(client.id);
-        }
-      }
-
-      const sale = await window.api.database.sales.create({
-        clientId: saleClientId || undefined,
-        items: cart.map((item) => ({
-          productId: item.id,
-          quantity: item.qty,
-          price: item.price,
-        })),
-        discount: Number(discount) || 0,
-      });
-
-      // Add payment if payment info is present and valid
-      if (
-        paymentType !== "none" &&
-        paymentAmount > 0 &&
-        paymentDate &&
-        saleClientId
-      ) {
-        await window.api.database.payments.create({
-          saleId: sale.id,
-          clientId: saleClientId,
-          givenAmount: paymentAmount,
-          dueDate: paymentDate,
-          paidDate: undefined, // Do not set paidDate for either credit or versement
-          type: paymentType === "credit" ? "CREDIT" : "VERSEMENT",
-        });
-      }
-      setCart([]);
-      setClientName("");
-      setClientId(null);
-      setDiscount("");
-      setPaymentAmount(0);
-      setPaymentType("none");
-      setPaymentDate(undefined);
-      setProductRefreshKey((k: number) => k + 1);
-      showToast(
-        t("cashier.saleRecorded", "Sale recorded successfully"),
-        "success",
-      );
-      return sale.id;
-    } catch (err) {
-      showToast(t("cashier.saleError", "Failed to record sale"), "error");
-      return undefined;
-    }
-  };
-
-  // Sale logic that returns the sale ID for receipt
-  const proceedWithSaleWithReceipt = async (): Promise<string | undefined> => {
+  // Common sale logic that both regular and receipt sales can use
+  const proceedWithSale = async (): Promise<string | undefined> => {
     let saleClientId = clientId;
     try {
       if (clientName.trim() && !clientId) {
