@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { Clock, User, ShoppingBag, Search, Eye } from "lucide-react";
+import { Clock, User, ShoppingBag, Search, Eye, Trash2 } from "lucide-react";
 import { Input } from "../../../lib/components/input";
 import SaleDetailsModal from "../../../lib/components/saleDetailsModal";
 import { useStock } from "../../../lib/contexts/stockContext";
+import { useToast } from "../../../lib/contexts/toastContext";
 import { Sale } from "../../../types";
 
 interface HistoryBrowserProps {
@@ -17,12 +18,16 @@ const HistoryBrowser: React.FC<HistoryBrowserProps> = ({
 }) => {
   const { t } = useTranslation();
   const { refetchProducts } = useStock();
+  const { showToast } = useToast();
   const [sales, setSales] = useState<Sale[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const [saleToDelete, setSaleToDelete] = useState<Sale | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const fetchSales = async () => {
     try {
@@ -129,6 +134,66 @@ const HistoryBrowser: React.FC<HistoryBrowserProps> = ({
     }
   };
 
+  const handleSaleDeleted = async (saleId: string) => {
+    // Remove the sale from the local state
+    setSales((prevSales) => prevSales.filter((sale) => sale.id !== saleId));
+
+    // Clear the selected sale if it's the same one
+    if (selectedSale?.id === saleId) {
+      setSelectedSale(null);
+      setShowModal(false);
+    }
+
+    // Refresh stock context to update product quantities and sales counts
+    try {
+      await refetchProducts();
+    } catch (error) {
+      console.error("Error refreshing stock context:", error);
+    }
+  };
+
+  const handleDeleteSale = async (sale: Sale, event: React.MouseEvent) => {
+    event.stopPropagation(); // Prevent opening the modal
+    setSaleToDelete(sale);
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDeleteSale = async () => {
+    if (!saleToDelete) return;
+
+    setIsDeleting(true);
+    try {
+      await window.api.database.sales.delete(saleToDelete.id);
+
+      // Remove the sale from the local state
+      setSales((prevSales) =>
+        prevSales.filter((s) => s.id !== saleToDelete.id),
+      );
+
+      // Clear the selected sale if it's the same one
+      if (selectedSale?.id === saleToDelete.id) {
+        setSelectedSale(null);
+        setShowModal(false);
+      }
+
+      // Refresh stock context to update product quantities and sales counts
+      await refetchProducts();
+
+      // Show success toast
+      showToast(
+        t("cashier.saleDeleted", "Sale deleted successfully"),
+        "success",
+      );
+    } catch (error) {
+      console.error("Error deleting sale:", error);
+      showToast(t("cashier.saleDeleteError", "Failed to delete sale"), "error");
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteConfirm(false);
+      setSaleToDelete(null);
+    }
+  };
+
   return (
     <div className="h-full flex flex-col">
       {/* Search Bar */}
@@ -216,15 +281,25 @@ const HistoryBrowser: React.FC<HistoryBrowserProps> = ({
                   </div>
                 </div>
 
-                {/* Footer with items count and view button */}
+                {/* Footer with items count and action buttons */}
                 <div className="flex items-center justify-between text-sm">
                   <div className="flex items-center gap-2 text-orange-600">
                     <ShoppingBag className="w-4 h-4" />
                     {sale.totalItems} {t("cashier.items", "items")}
                   </div>
-                  <div className="px-3 py-1.5 text-primary border border-primary/30 text-xs rounded-md bg-primary/5 flex items-center gap-1.5">
-                    <Eye className="w-3 h-3" />
-                    {t("cashier.view", "View")}
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={(e) => handleDeleteSale(sale, e)}
+                      className="px-3 py-1.5 text-red-600 border border-red-300 text-xs rounded-md bg-red-50 hover:bg-red-100 transition-colors flex items-center gap-1.5"
+                      title={t("cashier.deleteSale", "Delete Sale")}
+                    >
+                      <Trash2 className="w-3 h-3" />
+                      {t("cashier.delete", "Delete")}
+                    </button>
+                    <div className="px-3 py-1.5 text-primary border border-primary/30 text-xs rounded-md bg-primary/5 flex items-center gap-1.5">
+                      <Eye className="w-3 h-3" />
+                      {t("cashier.view", "View")}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -241,7 +316,61 @@ const HistoryBrowser: React.FC<HistoryBrowserProps> = ({
         onPrint={handlePrintReceipt}
         onModify={handleModifySale}
         onSaleUpdated={handleSaleUpdated}
+        onSaleDeleted={handleSaleDeleted}
       />
+
+      {/* Delete Confirmation Dialog */}
+      {showDeleteConfirm && saleToDelete && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
+          <div className="bg-background border border-border/50 rounded-xl shadow-xl max-w-md w-full p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-red-500/10 rounded-lg">
+                <Trash2 className="w-5 h-5 text-red-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-foreground">
+                  {t("cashier.confirmDelete", "Confirm Delete")}
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  {t(
+                    "cashier.deleteSaleWarning",
+                    "This action cannot be undone",
+                  )}
+                </p>
+              </div>
+            </div>
+
+            <p className="text-sm text-foreground mb-6">
+              {t(
+                "cashier.deleteSaleMessage",
+                "Are you sure you want to delete this sale? This will restore the product quantities to your inventory.",
+              )}
+            </p>
+
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => {
+                  setShowDeleteConfirm(false);
+                  setSaleToDelete(null);
+                }}
+                disabled={isDeleting}
+                className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {t("cashier.cancel", "Cancel")}
+              </button>
+              <button
+                onClick={confirmDeleteSale}
+                disabled={isDeleting}
+                className="px-4 py-2 text-sm font-medium bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isDeleting
+                  ? t("cashier.deleting", "Deleting...")
+                  : t("cashier.delete", "Delete")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

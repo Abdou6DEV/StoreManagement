@@ -63,9 +63,7 @@ const PaymentFilters: React.FC<PaymentFiltersProps> = ({
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as any)}
           >
-            <option value="all">
-              {t("clients.allStatus", "All Status")}
-            </option>
+            <option value="all">{t("clients.allStatus", "All Status")}</option>
             <option value="paid">{t("clients.paid", "Paid")}</option>
             <option value="unpaid">{t("clients.unpaid", "Unpaid")}</option>
           </select>
@@ -101,9 +99,7 @@ const PaymentFilters: React.FC<PaymentFiltersProps> = ({
           >
             <option value="all">{t("clients.allDates", "All Dates")}</option>
             <option value="overdue">{t("clients.overdue", "Overdue")}</option>
-            <option value="dueSoon">
-              {t("clients.dueSoon", "Due Soon")}
-            </option>
+            <option value="dueSoon">{t("clients.dueSoon", "Due Soon")}</option>
             <option value="paid">{t("clients.paid", "Paid")}</option>
           </select>
         </div>
@@ -112,4 +108,4 @@ const PaymentFilters: React.FC<PaymentFiltersProps> = ({
   );
 };
 
-export default PaymentFilters; 
+export default PaymentFilters;

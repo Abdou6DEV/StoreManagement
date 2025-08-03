@@ -36,4 +36,4 @@ const PaymentStatus: React.FC<PaymentStatusProps> = ({
   );
 };
 
-export default PaymentStatus; 
+export default PaymentStatus;

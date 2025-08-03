@@ -46,4 +46,4 @@ export const getFilteredPayments = (
 
     return matchesSearch && matchesStatus && matchesType && matchesDate;
   });
-}; 
+};

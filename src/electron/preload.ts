@@ -89,6 +89,7 @@ contextBridge.exposeInMainWorld("api", {
           discount?: number;
         },
       ) => ipcRenderer.invoke("db:sales:update", { id, data }),
+      delete: (id: string) => ipcRenderer.invoke("db:sales:delete", id),
     },
     options: {
       get: (key: string) => ipcRenderer.invoke("db:options:get", key),
@@ -255,6 +256,7 @@ declare global {
               discount?: number;
             },
           ) => Promise<SaleWithDetails>;
+          delete: (id: string) => Promise<void>;
         };
         options: {
           get: (key: string) => Promise<string | null>;

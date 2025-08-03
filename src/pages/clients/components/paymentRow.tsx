@@ -142,4 +142,4 @@ const PaymentRow: React.FC<PaymentRowProps> = ({
   );
 };
 
-export default PaymentRow; 
+export default PaymentRow;

@@ -45,4 +45,4 @@ const PaymentActions: React.FC<PaymentActionsProps> = ({
   );
 };
 
-export default PaymentActions; 
+export default PaymentActions;

@@ -25,6 +25,7 @@ import {
   getAllSales,
   updateSale,
   getRecentSales,
+  deleteSale,
 } from "../lib/database/sales";
 import { getOption, setOption } from "../lib/database/options";
 import {
@@ -236,6 +237,10 @@ function setupDatabaseHandlers() {
 
   ipcMain.handle("db:sales:update", async (_event, { id, data }) => {
     return await updateSale(id, data);
+  });
+
+  ipcMain.handle("db:sales:delete", async (_event, id: string) => {
+    return await deleteSale(id);
   });
 
   // Sellers handlers

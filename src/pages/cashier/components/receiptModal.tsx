@@ -462,7 +462,8 @@ export default function ReceiptModal({
                 </span>
               </div>
             )}
-            {(discount > 0 || (paymentType !== "none" && paymentAmount > 0)) && (
+            {(discount > 0 ||
+              (paymentType !== "none" && paymentAmount > 0)) && (
               <div className="flex justify-between">
                 <span>New Total:</span>
                 <span>

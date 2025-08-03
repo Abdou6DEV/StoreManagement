@@ -13,6 +13,7 @@ import {
   Edit,
   Save,
   RotateCcw,
+  Trash2,
 } from "lucide-react";
 import PaymentSummary from "./paymentSummary";
 import { useToast } from "../contexts/toastContext";
@@ -25,6 +26,7 @@ interface SaleDetailsModalProps {
   onPrint?: (sale: Sale) => void;
   onModify?: (sale: Sale) => void;
   onSaleUpdated?: (updatedSale: Sale) => void;
+  onSaleDeleted?: (saleId: string) => void;
 }
 
 const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
@@ -33,6 +35,7 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
   onClose,
   onPrint,
   onSaleUpdated,
+  onSaleDeleted,
 }) => {
   const { t } = useTranslation();
   const { showToast } = useToast();
@@ -40,6 +43,8 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
   const [editedCart, setEditedCart] = useState<any[]>([]);
   const [editedDiscount, setEditedDiscount] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Reset edit state when modal opens/closes
   useEffect(() => {
@@ -168,6 +173,27 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
     }
   };
 
+  const handleDelete = async () => {
+    if (!sale) return;
+
+    setIsDeleting(true);
+    try {
+      await window.api.database.sales.delete(sale.id);
+      showToast(
+        t("cashier.saleDeleted", "Sale deleted successfully"),
+        "success",
+      );
+      onSaleDeleted?.(sale.id);
+      onClose();
+    } catch (error) {
+      console.error("Error deleting sale:", error);
+      showToast(t("cashier.saleDeleteError", "Failed to delete sale"), "error");
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteConfirm(false);
+    }
+  };
+
   const currentCart = isEditing
     ? editedCart
     : sale.saleItems.map((item) => ({
@@ -235,13 +261,22 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
                 </button>
               </>
             ) : (
-              <button
-                onClick={handleModify}
-                className="p-2.5 hover:bg-muted/50 rounded-lg transition-colors"
-                title={t("cashier.modifySale", "Modify Sale")}
-              >
-                <Edit className="w-4 h-4 text-muted-foreground" />
-              </button>
+              <>
+                <button
+                  onClick={handleModify}
+                  className="p-2.5 hover:bg-muted/50 rounded-lg transition-colors"
+                  title={t("cashier.modifySale", "Modify Sale")}
+                >
+                  <Edit className="w-4 h-4 text-muted-foreground" />
+                </button>
+                <button
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className="p-2.5 hover:bg-red-500/10 rounded-lg transition-colors"
+                  title={t("cashier.deleteSale", "Delete Sale")}
+                >
+                  <Trash2 className="w-4 h-4 text-red-600" />
+                </button>
+              </>
             )}
             <button
               onClick={handlePrint}
@@ -380,6 +415,56 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
+          <div className="bg-background border border-border/50 rounded-xl shadow-xl max-w-md w-full p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-red-500/10 rounded-lg">
+                <Trash2 className="w-5 h-5 text-red-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-foreground">
+                  {t("cashier.confirmDelete", "Confirm Delete")}
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  {t(
+                    "cashier.deleteSaleWarning",
+                    "This action cannot be undone",
+                  )}
+                </p>
+              </div>
+            </div>
+
+            <p className="text-sm text-foreground mb-6">
+              {t(
+                "cashier.deleteSaleMessage",
+                "Are you sure you want to delete this sale? This will restore the product quantities to your inventory.",
+              )}
+            </p>
+
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                disabled={isDeleting}
+                className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {t("cashier.cancel", "Cancel")}
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="px-4 py-2 text-sm font-medium bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isDeleting
+                  ? t("cashier.deleting", "Deleting...")
+                  : t("cashier.delete", "Delete")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

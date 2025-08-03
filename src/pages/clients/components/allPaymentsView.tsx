@@ -1,18 +1,17 @@
 import React, { useEffect, useState } from "react";
 import { Button } from "../../../lib/components/button";
 import { ConfirmDialog } from "../../../lib/components/confirmDialog";
-import {
-  Loader2,
-  CreditCard,
-  ArrowUpCircle,
-  Users,
-} from "lucide-react";
+import { Loader2, CreditCard, ArrowUpCircle, Users } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useToast } from "../../../lib/contexts/toastContext";
 import type { PaymentWithClient } from "../../../types";
 import PaymentFilters from "./paymentFilters";
 import PaymentTable from "./paymentTable";
-import { isOverdue, isDueSoon, getFilteredPayments } from "../utils/paymentUtils";
+import {
+  isOverdue,
+  isDueSoon,
+  getFilteredPayments,
+} from "../utils/paymentUtils";
 
 interface AllPaymentsViewProps {
   onBack: () => void;
@@ -143,10 +142,20 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({ onBack }) => {
     refreshPayments();
   }, []);
 
-  const filteredCredits = getFilteredPayments(credits, search, statusFilter, typeFilter, dateFilter);
-  const filteredVersements = getFilteredPayments(versements, search, statusFilter, typeFilter, dateFilter);
-
-
+  const filteredCredits = getFilteredPayments(
+    credits,
+    search,
+    statusFilter,
+    typeFilter,
+    dateFilter,
+  );
+  const filteredVersements = getFilteredPayments(
+    versements,
+    search,
+    statusFilter,
+    typeFilter,
+    dateFilter,
+  );
 
   return (
     <div className="space-y-6">
@@ -158,7 +167,11 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({ onBack }) => {
             {t("clients.allPaymentsTitle", "All Credits & Versements")}
           </h1>
         </div>
-        <Button onClick={onBack} variant="outline" className="flex items-center gap-2">
+        <Button
+          onClick={onBack}
+          variant="outline"
+          className="flex items-center gap-2"
+        >
           <Users className="w-4 h-4" />
           {t("clients.backToClients", "Back to Clients")}
         </Button>
