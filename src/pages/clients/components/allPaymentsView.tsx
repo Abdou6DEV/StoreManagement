@@ -1,24 +1,17 @@
 import React, { useEffect, useState } from "react";
 import { Button } from "../../../lib/components/button";
-import { Input } from "../../../lib/components/input";
 import { ConfirmDialog } from "../../../lib/components/confirmDialog";
 import {
   Loader2,
   CreditCard,
   ArrowUpCircle,
-  CheckCircle,
-  Edit,
-  Save,
-  Clock,
-  Filter,
-  Calendar,
-  User,
-  Search,
-  X,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useToast } from "../../../lib/contexts/toastContext";
 import type { PaymentWithClient } from "../../../types";
+import PaymentFilters from "./paymentFilters";
+import PaymentTable from "./paymentTable";
+import { isOverdue, isDueSoon, getFilteredPayments } from "../utils/paymentUtils";
 
 interface AllPaymentsViewProps {
   onBack: () => void;
@@ -149,212 +142,10 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({ onBack }) => {
     refreshPayments();
   }, []);
 
-  const isOverdue = (dueDate: Date) => {
-    return new Date(dueDate) < new Date() && new Date(dueDate).getTime() !== 0;
-  };
+  const filteredCredits = getFilteredPayments(credits, search, statusFilter, typeFilter, dateFilter);
+  const filteredVersements = getFilteredPayments(versements, search, statusFilter, typeFilter, dateFilter);
 
-  const isDueSoon = (dueDate: Date) => {
-    const today = new Date();
-    const due = new Date(dueDate);
-    const diffTime = due.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays >= 0 && diffDays <= 7;
-  };
 
-  const getFilteredPayments = (payments: PaymentWithClient[]) => {
-    return payments.filter((payment) => {
-      // Search filter
-      const matchesSearch =
-        payment.client.name.toLowerCase().includes(search.toLowerCase()) ||
-        (payment.client.phone && payment.client.phone.includes(search));
-
-      // Status filter
-      const matchesStatus =
-        statusFilter === "all" ||
-        (statusFilter === "paid" && payment.paidDate) ||
-        (statusFilter === "unpaid" && !payment.paidDate);
-
-      // Type filter
-      const matchesType = typeFilter === "all" || payment.type === typeFilter;
-
-      // Date filter
-      let matchesDate = true;
-      if (dateFilter === "overdue") {
-        matchesDate = isOverdue(payment.dueDate);
-      } else if (dateFilter === "dueSoon") {
-        matchesDate = isDueSoon(payment.dueDate);
-      } else if (dateFilter === "paid") {
-        matchesDate = !!payment.paidDate;
-      }
-
-      return matchesSearch && matchesStatus && matchesType && matchesDate;
-    });
-  };
-
-  const filteredCredits = getFilteredPayments(credits);
-  const filteredVersements = getFilteredPayments(versements);
-
-  const PaymentTable = ({
-    payments,
-    type,
-  }: {
-    payments: PaymentWithClient[];
-    type: "CREDIT" | "VERSEMENT";
-  }) => (
-    <div className="overflow-auto rounded-lg border border-muted">
-      <table className="min-w-full text-sm text-left">
-        <thead className="bg-muted text-muted-foreground">
-          <tr>
-            <th className="px-4 py-3">{t("clients.clientName", "Client")}</th>
-            <th className="px-4 py-3">
-              {t("clients.paymentAmount", "Amount")}
-            </th>
-            <th className="px-4 py-3">
-              {t("clients.paymentDueDate", "Due Date")}
-            </th>
-            <th className="px-4 py-3">
-              {t("clients.paymentPaidDate", "Paid Date")}
-            </th>
-            <th className="px-4 py-3">
-              {t("clients.paymentCreatedAt", "Created At")}
-            </th>
-            <th className="px-4 py-3">{t("clients.actions", "Actions")}</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-border">
-          {payments.map((payment) => (
-            <tr key={payment.id} className="hover:bg-muted/40 transition">
-              <td className="px-4 py-2">
-                <div className="flex items-center gap-2">
-                  <User className="w-4 h-4 text-muted-foreground" />
-                  <div>
-                    <div className="font-medium">{payment.client.name}</div>
-                    {payment.client.phone && (
-                      <div className="text-xs text-muted-foreground">
-                        {payment.client.phone}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </td>
-              <td className="px-4 py-2">
-                {editingPayment === payment.id ? (
-                  <div className="flex items-center gap-2">
-                    <Input
-                      type="number"
-                      value={editAmount}
-                      onChange={(e) => setEditAmount(Number(e.target.value))}
-                      className="w-20 h-8 text-sm"
-                      autoFocus
-                    />
-                    <Button
-                      size="sm"
-                      onClick={() => handleUpdateAmount(payment.id)}
-                      className="h-8 px-2"
-                    >
-                      <Save className="w-3 h-3" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setEditingPayment(null)}
-                      className="h-8 px-2"
-                    >
-                      <X className="w-3 h-3" />
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">
-                      {payment.givenAmount.toLocaleString()}{" "}
-                      {t("cashier.currency", "DA")}
-                    </span>
-                    {!payment.paidDate && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          setEditingPayment(payment.id);
-                          setEditAmount(payment.givenAmount);
-                        }}
-                        className="h-6 px-1"
-                      >
-                        <Edit className="w-3 h-3" />
-                      </Button>
-                    )}
-                  </div>
-                )}
-              </td>
-              <td className="px-4 py-2">
-                <div className="flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-muted-foreground" />
-                  {payment.dueDate
-                    ? new Date(payment.dueDate).toLocaleDateString()
-                    : "-"}
-                  {isOverdue(payment.dueDate) && (
-                    <span className="text-red-600 text-xs font-medium bg-red-100 px-2 py-1 rounded-full">
-                      {t("clients.overdue", "Overdue")}
-                    </span>
-                  )}
-                  {isDueSoon(payment.dueDate) &&
-                    !isOverdue(payment.dueDate) && (
-                      <span className="text-orange-600 text-xs font-medium bg-orange-100 px-2 py-1 rounded-full">
-                        {t("clients.dueSoon", "Due Soon")}
-                      </span>
-                    )}
-                </div>
-              </td>
-              <td className="px-4 py-2">
-                {payment.paidDate ? (
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-green-500" />
-                    {new Date(payment.paidDate).toLocaleDateString()}
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-orange-600" />
-                    <span className="text-orange-700 font-medium bg-orange-100 px-2 py-1 rounded-full text-xs">
-                      {t("clients.pending", "Pending")}
-                    </span>
-                  </div>
-                )}
-              </td>
-              <td className="px-4 py-2">
-                {payment.createdAt
-                  ? new Date(payment.createdAt).toLocaleDateString()
-                  : "-"}
-              </td>
-              <td className="px-4 py-2">
-                <div className="flex gap-2">
-                  {!payment.paidDate ? (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="text-green-700 border-green-500 hover:bg-green-50 flex items-center gap-1"
-                      onClick={() => handleMarkAsPaid(payment.id)}
-                    >
-                      <CheckCircle className="w-4 h-4 text-green-500" />
-                      {t("clients.markAsPaid", "Mark as Paid")}
-                    </Button>
-                  ) : (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="text-orange-700 border-orange-500 hover:bg-orange-50 flex items-center gap-1"
-                      onClick={() => handleMarkAsUnpaidConfirm(payment.id)}
-                    >
-                      <X className="w-4 h-4 text-orange-500" />
-                      {t("clients.markAsUnpaid", "Mark as Unpaid")}
-                    </Button>
-                  )}
-                </div>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
 
   return (
     <div className="space-y-6">
@@ -372,88 +163,16 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({ onBack }) => {
       </div>
 
       {/* Filters */}
-      <div className="bg-card border border-border rounded-xl p-4 space-y-4">
-        <div className="flex items-center gap-2">
-          <Filter className="w-4 h-4 text-muted-foreground" />
-          <h3 className="font-medium">{t("clients.filters", "Filters")}</h3>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Search */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium">
-              {t("clients.search", "Search")}
-            </label>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder={t(
-                  "clients.searchPayments",
-                  "Search by client name or phone...",
-                )}
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-          </div>
-
-          {/* Status Filter */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium">
-              {t("clients.status", "Status")}
-            </label>
-            <select
-              className="w-full px-3 py-2 border rounded-md bg-card"
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as any)}
-            >
-              <option value="all">
-                {t("clients.allStatus", "All Status")}
-              </option>
-              <option value="paid">{t("clients.paid", "Paid")}</option>
-              <option value="unpaid">{t("clients.unpaid", "Unpaid")}</option>
-            </select>
-          </div>
-
-          {/* Type Filter */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium">
-              {t("clients.type", "Type")}
-            </label>
-            <select
-              className="w-full px-3 py-2 border rounded-md bg-card"
-              value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value as any)}
-            >
-              <option value="all">{t("clients.allTypes", "All Types")}</option>
-              <option value="CREDIT">{t("clients.credits", "Credits")}</option>
-              <option value="VERSEMENT">
-                {t("clients.versements", "Versements")}
-              </option>
-            </select>
-          </div>
-
-          {/* Date Filter */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium">
-              {t("clients.dateFilter", "Date Filter")}
-            </label>
-            <select
-              className="w-full px-3 py-2 border rounded-md bg-card"
-              value={dateFilter}
-              onChange={(e) => setDateFilter(e.target.value as any)}
-            >
-              <option value="all">{t("clients.allDates", "All Dates")}</option>
-              <option value="overdue">{t("clients.overdue", "Overdue")}</option>
-              <option value="dueSoon">
-                {t("clients.dueSoon", "Due Soon")}
-              </option>
-              <option value="paid">{t("clients.paid", "Paid")}</option>
-            </select>
-          </div>
-        </div>
-      </div>
+      <PaymentFilters
+        search={search}
+        setSearch={setSearch}
+        statusFilter={statusFilter}
+        setStatusFilter={setStatusFilter}
+        typeFilter={typeFilter}
+        setTypeFilter={setTypeFilter}
+        dateFilter={dateFilter}
+        setDateFilter={setDateFilter}
+      />
 
       {/* Content */}
       {loading ? (
@@ -478,7 +197,19 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({ onBack }) => {
               </h3>
             </div>
             {filteredCredits.length > 0 ? (
-              <PaymentTable payments={filteredCredits} type="CREDIT" />
+              <PaymentTable
+                payments={filteredCredits}
+                type="CREDIT"
+                editingPayment={editingPayment}
+                editAmount={editAmount}
+                setEditingPayment={setEditingPayment}
+                setEditAmount={setEditAmount}
+                handleUpdateAmount={handleUpdateAmount}
+                onMarkAsPaid={handleMarkAsPaid}
+                onMarkAsUnpaidConfirm={handleMarkAsUnpaidConfirm}
+                isOverdue={isOverdue}
+                isDueSoon={isDueSoon}
+              />
             ) : (
               <div className="text-muted-foreground text-center py-4 border border-dashed rounded-lg">
                 {t("clients.noCredits", "No credits found")}
@@ -496,7 +227,19 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({ onBack }) => {
               </h3>
             </div>
             {filteredVersements.length > 0 ? (
-              <PaymentTable payments={filteredVersements} type="VERSEMENT" />
+              <PaymentTable
+                payments={filteredVersements}
+                type="VERSEMENT"
+                editingPayment={editingPayment}
+                editAmount={editAmount}
+                setEditingPayment={setEditingPayment}
+                setEditAmount={setEditAmount}
+                handleUpdateAmount={handleUpdateAmount}
+                onMarkAsPaid={handleMarkAsPaid}
+                onMarkAsUnpaidConfirm={handleMarkAsUnpaidConfirm}
+                isOverdue={isOverdue}
+                isDueSoon={isDueSoon}
+              />
             ) : (
               <div className="text-muted-foreground text-center py-4 border border-dashed rounded-lg">
                 {t("clients.noVersements", "No versements found")}
