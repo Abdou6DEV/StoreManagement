@@ -1,8 +1,9 @@
-import type { Product, Payment, Client } from "@prisma/client";
+import type { Product, Payment } from "@prisma/client";
 
 export type ToastType = "success" | "error" | "info";
-
 export type Theme = "light" | "dark";
+export type ModalSize = "sm" | "md" | "lg" | "xl" | "full" | "auto";
+export type ModalType = "dialog" | "overlay";
 
 export interface CartItem {
   id: string;
@@ -37,6 +38,18 @@ export interface PaymentWithDetails extends Payment {
   sale: { id: string };
 }
 
+export interface PaymentWithClient extends Payment {
+  client: {
+    id: string;
+    name: string;
+    phone?: string;
+  };
+  sale: {
+    id: string;
+    createdAt: Date;
+  };
+}
+
 export interface StockContextType {
   categories: string[];
   products: ProductWithSales[];
@@ -55,8 +68,6 @@ export interface TooltipContextType {
   showTooltips: boolean;
   toggleTooltips: () => void;
 }
-
-export type { Client };
 
 export interface SaleItem {
   id: string;
@@ -92,4 +103,19 @@ export interface Toast {
   id: number;
   message: string;
   type: ToastType;
+}
+
+export interface ModalAction {
+  label: string;
+  onClick: () => void;
+  variant?:
+    | "default"
+    | "destructive"
+    | "outline"
+    | "secondary"
+    | "ghost"
+    | "link";
+  disabled?: boolean;
+  loading?: boolean;
+  icon?: React.ReactNode;
 }

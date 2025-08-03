@@ -18,22 +18,10 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useToast } from "../../../lib/contexts/toastContext";
-import type { Payment } from "@prisma/client";
+import type { PaymentWithClient } from "../../../types";
 
 interface AllPaymentsViewProps {
   onBack: () => void;
-}
-
-interface PaymentWithClient extends Payment {
-  client: {
-    id: string;
-    name: string;
-    phone?: string;
-  };
-  sale: {
-    id: string;
-    createdAt: Date;
-  };
 }
 
 const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({ onBack }) => {
@@ -45,9 +33,15 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({ onBack }) => {
   const [editingPayment, setEditingPayment] = useState<string | null>(null);
   const [editAmount, setEditAmount] = useState<number>(0);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"all" | "paid" | "unpaid">("all");
-  const [typeFilter, setTypeFilter] = useState<"all" | "CREDIT" | "VERSEMENT">("all");
-  const [dateFilter, setDateFilter] = useState<"all" | "overdue" | "dueSoon" | "paid">("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "paid" | "unpaid">(
+    "all",
+  );
+  const [typeFilter, setTypeFilter] = useState<"all" | "CREDIT" | "VERSEMENT">(
+    "all",
+  );
+  const [dateFilter, setDateFilter] = useState<
+    "all" | "overdue" | "dueSoon" | "paid"
+  >("all");
   const [confirmUnpaidDialog, setConfirmUnpaidDialog] = useState<{
     open: boolean;
     paymentId: string | null;
@@ -170,19 +164,18 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({ onBack }) => {
   const getFilteredPayments = (payments: PaymentWithClient[]) => {
     return payments.filter((payment) => {
       // Search filter
-      const matchesSearch = 
+      const matchesSearch =
         payment.client.name.toLowerCase().includes(search.toLowerCase()) ||
         (payment.client.phone && payment.client.phone.includes(search));
 
       // Status filter
-      const matchesStatus = 
+      const matchesStatus =
         statusFilter === "all" ||
         (statusFilter === "paid" && payment.paidDate) ||
         (statusFilter === "unpaid" && !payment.paidDate);
 
       // Type filter
-      const matchesType = 
-        typeFilter === "all" || payment.type === typeFilter;
+      const matchesType = typeFilter === "all" || payment.type === typeFilter;
 
       // Date filter
       let matchesDate = true;
@@ -212,9 +205,7 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({ onBack }) => {
       <table className="min-w-full text-sm text-left">
         <thead className="bg-muted text-muted-foreground">
           <tr>
-            <th className="px-4 py-3">
-              {t("clients.clientName", "Client")}
-            </th>
+            <th className="px-4 py-3">{t("clients.clientName", "Client")}</th>
             <th className="px-4 py-3">
               {t("clients.paymentAmount", "Amount")}
             </th>
@@ -305,11 +296,12 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({ onBack }) => {
                       {t("clients.overdue", "Overdue")}
                     </span>
                   )}
-                  {isDueSoon(payment.dueDate) && !isOverdue(payment.dueDate) && (
-                    <span className="text-orange-600 text-xs font-medium bg-orange-100 px-2 py-1 rounded-full">
-                      {t("clients.dueSoon", "Due Soon")}
-                    </span>
-                  )}
+                  {isDueSoon(payment.dueDate) &&
+                    !isOverdue(payment.dueDate) && (
+                      <span className="text-orange-600 text-xs font-medium bg-orange-100 px-2 py-1 rounded-full">
+                        {t("clients.dueSoon", "Due Soon")}
+                      </span>
+                    )}
                 </div>
               </td>
               <td className="px-4 py-2">
@@ -385,7 +377,7 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({ onBack }) => {
           <Filter className="w-4 h-4 text-muted-foreground" />
           <h3 className="font-medium">{t("clients.filters", "Filters")}</h3>
         </div>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Search */}
           <div className="space-y-2">
@@ -395,7 +387,10 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({ onBack }) => {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
-                placeholder={t("clients.searchPayments", "Search by client name or phone...")}
+                placeholder={t(
+                  "clients.searchPayments",
+                  "Search by client name or phone...",
+                )}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-10"
@@ -413,7 +408,9 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({ onBack }) => {
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as any)}
             >
-              <option value="all">{t("clients.allStatus", "All Status")}</option>
+              <option value="all">
+                {t("clients.allStatus", "All Status")}
+              </option>
               <option value="paid">{t("clients.paid", "Paid")}</option>
               <option value="unpaid">{t("clients.unpaid", "Unpaid")}</option>
             </select>
@@ -431,7 +428,9 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({ onBack }) => {
             >
               <option value="all">{t("clients.allTypes", "All Types")}</option>
               <option value="CREDIT">{t("clients.credits", "Credits")}</option>
-              <option value="VERSEMENT">{t("clients.versements", "Versements")}</option>
+              <option value="VERSEMENT">
+                {t("clients.versements", "Versements")}
+              </option>
             </select>
           </div>
 
@@ -447,7 +446,9 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({ onBack }) => {
             >
               <option value="all">{t("clients.allDates", "All Dates")}</option>
               <option value="overdue">{t("clients.overdue", "Overdue")}</option>
-              <option value="dueSoon">{t("clients.dueSoon", "Due Soon")}</option>
+              <option value="dueSoon">
+                {t("clients.dueSoon", "Due Soon")}
+              </option>
               <option value="paid">{t("clients.paid", "Paid")}</option>
             </select>
           </div>
@@ -490,7 +491,8 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({ onBack }) => {
             <div className="flex items-center gap-2">
               <ArrowUpCircle className="w-5 h-5 text-red-500" />
               <h3 className="text-lg font-semibold">
-                {t("clients.versements", "Versements")} ({filteredVersements.length})
+                {t("clients.versements", "Versements")} (
+                {filteredVersements.length})
               </h3>
             </div>
             {filteredVersements.length > 0 ? (
@@ -523,4 +525,4 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({ onBack }) => {
   );
 };
 
-export default AllPaymentsView; 
+export default AllPaymentsView;

@@ -107,7 +107,8 @@ contextBridge.exposeInMainWorld("api", {
       getByClient: (clientId: string) =>
         ipcRenderer.invoke("db:payments:getByClient", clientId),
       getAll: () => ipcRenderer.invoke("db:payments:getAll"),
-      getAllWithClientInfo: () => ipcRenderer.invoke("db:payments:getAllWithClientInfo"),
+      getAllWithClientInfo: () =>
+        ipcRenderer.invoke("db:payments:getAllWithClientInfo"),
       markAsPaid: (paymentId: string, paidDate: Date) =>
         ipcRenderer.invoke("db:payments:updatePaidAt", {
           paymentId,
@@ -270,7 +271,9 @@ declare global {
           }) => Promise<Payment>;
           getByClient: (clientId: string) => Promise<Payment[]>;
           getAll: () => Promise<(Payment & { client: Client; sale: Sale })[]>;
-          getAllWithClientInfo: () => Promise<(Payment & { client: Client; sale: Sale })[]>;
+          getAllWithClientInfo: () => Promise<
+            (Payment & { client: Client; sale: Sale })[]
+          >;
           markAsPaid: (paymentId: string, paidDate: Date) => Promise<void>;
           updateAmount: (
             paymentId: string,

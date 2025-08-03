@@ -194,8 +194,6 @@ export default function AddStockForm({
     }
   };
 
-
-
   // Helper to check if form matches an existing product (by name only)
   const isExistingProduct = products.some(
     (p) => p.name.toLowerCase().trim() === form.name.toLowerCase().trim(),
@@ -623,7 +621,6 @@ export default function AddStockForm({
                   className="flex-1 px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-green-500/50 focus:border-green-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-muted/50"
                   disabled={isExistingProduct}
                 />
-
               </div>
             </Legend>
             <Legend>
@@ -681,8 +678,6 @@ export default function AddStockForm({
           </div>
         </form>
       )}
-
-
     </section>
   );
 }

@@ -3,28 +3,7 @@ import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { XIcon } from "lucide-react";
 import { cn } from "../utils";
 import { Button } from "./button";
-
-// Modal size variants
-export type ModalSize = "sm" | "md" | "lg" | "xl" | "full" | "auto";
-
-// Modal type variants
-export type ModalType = "dialog" | "overlay";
-
-// Common button configurations
-export interface ModalAction {
-  label: string;
-  onClick: () => void;
-  variant?:
-    | "default"
-    | "destructive"
-    | "outline"
-    | "secondary"
-    | "ghost"
-    | "link";
-  disabled?: boolean;
-  loading?: boolean;
-  icon?: React.ReactNode;
-}
+import type { ModalSize, ModalType, ModalAction } from "../../types";
 
 // Core modal props
 export interface ModalProps {

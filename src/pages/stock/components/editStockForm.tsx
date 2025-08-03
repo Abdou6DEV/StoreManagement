@@ -35,8 +35,6 @@ export default function EditStockForm({
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
-
-
   const handleUpdateProduct = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -162,7 +160,6 @@ export default function EditStockForm({
                 }
                 className="flex-1 px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-green-500/50 focus:border-green-500 transition-all"
               />
-
             </div>
           </div>
           <div className="space-y-2">
@@ -209,8 +206,6 @@ export default function EditStockForm({
           </Button>
         </div>
       </form>
-
-
     </>
   );
 }
