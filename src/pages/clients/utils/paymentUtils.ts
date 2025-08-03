@@ -17,7 +17,7 @@ export const getFilteredPayments = (
   search: string,
   statusFilter: "all" | "paid" | "unpaid",
   typeFilter: "all" | "CREDIT" | "VERSEMENT",
-  dateFilter: "all" | "overdue" | "dueSoon" | "paid",
+  dateFilter: "all" | "overdue" | "dueSoon",
 ) => {
   return payments.filter((payment) => {
     // Search filter
@@ -40,8 +40,6 @@ export const getFilteredPayments = (
       matchesDate = isOverdue(payment.dueDate);
     } else if (dateFilter === "dueSoon") {
       matchesDate = isDueSoon(payment.dueDate);
-    } else if (dateFilter === "paid") {
-      matchesDate = !!payment.paidDate;
     }
 
     return matchesSearch && matchesStatus && matchesType && matchesDate;

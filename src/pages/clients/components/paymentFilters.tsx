@@ -10,8 +10,8 @@ interface PaymentFiltersProps {
   setStatusFilter: (value: "all" | "paid" | "unpaid") => void;
   typeFilter: "all" | "CREDIT" | "VERSEMENT";
   setTypeFilter: (value: "all" | "CREDIT" | "VERSEMENT") => void;
-  dateFilter: "all" | "overdue" | "dueSoon" | "paid";
-  setDateFilter: (value: "all" | "overdue" | "dueSoon" | "paid") => void;
+  dateFilter: "all" | "overdue" | "dueSoon";
+  setDateFilter: (value: "all" | "overdue" | "dueSoon") => void;
 }
 
 const PaymentFilters: React.FC<PaymentFiltersProps> = ({
@@ -100,7 +100,6 @@ const PaymentFilters: React.FC<PaymentFiltersProps> = ({
             <option value="all">{t("clients.allDates", "All Dates")}</option>
             <option value="overdue">{t("clients.overdue", "Overdue")}</option>
             <option value="dueSoon">{t("clients.dueSoon", "Due Soon")}</option>
-            <option value="paid">{t("clients.paid", "Paid")}</option>
           </select>
         </div>
       </div>

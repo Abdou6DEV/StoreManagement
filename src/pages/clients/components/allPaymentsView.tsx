@@ -33,7 +33,7 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({ onBack }) => {
     "all",
   );
   const [dateFilter, setDateFilter] = useState<
-    "all" | "overdue" | "dueSoon" | "paid"
+    "all" | "overdue" | "dueSoon"
   >("all");
   const [confirmUnpaidDialog, setConfirmUnpaidDialog] = useState<{
     open: boolean;
