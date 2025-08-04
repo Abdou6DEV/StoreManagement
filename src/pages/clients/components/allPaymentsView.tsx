@@ -201,7 +201,7 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({ onBack }) => {
   }, [search, statusFilter, typeFilter, dateFilter]);
 
   return (
-    <div className="space-y-6">
+    <div className="bg-card border border-border rounded-xl shadow-sm p-6 space-y-5">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
