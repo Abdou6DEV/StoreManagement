@@ -1,7 +1,7 @@
 import { prisma } from "./prismaClient";
 
 export async function createPayment(data: {
-  saleId: string;
+  saleId?: string;
   clientId: string;
   givenAmount: number;
   dueDate: Date;

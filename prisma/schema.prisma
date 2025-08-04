@@ -92,7 +92,7 @@ model Option {
 
 model Payment {
   id          String      @id @default(uuid())
-  saleId      String      @unique
+  saleId      String?     @unique
   clientId    String
   givenAmount Int
   dueDate     DateTime
@@ -102,7 +102,7 @@ model Payment {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  sale   Sale   @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  sale   Sale?  @relation(fields: [saleId], references: [id], onDelete: Cascade)
   client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
 }
 

@@ -79,10 +79,6 @@ contextBridge.exposeInMainWorld("api", {
         items: { productId: string; quantity: number; price: number }[];
         discount?: number;
       }) => ipcRenderer.invoke("db:sales:create", data),
-      createDummy: (data: {
-        clientId?: string;
-        discount?: number;
-      }) => ipcRenderer.invoke("db:sales:createDummy", data),
       getAll: () => ipcRenderer.invoke("db:sales:getAll"),
       getRecent: (options?: { limit?: number; offset?: number }) =>
         ipcRenderer.invoke("db:sales:getRecent", options),
@@ -103,7 +99,7 @@ contextBridge.exposeInMainWorld("api", {
     },
     payments: {
       create: (data: {
-        saleId: string;
+        saleId?: string;
         clientId: string;
         givenAmount: number;
         dueDate: Date;
@@ -246,10 +242,6 @@ declare global {
             items: { productId: string; quantity: number; price: number }[];
             discount?: number;
           }) => Promise<Sale>;
-          createDummy: (data: {
-            clientId?: string;
-            discount?: number;
-          }) => Promise<Sale>;
           getAll: () => Promise<SaleWithDetails[]>;
           getRecent: (options?: {
             limit?: number;
@@ -275,7 +267,7 @@ declare global {
         };
         payments: {
           create: (data: {
-            saleId: string;
+            saleId?: string;
             clientId: string;
             givenAmount: number;
             dueDate: Date;

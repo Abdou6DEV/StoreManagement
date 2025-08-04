@@ -14,7 +14,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "../../../lib/components/popover";
-import { cn } from "../../../lib/utils";
 
 interface AddPaymentFormProps {
   openPanel: "add" | "addPayment" | "addSupplier" | null;
@@ -83,14 +82,8 @@ export default function AddPaymentForm({
 
     setLoading(true);
     try {
-      // Create a dummy sale first, then create the payment
-      const sale = await window.api.database.sales.createDummy({
-        clientId: form.clientId,
-        discount: 0,
-      });
-
+      // Create payment without a sale
       await window.api.database.payments.create({
-        saleId: sale.id,
         clientId: form.clientId,
         givenAmount: Number(form.givenAmount),
         dueDate: new Date(form.dueDate),

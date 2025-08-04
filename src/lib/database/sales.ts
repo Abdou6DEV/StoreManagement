@@ -1,17 +1,5 @@
 import { prisma } from "./prismaClient";
 
-export async function createDummySale(data: {
-  clientId?: string;
-  discount?: number;
-}) {
-  return await prisma.sale.create({
-    data: {
-      clientId: data.clientId,
-      discount: data.discount ?? 0,
-    },
-  });
-}
-
 export async function createSale(data: {
   clientId?: string;
   items: { productId: string; quantity: number; price: number }[];
