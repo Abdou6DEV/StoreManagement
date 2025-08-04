@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Button } from "../../../lib/components/button";
 import { ConfirmDialog } from "../../../lib/components/confirmDialog";
 import { Loader2, CreditCard, ArrowUpCircle, Users } from "lucide-react";
@@ -24,14 +24,21 @@ import {
 
 interface AllPaymentsViewProps {
   onBack: () => void;
+  payments: PaymentWithClient[];
+  loading: boolean;
+  error: string | null;
+  onRefresh: () => void;
 }
 
-const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({ onBack }) => {
+const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({ 
+  onBack, 
+  payments, 
+  loading, 
+  error, 
+  onRefresh 
+}) => {
   const { t } = useTranslation();
   const { showToast } = useToast();
-  const [payments, setPayments] = useState<PaymentWithClient[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [editingPayment, setEditingPayment] = useState<string | null>(null);
   const [editAmount, setEditAmount] = useState<number>(0);
   const [search, setSearch] = useState("");
@@ -64,13 +71,7 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({ onBack }) => {
     try {
       await window.api.database.payments.markAsPaid(paymentId, new Date());
 
-      setPayments((prevPayments) =>
-        prevPayments.map((payment) =>
-          payment.id === paymentId
-            ? { ...payment, paidDate: new Date() }
-            : payment,
-        ),
-      );
+      onRefresh(); // Refresh payments after marking as paid
 
       showToast(
         t("clients.paymentMarkedAsPaid", "Payment marked as paid"),
@@ -88,11 +89,7 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({ onBack }) => {
     try {
       await window.api.database.payments.markAsPaid(paymentId, null);
 
-      setPayments((prevPayments) =>
-        prevPayments.map((payment) =>
-          payment.id === paymentId ? { ...payment, paidDate: null } : payment,
-        ),
-      );
+      onRefresh(); // Refresh payments after marking as unpaid
 
       showToast(
         t("clients.paymentMarkedAsUnpaid", "Payment marked as unpaid"),
@@ -122,13 +119,7 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({ onBack }) => {
       await window.api.database.payments.updateAmount(paymentId, editAmount);
       setEditingPayment(null);
 
-      setPayments((prevPayments) =>
-        prevPayments.map((payment) =>
-          payment.id === paymentId
-            ? { ...payment, givenAmount: editAmount }
-            : payment,
-        ),
-      );
+      onRefresh(); // Refresh payments after updating amount
 
       showToast(
         t("clients.paymentAmountUpdated", "Payment amount updated"),
@@ -141,23 +132,6 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({ onBack }) => {
       );
     }
   };
-
-  const refreshPayments = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await window.api.database.payments.getAllWithClientInfo();
-      setPayments(data as PaymentWithClient[]);
-    } catch (err) {
-      setError(t("clients.paymentsError", "Failed to fetch payments"));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    refreshPayments();
-  }, []);
 
   const filteredCredits = getFilteredPayments(
     credits,

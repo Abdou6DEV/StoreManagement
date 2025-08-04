@@ -33,7 +33,7 @@ import {
   PopoverTrigger,
 } from "../../lib/components/popover";
 import type { Client, Seller } from "@prisma/client";
-import type { ClientWithTotalPurchases } from "../../types";
+import type { ClientWithTotalPurchases, PaymentWithClient } from "../../types";
 import { useToast } from "../../lib/contexts/toastContext";
 import { ConfirmDialog } from "../../lib/components/confirmDialog";
 import { Button } from "../../lib/components/button";
@@ -55,6 +55,11 @@ export default function Clients() {
   const [paymentsClient, setPaymentsClient] = useState<Client | null>(null);
   const [viewMode, setViewMode] = useState<"clients" | "payments">("clients");
   const [activeTab, setActiveTab] = useState<"clients" | "suppliers">("clients");
+  
+  // Payments state
+  const [payments, setPayments] = useState<PaymentWithClient[]>([]);
+  const [paymentsLoading, setPaymentsLoading] = useState(false);
+  const [paymentsError, setPaymentsError] = useState<string | null>(null);
   
   // Suppliers state
   const [suppliers, setSuppliers] = useState<Seller[]>([]);
@@ -92,6 +97,19 @@ export default function Clients() {
     }
   };
 
+  const fetchPayments = async () => {
+    setPaymentsLoading(true);
+    setPaymentsError(null);
+    try {
+      const data = await window.api.database.payments.getAllWithClientInfo();
+      setPayments(data as PaymentWithClient[]);
+    } catch (err) {
+      setPaymentsError(t("clients.paymentsError", "Failed to fetch payments"));
+    } finally {
+      setPaymentsLoading(false);
+    }
+  };
+
   const fetchSuppliers = async () => {
     setSuppliersLoading(true);
     setSuppliersError(null);
@@ -108,6 +126,7 @@ export default function Clients() {
   useEffect(() => {
     fetchClients();
     fetchSuppliers();
+    fetchPayments();
   }, []);
 
   const handleDelete = async (id: string) => {
@@ -324,11 +343,11 @@ export default function Clients() {
             setOpenPanel={setOpenPanel}
             onClientAdded={fetchClients}
           />
-          <AddPaymentForm
-            openPanel={openPanel}
-            setOpenPanel={setOpenPanel}
-            onPaymentAdded={fetchClients}
-          />
+                                           <AddPaymentForm
+              openPanel={openPanel}
+              setOpenPanel={setOpenPanel}
+              onPaymentAdded={fetchPayments}
+            />
           
           {viewMode === "clients" ? (
             <div className="bg-card border border-border rounded-xl shadow-sm p-6 space-y-4">
@@ -501,7 +520,13 @@ export default function Clients() {
               )}
             </div>
           ) : (
-            <AllPaymentsView onBack={() => setViewMode("clients")} />
+            <AllPaymentsView 
+              onBack={() => setViewMode("clients")} 
+              payments={payments}
+              loading={paymentsLoading}
+              error={paymentsError}
+              onRefresh={fetchPayments}
+            />
           )}
         </div>
       )}
