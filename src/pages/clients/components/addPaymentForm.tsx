@@ -139,7 +139,7 @@ export default function AddPaymentForm({
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
-                    className="w-full justify-between"
+                    className="w-full justify-between h-10"
                     aria-label={t("clients.selectClient", "Select client")}
                   >
                     {form.clientName || t("clients.selectClient", "Select client")}
@@ -188,7 +188,7 @@ export default function AddPaymentForm({
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
-                    className="w-full justify-between"
+                    className="w-full justify-between h-10"
                     aria-label={t("clients.selectPaymentType", "Select payment type")}
                   >
                     {form.type === "CREDIT" 
@@ -228,7 +228,7 @@ export default function AddPaymentForm({
                 placeholder={t("clients.amount", "Amount")}
                 value={form.givenAmount}
                 onChange={(e) => handleFormChange("givenAmount", e.target.value)}
-                className="w-full px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-red-500/50 focus:border-red-500 transition-all"
+                className="w-full px-4 h-10 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-red-500/50 focus:border-red-500 transition-all"
                 required
                 min="0"
                 step="0.01"
@@ -242,7 +242,7 @@ export default function AddPaymentForm({
                 type="date"
                 value={form.dueDate}
                 onChange={(e) => handleFormChange("dueDate", e.target.value)}
-                className="w-full px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-red-500/50 focus:border-red-500 transition-all"
+                className="w-full px-4 h-10 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-red-500/50 focus:border-red-500 transition-all"
                 required
               />
             </Legend>
@@ -254,7 +254,7 @@ export default function AddPaymentForm({
             <Button
               type="submit"
               disabled={loading || !form.clientId || !form.givenAmount || !form.dueDate}
-              className="bg-red-600 hover:bg-red-700 text-white"
+              className="bg-red-600 hover:bg-red-700 text-white h-10"
             >
               {loading ? (
                 <>

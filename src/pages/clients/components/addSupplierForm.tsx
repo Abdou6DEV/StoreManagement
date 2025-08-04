@@ -87,7 +87,7 @@ export default function AddSupplierForm({
                 placeholder={t("suppliers.name", "Name")}
                 value={form.name}
                 onChange={(e) => handleFormChange("name", e.target.value)}
-                className="w-full px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
+                className="w-full px-4 h-10 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
                 required
               />
             </Legend>
@@ -98,7 +98,7 @@ export default function AddSupplierForm({
                 placeholder={t("suppliers.phone", "Phone")}
                 value={form.phone}
                 onChange={(e) => handleFormChange("phone", e.target.value)}
-                className="w-full px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
+                className="w-full px-4 h-10 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
               />
             </Legend>
             <Legend>
@@ -108,7 +108,7 @@ export default function AddSupplierForm({
                 placeholder={t("suppliers.email", "Email")}
                 value={form.email}
                 onChange={(e) => handleFormChange("email", e.target.value)}
-                className="w-full px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
+                className="w-full px-4 h-10 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
               />
             </Legend>
             <Legend>
@@ -118,7 +118,7 @@ export default function AddSupplierForm({
                 placeholder={t("suppliers.address", "Address")}
                 value={form.address}
                 onChange={(e) => handleFormChange("address", e.target.value)}
-                className="w-full px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
+                className="w-full px-4 h-10 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
               />
             </Legend>
             <Legend>
@@ -128,7 +128,7 @@ export default function AddSupplierForm({
                 placeholder={t("suppliers.notes", "Notes")}
                 value={form.notes}
                 onChange={(e) => handleFormChange("notes", e.target.value)}
-                className="w-full px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
+                className="w-full px-4 h-10 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
               />
             </Legend>
           </div>
@@ -137,7 +137,7 @@ export default function AddSupplierForm({
             <Button
               type="submit"
               disabled={loading}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
+              className="bg-blue-600 hover:bg-blue-700 text-white h-10"
             >
               {loading ? (
                 <>
