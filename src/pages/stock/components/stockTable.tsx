@@ -280,9 +280,8 @@ export const StockTable = () => {
     handleDeleteProduct: (id: string) => void;
     handleViewProductInfo: (id: string) => void;
   }) {
-    const { t } = useTranslation();
-    const profit = product.selling - product.bought;
-    const totalBought = product.bought * product.quantity;
+    const profit = product.sellingPrice - product.boughtPrice;
+    const totalBought = product.boughtPrice * product.quantity;
     const totalProfit = profit * (product.totalSold ?? 0);
 
     return (
@@ -290,8 +289,8 @@ export const StockTable = () => {
         <td className="px-4">{product.name}</td>
         <td className="px-4">{product.categoryName}</td>
         <td className="px-4">{product.quantity}</td>
-        <td className="px-4">{product.bought}</td>
-        <td className="px-4">{product.selling}</td>
+        <td className="px-4">{product.boughtPrice}</td>
+        <td className="px-4">{product.sellingPrice}</td>
         <td className="px-4 text-green-700 font-medium">{profit}</td>
         <td className="px-4">{totalBought}</td>
         <td className="px-4">{product.totalSold ?? 0}</td>
@@ -652,8 +651,8 @@ export const StockTable = () => {
                 <th className="px-4 py-3">{t("stock.product")}</th>
                 <th className="px-4 py-3">{t("stock.type")}</th>
                 <th className="px-4 py-3">{t("stock.quantity")}</th>
-                <th className="px-4 py-3">{t("stock.bought")}</th>
-                <th className="px-4 py-3">{t("stock.selling")}</th>
+                <th className="px-4 py-3">{t("stock.boughtPrice")}</th>
+                <th className="px-4 py-3">{t("stock.sellingPrice")}</th>
                 <th className="px-4 py-3">{t("stock.profit", "Profit")}</th>
                 <th className="px-4 py-3">
                   {t("stock.totalBought", "Total Bought")}

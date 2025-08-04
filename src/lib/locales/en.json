@@ -237,8 +237,6 @@
     "product": "Product Name",
     "type": "Product Type",
     "quantity": "Quantity",
-    "bought": "Bought Price",
-    "selling": "Selling Price",
     "codebar": "Codebar",
     "addTitle": "Add Stock",
     "addButton": "Add Product",

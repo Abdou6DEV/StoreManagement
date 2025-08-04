@@ -756,8 +756,8 @@ async function main() {
           name: productName,
           categoryName: category,
           quantity: 0,
-          bought: Number(boughtPrice),
-          selling: sellingPrice,
+          boughtPrice: Number(boughtPrice),
+          sellingPrice: sellingPrice,
           codebar: faker.string.numeric(12),
           photo: generateProductPhoto(),
         },
@@ -869,7 +869,7 @@ async function main() {
             productId: product.id,
             saleId: sale.id,
             quantity,
-            price: product.selling,
+            price: product.sellingPrice,
           },
         });
 

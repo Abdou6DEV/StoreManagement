@@ -26,8 +26,8 @@ model Product {
   name         String  @unique
   categoryName String
   quantity     Int
-  bought       Int
-  selling      Int
+  boughtPrice  Int
+  sellingPrice Int
   codebar      String?
   photo        String?
 

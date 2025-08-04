@@ -123,7 +123,8 @@ export default function ProductCard({
           )}
           <div className="flex items-center justify-between flex-shrink-0 mt-auto">
             <div className="text-sm font-semibold text-green-600 leading-tight">
-              {product.selling.toLocaleString()} {t("cashier.currency", "DA")}
+              {product.sellingPrice.toLocaleString()}{" "}
+              {t("cashier.currency", "DA")}
             </div>
           </div>
         </div>

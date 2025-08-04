@@ -29,8 +29,8 @@ export interface AddStockFormState {
   name: string;
   categoryName: string;
   quantity: number | "";
-  bought: number | "";
-  selling: number | "";
+  boughtPrice: number | "";
+  sellingPrice: number | "";
   codebar: string;
   sellerId: string;
   photo: string | null;

@@ -32,8 +32,8 @@ const initialForm: AddStockFormState = {
   name: "",
   categoryName: "",
   quantity: "",
-  bought: "",
-  selling: "",
+  boughtPrice: "",
+  sellingPrice: "",
   codebar: "",
   sellerId: "",
   photo: null,
@@ -122,7 +122,7 @@ export default function AddStockForm({
       );
 
       const quantity = Number(form.quantity || 0);
-      const boughtPrice = Number(form.bought || 0);
+      const boughtPrice = Number(form.boughtPrice || 0);
       const purchaseData = {
         sellerId: form.sellerId || undefined,
         quantity: quantity,
@@ -146,8 +146,8 @@ export default function AddStockForm({
           name: form.name,
           categoryName: form.categoryName,
           quantity: quantity,
-          bought: Number(form.bought || 0),
-          selling: Number(form.selling || 0),
+          boughtPrice: Number(form.boughtPrice || 0),
+          sellingPrice: Number(form.sellingPrice || 0),
           codebar: form.codebar,
           photo: form.photo,
         };
@@ -177,7 +177,7 @@ export default function AddStockForm({
     value: string | number | string | null,
   ) => {
     // For number fields, allow empty string
-    if (["quantity", "bought", "selling"].includes(key)) {
+    if (["quantity", "boughtPrice", "sellingPrice"].includes(key)) {
       setForm((prev) => ({
         ...prev,
         [key]:
@@ -307,8 +307,8 @@ export default function AddStockForm({
                                   name: p.name,
                                   categoryName: p.categoryName,
                                   quantity: "", // empty for user input
-                                  bought: p.bought ?? "",
-                                  selling: p.selling ?? "",
+                                  boughtPrice: p.boughtPrice ?? "",
+                                  sellingPrice: p.sellingPrice ?? "",
                                   codebar: p.codebar || "",
                                   sellerId: "", // reset seller selection
                                   photo: (p as any).photo || null,
@@ -584,12 +584,12 @@ export default function AddStockForm({
               <label
                 className={isExistingProduct ? "text-muted-foreground" : ""}
               >
-                {t("stock.bought")}
+                {t("stock.boughtPrice")}
               </label>
               <StyledNumberInput
-                value={form.bought === "" ? "" : Number(form.bought)}
-                onChange={(val) => handleFormChange("bought", val)}
-                placeholder={t("stock.bought")}
+                value={form.boughtPrice === "" ? "" : Number(form.boughtPrice)}
+                onChange={(val) => handleFormChange("boughtPrice", val)}
+                placeholder={t("stock.boughtPrice")}
                 disabled={isExistingProduct}
               />
             </Legend>
@@ -597,12 +597,14 @@ export default function AddStockForm({
               <label
                 className={isExistingProduct ? "text-muted-foreground" : ""}
               >
-                {t("stock.selling")}
+                {t("stock.sellingPrice")}
               </label>
               <StyledNumberInput
-                value={form.selling === "" ? "" : Number(form.selling)}
-                onChange={(val) => handleFormChange("selling", val)}
-                placeholder={t("stock.selling")}
+                value={
+                  form.sellingPrice === "" ? "" : Number(form.sellingPrice)
+                }
+                onChange={(val) => handleFormChange("sellingPrice", val)}
+                placeholder={t("stock.sellingPrice")}
                 disabled={isExistingProduct}
               />
             </Legend>

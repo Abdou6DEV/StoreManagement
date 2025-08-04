@@ -101,8 +101,6 @@
     "product": "Nom du produit",
     "type": "Type de produit",
     "quantity": "Quantité",
-    "bought": "Prix d'achat",
-    "selling": "Prix de vente",
     "codebar": "Code-barres",
     "addTitle": "Ajouter au stock",
     "addButton": "Ajouter le produit",

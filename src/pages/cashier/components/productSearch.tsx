@@ -195,7 +195,7 @@ export default function ProductSearch({ onAdd, refreshKey }: Props) {
                     <div className="text-xs text-muted-foreground flex justify-between mt-1">
                       <span>
                         {product.categoryName} • {t("cashier.price", "price")}:{" "}
-                        {product.selling.toLocaleString()}{" "}
+                        {product.sellingPrice.toLocaleString()}{" "}
                         {t("cashier.currency", "DA")}
                       </span>
                       <span>

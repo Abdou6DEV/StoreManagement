@@ -45,15 +45,22 @@ export default function EditStockForm({
       // Ensure category exists, create if not exists
       await window.api.database.categories.ensure(form.categoryName);
 
-      const { name, categoryName, quantity, bought, selling, codebar, photo } =
-        form;
+      const {
+        name,
+        categoryName,
+        quantity,
+        boughtPrice,
+        sellingPrice,
+        codebar,
+        photo,
+      } = form;
 
       await window.api.database.products.update(product.id, {
         name,
         categoryName,
         quantity: Number(quantity),
-        bought: Number(bought),
-        selling: Number(selling),
+        boughtPrice: Number(boughtPrice),
+        sellingPrice: Number(sellingPrice),
         codebar,
         photo,
       });
@@ -126,23 +133,23 @@ export default function EditStockForm({
 
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground">
-              {t("stock.bought")}
+              {t("stock.boughtPrice")}
             </label>
             <StyledNumberInput
-              value={form.bought}
-              onChange={(val) => handleEditFormChange("bought", val)}
-              placeholder={t("stock.bought")}
+              value={form.boughtPrice}
+              onChange={(val) => handleEditFormChange("boughtPrice", val)}
+              placeholder={t("stock.boughtPrice")}
             />
           </div>
 
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground mb-3">
-              {t("stock.selling")}
+              {t("stock.sellingPrice")}
             </label>
             <StyledNumberInput
-              value={form.selling}
-              onChange={(val) => handleEditFormChange("selling", val)}
-              placeholder={t("stock.selling")}
+              value={form.sellingPrice}
+              onChange={(val) => handleEditFormChange("sellingPrice", val)}
+              placeholder={t("stock.sellingPrice")}
             />
           </div>
 

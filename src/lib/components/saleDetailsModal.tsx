@@ -63,7 +63,9 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
         sale.saleItems.map((item) => ({
           id: item.product?.id || `manual-${item.id}`,
           name:
-            item.product?.name || item.manualProductName || t("cashier.manualProduct", "Manual Product"),
+            item.product?.name ||
+            item.manualProductName ||
+            t("cashier.manualProduct", "Manual Product"),
           price: item.price,
           qty: item.quantity,
           isManual: !item.product,
@@ -203,7 +205,10 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
     ? editedCart
     : sale.saleItems.map((item) => ({
         id: item.product?.id || `manual-${item.id}`,
-        name: item.product?.name || item.manualProductName || t("cashier.manualProduct", "Manual Product"),
+        name:
+          item.product?.name ||
+          item.manualProductName ||
+          t("cashier.manualProduct", "Manual Product"),
         price: item.price,
         qty: item.quantity,
       }));

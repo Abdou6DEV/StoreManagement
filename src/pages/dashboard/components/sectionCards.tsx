@@ -43,7 +43,7 @@ export function SectionCards() {
             (s.saleItems?.reduce(
               (itemSum: number, item: any) =>
                 itemSum +
-                (item.price - (item.product?.bought || 0)) * item.quantity,
+                (item.price - (item.product?.boughtPrice || 0)) * item.quantity,
               0,
             ) || 0)
           );
@@ -94,7 +94,7 @@ export function SectionCards() {
       ).length;
       const outOfStock = products.filter((p: any) => p.quantity === 0).length;
       const stockValue = products.reduce(
-        (sum: number, p: any) => sum + p.bought * p.quantity,
+        (sum: number, p: any) => sum + p.boughtPrice * p.quantity,
         0,
       );
       setStockStats([

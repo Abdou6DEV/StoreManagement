@@ -76,7 +76,7 @@ export function ChartBarInteractive() {
             (s.saleItems?.reduce(
               (itemSum: number, item: any) =>
                 itemSum +
-                (item.price - (item.product?.bought || 0)) * item.quantity,
+                (item.price - (item.product?.boughtPrice || 0)) * item.quantity,
               0,
             ) || 0),
           0,
@@ -114,7 +114,7 @@ export function ChartBarInteractive() {
             (s.saleItems?.reduce(
               (itemSum: number, item: any) =>
                 itemSum +
-                (item.price - (item.product?.bought || 0)) * item.quantity,
+                (item.price - (item.product?.boughtPrice || 0)) * item.quantity,
               0,
             ) || 0),
           0,
@@ -148,7 +148,7 @@ export function ChartBarInteractive() {
             (s.saleItems?.reduce(
               (itemSum: number, item: any) =>
                 itemSum +
-                (item.price - (item.product?.bought || 0)) * item.quantity,
+                (item.price - (item.product?.boughtPrice || 0)) * item.quantity,
               0,
             ) || 0),
           0,

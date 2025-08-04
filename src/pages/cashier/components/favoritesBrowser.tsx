@@ -94,7 +94,7 @@ const FavoritesBrowser: React.FC<FavoritesBrowserProps> = ({
         {
           id: product.id,
           name: product.name,
-          price: product.selling,
+          price: product.sellingPrice,
           qty: 1,
         },
       ]);
@@ -139,7 +139,7 @@ const FavoritesBrowser: React.FC<FavoritesBrowserProps> = ({
           updated.push({
             id: product.id,
             name: product.name,
-            price: product.selling,
+            price: product.sellingPrice,
             qty: newQty,
           });
         }

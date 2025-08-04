@@ -125,7 +125,7 @@ export default function CashierPage() {
       updated.push({
         id: product.id,
         name: product.name,
-        price: product.selling,
+        price: product.sellingPrice,
         qty: 1,
       });
     }

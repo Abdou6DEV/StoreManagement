@@ -80,13 +80,13 @@ export const ProductInfoModal = ({
               <label className="text-sm font-medium text-muted-foreground">
                 {t("stock.boughtPrice", "Bought Price")}
               </label>
-              <p className="text-foreground">{productData.bought}</p>
+              <p className="text-foreground">{productData.boughtPrice}</p>
             </div>
             <div className={isRTL ? "text-right" : "text-left"}>
               <label className="text-sm font-medium text-muted-foreground">
                 {t("stock.sellingPrice", "Selling Price")}
               </label>
-              <p className="text-foreground">{productData.selling}</p>
+              <p className="text-foreground">{productData.sellingPrice}</p>
             </div>
             <div className={isRTL ? "text-right" : "text-left"}>
               <label className="text-sm font-medium text-muted-foreground">

@@ -297,7 +297,7 @@ const ProductBrowser = forwardRef<
                     {
                       id: product.id,
                       name: product.name,
-                      price: product.selling,
+                      price: product.sellingPrice,
                       qty: 1,
                     },
                   ]);
@@ -320,7 +320,7 @@ const ProductBrowser = forwardRef<
                       updated.push({
                         id: product.id,
                         name: product.name,
-                        price: product.selling,
+                        price: product.sellingPrice,
                         qty: newQty,
                       });
                     }

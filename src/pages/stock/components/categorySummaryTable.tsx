@@ -44,17 +44,17 @@ export default function CategorySummaryTable() {
     const catProducts = products.filter((p) => p.categoryName === cat);
     const totalQuantity = catProducts.reduce((sum, p) => sum + p.quantity, 0);
     const totalProfit = catProducts.reduce(
-      (sum, p) => sum + (p.selling - p.bought) * p.quantity,
+      (sum, p) => sum + (p.sellingPrice - p.boughtPrice) * p.quantity,
       0,
     );
 
     const totalBought = catProducts.reduce(
-      (sum, p) => sum + p.bought * p.quantity,
+      (sum, p) => sum + p.boughtPrice * p.quantity,
       0,
     );
 
     const totalSelling = catProducts.reduce(
-      (sum, p) => sum + p.selling * p.quantity,
+      (sum, p) => sum + p.sellingPrice * p.quantity,
       0,
     );
 
