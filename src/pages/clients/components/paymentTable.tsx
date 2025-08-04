@@ -30,27 +30,28 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
   isOverdue,
   isDueSoon,
 }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isRTL = i18n.language === "ar";
 
   return (
     <div className="overflow-auto rounded-lg border border-muted">
       <table className="min-w-full text-sm text-left">
         <thead className="bg-muted text-muted-foreground">
           <tr>
-            <th className="px-4 py-3">{t("clients.clientName", "Client")}</th>
-            <th className="px-4 py-3">
+            <th className={`px-4 py-3 ${isRTL ? 'text-right' : 'text-left'}`}>{t("clients.clientName", "Client")}</th>
+            <th className={`px-4 py-3 ${isRTL ? 'text-right' : 'text-left'}`}>
               {t("clients.paymentAmount", "Amount")}
             </th>
-            <th className="px-4 py-3">
+            <th className={`px-4 py-3 ${isRTL ? 'text-right' : 'text-left'}`}>
               {t("clients.paymentDueDate", "Due Date")}
             </th>
-            <th className="px-4 py-3">
+            <th className={`px-4 py-3 ${isRTL ? 'text-right' : 'text-left'}`}>
               {t("clients.paymentPaidDate", "Paid Date")}
             </th>
-            <th className="px-4 py-3">
+            <th className={`px-4 py-3 ${isRTL ? 'text-right' : 'text-left'}`}>
               {t("clients.paymentCreatedAt", "Created At")}
             </th>
-            <th className="px-4 py-3">{t("clients.actions", "Actions")}</th>
+            <th className={`px-4 py-3 ${isRTL ? 'text-right' : 'text-left'}`}>{t("clients.actions", "Actions")}</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-border">

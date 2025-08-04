@@ -24,7 +24,7 @@ interface PaymentsModalProps {
 }
 
 const PaymentsModal: React.FC<PaymentsModalProps> = ({ client, onClose }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { showToast } = useToast();
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -143,24 +143,27 @@ const PaymentsModal: React.FC<PaymentsModalProps> = ({ client, onClose }) => {
   }: {
     payments: Payment[];
     type: "CREDIT" | "VERSEMENT";
-  }) => (
+  }) => {
+    const isRTL = i18n.language === "ar";
+    
+    return (
     <div className="overflow-auto rounded-lg border border-muted">
       <table className="min-w-full text-sm text-left">
         <thead className="bg-muted text-muted-foreground">
           <tr>
-            <th className="px-4 py-3">
+            <th className={`px-4 py-3 ${isRTL ? 'text-right' : 'text-left'}`}>
               {t("clients.paymentAmount", "Amount")}
             </th>
-            <th className="px-4 py-3">
+            <th className={`px-4 py-3 ${isRTL ? 'text-right' : 'text-left'}`}>
               {t("clients.paymentDueDate", "Due Date")}
             </th>
-            <th className="px-4 py-3">
+            <th className={`px-4 py-3 ${isRTL ? 'text-right' : 'text-left'}`}>
               {t("clients.paymentPaidDate", "Paid Date")}
             </th>
-            <th className="px-4 py-3">
+            <th className={`px-4 py-3 ${isRTL ? 'text-right' : 'text-left'}`}>
               {t("clients.paymentCreatedAt", "Created At")}
             </th>
-            <th className="px-4 py-3">{t("clients.actions", "Actions")}</th>
+            <th className={`px-4 py-3 ${isRTL ? 'text-right' : 'text-left'}`}>{t("clients.actions", "Actions")}</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-border">
@@ -214,7 +217,7 @@ const PaymentsModal: React.FC<PaymentsModalProps> = ({ client, onClose }) => {
                   </div>
                 )}
               </td>
-              <td className="px-4 py-2">
+              <td className={`px-4 py-2 ${isRTL ? 'text-right' : 'text-left'}`}>
                 {payment.dueDate
                   ? new Date(payment.dueDate).toLocaleDateString()
                   : "-"}
@@ -234,7 +237,7 @@ const PaymentsModal: React.FC<PaymentsModalProps> = ({ client, onClose }) => {
                   </div>
                 )}
               </td>
-              <td className="px-4 py-2">
+              <td className={`px-4 py-2 ${isRTL ? 'text-right' : 'text-left'}`}>
                 {payment.createdAt
                   ? new Date(payment.createdAt).toLocaleDateString()
                   : "-"}
@@ -269,7 +272,8 @@ const PaymentsModal: React.FC<PaymentsModalProps> = ({ client, onClose }) => {
         </tbody>
       </table>
     </div>
-  );
+    );
+  };
 
   return (
     <Modal

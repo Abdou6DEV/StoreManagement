@@ -32,7 +32,8 @@ const PaymentRow: React.FC<PaymentRowProps> = ({
   isOverdue,
   isDueSoon,
 }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isRTL = i18n.language === "ar";
 
   return (
     <tr className="hover:bg-muted/40 transition">
@@ -97,7 +98,7 @@ const PaymentRow: React.FC<PaymentRowProps> = ({
           </div>
         )}
       </td>
-      <td className="px-4 py-2">
+      <td className={`px-4 py-2 ${isRTL ? 'text-right' : 'text-left'}`}>
         <div className="flex items-center gap-2">
           <Calendar className="w-4 h-4 text-muted-foreground" />
           {payment.dueDate
@@ -123,7 +124,7 @@ const PaymentRow: React.FC<PaymentRowProps> = ({
           isDueSoon={isDueSoon(payment.dueDate)}
         />
       </td>
-      <td className="px-4 py-2">
+      <td className={`px-4 py-2 ${isRTL ? 'text-right' : 'text-left'}`}>
         {payment.createdAt
           ? new Date(payment.createdAt).toLocaleDateString()
           : "-"}
