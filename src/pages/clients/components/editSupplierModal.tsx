@@ -32,7 +32,9 @@ const EditSupplierModal: React.FC<EditSupplierModalProps> = ({
       className="min-w-[350px] max-w-md"
       onSubmit={onSubmit}
       submitText={
-        loading ? t("suppliers.updating", "Updating...") : t("suppliers.update", "Update")
+        loading
+          ? t("suppliers.updating", "Updating...")
+          : t("suppliers.update", "Update")
       }
       cancelText={t("suppliers.cancel", "Cancel")}
       loading={loading}
@@ -100,4 +102,4 @@ const EditSupplierModal: React.FC<EditSupplierModalProps> = ({
   );
 };
 
-export default EditSupplierModal; 
+export default EditSupplierModal;

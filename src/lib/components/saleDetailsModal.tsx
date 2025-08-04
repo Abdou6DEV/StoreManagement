@@ -62,7 +62,8 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
       setEditedCart(
         sale.saleItems.map((item) => ({
           id: item.product?.id || `manual-${item.id}`,
-          name: item.product?.name || item.manualProductName || "Unknown Product",
+          name:
+            item.product?.name || item.manualProductName || "Unknown Product",
           price: item.price,
           qty: item.quantity,
           isManual: !item.product,

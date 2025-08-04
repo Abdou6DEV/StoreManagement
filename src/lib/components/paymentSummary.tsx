@@ -224,7 +224,11 @@ export default function PaymentSummary({
 
     return (
       <tr className="border-b border-dashed border-primary/40 hover:bg-accent/40 transition-colors group">
-        <td className="py-2 px-2 font-medium truncate">{item.name}</td>
+        <td
+          className={`py-2 px-2 font-medium truncate ${isRTL ? "text-right" : "text-left"}`}
+        >
+          {item.name}
+        </td>
         <td
           className="py-2 px-2 text-right cursor-pointer select-none hover:bg-primary/20 rounded"
           onDoubleClick={handleDoubleClick}
@@ -248,7 +252,9 @@ export default function PaymentSummary({
           {(item.qty * item.price).toLocaleString()}
         </td>
         <td className="py-1 px-2 text-right">
-          <div className="flex gap-1 justify-end">
+          <div
+            className={`flex gap-1 ${isRTL ? "justify-start" : "justify-end"}`}
+          >
             <button
               onClick={() => updateQty(index, item.qty + 1)}
               className="w-6 h-6 rounded bg-muted hover:bg-primary hover:text-primary-foreground transition text-sm font-bold flex items-center justify-center"
@@ -338,7 +344,7 @@ export default function PaymentSummary({
           <thead>
             <tr className="font-semibold text-xs uppercase tracking-wider border-b border-black dark:border-white">
               <th
-                className={`text-left py-2 px-2 ${interactive ? "w-[35%]" : "w-1/2"}`}
+                className={`${isRTL ? "text-right" : "text-left"} py-2 px-2 ${interactive ? "w-[35%]" : "w-1/2"}`}
               >
                 {t("cashier.product", "Product")}
               </th>
@@ -380,7 +386,9 @@ export default function PaymentSummary({
                       key={item.id}
                       className="border-b border-dashed border-primary/40 hover:bg-accent/40 transition-colors"
                     >
-                      <td className="py-2 px-2 font-medium truncate">
+                      <td
+                        className={`py-2 px-2 font-medium truncate ${isRTL ? "text-right" : "text-left"}`}
+                      >
                         {item.name}
                       </td>
                       <td className="py-2 px-2 text-right">{item.qty}</td>

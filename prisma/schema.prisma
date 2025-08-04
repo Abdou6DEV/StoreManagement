@@ -59,7 +59,6 @@ model SaleItem {
   quantity  Int
   price     Int
 
-  // Manual product fields
   manualProductName String?
   manualProductType String?
 

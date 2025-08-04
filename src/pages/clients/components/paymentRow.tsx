@@ -98,7 +98,7 @@ const PaymentRow: React.FC<PaymentRowProps> = ({
           </div>
         )}
       </td>
-      <td className={`px-4 py-2 ${isRTL ? 'text-right' : 'text-left'}`}>
+      <td className={`px-4 py-2 ${isRTL ? "text-right" : "text-left"}`}>
         <div className="flex items-center gap-2">
           <Calendar className="w-4 h-4 text-muted-foreground" />
           {payment.dueDate
@@ -124,7 +124,7 @@ const PaymentRow: React.FC<PaymentRowProps> = ({
           isDueSoon={isDueSoon(payment.dueDate)}
         />
       </td>
-      <td className={`px-4 py-2 ${isRTL ? 'text-right' : 'text-left'}`}>
+      <td className={`px-4 py-2 ${isRTL ? "text-right" : "text-left"}`}>
         {payment.createdAt
           ? new Date(payment.createdAt).toLocaleDateString()
           : "-"}

@@ -34,22 +34,34 @@ export default function SuppliersTable({
       <table className="w-full">
         <thead>
           <tr className="border-b border-border">
-            <th className={`py-3 px-4 font-medium ${isRTL ? "text-right" : "text-left"}`}>
+            <th
+              className={`py-3 px-4 font-medium ${isRTL ? "text-right" : "text-left"}`}
+            >
               {t("suppliers.name", "Name")}
             </th>
-            <th className={`py-3 px-4 font-medium ${isRTL ? "text-right" : "text-left"}`}>
+            <th
+              className={`py-3 px-4 font-medium ${isRTL ? "text-right" : "text-left"}`}
+            >
               {t("suppliers.phone", "Phone")}
             </th>
-            <th className={`py-3 px-4 font-medium ${isRTL ? "text-right" : "text-left"}`}>
+            <th
+              className={`py-3 px-4 font-medium ${isRTL ? "text-right" : "text-left"}`}
+            >
               {t("suppliers.email", "Email")}
             </th>
-            <th className={`py-3 px-4 font-medium ${isRTL ? "text-right" : "text-left"}`}>
+            <th
+              className={`py-3 px-4 font-medium ${isRTL ? "text-right" : "text-left"}`}
+            >
               {t("suppliers.address", "Address")}
             </th>
-            <th className={`py-3 px-4 font-medium ${isRTL ? "text-right" : "text-left"}`}>
+            <th
+              className={`py-3 px-4 font-medium ${isRTL ? "text-right" : "text-left"}`}
+            >
               {t("suppliers.notes", "Notes")}
             </th>
-            <th className={`py-3 px-4 font-medium ${isRTL ? "text-right" : "text-left"}`}>
+            <th
+              className={`py-3 px-4 font-medium ${isRTL ? "text-right" : "text-left"}`}
+            >
               {t("suppliers.actions", "Actions")}
             </th>
           </tr>
@@ -84,7 +96,9 @@ export default function SuppliersTable({
                 )}
               </td>
               <td className={`py-3 px-4 ${isRTL ? "text-right" : "text-left"}`}>
-                <div className={`flex items-center gap-2 ${isRTL ? "flex-row-reverse justify-start" : "justify-end"}`}>
+                <div
+                  className={`flex items-center gap-2 ${isRTL ? "flex-row-reverse justify-start" : "justify-end"}`}
+                >
                   <Button
                     variant="ghost"
                     size="sm"
@@ -114,4 +128,4 @@ export default function SuppliersTable({
       </table>
     </div>
   );
-} 
+}

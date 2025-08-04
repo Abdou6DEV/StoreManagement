@@ -6,7 +6,9 @@ import { useToast } from "../../../lib/contexts/toastContext";
 
 interface AddClientFormProps {
   openPanel: "add" | "addPayment" | "addSupplier" | null;
-  setOpenPanel: React.Dispatch<React.SetStateAction<"add" | "addPayment" | "addSupplier" | null>>;
+  setOpenPanel: React.Dispatch<
+    React.SetStateAction<"add" | "addPayment" | "addSupplier" | null>
+  >;
   onClientAdded: () => void;
 }
 

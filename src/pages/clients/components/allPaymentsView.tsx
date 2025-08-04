@@ -30,12 +30,12 @@ interface AllPaymentsViewProps {
   onRefresh: () => void;
 }
 
-const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({ 
-  onBack, 
-  payments, 
-  loading, 
-  error, 
-  onRefresh 
+const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
+  onBack,
+  payments,
+  loading,
+  error,
+  onRefresh,
 }) => {
   const { t } = useTranslation();
   const { showToast } = useToast();
@@ -48,9 +48,9 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
   const [typeFilter, setTypeFilter] = useState<"all" | "CREDIT" | "VERSEMENT">(
     "all",
   );
-  const [dateFilter, setDateFilter] = useState<
-    "all" | "overdue" | "dueSoon"
-  >("all");
+  const [dateFilter, setDateFilter] = useState<"all" | "overdue" | "dueSoon">(
+    "all",
+  );
   const [confirmUnpaidDialog, setConfirmUnpaidDialog] = useState<{
     open: boolean;
     paymentId: string | null;
@@ -248,7 +248,8 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
                   <Pagination className="mt-6">
                     <PaginationContent>
                       <PaginationItem>
-                        {creditsCurrentPage === 1 || filteredCredits.length === 0 ? (
+                        {creditsCurrentPage === 1 ||
+                        filteredCredits.length === 0 ? (
                           <span className="opacity-50 pointer-events-none select-none">
                             <PaginationPrevious href="#" />
                           </span>
@@ -266,10 +267,16 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
                       {(() => {
                         const items = [];
                         let start = Math.max(1, creditsCurrentPage - 2);
-                        let end = Math.min(creditsTotalPages, creditsCurrentPage + 2);
+                        let end = Math.min(
+                          creditsTotalPages,
+                          creditsCurrentPage + 2,
+                        );
                         if (creditsCurrentPage <= 3) {
                           end = Math.min(5, creditsTotalPages);
-                        } else if (creditsCurrentPage >= creditsTotalPages - 2) {
+                        } else if (
+                          creditsCurrentPage >=
+                          creditsTotalPages - 2
+                        ) {
                           start = Math.max(1, creditsTotalPages - 4);
                         }
                         if (start > 1) {
@@ -305,7 +312,8 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
                         return items;
                       })()}
                       <PaginationItem>
-                        {creditsCurrentPage === creditsTotalPages || filteredCredits.length === 0 ? (
+                        {creditsCurrentPage === creditsTotalPages ||
+                        filteredCredits.length === 0 ? (
                           <span className="opacity-50 pointer-events-none select-none">
                             <PaginationNext href="#" />
                           </span>
@@ -359,7 +367,8 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
                   <Pagination className="mt-6">
                     <PaginationContent>
                       <PaginationItem>
-                        {versementsCurrentPage === 1 || filteredVersements.length === 0 ? (
+                        {versementsCurrentPage === 1 ||
+                        filteredVersements.length === 0 ? (
                           <span className="opacity-50 pointer-events-none select-none">
                             <PaginationPrevious href="#" />
                           </span>
@@ -367,7 +376,9 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
                           <PaginationPrevious
                             onClick={(e) => {
                               e.preventDefault();
-                              setVersementsCurrentPage(versementsCurrentPage - 1);
+                              setVersementsCurrentPage(
+                                versementsCurrentPage - 1,
+                              );
                             }}
                             href="#"
                           />
@@ -377,10 +388,16 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
                       {(() => {
                         const items = [];
                         let start = Math.max(1, versementsCurrentPage - 2);
-                        let end = Math.min(versementsTotalPages, versementsCurrentPage + 2);
+                        let end = Math.min(
+                          versementsTotalPages,
+                          versementsCurrentPage + 2,
+                        );
                         if (versementsCurrentPage <= 3) {
                           end = Math.min(5, versementsTotalPages);
-                        } else if (versementsCurrentPage >= versementsTotalPages - 2) {
+                        } else if (
+                          versementsCurrentPage >=
+                          versementsTotalPages - 2
+                        ) {
                           start = Math.max(1, versementsTotalPages - 4);
                         }
                         if (start > 1) {
@@ -416,7 +433,8 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
                         return items;
                       })()}
                       <PaginationItem>
-                        {versementsCurrentPage === versementsTotalPages || filteredVersements.length === 0 ? (
+                        {versementsCurrentPage === versementsTotalPages ||
+                        filteredVersements.length === 0 ? (
                           <span className="opacity-50 pointer-events-none select-none">
                             <PaginationNext href="#" />
                           </span>
@@ -424,7 +442,9 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
                           <PaginationNext
                             onClick={(e) => {
                               e.preventDefault();
-                              setVersementsCurrentPage(versementsCurrentPage + 1);
+                              setVersementsCurrentPage(
+                                versementsCurrentPage + 1,
+                              );
                             }}
                             href="#"
                           />

@@ -2,9 +2,9 @@ import { prisma } from "./prismaClient";
 
 export async function createSale(data: {
   clientId?: string;
-  items: { 
-    productId?: string; 
-    quantity: number; 
+  items: {
+    productId?: string;
+    quantity: number;
     price: number;
     manualProductName?: string;
     manualProductType?: string;
@@ -53,9 +53,9 @@ export async function updateSale(
   saleId: string,
   data: {
     clientId?: string;
-    items: { 
-      productId?: string; 
-      quantity: number; 
+    items: {
+      productId?: string;
+      quantity: number;
       price: number;
       manualProductName?: string;
       manualProductType?: string;

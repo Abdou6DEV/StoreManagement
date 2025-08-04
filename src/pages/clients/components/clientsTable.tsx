@@ -41,17 +41,29 @@ const ClientsTable: React.FC<ClientsTableProps> = ({
 
   return (
     <div className="overflow-auto rounded-lg border border-muted">
-      <table className={`min-w-full text-sm ${isRTL ? "text-right" : "text-left"}`}>
+      <table
+        className={`min-w-full text-sm ${isRTL ? "text-right" : "text-left"}`}
+      >
         <thead className="bg-muted text-muted-foreground">
           <tr>
-            <th className={`px-4 py-3 ${isRTL ? "text-right" : "text-left"}`}>{t("clients.name", "Name")}</th>
-            <th className={`px-4 py-3 ${isRTL ? "text-right" : "text-left"}`}>{t("clients.phone", "Phone")}</th>
-            <th className={`px-4 py-3 ${isRTL ? "text-right" : "text-left"}`}>{t("clients.address", "Address")}</th>
-            <th className={`px-4 py-3 ${isRTL ? "text-right" : "text-left"}`}>{t("clients.notes", "Notes")}</th>
+            <th className={`px-4 py-3 ${isRTL ? "text-right" : "text-left"}`}>
+              {t("clients.name", "Name")}
+            </th>
+            <th className={`px-4 py-3 ${isRTL ? "text-right" : "text-left"}`}>
+              {t("clients.phone", "Phone")}
+            </th>
+            <th className={`px-4 py-3 ${isRTL ? "text-right" : "text-left"}`}>
+              {t("clients.address", "Address")}
+            </th>
+            <th className={`px-4 py-3 ${isRTL ? "text-right" : "text-left"}`}>
+              {t("clients.notes", "Notes")}
+            </th>
             <th className={`px-4 py-3 ${isRTL ? "text-right" : "text-left"}`}>
               {t("clients.totalPurchases", "Total Purchases")}
             </th>
-            <th className={`px-4 py-3 ${isRTL ? "text-right" : "text-left"}`}>{t("clients.actions", "Actions")}</th>
+            <th className={`px-4 py-3 ${isRTL ? "text-right" : "text-left"}`}>
+              {t("clients.actions", "Actions")}
+            </th>
           </tr>
         </thead>
         <tbody className="divide-y divide-border">
@@ -60,16 +72,28 @@ const ClientsTable: React.FC<ClientsTableProps> = ({
               key={client.id}
               className="h-[48px] hover:bg-muted/40 transition"
             >
-              <td className={`px-4 py-2 font-medium ${isRTL ? "text-right" : "text-left"}`}>{client.name}</td>
-              <td className={`px-4 py-2 ${isRTL ? "text-right" : "text-left"}`}>{client.phone || "-"}</td>
-              <td className={`px-4 py-2 ${isRTL ? "text-right" : "text-left"}`}>{client.address || "-"}</td>
-              <td className={`px-4 py-2 ${isRTL ? "text-right" : "text-left"}`}>{client.notes || "-"}</td>
+              <td
+                className={`px-4 py-2 font-medium ${isRTL ? "text-right" : "text-left"}`}
+              >
+                {client.name}
+              </td>
+              <td className={`px-4 py-2 ${isRTL ? "text-right" : "text-left"}`}>
+                {client.phone || "-"}
+              </td>
+              <td className={`px-4 py-2 ${isRTL ? "text-right" : "text-left"}`}>
+                {client.address || "-"}
+              </td>
+              <td className={`px-4 py-2 ${isRTL ? "text-right" : "text-left"}`}>
+                {client.notes || "-"}
+              </td>
               <td className={`px-4 py-2 ${isRTL ? "text-right" : "text-left"}`}>
                 {client.totalPurchases?.toLocaleString() || 0}{" "}
                 {t("cashier.currency", "DA")}
               </td>
               <td className={`px-4 py-2 ${isRTL ? "text-right" : "text-left"}`}>
-                <div className={`flex gap-2 ${isRTL ? "flex-row-reverse" : ""}`}>
+                <div
+                  className={`flex gap-2 ${isRTL ? "flex-row-reverse" : ""}`}
+                >
                   <Button
                     onClick={() => onViewPayments(client)}
                     size="sm"

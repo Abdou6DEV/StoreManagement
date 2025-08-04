@@ -6,7 +6,9 @@ import { useToast } from "../../../lib/contexts/toastContext";
 
 interface AddSupplierFormProps {
   openPanel: "add" | "addPayment" | "addSupplier" | null;
-  setOpenPanel: React.Dispatch<React.SetStateAction<"add" | "addPayment" | "addSupplier" | null>>;
+  setOpenPanel: React.Dispatch<
+    React.SetStateAction<"add" | "addPayment" | "addSupplier" | null>
+  >;
   onSupplierAdded: () => void;
 }
 
@@ -60,7 +62,9 @@ export default function AddSupplierForm({
     <section className="bg-card border border-border rounded-xl shadow-sm">
       <header
         className="flex items-center justify-between p-6 cursor-pointer select-none"
-        onClick={() => setOpenPanel(openPanel === "addSupplier" ? null : "addSupplier")}
+        onClick={() =>
+          setOpenPanel(openPanel === "addSupplier" ? null : "addSupplier")
+        }
         aria-expanded={openPanel === "addSupplier"}
       >
         <div className="flex items-center gap-3">
@@ -164,4 +168,4 @@ function Legend({ children }: { children: React.ReactNode }) {
       {children}
     </legend>
   );
-} 
+}

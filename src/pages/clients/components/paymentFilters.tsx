@@ -81,8 +81,8 @@ const PaymentFilters: React.FC<PaymentFiltersProps> = ({
                 {statusFilter === "all"
                   ? t("clients.allStatus", "All Status")
                   : statusFilter === "paid"
-                  ? t("clients.paid", "Paid")
-                  : t("clients.unpaid", "Unpaid")}
+                    ? t("clients.paid", "Paid")
+                    : t("clients.unpaid", "Unpaid")}
                 <ChevronDown className="ml-2 w-4 h-4" />
               </Button>
             </PopoverTrigger>
@@ -122,7 +122,9 @@ const PaymentFilters: React.FC<PaymentFiltersProps> = ({
                       <Check
                         className={cn(
                           "ml-auto h-4 w-4",
-                          statusFilter === "unpaid" ? "opacity-100" : "opacity-0",
+                          statusFilter === "unpaid"
+                            ? "opacity-100"
+                            : "opacity-0",
                         )}
                       />
                     </CommandItem>
@@ -148,8 +150,8 @@ const PaymentFilters: React.FC<PaymentFiltersProps> = ({
                 {typeFilter === "all"
                   ? t("clients.allTypes", "All Types")
                   : typeFilter === "CREDIT"
-                  ? t("clients.credits", "Credits")
-                  : t("clients.versements", "Versements")}
+                    ? t("clients.credits", "Credits")
+                    : t("clients.versements", "Versements")}
                 <ChevronDown className="ml-2 w-4 h-4" />
               </Button>
             </PopoverTrigger>
@@ -189,7 +191,9 @@ const PaymentFilters: React.FC<PaymentFiltersProps> = ({
                       <Check
                         className={cn(
                           "ml-auto h-4 w-4",
-                          typeFilter === "VERSEMENT" ? "opacity-100" : "opacity-0",
+                          typeFilter === "VERSEMENT"
+                            ? "opacity-100"
+                            : "opacity-0",
                         )}
                       />
                     </CommandItem>
@@ -215,8 +219,8 @@ const PaymentFilters: React.FC<PaymentFiltersProps> = ({
                 {dateFilter === "all"
                   ? t("clients.allDates", "All Dates")
                   : dateFilter === "overdue"
-                  ? t("clients.overdue", "Overdue")
-                  : t("clients.dueSoon", "Due Soon")}
+                    ? t("clients.overdue", "Overdue")
+                    : t("clients.dueSoon", "Due Soon")}
                 <ChevronDown className="ml-2 w-4 h-4" />
               </Button>
             </PopoverTrigger>
@@ -244,7 +248,9 @@ const PaymentFilters: React.FC<PaymentFiltersProps> = ({
                       <Check
                         className={cn(
                           "ml-auto h-4 w-4",
-                          dateFilter === "overdue" ? "opacity-100" : "opacity-0",
+                          dateFilter === "overdue"
+                            ? "opacity-100"
+                            : "opacity-0",
                         )}
                       />
                     </CommandItem>
@@ -256,7 +262,9 @@ const PaymentFilters: React.FC<PaymentFiltersProps> = ({
                       <Check
                         className={cn(
                           "ml-auto h-4 w-4",
-                          dateFilter === "dueSoon" ? "opacity-100" : "opacity-0",
+                          dateFilter === "dueSoon"
+                            ? "opacity-100"
+                            : "opacity-0",
                         )}
                       />
                     </CommandItem>

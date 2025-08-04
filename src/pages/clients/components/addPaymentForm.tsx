@@ -17,7 +17,9 @@ import {
 
 interface AddPaymentFormProps {
   openPanel: "add" | "addPayment" | "addSupplier" | null;
-  setOpenPanel: React.Dispatch<React.SetStateAction<"add" | "addPayment" | "addSupplier" | null>>;
+  setOpenPanel: React.Dispatch<
+    React.SetStateAction<"add" | "addPayment" | "addSupplier" | null>
+  >;
   onPaymentAdded: () => void;
   selectedClientId?: string;
   selectedClientName?: string;
@@ -42,13 +44,15 @@ export default function AddPaymentForm({
   const { showToast } = useToast();
   const [form, setForm] = useState(initialForm);
   const [loading, setLoading] = useState(false);
-  const [clients, setClients] = useState<Array<{ id: string; name: string; phone?: string }>>([]);
+  const [clients, setClients] = useState<
+    Array<{ id: string; name: string; phone?: string }>
+  >([]);
   const [clientSearch, setClientSearch] = useState("");
 
   // Initialize form with selected client if provided
   React.useEffect(() => {
     if (selectedClientId && selectedClientName) {
-      setForm(prev => ({
+      setForm((prev) => ({
         ...prev,
         clientId: selectedClientId,
         clientName: selectedClientName,
@@ -76,7 +80,10 @@ export default function AddPaymentForm({
   const handleAddPayment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.clientId || !form.givenAmount || !form.dueDate) {
-      showToast(t("clients.fillRequiredFields", "Please fill all required fields"), "error");
+      showToast(
+        t("clients.fillRequiredFields", "Please fill all required fields"),
+        "error",
+      );
       return;
     }
 
@@ -103,16 +110,20 @@ export default function AddPaymentForm({
     }
   };
 
-  const filteredClients = clients.filter(client =>
-    client.name.toLowerCase().includes(clientSearch.toLowerCase()) ||
-    (client.phone && client.phone.toLowerCase().includes(clientSearch.toLowerCase()))
+  const filteredClients = clients.filter(
+    (client) =>
+      client.name.toLowerCase().includes(clientSearch.toLowerCase()) ||
+      (client.phone &&
+        client.phone.toLowerCase().includes(clientSearch.toLowerCase())),
   );
 
   return (
     <section className="bg-card border border-border rounded-xl shadow-sm">
       <header
         className="flex items-center justify-between p-6 cursor-pointer select-none"
-        onClick={() => setOpenPanel(openPanel === "addPayment" ? null : "addPayment")}
+        onClick={() =>
+          setOpenPanel(openPanel === "addPayment" ? null : "addPayment")
+        }
         aria-expanded={openPanel === "addPayment"}
       >
         <div className="flex items-center gap-3">
@@ -142,7 +153,8 @@ export default function AddPaymentForm({
                     className="w-full justify-between h-10"
                     aria-label={t("clients.selectClient", "Select client")}
                   >
-                    {form.clientName || t("clients.selectClient", "Select client")}
+                    {form.clientName ||
+                      t("clients.selectClient", "Select client")}
                     <ChevronDown className="ml-2 w-4 h-4" />
                   </Button>
                 </PopoverTrigger>
@@ -151,7 +163,10 @@ export default function AddPaymentForm({
                     <CommandList>
                       <CommandGroup>
                         <input
-                          placeholder={t("clients.searchClients", "Search clients...")}
+                          placeholder={t(
+                            "clients.searchClients",
+                            "Search clients...",
+                          )}
                           value={clientSearch}
                           onChange={(e) => setClientSearch(e.target.value)}
                           className="w-full px-3 py-2 text-sm border-b border-border focus:outline-none focus:ring-1 focus:ring-red-500/50"
@@ -169,7 +184,9 @@ export default function AddPaymentForm({
                             <div className="flex flex-col">
                               <span className="font-medium">{client.name}</span>
                               {client.phone && (
-                                <span className="text-sm text-muted-foreground">{client.phone}</span>
+                                <span className="text-sm text-muted-foreground">
+                                  {client.phone}
+                                </span>
                               )}
                             </div>
                           </CommandItem>
@@ -189,10 +206,13 @@ export default function AddPaymentForm({
                   <Button
                     variant="outline"
                     className="w-full justify-between h-10"
-                    aria-label={t("clients.selectPaymentType", "Select payment type")}
+                    aria-label={t(
+                      "clients.selectPaymentType",
+                      "Select payment type",
+                    )}
                   >
-                    {form.type === "CREDIT" 
-                      ? t("clients.credits", "Credits") 
+                    {form.type === "CREDIT"
+                      ? t("clients.credits", "Credits")
                       : t("clients.versements", "Versements")}
                     <ChevronDown className="ml-2 w-4 h-4" />
                   </Button>
@@ -227,7 +247,9 @@ export default function AddPaymentForm({
                 type="number"
                 placeholder={t("clients.amount", "Amount")}
                 value={form.givenAmount}
-                onChange={(e) => handleFormChange("givenAmount", e.target.value)}
+                onChange={(e) =>
+                  handleFormChange("givenAmount", e.target.value)
+                }
                 className="w-full px-4 h-10 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-red-500/50 focus:border-red-500 transition-all"
                 required
                 min="0"
@@ -246,14 +268,14 @@ export default function AddPaymentForm({
                 required
               />
             </Legend>
-
-            
           </div>
           <hr />
           <div>
             <Button
               type="submit"
-              disabled={loading || !form.clientId || !form.givenAmount || !form.dueDate}
+              disabled={
+                loading || !form.clientId || !form.givenAmount || !form.dueDate
+              }
               className="bg-red-600 hover:bg-red-700 text-white h-10"
             >
               {loading ? (
@@ -281,4 +303,4 @@ function Legend({ children }: { children: React.ReactNode }) {
       {children}
     </legend>
   );
-} 
+}

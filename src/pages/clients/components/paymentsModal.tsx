@@ -145,133 +145,139 @@ const PaymentsModal: React.FC<PaymentsModalProps> = ({ client, onClose }) => {
     type: "CREDIT" | "VERSEMENT";
   }) => {
     const isRTL = i18n.language === "ar";
-    
+
     return (
-    <div className="overflow-auto rounded-lg border border-muted">
-      <table className="min-w-full text-sm text-left">
-        <thead className="bg-muted text-muted-foreground">
-          <tr>
-            <th className={`px-4 py-3 ${isRTL ? 'text-right' : 'text-left'}`}>
-              {t("clients.paymentAmount", "Amount")}
-            </th>
-            <th className={`px-4 py-3 ${isRTL ? 'text-right' : 'text-left'}`}>
-              {t("clients.paymentDueDate", "Due Date")}
-            </th>
-            <th className={`px-4 py-3 ${isRTL ? 'text-right' : 'text-left'}`}>
-              {t("clients.paymentPaidDate", "Paid Date")}
-            </th>
-            <th className={`px-4 py-3 ${isRTL ? 'text-right' : 'text-left'}`}>
-              {t("clients.paymentCreatedAt", "Created At")}
-            </th>
-            <th className={`px-4 py-3 ${isRTL ? 'text-right' : 'text-left'}`}>{t("clients.actions", "Actions")}</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-border">
-          {payments.map((payment) => (
-            <tr key={payment.id} className="hover:bg-muted/40 transition">
-              <td className="px-4 py-2">
-                {editingPayment === payment.id ? (
-                  <div className="flex items-center gap-2">
-                    <Input
-                      type="number"
-                      value={editAmount}
-                      onChange={(e) => setEditAmount(Number(e.target.value))}
-                      className="w-20 h-8 text-sm"
-                      autoFocus
-                    />
-                    <Button
-                      size="sm"
-                      onClick={() => handleUpdateAmount(payment.id)}
-                      className="h-8 px-2"
-                    >
-                      <Save className="w-3 h-3" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setEditingPayment(null)}
-                      className="h-8 px-2"
-                    >
-                      <X className="w-3 h-3" />
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">
-                      {payment.givenAmount.toLocaleString()}{" "}
-                      {t("cashier.currency", "DA")}
-                    </span>
-                    {!payment.paidDate && (
+      <div className="overflow-auto rounded-lg border border-muted">
+        <table className="min-w-full text-sm text-left">
+          <thead className="bg-muted text-muted-foreground">
+            <tr>
+              <th className={`px-4 py-3 ${isRTL ? "text-right" : "text-left"}`}>
+                {t("clients.paymentAmount", "Amount")}
+              </th>
+              <th className={`px-4 py-3 ${isRTL ? "text-right" : "text-left"}`}>
+                {t("clients.paymentDueDate", "Due Date")}
+              </th>
+              <th className={`px-4 py-3 ${isRTL ? "text-right" : "text-left"}`}>
+                {t("clients.paymentPaidDate", "Paid Date")}
+              </th>
+              <th className={`px-4 py-3 ${isRTL ? "text-right" : "text-left"}`}>
+                {t("clients.paymentCreatedAt", "Created At")}
+              </th>
+              <th className={`px-4 py-3 ${isRTL ? "text-right" : "text-left"}`}>
+                {t("clients.actions", "Actions")}
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border">
+            {payments.map((payment) => (
+              <tr key={payment.id} className="hover:bg-muted/40 transition">
+                <td className="px-4 py-2">
+                  {editingPayment === payment.id ? (
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        value={editAmount}
+                        onChange={(e) => setEditAmount(Number(e.target.value))}
+                        className="w-20 h-8 text-sm"
+                        autoFocus
+                      />
+                      <Button
+                        size="sm"
+                        onClick={() => handleUpdateAmount(payment.id)}
+                        className="h-8 px-2"
+                      >
+                        <Save className="w-3 h-3" />
+                      </Button>
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => {
-                          setEditingPayment(payment.id);
-                          setEditAmount(payment.givenAmount);
-                        }}
-                        className="h-6 px-1"
+                        onClick={() => setEditingPayment(null)}
+                        className="h-8 px-2"
                       >
-                        <Edit className="w-3 h-3" />
+                        <X className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">
+                        {payment.givenAmount.toLocaleString()}{" "}
+                        {t("cashier.currency", "DA")}
+                      </span>
+                      {!payment.paidDate && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setEditingPayment(payment.id);
+                            setEditAmount(payment.givenAmount);
+                          }}
+                          className="h-6 px-1"
+                        >
+                          <Edit className="w-3 h-3" />
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                </td>
+                <td
+                  className={`px-4 py-2 ${isRTL ? "text-right" : "text-left"}`}
+                >
+                  {payment.dueDate
+                    ? new Date(payment.dueDate).toLocaleDateString()
+                    : "-"}
+                </td>
+                <td className="px-4 py-2">
+                  {payment.paidDate ? (
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4 text-green-500" />
+                      {new Date(payment.paidDate).toLocaleDateString()}
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-orange-600" />
+                      <span className="text-orange-700 font-medium bg-orange-100 px-2 py-1 rounded-full text-xs">
+                        {t("clients.pending", "Pending")}
+                      </span>
+                    </div>
+                  )}
+                </td>
+                <td
+                  className={`px-4 py-2 ${isRTL ? "text-right" : "text-left"}`}
+                >
+                  {payment.createdAt
+                    ? new Date(payment.createdAt).toLocaleDateString()
+                    : "-"}
+                </td>
+                <td className="px-4 py-2">
+                  <div className="flex gap-2">
+                    {!payment.paidDate ? (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-green-700 border-green-500 hover:bg-green-50 flex items-center gap-1"
+                        onClick={() => handleMarkAsPaid(payment.id)}
+                      >
+                        <CheckCircle className="w-4 h-4 text-green-500" />
+                        {t("clients.markAsPaid", "Mark as Paid")}
+                      </Button>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-orange-700 border-orange-500 hover:bg-orange-50 flex items-center gap-1"
+                        onClick={() => handleMarkAsUnpaidConfirm(payment.id)}
+                      >
+                        <X className="w-4 h-4 text-orange-500" />
+                        {t("clients.markAsUnpaid", "Mark as Unpaid")}
                       </Button>
                     )}
                   </div>
-                )}
-              </td>
-              <td className={`px-4 py-2 ${isRTL ? 'text-right' : 'text-left'}`}>
-                {payment.dueDate
-                  ? new Date(payment.dueDate).toLocaleDateString()
-                  : "-"}
-              </td>
-              <td className="px-4 py-2">
-                {payment.paidDate ? (
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-green-500" />
-                    {new Date(payment.paidDate).toLocaleDateString()}
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-orange-600" />
-                    <span className="text-orange-700 font-medium bg-orange-100 px-2 py-1 rounded-full text-xs">
-                      {t("clients.pending", "Pending")}
-                    </span>
-                  </div>
-                )}
-              </td>
-              <td className={`px-4 py-2 ${isRTL ? 'text-right' : 'text-left'}`}>
-                {payment.createdAt
-                  ? new Date(payment.createdAt).toLocaleDateString()
-                  : "-"}
-              </td>
-              <td className="px-4 py-2">
-                <div className="flex gap-2">
-                  {!payment.paidDate ? (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="text-green-700 border-green-500 hover:bg-green-50 flex items-center gap-1"
-                      onClick={() => handleMarkAsPaid(payment.id)}
-                    >
-                      <CheckCircle className="w-4 h-4 text-green-500" />
-                      {t("clients.markAsPaid", "Mark as Paid")}
-                    </Button>
-                  ) : (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="text-orange-700 border-orange-500 hover:bg-orange-50 flex items-center gap-1"
-                      onClick={() => handleMarkAsUnpaidConfirm(payment.id)}
-                    >
-                      <X className="w-4 h-4 text-orange-500" />
-                      {t("clients.markAsUnpaid", "Mark as Unpaid")}
-                    </Button>
-                  )}
-                </div>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     );
   };
 

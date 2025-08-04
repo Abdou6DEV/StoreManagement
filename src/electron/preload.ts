@@ -122,28 +122,28 @@ contextBridge.exposeInMainWorld("api", {
           givenAmount,
         }),
     },
-            sellers: {
-          getAll: () => ipcRenderer.invoke("db:sellers:getAll"),
-          create: (data: {
-            name: string;
-            phone?: string;
-            email?: string;
-            address?: string;
-            notes?: string;
-          }) => ipcRenderer.invoke("db:sellers:create", data),
-          update: (
-            id: string,
-            data: {
-              name?: string;
-              phone?: string;
-              email?: string;
-              address?: string;
-              notes?: string;
-            },
-          ) => ipcRenderer.invoke("db:sellers:update", { id, data }),
-          delete: (id: string) => ipcRenderer.invoke("db:sellers:delete", id),
-          getById: (id: string) => ipcRenderer.invoke("db:sellers:getById", id),
+    sellers: {
+      getAll: () => ipcRenderer.invoke("db:sellers:getAll"),
+      create: (data: {
+        name: string;
+        phone?: string;
+        email?: string;
+        address?: string;
+        notes?: string;
+      }) => ipcRenderer.invoke("db:sellers:create", data),
+      update: (
+        id: string,
+        data: {
+          name?: string;
+          phone?: string;
+          email?: string;
+          address?: string;
+          notes?: string;
         },
+      ) => ipcRenderer.invoke("db:sellers:update", { id, data }),
+      delete: (id: string) => ipcRenderer.invoke("db:sellers:delete", id),
+      getById: (id: string) => ipcRenderer.invoke("db:sellers:getById", id),
+    },
     purchases: {
       getAll: () => ipcRenderer.invoke("db:purchases:getAll"),
       create: (data: {

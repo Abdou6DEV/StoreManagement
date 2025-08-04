@@ -1,5 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { Users, Loader2, CreditCard, ChevronDown, Check, Package } from "lucide-react";
+import {
+  Users,
+  Loader2,
+  CreditCard,
+  ChevronDown,
+  Check,
+  Package,
+} from "lucide-react";
 import { useTranslation } from "react-i18next";
 import ClientsTable from "./components/clientsTable";
 import EditClientDialog from "./components/editClientModal";
@@ -51,16 +58,20 @@ export default function Clients() {
   const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [openPanel, setOpenPanel] = useState<"add" | "addPayment" | "addSupplier" | null>(null);
+  const [openPanel, setOpenPanel] = useState<
+    "add" | "addPayment" | "addSupplier" | null
+  >(null);
   const [paymentsClient, setPaymentsClient] = useState<Client | null>(null);
   const [viewMode, setViewMode] = useState<"clients" | "payments">("clients");
-  const [activeTab, setActiveTab] = useState<"clients" | "suppliers">("clients");
-  
+  const [activeTab, setActiveTab] = useState<"clients" | "suppliers">(
+    "clients",
+  );
+
   // Payments state
   const [payments, setPayments] = useState<PaymentWithClient[]>([]);
   const [paymentsLoading, setPaymentsLoading] = useState(false);
   const [paymentsError, setPaymentsError] = useState<string | null>(null);
-  
+
   // Suppliers state
   const [suppliers, setSuppliers] = useState<Seller[]>([]);
   const [suppliersLoading, setSuppliersLoading] = useState(true);
@@ -68,16 +79,18 @@ export default function Clients() {
   const [suppliersSearch, setSuppliersSearch] = useState("");
   const [editingSupplier, setEditingSupplier] = useState<Seller | null>(null);
   const [editSupplierLoading, setEditSupplierLoading] = useState(false);
-  const [deleteSupplierLoading, setDeleteSupplierLoading] = useState<string | null>(null);
+  const [deleteSupplierLoading, setDeleteSupplierLoading] = useState<
+    string | null
+  >(null);
   const [suppliersCurrentPage, setSuppliersCurrentPage] = useState(1);
   const [suppliersItemsPerPage, setSuppliersItemsPerPage] = useState(10);
-  
+
   const [confirmDelete, setConfirmDelete] = useState<{
     open: boolean;
     clientId: string | null;
     clientName: string;
   }>({ open: false, clientId: null, clientName: "" });
-  
+
   const [confirmDeleteSupplier, setConfirmDeleteSupplier] = useState<{
     open: boolean;
     supplierId: string | null;
@@ -207,14 +220,19 @@ export default function Clients() {
 
     setDeleteSupplierLoading(confirmDeleteSupplier.supplierId);
     try {
-      await window.api.database.sellers.delete(confirmDeleteSupplier.supplierId);
+      await window.api.database.sellers.delete(
+        confirmDeleteSupplier.supplierId,
+      );
       await fetchSuppliers();
       showToast(
         t("suppliers.deleteSuccess", "Supplier deleted successfully"),
         "success",
       );
     } catch (err) {
-      showToast(t("suppliers.deleteError", "Failed to delete supplier"), "error");
+      showToast(
+        t("suppliers.deleteError", "Failed to delete supplier"),
+        "error",
+      );
     } finally {
       setDeleteSupplierLoading(null);
     }
@@ -247,7 +265,10 @@ export default function Clients() {
         "success",
       );
     } catch (err) {
-      showToast(t("suppliers.updateError", "Failed to update supplier"), "error");
+      showToast(
+        t("suppliers.updateError", "Failed to update supplier"),
+        "error",
+      );
     } finally {
       setEditSupplierLoading(false);
     }
@@ -343,12 +364,12 @@ export default function Clients() {
             setOpenPanel={setOpenPanel}
             onClientAdded={fetchClients}
           />
-                                           <AddPaymentForm
-              openPanel={openPanel}
-              setOpenPanel={setOpenPanel}
-              onPaymentAdded={fetchPayments}
-            />
-          
+          <AddPaymentForm
+            openPanel={openPanel}
+            setOpenPanel={setOpenPanel}
+            onPaymentAdded={fetchPayments}
+          />
+
           {viewMode === "clients" ? (
             <div className="bg-card border border-border rounded-xl shadow-sm p-6 space-y-4">
               <div className="flex items-center justify-between mb-4">
@@ -520,8 +541,8 @@ export default function Clients() {
               )}
             </div>
           ) : (
-            <AllPaymentsView 
-              onBack={() => setViewMode("clients")} 
+            <AllPaymentsView
+              onBack={() => setViewMode("clients")}
               payments={payments}
               loading={paymentsLoading}
               error={paymentsError}
@@ -539,7 +560,7 @@ export default function Clients() {
             setOpenPanel={setOpenPanel}
             onSupplierAdded={fetchSuppliers}
           />
-          
+
           <div className="bg-card border border-border rounded-xl shadow-sm p-6 space-y-4">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
@@ -600,7 +621,10 @@ export default function Clients() {
                 </Popover>
               </div>
               {/* Search bar inline */}
-              <SupplierSearchBar search={suppliersSearch} setSearch={setSuppliersSearch} />
+              <SupplierSearchBar
+                search={suppliersSearch}
+                setSearch={setSuppliersSearch}
+              />
             </div>
             {suppliersLoading ? (
               <div className="flex items-center gap-2 text-muted-foreground">
@@ -622,7 +646,8 @@ export default function Clients() {
                   <Pagination className="mt-6">
                     <PaginationContent>
                       <PaginationItem>
-                        {suppliersCurrentPage === 1 || filteredSuppliers.length === 0 ? (
+                        {suppliersCurrentPage === 1 ||
+                        filteredSuppliers.length === 0 ? (
                           <span className="opacity-50 pointer-events-none select-none">
                             <PaginationPrevious href="#" />
                           </span>
@@ -640,10 +665,16 @@ export default function Clients() {
                       {(() => {
                         const items = [];
                         let start = Math.max(1, suppliersCurrentPage - 2);
-                        let end = Math.min(suppliersTotalPages, suppliersCurrentPage + 2);
+                        let end = Math.min(
+                          suppliersTotalPages,
+                          suppliersCurrentPage + 2,
+                        );
                         if (suppliersCurrentPage <= 3) {
                           end = Math.min(5, suppliersTotalPages);
-                        } else if (suppliersCurrentPage >= suppliersTotalPages - 2) {
+                        } else if (
+                          suppliersCurrentPage >=
+                          suppliersTotalPages - 2
+                        ) {
                           start = Math.max(1, suppliersTotalPages - 4);
                         }
                         if (start > 1) {
@@ -742,7 +773,9 @@ export default function Clients() {
       {/* Confirm Delete Supplier Dialog */}
       <ConfirmDialog
         open={confirmDeleteSupplier.open}
-        onOpenChange={(open) => setConfirmDeleteSupplier((prev) => ({ ...prev, open }))}
+        onOpenChange={(open) =>
+          setConfirmDeleteSupplier((prev) => ({ ...prev, open }))
+        }
         title={t("suppliers.confirmDeleteTitle", "Delete Supplier")}
         message={t(
           "suppliers.confirmDeleteMessage",

@@ -88,7 +88,7 @@ export default function CashierSession({
     const outOfStock = cart.filter((item) => {
       // Skip manual products as they don't have inventory constraints
       if (item.isManual) return false;
-      
+
       const product = allProducts.find((p) => p.id === item.id);
       return product && item.qty > product.quantity;
     });
@@ -124,7 +124,7 @@ export default function CashierSession({
     const outOfStock = cart.filter((item) => {
       // Skip manual products as they don't have inventory constraints
       if (item.isManual) return false;
-      
+
       const product = allProducts.find((p) => p.id === item.id);
       return product && item.qty > product.quantity;
     });
