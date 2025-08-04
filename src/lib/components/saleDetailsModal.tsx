@@ -61,10 +61,12 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
     if (sale && isEditing) {
       setEditedCart(
         sale.saleItems.map((item) => ({
-          id: item.product.id,
-          name: item.product.name,
+          id: item.product?.id || `manual-${item.id}`,
+          name: item.product?.name || item.manualProductName || "Unknown Product",
           price: item.price,
           qty: item.quantity,
+          isManual: !item.product,
+          manualProductType: item.manualProductType,
         })),
       );
       setEditedDiscount(sale.discount);
@@ -152,9 +154,11 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
       const updatedSale = await window.api.database.sales.update(sale.id, {
         clientId: sale.client?.name ? undefined : undefined, // Keep existing client
         items: editedCart.map((item) => ({
-          productId: item.id,
+          productId: item.isManual ? undefined : item.id,
           quantity: item.qty,
           price: item.price,
+          manualProductName: item.isManual ? item.name : undefined,
+          manualProductType: item.isManual ? item.manualProductType : undefined,
         })),
         discount: editedDiscount,
       });
@@ -197,8 +201,8 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
   const currentCart = isEditing
     ? editedCart
     : sale.saleItems.map((item) => ({
-        id: item.product.id,
-        name: item.product.name,
+        id: item.product?.id || `manual-${item.id}`,
+        name: item.product?.name || item.manualProductName || "Unknown Product",
         price: item.price,
         qty: item.quantity,
       }));

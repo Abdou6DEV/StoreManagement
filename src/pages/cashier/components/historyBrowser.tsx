@@ -65,9 +65,10 @@ const HistoryBrowser: React.FC<HistoryBrowserProps> = ({
 
       // Search in product names
       if (
-        sale.saleItems.some((item) =>
-          item.product.name.toLowerCase().includes(searchLower),
-        )
+        sale.saleItems.some((item) => {
+          const productName = item.product?.name || item.manualProductName || "";
+          return productName.toLowerCase().includes(searchLower);
+        })
       )
         return true;
 
@@ -274,7 +275,7 @@ const HistoryBrowser: React.FC<HistoryBrowserProps> = ({
                   <div className="text-sm font-medium text-foreground line-clamp-1">
                     {sale.saleItems
                       .slice(0, 2)
-                      .map((item) => item.product.name)
+                      .map((item) => item.product?.name || item.manualProductName || "Unknown Product")
                       .join(", ")}
                     {sale.saleItems.length > 2 &&
                       ` +${sale.saleItems.length - 2} ${t("cashier.more", "more")}`}

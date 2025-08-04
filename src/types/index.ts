@@ -11,6 +11,8 @@ export interface CartItem {
   name: string;
   price: number;
   qty: number;
+  isManual?: boolean;
+  manualProductType?: string;
 }
 
 export interface ClientSuggestion {
@@ -74,10 +76,12 @@ export interface SaleItem {
   id: string;
   quantity: number;
   price: number;
-  product: {
+  product?: {
     id: string;
     name: string;
-  };
+  } | null;
+  manualProductName?: string | null;
+  manualProductType?: string | null;
 }
 
 export interface Sale {

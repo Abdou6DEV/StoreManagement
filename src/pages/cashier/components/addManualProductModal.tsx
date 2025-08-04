@@ -20,7 +20,6 @@ export default function AddManualProductModal({
   const [manualProduct, setManualProduct] = useState({
     name: "",
     type: "",
-    bought: 0,
     sold: 0,
   });
 
@@ -38,15 +37,17 @@ export default function AddManualProductModal({
       name: manualProduct.name,
       price: manualProduct.sold,
       qty: 1,
+      isManual: true,
+      manualProductType: manualProduct.type,
     });
 
     // Reset form
-    setManualProduct({ name: "", type: "", bought: 0, sold: 0 });
+    setManualProduct({ name: "", type: "", sold: 0 });
     onClose();
   };
 
   const handleClose = () => {
-    setManualProduct({ name: "", type: "", bought: 0, sold: 0 });
+    setManualProduct({ name: "", type: "", sold: 0 });
     onClose();
   };
 
@@ -64,7 +65,7 @@ export default function AddManualProductModal({
       className="max-w-md"
       onSubmit={handleSubmit}
       submitText={t("cashier.addToCart", "Add to Cart")}
-      cancelText={t("common.cancel", "Cancel")}
+      cancelText={t("cashier.cancel", "Cancel")}
       submitDisabled={
         !manualProduct.name.trim() ||
         !manualProduct.type.trim() ||
@@ -113,25 +114,7 @@ export default function AddManualProductModal({
           <h3 className="text-sm font-semibold text-foreground mb-4">
             {t("cashier.pricing", "Pricing Information")}
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Legend>
-              <label className="text-sm font-medium text-foreground">
-                {t("cashier.boughtPrice", "Bought Price")}
-              </label>
-              <div className="w-full">
-                <StyledNumberInput
-                  value={manualProduct.bought}
-                  onChange={(val) =>
-                    setManualProduct((p) => ({
-                      ...p,
-                      bought: val === "" ? 0 : val,
-                    }))
-                  }
-                  min={0}
-                  placeholder="0"
-                />
-              </div>
-            </Legend>
+          <div className="grid grid-cols-1 gap-4">
             <Legend>
               <label className="text-sm font-medium text-foreground">
                 {t("cashier.soldPrice", "Sold Price")} *

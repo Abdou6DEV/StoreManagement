@@ -2,21 +2,30 @@ import { prisma } from "./prismaClient";
 
 export async function createSale(data: {
   clientId?: string;
-  items: { productId: string; quantity: number; price: number }[];
+  items: { 
+    productId?: string; 
+    quantity: number; 
+    price: number;
+    manualProductName?: string;
+    manualProductType?: string;
+  }[];
   discount?: number;
 }) {
   return await prisma.$transaction(async (tx) => {
     for (const item of data.items) {
-      const product = await tx.product.findUnique({
-        where: { id: item.productId },
-      });
-
-      if (product) {
-        const newQty = Math.max(0, product.quantity - item.quantity);
-        await tx.product.update({
+      // Only update product quantity if it's a regular product (has productId)
+      if (item.productId) {
+        const product = await tx.product.findUnique({
           where: { id: item.productId },
-          data: { quantity: newQty },
         });
+
+        if (product) {
+          const newQty = Math.max(0, product.quantity - item.quantity);
+          await tx.product.update({
+            where: { id: item.productId },
+            data: { quantity: newQty },
+          });
+        }
       }
     }
 
@@ -26,9 +35,11 @@ export async function createSale(data: {
         discount: data.discount ?? 0,
         saleItems: {
           create: data.items.map((item) => ({
-            productId: item.productId,
+            productId: item.productId || null,
             quantity: item.quantity,
             price: item.price,
+            manualProductName: item.manualProductName || null,
+            manualProductType: item.manualProductType || null,
           })),
         },
       },
@@ -42,7 +53,13 @@ export async function updateSale(
   saleId: string,
   data: {
     clientId?: string;
-    items: { productId: string; quantity: number; price: number }[];
+    items: { 
+      productId?: string; 
+      quantity: number; 
+      price: number;
+      manualProductName?: string;
+      manualProductType?: string;
+    }[];
     discount?: number;
   },
 ) {
@@ -57,18 +74,20 @@ export async function updateSale(
       throw new Error("Sale not found");
     }
 
-    // Restore original quantities to products
+    // Restore original quantities to products (only for regular products)
     for (const item of originalSale.saleItems) {
-      const product = await tx.product.findUnique({
-        where: { id: item.productId },
-      });
-
-      if (product) {
-        const newQty = product.quantity + item.quantity;
-        await tx.product.update({
+      if (item.productId) {
+        const product = await tx.product.findUnique({
           where: { id: item.productId },
-          data: { quantity: newQty },
         });
+
+        if (product) {
+          const newQty = product.quantity + item.quantity;
+          await tx.product.update({
+            where: { id: item.productId },
+            data: { quantity: newQty },
+          });
+        }
       }
     }
 
@@ -77,18 +96,20 @@ export async function updateSale(
       where: { saleId },
     });
 
-    // Update quantities for new items
+    // Update quantities for new items (only for regular products)
     for (const item of data.items) {
-      const product = await tx.product.findUnique({
-        where: { id: item.productId },
-      });
-
-      if (product) {
-        const newQty = Math.max(0, product.quantity - item.quantity);
-        await tx.product.update({
+      if (item.productId) {
+        const product = await tx.product.findUnique({
           where: { id: item.productId },
-          data: { quantity: newQty },
         });
+
+        if (product) {
+          const newQty = Math.max(0, product.quantity - item.quantity);
+          await tx.product.update({
+            where: { id: item.productId },
+            data: { quantity: newQty },
+          });
+        }
       }
     }
 
@@ -100,9 +121,11 @@ export async function updateSale(
         discount: data.discount ?? 0,
         saleItems: {
           create: data.items.map((item) => ({
-            productId: item.productId,
+            productId: item.productId || null,
             quantity: item.quantity,
             price: item.price,
+            manualProductName: item.manualProductName || null,
+            manualProductType: item.manualProductType || null,
           })),
         },
       },
@@ -164,18 +187,20 @@ export async function deleteSale(saleId: string) {
       throw new Error("Sale not found");
     }
 
-    // Restore quantities to products
+    // Restore quantities to products (only for regular products)
     for (const item of sale.saleItems) {
-      const product = await tx.product.findUnique({
-        where: { id: item.productId },
-      });
-
-      if (product) {
-        const newQty = product.quantity + item.quantity;
-        await tx.product.update({
+      if (item.productId) {
+        const product = await tx.product.findUnique({
           where: { id: item.productId },
-          data: { quantity: newQty },
         });
+
+        if (product) {
+          const newQty = product.quantity + item.quantity;
+          await tx.product.update({
+            where: { id: item.productId },
+            data: { quantity: newQty },
+          });
+        }
       }
     }
 
