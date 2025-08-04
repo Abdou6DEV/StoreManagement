@@ -17,7 +17,8 @@ export default function SuppliersTable({
   onDelete,
   deleteLoading,
 }: SuppliersTableProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isRTL = i18n.language === "ar";
 
   if (suppliers.length === 0) {
     return (
@@ -33,22 +34,22 @@ export default function SuppliersTable({
       <table className="w-full">
         <thead>
           <tr className="border-b border-border">
-            <th className="text-left py-3 px-4 font-medium">
+            <th className={`py-3 px-4 font-medium ${isRTL ? "text-right" : "text-left"}`}>
               {t("suppliers.name", "Name")}
             </th>
-            <th className="text-left py-3 px-4 font-medium">
+            <th className={`py-3 px-4 font-medium ${isRTL ? "text-right" : "text-left"}`}>
               {t("suppliers.phone", "Phone")}
             </th>
-            <th className="text-left py-3 px-4 font-medium">
+            <th className={`py-3 px-4 font-medium ${isRTL ? "text-right" : "text-left"}`}>
               {t("suppliers.email", "Email")}
             </th>
-            <th className="text-left py-3 px-4 font-medium">
+            <th className={`py-3 px-4 font-medium ${isRTL ? "text-right" : "text-left"}`}>
               {t("suppliers.address", "Address")}
             </th>
-            <th className="text-left py-3 px-4 font-medium">
+            <th className={`py-3 px-4 font-medium ${isRTL ? "text-right" : "text-left"}`}>
               {t("suppliers.notes", "Notes")}
             </th>
-            <th className="text-right py-3 px-4 font-medium">
+            <th className={`py-3 px-4 font-medium ${isRTL ? "text-right" : "text-left"}`}>
               {t("suppliers.actions", "Actions")}
             </th>
           </tr>
@@ -59,31 +60,31 @@ export default function SuppliersTable({
               key={supplier.id}
               className="border-b border-border hover:bg-muted/50 transition-colors"
             >
-              <td className="py-3 px-4">
+              <td className={`py-3 px-4 ${isRTL ? "text-right" : "text-left"}`}>
                 <div className="font-medium">{supplier.name}</div>
               </td>
-              <td className="py-3 px-4">
+              <td className={`py-3 px-4 ${isRTL ? "text-right" : "text-left"}`}>
                 {supplier.phone || (
                   <span className="text-muted-foreground">-</span>
                 )}
               </td>
-              <td className="py-3 px-4">
+              <td className={`py-3 px-4 ${isRTL ? "text-right" : "text-left"}`}>
                 {supplier.email || (
                   <span className="text-muted-foreground">-</span>
                 )}
               </td>
-              <td className="py-3 px-4">
+              <td className={`py-3 px-4 ${isRTL ? "text-right" : "text-left"}`}>
                 {supplier.address || (
                   <span className="text-muted-foreground">-</span>
                 )}
               </td>
-              <td className="py-3 px-4">
+              <td className={`py-3 px-4 ${isRTL ? "text-right" : "text-left"}`}>
                 {supplier.notes || (
                   <span className="text-muted-foreground">-</span>
                 )}
               </td>
-              <td className="py-3 px-4">
-                <div className="flex items-center justify-end gap-2">
+              <td className={`py-3 px-4 ${isRTL ? "text-right" : "text-left"}`}>
+                <div className={`flex items-center gap-2 ${isRTL ? "flex-row-reverse justify-start" : "justify-end"}`}>
                   <Button
                     variant="ghost"
                     size="sm"
