@@ -837,6 +837,84 @@ async function main() {
   products = await prisma.product.findMany();
   const sales = [];
 
+  // Manual product types for variety (categories of products not in stock)
+  const manualProductTypes = [
+    "Electronics",
+    "Clothing",
+    "Home & Garden",
+    "Sports & Outdoors",
+    "Books & Media",
+    "Beauty & Health",
+    "Automotive",
+    "Toys & Games",
+    "Food & Beverages",
+    "Jewelry & Watches",
+    "Tools & Hardware",
+    "Pet Supplies",
+    "Office Supplies",
+    "Baby & Kids",
+    "Furniture",
+    "Art & Crafts",
+    "Music & Instruments",
+    "Pharmaceuticals",
+    "Kitchen & Dining",
+    "Outdoor & Camping",
+  ];
+
+  // Manual product names for variety (products not tracked in inventory)
+  const manualProductNames = [
+    "Fresh Bread",
+    "Milk",
+    "Eggs",
+    "Butter",
+    "Cheese",
+    "Yogurt",
+    "Fresh Vegetables",
+    "Fresh Fruits",
+    "Meat",
+    "Fish",
+    "Chicken",
+    "Rice",
+    "Pasta",
+    "Cooking Oil",
+    "Sugar",
+    "Salt",
+    "Spices",
+    "Tea",
+    "Coffee",
+    "Juice",
+    "Soda",
+    "Water",
+    "Beer",
+    "Wine",
+    "Cigarettes",
+    "Newspaper",
+    "Magazine",
+    "Lottery Ticket",
+    "Gift Card",
+    "Phone Credit",
+    "Internet Credit",
+    "Electricity Credit",
+    "Gas Credit",
+    "Water Credit",
+    "Postage Stamps",
+    "Bus Ticket",
+    "Train Ticket",
+    "Movie Ticket",
+    "Concert Ticket",
+    "Restaurant Meal",
+    "Fast Food",
+    "Ice Cream",
+    "Cake",
+    "Pastry",
+    "Sandwich",
+    "Pizza",
+    "Burger",
+    "Hot Dog",
+    "Taco",
+    "Sushi",
+  ];
+
   for (let i = 0; i < 200; i++) {
     const client = faker.helpers.maybe(
       () => faker.helpers.arrayElement(clients),
@@ -855,6 +933,12 @@ async function main() {
       },
     });
     sales.push({ ...sale, clientId: client?.id });
+    
+    // Decide if this sale should include manual products (30% chance)
+    const includeManualProducts = faker.datatype.boolean({ probability: 0.3 });
+    let manualProductsAdded = 0;
+    const maxManualProducts = faker.number.int({ min: 1, max: 2 });
+    
     const saleProducts = faker.helpers.arrayElements(products, saleItemsCount);
     for (const product of saleProducts) {
       const maxQuantity = Math.min(5, product.quantity); // Don't sell more than available
@@ -886,6 +970,35 @@ async function main() {
         // Update local product object to reflect new quantity
         product.quantity -= quantity;
       });
+    }
+
+    // Add manual products if decided
+    if (includeManualProducts && manualProductsAdded < maxManualProducts) {
+      const manualProductCount = faker.number.int({ min: 1, max: 2 });
+      
+      for (let j = 0; j < manualProductCount; j++) {
+        const manualProductName = faker.helpers.arrayElement(manualProductNames);
+        const manualProductType = faker.helpers.arrayElement(manualProductTypes);
+        const manualProductPrice = faker.commerce.price({
+          min: 5,
+          max: 200,
+          dec: 0,
+        });
+        const quantity = faker.number.int({ min: 1, max: 3 });
+
+        await prisma.saleItem.create({
+          data: {
+            productId: null, // Manual products don't have a productId
+            saleId: sale.id,
+            quantity,
+            price: Number(manualProductPrice),
+            manualProductName,
+            manualProductType,
+          },
+        });
+        
+        manualProductsAdded++;
+      }
     }
   }
 
@@ -929,7 +1042,7 @@ async function main() {
   console.log(`   - 1,000 products`);
   console.log(`   - Multiple purchases per product (1-4 purchases each)`);
   console.log(`   - 50 clients`);
-  console.log(`   - 200 sales with items`);
+  console.log(`   - 200 sales with items (including manual products)`);
   console.log(`   - ${paymentCount} payments`);
 }
 
