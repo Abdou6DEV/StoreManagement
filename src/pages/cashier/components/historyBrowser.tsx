@@ -280,7 +280,7 @@ const HistoryBrowser: React.FC<HistoryBrowserProps> = ({
                         (item) =>
                           item.product?.name ||
                           item.manualProductName ||
-                          "Unknown Product",
+                          t("cashier.manualProduct", "Manual Product"),
                       )
                       .join(", ")}
                     {sale.saleItems.length > 2 &&

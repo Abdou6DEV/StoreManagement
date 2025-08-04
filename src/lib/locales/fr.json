@@ -273,6 +273,7 @@
     "tooltipAddManualProduct": "Ajouter des produits manuellement (F2)",
     "addManualProduct": "Ajouter un produit manuel",
     "addManualProductDesc": "Ajouter un produit qui n'est pas dans votre inventaire",
+    "manualProduct": "Produit manuel",
     "productName": "Nom du produit",
     "enterProductName": "Entrer le nom du produit",
     "type": "Type",

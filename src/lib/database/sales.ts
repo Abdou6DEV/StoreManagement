@@ -319,6 +319,8 @@ export async function getRecentSales(limit = 50, offset = 0) {
           id: true,
           quantity: true,
           price: true,
+          manualProductName: true,
+          manualProductType: true,
           product: {
             select: {
               id: true,

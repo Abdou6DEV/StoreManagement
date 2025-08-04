@@ -168,6 +168,7 @@
     "tooltipAddManualProduct": "إضافة منتجات يدويًا (F2)",
     "addManualProduct": "إضافة منتج يدوي",
     "addManualProductDesc": "إضافة منتج غير موجود في المخزون",
+    "manualProduct": "منتج يدوي",
     "productName": "اسم المنتج",
     "enterProductName": "أدخل اسم المنتج",
     "type": "النوع",
