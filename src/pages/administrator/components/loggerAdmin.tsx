@@ -115,9 +115,8 @@ const LoggerAdmin: React.FC = () => {
       await window.api.logger.clearLogs();
       await loadLogFiles();
       setLogEntries([]);
-      rendererLogger.info('Logs cleared successfully', 'LoggerAdmin');
     } catch (error) {
-      rendererLogger.error('Failed to clear logs', 'LoggerAdmin', error);
+      // Error is already logged by the main logger
     }
   };
 
