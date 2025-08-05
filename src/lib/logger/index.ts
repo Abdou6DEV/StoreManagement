@@ -225,6 +225,9 @@ class Logger {
         fs.unlinkSync(path.join(this.config.logDir, file));
       });
       
+      // Recreate the main log file
+      this.initializeLogFile();
+      
       this.info('All log files cleared', 'Logger');
     } catch (error) {
       this.error('Failed to clear log files', 'Logger', error);
