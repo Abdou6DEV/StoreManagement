@@ -2,6 +2,7 @@ import { app, BrowserWindow, screen, ipcMain } from "electron";
 import path from "node:path";
 import started from "electron-squirrel-startup";
 import { initializePrisma } from "../lib/database/prismaClient";
+import logger from "../lib/logger";
 import { getAllCategories, ensureCategory } from "../lib/database/categories";
 import {
   updateProduct,
@@ -61,6 +62,7 @@ if (started) {
 const createWindow = async () => {
   await initializePrisma();
   setupDatabaseHandlers();
+  setupLoggerHandlers();
 
   const { width, height, x, y } = screen.getPrimaryDisplay().workArea;
 
@@ -298,4 +300,31 @@ function setupDatabaseHandlers() {
       return await getPurchasesBySeller(sellerId);
     },
   );
+}
+
+function setupLoggerHandlers() {
+  ipcMain.handle("logger:log", async (_event, entry) => {
+    const { timestamp, level, message, context, data, userId } = entry;
+    logger.log(level, message, context, data, userId);
+  });
+
+  ipcMain.handle("logger:getLogFiles", async () => {
+    return logger.getLogFiles();
+  });
+
+  ipcMain.handle("logger:readLogFile", async (_event, { filePath, lines }) => {
+    return logger.readLogFile(filePath, lines);
+  });
+
+  ipcMain.handle("logger:clearLogs", async () => {
+    logger.clearLogs();
+  });
+
+  ipcMain.handle("logger:updateConfig", async (_event, config) => {
+    logger.updateConfig(config);
+  });
+  
+  ipcMain.handle("logger:getConfig", async () => {
+    return logger.getConfig();
+  });
 }

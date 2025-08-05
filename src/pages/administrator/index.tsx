@@ -8,7 +8,9 @@ import {
   AlertCircle,
   DollarSign,
   Package,
+  FileText,
 } from "lucide-react";
+import LoggerAdmin from "./components/loggerAdmin";
 
 export default function AdministratorPage() {
   const { t } = useTranslation();
@@ -18,6 +20,7 @@ export default function AdministratorPage() {
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'settings' | 'logs'>('settings');
 
   useEffect(() => {
     setLoading(true);
@@ -56,14 +59,42 @@ export default function AdministratorPage() {
 
   return (
     <main className="px-6 md:px-12 flex-1 space-y-4">
-      <section className="bg-card border border-border rounded-xl shadow-sm p-6 space-y-5">
-        {/* Header */}
-        <div className="flex items-center gap-3">
-          <Shield className="w-7 h-7 text-orange-500" />
-          <h1 className="text-2xl font-bold">
-            {t("admin.optionsList", "Options List")}
-          </h1>
-        </div>
+      {/* Tab Navigation */}
+      <div className="flex border-b border-border">
+        <button
+          onClick={() => setActiveTab('settings')}
+          className={`px-4 py-2 font-medium transition-colors ${
+            activeTab === 'settings'
+              ? 'border-b-2 border-orange-500 text-orange-600'
+              : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          {t("admin.settings", "Settings")}
+        </button>
+        <button
+          onClick={() => setActiveTab('logs')}
+          className={`px-4 py-2 font-medium transition-colors ${
+            activeTab === 'logs'
+              ? 'border-b-2 border-orange-500 text-orange-600'
+              : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <FileText className="w-4 h-4" />
+            {t("admin.logs", "Logs")}
+          </div>
+        </button>
+      </div>
+
+      {activeTab === 'settings' && (
+        <section className="bg-card border border-border rounded-xl shadow-sm p-6 space-y-5">
+          {/* Header */}
+          <div className="flex items-center gap-3">
+            <Shield className="w-7 h-7 text-orange-500" />
+            <h1 className="text-2xl font-bold">
+              {t("admin.optionsList", "Options List")}
+            </h1>
+          </div>
 
         {/* Settings Form */}
         <form onSubmit={handleSave} className="space-y-6">
@@ -165,6 +196,13 @@ export default function AdministratorPage() {
           </div>
         </form>
       </section>
+      )}
+
+      {activeTab === 'logs' && (
+        <section className="bg-card border border-border rounded-xl shadow-sm p-6">
+          <LoggerAdmin />
+        </section>
+      )}
     </main>
   );
 }

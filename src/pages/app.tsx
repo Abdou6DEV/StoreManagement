@@ -1,11 +1,12 @@
-import React, { Suspense } from "react";
-import { Routes, Route, Outlet } from "react-router-dom";
+import React, { Suspense, useEffect } from "react";
+import { Routes, Route, Outlet, useLocation } from "react-router-dom";
 import Layout from "../lib/components/layout";
 import ScrollToTop from "../lib/components/scrollToTop";
 import Sidebar from "../lib/components/sidebar";
 import { StockProvider } from "../lib/contexts/stockContext";
 import { useTranslation } from "react-i18next";
 import { ToastProvider } from "../lib/contexts/toastContext";
+import rendererLogger from "../lib/logger/rendererLogger";
 
 const MainMenu = React.lazy(() => import("./mainMenu"));
 const Dashboard = React.lazy(() => import("./dashboard"));
@@ -16,7 +17,17 @@ const Administrator = React.lazy(() => import("./administrator"));
 
 export default function App() {
   const { i18n } = useTranslation();
+  const location = useLocation();
   const dir = i18n.language === "ar" ? "rtl" : "ltr";
+
+  useEffect(() => {
+    rendererLogger.info('Application initialized', 'App');
+  }, []);
+
+  useEffect(() => {
+    rendererLogger.debug(`Route changed to: ${location.pathname}`, 'App');
+  }, [location.pathname]);
+
   return (
     <div dir={dir} style={{ direction: dir, width: "100%", height: "100%" }}>
       <ToastProvider>

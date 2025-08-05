@@ -8,6 +8,7 @@ import {
   Payment,
   Seller,
 } from "@prisma/client";
+import { LogLevel } from "../lib/logger/common";
 
 type SaleWithDetails = Sale & {
   client?: Client;
@@ -172,6 +173,22 @@ contextBridge.exposeInMainWorld("api", {
   app: {
     getVersion: () => ipcRenderer.invoke("app:getVersion"),
   },
+      logger: {
+      log: (entry: {
+        timestamp: string;
+        level: LogLevel;
+        message: string;
+        context?: string;
+        data?: any;
+        userId?: string;
+      }) => ipcRenderer.invoke("logger:log", entry),
+      getLogFiles: () => ipcRenderer.invoke("logger:getLogFiles"),
+      readLogFile: (filePath: string, lines?: number) => 
+        ipcRenderer.invoke("logger:readLogFile", { filePath, lines }),
+      clearLogs: () => ipcRenderer.invoke("logger:clearLogs"),
+      updateConfig: (config: any) => ipcRenderer.invoke("logger:updateConfig", config),
+      getConfig: () => ipcRenderer.invoke("logger:getConfig"),
+    },
 });
 
 declare global {
@@ -332,6 +349,27 @@ declare global {
       };
       app: {
         getVersion: () => Promise<string>;
+      };
+      logger: {
+        log: (entry: {
+          timestamp: string;
+          level: LogLevel;
+          message: string;
+          context?: string;
+          data?: any;
+          userId?: string;
+        }) => Promise<void>;
+        getLogFiles: () => Promise<string[]>;
+        readLogFile: (filePath: string, lines?: number) => Promise<string[]>;
+                 clearLogs: () => Promise<void>;
+         updateConfig: (config: any) => Promise<void>;
+         getConfig: () => Promise<{
+           level: LogLevel;
+           maxFileSize: number;
+           maxFiles: number;
+           logToFile: boolean;
+           logToConsole: boolean;
+         }>;
       };
     };
   }

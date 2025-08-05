@@ -1,0 +1,310 @@
+import React, { useState, useEffect } from 'react';
+import { Button } from '../../../lib/components/button';
+import { Input } from '../../../lib/components/input';
+import { ScrollArea } from '../../../lib/components/scrollArea';
+import { Badge } from '../../../lib/components/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../lib/components/select';
+import { ConfirmDialog } from '../../../lib/components/confirmDialog';
+import { LogLevel } from '../../../lib/logger/common';
+import rendererLogger from '../../../lib/logger/rendererLogger';
+
+interface LogEntry {
+  timestamp: string;
+  level: LogLevel;
+  message: string;
+  context?: string;
+  data?: any;
+  process: 'main' | 'renderer';
+  userId?: string;
+}
+
+interface LoggerConfig {
+  level: LogLevel;
+  maxFileSize: number;
+  maxFiles: number;
+  logToFile: boolean;
+  logToConsole: boolean;
+}
+
+const LoggerAdmin: React.FC = () => {
+  const [logFiles, setLogFiles] = useState<string[]>([]);
+  const [selectedFile, setSelectedFile] = useState<string>('');
+  const [logEntries, setLogEntries] = useState<LogEntry[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [config, setConfig] = useState<LoggerConfig>({
+    level: LogLevel.INFO,
+    maxFileSize: 10 * 1024 * 1024,
+    maxFiles: 5,
+    logToFile: true,
+    logToConsole: true,
+  });
+
+  useEffect(() => {
+    loadLogFiles();
+    loadConfig();
+  }, []);
+
+  const loadLogFiles = async () => {
+    try {
+      setIsLoading(true);
+      const files = await window.api.logger.getLogFiles();
+      setLogFiles(files);
+      if (files.length > 0 && !selectedFile) {
+        setSelectedFile(files[0]);
+      }
+    } catch (error) {
+      rendererLogger.error('Failed to load log files', 'LoggerAdmin', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const refreshAll = async () => {
+    try {
+      setIsLoading(true);
+      await loadLogFiles();
+      if (selectedFile) {
+        await loadLogContent(selectedFile);
+      }
+    } catch (error) {
+      rendererLogger.error('Failed to refresh logs', 'LoggerAdmin', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const loadConfig = async () => {
+    try {
+      const currentConfig = await window.api.logger.getConfig();
+      setConfig(currentConfig);
+    } catch (error) {
+      rendererLogger.error('Failed to load logger configuration', 'LoggerAdmin', error);
+    }
+  };
+
+  const loadLogContent = async (filePath: string) => {
+    try {
+      setIsLoading(true);
+      const lines = await window.api.logger.readLogFile(filePath, 1000);
+      const entries: LogEntry[] = lines
+        .filter(line => line.trim())
+        .map(line => {
+          try {
+            return JSON.parse(line);
+          } catch {
+            return null;
+          }
+        })
+        .filter(Boolean)
+        .reverse(); // Show newest first
+      
+      setLogEntries(entries);
+    } catch (error) {
+      rendererLogger.error('Failed to load log content', 'LoggerAdmin', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const clearLogs = async () => {
+    try {
+      await window.api.logger.clearLogs();
+      await loadLogFiles();
+      setLogEntries([]);
+      rendererLogger.info('Logs cleared successfully', 'LoggerAdmin');
+    } catch (error) {
+      rendererLogger.error('Failed to clear logs', 'LoggerAdmin', error);
+    }
+  };
+
+  const updateConfig = async (newConfig: Partial<LoggerConfig>) => {
+    try {
+      const updatedConfig = { ...config, ...newConfig };
+      await window.api.logger.updateConfig(updatedConfig);
+      setConfig(updatedConfig);
+      rendererLogger.info('Logger configuration updated', 'LoggerAdmin', updatedConfig);
+    } catch (error) {
+      rendererLogger.error('Failed to update logger configuration', 'LoggerAdmin', error);
+    }
+  };
+
+  const getLevelColor = (level: LogLevel) => {
+    switch (level) {
+      case LogLevel.ERROR: return 'bg-red-500';
+      case LogLevel.WARN: return 'bg-yellow-500';
+      case LogLevel.INFO: return 'bg-blue-500';
+      case LogLevel.DEBUG: return 'bg-purple-500';
+      case LogLevel.TRACE: return 'bg-gray-500';
+      default: return 'bg-gray-500';
+    }
+  };
+
+  const formatTimestamp = (timestamp: string) => {
+    return new Date(timestamp).toLocaleString();
+  };
+
+  useEffect(() => {
+    if (selectedFile) {
+      loadLogContent(selectedFile);
+    }
+  }, [selectedFile]);
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold">Logger Administration</h2>
+        <div className="flex gap-2">
+                     <Button onClick={refreshAll} disabled={isLoading}>
+             Refresh
+           </Button>
+           <Button 
+             variant="destructive" 
+             onClick={() => setShowClearConfirm(true)}
+           >
+             Clear All Logs
+           </Button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Configuration Panel */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold">Configuration</h3>
+          <div className="space-y-4 p-4 border rounded-lg">
+            <div>
+              <label className="text-sm font-medium">Log Level</label>
+              <Select value={config.level} onValueChange={(value: string) => updateConfig({ level: value as LogLevel })}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.values(LogLevel).map(level => (
+                    <SelectItem key={level} value={level}>{level}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium">Max File Size (MB)</label>
+              <Input
+                type="number"
+                value={config.maxFileSize / (1024 * 1024)}
+                onChange={(e) => updateConfig({ maxFileSize: parseInt(e.target.value) * 1024 * 1024 })}
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium">Max Files</label>
+              <Input
+                type="number"
+                value={config.maxFiles}
+                onChange={(e) => updateConfig({ maxFiles: parseInt(e.target.value) })}
+              />
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="logToFile"
+                checked={config.logToFile}
+                onChange={(e) => updateConfig({ logToFile: e.target.checked })}
+              />
+              <label htmlFor="logToFile" className="text-sm">Log to File</label>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="logToConsole"
+                checked={config.logToConsole}
+                onChange={(e) => updateConfig({ logToConsole: e.target.checked })}
+              />
+              <label htmlFor="logToConsole" className="text-sm">Log to Console</label>
+            </div>
+          </div>
+        </div>
+
+        {/* Log Files Panel */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold">Log Files</h3>
+          <div className="space-y-2">
+            {logFiles.map((file, index) => (
+              <div
+                key={index}
+                className={`p-3 border rounded-lg cursor-pointer transition-colors ${
+                  selectedFile === file ? 'border-blue-500 bg-blue-50' : 'hover:bg-gray-50'
+                }`}
+                onClick={() => setSelectedFile(file)}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium truncate">
+                    {file.split('/').pop() || file.split('\\').pop()}
+                  </span>
+                  <Badge variant="secondary">Log File</Badge>
+                </div>
+              </div>
+            ))}
+            {logFiles.length === 0 && (
+              <p className="text-sm text-gray-500">No log files found</p>
+            )}
+          </div>
+        </div>
+
+        {/* Log Entries Panel */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold">Log Entries</h3>
+          <ScrollArea className="h-96">
+            <div className="space-y-2">
+              {logEntries.map((entry, index) => (
+                <div key={index} className="p-3 border rounded-lg">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <Badge className={getLevelColor(entry.level)}>
+                        {entry.level}
+                      </Badge>
+                      <Badge variant="outline">{entry.process}</Badge>
+                      {entry.context && (
+                        <Badge variant="secondary">{entry.context}</Badge>
+                      )}
+                    </div>
+                    <span className="text-xs text-gray-500">
+                      {formatTimestamp(entry.timestamp)}
+                    </span>
+                  </div>
+                  <p className="text-sm mb-2">{entry.message}</p>
+                  {entry.data && (
+                    <details className="text-xs">
+                      <summary className="cursor-pointer text-gray-600">Additional Data</summary>
+                      <pre className="mt-1 p-2 bg-gray-100 rounded text-xs overflow-x-auto">
+                        {JSON.stringify(entry.data, null, 2)}
+                      </pre>
+                    </details>
+                  )}
+                </div>
+              ))}
+              {logEntries.length === 0 && (
+                <p className="text-sm text-gray-500">No log entries to display</p>
+              )}
+            </div>
+          </ScrollArea>
+                 </div>
+       </div>
+       
+       <ConfirmDialog
+         open={showClearConfirm}
+         onOpenChange={setShowClearConfirm}
+         title="Clear All Logs"
+         message="Are you sure you want to clear all log files? This action cannot be undone."
+         confirmText="Clear All Logs"
+         cancelText="Cancel"
+         variant="danger"
+         onConfirm={clearLogs}
+         loading={isLoading}
+       />
+     </div>
+   );
+ };
+
+export default LoggerAdmin; 

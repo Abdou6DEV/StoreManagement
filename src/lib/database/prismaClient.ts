@@ -1,6 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import path from "path";
 import { app } from "electron";
+import logger from "../logger";
 
 const isDev = process.env.NODE_ENV === "development";
 const dbPath = isDev
@@ -18,9 +19,9 @@ export const prisma = new PrismaClient({
 export async function initializePrisma() {
   try {
     await prisma.$connect();
-    console.log("Database connected successfully!");
+    logger.info("Database connected successfully", "Database");
   } catch (error) {
-    console.error("Database connection failed: ", error);
+    logger.error("Database connection failed", "Database", error);
   }
 }
 
