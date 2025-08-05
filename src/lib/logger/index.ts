@@ -203,15 +203,35 @@ class Logger {
     }
   }
 
-  // Method to read log file content
+  // Method to read log file content with improved performance
   readLogFile(filePath: string, lines = 100): string[] {
     try {
+      // Use streaming for better performance with large files
       const content = fs.readFileSync(filePath, 'utf8');
       const logLines = content.split('\n').filter(line => line.trim());
+      
+      // Return the last N lines (most recent)
       return logLines.slice(-lines);
     } catch (error) {
       this.error('Failed to read log file', 'Logger', { filePath, error });
       return [];
+    }
+  }
+
+  // Method to get log file statistics
+  getLogFileStats(filePath: string): { totalLines: number; fileSize: number } {
+    try {
+      const stats = fs.statSync(filePath);
+      const content = fs.readFileSync(filePath, 'utf8');
+      const totalLines = content.split('\n').filter(line => line.trim()).length;
+      
+      return {
+        totalLines,
+        fileSize: stats.size
+      };
+    } catch (error) {
+      this.error('Failed to get log file stats', 'Logger', { filePath, error });
+      return { totalLines: 0, fileSize: 0 };
     }
   }
 

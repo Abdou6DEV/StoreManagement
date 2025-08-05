@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '../../../lib/components/button';
 import { Input } from '../../../lib/components/input';
@@ -32,9 +32,10 @@ const LoggerAdmin: React.FC = () => {
   const isRTL = i18n.language === 'ar';
   const [logFiles, setLogFiles] = useState<string[]>([]);
   const [selectedFile, setSelectedFile] = useState<string>('');
-  const [logEntries, setLogEntries] = useState<LogEntry[]>([]);
+  const [allLogEntries, setAllLogEntries] = useState<LogEntry[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [fileStats, setFileStats] = useState<{ totalLines: number; fileSize: number } | null>(null);
   const [config, setConfig] = useState<LoggerConfig>({
     level: LogLevel.INFO,
     maxFileSize: 10 * 1024 * 1024,
@@ -42,6 +43,13 @@ const LoggerAdmin: React.FC = () => {
     logToFile: true,
     logToConsole: true,
   });
+
+  // Pagination and filtering state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [entriesPerPage] = useState(30);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedLevel, setSelectedLevel] = useState<LogLevel | 'ALL'>('ALL');
+  const [selectedProcess, setSelectedProcess] = useState<'main' | 'renderer' | 'ALL'>('ALL');
 
   useEffect(() => {
     loadLogFiles();
@@ -89,7 +97,15 @@ const LoggerAdmin: React.FC = () => {
   const loadLogContent = async (filePath: string) => {
     try {
       setIsLoading(true);
-      const lines = await window.api.logger.readLogFile(filePath, 1000);
+      
+      // Load file stats first
+      const stats = await window.api.logger.getLogFileStats(filePath);
+      setFileStats(stats);
+      
+      // Determine how many lines to load based on file size
+      const maxLines = stats.totalLines > 1000 ? 1000 : stats.totalLines;
+      const lines = await window.api.logger.readLogFile(filePath, maxLines);
+      
       const entries: LogEntry[] = lines
         .filter(line => line.trim())
         .map(line => {
@@ -102,7 +118,8 @@ const LoggerAdmin: React.FC = () => {
         .filter(Boolean)
         .reverse(); // Show newest first
       
-      setLogEntries(entries);
+      setAllLogEntries(entries);
+      setCurrentPage(1); // Reset to first page when loading new file
     } catch (error) {
       rendererLogger.error('Failed to load log content', 'LoggerAdmin', error);
     } finally {
@@ -110,11 +127,51 @@ const LoggerAdmin: React.FC = () => {
     }
   };
 
+  // Filter and paginate log entries
+  const filteredAndPaginatedEntries = useMemo(() => {
+    let filtered = allLogEntries;
+
+    // Filter by search term
+    if (searchTerm.trim()) {
+      const searchLower = searchTerm.toLowerCase();
+      filtered = filtered.filter(entry => 
+        entry.message.toLowerCase().includes(searchLower) ||
+        entry.context?.toLowerCase().includes(searchLower) ||
+        entry.process.toLowerCase().includes(searchLower)
+      );
+    }
+
+    // Filter by level
+    if (selectedLevel !== 'ALL') {
+      filtered = filtered.filter(entry => entry.level === selectedLevel);
+    }
+
+    // Filter by process
+    if (selectedProcess !== 'ALL') {
+      filtered = filtered.filter(entry => entry.process === selectedProcess);
+    }
+
+    // Calculate pagination
+    const totalPages = Math.ceil(filtered.length / entriesPerPage);
+    const startIndex = (currentPage - 1) * entriesPerPage;
+    const endIndex = startIndex + entriesPerPage;
+    const paginated = filtered.slice(startIndex, endIndex);
+
+    return {
+      entries: paginated,
+      totalEntries: filtered.length,
+      totalPages,
+      currentPage,
+      hasNextPage: currentPage < totalPages,
+      hasPrevPage: currentPage > 1
+    };
+  }, [allLogEntries, searchTerm, selectedLevel, selectedProcess, currentPage, entriesPerPage]);
+
   const clearLogs = async () => {
     try {
       await window.api.logger.clearLogs();
       await loadLogFiles();
-      setLogEntries([]);
+      setAllLogEntries([]);
     } catch (error) {
       // Error is already logged by the main logger
     }
@@ -257,10 +314,57 @@ const LoggerAdmin: React.FC = () => {
         {/* Log Entries Panel */}
         <div className="space-y-4">
           <h3 className="text-lg font-semibold">{t('admin.logger.logEntries')}</h3>
-          <ScrollArea className="h-96">
-            <div className="space-y-2">
-              {logEntries.map((entry, index) => (
-                <div key={index} className="p-3 border rounded-lg">
+          
+          {/* Filters */}
+          <div className="space-y-3 p-3 border rounded-lg bg-gray-50">
+            <div>
+              <Input
+                placeholder="Search logs..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="text-sm"
+              />
+            </div>
+            
+            <div className="flex gap-2">
+              <Select value={selectedLevel} onValueChange={(value: string) => setSelectedLevel(value as LogLevel | 'ALL')}>
+                <SelectTrigger className="w-24">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">All Levels</SelectItem>
+                  {Object.values(LogLevel).map(level => (
+                    <SelectItem key={level} value={level}>{level}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              
+              <Select value={selectedProcess} onValueChange={(value: string) => setSelectedProcess(value as 'main' | 'renderer' | 'ALL')}>
+                <SelectTrigger className="w-24">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">All</SelectItem>
+                  <SelectItem value="main">Main</SelectItem>
+                  <SelectItem value="renderer">Renderer</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="text-xs text-gray-600">
+              Showing {filteredAndPaginatedEntries.entries.length} of {filteredAndPaginatedEntries.totalEntries} entries
+              {fileStats && (
+                <div className="mt-1">
+                  File: {fileStats.totalLines.toLocaleString()} lines, {(fileStats.fileSize / 1024).toFixed(1)} KB
+                </div>
+              )}
+            </div>
+          </div>
+
+          <ScrollArea className="h-60">
+            <div className="space-y-2 pr-4">
+              {filteredAndPaginatedEntries.entries.map((entry, index) => (
+                <div key={`${entry.timestamp}-${index}`} className="p-3 border rounded-lg">
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex items-center gap-2">
                       <Badge className={getLevelColor(entry.level)}>
@@ -286,11 +390,38 @@ const LoggerAdmin: React.FC = () => {
                   )}
                 </div>
               ))}
-              {logEntries.length === 0 && (
+              {filteredAndPaginatedEntries.entries.length === 0 && (
                 <p className="text-sm text-gray-500">No log entries to display</p>
               )}
             </div>
           </ScrollArea>
+
+          {/* Pagination */}
+          {filteredAndPaginatedEntries.totalPages > 1 && (
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-gray-600">
+                Page {currentPage} of {filteredAndPaginatedEntries.totalPages}
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(currentPage - 1)}
+                  disabled={!filteredAndPaginatedEntries.hasPrevPage}
+                >
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(currentPage + 1)}
+                  disabled={!filteredAndPaginatedEntries.hasNextPage}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
       

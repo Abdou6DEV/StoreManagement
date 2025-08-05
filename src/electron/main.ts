@@ -316,6 +316,10 @@ function setupLoggerHandlers() {
     return logger.readLogFile(filePath, lines);
   });
 
+  ipcMain.handle("logger:getLogFileStats", async (_event, { filePath }) => {
+    return logger.getLogFileStats(filePath);
+  });
+
   ipcMain.handle("logger:clearLogs", async () => {
     logger.clearLogs();
   });

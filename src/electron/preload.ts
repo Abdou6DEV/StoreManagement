@@ -185,6 +185,8 @@ contextBridge.exposeInMainWorld("api", {
       getLogFiles: () => ipcRenderer.invoke("logger:getLogFiles"),
       readLogFile: (filePath: string, lines?: number) => 
         ipcRenderer.invoke("logger:readLogFile", { filePath, lines }),
+      getLogFileStats: (filePath: string) => 
+        ipcRenderer.invoke("logger:getLogFileStats", { filePath }),
       clearLogs: () => ipcRenderer.invoke("logger:clearLogs"),
       updateConfig: (config: any) => ipcRenderer.invoke("logger:updateConfig", config),
       getConfig: () => ipcRenderer.invoke("logger:getConfig"),
@@ -361,15 +363,16 @@ declare global {
         }) => Promise<void>;
         getLogFiles: () => Promise<string[]>;
         readLogFile: (filePath: string, lines?: number) => Promise<string[]>;
-                 clearLogs: () => Promise<void>;
-         updateConfig: (config: any) => Promise<void>;
-         getConfig: () => Promise<{
-           level: LogLevel;
-           maxFileSize: number;
-           maxFiles: number;
-           logToFile: boolean;
-           logToConsole: boolean;
-         }>;
+        getLogFileStats: (filePath: string) => Promise<{ totalLines: number; fileSize: number }>;
+        clearLogs: () => Promise<void>;
+        updateConfig: (config: any) => Promise<void>;
+        getConfig: () => Promise<{
+          level: LogLevel;
+          maxFileSize: number;
+          maxFiles: number;
+          logToFile: boolean;
+          logToConsole: boolean;
+        }>;
       };
     };
   }
