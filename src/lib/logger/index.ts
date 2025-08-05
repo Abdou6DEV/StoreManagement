@@ -19,7 +19,7 @@ class Logger {
 
   constructor(config?: Partial<MainLoggerConfig>) {
     this.config = {
-      level: LogLevel.INFO,
+      level: LogLevel.WARN,
       maxFileSize: 10 * 1024 * 1024, // 10MB
       maxFiles: 5,
       logToFile: true,
