@@ -23,7 +23,7 @@ export default function SessionSelector({
   const { t } = useTranslation();
 
   return (
-    <div className="gap-3 bg-background flex justify-center items-center px-4 py-4 flex-shrink-0">
+    <div className="gap-3 bg-background flex justify-center items-center px-4 pt-3 pb-6 flex-shrink-0">
       {sessions.map((session, i) => {
         const isActive = activeSession === i;
         const hasItems = session.cart.length > 0;
