@@ -11,10 +11,10 @@
     "publish": "electron-forge publish",
     "lint": "eslint . --ext .ts,.tsx",
     "format": "prettier --write .",
-    "db:seed": "ts-node prisma/seed.ts"
+    "db:seed": "ts-node prisma/seed/index.ts"
   },
   "prisma": {
-    "seed": "ts-node prisma/seed.ts"
+    "seed": "ts-node prisma/seed/index.ts"
   },
   "keywords": [],
   "author": {
