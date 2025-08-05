@@ -287,7 +287,7 @@ const LoggerAdmin: React.FC = () => {
                 </div>
               ))}
               {logEntries.length === 0 && (
-                <p className="text-sm text-gray-500">{t('admin.logger.noLogEntries')}</p>
+                <p className="text-sm text-gray-500">No log entries to display</p>
               )}
             </div>
           </ScrollArea>

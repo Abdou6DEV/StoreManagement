@@ -488,7 +488,6 @@
       "logFiles": "Fichiers de journaux",
       "logEntries": "Entrées de journaux",
       "noLogFiles": "Aucun fichier de journal trouvé",
-      "noLogEntries": "Aucune entrée de journal à afficher",
       "additionalData": "Données supplémentaires",
       "clearConfirmTitle": "Effacer tous les journaux",
       "clearConfirmMessage": "Êtes-vous sûr de vouloir effacer tous les fichiers de journaux ? Cette action ne peut pas être annulée.",

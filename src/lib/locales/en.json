@@ -494,7 +494,6 @@
       "logFiles": "Log Files",
       "logEntries": "Log Entries",
       "noLogFiles": "No log files found",
-      "noLogEntries": "No log entries to display",
       "additionalData": "Additional Data",
       "clearConfirmTitle": "Clear All Logs",
       "clearConfirmMessage": "Are you sure you want to clear all log files? This action cannot be undone.",
