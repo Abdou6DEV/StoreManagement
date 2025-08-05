@@ -13,7 +13,8 @@ import {
 import LoggerAdmin from "./components/loggerAdmin";
 
 export default function AdministratorPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isRTL = i18n.language === 'ar';
   const [lowStock, setLowStock] = useState(0);
   const [storeCash, setStoreCash] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -58,7 +59,7 @@ export default function AdministratorPage() {
   };
 
   return (
-    <main className="px-6 md:px-12 flex-1 space-y-4">
+    <main className="px-6 md:px-12 flex-1 space-y-4" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Tab Navigation */}
       <div className="flex border-b border-border">
         <button
@@ -69,7 +70,7 @@ export default function AdministratorPage() {
               : 'text-muted-foreground hover:text-foreground'
           }`}
         >
-          {t("admin.settings", "Settings")}
+          {t("admin.settings")}
         </button>
         <button
           onClick={() => setActiveTab('logs')}
@@ -81,7 +82,7 @@ export default function AdministratorPage() {
         >
           <div className="flex items-center gap-2">
             <FileText className="w-4 h-4" />
-            {t("admin.logs", "Logs")}
+            {t("admin.logs")}
           </div>
         </button>
       </div>

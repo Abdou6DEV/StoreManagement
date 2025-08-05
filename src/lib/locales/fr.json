@@ -472,7 +472,29 @@
     "save": "Enregistrer les paramètres",
     "saving": "Enregistrement...",
     "saved": "Paramètres enregistrés !",
-    "loading": "Chargement des paramètres..."
+    "loading": "Chargement des paramètres...",
+    "settings": "Paramètres",
+    "logs": "Journaux",
+    "logger": {
+      "title": "Administration des journaux",
+      "refresh": "Actualiser",
+      "clearAllLogs": "Effacer tous les journaux",
+      "configuration": "Configuration",
+      "logLevel": "Niveau de journal",
+      "maxFileSize": "Taille maximale du fichier (Mo)",
+      "maxFiles": "Nombre maximum de fichiers",
+      "logToFile": "Journaliser dans un fichier",
+      "logToConsole": "Journaliser dans la console",
+      "logFiles": "Fichiers de journaux",
+      "logEntries": "Entrées de journaux",
+      "noLogFiles": "Aucun fichier de journal trouvé",
+      "noLogEntries": "Aucune entrée de journal à afficher",
+      "additionalData": "Données supplémentaires",
+      "clearConfirmTitle": "Effacer tous les journaux",
+      "clearConfirmMessage": "Êtes-vous sûr de vouloir effacer tous les fichiers de journaux ? Cette action ne peut pas être annulée.",
+      "clearConfirmText": "Effacer tous les journaux",
+      "cancel": "Annuler"
+    }
   },
   "pagination": {
     "next": "Suivant",

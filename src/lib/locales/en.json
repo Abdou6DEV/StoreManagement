@@ -478,7 +478,29 @@
     "save": "Save Settings",
     "saving": "Saving...",
     "saved": "Settings saved!",
-    "loading": "Loading settings..."
+    "loading": "Loading settings...",
+    "settings": "Settings",
+    "logs": "Logs",
+    "logger": {
+      "title": "Logger Administration",
+      "refresh": "Refresh",
+      "clearAllLogs": "Clear All Logs",
+      "configuration": "Configuration",
+      "logLevel": "Log Level",
+      "maxFileSize": "Max File Size (MB)",
+      "maxFiles": "Max Files",
+      "logToFile": "Log to File",
+      "logToConsole": "Log to Console",
+      "logFiles": "Log Files",
+      "logEntries": "Log Entries",
+      "noLogFiles": "No log files found",
+      "noLogEntries": "No log entries to display",
+      "additionalData": "Additional Data",
+      "clearConfirmTitle": "Clear All Logs",
+      "clearConfirmMessage": "Are you sure you want to clear all log files? This action cannot be undone.",
+      "clearConfirmText": "Clear All Logs",
+      "cancel": "Cancel"
+    }
   },
   "pagination": {
     "next": "Next",

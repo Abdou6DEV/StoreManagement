@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '../../../lib/components/button';
 import { Input } from '../../../lib/components/input';
 import { ScrollArea } from '../../../lib/components/scrollArea';
@@ -27,6 +28,8 @@ interface LoggerConfig {
 }
 
 const LoggerAdmin: React.FC = () => {
+  const { t, i18n } = useTranslation();
+  const isRTL = i18n.language === 'ar';
   const [logFiles, setLogFiles] = useState<string[]>([]);
   const [selectedFile, setSelectedFile] = useState<string>('');
   const [logEntries, setLogEntries] = useState<LogEntry[]>([]);
@@ -151,29 +154,29 @@ const LoggerAdmin: React.FC = () => {
   }, [selectedFile]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">Logger Administration</h2>
+        <h2 className="text-2xl font-bold">{t('admin.logger.title')}</h2>
         <div className="flex gap-2">
-                     <Button onClick={refreshAll} disabled={isLoading}>
-             Refresh
-           </Button>
-           <Button 
-             variant="destructive" 
-             onClick={() => setShowClearConfirm(true)}
-           >
-             Clear All Logs
-           </Button>
+          <Button onClick={refreshAll} disabled={isLoading}>
+            {t('admin.logger.refresh')}
+          </Button>
+          <Button 
+            variant="destructive" 
+            onClick={() => setShowClearConfirm(true)}
+          >
+            {t('admin.logger.clearAllLogs')}
+          </Button>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Configuration Panel */}
         <div className="space-y-4">
-          <h3 className="text-lg font-semibold">Configuration</h3>
+          <h3 className="text-lg font-semibold">{t('admin.logger.configuration')}</h3>
           <div className="space-y-4 p-4 border rounded-lg">
             <div>
-              <label className="text-sm font-medium">Log Level</label>
+              <label className="text-sm font-medium">{t('admin.logger.logLevel')}</label>
               <Select value={config.level} onValueChange={(value: string) => updateConfig({ level: value as LogLevel })}>
                 <SelectTrigger>
                   <SelectValue />
@@ -187,7 +190,7 @@ const LoggerAdmin: React.FC = () => {
             </div>
 
             <div>
-              <label className="text-sm font-medium">Max File Size (MB)</label>
+              <label className="text-sm font-medium">{t('admin.logger.maxFileSize')}</label>
               <Input
                 type="number"
                 value={config.maxFileSize / (1024 * 1024)}
@@ -196,7 +199,7 @@ const LoggerAdmin: React.FC = () => {
             </div>
 
             <div>
-              <label className="text-sm font-medium">Max Files</label>
+              <label className="text-sm font-medium">{t('admin.logger.maxFiles')}</label>
               <Input
                 type="number"
                 value={config.maxFiles}
@@ -211,7 +214,7 @@ const LoggerAdmin: React.FC = () => {
                 checked={config.logToFile}
                 onChange={(e) => updateConfig({ logToFile: e.target.checked })}
               />
-              <label htmlFor="logToFile" className="text-sm">Log to File</label>
+              <label htmlFor="logToFile" className="text-sm">{t('admin.logger.logToFile')}</label>
             </div>
 
             <div className="flex items-center space-x-2">
@@ -221,14 +224,14 @@ const LoggerAdmin: React.FC = () => {
                 checked={config.logToConsole}
                 onChange={(e) => updateConfig({ logToConsole: e.target.checked })}
               />
-              <label htmlFor="logToConsole" className="text-sm">Log to Console</label>
+              <label htmlFor="logToConsole" className="text-sm">{t('admin.logger.logToConsole')}</label>
             </div>
           </div>
         </div>
 
         {/* Log Files Panel */}
         <div className="space-y-4">
-          <h3 className="text-lg font-semibold">Log Files</h3>
+          <h3 className="text-lg font-semibold">{t('admin.logger.logFiles')}</h3>
           <div className="space-y-2">
             {logFiles.map((file, index) => (
               <div
@@ -247,14 +250,14 @@ const LoggerAdmin: React.FC = () => {
               </div>
             ))}
             {logFiles.length === 0 && (
-              <p className="text-sm text-gray-500">No log files found</p>
+              <p className="text-sm text-gray-500">{t('admin.logger.noLogFiles')}</p>
             )}
           </div>
         </div>
 
         {/* Log Entries Panel */}
         <div className="space-y-4">
-          <h3 className="text-lg font-semibold">Log Entries</h3>
+          <h3 className="text-lg font-semibold">{t('admin.logger.logEntries')}</h3>
           <ScrollArea className="h-96">
             <div className="space-y-2">
               {logEntries.map((entry, index) => (
@@ -276,7 +279,7 @@ const LoggerAdmin: React.FC = () => {
                   <p className="text-sm mb-2">{entry.message}</p>
                   {entry.data && (
                     <details className="text-xs">
-                      <summary className="cursor-pointer text-gray-600">Additional Data</summary>
+                      <summary className="cursor-pointer text-gray-600">{t('admin.logger.additionalData')}</summary>
                       <pre className="mt-1 p-2 bg-gray-100 rounded text-xs overflow-x-auto">
                         {JSON.stringify(entry.data, null, 2)}
                       </pre>
@@ -285,26 +288,26 @@ const LoggerAdmin: React.FC = () => {
                 </div>
               ))}
               {logEntries.length === 0 && (
-                <p className="text-sm text-gray-500">No log entries to display</p>
+                <p className="text-sm text-gray-500">{t('admin.logger.noLogEntries')}</p>
               )}
             </div>
           </ScrollArea>
-                 </div>
-       </div>
-       
-       <ConfirmDialog
-         open={showClearConfirm}
-         onOpenChange={setShowClearConfirm}
-         title="Clear All Logs"
-         message="Are you sure you want to clear all log files? This action cannot be undone."
-         confirmText="Clear All Logs"
-         cancelText="Cancel"
-         variant="danger"
-         onConfirm={clearLogs}
-         loading={isLoading}
-       />
-     </div>
-   );
- };
+        </div>
+      </div>
+      
+      <ConfirmDialog
+        open={showClearConfirm}
+        onOpenChange={setShowClearConfirm}
+        title={t('admin.logger.clearConfirmTitle')}
+        message={t('admin.logger.clearConfirmMessage')}
+        confirmText={t('admin.logger.clearConfirmText')}
+        cancelText={t('cashier.cancel')}
+        variant="danger"
+        onConfirm={clearLogs}
+        loading={isLoading}
+      />
+    </div>
+  );
+};
 
 export default LoggerAdmin; 
