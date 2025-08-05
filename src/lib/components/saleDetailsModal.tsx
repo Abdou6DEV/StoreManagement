@@ -18,6 +18,7 @@ import {
 import PaymentSummary from "./paymentSummary";
 import { useToast } from "../contexts/toastContext";
 import { Sale } from "../../types";
+import rendererLogger from "../logger/rendererLogger";
 
 interface SaleDetailsModalProps {
   sale: Sale | null;
@@ -173,7 +174,7 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
       setIsEditing(false);
       onSaleUpdated?.(updatedSale);
     } catch (error) {
-      console.error("Error updating sale:", error);
+      rendererLogger.error("Error updating sale", "SaleDetailsModal", error);
       showToast(t("cashier.saleUpdateError", "Failed to update sale"), "error");
     } finally {
       setIsSaving(false);
@@ -193,7 +194,7 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
       onSaleDeleted?.(sale.id);
       onClose();
     } catch (error) {
-      console.error("Error deleting sale:", error);
+      rendererLogger.error("Error deleting sale", "SaleDetailsModal", error);
       showToast(t("cashier.saleDeleteError", "Failed to delete sale"), "error");
     } finally {
       setIsDeleting(false);

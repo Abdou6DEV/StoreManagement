@@ -12,6 +12,7 @@ import { Skeleton } from "../../../lib/components/skeleton";
 import { useStock } from "../../../lib/contexts/stockContext";
 import { ChevronLeft, ChevronRight, CheckCircle } from "lucide-react";
 import ProductCard from "./productCard";
+import rendererLogger from "../../../lib/logger/rendererLogger";
 
 interface ProductBrowserProps {
   allProducts: ProductWithSales[];
@@ -96,7 +97,7 @@ const ProductBrowser = forwardRef<
         try {
           setFavorites(JSON.parse(savedFavorites));
         } catch (error) {
-          console.error("Error loading favorites:", error);
+          rendererLogger.error("Error loading favorites", "ProductBrowser", error);
         }
       } else {
         setFavorites([]);

@@ -27,6 +27,7 @@ import {
 } from "../../../lib/utils/tooltipUtils";
 import type { AddStockFormState } from "../../../types";
 import { useToast } from "../../../lib/contexts/toastContext";
+import rendererLogger from "../../../lib/logger/rendererLogger";
 
 const initialForm: AddStockFormState = {
   name: "",
@@ -101,7 +102,7 @@ export default function AddStockForm({
         setSellers(sellersData);
         setFilteredSellers(sellersData);
       } catch (error) {
-        console.error("Failed to fetch sellers:", error);
+        rendererLogger.error("Failed to fetch sellers", "AddStockForm", error);
       }
     };
     fetchSellers();

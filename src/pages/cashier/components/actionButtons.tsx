@@ -15,6 +15,7 @@ import CalculatorModal from "./calculatorModal";
 import PaymentsModal from "../../clients/components/paymentsModal";
 import { useToast } from "../../../lib/contexts/toastContext";
 import { Tooltip } from "../../../lib/components/tooltip";
+import rendererLogger from "../../../lib/logger/rendererLogger";
 
 interface Props {
   clientName: string;
@@ -288,7 +289,7 @@ export default function ActionButtons({
         </button>
         <button
           onClick={() => {
-            console.log("Receipt button clicked", {
+            rendererLogger.debug("Receipt button clicked", "ActionButtons", {
               cart,
               onConfirmWithReceipt: !!onConfirmWithReceipt,
             });

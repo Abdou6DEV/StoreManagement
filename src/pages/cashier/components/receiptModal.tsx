@@ -3,6 +3,7 @@ import { Printer, Eye, FileText } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Modal } from "../../../lib/components/Modal";
 import type { CartItem } from "../../../types";
+import rendererLogger from "../../../lib/logger/rendererLogger";
 
 interface Props {
   open: boolean;
@@ -62,7 +63,7 @@ export default function ReceiptModal({
         alert(t("cashier.printSuccess", "Receipt sent to printer"));
       };
     } catch (error) {
-      console.error("Print error:", error);
+      rendererLogger.error("Print error", "ReceiptModal", error);
       alert(t("cashier.printError", "Failed to print receipt"));
     } finally {
       setIsPrinting(false);

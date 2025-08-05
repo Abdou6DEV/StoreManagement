@@ -2,6 +2,7 @@ import React, { useState, useRef } from "react";
 import { Image as ImageIcon, X } from "lucide-react";
 import { cn } from "../utils";
 import { useTranslation } from "react-i18next";
+import rendererLogger from "../logger/rendererLogger";
 
 interface ImageUploadProps {
   value: string | null;
@@ -105,7 +106,7 @@ export function ImageUpload({
       const resizedImage = await resizeImage(file);
       onChange(resizedImage);
     } catch (error) {
-      console.error("Error resizing image:", error);
+      rendererLogger.error("Error resizing image", "ImageUpload", error);
       alert(t("imageUpload.failedToProcess"));
     }
   };

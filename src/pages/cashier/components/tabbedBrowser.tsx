@@ -4,6 +4,7 @@ import { Star, Clock } from "lucide-react";
 import FavoritesBrowser from "./favoritesBrowser";
 import HistoryBrowser from "./historyBrowser";
 import type { ProductWithSales, CartItem } from "../../../types";
+import rendererLogger from "../../../lib/logger/rendererLogger";
 
 interface TabbedBrowserProps {
   allProducts: ProductWithSales[];
@@ -40,7 +41,7 @@ const TabbedBrowser: React.FC<TabbedBrowserProps> = ({
 
   const handleSaleSelect = (sale: any) => {
     // Optional: Handle sale selection (e.g., show details modal)
-    console.log("Selected sale:", sale);
+    rendererLogger.debug("Selected sale", "TabbedBrowser", { saleId: sale.id });
   };
 
   return (

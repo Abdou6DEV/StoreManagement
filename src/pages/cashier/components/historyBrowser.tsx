@@ -6,6 +6,7 @@ import SaleDetailsModal from "../../../lib/components/saleDetailsModal";
 import { useStock } from "../../../lib/contexts/stockContext";
 import { useToast } from "../../../lib/contexts/toastContext";
 import { Sale } from "../../../types";
+import rendererLogger from "../../../lib/logger/rendererLogger";
 
 interface HistoryBrowserProps {
   onSaleSelect?: (sale: Sale) => void;
@@ -41,7 +42,7 @@ const HistoryBrowser: React.FC<HistoryBrowserProps> = ({
       const result = await window.api.database.sales.getRecent({ limit: 100 });
       setSales(result.sales);
     } catch (error) {
-      console.error("Error fetching sales:", error);
+      rendererLogger.error("Error fetching sales", "HistoryBrowser", error);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -107,12 +108,12 @@ const HistoryBrowser: React.FC<HistoryBrowserProps> = ({
 
   const handlePrintReceipt = (sale: Sale) => {
     // TODO: Implement print functionality
-    console.log("Printing receipt for sale:", sale.id);
+    rendererLogger.debug("Printing receipt for sale", "HistoryBrowser", { saleId: sale.id });
   };
 
   const handleModifySale = (sale: Sale) => {
     // This is now handled in the modal
-    console.log("Modifying sale:", sale.id);
+    rendererLogger.debug("Modifying sale", "HistoryBrowser", { saleId: sale.id });
   };
 
   const handleSaleUpdated = async (updatedSale: Sale) => {
@@ -132,7 +133,7 @@ const HistoryBrowser: React.FC<HistoryBrowserProps> = ({
     try {
       await refetchProducts();
     } catch (error) {
-      console.error("Error refreshing stock context:", error);
+      rendererLogger.error("Error refreshing stock context", "HistoryBrowser", error);
     }
   };
 
@@ -150,7 +151,7 @@ const HistoryBrowser: React.FC<HistoryBrowserProps> = ({
     try {
       await refetchProducts();
     } catch (error) {
-      console.error("Error refreshing stock context:", error);
+      rendererLogger.error("Error refreshing stock context", "HistoryBrowser", error);
     }
   };
 
@@ -187,7 +188,7 @@ const HistoryBrowser: React.FC<HistoryBrowserProps> = ({
         "success",
       );
     } catch (error) {
-      console.error("Error deleting sale:", error);
+      rendererLogger.error("Error deleting sale", "HistoryBrowser", error);
       showToast(t("cashier.saleDeleteError", "Failed to delete sale"), "error");
     } finally {
       setIsDeleting(false);

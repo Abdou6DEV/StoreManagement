@@ -14,6 +14,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "../../../lib/components/popover";
+import rendererLogger from "../../../lib/logger/rendererLogger";
 
 interface AddPaymentFormProps {
   openPanel: "add" | "addPayment" | "addSupplier" | null;
@@ -67,7 +68,7 @@ export default function AddPaymentForm({
         const data = await window.api.database.clients.getAll();
         setClients(data);
       } catch (err) {
-        console.error("Failed to load clients:", err);
+        rendererLogger.error("Failed to load clients", "AddPaymentForm", err);
       }
     };
     loadClients();

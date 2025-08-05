@@ -10,6 +10,7 @@ import TabbedBrowser from "./components/tabbedBrowser";
 import ProductSearch from "./components/productSearch";
 import { Tooltip } from "../../lib/components/tooltip";
 import { ConfirmDialog } from "../../lib/components/confirmDialog";
+import rendererLogger from "../../lib/logger/rendererLogger";
 
 const MAX_SESSIONS = 5;
 
@@ -152,7 +153,7 @@ export default function CashierPage() {
 
         setAllProducts(merged as ProductWithSales[]);
       } catch (error) {
-        console.error("Error fetching products with sales:", error);
+        rendererLogger.error("Error fetching products with sales", "CashierPage", error);
         // Fallback to basic products if sales fetch fails
         const products = await window.api.database.products.getAll();
         setAllProducts(

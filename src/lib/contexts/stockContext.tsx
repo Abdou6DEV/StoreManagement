@@ -6,6 +6,7 @@ import {
   ReactNode,
 } from "react";
 import type { ProductWithSales, StockContextType } from "../../types";
+import rendererLogger from "../logger/rendererLogger";
 
 const StockContext = createContext<StockContextType | undefined>(undefined);
 
@@ -24,7 +25,7 @@ export function StockProvider({ children }: { children: ReactNode }) {
       setError(
         err instanceof Error ? err.message : "Failed to fetch categories",
       );
-      console.error("Error fetching categories:", err);
+      rendererLogger.error("Error fetching categories", "StockContext", err);
     }
   };
 
@@ -45,7 +46,7 @@ export function StockProvider({ children }: { children: ReactNode }) {
       setProducts(merged);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to fetch products");
-      console.error("Error fetching products:", err);
+      rendererLogger.error("Error fetching products", "StockContext", err);
     }
   };
 

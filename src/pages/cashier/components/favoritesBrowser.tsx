@@ -3,6 +3,7 @@ import type { ProductWithSales, CartItem } from "../../../types";
 import { useTranslation } from "react-i18next";
 import { Star } from "lucide-react";
 import ProductCard from "./productCard";
+import rendererLogger from "../../../lib/logger/rendererLogger";
 
 interface FavoritesBrowserProps {
   allProducts: ProductWithSales[];
@@ -26,7 +27,7 @@ const FavoritesBrowser: React.FC<FavoritesBrowserProps> = ({
         try {
           setFavorites(JSON.parse(savedFavorites));
         } catch (error) {
-          console.error("Error loading favorites:", error);
+          rendererLogger.error("Error loading favorites", "FavoritesBrowser", error);
         }
       }
     };
