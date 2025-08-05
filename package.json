@@ -11,7 +11,8 @@
     "publish": "electron-forge publish",
     "lint": "eslint . --ext .ts,.tsx",
     "format": "prettier --write .",
-    "db:seed": "ts-node prisma/seed/index.ts"
+    "db:seed": "ts-node prisma/seed/index.ts",
+    "logs:seed": "ts-node scripts/seedLogs.ts --"
   },
   "prisma": {
     "seed": "ts-node prisma/seed/index.ts"

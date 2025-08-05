@@ -298,7 +298,10 @@ const LoggerAdmin: React.FC = () => {
                 onClick={() => setSelectedFile(file)}
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium truncate">
+                  <span 
+                    className="text-sm font-medium truncate cursor-help" 
+                    title={file}
+                  >
                     {file.split('/').pop() || file.split('\\').pop()}
                   </span>
                   <Badge variant="secondary">Log File</Badge>
