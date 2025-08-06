@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { FormModal } from "../../../lib/components/Modal";
 import StyledNumberInput from "../../../lib/components/inputNumber";
-import { Plus, Check } from "lucide-react";
+import { Plus } from "lucide-react";
 import type { CartItem, ManualProduct } from "../../../types";
 
 interface AddManualProductModalProps {
@@ -42,7 +42,7 @@ export default function AddManualProductModal({
       try {
         const query = manualProduct.name.trim() || manualProduct.type.trim();
         const results = await window.api.database.manualProducts.search(query);
-        setSuggestions(results);
+        setSuggestions(results.slice(0, 2));
         setShowSuggestions(results.length > 0);
         setSelectedSuggestionIndex(-1);
       } catch (error) {
@@ -192,11 +192,11 @@ export default function AddManualProductModal({
                 placeholder={t("cashier.enterProductName", "Enter product name")}
                 required
               />
-              {showSuggestions && (
-                <div
-                  ref={suggestionsRef}
-                  className="absolute z-50 w-full mt-1 bg-card border border-border rounded-lg shadow-lg max-h-48 overflow-y-auto"
-                >
+                             {showSuggestions && (
+                 <div
+                   ref={suggestionsRef}
+                   className="absolute z-[9999] w-full top-full mt-1 bg-card border border-border rounded-lg shadow-lg max-h-48 overflow-y-auto"
+                 >
                   {isLoading ? (
                     <div className="p-3 text-sm text-muted-foreground text-center">
                       {t("cashier.searching", "Searching...")}
@@ -212,17 +212,14 @@ export default function AddManualProductModal({
                         onClick={() => selectSuggestion(suggestion)}
                         onMouseEnter={() => setSelectedSuggestionIndex(index)}
                       >
-                        <div className="flex-1">
-                          <div className="font-medium text-foreground">
-                            {suggestion.name}
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            {suggestion.type}
-                          </div>
-                        </div>
-                        {index === selectedSuggestionIndex && (
-                          <Check className="w-4 h-4 text-primary" />
-                        )}
+                                                 <div className="flex-1">
+                           <div className="font-medium text-foreground">
+                             {suggestion.name}
+                           </div>
+                           <div className="text-xs text-muted-foreground">
+                             {suggestion.type}
+                           </div>
+                         </div>
                       </button>
                     ))
                   ) : (
