@@ -14,11 +14,11 @@ const MAX_SESSIONS = 5;
 // Cart utility functions
 function addProductToCart(
   cart: CartItem[],
-  product: ProductWithSales
+  product: ProductWithSales,
 ): CartItem[] {
   const updated = [...cart];
   const exists = updated.find((item) => item.id === product.id);
-  
+
   if (exists) {
     exists.qty += 1;
   } else {
@@ -29,13 +29,13 @@ function addProductToCart(
       qty: 1,
     });
   }
-  
+
   return updated;
 }
 
 function addManualProductToCart(
   cart: CartItem[],
-  product: CartItem
+  product: CartItem,
 ): CartItem[] {
   return [...cart, product];
 }
@@ -82,7 +82,11 @@ export default function CashierPage() {
 
         setAllProducts(merged as ProductWithSales[]);
       } catch (error) {
-        rendererLogger.error("Error fetching products with sales", "CashierPage", error);
+        rendererLogger.error(
+          "Error fetching products with sales",
+          "CashierPage",
+          error,
+        );
         // Fallback to basic products if sales fetch fails
         const products = await window.api.database.products.getAll();
         setAllProducts(
@@ -179,12 +183,18 @@ export default function CashierPage() {
             onShowManualProductModal={() => setShowManualProductModal(true)}
             onAddProduct={(product: ProductWithSales) => {
               const currentSession = sessionActions.getCurrentSession();
-              const updatedCart = addProductToCart(currentSession.cart, product);
+              const updatedCart = addProductToCart(
+                currentSession.cart,
+                product,
+              );
               sessionActions.updateSessionCart(activeSession, updatedCart);
             }}
             onAddManualProduct={(product: CartItem) => {
               const currentSession = sessionActions.getCurrentSession();
-              const updatedCart = addManualProductToCart(currentSession.cart, product);
+              const updatedCart = addManualProductToCart(
+                currentSession.cart,
+                product,
+              );
               sessionActions.updateSessionCart(activeSession, updatedCart);
             }}
             onSessionChange={sessionActions.setActiveSession}
@@ -236,7 +246,10 @@ export default function CashierPage() {
             onClose={() => setShowManualProductModal(false)}
             onAdd={(product: CartItem) => {
               const currentSession = sessionActions.getCurrentSession();
-              const updatedCart = addManualProductToCart(currentSession.cart, product);
+              const updatedCart = addManualProductToCart(
+                currentSession.cart,
+                product,
+              );
               sessionActions.updateSessionCart(activeSession, updatedCart);
             }}
           />

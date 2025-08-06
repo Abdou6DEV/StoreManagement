@@ -21,11 +21,11 @@ export default function App() {
   const dir = i18n.language === "ar" ? "rtl" : "ltr";
 
   useEffect(() => {
-    rendererLogger.info('Application initialized', 'App');
+    rendererLogger.info("Application initialized", "App");
   }, []);
 
   useEffect(() => {
-    rendererLogger.debug(`Route changed to: ${location.pathname}`, 'App');
+    rendererLogger.debug(`Route changed to: ${location.pathname}`, "App");
   }, [location.pathname]);
 
   return (

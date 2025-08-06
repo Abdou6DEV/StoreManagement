@@ -8,7 +8,11 @@ interface TotalHeaderProps {
   isRTL: boolean;
 }
 
-export default function TotalHeader({ cart, discount, isRTL }: TotalHeaderProps) {
+export default function TotalHeader({
+  cart,
+  discount,
+  isRTL,
+}: TotalHeaderProps) {
   const { t } = useTranslation();
   const [isTotalAnimating, setIsTotalAnimating] = useState(false);
 
@@ -60,4 +64,4 @@ export default function TotalHeader({ cart, discount, isRTL }: TotalHeaderProps)
       </div>
     </header>
   );
-} 
+}

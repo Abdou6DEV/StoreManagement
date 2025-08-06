@@ -170,41 +170,43 @@ contextBridge.exposeInMainWorld("api", {
         ipcRenderer.invoke("db:purchases:getBySeller", sellerId),
     },
     manualProducts: {
-      search: (query: string) => ipcRenderer.invoke("db:manualProducts:search", query),
+      search: (query: string) =>
+        ipcRenderer.invoke("db:manualProducts:search", query),
       getAll: () => ipcRenderer.invoke("db:manualProducts:getAll"),
       create: (data: { name: string; type: string }) =>
         ipcRenderer.invoke("db:manualProducts:create", data),
       findOrCreate: (data: { name: string; type: string }) =>
         ipcRenderer.invoke("db:manualProducts:findOrCreate", data),
-      getById: (id: string) => ipcRenderer.invoke("db:manualProducts:getById", id),
-      update: (
-        id: string,
-        data: { name?: string; type?: string },
-      ) => ipcRenderer.invoke("db:manualProducts:update", { id, data }),
-      delete: (id: string) => ipcRenderer.invoke("db:manualProducts:delete", id),
+      getById: (id: string) =>
+        ipcRenderer.invoke("db:manualProducts:getById", id),
+      update: (id: string, data: { name?: string; type?: string }) =>
+        ipcRenderer.invoke("db:manualProducts:update", { id, data }),
+      delete: (id: string) =>
+        ipcRenderer.invoke("db:manualProducts:delete", id),
     },
   },
   app: {
     getVersion: () => ipcRenderer.invoke("app:getVersion"),
   },
-      logger: {
-      log: (entry: {
-        timestamp: string;
-        level: LogLevel;
-        message: string;
-        context?: string;
-        data?: any;
-        userId?: string;
-      }) => ipcRenderer.invoke("logger:log", entry),
-      getLogFiles: () => ipcRenderer.invoke("logger:getLogFiles"),
-      readLogFile: (filePath: string, lines?: number) => 
-        ipcRenderer.invoke("logger:readLogFile", { filePath, lines }),
-      getLogFileStats: (filePath: string) => 
-        ipcRenderer.invoke("logger:getLogFileStats", { filePath }),
-      clearLogs: () => ipcRenderer.invoke("logger:clearLogs"),
-      updateConfig: (config: any) => ipcRenderer.invoke("logger:updateConfig", config),
-      getConfig: () => ipcRenderer.invoke("logger:getConfig"),
-    },
+  logger: {
+    log: (entry: {
+      timestamp: string;
+      level: LogLevel;
+      message: string;
+      context?: string;
+      data?: any;
+      userId?: string;
+    }) => ipcRenderer.invoke("logger:log", entry),
+    getLogFiles: () => ipcRenderer.invoke("logger:getLogFiles"),
+    readLogFile: (filePath: string, lines?: number) =>
+      ipcRenderer.invoke("logger:readLogFile", { filePath, lines }),
+    getLogFileStats: (filePath: string) =>
+      ipcRenderer.invoke("logger:getLogFileStats", { filePath }),
+    clearLogs: () => ipcRenderer.invoke("logger:clearLogs"),
+    updateConfig: (config: any) =>
+      ipcRenderer.invoke("logger:updateConfig", config),
+    getConfig: () => ipcRenderer.invoke("logger:getConfig"),
+  },
 });
 
 declare global {
@@ -363,11 +365,21 @@ declare global {
           getBySeller: (sellerId: string) => Promise<any[]>;
         };
         manualProducts: {
-          search: (query: string) => Promise<{ id: string; name: string; type: string }[]>;
+          search: (
+            query: string,
+          ) => Promise<{ id: string; name: string; type: string }[]>;
           getAll: () => Promise<{ id: string; name: string; type: string }[]>;
-          create: (data: { name: string; type: string }) => Promise<{ id: string; name: string; type: string }>;
-          findOrCreate: (data: { name: string; type: string }) => Promise<{ id: string; name: string; type: string }>;
-          getById: (id: string) => Promise<{ id: string; name: string; type: string } | null>;
+          create: (data: {
+            name: string;
+            type: string;
+          }) => Promise<{ id: string; name: string; type: string }>;
+          findOrCreate: (data: {
+            name: string;
+            type: string;
+          }) => Promise<{ id: string; name: string; type: string }>;
+          getById: (
+            id: string,
+          ) => Promise<{ id: string; name: string; type: string } | null>;
           update: (
             id: string,
             data: { name?: string; type?: string },
@@ -389,7 +401,9 @@ declare global {
         }) => Promise<void>;
         getLogFiles: () => Promise<string[]>;
         readLogFile: (filePath: string, lines?: number) => Promise<string[]>;
-        getLogFileStats: (filePath: string) => Promise<{ totalLines: number; fileSize: number }>;
+        getLogFileStats: (
+          filePath: string,
+        ) => Promise<{ totalLines: number; fileSize: number }>;
         clearLogs: () => Promise<void>;
         updateConfig: (config: any) => Promise<void>;
         getConfig: () => Promise<{

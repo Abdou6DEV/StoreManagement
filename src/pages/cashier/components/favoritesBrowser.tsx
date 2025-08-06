@@ -27,7 +27,11 @@ const FavoritesBrowser: React.FC<FavoritesBrowserProps> = ({
         try {
           setFavorites(JSON.parse(savedFavorites));
         } catch (error) {
-          rendererLogger.error("Error loading favorites", "FavoritesBrowser", error);
+          rendererLogger.error(
+            "Error loading favorites",
+            "FavoritesBrowser",
+            error,
+          );
         }
       }
     };

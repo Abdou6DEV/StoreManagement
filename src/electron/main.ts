@@ -365,7 +365,7 @@ function setupLoggerHandlers() {
   ipcMain.handle("logger:updateConfig", async (_event, config) => {
     logger.updateConfig(config);
   });
-  
+
   ipcMain.handle("logger:getConfig", async () => {
     return logger.getConfig();
   });

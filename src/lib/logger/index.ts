@@ -1,11 +1,11 @@
-import { app } from 'electron';
-import path from 'path';
-import fs from 'fs';
-import { LogLevel, LogEntry, LoggerConfig } from './common';
+import { app } from "electron";
+import path from "path";
+import fs from "fs";
+import { LogLevel, LogEntry, LoggerConfig } from "./common";
 
 // Extend the common interfaces for main process specific needs
 interface MainLogEntry extends LogEntry {
-  process: 'main' | 'renderer';
+  process: "main" | "renderer";
 }
 
 interface MainLoggerConfig extends LoggerConfig {
@@ -24,11 +24,11 @@ class Logger {
       maxFiles: 5,
       logToFile: true,
       logToConsole: true,
-      logDir: path.join(app.getPath('userData'), 'logs'),
-      ...config
+      logDir: path.join(app.getPath("userData"), "logs"),
+      ...config,
     };
 
-    this.logFilePath = path.join(this.config.logDir, 'app.log');
+    this.logFilePath = path.join(this.config.logDir, "app.log");
     this.ensureLogDirectory();
     this.initializeLogFile();
     this.loadConfig(); // Load saved configuration
@@ -42,7 +42,7 @@ class Logger {
 
   private initializeLogFile(): void {
     if (!fs.existsSync(this.logFilePath)) {
-      fs.writeFileSync(this.logFilePath, '');
+      fs.writeFileSync(this.logFilePath, "");
     } else {
       const stats = fs.statSync(this.logFilePath);
       this.currentFileSize = stats.size;
@@ -57,9 +57,12 @@ class Logger {
   }
 
   private rotateLogFile(): void {
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+    const timestamp = new Date()
+      .toISOString()
+      .replace(/[:.]/g, "-")
+      .slice(0, -5);
     const rotatedPath = path.join(this.config.logDir, `app-${timestamp}.log`);
-    
+
     if (fs.existsSync(this.logFilePath)) {
       fs.renameSync(this.logFilePath, rotatedPath);
     }
@@ -69,22 +72,23 @@ class Logger {
   }
 
   private cleanupOldLogs(): void {
-    const files = fs.readdirSync(this.config.logDir)
-      .filter(file => file.startsWith('app-') && file.endsWith('.log'))
-      .map(file => ({
+    const files = fs
+      .readdirSync(this.config.logDir)
+      .filter((file) => file.startsWith("app-") && file.endsWith(".log"))
+      .map((file) => ({
         name: file,
         path: path.join(this.config.logDir, file),
-        mtime: fs.statSync(path.join(this.config.logDir, file)).mtime
+        mtime: fs.statSync(path.join(this.config.logDir, file)).mtime,
       }))
       .sort((a, b) => b.mtime.getTime() - a.mtime.getTime());
 
     // Keep only the most recent maxFiles
     if (files.length > this.config.maxFiles) {
-      files.slice(this.config.maxFiles).forEach(file => {
+      files.slice(this.config.maxFiles).forEach((file) => {
         try {
           fs.unlinkSync(file.path);
         } catch (error) {
-          console.error('Failed to delete old log file:', file.name, error);
+          console.error("Failed to delete old log file:", file.name, error);
         }
       });
     }
@@ -93,8 +97,8 @@ class Logger {
   private writeToFile(entry: MainLogEntry): void {
     if (!this.config.logToFile) return;
 
-    const logLine = JSON.stringify(entry) + '\n';
-    const logLineSize = Buffer.byteLength(logLine, 'utf8');
+    const logLine = JSON.stringify(entry) + "\n";
+    const logLineSize = Buffer.byteLength(logLine, "utf8");
 
     // Check if we need to rotate the log file
     if (this.currentFileSize + logLineSize > this.config.maxFileSize) {
@@ -106,7 +110,7 @@ class Logger {
       fs.appendFileSync(this.logFilePath, logLine);
       this.currentFileSize += logLineSize;
     } catch (error) {
-      console.error('Failed to write to log file:', error);
+      console.error("Failed to write to log file:", error);
     }
   }
 
@@ -115,10 +119,10 @@ class Logger {
 
     const timestamp = new Date(entry.timestamp).toLocaleString();
     const levelColor = this.getLevelColor(entry.level);
-    const resetColor = '\x1b[0m';
-    
-    const consoleMessage = `${timestamp} [${levelColor}${entry.level}${resetColor}] [${entry.process}] ${entry.context ? `[${entry.context}] ` : ''}${entry.message}`;
-    
+    const resetColor = "\x1b[0m";
+
+    const consoleMessage = `${timestamp} [${levelColor}${entry.level}${resetColor}] [${entry.process}] ${entry.context ? `[${entry.context}] ` : ""}${entry.message}`;
+
     switch (entry.level) {
       case LogLevel.ERROR:
         console.error(consoleMessage);
@@ -145,16 +149,28 @@ class Logger {
 
   private getLevelColor(level: LogLevel): string {
     switch (level) {
-      case LogLevel.ERROR: return '\x1b[31m'; // Red
-      case LogLevel.WARN: return '\x1b[33m';  // Yellow
-      case LogLevel.INFO: return '\x1b[36m';  // Cyan
-      case LogLevel.DEBUG: return '\x1b[35m'; // Magenta
-      case LogLevel.TRACE: return '\x1b[37m'; // White
-      default: return '\x1b[0m';
+      case LogLevel.ERROR:
+        return "\x1b[31m"; // Red
+      case LogLevel.WARN:
+        return "\x1b[33m"; // Yellow
+      case LogLevel.INFO:
+        return "\x1b[36m"; // Cyan
+      case LogLevel.DEBUG:
+        return "\x1b[35m"; // Magenta
+      case LogLevel.TRACE:
+        return "\x1b[37m"; // White
+      default:
+        return "\x1b[0m";
     }
   }
 
-  log(level: LogLevel, message: string, context?: string, data?: any, userId?: string): void {
+  log(
+    level: LogLevel,
+    message: string,
+    context?: string,
+    data?: any,
+    userId?: string,
+  ): void {
     if (!this.shouldLog(level)) return;
 
     const entry: MainLogEntry = {
@@ -163,8 +179,8 @@ class Logger {
       message,
       context,
       data,
-      process: 'main',
-      userId
+      process: "main",
+      userId,
     };
 
     this.writeToFile(entry);
@@ -194,11 +210,12 @@ class Logger {
   // Method to get log files for the admin interface
   getLogFiles(): string[] {
     try {
-      return fs.readdirSync(this.config.logDir)
-        .filter(file => file.endsWith('.log'))
-        .map(file => path.join(this.config.logDir, file));
+      return fs
+        .readdirSync(this.config.logDir)
+        .filter((file) => file.endsWith(".log"))
+        .map((file) => path.join(this.config.logDir, file));
     } catch (error) {
-      this.error('Failed to get log files', 'Logger', error);
+      this.error("Failed to get log files", "Logger", error);
       return [];
     }
   }
@@ -207,13 +224,13 @@ class Logger {
   readLogFile(filePath: string, lines = 100): string[] {
     try {
       // Use streaming for better performance with large files
-      const content = fs.readFileSync(filePath, 'utf8');
-      const logLines = content.split('\n').filter(line => line.trim());
-      
+      const content = fs.readFileSync(filePath, "utf8");
+      const logLines = content.split("\n").filter((line) => line.trim());
+
       // Return the last N lines (most recent)
       return logLines.slice(-lines);
     } catch (error) {
-      this.error('Failed to read log file', 'Logger', { filePath, error });
+      this.error("Failed to read log file", "Logger", { filePath, error });
       return [];
     }
   }
@@ -222,15 +239,17 @@ class Logger {
   getLogFileStats(filePath: string): { totalLines: number; fileSize: number } {
     try {
       const stats = fs.statSync(filePath);
-      const content = fs.readFileSync(filePath, 'utf8');
-      const totalLines = content.split('\n').filter(line => line.trim()).length;
-      
+      const content = fs.readFileSync(filePath, "utf8");
+      const totalLines = content
+        .split("\n")
+        .filter((line) => line.trim()).length;
+
       return {
         totalLines,
-        fileSize: stats.size
+        fileSize: stats.size,
       };
     } catch (error) {
-      this.error('Failed to get log file stats', 'Logger', { filePath, error });
+      this.error("Failed to get log file stats", "Logger", { filePath, error });
       return { totalLines: 0, fileSize: 0 };
     }
   }
@@ -238,19 +257,20 @@ class Logger {
   // Method to clear log files
   clearLogs(): void {
     try {
-      const files = fs.readdirSync(this.config.logDir)
-        .filter(file => file.endsWith('.log'));
-      
-      files.forEach(file => {
+      const files = fs
+        .readdirSync(this.config.logDir)
+        .filter((file) => file.endsWith(".log"));
+
+      files.forEach((file) => {
         fs.unlinkSync(path.join(this.config.logDir, file));
       });
-      
+
       // Recreate the main log file
       this.initializeLogFile();
-      
-      this.info('All log files cleared', 'Logger');
+
+      this.info("All log files cleared", "Logger");
     } catch (error) {
-      this.error('Failed to clear log files', 'Logger', error);
+      this.error("Failed to clear log files", "Logger", error);
     }
   }
 
@@ -258,57 +278,67 @@ class Logger {
   updateConfig(newConfig: Partial<MainLoggerConfig>): void {
     // Validate the configuration
     if (newConfig.level && !Object.values(LogLevel).includes(newConfig.level)) {
-      this.error('Invalid log level provided', 'Logger', { level: newConfig.level });
+      this.error("Invalid log level provided", "Logger", {
+        level: newConfig.level,
+      });
       return;
     }
-    
+
     if (newConfig.maxFileSize && newConfig.maxFileSize <= 0) {
-      this.error('Max file size must be greater than 0', 'Logger', { maxFileSize: newConfig.maxFileSize });
+      this.error("Max file size must be greater than 0", "Logger", {
+        maxFileSize: newConfig.maxFileSize,
+      });
       return;
     }
-    
+
     if (newConfig.maxFiles && newConfig.maxFiles <= 0) {
-      this.error('Max files must be greater than 0', 'Logger', { maxFiles: newConfig.maxFiles });
+      this.error("Max files must be greater than 0", "Logger", {
+        maxFiles: newConfig.maxFiles,
+      });
       return;
     }
 
     // Update the configuration
     this.config = { ...this.config, ...newConfig };
-    
+
     // Save configuration to file for persistence
     this.saveConfig();
-    
-    this.info('Logger configuration updated', 'Logger', newConfig);
+
+    this.info("Logger configuration updated", "Logger", newConfig);
   }
 
   // Method to save configuration to file
   private saveConfig(): void {
     try {
-      const configPath = path.join(this.config.logDir, 'logger-config.json');
+      const configPath = path.join(this.config.logDir, "logger-config.json");
       const configToSave = {
         level: this.config.level,
         maxFileSize: this.config.maxFileSize,
         maxFiles: this.config.maxFiles,
         logToFile: this.config.logToFile,
-        logToConsole: this.config.logToConsole
+        logToConsole: this.config.logToConsole,
       };
       fs.writeFileSync(configPath, JSON.stringify(configToSave, null, 2));
     } catch (error) {
-      this.error('Failed to save logger configuration', 'Logger', error);
+      this.error("Failed to save logger configuration", "Logger", error);
     }
   }
 
   // Method to load configuration from file
   private loadConfig(): void {
     try {
-      const configPath = path.join(this.config.logDir, 'logger-config.json');
+      const configPath = path.join(this.config.logDir, "logger-config.json");
       if (fs.existsSync(configPath)) {
-        const configData = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+        const configData = JSON.parse(fs.readFileSync(configPath, "utf8"));
         this.config = { ...this.config, ...configData };
-        this.info('Logger configuration loaded from file', 'Logger', configData);
+        this.info(
+          "Logger configuration loaded from file",
+          "Logger",
+          configData,
+        );
       }
     } catch (error) {
-      this.error('Failed to load logger configuration', 'Logger', error);
+      this.error("Failed to load logger configuration", "Logger", error);
     }
   }
 
@@ -319,7 +349,7 @@ class Logger {
       maxFileSize: this.config.maxFileSize,
       maxFiles: this.config.maxFiles,
       logToFile: this.config.logToFile,
-      logToConsole: this.config.logToConsole
+      logToConsole: this.config.logToConsole,
     };
   }
 }
@@ -327,4 +357,4 @@ class Logger {
 // Create singleton instance
 const logger = new Logger();
 
-export default logger; 
+export default logger;

@@ -9,7 +9,11 @@ export interface Session {
 
 interface SessionManagerProps {
   maxSessions: number;
-  children: (sessions: Session[], activeSession: number, sessionActions: SessionActions) => React.ReactNode;
+  children: (
+    sessions: Session[],
+    activeSession: number,
+    sessionActions: SessionActions,
+  ) => React.ReactNode;
 }
 
 export interface SessionActions {
@@ -21,46 +25,66 @@ export interface SessionActions {
   getCurrentSession: () => Session;
 }
 
-export default function SessionManager({ maxSessions, children }: SessionManagerProps) {
+export default function SessionManager({
+  maxSessions,
+  children,
+}: SessionManagerProps) {
   const [sessions, setSessions] = useState<Session[]>([
-    { id: 0, cart: [], discount: "" }
+    { id: 0, cart: [], discount: "" },
   ]);
   const [activeSession, setActiveSession] = useState(0);
 
   const addSession = useCallback(() => {
     if (sessions.length < maxSessions) {
       const newSessionId = sessions.length;
-      setSessions(prev => [...prev, { id: newSessionId, cart: [], discount: "" }]);
+      setSessions((prev) => [
+        ...prev,
+        { id: newSessionId, cart: [], discount: "" },
+      ]);
       setActiveSession(newSessionId);
     }
   }, [sessions.length, maxSessions]);
 
-  const removeSession = useCallback((sessionIndex: number) => {
-    if (sessions.length > 1) {
-      setSessions(prev => prev.filter((_, index) => index !== sessionIndex));
-      
-      // Adjust active session if necessary
-      if (activeSession >= sessionIndex) {
-        setActiveSession(prev => Math.max(0, prev - 1));
+  const removeSession = useCallback(
+    (sessionIndex: number) => {
+      if (sessions.length > 1) {
+        setSessions((prev) =>
+          prev.filter((_, index) => index !== sessionIndex),
+        );
+
+        // Adjust active session if necessary
+        if (activeSession >= sessionIndex) {
+          setActiveSession((prev) => Math.max(0, prev - 1));
+        }
       }
-    }
-  }, [sessions.length, activeSession]);
+    },
+    [sessions.length, activeSession],
+  );
 
-  const updateSessionCart = useCallback((sessionIndex: number, newCart: CartItem[]) => {
-    setSessions(prev => {
-      const updated = [...prev];
-      updated[sessionIndex] = { ...updated[sessionIndex], cart: newCart };
-      return updated;
-    });
-  }, []);
+  const updateSessionCart = useCallback(
+    (sessionIndex: number, newCart: CartItem[]) => {
+      setSessions((prev) => {
+        const updated = [...prev];
+        updated[sessionIndex] = { ...updated[sessionIndex], cart: newCart };
+        return updated;
+      });
+    },
+    [],
+  );
 
-  const updateSessionDiscount = useCallback((sessionIndex: number, newDiscount: string) => {
-    setSessions(prev => {
-      const updated = [...prev];
-      updated[sessionIndex] = { ...updated[sessionIndex], discount: newDiscount };
-      return updated;
-    });
-  }, []);
+  const updateSessionDiscount = useCallback(
+    (sessionIndex: number, newDiscount: string) => {
+      setSessions((prev) => {
+        const updated = [...prev];
+        updated[sessionIndex] = {
+          ...updated[sessionIndex],
+          discount: newDiscount,
+        };
+        return updated;
+      });
+    },
+    [],
+  );
 
   const getCurrentSession = useCallback(() => {
     return sessions[activeSession] || sessions[0];
@@ -76,4 +100,4 @@ export default function SessionManager({ maxSessions, children }: SessionManager
   };
 
   return <>{children(sessions, activeSession, sessionActions)}</>;
-} 
+}

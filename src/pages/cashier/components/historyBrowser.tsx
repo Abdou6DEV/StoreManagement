@@ -108,12 +108,16 @@ const HistoryBrowser: React.FC<HistoryBrowserProps> = ({
 
   const handlePrintReceipt = (sale: Sale) => {
     // TODO: Implement print functionality
-    rendererLogger.debug("Printing receipt for sale", "HistoryBrowser", { saleId: sale.id });
+    rendererLogger.debug("Printing receipt for sale", "HistoryBrowser", {
+      saleId: sale.id,
+    });
   };
 
   const handleModifySale = (sale: Sale) => {
     // This is now handled in the modal
-    rendererLogger.debug("Modifying sale", "HistoryBrowser", { saleId: sale.id });
+    rendererLogger.debug("Modifying sale", "HistoryBrowser", {
+      saleId: sale.id,
+    });
   };
 
   const handleSaleUpdated = async (updatedSale: Sale) => {
@@ -133,7 +137,11 @@ const HistoryBrowser: React.FC<HistoryBrowserProps> = ({
     try {
       await refetchProducts();
     } catch (error) {
-      rendererLogger.error("Error refreshing stock context", "HistoryBrowser", error);
+      rendererLogger.error(
+        "Error refreshing stock context",
+        "HistoryBrowser",
+        error,
+      );
     }
   };
 
@@ -151,7 +159,11 @@ const HistoryBrowser: React.FC<HistoryBrowserProps> = ({
     try {
       await refetchProducts();
     } catch (error) {
-      rendererLogger.error("Error refreshing stock context", "HistoryBrowser", error);
+      rendererLogger.error(
+        "Error refreshing stock context",
+        "HistoryBrowser",
+        error,
+      );
     }
   };
 

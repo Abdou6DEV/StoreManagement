@@ -99,7 +99,9 @@ function DialogModal({
     // Auto-focus first input when modal opens
     const timer = setTimeout(() => {
       if (modalContentRef.current) {
-        const firstInput = modalContentRef.current.querySelector('input, textarea, select') as HTMLInputElement;
+        const firstInput = modalContentRef.current.querySelector(
+          "input, textarea, select",
+        ) as HTMLInputElement;
         if (firstInput) {
           firstInput.focus();
         }
@@ -110,10 +112,11 @@ function DialogModal({
     const handleKeyDown = (e: KeyboardEvent) => {
       // Only handle printable characters and ignore when already focused on an input
       const target = e.target as HTMLElement;
-      const isInputElement = target instanceof HTMLInputElement || 
-                           target instanceof HTMLTextAreaElement || 
-                           target instanceof HTMLSelectElement;
-      
+      const isInputElement =
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target instanceof HTMLSelectElement;
+
       // Ignore if already in an input element or if it's a special key
       if (isInputElement || e.ctrlKey || e.altKey || e.metaKey) {
         return;
@@ -122,22 +125,24 @@ function DialogModal({
       // Check if it's a printable character (letters, numbers, symbols)
       if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
         e.preventDefault();
-        
+
         if (modalContentRef.current) {
-          const firstInput = modalContentRef.current.querySelector('input, textarea, select') as HTMLInputElement;
+          const firstInput = modalContentRef.current.querySelector(
+            "input, textarea, select",
+          ) as HTMLInputElement;
           if (firstInput) {
             firstInput.focus();
             // Set the input value to the typed character
             firstInput.value = e.key;
             // Trigger change event to update React state
-            firstInput.dispatchEvent(new Event('input', { bubbles: true }));
+            firstInput.dispatchEvent(new Event("input", { bubbles: true }));
           }
         }
       }
     };
 
     document.addEventListener("keydown", handleKeyDown);
-    
+
     return () => {
       clearTimeout(timer);
       document.removeEventListener("keydown", handleKeyDown);
@@ -272,11 +277,14 @@ function OverlayModal({
     // Auto-focus first input when overlay modal opens
     const timer = setTimeout(() => {
       // Try multiple selectors to find the overlay modal
-      const overlayModal = document.querySelector('.fixed.inset-0.z-50.flex') ||
-                          document.querySelector('[data-modal="true"]') ||
-                          document.querySelector('.modal');
+      const overlayModal =
+        document.querySelector(".fixed.inset-0.z-50.flex") ||
+        document.querySelector('[data-modal="true"]') ||
+        document.querySelector(".modal");
       if (overlayModal) {
-        const firstInput = overlayModal.querySelector('input, textarea, select') as HTMLInputElement;
+        const firstInput = overlayModal.querySelector(
+          "input, textarea, select",
+        ) as HTMLInputElement;
         if (firstInput) {
           firstInput.focus();
         }
@@ -286,10 +294,11 @@ function OverlayModal({
     const handleKeyDown = (e: KeyboardEvent) => {
       // Only handle printable characters and ignore when already focused on an input
       const target = e.target as HTMLElement;
-      const isInputElement = target instanceof HTMLInputElement || 
-                           target instanceof HTMLTextAreaElement || 
-                           target instanceof HTMLSelectElement;
-      
+      const isInputElement =
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target instanceof HTMLSelectElement;
+
       // Ignore if already in an input element or if it's a special key
       if (isInputElement || e.ctrlKey || e.altKey || e.metaKey) {
         return;
@@ -298,19 +307,22 @@ function OverlayModal({
       // Check if it's a printable character (letters, numbers, symbols)
       if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
         e.preventDefault();
-        
+
         // Try multiple selectors to find the overlay modal
-        const overlayModal = document.querySelector('.fixed.inset-0.z-50.flex') ||
-                            document.querySelector('[data-modal="true"]') ||
-                            document.querySelector('.modal');
+        const overlayModal =
+          document.querySelector(".fixed.inset-0.z-50.flex") ||
+          document.querySelector('[data-modal="true"]') ||
+          document.querySelector(".modal");
         if (overlayModal) {
-          const firstInput = overlayModal.querySelector('input, textarea, select') as HTMLInputElement;
+          const firstInput = overlayModal.querySelector(
+            "input, textarea, select",
+          ) as HTMLInputElement;
           if (firstInput) {
             firstInput.focus();
             // Set the input value to the typed character
             firstInput.value = e.key;
             // Trigger change event to update React state
-            firstInput.dispatchEvent(new Event('input', { bubbles: true }));
+            firstInput.dispatchEvent(new Event("input", { bubbles: true }));
           }
         }
       }

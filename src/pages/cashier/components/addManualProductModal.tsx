@@ -66,13 +66,13 @@ export default function AddManualProductModal({
       switch (e.key) {
         case "ArrowDown":
           e.preventDefault();
-          setSelectedSuggestionIndex(prev => 
-            prev < suggestions.length - 1 ? prev + 1 : prev
+          setSelectedSuggestionIndex((prev) =>
+            prev < suggestions.length - 1 ? prev + 1 : prev,
           );
           break;
         case "ArrowUp":
           e.preventDefault();
-          setSelectedSuggestionIndex(prev => prev > 0 ? prev - 1 : -1);
+          setSelectedSuggestionIndex((prev) => (prev > 0 ? prev - 1 : -1));
           break;
         case "Enter":
           e.preventDefault();
@@ -108,7 +108,7 @@ export default function AddManualProductModal({
   }, []);
 
   const selectSuggestion = (suggestion: ManualProduct) => {
-    setManualProduct(prev => ({
+    setManualProduct((prev) => ({
       ...prev,
       name: suggestion.name,
       type: suggestion.type,
@@ -189,14 +189,17 @@ export default function AddManualProductModal({
                   setShowSuggestions(true);
                 }}
                 onFocus={() => setShowSuggestions(suggestions.length > 0)}
-                placeholder={t("cashier.enterProductName", "Enter product name")}
+                placeholder={t(
+                  "cashier.enterProductName",
+                  "Enter product name",
+                )}
                 required
               />
-                             {showSuggestions && (
-                 <div
-                   ref={suggestionsRef}
-                   className="absolute z-[9999] w-full top-full mt-1 bg-card border border-border rounded-lg shadow-lg max-h-48 overflow-y-auto"
-                 >
+              {showSuggestions && (
+                <div
+                  ref={suggestionsRef}
+                  className="absolute z-[9999] w-full top-full mt-1 bg-card border border-border rounded-lg shadow-lg max-h-48 overflow-y-auto"
+                >
                   {isLoading ? (
                     <div className="p-3 text-sm text-muted-foreground text-center">
                       {t("cashier.searching", "Searching...")}
@@ -212,14 +215,14 @@ export default function AddManualProductModal({
                         onClick={() => selectSuggestion(suggestion)}
                         onMouseEnter={() => setSelectedSuggestionIndex(index)}
                       >
-                                                 <div className="flex-1">
-                           <div className="font-medium text-foreground">
-                             {suggestion.name}
-                           </div>
-                           <div className="text-xs text-muted-foreground">
-                             {suggestion.type}
-                           </div>
-                         </div>
+                        <div className="flex-1">
+                          <div className="font-medium text-foreground">
+                            {suggestion.name}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {suggestion.type}
+                          </div>
+                        </div>
                       </button>
                     ))
                   ) : (

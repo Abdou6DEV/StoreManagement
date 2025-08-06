@@ -97,7 +97,11 @@ const ProductBrowser = forwardRef<
         try {
           setFavorites(JSON.parse(savedFavorites));
         } catch (error) {
-          rendererLogger.error("Error loading favorites", "ProductBrowser", error);
+          rendererLogger.error(
+            "Error loading favorites",
+            "ProductBrowser",
+            error,
+          );
         }
       } else {
         setFavorites([]);

@@ -1,9 +1,9 @@
 export enum LogLevel {
   ERROR = "ERROR",
-  WARN = "WARN", 
+  WARN = "WARN",
   INFO = "INFO",
   DEBUG = "DEBUG",
-  TRACE = "TRACE"
+  TRACE = "TRACE",
 }
 
 export interface LogEntry {
@@ -21,4 +21,4 @@ export interface LoggerConfig {
   maxFiles: number;
   logToFile: boolean;
   logToConsole: boolean;
-} 
+}

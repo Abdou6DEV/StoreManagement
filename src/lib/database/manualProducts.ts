@@ -54,10 +54,7 @@ export async function searchManualProducts(query: string) {
         },
       ],
     },
-    orderBy: [
-      { name: "asc" },
-      { type: "asc" },
-    ],
+    orderBy: [{ name: "asc" }, { type: "asc" }],
     take: 10,
   });
 }
@@ -93,4 +90,4 @@ export async function deleteManualProduct(id: string) {
   return await prisma.manualProduct.delete({
     where: { id },
   });
-} 
+}

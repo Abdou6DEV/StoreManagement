@@ -1,4 +1,4 @@
-import { LogLevel, LogEntry } from './common';
+import { LogLevel, LogEntry } from "./common";
 
 export interface RendererLogEntry {
   timestamp: string;
@@ -13,7 +13,7 @@ class RendererLogger {
   private isElectron: boolean;
 
   constructor() {
-    this.isElectron = typeof window !== 'undefined' && !!window.api;
+    this.isElectron = typeof window !== "undefined" && !!window.api;
   }
 
   private async sendToMain(entry: RendererLogEntry): Promise<void> {
@@ -21,19 +21,25 @@ class RendererLogger {
       try {
         await window.api.logger.log(entry);
       } catch (error) {
-        console.error('Failed to send log to main process:', error);
+        console.error("Failed to send log to main process:", error);
       }
     }
   }
 
-  log(level: LogLevel, message: string, context?: string, data?: any, userId?: string): void {
+  log(
+    level: LogLevel,
+    message: string,
+    context?: string,
+    data?: any,
+    userId?: string,
+  ): void {
     const entry: RendererLogEntry = {
       timestamp: new Date().toISOString(),
       level,
       message,
       context,
       data,
-      userId
+      userId,
     };
 
     // Send to main process if available
@@ -41,8 +47,8 @@ class RendererLogger {
 
     // Also log to console for development
     const timestamp = new Date(entry.timestamp).toLocaleTimeString();
-    const consoleMessage = `[${timestamp}] [${level}] [Renderer] ${context ? `[${context}] ` : ''}${message}`;
-    
+    const consoleMessage = `[${timestamp}] [${level}] [Renderer] ${context ? `[${context}] ` : ""}${message}`;
+
     switch (level) {
       case LogLevel.ERROR:
         console.error(consoleMessage);
@@ -91,4 +97,4 @@ class RendererLogger {
 // Create singleton instance for renderer
 const rendererLogger = new RendererLogger();
 
-export default rendererLogger; 
+export default rendererLogger;

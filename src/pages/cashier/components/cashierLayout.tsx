@@ -81,7 +81,9 @@ export default function CashierLayout({
             <TabbedBrowser
               allProducts={allProducts}
               cart={currentSession.cart}
-              setCart={(newCart: CartItem[] | ((prev: CartItem[]) => CartItem[])) => {
+              setCart={(
+                newCart: CartItem[] | ((prev: CartItem[]) => CartItem[]),
+              ) => {
                 const cart =
                   typeof newCart === "function"
                     ? newCart(currentSession.cart)
@@ -137,4 +139,4 @@ export default function CashierLayout({
       />
     </main>
   );
-} 
+}

@@ -38,7 +38,7 @@ export async function createSale(data: {
           create: await Promise.all(
             data.items.map(async (item) => {
               let manualProductId = null;
-              
+
               if (item.manualProductName && item.manualProductType) {
                 const manualProduct = await findOrCreateManualProduct({
                   name: item.manualProductName,
@@ -53,7 +53,7 @@ export async function createSale(data: {
                 quantity: item.quantity,
                 price: item.price,
               };
-            })
+            }),
           ),
         },
       },
@@ -137,7 +137,7 @@ export async function updateSale(
           create: await Promise.all(
             data.items.map(async (item) => {
               let manualProductId = null;
-              
+
               if (item.manualProductName && item.manualProductType) {
                 const manualProduct = await findOrCreateManualProduct({
                   name: item.manualProductName,
@@ -152,7 +152,7 @@ export async function updateSale(
                 quantity: item.quantity,
                 price: item.price,
               };
-            })
+            }),
           ),
         },
       },

@@ -204,10 +204,10 @@ export default function ActionButtons({
           >
             <button
               onClick={() => setShowHistoryModal(true)}
-              className="flex-1 flex items-center justify-center px-2 py-2 rounded-md bg-muted text-foreground hover:bg-primary hover:text-primary-foreground transition text-sm border border-border min-w-0 w-full"
+              className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-md bg-primary text-primary-foreground font-medium text-sm shadow-md hover:bg-primary/90 transition focus:outline-none focus:ring-2 focus:ring-primary/50 min-w-0 w-full"
             >
               <Clock
-                className={`w-4 h-4 mr-1 ml-1 flex-shrink-0 ${i18n.language === "ar" ? " scale-x-[-1]" : ""}`}
+                className={`w-4 h-4 ${i18n.language === "ar" ? " scale-x-[-1]" : ""}`}
               />
               <span className="hidden sm:inline whitespace-nowrap truncate max-w-[150px]">
                 {t("cashier.showHistory", "Show History")}
@@ -223,10 +223,10 @@ export default function ActionButtons({
           >
             <button
               onClick={() => setShowAddClientModal(true)}
-              className="flex-1 flex items-center justify-center px-2 py-2 rounded-md bg-muted text-foreground hover:bg-primary hover:text-primary-foreground transition text-sm border border-border min-w-0 w-full"
+              className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-md bg-primary text-primary-foreground font-medium text-sm shadow-md hover:bg-primary/90 transition focus:outline-none focus:ring-2 focus:ring-primary/50 min-w-0 w-full"
             >
               <UserPlus
-                className={`w-4 h-4 mr-1 ml-1 ${i18n.language === "ar" ? " scale-x-[-1]" : ""}`}
+                className={`w-4 h-4 ${i18n.language === "ar" ? " scale-x-[-1]" : ""}`}
               />
               <span className="hidden sm:inline whitespace-nowrap truncate max-w-[150px]">
                 {t("cashier.addNewClient", "Add New Client")}
@@ -265,7 +265,7 @@ export default function ActionButtons({
           }
         >
           <button
-            className="flex-1 flex items-center justify-center rounded-lg bg-primary text-primary-foreground px-4 py-2 text-base font-medium shadow-md hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary/50 transition duration-150 disabled:bg-primary/50 disabled:text-primary-foreground/70 disabled:cursor-not-allowed min-w-0 w-full"
+            className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-md bg-primary text-primary-foreground font-medium text-sm shadow-md hover:bg-primary/90 transition focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:bg-primary/50 disabled:text-primary-foreground/70 disabled:cursor-not-allowed min-w-0 w-full"
             onClick={() => {
               setShowPaymentModal(true);
             }}
@@ -280,7 +280,7 @@ export default function ActionButtons({
       <div className="flex flex-row gap-2 w-full">
         <button
           onClick={onFinish}
-          className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg bg-primary text-primary-foreground font-bold text-base tracking-wide shadow-md hover:bg-primary/90 transition focus:outline-none focus:ring-2 focus:ring-primary/50 min-w-0 w-full"
+          className="flex-1 flex items-center justify-center gap-2 py-3 rounded-md bg-primary text-primary-foreground font-bold text-base tracking-wide shadow-md hover:bg-primary/90 transition focus:outline-none focus:ring-2 focus:ring-primary/50 min-w-0 w-full"
         >
           <CheckCircle className="w-6 h-6" />
           <span className="hidden sm:inline whitespace-nowrap">
@@ -295,7 +295,7 @@ export default function ActionButtons({
             });
             onConfirmWithReceipt?.();
           }}
-          className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg bg-primary text-primary-foreground font-bold text-base tracking-wide shadow-md hover:bg-primary/90 transition focus:outline-none focus:ring-2 focus:ring-primary/50 min-w-0 w-full"
+          className="flex-1 flex items-center justify-center gap-2 py-3 rounded-md bg-primary text-primary-foreground font-bold text-base tracking-wide shadow-md hover:bg-primary/90 transition focus:outline-none focus:ring-2 focus:ring-primary/50 min-w-0 w-full"
         >
           <Printer className="w-6 h-6" />
           <span className="hidden sm:inline whitespace-nowrap">
@@ -307,7 +307,7 @@ export default function ActionButtons({
             setDraftDiscount("");
             onClear();
           }}
-          className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg bg-destructive text-white font-semibold text-base tracking-wide shadow-md hover:bg-destructive/80 transition focus:outline-none focus:ring-2 focus:ring-destructive/50 min-w-0 w-full"
+          className="flex-1 flex items-center justify-center gap-2 py-3 rounded-md bg-destructive text-white font-semibold text-base tracking-wide shadow-md hover:bg-destructive/80 transition focus:outline-none focus:ring-2 focus:ring-destructive/50 min-w-0 w-full"
         >
           <Trash2 className="w-6 h-6" />
           <span className="hidden sm:inline whitespace-nowrap">
@@ -316,7 +316,7 @@ export default function ActionButtons({
         </button>
         <button
           onClick={() => setShowCalculatorModal(true)}
-          className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg bg-blue-500 text-white text-base font-medium shadow-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 transition duration-150 disabled:bg-blue-300 disabled:text-white/70 disabled:cursor-not-allowed max-w-10 w-full"
+          className="flex-1 flex items-center justify-center gap-2 py-3 rounded-md bg-primary text-primary-foreground text-base font-medium shadow-md hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary/50 transition duration-150 disabled:bg-primary/50 disabled:text-primary-foreground/70 disabled:cursor-not-allowed max-w-10 w-full"
           title={t("cashier.calculator", "Calculator")}
         >
           <Calculator className="w-5 h-5" />

@@ -37,10 +37,11 @@ export default function ProductSearch({ onAdd, refreshKey }: Props) {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Only handle printable characters and ignore when already focused on an input
       const target = e.target as HTMLElement;
-      const isInputElement = target instanceof HTMLInputElement || 
-                           target instanceof HTMLTextAreaElement || 
-                           target instanceof HTMLSelectElement;
-      
+      const isInputElement =
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target instanceof HTMLSelectElement;
+
       // Ignore if already in an input element or if it's a special key
       if (isInputElement || e.ctrlKey || e.altKey || e.metaKey) {
         return;
