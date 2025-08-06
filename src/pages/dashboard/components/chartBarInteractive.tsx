@@ -82,7 +82,7 @@ export function ChartBarInteractive() {
           0,
         );
         const salesTotal = daySales.reduce(
-          (sum: number, s: any) => sum + (s.totalWithDiscount || 0),
+          (sum: number, s: any) => sum + (s.totalAmountWithDiscount || 0),
           0,
         );
         return {
@@ -120,7 +120,7 @@ export function ChartBarInteractive() {
           0,
         );
         const salesTotal = monthSales.reduce(
-          (sum: number, s: any) => sum + (s.totalWithDiscount || 0),
+          (sum: number, s: any) => sum + (s.totalAmountWithDiscount || 0),
           0,
         );
         return {
@@ -154,7 +154,7 @@ export function ChartBarInteractive() {
           0,
         );
         const salesTotal = yearSales.reduce(
-          (sum: number, s: any) => sum + (s.totalWithDiscount || 0),
+          (sum: number, s: any) => sum + (s.totalAmountWithDiscount || 0),
           0,
         );
         return {

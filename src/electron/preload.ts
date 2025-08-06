@@ -17,10 +17,10 @@ type SaleWithDetails = Sale & {
   })[];
   payment?: Payment;
   totalAmount: number;
-  totalWithDiscount: number;
-  totalPaid: number;
-  totalItems: number;
+  totalAmountWithDiscount: number;
+  paidAmount: number;
   remainingAmount: number;
+  totalItems: number;
   isPaidInCash: boolean;
 };
 

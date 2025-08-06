@@ -95,8 +95,9 @@ export interface Sale {
   } | null;
   saleItems: SaleItem[];
   totalAmount: number;
-  totalWithDiscount: number;
-  totalPaid: number;
+  totalAmountWithDiscount: number;
+  paidAmount: number;
+  remainingAmount: number;
   totalItems: number;
   discount: number;
   isPaidInCash: boolean;

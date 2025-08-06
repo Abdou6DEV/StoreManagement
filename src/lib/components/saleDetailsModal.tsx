@@ -140,7 +140,7 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
     const isCashSale = sale.isPaidInCash;
     const maxAllowedDiscount = isCashSale
       ? subtotal
-      : subtotal - sale.totalPaid;
+              : subtotal - sale.paidAmount;
 
     if (editedDiscount > maxAllowedDiscount) {
       showToast(
@@ -366,10 +366,10 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
                   </div>
                   <div className="p-3 bg-primary/5 rounded-lg border border-primary/20">
                     <div className="text-xs text-muted-foreground mb-1">
-                      {t("cashier.totalPaid", "Total Paid")}
+                      {t("cashier.paidAmount", "Paid Amount")}
                     </div>
                     <div className="text-lg font-bold text-primary">
-                      {formatCurrency(sale.totalPaid)}
+                      {formatCurrency(sale.paidAmount)}
                     </div>
                   </div>
                 </div>
@@ -407,7 +407,7 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
                 <PaymentSummary
                   cart={currentCart}
                   clientName={sale.client?.name}
-                  paymentAmount={sale.totalPaid}
+                  paymentAmount={sale.paidAmount}
                   discount={currentDiscount}
                   paymentType={
                     sale.isPaidInCash

@@ -236,7 +236,7 @@
     "saleInformation": "Sale Information",
     "paymentInformation": "Payment Information",
     "paymentMethod": "Payment Method",
-    "totalPaid": "Total Paid",
+    "paidAmount": "Paid Amount",
     "itemsSummary": "Items Summary",
     "totalItems": "Total Items",
     "items": "items",

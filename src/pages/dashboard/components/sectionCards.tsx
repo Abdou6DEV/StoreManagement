@@ -34,7 +34,7 @@ export function SectionCards() {
       ) {
         const filtered = sales.filter((s: any) => filterFn(s.createdAt));
         const revenue = filtered.reduce(
-          (sum: number, s: any) => sum + (s.totalWithDiscount || 0),
+          (sum: number, s: any) => sum + (s.totalAmountWithDiscount || 0),
           0,
         );
         const profit = filtered.reduce((sum: number, s: any) => {

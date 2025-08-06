@@ -235,7 +235,7 @@
     "view": "عرض",
     "paymentInformation": "معلومات الدفع",
     "paymentMethod": "طريقة الدفع",
-    "totalPaid": "إجمالي المدفوع",
+    "paidAmount": "المبلغ المدفوع",
     "itemsSummary": "ملخص العناصر",
     "totalItems": "إجمالي العناصر"
   },

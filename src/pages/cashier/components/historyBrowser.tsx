@@ -280,7 +280,7 @@ const HistoryBrowser: React.FC<HistoryBrowserProps> = ({
                     )}
                   </div>
                   <div className="flex items-center gap-2 font-semibold text-green-600">
-                    {formatCurrency(sale.totalWithDiscount)}
+                    {formatCurrency(sale.totalAmountWithDiscount)}
                   </div>
                 </div>
 

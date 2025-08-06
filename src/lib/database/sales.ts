@@ -180,11 +180,11 @@ export async function updateSale(
       0,
     );
 
-    const totalWithDiscount = totalAmount - updatedSale.discount;
+    const totalAmountWithDiscount = totalAmount - updatedSale.discount;
 
-    const totalPaid = updatedSale.payment
+    const paidAmount = updatedSale.payment
       ? updatedSale.payment.givenAmount || 0
-      : totalWithDiscount;
+      : totalAmountWithDiscount;
 
     const totalItems = updatedSale.saleItems.reduce(
       (sum, item) => sum + item.quantity,
@@ -194,10 +194,10 @@ export async function updateSale(
     return {
       ...updatedSale,
       totalAmount,
-      totalWithDiscount,
-      totalPaid,
+      totalAmountWithDiscount,
+      paidAmount,
+      remainingAmount: totalAmountWithDiscount - paidAmount,
       totalItems,
-      remainingAmount: totalWithDiscount - totalPaid,
       isPaidInCash: !updatedSale.payment,
     };
   });
@@ -291,12 +291,12 @@ export async function getAllSales() {
       (sum, item) => sum + item.price * item.quantity,
       0,
     );
-    const totalWithDiscount = totalAmount - sale.discount;
+    const totalAmountWithDiscount = totalAmount - sale.discount;
 
     // If no payment recorded, it was paid in cash
-    const totalPaid = sale.payment
+    const paidAmount = sale.payment
       ? sale.payment.givenAmount || 0
-      : totalWithDiscount; // Cash payment - full amount paid
+      : totalAmountWithDiscount; // Cash payment - full amount paid
 
     const totalItems = sale.saleItems.reduce(
       (sum, item) => sum + item.quantity,
@@ -306,10 +306,10 @@ export async function getAllSales() {
     return {
       ...sale,
       totalAmount,
-      totalWithDiscount,
-      totalPaid,
+      totalAmountWithDiscount,
+      paidAmount,
+      remainingAmount: totalAmountWithDiscount - paidAmount,
       totalItems,
-      remainingAmount: totalWithDiscount - totalPaid,
       isPaidInCash: !sale.payment,
     };
   });
@@ -380,11 +380,11 @@ export async function getRecentSales(limit = 50, offset = 0) {
       (sum, item) => sum + item.price * item.quantity,
       0,
     );
-    const totalWithDiscount = totalAmount - sale.discount;
+    const totalAmountWithDiscount = totalAmount - sale.discount;
 
-    const totalPaid = sale.payment
+    const paidAmount = sale.payment
       ? sale.payment.givenAmount || 0
-      : totalWithDiscount;
+      : totalAmountWithDiscount;
 
     const totalItems = sale.saleItems.reduce(
       (sum, item) => sum + item.quantity,
@@ -394,10 +394,10 @@ export async function getRecentSales(limit = 50, offset = 0) {
     return {
       ...sale,
       totalAmount,
-      totalWithDiscount,
-      totalPaid,
+      totalAmountWithDiscount,
+      paidAmount,
+      remainingAmount: totalAmountWithDiscount - paidAmount,
       totalItems,
-      remainingAmount: totalWithDiscount - totalPaid,
       isPaidInCash: !sale.payment,
     };
   });

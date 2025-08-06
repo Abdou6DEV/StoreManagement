@@ -328,7 +328,7 @@
     "view": "Voir",
     "paymentInformation": "Informations de paiement",
     "paymentMethod": "Méthode de paiement",
-    "totalPaid": "Total payé",
+    "paidAmount": "Montant payé",
     "itemsSummary": "Résumé des articles",
     "totalItems": "Total des articles",
     "quantity": "Qté",
