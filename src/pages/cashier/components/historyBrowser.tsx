@@ -68,7 +68,7 @@ const HistoryBrowser: React.FC<HistoryBrowserProps> = ({
       if (
         sale.saleItems.some((item) => {
           const productName =
-            item.product?.name || item.manualProductName || "";
+            item.product?.name || item.manualProduct?.name || "";
           return productName.toLowerCase().includes(searchLower);
         })
       )
@@ -280,7 +280,7 @@ const HistoryBrowser: React.FC<HistoryBrowserProps> = ({
                       .map(
                         (item) =>
                           item.product?.name ||
-                          item.manualProductName ||
+                          item.manualProduct?.name ||
                           t("cashier.manualProduct", "Manual Product"),
                       )
                       .join(", ")}

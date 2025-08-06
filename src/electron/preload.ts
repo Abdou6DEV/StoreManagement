@@ -169,6 +169,20 @@ contextBridge.exposeInMainWorld("api", {
       getBySeller: (sellerId: string) =>
         ipcRenderer.invoke("db:purchases:getBySeller", sellerId),
     },
+    manualProducts: {
+      search: (query: string) => ipcRenderer.invoke("db:manualProducts:search", query),
+      getAll: () => ipcRenderer.invoke("db:manualProducts:getAll"),
+      create: (data: { name: string; type: string }) =>
+        ipcRenderer.invoke("db:manualProducts:create", data),
+      findOrCreate: (data: { name: string; type: string }) =>
+        ipcRenderer.invoke("db:manualProducts:findOrCreate", data),
+      getById: (id: string) => ipcRenderer.invoke("db:manualProducts:getById", id),
+      update: (
+        id: string,
+        data: { name?: string; type?: string },
+      ) => ipcRenderer.invoke("db:manualProducts:update", { id, data }),
+      delete: (id: string) => ipcRenderer.invoke("db:manualProducts:delete", id),
+    },
   },
   app: {
     getVersion: () => ipcRenderer.invoke("app:getVersion"),
@@ -347,6 +361,18 @@ declare global {
           getById: (id: string) => Promise<any>;
           getByProduct: (productId: string) => Promise<any[]>;
           getBySeller: (sellerId: string) => Promise<any[]>;
+        };
+        manualProducts: {
+          search: (query: string) => Promise<{ id: string; name: string; type: string }[]>;
+          getAll: () => Promise<{ id: string; name: string; type: string }[]>;
+          create: (data: { name: string; type: string }) => Promise<{ id: string; name: string; type: string }>;
+          findOrCreate: (data: { name: string; type: string }) => Promise<{ id: string; name: string; type: string }>;
+          getById: (id: string) => Promise<{ id: string; name: string; type: string } | null>;
+          update: (
+            id: string,
+            data: { name?: string; type?: string },
+          ) => Promise<{ id: string; name: string; type: string }>;
+          delete: (id: string) => Promise<void>;
         };
       };
       app: {

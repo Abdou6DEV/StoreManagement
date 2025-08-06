@@ -65,12 +65,12 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
           id: item.product?.id || `manual-${item.id}`,
           name:
             item.product?.name ||
-            item.manualProductName ||
+            item.manualProduct?.name ||
             t("cashier.manualProduct", "Manual Product"),
           price: item.price,
           qty: item.quantity,
           isManual: !item.product,
-          manualProductType: item.manualProductType,
+          manualProductType: item.manualProduct?.type,
         })),
       );
       setEditedDiscount(sale.discount);
@@ -208,7 +208,7 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
         id: item.product?.id || `manual-${item.id}`,
         name:
           item.product?.name ||
-          item.manualProductName ||
+          item.manualProduct?.name ||
           t("cashier.manualProduct", "Manual Product"),
         price: item.price,
         qty: item.quantity,

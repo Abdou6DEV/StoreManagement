@@ -99,14 +99,28 @@ export async function seedSales(prisma: PrismaClient, products: Product[]) {
         });
         const quantity = faker.number.int({ min: 1, max: 3 });
 
+        // Create or find the manual product
+        const manualProduct = await prisma.manualProduct.upsert({
+          where: {
+            name_type: {
+              name: manualProductName,
+              type: manualProductType,
+            },
+          },
+          update: {},
+          create: {
+            name: manualProductName,
+            type: manualProductType,
+          },
+        });
+
         await prisma.saleItem.create({
           data: {
             productId: null, // Manual products don't have a productId
+            manualProductId: manualProduct.id,
             saleId: sale.id,
             quantity,
             price: Number(manualProductPrice),
-            manualProductName,
-            manualProductType,
           },
         });
 

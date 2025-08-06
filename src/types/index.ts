@@ -80,8 +80,11 @@ export interface SaleItem {
     id: string;
     name: string;
   } | null;
-  manualProductName?: string | null;
-  manualProductType?: string | null;
+  manualProduct?: {
+    id: string;
+    name: string;
+    type: string;
+  } | null;
 }
 
 export interface Sale {
@@ -123,4 +126,10 @@ export interface ModalAction {
   disabled?: boolean;
   loading?: boolean;
   icon?: React.ReactNode;
+}
+
+export interface ManualProduct {
+  id: string;
+  name: string;
+  type: string;
 }

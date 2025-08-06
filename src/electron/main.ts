@@ -53,6 +53,15 @@ import {
   getPurchasesByProduct,
   getPurchasesBySeller,
 } from "../lib/database/purchases";
+import {
+  searchManualProducts,
+  getAllManualProducts,
+  createManualProduct,
+  findOrCreateManualProduct,
+  getManualProductById,
+  updateManualProduct,
+  deleteManualProduct,
+} from "../lib/database/manualProducts";
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {
@@ -300,6 +309,35 @@ function setupDatabaseHandlers() {
       return await getPurchasesBySeller(sellerId);
     },
   );
+
+  // Manual Products handlers
+  ipcMain.handle("db:manualProducts:search", async (_event, query: string) => {
+    return await searchManualProducts(query);
+  });
+
+  ipcMain.handle("db:manualProducts:getAll", async () => {
+    return await getAllManualProducts();
+  });
+
+  ipcMain.handle("db:manualProducts:create", async (_event, data) => {
+    return await createManualProduct(data);
+  });
+
+  ipcMain.handle("db:manualProducts:findOrCreate", async (_event, data) => {
+    return await findOrCreateManualProduct(data);
+  });
+
+  ipcMain.handle("db:manualProducts:getById", async (_event, id: string) => {
+    return await getManualProductById(id);
+  });
+
+  ipcMain.handle("db:manualProducts:update", async (_event, { id, data }) => {
+    return await updateManualProduct(id, data);
+  });
+
+  ipcMain.handle("db:manualProducts:delete", async (_event, id: string) => {
+    return await deleteManualProduct(id);
+  });
 }
 
 function setupLoggerHandlers() {

@@ -1,4 +1,5 @@
 import { prisma } from "./prismaClient";
+import { findOrCreateManualProduct } from "./manualProducts";
 
 export async function createSale(data: {
   clientId?: string;
@@ -34,13 +35,26 @@ export async function createSale(data: {
         clientId: data.clientId,
         discount: data.discount ?? 0,
         saleItems: {
-          create: data.items.map((item) => ({
-            productId: item.productId || null,
-            quantity: item.quantity,
-            price: item.price,
-            manualProductName: item.manualProductName || null,
-            manualProductType: item.manualProductType || null,
-          })),
+          create: await Promise.all(
+            data.items.map(async (item) => {
+              let manualProductId = null;
+              
+              if (item.manualProductName && item.manualProductType) {
+                const manualProduct = await findOrCreateManualProduct({
+                  name: item.manualProductName,
+                  type: item.manualProductType,
+                });
+                manualProductId = manualProduct.id;
+              }
+
+              return {
+                productId: item.productId || null,
+                manualProductId,
+                quantity: item.quantity,
+                price: item.price,
+              };
+            })
+          ),
         },
       },
     });
@@ -120,13 +134,26 @@ export async function updateSale(
         clientId: data.clientId,
         discount: data.discount ?? 0,
         saleItems: {
-          create: data.items.map((item) => ({
-            productId: item.productId || null,
-            quantity: item.quantity,
-            price: item.price,
-            manualProductName: item.manualProductName || null,
-            manualProductType: item.manualProductType || null,
-          })),
+          create: await Promise.all(
+            data.items.map(async (item) => {
+              let manualProductId = null;
+              
+              if (item.manualProductName && item.manualProductType) {
+                const manualProduct = await findOrCreateManualProduct({
+                  name: item.manualProductName,
+                  type: item.manualProductType,
+                });
+                manualProductId = manualProduct.id;
+              }
+
+              return {
+                productId: item.productId || null,
+                manualProductId,
+                quantity: item.quantity,
+                price: item.price,
+              };
+            })
+          ),
         },
       },
       include: {
@@ -134,6 +161,7 @@ export async function updateSale(
         saleItems: {
           include: {
             product: true,
+            manualProduct: true,
           },
         },
         payment: {
@@ -242,6 +270,7 @@ export async function getAllSales() {
       saleItems: {
         include: {
           product: true,
+          manualProduct: true,
         },
       },
       payment: {
@@ -315,16 +344,18 @@ export async function getRecentSales(limit = 50, offset = 0) {
         },
       },
       saleItems: {
-        select: {
-          id: true,
-          quantity: true,
-          price: true,
-          manualProductName: true,
-          manualProductType: true,
+        include: {
           product: {
             select: {
               id: true,
               name: true,
+            },
+          },
+          manualProduct: {
+            select: {
+              id: true,
+              name: true,
+              type: true,
             },
           },
         },

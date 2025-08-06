@@ -39,6 +39,19 @@ model Product {
   purchases Purchase[]
 }
 
+model ManualProduct {
+  id   String @id @default(uuid())
+  name String
+  type String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  saleItems SaleItem[]
+
+  @@unique([name, type])
+}
+
 model Sale {
   id       String  @id @default(uuid())
   clientId String?
@@ -53,22 +66,22 @@ model Sale {
 }
 
 model SaleItem {
-  id        String  @id @default(uuid())
-  productId String?
-  saleId    String
-  quantity  Int
-  price     Int
-
-  manualProductName String?
-  manualProductType String?
+  id              String  @id @default(uuid())
+  productId       String?
+  manualProductId String?
+  saleId          String
+  quantity        Int
+  price           Int
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  product Product? @relation(fields: [productId], references: [id], onDelete: Cascade)
-  sale    Sale     @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  product       Product?       @relation(fields: [productId], references: [id], onDelete: Cascade)
+  manualProduct ManualProduct? @relation(fields: [manualProductId], references: [id], onDelete: Cascade)
+  sale          Sale           @relation(fields: [saleId], references: [id], onDelete: Cascade)
 
   @@unique([productId, saleId])
+  @@unique([manualProductId, saleId])
 }
 
 model Client {

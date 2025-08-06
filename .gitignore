@@ -97,3 +97,5 @@ out/
 
 # Database files
 *.db
+*.db-journal
+*.db-lock

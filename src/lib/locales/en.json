@@ -170,6 +170,8 @@
     "tooltipAddManualProduct": "Add Products Manually (F2)",
     "addManualProduct": "Add Manual Product",
     "addManualProductDesc": "Add a product that is not in your inventory",
+    "searching": "Searching...",
+    "noSuggestions": "No suggestions found",
     "manualProduct": "Manual Product",
     "productName": "Product Name",
     "enterProductName": "Enter product name",
