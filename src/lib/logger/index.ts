@@ -20,10 +20,10 @@ class Logger {
   constructor(config?: Partial<MainLoggerConfig>) {
     this.config = {
       level: LogLevel.WARN,
-      maxFileSize: 10 * 1024 * 1024, // 10MB
+      maxFileSize: 10 * 1024 * 1024, // 10 MB
       maxFiles: 5,
       logToFile: true,
-      logToConsole: true,
+      logToConsole: false,
       logDir: path.join(app.getPath("userData"), "logs"),
       ...config,
     };
