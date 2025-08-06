@@ -32,34 +32,34 @@ export default function ProductSearch({ onAdd, refreshKey }: Props) {
     });
   }, [refreshKey]);
 
-  // Autofocus input on mount and when clicking on the document body (not on any input/textarea/select)
+  // Focus search input when user starts typing anywhere on the page
   useEffect(() => {
-    // On mount
-    if (
-      inputRef.current &&
-      (document.activeElement === document.body ||
-        (document.activeElement &&
-          !(document.activeElement instanceof HTMLInputElement) &&
-          !(document.activeElement instanceof HTMLTextAreaElement) &&
-          !(document.activeElement instanceof HTMLSelectElement)))
-    ) {
-      inputRef.current.focus();
-    }
-    // On click
-    const handleClick = (e: MouseEvent) => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Only handle printable characters and ignore when already focused on an input
       const target = e.target as HTMLElement;
-      if (
-        inputRef.current &&
-        !(target instanceof HTMLInputElement) &&
-        !(target instanceof HTMLTextAreaElement) &&
-        !(target instanceof HTMLSelectElement)
-      ) {
-        inputRef.current.focus();
+      const isInputElement = target instanceof HTMLInputElement || 
+                           target instanceof HTMLTextAreaElement || 
+                           target instanceof HTMLSelectElement;
+      
+      // Ignore if already in an input element or if it's a special key
+      if (isInputElement || e.ctrlKey || e.altKey || e.metaKey) {
+        return;
+      }
+
+      // Check if it's a printable character (letters, numbers, symbols)
+      if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
+        e.preventDefault();
+        if (inputRef.current) {
+          inputRef.current.focus();
+          // Set the search value to the typed character
+          setSearch(e.key);
+        }
       }
     };
-    document.addEventListener("click", handleClick, true);
+
+    document.addEventListener("keydown", handleKeyDown);
     return () => {
-      document.removeEventListener("click", handleClick, true);
+      document.removeEventListener("keydown", handleKeyDown);
     };
   }, []);
 
