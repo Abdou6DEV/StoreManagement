@@ -140,7 +140,7 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
     const isCashSale = sale.isPaidInCash;
     const maxAllowedDiscount = isCashSale
       ? subtotal
-              : subtotal - sale.paidAmount;
+      : subtotal - sale.paidAmount;
 
     if (editedDiscount > maxAllowedDiscount) {
       showToast(
