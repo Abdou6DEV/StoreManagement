@@ -31,7 +31,7 @@ export default function Navigation() {
 
   if (isCashierPage) {
     return (
-      <div className="fixed top-4 right-4 z-50">
+      <div className={`fixed top-4 z-50 ${isRTL ? "left-4" : "right-4"}`}>
         <DropdownMenu onOpenChange={setDropdownOpen}>
           <DropdownMenuTrigger asChild>
             <button className="rounded-xl outline-none ring-0 hover:text-red-400 transition-all duration-300 p-1">
