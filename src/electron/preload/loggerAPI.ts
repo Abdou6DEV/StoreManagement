@@ -19,4 +19,4 @@ export const loggerAPI = {
   updateConfig: (config: any) =>
     ipcRenderer.invoke("logger:updateConfig", config),
   getConfig: () => ipcRenderer.invoke("logger:getConfig"),
-}; 
+};

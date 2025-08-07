@@ -3,7 +3,7 @@ import logger from "../../lib/logger";
 
 export function setupLoggerHandlers() {
   ipcMain.handle("logger:log", async (_event, entry) => {
-    const { timestamp, level, message, context, data, userId } = entry;
+    const { level, message, context, data, userId } = entry;
     logger.log(level, message, context, data, userId);
   });
 

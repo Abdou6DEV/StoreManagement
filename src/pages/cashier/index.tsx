@@ -92,7 +92,10 @@ export default function CashierPage() {
         // Fallback to basic products if sales fetch fails
         const products = await window.api.database.products.getAll();
         setAllProducts(
-          products.map((p: any) => ({ ...p, totalSold: 0 })) as ProductWithSales[],
+          products.map((p: any) => ({
+            ...p,
+            totalSold: 0,
+          })) as ProductWithSales[],
         );
       }
     };

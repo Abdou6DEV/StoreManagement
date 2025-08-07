@@ -67,7 +67,9 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
             item.product?.name ||
             item.manualProduct?.name ||
             item.service?.name ||
-            (item.service ? t("cashier.service", "Service") : t("cashier.manualProduct", "Manual Product")),
+            (item.service
+              ? t("cashier.service", "Service")
+              : t("cashier.manualProduct", "Manual Product")),
           price: item.price,
           qty: item.quantity,
           isManual: !item.product && !item.service,
@@ -215,7 +217,9 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
           item.product?.name ||
           item.manualProduct?.name ||
           item.service?.name ||
-          (item.service ? t("cashier.service", "Service") : t("cashier.manualProduct", "Manual Product")),
+          (item.service
+            ? t("cashier.service", "Service")
+            : t("cashier.manualProduct", "Manual Product")),
         price: item.price,
         qty: item.quantity,
         isService: !!item.service,
