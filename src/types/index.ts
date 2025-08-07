@@ -13,6 +13,8 @@ export interface CartItem {
   qty: number;
   isManual?: boolean;
   manualProductType?: string;
+  isService?: boolean;
+  description?: string;
 }
 
 export interface ClientSuggestion {
@@ -85,6 +87,11 @@ export interface SaleItem {
     name: string;
     type: string;
   } | null;
+  service?: {
+    id: string;
+    name: string;
+    description?: string;
+  } | null;
 }
 
 export interface Sale {
@@ -133,4 +140,10 @@ export interface ManualProduct {
   id: string;
   name: string;
   type: string;
+}
+
+export interface Service {
+  id: string;
+  name: string;
+  description?: string;
 }

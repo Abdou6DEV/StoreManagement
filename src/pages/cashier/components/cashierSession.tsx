@@ -86,8 +86,8 @@ export default function CashierSession({
 
     // Check for out-of-stock items
     const outOfStock = cart.filter((item) => {
-      // Skip manual products as they don't have inventory constraints
-      if (item.isManual) return false;
+      // Skip manual products and services as they don't have inventory constraints
+      if (item.isManual || item.isService) return false;
 
       const product = allProducts.find((p) => p.id === item.id);
       return product && item.qty > product.quantity;
@@ -181,11 +181,13 @@ export default function CashierSession({
       const sale = await window.api.database.sales.create({
         clientId: saleClientId || undefined,
         items: cart.map((item) => ({
-          productId: item.isManual ? undefined : item.id,
+          productId: item.isManual || item.isService ? undefined : item.id,
           quantity: item.qty,
           price: item.price,
           manualProductName: item.isManual ? item.name : undefined,
           manualProductType: item.isManual ? item.manualProductType : undefined,
+          serviceName: item.isService ? item.name : undefined,
+          serviceDescription: item.isService ? item.description : undefined,
         })),
         discount: Number(discount) || 0,
       });

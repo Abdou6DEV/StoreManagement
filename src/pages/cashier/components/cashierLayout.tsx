@@ -16,6 +16,7 @@ interface CashierLayoutProps {
   salesRefreshKey: number;
   onShowProductBrowser: () => void;
   onShowManualProductModal: () => void;
+  onShowServiceModal: () => void;
   onAddProduct: (product: ProductWithSales) => void;
   onAddManualProduct: (product: CartItem) => void;
   onSessionChange: (sessionIndex: number) => void;
@@ -40,6 +41,7 @@ export default function CashierLayout({
   salesRefreshKey,
   onShowProductBrowser,
   onShowManualProductModal,
+  onShowServiceModal,
   onAddProduct,
   onAddManualProduct,
   onSessionChange,
@@ -72,6 +74,7 @@ export default function CashierLayout({
           <ProductControls
             onShowProductBrowser={onShowProductBrowser}
             onShowManualProductModal={onShowManualProductModal}
+            onShowServiceModal={onShowServiceModal}
             onAddProduct={onAddProduct}
             productRefreshKey={productRefreshKey}
           />

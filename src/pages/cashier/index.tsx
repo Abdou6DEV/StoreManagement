@@ -3,6 +3,7 @@ import type { ProductWithSales, CartItem } from "../../types";
 import { useTranslation } from "react-i18next";
 import ProductBrowser from "./components/productBrowser";
 import AddManualProductModal from "./components/addManualProductModal";
+import AddServiceModal from "./components/addServiceModal";
 import ReceiptModal from "./components/receiptModal";
 import CashierLayout from "./components/cashierLayout";
 import SessionManager from "./components/sessionManager";
@@ -51,6 +52,7 @@ export default function CashierPage() {
   const [outOfStockItems, setOutOfStockItems] = useState<CartItem[]>([]);
   const [showStockWarning, setShowStockWarning] = useState(false);
   const [showManualProductModal, setShowManualProductModal] = useState(false);
+  const [showServiceModal, setShowServiceModal] = useState(false);
   const [showReceiptModal, setShowReceiptModal] = useState(false);
   const [lastSaleId, setLastSaleId] = useState<string | undefined>(undefined);
   const [receiptData, setReceiptData] = useState<{
@@ -73,9 +75,9 @@ export default function CashierPage() {
 
         // Merge salesCounts into products
         const salesMap = new Map(
-          salesCounts.map((s) => [s.productId, s.totalSold]),
+          salesCounts.map((s: any) => [s.productId, s.totalSold]),
         );
-        const merged = products.map((p) => ({
+        const merged = products.map((p: any) => ({
           ...p,
           totalSold: salesMap.get(p.id) || 0,
         }));
@@ -90,7 +92,7 @@ export default function CashierPage() {
         // Fallback to basic products if sales fetch fails
         const products = await window.api.database.products.getAll();
         setAllProducts(
-          products.map((p) => ({ ...p, totalSold: 0 })) as ProductWithSales[],
+          products.map((p: any) => ({ ...p, totalSold: 0 })) as ProductWithSales[],
         );
       }
     };
@@ -181,6 +183,7 @@ export default function CashierPage() {
             salesRefreshKey={salesRefreshKey}
             onShowProductBrowser={() => setShowProductBrowser(true)}
             onShowManualProductModal={() => setShowManualProductModal(true)}
+            onShowServiceModal={() => setShowServiceModal(true)}
             onAddProduct={(product: ProductWithSales) => {
               const currentSession = sessionActions.getCurrentSession();
               const updatedCart = addProductToCart(
@@ -249,6 +252,19 @@ export default function CashierPage() {
               const updatedCart = addManualProductToCart(
                 currentSession.cart,
                 product,
+              );
+              sessionActions.updateSessionCart(activeSession, updatedCart);
+            }}
+          />
+
+          <AddServiceModal
+            open={showServiceModal}
+            onClose={() => setShowServiceModal(false)}
+            onAdd={(service: CartItem) => {
+              const currentSession = sessionActions.getCurrentSession();
+              const updatedCart = addManualProductToCart(
+                currentSession.cart,
+                service,
               );
               sessionActions.updateSessionCart(activeSession, updatedCart);
             }}

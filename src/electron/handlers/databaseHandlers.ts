@@ -61,6 +61,15 @@ import {
   updateManualProduct,
   deleteManualProduct,
 } from "../../lib/database/manualProducts";
+import {
+  searchServices,
+  getAllServices,
+  createService,
+  findOrCreateService,
+  getServiceById,
+  updateService,
+  deleteService,
+} from "../../lib/database/services";
 
 export function setupDatabaseHandlers() {
   // Products handlers
@@ -287,5 +296,34 @@ export function setupDatabaseHandlers() {
 
   ipcMain.handle("db:manualProducts:delete", async (_event, id: string) => {
     return await deleteManualProduct(id);
+  });
+
+  // Services handlers
+  ipcMain.handle("db:services:search", async (_event, query: string) => {
+    return await searchServices(query);
+  });
+
+  ipcMain.handle("db:services:getAll", async () => {
+    return await getAllServices();
+  });
+
+  ipcMain.handle("db:services:create", async (_event, data) => {
+    return await createService(data);
+  });
+
+  ipcMain.handle("db:services:findOrCreate", async (_event, data) => {
+    return await findOrCreateService(data);
+  });
+
+  ipcMain.handle("db:services:getById", async (_event, id: string) => {
+    return await getServiceById(id);
+  });
+
+  ipcMain.handle("db:services:update", async (_event, { id, data }) => {
+    return await updateService(id, data);
+  });
+
+  ipcMain.handle("db:services:delete", async (_event, id: string) => {
+    return await deleteService(id);
   });
 }

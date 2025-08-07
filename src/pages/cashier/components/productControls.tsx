@@ -1,11 +1,12 @@
 import { useTranslation } from "react-i18next";
-import { ShoppingCart, PlusCircle } from "lucide-react";
+import { ShoppingCart, PlusCircle, Wrench } from "lucide-react";
 import ProductSearch from "./productSearch";
 import { Tooltip } from "../../../lib/components/tooltip";
 
 interface ProductControlsProps {
   onShowProductBrowser: () => void;
   onShowManualProductModal: () => void;
+  onShowServiceModal: () => void;
   onAddProduct: (product: any) => void;
   productRefreshKey: number;
 }
@@ -13,6 +14,7 @@ interface ProductControlsProps {
 export default function ProductControls({
   onShowProductBrowser,
   onShowManualProductModal,
+  onShowServiceModal,
   onAddProduct,
   productRefreshKey,
 }: ProductControlsProps) {
@@ -45,6 +47,20 @@ export default function ProductControls({
             className="flex h-8 w-8 p-1 text-sm font-semibold border-1 border-border items-center justify-center rounded-md bg-muted/40 hover:bg-muted hover:text-primary transition"
           >
             <PlusCircle className="w-4 h-4" />
+          </button>
+        </Tooltip>
+        <Tooltip
+          content={t(
+            "cashier.tooltipAddService",
+            "Add Service (F3)",
+          )}
+          position="top"
+        >
+          <button
+            onClick={onShowServiceModal}
+            className="flex h-8 w-8 p-1 text-sm font-semibold border-1 border-border items-center justify-center rounded-md bg-muted/40 hover:bg-muted hover:text-blue-500 transition"
+          >
+            <Wrench className="w-4 h-4" />
           </button>
         </Tooltip>
       </div>

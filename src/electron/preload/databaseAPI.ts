@@ -160,4 +160,19 @@ export const databaseAPI = {
     delete: (id: string) =>
       ipcRenderer.invoke("db:manualProducts:delete", id),
   },
+  services: {
+    search: (query: string) =>
+      ipcRenderer.invoke("db:services:search", query),
+    getAll: () => ipcRenderer.invoke("db:services:getAll"),
+    create: (data: { name: string; description?: string }) =>
+      ipcRenderer.invoke("db:services:create", data),
+    findOrCreate: (data: { name: string; description?: string }) =>
+      ipcRenderer.invoke("db:services:findOrCreate", data),
+    getById: (id: string) =>
+      ipcRenderer.invoke("db:services:getById", id),
+    update: (id: string, data: { name?: string; description?: string }) =>
+      ipcRenderer.invoke("db:services:update", { id, data }),
+    delete: (id: string) =>
+      ipcRenderer.invoke("db:services:delete", id),
+  },
 }; 

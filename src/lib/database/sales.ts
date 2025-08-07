@@ -1,5 +1,6 @@
 import { prisma } from "./prismaClient";
 import { findOrCreateManualProduct } from "./manualProducts";
+import { findOrCreateService } from "./services";
 
 export async function createSale(data: {
   clientId?: string;
@@ -9,9 +10,41 @@ export async function createSale(data: {
     price: number;
     manualProductName?: string;
     manualProductType?: string;
+    serviceName?: string;
+    serviceDescription?: string;
   }[];
   discount?: number;
 }) {
+  // Pre-process items to create/find manual products and services outside the transaction
+  const processedItems = await Promise.all(
+    data.items.map(async (item) => {
+      let manualProductId = null;
+      let serviceId = null;
+
+      if (item.manualProductName && item.manualProductType) {
+        const manualProduct = await findOrCreateManualProduct({
+          name: item.manualProductName,
+          type: item.manualProductType,
+        });
+        manualProductId = manualProduct.id;
+      }
+
+      if (item.serviceName) {
+        const service = await findOrCreateService({
+          name: item.serviceName,
+          description: item.serviceDescription,
+        });
+        serviceId = service.id;
+      }
+
+      return {
+        ...item,
+        manualProductId,
+        serviceId,
+      };
+    }),
+  );
+
   return await prisma.$transaction(async (tx) => {
     for (const item of data.items) {
       // Only update product quantity if it's a regular product (has productId)
@@ -35,26 +68,13 @@ export async function createSale(data: {
         clientId: data.clientId,
         discount: data.discount ?? 0,
         saleItems: {
-          create: await Promise.all(
-            data.items.map(async (item) => {
-              let manualProductId = null;
-
-              if (item.manualProductName && item.manualProductType) {
-                const manualProduct = await findOrCreateManualProduct({
-                  name: item.manualProductName,
-                  type: item.manualProductType,
-                });
-                manualProductId = manualProduct.id;
-              }
-
-              return {
-                productId: item.productId || null,
-                manualProductId,
-                quantity: item.quantity,
-                price: item.price,
-              };
-            }),
-          ),
+          create: processedItems.map((item) => ({
+            productId: item.productId || null,
+            manualProductId: item.manualProductId,
+            serviceId: item.serviceId,
+            quantity: item.quantity,
+            price: item.price,
+          })),
         },
       },
     });
@@ -73,10 +93,42 @@ export async function updateSale(
       price: number;
       manualProductName?: string;
       manualProductType?: string;
+      serviceName?: string;
+      serviceDescription?: string;
     }[];
     discount?: number;
   },
 ) {
+  // Pre-process items to create/find manual products and services outside the transaction
+  const processedItems = await Promise.all(
+    data.items.map(async (item) => {
+      let manualProductId = null;
+      let serviceId = null;
+
+      if (item.manualProductName && item.manualProductType) {
+        const manualProduct = await findOrCreateManualProduct({
+          name: item.manualProductName,
+          type: item.manualProductType,
+        });
+        manualProductId = manualProduct.id;
+      }
+
+      if (item.serviceName) {
+        const service = await findOrCreateService({
+          name: item.serviceName,
+          description: item.serviceDescription,
+        });
+        serviceId = service.id;
+      }
+
+      return {
+        ...item,
+        manualProductId,
+        serviceId,
+      };
+    }),
+  );
+
   return await prisma.$transaction(async (tx) => {
     // Get the original sale with items
     const originalSale = await tx.sale.findUnique({
@@ -134,26 +186,13 @@ export async function updateSale(
         clientId: data.clientId,
         discount: data.discount ?? 0,
         saleItems: {
-          create: await Promise.all(
-            data.items.map(async (item) => {
-              let manualProductId = null;
-
-              if (item.manualProductName && item.manualProductType) {
-                const manualProduct = await findOrCreateManualProduct({
-                  name: item.manualProductName,
-                  type: item.manualProductType,
-                });
-                manualProductId = manualProduct.id;
-              }
-
-              return {
-                productId: item.productId || null,
-                manualProductId,
-                quantity: item.quantity,
-                price: item.price,
-              };
-            }),
-          ),
+          create: processedItems.map((item) => ({
+            productId: item.productId || null,
+            manualProductId: item.manualProductId,
+            serviceId: item.serviceId,
+            quantity: item.quantity,
+            price: item.price,
+          })),
         },
       },
       include: {
@@ -162,6 +201,7 @@ export async function updateSale(
           include: {
             product: true,
             manualProduct: true,
+            service: true,
           },
         },
         payment: {
@@ -200,6 +240,8 @@ export async function updateSale(
       totalItems,
       isPaidInCash: !updatedSale.payment,
     };
+  }, {
+    timeout: 10000, // 10 seconds timeout
   });
 }
 
