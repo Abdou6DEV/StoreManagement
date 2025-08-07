@@ -6,6 +6,7 @@ export async function seedSales(prisma: PrismaClient, products: Product[]) {
   console.log("🛒 Creating sample sales...");
 
   const clients = await prisma.client.findMany();
+  const services = await prisma.service.findMany();
   const sales = [];
   const twoYearsAgo = new Date();
   twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
@@ -31,16 +32,23 @@ export async function seedSales(prisma: PrismaClient, products: Product[]) {
 
     // Decide if this sale should include manual products (40% chance)
     const includeManualProducts = faker.datatype.boolean({ probability: 0.4 });
+    // Decide if this sale should include services (30% chance)
+    const includeServices = faker.datatype.boolean({ probability: 0.3 });
+    
     let manualProductsAdded = 0;
+    let servicesAdded = 0;
     const maxManualProducts = faker.number.int({ min: 1, max: 3 });
+    const maxServices = faker.number.int({ min: 1, max: 2 });
 
     // Filter products that have stock available
     const availableProducts = products.filter(
       (product) => product.quantity > 0,
     );
-    const regularProductCount = includeManualProducts
-      ? faker.number.int({ min: 0, max: Math.min(3, saleItemsCount) }) // Fewer regular products if manual products included
-      : saleItemsCount;
+    
+    // Calculate how many regular products to include
+    let regularProductCount = saleItemsCount;
+    if (includeManualProducts) regularProductCount = Math.max(0, regularProductCount - 2);
+    if (includeServices) regularProductCount = Math.max(0, regularProductCount - 1);
 
     const saleProducts =
       availableProducts.length > 0
@@ -127,6 +135,37 @@ export async function seedSales(prisma: PrismaClient, products: Product[]) {
         manualProductsAdded++;
       }
     }
+
+    // Add services if decided
+    if (includeServices && servicesAdded < maxServices && services.length > 0) {
+      const serviceCount = faker.number.int({ min: 1, max: 2 });
+      const selectedServices = faker.helpers.arrayElements(
+        services,
+        Math.min(serviceCount, services.length)
+      );
+
+      for (const service of selectedServices) {
+        const servicePrice = faker.commerce.price({
+          min: 20,
+          max: 500,
+          dec: 0,
+        });
+        const quantity = 1; // Services typically have quantity of 1
+
+        await prisma.saleItem.create({
+          data: {
+            productId: null,
+            manualProductId: null,
+            serviceId: service.id,
+            saleId: sale.id,
+            quantity,
+            price: Number(servicePrice),
+          },
+        });
+
+        servicesAdded++;
+      }
+    }
   }
 
   console.log(`   - ${sales.length} sales created`);
@@ -135,13 +174,32 @@ export async function seedSales(prisma: PrismaClient, products: Product[]) {
   const totalSaleItems = await prisma.saleItem.count();
   console.log(`   - ${totalSaleItems} total sale items created`);
 
-  // Count manual vs regular sale items
-  const manualSaleItems = await prisma.saleItem.count({
-    where: { productId: null },
+  // Count different types of sale items
+  const regularSaleItems = await prisma.saleItem.count({
+    where: { 
+      productId: { not: null },
+      manualProductId: null,
+      serviceId: null
+    },
   });
-  const regularSaleItems = totalSaleItems - manualSaleItems;
+  const manualSaleItems = await prisma.saleItem.count({
+    where: { 
+      productId: null,
+      manualProductId: { not: null },
+      serviceId: null
+    },
+  });
+  const serviceSaleItems = await prisma.saleItem.count({
+    where: { 
+      productId: null,
+      manualProductId: null,
+      serviceId: { not: null }
+    },
+  });
+  
   console.log(`   - ${regularSaleItems} regular product items`);
   console.log(`   - ${manualSaleItems} manual product items`);
+  console.log(`   - ${serviceSaleItems} service items`);
 
   return sales;
 }
