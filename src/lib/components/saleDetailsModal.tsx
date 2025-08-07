@@ -62,15 +62,18 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
     if (sale && isEditing) {
       setEditedCart(
         sale.saleItems.map((item) => ({
-          id: item.product?.id || `manual-${item.id}`,
+          id: item.product?.id || item.service?.id || `manual-${item.id}`,
           name:
             item.product?.name ||
             item.manualProduct?.name ||
-            t("cashier.manualProduct", "Manual Product"),
+            item.service?.name ||
+            (item.service ? t("cashier.service", "Service") : t("cashier.manualProduct", "Manual Product")),
           price: item.price,
           qty: item.quantity,
-          isManual: !item.product,
+          isManual: !item.product && !item.service,
+          isService: !!item.service,
           manualProductType: item.manualProduct?.type,
+          description: item.service?.description,
         })),
       );
       setEditedDiscount(sale.discount);
@@ -158,11 +161,13 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
       const updatedSale = await window.api.database.sales.update(sale.id, {
         clientId: sale.client?.name ? undefined : undefined, // Keep existing client
         items: editedCart.map((item) => ({
-          productId: item.isManual ? undefined : item.id,
+          productId: item.isManual || item.isService ? undefined : item.id,
           quantity: item.qty,
           price: item.price,
           manualProductName: item.isManual ? item.name : undefined,
           manualProductType: item.isManual ? item.manualProductType : undefined,
+          serviceName: item.isService ? item.name : undefined,
+          serviceDescription: item.isService ? item.description : undefined,
         })),
         discount: editedDiscount,
       });
@@ -205,13 +210,16 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
   const currentCart = isEditing
     ? editedCart
     : sale.saleItems.map((item) => ({
-        id: item.product?.id || `manual-${item.id}`,
+        id: item.product?.id || item.service?.id || `manual-${item.id}`,
         name:
           item.product?.name ||
           item.manualProduct?.name ||
-          t("cashier.manualProduct", "Manual Product"),
+          item.service?.name ||
+          (item.service ? t("cashier.service", "Service") : t("cashier.manualProduct", "Manual Product")),
         price: item.price,
         qty: item.quantity,
+        isService: !!item.service,
+        description: item.service?.description,
       }));
 
   const currentDiscount = isEditing ? editedDiscount : sale.discount;

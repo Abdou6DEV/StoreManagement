@@ -227,7 +227,7 @@ export default function PaymentSummary({
         <td
           className={`py-2 px-2 font-medium truncate ${isRTL ? "text-right" : "text-left"}`}
         >
-          {item.name}
+          {item.isService ? `🔧 ${item.name}` : item.name}
         </td>
         <td
           className="py-2 px-2 text-right cursor-pointer select-none hover:bg-primary/20 rounded"
@@ -389,7 +389,7 @@ export default function PaymentSummary({
                       <td
                         className={`py-2 px-2 font-medium truncate ${isRTL ? "text-right" : "text-left"}`}
                       >
-                        {item.name}
+                        {item.isService ? `🔧 ${item.name}` : item.name}
                       </td>
                       <td className="py-2 px-2 text-right">{item.qty}</td>
                       <td className="py-2 px-2 text-right">

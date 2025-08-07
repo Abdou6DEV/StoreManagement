@@ -313,6 +313,7 @@ export async function getAllSales() {
         include: {
           product: true,
           manualProduct: true,
+          service: true,
         },
       },
       payment: {
@@ -385,23 +386,30 @@ export async function getRecentSales(limit = 50, offset = 0) {
           name: true,
         },
       },
-      saleItems: {
-        include: {
-          product: {
-            select: {
-              id: true,
-              name: true,
+              saleItems: {
+          include: {
+            product: {
+              select: {
+                id: true,
+                name: true,
+              },
             },
-          },
-          manualProduct: {
-            select: {
-              id: true,
-              name: true,
-              type: true,
+            manualProduct: {
+              select: {
+                id: true,
+                name: true,
+                type: true,
+              },
+            },
+            service: {
+              select: {
+                id: true,
+                name: true,
+                description: true,
+              },
             },
           },
         },
-      },
       payment: {
         select: {
           id: true,
