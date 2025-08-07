@@ -129,120 +129,123 @@ export async function updateSale(
     }),
   );
 
-  return await prisma.$transaction(async (tx) => {
-    // Get the original sale with items
-    const originalSale = await tx.sale.findUnique({
-      where: { id: saleId },
-      include: { saleItems: true },
-    });
+  return await prisma.$transaction(
+    async (tx) => {
+      // Get the original sale with items
+      const originalSale = await tx.sale.findUnique({
+        where: { id: saleId },
+        include: { saleItems: true },
+      });
 
-    if (!originalSale) {
-      throw new Error("Sale not found");
-    }
+      if (!originalSale) {
+        throw new Error("Sale not found");
+      }
 
-    // Restore original quantities to products (only for regular products)
-    for (const item of originalSale.saleItems) {
-      if (item.productId) {
-        const product = await tx.product.findUnique({
-          where: { id: item.productId },
-        });
-
-        if (product) {
-          const newQty = product.quantity + item.quantity;
-          await tx.product.update({
+      // Restore original quantities to products (only for regular products)
+      for (const item of originalSale.saleItems) {
+        if (item.productId) {
+          const product = await tx.product.findUnique({
             where: { id: item.productId },
-            data: { quantity: newQty },
           });
+
+          if (product) {
+            const newQty = product.quantity + item.quantity;
+            await tx.product.update({
+              where: { id: item.productId },
+              data: { quantity: newQty },
+            });
+          }
         }
       }
-    }
 
-    // Remove old sale items
-    await tx.saleItem.deleteMany({
-      where: { saleId },
-    });
+      // Remove old sale items
+      await tx.saleItem.deleteMany({
+        where: { saleId },
+      });
 
-    // Update quantities for new items (only for regular products)
-    for (const item of data.items) {
-      if (item.productId) {
-        const product = await tx.product.findUnique({
-          where: { id: item.productId },
-        });
-
-        if (product) {
-          const newQty = Math.max(0, product.quantity - item.quantity);
-          await tx.product.update({
+      // Update quantities for new items (only for regular products)
+      for (const item of data.items) {
+        if (item.productId) {
+          const product = await tx.product.findUnique({
             where: { id: item.productId },
-            data: { quantity: newQty },
           });
+
+          if (product) {
+            const newQty = Math.max(0, product.quantity - item.quantity);
+            await tx.product.update({
+              where: { id: item.productId },
+              data: { quantity: newQty },
+            });
+          }
         }
       }
-    }
 
-    // Update the sale
-    const updatedSale = await tx.sale.update({
-      where: { id: saleId },
-      data: {
-        clientId: data.clientId,
-        discount: data.discount ?? 0,
-        saleItems: {
-          create: processedItems.map((item) => ({
-            productId: item.productId || null,
-            manualProductId: item.manualProductId,
-            serviceId: item.serviceId,
-            quantity: item.quantity,
-            price: item.price,
-          })),
-        },
-      },
-      include: {
-        client: true,
-        saleItems: {
-          include: {
-            product: true,
-            manualProduct: true,
-            service: true,
+      // Update the sale
+      const updatedSale = await tx.sale.update({
+        where: { id: saleId },
+        data: {
+          clientId: data.clientId,
+          discount: data.discount ?? 0,
+          saleItems: {
+            create: processedItems.map((item) => ({
+              productId: item.productId || null,
+              manualProductId: item.manualProductId,
+              serviceId: item.serviceId,
+              quantity: item.quantity,
+              price: item.price,
+            })),
           },
         },
-        payment: {
-          select: {
-            id: true,
-            givenAmount: true,
-            type: true,
+        include: {
+          client: true,
+          saleItems: {
+            include: {
+              product: true,
+              manualProduct: true,
+              service: true,
+            },
+          },
+          payment: {
+            select: {
+              id: true,
+              givenAmount: true,
+              type: true,
+            },
           },
         },
-      },
-    });
+      });
 
-    // Calculate totals
-    const totalAmount = updatedSale.saleItems.reduce(
-      (sum, item) => sum + item.price * item.quantity,
-      0,
-    );
+      // Calculate totals
+      const totalAmount = updatedSale.saleItems.reduce(
+        (sum, item) => sum + item.price * item.quantity,
+        0,
+      );
 
-    const totalAmountWithDiscount = totalAmount - updatedSale.discount;
+      const totalAmountWithDiscount = totalAmount - updatedSale.discount;
 
-    const paidAmount = updatedSale.payment
-      ? updatedSale.payment.givenAmount || 0
-      : totalAmountWithDiscount;
+      const paidAmount = updatedSale.payment
+        ? updatedSale.payment.givenAmount || 0
+        : totalAmountWithDiscount;
 
-    const totalItems = updatedSale.saleItems.reduce(
-      (sum, item) => sum + item.quantity,
-      0,
-    );
+      const totalItems = updatedSale.saleItems.reduce(
+        (sum, item) => sum + item.quantity,
+        0,
+      );
 
-    return {
-      ...updatedSale,
-      totalAmount,
-      totalAmountWithDiscount,
-      paidAmount,
-      remainingAmount: totalAmountWithDiscount - paidAmount,
-      totalItems,
-      isPaidInCash: !updatedSale.payment,
-    };
-  }, {
-    timeout: 10000, // 10 seconds timeout
-  });
+      return {
+        ...updatedSale,
+        totalAmount,
+        totalAmountWithDiscount,
+        paidAmount,
+        remainingAmount: totalAmountWithDiscount - paidAmount,
+        totalItems,
+        isPaidInCash: !updatedSale.payment,
+      };
+    },
+    {
+      timeout: 10000, // 10 seconds timeout
+    },
+  );
 }
 
 export async function deleteSale(saleId: string) {
@@ -386,30 +389,30 @@ export async function getRecentSales(limit = 50, offset = 0) {
           name: true,
         },
       },
-              saleItems: {
-          include: {
-            product: {
-              select: {
-                id: true,
-                name: true,
-              },
+      saleItems: {
+        include: {
+          product: {
+            select: {
+              id: true,
+              name: true,
             },
-            manualProduct: {
-              select: {
-                id: true,
-                name: true,
-                type: true,
-              },
+          },
+          manualProduct: {
+            select: {
+              id: true,
+              name: true,
+              type: true,
             },
-            service: {
-              select: {
-                id: true,
-                name: true,
-                description: true,
-              },
+          },
+          service: {
+            select: {
+              id: true,
+              name: true,
+              description: true,
             },
           },
         },
+      },
       payment: {
         select: {
           id: true,

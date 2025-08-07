@@ -49,7 +49,6 @@ export default function CashierPage() {
   const [showProductBrowser, setShowProductBrowser] = useState(false);
   const [allProducts, setAllProducts] = useState<ProductWithSales[]>([]);
   const productBrowserRef = useRef<{ handleClose: () => void }>(null);
-  const [outOfStockItems, setOutOfStockItems] = useState<CartItem[]>([]);
   const [showStockWarning, setShowStockWarning] = useState(false);
   const [showManualProductModal, setShowManualProductModal] = useState(false);
   const [showServiceModal, setShowServiceModal] = useState(false);
@@ -92,7 +91,10 @@ export default function CashierPage() {
         // Fallback to basic products if sales fetch fails
         const products = await window.api.database.products.getAll();
         setAllProducts(
-          products.map((p: any) => ({ ...p, totalSold: 0 })) as ProductWithSales[],
+          products.map((p: any) => ({
+            ...p,
+            totalSold: 0,
+          })) as ProductWithSales[],
         );
       }
     };
@@ -113,8 +115,7 @@ export default function CashierPage() {
     };
   }, []);
 
-  const handleOutOfStock = (items: CartItem[]) => {
-    setOutOfStockItems(items);
+  const handleOutOfStock = () => {
     setShowStockWarning(true);
   };
 
@@ -139,14 +140,13 @@ export default function CashierPage() {
     setSalesRefreshKey((prev) => prev + 1);
   };
 
-  const handleSaleCompleted = (saleId?: string) => {
+  const handleSaleCompleted = () => {
     setSalesRefreshKey((prev) => prev + 1);
   };
 
   // Proceed with sale despite out of stock warning
   const proceedWithOutOfStockSale = async () => {
     setShowStockWarning(false);
-    setOutOfStockItems([]);
     // This would need to be handled by the active session component
     // For now, we'll just close the modal
   };

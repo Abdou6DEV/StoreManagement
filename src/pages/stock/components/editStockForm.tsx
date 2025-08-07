@@ -24,7 +24,7 @@ export default function EditStockForm({
   const [form, setForm] = useState(() => {
     if (!product) return null;
     // Only include editable fields, exclude totalSold and other computed fields
-    const { totalSold, ...editableFields } = product;
+    const { totalSold: _, ...editableFields } = product;
     return editableFields;
   });
 

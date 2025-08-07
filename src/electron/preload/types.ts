@@ -34,9 +34,7 @@ export type DatabaseAPI = {
       data: Partial<Omit<Product, "id" | "createdAt" | "updatedAt">>,
     ) => Promise<Product>;
     delete: (id: string) => Promise<void>;
-    getSalesCounts: () => Promise<
-      { productId: string; totalSold: number }[]
-    >;
+    getSalesCounts: () => Promise<{ productId: string; totalSold: number }[]>;
     getWithPurchaseHistory: (id: string) => Promise<any>;
     createWithPurchase: (data: {
       productData: any;
@@ -89,10 +87,7 @@ export type DatabaseAPI = {
       discount?: number;
     }) => Promise<Sale>;
     getAll: () => Promise<SaleWithDetails[]>;
-    getRecent: (options?: {
-      limit?: number;
-      offset?: number;
-    }) => Promise<{
+    getRecent: (options?: { limit?: number; offset?: number }) => Promise<{
       sales: SaleWithDetails[];
       totalCount: number;
       hasMore: boolean;
@@ -126,10 +121,7 @@ export type DatabaseAPI = {
       (Payment & { client: Client; sale: Sale })[]
     >;
     markAsPaid: (paymentId: string, paidDate: Date) => Promise<void>;
-    updateAmount: (
-      paymentId: string,
-      givenAmount: number,
-    ) => Promise<void>;
+    updateAmount: (paymentId: string, givenAmount: number) => Promise<void>;
   };
   sellers: {
     getAll: () => Promise<Seller[]>;
@@ -232,4 +224,4 @@ export type API = {
   database: DatabaseAPI;
   app: AppAPI;
   logger: LoggerAPI;
-}; 
+};

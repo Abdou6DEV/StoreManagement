@@ -18,7 +18,6 @@ interface CashierLayoutProps {
   onShowManualProductModal: () => void;
   onShowServiceModal: () => void;
   onAddProduct: (product: ProductWithSales) => void;
-  onAddManualProduct: (product: CartItem) => void;
   onSessionChange: (sessionIndex: number) => void;
   onAddSession: () => void;
   onRemoveSession: (sessionIndex: number) => void;
@@ -43,7 +42,6 @@ export default function CashierLayout({
   onShowManualProductModal,
   onShowServiceModal,
   onAddProduct,
-  onAddManualProduct,
   onSessionChange,
   onAddSession,
   onRemoveSession,

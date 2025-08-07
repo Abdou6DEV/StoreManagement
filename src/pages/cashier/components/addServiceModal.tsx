@@ -150,10 +150,7 @@ export default function AddServiceModal({
       open={open}
       onClose={handleClose}
       title={t("cashier.addService", "Add Service")}
-      subtitle={t(
-        "cashier.addServiceDesc",
-        "Add a service to the cart",
-      )}
+      subtitle={t("cashier.addServiceDesc", "Add a service to the cart")}
       icon={<Plus className="w-5 h-5 text-blue-500" />}
       size="lg"
       className="max-w-md"
@@ -237,7 +234,10 @@ export default function AddServiceModal({
               onChange={(e) =>
                 setService((p) => ({ ...p, description: e.target.value }))
               }
-              placeholder={t("cashier.enterDescription", "Enter service description (optional)")}
+              placeholder={t(
+                "cashier.enterDescription",
+                "Enter service description (optional)",
+              )}
               rows={3}
             />
           </Legend>

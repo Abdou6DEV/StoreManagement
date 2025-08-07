@@ -34,7 +34,7 @@ export async function seedSales(prisma: PrismaClient, products: Product[]) {
     const includeManualProducts = faker.datatype.boolean({ probability: 0.4 });
     // Decide if this sale should include services (30% chance)
     const includeServices = faker.datatype.boolean({ probability: 0.3 });
-    
+
     let manualProductsAdded = 0;
     let servicesAdded = 0;
     const maxManualProducts = faker.number.int({ min: 1, max: 3 });
@@ -44,11 +44,13 @@ export async function seedSales(prisma: PrismaClient, products: Product[]) {
     const availableProducts = products.filter(
       (product) => product.quantity > 0,
     );
-    
+
     // Calculate how many regular products to include
     let regularProductCount = saleItemsCount;
-    if (includeManualProducts) regularProductCount = Math.max(0, regularProductCount - 2);
-    if (includeServices) regularProductCount = Math.max(0, regularProductCount - 1);
+    if (includeManualProducts)
+      regularProductCount = Math.max(0, regularProductCount - 2);
+    if (includeServices)
+      regularProductCount = Math.max(0, regularProductCount - 1);
 
     const saleProducts =
       availableProducts.length > 0
@@ -141,7 +143,7 @@ export async function seedSales(prisma: PrismaClient, products: Product[]) {
       const serviceCount = faker.number.int({ min: 1, max: 2 });
       const selectedServices = faker.helpers.arrayElements(
         services,
-        Math.min(serviceCount, services.length)
+        Math.min(serviceCount, services.length),
       );
 
       for (const service of selectedServices) {
@@ -176,27 +178,27 @@ export async function seedSales(prisma: PrismaClient, products: Product[]) {
 
   // Count different types of sale items
   const regularSaleItems = await prisma.saleItem.count({
-    where: { 
+    where: {
       productId: { not: null },
       manualProductId: null,
-      serviceId: null
+      serviceId: null,
     },
   });
   const manualSaleItems = await prisma.saleItem.count({
-    where: { 
+    where: {
       productId: null,
       manualProductId: { not: null },
-      serviceId: null
+      serviceId: null,
     },
   });
   const serviceSaleItems = await prisma.saleItem.count({
-    where: { 
+    where: {
       productId: null,
       manualProductId: null,
-      serviceId: { not: null }
+      serviceId: { not: null },
     },
   });
-  
+
   console.log(`   - ${regularSaleItems} regular product items`);
   console.log(`   - ${manualSaleItems} manual product items`);
   console.log(`   - ${serviceSaleItems} service items`);

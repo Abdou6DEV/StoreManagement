@@ -64,8 +64,6 @@ const ProductBrowser = forwardRef<
   // Remove canScrollLeft, canScrollRight, updateChevronState, and related useEffect
 
   useEffect(() => {
-    const container = tabsContainerRef.current;
-    // No chevron state logic needed
     if (open) {
       const container = tabsContainerRef.current;
       if (container) {

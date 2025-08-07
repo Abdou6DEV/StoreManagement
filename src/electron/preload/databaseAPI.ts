@@ -26,8 +26,7 @@ export const databaseAPI = {
   },
   categories: {
     getAll: () => ipcRenderer.invoke("db:categories:getAll"),
-    ensure: (name: string) =>
-      ipcRenderer.invoke("db:categories:ensure", name),
+    ensure: (name: string) => ipcRenderer.invoke("db:categories:ensure", name),
   },
   clients: {
     create: (data: {
@@ -157,22 +156,18 @@ export const databaseAPI = {
       ipcRenderer.invoke("db:manualProducts:getById", id),
     update: (id: string, data: { name?: string; type?: string }) =>
       ipcRenderer.invoke("db:manualProducts:update", { id, data }),
-    delete: (id: string) =>
-      ipcRenderer.invoke("db:manualProducts:delete", id),
+    delete: (id: string) => ipcRenderer.invoke("db:manualProducts:delete", id),
   },
   services: {
-    search: (query: string) =>
-      ipcRenderer.invoke("db:services:search", query),
+    search: (query: string) => ipcRenderer.invoke("db:services:search", query),
     getAll: () => ipcRenderer.invoke("db:services:getAll"),
     create: (data: { name: string; description?: string }) =>
       ipcRenderer.invoke("db:services:create", data),
     findOrCreate: (data: { name: string; description?: string }) =>
       ipcRenderer.invoke("db:services:findOrCreate", data),
-    getById: (id: string) =>
-      ipcRenderer.invoke("db:services:getById", id),
+    getById: (id: string) => ipcRenderer.invoke("db:services:getById", id),
     update: (id: string, data: { name?: string; description?: string }) =>
       ipcRenderer.invoke("db:services:update", { id, data }),
-    delete: (id: string) =>
-      ipcRenderer.invoke("db:services:delete", id),
+    delete: (id: string) => ipcRenderer.invoke("db:services:delete", id),
   },
-}; 
+};

@@ -58,11 +58,11 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
 
   // Pagination state for credits
   const [creditsCurrentPage, setCreditsCurrentPage] = useState(1);
-  const [creditsItemsPerPage, setCreditsItemsPerPage] = useState(10);
+  const [creditsItemsPerPage] = useState(10);
 
   // Pagination state for versements
   const [versementsCurrentPage, setVersementsCurrentPage] = useState(1);
-  const [versementsItemsPerPage, setVersementsItemsPerPage] = useState(10);
+  const [versementsItemsPerPage] = useState(10);
 
   const credits = payments.filter((p) => p.type === "CREDIT");
   const versements = payments.filter((p) => p.type === "VERSEMENT");

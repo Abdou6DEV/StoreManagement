@@ -28,7 +28,9 @@ async function main() {
   console.log(`   - 1,000 products with purchases`);
   console.log(`   - 50 clients`);
   console.log(`   - 8 services`);
-  console.log(`   - 200 sales with items (including manual products and services)`);
+  console.log(
+    `   - 200 sales with items (including manual products and services)`,
+  );
   console.log(`   - Multiple payments`);
 }
 

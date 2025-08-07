@@ -50,10 +50,7 @@ export default function ProductControls({
           </button>
         </Tooltip>
         <Tooltip
-          content={t(
-            "cashier.tooltipAddService",
-            "Add Service (F3)",
-          )}
+          content={t("cashier.tooltipAddService", "Add Service (F3)")}
           position="top"
         >
           <button

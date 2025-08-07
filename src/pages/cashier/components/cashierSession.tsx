@@ -1,6 +1,5 @@
 import { useState, useMemo } from "react";
-import type { ProductWithSales } from "../../../types";
-import type { CartItem } from "../../../types";
+import type { ProductWithSales, CartItem } from "../../../types";
 import { useTranslation } from "react-i18next";
 import PaymentSummary from "../../../lib/components/paymentSummary";
 import ActionButtons from "./actionButtons";
@@ -32,16 +31,12 @@ interface CashierSessionProps {
 
 export default function CashierSession({
   allProducts,
-  productRefreshKey,
-  setProductRefreshKey,
   cart,
   setCart,
   onOutOfStock,
   onReceiptData,
   onSaleComplete,
   onSaleCompleted,
-  onShowProductBrowser,
-  onShowManualProductModal,
   isActive,
   discount,
   setDiscount,
