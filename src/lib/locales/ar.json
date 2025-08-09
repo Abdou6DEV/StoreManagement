@@ -352,7 +352,10 @@
     "totalPurchases": "إجمالي المشتريات",
     "totalQuantityPurchased": "إجمالي الكمية",
     "purchaseId": "معرف الشراء",
-    "totalCost": "إجمالي التكلفة"
+    "totalCost": "إجمالي التكلفة",
+    "viewInfo": "عرض معلومات المنتج",
+    "editProduct": "تعديل المنتج",
+    "deleteProduct": "حذف المنتج"
   },
   "clients": {
     "itemsPerPage": "العناصر لكل صفحة:",

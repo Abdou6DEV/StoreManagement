@@ -198,7 +198,10 @@
     "totalPurchases": "Total des achats",
     "totalQuantityPurchased": "Quantité totale",
     "purchaseId": "ID d'achat",
-    "totalCost": "Coût total"
+    "totalCost": "Coût total",
+    "viewInfo": "Voir les informations du produit",
+    "editProduct": "Modifier le produit",
+    "deleteProduct": "Supprimer le produit"
   },
   "cashier": {
     "total": "Total",
