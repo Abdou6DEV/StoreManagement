@@ -201,7 +201,11 @@
     "totalCost": "Coût total",
     "viewInfo": "Voir les informations du produit",
     "editProduct": "Modifier le produit",
-    "deleteProduct": "Supprimer le produit"
+    "deleteProduct": "Supprimer le produit",
+    "totalProducts": "Total des produits",
+    "totalQuantity": "Quantité totale",
+    "inventoryValue": "Valeur du stock",
+    "profitPotential": "Bénéfice total"
   },
   "cashier": {
     "total": "Total",

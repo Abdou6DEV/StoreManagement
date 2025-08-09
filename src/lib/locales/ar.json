@@ -355,7 +355,11 @@
     "totalCost": "إجمالي التكلفة",
     "viewInfo": "عرض معلومات المنتج",
     "editProduct": "تعديل المنتج",
-    "deleteProduct": "حذف المنتج"
+    "deleteProduct": "حذف المنتج",
+    "totalProducts": "إجمالي المنتجات",
+    "totalQuantity": "إجمالي الكمية",
+    "inventoryValue": "قيمة المخزون",
+    "profitPotential": "إجمالي الربح"
   },
   "clients": {
     "itemsPerPage": "العناصر لكل صفحة:",

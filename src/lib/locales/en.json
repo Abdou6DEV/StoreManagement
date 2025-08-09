@@ -358,7 +358,11 @@
     "totalCost": "Total Cost",
     "viewInfo": "View product info",
     "editProduct": "Edit product",
-    "deleteProduct": "Delete product"
+    "deleteProduct": "Delete product",
+    "totalProducts": "Total Products",
+    "totalQuantity": "Total Quantity",
+    "inventoryValue": "Stock Value",
+    "profitPotential": "Total Profit"
   },
   "clients": {
     "itemsPerPage": "Items per page:",

@@ -15,6 +15,9 @@ import {
   TrendingDown,
   Package,
   QrCode,
+  CreditCard,
+  DollarSign,
+  BarChart2,
   Filter,
 } from "lucide-react";
 
@@ -262,6 +265,9 @@ export const StockTable = () => {
       const soldB = b.totalSold ?? 0;
       return soldA - soldB;
     });
+  } else {
+    // Default sorting by quantity (highest to lowest)
+    sortedList.sort((a, b) => b.quantity - a.quantity);
   }
 
   const totalPages = Math.max(1, Math.ceil(sortedList.length / itemsPerPage));
@@ -767,6 +773,49 @@ export const StockTable = () => {
           </PaginationContent>
         </Pagination>
       )}
+
+      {/* Simplified Totals Footer */}
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-4 text-sm">
+        {/* Total Products */}
+        <div className="flex items-center gap-2">
+          <Package className="w-4 h-4 text-muted-foreground" />
+          <span className="text-muted-foreground">{t("stock.totalProducts")}:</span>
+          <span className="font-medium">{filteredList.length}</span>
+        </div>
+      
+        {/* Total Quantity */}
+        <div className="flex items-center gap-2">
+          <TrendingUp className="w-4 h-4 text-muted-foreground" />
+          <span className="text-muted-foreground">{t("stock.totalQuantity")}:</span>
+          <span className="font-medium">
+            {filteredList.reduce((sum, p) => sum + p.quantity, 0)}
+          </span>
+        </div>
+      
+        {/* Inventory Value */}
+        <div className="flex items-center gap-2">
+          <CreditCard className="w-4 h-4 text-muted-foreground" />
+          <span className="text-muted-foreground">{t("stock.inventoryValue")}:</span>
+          <span className="font-medium">
+            {filteredList
+              .reduce((sum, p) => sum + (p.boughtPrice * p.quantity), 0)
+              .toLocaleString()}{" "}
+            {t("cashier.currency")}
+          </span>
+        </div>
+      
+        {/* Profit Potential */}
+        <div className="flex items-center gap-2">
+          <BarChart2 className="w-4 h-4 text-green-600 dark:text-green-400" />
+          <span className="text-muted-foreground">{t("stock.profitPotential")}:</span>
+          <span className="font-medium text-green-600 dark:text-green-400">
+            {filteredList
+              .reduce((sum, p) => sum + ((p.sellingPrice - p.boughtPrice) * p.quantity), 0)
+              .toLocaleString()}{" "}
+            {t("cashier.currency")}
+          </span>
+        </div>
+      </div>
 
       {/* Edit Product Modal */}
       <EditProductModal
