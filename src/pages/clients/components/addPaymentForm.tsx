@@ -170,7 +170,7 @@ export default function AddPaymentForm({
                           )}
                           value={clientSearch}
                           onChange={(e) => setClientSearch(e.target.value)}
-                          className="w-full px-3 py-2 text-sm border-b border-border focus:outline-none focus:ring-1 focus:ring-red-500/50"
+                          className="w-full px-3 py-2 text-sm border-b focus:outline-none"
                         />
                         {filteredClients.map((client) => (
                           <CommandItem
