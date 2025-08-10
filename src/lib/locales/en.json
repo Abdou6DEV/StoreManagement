@@ -461,7 +461,10 @@
     "dueDate": "Due Date",
     "fillRequiredFields": "Please fill all required fields",
     "paymentAddSuccess": "Payment added successfully",
-    "paymentAddError": "Failed to add payment"
+    "paymentAddError": "Failed to add payment",
+    "viewPaymentsTooltip": "View payments history",
+    "editTooltip": "Edit client",
+    "deleteTooltip": "Delete client"
   },
   "suppliers": {
     "title": "Suppliers",

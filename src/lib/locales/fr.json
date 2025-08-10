@@ -455,7 +455,10 @@
     "dueDate": "Date d'échéance",
     "fillRequiredFields": "Veuillez remplir tous les champs obligatoires",
     "paymentAddSuccess": "Paiement ajouté avec succès",
-    "paymentAddError": "Échec de l'ajout du paiement"
+    "paymentAddError": "Échec de l'ajout du paiement",
+    "viewPaymentsTooltip": "Voir l'historique des paiements",
+    "editTooltip": "Modifier le client",
+    "deleteTooltip": "Supprimer le client"
   },
   "suppliers": {
     "title": "Fournisseurs",

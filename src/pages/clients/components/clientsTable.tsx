@@ -3,6 +3,7 @@ import { Button } from "../../../lib/components/button";
 import { Edit, Loader2, Trash2, CreditCard } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { ClientWithTotalPurchases } from "../../../types";
+import { Tooltip } from "../../../lib/components/tooltip";
 
 interface ClientsTableProps {
   clients: ClientWithTotalPurchases[];
@@ -91,38 +92,44 @@ const ClientsTable: React.FC<ClientsTableProps> = ({
                 {t("cashier.currency", "DA")}
               </td>
               <td className={`px-4 py-2 ${isRTL ? "text-right" : "text-left"}`}>
-                <div
-                  className={`flex gap-2 ${isRTL ? "flex-row-reverse" : ""}`}
-                >
-                  <Button
-                    onClick={() => onViewPayments(client)}
-                    size="sm"
-                    variant="outline"
-                    className="text-blue-600 border-blue-200 hover:bg-blue-50 dark:text-blue-400 dark:border-blue-800 dark:hover:bg-blue-950/30"
-                  >
-                    <CreditCard className="w-3 h-3" />
-                  </Button>
-                  <Button
-                    onClick={() => onEdit(client)}
-                    size="sm"
-                    variant="outline"
-                    className="text-green-600 border-green-200 hover:bg-green-50 dark:text-green-400 dark:border-green-800 dark:hover:bg-green-950/30"
-                  >
-                    <Edit className="w-3 h-3" />
-                  </Button>
-                  <Button
-                    onClick={() => onDelete(client.id)}
-                    size="sm"
-                    variant="outline"
-                    className="text-red-600 border-red-200 hover:bg-red-50 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-950/30"
-                    disabled={deleteLoading === client.id}
-                  >
-                    {deleteLoading === client.id ? (
-                      <Loader2 className="w-3 h-3 animate-spin" />
-                    ) : (
-                      <Trash2 className="w-3 h-3" />
-                    )}
-                  </Button>
+                <div className={`flex gap-2 ${isRTL ? "flex-row-reverse" : ""}`}>
+                  <Tooltip content={t("clients.viewPaymentsTooltip", "View payments history")}>
+                    <Button
+                      onClick={() => onViewPayments(client)}
+                      size="sm"
+                      variant="outline"
+                      className="text-blue-600 border-blue-200 hover:bg-blue-50 dark:text-blue-400 dark:border-blue-800 dark:hover:bg-blue-950/30"
+                    >
+                      <CreditCard className="w-3 h-3" />
+                    </Button>
+                  </Tooltip>
+                  
+                  <Tooltip content={t("clients.editTooltip", "Edit client")}>
+                    <Button
+                      onClick={() => onEdit(client)}
+                      size="sm"
+                      variant="outline"
+                      className="text-green-600 border-green-200 hover:bg-green-50 dark:text-green-400 dark:border-green-800 dark:hover:bg-green-950/30"
+                    >
+                      <Edit className="w-3 h-3" />
+                    </Button>
+                  </Tooltip>
+                  
+                  <Tooltip content={t("clients.deleteTooltip", "Delete client")}>
+                    <Button
+                      onClick={() => onDelete(client.id)}
+                      size="sm"
+                      variant="outline"
+                      className="text-red-600 border-red-200 hover:bg-red-50 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-950/30"
+                      disabled={deleteLoading === client.id}
+                    >
+                      {deleteLoading === client.id ? (
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                      ) : (
+                        <Trash2 className="w-3 h-3" />
+                      )}
+                    </Button>
+                  </Tooltip>
                 </div>
               </td>
             </tr>

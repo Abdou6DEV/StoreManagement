@@ -458,7 +458,10 @@
     "dueDate": "تاريخ الاستحقاق",
     "fillRequiredFields": "يرجى ملء جميع الحقول المطلوبة",
     "paymentAddSuccess": "تمت إضافة الدفعة بنجاح",
-    "paymentAddError": "فشل في إضافة الدفعة"
+    "paymentAddError": "فشل في إضافة الدفعة",
+    "viewPaymentsTooltip": "عرض سجل المدفوعات",
+    "editTooltip": "تعديل العميل",
+    "deleteTooltip": "حذف العميل"
   },
   "suppliers": {
     "title": "الموردون",
