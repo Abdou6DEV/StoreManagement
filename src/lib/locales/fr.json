@@ -139,6 +139,7 @@
     "viewDetails": "Voir les détails du paiement",
     "viewClientPayments": "Voir les paiements du client",
     "paidInCash": "Payé en espèces",
+    "completed": "Terminé",
     "partiallyPaid": "Partiellement payé",
     "fullyPaid": "Entièrement payé",
     "noSalesFound": "Aucune vente trouvée",

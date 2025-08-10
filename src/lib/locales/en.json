@@ -139,6 +139,7 @@
     "viewDetails": "View payment details",
     "viewClientPayments": "View client payments",
     "paidInCash": "Paid in Cash",
+    "completed": "Completed",
     "partiallyPaid": "Partially Paid",
     "fullyPaid": "Fully Paid",
     "noSalesFound": "No sales found",

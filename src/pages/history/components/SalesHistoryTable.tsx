@@ -202,12 +202,22 @@ export const SalesHistoryTable: React.FC<SalesHistoryTableProps> = React.memo(
           variant: "default" as const,
         };
       }
+      
+      // Check if there's a payment associated with the sale and if it's been paid
+      if (sale.payment && sale.payment.paidDate) {
+        return {
+          label: t("history.completed", "Completed"),
+          variant: "default" as const,
+        };
+      }
+      
       if (sale.remainingAmount > 0) {
         return {
           label: t("history.partiallyPaid", "Partially Paid"),
           variant: "secondary" as const,
         };
       }
+      
       return {
         label: t("history.fullyPaid", "Fully Paid"),
         variant: "default" as const,

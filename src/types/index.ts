@@ -112,6 +112,7 @@ export interface Sale {
     id: string;
     givenAmount: number;
     type: "CREDIT" | "VERSEMENT";
+    paidDate?: Date | null;
   };
 }
 

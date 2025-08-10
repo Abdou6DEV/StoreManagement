@@ -139,6 +139,7 @@
     "viewDetails": "عرض تفاصيل الدفع",
     "viewClientPayments": "عرض مدفوعات العميل",
     "paidInCash": "مدفوع نقداً",
+    "completed": "مكتمل",
     "partiallyPaid": "مدفوع جزئياً",
     "fullyPaid": "مدفوع بالكامل",
     "noSalesFound": "لم يتم العثور على مبيعات",
