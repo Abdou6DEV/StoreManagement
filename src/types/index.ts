@@ -140,3 +140,16 @@ export type DateRange = {
   startDate: Date | null;
   endDate: Date | null;
 };
+
+export interface SummaryStats {
+  totalCredits: number;
+  totalVersements: number;
+  paidCredits: number;
+  paidVersements: number;
+  creditsCount: number;
+  versementsCount: number;
+  paidCreditsCount: number;
+  paidVersementsCount: number;
+}
+
+export type TabType = "summary" | "credits" | "versements";
