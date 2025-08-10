@@ -294,10 +294,7 @@ export const PaymentsHistoryTable: React.FC<PaymentsHistoryTableProps> =
                       </div>
                     </th>
                     <th className="p-4 text-left">
-                      <div className="flex items-center gap-2">
-                        <Skeleton className="h-4 w-4" />
-                        <Skeleton className="h-4 w-16" />
-                      </div>
+                      <Skeleton className="h-4 w-20" />
                     </th>
                     <th className="p-4 text-left">
                       <Skeleton className="h-4 w-20" />
@@ -326,7 +323,6 @@ export const PaymentsHistoryTable: React.FC<PaymentsHistoryTableProps> =
                         <td className="p-4">
                           <div className="space-y-2">
                             <Skeleton className="h-4 w-24" />
-                            <Skeleton className="h-3 w-20" />
                           </div>
                         </td>
                         <td className="p-4">
@@ -336,10 +332,7 @@ export const PaymentsHistoryTable: React.FC<PaymentsHistoryTableProps> =
                           <Skeleton className="h-6 w-20 rounded-full" />
                         </td>
                         <td className="p-4">
-                          <div className="flex gap-2">
-                            <Skeleton className="h-8 w-16" />
-                            <Skeleton className="h-8 w-16" />
-                          </div>
+                          <Skeleton className="h-8 w-8 rounded" />
                         </td>
                       </tr>
                     ),
@@ -531,28 +524,17 @@ export const PaymentsHistoryTable: React.FC<PaymentsHistoryTableProps> =
                         )}
                       </td>
                       <td className="p-4">
+                        <div className="text-sm font-medium">
+                          {formatCurrency(payment.givenAmount)}
+                        </div>
+                      </td>
+                      <td className="p-4">
                         <Badge
                           variant={paymentType.variant}
                           className={paymentType.color}
                         >
                           {paymentType.label}
                         </Badge>
-                      </td>
-                      <td className="p-4">
-                        <div className="text-sm font-medium">
-                          {formatCurrency(payment.givenAmount)}
-                        </div>
-                      </td>
-                      <td className="p-4">
-                        <div className="text-sm">
-                          {formatDate(payment.dueDate)}
-                        </div>
-                        {payment.paidDate && (
-                          <div className="font-medium text-xs text-muted-foreground">
-                            {t("history.paidOn", "Paid on")}{" "}
-                            {formatDate(payment.paidDate)}
-                          </div>
-                        )}
                       </td>
                       <td className="p-4">
                         <Badge
