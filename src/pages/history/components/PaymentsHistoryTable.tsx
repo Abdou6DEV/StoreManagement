@@ -548,7 +548,7 @@ export const PaymentsHistoryTable: React.FC<PaymentsHistoryTableProps> =
                           {formatDate(payment.dueDate)}
                         </div>
                         {payment.paidDate && (
-                          <div className="text-xs text-muted-foreground">
+                          <div className="font-medium text-xs text-muted-foreground">
                             {t("history.paidOn", "Paid on")}{" "}
                             {formatDate(payment.paidDate)}
                           </div>
