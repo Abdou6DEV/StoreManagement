@@ -57,8 +57,8 @@ export default function AddClientModal({
         "Enter client information to add them to your database",
       )}
       icon={<Users className="w-5 h-5 text-blue-600" />}
-      size="sm"
-      className="max-w-sm"
+      size="lg"
+      className="max-w-lg"
       onSubmit={handleSubmit}
       submitText={t("cashier.addClient", "Add Client")}
       cancelText={t("cashier.cancel", "Cancel")}
@@ -75,7 +75,7 @@ export default function AddClientModal({
             value={clientName}
             onChange={(e) => setClientName(e.target.value)}
             placeholder={t("cashier.enterClientName", "Enter client name")}
-            className="w-full rounded-md border border-border px-3 py-2 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all"
+            className="w-full rounded-lg border border-border bg-card px-4 py-3 text-sm text-foreground focus:border-primary/30 transition-all"
             required
           />
         </div>
@@ -89,7 +89,7 @@ export default function AddClientModal({
             value={clientPhone}
             onChange={(e) => setClientPhone(e.target.value)}
             placeholder={t("cashier.phoneOptional", "Phone Number (optional)")}
-            className="w-full rounded-md border border-border px-3 py-2 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all"
+            className="w-full rounded-lg border border-border bg-card px-4 py-3 text-sm text-foreground focus:border-primary/30 transition-all"
           />
         </div>
 
@@ -102,7 +102,7 @@ export default function AddClientModal({
             value={clientAddress}
             onChange={(e) => setClientAddress(e.target.value)}
             placeholder={t("cashier.addressOptional", "Address (optional)")}
-            className="w-full rounded-md border border-border px-3 py-2 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all"
+            className="w-full rounded-lg border border-border bg-card px-4 py-3 text-sm text-foreground focus:border-primary/30 transition-all"
           />
         </div>
 
@@ -114,7 +114,7 @@ export default function AddClientModal({
             value={clientNotes}
             onChange={(e) => setClientNotes(e.target.value)}
             placeholder={t("cashier.notesOptional", "Notes (optional)")}
-            className="w-full rounded-md border border-border px-3 py-2 text-sm bg-background text-foreground resize-none focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all"
+            className="w-full rounded-lg border border-border bg-card px-4 py-3 text-sm text-foreground resize-none focus:border-primary/30 transition-all"
             rows={3}
           />
         </div>
