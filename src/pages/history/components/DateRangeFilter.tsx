@@ -158,7 +158,7 @@ export const DateRangeFilter: React.FC<DateRangeFilterProps> = React.memo(({
             ? "bg-primary text-primary-foreground shadow-md ring-2 ring-primary/20 scale-105" 
             : showCustomRange 
               ? "bg-secondary text-secondary-foreground" 
-              : "hover:bg-accent hover:text-accent-foreground"
+              : "hover:bg-accent hover:text-foreground"
         }`}
       >
         <Calendar className="h-4 w-4" />

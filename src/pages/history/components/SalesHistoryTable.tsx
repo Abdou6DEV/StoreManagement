@@ -55,7 +55,7 @@ export const SalesHistoryTable: React.FC<SalesHistoryTableProps> = React.memo(({
   const [sortField, setSortField] = useState<SortField>("date");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(25);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   const [selectedSale, setSelectedSale] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 

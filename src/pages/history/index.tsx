@@ -6,8 +6,7 @@ import { DateRangeFilter } from "./components/DateRangeFilter";
 import { SalesHistoryTable } from "./components/SalesHistoryTable";
 import { PaymentsHistoryTable } from "./components/PaymentsHistoryTable";
 import { HistoryStats } from "./components/HistoryStats";
-import { Button } from "../../lib/components/button";
-import { RefreshCw, Download, Filter } from "lucide-react";
+import { Filter } from "lucide-react";
 import { useToast } from "../../lib/contexts/toastContext";
 import { DateRange } from "../../types";
 
@@ -143,22 +142,6 @@ export default function History() {
     });
   };
 
-  const handleRefresh = useCallback(() => {
-    // Reset loaded flags to force reload of current tab
-    if (activeTab === "sales") {
-      setSalesLoaded(false);
-      loadSalesData();
-    } else {
-      setPaymentsLoaded(false);
-      loadPaymentsData();
-    }
-  }, [activeTab]);
-
-  const handleExport = useCallback(() => {
-    // TODO: Implement export functionality
-    showToast("Export functionality coming soon", "info");
-  }, [showToast]);
-
   const handleDateRangeChange = useCallback((newRange: DateRange) => {
     setDateRange(newRange);
   }, []);
@@ -187,42 +170,7 @@ export default function History() {
   }, []);
 
   return (
-    <div className="space-y-6 p-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            {t("history.title", "History")}
-          </h1>
-          <p className="text-muted-foreground">
-            {t("history.description", "View and analyze your sales and payment history")}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          {useMemo(() => (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleRefresh}
-              disabled={activeTab === "sales" ? salesLoading : paymentsLoading}
-            >
-              <RefreshCw className={`h-4 w-4 mr-2 ${(activeTab === "sales" ? salesLoading : paymentsLoading) ? 'animate-spin' : ''}`} />
-              {t("common.refresh", "Refresh")}
-            </Button>
-          ), [handleRefresh, activeTab, salesLoading, paymentsLoading, t])}
-          {useMemo(() => (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleExport}
-            >
-              <Download className="h-4 w-4 mr-2" />
-              {t("common.export", "Export")}
-            </Button>
-          ), [handleExport, t])}
-        </div>
-      </div>
-
+    <div className="space-y-6 pb-6 px-6">
       {/* Stats Cards */}
       {useMemo(() => (
         <HistoryStats stats={stats} activeTab={activeTab} />
