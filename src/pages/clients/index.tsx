@@ -17,7 +17,7 @@ import AddSupplierForm from "./components/addSupplierForm";
 import SuppliersTable from "./components/suppliersTable";
 import EditSupplierModal from "./components/editSupplierModal";
 import SupplierSearchBar from "./components/supplierSearchBar";
-import PaymentsModal from "./components/paymentsModal";
+import PaymentsModal from "../../lib/components/paymentsModal";
 import AllPaymentsView from "./components/allPaymentsView";
 import {
   Pagination,

@@ -12,7 +12,7 @@ import type { CartItem, ClientSuggestion } from "../../../types";
 import AddPaymentModal from "./addPaymentModal";
 import AddClientModal from "./addClientModal";
 import CalculatorModal from "./calculatorModal";
-import PaymentsModal from "../../clients/components/paymentsModal";
+import PaymentsModal from "../../../lib/components/paymentsModal";
 import { useToast } from "../../../lib/contexts/toastContext";
 import { Tooltip } from "../../../lib/components/tooltip";
 import rendererLogger from "../../../lib/logger/rendererLogger";

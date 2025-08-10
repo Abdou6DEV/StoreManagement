@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react";
 import type { Payment } from "@prisma/client";
-import { Modal } from "../../../lib/components/Modal";
-import { Button } from "../../../lib/components/button";
-import { Input } from "../../../lib/components/input";
-import { ConfirmDialog } from "../../../lib/components/confirmDialog";
+import { Modal } from "./Modal";
+import { Button } from "./button";
+import { Input } from "./input";
+import { ConfirmDialog } from "./confirmDialog";
 import {
   Loader2,
   X,
@@ -15,8 +15,8 @@ import {
   Clock,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { useToast } from "../../../lib/contexts/toastContext";
-import { ClientSuggestion } from "../../../types";
+import { useToast } from "../contexts/toastContext";
+import { ClientSuggestion } from "../../types";
 
 interface PaymentsModalProps {
   client: ClientSuggestion;

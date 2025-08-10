@@ -135,3 +135,8 @@ export interface ModalAction {
   loading?: boolean;
   icon?: React.ReactNode;
 }
+
+export type DateRange = {
+  startDate: Date | null;
+  endDate: Date | null;
+};
