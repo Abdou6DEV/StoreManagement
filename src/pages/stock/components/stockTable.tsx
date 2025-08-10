@@ -377,9 +377,11 @@ export const StockTable = () => {
     <section className="bg-card border border-border rounded-xl shadow-sm p-6 space-y-5">
       <div className="flex items-center justify-between border-b border-border pb-3">
         <div className="flex items-center gap-3">
-          <Package className="w-7 h-7 text-primary" />
+          <Package className="w-7 h-7 text-green-600" />
           <h1 className="text-2xl font-bold">
-            {t("stock.tableTitle", "Stock Management")}
+            {viewMode === 'product' 
+              ? t("stock.tableTitle", "Stock Management") 
+              : t("stock.categoryTableTitle", "Stock by Category")}
           </h1>
         </div> 
         <div className="flex items-center gap-3">
