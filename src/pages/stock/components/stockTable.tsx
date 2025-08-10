@@ -324,7 +324,6 @@ export const StockTable = () => {
   }) {
     const { t } = useTranslation();
     const profit = product.sellingPrice - product.boughtPrice;
-    const totalBought = product.boughtPrice * product.quantity;
     const totalProfit = profit * (product.totalSold ?? 0);
   
     return (
@@ -335,7 +334,6 @@ export const StockTable = () => {
         <td className="px-4">{product.boughtPrice}</td>
         <td className="px-4">{product.sellingPrice}</td>
         <td className="px-4 text-green-700 font-medium">{profit}</td>
-        <td className="px-4">{totalBought}</td>
         <td className="px-4">{product.totalSold ?? 0}</td>
         <td className="px-4 text-green-700 font-medium">{totalProfit}</td>
         <td className="px-4">
@@ -704,7 +702,6 @@ export const StockTable = () => {
               <th className="px-4 py-3">{t("stock.boughtPrice")}</th>
               <th className="px-4 py-3">{t("stock.sellingPrice")}</th>
               <th className="px-4 py-3">{t("stock.profit", "Profit")}</th>
-              <th className="px-4 py-3">{t("stock.totalBought", "Total Bought")}</th>
               <th className="px-4 py-3">{t("stock.totalSold", "Total Sold")}</th>
               <th className="px-4 py-3">{t("stock.totalProfit", "Total Profit")}</th>
               <th className="px-4 py-3">{t("stock.actions", "Actions")}</th>
