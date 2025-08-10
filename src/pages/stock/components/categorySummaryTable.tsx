@@ -218,46 +218,7 @@ export default function CategorySummaryTable() {
               </tbody>
             </table>
           </div>
-          {/* Total Summary Card (separated from table) */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mt-6 p-4 bg-muted/60 rounded-lg border border-border">
-            <span className="font-semibold text-foreground text-base">
-              {t("stock.total", "Total (All)")}:
-            </span>
-            <div className="flex flex-wrap gap-6 text-sm">
-              <span>
-                <span className="text-muted-foreground">
-                  {t("stock.quantity")}:{" "}
-                </span>
-                <span className="font-medium">
-                  {summary.reduce((sum, row) => sum + row.totalQuantity, 0)}
-                </span>
-              </span>
-              <span>
-                <span className="text-muted-foreground">
-                  {t("stock.totalBought", "Total Bought")}:{" "}
-                </span>
-                <span className="font-medium">
-                  {summary.reduce((sum, row) => sum + row.totalBought, 0)}
-                </span>
-              </span>
-              <span>
-                <span className="text-muted-foreground">
-                  {t("stock.totalSelling", "Total Selling")}:{" "}
-                </span>
-                <span className="font-medium">
-                  {summary.reduce((sum, row) => sum + row.totalSelling, 0)}
-                </span>
-              </span>
-              <span>
-                <span className="text-muted-foreground">
-                  {t("stock.totalProfit", "Total Profit")}:{" "}
-                </span>
-                <span className="font-bold text-green-900">
-                  {summary.reduce((sum, row) => sum + row.totalProfit, 0)}
-                </span>
-              </span>
-            </div>
-          </div>
+
           {/* Pagination controls at the bottom, centered */}
           {totalPages > 1 && (
             <Pagination className="mt-6">
