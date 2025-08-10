@@ -520,6 +520,7 @@
     "addPaymentButton": "إضافة دفعة",
     "addingPayment": "جارٍ الإضافة...",
     "searchClients": "البحث في العملاء...",
+    "searchPaymentsPlaceholder": "البحث بالمبلغ أو تاريخ الاستحقاق أو تاريخ الدفع أو تاريخ الإنشاء...",
     "selectClient": "اختر العميل",
     "selectPaymentType": "اختر نوع الدفعة",
     "amount": "المبلغ",

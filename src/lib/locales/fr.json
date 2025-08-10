@@ -517,6 +517,7 @@
     "addPaymentButton": "Ajouter un paiement",
     "addingPayment": "Ajout...",
     "searchClients": "Rechercher des clients...",
+    "searchPaymentsPlaceholder": "Rechercher par montant, date d'échéance, date de paiement ou date de création...",
     "selectClient": "Sélectionner un client",
     "selectPaymentType": "Sélectionner le type de paiement",
     "amount": "Montant",

@@ -523,6 +523,7 @@
     "addPaymentButton": "Add Payment",
     "addingPayment": "Adding...",
     "searchClients": "Search clients...",
+    "searchPaymentsPlaceholder": "Search by amount, due date, paid date, or created date...",
     "selectClient": "Select client",
     "selectPaymentType": "Select payment type",
     "amount": "Amount",
