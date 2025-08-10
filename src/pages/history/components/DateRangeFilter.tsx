@@ -2,8 +2,13 @@ import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "../../../lib/components/button";
 import { Input } from "../../../lib/components/input";
-import { Calendar, X } from "lucide-react";
+import { Calendar, ChevronDown, X } from "lucide-react";
 import { DateRange } from "../../../types";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "../../../lib/components/popover";
 
 interface DateRangeFilterProps {
   dateRange: DateRange;
@@ -15,7 +20,7 @@ export const DateRangeFilter: React.FC<DateRangeFilterProps> = React.memo(({
   onDateRangeChange,
 }) => {
   const { t } = useTranslation();
-  const [showCustomRange, setShowCustomRange] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
 
   const presetRanges = [
     {
@@ -84,7 +89,7 @@ export const DateRangeFilter: React.FC<DateRangeFilterProps> = React.memo(({
   const handlePresetClick = (preset: typeof presetRanges[0]) => {
     const range = preset.getRange();
     onDateRangeChange(range);
-    setShowCustomRange(false);
+    setIsOpen(false);
   };
 
   const handleCustomDateChange = (field: "startDate" | "endDate", value: string) => {
@@ -97,7 +102,6 @@ export const DateRangeFilter: React.FC<DateRangeFilterProps> = React.memo(({
 
   const clearFilters = () => {
     onDateRangeChange({ startDate: null, endDate: null });
-    setShowCustomRange(false);
   };
 
   const formatDate = (date: Date | null) => {
@@ -115,117 +119,112 @@ export const DateRangeFilter: React.FC<DateRangeFilterProps> = React.memo(({
     return startMatch && endMatch;
   };
 
-  // Check if custom range is active (when dates don't match any preset)
-  const isCustomRangeActive = () => {
-    if (!hasActiveFilters) return false;
-    return !presetRanges.some(preset => isPresetActive(preset));
+  // Get current filter display text
+  const getCurrentFilterText = () => {
+    if (!hasActiveFilters) return t("history.selectDateRange", "Select date range");
+    
+    const activePreset = presetRanges.find(preset => isPresetActive(preset));
+    if (activePreset) return activePreset.label;
+    
+    let text = "";
+    if (dateRange.startDate) {
+      text += dateRange.startDate.toLocaleDateString();
+    }
+    if (dateRange.endDate) {
+      text += dateRange.startDate ? " - " : "";
+      text += dateRange.endDate.toLocaleDateString();
+    }
+    return text || t("history.customRange", "Custom Range");
   };
 
   return (
-    <div className="flex items-center gap-3">
-      {/* Preset buttons */}
-      <div className="flex flex-wrap gap-2">
-        {presetRanges.map((preset, index) => {
-          const isActive = isPresetActive(preset);
-          return (
-            <Button
-              key={index}
-              variant={isActive ? "default" : "outline"}
-              size="sm"
-              onClick={() => handlePresetClick(preset)}
-              className={`text-xs transition-all duration-200 relative ${
-                isActive 
-                  ? "bg-primary text-primary-foreground shadow-md ring-2 ring-primary/20 scale-105" 
-                  : "hover:bg-accent hover:text-accent-foreground hover:scale-102"
-              }`}
-            >
-              {preset.label}
-              {isActive && (
-                <div className="absolute -top-1 -right-1 w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-              )}
-            </Button>
-          );
-        })}
-      </div>
+    <div className="flex items-center gap-2">
+      <Popover open={isOpen} onOpenChange={setIsOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            size="sm"
+            className="min-w-[200px] justify-between"
+          >
+            <div className="flex items-center gap-2">
+              <Calendar className="h-4 w-4" />
+              <span className="truncate">{getCurrentFilterText()}</span>
+            </div>
+            <ChevronDown className="h-4 w-4 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        
+        <PopoverContent className="w-80 p-4" align="start">
+          <div className="space-y-4">
+            {/* Preset ranges */}
+            <div>
+              <h4 className="font-medium text-sm mb-3">{t("history.quickSelect", "Quick Select")}</h4>
+              <div className="grid grid-cols-2 gap-2">
+                {presetRanges.map((preset, index) => {
+                  const isActive = isPresetActive(preset);
+                  return (
+                    <Button
+                      key={index}
+                      variant={isActive ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => handlePresetClick(preset)}
+                      className={`text-xs ${isActive ? "bg-primary" : ""}`}
+                    >
+                      {preset.label}
+                    </Button>
+                  );
+                })}
+              </div>
+            </div>
 
-      {/* Custom date range toggle */}
-      <Button
-        variant={isCustomRangeActive() ? "default" : (showCustomRange ? "default" : "outline")}
-        size="sm"
-        onClick={() => setShowCustomRange(!showCustomRange)}
-        className={`flex items-center gap-2 transition-all duration-200 relative ${
-          isCustomRangeActive() 
-            ? "bg-primary text-primary-foreground shadow-md ring-2 ring-primary/20 scale-105" 
-            : showCustomRange 
-              ? "bg-secondary text-secondary-foreground" 
-              : "hover:bg-accent hover:text-foreground"
-        }`}
-      >
-        <Calendar className="h-4 w-4" />
-        {t("history.customRange", "Custom Range")}
-        {isCustomRangeActive() && (
-          <div className="absolute -top-1 -right-1 w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-        )}
-      </Button>
+            {/* Custom range */}
+            <div>
+              <h4 className="font-medium text-sm mb-3">{t("history.customRange", "Custom Range")}</h4>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <label className="text-xs text-muted-foreground">{t("history.from", "From")}</label>
+                  <Input
+                    type="date"
+                    value={formatDate(dateRange.startDate)}
+                    onChange={(e) => handleCustomDateChange("startDate", e.target.value)}
+                    className="h-8 text-xs"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs text-muted-foreground">{t("history.to", "To")}</label>
+                  <Input
+                    type="date"
+                    value={formatDate(dateRange.endDate)}
+                    onChange={(e) => handleCustomDateChange("endDate", e.target.value)}
+                    className="h-8 text-xs"
+                  />
+                </div>
+              </div>
+            </div>
 
-      {/* Clear filters */}
-      {hasActiveFilters && (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={clearFilters}
-          className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
-        >
-          <X className="h-4 w-4" />
-          {t("common.clear", "Clear")}
-        </Button>
-      )}
-
-      {/* Custom date inputs */}
-      {showCustomRange && (
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">
-              {t("history.from", "From")}:
-            </span>
-            <Input
-              type="date"
-              value={formatDate(dateRange.startDate)}
-              onChange={(e) => handleCustomDateChange("startDate", e.target.value)}
-              className="w-40"
-            />
+            {/* Actions */}
+            <div className="flex items-center justify-between pt-2 border-t">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={clearFilters}
+                disabled={!hasActiveFilters}
+                className="text-xs"
+              >
+                <X className="h-3 w-3 mr-1" />
+                {t("common.clear", "Clear")}
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => setIsOpen(false)}
+                className="text-xs"
+              >
+                {t("common.done", "Done")}
+              </Button>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">
-              {t("history.to", "To")}:
-            </span>
-            <Input
-              type="date"
-              value={formatDate(dateRange.endDate)}
-              onChange={(e) => handleCustomDateChange("endDate", e.target.value)}
-              className="w-40"
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Active filter display */}
-      {hasActiveFilters && (
-        <div className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 border border-primary/20 rounded-md text-sm text-primary">
-          <span className="font-medium">{t("history.activeFilter", "Active filter")}:</span>
-          {dateRange.startDate && (
-            <span>
-              {t("history.from", "From")} {dateRange.startDate.toLocaleDateString()}
-            </span>
-          )}
-          {dateRange.endDate && (
-            <span>
-              {dateRange.startDate ? " - " : ""}
-              {t("history.to", "To")} {dateRange.endDate.toLocaleDateString()}
-            </span>
-          )}
-        </div>
-      )}
+        </PopoverContent>
+      </Popover>
     </div>
   );
 });
