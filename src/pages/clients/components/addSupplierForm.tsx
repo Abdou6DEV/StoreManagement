@@ -68,8 +68,8 @@ export default function AddSupplierForm({
         aria-expanded={openPanel === "addSupplier"}
       >
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-            <Users className="w-5 h-5 text-blue-600" />
+          <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
+            <Users className="w-5 h-5 text-red-600" />
           </div>
           <h2 className="text-lg font-bold text-foreground">
             {t("suppliers.addTitle", "Add Supplier")}
@@ -91,7 +91,7 @@ export default function AddSupplierForm({
                 placeholder={t("suppliers.name", "Name")}
                 value={form.name}
                 onChange={(e) => handleFormChange("name", e.target.value)}
-                className="w-full px-4 h-10 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
+                className="w-full px-4 h-10 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-red-500/50 focus:border-red-500 transition-all"
                 required
               />
             </Legend>
@@ -102,7 +102,7 @@ export default function AddSupplierForm({
                 placeholder={t("suppliers.phone", "Phone")}
                 value={form.phone}
                 onChange={(e) => handleFormChange("phone", e.target.value)}
-                className="w-full px-4 h-10 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
+                className="w-full px-4 h-10 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-red-500/50 focus:border-red-500 transition-all"
               />
             </Legend>
             <Legend>
@@ -112,7 +112,7 @@ export default function AddSupplierForm({
                 placeholder={t("suppliers.email", "Email")}
                 value={form.email}
                 onChange={(e) => handleFormChange("email", e.target.value)}
-                className="w-full px-4 h-10 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
+                className="w-full px-4 h-10 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-red-500/50 focus:border-red-500 transition-all"
               />
             </Legend>
             <Legend>
@@ -122,7 +122,7 @@ export default function AddSupplierForm({
                 placeholder={t("suppliers.address", "Address")}
                 value={form.address}
                 onChange={(e) => handleFormChange("address", e.target.value)}
-                className="w-full px-4 h-10 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
+                className="w-full px-4 h-10 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-red-500/50 focus:border-red-500 transition-all"
               />
             </Legend>
             <Legend>
@@ -132,7 +132,7 @@ export default function AddSupplierForm({
                 placeholder={t("suppliers.notes", "Notes")}
                 value={form.notes}
                 onChange={(e) => handleFormChange("notes", e.target.value)}
-                className="w-full px-4 h-10 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
+                className="w-full px-4 h-10 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-red-500/50 focus:border-red-500 transition-all"
               />
             </Legend>
           </div>
@@ -141,7 +141,7 @@ export default function AddSupplierForm({
             <Button
               type="submit"
               disabled={loading}
-              className="bg-blue-600 hover:bg-blue-700 text-white h-10"
+              className="bg-red-600 hover:bg-red-700 text-white h-10"
             >
               {loading ? (
                 <>

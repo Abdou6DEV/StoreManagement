@@ -345,7 +345,7 @@ export default function Clients() {
           onClick={() => setActiveTab("suppliers")}
           className={`flex-1 px-6 py-4 font-medium transition-all duration-200 ${
             activeTab === "suppliers"
-              ? "text-blue-600 bg-background border-b-2 border-blue-600"
+              ? "text-red-600 bg-background border-b-2 border-red-600"
               : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
           }`}
         >
@@ -564,7 +564,7 @@ export default function Clients() {
           <div className="bg-card border border-border rounded-xl shadow-sm p-6 space-y-4">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
-                <Package className="w-7 h-7 text-blue-500" />
+                <Package className="w-7 h-7 text-red-500" />
                 <h1 className="text-2xl font-bold">
                   {t("suppliers.title", "Suppliers List")}
                 </h1>
