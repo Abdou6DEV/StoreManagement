@@ -16,8 +16,9 @@ import {
   Package,
   QrCode,
   CreditCard,
-  DollarSign,
   BarChart2,
+  ListTree,
+  Folder,
   Filter,
 } from "lucide-react";
 
@@ -275,7 +276,35 @@ export const StockTable = () => {
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage,
   );
-
+  const getCategorySummaries = () => {
+    return categories.map((cat) => {
+      const catProducts = products.filter((p) => p.categoryName === cat);
+      const totalQuantity = catProducts.reduce((sum, p) => sum + p.quantity, 0);
+      const totalBought = catProducts.reduce(
+        (sum, p) => sum + p.boughtPrice * p.quantity,
+        0
+      );
+      const totalSelling = catProducts.reduce(
+        (sum, p) => sum + p.sellingPrice * p.quantity,
+        0
+      );
+      const totalProfit = totalSelling - totalBought;
+  
+      return {
+        category: cat,
+        totalQuantity,
+        totalBought,
+        totalSelling,
+        totalProfit,
+      };
+    });
+  };
+  
+  // Filter category summaries based on search
+  const filteredCategorySummaries = getCategorySummaries().filter((row) =>
+    row.category.toLowerCase().includes(filters.search.toLowerCase())
+  );
+  const [viewMode, setViewMode] = useState<'product' | 'category'>('product');
   const StockRow = React.memo(function StockRow({
     product,
     setEditingProductID,
@@ -343,439 +372,495 @@ export const StockTable = () => {
   return (
     <section className="bg-card border border-border rounded-xl shadow-sm p-6 space-y-5">
       <div className="flex items-center justify-between border-b border-border pb-3">
-        <h2 className="flex justify-between text-lg font-bold text-foreground flex-1">
-          <span>{t("stock.tableTitle", "Stock by Product")}</span>
-          <span>{t("stock.count", { val: filteredList.length })}</span>
-        </h2>
-      </div>
-
-      {/* Filters Row */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex flex-wrap items-center gap-4">
-          {/* Items per page selector */}
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">
-              {t("stock.itemsPerPage", "Items per page:")}
-            </span>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="px-3 py-1.5 min-w-[70px]"
-                  aria-label={t(
-                    "stock.selectItemsPerPage",
-                    "Select items per page",
-                  )}
-                >
-                  {itemsPerPage}
-                  <ChevronDown className="ml-2 w-4 h-4" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-[120px] p-0 z-50">
-                <Command shouldFilter={false}>
-                  <CommandList>
-                    <CommandGroup>
-                      {[5, 10, 25, 50, 100].map((size) => (
-                        <CommandItem
-                          key={size}
-                          value={size.toString()}
-                          onSelect={() => {
-                            setItemsPerPage(size);
-                            setCurrentPage(1); // Reset to first page
-                          }}
-                        >
-                          {size}
-                          <Check
-                            className={cn(
-                              "ml-auto h-4 w-4",
-                              itemsPerPage === size
-                                ? "opacity-100"
-                                : "opacity-0",
-                            )}
-                          />
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
-                  </CommandList>
-                </Command>
-              </PopoverContent>
-            </Popover>
-          </div>
-          <input
-            type="text"
-            placeholder={t("stock.search")}
-            value={filters.search}
-            onChange={(e) => handleChange("search", e.target.value)}
-            className="px-3 py-1.5 rounded-md border border-border bg-card text-sm focus:outline-none focus:ring focus:ring-primary/30 transition max-w-[220px]"
-            aria-label={t("stock.search")}
-          />
-          {/* Category Filter Dropdown */}
-          <Popover
-            open={categoryDropdownOpen}
-            onOpenChange={(open) => {
-              setCategoryDropdownOpen(open);
-              if (open) setCategorySearch(""); // Reset search when opening
-            }}
+        <div className="flex items-center gap-3">
+          <Package className="w-7 h-7 text-primary" />
+          <h1 className="text-2xl font-bold">
+            {t("stock.tableTitle", "Stock Management")}
+          </h1>
+        </div> 
+        <div className="flex items-center gap-3">
+          <Tooltip
+            content={
+              viewMode === 'product' 
+                ? t("stock.viewByProductTooltip", "View stock by individual products")
+                : t("stock.viewByCategoryTooltip", "View stock by categories")
+            }
           >
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className="px-3 py-1.5"
-                aria-label={t("stock.filterByCategory", "Filter by category")}
-              >
-                {filters.category
-                  ? filters.category
-                  : t("stock.allCategories", "All Categories")}
-                <ChevronDown className="ml-2 w-4 h-4" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-[200px] p-0 z-50">
-              <Command shouldFilter={false}>
-                <CommandInput
-                  placeholder={t("stock.searchType")}
-                  className="h-9"
-                  value={categorySearch}
-                  onValueChange={setCategorySearch}
-                />
-                <CommandList>
-                  <CommandGroup>
+            <Button
+              variant="outline"
+              onClick={() => setViewMode(viewMode === 'product' ? 'category' : 'product')}
+              className="gap-2"
+            >
+              {viewMode === 'product' ? (
+                <>
+                  <Package className="w-4 h-4" />
+                  {t("stock.viewByProduct", "Products")}
+                </>
+              ) : (
+                <>
+                  <ListTree className="w-4 h-4" />
+                  {t("stock.viewByCategory", "Categories")}
+                </>
+              )}
+            </Button>
+          </Tooltip>
+        </div>
+      </div>
+      {/* Filters Row - Only show search in category view, show all filters in product view */}
+<div className="flex flex-wrap items-center justify-between gap-4">
+  <div className="flex flex-wrap items-center gap-4">
+    {/* Items per page selector - shown in both views */}
+    <div className="flex items-center gap-2">
+      <span className="text-sm text-muted-foreground">
+        {t("stock.itemsPerPage", "Items per page:")}
+      </span>
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            className="px-3 py-1.5 min-w-[70px]"
+            aria-label={t("stock.selectItemsPerPage", "Select items per page")}
+          >
+            {itemsPerPage}
+            <ChevronDown className="ml-2 w-4 h-4" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-[120px] p-0 z-50">
+          <Command shouldFilter={false}>
+            <CommandList>
+              <CommandGroup>
+                {[5, 10, 25, 50, 100].map((size) => (
+                  <CommandItem
+                    key={size}
+                    value={size.toString()}
+                    onSelect={() => {
+                      setItemsPerPage(size);
+                      setCurrentPage(1); // Reset to first page
+                    }}
+                  >
+                    {size}
+                    <Check
+                      className={cn(
+                        "ml-auto h-4 w-4",
+                        itemsPerPage === size ? "opacity-100" : "opacity-0",
+                      )}
+                    />
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+    </div>
+    
+    {/* Search input - shown in both views */}
+    <input
+      type="text"
+      placeholder={viewMode === 'product' 
+        ? t("stock.search") 
+        : t("stock.searchCategory", "Search categories...")}
+      value={filters.search}
+      onChange={(e) => handleChange("search", e.target.value)}
+      className="px-3 py-1.5 rounded-md border border-border bg-card text-sm focus:outline-none focus:ring focus:ring-primary/30 transition max-w-[220px]"
+      aria-label={t("stock.search")}
+    />
+
+    {/* Category Filter Dropdown - only in product view */}
+    {viewMode === 'product' && (
+      <Popover
+        open={categoryDropdownOpen}
+        onOpenChange={(open) => {
+          setCategoryDropdownOpen(open);
+          if (open) setCategorySearch(""); // Reset search when opening
+        }}
+      >
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            className="px-3 py-1.5"
+            aria-label={t("stock.filterByCategory", "Filter by category")}
+          >
+            {filters.category
+              ? filters.category
+              : t("stock.allCategories", "All Categories")}
+            <ChevronDown className="ml-2 w-4 h-4" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-[200px] p-0 z-50">
+          <Command shouldFilter={false}>
+            <CommandInput
+              placeholder={t("stock.searchType")}
+              className="h-9"
+              value={categorySearch}
+              onValueChange={setCategorySearch}
+            />
+            <CommandList>
+              <CommandGroup>
+                <CommandItem
+                  key="all"
+                  value=""
+                  onSelect={() => handleChange("category", "")}
+                >
+                  {t("stock.allCategories", "All Categories")}
+                  <Check
+                    className={cn(
+                      "ml-auto h-4 w-4",
+                      !filters.category ? "opacity-100" : "opacity-0",
+                    )}
+                  />
+                </CommandItem>
+                {categories
+                  .filter((cat) =>
+                    cat.toLowerCase().includes(categorySearch.toLowerCase()),
+                  )
+                  .map((cat) => (
                     <CommandItem
-                      key="all"
-                      value=""
-                      onSelect={() => handleChange("category", "")}
+                      key={cat}
+                      value={cat}
+                      onSelect={() => handleChange("category", cat)}
                     >
-                      {t("stock.allCategories", "All Categories")}
+                      {cat}
                       <Check
                         className={cn(
                           "ml-auto h-4 w-4",
-                          !filters.category ? "opacity-100" : "opacity-0",
+                          filters.category === cat ? "opacity-100" : "opacity-0",
                         )}
                       />
                     </CommandItem>
-                    {categories
-                      .filter((cat) =>
-                        cat
-                          .toLowerCase()
-                          .includes(categorySearch.toLowerCase()),
-                      )
-                      .map((cat) => (
-                        <CommandItem
-                          key={cat}
-                          value={cat}
-                          onSelect={() => handleChange("category", cat)}
-                        >
-                          {cat}
-                          <Check
-                            className={cn(
-                              "ml-auto h-4 w-4",
-                              filters.category === cat
-                                ? "opacity-100"
-                                : "opacity-0",
-                            )}
-                          />
-                        </CommandItem>
-                      ))}
-                  </CommandGroup>
-                </CommandList>
-              </Command>
-            </PopoverContent>
-          </Popover>
-        </div>
+                  ))}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+    )}
+  </div>
 
-        {/* Filters Section */}
-        <Popover>
-          <PopoverTrigger asChild>
-            <div className="relative inline-block">
-              <Button
-                variant="outline"
-                className="px-3 py-1.5 min-w-[120px] justify-start"
-                aria-label={t("stock.filters", "Filters")}
-                onMouseEnter={handleTooltipEnter}
-                onMouseLeave={handleTooltipLeave}
-              >
-                <Filter className="w-4 h-4 mr-2" />
-                {getActiveFilterCount() > 0 ? (
-                  <div className="flex items-center gap-1 flex-wrap">
-                    {getActiveFiltersSummary()
-                      .slice(0, 2)
-                      .map((filter, index) => (
-                        <span
-                          key={index}
-                          className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium bg-primary/10 text-primary border border-primary/20"
-                        >
-                          {filter}
-                          <span
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              removeFilter(filter);
-                            }}
-                            className="ml-1 hover:bg-primary/20 rounded-full w-3 h-3 flex items-center justify-center cursor-pointer"
-                          >
-                            <X className="w-2 h-2" />
-                          </span>
-                        </span>
-                      ))}
-                    {getActiveFilterCount() > 2 && (
-                      <span className="text-xs text-muted-foreground">
-                        +{getActiveFilterCount() - 2}
+  {/* Filters Section - only in product view */}
+  {viewMode === 'product' && (
+    <Popover>
+      <PopoverTrigger asChild>
+        <div className="relative inline-block">
+          <Button
+            variant="outline"
+            className="px-3 py-1.5 min-w-[120px] justify-start"
+            aria-label={t("stock.filters", "Filters")}
+            onMouseEnter={handleTooltipEnter}
+            onMouseLeave={handleTooltipLeave}
+          >
+            <Filter className="w-4 h-4 mr-2" />
+            {getActiveFilterCount() > 0 ? (
+              <div className="flex items-center gap-1 flex-wrap">
+                {getActiveFiltersSummary()
+                  .slice(0, 2)
+                  .map((filter, index) => (
+                    <span
+                      key={index}
+                      className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium bg-primary/10 text-primary border border-primary/20"
+                    >
+                      {filter}
+                      <span
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeFilter(filter);
+                        }}
+                        className="ml-1 hover:bg-primary/20 rounded-full w-3 h-3 flex items-center justify-center cursor-pointer"
+                      >
+                        <X className="w-2 h-2" />
                       </span>
-                    )}
-                  </div>
-                ) : (
-                  t("stock.filters", "Filters")
-                )}
-                <ChevronDown className="ml-auto w-4 h-4" />
-              </Button>
-              <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-full z-[9999] whitespace-nowrap px-2 py-1 rounded bg-black text-white dark:bg-white dark:text-black text-xs opacity-0 scale-95 transition-all duration-200">
-                {t(
-                  "stock.filtersTooltip",
-                  "Filter products by various criteria",
+                    </span>
+                  ))}
+                {getActiveFilterCount() > 2 && (
+                  <span className="text-xs text-muted-foreground">
+                    +{getActiveFilterCount() - 2}
+                  </span>
                 )}
               </div>
-            </div>
-          </PopoverTrigger>
-          <PopoverContent className="w-[200px] p-0 z-50">
-            <div className="py-1">
-              <Tooltip
-                content={t(
-                  "stock.lowStockTooltip",
-                  "Show products with quantity below threshold",
-                )}
-                position="left"
-              >
-                <div
-                  className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-accent"
-                  style={{ width: "100%", minWidth: "198px" }}
-                  onClick={() => toggleFilter("lowStock")}
-                >
-                  <AlertTriangle
-                    className={cn(
-                      "w-4 h-4",
-                      filters.lowStock
-                        ? "text-yellow-600"
-                        : "text-muted-foreground",
-                    )}
-                  />
-                  <span className="flex-1">{t("stock.lowStock")}</span>
-                  {filters.lowStock && (
-                    <Check className="w-4 h-4 text-yellow-600" />
-                  )}
-                </div>
-              </Tooltip>
-              <Tooltip
-                content={t(
-                  "stock.bestSellingTooltip",
-                  "Show products with highest sales",
-                )}
-                position="left"
-              >
-                <div
-                  className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-accent"
-                  style={{ width: "100%", minWidth: "198px" }}
-                  onClick={() => toggleFilter("bestSelling")}
-                >
-                  <TrendingUp
-                    className={cn(
-                      "w-4 h-4",
-                      filters.bestSelling
-                        ? "text-green-600"
-                        : "text-muted-foreground",
-                    )}
-                  />
-                  <span className="flex-1">{t("stock.bestSelling")}</span>
-                  {filters.bestSelling && (
-                    <Check className="w-4 h-4 text-green-600" />
-                  )}
-                </div>
-              </Tooltip>
-              <Tooltip
-                content={t(
-                  "stock.worstSellingTooltip",
-                  "Show products with lowest sales",
-                )}
-                position="left"
-              >
-                <div
-                  className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-accent"
-                  style={{ width: "100%", minWidth: "198px" }}
-                  onClick={() => toggleFilter("worstSelling")}
-                >
-                  <TrendingDown
-                    className={cn(
-                      "w-4 h-4",
-                      filters.worstSelling
-                        ? "text-red-600"
-                        : "text-muted-foreground",
-                    )}
-                  />
-                  <span className="flex-1">{t("stock.worstSelling")}</span>
-                  {filters.worstSelling && (
-                    <Check className="w-4 h-4 text-red-600" />
-                  )}
-                </div>
-              </Tooltip>
-              <Tooltip
-                content={t(
-                  "stock.noBarcodeTooltip",
-                  "Show products without barcode",
-                )}
-                position="left"
-              >
-                <div
-                  className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-accent"
-                  style={{ width: "100%", minWidth: "200px" }}
-                  onClick={() => toggleFilter("noBarcode")}
-                >
-                  <QrCode
-                    className={cn(
-                      "w-4 h-4",
-                      filters.noBarcode
-                        ? "text-orange-600"
-                        : "text-muted-foreground",
-                    )}
-                  />
-                  <span className="flex-1">{t("stock.noBarcode")}</span>
-                  {filters.noBarcode && (
-                    <Check className="w-4 h-4 text-orange-600" />
-                  )}
-                </div>
-              </Tooltip>
-            </div>
-          </PopoverContent>
-        </Popover>
-      </div>
-
-      {/* Table or Empty State */}
-      {paginatedProducts.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 gap-4 text-center">
-          <Package className="w-16 h-16 text-green-600 mb-2" />
-          <h3 className="text-xl font-semibold text-foreground">
-            {t("stock.emptyProductTitle")}
-          </h3>
-          <p className="text-muted-foreground max-w-md">
-            {t("stock.emptyProductDesc")}
-          </p>
+            ) : (
+              t("stock.filters", "Filters")
+            )}
+            <ChevronDown className="ml-auto w-4 h-4" />
+          </Button>
+          <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-full z-[9999] whitespace-nowrap px-2 py-1 rounded bg-black text-white dark:bg-white dark:text-black text-xs opacity-0 scale-95 transition-all duration-200">
+            {t("stock.filtersTooltip", "Filter products by various criteria")}
+          </div>
         </div>
-      ) : (
-        <div className="table-container overflow-auto rounded-lg border border-muted">
-          <table className="min-w-full text-sm text-left">
-            <thead className="bg-muted text-muted-foreground">
-              <tr>
-                <th className="px-4 py-3">{t("stock.product")}</th>
-                <th className="px-4 py-3">{t("stock.type")}</th>
-                <th className="px-4 py-3">{t("stock.quantity")}</th>
-                <th className="px-4 py-3">{t("stock.boughtPrice")}</th>
-                <th className="px-4 py-3">{t("stock.sellingPrice")}</th>
-                <th className="px-4 py-3">{t("stock.profit", "Profit")}</th>
-                <th className="px-4 py-3">
-                  {t("stock.totalBought", "Total Bought")}
-                </th>
-                <th className="px-4 py-3">
-                  {t("stock.totalSold", "Total Sold")}
-                </th>
-                <th className="px-4 py-3">
-                  {t("stock.totalProfit", "Total Profit")}
-                </th>
-                <th className="px-4 py-3">{t("stock.actions", "Actions")}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {paginatedProducts.map((product) => (
-                <StockRow
-                  key={product.id}
-                  product={product}
-                  setEditingProductID={setEditingProductID}
-                  handleDeleteProduct={handleDeleteProduct}
-                  handleViewProductInfo={handleViewProductInfo}
-                />
-              ))}
-            </tbody>
-          </table>
+      </PopoverTrigger>
+      <PopoverContent className="w-[200px] p-0 z-50">
+        <div className="py-1">
+          <Tooltip
+            content={t("stock.lowStockTooltip", "Show products with quantity below threshold")}
+            position="left"
+          >
+            <div
+              className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-accent"
+              style={{ width: "100%", minWidth: "198px" }}
+              onClick={() => toggleFilter("lowStock")}
+            >
+              <AlertTriangle
+                className={cn(
+                  "w-4 h-4",
+                  filters.lowStock ? "text-yellow-600" : "text-muted-foreground",
+                )}
+              />
+              <span className="flex-1">{t("stock.lowStock")}</span>
+              {filters.lowStock && <Check className="w-4 h-4 text-yellow-600" />}
+            </div>
+          </Tooltip>
+          <Tooltip
+            content={t("stock.bestSellingTooltip", "Show products with highest sales")}
+            position="left"
+          >
+            <div
+              className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-accent"
+              style={{ width: "100%", minWidth: "198px" }}
+              onClick={() => toggleFilter("bestSelling")}
+            >
+              <TrendingUp
+                className={cn(
+                  "w-4 h-4",
+                  filters.bestSelling ? "text-green-600" : "text-muted-foreground",
+                )}
+              />
+              <span className="flex-1">{t("stock.bestSelling")}</span>
+              {filters.bestSelling && <Check className="w-4 h-4 text-green-600" />}
+            </div>
+          </Tooltip>
+          <Tooltip
+            content={t("stock.worstSellingTooltip", "Show products with lowest sales")}
+            position="left"
+          >
+            <div
+              className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-accent"
+              style={{ width: "100%", minWidth: "198px" }}
+              onClick={() => toggleFilter("worstSelling")}
+            >
+              <TrendingDown
+                className={cn(
+                  "w-4 h-4",
+                  filters.worstSelling ? "text-red-600" : "text-muted-foreground",
+                )}
+              />
+              <span className="flex-1">{t("stock.worstSelling")}</span>
+              {filters.worstSelling && <Check className="w-4 h-4 text-red-600" />}
+            </div>
+          </Tooltip>
+          <Tooltip
+            content={t("stock.noBarcodeTooltip", "Show products without barcode")}
+            position="left"
+          >
+            <div
+              className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-accent"
+              style={{ width: "100%", minWidth: "200px" }}
+              onClick={() => toggleFilter("noBarcode")}
+            >
+              <QrCode
+                className={cn(
+                  "w-4 h-4",
+                  filters.noBarcode ? "text-orange-600" : "text-muted-foreground",
+                )}
+              />
+              <span className="flex-1">{t("stock.noBarcode")}</span>
+              {filters.noBarcode && <Check className="w-4 h-4 text-orange-600" />}
+            </div>
+          </Tooltip>
         </div>
-      )}
+      </PopoverContent>
+    </Popover>
+  )}
+</div>
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <Pagination className="mt-6">
-          <PaginationContent>
-            <PaginationItem>
-              {currentPage === 1 || products.length === 0 ? (
-                <span className="opacity-50 pointer-events-none select-none">
-                  <PaginationPrevious href="#" />
-                </span>
-              ) : (
-                <PaginationPrevious
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setCurrentPage(currentPage - 1);
-                  }}
-                  href="#"
-                />
-              )}
-            </PaginationItem>
-            {/* Page numbers with ellipsis if needed */}
-            {(() => {
-              const items = [];
-              let start = Math.max(1, currentPage - 2);
-              let end = Math.min(totalPages, currentPage + 2);
-              if (currentPage <= 3) {
-                end = Math.min(5, totalPages);
-              } else if (currentPage >= totalPages - 2) {
-                start = Math.max(1, totalPages - 4);
-              }
-              if (start > 1) {
-                items.push(
-                  <PaginationItem key="start-ellipsis">
-                    <PaginationEllipsis />
-                  </PaginationItem>,
-                );
-              }
-              for (let i = start; i <= end; i++) {
-                items.push(
-                  <PaginationItem key={i}>
-                    <PaginationLink
-                      isActive={i === currentPage}
-                      href="#"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        setCurrentPage(i);
-                      }}
-                    >
-                      {i}
-                    </PaginationLink>
-                  </PaginationItem>,
-                );
-              }
-              if (end < totalPages) {
-                items.push(
-                  <PaginationItem key="end-ellipsis">
-                    <PaginationEllipsis />
-                  </PaginationItem>,
-                );
-              }
-              return items;
-            })()}
-            <PaginationItem>
-              {currentPage === totalPages || products.length === 0 ? (
-                <span className="opacity-50 pointer-events-none select-none">
-                  <PaginationNext href="#" />
-                </span>
-              ) : (
-                <PaginationNext
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setCurrentPage(currentPage + 1);
-                  }}
-                  href="#"
-                />
-              )}
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
-      )}
+{/* Table or Empty State */}
+{viewMode === 'product' ? (
+  paginatedProducts.length === 0 ? (
+    <div className="flex flex-col items-center justify-center py-16 gap-4 text-center">
+      <Package className="w-16 h-16 text-green-600 mb-2" />
+      <h3 className="text-xl font-semibold text-foreground">
+        {t("stock.emptyProductTitle")}
+      </h3>
+      <p className="text-muted-foreground max-w-md">
+        {t("stock.emptyProductDesc")}
+      </p>
+    </div>
+  ) : (
+    <div className="table-container overflow-auto rounded-lg border border-muted">
+      <table className="min-w-full text-sm text-left">
+        <thead className="bg-muted text-muted-foreground">
+          <tr>
+            <th className="px-4 py-3">{t("stock.product")}</th>
+            <th className="px-4 py-3">{t("stock.type")}</th>
+            <th className="px-4 py-3">{t("stock.quantity")}</th>
+            <th className="px-4 py-3">{t("stock.boughtPrice")}</th>
+            <th className="px-4 py-3">{t("stock.sellingPrice")}</th>
+            <th className="px-4 py-3">{t("stock.profit", "Profit")}</th>
+            <th className="px-4 py-3">{t("stock.totalBought", "Total Bought")}</th>
+            <th className="px-4 py-3">{t("stock.totalSold", "Total Sold")}</th>
+            <th className="px-4 py-3">{t("stock.totalProfit", "Total Profit")}</th>
+            <th className="px-4 py-3">{t("stock.actions", "Actions")}</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-border">
+          {paginatedProducts.map((product) => (
+            <StockRow
+              key={product.id}
+              product={product}
+              setEditingProductID={setEditingProductID}
+              handleDeleteProduct={handleDeleteProduct}
+              handleViewProductInfo={handleViewProductInfo}
+            />
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+) : filteredCategorySummaries.length === 0 ? (
+  <div className="flex flex-col items-center justify-center py-16 gap-4 text-center">
+    <Folder className="w-16 h-16 text-green-600 mb-2" />
+    <h3 className="text-xl font-semibold text-foreground">
+      {t("stock.emptyCategoryTitle")}
+    </h3>
+    <p className="text-muted-foreground max-w-md">
+      {t("stock.emptyCategoryDesc")}
+    </p>
+  </div>
+) : (
+  <>
+    <div className="table-container overflow-auto rounded-lg border border-muted">
+      <table className="min-w-full text-sm text-left">
+        <thead className="bg-muted text-muted-foreground">
+          <tr>
+            <th className="px-4 py-3">{t("stock.category")}</th>
+            <th className="px-4 py-3">{t("stock.productCount", "Products")}</th>
+            <th className="px-4 py-3">{t("stock.totalQuantity")}</th>
+            <th className="px-4 py-3">{t("stock.totalBought")}</th>
+            <th className="px-4 py-3">{t("stock.totalSelling")}</th>
+            <th className="px-4 py-3">{t("stock.totalProfit")}</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-border">
+          {filteredCategorySummaries
+            .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+            .map((row) => {
+              const categoryProducts = products.filter(p => p.categoryName === row.category);
+              return (
+                <tr key={row.category} className="h-[48px] hover:bg-muted/40 transition">
+                  <td className="px-4">{row.category}</td>
+                  <td className="px-4">{categoryProducts.length}</td>
+                  <td className="px-4">{row.totalQuantity}</td>
+                  <td className="px-4">
+                    {row.totalBought.toLocaleString()} {t("cashier.currency")}
+                  </td>
+                  <td className="px-4">
+                    {row.totalSelling.toLocaleString()} {t("cashier.currency")}
+                  </td>
+                  <td className="px-4 text-green-700 font-medium">
+                    {row.totalProfit.toLocaleString()} {t("cashier.currency")}
+                  </td>
+                </tr>
+              );
+            })}
+        </tbody>
+      </table>
+    </div>
+  </>
+)}
+
+{/* Pagination - works for both views */}
+{((viewMode === 'product' && totalPages > 1) || 
+ (viewMode === 'category' && Math.ceil(filteredCategorySummaries.length / itemsPerPage) > 1)) && (
+  <Pagination className="mt-6">
+    <PaginationContent>
+      <PaginationItem>
+        {currentPage === 1 || 
+        (viewMode === 'product' ? products.length === 0 : filteredCategorySummaries.length === 0) ? (
+          <span className="opacity-50 pointer-events-none select-none">
+            <PaginationPrevious href="#" />
+          </span>
+        ) : (
+          <PaginationPrevious
+            onClick={(e) => {
+              e.preventDefault();
+              setCurrentPage(currentPage - 1);
+            }}
+            href="#"
+          />
+        )}
+      </PaginationItem>
+      {/* Page numbers with ellipsis if needed */}
+      {(() => {
+        const totalPagesToShow = viewMode === 'product' 
+          ? totalPages 
+          : Math.ceil(filteredCategorySummaries.length / itemsPerPage);
+        
+        const items = [];
+        let start = Math.max(1, currentPage - 2);
+        let end = Math.min(totalPagesToShow, currentPage + 2);
+        
+        if (currentPage <= 3) {
+          end = Math.min(5, totalPagesToShow);
+        } else if (currentPage >= totalPagesToShow - 2) {
+          start = Math.max(1, totalPagesToShow - 4);
+        }
+        
+        if (start > 1) {
+          items.push(
+            <PaginationItem key="start-ellipsis">
+              <PaginationEllipsis />
+            </PaginationItem>,
+          );
+        }
+        
+        for (let i = start; i <= end; i++) {
+          items.push(
+            <PaginationItem key={i}>
+              <PaginationLink
+                isActive={i === currentPage}
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setCurrentPage(i);
+                }}
+              >
+                {i}
+              </PaginationLink>
+            </PaginationItem>,
+          );
+        }
+        
+        if (end < totalPagesToShow) {
+          items.push(
+            <PaginationItem key="end-ellipsis">
+              <PaginationEllipsis />
+            </PaginationItem>,
+          );
+        }
+        return items;
+      })()}
+      <PaginationItem>
+        {currentPage === (viewMode === 'product' 
+          ? totalPages 
+          : Math.ceil(filteredCategorySummaries.length / itemsPerPage)) || 
+        (viewMode === 'product' ? products.length === 0 : filteredCategorySummaries.length === 0) ? (
+          <span className="opacity-50 pointer-events-none select-none">
+            <PaginationNext href="#" />
+          </span>
+        ) : (
+          <PaginationNext
+            onClick={(e) => {
+              e.preventDefault();
+              setCurrentPage(currentPage + 1);
+            }}
+            href="#"
+          />
+        )}
+      </PaginationItem>
+    </PaginationContent>
+  </Pagination>
+)}
 
       {/* Simplified Totals Footer */}
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-4 text-sm">
+      <div className="mt-4 flex flex-wrap items-center justify-center gap-10 text-sm">
         {/* Total Products */}
         <div className="flex items-center gap-2">
           <Package className="w-4 h-4 text-muted-foreground" />
