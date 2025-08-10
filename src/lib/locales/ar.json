@@ -102,8 +102,8 @@
     "salesInPeriod": "المبيعات في الفترة المحددة",
     "totalRevenue": "إجمالي الإيرادات",
     "revenueInPeriod": "الإيرادات في الفترة المحددة",
-    "averageSale": "متوسط البيع",
-    "perTransaction": "لكل معاملة",
+    "totalProfit": "إجمالي الربح",
+    "profitInPeriod": "الربح في الفترة المحددة",
 
     "allTransactions": "جميع المعاملات المعالجة",
     "totalPayments": "إجمالي المدفوعات",

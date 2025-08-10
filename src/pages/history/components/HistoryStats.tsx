@@ -8,6 +8,7 @@ interface HistoryStatsProps {
   stats: {
     totalSales: number;
     totalRevenue: number;
+    totalProfit: number;
     totalPayments: number;
     totalPaymentAmount: number;
   };
@@ -63,18 +64,18 @@ export const HistoryStats: React.FC<HistoryStatsProps> = React.memo(({ stats, ac
           <div className="flex items-center space-x-2">
             <TrendingUp className="h-5 w-5 text-muted-foreground" />
             <div className="text-sm font-medium text-muted-foreground">
-              {t("history.averageSale", "Average Sale")}
+              {t("history.totalProfit", "Total Profit")}
             </div>
           </div>
           <div className="text-2xl font-bold">
             {isLoading ? (
               <Skeleton className="h-8 w-24" />
             ) : (
-              stats.totalSales > 0 ? formatCurrency(stats.totalRevenue / stats.totalSales) : formatCurrency(0)
+              formatCurrency(stats.totalProfit)
             )}
           </div>
           <p className="text-xs text-muted-foreground">
-            {t("history.perTransaction", "Per transaction")}
+            {t("history.profitInPeriod", "Profit in selected period")}
           </p>
         </div>
       </div>

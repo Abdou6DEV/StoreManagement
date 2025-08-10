@@ -1,6 +1,4 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { useTranslation } from "react-i18next";
-import "../../lib/i18n";
 import { HistoryTabs } from "./components/HistoryTabs";
 import { DateRangeFilter } from "./components/DateRangeFilter";
 import { SalesHistoryTable } from "./components/SalesHistoryTable";
@@ -13,7 +11,6 @@ import { DateRange } from "../../types";
 export type HistoryTab = "sales" | "payments";
 
 export default function History() {
-  const { t } = useTranslation();
   const { showToast } = useToast();
   
   const [activeTab, setActiveTab] = useState<HistoryTab>("sales");
@@ -32,6 +29,7 @@ export default function History() {
   const [stats, setStats] = useState({
     totalSales: 0,
     totalRevenue: 0,
+    totalProfit: 0,
     totalPayments: 0,
     totalPaymentAmount: 0,
   });
@@ -49,7 +47,26 @@ export default function History() {
       
       // Update stats
       const totalRevenue = filteredSales.reduce((sum, sale) => sum + sale.totalAmountWithDiscount, 0);
-      setStats(prev => ({ ...prev, totalSales: filteredSales.length, totalRevenue }));
+      
+      // Calculate total profit
+      const totalProfit = filteredSales.reduce((sum: number, sale: any) => {
+        const saleProfit = sale.saleItems.reduce((itemSum: number, item: any) => {
+          if (item.product && item.product.boughtPrice) {
+            // For regular products: profit = (selling price - bought price) × quantity
+            const itemProfit = (item.price - item.product.boughtPrice) * item.quantity;
+            return itemSum + itemProfit;
+          } else if (item.manualProduct || item.service) {
+            // For manual products and services: assume 100% profit (no cost)
+            const itemProfit = item.price * item.quantity;
+            return itemSum + itemProfit;
+          }
+          return itemSum;
+        }, 0);
+        // Subtract the discount from the profit since discount reduces actual revenue
+        return sum + saleProfit - sale.discount;
+      }, 0);
+      
+      setStats(prev => ({ ...prev, totalSales: filteredSales.length, totalRevenue, totalProfit }));
     }
     
     if (paymentsLoaded && rawPaymentsData.length > 0) {
@@ -93,7 +110,26 @@ export default function History() {
       
       // Calculate sales stats
       const totalRevenue = filteredSales.reduce((sum, sale) => sum + sale.totalAmountWithDiscount, 0);
-      setStats(prev => ({ ...prev, totalSales: filteredSales.length, totalRevenue }));
+      
+      // Calculate total profit
+      const totalProfit = filteredSales.reduce((sum: number, sale: any) => {
+        const saleProfit = sale.saleItems.reduce((itemSum: number, item: any) => {
+          if (item.product && item.product.boughtPrice) {
+            // For regular products: profit = (selling price - bought price) × quantity
+            const itemProfit = (item.price - item.product.boughtPrice) * item.quantity;
+            return itemSum + itemProfit;
+          } else if (item.manualProduct || item.service) {
+            // For manual products and services: assume 100% profit (no cost)
+            const itemProfit = item.price * item.quantity;
+            return itemSum + itemProfit;
+          }
+          return itemSum;
+        }, 0);
+        // Subtract the discount from the profit since discount reduces actual revenue
+        return sum + saleProfit - sale.discount;
+      }, 0);
+      
+      setStats(prev => ({ ...prev, totalSales: filteredSales.length, totalRevenue, totalProfit }));
     } catch (error) {
       console.error("Error loading sales data:", error);
       showToast("Error loading sales data", "error");

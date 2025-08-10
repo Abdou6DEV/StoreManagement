@@ -102,8 +102,8 @@
     "salesInPeriod": "Ventes dans la période sélectionnée",
     "totalRevenue": "Revenu total",
     "revenueInPeriod": "Revenu dans la période sélectionnée",
-    "averageSale": "Vente moyenne",
-    "perTransaction": "Par transaction",
+    "totalProfit": "Profit total",
+    "profitInPeriod": "Profit dans la période sélectionnée",
 
     "allTransactions": "Toutes les transactions traitées",
     "totalPayments": "Total des paiements",

@@ -102,8 +102,8 @@
     "salesInPeriod": "Sales in selected period",
     "totalRevenue": "Total Revenue",
     "revenueInPeriod": "Revenue in selected period",
-    "averageSale": "Average Sale",
-    "perTransaction": "Per transaction",
+    "totalProfit": "Total Profit",
+    "profitInPeriod": "Profit in selected period",
 
     "allTransactions": "All transactions processed",
     "totalPayments": "Total Payments",
