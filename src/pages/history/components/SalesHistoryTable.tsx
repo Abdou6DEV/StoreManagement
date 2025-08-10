@@ -384,7 +384,7 @@ export const SalesHistoryTable: React.FC<SalesHistoryTableProps> = React.memo(
         {/* Search and Controls */}
         <div className="flex items-center justify-between">
           <div className="relative w-80">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-primary" />
             <Input
               placeholder={t(
                 "history.searchSales",
@@ -392,7 +392,7 @@ export const SalesHistoryTable: React.FC<SalesHistoryTableProps> = React.memo(
               )}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
+              className="pl-10 border-2 border-primary/20 focus:border-primary focus:ring-2 focus:ring-primary/20"
               disabled={isLoading}
             />
             {isLoading && (
@@ -403,7 +403,7 @@ export const SalesHistoryTable: React.FC<SalesHistoryTableProps> = React.memo(
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">
+            <span className="text-sm text-foreground font-medium">
               {t("history.showing", "Showing")} {startIndex + 1}-
               {Math.min(endIndex, filteredAndSortedData.length)}{" "}
               {t("history.of", "of")} {filteredAndSortedData.length}
@@ -412,7 +412,7 @@ export const SalesHistoryTable: React.FC<SalesHistoryTableProps> = React.memo(
               onValueChange={(value) => setItemsPerPage(Number(value))}
               defaultValue={itemsPerPage.toString()}
             >
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-[180px] border-2 border-primary/20 focus:border-primary focus:ring-2 focus:ring-primary/20">
                 <SelectValue
                   placeholder={t("history.itemsPerPage", "Items per page")}
                 />
