@@ -254,13 +254,6 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
           </div>
 
           <div className="flex items-center gap-1">
-            <button
-              onClick={onClose}
-              className="p-2.5 hover:bg-muted/50 rounded-lg transition-colors"
-              title={t("cashier.close", "Close")}
-            >
-              <X className="w-4 h-4 text-muted-foreground" />
-            </button>
             {isEditing ? (
               <>
                 <button
