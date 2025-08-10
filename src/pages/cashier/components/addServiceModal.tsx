@@ -26,6 +26,7 @@ export default function AddServiceModal({
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
   const [isLoading, setIsLoading] = useState(false);
+  const [justSelectedSuggestion, setJustSelectedSuggestion] = useState(false);
   const nameInputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
 
@@ -43,7 +44,10 @@ export default function AddServiceModal({
         const query = service.name.trim() || service.description.trim();
         const results = await window.api.database.services.search(query);
         setSuggestions(results.slice(0, 2));
-        setShowSuggestions(results.length > 0);
+        // Only show suggestions if we haven't just selected one
+        if (!justSelectedSuggestion) {
+          setShowSuggestions(results.length > 0);
+        }
         setSelectedSuggestionIndex(-1);
       } catch (error) {
         console.error("Error searching services:", error);
@@ -56,7 +60,7 @@ export default function AddServiceModal({
 
     const debounceTimer = setTimeout(searchSuggestions, 300);
     return () => clearTimeout(debounceTimer);
-  }, [service.name, service.description]);
+  }, [service.name, service.description, justSelectedSuggestion]);
 
   // Handle keyboard navigation
   useEffect(() => {
@@ -113,9 +117,36 @@ export default function AddServiceModal({
       name: suggestion.name,
       description: suggestion.description || "",
     }));
+    // Close dropdown and reset selection
     setShowSuggestions(false);
     setSelectedSuggestionIndex(-1);
-    nameInputRef.current?.focus();
+    // Set flag to prevent immediate reopening
+    setJustSelectedSuggestion(true);
+    // Clear suggestions to prevent them from showing again
+    setSuggestions([]);
+  };
+
+  const handleNameChange = (newValue: string) => {
+    setService((p) => ({ ...p, name: newValue }));
+    
+    // If user is typing something completely different, reset the flag
+    if (newValue.trim() !== service.name.trim()) {
+      setJustSelectedSuggestion(false);
+    }
+    
+    // Only show suggestions if there's text, suggestions, and haven't just selected one
+    if (newValue.trim() && suggestions.length > 0 && !justSelectedSuggestion) {
+      setShowSuggestions(true);
+    } else {
+      setShowSuggestions(false);
+    }
+  };
+
+  const handleNameFocus = () => {
+    // Only show suggestions if we have text, suggestions, and haven't just selected one
+    if (service.name.trim() && suggestions.length > 0 && !justSelectedSuggestion) {
+      setShowSuggestions(true);
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -135,6 +166,7 @@ export default function AddServiceModal({
     setService({ name: "", description: "", price: 0 });
     setSuggestions([]);
     setShowSuggestions(false);
+    setJustSelectedSuggestion(false);
     onClose();
   };
 
@@ -142,6 +174,7 @@ export default function AddServiceModal({
     setService({ name: "", description: "", price: 0 });
     setSuggestions([]);
     setShowSuggestions(false);
+    setJustSelectedSuggestion(false);
     onClose();
   };
 
@@ -172,11 +205,8 @@ export default function AddServiceModal({
                 type="text"
                 className="w-full px-3 py-2.5 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                 value={service.name}
-                onChange={(e) => {
-                  setService((p) => ({ ...p, name: e.target.value }));
-                  setShowSuggestions(true);
-                }}
-                onFocus={() => setShowSuggestions(suggestions.length > 0)}
+                onChange={(e) => handleNameChange(e.target.value)}
+                onFocus={handleNameFocus}
                 placeholder={t(
                   "cashier.enterServiceName",
                   "Enter service name",
