@@ -53,7 +53,7 @@ const PaymentFilters: React.FC<PaymentFiltersProps> = ({
             {t("clients.search", "Search")}
           </label>
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-primary" />
             <Input
               placeholder={t(
                 "clients.searchPayments",
@@ -61,7 +61,7 @@ const PaymentFilters: React.FC<PaymentFiltersProps> = ({
               )}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-10"
+              className="pl-10 border-2 border-primary/20 focus:border-primary focus:ring-2 focus:ring-primary/20"
             />
           </div>
         </div>

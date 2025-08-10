@@ -481,7 +481,7 @@ export const StockTable = () => {
             }
             value={filters.search}
             onChange={(e) => handleChange("search", e.target.value)}
-            className="px-3 py-1.5 rounded-md border border-border bg-card text-sm focus:outline-none focus:ring focus:ring-primary/30 transition max-w-[220px]"
+            className="px-3 py-1.5 rounded-md border-2 border-primary/20 bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition max-w-[220px]"
             aria-label={t("stock.search")}
           />
 

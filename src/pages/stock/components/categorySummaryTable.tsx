@@ -157,7 +157,7 @@ export default function CategorySummaryTable() {
             setCategorySearch(e.target.value);
             setCurrentPage(1);
           }}
-          className="px-3 py-1.5 rounded-md border border-border bg-card text-sm focus:outline-none focus:ring focus:ring-primary/30 transition max-w-[220px]"
+          className="px-3 py-1.5 rounded-md border-2 border-primary/20 bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition max-w-[220px]"
           aria-label={t("stock.searchType", "Search category")}
         />
       </div>

@@ -228,7 +228,7 @@ const ProductBrowser = forwardRef<
             ref={filterInputRef}
             type="text"
             placeholder={t("cashier.filterProducts", "Filter products...")}
-            className="w-full px-3 py-2 rounded-md border border-border bg-card text-foreground"
+            className="w-full px-3 py-2 rounded-md border-2 border-primary/20 bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition"
             value={productFilter}
             onChange={(e) => setProductFilter(e.target.value)}
           />

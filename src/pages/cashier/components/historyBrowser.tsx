@@ -217,7 +217,7 @@ const HistoryBrowser: React.FC<HistoryBrowserProps> = ({
       {/* Search Bar */}
       <div className="bg-muted/20">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-primary" />
           <Input
             placeholder={t(
               "cashier.searchSalesOrScan",
@@ -225,7 +225,7 @@ const HistoryBrowser: React.FC<HistoryBrowserProps> = ({
             )}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-9 text-sm border-1 border-border hover:border-primary/50 focus:border-primary transition-colors"
+            className="pl-9 text-sm border-2 border-primary/20 hover:border-primary/50 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-colors"
           />
           {refreshing && (
             <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
