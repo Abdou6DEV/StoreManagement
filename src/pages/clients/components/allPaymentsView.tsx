@@ -185,15 +185,20 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
             {t("clients.allPaymentsTitle", "All Credits & Versements")}
           </h1>
         </div>
-        <Tooltip content={t("clients.clientsViewTooltip", "View Clients List and manage them")}>
-        <Button
-          onClick={onBack}
-          variant="outline"
-          className="flex items-center gap-2"
+        <Tooltip
+          content={t(
+            "clients.clientsViewTooltip",
+            "View Clients List and manage them",
+          )}
         >
-          <Users className="w-4 h-4" />
-          {t("clients.backToClients", "View All Clients")}
-        </Button>
+          <Button
+            onClick={onBack}
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            <Users className="w-4 h-4" />
+            {t("clients.backToClients", "View All Clients")}
+          </Button>
         </Tooltip>
       </div>
 

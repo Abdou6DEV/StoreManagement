@@ -112,6 +112,8 @@
     "amountInPeriod": "Amount in selected period",
     "averagePayment": "Average Payment",
     "perPayment": "Per payment",
+    "totalPaidAmount": "Total Paid Amount",
+    "paidAmountInPeriod": "Paid amount in selected period",
 
     "allPayments": "All payments processed",
     "paid": "Paid",

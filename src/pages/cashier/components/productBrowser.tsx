@@ -350,8 +350,6 @@ const ProductBrowser = forwardRef<
                 <Skeleton className="h-3 w-1/3" />
               </div>
             ))}
-
-
         </div>
         <div className="flex justify-center gap-2 mt-2">
           <button

@@ -373,7 +373,6 @@ export default function Clients() {
 
           {viewMode === "clients" ? (
             <div className="bg-card border border-border rounded-xl shadow-sm p-6 space-y-4">
-              
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
                   <Users className="w-7 h-7 text-red-500" />
@@ -381,7 +380,12 @@ export default function Clients() {
                     {t("clients.title", "Clients List")}
                   </h1>
                 </div>
-                <Tooltip content={t("clients.paymentsViewTooltip", "View Client's Credits & Versements and manage them")}>
+                <Tooltip
+                  content={t(
+                    "clients.paymentsViewTooltip",
+                    "View Client's Credits & Versements and manage them",
+                  )}
+                >
                   <Button
                     onClick={() => setViewMode("payments")}
                     variant="outline"
@@ -390,9 +394,9 @@ export default function Clients() {
                     <CreditCard className="w-4 h-4" />
                     {t("clients.viewAllPayments", "View All Payments")}
                   </Button>
-                  </Tooltip>
+                </Tooltip>
               </div>
-              
+
               {/* Items per page selector and search bar in the same row */}
               <div className="flex items-center gap-4 mb-4">
                 <div className="flex items-center gap-2">

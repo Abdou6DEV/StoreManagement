@@ -112,6 +112,8 @@
     "amountInPeriod": "Montant dans la période sélectionnée",
     "averagePayment": "Paiement moyen",
     "perPayment": "Par paiement",
+    "totalPaidAmount": "Montant total payé",
+    "paidAmountInPeriod": "Montant payé dans la période sélectionnée",
 
     "allPayments": "Tous les paiements traités",
     "paid": "Payé",

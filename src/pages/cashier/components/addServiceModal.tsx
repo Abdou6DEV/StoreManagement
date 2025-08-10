@@ -129,12 +129,12 @@ export default function AddServiceModal({
 
   const handleNameChange = (newValue: string) => {
     setService((p) => ({ ...p, name: newValue }));
-    
+
     // If user is typing something completely different, reset the flag
     if (newValue.trim() !== service.name.trim()) {
       setJustSelectedSuggestion(false);
     }
-    
+
     // Only show suggestions if there's text, suggestions, and haven't just selected one
     if (newValue.trim() && suggestions.length > 0 && !justSelectedSuggestion) {
       setShowSuggestions(true);
@@ -145,7 +145,11 @@ export default function AddServiceModal({
 
   const handleNameFocus = () => {
     // Only show suggestions if we have text, suggestions, and haven't just selected one
-    if (service.name.trim() && suggestions.length > 0 && !justSelectedSuggestion) {
+    if (
+      service.name.trim() &&
+      suggestions.length > 0 &&
+      !justSelectedSuggestion
+    ) {
       setShowSuggestions(true);
     }
   };

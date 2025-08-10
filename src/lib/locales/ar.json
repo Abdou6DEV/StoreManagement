@@ -112,6 +112,8 @@
     "amountInPeriod": "المبلغ في الفترة المحددة",
     "averagePayment": "متوسط الدفع",
     "perPayment": "لكل دفعة",
+    "totalPaidAmount": "إجمالي المبلغ المدفوع",
+    "paidAmountInPeriod": "المبلغ المدفوع في الفترة المحددة",
 
     "allPayments": "جميع المدفوعات المعالجة",
     "paid": "مدفوع",

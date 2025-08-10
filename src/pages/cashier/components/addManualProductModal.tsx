@@ -4,7 +4,7 @@ import { FormModal } from "../../../lib/components/Modal";
 import StyledNumberInput from "../../../lib/components/inputNumber";
 import { Plus } from "lucide-react";
 import type { CartItem } from "../../../types";
-import type { ManualProduct} from "@prisma/client"
+import type { ManualProduct } from "@prisma/client";
 
 interface AddManualProductModalProps {
   open: boolean;
@@ -129,12 +129,12 @@ export default function AddManualProductModal({
 
   const handleNameChange = (newValue: string) => {
     setManualProduct((p) => ({ ...p, name: newValue }));
-    
+
     // If user is typing something completely different, reset the flag
     if (newValue.trim() !== manualProduct.name.trim()) {
       setJustSelectedSuggestion(false);
     }
-    
+
     // Only show suggestions if there's text, suggestions, and haven't just selected one
     if (newValue.trim() && suggestions.length > 0 && !justSelectedSuggestion) {
       setShowSuggestions(true);
@@ -145,7 +145,11 @@ export default function AddManualProductModal({
 
   const handleNameFocus = () => {
     // Only show suggestions if we have text, suggestions, and haven't just selected one
-    if (manualProduct.name.trim() && suggestions.length > 0 && !justSelectedSuggestion) {
+    if (
+      manualProduct.name.trim() &&
+      suggestions.length > 0 &&
+      !justSelectedSuggestion
+    ) {
       setShowSuggestions(true);
     }
   };

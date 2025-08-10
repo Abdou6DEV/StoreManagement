@@ -92,8 +92,15 @@ const ClientsTable: React.FC<ClientsTableProps> = ({
                 {t("cashier.currency", "DA")}
               </td>
               <td className={`px-4 py-2 ${isRTL ? "text-right" : "text-left"}`}>
-                <div className={`flex gap-2 ${isRTL ? "flex-row-reverse" : ""}`}>
-                  <Tooltip content={t("clients.viewPaymentsTooltip", "View payments history")}>
+                <div
+                  className={`flex gap-2 ${isRTL ? "flex-row-reverse" : ""}`}
+                >
+                  <Tooltip
+                    content={t(
+                      "clients.viewPaymentsTooltip",
+                      "View payments history",
+                    )}
+                  >
                     <Button
                       onClick={() => onViewPayments(client)}
                       size="sm"
@@ -103,7 +110,7 @@ const ClientsTable: React.FC<ClientsTableProps> = ({
                       <CreditCard className="w-3 h-3" />
                     </Button>
                   </Tooltip>
-                  
+
                   <Tooltip content={t("clients.editTooltip", "Edit client")}>
                     <Button
                       onClick={() => onEdit(client)}
@@ -114,8 +121,10 @@ const ClientsTable: React.FC<ClientsTableProps> = ({
                       <Edit className="w-3 h-3" />
                     </Button>
                   </Tooltip>
-                  
-                  <Tooltip content={t("clients.deleteTooltip", "Delete client")}>
+
+                  <Tooltip
+                    content={t("clients.deleteTooltip", "Delete client")}
+                  >
                     <Button
                       onClick={() => onDelete(client.id)}
                       size="sm"
