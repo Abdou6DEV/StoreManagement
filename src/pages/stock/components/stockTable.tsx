@@ -382,8 +382,8 @@ export const StockTable = () => {
           <Tooltip
             content={
               viewMode === 'product' 
-                ? t("stock.viewByProductTooltip", "View stock by individual products")
-                : t("stock.viewByCategoryTooltip", "View stock by categories")
+                ? t("stock.viewByCategoryTooltip", "View stock by categories")
+                : t("stock.viewByProductTooltip", "View stock by individual products")  
             }
           >
             <Button
@@ -394,12 +394,13 @@ export const StockTable = () => {
               {viewMode === 'product' ? (
                 <>
                   <Package className="w-4 h-4" />
-                  {t("stock.viewByProduct", "Products")}
+                  {t("stock.viewByCategory", "Categories")}
+                  
                 </>
               ) : (
                 <>
                   <ListTree className="w-4 h-4" />
-                  {t("stock.viewByCategory", "Categories")}
+                  {t("stock.viewByProduct", "Products")}
                 </>
               )}
             </Button>
