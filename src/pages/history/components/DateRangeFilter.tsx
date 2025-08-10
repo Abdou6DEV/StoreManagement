@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "../../../lib/components/button";
 import { Input } from "../../../lib/components/input";
-import { Calendar, ChevronDown, X } from "lucide-react";
+import { Calendar, ChevronDown, X, Loader2 } from "lucide-react";
 import { DateRange } from "../../../types";
 import {
   Popover,
@@ -13,11 +13,13 @@ import {
 interface DateRangeFilterProps {
   dateRange: DateRange;
   onDateRangeChange: (range: DateRange) => void;
+  isLoading?: boolean;
 }
 
 export const DateRangeFilter: React.FC<DateRangeFilterProps> = React.memo(({
   dateRange,
   onDateRangeChange,
+  isLoading = false,
 }) => {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
@@ -145,12 +147,14 @@ export const DateRangeFilter: React.FC<DateRangeFilterProps> = React.memo(({
             variant="outline"
             size="sm"
             className="min-w-[200px] justify-between"
+            disabled={isLoading}
           >
             <div className="flex items-center gap-2">
               <Calendar className="h-4 w-4" />
               <span className="truncate">{getCurrentFilterText()}</span>
             </div>
             <ChevronDown className="h-4 w-4 opacity-50" />
+            {isLoading && <Loader2 className="h-4 w-4 ml-2" />}
           </Button>
         </PopoverTrigger>
         

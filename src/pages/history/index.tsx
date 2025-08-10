@@ -173,8 +173,12 @@ export default function History() {
     <div className="space-y-6 pb-6 px-6">
       {/* Stats Cards */}
       {useMemo(() => (
-        <HistoryStats stats={stats} activeTab={activeTab} />
-      ), [stats, activeTab])}
+        <HistoryStats 
+          stats={stats} 
+          activeTab={activeTab} 
+          isLoading={activeTab === "sales" ? salesLoading : paymentsLoading}
+        />
+      ), [stats, activeTab, salesLoading, paymentsLoading])}
 
       {/* Date Range Filter */}
       <div className="flex items-center gap-4">
@@ -183,8 +187,9 @@ export default function History() {
           <DateRangeFilter
             dateRange={dateRange}
             onDateRangeChange={handleDateRangeChange}
+            isLoading={salesLoading || paymentsLoading}
           />
-        ), [dateRange, handleDateRangeChange])}
+        ), [dateRange, handleDateRangeChange, salesLoading, paymentsLoading])}
       </div>
 
       {/* Tabs */}

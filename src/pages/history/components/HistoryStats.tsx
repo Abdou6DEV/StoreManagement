@@ -1,6 +1,7 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { ShoppingCart, CreditCard, DollarSign, TrendingUp } from "lucide-react";
+import { Skeleton } from "../../../lib/components/skeleton";
 import type { HistoryTab } from "../index";
 
 interface HistoryStatsProps {
@@ -11,9 +12,10 @@ interface HistoryStatsProps {
     totalPaymentAmount: number;
   };
   activeTab: HistoryTab;
+  isLoading?: boolean;
 }
 
-export const HistoryStats: React.FC<HistoryStatsProps> = React.memo(({ stats, activeTab }) => {
+export const HistoryStats: React.FC<HistoryStatsProps> = React.memo(({ stats, activeTab, isLoading = false }) => {
   const { t } = useTranslation();
 
   const formatCurrency = (amount: number) => {
@@ -34,7 +36,9 @@ export const HistoryStats: React.FC<HistoryStatsProps> = React.memo(({ stats, ac
               {t("history.totalSales", "Total Sales")}
             </div>
           </div>
-          <div className="text-2xl font-bold">{formatNumber(stats.totalSales)}</div>
+          <div className="text-2xl font-bold">
+            {isLoading ? <Skeleton className="h-8 w-20" /> : formatNumber(stats.totalSales)}
+          </div>
           <p className="text-xs text-muted-foreground">
             {t("history.salesInPeriod", "Sales in selected period")}
           </p>
@@ -47,7 +51,9 @@ export const HistoryStats: React.FC<HistoryStatsProps> = React.memo(({ stats, ac
               {t("history.totalRevenue", "Total Revenue")}
             </div>
           </div>
-          <div className="text-2xl font-bold">{formatCurrency(stats.totalRevenue)}</div>
+          <div className="text-2xl font-bold">
+            {isLoading ? <Skeleton className="h-8 w-24" /> : formatCurrency(stats.totalRevenue)}
+          </div>
           <p className="text-xs text-muted-foreground">
             {t("history.revenueInPeriod", "Revenue in selected period")}
           </p>
@@ -61,14 +67,16 @@ export const HistoryStats: React.FC<HistoryStatsProps> = React.memo(({ stats, ac
             </div>
           </div>
           <div className="text-2xl font-bold">
-            {stats.totalSales > 0 ? formatCurrency(stats.totalRevenue / stats.totalSales) : formatCurrency(0)}
+            {isLoading ? (
+              <Skeleton className="h-8 w-24" />
+            ) : (
+              stats.totalSales > 0 ? formatCurrency(stats.totalRevenue / stats.totalSales) : formatCurrency(0)
+            )}
           </div>
           <p className="text-xs text-muted-foreground">
             {t("history.perTransaction", "Per transaction")}
           </p>
         </div>
-
-
       </div>
     );
   }
@@ -82,7 +90,9 @@ export const HistoryStats: React.FC<HistoryStatsProps> = React.memo(({ stats, ac
             {t("history.totalPayments", "Total Payments")}
           </div>
         </div>
-        <div className="text-2xl font-bold">{formatNumber(stats.totalPayments)}</div>
+        <div className="text-2xl font-bold">
+          {isLoading ? <Skeleton className="h-8 w-20" /> : formatNumber(stats.totalPayments)}
+        </div>
         <p className="text-xs text-muted-foreground">
           {t("history.paymentsInPeriod", "Payments in selected period")}
         </p>
@@ -95,7 +105,9 @@ export const HistoryStats: React.FC<HistoryStatsProps> = React.memo(({ stats, ac
             {t("history.totalAmount", "Total Amount")}
           </div>
         </div>
-        <div className="text-2xl font-bold">{formatCurrency(stats.totalPaymentAmount)}</div>
+        <div className="text-2xl font-bold">
+          {isLoading ? <Skeleton className="h-8 w-24" /> : formatCurrency(stats.totalPaymentAmount)}
+        </div>
         <p className="text-xs text-muted-foreground">
           {t("history.amountInPeriod", "Amount in selected period")}
         </p>
@@ -109,14 +121,16 @@ export const HistoryStats: React.FC<HistoryStatsProps> = React.memo(({ stats, ac
           </div>
         </div>
         <div className="text-2xl font-bold">
-          {stats.totalPayments > 0 ? formatCurrency(stats.totalPaymentAmount / stats.totalPayments) : formatCurrency(0)}
+          {isLoading ? (
+            <Skeleton className="h-8 w-24" />
+          ) : (
+            stats.totalPayments > 0 ? formatCurrency(stats.totalPaymentAmount / stats.totalPayments) : formatCurrency(0)
+          )}
         </div>
         <p className="text-xs text-muted-foreground">
           {t("history.perPayment", "Per payment")}
         </p>
       </div>
-
-
     </div>
   );
 });

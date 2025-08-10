@@ -17,7 +17,8 @@ import {
   SortAsc,
   SortDesc,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  Loader2
 } from "lucide-react";
 import { DateRange } from "../../../types";
 import PaymentsModal from "../../../lib/components/paymentsModal";
@@ -237,18 +238,105 @@ export const PaymentsHistoryTable: React.FC<PaymentsHistoryTableProps> = React.m
   if (isLoading) {
     return (
       <div className="space-y-4">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <div key={i} className="rounded-lg border bg-card p-4">
-            <div className="flex items-center space-x-4">
-              <Skeleton className="h-12 w-12 rounded-full" />
-              <div className="space-y-2 flex-1">
-                <Skeleton className="h-4 w-[200px]" />
-                <Skeleton className="h-4 w-[150px]" />
-              </div>
-              <Skeleton className="h-4 w-[100px]" />
-            </div>
+        {/* Search and Controls Skeleton */}
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-10 w-80" />
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-10 w-[180px]" />
           </div>
-        ))}
+        </div>
+
+        {/* Table Skeleton */}
+        <div className="rounded-lg border bg-card">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="border-b bg-muted/50">
+                <tr>
+                  <th className="p-4 text-left">
+                    <div className="flex items-center gap-2">
+                      <Skeleton className="h-4 w-4" />
+                      <Skeleton className="h-4 w-16" />
+                    </div>
+                  </th>
+                  <th className="p-4 text-left">
+                    <div className="flex items-center gap-2">
+                      <Skeleton className="h-4 w-4" />
+                      <Skeleton className="h-4 w-20" />
+                    </div>
+                  </th>
+                  <th className="p-4 text-left">
+                    <div className="flex items-center gap-2">
+                      <Skeleton className="h-4 w-4" />
+                      <Skeleton className="h-4 w-20" />
+                    </div>
+                  </th>
+                  <th className="p-4 text-left">
+                    <div className="flex items-center gap-2">
+                      <Skeleton className="h-4 w-4" />
+                      <Skeleton className="h-4 w-16" />
+                    </div>
+                  </th>
+                  <th className="p-4 text-left">
+                    <Skeleton className="h-4 w-20" />
+                  </th>
+                  <th className="p-4 text-left">
+                    <Skeleton className="h-4 w-20" />
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {Array.from({ length: Math.min(10, itemsPerPage) }).map((_, i) => (
+                  <tr key={i} className="border-b">
+                    <td className="p-4">
+                      <div className="space-y-2">
+                        <Skeleton className="h-4 w-24" />
+                        <Skeleton className="h-3 w-20" />
+                      </div>
+                    </td>
+                    <td className="p-4">
+                      <div className="space-y-2">
+                        <Skeleton className="h-4 w-32" />
+                        <Skeleton className="h-3 w-24" />
+                      </div>
+                    </td>
+                    <td className="p-4">
+                      <div className="space-y-2">
+                        <Skeleton className="h-4 w-24" />
+                        <Skeleton className="h-3 w-20" />
+                      </div>
+                    </td>
+                    <td className="p-4">
+                      <Skeleton className="h-6 w-20 rounded-full" />
+                    </td>
+                    <td className="p-4">
+                      <Skeleton className="h-6 w-20 rounded-full" />
+                    </td>
+                    <td className="p-4">
+                      <div className="flex gap-2">
+                        <Skeleton className="h-8 w-16" />
+                        <Skeleton className="h-8 w-16" />
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Pagination Skeleton */}
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-4 w-32" />
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-8 w-8" />
+            <Skeleton className="h-8 w-8" />
+            <Skeleton className="h-8 w-8" />
+            <Skeleton className="h-8 w-8" />
+            <Skeleton className="h-8 w-8" />
+            <Skeleton className="h-8 w-8" />
+          </div>
+        </div>
       </div>
     );
   }
@@ -280,7 +368,13 @@ export const PaymentsHistoryTable: React.FC<PaymentsHistoryTableProps> = React.m
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
+            disabled={isLoading}
           />
+          {isLoading && (
+            <div className="absolute right-3 top-1/2 -translate-y-1/2">
+              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+            </div>
+          )}
         </div>
         
         <div className="flex items-center gap-2">
@@ -318,6 +412,7 @@ export const PaymentsHistoryTable: React.FC<PaymentsHistoryTableProps> = React.m
                     <div className="flex items-center gap-2">
                       <Calendar className="h-4 w-4" />
                       {t("history.date", "Date")}
+                      {isLoading && <div className="w-2 h-2 bg-primary/20 rounded-full animate-pulse" />}
                     </div>
                   </SortableHeader>
                 </th>
@@ -326,14 +421,7 @@ export const PaymentsHistoryTable: React.FC<PaymentsHistoryTableProps> = React.m
                     <div className="flex items-center gap-2">
                       <User className="h-4 w-4" />
                       {t("history.client", "Client")}
-                    </div>
-                  </SortableHeader>
-                </th>
-                <th className="p-4 text-left">
-                  <SortableHeader field="type">
-                    <div className="flex items-center gap-2">
-                      <CreditCard className="h-4 w-4" />
-                      {t("history.type", "Type")}
+                      {isLoading && <div className="w-2 h-2 bg-primary/20 rounded-full animate-pulse" />}
                     </div>
                   </SortableHeader>
                 </th>
@@ -342,19 +430,29 @@ export const PaymentsHistoryTable: React.FC<PaymentsHistoryTableProps> = React.m
                     <div className="flex items-center gap-2">
                       <DollarSign className="h-4 w-4" />
                       {t("history.amount", "Amount")}
+                      {isLoading && <div className="w-2 h-2 bg-primary/20 rounded-full animate-pulse" />}
                     </div>
                   </SortableHeader>
                 </th>
                 <th className="p-4 text-left">
-                  {t("history.dueDate", "Due Date")}
-                </th>
-                <th className="p-4 text-left">
-                  <SortableHeader field="status">
-                    {t("history.status", "Status")}
+                  <SortableHeader field="type">
+                    <div className="flex items-center gap-2">
+                      {t("history.type", "Type")}
+                      {isLoading && <div className="w-2 h-2 bg-primary/20 rounded-full animate-pulse" />}
+                    </div>
                   </SortableHeader>
                 </th>
                 <th className="p-4 text-left">
-                  {t("history.actions", "Actions")}
+                  <div className="flex items-center gap-2">
+                    {t("history.status", "Status")}
+                    {isLoading && <div className="w-2 h-2 bg-primary/20 rounded-full animate-pulse" />}
+                  </div>
+                </th>
+                <th className="p-4 text-left">
+                  <div className="flex items-center gap-2">
+                    {t("history.actions", "Actions")}
+                    {isLoading && <div className="w-2 h-2 bg-primary/20 rounded-full animate-pulse" />}
+                  </div>
                 </th>
               </tr>
             </thead>
