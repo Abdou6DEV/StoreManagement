@@ -7,6 +7,7 @@ import { useToast } from "../../../lib/contexts/toastContext";
 import type { PaymentWithClient } from "../../../types";
 import PaymentFilters from "./paymentFilters";
 import PaymentTable from "./paymentTable";
+import { Tooltip } from "../../../lib/components/tooltip";
 import {
   Pagination,
   PaginationContent,
@@ -184,14 +185,16 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
             {t("clients.allPaymentsTitle", "All Credits & Versements")}
           </h1>
         </div>
+        <Tooltip content={t("clients.clientsViewTooltip", "View Clients List and manage them")}>
         <Button
           onClick={onBack}
           variant="outline"
           className="flex items-center gap-2"
         >
           <Users className="w-4 h-4" />
-          {t("clients.backToClients", "Back to Clients")}
+          {t("clients.backToClients", "View All Clients")}
         </Button>
+        </Tooltip>
       </div>
 
       {/* Filters */}
