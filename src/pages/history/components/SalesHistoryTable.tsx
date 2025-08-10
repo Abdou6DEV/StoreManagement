@@ -214,7 +214,7 @@ export const SalesHistoryTable: React.FC<SalesHistoryTableProps> = React.memo(
       if (sale.remainingAmount > 0) {
         return {
           label: t("history.partiallyPaid", "Partially Paid"),
-          variant: "secondary" as const,
+          variant: "warning" as const,
         };
       }
       
