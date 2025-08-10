@@ -450,7 +450,7 @@ const LoggerAdmin: React.FC = () => {
             </div>
           </div>
 
-          <ScrollArea className="h-60">
+          <ScrollArea className="h-40">
             <div className="space-y-2 pr-4">
               {filteredAndPaginatedEntries.entries.map((entry, index) => (
                 <div

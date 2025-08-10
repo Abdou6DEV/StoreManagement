@@ -7,12 +7,6 @@ export default function History() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold tracking-tight">
-          {t("mainMenu.history")}
-        </h1>
-      </div>
-      
       <div className="grid gap-6">
         <div className="rounded-lg border bg-card p-6">
           <h2 className="text-xl font-semibold mb-4">
