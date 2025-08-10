@@ -79,7 +79,9 @@
     "clients": "Clients",
     "clientsDesc": "Add clients, manage debts, payments, and orders",
     "administrator": "Administrator",
-    "administratorDesc": "Manage your app settings and configurations"
+    "administratorDesc": "Manage your app settings and configurations",
+    "history": "History",
+    "historyDesc": "View sales and purchase history, track transactions"
   },
   "navigation": {
     "preferences": "Preferences",

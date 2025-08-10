@@ -6,6 +6,7 @@ import {
   Settings as AdminIcon,
   Home,
   ChevronsLeft,
+  History,
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -34,6 +35,12 @@ const menuItems = [
     color: "text-green-600",
   },
   { key: "clients", path: "/clients", icon: Users, color: "text-red-500" },
+  {
+    key: "history",
+    path: "/history",
+    icon: History,
+    color: "text-blue-500",
+  },
   {
     key: "administrator",
     path: "/administrator",

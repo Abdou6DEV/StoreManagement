@@ -4,6 +4,7 @@ import {
   ShoppingCart,
   PackageSearch,
   Settings as AdminIcon,
+  History,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -31,6 +32,11 @@ export default function MainMenu() {
       key: "clients",
       icon: Users,
       color: "text-red-500",
+    },
+    {
+      key: "history",
+      icon: History,
+      color: "text-blue-500",
     },
     {
       key: "administrator",

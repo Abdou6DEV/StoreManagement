@@ -79,7 +79,9 @@
     "clients": "العملاء",
     "clientsDesc": "إضافة العملاء، إدارة الديون، المدفوعات والطلبات",
     "administrator": "المسؤول",
-    "administratorDesc": "إدارة إعدادات وتكوينات التطبيق"
+    "administratorDesc": "إدارة إعدادات وتكوينات التطبيق",
+    "history": "التاريخ",
+    "historyDesc": "عرض تاريخ المبيعات والمشتريات، تتبع المعاملات"
   },
   "navigation": {
     "preferences": "التفضيلات",

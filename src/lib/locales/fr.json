@@ -79,7 +79,9 @@
     "clients": "Clients",
     "clientsDesc": "Ajoutez des clients, gérez les dettes, paiements et commandes",
     "administrator": "Administrateur",
-    "administratorDesc": "Gérez les paramètres et configurations de l'application"
+    "administratorDesc": "Gérez les paramètres et configurations de l'application",
+    "history": "Historique",
+    "historyDesc": "Voir l'historique des ventes et achats, suivre les transactions"
   },
   "navigation": {
     "preferences": "Préférences",
