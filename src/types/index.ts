@@ -135,15 +135,3 @@ export interface ModalAction {
   loading?: boolean;
   icon?: React.ReactNode;
 }
-
-export interface ManualProduct {
-  id: string;
-  name: string;
-  type: string;
-}
-
-export interface Service {
-  id: string;
-  name: string;
-  description?: string;
-}

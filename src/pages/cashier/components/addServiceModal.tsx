@@ -3,7 +3,8 @@ import { useTranslation } from "react-i18next";
 import { FormModal } from "../../../lib/components/Modal";
 import StyledNumberInput from "../../../lib/components/inputNumber";
 import { Plus } from "lucide-react";
-import type { CartItem, Service } from "../../../types";
+import type { CartItem } from "../../../types";
+import type { Service } from "@prisma/client";
 
 interface AddServiceModalProps {
   open: boolean;
