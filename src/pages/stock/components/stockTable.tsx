@@ -305,6 +305,12 @@ export const StockTable = () => {
     row.category.toLowerCase().includes(filters.search.toLowerCase())
   );
   const [viewMode, setViewMode] = useState<'product' | 'category'>('product');
+
+  useEffect(() => {
+    // Reset to first page whenever view mode changes
+    setCurrentPage(1);
+  }, [viewMode]);
+
   const StockRow = React.memo(function StockRow({
     product,
     setEditingProductID,
@@ -388,7 +394,10 @@ export const StockTable = () => {
           >
             <Button
               variant="outline"
-              onClick={() => setViewMode(viewMode === 'product' ? 'category' : 'product')}
+              onClick={() => {
+                setViewMode(viewMode === 'product' ? 'category' : 'product');
+                // Note: The useEffect above will handle the page reset
+              }}
               className="gap-2"
             >
               {viewMode === 'product' ? (
@@ -672,100 +681,100 @@ export const StockTable = () => {
   )}
 </div>
 
-{/* Table or Empty State */}
-{viewMode === 'product' ? (
-  paginatedProducts.length === 0 ? (
+  {/* Table or Empty State */}
+  {viewMode === 'product' ? (
+    paginatedProducts.length === 0 ? (
+      <div className="flex flex-col items-center justify-center py-16 gap-4 text-center">
+        <Package className="w-16 h-16 text-green-600 mb-2" />
+        <h3 className="text-xl font-semibold text-foreground">
+          {t("stock.emptyProductTitle")}
+        </h3>
+        <p className="text-muted-foreground max-w-md">
+          {t("stock.emptyProductDesc")}
+        </p>
+      </div>
+    ) : (
+      <div className="table-container overflow-auto rounded-lg border border-muted">
+        <table className="min-w-full text-sm text-left">
+          <thead className="bg-muted text-muted-foreground">
+            <tr>
+              <th className="px-4 py-3">{t("stock.product")}</th>
+              <th className="px-4 py-3">{t("stock.type")}</th>
+              <th className="px-4 py-3">{t("stock.quantity")}</th>
+              <th className="px-4 py-3">{t("stock.boughtPrice")}</th>
+              <th className="px-4 py-3">{t("stock.sellingPrice")}</th>
+              <th className="px-4 py-3">{t("stock.profit", "Profit")}</th>
+              <th className="px-4 py-3">{t("stock.totalBought", "Total Bought")}</th>
+              <th className="px-4 py-3">{t("stock.totalSold", "Total Sold")}</th>
+              <th className="px-4 py-3">{t("stock.totalProfit", "Total Profit")}</th>
+              <th className="px-4 py-3">{t("stock.actions", "Actions")}</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border">
+            {paginatedProducts.map((product) => (
+              <StockRow
+                key={product.id}
+                product={product}
+                setEditingProductID={setEditingProductID}
+                handleDeleteProduct={handleDeleteProduct}
+                handleViewProductInfo={handleViewProductInfo}
+              />
+            ))}
+          </tbody>
+        </table>
+      </div>
+    )
+  ) : filteredCategorySummaries.length === 0 ? (
     <div className="flex flex-col items-center justify-center py-16 gap-4 text-center">
-      <Package className="w-16 h-16 text-green-600 mb-2" />
+      <Folder className="w-16 h-16 text-green-600 mb-2" />
       <h3 className="text-xl font-semibold text-foreground">
-        {t("stock.emptyProductTitle")}
+        {t("stock.emptyCategoryTitle")}
       </h3>
       <p className="text-muted-foreground max-w-md">
-        {t("stock.emptyProductDesc")}
+        {t("stock.emptyCategoryDesc")}
       </p>
     </div>
   ) : (
-    <div className="table-container overflow-auto rounded-lg border border-muted">
-      <table className="min-w-full text-sm text-left">
-        <thead className="bg-muted text-muted-foreground">
-          <tr>
-            <th className="px-4 py-3">{t("stock.product")}</th>
-            <th className="px-4 py-3">{t("stock.type")}</th>
-            <th className="px-4 py-3">{t("stock.quantity")}</th>
-            <th className="px-4 py-3">{t("stock.boughtPrice")}</th>
-            <th className="px-4 py-3">{t("stock.sellingPrice")}</th>
-            <th className="px-4 py-3">{t("stock.profit", "Profit")}</th>
-            <th className="px-4 py-3">{t("stock.totalBought", "Total Bought")}</th>
-            <th className="px-4 py-3">{t("stock.totalSold", "Total Sold")}</th>
-            <th className="px-4 py-3">{t("stock.totalProfit", "Total Profit")}</th>
-            <th className="px-4 py-3">{t("stock.actions", "Actions")}</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-border">
-          {paginatedProducts.map((product) => (
-            <StockRow
-              key={product.id}
-              product={product}
-              setEditingProductID={setEditingProductID}
-              handleDeleteProduct={handleDeleteProduct}
-              handleViewProductInfo={handleViewProductInfo}
-            />
-          ))}
-        </tbody>
-      </table>
-    </div>
-  )
-) : filteredCategorySummaries.length === 0 ? (
-  <div className="flex flex-col items-center justify-center py-16 gap-4 text-center">
-    <Folder className="w-16 h-16 text-green-600 mb-2" />
-    <h3 className="text-xl font-semibold text-foreground">
-      {t("stock.emptyCategoryTitle")}
-    </h3>
-    <p className="text-muted-foreground max-w-md">
-      {t("stock.emptyCategoryDesc")}
-    </p>
-  </div>
-) : (
-  <>
-    <div className="table-container overflow-auto rounded-lg border border-muted">
-      <table className="min-w-full text-sm text-left">
-        <thead className="bg-muted text-muted-foreground">
-          <tr>
-            <th className="px-4 py-3">{t("stock.category")}</th>
-            <th className="px-4 py-3">{t("stock.productCount", "Products")}</th>
-            <th className="px-4 py-3">{t("stock.totalQuantity")}</th>
-            <th className="px-4 py-3">{t("stock.totalBought")}</th>
-            <th className="px-4 py-3">{t("stock.totalSelling")}</th>
-            <th className="px-4 py-3">{t("stock.totalProfit")}</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-border">
-          {filteredCategorySummaries
-            .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
-            .map((row) => {
-              const categoryProducts = products.filter(p => p.categoryName === row.category);
-              return (
-                <tr key={row.category} className="h-[48px] hover:bg-muted/40 transition">
-                  <td className="px-4">{row.category}</td>
-                  <td className="px-4">{categoryProducts.length}</td>
-                  <td className="px-4">{row.totalQuantity}</td>
-                  <td className="px-4">
-                    {row.totalBought.toLocaleString()} {t("cashier.currency")}
-                  </td>
-                  <td className="px-4">
-                    {row.totalSelling.toLocaleString()} {t("cashier.currency")}
-                  </td>
-                  <td className="px-4 text-green-700 font-medium">
-                    {row.totalProfit.toLocaleString()} {t("cashier.currency")}
-                  </td>
-                </tr>
-              );
-            })}
-        </tbody>
-      </table>
-    </div>
-  </>
-)}
+    <>
+      <div className="table-container overflow-auto rounded-lg border border-muted">
+        <table className="min-w-full text-sm text-left">
+          <thead className="bg-muted text-muted-foreground">
+            <tr>
+              <th className="px-4 py-3">{t("stock.category")}</th>
+              <th className="px-4 py-3">{t("stock.productCount", "Products")}</th>
+              <th className="px-4 py-3">{t("stock.totalQuantity")}</th>
+              <th className="px-4 py-3">{t("stock.totalBought")}</th>
+              <th className="px-4 py-3">{t("stock.totalSelling")}</th>
+              <th className="px-4 py-3">{t("stock.totalProfit")}</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border">
+            {filteredCategorySummaries
+              .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+              .map((row) => {
+                const categoryProducts = products.filter(p => p.categoryName === row.category);
+                return (
+                  <tr key={row.category} className="h-[48px] hover:bg-muted/40 transition">
+                    <td className="px-4">{row.category}</td>
+                    <td className="px-4">{categoryProducts.length}</td>
+                    <td className="px-4">{row.totalQuantity}</td>
+                    <td className="px-4">
+                      {row.totalBought.toLocaleString()} {t("cashier.currency")}
+                    </td>
+                    <td className="px-4">
+                      {row.totalSelling.toLocaleString()} {t("cashier.currency")}
+                    </td>
+                    <td className="px-4 text-green-700 font-medium">
+                      {row.totalProfit.toLocaleString()} {t("cashier.currency")}
+                    </td>
+                  </tr>
+                );
+              })}
+          </tbody>
+        </table>
+      </div>
+    </>
+  )}
 
 {/* Pagination - works for both views */}
 {((viewMode === 'product' && totalPages > 1) || 
