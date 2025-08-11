@@ -1,8 +1,9 @@
-import { Star, Plus, Minus, Image } from "lucide-react";
+import { Star, Plus, Minus } from "lucide-react";
 import { Tooltip } from "../../../lib/components/tooltip";
 import type { ProductWithSales } from "../../../types";
 import { useTranslation } from "react-i18next";
 import { useRef, useEffect, useState } from "react";
+import { ProductAvatar } from "../../../lib/components/productAvatar";
 
 export default function ProductCard({
   product,
@@ -83,9 +84,9 @@ export default function ProductCard({
           />
         ) : null}
         <div
-          className={`w-full h-full flex items-center justify-center bg-gray-200 dark:bg-gray-400 ${product.photo ? "hidden" : ""}`}
+          className={`w-full h-full flex items-center justify-center ${product.photo ? "hidden" : ""}`}
         >
-          <Image className="w-12 h-12 text-gray-600 dark:text-gray-300" />
+          <ProductAvatar name={product.name} size="sm" className="w-full h-full" />
         </div>
       </div>
 

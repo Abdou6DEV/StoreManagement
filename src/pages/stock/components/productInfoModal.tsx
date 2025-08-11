@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 import { Info, Package, ShoppingCart } from "lucide-react";
 import { Modal } from "../../../lib/components/Modal";
 import { Client, Purchase, Sale, SaleItem, Seller } from "@prisma/client";
+import { ProductAvatar } from "../../../lib/components/productAvatar";
 
 interface ProductInfoModalProps {
   open: boolean;
@@ -38,8 +39,8 @@ export const ProductInfoModal = ({
       ) : productData ? (
         <div className="space-y-6">
           {/* Product Photo */}
-          {productData.photo && (
-            <div className="flex justify-center">
+          <div className="flex justify-center">
+            {productData.photo ? (
               <div className="relative w-48 h-48 rounded-lg overflow-hidden border border-border">
                 <img
                   src={productData.photo}
@@ -51,8 +52,10 @@ export const ProductInfoModal = ({
                   }}
                 />
               </div>
-            </div>
-          )}
+            ) : (
+              <ProductAvatar name={productData.name} size="lg" />
+            )}
+          </div>
 
           {/* Product Details */}
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4 p-4 bg-muted/30 rounded-lg">
