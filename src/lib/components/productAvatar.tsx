@@ -51,17 +51,23 @@ const sizeClasses = {
   lg: "w-24 h-24 text-2xl",
 };
 
-export function ProductAvatar({ name, size = "md", className = "" }: ProductAvatarProps) {
+export function ProductAvatar({
+  name,
+  size = "md",
+  className = "",
+}: ProductAvatarProps) {
   // Get the first character and convert to uppercase
   const firstChar = name.charAt(0).toUpperCase();
-  
+
   // Get color palette for the first character, fallback to a default if not found
-  const colors = colorPalettes[firstChar as keyof typeof colorPalettes] || 
-                 ["bg-gradient-to-br from-slate-400 to-slate-600", "text-white"];
-  
+  const colors = colorPalettes[firstChar as keyof typeof colorPalettes] || [
+    "bg-gradient-to-br from-slate-400 to-slate-600",
+    "text-white",
+  ];
+
   // Get size classes
   const sizeClass = sizeClasses[size];
-  
+
   return (
     <div
       className={`${sizeClass} ${colors[0]} ${colors[1]} rounded-lg flex items-center justify-center font-bold shadow-md ${className}`}

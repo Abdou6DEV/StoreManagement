@@ -22,12 +22,16 @@ export const HistoryTabs: React.FC<HistoryTabsProps> = React.memo(
               : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
           }`}
         >
-          <ShoppingCart className={`h-4 w-4 transition-transform duration-200 ${
-            activeTab === "sales" ? "scale-110" : ""
-          }`} />
-          <span className="text-sm font-medium">{t("history.sales", "Sales")}</span>
+          <ShoppingCart
+            className={`h-4 w-4 transition-transform duration-200 ${
+              activeTab === "sales" ? "scale-110" : ""
+            }`}
+          />
+          <span className="text-sm font-medium">
+            {t("history.sales", "Sales")}
+          </span>
         </button>
-        
+
         <button
           onClick={() => onTabChange("payments")}
           className={`flex-1 flex items-center justify-center gap-2.5 px-4 py-2.5 rounded-lg font-medium transition-all duration-200 ${
@@ -36,10 +40,14 @@ export const HistoryTabs: React.FC<HistoryTabsProps> = React.memo(
               : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
           }`}
         >
-          <CreditCard className={`h-4 w-4 transition-transform duration-200 ${
-            activeTab === "payments" ? "scale-110" : ""
-          }`} />
-          <span className="text-sm font-medium">{t("history.payments", "Payments")}</span>
+          <CreditCard
+            className={`h-4 w-4 transition-transform duration-200 ${
+              activeTab === "payments" ? "scale-110" : ""
+            }`}
+          />
+          <span className="text-sm font-medium">
+            {t("history.payments", "Payments")}
+          </span>
         </button>
       </div>
     );

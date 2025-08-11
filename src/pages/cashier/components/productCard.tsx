@@ -86,7 +86,11 @@ export default function ProductCard({
         <div
           className={`w-full h-full flex items-center justify-center ${product.photo ? "hidden" : ""}`}
         >
-          <ProductAvatar name={product.name} size="sm" className="w-full h-full" />
+          <ProductAvatar
+            name={product.name}
+            size="sm"
+            className="w-full h-full"
+          />
         </div>
       </div>
 

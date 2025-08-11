@@ -84,18 +84,20 @@ const PaymentRow: React.FC<PaymentRowProps> = ({
               {t("cashier.currency", "DA")}
             </span>
             {!payment.paidDate && (
-              <Tooltip content={t("clients.editAmountTooltip", "Edit payment amount")}>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => {
-                  setEditingPayment(payment.id);
-                  setEditAmount(payment.givenAmount);
-                }}
-                className="h-6 px-1"
+              <Tooltip
+                content={t("clients.editAmountTooltip", "Edit payment amount")}
               >
-                <Edit className="w-3 h-3" />
-              </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setEditingPayment(payment.id);
+                    setEditAmount(payment.givenAmount);
+                  }}
+                  className="h-6 px-1"
+                >
+                  <Edit className="w-3 h-3" />
+                </Button>
               </Tooltip>
             )}
           </div>

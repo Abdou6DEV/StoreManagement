@@ -21,7 +21,12 @@ const PaymentActions: React.FC<PaymentActionsProps> = ({
 
   if (!isPaid) {
     return (
-      <Tooltip content={t("clients.markAsPaidTooltip", "Mark this payment as completed")}>
+      <Tooltip
+        content={t(
+          "clients.markAsPaidTooltip",
+          "Mark this payment as completed",
+        )}
+      >
         <Button
           size="sm"
           variant="outline"
@@ -36,7 +41,12 @@ const PaymentActions: React.FC<PaymentActionsProps> = ({
   }
 
   return (
-    <Tooltip content={t("clients.markAsUnpaidTooltip", "Revert this payment to unpaid status")}>
+    <Tooltip
+      content={t(
+        "clients.markAsUnpaidTooltip",
+        "Revert this payment to unpaid status",
+      )}
+    >
       <Button
         size="sm"
         variant="outline"

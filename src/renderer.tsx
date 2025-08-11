@@ -4,14 +4,17 @@ import ReactDOM from "react-dom/client";
 import { HashRouter } from "react-router-dom";
 import { ThemeProvider } from "./lib/contexts/themeContext";
 import { TooltipProvider } from "./lib/contexts/tooltipContext";
+import { AuthProvider } from "./lib/contexts/authContext";
 import App from "./pages/app";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <ThemeProvider>
     <TooltipProvider>
-      <HashRouter>
-        <App />
-      </HashRouter>
+      <AuthProvider>
+        <HashRouter>
+          <App />
+        </HashRouter>
+      </AuthProvider>
     </TooltipProvider>
   </ThemeProvider>,
 );

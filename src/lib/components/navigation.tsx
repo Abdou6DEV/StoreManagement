@@ -14,17 +14,20 @@ import {
   ShoppingCart,
   PackageSearch,
   Settings,
+  User,
 } from "lucide-react";
 import { ThemeToggleButton } from "./themeToggleButton";
 import { FullscreenToggleButton } from "./fullscreenToggleButton";
 import { TooltipToggleButton } from "./tooltipToggleButton";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useAuth } from "../contexts/authContext";
 
 export default function Navigation() {
   const location = useLocation();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const { t, i18n } = useTranslation();
+  const { user } = useAuth();
 
   const isCashierPage = location.pathname.startsWith("/cashier");
   const isRTL = i18n.language === "ar";
@@ -45,6 +48,13 @@ export default function Navigation() {
           <DropdownMenuContent
             className={`mx-4 my-2 w-56 ${isRTL ? "text-right" : ""}`}
           >
+            {/* User Info */}
+            <DropdownMenuLabel className="font-semibold text-md flex items-center gap-2">
+              <User className="w-4 h-4" />
+              Welcome, {user || "User"}
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+
             <DropdownMenuLabel className="font-semibold text-md">
               {t("navigation.preferences")}
             </DropdownMenuLabel>
@@ -96,6 +106,8 @@ export default function Navigation() {
               <span className={isRTL ? "ml-2" : "mr-2"}>🇸🇦</span>{" "}
               {t("navigation.arabic")}
             </DropdownMenuItem>
+
+            <DropdownMenuSeparator />
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
@@ -162,6 +174,13 @@ export default function Navigation() {
             <DropdownMenuContent
               className={`mx-4 my-2 w-56 ${isRTL ? "text-right" : ""}`}
             >
+              {/* User Info */}
+              <DropdownMenuLabel className="font-semibold text-md flex items-center gap-2">
+                <User className="w-4 h-4" />
+                Welcome, {user || "User"}
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+
               <DropdownMenuLabel className="font-semibold text-md">
                 {t("navigation.preferences")}
               </DropdownMenuLabel>

@@ -7,12 +7,14 @@ import {
   Home,
   ChevronsLeft,
   History,
+  LogOut,
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import "../../lib/i18n";
 import { useState, useRef } from "react";
 import { cn } from "../utils";
+import { useAuth } from "../contexts/authContext";
 
 const menuItems = [
   { key: "title", path: "/", icon: Home, color: "text-primary" },
@@ -52,6 +54,7 @@ const menuItems = [
 export default function Sidebar() {
   const location = useLocation();
   const { t } = useTranslation();
+  const { logout } = useAuth();
   const savedCollapsedState = localStorage.getItem("sidebarCollapsed");
   const [collapsed, setCollapsed] = useState(savedCollapsedState === "true");
   const [showText, setShowText] = useState(!collapsed);
@@ -132,8 +135,17 @@ export default function Sidebar() {
           </Link>
         ))}
 
+        {/* Logout Button */}
         <button
-          className="max-w-full flex gap-4 items-center rounded-xl self-end m-2 p-2 hover:bg-secondary font-semibold transition-all duration-300 mt-auto"
+          className="max-w-full flex gap-4 items-center rounded-xl m-2 p-2 hover:bg-red-100 hover:text-red-600 font-semibold transition-all duration-300 mt-auto"
+          onClick={logout}
+        >
+          <LogOut className="text-red-500" />
+          {showText && <span>Logout</span>}
+        </button>
+
+        <button
+          className="max-w-full flex gap-4 items-center rounded-xl self-end m-2 p-2 hover:bg-secondary font-semibold transition-all duration-300"
           onClick={handleToggleCollapse}
           disabled={isDisabled}
         >
