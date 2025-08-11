@@ -1,13 +1,35 @@
 import { useTranslation } from "react-i18next";
 import { Info, Package, ShoppingCart } from "lucide-react";
 import { Modal } from "../../../lib/components/Modal";
-import { Client, Purchase, Sale, SaleItem, Seller } from "@prisma/client";
+import { Client, Sale, SaleItem } from "@prisma/client";
 import { ProductAvatar } from "../../../lib/components/productAvatar";
 
 interface ProductInfoModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  productData: any | null;
+  productData: {
+    id: string;
+    name: string;
+    categoryName: string;
+    quantity: number;
+    boughtPrice: number;
+    sellingPrice: number;
+    codebar: string | null;
+    photo: string | null;
+    PurchaseItems?: Array<{
+      id: string;
+      quantity: number;
+      price: number;
+      createdAt: string;
+      purchase: {
+        id: string;
+        seller: {
+          name: string;
+        } | null;
+      };
+    }>;
+    saleItems?: Array<SaleItem & { sale: Sale & { client: Client | null } }>;
+  } | null;
   loading: boolean;
 }
 
@@ -108,34 +130,39 @@ export const ProductInfoModal = ({
                 <Package className="w-5 h-5" />
                 {t("stock.purchaseHistory", "Purchase History")}
               </h3>
-              {productData.purchases && productData.purchases.length > 0 && (
-                <div
-                  className={`flex gap-4 text-sm text-muted-foreground ${isRTL ? "flex-row-reverse" : ""}`}
-                >
-                  <span>
-                    {t("stock.totalPurchases", "Total Purchases")}:{" "}
-                    {productData.purchases.length}
-                  </span>
-                  <span>
-                    {t("stock.totalQuantityPurchased", "Total Quantity")}:{" "}
-                    {productData.purchases.reduce(
-                      (sum: number, item: Purchase) => sum + item.quantity,
-                      0,
-                    )}
-                  </span>
-                  <span>
-                    {t("stock.totalCost", "Total Cost")}:{" "}
-                    {productData.purchases.reduce(
-                      (sum: number, item: Purchase) =>
-                        sum + item.quantity * item.price,
-                      0,
-                    )}
-                  </span>
-                </div>
-              )}
+              {productData.PurchaseItems &&
+                productData.PurchaseItems.length > 0 && (
+                  <div
+                    className={`flex gap-4 text-sm text-muted-foreground ${isRTL ? "flex-row-reverse" : ""}`}
+                  >
+                    <span>
+                      {t("stock.totalPurchases", "Total Purchases")}:{" "}
+                      {productData.PurchaseItems.length}
+                    </span>
+                    <span>
+                      {t("stock.totalQuantityPurchased", "Total Quantity")}:{" "}
+                      {productData.PurchaseItems.reduce(
+                        (sum: number, item: { quantity: number }) =>
+                          sum + item.quantity,
+                        0,
+                      )}
+                    </span>
+                    <span>
+                      {t("stock.totalCost", "Total Cost")}:{" "}
+                      {productData.PurchaseItems.reduce(
+                        (
+                          sum: number,
+                          item: { quantity: number; price: number },
+                        ) => sum + item.quantity * item.price,
+                        0,
+                      )}
+                    </span>
+                  </div>
+                )}
             </div>
 
-            {productData.purchases && productData.purchases.length > 0 ? (
+            {productData.PurchaseItems &&
+            productData.PurchaseItems.length > 0 ? (
               <div className="border rounded-lg overflow-hidden shadow-sm">
                 <div className="overflow-x-auto">
                   <table className="w-full table-auto">
@@ -174,48 +201,58 @@ export const ProductInfoModal = ({
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border">
-                      {productData.purchases.map(
+                      {productData.PurchaseItems.map(
                         (
-                          purchase: Purchase & { seller: Seller },
+                          purchaseItem: {
+                            id: string;
+                            quantity: number;
+                            price: number;
+                            createdAt: string;
+                            purchase: {
+                              id: string;
+                              seller: { name: string } | null;
+                            };
+                          },
                           index: number,
                         ) => (
                           <tr
                             key={index}
-                            className="hover:bg-muted/30 transition-colors border-b border-border/50 last:border-0"
+                            className="hover:bg-muted/40 transition"
                           >
                             <td
                               className={`px-4 py-3 text-sm font-mono text-blue-600 font-medium ${isRTL ? "text-right" : "text-left"}`}
                             >
-                              #{purchase.id.slice(-8)}
+                              #{purchaseItem.purchase.id.slice(-8)}
                             </td>
                             <td
                               className={`px-4 py-3 text-sm text-foreground ${isRTL ? "text-right" : "text-left"}`}
                             >
                               {new Date(
-                                purchase.createdAt,
+                                purchaseItem.createdAt,
                               ).toLocaleDateString()}
                             </td>
                             <td
                               className={`px-4 py-3 text-sm text-foreground ${isRTL ? "text-right" : "text-left"}`}
                             >
-                              {purchase.seller?.name ||
+                              {purchaseItem.purchase.seller?.name ||
                                 t("stock.noSeller", "No Seller")}
                             </td>
                             <td className="px-4 py-3">
                               <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-sm font-medium">
                                 <span className="text-xs">+</span>
-                                {purchase.quantity}
+                                {purchaseItem.quantity}
                               </span>
                             </td>
                             <td
                               className={`px-4 py-3 text-sm text-foreground ${isRTL ? "text-right" : "text-left"}`}
                             >
-                              {purchase.price || "N/A"}
+                              {purchaseItem.price || "N/A"}
                             </td>
                             <td
                               className={`px-4 py-3 text-sm font-medium text-blue-600 ${isRTL ? "text-right" : "text-left"}`}
                             >
-                              {purchase.quantity * (purchase.price || 0)}
+                              {purchaseItem.quantity *
+                                (purchaseItem.price || 0)}
                             </td>
                           </tr>
                         ),

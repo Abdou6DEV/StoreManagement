@@ -67,14 +67,23 @@ export async function seedProducts(
           to: new Date(),
         });
 
+        // Create a purchase with PurchaseItems
         await tx.purchase.create({
           data: {
-            productId: createdProduct.id,
             sellerId: seller?.id || null,
-            quantity: purchaseQuantity,
-            price: Number(boughtPrice),
             createdAt: purchaseDate,
             updatedAt: purchaseDate,
+            PurchaseItems: {
+              create: [
+                {
+                  productId: createdProduct.id,
+                  quantity: purchaseQuantity,
+                  price: Number(boughtPrice),
+                  createdAt: purchaseDate,
+                  updatedAt: purchaseDate,
+                },
+              ],
+            },
           },
         });
 
@@ -83,6 +92,59 @@ export async function seedProducts(
           where: { id: createdProduct.id },
           data: { quantity: currentQuantity },
         });
+      }
+
+      // Sometimes create purchases with multiple products (multi-item purchases)
+      if (faker.datatype.boolean(0.2)) {
+        // 20% chance for multi-item purchase
+        const otherProducts = await tx.product.findMany({
+          take: faker.number.int({ min: 2, max: 4 }),
+          skip: Math.max(0, i - 50), // Get some recently created products
+        });
+
+        if (otherProducts.length > 0) {
+          const seller = faker.helpers.maybe(
+            () => faker.helpers.arrayElement(sellers),
+            { probability: 0.85 },
+          );
+
+          const purchaseDate = faker.date.between({
+            from: twoYearsAgo,
+            to: new Date(),
+          });
+
+          // Create a multi-item purchase
+          const purchaseItems = otherProducts.map((product) => ({
+            productId: product.id,
+            quantity: faker.number.int({ min: 1, max: 10 }),
+            price: product.boughtPrice,
+            createdAt: purchaseDate,
+            updatedAt: purchaseDate,
+          }));
+
+          await tx.purchase.create({
+            data: {
+              sellerId: seller?.id || null,
+              createdAt: purchaseDate,
+              updatedAt: purchaseDate,
+              PurchaseItems: {
+                create: purchaseItems,
+              },
+            },
+          });
+
+          // Update quantities for all products in the multi-item purchase
+          for (const item of purchaseItems) {
+            await tx.product.update({
+              where: { id: item.productId },
+              data: {
+                quantity: {
+                  increment: item.quantity,
+                },
+              },
+            });
+          }
+        }
       }
 
       // Return the created product with updated quantity
@@ -107,6 +169,12 @@ export async function seedProducts(
   // Check how many products have stock
   const productsWithStock = products.filter((p) => p.quantity > 0);
   console.log(`   - ${productsWithStock.length} products have stock available`);
+
+  // Log some statistics about the purchases
+  const totalPurchases = await prisma.purchase.count();
+  const totalPurchaseItems = await prisma.purchaseItem.count();
+  console.log(`   - Created ${totalPurchases} purchase records`);
+  console.log(`   - Created ${totalPurchaseItems} purchase items`);
 
   return products;
 }

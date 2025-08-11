@@ -34,9 +34,13 @@ export async function getProductWithPurchaseHistory(id: string) {
     where: { id },
     include: {
       category: true,
-      purchases: {
+      PurchaseItems: {
         include: {
-          seller: true,
+          purchase: {
+            include: {
+              seller: true,
+            },
+          },
         },
         orderBy: {
           createdAt: "desc",
@@ -74,11 +78,18 @@ export async function createProductWithPurchase(
       data: productData,
     });
 
-    // Create the purchase record
-    await tx.purchase.create({
+    // Create the purchase record with purchase item
+    const purchase = await tx.purchase.create({
+      data: {
+        sellerId: purchaseData.sellerId || null,
+      },
+    });
+
+    // Create the purchase item
+    await tx.purchaseItem.create({
       data: {
         productId: product.id,
-        sellerId: purchaseData.sellerId || null,
+        purchaseId: purchase.id,
         quantity: purchaseData.quantity,
         price: purchaseData.price,
       },
@@ -109,10 +120,17 @@ export async function updateProductWithPurchase(
     });
 
     // Create the purchase record
-    await tx.purchase.create({
+    const purchase = await tx.purchase.create({
+      data: {
+        sellerId: purchaseData.sellerId || null,
+      },
+    });
+
+    // Create the purchase item
+    await tx.purchaseItem.create({
       data: {
         productId: productId,
-        sellerId: purchaseData.sellerId || null,
+        purchaseId: purchase.id,
         quantity: purchaseData.quantity,
         price: purchaseData.price,
       },

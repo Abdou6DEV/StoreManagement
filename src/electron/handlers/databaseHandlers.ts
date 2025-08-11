@@ -51,6 +51,12 @@ import {
   getPurchaseById,
   getPurchasesByProduct,
   getPurchasesBySeller,
+  createPurchaseWithItems,
+  updatePurchaseWithItems,
+  createPurchaseItem,
+  updatePurchaseItem,
+  deletePurchaseItem,
+  getPurchaseItemsByPurchase,
 } from "../../lib/database/purchases";
 import {
   searchManualProducts,
@@ -266,6 +272,37 @@ export function setupDatabaseHandlers() {
     "db:purchases:getBySeller",
     async (_event, sellerId: string) => {
       return await getPurchasesBySeller(sellerId);
+    },
+  );
+
+  ipcMain.handle("db:purchases:createWithItems", async (_event, data) => {
+    return await createPurchaseWithItems(data);
+  });
+
+  ipcMain.handle(
+    "db:purchases:updateWithItems",
+    async (_event, { purchaseId, data }) => {
+      return await updatePurchaseWithItems(purchaseId, data);
+    },
+  );
+
+  // Purchase Items handlers
+  ipcMain.handle("db:purchaseItems:create", async (_event, data) => {
+    return await createPurchaseItem(data);
+  });
+
+  ipcMain.handle("db:purchaseItems:update", async (_event, { id, data }) => {
+    return await updatePurchaseItem(id, data);
+  });
+
+  ipcMain.handle("db:purchaseItems:delete", async (_event, id: string) => {
+    return await deletePurchaseItem(id);
+  });
+
+  ipcMain.handle(
+    "db:purchaseItems:getByPurchase",
+    async (_event, purchaseId: string) => {
+      return await getPurchaseItemsByPurchase(purchaseId);
     },
   );
 

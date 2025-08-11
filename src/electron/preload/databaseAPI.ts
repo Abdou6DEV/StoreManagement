@@ -143,6 +143,45 @@ export const databaseAPI = {
       ipcRenderer.invoke("db:purchases:getByProduct", productId),
     getBySeller: (sellerId: string) =>
       ipcRenderer.invoke("db:purchases:getBySeller", sellerId),
+    createWithItems: (data: {
+      sellerId?: string;
+      items: Array<{
+        productId: string;
+        quantity: number;
+        price: number;
+      }>;
+    }) => ipcRenderer.invoke("db:purchases:createWithItems", data),
+    updateWithItems: (
+      purchaseId: string,
+      data: {
+        sellerId?: string;
+        items: Array<{
+          id?: string;
+          productId: string;
+          quantity: number;
+          price: number;
+        }>;
+      },
+    ) =>
+      ipcRenderer.invoke("db:purchases:updateWithItems", { purchaseId, data }),
+  },
+  purchaseItems: {
+    create: (data: {
+      productId: string;
+      purchaseId: string;
+      quantity: number;
+      price: number;
+    }) => ipcRenderer.invoke("db:purchaseItems:create", data),
+    update: (
+      id: string,
+      data: {
+        quantity?: number;
+        price?: number;
+      },
+    ) => ipcRenderer.invoke("db:purchaseItems:update", { id, data }),
+    delete: (id: string) => ipcRenderer.invoke("db:purchaseItems:delete", id),
+    getByPurchase: (purchaseId: string) =>
+      ipcRenderer.invoke("db:purchaseItems:getByPurchase", purchaseId),
   },
   manualProducts: {
     search: (query: string) =>
