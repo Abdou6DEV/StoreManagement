@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import type { PaymentWithClient } from "../../../types";
 import PaymentStatus from "./paymentStatus";
 import PaymentActions from "./paymentActions";
+import { Tooltip } from "../../../lib/components/tooltip";
 
 interface PaymentRowProps {
   payment: PaymentWithClient;
@@ -83,6 +84,7 @@ const PaymentRow: React.FC<PaymentRowProps> = ({
               {t("cashier.currency", "DA")}
             </span>
             {!payment.paidDate && (
+              <Tooltip content={t("clients.editAmountTooltip", "Edit payment amount")}>
               <Button
                 size="sm"
                 variant="outline"
@@ -94,6 +96,7 @@ const PaymentRow: React.FC<PaymentRowProps> = ({
               >
                 <Edit className="w-3 h-3" />
               </Button>
+              </Tooltip>
             )}
           </div>
         )}

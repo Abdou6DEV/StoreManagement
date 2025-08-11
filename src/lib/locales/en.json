@@ -536,7 +536,8 @@
     "editTooltip": "Edit client",
     "deleteTooltip": "Delete client",
     "markAsPaidTooltip": "Mark this payment as completed",
-    "markAsUnpaidTooltip": "Revert this payment to unpaid status"
+    "markAsUnpaidTooltip": "Revert this payment to unpaid status",
+    "editAmountTooltip": "Edit payment amount"
   },
   "suppliers": {
     "title": "Suppliers",
