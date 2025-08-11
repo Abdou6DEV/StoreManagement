@@ -181,7 +181,17 @@
     "discount": "Discount",
     "paymentStatus": "Payment Status",
     "types": "types",
-    "noDiscount": "No discount"
+    "noDiscount": "No discount",
+    "doubleClickHint": "Double-click on any row to view detailed information for that period",
+    "detailedHistory": "Detailed History",
+    "noSalesFoundForPeriod": "No sales found for this period",
+    "noPaymentsFoundForPeriod": "No payments found for this period",
+    "noPurchasesFoundForPeriod": "No purchases found for this period",
+    "loadingPeriodData": "Loading period data...",
+    "selectPeriodHint": "Double-click on a row in the General History tab to view detailed information for that period",
+    "relatedToSale": "Related to sale",
+    "client": "Client",
+    "seller": "Seller"
   },
   "navigation": {
     "preferences": "Preferences",

@@ -168,6 +168,60 @@ export async function getPurchasesBySeller(
   })) as PurchaseWithItems[];
 }
 
+export async function getPurchasesByDateRange(startDate: Date, endDate: Date): Promise<PurchaseWithItems[]> {
+  return (await prisma.purchase.findMany({
+    where: {
+      createdAt: {
+        gte: startDate,
+        lte: endDate,
+      },
+    },
+    include: {
+      PurchaseItems: {
+        include: {
+          product: true,
+        },
+      },
+      seller: true,
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  })) as PurchaseWithItems[];
+}
+
+export async function getPurchasesBySpecificPeriod(
+  period: "day" | "month" | "year",
+  periodValue: string,
+): Promise<PurchaseWithItems[]> {
+  let startDate: Date;
+  let endDate: Date;
+
+  if (period === "day") {
+    // periodValue is in format "YYYY-MM-DD"
+    startDate = new Date(periodValue);
+    startDate.setHours(0, 0, 0, 0);
+    endDate = new Date(periodValue);
+    endDate.setHours(23, 59, 59, 999);
+  } else if (period === "month") {
+    // periodValue is in format "YYYY-MM"
+    const [year, month] = periodValue.split("-");
+    startDate = new Date(parseInt(year), parseInt(month) - 1, 1);
+    startDate.setHours(0, 0, 0, 0);
+    endDate = new Date(parseInt(year), parseInt(month), 0);
+    endDate.setHours(23, 59, 59, 999);
+  } else {
+    // periodValue is in format "YYYY"
+    const year = parseInt(periodValue);
+    startDate = new Date(year, 0, 1);
+    startDate.setHours(0, 0, 0, 0);
+    endDate = new Date(year, 11, 31);
+    endDate.setHours(23, 59, 59, 999);
+  }
+
+  return await getPurchasesByDateRange(startDate, endDate);
+}
+
 // PurchaseItem management functions
 export async function createPurchaseItem(data: {
   productId: string;

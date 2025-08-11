@@ -1,10 +1,48 @@
-import type { Product, Payment, Client } from "@prisma/client";
+import type { Product, Payment, Client, Purchase, PurchaseItem } from "@prisma/client";
 
 export type ToastType = "success" | "error" | "info";
 export type Theme = "light" | "dark";
 export type ModalSize = "sm" | "md" | "lg" | "xl" | "full" | "auto";
 export type ModalType = "dialog" | "overlay";
 export type ClientWithTotalPurchases = Client & { totalPurchases: number };
+export type TabType = "summary" | "credits" | "versements";
+export type AggregationLevel = "day" | "month" | "year";
+
+export type SaleForHistory = Sale & {
+  client?: {
+    name: string;
+    phone?: string;
+  } | null;
+  saleItems: Array<SaleItem & {
+    product?: { name: string } | null;
+    manualProduct?: { name: string } | null;
+    service?: { name: string } | null;
+  }>;
+};
+
+export type PaymentForHistory = Payment & {
+  client: {
+    name: string;
+    phone?: string;
+  };
+  sale?: {
+    id: string;
+    createdAt: Date;
+  } | null;
+};
+
+export type PurchaseForHistory = Purchase & {
+  seller?: {
+    name: string;
+    phone?: string;
+  } | null;
+  PurchaseItems: Array<PurchaseItem & {
+    product: {
+      name: string;
+      categoryName: string;
+    };
+  }>;
+};
 
 export interface CartItem {
   id: string;
@@ -150,11 +188,6 @@ export interface ModalAction {
   icon?: React.ReactNode;
 }
 
-export type DateRange = {
-  startDate: Date | null;
-  endDate: Date | null;
-};
-
 export interface SummaryStats {
   totalCredits: number;
   totalVersements: number;
@@ -166,4 +199,15 @@ export interface SummaryStats {
   paidVersementsCount: number;
 }
 
-export type TabType = "summary" | "credits" | "versements";
+export interface SelectedPeriod {
+  period: AggregationLevel;
+  periodValue: string;
+}
+
+export interface AggregatedData {
+  period: string;
+  revenue: number;
+  profit: number;
+  purchases: number;
+  count: number;
+}

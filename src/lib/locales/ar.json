@@ -182,7 +182,17 @@
     "discount": "الخصم",
     "paymentStatus": "حالة الدفع",
     "types": "أنواع",
-    "noDiscount": "لا يوجد خصم"
+    "noDiscount": "لا يوجد خصم",
+    "doubleClickHint": "انقر نقرًا مزدوجًا على أي صف لعرض المعلومات التفصيلية لتلك الفترة",
+    "detailedHistory": "التاريخ التفصيلي",
+    "noSalesFoundForPeriod": "لم يتم العثور على مبيعات لهذه الفترة",
+    "noPaymentsFoundForPeriod": "لم يتم العثور على مدفوعات لهذه الفترة",
+    "noPurchasesFoundForPeriod": "لم يتم العثور على مشتريات لهذه الفترة",
+    "loadingPeriodData": "جاري تحميل بيانات الفترة...",
+    "selectPeriodHint": "انقر نقرًا مزدوجًا على صف في تبويب التاريخ العام لعرض المعلومات التفصيلية لتلك الفترة",
+    "relatedToSale": "مرتبط بالبيع",
+    "client": "العميل",
+    "seller": "البائع"
   },
   "navigation": {
     "preferences": "التفضيلات",

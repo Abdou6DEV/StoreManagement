@@ -614,3 +614,59 @@ export async function getSalesSummary(startDate: Date, endDate: Date) {
     averageProfit: totalSales > 0 ? totalProfit / totalSales : 0,
   };
 }
+
+export async function getSalesByDateRange(startDate: Date, endDate: Date) {
+  return await prisma.sale.findMany({
+    where: {
+      createdAt: {
+        gte: startDate,
+        lte: endDate,
+      },
+    },
+    include: {
+      client: true,
+      saleItems: {
+        include: {
+          product: true,
+          manualProduct: true,
+          service: true,
+        },
+      },
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
+}
+
+export async function getSalesBySpecificPeriod(
+  period: "day" | "month" | "year",
+  periodValue: string,
+) {
+  let startDate: Date;
+  let endDate: Date;
+
+  if (period === "day") {
+    // periodValue is in format "YYYY-MM-DD"
+    startDate = new Date(periodValue);
+    startDate.setHours(0, 0, 0, 0);
+    endDate = new Date(periodValue);
+    endDate.setHours(23, 59, 59, 999);
+  } else if (period === "month") {
+    // periodValue is in format "YYYY-MM"
+    const [year, month] = periodValue.split("-");
+    startDate = new Date(parseInt(year), parseInt(month) - 1, 1);
+    startDate.setHours(0, 0, 0, 0);
+    endDate = new Date(parseInt(year), parseInt(month), 0);
+    endDate.setHours(23, 59, 59, 999);
+  } else {
+    // periodValue is in format "YYYY"
+    const year = parseInt(periodValue);
+    startDate = new Date(year, 0, 1);
+    startDate.setHours(0, 0, 0, 0);
+    endDate = new Date(year, 11, 31);
+    endDate.setHours(23, 59, 59, 999);
+  }
+
+  return await getSalesByDateRange(startDate, endDate);
+}

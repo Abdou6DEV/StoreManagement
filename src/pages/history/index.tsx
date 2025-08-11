@@ -4,9 +4,22 @@ import { BarChart3, FileText, TrendingUp } from "lucide-react";
 import GeneralHistory from "./components/generalHistory";
 import DetailsHistory from "./components/detailsHistory";
 
+type AggregationLevel = "day" | "month" | "year";
+
+interface SelectedPeriod {
+  period: AggregationLevel;
+  periodValue: string;
+}
+
 export default function History() {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<"general" | "details">("general");
+  const [selectedPeriod, setSelectedPeriod] = useState<SelectedPeriod | null>(null);
+
+  const handlePeriodSelect = (period: AggregationLevel, periodValue: string) => {
+    setSelectedPeriod({ period, periodValue });
+    setActiveTab("details");
+  };
 
   const tabs = [
     {
@@ -67,8 +80,12 @@ export default function History() {
 
       {/* Tab Content */}
       <div className="min-h-[600px]">
-        {activeTab === "general" && <GeneralHistory />}
-        {activeTab === "details" && <DetailsHistory />}
+        {activeTab === "general" && (
+          <GeneralHistory onPeriodSelect={handlePeriodSelect} />
+        )}
+        {activeTab === "details" && (
+          <DetailsHistory selectedPeriod={selectedPeriod} />
+        )}
       </div>
     </div>
   );

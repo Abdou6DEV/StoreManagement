@@ -74,3 +74,53 @@ export async function updatePaymentAmount(
     data: { givenAmount },
   });
 }
+
+export async function getPaymentsByDateRange(startDate: Date, endDate: Date) {
+  return await prisma.payment.findMany({
+    where: {
+      createdAt: {
+        gte: startDate,
+        lte: endDate,
+      },
+    },
+    include: {
+      client: true,
+      sale: true,
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
+}
+
+export async function getPaymentsBySpecificPeriod(
+  period: "day" | "month" | "year",
+  periodValue: string,
+) {
+  let startDate: Date;
+  let endDate: Date;
+
+  if (period === "day") {
+    // periodValue is in format "YYYY-MM-DD"
+    startDate = new Date(periodValue);
+    startDate.setHours(0, 0, 0, 0);
+    endDate = new Date(periodValue);
+    endDate.setHours(23, 59, 59, 999);
+  } else if (period === "month") {
+    // periodValue is in format "YYYY-MM"
+    const [year, month] = periodValue.split("-");
+    startDate = new Date(parseInt(year), parseInt(month) - 1, 1);
+    startDate.setHours(0, 0, 0, 0);
+    endDate = new Date(parseInt(year), parseInt(month), 0);
+    endDate.setHours(23, 59, 59, 999);
+  } else {
+    // periodValue is in format "YYYY"
+    const year = parseInt(periodValue);
+    startDate = new Date(year, 0, 1);
+    startDate.setHours(0, 0, 0, 0);
+    endDate = new Date(year, 11, 31);
+    endDate.setHours(23, 59, 59, 999);
+  }
+
+  return await getPaymentsByDateRange(startDate, endDate);
+}

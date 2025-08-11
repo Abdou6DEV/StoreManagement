@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Calendar } from "lucide-react";
 import rendererLogger from "../../../lib/logger/rendererLogger";
+import type { AggregationLevel, AggregatedData } from "../../../types";
 import {
   Pagination,
   PaginationContent,
@@ -11,17 +12,11 @@ import {
   PaginationPrevious,
 } from "../../../lib/components/pagination";
 
-type AggregationLevel = "day" | "month" | "year";
-
-interface AggregatedData {
-  period: string;
-  revenue: number;
-  profit: number;
-  purchases: number;
-  count: number;
+interface GeneralHistoryProps {
+  onPeriodSelect?: (period: AggregationLevel, periodValue: string) => void;
 }
 
-export default function GeneralHistory() {
+export default function GeneralHistory({ onPeriodSelect }: GeneralHistoryProps) {
   const { t } = useTranslation();
   const [aggregationLevel, setAggregationLevel] =
     useState<AggregationLevel>("day");
@@ -121,6 +116,12 @@ export default function GeneralHistory() {
     }
   };
 
+  const handleRowDoubleClick = (period: string) => {
+    if (onPeriodSelect) {
+      onPeriodSelect(aggregationLevel, period);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Controls */}
@@ -131,7 +132,7 @@ export default function GeneralHistory() {
               {t("history.aggregationLevel")}
             </label>
             <p className="text-xs text-muted-foreground">
-              Select how you want to group your sales data
+              Select how you want to group your data
             </p>
           </div>
           <div className="flex items-center gap-2 bg-background/80 rounded-xl p-1 border border-primary/15">
@@ -167,6 +168,13 @@ export default function GeneralHistory() {
 
       {/* Data Table */}
       <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
+        {/* Hint */}
+        <div className="bg-muted/30 border-b border-border px-6 py-3">
+          <p className="text-sm text-muted-foreground text-center">
+            💡 {t("history.doubleClickHint")}
+          </p>
+        </div>
+        
         {loading ? (
           <div className="flex items-center justify-center h-64">
             <div className="flex items-center gap-3 text-muted-foreground">
@@ -209,10 +217,11 @@ export default function GeneralHistory() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/50">
-                {currentData.map((item, index) => (
+                {currentData.map((item) => (
                   <tr
                     key={item.period}
-                    className="group transition-all duration-200 hover:bg-muted/90 bg-muted/5"
+                    className="group transition-all duration-200 hover:bg-muted/90 bg-muted/5 cursor-pointer"
+                    onDoubleClick={() => handleRowDoubleClick(item.period)}
                   >
                     <td className="p-6 font-medium text-foreground">
                       <div className="flex items-center gap-3">

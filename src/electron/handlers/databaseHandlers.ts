@@ -28,6 +28,7 @@ import {
   deleteSale,
   getSalesAggregatedByPeriod,
   getSalesSummary,
+  getSalesBySpecificPeriod,
 } from "../../lib/database/sales";
 import { getOption, setOption } from "../../lib/database/options";
 import {
@@ -37,6 +38,7 @@ import {
   getAllPaymentsWithClientInfo,
   updatePaymentPaidAt,
   updatePaymentAmount,
+  getPaymentsBySpecificPeriod,
 } from "../../lib/database/payments";
 import {
   getAllSellers,
@@ -53,6 +55,7 @@ import {
   getPurchaseById,
   getPurchasesByProduct,
   getPurchasesBySeller,
+  getPurchasesBySpecificPeriod,
   createPurchaseWithItems,
   updatePurchaseWithItems,
   createPurchaseItem,
@@ -192,6 +195,13 @@ export function setupDatabaseHandlers() {
     return await getSalesSummary(new Date(startDate), new Date(endDate));
   });
 
+  ipcMain.handle(
+    "db:sales:getBySpecificPeriod",
+    async (_event, period, periodValue) => {
+      return await getSalesBySpecificPeriod(period, periodValue);
+    },
+  );
+
   // Options handlers
   ipcMain.handle("db:options:get", async (_event, key: string) => {
     return await getOption(key);
@@ -233,6 +243,13 @@ export function setupDatabaseHandlers() {
     "db:payments:updateAmount",
     async (_event, { paymentId, givenAmount }) => {
       return await updatePaymentAmount(paymentId, givenAmount);
+    },
+  );
+
+  ipcMain.handle(
+    "db:payments:getBySpecificPeriod",
+    async (_event, period, periodValue) => {
+      return await getPaymentsBySpecificPeriod(period, periodValue);
     },
   );
 
@@ -289,6 +306,13 @@ export function setupDatabaseHandlers() {
     "db:purchases:getBySeller",
     async (_event, sellerId: string) => {
       return await getPurchasesBySeller(sellerId);
+    },
+  );
+
+  ipcMain.handle(
+    "db:purchases:getBySpecificPeriod",
+    async (_event, period, periodValue) => {
+      return await getPurchasesBySpecificPeriod(period, periodValue);
     },
   );
 

@@ -182,7 +182,17 @@
     "discount": "Remise",
     "paymentStatus": "Statut de paiement",
     "types": "types",
-    "noDiscount": "Aucune remise"
+    "noDiscount": "Aucune remise",
+    "doubleClickHint": "Double-cliquez sur n'importe quelle ligne pour voir les informations détaillées de cette période",
+    "detailedHistory": "Historique Détaillé",
+    "noSalesFoundForPeriod": "Aucune vente trouvée pour cette période",
+    "noPaymentsFoundForPeriod": "Aucun paiement trouvé pour cette période",
+    "noPurchasesFoundForPeriod": "Aucun achat trouvé pour cette période",
+    "loadingPeriodData": "Chargement des données de la période...",
+    "selectPeriodHint": "Double-cliquez sur une ligne dans l'onglet Historique Général pour voir les informations détaillées de cette période",
+    "relatedToSale": "Lié à la vente",
+    "client": "Client",
+    "seller": "Vendeur"
   },
   "navigation": {
     "preferences": "Préférences",

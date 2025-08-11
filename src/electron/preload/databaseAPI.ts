@@ -71,6 +71,8 @@ export const databaseAPI = {
       ),
     getSummary: (startDate: Date, endDate: Date) =>
       ipcRenderer.invoke("db:sales:getSummary", startDate, endDate),
+    getBySpecificPeriod: (period: "day" | "month" | "year", periodValue: string) =>
+      ipcRenderer.invoke("db:sales:getBySpecificPeriod", period, periodValue),
     update: (
       id: string,
       data: {
@@ -100,6 +102,8 @@ export const databaseAPI = {
     getAll: () => ipcRenderer.invoke("db:payments:getAll"),
     getAllWithClientInfo: () =>
       ipcRenderer.invoke("db:payments:getAllWithClientInfo"),
+    getBySpecificPeriod: (period: "day" | "month" | "year", periodValue: string) =>
+      ipcRenderer.invoke("db:payments:getBySpecificPeriod", period, periodValue),
     markAsPaid: (paymentId: string, paidDate: Date) =>
       ipcRenderer.invoke("db:payments:updatePaidAt", {
         paymentId,
@@ -156,6 +160,8 @@ export const databaseAPI = {
       ipcRenderer.invoke("db:purchases:getByProduct", productId),
     getBySeller: (sellerId: string) =>
       ipcRenderer.invoke("db:purchases:getBySeller", sellerId),
+    getBySpecificPeriod: (period: "day" | "month" | "year", periodValue: string) =>
+      ipcRenderer.invoke("db:purchases:getBySpecificPeriod", period, periodValue),
     createWithItems: (data: {
       sellerId?: string;
       items: Array<{
