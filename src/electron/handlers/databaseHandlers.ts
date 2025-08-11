@@ -26,6 +26,8 @@ import {
   updateSale,
   getRecentSales,
   deleteSale,
+  getSalesAggregatedByPeriod,
+  getSalesSummary,
 } from "../../lib/database/sales";
 import { getOption, setOption } from "../../lib/database/options";
 import {
@@ -173,6 +175,21 @@ export function setupDatabaseHandlers() {
 
   ipcMain.handle("db:sales:delete", async (_event, id: string) => {
     return await deleteSale(id);
+  });
+
+  ipcMain.handle(
+    "db:sales:getAggregatedByPeriod",
+    async (_event, period, startDate, endDate) => {
+      return await getSalesAggregatedByPeriod(
+        period,
+        new Date(startDate),
+        new Date(endDate),
+      );
+    },
+  );
+
+  ipcMain.handle("db:sales:getSummary", async (_event, startDate, endDate) => {
+    return await getSalesSummary(new Date(startDate), new Date(endDate));
   });
 
   // Options handlers

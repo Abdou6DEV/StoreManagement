@@ -58,6 +58,19 @@ export const databaseAPI = {
     getAll: () => ipcRenderer.invoke("db:sales:getAll"),
     getRecent: (options?: { limit?: number; offset?: number }) =>
       ipcRenderer.invoke("db:sales:getRecent", options),
+    getAggregatedByPeriod: (
+      period: "day" | "month" | "year",
+      startDate: Date,
+      endDate: Date,
+    ) =>
+      ipcRenderer.invoke(
+        "db:sales:getAggregatedByPeriod",
+        period,
+        startDate,
+        endDate,
+      ),
+    getSummary: (startDate: Date, endDate: Date) =>
+      ipcRenderer.invoke("db:sales:getSummary", startDate, endDate),
     update: (
       id: string,
       data: {

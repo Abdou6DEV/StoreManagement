@@ -464,3 +464,153 @@ export async function getRecentSales(limit = 50, offset = 0) {
     hasMore: offset + limit < totalCount,
   };
 }
+
+export async function getSalesAggregatedByPeriod(
+  period: "day" | "month" | "year",
+  startDate: Date,
+  endDate: Date,
+) {
+  const sales = await prisma.sale.findMany({
+    where: {
+      createdAt: {
+        gte: startDate,
+        lte: endDate,
+      },
+    },
+    include: {
+      saleItems: {
+        include: {
+          product: true,
+          manualProduct: true,
+          service: true,
+        },
+      },
+    },
+  });
+
+  // Group sales by period
+  const groupedData = new Map<
+    string,
+    {
+      period: string;
+      revenue: number;
+      profit: number;
+      purchases: number;
+      count: number;
+    }
+  >();
+
+  sales.forEach((sale) => {
+    const saleDate = new Date(sale.createdAt);
+    let periodKey: string;
+
+    if (period === "day") {
+      periodKey = saleDate.toISOString().split("T")[0]; // YYYY-MM-DD
+    } else if (period === "month") {
+      periodKey = `${saleDate.getFullYear()}-${String(saleDate.getMonth() + 1).padStart(2, "0")}`;
+    } else {
+      periodKey = saleDate.getFullYear().toString();
+    }
+
+    const totalAmount = sale.saleItems.reduce(
+      (sum, item) => sum + item.price * item.quantity,
+      0,
+    );
+    const totalAmountWithDiscount = totalAmount - sale.discount;
+
+    // Calculate profit (revenue - cost)
+    const totalCost = sale.saleItems.reduce((sum, item) => {
+      if (item.product) {
+        return sum + item.product.boughtPrice * item.quantity;
+      }
+      // For manual products and services, assume 70% profit margin
+      return sum + item.price * item.quantity * 0.3;
+    }, 0);
+
+    const profit = totalAmountWithDiscount - totalCost;
+
+    const existing = groupedData.get(periodKey);
+    if (existing) {
+      existing.revenue += totalAmountWithDiscount;
+      existing.profit += profit;
+      existing.purchases += sale.saleItems.reduce(
+        (sum, item) => sum + item.quantity,
+        0,
+      );
+      existing.count += 1;
+    } else {
+      groupedData.set(periodKey, {
+        period: periodKey,
+        revenue: totalAmountWithDiscount,
+        profit: profit,
+        purchases: sale.saleItems.reduce((sum, item) => sum + item.quantity, 0),
+        count: 1,
+      });
+    }
+  });
+
+  // Convert to array and sort by period
+  const result = Array.from(groupedData.values()).sort((a, b) =>
+    a.period.localeCompare(b.period),
+  );
+
+  return result;
+}
+
+export async function getSalesSummary(startDate: Date, endDate: Date) {
+  const sales = await prisma.sale.findMany({
+    where: {
+      createdAt: {
+        gte: startDate,
+        lte: endDate,
+      },
+    },
+    include: {
+      saleItems: {
+        include: {
+          product: true,
+          manualProduct: true,
+          service: true,
+        },
+      },
+    },
+  });
+
+  let totalRevenue = 0;
+  let totalProfit = 0;
+  let totalPurchases = 0;
+  const totalSales = sales.length;
+
+  sales.forEach((sale) => {
+    const totalAmount = sale.saleItems.reduce(
+      (sum, item) => sum + item.price * item.quantity,
+      0,
+    );
+    const totalAmountWithDiscount = totalAmount - sale.discount;
+
+    // Calculate profit (revenue - cost)
+    const totalCost = sale.saleItems.reduce((sum, item) => {
+      if (item.product) {
+        return sum + item.product.boughtPrice * item.quantity;
+      }
+      // For manual products and services, assume 70% profit margin
+      return sum + item.price * item.quantity * 0.3;
+    }, 0);
+
+    totalRevenue += totalAmountWithDiscount;
+    totalProfit += totalAmountWithDiscount - totalCost;
+    totalPurchases += sale.saleItems.reduce(
+      (sum, item) => sum + item.quantity,
+      0,
+    );
+  });
+
+  return {
+    totalRevenue,
+    totalProfit,
+    totalPurchases,
+    totalSales,
+    averageRevenue: totalSales > 0 ? totalRevenue / totalSales : 0,
+    averageProfit: totalSales > 0 ? totalProfit / totalSales : 0,
+  };
+}
