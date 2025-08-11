@@ -166,7 +166,8 @@
     "fullscreen": "ملء الشاشة",
     "exitFullscreen": "الخروج من ملء الشاشة",
     "tooltipsOn": "تفعيل التلميحات",
-    "tooltipsOff": "إلغاء التلميحات"
+    "tooltipsOff": "إلغاء التلميحات",
+    "logout": "تسجيل الخروج"
   },
   "cashier": {
     "total": "الإجمالي",

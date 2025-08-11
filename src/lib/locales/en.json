@@ -166,7 +166,8 @@
     "fullscreen": "Fullscreen",
     "exitFullscreen": "Exit Fullscreen",
     "tooltipsOn": "Tooltips On",
-    "tooltipsOff": "Tooltips Off"
+    "tooltipsOff": "Tooltips Off",
+    "logout": "Logout"
   },
   "cashier": {
     "session": "Page",

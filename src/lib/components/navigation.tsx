@@ -15,6 +15,7 @@ import {
   PackageSearch,
   Settings,
   User,
+  LogOut,
 } from "lucide-react";
 import { ThemeToggleButton } from "./themeToggleButton";
 import { FullscreenToggleButton } from "./fullscreenToggleButton";
@@ -27,7 +28,7 @@ export default function Navigation() {
   const location = useLocation();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const { t, i18n } = useTranslation();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
 
   const isCashierPage = location.pathname.startsWith("/cashier");
   const isRTL = i18n.language === "ar";
@@ -108,6 +109,16 @@ export default function Navigation() {
             </DropdownMenuItem>
 
             <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.preventDefault();
+                logout();
+              }}
+              className={`text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950 font-medium ${isRTL ? "flex-row-reverse" : ""}`}
+            >
+              <LogOut className={`w-4 h-4 ${isRTL ? "ml-2" : "mr-2"}`} />
+              {t("navigation.logout")}
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
@@ -231,6 +242,18 @@ export default function Navigation() {
               >
                 <span className={isRTL ? "ml-2" : "mr-2"}>🇸🇦</span>{" "}
                 {t("navigation.arabic")}
+              </DropdownMenuItem>
+
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.preventDefault();
+                  logout();
+                }}
+                className={`text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950 font-medium ${isRTL ? "flex-row-reverse" : ""}`}
+              >
+                <LogOut className={`w-4 h-4 ${isRTL ? "ml-2" : "mr-2"}`} />
+                {t("navigation.logout")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
