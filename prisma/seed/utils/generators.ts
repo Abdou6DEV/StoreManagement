@@ -7,7 +7,6 @@ import {
   colors,
   materials,
   productNameTemplates,
-  placeholderImages,
 } from "../data/index";
 
 export function generateUniqueProductName(): string {
@@ -34,13 +33,8 @@ export function generateUniqueProductName(): string {
 }
 
 export function generateProductPhoto(): string | null {
-  // 60% chance to have no photo, 40% chance to have a varied placeholder
-  if (!faker.datatype.boolean({ probability: 0.4 })) {
-    return null;
-  }
-
-  // Return a random placeholder image
-  return faker.helpers.arrayElement(placeholderImages);
+  // All products will have no photo
+  return null;
 }
 
 export function generateUniqueClientName(): string {

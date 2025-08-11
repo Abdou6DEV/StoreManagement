@@ -7,4 +7,4 @@ export * from "./colors";
 export * from "./materials";
 export * from "./manualProducts";
 export * from "./productNameTemplates";
-export * from "./placeholderImages";
+
