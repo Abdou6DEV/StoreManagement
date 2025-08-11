@@ -38,6 +38,19 @@ export interface AddStockFormState {
   photo: string | null;
 }
 
+export interface MultiProductItem {
+  id: string;
+  productId: string;
+  productName: string;
+  quantity: number | "";
+  price: number | "";
+}
+
+export interface MultiStockFormState {
+  sellerId: string;
+  items: MultiProductItem[];
+}
+
 export interface PaymentWithDetails extends Payment {
   client: { name: string; phone?: string };
   sale: { id: string };
