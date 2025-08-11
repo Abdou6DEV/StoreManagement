@@ -146,7 +146,7 @@ export default function AddPaymentForm({
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {/* Client Selection */}
             <Legend>
-              <label>{t("clients.client", "Client")} *</label>
+              <label>{t("clients.client", "Client")}</label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
@@ -201,7 +201,7 @@ export default function AddPaymentForm({
 
             {/* Payment Type */}
             <Legend>
-              <label>{t("clients.paymentType", "Payment Type")} *</label>
+              <label>{t("clients.paymentType", "Payment Type")}</label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
@@ -243,7 +243,7 @@ export default function AddPaymentForm({
 
             {/* Amount */}
             <Legend>
-              <label>{t("clients.amount", "Amount")} *</label>
+              <label>{t("clients.amount", "Amount")}</label>
               <input
                 type="number"
                 placeholder={t("clients.amount", "Amount")}
@@ -260,7 +260,7 @@ export default function AddPaymentForm({
 
             {/* Due Date */}
             <Legend>
-              <label>{t("clients.dueDate", "Due Date")} *</label>
+              <label>{t("clients.dueDate", "Due Date")}</label>
               <input
                 type="date"
                 value={form.dueDate}

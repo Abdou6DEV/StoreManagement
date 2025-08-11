@@ -531,7 +531,9 @@
     "paymentAddError": "فشل في إضافة الدفعة",
     "viewPaymentsTooltip": "عرض سجل المدفوعات",
     "editTooltip": "تعديل العميل",
-    "deleteTooltip": "حذف العميل"
+    "deleteTooltip": "حذف العميل",
+    "markAsPaidTooltip": "وضع علامة على هذه الدفعة كمكتملة",
+    "markAsUnpaidTooltip": "إعادة هذه الدفعة إلى حالة غير مدفوعة"
   },
   "suppliers": {
     "title": "الموردون",

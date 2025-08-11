@@ -534,7 +534,9 @@
     "paymentAddError": "Failed to add payment",
     "viewPaymentsTooltip": "View payments history",
     "editTooltip": "Edit client",
-    "deleteTooltip": "Delete client"
+    "deleteTooltip": "Delete client",
+    "markAsPaidTooltip": "Mark this payment as completed",
+    "markAsUnpaidTooltip": "Revert this payment to unpaid status"
   },
   "suppliers": {
     "title": "Suppliers",

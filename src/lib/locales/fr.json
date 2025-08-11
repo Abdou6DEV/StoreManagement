@@ -528,7 +528,9 @@
     "paymentAddError": "Échec de l'ajout du paiement",
     "viewPaymentsTooltip": "Voir l'historique des paiements",
     "editTooltip": "Modifier le client",
-    "deleteTooltip": "Supprimer le client"
+    "deleteTooltip": "Supprimer le client",
+    "markAsPaidTooltip": "Marquer ce paiement comme terminé",
+    "markAsUnpaidTooltip": "Revenir ce paiement au statut non payé"
   },
   "suppliers": {
     "title": "Fournisseurs",
