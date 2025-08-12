@@ -442,7 +442,7 @@ export default function DetailsHistory({ selectedPeriod }: DetailsHistoryProps) 
                   currentPage={purchasesPage}
                   totalPages={purchasesTotalPages}
                   onPageChange={setPurchasesPage}
-                />A
+                />
               </>
             )}
           </div>
