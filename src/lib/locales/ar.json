@@ -577,6 +577,7 @@
     "deleteTooltip": "حذف العميل",
     "markAsPaidTooltip": "وضع علامة على هذه الدفعة كمكتملة",
     "markAsUnpaidTooltip": "إعادة هذه الدفعة إلى حالة غير مدفوعة",
+    "totalClients": "إجمالي العملاء",
     "editAmountTooltip": "تعديل مبلغ الدفع"
   },
   "suppliers": {

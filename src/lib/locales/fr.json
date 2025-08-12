@@ -574,7 +574,8 @@
     "deleteTooltip": "Supprimer le client",
     "markAsPaidTooltip": "Marquer ce paiement comme terminé",
     "markAsUnpaidTooltip": "Revenir ce paiement au statut non payé",
-    "editAmountTooltip": "Modifier le montant du paiement"
+    "editAmountTooltip": "Modifier le montant du paiement",
+    "totalClients": "Total Clients"
   },
   "suppliers": {
     "title": "Fournisseurs",
