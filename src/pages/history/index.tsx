@@ -1,15 +1,9 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { BarChart3, FileText, TrendingUp } from "lucide-react";
 import GeneralHistory from "./components/generalHistory";
 import DetailsHistory from "./components/detailsHistory";
-
-type AggregationLevel = "day" | "month" | "year";
-
-interface SelectedPeriod {
-  period: AggregationLevel;
-  periodValue: string;
-}
+import type { AggregationLevel, SelectedPeriod } from "../../types";
 
 export default function History() {
   const { t } = useTranslation();
