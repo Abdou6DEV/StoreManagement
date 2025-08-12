@@ -131,8 +131,6 @@
     "profit": "Profit",
     "purchases": "Achats",
     "sales": "Ventes",
-
-    "sales": "Ventes",
     "payments": "Paiements",
     "today": "Aujourd'hui",
     "yesterday": "Hier",
@@ -191,7 +189,6 @@
     "loadingPeriodData": "Chargement des données de la période...",
     "selectPeriodHint": "Double-cliquez sur une ligne dans l'onglet Historique Général pour voir les informations détaillées de cette période",
     "relatedToSale": "Lié à la vente",
-    "client": "Client",
     "seller": "Vendeur"
   },
   "navigation": {

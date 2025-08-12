@@ -10,7 +10,7 @@ import type { ProductWithSales, CartItem } from "../../../types";
 import { useTranslation } from "react-i18next";
 import { Skeleton } from "../../../lib/components/skeleton";
 import { useStock } from "../../../lib/contexts/stockContext";
-import { ChevronLeft, ChevronRight, CheckCircle } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import ProductCard from "./productCard";
 import rendererLogger from "../../../lib/logger/rendererLogger";
 
@@ -64,7 +64,6 @@ const ProductBrowser = forwardRef<
   // Remove canScrollLeft, canScrollRight, updateChevronState, and related useEffect
 
   useEffect(() => {
-    const container = tabsContainerRef.current;
     // No chevron state logic needed
     if (open) {
       const container = tabsContainerRef.current;

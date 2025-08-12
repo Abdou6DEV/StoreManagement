@@ -131,8 +131,6 @@
     "profit": "Profit",
     "purchases": "Purchases",
     "sales": "Sales",
-
-    "sales": "Sales",
     "payments": "Payments",
     "today": "Today",
     "yesterday": "Yesterday",
@@ -190,7 +188,6 @@
     "loadingPeriodData": "Loading period data...",
     "selectPeriodHint": "Double-click on a row in the General History tab to view detailed information for that period",
     "relatedToSale": "Related to sale",
-    "client": "Client",
     "seller": "Seller"
   },
   "navigation": {
