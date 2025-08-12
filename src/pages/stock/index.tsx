@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useTranslation } from "react-i18next";
+
 import { StockTable } from "./components/stockTable";
 import AddStockForm from "./components/addStockForm";
 import CategorySummaryTable from "./components/categorySummaryTable";

@@ -1,10 +1,10 @@
 import { useState, useMemo } from "react";
-import type { ProductWithSales } from "../../../types";
-import type { CartItem } from "../../../types";
+import type { ProductWithSales, CartItem } from "../../../types";
 import { useTranslation } from "react-i18next";
 import PaymentSummary from "../../../lib/components/paymentSummary";
 import ActionButtons from "./actionButtons";
 import { useToast } from "../../../lib/contexts/toastContext";
+import { Client } from "@prisma/client";
 
 interface CashierSessionProps {
   allProducts: ProductWithSales[];
@@ -32,7 +32,6 @@ interface CashierSessionProps {
 
 export default function CashierSession({
   allProducts,
-  productRefreshKey,
   setProductRefreshKey,
   cart,
   setCart,
@@ -40,8 +39,6 @@ export default function CashierSession({
   onReceiptData,
   onSaleComplete,
   onSaleCompleted,
-  onShowProductBrowser,
-  onShowManualProductModal,
   isActive,
   discount,
   setDiscount,
@@ -162,7 +159,7 @@ export default function CashierSession({
         // First try to find an existing client with this name
         const allClients = await window.api.database.clients.getAll();
         const existingClient = allClients.find(
-          (c) => c.name === clientName.trim(),
+          (c: Client) => c.name === clientName.trim(),
         );
 
         if (existingClient) {

@@ -3,7 +3,7 @@ import { FormModal } from "../../../lib/components/Modal";
 import { Input } from "../../../lib/components/input";
 import { Edit } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import type { Client } from "../../../types";
+import type { Client } from "@prisma/client";
 
 interface EditClientDialogProps {
   client: Client | null;

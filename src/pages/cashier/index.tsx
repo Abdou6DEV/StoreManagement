@@ -9,6 +9,7 @@ import CashierLayout from "./components/cashierLayout";
 import SessionManager from "./components/sessionManager";
 import { ConfirmDialog } from "../../lib/components/confirmDialog";
 import rendererLogger from "../../lib/logger/rendererLogger";
+import { Product } from "@prisma/client";
 
 const MAX_SESSIONS = 5;
 
@@ -49,7 +50,6 @@ export default function CashierPage() {
   const [showProductBrowser, setShowProductBrowser] = useState(false);
   const [allProducts, setAllProducts] = useState<ProductWithSales[]>([]);
   const productBrowserRef = useRef<{ handleClose: () => void }>(null);
-  const [outOfStockItems, setOutOfStockItems] = useState<CartItem[]>([]);
   const [showStockWarning, setShowStockWarning] = useState(false);
   const [showManualProductModal, setShowManualProductModal] = useState(false);
   const [showServiceModal, setShowServiceModal] = useState(false);
@@ -77,7 +77,7 @@ export default function CashierPage() {
         const salesMap = new Map(
           salesCounts.map((s: any) => [s.productId, s.totalSold]),
         );
-        const merged = products.map((p: any) => ({
+        const merged = products.map((p: Product) => ({
           ...p,
           totalSold: salesMap.get(p.id) || 0,
         }));
@@ -92,7 +92,7 @@ export default function CashierPage() {
         // Fallback to basic products if sales fetch fails
         const products = await window.api.database.products.getAll();
         setAllProducts(
-          products.map((p: any) => ({
+          products.map((p: Product) => ({
             ...p,
             totalSold: 0,
           })) as ProductWithSales[],
@@ -116,8 +116,7 @@ export default function CashierPage() {
     };
   }, []);
 
-  const handleOutOfStock = (items: CartItem[]) => {
-    setOutOfStockItems(items);
+  const handleOutOfStock = () => {
     setShowStockWarning(true);
   };
 
@@ -142,14 +141,13 @@ export default function CashierPage() {
     setSalesRefreshKey((prev) => prev + 1);
   };
 
-  const handleSaleCompleted = (saleId?: string) => {
+  const handleSaleCompleted = () => {
     setSalesRefreshKey((prev) => prev + 1);
   };
 
   // Proceed with sale despite out of stock warning
   const proceedWithOutOfStockSale = async () => {
     setShowStockWarning(false);
-    setOutOfStockItems([]);
     // This would need to be handled by the active session component
     // For now, we'll just close the modal
   };
@@ -236,7 +234,6 @@ export default function CashierPage() {
             onOpenChange={(open) => {
               if (!open) {
                 setShowStockWarning(false);
-                setOutOfStockItems([]);
               }
             }}
             onConfirm={proceedWithOutOfStockSale}

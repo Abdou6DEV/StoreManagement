@@ -19,7 +19,6 @@ interface PaymentTableProps {
 
 const PaymentTable: React.FC<PaymentTableProps> = ({
   payments,
-  type,
   editingPayment,
   editAmount,
   setEditingPayment,

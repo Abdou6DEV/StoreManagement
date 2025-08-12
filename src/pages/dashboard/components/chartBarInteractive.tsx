@@ -271,7 +271,7 @@ export function ChartBarInteractive() {
           <div
             className={`flex rounded-lg border ${controlBorder} ${toggleBg} p-1`}
           >
-            {Object.entries(timePeriods).map(([key, period]) => (
+            {Object.entries(timePeriods).map(([key]) => (
               <button
                 key={key}
                 onClick={() => setTimePeriod(key as keyof typeof timePeriods)}

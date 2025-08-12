@@ -505,7 +505,7 @@ export default function AddStockForm({
                                     sellingPrice: p.sellingPrice ?? "",
                                     codebar: p.codebar || "",
                                     sellerId: "",
-                                    photo: (p as any).photo || null,
+                                    photo: p.photo || null,
                                   });
                                   setShowProductDropdown(false);
                                 }}

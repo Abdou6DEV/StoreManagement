@@ -9,12 +9,7 @@ interface PaymentStatusProps {
   isDueSoon: boolean;
 }
 
-const PaymentStatus: React.FC<PaymentStatusProps> = ({
-  paidDate,
-  dueDate,
-  isOverdue,
-  isDueSoon,
-}) => {
+const PaymentStatus: React.FC<PaymentStatusProps> = ({ paidDate }) => {
   const { t } = useTranslation();
 
   if (paidDate) {
