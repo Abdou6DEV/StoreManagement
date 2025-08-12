@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next";
 import { ShoppingCart } from "lucide-react";
 import type { SaleForHistory } from "../../../../types";
 import { formatCurrency, formatDateTime } from "./detailsHistoryUtils";
-import DetailsHistoryPagination from "./detailsHistoryPagination";
+import SharedPagination from "../sharedPagination";
 
 interface SalesSectionProps {
   sales: SaleForHistory[];
@@ -73,7 +73,7 @@ export default function SalesSection({
           </div>
         ))}
       </div>
-      <DetailsHistoryPagination
+      <SharedPagination
         currentPage={currentPage}
         totalPages={totalPages}
         onPageChange={onPageChange}

@@ -2,7 +2,7 @@ import type { AggregationLevel } from "../../../../types";
 import { useGeneralHistoryData } from "./useGeneralHistoryData";
 import GeneralHistoryControls from "./generalHistoryControls";
 import GeneralHistoryTable from "./generalHistoryTable";
-import GeneralHistoryPagination from "./generalHistoryPagination";
+import SharedPagination from "../sharedPagination";
 import LoadingState from "./loadingState";
 import EmptyState from "./emptyState";
 
@@ -46,7 +46,7 @@ export default function GeneralHistory({ onPeriodSelect }: GeneralHistoryProps) 
             aggregationLevel={aggregationLevel}
             onRowDoubleClick={handleRowDoubleClick}
           />
-          <GeneralHistoryPagination
+          <SharedPagination
             currentPage={currentPage}
             totalPages={totalPages}
             onPageChange={setCurrentPage}

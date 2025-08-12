@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next";
 import { FileText } from "lucide-react";
 import type { PurchaseForHistory } from "../../../../types";
 import { formatCurrency, formatDateTime } from "./detailsHistoryUtils";
-import DetailsHistoryPagination from "./detailsHistoryPagination";
+import SharedPagination from "../sharedPagination";
 
 interface PurchasesSectionProps {
   purchases: PurchaseForHistory[];
@@ -67,7 +67,7 @@ export default function PurchasesSection({
           </div>
         ))}
       </div>
-      <DetailsHistoryPagination
+      <SharedPagination
         currentPage={currentPage}
         totalPages={totalPages}
         onPageChange={onPageChange}

@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next";
 import { CreditCard } from "lucide-react";
 import type { PaymentForHistory } from "../../../../types";
 import { formatCurrency, formatDateTime, formatDate } from "./detailsHistoryUtils";
-import DetailsHistoryPagination from "./detailsHistoryPagination";
+import SharedPagination from "../sharedPagination";
 
 interface PaymentsSectionProps {
   payments: PaymentForHistory[];
@@ -61,7 +61,7 @@ export default function PaymentsSection({
           </div>
         ))}
       </div>
-      <DetailsHistoryPagination
+      <SharedPagination
         currentPage={currentPage}
         totalPages={totalPages}
         onPageChange={onPageChange}
