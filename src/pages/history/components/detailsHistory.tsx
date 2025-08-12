@@ -3,6 +3,14 @@ import { useTranslation } from "react-i18next";
 import { FileText, Calendar, ShoppingCart, CreditCard } from "lucide-react";
 import rendererLogger from "../../../lib/logger/rendererLogger";
 import type { SaleForHistory, PaymentForHistory, PurchaseForHistory, SelectedPeriod } from "../../../types";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "../../../lib/components/pagination";
 
 interface DetailsHistoryProps {
   selectedPeriod: SelectedPeriod | null;
@@ -15,6 +23,43 @@ export default function DetailsHistory({ selectedPeriod }: DetailsHistoryProps) 
   const [purchases, setPurchases] = useState<PurchaseForHistory[]>([]);
   const [loading, setLoading] = useState(false);
   const [activeSection, setActiveSection] = useState<"sales" | "payments" | "purchases">("sales");
+  
+  // Pagination state for each section
+  const [salesPage, setSalesPage] = useState(1);
+  const [paymentsPage, setPaymentsPage] = useState(1);
+  const [purchasesPage, setPurchasesPage] = useState(1);
+  const [itemsPerPage] = useState(10);
+
+  // Calculate pagination for each section
+  const salesTotalPages = Math.ceil(sales.length / itemsPerPage);
+  const paymentsTotalPages = Math.ceil(payments.length / itemsPerPage);
+  const purchasesTotalPages = Math.ceil(purchases.length / itemsPerPage);
+
+  const salesStartIndex = (salesPage - 1) * itemsPerPage;
+  const salesEndIndex = salesStartIndex + itemsPerPage;
+  const currentSales = sales.slice(salesStartIndex, salesEndIndex);
+
+  const paymentsStartIndex = (paymentsPage - 1) * itemsPerPage;
+  const paymentsEndIndex = paymentsStartIndex + itemsPerPage;
+  const currentPayments = payments.slice(paymentsStartIndex, paymentsEndIndex);
+
+  const purchasesStartIndex = (purchasesPage - 1) * itemsPerPage;
+  const purchasesEndIndex = purchasesStartIndex + itemsPerPage;
+  const currentPurchases = purchases.slice(purchasesStartIndex, purchasesEndIndex);
+
+  // Reset pagination when section changes
+  useEffect(() => {
+    setSalesPage(1);
+    setPaymentsPage(1);
+    setPurchasesPage(1);
+  }, [activeSection]);
+
+  // Reset pagination when period changes
+  useEffect(() => {
+    setSalesPage(1);
+    setPaymentsPage(1);
+    setPurchasesPage(1);
+  }, [selectedPeriod]);
 
   useEffect(() => {
     if (selectedPeriod) {
@@ -89,6 +134,65 @@ export default function DetailsHistory({ selectedPeriod }: DetailsHistoryProps) 
     } else {
       return selectedPeriod.periodValue;
     }
+  };
+
+  // Pagination component for each section
+  const PaginationControls = ({ 
+    currentPage, 
+    totalPages, 
+    onPageChange
+  }: {
+    currentPage: number;
+    totalPages: number;
+    onPageChange: (page: number) => void;
+  }) => {
+    if (totalPages <= 1) return null;
+
+    return (
+      <div className="flex justify-center mt-6">
+        <Pagination>
+          <PaginationPrevious
+            onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+            className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
+          />
+          <PaginationContent>
+            {(() => {
+              const pages = [];
+              const maxVisiblePages = 7;
+
+              // Calculate start and end of visible page range
+              let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+              const endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+              // Adjust start if we're near the end
+              if (endPage - startPage < maxVisiblePages - 1) {
+                startPage = Math.max(1, endPage - maxVisiblePages + 1);
+              }
+
+              // Generate visible page numbers
+              for (let i = startPage; i <= endPage; i++) {
+                pages.push(
+                  <PaginationItem key={i}>
+                    <PaginationLink
+                      onClick={() => onPageChange(i)}
+                      isActive={i === currentPage}
+                    >
+                      {i}
+                    </PaginationLink>
+                  </PaginationItem>,
+                );
+              }
+
+              return pages;
+            })()}
+          </PaginationContent>
+          <PaginationNext
+            onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
+            className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
+          />
+        </Pagination>
+      </div>
+    );
   };
 
   if (!selectedPeriod) {
@@ -190,47 +294,54 @@ export default function DetailsHistory({ selectedPeriod }: DetailsHistoryProps) 
                 <p>{t("history.noSalesFoundForPeriod")}</p>
               </div>
             ) : (
-              <div className="space-y-3">
-                {sales.map((sale) => (
-                  <div key={sale.id} className="bg-card border border-border rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-3">
-                        <span className="text-sm text-muted-foreground">
-                          {formatDateTime(sale.createdAt)}
-                        </span>
-                        {sale.client && (
-                          <span className="text-sm font-medium">
-                            {t("history.client")}: {sale.client.name}
+              <>
+                <div className="space-y-3">
+                  {currentSales.map((sale) => (
+                    <div key={sale.id} className="bg-card border border-border rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm text-muted-foreground">
+                            {formatDateTime(sale.createdAt)}
                           </span>
+                          {sale.client && (
+                            <span className="text-sm font-medium">
+                              {t("history.client")}: {sale.client.name}
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-sm font-semibold text-primary">
+                          {formatCurrency(
+                            sale.saleItems.reduce((sum, item) => sum + item.price * item.quantity, 0) - sale.discount
+                          )}
+                        </span>
+                      </div>
+                      <div className="space-y-2">
+                        {sale.saleItems.map((item, index) => (
+                          <div key={index} className="flex items-center justify-between text-sm">
+                            <span>
+                              {item.product?.name || item.manualProduct?.name || item.service?.name} x {item.quantity}
+                            </span>
+                            <span className="text-muted-foreground">
+                              {formatCurrency(item.price * item.quantity)}
+                            </span>
+                          </div>
+                        ))}
+                        {sale.discount > 0 && (
+                          <div className="flex items-center justify-between text-sm text-red-600">
+                            <span>{t("history.discount")}</span>
+                            <span>-{formatCurrency(sale.discount)}</span>
+                          </div>
                         )}
                       </div>
-                      <span className="text-sm font-semibold text-primary">
-                        {formatCurrency(
-                          sale.saleItems.reduce((sum, item) => sum + item.price * item.quantity, 0) - sale.discount
-                        )}
-                      </span>
                     </div>
-                    <div className="space-y-2">
-                      {sale.saleItems.map((item, index) => (
-                        <div key={index} className="flex items-center justify-between text-sm">
-                          <span>
-                            {item.product?.name || item.manualProduct?.name || item.service?.name} x {item.quantity}
-                          </span>
-                          <span className="text-muted-foreground">
-                            {formatCurrency(item.price * item.quantity)}
-                          </span>
-                        </div>
-                      ))}
-                      {sale.discount > 0 && (
-                        <div className="flex items-center justify-between text-sm text-red-600">
-                          <span>{t("history.discount")}</span>
-                          <span>-{formatCurrency(sale.discount)}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+                <PaginationControls
+                  currentPage={salesPage}
+                  totalPages={salesTotalPages}
+                  onPageChange={setSalesPage}
+                />
+              </>
             )}
           </div>
         )}
@@ -243,39 +354,42 @@ export default function DetailsHistory({ selectedPeriod }: DetailsHistoryProps) 
                 <p>{t("history.noPaymentsFoundForPeriod")}</p>
               </div>
             ) : (
-              <div className="space-y-3">
-                {payments.map((payment) => (
-                  <div key={payment.id} className="bg-card border border-border rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-3">
-                        <span className="text-sm text-muted-foreground">
-                          {formatDateTime(payment.createdAt)}
-                        </span>
-                        <span className="text-sm font-medium">
-                          {payment.client.name}
-                        </span>
+              <>
+                <div className="space-y-3">
+                  {currentPayments.map((payment) => (
+                    <div key={payment.id} className="bg-card border border-border rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm text-muted-foreground">
+                            {formatDateTime(payment.createdAt)}
+                          </span>
+                          <span className="text-sm font-medium">
+                            {payment.client.name}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                                                     <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                             {payment.type}
+                           </span>
+                          <span className="text-sm font-semibold text-primary">
+                            {formatCurrency(payment.givenAmount)}
+                          </span>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          payment.type === "CREDIT" 
-                            ? "bg-red-100 text-red-800" 
-                            : "bg-green-100 text-green-800"
-                        }`}>
-                          {payment.type}
-                        </span>
-                        <span className="text-sm font-semibold text-primary">
-                          {formatCurrency(payment.givenAmount)}
-                        </span>
-                      </div>
+                      {payment.sale && (
+                        <div className="text-sm text-muted-foreground">
+                          {t("history.relatedToSale")}: {payment.sale.id} ({formatDate(payment.sale.createdAt)})
+                        </div>
+                      )}
                     </div>
-                    {payment.sale && (
-                      <div className="text-sm text-muted-foreground">
-                        {t("history.relatedToSale")}: {payment.sale.id} ({formatDate(payment.sale.createdAt)})
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+                <PaginationControls
+                  currentPage={paymentsPage}
+                  totalPages={paymentsTotalPages}
+                  onPageChange={setPaymentsPage}
+                />
+              </>
             )}
           </div>
         )}
@@ -288,41 +402,48 @@ export default function DetailsHistory({ selectedPeriod }: DetailsHistoryProps) 
                 <p>{t("history.noPurchasesFoundForPeriod")}</p>
               </div>
             ) : (
-              <div className="space-y-3">
-                {purchases.map((purchase) => (
-                  <div key={purchase.id} className="bg-card border border-border rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-3">
-                        <span className="text-sm text-muted-foreground">
-                          {formatDateTime(purchase.createdAt)}
-                        </span>
-                        {purchase.seller && (
-                          <span className="text-sm font-medium">
-                            {t("history.seller")}: {purchase.seller.name}
+              <>
+                <div className="space-y-3">
+                  {currentPurchases.map((purchase) => (
+                    <div key={purchase.id} className="bg-card border border-border rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm text-muted-foreground">
+                            {formatDateTime(purchase.createdAt)}
                           </span>
-                        )}
-                      </div>
-                      <span className="text-sm font-semibold text-primary">
-                        {formatCurrency(
-                          purchase.PurchaseItems.reduce((sum, item) => sum + item.price * item.quantity, 0)
-                        )}
-                      </span>
-                    </div>
-                    <div className="space-y-2">
-                      {purchase.PurchaseItems.map((item, index) => (
-                        <div key={index} className="flex items-center justify-between text-sm">
-                          <span>
-                            {item.product.name} ({item.product.categoryName}) x {item.quantity}
-                          </span>
-                          <span className="text-muted-foreground">
-                            {formatCurrency(item.price * item.quantity)}
-                          </span>
+                          {purchase.seller && (
+                            <span className="text-sm font-medium">
+                              {t("history.seller")}: {purchase.seller.name}
+                            </span>
+                          )}
                         </div>
-                      ))}
+                        <span className="text-sm font-semibold text-primary">
+                          {formatCurrency(
+                            purchase.PurchaseItems.reduce((sum, item) => sum + item.price * item.quantity, 0)
+                          )}
+                        </span>
+                      </div>
+                      <div className="space-y-2">
+                        {purchase.PurchaseItems.map((item, index) => (
+                          <div key={index} className="flex items-center justify-between text-sm">
+                            <span>
+                              {item.product.name} ({item.product.categoryName}) x {item.quantity}
+                            </span>
+                            <span className="text-muted-foreground">
+                              {formatCurrency(item.price * item.quantity)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+                <PaginationControls
+                  currentPage={purchasesPage}
+                  totalPages={purchasesTotalPages}
+                  onPageChange={setPurchasesPage}
+                />A
+              </>
             )}
           </div>
         )}
