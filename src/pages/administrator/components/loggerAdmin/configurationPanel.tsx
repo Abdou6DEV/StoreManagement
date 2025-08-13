@@ -96,9 +96,7 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
             type="checkbox"
             id="logToConsole"
             checked={config.logToConsole}
-            onChange={(e) =>
-              onConfigUpdate({ logToConsole: e.target.checked })
-            }
+            onChange={(e) => onConfigUpdate({ logToConsole: e.target.checked })}
           />
           <label htmlFor="logToConsole" className="text-sm">
             {t("admin.logger.logToConsole")}

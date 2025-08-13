@@ -34,7 +34,10 @@ export default function SalesSection({
     <div className="space-y-4">
       <div className="space-y-3">
         {currentSales.map((sale) => (
-          <div key={sale.id} className="bg-card border border-border rounded-lg p-4">
+          <div
+            key={sale.id}
+            className="bg-card border border-border rounded-lg p-4"
+          >
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-3">
                 <span className="text-sm text-muted-foreground">
@@ -48,15 +51,24 @@ export default function SalesSection({
               </div>
               <span className="text-sm font-semibold text-primary">
                 {formatCurrency(
-                  sale.saleItems.reduce((sum, item) => sum + item.price * item.quantity, 0) - sale.discount
+                  sale.saleItems.reduce(
+                    (sum, item) => sum + item.price * item.quantity,
+                    0,
+                  ) - sale.discount,
                 )}
               </span>
             </div>
             <div className="space-y-2">
               {sale.saleItems.map((item, index) => (
-                <div key={index} className="flex items-center justify-between text-sm">
+                <div
+                  key={index}
+                  className="flex items-center justify-between text-sm"
+                >
                   <span>
-                    {item.product?.name || item.manualProduct?.name || item.service?.name} x {item.quantity}
+                    {item.product?.name ||
+                      item.manualProduct?.name ||
+                      item.service?.name}{" "}
+                    x {item.quantity}
                   </span>
                   <span className="text-muted-foreground">
                     {formatCurrency(item.price * item.quantity)}

@@ -1,6 +1,11 @@
 import { useState, useEffect } from "react";
 import rendererLogger from "../../../../lib/logger/rendererLogger";
-import type { SaleForHistory, PaymentForHistory, PurchaseForHistory, SelectedPeriod } from "../../../../types";
+import type {
+  SaleForHistory,
+  PaymentForHistory,
+  PurchaseForHistory,
+  SelectedPeriod,
+} from "../../../../types";
 
 export function useDetailsHistoryData(selectedPeriod: SelectedPeriod | null) {
   const [sales, setSales] = useState<SaleForHistory[]>([]);
@@ -29,7 +34,10 @@ export function useDetailsHistoryData(selectedPeriod: SelectedPeriod | null) {
 
   const purchasesStartIndex = (purchasesPage - 1) * itemsPerPage;
   const purchasesEndIndex = purchasesStartIndex + itemsPerPage;
-  const currentPurchases = purchases.slice(purchasesStartIndex, purchasesEndIndex);
+  const currentPurchases = purchases.slice(
+    purchasesStartIndex,
+    purchasesEndIndex,
+  );
 
   // Reset pagination when section changes
   useEffect(() => {
@@ -56,12 +64,21 @@ export function useDetailsHistoryData(selectedPeriod: SelectedPeriod | null) {
 
     try {
       setLoading(true);
-      
+
       // Fetch data for the selected period
       const [salesData, paymentsData, purchasesData] = await Promise.all([
-        window.api.database.sales.getBySpecificPeriod(selectedPeriod.period, selectedPeriod.periodValue),
-        window.api.database.payments.getBySpecificPeriod(selectedPeriod.period, selectedPeriod.periodValue),
-        window.api.database.purchases.getBySpecificPeriod(selectedPeriod.period, selectedPeriod.periodValue),
+        window.api.database.sales.getBySpecificPeriod(
+          selectedPeriod.period,
+          selectedPeriod.periodValue,
+        ),
+        window.api.database.payments.getBySpecificPeriod(
+          selectedPeriod.period,
+          selectedPeriod.periodValue,
+        ),
+        window.api.database.purchases.getBySpecificPeriod(
+          selectedPeriod.period,
+          selectedPeriod.periodValue,
+        ),
       ]);
 
       setSales(salesData);

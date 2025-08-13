@@ -10,7 +10,9 @@ interface GeneralHistoryProps {
   onPeriodSelect?: (period: AggregationLevel, periodValue: string) => void;
 }
 
-export default function GeneralHistory({ onPeriodSelect }: GeneralHistoryProps) {
+export default function GeneralHistory({
+  onPeriodSelect,
+}: GeneralHistoryProps) {
   const {
     aggregationLevel,
     setAggregationLevel,

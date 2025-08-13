@@ -8,9 +8,14 @@ import type { AggregationLevel, SelectedPeriod } from "../../types";
 export default function History() {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<"general" | "details">("general");
-  const [selectedPeriod, setSelectedPeriod] = useState<SelectedPeriod | null>(null);
+  const [selectedPeriod, setSelectedPeriod] = useState<SelectedPeriod | null>(
+    null,
+  );
 
-  const handlePeriodSelect = (period: AggregationLevel, periodValue: string) => {
+  const handlePeriodSelect = (
+    period: AggregationLevel,
+    periodValue: string,
+  ) => {
     setSelectedPeriod({ period, periodValue });
     setActiveTab("details");
   };

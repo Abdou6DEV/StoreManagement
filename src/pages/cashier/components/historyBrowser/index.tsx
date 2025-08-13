@@ -176,10 +176,7 @@ const HistoryBrowser: React.FC<HistoryBrowserProps> = ({
       await refetchProducts();
 
       // Show success toast
-      showToast(
-        "Sale deleted successfully",
-        "success",
-      );
+      showToast("Sale deleted successfully", "success");
     } catch (error) {
       rendererLogger.error("Error deleting sale", "HistoryBrowser", error);
       showToast("Failed to delete sale", "error");
@@ -230,7 +227,10 @@ const HistoryBrowser: React.FC<HistoryBrowserProps> = ({
           }
         }}
         title={t("cashier.confirmDelete", "Confirm Delete")}
-        message={t("cashier.deleteSaleMessage", "Are you sure you want to delete this sale? This will restore the product quantities to your inventory.")}
+        message={t(
+          "cashier.deleteSaleMessage",
+          "Are you sure you want to delete this sale? This will restore the product quantities to your inventory.",
+        )}
         confirmText={t("cashier.delete", "Delete")}
         cancelText={t("cashier.cancel", "Cancel")}
         variant="danger"

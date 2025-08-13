@@ -92,10 +92,7 @@ export const OptionsList: React.FC = () => {
               onChange={(e) => setLowStock(Number(e.target.value))}
               className="w-40 text-lg"
               disabled={loading || saving}
-              aria-label={t(
-                "admin.lowStockThreshold",
-                "Low Stock Threshold",
-              )}
+              aria-label={t("admin.lowStockThreshold", "Low Stock Threshold")}
             />
           </div>
         </div>

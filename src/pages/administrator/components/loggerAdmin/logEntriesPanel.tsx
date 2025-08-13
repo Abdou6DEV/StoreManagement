@@ -86,9 +86,7 @@ export const LogEntriesPanel: React.FC<LogEntriesPanelProps> = ({
 
   return (
     <div className="space-y-4">
-      <h3 className="text-lg font-semibold">
-        {t("admin.logger.logEntries")}
-      </h3>
+      <h3 className="text-lg font-semibold">{t("admin.logger.logEntries")}</h3>
 
       <LogFilters
         searchTerm={searchTerm}
@@ -112,9 +110,7 @@ export const LogEntriesPanel: React.FC<LogEntriesPanelProps> = ({
             />
           ))}
           {filteredAndPaginatedEntries.entries.length === 0 && (
-            <p className="text-sm text-gray-500">
-              No log entries to display
-            </p>
+            <p className="text-sm text-gray-500">No log entries to display</p>
           )}
         </div>
       </ScrollArea>

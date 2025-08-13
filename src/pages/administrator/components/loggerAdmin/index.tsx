@@ -169,13 +169,13 @@ const LoggerAdmin: React.FC = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <ConfigurationPanel config={config} onConfigUpdate={updateConfig} />
-        
+
         <LogFilesPanel
           logFiles={logFiles}
           selectedFile={selectedFile}
           onFileSelect={setSelectedFile}
         />
-        
+
         <LogEntriesPanel
           allLogEntries={allLogEntries}
           searchTerm={searchTerm}

@@ -21,7 +21,7 @@ export async function seedSales(prisma: PrismaClient, products: Product[]) {
       from: twoYearsAgo,
       to: new Date(),
     });
-    
+
     // Create sale without discount first - we'll calculate it after adding items
     const sale = await prisma.sale.create({
       data: {
@@ -175,16 +175,20 @@ export async function seedSales(prisma: PrismaClient, products: Product[]) {
     const saleItems = await prisma.saleItem.findMany({
       where: { saleId: sale.id },
     });
-    
+
     const saleTotal = saleItems.reduce(
-      (sum, item) => sum + item.price * item.quantity, 
-      0
+      (sum, item) => sum + item.price * item.quantity,
+      0,
     );
-    
+
     // Calculate discount as a percentage of total (0-20%)
-    const discountPercentage = faker.number.float({ min: 0, max: 0.2, fractionDigits: 2 });
+    const discountPercentage = faker.number.float({
+      min: 0,
+      max: 0.2,
+      fractionDigits: 2,
+    });
     const calculatedDiscount = Math.floor(saleTotal * discountPercentage);
-    
+
     // Update the sale with the calculated discount
     await prisma.sale.update({
       where: { id: sale.id },

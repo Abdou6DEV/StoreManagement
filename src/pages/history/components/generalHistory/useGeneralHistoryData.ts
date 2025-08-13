@@ -3,7 +3,8 @@ import rendererLogger from "../../../../lib/logger/rendererLogger";
 import type { AggregationLevel, AggregatedData } from "../../../../types";
 
 export function useGeneralHistoryData() {
-  const [aggregationLevel, setAggregationLevel] = useState<AggregationLevel>("day");
+  const [aggregationLevel, setAggregationLevel] =
+    useState<AggregationLevel>("day");
   const [aggregatedData, setAggregatedData] = useState<AggregatedData[]>([]);
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);

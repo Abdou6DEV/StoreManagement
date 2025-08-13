@@ -17,9 +17,7 @@ export const LogFilesPanel: React.FC<LogFilesPanelProps> = ({
 
   return (
     <div className="space-y-4">
-      <h3 className="text-lg font-semibold">
-        {t("admin.logger.logFiles")}
-      </h3>
+      <h3 className="text-lg font-semibold">{t("admin.logger.logFiles")}</h3>
       <div className="space-y-2">
         {logFiles.map((file, index) => (
           <div

@@ -13,9 +13,13 @@ interface DetailsHistoryProps {
   selectedPeriod: SelectedPeriod | null;
 }
 
-export default function DetailsHistory({ selectedPeriod }: DetailsHistoryProps) {
-  const [activeSection, setActiveSection] = useState<"sales" | "payments" | "purchases">("sales");
-  
+export default function DetailsHistory({
+  selectedPeriod,
+}: DetailsHistoryProps) {
+  const [activeSection, setActiveSection] = useState<
+    "sales" | "payments" | "purchases"
+  >("sales");
+
   const {
     sales,
     payments,

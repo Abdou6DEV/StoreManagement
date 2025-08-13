@@ -1,6 +1,10 @@
 import { useTranslation } from "react-i18next";
 import type { AggregatedData, AggregationLevel } from "../../../../types";
-import { formatCurrency, formatNumber, formatPeriod } from "./generalHistoryUtils";
+import {
+  formatCurrency,
+  formatNumber,
+  formatPeriod,
+} from "./generalHistoryUtils";
 
 interface GeneralHistoryTableProps {
   data: AggregatedData[];

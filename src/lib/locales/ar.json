@@ -576,8 +576,6 @@
     "markAsUnpaidTooltip": "إعادة هذه الدفعة إلى حالة غير مدفوعة",
     "totalClients": "إجمالي العملاء",
     "editAmountTooltip": "تعديل مبلغ الدفع"
-
-
   },
   "suppliers": {
     "title": "الموردون",
@@ -613,7 +611,7 @@
     "searchPlaceholder": "البحث في الموردين...",
     "confirmDeleteTitle": "حذف المورد",
     "deleteTooltip": "حذف المورد",
-    "editTooltip": "تعديل المورد", 
+    "editTooltip": "تعديل المورد",
     "confirmDeleteMessage": "هل أنت متأكد من أنك تريد حذف '{{name}}'؟ تحذير: حذف هذا المورد سيؤدي أيضًا إلى حذف جميع المشتريات المرتبطة. لا يمكن التراجع عن هذا الإجراء."
   },
   "admin": {

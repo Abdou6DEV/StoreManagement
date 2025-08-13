@@ -1,4 +1,10 @@
-import type { Product, Payment, Client, Purchase, PurchaseItem } from "@prisma/client";
+import type {
+  Product,
+  Payment,
+  Client,
+  Purchase,
+  PurchaseItem,
+} from "@prisma/client";
 
 export type ToastType = "success" | "error" | "info";
 export type Theme = "light" | "dark";
@@ -13,11 +19,13 @@ export type SaleForHistory = Sale & {
     name: string;
     phone?: string;
   } | null;
-  saleItems: Array<SaleItem & {
-    product?: { name: string } | null;
-    manualProduct?: { name: string } | null;
-    service?: { name: string } | null;
-  }>;
+  saleItems: Array<
+    SaleItem & {
+      product?: { name: string } | null;
+      manualProduct?: { name: string } | null;
+      service?: { name: string } | null;
+    }
+  >;
 };
 
 export type PaymentForHistory = Payment & {
@@ -36,12 +44,14 @@ export type PurchaseForHistory = Purchase & {
     name: string;
     phone?: string;
   } | null;
-  PurchaseItems: Array<PurchaseItem & {
-    product: {
-      name: string;
-      categoryName: string;
-    };
-  }>;
+  PurchaseItems: Array<
+    PurchaseItem & {
+      product: {
+        name: string;
+        categoryName: string;
+      };
+    }
+  >;
 };
 
 export interface CartItem {

@@ -19,9 +19,24 @@ export default function DetailsHistoryTabs({
   const { t } = useTranslation();
 
   const tabs = [
-    { id: "sales" as const, label: t("history.sales"), icon: ShoppingCart, count: salesCount },
-    { id: "payments" as const, label: t("history.payments"), icon: CreditCard, count: paymentsCount },
-    { id: "purchases" as const, label: t("history.purchases"), icon: FileText, count: purchasesCount },
+    {
+      id: "sales" as const,
+      label: t("history.sales"),
+      icon: ShoppingCart,
+      count: salesCount,
+    },
+    {
+      id: "payments" as const,
+      label: t("history.payments"),
+      icon: CreditCard,
+      count: paymentsCount,
+    },
+    {
+      id: "purchases" as const,
+      label: t("history.purchases"),
+      icon: FileText,
+      count: purchasesCount,
+    },
   ];
 
   return (

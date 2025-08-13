@@ -22,10 +22,13 @@ export default function DetailsHistoryHeader({
       return new Date(selectedPeriod.periodValue).toLocaleDateString();
     } else if (selectedPeriod.period === "month") {
       const [year, month] = selectedPeriod.periodValue.split("-");
-      return new Date(parseInt(year), parseInt(month) - 1).toLocaleDateString(undefined, {
-        year: "numeric",
-        month: "long",
-      });
+      return new Date(parseInt(year), parseInt(month) - 1).toLocaleDateString(
+        undefined,
+        {
+          year: "numeric",
+          month: "long",
+        },
+      );
     } else {
       return selectedPeriod.periodValue;
     }
@@ -38,9 +41,7 @@ export default function DetailsHistoryHeader({
           <h2 className="text-2xl font-bold text-foreground">
             {t("history.detailedHistory")}
           </h2>
-          <p className="text-muted-foreground mt-1">
-            {getPeriodDisplayName()}
-          </p>
+          <p className="text-muted-foreground mt-1">{getPeriodDisplayName()}</p>
         </div>
         <div className="flex items-center gap-4 text-sm">
           <div className="flex items-center gap-2">

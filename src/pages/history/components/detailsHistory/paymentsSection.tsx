@@ -1,7 +1,11 @@
 import { useTranslation } from "react-i18next";
 import { CreditCard } from "lucide-react";
 import type { PaymentForHistory } from "../../../../types";
-import { formatCurrency, formatDateTime, formatDate } from "./detailsHistoryUtils";
+import {
+  formatCurrency,
+  formatDateTime,
+  formatDate,
+} from "./detailsHistoryUtils";
 import SharedPagination from "../sharedPagination";
 
 interface PaymentsSectionProps {
@@ -34,7 +38,10 @@ export default function PaymentsSection({
     <div className="space-y-4">
       <div className="space-y-3">
         {currentPayments.map((payment) => (
-          <div key={payment.id} className="bg-card border border-border rounded-lg p-4">
+          <div
+            key={payment.id}
+            className="bg-card border border-border rounded-lg p-4"
+          >
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-3">
                 <span className="text-sm text-muted-foreground">
@@ -55,7 +62,8 @@ export default function PaymentsSection({
             </div>
             {payment.sale && (
               <div className="text-sm text-muted-foreground">
-                {t("history.relatedToSale")}: {payment.sale.id} ({formatDate(payment.sale.createdAt)})
+                {t("history.relatedToSale")}: {payment.sale.id} (
+                {formatDate(payment.sale.createdAt)})
               </div>
             )}
           </div>

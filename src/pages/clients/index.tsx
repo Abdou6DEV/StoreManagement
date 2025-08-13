@@ -548,32 +548,34 @@ export default function Clients() {
                     </Pagination>
                   )}
                 </>
-                
               )}
               <div className="mt-4 flex flex-wrap items-center justify-center gap-10 text-sm">
-              {/* Total Clients */}
-              <div className="flex items-center gap-2">
-                <Users className="w-4 h-4 text-muted-foreground" />
-                <span className="text-muted-foreground">
-                  {t("clients.totalClients", "Total Clients")}:
-                </span>
-                <span className="font-medium">{filteredClients.length}</span>
+                {/* Total Clients */}
+                <div className="flex items-center gap-2">
+                  <Users className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-muted-foreground">
+                    {t("clients.totalClients", "Total Clients")}:
+                  </span>
+                  <span className="font-medium">{filteredClients.length}</span>
+                </div>
+
+                {/* Total Purchases */}
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-muted-foreground">
+                    {t("clients.totalPurchases", "Total Purchases")}:
+                  </span>
+                  <span className="font-medium">
+                    {filteredClients
+                      .reduce(
+                        (sum, client) => sum + (client.totalPurchases || 0),
+                        0,
+                      )
+                      .toLocaleString()}{" "}
+                    {t("cashier.currency", "DA")}
+                  </span>
+                </div>
               </div>
-        
-              {/* Total Purchases */}
-              <div className="flex items-center gap-2">
-                <TrendingUp className="w-4 h-4 text-muted-foreground" />
-                <span className="text-muted-foreground">
-                  {t("clients.totalPurchases", "Total Purchases")}:
-                </span>
-                <span className="font-medium">
-                  {filteredClients
-                    .reduce((sum, client) => sum + (client.totalPurchases || 0), 0)
-                    .toLocaleString()}{" "}
-                  {t("cashier.currency", "DA")}
-                </span>
-              </div>
-            </div>
             </div>
           ) : (
             <AllPaymentsView

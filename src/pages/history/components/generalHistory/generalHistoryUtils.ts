@@ -6,7 +6,10 @@ export const formatNumber = (num: number) => {
   return num.toLocaleString();
 };
 
-export const formatPeriod = (period: string, aggregationLevel: "day" | "month" | "year") => {
+export const formatPeriod = (
+  period: string,
+  aggregationLevel: "day" | "month" | "year",
+) => {
   if (aggregationLevel === "day") {
     return new Date(period).toLocaleDateString();
   } else if (aggregationLevel === "month") {

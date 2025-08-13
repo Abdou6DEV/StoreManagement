@@ -32,9 +32,7 @@ const ProductBrowserGrid: React.FC<ProductBrowserGridProps> = ({
           handleAddToCart={(product) => {
             const exists = cart.find((item) => item.id === product.id);
             if (exists) {
-              setCart((prev) =>
-                prev.filter((item) => item.id !== product.id)
-              );
+              setCart((prev) => prev.filter((item) => item.id !== product.id));
             } else {
               setCart((prev) => [
                 ...prev,
@@ -49,15 +47,11 @@ const ProductBrowserGrid: React.FC<ProductBrowserGridProps> = ({
           }}
           handleQuantityChange={(product, newQty) => {
             if (newQty <= 0) {
-              setCart((prev) =>
-                prev.filter((item) => item.id !== product.id)
-              );
+              setCart((prev) => prev.filter((item) => item.id !== product.id));
             } else {
               setCart((prev) => {
                 const updated = [...prev];
-                const exists = updated.find(
-                  (item) => item.id === product.id
-                );
+                const exists = updated.find((item) => item.id === product.id);
                 if (exists) {
                   exists.qty = newQty;
                 } else {

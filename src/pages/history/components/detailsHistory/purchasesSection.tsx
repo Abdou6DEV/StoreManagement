@@ -34,7 +34,10 @@ export default function PurchasesSection({
     <div className="space-y-4">
       <div className="space-y-3">
         {currentPurchases.map((purchase) => (
-          <div key={purchase.id} className="bg-card border border-border rounded-lg p-4">
+          <div
+            key={purchase.id}
+            className="bg-card border border-border rounded-lg p-4"
+          >
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-3">
                 <span className="text-sm text-muted-foreground">
@@ -48,15 +51,22 @@ export default function PurchasesSection({
               </div>
               <span className="text-sm font-semibold text-primary">
                 {formatCurrency(
-                  purchase.PurchaseItems.reduce((sum, item) => sum + item.price * item.quantity, 0)
+                  purchase.PurchaseItems.reduce(
+                    (sum, item) => sum + item.price * item.quantity,
+                    0,
+                  ),
                 )}
               </span>
             </div>
             <div className="space-y-2">
               {purchase.PurchaseItems.map((item, index) => (
-                <div key={index} className="flex items-center justify-between text-sm">
+                <div
+                  key={index}
+                  className="flex items-center justify-between text-sm"
+                >
                   <span>
-                    {item.product.name} ({item.product.categoryName}) x {item.quantity}
+                    {item.product.name} ({item.product.categoryName}) x{" "}
+                    {item.quantity}
                   </span>
                   <span className="text-muted-foreground">
                     {formatCurrency(item.price * item.quantity)}

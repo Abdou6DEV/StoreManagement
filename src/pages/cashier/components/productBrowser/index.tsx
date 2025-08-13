@@ -34,7 +34,7 @@ const ProductBrowser = forwardRef<
   const scrollTabs = (direction: "left" | "right") => {
     const container = tabsContainerRef.current;
     if (!container) return;
-    
+
     // Get the first 3 visible buttons and sum their widths
     const btns = Array.from(container.querySelectorAll("button"));
     let scrollAmount = 0;
@@ -42,7 +42,7 @@ const ProductBrowser = forwardRef<
       scrollAmount += (btns[i] as HTMLElement).offsetWidth;
     }
     if (scrollAmount === 0) scrollAmount = 120; // fallback
-    
+
     if (direction === "left") {
       container.scrollBy({ left: -scrollAmount, behavior: "smooth" });
     } else {
@@ -142,7 +142,7 @@ const ProductBrowser = forwardRef<
       visibleCount,
       filteredProducts.length,
       setVisibleCount,
-      setLoadingMore
+      setLoadingMore,
     );
   };
 
@@ -195,7 +195,7 @@ const ProductBrowser = forwardRef<
           tabsContainerRef={tabsContainerRef}
           scrollTabs={scrollTabs}
         />
-        
+
         <ProductBrowserGrid
           filteredProducts={filteredProducts}
           visibleCount={visibleCount}
@@ -206,7 +206,7 @@ const ProductBrowser = forwardRef<
           toggleFavorite={toggleFavorite}
           handleScroll={handleScroll}
         />
-        
+
         <ProductBrowserActions
           onConfirm={handleClose}
           onCancel={handleCancel}

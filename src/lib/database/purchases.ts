@@ -168,7 +168,10 @@ export async function getPurchasesBySeller(
   })) as PurchaseWithItems[];
 }
 
-export async function getPurchasesByDateRange(startDate: Date, endDate: Date): Promise<PurchaseWithItems[]> {
+export async function getPurchasesByDateRange(
+  startDate: Date,
+  endDate: Date,
+): Promise<PurchaseWithItems[]> {
   return (await prisma.purchase.findMany({
     where: {
       createdAt: {

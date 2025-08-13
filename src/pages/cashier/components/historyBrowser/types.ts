@@ -28,10 +28,8 @@ export interface SaleCardProps {
   onDelete: (event: React.MouseEvent) => void;
 }
 
-
-
 export interface SaleItemPreviewProps {
-  saleItems: Sale['saleItems'];
+  saleItems: Sale["saleItems"];
 }
 
 export interface SaleHeaderProps {

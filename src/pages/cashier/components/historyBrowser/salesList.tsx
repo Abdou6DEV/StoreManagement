@@ -34,10 +34,7 @@ const SalesList: React.FC<SalesListProps> = ({
             : t("cashier.noSalesHistory", "No sales history")}
         </div>
         <div className="text-xs">
-          {t(
-            "cashier.salesWillAppearHere",
-            "Recent sales will appear here",
-          )}
+          {t("cashier.salesWillAppearHere", "Recent sales will appear here")}
         </div>
       </div>
     );

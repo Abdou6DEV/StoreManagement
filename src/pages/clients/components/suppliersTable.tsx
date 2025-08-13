@@ -92,30 +92,34 @@ export default function SuppliersTable({
                 <div
                   className={`flex gap-2 ${isRTL ? "flex-row-reverse" : ""}`}
                 >
-                  <Tooltip content={t("suppliers.editTooltip", "Edit supplier")}>
-                  <Button
-                    onClick={() => onEdit(supplier)}
-                    size="sm"
-                    variant="outline"
-                    className="text-green-600 border-green-200 hover:bg-green-50 dark:text-green-400 dark:border-green-800 dark:hover:bg-green-950/30"
+                  <Tooltip
+                    content={t("suppliers.editTooltip", "Edit supplier")}
                   >
-                    <Edit className="w-3 h-3" />
-                  </Button>
+                    <Button
+                      onClick={() => onEdit(supplier)}
+                      size="sm"
+                      variant="outline"
+                      className="text-green-600 border-green-200 hover:bg-green-50 dark:text-green-400 dark:border-green-800 dark:hover:bg-green-950/30"
+                    >
+                      <Edit className="w-3 h-3" />
+                    </Button>
                   </Tooltip>
-                  <Tooltip content={ t("suppliers.deleteTooltip", "Delete supplier")}>
-                  <Button
-                    onClick={() => onDelete(supplier.id)}
-                    size="sm"
-                    variant="outline"
-                    className="text-red-600 border-red-200 hover:bg-red-50 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-950/30"
-                    disabled={deleteLoading === supplier.id}
+                  <Tooltip
+                    content={t("suppliers.deleteTooltip", "Delete supplier")}
                   >
-                    {deleteLoading === supplier.id ? (
-                      <Loader2 className="w-3 h-3 animate-spin" />
-                    ) : (
-                      <Trash2 className="w-3 h-3" />
-                    )}
-                  </Button>
+                    <Button
+                      onClick={() => onDelete(supplier.id)}
+                      size="sm"
+                      variant="outline"
+                      className="text-red-600 border-red-200 hover:bg-red-50 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-950/30"
+                      disabled={deleteLoading === supplier.id}
+                    >
+                      {deleteLoading === supplier.id ? (
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                      ) : (
+                        <Trash2 className="w-3 h-3" />
+                      )}
+                    </Button>
                   </Tooltip>
                 </div>
               </td>

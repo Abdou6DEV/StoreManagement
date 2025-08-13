@@ -34,19 +34,12 @@ export const LogEntryItem: React.FC<LogEntryItemProps> = ({ entry, index }) => {
   };
 
   return (
-    <div
-      key={`${entry.timestamp}-${index}`}
-      className="p-3 border rounded-lg"
-    >
+    <div key={`${entry.timestamp}-${index}`} className="p-3 border rounded-lg">
       <div className="flex items-start justify-between mb-2">
         <div className="flex items-center gap-2">
-          <Badge className={getLevelColor(entry.level)}>
-            {entry.level}
-          </Badge>
+          <Badge className={getLevelColor(entry.level)}>{entry.level}</Badge>
           <Badge variant="outline">{entry.process}</Badge>
-          {entry.context && (
-            <Badge variant="secondary">{entry.context}</Badge>
-          )}
+          {entry.context && <Badge variant="secondary">{entry.context}</Badge>}
         </div>
         <span className="text-xs text-gray-500">
           {formatTimestamp(entry.timestamp)}
