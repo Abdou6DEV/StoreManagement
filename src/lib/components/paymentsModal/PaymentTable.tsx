@@ -3,7 +3,7 @@ import { CheckCircle, Clock } from "lucide-react";
 import { Button } from "../button";
 import { useTranslation } from "react-i18next";
 import type { Payment } from "@prisma/client";
-import PaymentActions from "./PaymentActions";
+import PaymentActions from "./paymentActions";
 import {
   Pagination,
   PaginationContent,

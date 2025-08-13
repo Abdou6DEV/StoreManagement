@@ -6,10 +6,10 @@ import { useTranslation } from "react-i18next";
 import { useToast } from "../contexts/toastContext";
 import { ClientSuggestion } from "../../types";
 import { ConfirmDialog } from "./confirmDialog";
-import PaymentTabs from "./paymentsModal/PaymentTabs";
-import PaymentSearch from "./paymentsModal/PaymentSearch";
-import PaymentTable from "./paymentsModal/PaymentTable";
-import PaymentSummaryTab from "./paymentsModal/PaymentSummaryTab";
+import PaymentTabs from "./paymentsModal/paymentTabs";
+import PaymentSearch from "./paymentsModal/paymentSearch";
+import PaymentTable from "./paymentsModal/paymentTable";
+import PaymentSummaryTab from "./paymentsModal/paymentSummaryTab";
 
 interface PaymentsModalProps {
   client: ClientSuggestion;

@@ -1,4 +1,4 @@
-import { LogLevel, LogEntry } from "./common";
+import { LogLevel } from "./common";
 
 export interface RendererLogEntry {
   timestamp: string;

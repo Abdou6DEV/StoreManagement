@@ -2,7 +2,7 @@ import React from "react";
 import { ArrowUpCircle, ArrowDownCircle } from "lucide-react";
 import { Button } from "../button";
 import { useTranslation } from "react-i18next";
-import PaymentSummaryCards from "./PaymentSummaryCards";
+import PaymentSummaryCards from "./paymentSummaryCards";
 import { SummaryStats } from "../../../types";
 
 interface PaymentSummaryTabProps {
