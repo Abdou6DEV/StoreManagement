@@ -31,22 +31,7 @@ export default function History() {
   ];
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">
-            {t("history.title")}
-          </h1>
-          <p className="text-muted-foreground mt-2">
-            {t("history.description")}
-          </p>
-        </div>
-        <div className="flex items-center gap-2 p-2 bg-muted/20 rounded-lg">
-          <BarChart3 className="w-5 h-5 text-primary" />
-        </div>
-      </div>
-
+    <div className="space-y-6 ml-6">
       {/* Tabs */}
       <div className="border-b border-border">
         <nav className="flex space-x-8">
