@@ -65,7 +65,7 @@ export default function App() {
                           element={
                             <main className="flex flex-1">
                               <Sidebar />
-                              <div className="flex-1 p-4">
+                              <div className="flex-1 pt-4">
                                 <Outlet />
                               </div>
                             </main>

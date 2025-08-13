@@ -1,5 +1,5 @@
 import React from "react";
-import { FormModal } from "../../../lib/components/Modal";
+import { FormModal } from "../../../lib/components/modal";
 import { Input } from "../../../lib/components/input";
 import { Edit } from "lucide-react";
 import { useTranslation } from "react-i18next";

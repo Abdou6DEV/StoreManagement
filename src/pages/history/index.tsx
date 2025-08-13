@@ -31,7 +31,7 @@ export default function History() {
   ];
 
   return (
-    <div className="space-y-6 ml-6">
+    <div className="space-y-6">
       {/* Tabs */}
       <div className="border-b border-border">
         <nav className="flex space-x-8">

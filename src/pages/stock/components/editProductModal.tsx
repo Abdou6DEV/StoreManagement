@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
 
 import { Edit } from "lucide-react";
-import { Modal } from "../../../lib/components/Modal";
+import { Modal } from "../../../lib/components/modal";
 import EditStockForm from "./editStockForm";
 import type { ProductWithSales } from "../../../types";
 

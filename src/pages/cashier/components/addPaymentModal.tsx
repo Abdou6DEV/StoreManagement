@@ -1,5 +1,5 @@
 import { Wallet } from "lucide-react";
-import { FormModal } from "../../../lib/components/Modal";
+import { FormModal } from "../../../lib/components/modal";
 import type { CartItem } from "../../../types";
 import type { TFunction } from "i18next";
 import React, { useRef, useEffect } from "react";

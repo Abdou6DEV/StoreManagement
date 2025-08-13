@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { Info, Package, ShoppingCart } from "lucide-react";
-import { Modal } from "../../../lib/components/Modal";
+import { Modal } from "../../../lib/components/modal";
 import { Client, Sale, SaleItem } from "@prisma/client";
 import { ProductAvatar } from "../../../lib/components/productAvatar";
 

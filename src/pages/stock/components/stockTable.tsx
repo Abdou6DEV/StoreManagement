@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { useStock } from "../../../lib/contexts/stockContext";
 import { useToast } from "../../../lib/contexts/toastContext";
-import { ConfirmModal } from "../../../lib/components/Modal";
+import { ConfirmModal } from "../../../lib/components/modal";
 
 import {
   Edit,

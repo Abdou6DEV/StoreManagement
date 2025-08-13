@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Printer, Eye, FileText } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Modal } from "../../../lib/components/Modal";
+import { Modal } from "../../../lib/components/modal";
 import type { CartItem } from "../../../types";
 import rendererLogger from "../../../lib/logger/rendererLogger";
 

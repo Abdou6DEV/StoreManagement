@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from "react";
 import type { Payment } from "@prisma/client";
-import { Modal } from "./Modal";
+import { Modal } from "./modal";
 import { Loader2, CreditCard } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useToast } from "../contexts/toastContext";

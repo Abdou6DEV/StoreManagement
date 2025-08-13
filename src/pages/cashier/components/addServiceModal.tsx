@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { FormModal } from "../../../lib/components/Modal";
+import { FormModal } from "../../../lib/components/modal";
 import StyledNumberInput from "../../../lib/components/inputNumber";
 import { Plus } from "lucide-react";
 import type { CartItem } from "../../../types";

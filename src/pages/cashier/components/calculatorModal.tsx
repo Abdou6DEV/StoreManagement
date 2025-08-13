@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Delete, Calculator } from "lucide-react";
-import { Modal } from "../../../lib/components/Modal";
+import { Modal } from "../../../lib/components/modal";
 import { Button } from "../../../lib/components/button";
 
 interface CalculatorModalProps {

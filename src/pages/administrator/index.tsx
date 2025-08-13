@@ -11,7 +11,7 @@ export default function AdministratorPage() {
 
   return (
     <main
-      className="px-6 md:px-12 flex-1 space-y-4 ml-7"
+      className="px-6 md:px-12 flex-1 space-y-4"
       dir={isRTL ? "rtl" : "ltr"}
     >
       {/* Tab Navigation */}

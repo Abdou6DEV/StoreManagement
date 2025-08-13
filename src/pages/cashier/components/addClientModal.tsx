@@ -1,6 +1,6 @@
 import { useRef, useEffect } from "react";
 import { Users } from "lucide-react";
-import { FormModal } from "../../../lib/components/Modal";
+import { FormModal } from "../../../lib/components/modal";
 import type { TFunction } from "i18next";
 
 export default function AddClientModal({
