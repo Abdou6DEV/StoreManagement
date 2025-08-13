@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Edit, Trash2, Package, Loader2 } from "lucide-react";
 import { Button } from "../../../lib/components/button";
 import type { Seller } from "@prisma/client";
+import { Tooltip } from "../../../lib/components/tooltip";
 
 interface SuppliersTableProps {
   suppliers: Seller[];
@@ -91,6 +92,7 @@ export default function SuppliersTable({
                 <div
                   className={`flex gap-2 ${isRTL ? "flex-row-reverse" : ""}`}
                 >
+                  <Tooltip content={t("suppliers.editTooltip", "Edit supplier")}>
                   <Button
                     onClick={() => onEdit(supplier)}
                     size="sm"
@@ -99,6 +101,8 @@ export default function SuppliersTable({
                   >
                     <Edit className="w-3 h-3" />
                   </Button>
+                  </Tooltip>
+                  <Tooltip content={ t("suppliers.deleteTooltip", "Delete supplier")}>
                   <Button
                     onClick={() => onDelete(supplier.id)}
                     size="sm"
@@ -112,6 +116,7 @@ export default function SuppliersTable({
                       <Trash2 className="w-3 h-3" />
                     )}
                   </Button>
+                  </Tooltip>
                 </div>
               </td>
             </tr>

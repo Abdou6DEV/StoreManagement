@@ -607,6 +607,8 @@
     "noSuppliers": "Aucun fournisseur trouvé",
     "searchPlaceholder": "Rechercher des fournisseurs...",
     "confirmDeleteTitle": "Supprimer le fournisseur",
+    "deleteTooltip": "Supprimer le fournisseur",
+    "editTooltip": "Modifier le fournisseur",
     "confirmDeleteMessage": "Êtes-vous sûr de vouloir supprimer '{{name}}' ? Attention : La suppression de ce fournisseur supprimera également tous les achats associés. Cette action ne peut pas être annulée."
   },
   "admin": {
