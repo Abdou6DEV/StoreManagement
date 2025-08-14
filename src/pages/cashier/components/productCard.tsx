@@ -88,7 +88,7 @@ export default function ProductCard({
         >
           <ProductAvatar
             name={product.name}
-            size="sm"
+            size="lg"
             className="w-full h-full"
           />
         </div>
