@@ -6,6 +6,10 @@ import type { ProductBrowserHeaderProps } from "./productBrowserTypes";
 const ProductBrowserHeader: React.FC<ProductBrowserHeaderProps> = ({
   productFilter,
   setProductFilter,
+  minPrice,
+  setMinPrice,
+  maxPrice,
+  setMaxPrice,
   selectedCategory,
   setSelectedCategory,
   categories,
@@ -16,15 +20,33 @@ const ProductBrowserHeader: React.FC<ProductBrowserHeaderProps> = ({
   const { t } = useTranslation();
 
   return (
-    <div className="flex items-center gap-4 mb-3">
-      <input
-        ref={filterInputRef}
-        type="text"
-        placeholder={t("cashier.filterProducts", "Filter products...")}
-        className="w-full px-3 py-2 rounded-md border-2 border-primary/20 bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition"
-        value={productFilter}
-        onChange={(e) => setProductFilter(e.target.value)}
-      />
+    <div className="flex items-center mb-3">
+      <div className="flex gap-2 w-full">
+        <input
+          ref={filterInputRef}
+          type="text"
+          placeholder={t("cashier.filterProducts", "Filter products...")}
+          className="w-full px-3 py-2 rounded-md border-2 border-primary/20 bg-card text-foreground focus:outline-none"
+          value={productFilter}
+          onChange={(e) => setProductFilter(e.target.value)}
+        />
+        <input
+          type="number"
+          min={0}
+          placeholder={t("cashier.minPrice", "Minimum price")}
+          className="w-24 px-3 py-2 rounded-md border-2 border-primary/20 bg-card text-foreground focus:outline-none"
+          value={minPrice ?? ""}
+          onChange={e => setMinPrice(e.target.value === "" ? undefined : Number(e.target.value))}
+        />
+        <input
+          type="number"
+          min={0}
+          placeholder={t("cashier.maxPrice", "Maximum price")}
+          className="w-24 px-3 py-2 rounded-md border-2 border-primary/20 bg-card text-foreground focus:outline-none"
+          value={maxPrice ?? ""}
+          onChange={e => setMaxPrice(e.target.value === "" ? undefined : Number(e.target.value))}
+        />
+      </div>
       <div className="w-full flex items-center gap-2">
         <button
           type="button"

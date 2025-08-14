@@ -11,6 +11,10 @@ export interface ProductBrowserProps {
 export interface ProductBrowserHeaderProps {
   productFilter: string;
   setProductFilter: (filter: string) => void;
+  minPrice?: number;
+  setMinPrice: (min?: number) => void;
+  maxPrice?: number;
+  setMaxPrice: (max?: number) => void;
   selectedCategory: string;
   setSelectedCategory: (category: string) => void;
   categories: string[];

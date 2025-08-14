@@ -19,6 +19,8 @@ const ProductBrowser = forwardRef<
   ProductBrowserProps
 >(({ allProducts, open, onClose, cart, setCart }, ref) => {
   const [productFilter, setProductFilter] = useState("");
+  const [minPrice, setMinPrice] = useState<number | undefined>(undefined);
+  const [maxPrice, setMaxPrice] = useState<number | undefined>(undefined);
   const [visibleCount, setVisibleCount] = useState(20);
   const [loadingMore, setLoadingMore] = useState(false);
   const modalRef = useRef<HTMLDivElement>(null);
@@ -130,8 +132,15 @@ const ProductBrowser = forwardRef<
   };
 
   const filteredProducts = useMemo(() => {
-    return filterProducts(allProducts, productFilter, selectedCategory);
-  }, [allProducts, productFilter, selectedCategory]);
+    let products = filterProducts(allProducts, productFilter, selectedCategory);
+    if (typeof minPrice === "number") {
+      products = products.filter((p) => typeof p.sellingPrice === "number" && p.sellingPrice >= minPrice);
+    }
+    if (typeof maxPrice === "number") {
+      products = products.filter((p) => typeof p.sellingPrice === "number" && p.sellingPrice <= maxPrice);
+    }
+    return products;
+  }, [allProducts, productFilter, selectedCategory, minPrice, maxPrice]);
 
   useEffect(() => {
     setVisibleCount(50);
@@ -188,6 +197,10 @@ const ProductBrowser = forwardRef<
         <ProductBrowserHeader
           productFilter={productFilter}
           setProductFilter={setProductFilter}
+          minPrice={minPrice}
+          setMinPrice={setMinPrice}
+          maxPrice={maxPrice}
+          setMaxPrice={setMaxPrice}
           selectedCategory={selectedCategory}
           setSelectedCategory={setSelectedCategory}
           categories={categories}
