@@ -1,12 +1,13 @@
 import React, { useState } from "react";
 import { useAuth } from "../lib/contexts/authContext";
-import { Eye, EyeOff, Store, User, Lock } from "lucide-react";
+import { Eye, EyeOff, Store, User, Lock, AlertCircle } from "lucide-react";
 
 export default function Login() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const { login } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -14,12 +15,19 @@ export default function Login() {
     if (!username.trim() || !password.trim()) return;
 
     setIsLoading(true);
+    setError(null);
 
-    // Simulate a brief loading state for better UX
-    setTimeout(() => {
-      login(username, password);
+    try {
+      const result = await login(username, password);
+      console.log(result);
+      if (!result.success) {
+        setError(result.error || "Login failed");
+      }
+    } catch (err) {
+      setError("An unexpected error occurred");
+    } finally {
       setIsLoading(false);
-    }, 800);
+    }
   };
 
   return (
@@ -41,6 +49,14 @@ export default function Login() {
         {/* Login Form */}
         <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Error Message */}
+            {error && (
+              <div className="flex items-center p-3 bg-red-50 border border-red-200 rounded-lg">
+                <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
+                <span className="text-sm text-red-700">{error}</span>
+              </div>
+            )}
+
             {/* Username Field */}
             <div>
               <label
@@ -122,8 +138,9 @@ export default function Login() {
           {/* Demo Info */}
           <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
             <p className="text-sm text-blue-800 text-center">
-              💡 <strong>Demo Mode:</strong> Enter any username and password to
-              continue
+              💡 <strong>Demo Mode:</strong> Use the default admin account:<br />
+              <strong>Username:</strong> admin<br />
+              <strong>Password:</strong> admin123
             </p>
           </div>
         </div>
@@ -131,7 +148,7 @@ export default function Login() {
         {/* Footer */}
         <div className="text-center">
           <p className="text-sm text-gray-500">
-            © 2024 Store Management System. All rights reserved.
+            © 2025 Store Management System. All rights reserved.
           </p>
         </div>
       </div>

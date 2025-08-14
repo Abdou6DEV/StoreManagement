@@ -21,7 +21,7 @@ const Administrator = React.lazy(() => import("./administrator"));
 
 export default function App() {
   const { i18n } = useTranslation();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, loading } = useAuth();
   const location = useLocation();
   const dir = i18n.language === "ar" ? "rtl" : "ltr";
 
@@ -32,6 +32,15 @@ export default function App() {
   useEffect(() => {
     rendererLogger.debug(`Route changed to: ${location.pathname}`, "App");
   }, [location.pathname]);
+
+  // Show loading while checking authentication
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
 
   // Redirect to login if not authenticated and trying to access protected routes
   if (!isAuthenticated && location.pathname !== "/login") {
@@ -71,14 +80,48 @@ export default function App() {
                             </main>
                           }
                         >
-                          <Route path="/dashboard" element={<Dashboard />} />
-                          <Route path="/clients" element={<Clients />} />
-                          <Route path="/stock" element={<Stock />} />
+                          {/* Admin-only routes */}
+                          <Route
+                            path="/dashboard"
+                            element={
+                              <ProtectedRoute requireAdmin>
+                                <Dashboard />
+                              </ProtectedRoute>
+                            }
+                          />
+                          <Route
+                            path="/clients"
+                            element={
+                              <ProtectedRoute requireAdmin>
+                                <Clients />
+                              </ProtectedRoute>
+                            }
+                          />
+                          <Route
+                            path="/stock"
+                            element={
+                              <ProtectedRoute requireAdmin>
+                                <Stock />
+                              </ProtectedRoute>
+                            }
+                          />
+                          {/* User-accessible routes */}
                           <Route path="/cashier" element={<Cashier />} />
-                          <Route path="/history" element={<History />} />
+                          <Route
+                            path="/history"
+                            element={
+                              <ProtectedRoute requireAdmin>
+                                <History />
+                              </ProtectedRoute>
+                            }
+                          />
                           <Route
                             path="/administrator"
-                            element={<Administrator />}
+                            element={
+                              <ProtectedRoute requireAdmin>
+                                <Administrator />
+                              </ProtectedRoute>
+                            }
                           />
                           <Route
                             path="/*"

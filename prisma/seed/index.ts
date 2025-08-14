@@ -1,10 +1,11 @@
 import { PrismaClient } from "@prisma/client";
 import { seedCategories } from "./seeders/categoriesSeeder";
-import { seedSellers } from "./seeders/sellersSeeder";
-import { seedProducts } from "./seeders/productsSeeder";
 import { seedClients } from "./seeders/clientsSeeder";
-import { seedSales } from "./seeders/salesSeeder";
 import { seedPayments } from "./seeders/paymentsSeeder";
+import { seedProducts } from "./seeders/productsSeeder";
+import { seedSales } from "./seeders/salesSeeder";
+import { seedSellers } from "./seeders/sellersSeeder";
+import { seedUsers } from "./usersSeeder";
 import { seedServices } from "./data/services";
 
 const prisma = new PrismaClient();
@@ -12,26 +13,35 @@ const prisma = new PrismaClient();
 async function main() {
   console.log("🌱 Starting seed...");
 
-  // Seed in order of dependencies
-  await seedCategories(prisma);
-  const sellers = await seedSellers(prisma);
-  const products = await seedProducts(prisma, sellers);
-  await seedClients(prisma);
-  await seedServices(prisma);
-  const sales = await seedSales(prisma, products);
-  await seedPayments(prisma, sales);
+  try {
+    // Seed users first (required for authentication)
+    await seedUsers();
 
-  console.log("✅ Seed completed successfully!");
-  console.log(`📊 Created:`);
-  console.log(`   - Categories`);
-  console.log(`   - 30 sellers`);
-  console.log(`   - 1,000 products with purchases`);
-  console.log(`   - 50 clients`);
-  console.log(`   - 8 services`);
-  console.log(
-    `   - 200 sales with items (including manual products and services)`,
-  );
-  console.log(`   - Multiple payments`);
+    // Seed in order of dependencies
+    await seedCategories(prisma);
+    const sellers = await seedSellers(prisma);
+    const products = await seedProducts(prisma, sellers);
+    await seedClients(prisma);
+    await seedServices(prisma);
+    const sales = await seedSales(prisma, products);
+    await seedPayments(prisma, sales);
+
+    console.log("✅ Seed completed successfully!");
+    console.log(`📊 Created:`);
+    console.log(`   - Users (admin and regular)`);
+    console.log(`   - Categories`);
+    console.log(`   - 30 sellers`);
+    console.log(`   - 1,000 products with purchases`);
+    console.log(`   - 50 clients`);
+    console.log(`   - 8 services`);
+    console.log(
+      `   - 200 sales with items (including manual products and services)`,
+    );
+    console.log(`   - Multiple payments`);
+  } catch (error) {
+    console.error("❌ Seed failed:", error);
+    throw error;
+  }
 }
 
 main()

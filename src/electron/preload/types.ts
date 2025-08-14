@@ -6,6 +6,8 @@ import {
   SaleItem,
   Payment,
   Seller,
+  User,
+  UserRole,
 } from "@prisma/client";
 import { LogLevel } from "../../lib/logger/common";
 
@@ -220,8 +222,61 @@ export type LoggerAPI = {
   }>;
 };
 
+export type AuthAPI = {
+  login: (credentials: { username: string; password: string }) => Promise<{
+    success: boolean;
+    user?: Omit<User, "password">;
+    error?: string;
+  }>;
+  createUser: (userData: {
+    username: string;
+    email?: string;
+    password: string;
+    role?: UserRole;
+  }) => Promise<{
+    success: boolean;
+    user?: Omit<User, "password">;
+    error?: string;
+  }>;
+  getUserById: (userId: string) => Promise<{
+    success: boolean;
+    user?: Omit<User, "password">;
+    error?: string;
+  }>;
+  getUserByUsername: (username: string) => Promise<{
+    success: boolean;
+    user?: Omit<User, "password">;
+    error?: string;
+  }>;
+  updateUserRole: (userId: string, role: string) => Promise<{
+    success: boolean;
+    user?: Omit<User, "password">;
+    error?: string;
+  }>;
+  getAllUsers: () => Promise<{
+    success: boolean;
+    users?: Omit<User, "password">[];
+    error?: string;
+  }>;
+  deactivateUser: (userId: string) => Promise<{
+    success: boolean;
+    user?: Omit<User, "password">;
+    error?: string;
+  }>;
+  activateUser: (userId: string) => Promise<{
+    success: boolean;
+    user?: Omit<User, "password">;
+    error?: string;
+  }>;
+  deleteUser: (userId: string) => Promise<{
+    success: boolean;
+    error?: string;
+  }>;
+};
+
 export type API = {
   database: DatabaseAPI;
   app: AppAPI;
   logger: LoggerAPI;
+  auth: AuthAPI;
 };

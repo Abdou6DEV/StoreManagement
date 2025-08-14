@@ -227,3 +227,12 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 .animate-fade-in {
   animation: fade-in 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
+/* Global button cursor pointer */
+button,
+[role="button"],
+input[type="button"],
+input[type="submit"],
+input[type="reset"] {
+  cursor: pointer;
+}

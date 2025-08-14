@@ -28,10 +28,23 @@ export default function Navigation() {
   const location = useLocation();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const { t, i18n } = useTranslation();
-  const { user, logout } = useAuth();
+  const { user, logout, loading } = useAuth();
 
   const isCashierPage = location.pathname.startsWith("/cashier");
   const isRTL = i18n.language === "ar";
+
+  // Show loading while authentication is being checked
+  if (loading) {
+    return (
+      <div className="w-full px-4 pt-4">
+        <div className="flex items-center justify-between rounded-xl border border-border px-6 h-20 bg-card">
+          <div className="animate-pulse bg-gray-300 dark:bg-gray-600 h-20 w-40 rounded"></div>
+          <div className="animate-pulse bg-gray-300 dark:bg-gray-600 h-8 w-32 rounded"></div>
+          <div className="animate-pulse bg-gray-300 dark:bg-gray-600 h-8 w-8 rounded"></div>
+        </div>
+      </div>
+    );
+  }
 
   if (isCashierPage) {
     return (
@@ -52,7 +65,7 @@ export default function Navigation() {
             {/* User Info */}
             <DropdownMenuLabel className="font-semibold text-md flex items-center gap-2">
               <User className="w-4 h-4" />
-              Welcome, {user || "User"}
+              Welcome, {user?.username || "User"}
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
 
@@ -114,7 +127,7 @@ export default function Navigation() {
                 e.preventDefault();
                 logout();
               }}
-              className={`text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950 font-medium ${isRTL ? "flex-row-reverse" : ""}`}
+              className={`font-medium ${isRTL ? "flex-row-reverse" : ""}`}
             >
               <LogOut className={`w-4 h-4 ${isRTL ? "ml-2" : "mr-2"}`} />
               {t("navigation.logout")}
@@ -188,7 +201,7 @@ export default function Navigation() {
               {/* User Info */}
               <DropdownMenuLabel className="font-semibold text-md flex items-center gap-2">
                 <User className="w-4 h-4" />
-                Welcome, {user || "User"}
+                Welcome, {user?.username || "User"}
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
 
@@ -245,16 +258,16 @@ export default function Navigation() {
               </DropdownMenuItem>
 
               <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={(e) => {
-                  e.preventDefault();
-                  logout();
-                }}
-                className={`text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950 font-medium ${isRTL ? "flex-row-reverse" : ""}`}
-              >
-                <LogOut className={`w-4 h-4 ${isRTL ? "ml-2" : "mr-2"}`} />
-                {t("navigation.logout")}
-              </DropdownMenuItem>
+                          <DropdownMenuItem
+              onClick={(e) => {
+                e.preventDefault();
+                logout();
+              }}
+              className={`font-medium ${isRTL ? "flex-row-reverse" : ""}`}
+            >
+              <LogOut className={`w-4 h-4 ${isRTL ? "ml-2" : "mr-2"}`} />
+              {t("navigation.logout")}
+            </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

@@ -1,10 +1,14 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
+import type { User, UserRole } from "@prisma/client";
 
 interface AuthContextType {
   isAuthenticated: boolean;
-  login: (username: string, password: string) => void;
+  user: Omit<User, "password"> | null;
+  userRole: UserRole | null;
+  isAdmin: boolean;
+  login: (username: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
-  user: string | null;
+  loading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -23,40 +27,86 @@ interface AuthProviderProps {
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [user, setUser] = useState<string | null>(null);
+  const [user, setUser] = useState<Omit<User, "password"> | null>(null);
+  const [userRole, setUserRole] = useState<UserRole | null>(null);
+  const [loading, setLoading] = useState(true);
 
   // Check if user is already authenticated on app start
   useEffect(() => {
-    const savedAuth = localStorage.getItem("storeManagementAuth");
-    if (savedAuth) {
-      const authData = JSON.parse(savedAuth);
-      setIsAuthenticated(authData.isAuthenticated);
-      setUser(authData.user);
-    }
+    const checkAuth = async () => {
+      try {
+        const savedAuth = localStorage.getItem("storeManagementAuth");
+        if (savedAuth) {
+          const authData = JSON.parse(savedAuth);
+          if (authData.userId) {
+            const result = await window.api.auth.getUserById(authData.userId);
+            if (result.success && result.user) {
+              setUser(result.user);
+              setUserRole(result.user.role);
+              setIsAuthenticated(true);
+            } else {
+              // Invalid saved auth, clear it
+              localStorage.removeItem("storeManagementAuth");
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Error checking authentication:", error);
+        localStorage.removeItem("storeManagementAuth");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkAuth();
   }, []);
 
-  const login = (username: string, password: string) => {
-    // For demo purposes, accept any username/password
-    // In a real app, you would validate against a backend
-    setIsAuthenticated(true);
-    setUser(username);
+  const login = async (username: string, password: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      setLoading(true);
+      const result = await window.api.auth.login({ username, password });
+      
+      if (result.success && result.user) {
+        setUser(result.user);
+        setUserRole(result.user.role);
+        setIsAuthenticated(true);
 
-    // Save to localStorage for persistence
-    const authData = { isAuthenticated: true, user: username };
-    localStorage.setItem("storeManagementAuth", JSON.stringify(authData));
+        // Save to localStorage for persistence
+        const authData = { 
+          isAuthenticated: true, 
+          userId: result.user.id,
+          username: result.user.username,
+          role: result.user.role
+        };
+        localStorage.setItem("storeManagementAuth", JSON.stringify(authData));
+        
+        return { success: true };
+      } else {
+        return { success: false, error: result.error || "Login failed" };
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      return { success: false, error: "Login failed" };
+    } finally {
+      setLoading(false);
+    }
   };
 
   const logout = () => {
     setIsAuthenticated(false);
     setUser(null);
+    setUserRole(null);
     localStorage.removeItem("storeManagementAuth");
   };
 
   const value: AuthContextType = {
     isAuthenticated,
+    user,
+    userRole,
+    isAdmin: userRole === "ADMIN",
     login,
     logout,
-    user,
+    loading,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

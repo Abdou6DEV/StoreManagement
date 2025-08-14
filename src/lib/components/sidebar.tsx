@@ -54,13 +54,21 @@ const menuItems = [
 export default function Sidebar() {
   const location = useLocation();
   const { t } = useTranslation();
-  const { logout } = useAuth();
+  const { logout, isAdmin } = useAuth();
   const savedCollapsedState = localStorage.getItem("sidebarCollapsed");
   const [collapsed, setCollapsed] = useState(savedCollapsedState === "true");
   const [showText, setShowText] = useState(!collapsed);
   const [isDisabled, setIsDisabled] = useState(false);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const textTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Filter menu items based on user role
+  const filteredMenuItems = menuItems.filter((item) => {
+    if (item.key === "title" || item.key === "cashier") {
+      return true; // Always show home and cashier
+    }
+    return isAdmin; // Only show other items for admins
+  });
 
   const handleToggleCollapse = () => {
     // Prevent rapid clicks during transition
@@ -123,7 +131,7 @@ export default function Sidebar() {
         className="flex flex-col overflow-y-auto py-2"
         style={{ height: "100%" }}
       >
-        {menuItems.map((item) => (
+        {filteredMenuItems.map((item) => (
           <Link
             data-is-active={location.pathname === item.path}
             to={item.path}
