@@ -258,16 +258,16 @@ export default function Navigation() {
               </DropdownMenuItem>
 
               <DropdownMenuSeparator />
-                          <DropdownMenuItem
-              onClick={(e) => {
-                e.preventDefault();
-                logout();
-              }}
-              className={`font-medium ${isRTL ? "flex-row-reverse" : ""}`}
-            >
-              <LogOut className={`w-4 h-4 ${isRTL ? "ml-2" : "mr-2"}`} />
-              {t("navigation.logout")}
-            </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.preventDefault();
+                  logout();
+                }}
+                className={`font-medium ${isRTL ? "flex-row-reverse" : ""}`}
+              >
+                <LogOut className={`w-4 h-4 ${isRTL ? "ml-2" : "mr-2"}`} />
+                {t("navigation.logout")}
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

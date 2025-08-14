@@ -14,7 +14,7 @@ import "../../lib/i18n";
 export default function MainMenu() {
   const { t } = useTranslation();
   const { isAdmin } = useAuth();
-  
+
   const allMenuItems = [
     {
       key: "cashier",
@@ -55,7 +55,7 @@ export default function MainMenu() {
   ];
 
   // Filter menu items based on user role
-  const menuItems = allMenuItems.filter(item => !item.adminOnly || isAdmin);
+  const menuItems = allMenuItems.filter((item) => !item.adminOnly || isAdmin);
 
   return (
     <main className="py-4 px-4 md:px-12 ml-20 flex-1 rounded-xl">

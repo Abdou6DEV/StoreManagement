@@ -2,7 +2,11 @@ import { app, BrowserWindow, screen } from "electron";
 import path from "node:path";
 import started from "electron-squirrel-startup";
 import { initializePrisma } from "../lib/database/prismaClient";
-import { setupDatabaseHandlers, setupLoggerHandlers, setupAuthHandlers } from "./handlers";
+import {
+  setupDatabaseHandlers,
+  setupLoggerHandlers,
+  setupAuthHandlers,
+} from "./handlers";
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {

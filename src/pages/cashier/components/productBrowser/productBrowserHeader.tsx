@@ -36,7 +36,11 @@ const ProductBrowserHeader: React.FC<ProductBrowserHeaderProps> = ({
           placeholder={t("cashier.minPrice", "Minimum price")}
           className="w-24 px-3 py-2 rounded-md border-2 border-primary/20 bg-card text-foreground focus:outline-none"
           value={minPrice ?? ""}
-          onChange={e => setMinPrice(e.target.value === "" ? undefined : Number(e.target.value))}
+          onChange={(e) =>
+            setMinPrice(
+              e.target.value === "" ? undefined : Number(e.target.value),
+            )
+          }
         />
         <input
           type="number"
@@ -44,7 +48,11 @@ const ProductBrowserHeader: React.FC<ProductBrowserHeaderProps> = ({
           placeholder={t("cashier.maxPrice", "Maximum price")}
           className="w-24 px-3 py-2 rounded-md border-2 border-primary/20 bg-card text-foreground focus:outline-none"
           value={maxPrice ?? ""}
-          onChange={e => setMaxPrice(e.target.value === "" ? undefined : Number(e.target.value))}
+          onChange={(e) =>
+            setMaxPrice(
+              e.target.value === "" ? undefined : Number(e.target.value),
+            )
+          }
         />
       </div>
       <div className="w-full flex items-center gap-2">

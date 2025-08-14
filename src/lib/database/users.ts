@@ -24,7 +24,7 @@ export interface AuthResult {
 export const users = {
   async create(data: CreateUserData): Promise<User> {
     const hashedPassword = await bcrypt.hash(data.password, 10);
-    
+
     return prisma.user.create({
       data: {
         username: data.username,
@@ -50,7 +50,7 @@ export const users = {
 
       const isPasswordValid = await bcrypt.compare(
         credentials.password,
-        user.password
+        user.password,
       );
 
       if (!isPasswordValid) {
@@ -84,7 +84,9 @@ export const users = {
     return userWithoutPassword;
   },
 
-  async getByUsername(username: string): Promise<Omit<User, "password"> | null> {
+  async getByUsername(
+    username: string,
+  ): Promise<Omit<User, "password"> | null> {
     const user = await prisma.user.findUnique({
       where: { username },
     });

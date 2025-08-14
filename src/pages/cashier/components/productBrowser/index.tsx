@@ -134,10 +134,14 @@ const ProductBrowser = forwardRef<
   const filteredProducts = useMemo(() => {
     let products = filterProducts(allProducts, productFilter, selectedCategory);
     if (typeof minPrice === "number") {
-      products = products.filter((p) => typeof p.sellingPrice === "number" && p.sellingPrice >= minPrice);
+      products = products.filter(
+        (p) => typeof p.sellingPrice === "number" && p.sellingPrice >= minPrice,
+      );
     }
     if (typeof maxPrice === "number") {
-      products = products.filter((p) => typeof p.sellingPrice === "number" && p.sellingPrice <= maxPrice);
+      products = products.filter(
+        (p) => typeof p.sellingPrice === "number" && p.sellingPrice <= maxPrice,
+      );
     }
     return products;
   }, [allProducts, productFilter, selectedCategory, minPrice, maxPrice]);

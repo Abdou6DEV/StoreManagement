@@ -1,5 +1,9 @@
 import { ipcMain } from "electron";
-import { users, CreateUserData, LoginCredentials } from "../../lib/database/users";
+import {
+  users,
+  CreateUserData,
+  LoginCredentials,
+} from "../../lib/database/users";
 
 export const setupAuthHandlers = () => {
   // Login handler
@@ -65,21 +69,24 @@ export const setupAuthHandlers = () => {
   });
 
   // Update user role handler (admin only)
-  ipcMain.handle("auth:updateUserRole", async (_, userId: string, role: string) => {
-    try {
-      const user = await users.updateRole(userId, role as any);
-      const { password, ...userWithoutPassword } = user;
-      return {
-        success: true,
-        user: userWithoutPassword,
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: "Failed to update user role",
-      };
-    }
-  });
+  ipcMain.handle(
+    "auth:updateUserRole",
+    async (_, userId: string, role: string) => {
+      try {
+        const user = await users.updateRole(userId, role as any);
+        const { password, ...userWithoutPassword } = user;
+        return {
+          success: true,
+          user: userWithoutPassword,
+        };
+      } catch (error) {
+        return {
+          success: false,
+          error: "Failed to update user role",
+        };
+      }
+    },
+  );
 
   // Get all users handler (admin only)
   ipcMain.handle("auth:getAllUsers", async () => {

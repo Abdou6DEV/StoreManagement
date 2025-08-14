@@ -138,8 +138,10 @@ export default function Login() {
           {/* Demo Info */}
           <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
             <p className="text-sm text-blue-800 text-center">
-              💡 <strong>Demo Mode:</strong> Use the default admin account:<br />
-              <strong>Username:</strong> admin<br />
+              💡 <strong>Demo Mode:</strong> Use the default admin account:
+              <br />
+              <strong>Username:</strong> admin
+              <br />
               <strong>Password:</strong> admin123
             </p>
           </div>

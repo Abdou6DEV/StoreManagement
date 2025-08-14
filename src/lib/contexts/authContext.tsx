@@ -6,7 +6,10 @@ interface AuthContextType {
   user: Omit<User, "password"> | null;
   userRole: UserRole | null;
   isAdmin: boolean;
-  login: (username: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  login: (
+    username: string,
+    password: string,
+  ) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   loading: boolean;
 }
@@ -61,25 +64,28 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     checkAuth();
   }, []);
 
-  const login = async (username: string, password: string): Promise<{ success: boolean; error?: string }> => {
+  const login = async (
+    username: string,
+    password: string,
+  ): Promise<{ success: boolean; error?: string }> => {
     try {
       setLoading(true);
       const result = await window.api.auth.login({ username, password });
-      
+
       if (result.success && result.user) {
         setUser(result.user);
         setUserRole(result.user.role);
         setIsAuthenticated(true);
 
         // Save to localStorage for persistence
-        const authData = { 
-          isAuthenticated: true, 
+        const authData = {
+          isAuthenticated: true,
           userId: result.user.id,
           username: result.user.username,
-          role: result.user.role
+          role: result.user.role,
         };
         localStorage.setItem("storeManagementAuth", JSON.stringify(authData));
-        
+
         return { success: true };
       } else {
         return { success: false, error: result.error || "Login failed" };

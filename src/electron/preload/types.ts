@@ -248,7 +248,10 @@ export type AuthAPI = {
     user?: Omit<User, "password">;
     error?: string;
   }>;
-  updateUserRole: (userId: string, role: string) => Promise<{
+  updateUserRole: (
+    userId: string,
+    role: string,
+  ) => Promise<{
     success: boolean;
     user?: Omit<User, "password">;
     error?: string;
