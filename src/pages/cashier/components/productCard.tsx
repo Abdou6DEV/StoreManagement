@@ -1,8 +1,9 @@
-import { Star, Plus, Minus } from "lucide-react";
+import { Star, Plus, Minus, Info } from "lucide-react";
 import { Tooltip } from "../../../lib/components/tooltip";
 import type { ProductWithSales } from "../../../types";
 import { useTranslation } from "react-i18next";
 import { useRef, useEffect, useState } from "react";
+import { ProductInfoModal } from "../../stock/components/productInfoModal";
 import { ProductAvatar } from "../../../lib/components/productAvatar";
 
 export default function ProductCard({
@@ -25,6 +26,7 @@ export default function ProductCard({
   const { t } = useTranslation();
   const nameRef = useRef<HTMLDivElement>(null);
   const [isTextTruncated, setIsTextTruncated] = useState(false);
+  const [showInfo, setShowInfo] = useState(false);
 
   useEffect(() => {
     const checkTextTruncation = () => {
@@ -126,10 +128,20 @@ export default function ProductCard({
               {product.name}
             </div>
           )}
-          <div className="flex items-center justify-between flex-shrink-0 mt-auto">
-            <div className="text-sm font-semibold text-green-600 leading-tight">
-              {product.sellingPrice.toLocaleString()}{" "}
+          <div className="w-full flex items-center justify-between flex-shrink-0">
+            <div className="text-sm font-semibold text-green-600">
+              {product.sellingPrice.toLocaleString()} {" "}
               {t("cashier.currency", "DA")}
+            </div>
+            <div className="flex items-center">
+              <Tooltip content={t("cashier.productInfo", "Product info")}>
+                <button
+                  onClick={e => { e.stopPropagation(); setShowInfo(true); }}
+                  className="transition text-gray-400 hover:text-blue-500"
+                >
+                  <Info className="w-4 h-4" />
+                </button>
+              </Tooltip>
             </div>
           </div>
         </div>
@@ -150,12 +162,22 @@ export default function ProductCard({
                 ? "text-yellow-500 hover:text-yellow-600"
                 : "text-gray-400 hover:text-yellow-500"
             }`}
+            style={{marginLeft: 4}}
           >
             <Star
               className={`w-4 h-4 ${favorites.includes(product.id) ? "fill-current" : ""}`}
             />
           </button>
         </Tooltip>
+      {/* Product Info Modal */}
+      {showInfo && (
+        <ProductInfoModal
+          open={showInfo}
+          onOpenChange={setShowInfo}
+          productData={product}
+          loading={false}
+        />
+      )}
       </div>
 
       {isInCart(product.id) && (
