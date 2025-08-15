@@ -19,8 +19,6 @@ export interface ProductBrowserHeaderProps {
   setSelectedCategory: (category: string) => void;
   categories: string[];
   filterInputRef: React.RefObject<HTMLInputElement>;
-  tabsContainerRef: React.RefObject<HTMLDivElement>;
-  scrollTabs: (direction: "left" | "right") => void;
 }
 
 export interface ProductBrowserGridProps {

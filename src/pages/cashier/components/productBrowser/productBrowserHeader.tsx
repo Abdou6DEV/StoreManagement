@@ -1,6 +1,12 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../../../../lib/components/select";
 import type { ProductBrowserHeaderProps } from "./productBrowserTypes";
 
 const ProductBrowserHeader: React.FC<ProductBrowserHeaderProps> = ({
@@ -14,26 +20,24 @@ const ProductBrowserHeader: React.FC<ProductBrowserHeaderProps> = ({
   setSelectedCategory,
   categories,
   filterInputRef,
-  tabsContainerRef,
-  scrollTabs,
 }) => {
   const { t } = useTranslation();
 
   return (
-    <div className="flex items-center mb-3">
-      <div className="flex gap-2 w-full">
+    <div className="flex items-center gap-3 mb-5">
+      <div className="flex gap-2 flex-1">
         <input
           ref={filterInputRef}
           type="text"
           placeholder={t("cashier.filterProducts", "Filter products...")}
-          className="w-full px-3 py-2 rounded-md border-2 border-primary/20 bg-card text-foreground focus:outline-none"
+          className="flex-1 px-3 py-2 rounded-md border-2 border-primary/20 bg-card text-foreground focus:outline-none"
           value={productFilter}
           onChange={(e) => setProductFilter(e.target.value)}
         />
         <input
           type="number"
           min={0}
-          placeholder={t("cashier.minPrice", "Minimum price")}
+          placeholder={t("cashier.minPrice", "Min price")}
           className="w-24 px-3 py-2 rounded-md border-2 border-primary/20 bg-card text-foreground focus:outline-none"
           value={minPrice ?? ""}
           onChange={(e) =>
@@ -45,7 +49,7 @@ const ProductBrowserHeader: React.FC<ProductBrowserHeaderProps> = ({
         <input
           type="number"
           min={0}
-          placeholder={t("cashier.maxPrice", "Maximum price")}
+          placeholder={t("cashier.maxPrice", "Max price")}
           className="w-24 px-3 py-2 rounded-md border-2 border-primary/20 bg-card text-foreground focus:outline-none"
           value={maxPrice ?? ""}
           onChange={(e) =>
@@ -55,55 +59,23 @@ const ProductBrowserHeader: React.FC<ProductBrowserHeaderProps> = ({
           }
         />
       </div>
-      <div className="w-full flex items-center gap-2">
-        <button
-          type="button"
-          className="flex items-center justify-center w-8 h-8 text-primary hover:text-primary/80 transition"
-          onClick={() => scrollTabs("left")}
-          tabIndex={-1}
-          aria-label="Scroll categories left"
-        >
-          <ChevronLeft className="w-5 h-5" />
-        </button>
-        <div className="overflow-x-auto flex-1 max-w-[50vw]">
-          <div
-            ref={tabsContainerRef}
-            className="flex gap-1 bg-muted rounded-md p-1 border border-border whitespace-nowrap min-w-full overflow-x-auto scrollbar-thin"
-          >
-            <button
-              className={`px-3 py-1 rounded-md font-medium transition-colors text-sm ${
-                selectedCategory === "All"
-                  ? "bg-primary text-primary-foreground"
-                  : "text-foreground hover:bg-accent"
-              }`}
-              onClick={() => setSelectedCategory("All")}
-            >
-              {t("cashier.all", "All")}
-            </button>
-            {categories.map((cat) => (
-              <button
-                key={cat}
-                className={`px-3 py-1 rounded-md font-medium transition-colors text-sm ${
-                  selectedCategory === cat
-                    ? "bg-primary text-primary-foreground"
-                    : "text-foreground hover:bg-accent"
-                }`}
-                onClick={() => setSelectedCategory(cat)}
-              >
-                {cat}
-              </button>
+      
+      <div className="w-48">
+        <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder={t("cashier.selectCategory", "Select category")} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="All">
+              {t("cashier.all", "All Categories")}
+            </SelectItem>
+            {categories.map((category) => (
+              <SelectItem key={category} value={category}>
+                {category}
+              </SelectItem>
             ))}
-          </div>
-        </div>
-        <button
-          type="button"
-          className="flex items-center justify-center w-8 h-8 text-primary hover:text-primary/80 transition"
-          onClick={() => scrollTabs("right")}
-          tabIndex={-1}
-          aria-label="Scroll categories right"
-        >
-          <ChevronRight className="w-5 h-5" />
-        </button>
+          </SelectContent>
+        </Select>
       </div>
     </div>
   );

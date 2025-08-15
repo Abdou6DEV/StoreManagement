@@ -31,36 +31,6 @@ const ProductBrowser = forwardRef<
   const [isClosing, setIsClosing] = useState(false);
   const [favorites, setFavorites] = useState<string[]>([]);
 
-  const tabsContainerRef = useRef<HTMLDivElement>(null);
-
-  const scrollTabs = (direction: "left" | "right") => {
-    const container = tabsContainerRef.current;
-    if (!container) return;
-
-    // Get the first 3 visible buttons and sum their widths
-    const btns = Array.from(container.querySelectorAll("button"));
-    let scrollAmount = 0;
-    for (let i = 0; i < 3 && i < btns.length; i++) {
-      scrollAmount += (btns[i] as HTMLElement).offsetWidth;
-    }
-    if (scrollAmount === 0) scrollAmount = 120; // fallback
-
-    if (direction === "left") {
-      container.scrollBy({ left: -scrollAmount, behavior: "smooth" });
-    } else {
-      container.scrollBy({ left: scrollAmount, behavior: "smooth" });
-    }
-  };
-
-  useEffect(() => {
-    if (open) {
-      const container = tabsContainerRef.current;
-      if (container) {
-        container.scrollLeft = 0;
-      }
-    }
-  }, [open, categories]);
-
   useEffect(() => {
     if (open && filterInputRef.current) {
       filterInputRef.current.focus();
@@ -209,8 +179,6 @@ const ProductBrowser = forwardRef<
           setSelectedCategory={setSelectedCategory}
           categories={categories}
           filterInputRef={filterInputRef}
-          tabsContainerRef={tabsContainerRef}
-          scrollTabs={scrollTabs}
         />
 
         <ProductBrowserGrid
