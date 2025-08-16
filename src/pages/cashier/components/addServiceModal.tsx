@@ -316,7 +316,7 @@ export default function AddServiceModal({
           {allServices.length === 0 ? (
             <div className="text-muted-foreground text-sm text-center py-8">{t("cashier.noSuggestions", "No suggestions found")}</div>
           ) : (
-            <div className="grid grid-cols-2 gap-3 auto-rows-max">
+            <div className="grid grid-cols-3 gap-3 auto-rows-max">
               {allServices.map((srv) => (
                 <div
                   key={srv.id}
@@ -324,7 +324,7 @@ export default function AddServiceModal({
                   onClick={() => handleSelectService(srv)}
                 >
                   <div className="flex flex-col gap-1 flex-1 min-w-0">
-                    <div className="font-medium text-sm break-words leading-tight min-h-[1.6rem] max-h-[1.6rem] flex-1 overflow-hidden" 
+                    <div className="font-medium text-sm break-words leading-tight min-h-[1rem] max-h-[1rem] flex-1 overflow-hidden" 
                          style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", lineHeight: "0.8rem" }}>
                       {srv.name}
                     </div>
