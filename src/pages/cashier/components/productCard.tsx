@@ -130,16 +130,13 @@ export default function ProductCard({
           )}
           <div className="flex items-center gap-2 flex-shrink-0">
             <div className="text-sm font-semibold text-green-600">
-              {product.sellingPrice.toLocaleString()}{" "}
+              {product.sellingPrice.toLocaleString()} {" "}
               {t("cashier.currency", "DA")}
             </div>
             <div className="flex items-center">
               <Tooltip content={t("cashier.productInfo", "Product info")}>
                 <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowInfo(true);
-                  }}
+                  onClick={e => { e.stopPropagation(); setShowInfo(true); }}
                   className="transition text-gray-400 hover:text-blue-500"
                 >
                   <Info className="w-4 h-4" />
@@ -165,22 +162,22 @@ export default function ProductCard({
                 ? "text-yellow-500 hover:text-yellow-600"
                 : "text-gray-400 hover:text-yellow-500"
             }`}
-            style={{ marginLeft: 4 }}
+            style={{marginLeft: 4}}
           >
             <Star
               className={`w-5 h-5 ${favorites.includes(product.id) ? "fill-current" : ""}`}
             />
           </button>
         </Tooltip>
-        {/* Product Info Modal */}
-        {showInfo && (
-          <ProductInfoModal
-            open={showInfo}
-            onOpenChange={setShowInfo}
-            productData={product}
-            loading={false}
-          />
-        )}
+      {/* Product Info Modal */}
+      {showInfo && (
+        <ProductInfoModal
+          open={showInfo}
+          onOpenChange={setShowInfo}
+          productData={product}
+          loading={false}
+        />
+      )}
       </div>
 
       {isInCart(product.id) && (

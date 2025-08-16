@@ -320,6 +320,7 @@
   },
   "cashier": {
     "total": "Total",
+    "productInfo": "Informations sur le produit",
     "session": "Page",
     "products": "Produits",
     "filterProducts": "Filtrer les produits...",
