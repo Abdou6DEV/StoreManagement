@@ -37,7 +37,7 @@ const ProductBrowserHeader: React.FC<ProductBrowserHeaderProps> = ({
         <input
           type="number"
           min={0}
-          placeholder={t("cashier.minPrice", "Min price")}
+          placeholder={t("cashier.minPrice", "Minimum price")}
           className="w-32 px-3 py-2 rounded-md border-2 border-primary/20 bg-card text-foreground focus:outline-none"
           value={minPrice ?? ""}
           onChange={(e) =>
@@ -49,7 +49,7 @@ const ProductBrowserHeader: React.FC<ProductBrowserHeaderProps> = ({
         <input
           type="number"
           min={0}
-          placeholder={t("cashier.maxPrice", "Max price")}
+          placeholder={t("cashier.maxPrice", "Maximum price")}
           className="w-32 px-3 py-2 rounded-md border-2 border-primary/20 bg-card text-foreground focus:outline-none"
           value={maxPrice ?? ""}
           onChange={(e) =>
