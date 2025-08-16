@@ -23,6 +23,21 @@ export default function AddServiceModal({
     description: "",
     price: 0,
   });
+  const [allServices, setAllServices] = useState<Service[]>([]);
+  // Fetch all services when modal opens
+  useEffect(() => {
+    if (open) {
+      window.api.database.services.getAll().then(setAllServices).catch(() => setAllServices([]));
+    }
+  }, [open]);
+  
+  const handleSelectService = (selectedService: Service) => {
+    setService((prev) => ({
+      ...prev,
+      name: selectedService.name,
+      description: selectedService.description || "",
+    }));
+  };
   const [suggestions, setSuggestions] = useState<Service[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
@@ -191,15 +206,15 @@ export default function AddServiceModal({
       subtitle={t("cashier.addServiceDesc", "Add a service to the cart")}
       icon={<Plus className="w-5 h-5 text-blue-500" />}
       size="lg"
-      className="max-w-md"
+      className="max-w-5xl"
       onSubmit={handleSubmit}
       submitText={t("cashier.addToCart", "Add to Cart")}
       cancelText={t("cashier.cancel", "Cancel")}
       submitDisabled={!service.name.trim() || !service.price}
     >
-      {/* Service Information Section */}
-      <div className="space-y-4">
-        <div className="grid grid-cols-1 gap-4">
+      <div className="flex flex-row gap-8">
+        {/* Left: Service Form */}
+        <div className="w-[260px] min-w-0 space-y-4">
           <Legend>
             <label className="text-sm font-medium text-foreground">
               {t("cashier.serviceName", "Service Name")} *
@@ -212,10 +227,7 @@ export default function AddServiceModal({
                 value={service.name}
                 onChange={(e) => handleNameChange(e.target.value)}
                 onFocus={handleNameFocus}
-                placeholder={t(
-                  "cashier.enterServiceName",
-                  "Enter service name",
-                )}
+                placeholder={t("cashier.enterServiceName", "Enter service name")}
                 required
               />
               {showSuggestions && (
@@ -259,6 +271,7 @@ export default function AddServiceModal({
               )}
             </div>
           </Legend>
+
           <Legend>
             <label className="text-sm font-medium text-foreground">
               {t("cashier.description", "Description")}
@@ -276,35 +289,55 @@ export default function AddServiceModal({
               rows={3}
             />
           </Legend>
-        </div>
-      </div>
 
-      {/* Pricing Section */}
-      <div className="space-y-4">
-        <div className="border-t border-border pt-4">
-          <h3 className="text-sm font-semibold text-foreground mb-4">
-            {t("cashier.pricing", "Pricing Information")}
-          </h3>
-          <div className="grid grid-cols-1 gap-4">
-            <Legend>
-              <label className="text-sm font-medium text-foreground">
-                {t("cashier.servicePrice", "Service Price")} *
-              </label>
-              <div className="w-full">
-                <StyledNumberInput
-                  value={service.price}
-                  onChange={(val) =>
-                    setService((p) => ({
-                      ...p,
-                      price: val === "" ? 0 : val,
-                    }))
-                  }
-                  min={0}
-                  placeholder="0"
-                />
-              </div>
-            </Legend>
-          </div>
+          <Legend>
+            <label className="text-sm font-medium text-foreground">
+              {t("cashier.servicePrice", "Service Price")} *
+            </label>
+            <div className="w-full">
+              <StyledNumberInput
+                value={service.price}
+                onChange={(val) =>
+                  setService((p) => ({
+                    ...p,
+                    price: val === "" ? 0 : val,
+                  }))
+                }
+                min={0}
+                placeholder="0"
+              />
+            </div>
+          </Legend>
+        </div>
+
+        {/* Right: All Services List */}
+        <div className="flex-1 bg-muted/40 rounded-lg p-4 overflow-y-auto border border-border h-[400px]">
+          <div className="font-semibold text-base mb-3 text-foreground">{t("cashier.service", "Service")} {t("cashier.servicesList", "List")}</div>
+          {allServices.length === 0 ? (
+            <div className="text-muted-foreground text-sm text-center py-8">{t("cashier.noSuggestions", "No suggestions found")}</div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3 auto-rows-max">
+              {allServices.map((srv) => (
+                <div
+                  key={srv.id}
+                  className="p-3 border rounded-lg h-[60px] flex flex-col justify-between relative overflow-hidden w-full bg-card hover:border-primary hover:shadow-md transition-all cursor-pointer"
+                  onClick={() => handleSelectService(srv)}
+                >
+                  <div className="flex flex-col gap-1 flex-1 min-w-0">
+                    <div className="font-medium text-sm break-words leading-tight min-h-[1.6rem] max-h-[1.6rem] flex-1 overflow-hidden" 
+                         style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", lineHeight: "0.8rem" }}>
+                      {srv.name}
+                    </div>
+                    {srv.description && (
+                      <div className="text-muted-foreground text-xs truncate">
+                        {srv.description}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </FormModal>
