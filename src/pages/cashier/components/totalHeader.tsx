@@ -42,7 +42,7 @@ export default function TotalHeader({
               </div>
               <div className="flex items-baseline gap-1">
                 <span
-                  className={`text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-primary drop-shadow-sm transition-all duration-300 ${isTotalAnimating ? "scale-110 text-primary/80" : "scale-100"}`}
+                  className={`text-3xl sm:text-4xl lg:text-7xl font-black tracking-tight text-primary drop-shadow-sm transition-all duration-300 ${isTotalAnimating ? "scale-110 text-primary/80" : "scale-100"}`}
                 >
                   {total.toLocaleString()}
                 </span>
