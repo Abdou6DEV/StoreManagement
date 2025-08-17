@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { AggregationLevel } from "../../../../types";
 import { useGeneralHistoryData } from "./useGeneralHistoryData";
 import GeneralHistoryControls from "./generalHistoryControls";
@@ -23,6 +24,7 @@ export default function GeneralHistory({
     totalPages,
     currentData,
   } = useGeneralHistoryData();
+  const [highlightEnabled, setHighlightEnabled] = useState(false);
 
   const handleRowDoubleClick = (period: string) => {
     if (onPeriodSelect) {
@@ -35,6 +37,8 @@ export default function GeneralHistory({
       <GeneralHistoryControls
         aggregationLevel={aggregationLevel}
         onAggregationLevelChange={setAggregationLevel}
+        highlightEnabled={highlightEnabled}
+        onHighlightChange={setHighlightEnabled}
       />
 
       {loading ? (
@@ -47,6 +51,7 @@ export default function GeneralHistory({
             data={currentData}
             aggregationLevel={aggregationLevel}
             onRowDoubleClick={handleRowDoubleClick}
+            highlightEnabled={highlightEnabled}
           />
           <SharedPagination
             currentPage={currentPage}

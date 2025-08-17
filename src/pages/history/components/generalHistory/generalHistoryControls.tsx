@@ -1,14 +1,19 @@
 import { useTranslation } from "react-i18next";
+import { Switch } from "../../../../lib/components/switch";
 import type { AggregationLevel } from "../../../../types";
 
 interface GeneralHistoryControlsProps {
   aggregationLevel: AggregationLevel;
   onAggregationLevelChange: (level: AggregationLevel) => void;
+  highlightEnabled: boolean;
+  onHighlightChange: (enabled: boolean) => void;
 }
 
 export default function GeneralHistoryControls({
   aggregationLevel,
   onAggregationLevelChange,
+  highlightEnabled,
+  onHighlightChange,
 }: GeneralHistoryControlsProps) {
   const { t } = useTranslation();
 
@@ -19,31 +24,41 @@ export default function GeneralHistoryControls({
   ];
 
   return (
-    <div className="bg-gradient-to-r from-primary/3 to-primary/6 border border-primary/15 rounded-2xl p-6 shadow-sm">
-      <div className="flex items-center justify-between">
-        <div className="space-y-1">
-          <label className="text-sm font-semibold text-foreground/80 uppercase tracking-wide">
-            {t("history.aggregationLevel")}
-          </label>
-          <p className="text-xs text-muted-foreground">
-            Select how you want to group your data
-          </p>
-        </div>
-        <div className="flex items-center gap-2 bg-background/80 rounded-xl p-1 border border-primary/15">
-          {options.map((option) => (
-            <button
-              key={option.value}
-              onClick={() => onAggregationLevelChange(option.value)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2 cursor-pointer ${
-                aggregationLevel === option.value
-                  ? "bg-primary text-primary-foreground shadow-md"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-              }`}
+    <div className="bg-background border border-border rounded-lg p-4 shadow-sm">
+      <div className="flex items-center justify-between gap-6">
+        <div className="flex items-center gap-6">
+          {/* Time Period Filter */}
+          <div className="flex items-center gap-2 bg-muted/50 rounded-lg p-1">
+            {options.map((option) => (
+              <button
+                key={option.value}
+                onClick={() => onAggregationLevelChange(option.value)}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 flex items-center gap-2 ${
+                  aggregationLevel === option.value
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                }`}
+              >
+                <span className="text-base">{option.icon}</span>
+                {option.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Highlight Toggle */}
+          <div className="flex items-center gap-2 text-sm">
+            <Switch
+              checked={highlightEnabled}
+              onCheckedChange={onHighlightChange}
+              id="highlight-toggle"
+            />
+            <label
+              htmlFor="highlight-toggle"
+              className="font-medium text-foreground cursor-pointer select-none"
             >
-              <span className="text-base">{option.icon}</span>
-              {option.label}
-            </button>
-          ))}
+              {t("history.highlightProfits", "Highlight Profits")}
+            </label>
+          </div>
         </div>
       </div>
     </div>

@@ -36,9 +36,9 @@ export default function History() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="flex-1 space-y-6 -mt-10">
       {/* Tabs */}
-      <div className="border-b border-border">
+      <div className="border-b border-border ">
         <nav className="flex space-x-8">
           {tabs.map((tab) => {
             const Icon = tab.icon;
@@ -48,7 +48,7 @@ export default function History() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors cursor-pointer ${
+                className={`flex w-full items-center justify-center gap-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors cursor-pointer ${
                   isActive
                     ? "border-primary text-primary"
                     : "border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground/30"
