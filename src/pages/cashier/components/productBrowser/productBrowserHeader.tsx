@@ -59,11 +59,13 @@ const ProductBrowserHeader: React.FC<ProductBrowserHeaderProps> = ({
           }
         />
       </div>
-      
+
       <div className="w-48">
         <Select value={selectedCategory} onValueChange={setSelectedCategory}>
           <SelectTrigger className="w-full">
-            <SelectValue placeholder={t("cashier.selectCategory", "Select category")} />
+            <SelectValue
+              placeholder={t("cashier.selectCategory", "Select category")}
+            />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="All">

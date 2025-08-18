@@ -22,26 +22,28 @@ export default function GeneralHistoryTable({
   const { t } = useTranslation();
 
   // Calculate average profit for comparison
-  const averageProfit = data.length > 0 
-    ? data.reduce((sum, item) => sum + item.profit, 0) / data.length 
-    : 0;
+  const averageProfit =
+    data.length > 0
+      ? data.reduce((sum, item) => sum + item.profit, 0) / data.length
+      : 0;
 
   const getRowHighlightClass = (profit: number) => {
-    console.log('Highlight enabled:', highlightEnabled);
-    console.log('Profit:', profit);
-    console.log('Average profit:', averageProfit);
-    
+    console.log("Highlight enabled:", highlightEnabled);
+    console.log("Profit:", profit);
+    console.log("Average profit:", averageProfit);
+
     if (!highlightEnabled) return "";
-    
+
     // Compare with average profit
-    const profitDiff = ((profit - averageProfit) / Math.abs(averageProfit)) * 100;
-    console.log('Profit difference:', profitDiff);
-    
+    const profitDiff =
+      ((profit - averageProfit) / Math.abs(averageProfit)) * 100;
+    console.log("Profit difference:", profitDiff);
+
     if (profitDiff >= 10) {
-      console.log('Should be green');
+      console.log("Should be green");
       return "bg-green-500/20 hover:bg-green-500/30";
     } else if (profitDiff < 0) {
-      console.log('Should be red');
+      console.log("Should be red");
       return "bg-red-500/20 hover:bg-red-500/30";
     }
     return "hover:bg-muted/50";
@@ -51,9 +53,10 @@ export default function GeneralHistoryTable({
     if (!highlightEnabled) {
       return "text-foreground";
     }
-    
-    const profitDiff = ((profit - averageProfit) / Math.abs(averageProfit)) * 100;
-    
+
+    const profitDiff =
+      ((profit - averageProfit) / Math.abs(averageProfit)) * 100;
+
     if (profitDiff >= 10) {
       return "text-green-600 dark:text-green-400 font-bold";
     } else if (profitDiff < 0) {
@@ -135,8 +138,15 @@ export default function GeneralHistoryTable({
                 </td>
                 <td className="px-4 text-right">
                   <div className="flex flex-col items-end">
-                    <span className={`font-semibold text-base ${getProfitTextClass(item.profit)}`}>
-                      {((item.profit - averageProfit) / Math.abs(averageProfit) * 100).toFixed(1)}%
+                    <span
+                      className={`font-semibold text-base ${getProfitTextClass(item.profit)}`}
+                    >
+                      {(
+                        ((item.profit - averageProfit) /
+                          Math.abs(averageProfit)) *
+                        100
+                      ).toFixed(1)}
+                      %
                     </span>
                   </div>
                 </td>

@@ -27,10 +27,13 @@ export default function AddServiceModal({
   // Fetch all services when modal opens
   useEffect(() => {
     if (open) {
-      window.api.database.services.getAll().then(setAllServices).catch(() => setAllServices([]));
+      window.api.database.services
+        .getAll()
+        .then(setAllServices)
+        .catch(() => setAllServices([]));
     }
   }, [open]);
-  
+
   const handleSelectService = (selectedService: Service) => {
     setService((prev) => ({
       ...prev,
@@ -227,7 +230,10 @@ export default function AddServiceModal({
                 value={service.name}
                 onChange={(e) => handleNameChange(e.target.value)}
                 onFocus={handleNameFocus}
-                placeholder={t("cashier.enterServiceName", "Enter service name")}
+                placeholder={t(
+                  "cashier.enterServiceName",
+                  "Enter service name",
+                )}
                 required
               />
               {showSuggestions && (
@@ -312,9 +318,14 @@ export default function AddServiceModal({
 
         {/* Right: All Services List */}
         <div className="flex-1 bg-muted/40 rounded-lg p-4 overflow-y-auto border border-border h-[400px]">
-          <div className="font-semibold text-base mb-3 text-foreground">{t("cashier.service", "Service")} {t("cashier.servicesList", "List")}</div>
+          <div className="font-semibold text-base mb-3 text-foreground">
+            {t("cashier.service", "Service")}{" "}
+            {t("cashier.servicesList", "List")}
+          </div>
           {allServices.length === 0 ? (
-            <div className="text-muted-foreground text-sm text-center py-8">{t("cashier.noSuggestions", "No suggestions found")}</div>
+            <div className="text-muted-foreground text-sm text-center py-8">
+              {t("cashier.noSuggestions", "No suggestions found")}
+            </div>
           ) : (
             <div className="grid grid-cols-3 gap-3 auto-rows-max">
               {allServices.map((srv) => (
@@ -324,8 +335,15 @@ export default function AddServiceModal({
                   onClick={() => handleSelectService(srv)}
                 >
                   <div className="flex flex-col gap-1 flex-1 min-w-0">
-                    <div className="font-medium text-sm break-words leading-tight min-h-[1rem] max-h-[1rem] flex-1 overflow-hidden" 
-                         style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", lineHeight: "0.8rem" }}>
+                    <div
+                      className="font-medium text-sm break-words leading-tight min-h-[1rem] max-h-[1rem] flex-1 overflow-hidden"
+                      style={{
+                        display: "-webkit-box",
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: "vertical",
+                        lineHeight: "0.8rem",
+                      }}
+                    >
                       {srv.name}
                     </div>
                     {srv.description && (

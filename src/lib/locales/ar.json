@@ -210,9 +210,9 @@
     "logout": "تسجيل الخروج"
   },
   "cashier": {
-  "total": "الإجمالي",
-  "minPrice": "أقل سعر",
-  "maxPrice": "أعلى سعر",
+    "total": "الإجمالي",
+    "minPrice": "أقل سعر",
+    "maxPrice": "أعلى سعر",
     "session": "الصفحة",
     "products": "المنتجات",
     "filterProducts": "تصفية المنتجات...",
