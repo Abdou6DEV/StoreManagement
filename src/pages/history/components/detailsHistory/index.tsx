@@ -20,6 +20,21 @@ export default function DetailsHistory({
     "sales" | "payments" | "purchases"
   >("sales");
 
+  // Memoize today's period to prevent unnecessary recalculations
+  const todayPeriod = useState<SelectedPeriod>(() => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = (today.getMonth() + 1).toString().padStart(2, '0');
+    const day = today.getDate().toString().padStart(2, '0');
+    return {
+      period: "day",
+      periodValue: `${year}-${month}-${day}`
+    };
+  })[0];
+
+  // Use today's date if no period is selected
+  const effectivePeriod = selectedPeriod || todayPeriod;
+
   const {
     sales,
     payments,
@@ -37,11 +52,7 @@ export default function DetailsHistory({
     currentSales,
     currentPayments,
     currentPurchases,
-  } = useDetailsHistoryData(selectedPeriod);
-
-  if (!selectedPeriod) {
-    return <EmptyState />;
-  }
+  } = useDetailsHistoryData(effectivePeriod);
 
   if (loading) {
     return <LoadingState />;
@@ -50,7 +61,7 @@ export default function DetailsHistory({
   return (
     <div className="space-y-6">
       <DetailsHistoryHeader
-        selectedPeriod={selectedPeriod}
+        selectedPeriod={effectivePeriod}
         salesCount={sales.length}
         paymentsCount={payments.length}
         purchasesCount={purchases.length}

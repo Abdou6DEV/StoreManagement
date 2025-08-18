@@ -7,11 +7,11 @@ import type {
   SelectedPeriod,
 } from "../../../../types";
 
-export function useDetailsHistoryData(selectedPeriod: SelectedPeriod | null) {
+export function useDetailsHistoryData(period: SelectedPeriod) {
   const [sales, setSales] = useState<SaleForHistory[]>([]);
   const [payments, setPayments] = useState<PaymentForHistory[]>([]);
   const [purchases, setPurchases] = useState<PurchaseForHistory[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true); // Start with loading true
 
   // Pagination state for each section
   const [salesPage, setSalesPage] = useState(1);
@@ -46,38 +46,31 @@ export function useDetailsHistoryData(selectedPeriod: SelectedPeriod | null) {
     setPurchasesPage(1);
   }, []);
 
-  // Reset pagination when period changes
+  // Reset pagination and fetch data when period changes
   useEffect(() => {
     setSalesPage(1);
     setPaymentsPage(1);
     setPurchasesPage(1);
-  }, [selectedPeriod]);
-
-  useEffect(() => {
-    if (selectedPeriod) {
-      fetchPeriodData();
-    }
-  }, [selectedPeriod]);
+    fetchPeriodData();
+  }, [period.period, period.periodValue]);
 
   const fetchPeriodData = async () => {
-    if (!selectedPeriod) return;
-
     try {
       setLoading(true);
 
       // Fetch data for the selected period
       const [salesData, paymentsData, purchasesData] = await Promise.all([
         window.api.database.sales.getBySpecificPeriod(
-          selectedPeriod.period,
-          selectedPeriod.periodValue,
+          period.period,
+          period.periodValue,
         ),
         window.api.database.payments.getBySpecificPeriod(
-          selectedPeriod.period,
-          selectedPeriod.periodValue,
+          period.period,
+          period.periodValue,
         ),
         window.api.database.purchases.getBySpecificPeriod(
-          selectedPeriod.period,
-          selectedPeriod.periodValue,
+          period.period,
+          period.periodValue,
         ),
       ]);
 
@@ -89,8 +82,8 @@ export function useDetailsHistoryData(selectedPeriod: SelectedPeriod | null) {
         "Period data fetched successfully",
         "DetailsHistory",
         {
-          period: selectedPeriod.period,
-          periodValue: selectedPeriod.periodValue,
+          period: period.period,
+          periodValue: period.periodValue,
           salesCount: salesData.length,
           paymentsCount: paymentsData.length,
           purchasesCount: purchasesData.length,
