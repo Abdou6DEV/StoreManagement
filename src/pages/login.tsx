@@ -136,14 +136,46 @@ export default function Login() {
           </form>
 
           {/* Demo Info */}
-          <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-            <p className="text-sm text-blue-800 text-center">
-              💡 <strong>Demo Mode:</strong> Use the default admin account:
-              <br />
-              <strong>Username:</strong> admin
-              <br />
-              <strong>Password:</strong> admin123
-            </p>
+          <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 shadow-sm">
+            <div className="text-center">
+              <div className="flex items-center justify-center mb-3">
+                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-2">
+                  <span className="text-blue-600 text-lg">💡</span>
+                </div>
+                <h3 className="text-sm font-semibold text-blue-800">Demo Mode</h3>
+              </div>
+              <p className="text-xs text-blue-700 mb-3">Use these demo accounts to test the system</p>
+              
+              <div className="space-y-2">
+                <div className="bg-white/60 rounded-lg p-3 border border-blue-200">
+                  <div className="text-xs font-medium text-blue-800 mb-1">Admin Account</div>
+                  <div className="text-xs text-blue-700 space-y-1">
+                    <div className="flex justify-between">
+                      <span>Username:</span>
+                      <code className="bg-blue-100 px-2 py-1 rounded text-blue-800 font-mono">admin</code>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Password:</span>
+                      <code className="bg-blue-100 px-2 py-1 rounded text-blue-800 font-mono">admin123</code>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="bg-white/60 rounded-lg p-3 border border-blue-200">
+                  <div className="text-xs font-medium text-blue-800 mb-1">User Account</div>
+                  <div className="text-xs text-blue-700 space-y-1">
+                    <div className="flex justify-between">
+                      <span>Username:</span>
+                      <code className="bg-blue-100 px-2 py-1 rounded text-blue-800 font-mono">user</code>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Password:</span>
+                      <code className="bg-blue-100 px-2 py-1 rounded text-blue-800 font-mono">user123</code>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
