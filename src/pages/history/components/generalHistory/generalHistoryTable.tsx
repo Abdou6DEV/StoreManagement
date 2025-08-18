@@ -84,7 +84,7 @@ export default function GeneralHistoryTable({
                 {t("history.sales")}
               </th>
               <th className="text-right p-4 font-semibold text-foreground text-sm uppercase tracking-wide">
-                % vs Average
+                {t("history.averagepercent")}
               </th>
             </tr>
           </thead>
@@ -95,7 +95,7 @@ export default function GeneralHistoryTable({
                 className={`group transition-all duration-200 hover:border-l-primary hover:border-r-primary border-l-4 border-r-4 border-l-transparent border-r-transparent cursor-pointer ${getRowHighlightClass(item.profit)}`}
                 onDoubleClick={() => onRowDoubleClick(item.period)}
               >
-                <td className="p-4 font-medium text-foreground">
+                <td className="px-4 py-3 font-medium text-foreground">
                   <div className="flex items-center gap-2.5">
                     <div className="w-2 h-2 rounded-full bg-primary/60"></div>
                     <span className="text-sm font-semibold">
@@ -103,14 +103,14 @@ export default function GeneralHistoryTable({
                     </span>
                   </div>
                 </td>
-                <td className="p-4 text-right">
+                <td className="px-4 text-right">
                   <div className="flex flex-col items-end">
                     <span className="font-semibold text-foreground text-base">
                       {formatCurrency(item.revenue)}
                     </span>
                   </div>
                 </td>
-                <td className="p-4 text-right">
+                <td className="px-4 text-right">
                   <div className="flex flex-col items-end">
                     <span
                       className={`font-semibold text-base ${getProfitTextClass(item.profit)}`}
@@ -119,21 +119,21 @@ export default function GeneralHistoryTable({
                     </span>
                   </div>
                 </td>
-                <td className="p-4 text-right">
+                <td className="px-4 text-right">
                   <div className="flex flex-col items-end">
                     <span className="font-semibold text-foreground text-base">
                       {formatNumber(item.purchases)}
                     </span>
                   </div>
                 </td>
-                <td className="p-4 text-right">
+                <td className="px-4 text-right">
                   <div className="flex flex-col items-end">
                     <span className="font-semibold text-foreground text-base">
                       {formatNumber(item.count)}
                     </span>
                   </div>
                 </td>
-                <td className="p-4 text-right">
+                <td className="px-4 text-right">
                   <div className="flex flex-col items-end">
                     <span className={`font-semibold text-base ${getProfitTextClass(item.profit)}`}>
                       {((item.profit - averageProfit) / Math.abs(averageProfit) * 100).toFixed(1)}%

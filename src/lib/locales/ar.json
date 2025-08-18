@@ -189,6 +189,7 @@
     "loadingPeriodData": "جاري تحميل بيانات الفترة...",
     "selectPeriodHint": "انقر نقرًا مزدوجًا على صف في تبويب التاريخ العام لعرض المعلومات التفصيلية لتلك الفترة",
     "relatedToSale": "مرتبط بالبيع",
+    "averagepercent": "نسبة النمو %",
     "seller": "البائع"
   },
   "navigation": {
