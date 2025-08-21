@@ -213,10 +213,10 @@ export default function Navigation() {
                 <ThemeToggleButton variant="ghost" showText={true} />
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <FullscreenToggleButton variant="ghost" showText={true} />
+                <TooltipToggleButton variant="ghost" showText={true} />
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <TooltipToggleButton variant="ghost" showText={true} />
+                <FullscreenToggleButton variant="ghost" showText={true} />
               </DropdownMenuItem>
 
               <DropdownMenuSeparator />
@@ -263,10 +263,10 @@ export default function Navigation() {
                   e.preventDefault();
                   logout();
                 }}
-                className={`font-medium ${isRTL ? "flex-row-reverse" : ""}`}
+                className={`w-full font-medium justify-between ${isRTL ? "flex-row-reverse" : ""}`}
               >
-                <LogOut className={`w-4 h-4 ${isRTL ? "ml-2" : "mr-2"}`} />
                 {t("navigation.logout")}
+                <LogOut className={`w-4 h-4 text-red-500 ${isRTL ? "ml-0" : "mr-0"}`} />
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

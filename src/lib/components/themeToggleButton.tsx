@@ -58,7 +58,7 @@ export const ThemeToggleButton: React.FC<ThemeToggleButtonProps> = ({
             {isDark ? (
               <Moon className="w-1 h-1 text-sky-400" />
             ) : (
-              <Sun className="w-1 h-1 text-yellow-400" />
+              <Sun className="w-1 h-1 text-yellow-600" />
             )}
           </div>
         </div>
