@@ -189,7 +189,8 @@
     "selectPeriodHint": "Double-click on a row in the General History tab to view detailed information for that period",
     "relatedToSale": "Related to sale",
     "averagepercent": "growth rate %",
-    "seller": "Seller"
+    "seller": "Seller",
+    "highlightProfits": "Highlight Profits"
   },
   "navigation": {
     "preferences": "Preferences",

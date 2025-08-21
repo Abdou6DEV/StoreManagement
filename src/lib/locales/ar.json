@@ -190,7 +190,8 @@
     "selectPeriodHint": "انقر نقرًا مزدوجًا على صف في تبويب التاريخ العام لعرض المعلومات التفصيلية لتلك الفترة",
     "relatedToSale": "مرتبط بالبيع",
     "averagepercent": "نسبة النمو %",
-    "seller": "البائع"
+    "seller": "البائع",
+    "highlightProfits": "إبراز الأرباح"
   },
   "navigation": {
     "preferences": "التفضيلات",

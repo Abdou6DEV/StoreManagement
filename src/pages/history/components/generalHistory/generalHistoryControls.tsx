@@ -46,7 +46,7 @@ export default function GeneralHistoryControls({
           </div>
 
           {/* Highlight Toggle */}
-          <div className="flex items-center gap-2 text-sm">
+          <div className="flex items-center gap-2 text-sm rtl:flex-row-reverse">
             <Switch
               checked={highlightEnabled}
               onCheckedChange={onHighlightChange}
@@ -56,7 +56,7 @@ export default function GeneralHistoryControls({
               htmlFor="highlight-toggle"
               className="font-medium text-foreground cursor-pointer select-none"
             >
-              {t("history.highlightProfits", "Highlight Profits")}
+              {t("history.highlightProfits")}
             </label>
           </div>
         </div>

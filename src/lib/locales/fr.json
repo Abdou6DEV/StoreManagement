@@ -190,7 +190,8 @@
     "selectPeriodHint": "Double-cliquez sur une ligne dans l'onglet Historique Général pour voir les informations détaillées de cette période",
     "relatedToSale": "Lié à la vente",
     "averagepercent": "Taux de croissance %",
-    "seller": "Vendeur"
+    "seller": "Vendeur",
+    "highlightProfits": "Mettre en évidence les profits"
   },
   "navigation": {
     "preferences": "Préférences",

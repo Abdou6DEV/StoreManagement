@@ -1,5 +1,8 @@
+import i18next from "i18next";
+
 export const formatCurrency = (amount: number) => {
-  return `${amount.toLocaleString()} DA`;
+  const currency = i18next.t("currency");
+  return `${amount.toLocaleString()} ${currency}`;
 };
 
 export const formatNumber = (num: number) => {

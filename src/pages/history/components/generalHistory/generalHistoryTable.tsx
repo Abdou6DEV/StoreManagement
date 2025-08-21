@@ -71,22 +71,22 @@ export default function GeneralHistoryTable({
         <table className="w-full">
           <thead>
             <tr className="bg-gradient-to-r from-muted/30 to-muted/10 border-b border-border">
-              <th className="text-left p-4 font-semibold text-foreground text-sm uppercase tracking-wide">
+              <th className="text-left rtl:text-right p-4 font-semibold text-foreground text-sm uppercase tracking-wide">
                 {t("history.period")}
               </th>
-              <th className="text-right p-4 font-semibold text-foreground text-sm uppercase tracking-wide">
+              <th className="text-right rtl:text-left p-4 font-semibold text-foreground text-sm uppercase tracking-wide">
                 {t("history.revenue")}
               </th>
-              <th className="text-right p-4 font-semibold text-foreground text-sm uppercase tracking-wide">
+              <th className="text-right rtl:text-left p-4 font-semibold text-foreground text-sm uppercase tracking-wide">
                 {t("history.profit")}
               </th>
-              <th className="text-right p-4 font-semibold text-foreground text-sm uppercase tracking-wide">
+              <th className="text-right rtl:text-left p-4 font-semibold text-foreground text-sm uppercase tracking-wide">
                 {t("history.purchases")}
               </th>
-              <th className="text-right p-4 font-semibold text-foreground text-sm uppercase tracking-wide">
+              <th className="text-right rtl:text-left p-4 font-semibold text-foreground text-sm uppercase tracking-wide">
                 {t("history.sales")}
               </th>
-              <th className="text-right p-4 font-semibold text-foreground text-sm uppercase tracking-wide">
+              <th className="text-right rtl:text-left p-4 font-semibold text-foreground text-sm uppercase tracking-wide">
                 {t("history.averagepercent")}
               </th>
             </tr>
