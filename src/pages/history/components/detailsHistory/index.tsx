@@ -4,7 +4,6 @@ import { useDetailsHistoryData } from "./useDetailsHistoryData";
 import DetailsHistoryHeader from "./detailsHistoryHeader";
 import DetailsHistoryTabs from "./detailsHistoryTabs";
 import SalesSection from "./salesSection";
-import PaymentsSection from "./paymentsSection";
 import PurchasesSection from "./purchasesSection";
 import EmptyState from "./emptyState";
 import LoadingState from "./loadingState";
@@ -17,7 +16,7 @@ export default function DetailsHistory({
   selectedPeriod,
 }: DetailsHistoryProps) {
   const [activeSection, setActiveSection] = useState<
-    "sales" | "payments" | "purchases"
+    "sales" | "purchases"
   >("sales");
 
   // Memoize today's period to prevent unnecessary recalculations
@@ -52,6 +51,12 @@ export default function DetailsHistory({
     currentSales,
     currentPayments,
     currentPurchases,
+    salesTotal,
+    salesProfit,
+    purchasesTotal,
+    previousSalesTotal,
+    previousPurchasesTotal,
+    historicalAverages,
   } = useDetailsHistoryData(effectivePeriod);
 
   if (loading) {
@@ -63,15 +68,19 @@ export default function DetailsHistory({
       <DetailsHistoryHeader
         selectedPeriod={effectivePeriod}
         salesCount={sales.length}
-        paymentsCount={payments.length}
         purchasesCount={purchases.length}
+        salesTotal={salesTotal}
+        salesProfit={salesProfit}
+        purchasesTotal={purchasesTotal}
+        previousPeriodSalesTotal={previousSalesTotal}
+        previousPeriodPurchasesTotal={previousPurchasesTotal}
+        historicalAverages={historicalAverages}
       />
 
       <DetailsHistoryTabs
         activeSection={activeSection}
         onSectionChange={setActiveSection}
         salesCount={sales.length}
-        paymentsCount={payments.length}
         purchasesCount={purchases.length}
       />
 
@@ -86,15 +95,7 @@ export default function DetailsHistory({
           />
         )}
 
-        {activeSection === "payments" && (
-          <PaymentsSection
-            payments={payments}
-            currentPayments={currentPayments}
-            currentPage={paymentsPage}
-            totalPages={paymentsTotalPages}
-            onPageChange={setPaymentsPage}
-          />
-        )}
+
 
         {activeSection === "purchases" && (
           <PurchasesSection

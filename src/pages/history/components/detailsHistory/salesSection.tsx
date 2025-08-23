@@ -1,8 +1,10 @@
 import { useTranslation } from "react-i18next";
 import { ShoppingCart } from "lucide-react";
-import type { SaleForHistory } from "../../../../types";
-import { formatCurrency, formatDateTime } from "./detailsHistoryUtils";
+import { useState } from "react";
+import type { SaleForHistory, Sale } from "../../../../types";
+import SaleCard from "./saleCard";
 import SharedPagination from "../sharedPagination";
+import SaleDetailsModal from "../../../../lib/components/saleDetailsModal";
 
 interface SalesSectionProps {
   sales: SaleForHistory[];
@@ -20,6 +22,64 @@ export default function SalesSection({
   onPageChange,
 }: SalesSectionProps) {
   const { t } = useTranslation();
+  const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
+  const [showModal, setShowModal] = useState(false);
+
+  // Transform SaleForHistory to Sale format that the modal expects
+  const transformSaleForHistory = (saleForHistory: SaleForHistory): Sale => {
+    const totalAmount = saleForHistory.saleItems.reduce(
+      (sum, item) => sum + item.price * item.quantity,
+      0,
+    );
+    const totalAmountWithDiscount = totalAmount - saleForHistory.discount;
+    const totalItems = saleForHistory.saleItems.reduce(
+      (sum, item) => sum + item.quantity,
+      0,
+    );
+
+    return {
+      ...saleForHistory,
+      totalAmount,
+      totalAmountWithDiscount,
+      paidAmount: totalAmountWithDiscount, // Assume full payment for history
+      remainingAmount: 0, // No remaining amount for completed sales
+      totalItems,
+      isPaidInCash: true, // Assume cash payment for history
+      payment: undefined, // No payment object for history
+    };
+  };
+
+  const handleViewSale = (sale: SaleForHistory) => {
+    const transformedSale = transformSaleForHistory(sale);
+    setSelectedSale(transformedSale);
+    setShowModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setSelectedSale(null);
+  };
+
+  const handlePrintReceipt = (sale: Sale) => {
+    // TODO: Implement print functionality
+    console.log("Printing receipt for sale:", sale.id);
+  };
+
+  const handleModifySale = (sale: Sale) => {
+    // This is handled in the modal
+    console.log("Modifying sale:", sale.id);
+  };
+
+  const handleSaleUpdated = (updatedSale: Sale) => {
+    // Handle sale updates if needed
+    console.log("Sale updated:", updatedSale.id);
+  };
+
+  const handleSaleDeleted = (saleId: string) => {
+    // Handle sale deletion if needed
+    console.log("Sale deleted:", saleId);
+    handleCloseModal();
+  };
 
   if (sales.length === 0) {
     return (
@@ -33,62 +93,30 @@ export default function SalesSection({
   return (
     <div className="space-y-4">
       <div className="space-y-3">
-        {currentSales.map((sale) => (
-          <div
+        {currentSales.map((sale, index) => (
+          <SaleCard
             key={sale.id}
-            className="bg-card border border-border rounded-lg p-4"
-          >
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-3">
-                <span className="text-sm text-muted-foreground">
-                  {formatDateTime(sale.createdAt)}
-                </span>
-                {sale.client && (
-                  <span className="text-sm font-medium">
-                    {t("history.client")}: {sale.client.name}
-                  </span>
-                )}
-              </div>
-              <span className="text-sm font-semibold text-primary">
-                {formatCurrency(
-                  sale.saleItems.reduce(
-                    (sum, item) => sum + item.price * item.quantity,
-                    0,
-                  ) - sale.discount,
-                )}
-              </span>
-            </div>
-            <div className="space-y-2">
-              {sale.saleItems.map((item, index) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-between text-sm"
-                >
-                  <span>
-                    {item.product?.name ||
-                      item.manualProduct?.name ||
-                      item.service?.name}{" "}
-                    x {item.quantity}
-                  </span>
-                  <span className="text-muted-foreground">
-                    {formatCurrency(item.price * item.quantity)}
-                  </span>
-                </div>
-              ))}
-              {sale.discount > 0 && (
-                <div className="flex items-center justify-between text-sm text-red-600">
-                  <span>{t("history.discount")}</span>
-                  <span>-{formatCurrency(sale.discount)}</span>
-                </div>
-              )}
-            </div>
-          </div>
+            sale={sale}
+            index={index}
+            onView={handleViewSale}
+          />
         ))}
       </div>
       <SharedPagination
         currentPage={currentPage}
         totalPages={totalPages}
         onPageChange={onPageChange}
+      />
+
+      {/* Sale Details Modal - Same as cashier history browser */}
+      <SaleDetailsModal
+        sale={selectedSale}
+        isOpen={showModal}
+        onClose={handleCloseModal}
+        onPrint={handlePrintReceipt}
+        onModify={handleModifySale}
+        onSaleUpdated={handleSaleUpdated}
+        onSaleDeleted={handleSaleDeleted}
       />
     </div>
   );

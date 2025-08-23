@@ -1,11 +1,10 @@
 import { useTranslation } from "react-i18next";
-import { ShoppingCart, CreditCard, FileText } from "lucide-react";
+import { ShoppingCart, FileText } from "lucide-react";
 
 interface DetailsHistoryTabsProps {
-  activeSection: "sales" | "payments" | "purchases";
-  onSectionChange: (section: "sales" | "payments" | "purchases") => void;
+  activeSection: "sales" | "purchases";
+  onSectionChange: (section: "sales" | "purchases") => void;
   salesCount: number;
-  paymentsCount: number;
   purchasesCount: number;
 }
 
@@ -13,7 +12,6 @@ export default function DetailsHistoryTabs({
   activeSection,
   onSectionChange,
   salesCount,
-  paymentsCount,
   purchasesCount,
 }: DetailsHistoryTabsProps) {
   const { t } = useTranslation();
@@ -24,12 +22,6 @@ export default function DetailsHistoryTabs({
       label: t("history.sales"),
       icon: ShoppingCart,
       count: salesCount,
-    },
-    {
-      id: "payments" as const,
-      label: t("history.payments"),
-      icon: CreditCard,
-      count: paymentsCount,
     },
     {
       id: "purchases" as const,
