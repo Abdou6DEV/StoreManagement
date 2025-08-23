@@ -632,6 +632,14 @@ export async function getSalesByDateRange(startDate: Date, endDate: Date) {
           service: true,
         },
       },
+      payment: {
+        select: {
+          id: true,
+          givenAmount: true,
+          type: true,
+          paidDate: true,
+        },
+      },
     },
     orderBy: {
       createdAt: "desc",

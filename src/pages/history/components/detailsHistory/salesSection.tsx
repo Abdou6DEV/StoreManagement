@@ -37,15 +37,23 @@ export default function SalesSection({
       0,
     );
 
+    // Handle credit sales properly
+    const hasPayment = saleForHistory.payment !== null && saleForHistory.payment !== undefined;
+    const paidAmount = hasPayment ? (saleForHistory.payment?.givenAmount || 0) : totalAmountWithDiscount;
+    const remainingAmount = totalAmountWithDiscount - paidAmount;
+    const isPaidInCash = !hasPayment;
+
+
+
     return {
       ...saleForHistory,
       totalAmount,
       totalAmountWithDiscount,
-      paidAmount: totalAmountWithDiscount, // Assume full payment for history
-      remainingAmount: 0, // No remaining amount for completed sales
+      paidAmount,
+      remainingAmount,
       totalItems,
-      isPaidInCash: true, // Assume cash payment for history
-      payment: undefined, // No payment object for history
+      isPaidInCash,
+      payment: saleForHistory.payment,
     };
   };
 
@@ -81,6 +89,8 @@ export default function SalesSection({
     handleCloseModal();
   };
 
+
+
   if (sales.length === 0) {
     return (
       <div className="text-center py-8 text-muted-foreground">
@@ -92,6 +102,7 @@ export default function SalesSection({
 
   return (
     <div className="space-y-4">
+      
       <div className="space-y-3">
         {currentSales.map((sale, index) => (
           <SaleCard
