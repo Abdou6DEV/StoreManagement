@@ -19,7 +19,6 @@ export default function Login() {
 
     try {
       const result = await login(username, password);
-      console.log(result);
       if (!result.success) {
         setError(result.error || "Login failed");
       }

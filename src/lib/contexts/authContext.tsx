@@ -69,7 +69,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     password: string,
   ): Promise<{ success: boolean; error?: string }> => {
     try {
-      setLoading(true);
       const result = await window.api.auth.login({ username, password });
 
       if (result.success && result.user) {
@@ -93,8 +92,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } catch (error) {
       console.error("Login error:", error);
       return { success: false, error: "Login failed" };
-    } finally {
-      setLoading(false);
     }
   };
 
