@@ -23,6 +23,10 @@ export default function GeneralHistory({
     setCurrentPage,
     totalPages,
     currentData,
+    startDate,
+    setStartDate,
+    endDate,
+    setEndDate,
   } = useGeneralHistoryData();
   const [highlightEnabled, setHighlightEnabled] = useState(false);
 
@@ -39,6 +43,10 @@ export default function GeneralHistory({
         onAggregationLevelChange={setAggregationLevel}
         highlightEnabled={highlightEnabled}
         onHighlightChange={setHighlightEnabled}
+        startDate={startDate}
+        endDate={endDate}
+        onStartDateChange={setStartDate}
+        onEndDateChange={setEndDate}
       />
 
       {loading ? (

@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { Switch } from "../../../../lib/components/switch";
+import { Input } from "../../../../lib/components/input";
 import type { AggregationLevel } from "../../../../types";
 
 interface GeneralHistoryControlsProps {
@@ -7,6 +8,10 @@ interface GeneralHistoryControlsProps {
   onAggregationLevelChange: (level: AggregationLevel) => void;
   highlightEnabled: boolean;
   onHighlightChange: (enabled: boolean) => void;
+  startDate: string;
+  endDate: string;
+  onStartDateChange: (date: string) => void;
+  onEndDateChange: (date: string) => void;
 }
 
 export default function GeneralHistoryControls({
@@ -14,6 +19,10 @@ export default function GeneralHistoryControls({
   onAggregationLevelChange,
   highlightEnabled,
   onHighlightChange,
+  startDate,
+  endDate,
+  onStartDateChange,
+  onEndDateChange,
 }: GeneralHistoryControlsProps) {
   const { t } = useTranslation();
 
@@ -43,6 +52,35 @@ export default function GeneralHistoryControls({
                 {option.label}
               </button>
             ))}
+          </div>
+
+          {/* Date Range Selectors */}
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium text-foreground whitespace-nowrap">
+                {t("history.from")}:
+              </label>
+              <Input
+                type="date"
+                value={startDate}
+                onChange={(e) => onStartDateChange(e.target.value)}
+                className="w-40 h-8 text-sm"
+                max={endDate}
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium text-foreground whitespace-nowrap">
+                {t("history.to")}:
+              </label>
+              <Input
+                type="date"
+                value={endDate}
+                onChange={(e) => onEndDateChange(e.target.value)}
+                className="w-40 h-8 text-sm"
+                min={startDate}
+                max={new Date().toISOString().split('T')[0]}
+              />
+            </div>
           </div>
 
           {/* Highlight Toggle */}

@@ -9,6 +9,16 @@ export function useGeneralHistoryData() {
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
+  
+  // Date range state
+  const [startDate, setStartDate] = useState(() => {
+    const date = new Date();
+    date.setMonth(date.getMonth() - 1); // Default to last month
+    return date.toISOString().split('T')[0];
+  });
+  const [endDate, setEndDate] = useState(() => {
+    return new Date().toISOString().split('T')[0];
+  });
 
   // Calculate pagination
   const totalPages = Math.ceil(aggregatedData.length / itemsPerPage);
@@ -16,25 +26,30 @@ export function useGeneralHistoryData() {
   const endIndex = startIndex + itemsPerPage;
   const currentData = aggregatedData.slice(startIndex, endIndex);
 
-  // Reset to first page when aggregation level changes
+  // Reset to first page when aggregation level or date range changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [aggregationLevel]);
+  }, [aggregationLevel, startDate, endDate]);
 
-  // Fetch data when aggregation level changes
+  // Fetch data when aggregation level or date range changes
   useEffect(() => {
     fetchData();
-  }, [aggregationLevel]);
+  }, [aggregationLevel, startDate, endDate]);
 
   const fetchData = async () => {
     try {
       setLoading(true);
 
-      // Fetch aggregated data for all time (no date restrictions)
+      // Convert string dates to Date objects
+      const startDateObj = new Date(startDate);
+      const endDateObj = new Date(endDate);
+      endDateObj.setHours(23, 59, 59, 999); // Set to end of day
+
+      // Fetch aggregated data for the selected date range
       const aggregated = await window.api.database.sales.getAggregatedByPeriod(
         aggregationLevel,
-        new Date(0), // Start from beginning of time
-        new Date(), // End at current date
+        startDateObj,
+        endDateObj,
       );
 
       // Sort data from newest to oldest
@@ -62,6 +77,8 @@ export function useGeneralHistoryData() {
         "GeneralHistory",
         {
           aggregationLevel,
+          startDate,
+          endDate,
           dataPoints: aggregated.length,
         },
       );
@@ -85,5 +102,9 @@ export function useGeneralHistoryData() {
     setCurrentPage,
     totalPages,
     currentData,
+    startDate,
+    setStartDate,
+    endDate,
+    setEndDate,
   };
 }
