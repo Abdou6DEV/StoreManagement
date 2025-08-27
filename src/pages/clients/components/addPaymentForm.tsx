@@ -14,6 +14,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "../../../lib/components/popover";
+import { DatePicker } from "../../../lib/components/datePicker";
 import rendererLogger from "../../../lib/logger/rendererLogger";
 
 interface AddPaymentFormProps {
@@ -261,12 +262,11 @@ export default function AddPaymentForm({
             {/* Due Date */}
             <Legend>
               <label>{t("clients.dueDate", "Due Date")}</label>
-              <input
-                type="date"
+              <DatePicker
                 value={form.dueDate}
-                onChange={(e) => handleFormChange("dueDate", e.target.value)}
-                className="w-full px-4 h-10 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-red-500/50 focus:border-red-500 transition-all"
-                required
+                onChange={(date) => handleFormChange("dueDate", date)}
+                placeholder={t("clients.dueDate", "Due Date")}
+                className="w-full h-10"
               />
             </Legend>
           </div>

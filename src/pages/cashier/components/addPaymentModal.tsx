@@ -1,5 +1,6 @@
 import { Wallet } from "lucide-react";
 import { FormModal } from "../../../lib/components/modal";
+import { DatePicker } from "../../../lib/components/datePicker";
 import type { CartItem } from "../../../types";
 import type { TFunction } from "i18next";
 import React, { useRef, useEffect } from "react";
@@ -125,18 +126,12 @@ const AddPaymentModal: React.FC<AddPaymentModalProps> = ({
           <label className="block text-xs font-semibold mb-1 text-muted-foreground tracking-wide">
             {t("cashier.dueDate", "Due Date")}
           </label>
-          <input
-            type="date"
-            value={
-              paymentDate ? paymentDate.toISOString().substring(0, 10) : ""
-            }
+          <DatePicker
+            value={paymentDate ? paymentDate.toISOString().substring(0, 10) : ""}
+            onChange={(date) => setPaymentDate(date ? new Date(date) : undefined)}
+            placeholder={t("cashier.dueDate", "Due Date")}
+            className="w-full h-12 text-base"
             min={tomorrow}
-            onChange={(e) => {
-              setPaymentDate(
-                e.target.value ? new Date(e.target.value) : undefined,
-              );
-            }}
-            className="w-full rounded-lg border border-border px-4 py-3 h-12 text-base bg-background focus:outline-none focus:ring-2 focus:ring-primary/30 transition shadow-sm"
           />
         </div>
       </div>
