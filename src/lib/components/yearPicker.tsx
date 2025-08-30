@@ -3,6 +3,7 @@ import { Calendar, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "./button";
 import { Popover, PopoverContent, PopoverTrigger } from "./popover";
 import { cn } from "../utils";
+import { useTranslation } from "react-i18next";
 
 interface YearPickerProps {
   value?: string; // Format: "YYYY"
@@ -17,12 +18,14 @@ interface YearPickerProps {
 export function YearPicker({
   value,
   onChange,
-  placeholder = "Select year",
+  placeholder,
   className,
   disabled = false,
   min,
   max,
 }: YearPickerProps) {
+  const { t } = useTranslation();
+  const defaultPlaceholder = t("datePicker.selectYear");
   const [isOpen, setIsOpen] = useState(false);
   const [currentDecade, setCurrentDecade] = useState(() => {
     if (value) {
@@ -122,7 +125,7 @@ export function YearPicker({
           disabled={disabled}
         >
           <Calendar className="mr-2 h-4 w-4" />
-          {selectedYear ? selectedYear.toString() : placeholder}
+          {selectedYear ? selectedYear.toString() : (placeholder || defaultPlaceholder)}
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="start">
@@ -134,6 +137,7 @@ export function YearPicker({
               size="sm"
               onClick={goToPreviousDecade}
               className="h-7 w-7 p-0"
+              aria-label={t("datePicker.previousDecade")}
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
@@ -145,6 +149,7 @@ export function YearPicker({
               size="sm"
               onClick={goToNextDecade}
               className="h-7 w-7 p-0"
+              aria-label={t("datePicker.nextDecade")}
             >
               <ChevronRight className="h-4 w-4" />
             </Button>

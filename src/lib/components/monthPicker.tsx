@@ -3,6 +3,7 @@ import { Calendar, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "./button";
 import { Popover, PopoverContent, PopoverTrigger } from "./popover";
 import { cn } from "../utils";
+import { useTranslation } from "react-i18next";
 
 interface MonthPickerProps {
   value?: string; // Format: "YYYY-MM"
@@ -17,12 +18,14 @@ interface MonthPickerProps {
 export function MonthPicker({
   value,
   onChange,
-  placeholder = "Select month",
+  placeholder,
   className,
   disabled = false,
   min,
   max,
 }: MonthPickerProps) {
+  const { t } = useTranslation();
+  const defaultPlaceholder = t("datePicker.selectMonth");
   const [isOpen, setIsOpen] = useState(false);
   const [currentYear, setCurrentYear] = useState(() => {
     if (value) {
@@ -88,8 +91,9 @@ export function MonthPicker({
   };
 
   const monthNames = [
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December"
+    t("datePicker.monthNames.0"), t("datePicker.monthNames.1"), t("datePicker.monthNames.2"), t("datePicker.monthNames.3"),
+    t("datePicker.monthNames.4"), t("datePicker.monthNames.5"), t("datePicker.monthNames.6"), t("datePicker.monthNames.7"),
+    t("datePicker.monthNames.8"), t("datePicker.monthNames.9"), t("datePicker.monthNames.10"), t("datePicker.monthNames.11")
   ];
 
   const renderMonths = () => {
@@ -135,7 +139,7 @@ export function MonthPicker({
           <Calendar className="mr-2 h-4 w-4" />
           {selectedMonth 
             ? `${monthNames[selectedMonth.month - 1]} ${selectedMonth.year}`
-            : placeholder
+            : (placeholder || defaultPlaceholder)
           }
         </Button>
       </PopoverTrigger>
@@ -148,6 +152,7 @@ export function MonthPicker({
               size="sm"
               onClick={goToPreviousYear}
               className="h-7 w-7 p-0"
+              aria-label={t("datePicker.previousYear")}
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
@@ -159,6 +164,7 @@ export function MonthPicker({
               size="sm"
               onClick={goToNextYear}
               className="h-7 w-7 p-0"
+              aria-label={t("datePicker.nextYear")}
             >
               <ChevronRight className="h-4 w-4" />
             </Button>

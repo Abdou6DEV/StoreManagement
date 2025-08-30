@@ -3,6 +3,7 @@ import { Calendar, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "./button";
 import { Popover, PopoverContent, PopoverTrigger } from "./popover";
 import { cn } from "../utils";
+import { useTranslation } from "react-i18next";
 
 interface DatePickerProps {
   value?: string;
@@ -17,12 +18,14 @@ interface DatePickerProps {
 export function DatePicker({
   value,
   onChange,
-  placeholder = "Select date",
+  placeholder,
   className,
   disabled = false,
   min,
   max,
 }: DatePickerProps) {
+  const { t } = useTranslation();
+  const defaultPlaceholder = t("datePicker.selectDate");
   const [isOpen, setIsOpen] = useState(false);
   const [currentDate, setCurrentDate] = useState(() => {
     try {
@@ -179,11 +182,15 @@ export function DatePicker({
   };
 
   const monthNames = [
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December"
+    t("datePicker.monthNames.0"), t("datePicker.monthNames.1"), t("datePicker.monthNames.2"), t("datePicker.monthNames.3"),
+    t("datePicker.monthNames.4"), t("datePicker.monthNames.5"), t("datePicker.monthNames.6"), t("datePicker.monthNames.7"),
+    t("datePicker.monthNames.8"), t("datePicker.monthNames.9"), t("datePicker.monthNames.10"), t("datePicker.monthNames.11")
   ];
 
-  const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const dayNames = [
+    t("datePicker.dayNames.0"), t("datePicker.dayNames.1"), t("datePicker.dayNames.2"), t("datePicker.dayNames.3"),
+    t("datePicker.dayNames.4"), t("datePicker.dayNames.5"), t("datePicker.dayNames.6")
+  ];
 
   const daysInMonth = getDaysInMonth(currentDate);
   const firstDayOfMonth = getFirstDayOfMonth(currentDate);
@@ -245,7 +252,7 @@ export function DatePicker({
           disabled={disabled}
         >
           <Calendar className="mr-2 h-4 w-4" />
-          {displayValue || placeholder}
+          {displayValue || (placeholder || defaultPlaceholder)}
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="start">
@@ -257,6 +264,7 @@ export function DatePicker({
               size="sm"
               onClick={goToPreviousMonth}
               className="h-7 w-7 p-0"
+              aria-label={t("datePicker.previousMonth")}
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
@@ -268,6 +276,7 @@ export function DatePicker({
               size="sm"
               onClick={goToNextMonth}
               className="h-7 w-7 p-0"
+              aria-label={t("datePicker.nextMonth")}
             >
               <ChevronRight className="h-4 w-4" />
             </Button>

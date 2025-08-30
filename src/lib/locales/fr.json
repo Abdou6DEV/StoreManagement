@@ -665,5 +665,39 @@
     "failedToProcess": "Échec du traitement de l'image. Veuillez réessayer.",
     "removeImage": "Supprimer l'image"
   },
-  "currency": "DA"
+  "currency": "DA",
+  "datePicker": {
+    "selectYear": "Sélectionner l'année",
+    "selectMonth": "Sélectionner le mois",
+    "selectDate": "Sélectionner la date",
+    "previousYear": "Année précédente",
+    "nextYear": "Année suivante",
+    "previousMonth": "Mois précédent",
+    "nextMonth": "Mois suivant",
+    "previousDecade": "Décennie précédente",
+    "nextDecade": "Décennie suivante",
+    "monthNames": {
+      "0": "Janvier",
+      "1": "Février",
+      "2": "Mars",
+      "3": "Avril",
+      "4": "Mai",
+      "5": "Juin",
+      "6": "Juillet",
+      "7": "Août",
+      "8": "Septembre",
+      "9": "Octobre",
+      "10": "Novembre",
+      "11": "Décembre"
+    },
+    "dayNames": {
+      "0": "Dim",
+      "1": "Lun",
+      "2": "Mar",
+      "3": "Mer",
+      "4": "Jeu",
+      "5": "Ven",
+      "6": "Sam"
+    }
+  }
 }
