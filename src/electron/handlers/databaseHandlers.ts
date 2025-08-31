@@ -1,4 +1,4 @@
-import { ipcMain } from "electron";
+import { ipcMain, BrowserWindow } from "electron";
 import {
   getAllCategories,
   ensureCategory,
@@ -234,7 +234,7 @@ export function setupDatabaseHandlers() {
 
   ipcMain.handle(
     "db:payments:updatePaidAt",
-    async (_event, { paymentId, paidDate }) => {
+    async (event, { paymentId, paidDate }) => {
       return await updatePaymentPaidAt(paymentId, paidDate);
     },
   );

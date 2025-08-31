@@ -91,7 +91,10 @@ export function DatePicker({
 
   const formatDate = (date: Date) => {
     try {
-      return date.toISOString().split('T')[0];
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
     } catch (error) {
       console.error("Error formatting date:", error);
       return "";
@@ -134,6 +137,28 @@ export function DatePicker({
       }
     } catch (error) {
       console.error("Error going to next month:", error);
+    }
+  };
+
+  const goToYear = (year: number) => {
+    try {
+      const newDate = new Date(year, currentDate.getMonth(), 1);
+      if (!isNaN(newDate.getTime())) {
+        setCurrentDate(newDate);
+      }
+    } catch (error) {
+      console.error("Error going to year:", error);
+    }
+  };
+
+  const goToMonth = (month: number) => {
+    try {
+      const newDate = new Date(currentDate.getFullYear(), month, 1);
+      if (!isNaN(newDate.getTime())) {
+        setCurrentDate(newDate);
+      }
+    } catch (error) {
+      console.error("Error going to month:", error);
     }
   };
 
@@ -259,27 +284,55 @@ export function DatePicker({
         <div className="rounded-md border bg-popover p-3 shadow-md">
           {/* Header */}
           <div className="flex items-center justify-between pb-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={goToPreviousMonth}
-              className="h-7 w-7 p-0"
-              aria-label={t("datePicker.previousMonth")}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <div className="text-sm font-medium">
-              {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+            {/* Month Navigation */}
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={goToPreviousMonth}
+                className="h-7 w-7 p-0"
+                aria-label={t("datePicker.previousMonth")}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <div className="text-sm font-medium min-w-[60px] text-center">
+                {monthNames[currentDate.getMonth()]}
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={goToNextMonth}
+                className="h-7 w-7 p-0"
+                aria-label={t("datePicker.nextMonth")}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={goToNextMonth}
-              className="h-7 w-7 p-0"
-              aria-label={t("datePicker.nextMonth")}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
+
+            {/* Year Navigation */}
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => goToYear(currentDate.getFullYear() - 1)}
+                className="h-7 w-7 p-0"
+                aria-label={t("datePicker.previousYear")}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <div className="text-sm font-medium min-w-[50px] text-center">
+                {currentDate.getFullYear()}
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => goToYear(currentDate.getFullYear() + 1)}
+                className="h-7 w-7 p-0"
+                aria-label={t("datePicker.nextYear")}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
 
           {/* Day names */}

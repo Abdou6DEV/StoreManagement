@@ -3,11 +3,13 @@ import { prisma } from "./prismaClient";
 export async function createService(data: {
   name: string;
   description?: string;
+  costPrice?: number;
 }) {
   return await prisma.service.create({
     data: {
       name: data.name,
       description: data.description,
+      costPrice: data.costPrice || 0,
     },
   });
 }
@@ -15,6 +17,7 @@ export async function createService(data: {
 export async function findOrCreateService(data: {
   name: string;
   description?: string;
+  costPrice?: number;
 }) {
   // Try to find existing service
   const existing = await prisma.service.findUnique({
@@ -28,7 +31,11 @@ export async function findOrCreateService(data: {
   }
 
   // Create new service if not found
-  return await createService(data);
+  return await createService({
+    name: data.name,
+    description: data.description,
+    costPrice: data.costPrice,
+  });
 }
 
 export async function searchServices(query: string) {
@@ -75,6 +82,7 @@ export async function updateService(
   data: {
     name?: string;
     description?: string;
+    costPrice?: number;
   },
 ) {
   return await prisma.service.update({

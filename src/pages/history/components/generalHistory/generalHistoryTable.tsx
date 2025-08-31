@@ -8,6 +8,7 @@ import {
 
 interface GeneralHistoryTableProps {
   data: AggregatedData[];
+  allData: AggregatedData[]; // Full dataset for average calculation
   aggregationLevel: AggregationLevel;
   onRowDoubleClick: (period: string) => void;
   highlightEnabled: boolean;
@@ -15,16 +16,17 @@ interface GeneralHistoryTableProps {
 
 export default function GeneralHistoryTable({
   data,
+  allData,
   aggregationLevel,
   onRowDoubleClick,
   highlightEnabled,
 }: GeneralHistoryTableProps) {
   const { t } = useTranslation();
 
-  // Calculate average profit for comparison
+  // Calculate average profit for comparison from all data
   const averageProfit =
-    data.length > 0
-      ? data.reduce((sum, item) => sum + item.profit, 0) / data.length
+    allData.length > 0
+      ? allData.reduce((sum, item) => sum + item.profit, 0) / allData.length
       : 0;
 
   const getRowHighlightClass = (profit: number) => {
@@ -141,12 +143,11 @@ export default function GeneralHistoryTable({
                     <span
                       className={`font-semibold text-base ${getProfitTextClass(item.profit)}`}
                     >
-                      {(
-                        ((item.profit - averageProfit) /
-                          Math.abs(averageProfit)) *
-                        100
-                      ).toFixed(1)}
-                      %
+                      {(() => {
+                        const percentage = ((item.profit - averageProfit) / Math.abs(averageProfit)) * 100;
+                        const formattedPercentage = percentage.toFixed(1);
+                        return percentage >= 0 ? `+${formattedPercentage}%` : `${formattedPercentage}%`;
+                      })()}
                     </span>
                   </div>
                 </td>

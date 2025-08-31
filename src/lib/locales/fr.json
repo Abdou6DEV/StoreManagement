@@ -186,12 +186,15 @@
     "noSalesFoundForPeriod": "Aucune vente trouvée pour cette période",
     "noPaymentsFoundForPeriod": "Aucun paiement trouvé pour cette période",
     "noPurchasesFoundForPeriod": "Aucun achat trouvé pour cette période",
+
     "loadingPeriodData": "Chargement des données de la période...",
     "selectPeriodHint": "Double-cliquez sur une ligne dans l'onglet Historique Général pour voir les informations détaillées de cette période",
     "relatedToSale": "Lié à la vente",
     "averagepercent": "Taux de croissance %",
     "seller": "Vendeur",
-    "highlightProfits": "Mettre en évidence les profits"
+    "highlightProfits": "Mettre en évidence les profits",
+    "creditUnpaid": "Crédit (Non payé)",
+    "creditPaid": "Crédit (Payé)"
   },
   "navigation": {
     "preferences": "Préférences",

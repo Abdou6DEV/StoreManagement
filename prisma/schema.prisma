@@ -57,9 +57,10 @@ model Product {
 }
 
 model ManualProduct {
-  id   String @id @default(uuid())
-  name String
-  type String
+  id        String @id @default(uuid())
+  name      String
+  type      String
+  costPrice Int    @default(0)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -73,6 +74,7 @@ model Service {
   id          String  @id @default(uuid())
   name        String  @unique
   description String?
+  costPrice   Int     @default(0)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

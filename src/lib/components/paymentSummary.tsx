@@ -35,12 +35,8 @@ export default function PaymentSummary({
     [cart],
   );
 
-  // For cash sales, total is subtotal - discount (amount to pay)
-  // For credit/versement, total is remaining amount after payment
-  const total =
-    paymentType === "none"
-      ? Math.max(subtotal - discount, 0)
-      : Math.max(subtotal - discount - paymentAmount, 0);
+  // Total is simply the total price of all products
+  const total = subtotal;
   const credit = subtotal - discount - paymentAmount;
   const creditDisplay = credit > 0 ? credit : 0;
   const nbrItems = cart.reduce((sum, item) => sum + item.qty, 0);
@@ -102,10 +98,8 @@ export default function PaymentSummary({
     animationRef.current = requestAnimationFrame(scrollStep);
   }
 
-  // On cart change: reset scroll, clear timers, and start fresh after a short delay (non-interactive only)
+  // On cart change: reset scroll, clear timers, and start fresh after a short delay
   React.useEffect(() => {
-    if (interactive) return; // Skip auto-scroll for interactive mode
-
     const el = scrollRef.current;
     clearAllScrollTimers();
     if (!el) return;
@@ -119,12 +113,10 @@ export default function PaymentSummary({
       transitionTimeouts.current.push(timeout);
     }
     // eslint-disable-next-line
-  }, [cart, interactive]);
+  }, [cart]);
 
-  // User interaction: pause scroll, resume after delay, always reset fade (non-interactive only)
+  // User interaction: pause scroll, resume after delay, always reset fade
   React.useEffect(() => {
-    if (interactive) return; // Skip auto-scroll for interactive mode
-
     const el = scrollRef.current;
     if (!el) return;
     function pauseScroll() {
@@ -147,7 +139,7 @@ export default function PaymentSummary({
       el.removeEventListener("touchstart", pauseScroll);
       el.removeEventListener("wheel", pauseScroll);
     };
-  }, [interactive]);
+  }, []);
 
   // Interactive mode functions
   const updateQty = (index: number, newQty: number) => {
@@ -331,15 +323,8 @@ export default function PaymentSummary({
         </>
       )}
 
-      {/* === Table Container === */}
-      <div
-        className={`flex-1 overflow-y-auto overflow-x-hidden min-h-0 ${
-          interactive
-            ? "opacity-100"
-            : `transition-opacity duration-500 ${isFading ? "opacity-0" : "opacity-100"}`
-        }`}
-        ref={scrollRef}
-      >
+      {/* === Fixed Header Table === */}
+      <div className="flex-shrink-0">
         <table className="w-full text-sm">
           <thead>
             <tr className="font-semibold text-xs uppercase tracking-wider border-b border-black dark:border-white">
@@ -370,6 +355,19 @@ export default function PaymentSummary({
               )}
             </tr>
           </thead>
+        </table>
+      </div>
+
+      {/* === Scrollable Table Body === */}
+      <div
+        className={`flex-1 overflow-y-auto overflow-x-hidden min-h-0 ${
+          interactive
+            ? "opacity-100"
+            : `transition-opacity duration-500 ${isFading ? "opacity-0" : "opacity-100"}`
+        }`}
+        ref={scrollRef}
+      >
+        <table className="w-full text-sm">
           <tbody>
             {cart.length > 0
               ? cart.map((item, index) =>
@@ -430,19 +428,7 @@ export default function PaymentSummary({
             {nbrItems}
           </span>
         </div>
-        {/* Show subtotal only when there's a discount, or for cash sales without discount (bold) */}
-        {(discount > 0 || (paymentType === "none" && discount === 0)) && (
-          <div
-            className={`flex justify-between ${paymentType === "none" && discount === 0 ? "font-bold" : ""}`}
-          >
-            <span className={isRTL ? "w-3/4 text-right" : "w-3/4 text-left"}>
-              {t("cashier.subtotal", "Subtotal")}
-            </span>
-            <span className={isRTL ? "w-1/4 text-left" : "w-1/4 text-right"}>
-              {subtotal.toLocaleString()} {t("cashier.currency", "DA")}
-            </span>
-          </div>
-        )}
+        
         {/* Show payment information (Paid/Versement) */}
         {paymentType === "credit" && (
           <div className="flex justify-between">
@@ -517,17 +503,15 @@ export default function PaymentSummary({
             </span>
           </div>
         )}
-        {/* Show new total only for cash sales with discount */}
-        {paymentType === "none" && discount > 0 && (
-          <div className="flex justify-between font-bold">
-            <span className={isRTL ? "w-3/4 text-right" : "w-3/4 text-left"}>
-              {t("cashier.newTotal", "New Total")}
-            </span>
-            <span className={isRTL ? "w-1/4 text-left" : "w-1/4 text-right"}>
-              {total.toLocaleString()} {t("cashier.currency", "DA")}
-            </span>
-          </div>
-        )}
+                 {/* Show total for all payment types */}
+         <div className="flex justify-between font-bold">
+           <span className={isRTL ? "w-3/4 text-right" : "w-3/4 text-left"}>
+             {t("cashier.total", "Total")}
+           </span>
+           <span className={isRTL ? "w-1/4 text-left" : "w-1/4 text-right"}>
+             {total.toLocaleString()} {t("cashier.currency", "DA")}
+           </span>
+         </div>
       </div>
     </div>
   );

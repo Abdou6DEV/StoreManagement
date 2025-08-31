@@ -38,15 +38,26 @@ export function SectionCards() {
           0,
         );
         const profit = filtered.reduce((sum: number, s: any) => {
-          return (
-            sum +
-            (s.saleItems?.reduce(
-              (itemSum: number, item: any) =>
-                itemSum +
-                (item.price - (item.product?.boughtPrice || 0)) * item.quantity,
-              0,
-            ) || 0)
-          );
+          const revenue = s.totalAmountWithDiscount || 0;
+          
+          const cost = s.saleItems?.reduce((itemSum: number, item: any) => {
+            if (item.product && item.product.boughtPrice) {
+              // For regular products, use actual bought price
+              return itemSum + item.product.boughtPrice * item.quantity;
+            }
+            if (item.manualProduct && item.manualProduct.costPrice) {
+              // For manual products, use actual cost price
+              return itemSum + item.manualProduct.costPrice * item.quantity;
+            }
+            if (item.service && item.service.costPrice) {
+              // For services, use actual cost price
+              return itemSum + item.service.costPrice * item.quantity;
+            }
+            // Fallback: if no cost price is available, assume 70% profit margin
+            return itemSum + item.price * item.quantity * 0.3;
+          }, 0) || 0;
+          
+          return sum + (revenue - cost);
         }, 0);
         const itemsSold = filtered.reduce(
           (sum: number, s: any) => sum + (s.totalItems || 0),

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import rendererLogger from "../../../../lib/logger/rendererLogger";
 import type {
   SaleForHistory,
@@ -62,10 +62,19 @@ export function useDetailsHistoryData(period: SelectedPeriod) {
     ) - sale.discount;
     
     const cost = sale.saleItems.reduce((itemSum, item) => {
-      if (item.product) {
-        return itemSum + item.product.boughtPrice * item.quantity;
+      if (item.product && 'boughtPrice' in item.product) {
+        // For regular products, use actual bought price
+        return itemSum + (item.product as any).boughtPrice * item.quantity;
       }
-      // For manual products and services, assume 70% profit margin
+      if (item.manualProduct && 'costPrice' in item.manualProduct) {
+        // For manual products, use actual cost price
+        return itemSum + (item.manualProduct as any).costPrice * item.quantity;
+      }
+      if (item.service && 'costPrice' in item.service) {
+        // For services, use actual cost price
+        return itemSum + (item.service as any).costPrice * item.quantity;
+      }
+      // Fallback: if no cost price is available, assume 70% profit margin
       return itemSum + item.price * item.quantity * 0.3;
     }, 0);
     
@@ -113,22 +122,7 @@ export function useDetailsHistoryData(period: SelectedPeriod) {
     }
   };
 
-  // Reset pagination when section changes
-  useEffect(() => {
-    setSalesPage(1);
-    setPaymentsPage(1);
-    setPurchasesPage(1);
-  }, []);
-
-  // Reset pagination and fetch data when period changes
-  useEffect(() => {
-    setSalesPage(1);
-    setPaymentsPage(1);
-    setPurchasesPage(1);
-    fetchPeriodData();
-  }, [period.period, period.periodValue]);
-
-  const fetchPeriodData = async () => {
+  const fetchPeriodData = useCallback(async () => {
     try {
       setLoading(true);
 
@@ -170,7 +164,7 @@ export function useDetailsHistoryData(period: SelectedPeriod) {
         ),
         window.api.database.sales.getSummary(historicalStartDate, historicalEndDate),
       ]);
-
+      
       setSales(salesData);
       setPayments(paymentsData);
       setPurchases(purchasesData);
@@ -202,7 +196,26 @@ export function useDetailsHistoryData(period: SelectedPeriod) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [period.period, period.periodValue]);
+
+  // Reset pagination when section changes
+  useEffect(() => {
+    setSalesPage(1);
+    setPaymentsPage(1);
+    setPurchasesPage(1);
+  }, []);
+
+  // Reset pagination and fetch data when period changes
+  useEffect(() => {
+    setSalesPage(1);
+    setPaymentsPage(1);
+    setPurchasesPage(1);
+    fetchPeriodData();
+  }, [fetchPeriodData]);
+
+
+
+
 
   // Calculate previous period totals
   const previousSalesTotal = previousSalesData.reduce((sum, sale) => {

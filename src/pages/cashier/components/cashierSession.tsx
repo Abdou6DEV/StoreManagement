@@ -183,8 +183,10 @@ export default function CashierSession({
           price: item.price,
           manualProductName: item.isManual ? item.name : undefined,
           manualProductType: item.isManual ? item.manualProductType : undefined,
+          manualProductCostPrice: item.isManual ? item.manualProductCostPrice : undefined,
           serviceName: item.isService ? item.name : undefined,
           serviceDescription: item.isService ? item.description : undefined,
+          serviceCostPrice: item.isService ? item.serviceCostPrice : undefined,
         })),
         discount: Number(discount) || 0,
       });

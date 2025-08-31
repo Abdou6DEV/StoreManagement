@@ -1,6 +1,7 @@
 import { prisma } from "./prismaClient";
 import { findOrCreateManualProduct } from "./manualProducts";
 import { findOrCreateService } from "./services";
+import { getPurchasesByDateRange } from "./purchases";
 
 export async function createSale(data: {
   clientId?: string;
@@ -10,8 +11,10 @@ export async function createSale(data: {
     price: number;
     manualProductName?: string;
     manualProductType?: string;
+    manualProductCostPrice?: number;
     serviceName?: string;
     serviceDescription?: string;
+    serviceCostPrice?: number;
   }[];
   discount?: number;
 }) {
@@ -25,6 +28,7 @@ export async function createSale(data: {
         const manualProduct = await findOrCreateManualProduct({
           name: item.manualProductName,
           type: item.manualProductType,
+          costPrice: item.manualProductCostPrice,
         });
         manualProductId = manualProduct.id;
       }
@@ -33,6 +37,7 @@ export async function createSale(data: {
         const service = await findOrCreateService({
           name: item.serviceName,
           description: item.serviceDescription,
+          costPrice: item.serviceCostPrice,
         });
         serviceId = service.id;
       }
@@ -334,7 +339,23 @@ export async function getAllSales() {
     },
   });
 
-  return sales.map((sale) => {
+  // Filter to exclude unpaid VERSEMENT sales only
+  const filteredSales = sales.filter((sale) => {
+    // Cash sales (no payment record) are always included
+    if (!sale.payment) {
+      return true;
+    }
+    
+    // CREDIT sales are always included
+    if (sale.payment.type === "CREDIT") {
+      return true;
+    }
+    
+    // VERSEMENT sales are only excluded if not paid
+    return !(sale.payment.type === "VERSEMENT" && sale.payment.paidDate === null);
+  });
+
+  return filteredSales.map((sale) => {
     const totalAmount = sale.saleItems.reduce(
       (sum, item) => sum + item.price * item.quantity,
       0,
@@ -431,7 +452,23 @@ export async function getRecentSales(limit = 50, offset = 0) {
     skip: offset,
   });
 
-  const salesWithTotals = sales.map((sale) => {
+  // Filter to exclude unpaid VERSEMENT sales only
+  const filteredSales = sales.filter((sale) => {
+    // Cash sales (no payment record) are always included
+    if (!sale.payment) {
+      return true;
+    }
+    
+    // CREDIT sales are always included
+    if (sale.payment.type === "CREDIT") {
+      return true;
+    }
+    
+    // VERSEMENT sales are only excluded if not paid
+    return !(sale.payment.type === "VERSEMENT" && sale.payment.paidDate === null);
+  });
+
+  const salesWithTotals = filteredSales.map((sale) => {
     const totalAmount = sale.saleItems.reduce(
       (sum, item) => sum + item.price * item.quantity,
       0,
@@ -460,8 +497,8 @@ export async function getRecentSales(limit = 50, offset = 0) {
 
   return {
     sales: salesWithTotals,
-    totalCount,
-    hasMore: offset + limit < totalCount,
+    totalCount: filteredSales.length, // Update count to reflect filtered results
+    hasMore: false, // Since we're filtering, pagination might not work as expected
   };
 }
 
@@ -470,23 +507,35 @@ export async function getSalesAggregatedByPeriod(
   startDate: Date,
   endDate: Date,
 ) {
-  const sales = await prisma.sale.findMany({
-    where: {
-      createdAt: {
-        gte: startDate,
-        lte: endDate,
-      },
-    },
-    include: {
-      saleItems: {
-        include: {
-          product: true,
-          manualProduct: true,
-          service: true,
+  // Fetch both sales and purchases data
+  const [sales, purchases] = await Promise.all([
+    prisma.sale.findMany({
+      where: {
+        createdAt: {
+          gte: startDate,
+          lte: endDate,
         },
       },
-    },
-  });
+      include: {
+        saleItems: {
+          include: {
+            product: true,
+            manualProduct: true,
+            service: true,
+          },
+        },
+        payment: {
+          select: {
+            id: true,
+            givenAmount: true,
+            type: true,
+            paidDate: true,
+          },
+        },
+      },
+    }),
+    getPurchasesByDateRange(startDate, endDate),
+  ]);
 
   // Group sales by period
   const groupedData = new Map<
@@ -500,7 +549,29 @@ export async function getSalesAggregatedByPeriod(
     }
   >();
 
+  // Process sales data - only exclude unpaid VERSEMENT sales
   sales.forEach((sale) => {
+    // Check if this is an unpaid VERSEMENT sale
+    const isUnpaidVersement = (() => {
+      // Cash sales (no payment record) are always included
+      if (!sale.payment) {
+        return false;
+      }
+      
+      // CREDIT sales are always included
+      if (sale.payment.type === "CREDIT") {
+        return false;
+      }
+      
+      // VERSEMENT sales are only excluded if not paid
+      return sale.payment.type === "VERSEMENT" && sale.payment.paidDate === null;
+    })();
+
+    // Skip unpaid VERSEMENT sales
+    if (isUnpaidVersement) {
+      return;
+    }
+
     const saleDate = new Date(sale.createdAt);
     let periodKey: string;
 
@@ -523,7 +594,13 @@ export async function getSalesAggregatedByPeriod(
       if (item.product) {
         return sum + item.product.boughtPrice * item.quantity;
       }
-      // For manual products and services, assume 70% profit margin
+      if (item.manualProduct && (item.manualProduct as any).costPrice) {
+        return sum + (item.manualProduct as any).costPrice * item.quantity;
+      }
+      if (item.service && (item.service as any).costPrice) {
+        return sum + (item.service as any).costPrice * item.quantity;
+      }
+      // Fallback: if no cost price is available, assume 70% profit margin
       return sum + item.price * item.quantity * 0.3;
     }, 0);
 
@@ -533,18 +610,41 @@ export async function getSalesAggregatedByPeriod(
     if (existing) {
       existing.revenue += totalAmountWithDiscount;
       existing.profit += profit;
-      existing.purchases += sale.saleItems.reduce(
-        (sum, item) => sum + item.quantity,
-        0,
-      );
       existing.count += 1;
     } else {
       groupedData.set(periodKey, {
         period: periodKey,
         revenue: totalAmountWithDiscount,
         profit: profit,
-        purchases: sale.saleItems.reduce((sum, item) => sum + item.quantity, 0),
+        purchases: 0, // Will be set by purchase data
         count: 1,
+      });
+    }
+  });
+
+  // Process purchase data to count actual purchases
+  purchases.forEach((purchase) => {
+    const purchaseDate = new Date(purchase.createdAt);
+    let periodKey: string;
+
+    if (period === "day") {
+      periodKey = purchaseDate.toISOString().split("T")[0]; // YYYY-MM-DD
+    } else if (period === "month") {
+      periodKey = `${purchaseDate.getFullYear()}-${String(purchaseDate.getMonth() + 1).padStart(2, "0")}`;
+    } else {
+      periodKey = purchaseDate.getFullYear().toString();
+    }
+
+    const existing = groupedData.get(periodKey);
+    if (existing) {
+      existing.purchases += 1; // Count each purchase transaction
+    } else {
+      groupedData.set(periodKey, {
+        period: periodKey,
+        revenue: 0,
+        profit: 0,
+        purchases: 1, // Count each purchase transaction
+        count: 0,
       });
     }
   });
@@ -573,15 +673,44 @@ export async function getSalesSummary(startDate: Date, endDate: Date) {
           service: true,
         },
       },
+      payment: {
+        select: {
+          id: true,
+          givenAmount: true,
+          type: true,
+          paidDate: true,
+        },
+      },
     },
   });
 
   let totalRevenue = 0;
   let totalProfit = 0;
   let totalPurchases = 0;
-  const totalSales = sales.length;
+  let totalSales = 0;
 
   sales.forEach((sale) => {
+    // Check if this is an unpaid VERSEMENT sale
+    const isUnpaidVersement = (() => {
+      // Cash sales (no payment record) are always included
+      if (!sale.payment) {
+        return false;
+      }
+      
+      // CREDIT sales are always included
+      if (sale.payment.type === "CREDIT") {
+        return false;
+      }
+      
+      // VERSEMENT sales are only excluded if not paid
+      return sale.payment.type === "VERSEMENT" && sale.payment.paidDate === null;
+    })();
+
+    // Skip unpaid VERSEMENT sales
+    if (isUnpaidVersement) {
+      return;
+    }
+
     const totalAmount = sale.saleItems.reduce(
       (sum, item) => sum + item.price * item.quantity,
       0,
@@ -603,6 +732,7 @@ export async function getSalesSummary(startDate: Date, endDate: Date) {
       (sum, item) => sum + item.quantity,
       0,
     );
+    totalSales += 1;
   });
 
   return {
@@ -616,7 +746,7 @@ export async function getSalesSummary(startDate: Date, endDate: Date) {
 }
 
 export async function getSalesByDateRange(startDate: Date, endDate: Date) {
-  return await prisma.sale.findMany({
+  const sales = await prisma.sale.findMany({
     where: {
       createdAt: {
         gte: startDate,
@@ -644,6 +774,22 @@ export async function getSalesByDateRange(startDate: Date, endDate: Date) {
     orderBy: {
       createdAt: "desc",
     },
+  });
+
+  // Filter to exclude unpaid VERSEMENT sales only
+  return sales.filter((sale) => {
+    // Cash sales (no payment record) are always included
+    if (!sale.payment) {
+      return true;
+    }
+    
+    // CREDIT sales are always included
+    if (sale.payment.type === "CREDIT") {
+      return true;
+    }
+    
+    // VERSEMENT sales are only excluded if not paid
+    return !(sale.payment.type === "VERSEMENT" && sale.payment.paidDate === null);
   });
 }
 

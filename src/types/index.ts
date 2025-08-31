@@ -61,8 +61,10 @@ export interface CartItem {
   qty: number;
   isManual?: boolean;
   manualProductType?: string;
+  manualProductCostPrice?: number;
   isService?: boolean;
   description?: string;
+  serviceCostPrice?: number;
 }
 
 export interface ClientSuggestion {

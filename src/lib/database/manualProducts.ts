@@ -3,11 +3,13 @@ import { prisma } from "./prismaClient";
 export async function createManualProduct(data: {
   name: string;
   type: string;
+  costPrice?: number;
 }) {
   return await prisma.manualProduct.create({
     data: {
       name: data.name,
       type: data.type,
+      costPrice: data.costPrice || 0,
     },
   });
 }
@@ -15,6 +17,7 @@ export async function createManualProduct(data: {
 export async function findOrCreateManualProduct(data: {
   name: string;
   type: string;
+  costPrice?: number;
 }) {
   // Try to find existing manual product
   const existing = await prisma.manualProduct.findUnique({
@@ -31,7 +34,11 @@ export async function findOrCreateManualProduct(data: {
   }
 
   // Create new manual product if not found
-  return await createManualProduct(data);
+  return await createManualProduct({
+    name: data.name,
+    type: data.type,
+    costPrice: data.costPrice,
+  });
 }
 
 export async function searchManualProducts(query: string) {
@@ -78,6 +85,7 @@ export async function updateManualProduct(
   data: {
     name?: string;
     type?: string;
+    costPrice?: number;
   },
 ) {
   return await prisma.manualProduct.update({

@@ -129,7 +129,7 @@ export default function ProductCard({
             </div>
           )}
           <div className="flex items-center gap-2 flex-shrink-0">
-            <div className="text-sm font-semibold text-green-600">
+            <div className="text-sm font-semibold text-green-600 whitespace-nowrap">
               {product.sellingPrice.toLocaleString()}{" "}
               {t("cashier.currency", "DA")}
             </div>

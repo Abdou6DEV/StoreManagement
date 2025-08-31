@@ -29,38 +29,66 @@ const SaleHeader: React.FC<SaleHeaderProps> = ({ sale }) => {
     return `${amount.toLocaleString()} ${t("currency")}`;
   };
 
-  // Calculate total amount with discount
-  const totalAmount = sale.saleItems.reduce(
-    (sum, item) => sum + item.price * item.quantity,
-    0,
-  ) - sale.discount;
+  const totalAmountWithDiscount = sale.saleItems.reduce((sum, item) => sum + item.price * item.quantity, 0) - sale.discount;
 
-  // Show credit indicator if this is a credit sale (same logic as cashier history)
-  const isCreditSale = sale.payment !== null && sale.payment !== undefined;
-  
-  // Calculate payment status for credit sales
-  const getPaymentStatus = () => {
-    if (!isCreditSale) return null;
+  // Calculate profit
+  const saleProfit = (() => {
+    const revenue = sale.saleItems.reduce((itemSum, item) => itemSum + item.price * item.quantity, 0) - sale.discount;
+    const cost = sale.saleItems.reduce((itemSum, item) => {
+      if (item.product && 'boughtPrice' in item.product) {
+        return itemSum + (item.product as any).boughtPrice * item.quantity;
+      }
+      if (item.manualProduct && 'costPrice' in item.manualProduct) {
+        return itemSum + (item.manualProduct as any).costPrice * item.quantity;
+      }
+      if (item.service && 'costPrice' in item.service) {
+        return itemSum + (item.service as any).costPrice * item.quantity;
+      }
+      return itemSum + item.price * item.quantity * 0.3;
+    }, 0);
+    return revenue - cost;
+  })();
+
+  // Get payment status badge
+  const getPaymentStatusBadge = () => {
+    if (!sale.payment) return null;
     
-    const totalAmount = sale.saleItems.reduce(
-      (sum, item) => sum + item.price * item.quantity,
-      0,
-    ) - sale.discount;
-    
-    const paidAmount = sale.payment?.givenAmount || 0;
-    const remainingAmount = totalAmount - paidAmount;
-    
-    // Always show as Credit/Versement if there's a payment record (consistent with cashier history)
-    const paymentType = sale.payment?.type === "VERSEMENT" ? "Versement" : "Credit";
-    
-    if (remainingAmount <= 0) {
-      return { type: 'paid', text: `${paymentType} (Paid)` };
-    } else {
-      return { type: 'partial', text: `${paymentType} (${formatCurrency(remainingAmount)} remaining)` };
+    if (sale.payment.type === "CREDIT") {
+      if (sale.payment.paidDate) {
+        return (
+          <span className="text-xs px-2 py-1 rounded-full font-medium text-green-700 bg-green-100 border border-green-200">
+            Credit (Paid)
+          </span>
+        );
+      } else {
+        return (
+          <span className="text-xs px-2 py-1 rounded-full font-medium text-orange-700 bg-orange-100 border border-orange-200">
+            Credit (Unpaid)
+          </span>
+        );
+      }
     }
+    
+    if (sale.payment.type === "VERSEMENT") {
+      if (sale.payment.paidDate) {
+        return (
+          <span className="text-xs px-2 py-1 rounded-full font-medium text-green-700 bg-green-100 border border-green-200">
+            Versement (Paid)
+          </span>
+        );
+      } else {
+        return (
+          <span className="text-xs px-2 py-1 rounded-full font-medium text-orange-700 bg-orange-100 border border-orange-200">
+            Versement (Unpaid)
+          </span>
+        );
+      }
+    }
+    
+    return null;
   };
-  
-  const paymentStatus = getPaymentStatus();
+
+  const paymentStatusBadge = getPaymentStatusBadge();
 
   return (
     <div className="flex items-center justify-between mb-3">
@@ -75,18 +103,15 @@ const SaleHeader: React.FC<SaleHeaderProps> = ({ sale }) => {
             {sale.client.name}
           </div>
         )}
+        {paymentStatusBadge}
       </div>
-      <div className="flex items-center gap-2 font-semibold text-green-600">
-        {formatCurrency(totalAmount)}
-        {paymentStatus && (
-          <span className={`text-xs px-2 py-1 rounded ${
-            paymentStatus.type === 'paid' 
-              ? 'text-green-600 bg-green-100' 
-              : 'text-orange-600 bg-orange-100'
-          }`}>
-            {paymentStatus.text}
-          </span>
-        )}
+      <div className="flex flex-col items-end gap-1">
+        <div className="text-lg font-bold text-foreground">
+          {formatCurrency(totalAmountWithDiscount)}
+        </div>
+        <div className="text-sm font-bold text-green-600">
+          {formatCurrency(saleProfit)}
+        </div>
       </div>
     </div>
   );

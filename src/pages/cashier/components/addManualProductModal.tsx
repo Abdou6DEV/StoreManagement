@@ -22,6 +22,7 @@ export default function AddManualProductModal({
     name: "",
     type: "",
     sold: 0,
+    costPrice: 0,
   });
   const [suggestions, setSuggestions] = useState<ManualProduct[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -117,6 +118,7 @@ export default function AddManualProductModal({
       ...prev,
       name: suggestion.name,
       type: suggestion.type,
+      costPrice: (suggestion as any).costPrice || 0,
     }));
     // Close dropdown and reset selection
     setShowSuggestions(false);
@@ -170,10 +172,11 @@ export default function AddManualProductModal({
       qty: 1,
       isManual: true,
       manualProductType: manualProduct.type,
+      manualProductCostPrice: manualProduct.costPrice,
     });
 
     // Reset form
-    setManualProduct({ name: "", type: "", sold: 0 });
+    setManualProduct({ name: "", type: "", sold: 0, costPrice: 0 });
     setSuggestions([]);
     setShowSuggestions(false);
     setJustSelectedSuggestion(false);
@@ -181,7 +184,7 @@ export default function AddManualProductModal({
   };
 
   const handleClose = () => {
-    setManualProduct({ name: "", type: "", sold: 0 });
+    setManualProduct({ name: "", type: "", sold: 0, costPrice: 0 });
     setSuggestions([]);
     setShowSuggestions(false);
     setJustSelectedSuggestion(false);
@@ -293,7 +296,25 @@ export default function AddManualProductModal({
           <h3 className="text-sm font-semibold text-foreground mb-4">
             {t("cashier.pricing", "Pricing Information")}
           </h3>
-          <div className="grid grid-cols-1 gap-4">
+          <div className="grid grid-cols-2 gap-4">
+            <Legend>
+              <label className="text-sm font-medium text-foreground">
+                {t("cashier.costPrice", "Cost Price")} *
+              </label>
+              <div className="w-full">
+                <StyledNumberInput
+                  value={manualProduct.costPrice}
+                  onChange={(val) =>
+                    setManualProduct((p) => ({
+                      ...p,
+                      costPrice: val === "" ? 0 : val,
+                    }))
+                  }
+                  min={0}
+                  placeholder="0"
+                />
+              </div>
+            </Legend>
             <Legend>
               <label className="text-sm font-medium text-foreground">
                 {t("cashier.soldPrice", "Sold Price")} *

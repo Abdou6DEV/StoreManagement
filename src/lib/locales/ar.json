@@ -186,12 +186,15 @@
     "noSalesFoundForPeriod": "لم يتم العثور على مبيعات لهذه الفترة",
     "noPaymentsFoundForPeriod": "لم يتم العثور على مدفوعات لهذه الفترة",
     "noPurchasesFoundForPeriod": "لم يتم العثور على مشتريات لهذه الفترة",
+
     "loadingPeriodData": "جاري تحميل بيانات الفترة...",
     "selectPeriodHint": "انقر نقرًا مزدوجًا على صف في تبويب التاريخ العام لعرض المعلومات التفصيلية لتلك الفترة",
     "relatedToSale": "مرتبط بالبيع",
     "averagepercent": "نسبة النمو %",
     "seller": "البائع",
-    "highlightProfits": "إبراز الأرباح"
+    "highlightProfits": "إبراز الأرباح",
+    "creditUnpaid": "دين (غير مدفوع)",
+    "creditPaid": "دين (مدفوع)"
   },
   "navigation": {
     "preferences": "التفضيلات",
@@ -211,6 +214,7 @@
     "logout": "تسجيل الخروج"
   },
   "cashier": {
+    "costPrice": "سعر التكلفة",
     "total": "الإجمالي",
     "minPrice": "أقل سعر",
     "maxPrice": "أعلى سعر",

@@ -57,6 +57,7 @@ export default function GeneralHistory({
         <>
           <GeneralHistoryTable
             data={currentData}
+            allData={aggregatedData}
             aggregationLevel={aggregationLevel}
             onRowDoubleClick={handleRowDoubleClick}
             highlightEnabled={highlightEnabled}

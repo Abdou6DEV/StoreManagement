@@ -11,16 +11,7 @@ interface SaleFooterProps {
 const SaleFooter: React.FC<SaleFooterProps> = ({ sale, onView }) => {
   const { t } = useTranslation();
 
-  // Calculate total items
-  const totalItems = sale.saleItems.reduce(
-    (sum, item) => sum + item.quantity,
-    0,
-  );
-
-  const handleViewClick = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent card click if we have one
-    onView(sale);
-  };
+  const totalItems = sale.saleItems.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
     <div className="flex items-center justify-between text-sm">
@@ -30,8 +21,11 @@ const SaleFooter: React.FC<SaleFooterProps> = ({ sale, onView }) => {
       </div>
       <div className="flex items-center gap-2">
         <button
-          onClick={handleViewClick}
-          className="px-3 py-1.5 text-primary border border-primary/30 text-xs rounded-md bg-primary/5 hover:bg-primary/10 transition-colors flex items-center gap-1.5 cursor-pointer"
+          onClick={(e) => {
+            e.stopPropagation();
+            onView(sale);
+          }}
+          className="px-3 py-1.5 text-primary border border-primary/30 text-xs rounded-md bg-primary/5 hover:bg-primary/10 transition-colors flex items-center gap-1.5"
         >
           <Eye className="w-3 h-3" />
           {t("cashier.view", "View")}

@@ -114,7 +114,7 @@ export const databaseAPI = {
         period,
         periodValue,
       ),
-    markAsPaid: (paymentId: string, paidDate: Date) =>
+    markAsPaid: (paymentId: string, paidDate: Date | null) =>
       ipcRenderer.invoke("db:payments:updatePaidAt", {
         paymentId,
         paidDate,

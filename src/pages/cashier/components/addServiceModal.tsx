@@ -22,6 +22,7 @@ export default function AddServiceModal({
     name: "",
     description: "",
     price: 0,
+    costPrice: 0,
   });
   const [allServices, setAllServices] = useState<Service[]>([]);
   // Fetch all services when modal opens
@@ -39,6 +40,7 @@ export default function AddServiceModal({
       ...prev,
       name: selectedService.name,
       description: selectedService.description || "",
+      costPrice: (selectedService as any).costPrice || 0,
     }));
   };
   const [suggestions, setSuggestions] = useState<Service[]>([]);
@@ -183,10 +185,11 @@ export default function AddServiceModal({
       qty: 1,
       isService: true,
       description: service.description || undefined,
+      serviceCostPrice: service.costPrice,
     });
 
     // Reset form
-    setService({ name: "", description: "", price: 0 });
+    setService({ name: "", description: "", price: 0, costPrice: 0 });
     setSuggestions([]);
     setShowSuggestions(false);
     setJustSelectedSuggestion(false);
@@ -194,7 +197,7 @@ export default function AddServiceModal({
   };
 
   const handleClose = () => {
-    setService({ name: "", description: "", price: 0 });
+    setService({ name: "", description: "", price: 0, costPrice: 0 });
     setSuggestions([]);
     setShowSuggestions(false);
     setJustSelectedSuggestion(false);
@@ -296,6 +299,24 @@ export default function AddServiceModal({
             />
           </Legend>
 
+          <Legend>
+            <label className="text-sm font-medium text-foreground">
+              {t("cashier.costPrice", "Cost Price")} *
+            </label>
+            <div className="w-full">
+              <StyledNumberInput
+                value={service.costPrice}
+                onChange={(val) =>
+                  setService((p) => ({
+                    ...p,
+                    costPrice: val === "" ? 0 : val,
+                  }))
+                }
+                min={0}
+                placeholder="0"
+              />
+            </div>
+          </Legend>
           <Legend>
             <label className="text-sm font-medium text-foreground">
               {t("cashier.servicePrice", "Service Price")} *

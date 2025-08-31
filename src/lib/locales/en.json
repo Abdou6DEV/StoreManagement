@@ -107,7 +107,6 @@
     "apply": "Apply",
     "clear": "Clear",
     "activeFilter": "Active filter",
-
     "metrics": "Metrics",
     "totalRevenue": "Total Revenue",
     "totalProfit": "Total Profit",
@@ -119,7 +118,6 @@
     "profitInPeriod": "Profit in selected period",
     "purchasesInPeriod": "Purchases in selected period",
     "salesInPeriod": "Sales in selected period",
-
     "chart": "Chart",
     "revenueChart": "Revenue Chart",
     "profitChart": "Profit Chart",
@@ -127,8 +125,6 @@
     "noDataAvailable": "No data available for the selected period",
     "loadingData": "Loading data...",
     "period": "Period",
-    "revenue": "Revenue",
-    "profit": "Profit",
     "purchases": "Purchases",
     "sales": "Sales",
     "payments": "Payments",
@@ -143,7 +139,6 @@
     "perPayment": "Per payment",
     "totalPaidAmount": "Total Paid Amount",
     "paidAmountInPeriod": "Paid amount in selected period",
-
     "allPayments": "All payments processed",
     "paid": "Paid",
     "overdue": "Overdue",
@@ -175,8 +170,6 @@
     "noSalesInPeriod": "No sales found in the selected period",
     "noSalesAtAll": "No sales have been recorded yet",
     "searchSales": "Search sales by client or ID...",
-    "items": "Items",
-    "discount": "Discount",
     "paymentStatus": "Payment Status",
     "types": "types",
     "noDiscount": "No discount",
@@ -190,7 +183,17 @@
     "relatedToSale": "Related to sale",
     "averagepercent": "growth rate %",
     "seller": "Seller",
-    "highlightProfits": "Highlight Profits"
+    "highlightProfits": "Highlight Profits",
+    "creditUnpaid": "Credit (Unpaid)",
+    "creditPaid": "Credit (Paid)",
+    "revenue": "Revenue",
+    "profit": "Profit",
+    "discount": "Discount",
+    "items": "items",
+    "more": "more",
+    "products": "products",
+    "manual": "manual",
+    "services": "services"
   },
   "navigation": {
     "preferences": "Preferences",
@@ -210,6 +213,7 @@
     "logout": "Logout"
   },
   "cashier": {
+    "costPrice": "Cost Price",
     "session": "Page",
     "products": "Products",
     "filterProducts": "Filter products...",
@@ -271,7 +275,6 @@
     "printError": "Failed to print receipt",
     "preview": "Preview",
     "previewError": "Failed to open preview window",
-
     "close": "Close",
     "calculator": "Calculator",
     "clientAdded": "Client added successfully",
@@ -326,7 +329,6 @@
     "noMatchingSales": "No matching sales found",
     "saleDetails": "Sale Details",
     "printReceipt": "Print Receipt",
-
     "quantity": "Qty",
     "subtotal": "Subtotal",
     "newTotal": "New Total",
@@ -702,3 +704,5 @@
     }
   }
 }
+
+

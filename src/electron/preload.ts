@@ -15,6 +15,7 @@ declare global {
       app: typeof appAPI;
       logger: typeof loggerAPI;
       auth: typeof authAPI;
+      onPaymentStatusChanged: typeof onPaymentStatusChanged;
     };
   }
 }
