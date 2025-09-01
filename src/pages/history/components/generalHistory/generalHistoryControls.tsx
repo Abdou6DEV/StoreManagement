@@ -1,8 +1,10 @@
 import { useTranslation } from "react-i18next";
+import { Calendar, BarChart3, TrendingUp } from "lucide-react";
 import { Switch } from "../../../../lib/components/switch";
 import { DatePicker } from "../../../../lib/components/datePicker";
 import { MonthPicker } from "../../../../lib/components/monthPicker";
 import { YearPicker } from "../../../../lib/components/yearPicker";
+import { Tooltip } from "../../../../lib/components/tooltip";
 import type { AggregationLevel } from "../../../../types";
 
 interface GeneralHistoryControlsProps {
@@ -29,9 +31,9 @@ export default function GeneralHistoryControls({
   const { t } = useTranslation();
 
   const options = [
-    { value: "day" as const, label: t("history.daily"), icon: "📅" },
-    { value: "month" as const, label: t("history.monthly"), icon: "📊" },
-    { value: "year" as const, label: t("history.yearly"), icon: "📈" },
+    { value: "day" as const, label: t("history.daily"), icon: Calendar },
+    { value: "month" as const, label: t("history.monthly"), icon: BarChart3 },
+    { value: "year" as const, label: t("history.yearly"), icon: TrendingUp },
   ];
 
   // Simple date validation
@@ -76,7 +78,7 @@ export default function GeneralHistoryControls({
         case "day":
           isValid = isValidDate(newDate);
           break;
-        case "month":
+        case "month": {
           const monthMatch = newDate.match(/^(\d{4})-(\d{1,2})$/);
           if (monthMatch) {
             const year = parseInt(monthMatch[1]);
@@ -84,13 +86,15 @@ export default function GeneralHistoryControls({
             isValid = year >= 1900 && year <= 2100 && month >= 1 && month <= 12;
           }
           break;
-        case "year":
+        }
+        case "year": {
           const yearMatch = newDate.match(/^(\d{4})$/);
           if (yearMatch) {
             const year = parseInt(yearMatch[1]);
             isValid = year >= 1900 && year <= 2100;
           }
           break;
+        }
       }
       
       if (isValid) {
@@ -154,54 +158,64 @@ export default function GeneralHistoryControls({
     <div className="bg-background border border-border rounded-lg p-4 shadow-sm">
       <div className="flex items-center justify-between gap-6">
         <div className="flex items-center gap-6">
-          {/* Time Period Filter */}
-          <div className="flex items-center gap-2 bg-muted/50 rounded-lg p-1">
-            {options.map((option) => (
-              <button
-                key={option.value}
-                onClick={() => onAggregationLevelChange(option.value)}
-                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 flex items-center gap-2 ${
-                  aggregationLevel === option.value
-                    ? "bg-primary text-primary-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
-                }`}
-              >
-                <span className="text-base">{option.icon}</span>
-                {option.label}
-              </button>
-            ))}
-          </div>
+                    {/* Time Period Filter */}
+          <Tooltip content={t("history.tooltips.aggregationLevel")}>
+            <div className="flex items-center gap-1 bg-muted/30 rounded-xl p-1.5 border border-border/50">
+              {options.map((option) => {
+                const Icon = option.icon;
+                return (
+                  <button
+                    key={option.value}
+                    onClick={() => onAggregationLevelChange(option.value)}
+                    className={`px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-300 flex items-center gap-2.5 ${
+                      aggregationLevel === option.value
+                        ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25 transform scale-105"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted/60 hover:shadow-md"
+                    }`}
+                  >
+                    <Icon className="w-4 h-4" />
+                    <span className="hidden sm:inline">{option.label}</span>
+                    <span className="sm:hidden">{option.label.charAt(0).toUpperCase()}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </Tooltip>
 
           {/* Date Range Selectors */}
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2">
-              <label className="text-sm font-medium text-foreground whitespace-nowrap">
-                {t("history.from")}:
-              </label>
-              {renderDatePicker(true)}
+          <Tooltip content={t("history.tooltips.dateRange")}>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium text-foreground whitespace-nowrap">
+                  {t("history.from")}:
+                </label>
+                {renderDatePicker(true)}
+              </div>
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium text-foreground whitespace-nowrap">
+                  {t("history.to")}:
+                </label>
+                {renderDatePicker(false)}
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <label className="text-sm font-medium text-foreground whitespace-nowrap">
-                {t("history.to")}:
-              </label>
-              {renderDatePicker(false)}
-            </div>
-          </div>
+          </Tooltip>
 
           {/* Highlight Toggle */}
-          <div className="flex items-center gap-2 text-sm rtl:flex-row-reverse">
-            <Switch
-              checked={highlightEnabled}
-              onCheckedChange={onHighlightChange}
-              id="highlight-toggle"
-            />
-            <label
-              htmlFor="highlight-toggle"
-              className="font-medium text-foreground cursor-pointer select-none"
-            >
-              {t("history.highlightProfits")}
-            </label>
-          </div>
+          <Tooltip content={t("history.tooltips.highlightProfits")}>
+            <div className="flex items-center gap-2 text-sm rtl:flex-row-reverse">
+              <Switch
+                checked={highlightEnabled}
+                onCheckedChange={onHighlightChange}
+                id="highlight-toggle"
+              />
+              <label
+                htmlFor="highlight-toggle"
+                className="font-medium text-foreground cursor-pointer select-none"
+              >
+                {t("history.highlightProfits")}
+              </label>
+            </div>
+          </Tooltip>
         </div>
       </div>
     </div>

@@ -1,5 +1,5 @@
 import React from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "./dialog";
 import { Button } from "./button";
 import { AlertTriangle, Info, XCircle } from "lucide-react";
 
@@ -77,6 +77,9 @@ export function ConfirmDialog({
             </div>
             <span>{title}</span>
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            {message}
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <p className="text-sm text-muted-foreground leading-relaxed">

@@ -7,6 +7,8 @@ import {
   PaginationPrevious,
   PaginationEllipsis,
 } from "../../../lib/components/pagination";
+import { Tooltip } from "../../../lib/components/tooltip";
+import { useTranslation } from "react-i18next";
 
 interface SharedPaginationProps {
   currentPage: number;
@@ -19,6 +21,8 @@ export default function SharedPagination({
   totalPages,
   onPageChange,
 }: SharedPaginationProps) {
+  const { t } = useTranslation();
+  
   if (totalPages <= 1) return null;
 
   return (
@@ -40,65 +44,65 @@ export default function SharedPagination({
               />
             )}
           </PaginationItem>
-          {/* Page numbers with ellipsis if needed */}
-          {(() => {
-            const items = [];
-            let start = Math.max(1, currentPage - 4);
-            let end = Math.min(totalPages, currentPage + 4);
-            if (currentPage <= 5) {
-              end = Math.min(10, totalPages);
-            } else if (currentPage >= totalPages - 4) {
-              start = Math.max(1, totalPages - 9);
-            }
-            if (start > 1) {
-              items.push(
-                <PaginationItem key="start-ellipsis">
-                  <PaginationEllipsis />
-                </PaginationItem>,
-              );
-            }
-            for (let i = start; i <= end; i++) {
-              items.push(
-                <PaginationItem key={i}>
-                  <PaginationLink
-                    isActive={i === currentPage}
-                    href="#"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      onPageChange(i);
-                    }}
-                  >
-                    {i}
-                  </PaginationLink>
-                </PaginationItem>,
-              );
-            }
-            if (end < totalPages) {
-              items.push(
-                <PaginationItem key="end-ellipsis">
-                  <PaginationEllipsis />
-                </PaginationItem>,
-              );
-            }
-            return items;
-          })()}
-          <PaginationItem>
-            {currentPage === totalPages ? (
-              <span className="opacity-50 pointer-events-none select-none">
-                <PaginationNext href="#" />
-              </span>
-            ) : (
-              <PaginationNext
-                onClick={(e) => {
-                  e.preventDefault();
-                  onPageChange(Math.min(totalPages, currentPage + 1));
-                }}
-                href="#"
-              />
-            )}
-          </PaginationItem>
-        </PaginationContent>
-      </Pagination>
-    </div>
+        {/* Page numbers with ellipsis if needed */}
+        {(() => {
+          const items = [];
+          let start = Math.max(1, currentPage - 4);
+          let end = Math.min(totalPages, currentPage + 4);
+          if (currentPage <= 5) {
+            end = Math.min(10, totalPages);
+          } else if (currentPage >= totalPages - 4) {
+            start = Math.max(1, totalPages - 9);
+          }
+          if (start > 1) {
+            items.push(
+              <PaginationItem key="start-ellipsis">
+                <PaginationEllipsis />
+              </PaginationItem>,
+            );
+          }
+          for (let i = start; i <= end; i++) {
+            items.push(
+              <PaginationItem key={i}>
+                <PaginationLink
+                  isActive={i === currentPage}
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    onPageChange(i);
+                  }}
+                >
+                  {i}
+                </PaginationLink>
+              </PaginationItem>,
+            );
+          }
+          if (end < totalPages) {
+            items.push(
+              <PaginationItem key="end-ellipsis">
+                <PaginationEllipsis />
+              </PaginationItem>,
+            );
+          }
+          return items;
+        })()}
+        <PaginationItem>
+          {currentPage === totalPages ? (
+            <span className="opacity-50 pointer-events-none select-none">
+              <PaginationNext href="#" />
+            </span>
+          ) : (
+            <PaginationNext
+              onClick={(e) => {
+                e.preventDefault();
+                onPageChange(Math.min(totalPages, currentPage + 1));
+              }}
+              href="#"
+            />
+          )}
+        </PaginationItem>
+      </PaginationContent>
+    </Pagination>
+  </div>
   );
 }

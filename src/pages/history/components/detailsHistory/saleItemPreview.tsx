@@ -10,7 +10,7 @@ const SaleItemPreview: React.FC<SaleItemPreviewProps> = ({ saleItems }) => {
   const { t } = useTranslation();
 
   return (
-    <div className="mb-3">
+    <div className="mb-2">
       <div className="text-sm font-medium text-foreground line-clamp-1">
         {saleItems
           .slice(0, 2)

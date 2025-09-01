@@ -58,6 +58,7 @@ export default function DetailsHistory({
     previousSalesTotal,
     previousPurchasesTotal,
     historicalAverages,
+    refreshData,
   } = useDetailsHistoryData(effectivePeriod);
 
   if (loading) {
@@ -95,6 +96,7 @@ export default function DetailsHistory({
             currentPage={salesPage}
             totalPages={salesTotalPages}
             onPageChange={setSalesPage}
+            onRefresh={refreshData}
           />
         )}
 

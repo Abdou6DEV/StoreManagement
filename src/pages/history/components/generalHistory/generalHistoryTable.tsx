@@ -5,6 +5,7 @@ import {
   formatNumber,
   formatPeriod,
 } from "./generalHistoryUtils";
+import { Tooltip } from "../../../../lib/components/tooltip";
 
 interface GeneralHistoryTableProps {
   data: AggregatedData[];

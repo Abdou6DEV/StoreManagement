@@ -257,5 +257,6 @@ export function useDetailsHistoryData(period: SelectedPeriod) {
     previousSalesTotal,
     previousPurchasesTotal,
     historicalAverages,
+    refreshData: fetchPeriodData,
   };
 }

@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
-import { Info, Package, ShoppingCart } from "lucide-react";
+import { useState } from "react";
+import { Info, Package, ShoppingCart, ChevronDown } from "lucide-react";
 import { Modal } from "../../../lib/components/modal";
 import { Client, Sale, SaleItem } from "@prisma/client";
 import { ProductAvatar } from "../../../lib/components/productAvatar";
@@ -41,6 +42,8 @@ export const ProductInfoModal = ({
 }: ProductInfoModalProps) => {
   const { t, i18n } = useTranslation();
   const isRTL = i18n.language === "ar";
+  const [purchaseLimit, setPurchaseLimit] = useState(5);
+  const [salesLimit, setSalesLimit] = useState(5);
 
   return (
     <Modal
@@ -60,27 +63,10 @@ export const ProductInfoModal = ({
         </div>
       ) : productData ? (
         <div className="space-y-6">
-          {/* Product Photo */}
-          <div className="flex justify-center">
-            {productData.photo ? (
-              <div className="relative w-48 h-48 rounded-lg overflow-hidden border border-border">
-                <img
-                  src={productData.photo}
-                  alt={productData.name}
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.style.display = "none";
-                  }}
-                />
-              </div>
-            ) : (
-              <ProductAvatar name={productData.name} size="lg" />
-            )}
-          </div>
-
-          {/* Product Details */}
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 p-4 bg-muted/30 rounded-lg">
+          {/* Product Photo and Details Side by Side */}
+          <div className="flex gap-6 items-center justify-center">
+            {/* Product Details */}
+            <div className="flex-1 grid grid-cols-2 md:grid-cols-3 gap-4 p-4 bg-muted/30 rounded-lg">
             <div className={isRTL ? "text-right" : "text-left"}>
               <label className="text-sm font-medium text-muted-foreground">
                 {t("stock.productName", "Product Name")}
@@ -120,6 +106,28 @@ export const ProductInfoModal = ({
               <p className="text-foreground">{productData.codebar || "N/A"}</p>
             </div>
           </div>
+
+                     {/* Product Photo */}
+           <div className="flex-shrink-0 flex items-center justify-center">
+             {productData.photo ? (
+               <div className="relative w-64 h-64 rounded-lg overflow-hidden border border-border shadow-lg">
+                 <img
+                   src={productData.photo}
+                   alt={productData.name}
+                   className="w-full h-full object-cover"
+                   onError={(e) => {
+                     const target = e.target as HTMLImageElement;
+                     target.style.display = "none";
+                   }}
+                 />
+               </div>
+             ) : (
+               <div className="w-64 h-64 flex items-center justify-center bg-muted/30 rounded-lg border border-border shadow-lg">
+                 <ProductAvatar name={productData.name} size="5xl" />
+               </div>
+             )}
+           </div>
+        </div>
 
           {/* Purchase History */}
           <div>
@@ -200,21 +208,21 @@ export const ProductInfoModal = ({
                         </th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-border">
-                      {productData.PurchaseItems.map(
-                        (
-                          purchaseItem: {
-                            id: string;
-                            quantity: number;
-                            price: number;
-                            createdAt: string;
-                            purchase: {
-                              id: string;
-                              seller: { name: string } | null;
-                            };
-                          },
-                          index: number,
-                        ) => (
+                                         <tbody className="divide-y divide-border">
+                       {productData.PurchaseItems.slice(0, purchaseLimit).map(
+                         (
+                           purchaseItem: {
+                             id: string;
+                             quantity: number;
+                             price: number;
+                             createdAt: string;
+                             purchase: {
+                               id: string;
+                               seller: { name: string } | null;
+                             };
+                           },
+                           index: number,
+                         ) => (
                           <tr
                             key={index}
                             className="hover:bg-muted/40 transition"
@@ -275,6 +283,28 @@ export const ProductInfoModal = ({
                 <p className="text-sm opacity-70">
                   Purchase records will appear here when stock is added
                 </p>
+              </div>
+            )}
+            
+            {/* Show More Button for Purchases */}
+            {productData.PurchaseItems && productData.PurchaseItems.length > 5 && (
+              <div className="flex justify-center mt-4">
+                {purchaseLimit < productData.PurchaseItems.length ? (
+                  <button
+                    onClick={() => setPurchaseLimit(prev => Math.min(prev + 5, productData.PurchaseItems!.length))}
+                    className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-primary bg-primary/10 hover:bg-primary/20 rounded-lg transition-colors"
+                  >
+                    <ChevronDown className="w-4 h-4" />
+                    {t("stock.showMore", "Show More")} ({Math.min(5, productData.PurchaseItems.length - purchaseLimit)} {t("stock.more", "more")})
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setPurchaseLimit(5)}
+                    className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {t("stock.showLess", "Show Less")}
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -356,14 +386,14 @@ export const ProductInfoModal = ({
                         </th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-border">
-                      {productData.saleItems.map(
-                        (
-                          saleItem: SaleItem & {
-                            sale: Sale & { client: Client };
-                          },
-                          index: number,
-                        ) => (
+                                         <tbody className="divide-y divide-border">
+                       {productData.saleItems.slice(0, salesLimit).map(
+                         (
+                           saleItem: SaleItem & {
+                             sale: Sale & { client: Client };
+                           },
+                           index: number,
+                         ) => (
                           <tr
                             key={index}
                             className="hover:bg-muted/30 transition-colors border-b border-border/50 last:border-0"
@@ -417,6 +447,28 @@ export const ProductInfoModal = ({
                 <p className="text-lg font-medium mb-2 text-center">
                   {t("stock.noSalesHistory", "No sales history available")}
                 </p>
+              </div>
+            )}
+            
+            {/* Show More Button for Sales */}
+            {productData.saleItems && productData.saleItems.length > 5 && (
+              <div className="flex justify-center mt-4">
+                {salesLimit < productData.saleItems.length ? (
+                  <button
+                    onClick={() => setSalesLimit(prev => Math.min(prev + 5, productData.saleItems!.length))}
+                    className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-primary bg-primary/10 hover:bg-primary/20 rounded-lg transition-colors"
+                  >
+                    <ChevronDown className="w-4 h-4" />
+                    {t("stock.showMore", "Show More")} ({Math.min(5, productData.saleItems.length - salesLimit)} {t("stock.more", "more")})
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setSalesLimit(5)}
+                    className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {t("stock.showLess", "Show Less")}
+                  </button>
+                )}
               </div>
             )}
           </div>

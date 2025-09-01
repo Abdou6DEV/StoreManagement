@@ -110,7 +110,7 @@ export function useGeneralHistoryData() {
           }
           return "";
           
-        case "month":
+        case "month": {
           // Convert YYYY-MM to YYYY-MM-01
           const monthMatch = pickerDate.match(/^(\d{4})-(\d{1,2})$/);
           if (monthMatch) {
@@ -121,8 +121,9 @@ export function useGeneralHistoryData() {
             }
           }
           return "";
+        }
           
-        case "year":
+        case "year": {
           // Convert YYYY to YYYY-01-01
           const yearMatch = pickerDate.match(/^(\d{4})$/);
           if (yearMatch) {
@@ -132,6 +133,7 @@ export function useGeneralHistoryData() {
             }
           }
           return "";
+        }
           
         default:
           return "";

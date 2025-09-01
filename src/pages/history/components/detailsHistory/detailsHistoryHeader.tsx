@@ -79,95 +79,83 @@ export default function DetailsHistoryHeader({
             {getPeriodDisplayName()}
           </h1>
         </div>
-        <div className="flex items-center gap-4 text-sm">
-          {/* Sales Card */}
-          <div className="flex items-center gap-3 bg-white/50 dark:bg-gray-800/50 rounded-lg p-3">
-            <div className="flex items-center gap-2">
-              <ShoppingCart className="w-5 h-5 text-blue-600" />
-              <div>
-                <div className="font-semibold">{salesCount} Sales</div>
-                <div className="text-xs text-muted-foreground">
-                  {formatCurrency(isNaN(salesTotal) ? 0 : salesTotal)}
-                </div>
-              </div>
-            </div>
-            <div className="flex items-center gap-1 ml-2">
-              {salesGrowthRate >= 0 ? (
-                <TrendingUp className="w-4 h-4 text-green-600" />
-              ) : (
-                <TrendingDown className="w-4 h-4 text-red-600" />
-              )}
-              <span className={`text-xs font-medium ${
-                salesGrowthRate >= 0 ? 'text-green-600' : 'text-red-600'
-              }`}>
-                {salesGrowthRate >= 0 ? '+' : ''}{(isNaN(salesGrowthRate) ? 0 : salesGrowthRate).toFixed(1)}%
-              </span>
-            </div>
-          </div>
+                 <div className="flex items-center gap-4 text-base">
+           {/* Sales Card */}
+           <div className="flex items-center gap-3 bg-white/60 dark:bg-gray-800/60 rounded-lg p-3 shadow-sm border border-blue-200 dark:border-blue-800">
+             <div className="flex items-center gap-2">
+               <ShoppingCart className="w-5 h-5 text-blue-600" />
+               <div>
+                 <div className="font-bold text-xl">{salesCount} {t("history.sales")}</div>
+                 <div className="text-base text-muted-foreground font-semibold">
+                   {formatCurrency(isNaN(salesTotal) ? 0 : salesTotal)}
+                 </div>
+               </div>
+             </div>
+             <div className="flex items-center gap-1 ml-2">
+               {salesGrowthRate >= 0 ? (
+                 <TrendingUp className="w-4 h-4 text-green-600" />
+               ) : (
+                 <TrendingDown className="w-4 h-4 text-red-600" />
+               )}
+               <span className={`text-base font-bold ${
+                 salesGrowthRate >= 0 ? 'text-green-600' : 'text-red-600'
+               }`}>
+                 {salesGrowthRate >= 0 ? '+' : ''}{(isNaN(salesGrowthRate) ? 0 : salesGrowthRate).toFixed(1)}%
+               </span>
+             </div>
+           </div>
 
-          {/* Profit Card */}
-          <div className="flex items-center gap-3 bg-white/50 dark:bg-gray-800/50 rounded-lg p-3">
-            <div className="flex items-center gap-2">
-              <DollarSign className="w-5 h-5 text-green-600" />
-              <div>
-                <div className="font-semibold">Profit</div>
-                <div className="text-xs text-muted-foreground">
-                  {formatCurrency(isNaN(salesProfit) ? 0 : salesProfit)}
-                </div>
-              </div>
-            </div>
-            <div className="flex items-center gap-1 ml-2">
-              {profitGrowthRate >= 0 ? (
-                <TrendingUp className="w-4 h-4 text-green-600" />
-              ) : (
-                <TrendingDown className="w-4 h-4 text-red-600" />
-              )}
-              <span className={`text-xs font-medium ${
-                profitGrowthRate >= 0 ? 'text-green-600' : 'text-red-600'
-              }`}>
-                {profitGrowthRate >= 0 ? '+' : ''}{(isNaN(profitGrowthRate) ? 0 : profitGrowthRate).toFixed(1)}%
-              </span>
-            </div>
-          </div>
+           {/* Profit Card */}
+           <div className="flex items-center gap-3 bg-white/60 dark:bg-gray-800/60 rounded-lg p-3 shadow-sm border border-green-200 dark:border-green-800">
+             <div className="flex items-center gap-2">
+               <DollarSign className="w-5 h-5 text-green-600" />
+               <div>
+                 <div className="font-bold text-xl">{t("history.profit")}</div>
+                 <div className="text-base text-muted-foreground font-semibold">
+                   {formatCurrency(isNaN(salesProfit) ? 0 : salesProfit)}
+                 </div>
+               </div>
+             </div>
+             <div className="flex items-center gap-1 ml-2">
+               {profitGrowthRate >= 0 ? (
+                 <TrendingUp className="w-4 h-4 text-green-600" />
+               ) : (
+                 <TrendingDown className="w-4 h-4 text-red-600" />
+               )}
+               <span className={`text-base font-bold ${
+                 profitGrowthRate >= 0 ? 'text-green-600' : 'text-red-600'
+               }`}>
+                 {profitGrowthRate >= 0 ? '+' : ''}{(isNaN(profitGrowthRate) ? 0 : profitGrowthRate).toFixed(1)}%
+               </span>
+             </div>
+           </div>
 
-          {/* Payments Card */}
-          <div className="flex items-center gap-3 bg-white/50 dark:bg-gray-800/50 rounded-lg p-3">
-            <div className="flex items-center gap-2">
-              <CreditCard className="w-5 h-5 text-purple-600" />
-              <div>
-                <div className="font-semibold">{paymentsCount} Payments</div>
-                <div className="text-xs text-muted-foreground">
-                  Credit & Versement
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          {/* Purchases Card */}
-          <div className="flex items-center gap-3 bg-white/50 dark:bg-gray-800/50 rounded-lg p-3">
-            <div className="flex items-center gap-2">
-              <FileText className="w-5 h-5 text-orange-600" />
-              <div>
-                <div className="font-semibold">{purchasesCount} Purchases</div>
-                <div className="text-xs text-muted-foreground">
-                  {formatCurrency(isNaN(purchasesTotal) ? 0 : purchasesTotal)}
-                </div>
-              </div>
-            </div>
-            <div className="flex items-center gap-1 ml-2">
-              {purchasesGrowthRate >= 0 ? (
-                <TrendingUp className="w-4 h-4 text-green-600" />
-              ) : (
-                <TrendingDown className="w-4 h-4 text-red-600" />
-              )}
-              <span className={`text-xs font-medium ${
-                purchasesGrowthRate >= 0 ? 'text-green-600' : 'text-red-600'
-              }`}>
-                {purchasesGrowthRate >= 0 ? '+' : ''}{(isNaN(purchasesGrowthRate) ? 0 : purchasesGrowthRate).toFixed(1)}%
-              </span>
-            </div>
-          </div>
-        </div>
+           {/* Payments Card */}
+           <div className="flex items-center gap-3 bg-white/60 dark:bg-gray-800/60 rounded-lg p-3 shadow-sm border border-purple-200 dark:border-purple-800">
+             <div className="flex items-center gap-2">
+               <CreditCard className="w-5 h-5 text-purple-600" />
+               <div>
+                 <div className="font-bold text-xl">{paymentsCount} {t("history.payments")}</div>
+                 <div className="text-base text-muted-foreground font-semibold">
+                   {t("history.credit")} & {t("history.versement")}
+                 </div>
+               </div>
+             </div>
+           </div>
+           
+           {/* Purchases Card */}
+           <div className="flex items-center gap-3 bg-white/60 dark:bg-gray-800/60 rounded-lg p-3 shadow-sm border border-orange-200 dark:border-orange-800">
+             <div className="flex items-center gap-2">
+               <FileText className="w-5 h-5 text-orange-600" />
+               <div>
+                 <div className="font-bold text-xl">{purchasesCount} {t("history.purchases")}</div>
+                 <div className="text-base text-muted-foreground font-semibold">
+                   {formatCurrency(isNaN(purchasesTotal) ? 0 : purchasesTotal)}
+                 </div>
+               </div>
+             </div>
+           </div>
+         </div>
       </div>
     </div>
   );

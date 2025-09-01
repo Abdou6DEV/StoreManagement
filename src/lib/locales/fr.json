@@ -194,7 +194,31 @@
     "seller": "Vendeur",
     "highlightProfits": "Mettre en évidence les profits",
     "creditUnpaid": "Crédit (Non payé)",
-    "creditPaid": "Crédit (Payé)"
+    "creditPaid": "Crédit (Payé)",
+    "tooltips": {
+      "aggregationLevel": "Choisissez comment regrouper vos données : quotidien, mensuel ou annuel",
+      "dateRange": "Sélectionnez la plage de dates pour filtrer vos données",
+      "highlightProfits": "Activer pour mettre en évidence les périodes rentables dans le graphique",
+      "searchSales": "Rechercher dans toutes les ventes par noms de produits, noms de clients ou ID de vente",
+      "gridView": "Afficher les ventes dans une mise en page en grille (2 colonnes)",
+      "listView": "Afficher les ventes dans une liste à colonne unique",
+      "deleteSale": "Supprimer cette vente et restaurer les quantités de produits dans l'inventaire",
+      "viewSale": "Voir les informations détaillées sur cette vente",
+      "pagination": "Naviguer entre les pages de résultats",
+      "refreshData": "Actualiser les données actuelles",
+      "periodSelector": "Sélectionner une période spécifique pour voir les données détaillées",
+      "salesTab": "Voir toutes les ventes pour la période sélectionnée",
+      "paymentsTab": "Voir tous les paiements pour la période sélectionnée",
+      "purchasesTab": "Voir tous les achats pour la période sélectionnée",
+      "generalTab": "Voir les données agrégées et les statistiques générales",
+      "detailsTab": "Voir l'historique détaillé des transactions et les enregistrements individuels",
+      "exportData": "Exporter les données vers CSV ou Excel",
+      "filterData": "Appliquer des filtres pour affiner les résultats",
+      "sortData": "Trier les données par différentes colonnes",
+      "printReport": "Imprimer ou sauvegarder en PDF",
+      "shareData": "Partager les données avec d'autres",
+      "help": "Obtenir de l'aide et de la documentation"
+    }
   },
   "navigation": {
     "preferences": "Préférences",
@@ -321,7 +345,10 @@
     "totalProducts": "Total des produits",
     "totalQuantity": "Quantité totale",
     "inventoryValue": "Valeur du stock",
-    "profitPotential": "Bénéfice total"
+    "profitPotential": "Bénéfice total",
+    "showMore": "Afficher plus",
+    "showLess": "Afficher moins",
+    "more": "plus"
   },
   "cashier": {
     "total": "Total",
