@@ -116,11 +116,13 @@ export function setupDatabaseHandlers() {
 
   ipcMain.handle(
     "db:products:updateWithPurchase",
-    async (_event, { productId, additionalQuantity, purchaseData }) => {
+    async (_event, { productId, additionalQuantity, purchaseData, updateBoughtPrice, newSellingPrice }) => {
       return await updateProductWithPurchase(
         productId,
         additionalQuantity,
         purchaseData,
+        updateBoughtPrice || false,
+        newSellingPrice,
       );
     },
   );

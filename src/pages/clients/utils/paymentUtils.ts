@@ -37,9 +37,11 @@ export const getFilteredPayments = (
     // Date filter
     let matchesDate = true;
     if (dateFilter === "overdue") {
-      matchesDate = isOverdue(payment.dueDate);
+      // Only show overdue for unpaid payments
+      matchesDate = !payment.paidDate && isOverdue(payment.dueDate);
     } else if (dateFilter === "dueSoon") {
-      matchesDate = isDueSoon(payment.dueDate);
+      // Only show due soon for unpaid payments
+      matchesDate = !payment.paidDate && isDueSoon(payment.dueDate);
     }
 
     return matchesSearch && matchesStatus && matchesType && matchesDate;

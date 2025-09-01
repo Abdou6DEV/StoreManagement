@@ -34,6 +34,7 @@ import { Switch } from "../../../lib/components/switch";
 import type { AddStockFormState } from "../../../types";
 import { useToast } from "../../../lib/contexts/toastContext";
 import rendererLogger from "../../../lib/logger/rendererLogger";
+import { PriceConfirmationDialog } from "./priceConfirmationDialog";
 
 const initialForm: AddStockFormState = {
   name: "",
@@ -87,12 +88,25 @@ export default function AddStockForm({
     useState<string[]>(categories);
   const [dropdownCategorySearch, setDropdownCategorySearch] = useState("");
   const [showSellerDropdown, setShowSellerDropdown] = useState(false);
-  const [sellers, setSellers] = useState<any[]>([]);
-  const [filteredSellers, setFilteredSellers] = useState<any[]>([]);
+  const [sellers, setSellers] = useState<{ id: string; name: string; phone?: string; email?: string; address?: string; notes?: string }[]>([]);
+  const [filteredSellers, setFilteredSellers] = useState<{ id: string; name: string; phone?: string; email?: string; address?: string; notes?: string }[]>([]);
   const [dropdownSellerSearch, setDropdownSellerSearch] = useState("");
   const [form, setForm] = useState<AddStockFormState>(initialForm);
   const [loading, setLoading] = useState(false);
   const [finishingPurchase, setFinishingPurchase] = useState(false);
+  
+  // Price confirmation dialog state
+  const [showPriceConfirmation, setShowPriceConfirmation] = useState(false);
+  const [priceConfirmationData, setPriceConfirmationData] = useState<{
+    productId: string;
+    newPrice: number;
+    previousPrice: number;
+    newSellingPrice: number;
+    previousSellingPrice: number;
+    sellerName: string | null;
+    quantity: number;
+    sellerId: string;
+  } | null>(null);
 
   // For infinite scroll in product dropdown
   const PAGE_SIZE = 50;
@@ -194,10 +208,30 @@ export default function AddStockForm({
         };
 
         if (existingProduct) {
+          // Check if the new price is different from the current bought price
+          if (boughtPrice !== existingProduct.boughtPrice) {
+            // Show price confirmation dialog
+            setPriceConfirmationData({
+              productId: existingProduct.id,
+              newPrice: boughtPrice,
+              previousPrice: existingProduct.boughtPrice,
+              newSellingPrice: Number(form.sellingPrice || 0),
+              previousSellingPrice: existingProduct.sellingPrice,
+              sellerName: sellers.find(s => s.id === form.sellerId)?.name || null,
+              quantity: quantity,
+              sellerId: form.sellerId,
+            });
+            setShowPriceConfirmation(true);
+            return; // Don't proceed yet, wait for user decision
+          }
+          
+          // Same price, proceed normally
           await window.api.database.products.updateWithPurchase({
             productId: existingProduct.id,
             additionalQuantity: quantity,
             purchaseData: purchaseData,
+            updateBoughtPrice: false,
+            newSellingPrice: Number(form.sellingPrice || 0),
           });
           showToast(
             t("stock.toastUpdateSuccess", "Product updated successfully!"),
@@ -333,6 +367,83 @@ export default function AddStockForm({
 
   const removePendingProduct = (id: string) => {
     setPendingProducts((prev) => prev.filter((p) => p.id !== id));
+  };
+
+  // Handle price confirmation dialog actions
+  const handleCalculateWeightedAverage = async () => {
+    if (!priceConfirmationData) return;
+    
+    try {
+      setLoading(true);
+      
+      const purchaseData = {
+        sellerId: priceConfirmationData.sellerId || undefined,
+        quantity: priceConfirmationData.quantity,
+        price: priceConfirmationData.newPrice,
+      };
+
+      // Update with weighted average
+      await window.api.database.products.updateWithPurchase({
+        productId: priceConfirmationData.productId,
+        additionalQuantity: priceConfirmationData.quantity,
+        purchaseData: purchaseData,
+        updateBoughtPrice: true,
+        newSellingPrice: Number(form.sellingPrice || 0),
+      });
+
+      showToast(
+        t("stock.toastUpdateSuccess", "Product updated successfully with weighted average price!"),
+        "success",
+      );
+
+      setForm(initialForm);
+      refetchProducts();
+      refetchCategories();
+    } catch (err) {
+      showToast(t("stock.toastAddError", "Failed to add product"), "error");
+    } finally {
+      setLoading(false);
+      setShowPriceConfirmation(false);
+      setPriceConfirmationData(null);
+    }
+  };
+
+  const handleKeepNewPrice = async () => {
+    if (!priceConfirmationData) return;
+    
+    try {
+      setLoading(true);
+      
+      const purchaseData = {
+        sellerId: priceConfirmationData.sellerId || undefined,
+        quantity: priceConfirmationData.quantity,
+        price: priceConfirmationData.newPrice,
+      };
+
+      // Update with NEW bought price (not weighted average)
+      await window.api.database.products.updateWithPurchase({
+        productId: priceConfirmationData.productId,
+        additionalQuantity: priceConfirmationData.quantity,
+        purchaseData: purchaseData,
+        updateBoughtPrice: false, // false = keep NEW price, true = calculate weighted average
+        newSellingPrice: Number(form.sellingPrice || 0),
+      });
+
+      showToast(
+        t("stock.toastUpdateSuccess", "Product updated successfully!"),
+        "success",
+      );
+
+      setForm(initialForm);
+      refetchProducts();
+      refetchCategories();
+    } catch (err) {
+      showToast(t("stock.toastAddError", "Failed to add product"), "error");
+    } finally {
+      setLoading(false);
+      setShowPriceConfirmation(false);
+      setPriceConfirmationData(null);
+    }
   };
 
   const handleFormChange = (
@@ -759,9 +870,7 @@ export default function AddStockForm({
               </div>
 
               <div className="space-y-2">
-                <label
-                  className={isExistingProduct ? "text-muted-foreground" : ""}
-                >
+                <label>
                   {t("stock.boughtPrice")}
                 </label>
                 <StyledNumberInput
@@ -770,14 +879,11 @@ export default function AddStockForm({
                   }
                   onChange={(val) => handleFormChange("boughtPrice", val)}
                   placeholder={t("stock.boughtPrice")}
-                  disabled={isExistingProduct}
                 />
               </div>
 
               <div className="space-y-2">
-                <label
-                  className={isExistingProduct ? "text-muted-foreground" : ""}
-                >
+                <label>
                   {t("stock.sellingPrice")}
                 </label>
                 <StyledNumberInput
@@ -786,14 +892,11 @@ export default function AddStockForm({
                   }
                   onChange={(val) => handleFormChange("sellingPrice", val)}
                   placeholder={t("stock.sellingPrice")}
-                  disabled={isExistingProduct}
                 />
               </div>
 
               <div className="space-y-2">
-                <label
-                  className={isExistingProduct ? "text-muted-foreground" : ""}
-                >
+                <label>
                   {t("stock.codebar")}
                 </label>
                 <input
@@ -801,8 +904,7 @@ export default function AddStockForm({
                   placeholder={t("stock.codebar")}
                   value={form.codebar}
                   onChange={(e) => handleFormChange("codebar", e.target.value)}
-                  className="w-full px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-green-500/50 focus:border-green-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-muted/50"
-                  disabled={isExistingProduct}
+                  className="w-full px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-green-500/50 focus:border-green-500 transition-all"
                 />
               </div>
 
@@ -812,7 +914,6 @@ export default function AddStockForm({
                   value={form.photo}
                   onChange={(value) => handleFormChange("photo", value)}
                   placeholder={t("stock.uploadPhoto")}
-                  disabled={isExistingProduct}
                   maxWidth={200}
                   maxHeight={200}
                   quality={0.8}
@@ -822,7 +923,7 @@ export default function AddStockForm({
 
             {/* Note for existing product */}
             {isExistingProduct && (
-              <div className="text-sm text-green-600 dark:text-green-400 font-medium">
+              <div className="text-sm text-blue-600 dark:text-blue-400 font-medium">
                 {(() => {
                   const existing = products.find(
                     (p) =>
@@ -832,7 +933,7 @@ export default function AddStockForm({
                   return existing
                     ? t("stock.existingProductNote", {
                         quantity: existing.quantity,
-                      })
+                      }) + " - " + t("stock.newPurchaseNote", "New purchase will be recorded with current prices")
                     : null;
                 })()}
               </div>
@@ -1021,6 +1122,19 @@ export default function AddStockForm({
           )}
         </div>
       )}
+
+      {/* Price Confirmation Dialog */}
+      <PriceConfirmationDialog
+        open={showPriceConfirmation}
+        onOpenChange={setShowPriceConfirmation}
+        newPrice={priceConfirmationData?.newPrice || 0}
+        previousPrice={priceConfirmationData?.previousPrice || 0}
+        newSellingPrice={priceConfirmationData?.newSellingPrice || 0}
+        previousSellingPrice={priceConfirmationData?.previousSellingPrice || 0}
+        sellerName={priceConfirmationData?.sellerName || null}
+        onCalculateWeightedAverage={handleCalculateWeightedAverage}
+        onKeepNewPrice={handleKeepNewPrice}
+      />
     </section>
   );
 }

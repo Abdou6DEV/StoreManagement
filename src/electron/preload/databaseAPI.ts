@@ -22,6 +22,8 @@ export const databaseAPI = {
       productId: string;
       additionalQuantity: number;
       purchaseData: { sellerId?: string; quantity: number; price: number };
+      updateBoughtPrice?: boolean;
+      newSellingPrice?: number;
     }) => ipcRenderer.invoke("db:products:updateWithPurchase", data),
   },
   categories: {

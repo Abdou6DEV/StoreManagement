@@ -91,13 +91,13 @@ export const ProductInfoModal = ({
               <label className="text-sm font-medium text-muted-foreground">
                 {t("stock.boughtPrice", "Bought Price")}
               </label>
-              <p className="text-foreground">{productData.boughtPrice}</p>
+              <p className="text-foreground">{productData.boughtPrice} {t("cashier.currency", "DA")}</p>
             </div>
             <div className={isRTL ? "text-right" : "text-left"}>
               <label className="text-sm font-medium text-muted-foreground">
                 {t("stock.sellingPrice", "Selling Price")}
               </label>
-              <p className="text-foreground">{productData.sellingPrice}</p>
+              <p className="text-foreground">{productData.sellingPrice} {t("cashier.currency", "DA")}</p>
             </div>
             <div className={isRTL ? "text-right" : "text-left"}>
               <label className="text-sm font-medium text-muted-foreground">
@@ -165,7 +165,7 @@ export const ProductInfoModal = ({
                 </label>
                 <p className="text-foreground font-semibold text-blue-600">
                   {productData.saleItems && productData.saleItems.length > 0
-                    ? productData.saleItems.reduce((sum: any, item: any) => {
+                    ? productData.saleItems.reduce((sum: number, item: SaleItem & { sale: Sale & { client: Client | null } }) => {
                         const profit = (item.price - productData.boughtPrice) * item.quantity;
                         return sum + profit;
                       }, 0)
@@ -229,7 +229,7 @@ export const ProductInfoModal = ({
                           item: { quantity: number; price: number },
                         ) => sum + item.quantity * item.price,
                         0,
-                      )}
+                      )} {t("cashier.currency", "DA")}
                     </span>
                   </div>
                 )}
@@ -320,13 +320,13 @@ export const ProductInfoModal = ({
                             <td
                               className={`px-4 py-3 text-sm text-foreground ${isRTL ? "text-right" : "text-left"}`}
                             >
-                              {purchaseItem.price || "N/A"}
+                              {purchaseItem.price ? `${purchaseItem.price} ${t("cashier.currency", "DA")}` : "N/A"}
                             </td>
                             <td
                               className={`px-4 py-3 text-sm font-medium text-blue-600 ${isRTL ? "text-right" : "text-left"}`}
                             >
                               {purchaseItem.quantity *
-                                (purchaseItem.price || 0)}
+                                (purchaseItem.price || 0)} {t("cashier.currency", "DA")}
                             </td>
                           </tr>
                         ),
@@ -357,7 +357,7 @@ export const ProductInfoModal = ({
               <div className="flex justify-center mt-4">
                 {purchaseLimit < productData.PurchaseItems.length ? (
                   <button
-                    onClick={() => setPurchaseLimit(prev => Math.min(prev + 5, productData.PurchaseItems!.length))}
+                    onClick={() => setPurchaseLimit(prev => Math.min(prev + 5, productData.PurchaseItems?.length || 0))}
                     className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-primary bg-primary/10 hover:bg-primary/20 rounded-lg transition-colors"
                   >
                     <ChevronDown className="w-4 h-4" />
@@ -408,7 +408,7 @@ export const ProductInfoModal = ({
                       (sum: number, item: SaleItem) =>
                         sum + item.quantity * item.price,
                       0,
-                    )}
+                    )} {t("cashier.currency", "DA")}
                   </span>
                 </div>
               )}
@@ -491,12 +491,12 @@ export const ProductInfoModal = ({
                             <td
                               className={`px-4 py-3 text-sm text-foreground ${isRTL ? "text-right" : "text-left"}`}
                             >
-                              {saleItem.price}
+                              {saleItem.price} {t("cashier.currency", "DA")}
                             </td>
                             <td
                               className={`px-4 py-3 text-sm font-medium text-green-600 ${isRTL ? "text-right" : "text-left"}`}
                             >
-                              {saleItem.quantity * saleItem.price}
+                              {saleItem.quantity * saleItem.price} {t("cashier.currency", "DA")}
                             </td>
                           </tr>
                         ),
@@ -521,7 +521,7 @@ export const ProductInfoModal = ({
               <div className="flex justify-center mt-4">
                 {salesLimit < productData.saleItems.length ? (
                   <button
-                    onClick={() => setSalesLimit(prev => Math.min(prev + 5, productData.saleItems!.length))}
+                    onClick={() => setSalesLimit(prev => Math.min(prev + 5, productData.saleItems?.length || 0))}
                     className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-primary bg-primary/10 hover:bg-primary/20 rounded-lg transition-colors"
                   >
                     <ChevronDown className="w-4 h-4" />

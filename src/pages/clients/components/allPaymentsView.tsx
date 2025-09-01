@@ -44,7 +44,7 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
   const [editAmount, setEditAmount] = useState<number>(0);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "paid" | "unpaid">(
-    "all",
+    "unpaid",
   );
   const [typeFilter, setTypeFilter] = useState<"all" | "CREDIT" | "VERSEMENT">(
     "all",
@@ -240,6 +240,7 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
               <>
                 <PaymentTable
                   payments={paginatedCredits}
+                  allPayments={filteredCredits}
                   type="CREDIT"
                   editingPayment={editingPayment}
                   editAmount={editAmount}
@@ -359,6 +360,7 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
               <>
                 <PaymentTable
                   payments={paginatedVersements}
+                  allPayments={filteredVersements}
                   type="VERSEMENT"
                   editingPayment={editingPayment}
                   editAmount={editAmount}

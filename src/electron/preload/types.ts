@@ -54,6 +54,8 @@ export type DatabaseAPI = {
         quantity: number;
         price: number;
       };
+      updateBoughtPrice?: boolean;
+      newSellingPrice?: number;
     }) => Promise<any>;
   };
   categories: {

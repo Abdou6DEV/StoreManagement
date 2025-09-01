@@ -107,16 +107,49 @@ export async function updateProductWithPurchase(
     quantity: number;
     price: number;
   },
+  updateBoughtPrice = false,
+  newSellingPrice?: number,
 ) {
   return await prisma.$transaction(async (tx) => {
-    // Update product quantity
+    const updateData: any = {
+      quantity: {
+        increment: additionalQuantity,
+      },
+    };
+
+    // If we need to update the bought price
+    if (updateBoughtPrice !== undefined) {
+      if (updateBoughtPrice) {
+        // Calculate weighted average
+        const product = await tx.product.findUnique({
+          where: { id: productId },
+          include: {
+            PurchaseItems: true,
+          },
+        });
+
+        if (product) {
+          const totalQuantity = product.quantity + additionalQuantity;
+          const totalValue = (product.boughtPrice * product.quantity) + (purchaseData.price * additionalQuantity);
+          const weightedAveragePrice = Math.round(totalValue / totalQuantity);
+          
+          updateData.boughtPrice = weightedAveragePrice;
+        }
+      } else {
+        // Keep the NEW price (not the old one!)
+        updateData.boughtPrice = purchaseData.price;
+      }
+    }
+
+    // Always update the selling price with the new one if provided
+    if (newSellingPrice !== undefined) {
+      updateData.sellingPrice = newSellingPrice;
+    }
+
+    // Update product
     const product = await tx.product.update({
       where: { id: productId },
-      data: {
-        quantity: {
-          increment: additionalQuantity,
-        },
-      },
+      data: updateData,
     });
 
     // Create the purchase record

@@ -109,12 +109,12 @@ const PaymentRow: React.FC<PaymentRowProps> = ({
           {payment.dueDate
             ? new Date(payment.dueDate).toLocaleDateString()
             : "-"}
-          {isOverdue(payment.dueDate) && (
+          {!payment.paidDate && isOverdue(payment.dueDate) && (
             <span className="text-red-600 text-xs font-medium bg-red-100 px-2 py-1 rounded-full">
               {t("clients.overdue", "Overdue")}
             </span>
           )}
-          {isDueSoon(payment.dueDate) && !isOverdue(payment.dueDate) && (
+          {!payment.paidDate && isDueSoon(payment.dueDate) && !isOverdue(payment.dueDate) && (
             <span className="text-orange-600 text-xs font-medium bg-orange-100 px-2 py-1 rounded-full">
               {t("clients.dueSoon", "Due Soon")}
             </span>

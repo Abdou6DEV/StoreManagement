@@ -5,6 +5,7 @@ import PaymentRow from "./paymentRow";
 
 interface PaymentTableProps {
   payments: PaymentWithClient[];
+  allPayments: PaymentWithClient[]; // Complete dataset for totals
   type: "CREDIT" | "VERSEMENT";
   editingPayment: string | null;
   editAmount: number;
@@ -19,6 +20,7 @@ interface PaymentTableProps {
 
 const PaymentTable: React.FC<PaymentTableProps> = ({
   payments,
+  allPayments,
   editingPayment,
   editAmount,
   setEditingPayment,
@@ -75,6 +77,72 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
           ))}
         </tbody>
       </table>
+      
+      {/* Totals Footer */}
+      <div className="mt-4 flex flex-wrap items-center justify-center gap-10 text-sm border-t border-muted pt-4">
+        {/* Total Payments */}
+        <div className="flex items-center gap-2">
+          <span className="text-muted-foreground">
+            {t("clients.totalPayments", "Total Payments")}:
+          </span>
+          <span className="font-medium">{allPayments.length}</span>
+        </div>
+
+        {/* Total Amount */}
+        <div className="flex items-center gap-2">
+          <span className="text-muted-foreground">
+            {t("clients.totalAmount", "Total Amount")}:
+          </span>
+          <span className="font-medium">
+            {allPayments
+              .reduce((sum, p) => sum + p.givenAmount, 0)
+              .toLocaleString()}{" "}
+            {t("cashier.currency", "DA")}
+          </span>
+        </div>
+
+        {/* Paid Amount */}
+        <div className="flex items-center gap-2">
+          <span className="text-muted-foreground">
+            {t("clients.paidAmount", "Paid Amount")}:
+          </span>
+          <span className="font-medium text-green-600 dark:text-green-400">
+            {allPayments
+              .filter(p => p.paidDate)
+              .reduce((sum, p) => sum + p.givenAmount, 0)
+              .toLocaleString()}{" "}
+            {t("cashier.currency", "DA")}
+          </span>
+        </div>
+
+        {/* Outstanding Amount */}
+        <div className="flex items-center gap-2">
+          <span className="text-muted-foreground">
+            {t("clients.outstandingAmount", "Outstanding")}:
+          </span>
+          <span className="font-medium text-orange-600 dark:text-orange-400">
+            {allPayments
+              .filter(p => !p.paidDate)
+              .reduce((sum, p) => sum + p.givenAmount, 0)
+              .toLocaleString()}{" "}
+            {t("cashier.currency", "DA")}
+          </span>
+        </div>
+
+        {/* Overdue Amount */}
+        <div className="flex items-center gap-2">
+          <span className="text-muted-foreground">
+            {t("clients.overdueAmount", "Overdue")}:
+          </span>
+          <span className="font-medium text-red-600 dark:text-red-400">
+            {allPayments
+              .filter(p => !p.paidDate && isOverdue(new Date(p.dueDate)))
+              .reduce((sum, p) => sum + p.givenAmount, 0)
+              .toLocaleString()}{" "}
+            {t("cashier.currency", "DA")}
+          </span>
+        </div>
+      </div>
     </div>
   );
 };

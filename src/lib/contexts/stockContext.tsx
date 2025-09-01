@@ -20,7 +20,7 @@ export function StockProvider({ children }: { children: ReactNode }) {
     try {
       const result = await window.api.database.categories.getAll();
 
-      setCategories(result.map((category) => category.name));
+      setCategories(result.map((category: { name: string }) => category.name));
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Failed to fetch categories",
@@ -37,9 +37,9 @@ export function StockProvider({ children }: { children: ReactNode }) {
       ]);
       // Merge salesCounts into products
       const salesMap = new Map(
-        salesCounts.map((s) => [s.productId, s.totalSold]),
+        salesCounts.map((s: { productId: string; totalSold: number }) => [s.productId, s.totalSold]),
       );
-      const merged = result.map((p) => ({
+      const merged = result.map((p: ProductWithSales) => ({
         ...p,
         totalSold: salesMap.get(p.id) || 0,
       }));
