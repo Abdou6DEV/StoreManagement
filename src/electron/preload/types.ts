@@ -29,11 +29,11 @@ export type DatabaseAPI = {
   products: {
     getAll: () => Promise<Product[]>;
     add: (
-      product: Omit<Product, "id" | "createdAt" | "updatedAt">,
+      product: Omit<Product, "id" | "createdAt" | "updatedAt">
     ) => Promise<Product>;
     update: (
       id: string,
-      data: Partial<Omit<Product, "id" | "createdAt" | "updatedAt">>,
+      data: Partial<Omit<Product, "id" | "createdAt" | "updatedAt">>
     ) => Promise<Product>;
     delete: (id: string) => Promise<void>;
     getSalesCounts: () => Promise<{ productId: string; totalSold: number }[]>;
@@ -81,7 +81,7 @@ export type DatabaseAPI = {
         phone?: string;
         address?: string;
         notes?: string;
-      },
+      }
     ) => Promise<Client>;
   };
   sales: {
@@ -102,7 +102,7 @@ export type DatabaseAPI = {
         clientId?: string;
         items: { productId: string; quantity: number; price: number }[];
         discount?: number;
-      },
+      }
     ) => Promise<SaleWithDetails>;
     delete: (id: string) => Promise<void>;
   };
@@ -144,7 +144,7 @@ export type DatabaseAPI = {
         email?: string;
         address?: string;
         notes?: string;
-      },
+      }
     ) => Promise<Seller>;
     delete: (id: string) => Promise<void>;
     getById: (id: string) => Promise<Seller>;
@@ -164,7 +164,7 @@ export type DatabaseAPI = {
         sellerId?: string;
         quantity?: number;
         price?: number;
-      },
+      }
     ) => Promise<any>;
     delete: (id: string) => Promise<void>;
     getById: (id: string) => Promise<any>;
@@ -173,7 +173,7 @@ export type DatabaseAPI = {
   };
   manualProducts: {
     search: (
-      query: string,
+      query: string
     ) => Promise<{ id: string; name: string; type: string }[]>;
     getAll: () => Promise<{ id: string; name: string; type: string }[]>;
     create: (data: {
@@ -185,11 +185,11 @@ export type DatabaseAPI = {
       type: string;
     }) => Promise<{ id: string; name: string; type: string }>;
     getById: (
-      id: string,
+      id: string
     ) => Promise<{ id: string; name: string; type: string } | null>;
     update: (
       id: string,
-      data: { name?: string; type?: string },
+      data: { name?: string; type?: string }
     ) => Promise<{ id: string; name: string; type: string }>;
     delete: (id: string) => Promise<void>;
   };
@@ -211,7 +211,7 @@ export type LoggerAPI = {
   getLogFiles: () => Promise<string[]>;
   readLogFile: (filePath: string, lines?: number) => Promise<string[]>;
   getLogFileStats: (
-    filePath: string,
+    filePath: string
   ) => Promise<{ totalLines: number; fileSize: number }>;
   clearLogs: () => Promise<void>;
   updateConfig: (config: any) => Promise<void>;
@@ -252,7 +252,7 @@ export type AuthAPI = {
   }>;
   updateUserRole: (
     userId: string,
-    role: string,
+    role: string
   ) => Promise<{
     success: boolean;
     user?: Omit<User, "password">;
