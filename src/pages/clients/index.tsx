@@ -18,6 +18,7 @@ import AddSupplierForm from "./components/addSupplierForm";
 import SuppliersTable from "./components/suppliersTable";
 import EditSupplierModal from "./components/editSupplierModal";
 import SupplierSearchBar from "./components/supplierSearchBar";
+import SupplierPurchasesModal from "./components/supplierPurchasesModal";
 import PaymentsModal from "../../lib/components/paymentsModal";
 import AllPaymentsView from "./components/allPaymentsView";
 import {
@@ -86,6 +87,10 @@ export default function Clients() {
   >(null);
   const [suppliersCurrentPage, setSuppliersCurrentPage] = useState(1);
   const [suppliersItemsPerPage, setSuppliersItemsPerPage] = useState(10);
+  
+  // Supplier purchases modal state
+  const [viewingPurchasesFor, setViewingPurchasesFor] = useState<Seller | null>(null);
+  const [showPurchasesModal, setShowPurchasesModal] = useState(false);
 
   const [confirmDelete, setConfirmDelete] = useState<{
     open: boolean;
@@ -215,6 +220,11 @@ export default function Clients() {
       supplierId: id,
       supplierName: supplier.name,
     });
+  };
+
+  const handleViewPurchases = (supplier: Seller) => {
+    setViewingPurchasesFor(supplier);
+    setShowPurchasesModal(true);
   };
 
   const confirmDeleteSupplierAction = async () => {
@@ -676,6 +686,7 @@ export default function Clients() {
                   suppliers={paginatedSuppliers}
                   onEdit={handleEditSupplier}
                   onDelete={handleDeleteSupplier}
+                  onViewPurchases={handleViewPurchases}
                   deleteLoading={deleteSupplierLoading}
                 />
                 {/* Pagination Navigation for suppliers */}
@@ -783,6 +794,11 @@ export default function Clients() {
         onClose={() => setEditingSupplier(null)}
         onSubmit={handleEditSupplierSubmit}
         loading={editSupplierLoading}
+      />
+      <SupplierPurchasesModal
+        open={showPurchasesModal}
+        onOpenChange={setShowPurchasesModal}
+        supplier={viewingPurchasesFor}
       />
       {/* PaymentsModal will be rendered here when paymentsClient is set */}
       {paymentsClient && (

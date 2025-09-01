@@ -30,9 +30,14 @@ export default function ProductSearch({ onAdd, refreshKey }: Props) {
     window.api.database.products.getAll().then((products) => {
       setAllProducts(products);
     });
+    
+    // Auto-focus on mount and after refresh
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
   }, [refreshKey]);
 
-  // Focus search input when user starts typing anywhere on the page
+  // Focus search input when user starts typing anywhere on the page (but not in modals)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Only handle printable characters and ignore when already focused on an input
@@ -42,8 +47,14 @@ export default function ProductSearch({ onAdd, refreshKey }: Props) {
         target instanceof HTMLTextAreaElement ||
         target instanceof HTMLSelectElement;
 
-      // Ignore if already in an input element or if it's a special key
+      // Ignore if already in an input element, in a modal, or if it's a special key
       if (isInputElement || e.ctrlKey || e.altKey || e.metaKey) {
+        return;
+      }
+
+      // Don't steal focus if user is in a modal
+      const isInModal = target.closest('[role="dialog"]') || target.closest('.modal');
+      if (isInModal) {
         return;
       }
 
@@ -75,16 +86,49 @@ export default function ProductSearch({ onAdd, refreshKey }: Props) {
         setShowSuggestions(false);
       }
     };
+    
+    // Only refocus when clicking on empty page areas (not on inputs or interactive elements)
+    const handlePageClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      
+      // Don't refocus if clicking on any interactive element
+      if (target.closest('input') || 
+          target.closest('textarea') || 
+          target.closest('select') || 
+          target.closest('button') || 
+          target.closest('a') || 
+          target.closest('[role="dialog"]') || 
+          target.closest('.modal') ||
+          target.closest('[data-interactive]')) {
+        return;
+      }
+      
+      // Only refocus if clicking on empty page area and no suggestions are open
+      if (!showSuggestions && inputRef.current) {
+        setTimeout(() => {
+          if (inputRef.current) {
+            inputRef.current.focus();
+          }
+        }, 50);
+      }
+    };
+    
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+    document.addEventListener("mousedown", handlePageClick);
+    
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("mousedown", handlePageClick);
+    };
+  }, [showSuggestions]);
 
   const grouped = React.useMemo((): GroupedSuggestions => {
     const trimmed = search.trim().toLowerCase();
     if (!trimmed) return [];
 
+    // Only search by name for suggestions (barcode searches are handled separately)
     const matches = allProducts.filter((p) =>
-      p.name.toLowerCase().includes(trimmed),
+      p.name.toLowerCase().includes(trimmed)
     );
     const sliced = matches.slice(0, 50);
     const groups: Record<string, Product[]> = {};
@@ -110,7 +154,13 @@ export default function ProductSearch({ onAdd, refreshKey }: Props) {
     onAdd(product);
     setSearch("");
     setShowSuggestions(false);
-    inputRef.current?.focus();
+    
+    // Ensure focus returns to search input for next scan
+    setTimeout(() => {
+      if (inputRef.current) {
+        inputRef.current.focus();
+      }
+    }, 10);
   };
 
   const moveHighlight = (deltaCat: number, deltaItem: number) => {
@@ -132,6 +182,28 @@ export default function ProductSearch({ onAdd, refreshKey }: Props) {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      
+      // First, try to find exact barcode match
+      const exactBarcodeMatch = allProducts.find(p => 
+        p.codebar && p.codebar === search.trim()
+      );
+      
+      if (exactBarcodeMatch) {
+        // Direct barcode match - add immediately
+        handleSelect(exactBarcodeMatch);
+        return;
+      }
+      
+      // If no exact barcode match, show suggestions for text search
+      if (showSuggestions) {
+        const prod = grouped[highlight.catIdx]?.items[highlight.itemIdx];
+        if (prod) handleSelect(prod);
+      }
+      return;
+    }
+
     if (!showSuggestions) return;
 
     if (e.key === "ArrowDown") {
@@ -152,10 +224,6 @@ export default function ProductSearch({ onAdd, refreshKey }: Props) {
         const prevLen = grouped[catIdx - 1]?.items.length || 0;
         moveHighlight(-1, prevLen - 1);
       }
-    } else if (e.key === "Enter") {
-      e.preventDefault();
-      const prod = grouped[highlight.catIdx]?.items[highlight.itemIdx];
-      if (prod) handleSelect(prod);
     }
   };
 

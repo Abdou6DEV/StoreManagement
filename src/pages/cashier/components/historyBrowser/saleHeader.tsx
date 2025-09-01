@@ -7,17 +7,24 @@ const SaleHeader: React.FC<SaleHeaderProps> = ({ sale }) => {
   const { t } = useTranslation();
 
   const formatDate = (date: Date) => {
-    const now = new Date();
     const saleDate = new Date(date);
-    const diffInHours = (now.getTime() - saleDate.getTime()) / (1000 * 60 * 60);
-
-    if (diffInHours < 1) {
-      const diffInMinutes = Math.floor(diffInHours * 60);
-      return `${diffInMinutes}m ago`;
-    } else if (diffInHours < 24) {
-      return `${Math.floor(diffInHours)}h ago`;
+    const now = new Date();
+    
+    // Check if it's today
+    const isToday = saleDate.toDateString() === now.toDateString();
+    
+    const hours = saleDate.getHours().toString().padStart(2, '0');
+    const minutes = saleDate.getMinutes().toString().padStart(2, '0');
+    
+    if (isToday) {
+      return `${t("today")} - ${hours}:${minutes}`;
     } else {
-      return saleDate.toLocaleDateString();
+      // Format: DD/MM/YYYY - HH:MM
+      const day = saleDate.getDate().toString().padStart(2, '0');
+      const month = (saleDate.getMonth() + 1).toString().padStart(2, '0');
+      const year = saleDate.getFullYear();
+      
+      return `${day}/${month}/${year} - ${hours}:${minutes}`;
     }
   };
 

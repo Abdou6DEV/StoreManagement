@@ -1,6 +1,6 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { Edit, Trash2, Package, Loader2 } from "lucide-react";
+import { Edit, Trash2, Package, Loader2, ShoppingCart } from "lucide-react";
 import { Button } from "../../../lib/components/button";
 import type { Seller } from "@prisma/client";
 import { Tooltip } from "../../../lib/components/tooltip";
@@ -9,6 +9,7 @@ interface SuppliersTableProps {
   suppliers: Seller[];
   onEdit: (supplier: Seller) => void;
   onDelete: (id: string) => void;
+  onViewPurchases: (supplier: Seller) => void;
   deleteLoading: string | null;
 }
 
@@ -16,6 +17,7 @@ export default function SuppliersTable({
   suppliers,
   onEdit,
   onDelete,
+  onViewPurchases,
   deleteLoading,
 }: SuppliersTableProps) {
   const { t, i18n } = useTranslation();
@@ -92,6 +94,18 @@ export default function SuppliersTable({
                 <div
                   className={`flex gap-2 ${isRTL ? "flex-row-reverse" : ""}`}
                 >
+                  <Tooltip
+                    content={t("suppliers.viewPurchasesTooltip", "View all products purchased from this supplier")}
+                  >
+                    <Button
+                      onClick={() => onViewPurchases(supplier)}
+                      size="sm"
+                      variant="outline"
+                      className="text-blue-600 border-blue-200 hover:bg-blue-50 dark:text-blue-400 dark:border-blue-800 dark:hover:bg-blue-950/30"
+                    >
+                      <ShoppingCart className="w-3 h-3" />
+                    </Button>
+                  </Tooltip>
                   <Tooltip
                     content={t("suppliers.editTooltip", "Edit supplier")}
                   >

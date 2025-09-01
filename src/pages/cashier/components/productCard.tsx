@@ -27,6 +27,8 @@ export default function ProductCard({
   const nameRef = useRef<HTMLDivElement>(null);
   const [isTextTruncated, setIsTextTruncated] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
+  const [productInfoData, setProductInfoData] = useState<any>(null);
+  const [productInfoLoading, setProductInfoLoading] = useState(false);
 
   useEffect(() => {
     const checkTextTruncation = () => {
@@ -44,6 +46,24 @@ export default function ProductCard({
     window.addEventListener("resize", checkTextTruncation);
     return () => window.removeEventListener("resize", checkTextTruncation);
   }, [product.name]);
+
+  const handleShowInfo = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowInfo(true);
+    
+    // Fetch full product data with purchase and sales history
+    setProductInfoLoading(true);
+    try {
+      const fullProductData = await window.api.database.products.getWithPurchaseHistory(product.id);
+      setProductInfoData(fullProductData);
+    } catch (error) {
+      console.error("Failed to fetch product info:", error);
+      // Fallback to basic product data if fetch fails
+      setProductInfoData(product);
+    } finally {
+      setProductInfoLoading(false);
+    }
+  };
 
   return (
     <div
@@ -136,10 +156,7 @@ export default function ProductCard({
             <div className="flex items-center">
               <Tooltip content={t("cashier.productInfo", "Product info")}>
                 <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowInfo(true);
-                  }}
+                  onClick={handleShowInfo}
                   className="transition text-gray-400 hover:text-blue-500"
                 >
                   <Info className="w-4 h-4" />
@@ -177,8 +194,8 @@ export default function ProductCard({
           <ProductInfoModal
             open={showInfo}
             onOpenChange={setShowInfo}
-            productData={product}
-            loading={false}
+            productData={productInfoData}
+            loading={productInfoLoading}
           />
         )}
       </div>

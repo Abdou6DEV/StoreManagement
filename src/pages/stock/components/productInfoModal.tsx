@@ -101,6 +101,22 @@ export const ProductInfoModal = ({
             </div>
             <div className={isRTL ? "text-right" : "text-left"}>
               <label className="text-sm font-medium text-muted-foreground">
+                {t("stock.profitPerUnit", "Profit per Unit")}
+              </label>
+              <p className="text-foreground font-medium text-green-600">
+                {productData.sellingPrice - productData.boughtPrice} {t("cashier.currency", "DA")}
+              </p>
+            </div>
+            <div className={isRTL ? "text-right" : "text-left"}>
+              <label className="text-sm font-medium text-muted-foreground">
+                {t("stock.totalProfit", "Total Profit")}
+              </label>
+              <p className="text-foreground font-medium text-green-600">
+                {(productData.sellingPrice - productData.boughtPrice) * productData.quantity} {t("cashier.currency", "DA")}
+              </p>
+            </div>
+            <div className={isRTL ? "text-right" : "text-left"}>
+              <label className="text-sm font-medium text-muted-foreground">
                 {t("stock.barcode", "Barcode")}
               </label>
               <p className="text-foreground">{productData.codebar || "N/A"}</p>
@@ -128,6 +144,56 @@ export const ProductInfoModal = ({
              )}
            </div>
         </div>
+
+          {/* Profit Analysis */}
+          <div className="bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-950/20 dark:to-blue-950/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+            <h3 className={`text-lg font-semibold mb-3 ${isRTL ? "text-right" : "text-left"}`}>
+              {t("stock.profitAnalysis", "Profit Analysis")}
+            </h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className={isRTL ? "text-right" : "text-left"}>
+                <label className="text-sm font-medium text-muted-foreground">
+                  {t("stock.potentialProfit", "Potential Profit")}
+                </label>
+                <p className="text-foreground font-semibold text-green-600">
+                  {(productData.sellingPrice - productData.boughtPrice) * productData.quantity} {t("cashier.currency", "DA")}
+                </p>
+              </div>
+              <div className={isRTL ? "text-right" : "text-left"}>
+                <label className="text-sm font-medium text-muted-foreground">
+                  {t("stock.actualProfit", "Actual Profit")}
+                </label>
+                <p className="text-foreground font-semibold text-blue-600">
+                  {productData.saleItems && productData.saleItems.length > 0
+                    ? productData.saleItems.reduce((sum: any, item: any) => {
+                        const profit = (item.price - productData.boughtPrice) * item.quantity;
+                        return sum + profit;
+                      }, 0)
+                    : 0} {t("cashier.currency", "DA")}
+                </p>
+              </div>
+              <div className={isRTL ? "text-right" : "text-left"}>
+                <label className="text-sm font-medium text-muted-foreground">
+                  {t("stock.profitMargin", "Profit Margin")}
+                </label>
+                <p className="text-foreground font-semibold text-purple-600">
+                  {productData.sellingPrice > 0 
+                    ? (((productData.sellingPrice - productData.boughtPrice) / productData.sellingPrice) * 100).toFixed(1)
+                    : 0}%
+                </p>
+              </div>
+              <div className={isRTL ? "text-right" : "text-left"}>
+                <label className="text-sm font-medium text-muted-foreground">
+                  {t("stock.roi", "ROI")}
+                </label>
+                <p className="text-foreground font-semibold text-orange-600">
+                  {productData.boughtPrice > 0 
+                    ? (((productData.sellingPrice - productData.boughtPrice) / productData.boughtPrice) * 100).toFixed(1)
+                    : 0}%
+                </p>
+              </div>
+            </div>
+          </div>
 
           {/* Purchase History */}
           <div>
