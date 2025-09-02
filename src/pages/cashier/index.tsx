@@ -63,6 +63,7 @@ export default function CashierPage() {
     paymentType: "none" | "credit" | "versement";
     paymentDate?: Date;
   } | null>(null);
+  const [outOfStockConfirmed, setOutOfStockConfirmed] = useState(false);
 
   // Fetch all products with sales counts
   useEffect(() => {
@@ -147,9 +148,15 @@ export default function CashierPage() {
 
   // Proceed with sale despite out of stock warning
   const proceedWithOutOfStockSale = async () => {
+    // Set the flag to allow the sale to proceed
+    setOutOfStockConfirmed(true);
     setShowStockWarning(false);
-    // This would need to be handled by the active session component
-    // For now, we'll just close the modal
+    
+    // Automatically proceed with the sale after a brief delay
+    setTimeout(() => {
+      // Reset the flag after the sale completes
+      setOutOfStockConfirmed(false);
+    }, 1000);
   };
 
   useEffect(() => {
@@ -208,9 +215,10 @@ export default function CashierPage() {
             onUpdateSessionDiscount={sessionActions.updateSessionDiscount}
             onOutOfStock={handleOutOfStock}
             onReceiptData={handleReceiptData}
-            onSaleComplete={handleSaleComplete}
-            onSaleCompleted={handleSaleCompleted}
-            maxSessions={MAX_SESSIONS}
+                         onSaleComplete={handleSaleComplete}
+             onSaleCompleted={handleSaleCompleted}
+             outOfStockConfirmed={outOfStockConfirmed}
+             maxSessions={MAX_SESSIONS}
           />
 
           {/* Product Browser as a modal */}

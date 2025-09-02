@@ -28,6 +28,7 @@ interface CashierLayoutProps {
   onReceiptData: (data: any) => void;
   onSaleComplete: (saleId?: string) => void;
   onSaleCompleted: (saleId?: string) => void;
+  outOfStockConfirmed?: boolean;
   maxSessions: number;
 }
 
@@ -53,6 +54,7 @@ export default function CashierLayout({
   onReceiptData,
   onSaleComplete,
   onSaleCompleted,
+  outOfStockConfirmed,
   maxSessions,
 }: CashierLayoutProps) {
   const currentSession = sessions[activeSession] || sessions[0];
@@ -119,6 +121,7 @@ export default function CashierLayout({
               onReceiptData={onReceiptData}
               onSaleComplete={onSaleComplete}
               onSaleCompleted={onSaleCompleted}
+              outOfStockConfirmed={outOfStockConfirmed}
               onShowProductBrowser={onShowProductBrowser}
               onShowManualProductModal={onShowManualProductModal}
               isActive={activeSession === sessionIndex}

@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import type { ProductWithSales, CartItem } from "../../../types";
 import { useTranslation } from "react-i18next";
 import PaymentSummary from "../../../lib/components/paymentSummary";
@@ -25,6 +25,7 @@ interface CashierSessionProps {
   onSaleCompleted: (saleId?: string) => void;
   onShowProductBrowser: () => void;
   onShowManualProductModal: () => void;
+  outOfStockConfirmed?: boolean;
   isActive: boolean;
   discount: string;
   setDiscount: (discount: string) => void;
@@ -39,6 +40,7 @@ export default function CashierSession({
   onReceiptData,
   onSaleComplete,
   onSaleCompleted,
+  outOfStockConfirmed,
   isActive,
   discount,
   setDiscount,
@@ -90,7 +92,7 @@ export default function CashierSession({
       return product && item.qty > product.quantity;
     });
 
-    if (outOfStock.length > 0) {
+    if (outOfStock.length > 0 && !outOfStockConfirmed) {
       onOutOfStock(outOfStock);
       return;
     }
@@ -126,7 +128,7 @@ export default function CashierSession({
       return product && item.qty > product.quantity;
     });
 
-    if (outOfStock.length > 0) {
+    if (outOfStock.length > 0 && !outOfStockConfirmed) {
       onOutOfStock(outOfStock);
       return;
     }
@@ -225,6 +227,24 @@ export default function CashierSession({
       return undefined;
     }
   };
+
+  // Automatically continue with sale when out-of-stock is confirmed
+  useEffect(() => {
+    if (outOfStockConfirmed && cart.length > 0) {
+      // Automatically proceed with the sale
+      const proceedWithConfirmedSale = async () => {
+        const saleId = await proceedWithSale();
+        if (saleId) {
+          onSaleCompleted(saleId);
+        }
+        setPaymentAmount(0);
+        setPaymentType("none");
+        setPaymentDate(undefined);
+      };
+      
+      proceedWithConfirmedSale();
+    }
+  }, [outOfStockConfirmed, cart, onSaleCompleted, proceedWithSale]);
 
   if (!isActive) {
     return null;

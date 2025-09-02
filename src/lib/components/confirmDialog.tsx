@@ -11,7 +11,7 @@ export interface ConfirmDialogProps {
   confirmText?: string;
   cancelText?: string;
   variant?: "danger" | "warning" | "info";
-  onConfirm: () => void;
+  onConfirm: () => void | Promise<void>;
   onCancel?: () => void;
   loading?: boolean;
 }
@@ -28,9 +28,13 @@ export function ConfirmDialog({
   onCancel,
   loading = false,
 }: ConfirmDialogProps) {
-  const handleConfirm = () => {
-    onConfirm();
-    onOpenChange(false);
+  const handleConfirm = async () => {
+    try {
+      await onConfirm();
+      onOpenChange(false);
+    } catch (error) {
+      console.error("Error in confirm action:", error);
+    }
   };
 
   const handleCancel = () => {
@@ -77,9 +81,6 @@ export function ConfirmDialog({
             </div>
             <span>{title}</span>
           </DialogTitle>
-          <DialogDescription className="sr-only">
-            {message}
-          </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <p className="text-sm text-muted-foreground leading-relaxed">

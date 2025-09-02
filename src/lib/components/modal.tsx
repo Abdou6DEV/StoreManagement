@@ -404,7 +404,7 @@ export interface ConfirmModalProps
   message: string;
   confirmText?: string;
   cancelText?: string;
-  onConfirm: () => void;
+  onConfirm: () => void | Promise<void>;
   onCancel?: () => void;
   variant?: "info" | "warning" | "danger";
   loading?: boolean;
@@ -421,8 +421,19 @@ export function ConfirmModal({
   onClose,
   ...props
 }: ConfirmModalProps) {
-  const handleConfirm = () => {
-    onConfirm();
+  const handleConfirm = async () => {
+    try {
+      // Handle both sync and async onConfirm functions
+      const result = onConfirm();
+      if (result instanceof Promise) {
+        await result;
+      }
+      // Close the modal after successful confirmation
+      onClose?.();
+    } catch (error) {
+      // If there's an error, don't close the modal
+      console.error("Error in confirm action:", error);
+    }
   };
 
   const handleCancel = () => {
