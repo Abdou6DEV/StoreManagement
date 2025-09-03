@@ -102,13 +102,13 @@ export const Filters = ({
           type="text"
           placeholder={
             viewMode === "product"
-              ? t("stock.search")
+              ? t("stock.searchProductNameOrBarcode", "Search by product name or barcode...")
               : t("stock.searchCategory", "Search categories...")
           }
           value={filters.search}
           onChange={(e) => onFilterChange("search", e.target.value)}
           className="px-3 py-1.5 rounded-md border-2 border-primary/20 bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition max-w-[220px]"
-          aria-label={t("stock.search")}
+          aria-label={t("stock.searchProductNameOrBarcode", "Search by product name or barcode")}
         />
 
         {/* Category Filter Dropdown - only in product view */}

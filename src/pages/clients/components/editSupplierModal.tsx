@@ -36,7 +36,7 @@ const EditSupplierModal: React.FC<EditSupplierModalProps> = ({
           ? t("suppliers.updating", "Updating...")
           : t("suppliers.update", "Update")
       }
-      cancelText={t("suppliers.cancel", "Cancel")}
+              cancelText={t("common.cancel")}
       loading={loading}
       submitDisabled={loading}
     >

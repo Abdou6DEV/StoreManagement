@@ -565,7 +565,6 @@
     "multiModeLossWarning": "Warning: {count} product(s) have selling prices less than bought prices, which will result in losses. Are you sure you want to continue?",
     "lossWarning": "Loss",
     "sellingPriceWarningTitle": "Price Warning",
-    "cancel": "Cancel",
     "proceedAnyway": "Proceed Anyway"
   },
   "clients": {
@@ -765,7 +764,8 @@
   "common": {
     "refresh": "Refresh",
     "export": "Export",
-    "clear": "Clear"
+    "clear": "Clear",
+    "cancel": "Cancel"
   },
   "pagination": {
     "next": "Next",

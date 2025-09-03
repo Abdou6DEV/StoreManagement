@@ -765,7 +765,8 @@
   "common": {
     "refresh": "Actualiser",
     "export": "Exporter",
-    "clear": "Effacer"
+    "clear": "Effacer",
+    "cancel": "Annuler"
   },
   "pagination": {
     "next": "Suivant",

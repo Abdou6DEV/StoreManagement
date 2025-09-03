@@ -43,7 +43,7 @@ function addManualProductToCart(
 }
 
 export default function CashierPage() {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const isRTL = i18n.language === "ar";
   const [productRefreshKey, setProductRefreshKey] = useState(0);
   const [salesRefreshKey, setSalesRefreshKey] = useState(0);
@@ -245,10 +245,10 @@ export default function CashierPage() {
               }
             }}
             onConfirm={proceedWithOutOfStockSale}
-            title="Out of Stock Warning"
-            message="Some items in your cart are out of stock. Would you like to proceed with the sale despite this?"
-            confirmText="Proceed Anyway"
-            cancelText="Cancel"
+            title={t("cashier.outOfStockTitle")}
+            message={t("cashier.outOfStockMessage")}
+            confirmText={t("cashier.proceedAnyway")}
+            cancelText={t("common.cancel")}
             variant="danger"
           />
 

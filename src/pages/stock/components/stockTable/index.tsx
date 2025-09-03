@@ -64,6 +64,11 @@ export const StockTable = () => {
     value: boolean | string,
   ) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
+    
+    // Reset pagination to page 1 when search or category filters change
+    if (key === "search" || key === "category") {
+      setCurrentPage(1);
+    }
   };
 
   // Helper function to get active filters summary
@@ -206,7 +211,6 @@ export const StockTable = () => {
     const search = filters.search.toLowerCase();
     const matchesSearch =
       product.name.toLowerCase().includes(search) ||
-      product.categoryName.toLowerCase().includes(search) ||
       (product.codebar && product.codebar.toLowerCase().includes(search));
     const matchesCategory =
       !filters.category || product.categoryName === filters.category;
@@ -450,7 +454,7 @@ export const StockTable = () => {
           { name: confirmDelete.productName },
         )}
         confirmText={t("stock.delete", "Delete")}
-        cancelText={t("stock.cancel", "Cancel")}
+                    cancelText={t("common.cancel")}
         variant="danger"
         onConfirm={confirmDeleteProduct}
       />

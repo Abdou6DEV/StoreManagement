@@ -81,7 +81,7 @@ export default function AddStockForm({
   const [dropdownProductSearch, setDropdownProductSearch] = useState("");
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   const [filteredCategories, setFilteredCategories] =
-    useState<string[]>(categories);
+    useState<string[]>([]);
   const [dropdownCategorySearch, setDropdownCategorySearch] = useState("");
   const [showSellerDropdown, setShowSellerDropdown] = useState(false);
   const [sellers, setSellers] = useState<
@@ -154,6 +154,28 @@ export default function AddStockForm({
     setProductPage(1);
     setHasMoreProducts(true);
   }, [showProductDropdown, dropdownProductSearch]);
+
+  // Initialize filtered categories when categories are loaded
+  React.useEffect(() => {
+    if (categories.length > 0) {
+      setFilteredCategories(categories);
+    }
+  }, [categories]);
+
+  // Close dropdowns when clicking outside
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      if (!target.closest('.relative')) {
+        setShowProductDropdown(false);
+        setShowCategoryDropdown(false);
+        setShowSellerDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Compute paginated products
   const paginatedProducts = filteredProducts.slice(0, productPage * PAGE_SIZE);
@@ -1151,6 +1173,14 @@ export default function AddStockForm({
       photo: prev.photo || product.photo || null,
     }));
     setShowProductDropdown(false);
+    
+    // Auto-focus on seller field after product selection
+    setTimeout(() => {
+      const sellerInput = document.querySelector('input[placeholder*="seller" i]') as HTMLInputElement;
+      if (sellerInput) {
+        sellerInput.focus();
+      }
+    }, 100);
   };
 
   // Handler for category selection
@@ -1170,6 +1200,61 @@ export default function AddStockForm({
     setPendingProducts([]);
     setMultiSellerId("");
     setMultiSellerName("");
+  };
+
+  // Smart tab system functions
+  const focusNextField = (currentField: string) => {
+    const fieldOrder = [
+      'product-name',
+      'category-name', 
+      'seller-name',
+      'quantity',
+      'bought-price',
+      'selling-price',
+      'codebar',
+      'add-button'
+    ];
+    
+    const currentIndex = fieldOrder.indexOf(currentField);
+    if (currentIndex === -1 || currentIndex === fieldOrder.length - 1) {
+      return;
+    }
+    
+    const nextField = fieldOrder[currentIndex + 1];
+    
+    if (nextField === 'add-button') {
+      const addButton = document.querySelector('button[type="submit"]') as HTMLButtonElement;
+      if (addButton) {
+        addButton.focus();
+      }
+    } else {
+      const nextInput = document.querySelector(`[data-field="${nextField}"]`) as HTMLInputElement;
+      if (nextInput) {
+        nextInput.focus();
+      }
+    }
+  };
+
+  const focusPreviousField = (currentField: string) => {
+    const fieldOrder = [
+      'product-name',
+      'category-name', 
+      'seller-name',
+      'quantity',
+      'bought-price',
+      'selling-price',
+      'codebar',
+      'add-button'
+    ];
+    
+    const currentIndex = fieldOrder.indexOf(currentField);
+    if (currentIndex <= 0) return;
+    
+    const prevField = fieldOrder[currentIndex - 1];
+    const prevInput = document.querySelector(`[data-field="${prevField}"]`) as HTMLInputElement;
+    if (prevInput) {
+      prevInput.focus();
+    }
   };
 
   return (
@@ -1200,83 +1285,110 @@ export default function AddStockForm({
           />
 
           {/* Main Form */}
-          <form onSubmit={handleAddProduct} className="space-y-6">
+                     <form 
+             onSubmit={handleAddProduct}
+             className="space-y-6"
+           >
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-              <ProductSelection
-                form={form}
-                showProductDropdown={showProductDropdown}
-                setShowProductDropdown={setShowProductDropdown}
-                filteredProducts={filteredProducts}
-                setFilteredProducts={setFilteredProducts}
-                dropdownProductSearch={dropdownProductSearch}
-                setDropdownProductSearch={setDropdownProductSearch}
-                products={products}
-                paginatedProducts={paginatedProducts}
-                loadingMoreProducts={loadingMoreProducts}
-                hasMoreProducts={hasMoreProducts}
-                handleLoadMoreProducts={handleLoadMoreProducts}
-                onProductSelect={handleProductSelect}
-                onFormChange={handleFormChange}
-              />
+                             <ProductSelection
+                 form={form}
+                 showProductDropdown={showProductDropdown}
+                 setShowProductDropdown={setShowProductDropdown}
+                 filteredProducts={filteredProducts}
+                 setFilteredProducts={setFilteredProducts}
+                 dropdownProductSearch={dropdownProductSearch}
+                 setDropdownProductSearch={setDropdownProductSearch}
+                 products={products}
+                 paginatedProducts={paginatedProducts}
+                 loadingMoreProducts={loadingMoreProducts}
+                 hasMoreProducts={hasMoreProducts}
+                 handleLoadMoreProducts={handleLoadMoreProducts}
+                 onProductSelect={handleProductSelect}
+                 onFormChange={handleFormChange}
+                 onNextField={() => focusNextField('product-name')}
+               />
 
-              <CategorySelection
-                form={form}
-                isExistingProduct={isExistingProduct}
-                showCategoryDropdown={showCategoryDropdown}
-                setShowCategoryDropdown={setShowCategoryDropdown}
-                filteredCategories={filteredCategories}
-                setFilteredCategories={setFilteredCategories}
-                dropdownCategorySearch={dropdownCategorySearch}
-                setDropdownCategorySearch={setDropdownCategorySearch}
-                categories={categories}
-                onCategorySelect={handleCategorySelect}
-                onFormChange={handleFormChange}
-              />
+                             <CategorySelection
+                 form={form}
+                 isExistingProduct={isExistingProduct}
+                 showCategoryDropdown={showCategoryDropdown}
+                 setShowCategoryDropdown={setShowCategoryDropdown}
+                 filteredCategories={filteredCategories}
+                 setFilteredCategories={setFilteredCategories}
+                 dropdownCategorySearch={dropdownCategorySearch}
+                 setDropdownCategorySearch={setDropdownCategorySearch}
+                 categories={categories}
+                 onCategorySelect={handleCategorySelect}
+                 onFormChange={handleFormChange}
+                 onNextField={() => focusNextField('category-name')}
+               />
 
               {!isMultiMode && (
-                <SellerSelection
-                  form={form}
-                  showSellerDropdown={showSellerDropdown}
-                  setShowSellerDropdown={setShowSellerDropdown}
-                  sellers={sellers}
-                  filteredSellers={filteredSellers}
-                  setFilteredSellers={setFilteredSellers}
-                  dropdownSellerSearch={dropdownSellerSearch}
-                  setDropdownSellerSearch={setDropdownSellerSearch}
-                  onSellerSelect={handleSellerSelect}
-                  onFormChange={handleFormChange}
-                />
+                                 <SellerSelection
+                   form={form}
+                   showSellerDropdown={showSellerDropdown}
+                   setShowSellerDropdown={setShowSellerDropdown}
+                   sellers={sellers}
+                   filteredSellers={filteredSellers}
+                   setFilteredSellers={setFilteredSellers}
+                   dropdownSellerSearch={dropdownSellerSearch}
+                   setDropdownSellerSearch={setDropdownSellerSearch}
+                   onSellerSelect={handleSellerSelect}
+                   onFormChange={handleFormChange}
+                                     onNextField={() => focusNextField('seller-name')}
+                 />
               )}
 
-              <div className="space-y-2">
-                <label>{t("stock.quantity")}</label>
-                <StyledNumberInput
-                  value={form.quantity === "" ? "" : Number(form.quantity)}
-                  onChange={(val) => handleFormChange("quantity", val)}
-                  placeholder={t("stock.quantity")}
-                />
-              </div>
+                             <div className="space-y-2">
+                 <label>{t("stock.quantity")}</label>
+                 <StyledNumberInput
+                   data-field="quantity"
+                   value={form.quantity === "" ? "" : Number(form.quantity)}
+                   onChange={(val) => handleFormChange("quantity", val)}
+                   placeholder={t("stock.quantity")}
+                   onKeyDown={(e) => {
+                     if (e.key === "Enter") {
+                       e.preventDefault();
+                       focusNextField('quantity');
+                     }
+                   }}
+                 />
+               </div>
 
-              <div className="space-y-2">
-                <label>{t("stock.boughtPrice")}</label>
-                <StyledNumberInput
-                  value={
-                    form.boughtPrice === "" ? "" : Number(form.boughtPrice)
-                  }
-                  onChange={(val) => handleFormChange("boughtPrice", val)}
-                  placeholder={t("stock.boughtPrice")}
-                />
-              </div>
+                             <div className="space-y-2">
+                 <label>{t("stock.boughtPrice")}</label>
+                 <StyledNumberInput
+                   data-field="bought-price"
+                   value={
+                     form.boughtPrice === "" ? "" : Number(form.boughtPrice)
+                   }
+                   onChange={(val) => handleFormChange("boughtPrice", val)}
+                   placeholder={t("stock.boughtPrice")}
+                   onKeyDown={(e) => {
+                     if (e.key === "Enter") {
+                       e.preventDefault();
+                       focusNextField('bought-price');
+                     }
+                   }}
+                 />
+               </div>
 
-              <div className="space-y-2">
-                <label>{t("stock.sellingPrice")}</label>
-                <StyledNumberInput
-                  value={
-                    form.sellingPrice === "" ? "" : Number(form.sellingPrice)
-                  }
-                  onChange={(val) => handleFormChange("sellingPrice", val)}
-                  placeholder={t("stock.sellingPrice")}
-                />
+                             <div className="space-y-2">
+                 <label>{t("stock.sellingPrice")}</label>
+                 <StyledNumberInput
+                   data-field="selling-price"
+                   value={
+                     form.sellingPrice === "" ? "" : Number(form.sellingPrice)
+                   }
+                   onChange={(val) => handleFormChange("sellingPrice", val)}
+                   placeholder={t("stock.sellingPrice")}
+                   onKeyDown={(e) => {
+                     if (e.key === "Enter") {
+                       e.preventDefault();
+                       focusNextField('selling-price');
+                     }
+                   }}
+                 />
                 {/* Warning when selling price is less than bought price */}
                 {form.sellingPrice &&
                   form.boughtPrice &&
@@ -1295,16 +1407,23 @@ export default function AddStockForm({
                   )}
               </div>
 
-              <div className="space-y-2">
-                <label>{t("stock.codebar")}</label>
-                <input
-                  type="text"
-                  placeholder={t("stock.codebar")}
-                  value={form.codebar}
-                  onChange={(e) => handleFormChange("codebar", e.target.value)}
-                  className="w-full px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-green-500/50 focus:border-green-500 transition-all"
-                />
-              </div>
+                             <div className="space-y-2">
+                 <label>{t("stock.codebar")}</label>
+                 <input
+                   data-field="codebar"
+                   type="text"
+                   placeholder={t("stock.codebar")}
+                   value={form.codebar}
+                   onChange={(e) => handleFormChange("codebar", e.target.value)}
+                   onKeyDown={(e) => {
+                     if (e.key === "Enter") {
+                       e.preventDefault();
+                       focusNextField('codebar');
+                     }
+                   }}
+                   className="w-full px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-green-500/50 focus:border-green-500 transition-all"
+                 />
+               </div>
 
               <div className="space-y-2">
                 <label>{t("stock.photo", "Product Photo")}</label>

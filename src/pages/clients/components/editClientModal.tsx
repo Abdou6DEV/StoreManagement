@@ -34,7 +34,7 @@ const EditClientDialog: React.FC<EditClientDialogProps> = ({
       submitText={
         loading ? t("clients.saving", "Saving...") : t("clients.save", "Save")
       }
-      cancelText={t("clients.cancel", "Cancel")}
+      cancelText={t("common.cancel")}
       loading={loading}
       submitDisabled={loading}
     >

@@ -765,7 +765,8 @@
   "common": {
     "refresh": "تحديث",
     "export": "تصدير",
-    "clear": "مسح"
+    "clear": "مسح",
+    "cancel": "إلغاء"
   },
   "pagination": {
     "next": "التالي",

@@ -818,7 +818,7 @@ export default function Clients() {
           { name: confirmDelete.clientName },
         )}
         confirmText={t("clients.delete", "Delete")}
-        cancelText={t("clients.cancel", "Cancel")}
+                  cancelText={t("common.cancel")}
         variant="danger"
         onConfirm={confirmDeleteClient}
         loading={!!deleteLoading}
@@ -836,7 +836,7 @@ export default function Clients() {
           { name: confirmDeleteSupplier.supplierName },
         )}
         confirmText={t("suppliers.delete", "Delete")}
-        cancelText={t("suppliers.cancel", "Cancel")}
+                  cancelText={t("common.cancel")}
         variant="danger"
         onConfirm={confirmDeleteSupplierAction}
         loading={!!deleteSupplierLoading}

@@ -5,6 +5,7 @@ interface StyledNumberInputProps {
   max?: number;
   placeholder?: string;
   disabled?: boolean;
+  [key: string]: any; // Allow additional props like data-field, onKeyDown, etc.
 }
 
 export default function StyledNumberInput({
@@ -14,6 +15,7 @@ export default function StyledNumberInput({
   max = 2_147_483_647,
   placeholder = "",
   disabled = false,
+  ...restProps
 }: StyledNumberInputProps) {
   return (
     <div className="relative w-full">
@@ -38,6 +40,7 @@ export default function StyledNumberInput({
         min={min}
         max={max}
         disabled={disabled}
+        {...restProps}
       />
     </div>
   );

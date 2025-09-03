@@ -65,13 +65,13 @@ export const SellingPriceWarningDialog: React.FC<SellingPriceWarningDialogProps>
             onClick={handleCancel}
             className="text-muted-foreground"
           >
-            {t("stock.cancel", "Cancel")}
+            {t("common.cancel")}
           </Button>
           <Button
             onClick={handleConfirm}
             className="bg-orange-600 hover:bg-orange-700 text-white"
           >
-            {t("stock.proceedAnyway", "Proceed Anyway")}
+            {t("stock.proceedAnyway")}
           </Button>
         </div>
       </DialogContent>
