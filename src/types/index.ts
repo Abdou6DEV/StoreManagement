@@ -85,6 +85,7 @@ export interface AddStockFormState {
   sellingPrice: number | "";
   codebar: string;
   sellerId: string;
+  sellerName: string;
   photo: string | null;
 }
 
