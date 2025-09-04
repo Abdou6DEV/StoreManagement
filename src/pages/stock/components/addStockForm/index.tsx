@@ -54,6 +54,9 @@ interface PendingProduct {
   photo: string | null;
   isNewProduct: boolean;
   existingProductId?: string;
+  priceStrategy?: 'weighted' | 'new'; // Track the chosen price strategy
+  originalBoughtPrice?: number; // Store the original price for weighted calculation
+  actualPurchasePrice?: number; // Store the actual price paid for this purchase
 }
 
 export default function AddStockForm({
@@ -162,19 +165,56 @@ export default function AddStockForm({
     }
   }, [categories]);
 
-  // Close dropdowns when clicking outside
+  // Close dropdowns when clicking outside or on other form elements
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Element;
-      if (!target.closest('.relative')) {
-        setShowProductDropdown(false);
-        setShowCategoryDropdown(false);
-        setShowSellerDropdown(false);
+      
+      // Check if click is on a dropdown item (don't close if clicking on dropdown items)
+      if (target.closest('[data-product-dropdown]') || 
+          target.closest('[data-category-dropdown]') || 
+          target.closest('[data-seller-dropdown]')) {
+        return;
       }
+      
+      // Close all dropdowns if clicking anywhere else
+      setShowProductDropdown(false);
+      setShowCategoryDropdown(false);
+      setShowSellerDropdown(false);
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Global Enter key handler to focus on product name when no input is focused
+  React.useEffect(() => {
+    const handleGlobalKeyDown = (event: KeyboardEvent) => {
+      // Only handle Enter key
+      if (event.key !== 'Enter') return;
+      
+      // Check if any input/textarea/button is currently focused
+      const activeElement = document.activeElement;
+      const isInputFocused = activeElement && (
+        activeElement.tagName === 'INPUT' ||
+        activeElement.tagName === 'TEXTAREA' ||
+        activeElement.tagName === 'BUTTON' ||
+        activeElement.tagName === 'SELECT' ||
+        activeElement.getAttribute('contenteditable') === 'true'
+      );
+      
+      // If no input is focused, focus on product name field
+      if (!isInputFocused) {
+        event.preventDefault();
+        const productNameInput = document.querySelector('[data-field="product-name"]') as HTMLInputElement;
+        if (productNameInput) {
+          productNameInput.focus();
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleGlobalKeyDown);
+    return () => document.removeEventListener('keydown', handleGlobalKeyDown);
   }, []);
 
   // Compute paginated products
@@ -323,6 +363,76 @@ export default function AddStockForm({
               form.categoryName.toLowerCase().trim()
         );
 
+        // Check if existing product has different bought price (like in single mode)
+        if (existingProduct && isPriceDifferent(safePrice(form.boughtPrice), existingProduct.boughtPrice)) {
+          // Check for remembered choice first
+          const rememberedChoice = localStorage.getItem("priceConfirmationChoice");
+
+          if (rememberedChoice) {
+            // Automatically apply the remembered choice
+            const pendingProduct: PendingProduct = {
+              id: Date.now().toString(),
+              name: form.name,
+              categoryName: form.categoryName,
+              quantity: Number(form.quantity || 0),
+              boughtPrice: safePrice(form.boughtPrice),
+              sellingPrice: safePrice(form.sellingPrice),
+              codebar: form.codebar,
+              sellerId: form.sellerId,
+              photo: form.photo,
+              isNewProduct: false,
+              existingProductId: existingProduct.id,
+            };
+
+            setPendingProducts((prev) => [...prev, pendingProduct]);
+            setForm(initialForm);
+
+            showToast(
+              t("stock.productAddedToPending", "Product added to purchase list"),
+              "success"
+            );
+            return;
+          }
+
+          // No remembered choice, show the price confirmation dialog
+          try {
+            // Fetch product with purchase history for the dialog
+            const productWithHistory = await window.api.database.products.getWithPurchaseHistory(existingProduct.id);
+
+            // Show price confirmation dialog
+            setPriceConfirmationData({
+              productId: existingProduct.id,
+              newPrice: safePrice(form.boughtPrice),
+              previousPrice: existingProduct.boughtPrice,
+              newSellingPrice: safePrice(form.sellingPrice),
+              previousSellingPrice: existingProduct.sellingPrice,
+              sellerName: sellers.find((s) => s.id === form.sellerId)?.name || null,
+              quantity: Number(form.quantity || 0),
+              sellerId: form.sellerId,
+              purchaseHistory: productWithHistory?.PurchaseItems || [],
+            });
+            setShowPriceConfirmation(true);
+            return; // Don't proceed yet, wait for user decision
+          } catch (error) {
+            rendererLogger.error("Failed to fetch product history", "AddStockForm", error);
+            // Fallback to basic confirmation without history
+            setPriceConfirmationData({
+              productId: existingProduct.id,
+              newPrice: safePrice(form.boughtPrice),
+              previousPrice: existingProduct.boughtPrice,
+              newSellingPrice: safePrice(form.sellingPrice),
+              previousSellingPrice: existingProduct.sellingPrice,
+              sellerName: sellers.find((s) => s.id === form.sellerId)?.name || null,
+              quantity: Number(form.quantity || 0),
+              sellerId: form.sellerId,
+              purchaseHistory: [],
+            });
+            setShowPriceConfirmation(true);
+            return;
+          }
+        }
+
+        // Same price or new product, proceed normally
         const pendingProduct: PendingProduct = {
           id: Date.now().toString(),
           name: form.name,
@@ -527,6 +637,15 @@ export default function AddStockForm({
       return;
     }
 
+    // Validate seller selection
+    if (!multiSellerId && !multiSellerName) {
+      showToast(
+        t("stock.sellerRequired", "Please select a seller for the purchase"),
+        "error"
+      );
+      return;
+    }
+
     // Check if seller name was entered but doesn't exist, and create it if needed
     if (multiSellerId === "" && multiSellerName) {
       const sellerName = multiSellerName.trim();
@@ -639,41 +758,78 @@ export default function AddStockForm({
         });
       }
 
-      // Add existing products to purchase items
+      // Process existing products with their chosen price strategies
       for (const existingProduct of existingProducts) {
         if (existingProduct.existingProductId) {
-          purchaseItems.push({
-            productId: existingProduct.existingProductId,
-            quantity: existingProduct.quantity,
-            price: existingProduct.boughtPrice,
-          });
+          try {
+            // Get current product data
+            const currentProduct = products.find(p => p.id === existingProduct.existingProductId);
+            const currentQuantity = currentProduct?.quantity || 0;
+            
+            // Update the product with new quantity and price
+            await window.api.database.products.update(existingProduct.existingProductId, {
+              quantity: currentQuantity + existingProduct.quantity,
+              boughtPrice: existingProduct.boughtPrice, // Use the calculated price from pending list
+              sellingPrice: safePrice(existingProduct.sellingPrice),
+            });
+
+            // Create the purchase record separately
+            const purchaseData = {
+              sellerId: multiSellerId || undefined,
+              quantity: existingProduct.quantity,
+              price: existingProduct.actualPurchasePrice || existingProduct.boughtPrice, // Use the actual price paid
+            };
+
+            // Add to purchase items for record keeping
+            purchaseItems.push({
+              productId: existingProduct.existingProductId,
+              quantity: existingProduct.quantity,
+              price: purchaseData.price,
+            });
+          } catch (productError) {
+            rendererLogger.error(
+              `Failed to update product ${existingProduct.name}`,
+              "AddStockForm",
+              productError
+            );
+            showToast(
+              t("stock.productUpdateError", `Failed to update product: ${existingProduct.name}`),
+              "error"
+            );
+            throw productError; // Re-throw to stop the entire process
+          }
         }
       }
 
       // Create the multi-product purchase
-      await window.api.database.purchases.createWithItems({
-        sellerId: multiSellerId || undefined,
-        items: purchaseItems,
-      });
-
-      // Update quantities for existing products only (new products already have correct quantity)
-      for (const item of purchaseItems) {
-        const isExistingProduct = existingProducts.some(
-          (p) => p.existingProductId === item.productId
-        );
-        if (isExistingProduct) {
-          const currentQuantity =
-            products.find((p) => p.id === item.productId)?.quantity || 0;
-          await window.api.database.products.update(item.productId, {
-            quantity: currentQuantity + item.quantity,
+      if (purchaseItems.length > 0) {
+        try {
+          await window.api.database.purchases.createWithItems({
+            sellerId: multiSellerId || undefined,
+            items: purchaseItems,
           });
+          
+          showToast(
+            t("stock.purchaseCompletedSuccess", "Purchase completed successfully!"),
+            "success"
+          );
+        } catch (purchaseError) {
+          rendererLogger.error(
+            "Failed to create purchase record",
+            "AddStockForm",
+            purchaseError
+          );
+          showToast(
+            t("stock.purchaseRecordError", "Products updated but purchase record failed"),
+            "error"
+          );
         }
+      } else {
+        showToast(
+          t("stock.noPurchaseItems", "No purchase items to record"),
+          "error"
+        );
       }
-
-      showToast(
-        t("stock.purchaseCompletedSuccess", "Purchase completed successfully!"),
-        "success"
-      );
 
       // Reset everything
       setPendingProducts([]);
@@ -702,37 +858,78 @@ export default function AddStockForm({
     try {
       setLoading(true);
 
-      const purchaseData = {
-        sellerId: priceConfirmationData.sellerId || undefined,
-        quantity: priceConfirmationData.quantity,
-        price: priceConfirmationData.newPrice,
-      };
+      if (isMultiMode) {
+        // Multi-mode: Add to pending list with weighted average preference
+        // For weighted average, we need to calculate the actual weighted price
+        const existingProduct = products.find(p => p.id === priceConfirmationData.productId);
+        const currentQuantity = existingProduct?.quantity || 0;
+        const currentPrice = existingProduct?.boughtPrice || 0;
+        const newQuantity = priceConfirmationData.quantity;
+        const newPrice = priceConfirmationData.newPrice;
+        
+        // Calculate weighted average price
+        const totalValue = (currentQuantity * currentPrice) + (newQuantity * newPrice);
+        const totalQuantity = currentQuantity + newQuantity;
+        const weightedPrice = totalQuantity > 0 ? totalValue / totalQuantity : newPrice;
+        
+        const pendingProduct: PendingProduct = {
+          id: Date.now().toString(),
+          name: form.name,
+          categoryName: form.categoryName,
+          quantity: priceConfirmationData.quantity,
+          boughtPrice: weightedPrice, // Use calculated weighted price
+          sellingPrice: safePrice(form.sellingPrice),
+          codebar: form.codebar,
+          sellerId: priceConfirmationData.sellerId,
+          photo: form.photo,
+          isNewProduct: false,
+          existingProductId: priceConfirmationData.productId,
+          priceStrategy: 'weighted',
+          originalBoughtPrice: currentPrice,
+          actualPurchasePrice: newPrice, // Store the actual price paid
+        };
 
-      // Update with weighted average
-      await window.api.database.products.updateWithPurchase({
-        productId: priceConfirmationData.productId,
-        additionalQuantity: priceConfirmationData.quantity,
-        purchaseData: purchaseData,
-        updateBoughtPrice: true,
-        newSellingPrice: safePrice(form.sellingPrice),
-      });
+        setPendingProducts((prev) => [...prev, pendingProduct]);
+        setForm(initialForm);
 
-      showToast(
-        t(
-          "stock.toastUpdateSuccess",
-          "Product updated successfully with weighted average price!"
-        ),
-        "success"
-      );
+        showToast(
+          t("stock.productAddedToPending", "Product added to purchase list"),
+          "success"
+        );
+      } else {
+        // Single mode: Update directly in database
+        const purchaseData = {
+          sellerId: priceConfirmationData.sellerId || undefined,
+          quantity: priceConfirmationData.quantity,
+          price: priceConfirmationData.newPrice,
+        };
+
+        // Update with weighted average
+        await window.api.database.products.updateWithPurchase({
+          productId: priceConfirmationData.productId,
+          additionalQuantity: priceConfirmationData.quantity,
+          purchaseData: purchaseData,
+          updateBoughtPrice: true,
+          newSellingPrice: safePrice(form.sellingPrice),
+        });
+
+        showToast(
+          t(
+            "stock.toastUpdateSuccess",
+            "Product updated successfully with weighted average price!"
+          ),
+          "success"
+        );
+
+        // Refresh data
+        refetchProducts();
+        refetchCategories();
+      }
 
       // Reset form and close dialog
       setForm(initialForm);
       setShowPriceConfirmation(false);
       setPriceConfirmationData(null);
-
-      // Refresh data
-      refetchProducts();
-      refetchCategories();
     } catch (err) {
       showToast(t("stock.toastAddError", "Failed to add product"), "error");
     } finally {
@@ -746,34 +943,65 @@ export default function AddStockForm({
     try {
       setLoading(true);
 
-      const purchaseData = {
-        sellerId: priceConfirmationData.sellerId || undefined,
-        quantity: priceConfirmationData.quantity,
-        price: priceConfirmationData.newPrice,
-      };
+      if (isMultiMode) {
+        // Multi-mode: Add to pending list with new price preference
+        const existingProduct = products.find(p => p.id === priceConfirmationData.productId);
+        
+        const pendingProduct: PendingProduct = {
+          id: Date.now().toString(),
+          name: form.name,
+          categoryName: form.categoryName,
+          quantity: priceConfirmationData.quantity,
+          boughtPrice: priceConfirmationData.newPrice, // Use new price directly
+          sellingPrice: safePrice(form.sellingPrice),
+          codebar: form.codebar,
+          sellerId: priceConfirmationData.sellerId,
+          photo: form.photo,
+          isNewProduct: false,
+          existingProductId: priceConfirmationData.productId,
+          priceStrategy: 'new',
+          originalBoughtPrice: existingProduct?.boughtPrice || 0,
+          actualPurchasePrice: priceConfirmationData.newPrice, // Store the actual price paid
+        };
 
-      // Update with NEW bought price (not weighted average)
-      await window.api.database.products.updateWithPurchase({
-        productId: priceConfirmationData.productId,
-        additionalQuantity: priceConfirmationData.quantity,
-        purchaseData: purchaseData,
-        updateBoughtPrice: false, // false = keep NEW price, true = calculate weighted average
-        newSellingPrice: safePrice(form.sellingPrice),
-      });
+        setPendingProducts((prev) => [...prev, pendingProduct]);
+        setForm(initialForm);
 
-      showToast(
-        t("stock.toastUpdateSuccess", "Product updated successfully!"),
-        "success"
-      );
+        showToast(
+          t("stock.productAddedToPending", "Product added to purchase list"),
+          "success"
+        );
+      } else {
+        // Single mode: Update directly in database
+        const purchaseData = {
+          sellerId: priceConfirmationData.sellerId || undefined,
+          quantity: priceConfirmationData.quantity,
+          price: priceConfirmationData.newPrice,
+        };
+
+        // Update with NEW bought price (not weighted average)
+        await window.api.database.products.updateWithPurchase({
+          productId: priceConfirmationData.productId,
+          additionalQuantity: priceConfirmationData.quantity,
+          purchaseData: purchaseData,
+          updateBoughtPrice: false, // false = keep NEW price, true = calculate weighted average
+          newSellingPrice: safePrice(form.sellingPrice),
+        });
+
+        showToast(
+          t("stock.toastUpdateSuccess", "Product updated successfully!"),
+          "success"
+        );
+
+        // Refresh data
+        refetchProducts();
+        refetchCategories();
+      }
 
       // Reset form and close dialog
       setForm(initialForm);
       setShowPriceConfirmation(false);
       setPriceConfirmationData(null);
-
-      // Refresh data
-      refetchProducts();
-      refetchCategories();
     } catch (err) {
       showToast(t("stock.toastAddError", "Failed to add product"), "error");
     } finally {
@@ -1076,41 +1304,78 @@ export default function AddStockForm({
         });
       }
 
-      // Add existing products to purchase items
+      // Process existing products with their chosen price strategies
       for (const existingProduct of existingProducts) {
         if (existingProduct.existingProductId) {
-          purchaseItems.push({
-            productId: existingProduct.existingProductId,
-            quantity: existingProduct.quantity,
-            price: existingProduct.boughtPrice,
-          });
+          try {
+            // Get current product data
+            const currentProduct = products.find(p => p.id === existingProduct.existingProductId);
+            const currentQuantity = currentProduct?.quantity || 0;
+            
+            // Update the product with new quantity and price
+            await window.api.database.products.update(existingProduct.existingProductId, {
+              quantity: currentQuantity + existingProduct.quantity,
+              boughtPrice: existingProduct.boughtPrice, // Use the calculated price from pending list
+              sellingPrice: safePrice(existingProduct.sellingPrice),
+            });
+
+            // Create the purchase record separately
+            const purchaseData = {
+              sellerId: multiSellerId || undefined,
+              quantity: existingProduct.quantity,
+              price: existingProduct.actualPurchasePrice || existingProduct.boughtPrice, // Use the actual price paid
+            };
+
+            // Add to purchase items for record keeping
+            purchaseItems.push({
+              productId: existingProduct.existingProductId,
+              quantity: existingProduct.quantity,
+              price: purchaseData.price,
+            });
+          } catch (productError) {
+            rendererLogger.error(
+              `Failed to update product ${existingProduct.name}`,
+              "AddStockForm",
+              productError
+            );
+            showToast(
+              t("stock.productUpdateError", `Failed to update product: ${existingProduct.name}`),
+              "error"
+            );
+            throw productError; // Re-throw to stop the entire process
+          }
         }
       }
 
       // Create the multi-product purchase
-      await window.api.database.purchases.createWithItems({
-        sellerId: multiSellerId || undefined,
-        items: purchaseItems,
-      });
-
-      // Update quantities for existing products only (new products already have correct quantity)
-      for (const item of purchaseItems) {
-        const isExistingProduct = existingProducts.some(
-          (p) => p.existingProductId === item.productId
-        );
-        if (isExistingProduct) {
-          const currentQuantity =
-            products.find((p) => p.id === item.productId)?.quantity || 0;
-          await window.api.database.products.update(item.productId, {
-            quantity: currentQuantity + item.quantity,
+      if (purchaseItems.length > 0) {
+        try {
+          await window.api.database.purchases.createWithItems({
+            sellerId: multiSellerId || undefined,
+            items: purchaseItems,
           });
+          
+          showToast(
+            t("stock.purchaseCompletedSuccess", "Purchase completed successfully!"),
+            "success"
+          );
+        } catch (purchaseError) {
+          rendererLogger.error(
+            "Failed to create purchase record",
+            "AddStockForm",
+            purchaseError
+          );
+          showToast(
+            t("stock.purchaseRecordError", "Products updated but purchase record failed"),
+            "error"
+          );
         }
+      } else {
+        showToast(
+          t("stock.noPurchaseItems", "No purchase items to record"),
+          "error"
+        );
       }
-
-      showToast(
-        t("stock.purchaseCompletedSuccess", "Purchase completed successfully!"),
-        "success"
-      );
 
       // Reset everything
       setPendingProducts([]);
@@ -1174,13 +1439,29 @@ export default function AddStockForm({
     }));
     setShowProductDropdown(false);
     
-    // Auto-focus on seller field after product selection
+    // Auto-focus on next appropriate field after product selection
     setTimeout(() => {
-      const sellerInput = document.querySelector('input[placeholder*="seller" i]') as HTMLInputElement;
-      if (sellerInput) {
-        sellerInput.focus();
+      if (isMultiMode) {
+        // In multi-mode, focus on quantity field (skip seller)
+        const quantityInput = document.querySelector('[data-field="quantity"]') as HTMLInputElement;
+        if (quantityInput) {
+          quantityInput.focus();
+        }
+      } else {
+        // In single mode, focus on seller field
+        const sellerInput = document.querySelector('[data-field="seller-name"]') as HTMLInputElement;
+        if (sellerInput) {
+          sellerInput.focus();
+        }
       }
     }, 100);
+  };
+
+  // Handler to close other dropdowns when focusing on a field
+  const handleFieldFocus = (fieldType: 'product' | 'category' | 'seller' | 'quantity' | 'bought-price' | 'selling-price' | 'codebar') => {
+    if (fieldType !== 'product') setShowProductDropdown(false);
+    if (fieldType !== 'category') setShowCategoryDropdown(false);
+    if (fieldType !== 'seller') setShowSellerDropdown(false);
   };
 
   // Handler for category selection
@@ -1200,20 +1481,39 @@ export default function AddStockForm({
     setPendingProducts([]);
     setMultiSellerId("");
     setMultiSellerName("");
+    
+    // Focus on product name field after mode change
+    setTimeout(() => {
+      const productNameInput = document.querySelector('[data-field="product-name"]') as HTMLInputElement;
+      if (productNameInput) {
+        productNameInput.focus();
+      }
+    }, 100); // Small delay to ensure the form is fully rendered
   };
 
   // Smart tab system functions
   const focusNextField = (currentField: string) => {
-    const fieldOrder = [
-      'product-name',
-      'category-name', 
-      'seller-name',
-      'quantity',
-      'bought-price',
-      'selling-price',
-      'codebar',
-      'add-button'
-    ];
+    // Dynamic field order based on mode
+    const fieldOrder = isMultiMode 
+      ? [
+          'product-name',
+          'category-name', 
+          'quantity',
+          'bought-price',
+          'selling-price',
+          'codebar',
+          'add-button'
+        ]
+      : [
+          'product-name',
+          'category-name', 
+          'seller-name',
+          'quantity',
+          'bought-price',
+          'selling-price',
+          'codebar',
+          'add-button'
+        ];
     
     const currentIndex = fieldOrder.indexOf(currentField);
     if (currentIndex === -1 || currentIndex === fieldOrder.length - 1) {
@@ -1236,16 +1536,27 @@ export default function AddStockForm({
   };
 
   const focusPreviousField = (currentField: string) => {
-    const fieldOrder = [
-      'product-name',
-      'category-name', 
-      'seller-name',
-      'quantity',
-      'bought-price',
-      'selling-price',
-      'codebar',
-      'add-button'
-    ];
+    // Dynamic field order based on mode (same as focusNextField)
+    const fieldOrder = isMultiMode 
+      ? [
+          'product-name',
+          'category-name', 
+          'quantity',
+          'bought-price',
+          'selling-price',
+          'codebar',
+          'add-button'
+        ]
+      : [
+          'product-name',
+          'category-name', 
+          'seller-name',
+          'quantity',
+          'bought-price',
+          'selling-price',
+          'codebar',
+          'add-button'
+        ];
     
     const currentIndex = fieldOrder.indexOf(currentField);
     if (currentIndex <= 0) return;
@@ -1257,11 +1568,27 @@ export default function AddStockForm({
     }
   };
 
+  // Handler for opening the add stock panel and focusing on product name
+  const handleOpenPanel = () => {
+    const newPanelState = openPanel === "add" ? null : "add";
+    setOpenPanel(newPanelState);
+    
+    // If opening the panel, focus on product name field after a short delay
+    if (newPanelState === "add") {
+      setTimeout(() => {
+        const productNameInput = document.querySelector('[data-field="product-name"]') as HTMLInputElement;
+        if (productNameInput) {
+          productNameInput.focus();
+        }
+      }, 100); // Small delay to ensure the panel is fully rendered
+    }
+  };
+
   return (
     <section className="bg-card border border-border rounded-xl shadow-sm">
       <header
         className="flex items-center justify-between p-6 border-b border-border cursor-pointer"
-        onClick={() => setOpenPanel(openPanel === "add" ? null : "add")}
+        onClick={handleOpenPanel}
       >
         <div className="flex items-center gap-3">
           <Package className="w-5 h-5 text-green-600" />
@@ -1306,6 +1633,7 @@ export default function AddStockForm({
                  onProductSelect={handleProductSelect}
                  onFormChange={handleFormChange}
                  onNextField={() => focusNextField('product-name')}
+                 onFieldFocus={() => handleFieldFocus('product')}
                />
 
                              <CategorySelection
@@ -1315,12 +1643,11 @@ export default function AddStockForm({
                  setShowCategoryDropdown={setShowCategoryDropdown}
                  filteredCategories={filteredCategories}
                  setFilteredCategories={setFilteredCategories}
-                 dropdownCategorySearch={dropdownCategorySearch}
-                 setDropdownCategorySearch={setDropdownCategorySearch}
                  categories={categories}
                  onCategorySelect={handleCategorySelect}
                  onFormChange={handleFormChange}
                  onNextField={() => focusNextField('category-name')}
+                 onFieldFocus={() => handleFieldFocus('category')}
                />
 
               {!isMultiMode && (
@@ -1336,6 +1663,7 @@ export default function AddStockForm({
                    onSellerSelect={handleSellerSelect}
                    onFormChange={handleFormChange}
                                      onNextField={() => focusNextField('seller-name')}
+                   onFieldFocus={() => handleFieldFocus('seller')}
                  />
               )}
 
@@ -1346,12 +1674,13 @@ export default function AddStockForm({
                    value={form.quantity === "" ? "" : Number(form.quantity)}
                    onChange={(val) => handleFormChange("quantity", val)}
                    placeholder={t("stock.quantity")}
-                   onKeyDown={(e) => {
+                   onKeyDown={(e: React.KeyboardEvent) => {
                      if (e.key === "Enter") {
                        e.preventDefault();
                        focusNextField('quantity');
                      }
                    }}
+                   onFocus={() => handleFieldFocus('quantity')}
                  />
                </div>
 
@@ -1364,12 +1693,13 @@ export default function AddStockForm({
                    }
                    onChange={(val) => handleFormChange("boughtPrice", val)}
                    placeholder={t("stock.boughtPrice")}
-                   onKeyDown={(e) => {
+                   onKeyDown={(e: React.KeyboardEvent) => {
                      if (e.key === "Enter") {
                        e.preventDefault();
                        focusNextField('bought-price');
                      }
                    }}
+                   onFocus={() => handleFieldFocus('bought-price')}
                  />
                </div>
 
@@ -1382,12 +1712,13 @@ export default function AddStockForm({
                    }
                    onChange={(val) => handleFormChange("sellingPrice", val)}
                    placeholder={t("stock.sellingPrice")}
-                   onKeyDown={(e) => {
+                   onKeyDown={(e: React.KeyboardEvent) => {
                      if (e.key === "Enter") {
                        e.preventDefault();
                        focusNextField('selling-price');
                      }
                    }}
+                   onFocus={() => handleFieldFocus('selling-price')}
                  />
                 {/* Warning when selling price is less than bought price */}
                 {form.sellingPrice &&
@@ -1421,6 +1752,7 @@ export default function AddStockForm({
                        focusNextField('codebar');
                      }
                    }}
+                   onFocus={() => handleFieldFocus('codebar')}
                    className="w-full px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-green-500/50 focus:border-green-500 transition-all"
                  />
                </div>

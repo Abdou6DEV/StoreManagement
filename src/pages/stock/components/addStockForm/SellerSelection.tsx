@@ -35,6 +35,7 @@ interface SellerSelectionProps {
   onSellerSelect: (sellerId: string) => void;
   onFormChange: (key: string, value: any) => void;
   onNextField?: () => void;
+  onFieldFocus?: () => void;
 }
 
 export default function SellerSelection({
@@ -49,6 +50,7 @@ export default function SellerSelection({
   onSellerSelect,
   onFormChange,
   onNextField,
+  onFieldFocus,
 }: SellerSelectionProps) {
   const { t } = useTranslation();
   
@@ -191,6 +193,7 @@ export default function SellerSelection({
            onChange={(e) => handleSellerSearch(e.target.value)}
            onKeyDown={handleKeyDown}
            onFocus={() => {
+             onFieldFocus?.();
              if (form.sellerName.trim()) {
                setShowSellerDropdown(true);
              }

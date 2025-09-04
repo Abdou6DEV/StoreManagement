@@ -5,6 +5,7 @@ interface StyledNumberInputProps {
   max?: number;
   placeholder?: string;
   disabled?: boolean;
+  onFocus?: () => void;
   [key: string]: any; // Allow additional props like data-field, onKeyDown, etc.
 }
 
@@ -15,6 +16,7 @@ export default function StyledNumberInput({
   max = 2_147_483_647,
   placeholder = "",
   disabled = false,
+  onFocus,
   ...restProps
 }: StyledNumberInputProps) {
   return (
@@ -31,11 +33,12 @@ export default function StyledNumberInput({
           }
         }}
         onFocus={(e) => {
+          onFocus?.();
           if (value === 0) {
             e.target.select(); // 👈 select the "0" so typing replaces it
           }
         }}
-        className="w-full px-4 py-3 pr-10 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-primary/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-muted/50"
+        className="w-full px-4 py-3 pr-10 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-green-500/50 focus:border-green-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-muted/50"
         placeholder={placeholder}
         min={min}
         max={max}

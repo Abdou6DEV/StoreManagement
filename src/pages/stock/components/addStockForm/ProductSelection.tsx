@@ -21,6 +21,7 @@ interface ProductSelectionProps {
   onProductSelect: (product: Product) => void;
   onFormChange: (key: string, value: string | number | null) => void;
   onNextField?: () => void;
+  onFieldFocus?: () => void;
 }
 
 export default function ProductSelection({
@@ -39,6 +40,7 @@ export default function ProductSelection({
   onProductSelect,
   onFormChange,
   onNextField,
+  onFieldFocus,
 }: ProductSelectionProps) {
   const { t } = useTranslation();
   
@@ -180,6 +182,7 @@ export default function ProductSelection({
           onChange={(e) => handleProductSearch(e.target.value)}
           onKeyDown={handleKeyDown}
           onFocus={() => {
+            onFieldFocus?.();
             if (form.name.trim()) {
               setShowProductDropdown(true);
             }

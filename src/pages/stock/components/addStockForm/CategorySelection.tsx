@@ -13,6 +13,7 @@ interface CategorySelectionProps {
   onCategorySelect: (category: string) => void; // Changed from object to string
   onFormChange: (key: string, value: any) => void;
   onNextField?: () => void;
+  onFieldFocus?: () => void;
   isExistingProduct: boolean;
 }
 
@@ -26,6 +27,7 @@ export default function CategorySelection({
   onCategorySelect,
   onFormChange,
   onNextField,
+  onFieldFocus,
   isExistingProduct,
 }: CategorySelectionProps) {
   const { t } = useTranslation();
@@ -166,6 +168,7 @@ export default function CategorySelection({
           onChange={(e) => handleCategorySearch(e.target.value)}
           onKeyDown={handleKeyDown}
           onFocus={() => {
+            onFieldFocus?.();
             if (!isExistingProduct && form.categoryName.trim()) {
               setShowCategoryDropdown(true);
             }
