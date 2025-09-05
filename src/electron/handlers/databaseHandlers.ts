@@ -104,27 +104,36 @@ export function setupDatabaseHandlers() {
     "db:products:getWithPurchaseHistory",
     async (_event, id: string) => {
       return await getProductWithPurchaseHistory(id);
-    },
+    }
   );
 
   ipcMain.handle(
     "db:products:createWithPurchase",
     async (_event, { productData, purchaseData }) => {
       return await createProductWithPurchase(productData, purchaseData);
-    },
+    }
   );
 
   ipcMain.handle(
     "db:products:updateWithPurchase",
-    async (_event, { productId, additionalQuantity, purchaseData, updateBoughtPrice, newSellingPrice }) => {
+    async (
+      _event,
+      {
+        productId,
+        additionalQuantity,
+        purchaseData,
+        updateBoughtPrice,
+        newSellingPrice,
+      }
+    ) => {
       return await updateProductWithPurchase(
         productId,
         additionalQuantity,
         purchaseData,
         updateBoughtPrice || false,
-        newSellingPrice,
+        newSellingPrice
       );
-    },
+    }
   );
 
   // Categories handlers
@@ -188,9 +197,9 @@ export function setupDatabaseHandlers() {
       return await getSalesAggregatedByPeriod(
         period,
         new Date(startDate),
-        new Date(endDate),
+        new Date(endDate)
       );
-    },
+    }
   );
 
   ipcMain.handle("db:sales:getSummary", async (_event, startDate, endDate) => {
@@ -201,7 +210,7 @@ export function setupDatabaseHandlers() {
     "db:sales:getBySpecificPeriod",
     async (_event, period, periodValue) => {
       return await getSalesBySpecificPeriod(period, periodValue);
-    },
+    }
   );
 
   // Options handlers
@@ -223,7 +232,7 @@ export function setupDatabaseHandlers() {
     "db:payments:getByClient",
     async (_event, clientId: string) => {
       return await getPaymentsByClient(clientId);
-    },
+    }
   );
 
   ipcMain.handle("db:payments:getAll", async () => {
@@ -238,21 +247,21 @@ export function setupDatabaseHandlers() {
     "db:payments:updatePaidAt",
     async (event, { paymentId, paidDate }) => {
       return await updatePaymentPaidAt(paymentId, paidDate);
-    },
+    }
   );
 
   ipcMain.handle(
     "db:payments:updateAmount",
     async (_event, { paymentId, givenAmount }) => {
       return await updatePaymentAmount(paymentId, givenAmount);
-    },
+    }
   );
 
   ipcMain.handle(
     "db:payments:getBySpecificPeriod",
     async (_event, period, periodValue) => {
       return await getPaymentsBySpecificPeriod(period, periodValue);
-    },
+    }
   );
 
   // Sellers handlers
@@ -301,21 +310,21 @@ export function setupDatabaseHandlers() {
     "db:purchases:getByProduct",
     async (_event, productId: string) => {
       return await getPurchasesByProduct(productId);
-    },
+    }
   );
 
   ipcMain.handle(
     "db:purchases:getBySeller",
     async (_event, sellerId: string) => {
       return await getPurchasesBySeller(sellerId);
-    },
+    }
   );
 
   ipcMain.handle(
     "db:purchases:getBySpecificPeriod",
     async (_event, period, periodValue) => {
       return await getPurchasesBySpecificPeriod(period, periodValue);
-    },
+    }
   );
 
   ipcMain.handle("db:purchases:createWithItems", async (_event, data) => {
@@ -326,7 +335,7 @@ export function setupDatabaseHandlers() {
     "db:purchases:updateWithItems",
     async (_event, { purchaseId, data }) => {
       return await updatePurchaseWithItems(purchaseId, data);
-    },
+    }
   );
 
   // Purchase Items handlers
@@ -346,7 +355,7 @@ export function setupDatabaseHandlers() {
     "db:purchaseItems:getByPurchase",
     async (_event, purchaseId: string) => {
       return await getPurchaseItemsByPurchase(purchaseId);
-    },
+    }
   );
 
   // Manual Products handlers

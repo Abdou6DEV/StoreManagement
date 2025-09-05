@@ -18,6 +18,20 @@ export async function createSale(data: {
   }[];
   discount?: number;
 }) {
+  // Basic validation
+  if (data.discount && data.discount < 0) {
+    throw new Error("Discount cannot be negative");
+  }
+
+  for (const item of data.items) {
+    if (item.quantity <= 0) {
+      throw new Error("Item quantity must be greater than 0");
+    }
+    if (item.price < 0) {
+      throw new Error("Item price cannot be negative");
+    }
+  }
+
   // Pre-process items to create/find manual products and services outside the transaction
   const processedItems = await Promise.all(
     data.items.map(async (item) => {
@@ -47,7 +61,7 @@ export async function createSale(data: {
         manualProductId,
         serviceId,
       };
-    }),
+    })
   );
 
   return await prisma.$transaction(async (tx) => {
@@ -73,13 +87,29 @@ export async function createSale(data: {
         clientId: data.clientId,
         discount: data.discount ?? 0,
         saleItems: {
-          create: processedItems.map((item) => ({
-            productId: item.productId || null,
-            manualProductId: item.manualProductId,
-            serviceId: item.serviceId,
-            quantity: item.quantity,
-            price: item.price,
-          })),
+          create: await Promise.all(
+            processedItems.map(async (item) => {
+              let boughtPrice = null;
+
+              // Get the current bought price for regular products
+              if (item.productId) {
+                const product = await tx.product.findUnique({
+                  where: { id: item.productId },
+                  select: { boughtPrice: true },
+                });
+                boughtPrice = product?.boughtPrice || null;
+              }
+
+              return {
+                productId: item.productId || null,
+                manualProductId: item.manualProductId,
+                serviceId: item.serviceId,
+                quantity: item.quantity,
+                price: item.price,
+                boughtPrice: boughtPrice,
+              };
+            })
+          ),
         },
       },
     });
@@ -98,12 +128,28 @@ export async function updateSale(
       price: number;
       manualProductName?: string;
       manualProductType?: string;
+      manualProductCostPrice?: number;
       serviceName?: string;
       serviceDescription?: string;
+      serviceCostPrice?: number;
     }[];
     discount?: number;
-  },
+  }
 ) {
+  // Basic validation
+  if (data.discount && data.discount < 0) {
+    throw new Error("Discount cannot be negative");
+  }
+
+  for (const item of data.items) {
+    if (item.quantity <= 0) {
+      throw new Error("Item quantity must be greater than 0");
+    }
+    if (item.price < 0) {
+      throw new Error("Item price cannot be negative");
+    }
+  }
+
   // Pre-process items to create/find manual products and services outside the transaction
   const processedItems = await Promise.all(
     data.items.map(async (item) => {
@@ -114,6 +160,7 @@ export async function updateSale(
         const manualProduct = await findOrCreateManualProduct({
           name: item.manualProductName,
           type: item.manualProductType,
+          costPrice: item.manualProductCostPrice,
         });
         manualProductId = manualProduct.id;
       }
@@ -122,6 +169,7 @@ export async function updateSale(
         const service = await findOrCreateService({
           name: item.serviceName,
           description: item.serviceDescription,
+          costPrice: item.serviceCostPrice,
         });
         serviceId = service.id;
       }
@@ -131,7 +179,7 @@ export async function updateSale(
         manualProductId,
         serviceId,
       };
-    }),
+    })
   );
 
   return await prisma.$transaction(
@@ -192,13 +240,29 @@ export async function updateSale(
           clientId: data.clientId,
           discount: data.discount ?? 0,
           saleItems: {
-            create: processedItems.map((item) => ({
-              productId: item.productId || null,
-              manualProductId: item.manualProductId,
-              serviceId: item.serviceId,
-              quantity: item.quantity,
-              price: item.price,
-            })),
+            create: await Promise.all(
+              processedItems.map(async (item) => {
+                let boughtPrice = null;
+
+                // Get the current bought price for regular products
+                if (item.productId) {
+                  const product = await tx.product.findUnique({
+                    where: { id: item.productId },
+                    select: { boughtPrice: true },
+                  });
+                  boughtPrice = product?.boughtPrice || null;
+                }
+
+                return {
+                  productId: item.productId || null,
+                  manualProductId: item.manualProductId,
+                  serviceId: item.serviceId,
+                  quantity: item.quantity,
+                  price: item.price,
+                  boughtPrice: boughtPrice,
+                };
+              })
+            ),
           },
         },
         include: {
@@ -224,7 +288,7 @@ export async function updateSale(
       // Calculate totals
       const totalAmount = updatedSale.saleItems.reduce(
         (sum, item) => sum + item.price * item.quantity,
-        0,
+        0
       );
 
       const totalAmountWithDiscount = totalAmount - updatedSale.discount;
@@ -235,7 +299,7 @@ export async function updateSale(
 
       const totalItems = updatedSale.saleItems.reduce(
         (sum, item) => sum + item.quantity,
-        0,
+        0
       );
 
       return {
@@ -250,7 +314,7 @@ export async function updateSale(
     },
     {
       timeout: 10000, // 10 seconds timeout
-    },
+    }
   );
 }
 
@@ -345,20 +409,22 @@ export async function getAllSales() {
     if (!sale.payment) {
       return true;
     }
-    
+
     // CREDIT sales are always included
     if (sale.payment.type === "CREDIT") {
       return true;
     }
-    
+
     // VERSEMENT sales are only excluded if not paid
-    return !(sale.payment.type === "VERSEMENT" && sale.payment.paidDate === null);
+    return !(
+      sale.payment.type === "VERSEMENT" && sale.payment.paidDate === null
+    );
   });
 
   return filteredSales.map((sale) => {
     const totalAmount = sale.saleItems.reduce(
       (sum, item) => sum + item.price * item.quantity,
-      0,
+      0
     );
     const totalAmountWithDiscount = totalAmount - sale.discount;
 
@@ -369,7 +435,7 @@ export async function getAllSales() {
 
     const totalItems = sale.saleItems.reduce(
       (sum, item) => sum + item.quantity,
-      0,
+      0
     );
 
     return {
@@ -390,14 +456,14 @@ export async function getRecentSales(limit = 50, offset = 0) {
   oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
   oneWeekAgo.setHours(0, 0, 0, 0);
 
-  // Get total count first
-  const totalCount = await prisma.sale.count({
-    where: {
-      createdAt: {
-        gte: oneWeekAgo,
-      },
-    },
-  });
+  // Get total count first (for potential future use)
+  // const totalCount = await prisma.sale.count({
+  //   where: {
+  //     createdAt: {
+  //       gte: oneWeekAgo,
+  //     },
+  //   },
+  // });
 
   const sales = await prisma.sale.findMany({
     where: {
@@ -458,20 +524,22 @@ export async function getRecentSales(limit = 50, offset = 0) {
     if (!sale.payment) {
       return true;
     }
-    
+
     // CREDIT sales are always included
     if (sale.payment.type === "CREDIT") {
       return true;
     }
-    
+
     // VERSEMENT sales are only excluded if not paid
-    return !(sale.payment.type === "VERSEMENT" && sale.payment.paidDate === null);
+    return !(
+      sale.payment.type === "VERSEMENT" && sale.payment.paidDate === null
+    );
   });
 
   const salesWithTotals = filteredSales.map((sale) => {
     const totalAmount = sale.saleItems.reduce(
       (sum, item) => sum + item.price * item.quantity,
-      0,
+      0
     );
     const totalAmountWithDiscount = totalAmount - sale.discount;
 
@@ -481,7 +549,7 @@ export async function getRecentSales(limit = 50, offset = 0) {
 
     const totalItems = sale.saleItems.reduce(
       (sum, item) => sum + item.quantity,
-      0,
+      0
     );
 
     return {
@@ -505,7 +573,7 @@ export async function getRecentSales(limit = 50, offset = 0) {
 export async function getSalesAggregatedByPeriod(
   period: "day" | "month" | "year",
   startDate: Date,
-  endDate: Date,
+  endDate: Date
 ) {
   // Fetch both sales and purchases data
   const [sales, purchases] = await Promise.all([
@@ -557,14 +625,16 @@ export async function getSalesAggregatedByPeriod(
       if (!sale.payment) {
         return false;
       }
-      
+
       // CREDIT sales are always included
       if (sale.payment.type === "CREDIT") {
         return false;
       }
-      
+
       // VERSEMENT sales are only excluded if not paid
-      return sale.payment.type === "VERSEMENT" && sale.payment.paidDate === null;
+      return (
+        sale.payment.type === "VERSEMENT" && sale.payment.paidDate === null
+      );
     })();
 
     // Skip unpaid VERSEMENT sales
@@ -585,20 +655,34 @@ export async function getSalesAggregatedByPeriod(
 
     const totalAmount = sale.saleItems.reduce(
       (sum, item) => sum + item.price * item.quantity,
-      0,
+      0
     );
     const totalAmountWithDiscount = totalAmount - sale.discount;
 
     // Calculate profit (revenue - cost)
     const totalCost = sale.saleItems.reduce((sum, item) => {
       if (item.product) {
-        return sum + item.product.boughtPrice * item.quantity;
+        // Use stored bought price if available, otherwise use current product bought price
+        const boughtPrice =
+          (item as { boughtPrice?: number }).boughtPrice ||
+          item.product.boughtPrice;
+        return sum + boughtPrice * item.quantity;
       }
-      if (item.manualProduct && (item.manualProduct as any).costPrice) {
-        return sum + (item.manualProduct as any).costPrice * item.quantity;
+      if (
+        item.manualProduct &&
+        (item.manualProduct as { costPrice?: number }).costPrice
+      ) {
+        return (
+          sum +
+          (item.manualProduct as { costPrice: number }).costPrice *
+            item.quantity
+        );
       }
-      if (item.service && (item.service as any).costPrice) {
-        return sum + (item.service as any).costPrice * item.quantity;
+      if (item.service && (item.service as { costPrice?: number }).costPrice) {
+        return (
+          sum +
+          (item.service as { costPrice: number }).costPrice * item.quantity
+        );
       }
       // Fallback: if no cost price is available, assume 70% profit margin
       return sum + item.price * item.quantity * 0.3;
@@ -651,7 +735,7 @@ export async function getSalesAggregatedByPeriod(
 
   // Convert to array and sort by period
   const result = Array.from(groupedData.values()).sort((a, b) =>
-    a.period.localeCompare(b.period),
+    a.period.localeCompare(b.period)
   );
 
   return result;
@@ -696,14 +780,16 @@ export async function getSalesSummary(startDate: Date, endDate: Date) {
       if (!sale.payment) {
         return false;
       }
-      
+
       // CREDIT sales are always included
       if (sale.payment.type === "CREDIT") {
         return false;
       }
-      
+
       // VERSEMENT sales are only excluded if not paid
-      return sale.payment.type === "VERSEMENT" && sale.payment.paidDate === null;
+      return (
+        sale.payment.type === "VERSEMENT" && sale.payment.paidDate === null
+      );
     })();
 
     // Skip unpaid VERSEMENT sales
@@ -713,16 +799,36 @@ export async function getSalesSummary(startDate: Date, endDate: Date) {
 
     const totalAmount = sale.saleItems.reduce(
       (sum, item) => sum + item.price * item.quantity,
-      0,
+      0
     );
     const totalAmountWithDiscount = totalAmount - sale.discount;
 
     // Calculate profit (revenue - cost)
     const totalCost = sale.saleItems.reduce((sum, item) => {
       if (item.product) {
-        return sum + item.product.boughtPrice * item.quantity;
+        // Use stored bought price if available, otherwise use current product bought price
+        const boughtPrice =
+          (item as { boughtPrice?: number }).boughtPrice ||
+          item.product.boughtPrice;
+        return sum + boughtPrice * item.quantity;
       }
-      // For manual products and services, assume 70% profit margin
+      if (
+        item.manualProduct &&
+        (item.manualProduct as { costPrice?: number }).costPrice
+      ) {
+        return (
+          sum +
+          (item.manualProduct as { costPrice: number }).costPrice *
+            item.quantity
+        );
+      }
+      if (item.service && (item.service as { costPrice?: number }).costPrice) {
+        return (
+          sum +
+          (item.service as { costPrice: number }).costPrice * item.quantity
+        );
+      }
+      // Fallback: if no cost price is available, assume 70% profit margin
       return sum + item.price * item.quantity * 0.3;
     }, 0);
 
@@ -730,7 +836,7 @@ export async function getSalesSummary(startDate: Date, endDate: Date) {
     totalProfit += totalAmountWithDiscount - totalCost;
     totalPurchases += sale.saleItems.reduce(
       (sum, item) => sum + item.quantity,
-      0,
+      0
     );
     totalSales += 1;
   });
@@ -782,20 +888,22 @@ export async function getSalesByDateRange(startDate: Date, endDate: Date) {
     if (!sale.payment) {
       return true;
     }
-    
+
     // CREDIT sales are always included
     if (sale.payment.type === "CREDIT") {
       return true;
     }
-    
+
     // VERSEMENT sales are only excluded if not paid
-    return !(sale.payment.type === "VERSEMENT" && sale.payment.paidDate === null);
+    return !(
+      sale.payment.type === "VERSEMENT" && sale.payment.paidDate === null
+    );
   });
 }
 
 export async function getSalesBySpecificPeriod(
   period: "day" | "month" | "year",
-  periodValue: string,
+  periodValue: string
 ) {
   let startDate: Date;
   let endDate: Date;

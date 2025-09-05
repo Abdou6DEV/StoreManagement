@@ -11,8 +11,12 @@ export function useDetailsHistoryData(period: SelectedPeriod) {
   const [sales, setSales] = useState<SaleForHistory[]>([]);
   const [payments, setPayments] = useState<PaymentForHistory[]>([]);
   const [purchases, setPurchases] = useState<PurchaseForHistory[]>([]);
-  const [previousSalesData, setPreviousSalesData] = useState<SaleForHistory[]>([]);
-  const [previousPurchasesData, setPreviousPurchasesData] = useState<PurchaseForHistory[]>([]);
+  const [previousSalesData, setPreviousSalesData] = useState<SaleForHistory[]>(
+    []
+  );
+  const [previousPurchasesData, setPreviousPurchasesData] = useState<
+    PurchaseForHistory[]
+  >([]);
   const [historicalAverages, setHistoricalAverages] = useState<{
     averageRevenue: number;
     averageProfit: number;
@@ -43,48 +47,59 @@ export function useDetailsHistoryData(period: SelectedPeriod) {
   const purchasesEndIndex = purchasesStartIndex + itemsPerPage;
   const currentPurchases = purchases.slice(
     purchasesStartIndex,
-    purchasesEndIndex,
+    purchasesEndIndex
   );
 
   // Calculate totals and profit - properly calculate from sale items and purchase items
   const salesTotal = sales.reduce((sum, sale) => {
     const totalAmount = sale.saleItems.reduce(
       (itemSum, item) => itemSum + item.price * item.quantity,
-      0,
+      0
     );
     return sum + (totalAmount - sale.discount);
   }, 0);
 
   const salesProfit = sales.reduce((sum, sale) => {
-    const revenue = sale.saleItems.reduce(
-      (itemSum, item) => itemSum + item.price * item.quantity,
-      0,
-    ) - sale.discount;
-    
+    const revenue =
+      sale.saleItems.reduce(
+        (itemSum, item) => itemSum + item.price * item.quantity,
+        0
+      ) - sale.discount;
+
     const cost = sale.saleItems.reduce((itemSum, item) => {
-      if (item.product && 'boughtPrice' in item.product) {
-        // For regular products, use actual bought price
-        return itemSum + (item.product as any).boughtPrice * item.quantity;
+      if (item.product && "boughtPrice" in item.product) {
+        // Use stored bought price if available, otherwise use current product bought price
+        const boughtPrice =
+          (item as { boughtPrice?: number }).boughtPrice ||
+          (item.product as { boughtPrice: number }).boughtPrice;
+        return itemSum + boughtPrice * item.quantity;
       }
-      if (item.manualProduct && 'costPrice' in item.manualProduct) {
+      if (item.manualProduct && "costPrice" in item.manualProduct) {
         // For manual products, use actual cost price
-        return itemSum + (item.manualProduct as any).costPrice * item.quantity;
+        return (
+          itemSum +
+          (item.manualProduct as { costPrice: number }).costPrice *
+            item.quantity
+        );
       }
-      if (item.service && 'costPrice' in item.service) {
+      if (item.service && "costPrice" in item.service) {
         // For services, use actual cost price
-        return itemSum + (item.service as any).costPrice * item.quantity;
+        return (
+          itemSum +
+          (item.service as { costPrice: number }).costPrice * item.quantity
+        );
       }
       // Fallback: if no cost price is available, assume 70% profit margin
       return itemSum + item.price * item.quantity * 0.3;
     }, 0);
-    
+
     return sum + (revenue - cost);
   }, 0);
 
   const purchasesTotal = purchases.reduce((sum, purchase) => {
     const totalAmount = purchase.PurchaseItems.reduce(
       (itemSum, item) => itemSum + item.price * item.quantity,
-      0,
+      0
     );
     return sum + totalAmount;
   }, 0);
@@ -108,7 +123,9 @@ export function useDetailsHistoryData(period: SelectedPeriod) {
       const previousDate = new Date(currentDate);
       previousDate.setMonth(previousDate.getMonth() - 1);
       const prevYear = previousDate.getFullYear();
-      const prevMonth = (previousDate.getMonth() + 1).toString().padStart(2, "0");
+      const prevMonth = (previousDate.getMonth() + 1)
+        .toString()
+        .padStart(2, "0");
       return {
         period: "month",
         periodValue: `${prevYear}-${prevMonth}`,
@@ -127,7 +144,7 @@ export function useDetailsHistoryData(period: SelectedPeriod) {
       setLoading(true);
 
       const previousPeriod = getPreviousPeriod(period);
-      
+
       // Calculate date range for historical averages (last 30 days/periods)
       const historicalEndDate = new Date();
       const historicalStartDate = new Date();
@@ -135,36 +152,39 @@ export function useDetailsHistoryData(period: SelectedPeriod) {
 
       // Fetch data for the selected period, previous period, and historical averages
       const [
-        salesData, 
-        paymentsData, 
+        salesData,
+        paymentsData,
         purchasesData,
         previousSalesData,
         previousPurchasesData,
-        historicalSummary
+        historicalSummary,
       ] = await Promise.all([
         window.api.database.sales.getBySpecificPeriod(
           period.period,
-          period.periodValue,
+          period.periodValue
         ),
         window.api.database.payments.getBySpecificPeriod(
           period.period,
-          period.periodValue,
+          period.periodValue
         ),
         window.api.database.purchases.getBySpecificPeriod(
           period.period,
-          period.periodValue,
+          period.periodValue
         ),
         window.api.database.sales.getBySpecificPeriod(
           previousPeriod.period,
-          previousPeriod.periodValue,
+          previousPeriod.periodValue
         ),
         window.api.database.purchases.getBySpecificPeriod(
           previousPeriod.period,
-          previousPeriod.periodValue,
+          previousPeriod.periodValue
         ),
-        window.api.database.sales.getSummary(historicalStartDate, historicalEndDate),
+        window.api.database.sales.getSummary(
+          historicalStartDate,
+          historicalEndDate
+        ),
       ]);
-      
+
       setSales(salesData);
       setPayments(paymentsData);
       setPurchases(purchasesData);
@@ -185,13 +205,13 @@ export function useDetailsHistoryData(period: SelectedPeriod) {
           salesCount: salesData.length,
           paymentsCount: paymentsData.length,
           purchasesCount: purchasesData.length,
-        },
+        }
       );
     } catch (error) {
       rendererLogger.error(
         "Error fetching period data",
         "DetailsHistory",
-        error,
+        error
       );
     } finally {
       setLoading(false);
@@ -213,26 +233,25 @@ export function useDetailsHistoryData(period: SelectedPeriod) {
     fetchPeriodData();
   }, [fetchPeriodData]);
 
-
-
-
-
   // Calculate previous period totals
   const previousSalesTotal = previousSalesData.reduce((sum, sale) => {
     const totalAmount = sale.saleItems.reduce(
       (itemSum, item) => itemSum + item.price * item.quantity,
-      0,
+      0
     );
     return sum + (totalAmount - sale.discount);
   }, 0);
 
-  const previousPurchasesTotal = previousPurchasesData.reduce((sum, purchase) => {
-    const totalAmount = purchase.PurchaseItems.reduce(
-      (itemSum, item) => itemSum + item.price * item.quantity,
-      0,
-    );
-    return sum + totalAmount;
-  }, 0);
+  const previousPurchasesTotal = previousPurchasesData.reduce(
+    (sum, purchase) => {
+      const totalAmount = purchase.PurchaseItems.reduce(
+        (itemSum, item) => itemSum + item.price * item.quantity,
+        0
+      );
+      return sum + totalAmount;
+    },
+    0
+  );
 
   return {
     sales,

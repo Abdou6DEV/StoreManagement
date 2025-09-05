@@ -16,7 +16,7 @@ const MAX_SESSIONS = 5;
 // Cart utility functions
 function addProductToCart(
   cart: CartItem[],
-  product: ProductWithSales,
+  product: ProductWithSales
 ): CartItem[] {
   const updated = [...cart];
   const exists = updated.find((item) => item.id === product.id);
@@ -37,7 +37,7 @@ function addProductToCart(
 
 function addManualProductToCart(
   cart: CartItem[],
-  product: CartItem,
+  product: CartItem
 ): CartItem[] {
   return [...cart, product];
 }
@@ -76,7 +76,7 @@ export default function CashierPage() {
 
         // Merge salesCounts into products
         const salesMap = new Map(
-          salesCounts.map((s: any) => [s.productId, s.totalSold]),
+          salesCounts.map((s: any) => [s.productId, s.totalSold])
         );
         const merged = products.map((p: Product) => ({
           ...p,
@@ -88,7 +88,7 @@ export default function CashierPage() {
         rendererLogger.error(
           "Error fetching products with sales",
           "CashierPage",
-          error,
+          error
         );
         // Fallback to basic products if sales fetch fails
         const products = await window.api.database.products.getAll();
@@ -96,7 +96,7 @@ export default function CashierPage() {
           products.map((p: Product) => ({
             ...p,
             totalSold: 0,
-          })) as ProductWithSales[],
+          })) as ProductWithSales[]
         );
       }
     };
@@ -151,7 +151,7 @@ export default function CashierPage() {
     // Set the flag to allow the sale to proceed
     setOutOfStockConfirmed(true);
     setShowStockWarning(false);
-    
+
     // Automatically proceed with the sale after a brief delay
     setTimeout(() => {
       // Reset the flag after the sale completes
@@ -196,7 +196,7 @@ export default function CashierPage() {
               const currentSession = sessionActions.getCurrentSession();
               const updatedCart = addProductToCart(
                 currentSession.cart,
-                product,
+                product
               );
               sessionActions.updateSessionCart(activeSession, updatedCart);
             }}
@@ -204,7 +204,7 @@ export default function CashierPage() {
               const currentSession = sessionActions.getCurrentSession();
               const updatedCart = addManualProductToCart(
                 currentSession.cart,
-                product,
+                product
               );
               sessionActions.updateSessionCart(activeSession, updatedCart);
             }}
@@ -215,10 +215,10 @@ export default function CashierPage() {
             onUpdateSessionDiscount={sessionActions.updateSessionDiscount}
             onOutOfStock={handleOutOfStock}
             onReceiptData={handleReceiptData}
-                         onSaleComplete={handleSaleComplete}
-             onSaleCompleted={handleSaleCompleted}
-             outOfStockConfirmed={outOfStockConfirmed}
-             maxSessions={MAX_SESSIONS}
+            onSaleComplete={handleSaleComplete}
+            onSaleCompleted={handleSaleCompleted}
+            outOfStockConfirmed={outOfStockConfirmed}
+            maxSessions={MAX_SESSIONS}
           />
 
           {/* Product Browser as a modal */}
@@ -259,7 +259,7 @@ export default function CashierPage() {
               const currentSession = sessionActions.getCurrentSession();
               const updatedCart = addManualProductToCart(
                 currentSession.cart,
-                product,
+                product
               );
               sessionActions.updateSessionCart(activeSession, updatedCart);
             }}
@@ -272,7 +272,7 @@ export default function CashierPage() {
               const currentSession = sessionActions.getCurrentSession();
               const updatedCart = addManualProductToCart(
                 currentSession.cart,
-                service,
+                service
               );
               sessionActions.updateSessionCart(activeSession, updatedCart);
             }}

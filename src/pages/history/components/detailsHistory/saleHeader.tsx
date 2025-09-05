@@ -16,16 +16,16 @@ const SaleHeader: React.FC<SaleHeaderProps> = ({ sale }) => {
 
     // Check if it's today
     const isToday = saleDate.toDateString() === now.toDateString();
-    
-    const hours = saleDate.getHours().toString().padStart(2, '0');
-    const minutes = saleDate.getMinutes().toString().padStart(2, '0');
+
+    const hours = saleDate.getHours().toString().padStart(2, "0");
+    const minutes = saleDate.getMinutes().toString().padStart(2, "0");
 
     if (isToday) {
       return `${t("today")} - ${hours}:${minutes}`;
     } else {
       // Format: DD/MM/YYYY - HH:MM
-      const day = saleDate.getDate().toString().padStart(2, '0');
-      const month = (saleDate.getMonth() + 1).toString().padStart(2, '0');
+      const day = saleDate.getDate().toString().padStart(2, "0");
+      const month = (saleDate.getMonth() + 1).toString().padStart(2, "0");
       const year = saleDate.getFullYear();
 
       return `${day}/${month}/${year} - ${hours}:${minutes}`;
@@ -36,21 +36,41 @@ const SaleHeader: React.FC<SaleHeaderProps> = ({ sale }) => {
     return `${amount.toLocaleString()} ${t("currency")}`;
   };
 
-  const totalAmountWithDiscount = sale.saleItems.reduce((sum, item) => sum + item.price * item.quantity, 0) - sale.discount;
+  const totalAmountWithDiscount =
+    sale.saleItems.reduce((sum, item) => sum + item.price * item.quantity, 0) -
+    sale.discount;
 
-  // Calculate profit
+  // Calculate profit using the same logic as InfoProductModal
   const saleProfit = (() => {
-    const revenue = sale.saleItems.reduce((itemSum, item) => itemSum + item.price * item.quantity, 0) - sale.discount;
+    const revenue =
+      sale.saleItems.reduce(
+        (itemSum, item) => itemSum + item.price * item.quantity,
+        0
+      ) - sale.discount;
     const cost = sale.saleItems.reduce((itemSum, item) => {
-      if (item.product && 'boughtPrice' in item.product) {
-        return itemSum + (item.product as any).boughtPrice * item.quantity;
+      if (item.product && "boughtPrice" in item.product) {
+        // Use stored bought price if available, otherwise use current product bought price
+        const boughtPrice =
+          (item as { boughtPrice?: number }).boughtPrice ||
+          (item.product as { boughtPrice: number }).boughtPrice;
+        return itemSum + boughtPrice * item.quantity;
       }
-      if (item.manualProduct && 'costPrice' in item.manualProduct) {
-        return itemSum + (item.manualProduct as any).costPrice * item.quantity;
+      if (item.manualProduct && "costPrice" in item.manualProduct) {
+        // For manual products, use actual cost price
+        return (
+          itemSum +
+          (item.manualProduct as { costPrice: number }).costPrice *
+            item.quantity
+        );
       }
-      if (item.service && 'costPrice' in item.service) {
-        return itemSum + (item.service as any).costPrice * item.quantity;
+      if (item.service && "costPrice" in item.service) {
+        // For services, use actual cost price
+        return (
+          itemSum +
+          (item.service as { costPrice: number }).costPrice * item.quantity
+        );
       }
+      // Fallback: if no cost price is available, assume 70% profit margin
       return itemSum + item.price * item.quantity * 0.3;
     }, 0);
     return revenue - cost;
@@ -59,7 +79,7 @@ const SaleHeader: React.FC<SaleHeaderProps> = ({ sale }) => {
   // Get payment status badge
   const getPaymentStatusBadge = () => {
     if (!sale.payment) return null;
-    
+
     if (sale.payment.type === "CREDIT") {
       if (sale.payment.paidDate) {
         return (
@@ -75,7 +95,7 @@ const SaleHeader: React.FC<SaleHeaderProps> = ({ sale }) => {
         );
       }
     }
-    
+
     if (sale.payment.type === "VERSEMENT") {
       if (sale.payment.paidDate) {
         return (
@@ -91,7 +111,7 @@ const SaleHeader: React.FC<SaleHeaderProps> = ({ sale }) => {
         );
       }
     }
-    
+
     return null;
   };
 

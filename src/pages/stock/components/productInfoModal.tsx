@@ -67,87 +67,100 @@ export const ProductInfoModal = ({
           <div className="flex gap-6 items-center justify-center">
             {/* Product Details */}
             <div className="flex-1 grid grid-cols-2 md:grid-cols-3 gap-4 p-4 bg-muted/30 rounded-lg">
-            <div className={isRTL ? "text-right" : "text-left"}>
-              <label className="text-sm font-medium text-muted-foreground">
-                {t("stock.productName", "Product Name")}
-              </label>
-              <p className="text-foreground font-medium">{productData.name}</p>
+              <div className={isRTL ? "text-right" : "text-left"}>
+                <label className="text-sm font-medium text-muted-foreground">
+                  {t("stock.productName", "Product Name")}
+                </label>
+                <p className="text-foreground font-medium">
+                  {productData.name}
+                </p>
+              </div>
+              <div className={isRTL ? "text-right" : "text-left"}>
+                <label className="text-sm font-medium text-muted-foreground">
+                  {t("stock.category", "Category")}
+                </label>
+                <p className="text-foreground">{productData.categoryName}</p>
+              </div>
+              <div className={isRTL ? "text-right" : "text-left"}>
+                <label className="text-sm font-medium text-muted-foreground">
+                  {t("stock.currentStock", "Current Stock")}
+                </label>
+                <p className="text-foreground font-medium">
+                  {productData.quantity}
+                </p>
+              </div>
+              <div className={isRTL ? "text-right" : "text-left"}>
+                <label className="text-sm font-medium text-muted-foreground">
+                  {t("stock.boughtPrice", "Bought Price")}
+                </label>
+                <p className="text-foreground">
+                  {productData.boughtPrice} {t("cashier.currency", "DA")}
+                </p>
+              </div>
+              <div className={isRTL ? "text-right" : "text-left"}>
+                <label className="text-sm font-medium text-muted-foreground">
+                  {t("stock.sellingPrice", "Selling Price")}
+                </label>
+                <p className="text-foreground">
+                  {productData.sellingPrice} {t("cashier.currency", "DA")}
+                </p>
+              </div>
+              <div className={isRTL ? "text-right" : "text-left"}>
+                <label className="text-sm font-medium text-muted-foreground">
+                  {t("stock.profitPerUnit", "Profit per Unit")}
+                </label>
+                <p className="text-foreground font-medium text-green-600">
+                  {productData.sellingPrice - productData.boughtPrice}{" "}
+                  {t("cashier.currency", "DA")}
+                </p>
+              </div>
+              <div className={isRTL ? "text-right" : "text-left"}>
+                <label className="text-sm font-medium text-muted-foreground">
+                  {t("stock.totalProfit", "Total Profit")}
+                </label>
+                <p className="text-foreground font-medium text-green-600">
+                  {(productData.sellingPrice - productData.boughtPrice) *
+                    productData.quantity}{" "}
+                  {t("cashier.currency", "DA")}
+                </p>
+              </div>
+              <div className={isRTL ? "text-right" : "text-left"}>
+                <label className="text-sm font-medium text-muted-foreground">
+                  {t("stock.barcode", "Barcode")}
+                </label>
+                <p className="text-foreground">
+                  {productData.codebar || "N/A"}
+                </p>
+              </div>
             </div>
-            <div className={isRTL ? "text-right" : "text-left"}>
-              <label className="text-sm font-medium text-muted-foreground">
-                {t("stock.category", "Category")}
-              </label>
-              <p className="text-foreground">{productData.categoryName}</p>
-            </div>
-            <div className={isRTL ? "text-right" : "text-left"}>
-              <label className="text-sm font-medium text-muted-foreground">
-                {t("stock.currentStock", "Current Stock")}
-              </label>
-              <p className="text-foreground font-medium">
-                {productData.quantity}
-              </p>
-            </div>
-            <div className={isRTL ? "text-right" : "text-left"}>
-              <label className="text-sm font-medium text-muted-foreground">
-                {t("stock.boughtPrice", "Bought Price")}
-              </label>
-              <p className="text-foreground">{productData.boughtPrice} {t("cashier.currency", "DA")}</p>
-            </div>
-            <div className={isRTL ? "text-right" : "text-left"}>
-              <label className="text-sm font-medium text-muted-foreground">
-                {t("stock.sellingPrice", "Selling Price")}
-              </label>
-              <p className="text-foreground">{productData.sellingPrice} {t("cashier.currency", "DA")}</p>
-            </div>
-            <div className={isRTL ? "text-right" : "text-left"}>
-              <label className="text-sm font-medium text-muted-foreground">
-                {t("stock.profitPerUnit", "Profit per Unit")}
-              </label>
-              <p className="text-foreground font-medium text-green-600">
-                {productData.sellingPrice - productData.boughtPrice} {t("cashier.currency", "DA")}
-              </p>
-            </div>
-            <div className={isRTL ? "text-right" : "text-left"}>
-              <label className="text-sm font-medium text-muted-foreground">
-                {t("stock.totalProfit", "Total Profit")}
-              </label>
-              <p className="text-foreground font-medium text-green-600">
-                {(productData.sellingPrice - productData.boughtPrice) * productData.quantity} {t("cashier.currency", "DA")}
-              </p>
-            </div>
-            <div className={isRTL ? "text-right" : "text-left"}>
-              <label className="text-sm font-medium text-muted-foreground">
-                {t("stock.barcode", "Barcode")}
-              </label>
-              <p className="text-foreground">{productData.codebar || "N/A"}</p>
+
+            {/* Product Photo */}
+            <div className="flex-shrink-0 flex items-center justify-center">
+              {productData.photo ? (
+                <div className="relative w-64 h-64 rounded-lg overflow-hidden border border-border shadow-lg">
+                  <img
+                    src={productData.photo}
+                    alt={productData.name}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = "none";
+                    }}
+                  />
+                </div>
+              ) : (
+                <div className="w-64 h-64 flex items-center justify-center bg-muted/30 rounded-lg border border-border shadow-lg">
+                  <ProductAvatar name={productData.name} size="5xl" />
+                </div>
+              )}
             </div>
           </div>
 
-                     {/* Product Photo */}
-           <div className="flex-shrink-0 flex items-center justify-center">
-             {productData.photo ? (
-               <div className="relative w-64 h-64 rounded-lg overflow-hidden border border-border shadow-lg">
-                 <img
-                   src={productData.photo}
-                   alt={productData.name}
-                   className="w-full h-full object-cover"
-                   onError={(e) => {
-                     const target = e.target as HTMLImageElement;
-                     target.style.display = "none";
-                   }}
-                 />
-               </div>
-             ) : (
-               <div className="w-64 h-64 flex items-center justify-center bg-muted/30 rounded-lg border border-border shadow-lg">
-                 <ProductAvatar name={productData.name} size="5xl" />
-               </div>
-             )}
-           </div>
-        </div>
-
           {/* Profit Analysis */}
           <div className="bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-950/20 dark:to-blue-950/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
-            <h3 className={`text-lg font-semibold mb-3 ${isRTL ? "text-right" : "text-left"}`}>
+            <h3
+              className={`text-lg font-semibold mb-3 ${isRTL ? "text-right" : "text-left"}`}
+            >
               {t("stock.profitAnalysis", "Profit Analysis")}
             </h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -156,7 +169,9 @@ export const ProductInfoModal = ({
                   {t("stock.potentialProfit", "Potential Profit")}
                 </label>
                 <p className="text-foreground font-semibold text-green-600">
-                  {(productData.sellingPrice - productData.boughtPrice) * productData.quantity} {t("cashier.currency", "DA")}
+                  {(productData.sellingPrice - productData.boughtPrice) *
+                    productData.quantity}{" "}
+                  {t("cashier.currency", "DA")}
                 </p>
               </div>
               <div className={isRTL ? "text-right" : "text-left"}>
@@ -165,11 +180,25 @@ export const ProductInfoModal = ({
                 </label>
                 <p className="text-foreground font-semibold text-blue-600">
                   {productData.saleItems && productData.saleItems.length > 0
-                    ? productData.saleItems.reduce((sum: number, item: SaleItem & { sale: Sale & { client: Client | null } }) => {
-                        const profit = (item.price - productData.boughtPrice) * item.quantity;
-                        return sum + profit;
-                      }, 0)
-                    : 0} {t("cashier.currency", "DA")}
+                    ? productData.saleItems.reduce(
+                        (
+                          sum: number,
+                          item: SaleItem & {
+                            sale: Sale & { client: Client | null };
+                          }
+                        ) => {
+                          // Use stored bought price if available, otherwise fallback to current bought price
+                          const boughtPrice =
+                            (item as { boughtPrice?: number }).boughtPrice ||
+                            productData.boughtPrice;
+                          const profit =
+                            (item.price - boughtPrice) * item.quantity;
+                          return sum + profit;
+                        },
+                        0
+                      )
+                    : 0}{" "}
+                  {t("cashier.currency", "DA")}
                 </p>
               </div>
               <div className={isRTL ? "text-right" : "text-left"}>
@@ -177,9 +206,14 @@ export const ProductInfoModal = ({
                   {t("stock.profitMargin", "Profit Margin")}
                 </label>
                 <p className="text-foreground font-semibold text-purple-600">
-                  {productData.sellingPrice > 0 
-                    ? (((productData.sellingPrice - productData.boughtPrice) / productData.sellingPrice) * 100).toFixed(1)
-                    : 0}%
+                  {productData.sellingPrice > 0
+                    ? (
+                        ((productData.sellingPrice - productData.boughtPrice) /
+                          productData.sellingPrice) *
+                        100
+                      ).toFixed(1)
+                    : 0}
+                  %
                 </p>
               </div>
               <div className={isRTL ? "text-right" : "text-left"}>
@@ -187,9 +221,14 @@ export const ProductInfoModal = ({
                   {t("stock.roi", "ROI")}
                 </label>
                 <p className="text-foreground font-semibold text-orange-600">
-                  {productData.boughtPrice > 0 
-                    ? (((productData.sellingPrice - productData.boughtPrice) / productData.boughtPrice) * 100).toFixed(1)
-                    : 0}%
+                  {productData.boughtPrice > 0
+                    ? (
+                        ((productData.sellingPrice - productData.boughtPrice) /
+                          productData.boughtPrice) *
+                        100
+                      ).toFixed(1)
+                    : 0}
+                  %
                 </p>
               </div>
             </div>
@@ -218,7 +257,7 @@ export const ProductInfoModal = ({
                       {productData.PurchaseItems.reduce(
                         (sum: number, item: { quantity: number }) =>
                           sum + item.quantity,
-                        0,
+                        0
                       )}
                     </span>
                     <span>
@@ -226,10 +265,11 @@ export const ProductInfoModal = ({
                       {productData.PurchaseItems.reduce(
                         (
                           sum: number,
-                          item: { quantity: number; price: number },
+                          item: { quantity: number; price: number }
                         ) => sum + item.quantity * item.price,
-                        0,
-                      )} {t("cashier.currency", "DA")}
+                        0
+                      )}{" "}
+                      {t("cashier.currency", "DA")}
                     </span>
                   </div>
                 )}
@@ -274,21 +314,21 @@ export const ProductInfoModal = ({
                         </th>
                       </tr>
                     </thead>
-                                         <tbody className="divide-y divide-border">
-                       {productData.PurchaseItems.slice(0, purchaseLimit).map(
-                         (
-                           purchaseItem: {
-                             id: string;
-                             quantity: number;
-                             price: number;
-                             createdAt: string;
-                             purchase: {
-                               id: string;
-                               seller: { name: string } | null;
-                             };
-                           },
-                           index: number,
-                         ) => (
+                    <tbody className="divide-y divide-border">
+                      {productData.PurchaseItems.slice(0, purchaseLimit).map(
+                        (
+                          purchaseItem: {
+                            id: string;
+                            quantity: number;
+                            price: number;
+                            createdAt: string;
+                            purchase: {
+                              id: string;
+                              seller: { name: string } | null;
+                            };
+                          },
+                          index: number
+                        ) => (
                           <tr
                             key={index}
                             className="hover:bg-muted/40 transition"
@@ -302,7 +342,7 @@ export const ProductInfoModal = ({
                               className={`px-4 py-3 text-sm text-foreground ${isRTL ? "text-right" : "text-left"}`}
                             >
                               {new Date(
-                                purchaseItem.createdAt,
+                                purchaseItem.createdAt
                               ).toLocaleDateString()}
                             </td>
                             <td
@@ -320,16 +360,19 @@ export const ProductInfoModal = ({
                             <td
                               className={`px-4 py-3 text-sm text-foreground ${isRTL ? "text-right" : "text-left"}`}
                             >
-                              {purchaseItem.price ? `${purchaseItem.price} ${t("cashier.currency", "DA")}` : "N/A"}
+                              {purchaseItem.price
+                                ? `${purchaseItem.price} ${t("cashier.currency", "DA")}`
+                                : "N/A"}
                             </td>
                             <td
                               className={`px-4 py-3 text-sm font-medium text-blue-600 ${isRTL ? "text-right" : "text-left"}`}
                             >
                               {purchaseItem.quantity *
-                                (purchaseItem.price || 0)} {t("cashier.currency", "DA")}
+                                (purchaseItem.price || 0)}{" "}
+                              {t("cashier.currency", "DA")}
                             </td>
                           </tr>
-                        ),
+                        )
                       )}
                     </tbody>
                   </table>
@@ -343,7 +386,7 @@ export const ProductInfoModal = ({
                 <p className="text-lg font-medium mb-2">
                   {t(
                     "stock.noPurchaseHistory",
-                    "No purchase history available",
+                    "No purchase history available"
                   )}
                 </p>
                 <p className="text-sm opacity-70">
@@ -351,28 +394,41 @@ export const ProductInfoModal = ({
                 </p>
               </div>
             )}
-            
+
             {/* Show More Button for Purchases */}
-            {productData.PurchaseItems && productData.PurchaseItems.length > 5 && (
-              <div className="flex justify-center mt-4">
-                {purchaseLimit < productData.PurchaseItems.length ? (
-                  <button
-                    onClick={() => setPurchaseLimit(prev => Math.min(prev + 5, productData.PurchaseItems?.length || 0))}
-                    className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-primary bg-primary/10 hover:bg-primary/20 rounded-lg transition-colors"
-                  >
-                    <ChevronDown className="w-4 h-4" />
-                    {t("stock.showMore", "Show More")} ({Math.min(5, productData.PurchaseItems.length - purchaseLimit)} {t("stock.more", "more")})
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => setPurchaseLimit(5)}
-                    className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    {t("stock.showLess", "Show Less")}
-                  </button>
-                )}
-              </div>
-            )}
+            {productData.PurchaseItems &&
+              productData.PurchaseItems.length > 5 && (
+                <div className="flex justify-center mt-4">
+                  {purchaseLimit < productData.PurchaseItems.length ? (
+                    <button
+                      onClick={() =>
+                        setPurchaseLimit((prev) =>
+                          Math.min(
+                            prev + 5,
+                            productData.PurchaseItems?.length || 0
+                          )
+                        )
+                      }
+                      className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-primary bg-primary/10 hover:bg-primary/20 rounded-lg transition-colors"
+                    >
+                      <ChevronDown className="w-4 h-4" />
+                      {t("stock.showMore", "Show More")} (
+                      {Math.min(
+                        5,
+                        productData.PurchaseItems.length - purchaseLimit
+                      )}{" "}
+                      {t("stock.more", "more")})
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => setPurchaseLimit(5)}
+                      className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      {t("stock.showLess", "Show Less")}
+                    </button>
+                  )}
+                </div>
+              )}
           </div>
 
           {/* Divider */}
@@ -399,7 +455,7 @@ export const ProductInfoModal = ({
                     {t("stock.totalQuantitySold", "Total Quantity")}:{" "}
                     {productData.saleItems.reduce(
                       (sum: number, item: SaleItem) => sum + item.quantity,
-                      0,
+                      0
                     )}
                   </span>
                   <span>
@@ -407,8 +463,9 @@ export const ProductInfoModal = ({
                     {productData.saleItems.reduce(
                       (sum: number, item: SaleItem) =>
                         sum + item.quantity * item.price,
-                      0,
-                    )} {t("cashier.currency", "DA")}
+                      0
+                    )}{" "}
+                    {t("cashier.currency", "DA")}
                   </span>
                 </div>
               )}
@@ -452,14 +509,14 @@ export const ProductInfoModal = ({
                         </th>
                       </tr>
                     </thead>
-                                         <tbody className="divide-y divide-border">
-                       {productData.saleItems.slice(0, salesLimit).map(
-                         (
-                           saleItem: SaleItem & {
-                             sale: Sale & { client: Client };
-                           },
-                           index: number,
-                         ) => (
+                    <tbody className="divide-y divide-border">
+                      {productData.saleItems.slice(0, salesLimit).map(
+                        (
+                          saleItem: SaleItem & {
+                            sale: Sale & { client: Client };
+                          },
+                          index: number
+                        ) => (
                           <tr
                             key={index}
                             className="hover:bg-muted/30 transition-colors border-b border-border/50 last:border-0"
@@ -473,7 +530,7 @@ export const ProductInfoModal = ({
                               className={`px-4 py-3 text-sm text-foreground ${isRTL ? "text-right" : "text-left"}`}
                             >
                               {new Date(
-                                saleItem.sale.createdAt,
+                                saleItem.sale.createdAt
                               ).toLocaleDateString()}
                             </td>
                             <td
@@ -496,10 +553,11 @@ export const ProductInfoModal = ({
                             <td
                               className={`px-4 py-3 text-sm font-medium text-green-600 ${isRTL ? "text-right" : "text-left"}`}
                             >
-                              {saleItem.quantity * saleItem.price} {t("cashier.currency", "DA")}
+                              {saleItem.quantity * saleItem.price}{" "}
+                              {t("cashier.currency", "DA")}
                             </td>
                           </tr>
-                        ),
+                        )
                       )}
                     </tbody>
                   </table>
@@ -515,17 +573,23 @@ export const ProductInfoModal = ({
                 </p>
               </div>
             )}
-            
+
             {/* Show More Button for Sales */}
             {productData.saleItems && productData.saleItems.length > 5 && (
               <div className="flex justify-center mt-4">
                 {salesLimit < productData.saleItems.length ? (
                   <button
-                    onClick={() => setSalesLimit(prev => Math.min(prev + 5, productData.saleItems?.length || 0))}
+                    onClick={() =>
+                      setSalesLimit((prev) =>
+                        Math.min(prev + 5, productData.saleItems?.length || 0)
+                      )
+                    }
                     className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-primary bg-primary/10 hover:bg-primary/20 rounded-lg transition-colors"
                   >
                     <ChevronDown className="w-4 h-4" />
-                    {t("stock.showMore", "Show More")} ({Math.min(5, productData.saleItems.length - salesLimit)} {t("stock.more", "more")})
+                    {t("stock.showMore", "Show More")} (
+                    {Math.min(5, productData.saleItems.length - salesLimit)}{" "}
+                    {t("stock.more", "more")})
                   </button>
                 ) : (
                   <button
@@ -546,7 +610,7 @@ export const ProductInfoModal = ({
           <p>
             {t(
               "stock.errorLoadingProduct",
-              "Error loading product information",
+              "Error loading product information"
             )}
           </p>
         </div>

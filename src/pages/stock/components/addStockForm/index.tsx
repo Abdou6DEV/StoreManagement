@@ -54,7 +54,7 @@ interface PendingProduct {
   photo: string | null;
   isNewProduct: boolean;
   existingProductId?: string;
-  priceStrategy?: 'weighted' | 'new'; // Track the chosen price strategy
+  priceStrategy?: "weighted" | "new"; // Track the chosen price strategy
   originalBoughtPrice?: number; // Store the original price for weighted calculation
   actualPurchasePrice?: number; // Store the actual price paid for this purchase
 }
@@ -83,9 +83,7 @@ export default function AddStockForm({
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [dropdownProductSearch, setDropdownProductSearch] = useState("");
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
-  const [filteredCategories, setFilteredCategories] =
-    useState<string[]>([]);
-  const [dropdownCategorySearch, setDropdownCategorySearch] = useState("");
+  const [filteredCategories, setFilteredCategories] = useState<string[]>([]);
   const [showSellerDropdown, setShowSellerDropdown] = useState(false);
   const [sellers, setSellers] = useState<
     {
@@ -169,52 +167,56 @@ export default function AddStockForm({
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Element;
-      
+
       // Check if click is on a dropdown item (don't close if clicking on dropdown items)
-      if (target.closest('[data-product-dropdown]') || 
-          target.closest('[data-category-dropdown]') || 
-          target.closest('[data-seller-dropdown]')) {
+      if (
+        target.closest("[data-product-dropdown]") ||
+        target.closest("[data-category-dropdown]") ||
+        target.closest("[data-seller-dropdown]")
+      ) {
         return;
       }
-      
+
       // Close all dropdowns if clicking anywhere else
       setShowProductDropdown(false);
       setShowCategoryDropdown(false);
       setShowSellerDropdown(false);
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   // Global Enter key handler to focus on product name when no input is focused
   React.useEffect(() => {
     const handleGlobalKeyDown = (event: KeyboardEvent) => {
       // Only handle Enter key
-      if (event.key !== 'Enter') return;
-      
+      if (event.key !== "Enter") return;
+
       // Check if any input/textarea/button is currently focused
       const activeElement = document.activeElement;
-      const isInputFocused = activeElement && (
-        activeElement.tagName === 'INPUT' ||
-        activeElement.tagName === 'TEXTAREA' ||
-        activeElement.tagName === 'BUTTON' ||
-        activeElement.tagName === 'SELECT' ||
-        activeElement.getAttribute('contenteditable') === 'true'
-      );
-      
+      const isInputFocused =
+        activeElement &&
+        (activeElement.tagName === "INPUT" ||
+          activeElement.tagName === "TEXTAREA" ||
+          activeElement.tagName === "BUTTON" ||
+          activeElement.tagName === "SELECT" ||
+          activeElement.getAttribute("contenteditable") === "true");
+
       // If no input is focused, focus on product name field
       if (!isInputFocused) {
         event.preventDefault();
-        const productNameInput = document.querySelector('[data-field="product-name"]') as HTMLInputElement;
+        const productNameInput = document.querySelector(
+          '[data-field="product-name"]'
+        ) as HTMLInputElement;
         if (productNameInput) {
           productNameInput.focus();
         }
       }
     };
 
-    document.addEventListener('keydown', handleGlobalKeyDown);
-    return () => document.removeEventListener('keydown', handleGlobalKeyDown);
+    document.addEventListener("keydown", handleGlobalKeyDown);
+    return () => document.removeEventListener("keydown", handleGlobalKeyDown);
   }, []);
 
   // Compute paginated products
@@ -364,9 +366,17 @@ export default function AddStockForm({
         );
 
         // Check if existing product has different bought price (like in single mode)
-        if (existingProduct && isPriceDifferent(safePrice(form.boughtPrice), existingProduct.boughtPrice)) {
+        if (
+          existingProduct &&
+          isPriceDifferent(
+            safePrice(form.boughtPrice),
+            existingProduct.boughtPrice
+          )
+        ) {
           // Check for remembered choice first
-          const rememberedChoice = localStorage.getItem("priceConfirmationChoice");
+          const rememberedChoice = localStorage.getItem(
+            "priceConfirmationChoice"
+          );
 
           if (rememberedChoice) {
             // Automatically apply the remembered choice
@@ -388,7 +398,10 @@ export default function AddStockForm({
             setForm(initialForm);
 
             showToast(
-              t("stock.productAddedToPending", "Product added to purchase list"),
+              t(
+                "stock.productAddedToPending",
+                "Product added to purchase list"
+              ),
               "success"
             );
             return;
@@ -397,7 +410,10 @@ export default function AddStockForm({
           // No remembered choice, show the price confirmation dialog
           try {
             // Fetch product with purchase history for the dialog
-            const productWithHistory = await window.api.database.products.getWithPurchaseHistory(existingProduct.id);
+            const productWithHistory =
+              await window.api.database.products.getWithPurchaseHistory(
+                existingProduct.id
+              );
 
             // Show price confirmation dialog
             setPriceConfirmationData({
@@ -406,7 +422,8 @@ export default function AddStockForm({
               previousPrice: existingProduct.boughtPrice,
               newSellingPrice: safePrice(form.sellingPrice),
               previousSellingPrice: existingProduct.sellingPrice,
-              sellerName: sellers.find((s) => s.id === form.sellerId)?.name || null,
+              sellerName:
+                sellers.find((s) => s.id === form.sellerId)?.name || null,
               quantity: Number(form.quantity || 0),
               sellerId: form.sellerId,
               purchaseHistory: productWithHistory?.PurchaseItems || [],
@@ -414,7 +431,11 @@ export default function AddStockForm({
             setShowPriceConfirmation(true);
             return; // Don't proceed yet, wait for user decision
           } catch (error) {
-            rendererLogger.error("Failed to fetch product history", "AddStockForm", error);
+            rendererLogger.error(
+              "Failed to fetch product history",
+              "AddStockForm",
+              error
+            );
             // Fallback to basic confirmation without history
             setPriceConfirmationData({
               productId: existingProduct.id,
@@ -422,7 +443,8 @@ export default function AddStockForm({
               previousPrice: existingProduct.boughtPrice,
               newSellingPrice: safePrice(form.sellingPrice),
               previousSellingPrice: existingProduct.sellingPrice,
-              sellerName: sellers.find((s) => s.id === form.sellerId)?.name || null,
+              sellerName:
+                sellers.find((s) => s.id === form.sellerId)?.name || null,
               quantity: Number(form.quantity || 0),
               sellerId: form.sellerId,
               purchaseHistory: [],
@@ -763,21 +785,28 @@ export default function AddStockForm({
         if (existingProduct.existingProductId) {
           try {
             // Get current product data
-            const currentProduct = products.find(p => p.id === existingProduct.existingProductId);
+            const currentProduct = products.find(
+              (p) => p.id === existingProduct.existingProductId
+            );
             const currentQuantity = currentProduct?.quantity || 0;
-            
+
             // Update the product with new quantity and price
-            await window.api.database.products.update(existingProduct.existingProductId, {
-              quantity: currentQuantity + existingProduct.quantity,
-              boughtPrice: existingProduct.boughtPrice, // Use the calculated price from pending list
-              sellingPrice: safePrice(existingProduct.sellingPrice),
-            });
+            await window.api.database.products.update(
+              existingProduct.existingProductId,
+              {
+                quantity: currentQuantity + existingProduct.quantity,
+                boughtPrice: existingProduct.boughtPrice, // Use the calculated price from pending list
+                sellingPrice: safePrice(existingProduct.sellingPrice),
+              }
+            );
 
             // Create the purchase record separately
             const purchaseData = {
               sellerId: multiSellerId || undefined,
               quantity: existingProduct.quantity,
-              price: existingProduct.actualPurchasePrice || existingProduct.boughtPrice, // Use the actual price paid
+              price:
+                existingProduct.actualPurchasePrice ||
+                existingProduct.boughtPrice, // Use the actual price paid
             };
 
             // Add to purchase items for record keeping
@@ -793,7 +822,10 @@ export default function AddStockForm({
               productError
             );
             showToast(
-              t("stock.productUpdateError", `Failed to update product: ${existingProduct.name}`),
+              t(
+                "stock.productUpdateError",
+                `Failed to update product: ${existingProduct.name}`
+              ),
               "error"
             );
             throw productError; // Re-throw to stop the entire process
@@ -808,9 +840,12 @@ export default function AddStockForm({
             sellerId: multiSellerId || undefined,
             items: purchaseItems,
           });
-          
+
           showToast(
-            t("stock.purchaseCompletedSuccess", "Purchase completed successfully!"),
+            t(
+              "stock.purchaseCompletedSuccess",
+              "Purchase completed successfully!"
+            ),
             "success"
           );
         } catch (purchaseError) {
@@ -820,7 +855,10 @@ export default function AddStockForm({
             purchaseError
           );
           showToast(
-            t("stock.purchaseRecordError", "Products updated but purchase record failed"),
+            t(
+              "stock.purchaseRecordError",
+              "Products updated but purchase record failed"
+            ),
             "error"
           );
         }
@@ -861,17 +899,21 @@ export default function AddStockForm({
       if (isMultiMode) {
         // Multi-mode: Add to pending list with weighted average preference
         // For weighted average, we need to calculate the actual weighted price
-        const existingProduct = products.find(p => p.id === priceConfirmationData.productId);
+        const existingProduct = products.find(
+          (p) => p.id === priceConfirmationData.productId
+        );
         const currentQuantity = existingProduct?.quantity || 0;
         const currentPrice = existingProduct?.boughtPrice || 0;
         const newQuantity = priceConfirmationData.quantity;
         const newPrice = priceConfirmationData.newPrice;
-        
+
         // Calculate weighted average price
-        const totalValue = (currentQuantity * currentPrice) + (newQuantity * newPrice);
+        const totalValue =
+          currentQuantity * currentPrice + newQuantity * newPrice;
         const totalQuantity = currentQuantity + newQuantity;
-        const weightedPrice = totalQuantity > 0 ? totalValue / totalQuantity : newPrice;
-        
+        const weightedPrice =
+          totalQuantity > 0 ? totalValue / totalQuantity : newPrice;
+
         const pendingProduct: PendingProduct = {
           id: Date.now().toString(),
           name: form.name,
@@ -884,7 +926,7 @@ export default function AddStockForm({
           photo: form.photo,
           isNewProduct: false,
           existingProductId: priceConfirmationData.productId,
-          priceStrategy: 'weighted',
+          priceStrategy: "weighted",
           originalBoughtPrice: currentPrice,
           actualPurchasePrice: newPrice, // Store the actual price paid
         };
@@ -945,8 +987,10 @@ export default function AddStockForm({
 
       if (isMultiMode) {
         // Multi-mode: Add to pending list with new price preference
-        const existingProduct = products.find(p => p.id === priceConfirmationData.productId);
-        
+        const existingProduct = products.find(
+          (p) => p.id === priceConfirmationData.productId
+        );
+
         const pendingProduct: PendingProduct = {
           id: Date.now().toString(),
           name: form.name,
@@ -959,7 +1003,7 @@ export default function AddStockForm({
           photo: form.photo,
           isNewProduct: false,
           existingProductId: priceConfirmationData.productId,
-          priceStrategy: 'new',
+          priceStrategy: "new",
           originalBoughtPrice: existingProduct?.boughtPrice || 0,
           actualPurchasePrice: priceConfirmationData.newPrice, // Store the actual price paid
         };
@@ -1309,21 +1353,28 @@ export default function AddStockForm({
         if (existingProduct.existingProductId) {
           try {
             // Get current product data
-            const currentProduct = products.find(p => p.id === existingProduct.existingProductId);
+            const currentProduct = products.find(
+              (p) => p.id === existingProduct.existingProductId
+            );
             const currentQuantity = currentProduct?.quantity || 0;
-            
+
             // Update the product with new quantity and price
-            await window.api.database.products.update(existingProduct.existingProductId, {
-              quantity: currentQuantity + existingProduct.quantity,
-              boughtPrice: existingProduct.boughtPrice, // Use the calculated price from pending list
-              sellingPrice: safePrice(existingProduct.sellingPrice),
-            });
+            await window.api.database.products.update(
+              existingProduct.existingProductId,
+              {
+                quantity: currentQuantity + existingProduct.quantity,
+                boughtPrice: existingProduct.boughtPrice, // Use the calculated price from pending list
+                sellingPrice: safePrice(existingProduct.sellingPrice),
+              }
+            );
 
             // Create the purchase record separately
             const purchaseData = {
               sellerId: multiSellerId || undefined,
               quantity: existingProduct.quantity,
-              price: existingProduct.actualPurchasePrice || existingProduct.boughtPrice, // Use the actual price paid
+              price:
+                existingProduct.actualPurchasePrice ||
+                existingProduct.boughtPrice, // Use the actual price paid
             };
 
             // Add to purchase items for record keeping
@@ -1339,7 +1390,10 @@ export default function AddStockForm({
               productError
             );
             showToast(
-              t("stock.productUpdateError", `Failed to update product: ${existingProduct.name}`),
+              t(
+                "stock.productUpdateError",
+                `Failed to update product: ${existingProduct.name}`
+              ),
               "error"
             );
             throw productError; // Re-throw to stop the entire process
@@ -1354,9 +1408,12 @@ export default function AddStockForm({
             sellerId: multiSellerId || undefined,
             items: purchaseItems,
           });
-          
+
           showToast(
-            t("stock.purchaseCompletedSuccess", "Purchase completed successfully!"),
+            t(
+              "stock.purchaseCompletedSuccess",
+              "Purchase completed successfully!"
+            ),
             "success"
           );
         } catch (purchaseError) {
@@ -1366,7 +1423,10 @@ export default function AddStockForm({
             purchaseError
           );
           showToast(
-            t("stock.purchaseRecordError", "Products updated but purchase record failed"),
+            t(
+              "stock.purchaseRecordError",
+              "Products updated but purchase record failed"
+            ),
             "error"
           );
         }
@@ -1438,18 +1498,22 @@ export default function AddStockForm({
       photo: prev.photo || product.photo || null,
     }));
     setShowProductDropdown(false);
-    
+
     // Auto-focus on next appropriate field after product selection
     setTimeout(() => {
       if (isMultiMode) {
         // In multi-mode, focus on quantity field (skip seller)
-        const quantityInput = document.querySelector('[data-field="quantity"]') as HTMLInputElement;
+        const quantityInput = document.querySelector(
+          '[data-field="quantity"]'
+        ) as HTMLInputElement;
         if (quantityInput) {
           quantityInput.focus();
         }
       } else {
         // In single mode, focus on seller field
-        const sellerInput = document.querySelector('[data-field="seller-name"]') as HTMLInputElement;
+        const sellerInput = document.querySelector(
+          '[data-field="seller-name"]'
+        ) as HTMLInputElement;
         if (sellerInput) {
           sellerInput.focus();
         }
@@ -1458,10 +1522,19 @@ export default function AddStockForm({
   };
 
   // Handler to close other dropdowns when focusing on a field
-  const handleFieldFocus = (fieldType: 'product' | 'category' | 'seller' | 'quantity' | 'bought-price' | 'selling-price' | 'codebar') => {
-    if (fieldType !== 'product') setShowProductDropdown(false);
-    if (fieldType !== 'category') setShowCategoryDropdown(false);
-    if (fieldType !== 'seller') setShowSellerDropdown(false);
+  const handleFieldFocus = (
+    fieldType:
+      | "product"
+      | "category"
+      | "seller"
+      | "quantity"
+      | "bought-price"
+      | "selling-price"
+      | "codebar"
+  ) => {
+    if (fieldType !== "product") setShowProductDropdown(false);
+    if (fieldType !== "category") setShowCategoryDropdown(false);
+    if (fieldType !== "seller") setShowSellerDropdown(false);
   };
 
   // Handler for category selection
@@ -1481,10 +1554,12 @@ export default function AddStockForm({
     setPendingProducts([]);
     setMultiSellerId("");
     setMultiSellerName("");
-    
+
     // Focus on product name field after mode change
     setTimeout(() => {
-      const productNameInput = document.querySelector('[data-field="product-name"]') as HTMLInputElement;
+      const productNameInput = document.querySelector(
+        '[data-field="product-name"]'
+      ) as HTMLInputElement;
       if (productNameInput) {
         productNameInput.focus();
       }
@@ -1494,77 +1569,48 @@ export default function AddStockForm({
   // Smart tab system functions
   const focusNextField = (currentField: string) => {
     // Dynamic field order based on mode
-    const fieldOrder = isMultiMode 
+    const fieldOrder = isMultiMode
       ? [
-          'product-name',
-          'category-name', 
-          'quantity',
-          'bought-price',
-          'selling-price',
-          'codebar',
-          'add-button'
+          "product-name",
+          "category-name",
+          "quantity",
+          "bought-price",
+          "selling-price",
+          "codebar",
+          "add-button",
         ]
       : [
-          'product-name',
-          'category-name', 
-          'seller-name',
-          'quantity',
-          'bought-price',
-          'selling-price',
-          'codebar',
-          'add-button'
+          "product-name",
+          "category-name",
+          "seller-name",
+          "quantity",
+          "bought-price",
+          "selling-price",
+          "codebar",
+          "add-button",
         ];
-    
+
     const currentIndex = fieldOrder.indexOf(currentField);
     if (currentIndex === -1 || currentIndex === fieldOrder.length - 1) {
       return;
     }
-    
+
     const nextField = fieldOrder[currentIndex + 1];
-    
-    if (nextField === 'add-button') {
-      const addButton = document.querySelector('button[type="submit"]') as HTMLButtonElement;
+
+    if (nextField === "add-button") {
+      const addButton = document.querySelector(
+        'button[type="submit"]'
+      ) as HTMLButtonElement;
       if (addButton) {
         addButton.focus();
       }
     } else {
-      const nextInput = document.querySelector(`[data-field="${nextField}"]`) as HTMLInputElement;
+      const nextInput = document.querySelector(
+        `[data-field="${nextField}"]`
+      ) as HTMLInputElement;
       if (nextInput) {
         nextInput.focus();
       }
-    }
-  };
-
-  const focusPreviousField = (currentField: string) => {
-    // Dynamic field order based on mode (same as focusNextField)
-    const fieldOrder = isMultiMode 
-      ? [
-          'product-name',
-          'category-name', 
-          'quantity',
-          'bought-price',
-          'selling-price',
-          'codebar',
-          'add-button'
-        ]
-      : [
-          'product-name',
-          'category-name', 
-          'seller-name',
-          'quantity',
-          'bought-price',
-          'selling-price',
-          'codebar',
-          'add-button'
-        ];
-    
-    const currentIndex = fieldOrder.indexOf(currentField);
-    if (currentIndex <= 0) return;
-    
-    const prevField = fieldOrder[currentIndex - 1];
-    const prevInput = document.querySelector(`[data-field="${prevField}"]`) as HTMLInputElement;
-    if (prevInput) {
-      prevInput.focus();
     }
   };
 
@@ -1572,11 +1618,13 @@ export default function AddStockForm({
   const handleOpenPanel = () => {
     const newPanelState = openPanel === "add" ? null : "add";
     setOpenPanel(newPanelState);
-    
+
     // If opening the panel, focus on product name field after a short delay
     if (newPanelState === "add") {
       setTimeout(() => {
-        const productNameInput = document.querySelector('[data-field="product-name"]') as HTMLInputElement;
+        const productNameInput = document.querySelector(
+          '[data-field="product-name"]'
+        ) as HTMLInputElement;
         if (productNameInput) {
           productNameInput.focus();
         }
@@ -1612,114 +1660,111 @@ export default function AddStockForm({
           />
 
           {/* Main Form */}
-                     <form 
-             onSubmit={handleAddProduct}
-             className="space-y-6"
-           >
+          <form onSubmit={handleAddProduct} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                             <ProductSelection
-                 form={form}
-                 showProductDropdown={showProductDropdown}
-                 setShowProductDropdown={setShowProductDropdown}
-                 filteredProducts={filteredProducts}
-                 setFilteredProducts={setFilteredProducts}
-                 dropdownProductSearch={dropdownProductSearch}
-                 setDropdownProductSearch={setDropdownProductSearch}
-                 products={products}
-                 paginatedProducts={paginatedProducts}
-                 loadingMoreProducts={loadingMoreProducts}
-                 hasMoreProducts={hasMoreProducts}
-                 handleLoadMoreProducts={handleLoadMoreProducts}
-                 onProductSelect={handleProductSelect}
-                 onFormChange={handleFormChange}
-                 onNextField={() => focusNextField('product-name')}
-                 onFieldFocus={() => handleFieldFocus('product')}
-               />
+              <ProductSelection
+                form={form}
+                showProductDropdown={showProductDropdown}
+                setShowProductDropdown={setShowProductDropdown}
+                filteredProducts={filteredProducts}
+                setFilteredProducts={setFilteredProducts}
+                dropdownProductSearch={dropdownProductSearch}
+                setDropdownProductSearch={setDropdownProductSearch}
+                products={products}
+                paginatedProducts={paginatedProducts}
+                loadingMoreProducts={loadingMoreProducts}
+                hasMoreProducts={hasMoreProducts}
+                handleLoadMoreProducts={handleLoadMoreProducts}
+                onProductSelect={handleProductSelect}
+                onFormChange={handleFormChange}
+                onNextField={() => focusNextField("product-name")}
+                onFieldFocus={() => handleFieldFocus("product")}
+              />
 
-                             <CategorySelection
-                 form={form}
-                 isExistingProduct={isExistingProduct}
-                 showCategoryDropdown={showCategoryDropdown}
-                 setShowCategoryDropdown={setShowCategoryDropdown}
-                 filteredCategories={filteredCategories}
-                 setFilteredCategories={setFilteredCategories}
-                 categories={categories}
-                 onCategorySelect={handleCategorySelect}
-                 onFormChange={handleFormChange}
-                 onNextField={() => focusNextField('category-name')}
-                 onFieldFocus={() => handleFieldFocus('category')}
-               />
+              <CategorySelection
+                form={form}
+                isExistingProduct={isExistingProduct}
+                showCategoryDropdown={showCategoryDropdown}
+                setShowCategoryDropdown={setShowCategoryDropdown}
+                filteredCategories={filteredCategories}
+                setFilteredCategories={setFilteredCategories}
+                categories={categories}
+                onCategorySelect={handleCategorySelect}
+                onFormChange={handleFormChange}
+                onNextField={() => focusNextField("category-name")}
+                onFieldFocus={() => handleFieldFocus("category")}
+              />
 
               {!isMultiMode && (
-                                 <SellerSelection
-                   form={form}
-                   showSellerDropdown={showSellerDropdown}
-                   setShowSellerDropdown={setShowSellerDropdown}
-                   sellers={sellers}
-                   filteredSellers={filteredSellers}
-                   setFilteredSellers={setFilteredSellers}
-                   dropdownSellerSearch={dropdownSellerSearch}
-                   setDropdownSellerSearch={setDropdownSellerSearch}
-                   onSellerSelect={handleSellerSelect}
-                   onFormChange={handleFormChange}
-                                     onNextField={() => focusNextField('seller-name')}
-                   onFieldFocus={() => handleFieldFocus('seller')}
-                 />
+                <SellerSelection
+                  form={form}
+                  showSellerDropdown={showSellerDropdown}
+                  setShowSellerDropdown={setShowSellerDropdown}
+                  sellers={sellers}
+                  filteredSellers={filteredSellers}
+                  setFilteredSellers={setFilteredSellers}
+                  dropdownSellerSearch={dropdownSellerSearch}
+                  setDropdownSellerSearch={setDropdownSellerSearch}
+                  onSellerSelect={handleSellerSelect}
+                  onFormChange={handleFormChange}
+                  onNextField={() => focusNextField("seller-name")}
+                  onFieldFocus={() => handleFieldFocus("seller")}
+                />
               )}
 
-                             <div className="space-y-2">
-                 <label>{t("stock.quantity")}</label>
-                 <StyledNumberInput
-                   data-field="quantity"
-                   value={form.quantity === "" ? "" : Number(form.quantity)}
-                   onChange={(val) => handleFormChange("quantity", val)}
-                   placeholder={t("stock.quantity")}
-                   onKeyDown={(e: React.KeyboardEvent) => {
-                     if (e.key === "Enter") {
-                       e.preventDefault();
-                       focusNextField('quantity');
-                     }
-                   }}
-                   onFocus={() => handleFieldFocus('quantity')}
-                 />
-               </div>
+              <div className="space-y-2">
+                <label>{t("stock.quantity")}</label>
+                <StyledNumberInput
+                  data-field="quantity"
+                  value={form.quantity === "" ? "" : Number(form.quantity)}
+                  onChange={(val) => handleFormChange("quantity", val)}
+                  placeholder={t("stock.quantity")}
+                  onKeyDown={(e: React.KeyboardEvent) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      focusNextField("quantity");
+                    }
+                  }}
+                  onFocus={() => handleFieldFocus("quantity")}
+                />
+              </div>
 
-                             <div className="space-y-2">
-                 <label>{t("stock.boughtPrice")}</label>
-                 <StyledNumberInput
-                   data-field="bought-price"
-                   value={
-                     form.boughtPrice === "" ? "" : Number(form.boughtPrice)
-                   }
-                   onChange={(val) => handleFormChange("boughtPrice", val)}
-                   placeholder={t("stock.boughtPrice")}
-                   onKeyDown={(e: React.KeyboardEvent) => {
-                     if (e.key === "Enter") {
-                       e.preventDefault();
-                       focusNextField('bought-price');
-                     }
-                   }}
-                   onFocus={() => handleFieldFocus('bought-price')}
-                 />
-               </div>
+              <div className="space-y-2">
+                <label>{t("stock.boughtPrice")}</label>
+                <StyledNumberInput
+                  data-field="bought-price"
+                  value={
+                    form.boughtPrice === "" ? "" : Number(form.boughtPrice)
+                  }
+                  onChange={(val) => handleFormChange("boughtPrice", val)}
+                  placeholder={t("stock.boughtPrice")}
+                  onKeyDown={(e: React.KeyboardEvent) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      focusNextField("bought-price");
+                    }
+                  }}
+                  onFocus={() => handleFieldFocus("bought-price")}
+                />
+              </div>
 
-                             <div className="space-y-2">
-                 <label>{t("stock.sellingPrice")}</label>
-                 <StyledNumberInput
-                   data-field="selling-price"
-                   value={
-                     form.sellingPrice === "" ? "" : Number(form.sellingPrice)
-                   }
-                   onChange={(val) => handleFormChange("sellingPrice", val)}
-                   placeholder={t("stock.sellingPrice")}
-                   onKeyDown={(e: React.KeyboardEvent) => {
-                     if (e.key === "Enter") {
-                       e.preventDefault();
-                       focusNextField('selling-price');
-                     }
-                   }}
-                   onFocus={() => handleFieldFocus('selling-price')}
-                 />
+              <div className="space-y-2">
+                <label>{t("stock.sellingPrice")}</label>
+                <StyledNumberInput
+                  data-field="selling-price"
+                  value={
+                    form.sellingPrice === "" ? "" : Number(form.sellingPrice)
+                  }
+                  onChange={(val) => handleFormChange("sellingPrice", val)}
+                  placeholder={t("stock.sellingPrice")}
+                  onKeyDown={(e: React.KeyboardEvent) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      focusNextField("selling-price");
+                    }
+                  }}
+                  onFocus={() => handleFieldFocus("selling-price")}
+                />
                 {/* Warning when selling price is less than bought price */}
                 {form.sellingPrice &&
                   form.boughtPrice &&
@@ -1738,24 +1783,24 @@ export default function AddStockForm({
                   )}
               </div>
 
-                             <div className="space-y-2">
-                 <label>{t("stock.codebar")}</label>
-                 <input
-                   data-field="codebar"
-                   type="text"
-                   placeholder={t("stock.codebar")}
-                   value={form.codebar}
-                   onChange={(e) => handleFormChange("codebar", e.target.value)}
-                   onKeyDown={(e) => {
-                     if (e.key === "Enter") {
-                       e.preventDefault();
-                       focusNextField('codebar');
-                     }
-                   }}
-                   onFocus={() => handleFieldFocus('codebar')}
-                   className="w-full px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-green-500/50 focus:border-green-500 transition-all"
-                 />
-               </div>
+              <div className="space-y-2">
+                <label>{t("stock.codebar")}</label>
+                <input
+                  data-field="codebar"
+                  type="text"
+                  placeholder={t("stock.codebar")}
+                  value={form.codebar}
+                  onChange={(e) => handleFormChange("codebar", e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      focusNextField("codebar");
+                    }
+                  }}
+                  onFocus={() => handleFieldFocus("codebar")}
+                  className="w-full px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-green-500/50 focus:border-green-500 transition-all"
+                />
+              </div>
 
               <div className="space-y-2">
                 <label>{t("stock.photo", "Product Photo")}</label>

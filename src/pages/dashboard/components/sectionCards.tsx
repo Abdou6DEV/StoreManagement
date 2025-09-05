@@ -30,38 +30,41 @@ export function SectionCards() {
 
       function calcSalesStats(
         labelKey: string,
-        filterFn: (date: Date) => boolean,
+        filterFn: (date: Date) => boolean
       ) {
         const filtered = sales.filter((s: any) => filterFn(s.createdAt));
         const revenue = filtered.reduce(
           (sum: number, s: any) => sum + (s.totalAmountWithDiscount || 0),
-          0,
+          0
         );
         const profit = filtered.reduce((sum: number, s: any) => {
           const revenue = s.totalAmountWithDiscount || 0;
-          
-          const cost = s.saleItems?.reduce((itemSum: number, item: any) => {
-            if (item.product && item.product.boughtPrice) {
-              // For regular products, use actual bought price
-              return itemSum + item.product.boughtPrice * item.quantity;
-            }
-            if (item.manualProduct && item.manualProduct.costPrice) {
-              // For manual products, use actual cost price
-              return itemSum + item.manualProduct.costPrice * item.quantity;
-            }
-            if (item.service && item.service.costPrice) {
-              // For services, use actual cost price
-              return itemSum + item.service.costPrice * item.quantity;
-            }
-            // Fallback: if no cost price is available, assume 70% profit margin
-            return itemSum + item.price * item.quantity * 0.3;
-          }, 0) || 0;
-          
+
+          const cost =
+            s.saleItems?.reduce((itemSum: number, item: any) => {
+              if (item.product && item.product.boughtPrice) {
+                // Use stored bought price if available, otherwise use current product bought price
+                const boughtPrice =
+                  item.boughtPrice || item.product.boughtPrice;
+                return itemSum + boughtPrice * item.quantity;
+              }
+              if (item.manualProduct && item.manualProduct.costPrice) {
+                // For manual products, use actual cost price
+                return itemSum + item.manualProduct.costPrice * item.quantity;
+              }
+              if (item.service && item.service.costPrice) {
+                // For services, use actual cost price
+                return itemSum + item.service.costPrice * item.quantity;
+              }
+              // Fallback: if no cost price is available, assume 70% profit margin
+              return itemSum + item.price * item.quantity * 0.3;
+            }, 0) || 0;
+
           return sum + (revenue - cost);
         }, 0);
         const itemsSold = filtered.reduce(
           (sum: number, s: any) => sum + (s.totalItems || 0),
-          0,
+          0
         );
         return {
           labelKey: `dashboard.${labelKey}`,
@@ -101,12 +104,12 @@ export function SectionCards() {
       const totalProducts = products.length;
       const threshold = lowStockThreshold ? Number(lowStockThreshold) : 5; // Default to 5 if not set
       const lowStockItems = products.filter(
-        (p: any) => p.quantity <= threshold && p.quantity > 0,
+        (p: any) => p.quantity <= threshold && p.quantity > 0
       ).length;
       const outOfStock = products.filter((p: any) => p.quantity === 0).length;
       const stockValue = products.reduce(
         (sum: number, p: any) => sum + p.boughtPrice * p.quantity,
-        0,
+        0
       );
       setStockStats([
         {
@@ -138,11 +141,11 @@ export function SectionCards() {
       const numberOfClients = clients.length;
       const totalCredit = payments.filter((p: any) => p.type === "CREDIT");
       const totalVersement = payments.filter(
-        (p: any) => p.type === "VERSEMENT",
+        (p: any) => p.type === "VERSEMENT"
       );
       const unpaidCredit = totalCredit.filter((p: any) => !p.paidDate).length;
       const unpaidVersement = totalVersement.filter(
-        (p: any) => !p.paidDate,
+        (p: any) => !p.paidDate
       ).length;
       setClientStats([
         {

@@ -14,7 +14,7 @@ export async function seedSales(prisma: PrismaClient, products: Product[]) {
   for (let i = 0; i < 200; i++) {
     const client = faker.helpers.maybe(
       () => faker.helpers.arrayElement(clients),
-      { probability: 0.7 },
+      { probability: 0.7 }
     );
     const saleItemsCount = faker.number.int({ min: 1, max: 5 });
     const saleCreatedAt = faker.date.between({
@@ -44,7 +44,7 @@ export async function seedSales(prisma: PrismaClient, products: Product[]) {
 
     // Filter products that have stock available
     const availableProducts = products.filter(
-      (product) => product.quantity > 0,
+      (product) => product.quantity > 0
     );
 
     // Calculate how many regular products to include
@@ -58,7 +58,7 @@ export async function seedSales(prisma: PrismaClient, products: Product[]) {
       availableProducts.length > 0
         ? faker.helpers.arrayElements(
             availableProducts,
-            Math.min(regularProductCount, availableProducts.length),
+            Math.min(regularProductCount, availableProducts.length)
           )
         : [];
 
@@ -77,6 +77,7 @@ export async function seedSales(prisma: PrismaClient, products: Product[]) {
             saleId: sale.id,
             quantity,
             price: product.sellingPrice,
+            boughtPrice: product.boughtPrice,
           },
         });
 
@@ -145,7 +146,7 @@ export async function seedSales(prisma: PrismaClient, products: Product[]) {
       const serviceCount = faker.number.int({ min: 1, max: 2 });
       const selectedServices = faker.helpers.arrayElements(
         services,
-        Math.min(serviceCount, services.length),
+        Math.min(serviceCount, services.length)
       );
 
       for (const service of selectedServices) {
@@ -178,7 +179,7 @@ export async function seedSales(prisma: PrismaClient, products: Product[]) {
 
     const saleTotal = saleItems.reduce(
       (sum, item) => sum + item.price * item.quantity,
-      0,
+      0
     );
 
     // Calculate discount as a percentage of total (0-20%)

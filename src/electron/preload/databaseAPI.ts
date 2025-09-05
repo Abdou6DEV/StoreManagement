@@ -8,7 +8,7 @@ export const databaseAPI = {
       ipcRenderer.invoke("db:products:add", product),
     update: (
       id: string,
-      data: Partial<Omit<Product, "id" | "createdAt" | "updatedAt">>,
+      data: Partial<Omit<Product, "id" | "createdAt" | "updatedAt">>
     ) => ipcRenderer.invoke("db:products:update", { id, data }),
     delete: (id: string) => ipcRenderer.invoke("db:products:delete", id),
     getSalesCounts: () => ipcRenderer.invoke("db:products:getSalesCounts"),
@@ -48,7 +48,7 @@ export const databaseAPI = {
         phone?: string;
         address?: string;
         notes?: string;
-      },
+      }
     ) => ipcRenderer.invoke("db:clients:update", { id, data }),
   },
   sales: {
@@ -63,19 +63,19 @@ export const databaseAPI = {
     getAggregatedByPeriod: (
       period: "day" | "month" | "year",
       startDate: Date,
-      endDate: Date,
+      endDate: Date
     ) =>
       ipcRenderer.invoke(
         "db:sales:getAggregatedByPeriod",
         period,
         startDate,
-        endDate,
+        endDate
       ),
     getSummary: (startDate: Date, endDate: Date) =>
       ipcRenderer.invoke("db:sales:getSummary", startDate, endDate),
     getBySpecificPeriod: (
       period: "day" | "month" | "year",
-      periodValue: string,
+      periodValue: string
     ) =>
       ipcRenderer.invoke("db:sales:getBySpecificPeriod", period, periodValue),
     update: (
@@ -84,7 +84,7 @@ export const databaseAPI = {
         clientId?: string;
         items: { productId: string; quantity: number; price: number }[];
         discount?: number;
-      },
+      }
     ) => ipcRenderer.invoke("db:sales:update", { id, data }),
     delete: (id: string) => ipcRenderer.invoke("db:sales:delete", id),
   },
@@ -109,12 +109,12 @@ export const databaseAPI = {
       ipcRenderer.invoke("db:payments:getAllWithClientInfo"),
     getBySpecificPeriod: (
       period: "day" | "month" | "year",
-      periodValue: string,
+      periodValue: string
     ) =>
       ipcRenderer.invoke(
         "db:payments:getBySpecificPeriod",
         period,
-        periodValue,
+        periodValue
       ),
     markAsPaid: (paymentId: string, paidDate: Date | null) =>
       ipcRenderer.invoke("db:payments:updatePaidAt", {
@@ -144,7 +144,7 @@ export const databaseAPI = {
         email?: string;
         address?: string;
         notes?: string;
-      },
+      }
     ) => ipcRenderer.invoke("db:sellers:update", { id, data }),
     delete: (id: string) => ipcRenderer.invoke("db:sellers:delete", id),
     getById: (id: string) => ipcRenderer.invoke("db:sellers:getById", id),
@@ -164,7 +164,7 @@ export const databaseAPI = {
         sellerId?: string;
         quantity?: number;
         price?: number;
-      },
+      }
     ) => ipcRenderer.invoke("db:purchases:update", { id, data }),
     delete: (id: string) => ipcRenderer.invoke("db:purchases:delete", id),
     getById: (id: string) => ipcRenderer.invoke("db:purchases:getById", id),
@@ -174,12 +174,12 @@ export const databaseAPI = {
       ipcRenderer.invoke("db:purchases:getBySeller", sellerId),
     getBySpecificPeriod: (
       period: "day" | "month" | "year",
-      periodValue: string,
+      periodValue: string
     ) =>
       ipcRenderer.invoke(
         "db:purchases:getBySpecificPeriod",
         period,
-        periodValue,
+        periodValue
       ),
     createWithItems: (data: {
       sellerId?: string;
@@ -199,7 +199,7 @@ export const databaseAPI = {
           quantity: number;
           price: number;
         }>;
-      },
+      }
     ) =>
       ipcRenderer.invoke("db:purchases:updateWithItems", { purchaseId, data }),
   },
@@ -215,7 +215,7 @@ export const databaseAPI = {
       data: {
         quantity?: number;
         price?: number;
-      },
+      }
     ) => ipcRenderer.invoke("db:purchaseItems:update", { id, data }),
     delete: (id: string) => ipcRenderer.invoke("db:purchaseItems:delete", id),
     getByPurchase: (purchaseId: string) =>

@@ -23,7 +23,7 @@ export function StockProvider({ children }: { children: ReactNode }) {
       setCategories(result.map((category: { name: string }) => category.name));
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Failed to fetch categories",
+        err instanceof Error ? err.message : "Failed to fetch categories"
       );
       rendererLogger.error("Error fetching categories", "StockContext", err);
     }
@@ -35,10 +35,15 @@ export function StockProvider({ children }: { children: ReactNode }) {
         window.api.database.products.getAll(),
         window.api.database.products.getSalesCounts(),
       ]);
+
       // Merge salesCounts into products
       const salesMap = new Map(
-        salesCounts.map((s: { productId: string; totalSold: number }) => [s.productId, s.totalSold]),
+        salesCounts.map((s: { productId: string; totalSold: number }) => [
+          s.productId,
+          s.totalSold,
+        ])
       );
+
       const merged = result.map((p: ProductWithSales) => ({
         ...p,
         totalSold: salesMap.get(p.id) || 0,
@@ -67,7 +72,7 @@ export function StockProvider({ children }: { children: ReactNode }) {
         await Promise.all([fetchCategories(), fetchProducts()]);
       } catch (err) {
         setError(
-          err instanceof Error ? err.message : "Failed to initialize data",
+          err instanceof Error ? err.message : "Failed to initialize data"
         );
       } finally {
         setLoading(false);

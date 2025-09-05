@@ -103,6 +103,7 @@ model SaleItem {
   saleId          String
   quantity        Int
   price           Int
+  boughtPrice     Int?    // Store the bought price at time of sale
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
