@@ -37,6 +37,22 @@ export default function StyledNumberInput({
           if (value === 0) {
             e.target.select(); // 👈 select the "0" so typing replaces it
           }
+
+          // Add wheel event listener to prevent value changes
+          const handleWheel = (event: WheelEvent) => {
+            event.preventDefault();
+            event.stopPropagation();
+          };
+
+          e.target.addEventListener("wheel", handleWheel, { passive: false });
+
+          // Clean up the event listener when focus is lost
+          const handleBlur = () => {
+            e.target.removeEventListener("wheel", handleWheel);
+            e.target.removeEventListener("blur", handleBlur);
+          };
+
+          e.target.addEventListener("blur", handleBlur);
         }}
         className="w-full px-4 py-3 pr-10 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-green-500/50 focus:border-green-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-muted/50"
         placeholder={placeholder}
