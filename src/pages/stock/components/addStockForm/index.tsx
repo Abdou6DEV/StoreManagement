@@ -110,6 +110,29 @@ export default function AddStockForm({
   const [loading, setLoading] = useState(false);
   const [finishingPurchase, setFinishingPurchase] = useState(false);
 
+  // Helper to prevent duplicate entries in pending list (multi-mode)
+  const isPendingDuplicate = (candidate: {
+    name: string;
+    categoryName: string;
+    existingProductId?: string;
+    isNewProduct: boolean;
+  }) => {
+    const nameLc = candidate.name.toLowerCase().trim();
+    const catLc = candidate.categoryName.toLowerCase().trim();
+    return pendingProducts.some((p) => {
+      if (candidate.existingProductId && p.existingProductId) {
+        return p.existingProductId === candidate.existingProductId;
+      }
+      if (candidate.isNewProduct && p.isNewProduct) {
+        return (
+          p.name.toLowerCase().trim() === nameLc &&
+          p.categoryName.toLowerCase().trim() === catLc
+        );
+      }
+      return false;
+    });
+  };
+
   // Price confirmation dialog state
   const [showPriceConfirmation, setShowPriceConfirmation] = useState(false);
   const [priceConfirmationData, setPriceConfirmationData] = useState<{
@@ -469,6 +492,21 @@ export default function AddStockForm({
           existingProductId: existingProduct?.id,
         };
 
+        // Prevent duplicates
+        if (isPendingDuplicate({
+          name: pendingProduct.name,
+          categoryName: pendingProduct.categoryName,
+          existingProductId: pendingProduct.existingProductId,
+          isNewProduct: pendingProduct.isNewProduct,
+        })) {
+          showToast(
+            t("stock.duplicatePendingProduct", "This product is already in the list"),
+            "error"
+          );
+          setLoading(false);
+          return;
+        }
+
         setPendingProducts((prev) => [...prev, pendingProduct]);
         setForm(initialForm);
 
@@ -715,24 +753,7 @@ export default function AddStockForm({
         p.boughtPrice <= 0
     );
 
-    // Check for products with selling price less than bought price
-    const lossProducts = pendingProducts.filter(
-      (p) =>
-        p.sellingPrice > 0 &&
-        p.boughtPrice > 0 &&
-        p.sellingPrice < p.boughtPrice
-    );
-
-    if (lossProducts.length > 0) {
-      setSellingPriceWarningData({
-        sellingPrice: 0, // Not relevant for multi-mode
-        boughtPrice: 0, // Not relevant for multi-mode
-        isMultiMode: true,
-        productCount: lossProducts.length,
-      });
-      setShowSellingPriceWarning(true);
-      return; // Wait for user decision
-    }
+    // Do not block finishing with a loss warning; the warning is handled at add-to-list time
 
     if (invalidProducts.length > 0) {
       showToast(
@@ -911,8 +932,9 @@ export default function AddStockForm({
         const totalValue =
           currentQuantity * currentPrice + newQuantity * newPrice;
         const totalQuantity = currentQuantity + newQuantity;
-        const weightedPrice =
-          totalQuantity > 0 ? totalValue / totalQuantity : newPrice;
+        const weightedPrice = totalQuantity > 0
+          ? parseFloat((totalValue / totalQuantity).toFixed(2))
+          : parseFloat(newPrice.toFixed(2));
 
         const pendingProduct: PendingProduct = {
           id: Date.now().toString(),
@@ -930,6 +952,21 @@ export default function AddStockForm({
           originalBoughtPrice: currentPrice,
           actualPurchasePrice: newPrice, // Store the actual price paid
         };
+
+        // Prevent duplicates
+        if (isPendingDuplicate({
+          name: pendingProduct.name,
+          categoryName: pendingProduct.categoryName,
+          existingProductId: pendingProduct.existingProductId,
+          isNewProduct: pendingProduct.isNewProduct,
+        })) {
+          showToast(
+            t("stock.duplicatePendingProduct", "This product is already in the list"),
+            "error"
+          );
+          setLoading(false);
+          return;
+        }
 
         setPendingProducts((prev) => [...prev, pendingProduct]);
         setForm(initialForm);
@@ -1007,6 +1044,21 @@ export default function AddStockForm({
           originalBoughtPrice: existingProduct?.boughtPrice || 0,
           actualPurchasePrice: priceConfirmationData.newPrice, // Store the actual price paid
         };
+
+        // Prevent duplicates
+        if (isPendingDuplicate({
+          name: pendingProduct.name,
+          categoryName: pendingProduct.categoryName,
+          existingProductId: pendingProduct.existingProductId,
+          isNewProduct: pendingProduct.isNewProduct,
+        })) {
+          showToast(
+            t("stock.duplicatePendingProduct", "This product is already in the list"),
+            "error"
+          );
+          setLoading(false);
+          return;
+        }
 
         setPendingProducts((prev) => [...prev, pendingProduct]);
         setForm(initialForm);
@@ -1089,12 +1141,104 @@ export default function AddStockForm({
               form.categoryName.toLowerCase().trim()
         );
 
+        const quantity = Number(form.quantity || 0);
+        const newBoughtPrice = safePrice(form.boughtPrice);
+
+        // If existing product and price differs, mirror the normal flow: remembered choice or open dialog
+        if (
+          existingProduct &&
+          isPriceDifferent(newBoughtPrice, existingProduct.boughtPrice)
+        ) {
+          const rememberedChoice = localStorage.getItem("priceConfirmationChoice");
+          if (rememberedChoice) {
         const pendingProduct: PendingProduct = {
           id: Date.now().toString(),
           name: form.name,
           categoryName: form.categoryName,
-          quantity: Number(form.quantity || 0),
-          boughtPrice: safePrice(form.boughtPrice),
+              quantity: quantity,
+              boughtPrice: newBoughtPrice,
+              sellingPrice: safePrice(form.sellingPrice),
+              codebar: form.codebar,
+              sellerId: form.sellerId,
+              photo: form.photo,
+              isNewProduct: false,
+              existingProductId: existingProduct.id,
+            };
+
+            if (
+              isPendingDuplicate({
+                name: pendingProduct.name,
+                categoryName: pendingProduct.categoryName,
+                existingProductId: pendingProduct.existingProductId,
+                isNewProduct: pendingProduct.isNewProduct,
+              })
+            ) {
+              showToast(
+                t(
+                  "stock.duplicatePendingProduct",
+                  "This product is already in the list"
+                ),
+                "error"
+              );
+              setLoading(false);
+              return;
+            }
+
+            setPendingProducts((prev) => [...prev, pendingProduct]);
+            setForm(initialForm);
+            showToast(
+              t("stock.productAddedToPending", "Product added to purchase list"),
+              "success"
+            );
+            return;
+          }
+
+          try {
+            const productWithHistory = await window.api.database.products.getWithPurchaseHistory(
+              existingProduct.id
+            );
+            setPriceConfirmationData({
+              productId: existingProduct.id,
+              newPrice: newBoughtPrice,
+              previousPrice: existingProduct.boughtPrice,
+              newSellingPrice: safePrice(form.sellingPrice),
+              previousSellingPrice: existingProduct.sellingPrice,
+              sellerName: sellers.find((s) => s.id === form.sellerId)?.name || null,
+              quantity: quantity,
+              sellerId: form.sellerId,
+              purchaseHistory: productWithHistory?.PurchaseItems || [],
+            });
+            setShowPriceConfirmation(true);
+            return;
+          } catch (error) {
+            rendererLogger.error(
+              "Failed to fetch product history",
+              "AddStockForm",
+              error
+            );
+            setPriceConfirmationData({
+              productId: existingProduct.id,
+              newPrice: newBoughtPrice,
+              previousPrice: existingProduct.boughtPrice,
+              newSellingPrice: safePrice(form.sellingPrice),
+              previousSellingPrice: existingProduct.sellingPrice,
+              sellerName: sellers.find((s) => s.id === form.sellerId)?.name || null,
+              quantity: quantity,
+              sellerId: form.sellerId,
+              purchaseHistory: [],
+            });
+            setShowPriceConfirmation(true);
+            return;
+          }
+        }
+
+        // Otherwise proceed to add pending normally
+        const pendingProduct: PendingProduct = {
+          id: Date.now().toString(),
+          name: form.name,
+          categoryName: form.categoryName,
+          quantity: quantity,
+          boughtPrice: newBoughtPrice,
           sellingPrice: safePrice(form.sellingPrice),
           codebar: form.codebar,
           sellerId: form.sellerId,
@@ -1103,9 +1247,24 @@ export default function AddStockForm({
           existingProductId: existingProduct?.id,
         };
 
+        if (
+          isPendingDuplicate({
+            name: pendingProduct.name,
+            categoryName: pendingProduct.categoryName,
+            existingProductId: pendingProduct.existingProductId,
+            isNewProduct: pendingProduct.isNewProduct,
+          })
+        ) {
+          showToast(
+            t("stock.duplicatePendingProduct", "This product is already in the list"),
+            "error"
+          );
+          setLoading(false);
+          return;
+        }
+
         setPendingProducts((prev) => [...prev, pendingProduct]);
         setForm(initialForm);
-
         showToast(
           t("stock.productAddedToPending", "Product added to purchase list"),
           "success"
