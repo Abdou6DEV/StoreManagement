@@ -67,17 +67,17 @@ export const StockRow = React.memo(function StockRow({
       <td className="px-4">{product.name}</td>
       <td className="px-4">{product.categoryName}</td>
       <td className="px-4">{product.quantity}</td>
-      <td className="px-4">
+      <td className="px-4 whitespace-nowrap">
         {product.boughtPrice} {t("cashier.currency", "DA")}
       </td>
-      <td className="px-4">
+      <td className="px-4 whitespace-nowrap">
         {product.sellingPrice} {t("cashier.currency", "DA")}
       </td>
-      <td className="px-4 text-green-700 font-medium">
+      <td className="px-4 text-green-700 font-medium whitespace-nowrap">
         {profit} {t("cashier.currency", "DA")}
       </td>
       <td className="px-4">{product.totalSold ?? 0}</td>
-      <td className="px-4 text-green-700 font-medium">
+      <td className="px-4 text-green-700 font-medium whitespace-nowrap">
         {loading ? (
           <span className="text-xs text-muted-foreground">Loading...</span>
         ) : (

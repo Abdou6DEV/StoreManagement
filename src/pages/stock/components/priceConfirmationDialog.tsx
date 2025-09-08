@@ -58,6 +58,14 @@ export const PriceConfirmationDialog: React.FC<PriceConfirmationDialogProps> = (
     ? purchaseHistory.find(item => item.price === bestPrice)?.purchase.seller?.name || t("stock.noSeller", "No Seller")
     : null;
 
+  // Calculate weighted average price
+  const weightedAveragePrice = purchaseHistory && purchaseHistory.length > 0
+    ? Math.round(
+        (purchaseHistory.reduce((acc, item) => acc + item.price * item.quantity, 0) + newPrice) / 
+        (purchaseHistory.reduce((acc, item) => acc + item.quantity, 0) + 1)
+      )
+    : newPrice;
+
   // Check if new price is higher than previous
   const isPriceIncrease = newPrice > previousPrice;
   
@@ -79,72 +87,72 @@ export const PriceConfirmationDialog: React.FC<PriceConfirmationDialogProps> = (
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-xl">
-            <AlertTriangle className="w-6 h-6 text-orange-500" />
+      <DialogContent className="sm:max-w-4xl">
+        <DialogHeader className="space-y-1 pb-2">
+          <DialogTitle className="flex items-center gap-2">
+            <AlertTriangle className="w-5 h-5 text-orange-500" />
             {t("stock.differentPriceDetected", "You have entered a different bought price")}
           </DialogTitle>
-          <DialogDescription className="text-muted-foreground">
+          <DialogDescription className="text-muted-foreground text-sm">
             {t("stock.priceConfirmationDescription", "Review the price differences and choose how to handle the new purchase. You can calculate a weighted average price or keep the new price.")}
           </DialogDescription>
         </DialogHeader>
         
-        <div className="space-y-8">
+        <div className="space-y-2">
           {/* Current Price Comparison */}
-          <div className="bg-muted/30 rounded-lg p-6 space-y-4">
-            <h3 className="font-semibold text-foreground text-lg">
+          <div className="bg-muted/30 rounded-lg p-3">
+            <h3 className="font-medium text-foreground mb-2">
               {t("stock.priceComparison", "Price Comparison")}
             </h3>
             
-            <div className="grid grid-cols-2 gap-6">
-              <div className="space-y-3">
-                <p className="text-sm text-muted-foreground font-medium">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <p className="text-sm text-muted-foreground mb-1">
                   {t("stock.newBoughtPrice", "New Bought Price")}
                 </p>
-                <p className={`text-2xl font-bold ${isPriceIncrease ? 'text-red-600' : 'text-green-600'}`}>
+                <p className={`text-xl font-bold ${isPriceIncrease ? 'text-red-600' : 'text-green-600'} flex items-center gap-1`}>
                   {newPrice.toLocaleString()} {t("cashier.currency", "DA")}
-                  {isPriceIncrease && <TrendingUp className="inline w-5 h-5 ml-2" />}
-                  {!isPriceIncrease && <TrendingDown className="inline w-5 h-5 ml-2" />}
+                  {isPriceIncrease && <TrendingUp className="w-4 h-4" />}
+                  {!isPriceIncrease && <TrendingDown className="w-4 h-4" />}
                 </p>
               </div>
               
-              <div className="space-y-3">
-                <p className="text-sm text-muted-foreground font-medium">
+              <div>
+                <p className="text-sm text-muted-foreground mb-1">
                   {t("stock.previousBoughtPrice", "Previous Bought Price")}
                 </p>
-                <p className="text-2xl font-bold text-foreground">
+                <p className="text-xl font-bold text-foreground">
                   {previousPrice.toLocaleString()} {t("cashier.currency", "DA")}
                 </p>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-6">
-              <div className="space-y-3">
-                <p className="text-sm text-muted-foreground font-medium">
+            <div className="grid grid-cols-2 gap-3 mt-2">
+              <div>
+                <p className="text-sm text-muted-foreground mb-1">
                   {t("stock.newSellingPrice", "New Selling Price")}
                 </p>
-                <p className="text-xl font-semibold text-foreground">
+                <p className="text-lg font-semibold text-foreground">
                   {newSellingPrice.toLocaleString()} {t("cashier.currency", "DA")}
                 </p>
               </div>
               
-              <div className="space-y-3">
-                <p className="text-sm text-muted-foreground font-medium">
+              <div>
+                <p className="text-sm text-muted-foreground mb-1">
                   {t("stock.previousSellingPrice", "Previous Selling Price")}
                 </p>
-                <p className="text-xl font-semibold text-foreground">
+                <p className="text-lg font-semibold text-foreground">
                   {previousSellingPrice.toLocaleString()} {t("cashier.currency", "DA")}
                 </p>
               </div>
             </div>
 
             {sellerName && (
-              <div className="pt-2 border-t border-border">
-                <p className="text-sm text-muted-foreground font-medium">
+              <div className="mt-2 pt-2 border-t border-border">
+                <p className="text-sm text-muted-foreground mb-1">
                   {t("stock.currentSupplier", "Current Supplier")}
                 </p>
-                <p className="text-lg font-semibold text-foreground flex items-center gap-2">
+                <p className="text-base font-medium text-foreground flex items-center gap-2">
                   <User className="w-4 h-4" />
                   {sellerName}
                 </p>
@@ -154,24 +162,24 @@ export const PriceConfirmationDialog: React.FC<PriceConfirmationDialogProps> = (
 
           {/* Purchase History Summary */}
                       {purchaseHistory && purchaseHistory.length > 0 && (
-            <div className="bg-blue-50 dark:bg-blue-950/20 rounded-lg p-6 space-y-4">
-              <h3 className="font-semibold text-foreground text-lg flex items-center gap-2">
-                <Package className="w-5 h-5" />
+            <div className="bg-blue-50 dark:bg-blue-950/20 rounded-lg p-3">
+              <h3 className="font-medium text-foreground mb-2 flex items-center gap-2">
+                <Package className="w-4 h-4" />
                 {t("stock.purchaseHistory", "Purchase History")}
               </h3>
               
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 {/* Best Price */}
-                <div className="space-y-3">
-                  <p className="text-sm text-muted-foreground font-medium">
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">
                     {t("stock.bestPrice", "Best Price")}
                   </p>
-                  <p className="text-2xl font-bold text-green-600">
+                  <p className="text-lg font-bold text-green-600">
                     {bestPrice.toLocaleString()} {t("cashier.currency", "DA")}
                   </p>
                   {bestPriceSupplier && (
-                    <p className="text-sm text-muted-foreground flex items-center gap-2">
-                      <User className="w-4 h-4" />
+                    <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
+                      <User className="w-3.5 h-3.5" />
                       {bestPriceSupplier}
                     </p>
                   )}
@@ -179,32 +187,34 @@ export const PriceConfirmationDialog: React.FC<PriceConfirmationDialogProps> = (
 
                 {/* Previous Purchase */}
                 {previousPurchase && (
-                  <div className="space-y-3">
-                    <p className="text-sm text-muted-foreground font-medium">
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">
                       {t("stock.lastPurchase", "Last Purchase")}
                     </p>
-                    <p className="text-2xl font-bold text-blue-600">
+                    <p className="text-lg font-bold text-blue-600">
                       {previousPurchase.price.toLocaleString()} {t("cashier.currency", "DA")}
                     </p>
-                    <p className="text-sm text-muted-foreground flex items-center gap-2">
-                      <User className="w-4 h-4" />
-                      {previousPurchase.purchase.seller?.name || t("stock.noSeller", "No Seller")}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {new Date(previousPurchase.createdAt).toLocaleDateString()}
-                    </p>
+                    <div className="flex flex-col gap-0.5 mt-1">
+                      <p className="text-sm text-muted-foreground flex items-center gap-1">
+                        <User className="w-3.5 h-3.5" />
+                        {previousPurchase.purchase.seller?.name || t("stock.noSeller", "No Seller")}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {new Date(previousPurchase.createdAt).toLocaleDateString()}
+                      </p>
+                    </div>
                   </div>
                 )}
 
                 {/* Total Purchases */}
-                <div className="space-y-3">
-                  <p className="text-sm text-muted-foreground font-medium">
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">
                     {t("stock.totalPurchases", "Total Purchases")}
                   </p>
-                  <p className="text-2xl font-bold text-purple-600">
+                  <p className="text-lg font-bold text-purple-600">
                     {purchaseHistory ? purchaseHistory.length : 0}
                   </p>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-muted-foreground mt-1">
                     {t("stock.uniqueSuppliers", "Unique Suppliers")}: {purchaseHistory ? new Set(purchaseHistory.map(item => item.purchase.seller?.name).filter(Boolean)).size : 0}
                   </p>
                 </div>
@@ -212,9 +222,9 @@ export const PriceConfirmationDialog: React.FC<PriceConfirmationDialogProps> = (
 
               {/* Price Warning */}
               {isPriceIncrease && (
-                <div className="mt-4 p-4 bg-orange-100 dark:bg-orange-900/30 border border-orange-200 dark:border-orange-800 rounded-lg">
-                  <p className="text-sm text-orange-800 dark:text-orange-200 flex items-start gap-2">
-                    <AlertTriangle className="w-5 h-5 mt-0.5 flex-shrink-0" />
+                <div className="mt-2 px-2 py-1 bg-orange-100 dark:bg-orange-900/30 border border-orange-200 dark:border-orange-800 rounded text-sm">
+                  <p className="text-orange-800 dark:text-orange-200 flex items-start gap-1.5">
+                    <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
                     {t("stock.priceIncreaseWarning", "The new price is higher than your previous purchase. Consider negotiating with suppliers or finding alternative sources.")}
                   </p>
                 </div>
@@ -223,8 +233,8 @@ export const PriceConfirmationDialog: React.FC<PriceConfirmationDialogProps> = (
           )}
 
           {/* Remember Choice Checkbox */}
-          <div className="bg-muted/20 rounded-lg p-4">
-            <div className="flex items-center space-x-3">
+          <div className="bg-muted/20 rounded-lg py-2 px-3">
+            <div className="flex items-center gap-2">
               <Input
                 id="rememberChoice"
                 type="checkbox"
@@ -234,38 +244,36 @@ export const PriceConfirmationDialog: React.FC<PriceConfirmationDialogProps> = (
               />
               <label
                 htmlFor="rememberChoice"
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                className="text-sm cursor-pointer"
               >
                 {t("stock.rememberChoice", "Remember my choice and apply it automatically in the future")}
               </label>
             </div>
             {rememberChoice && (
-              <p className="text-xs text-muted-foreground mt-2 ml-6">
+              <p className="text-xs text-muted-foreground mt-1 ml-6">
                 {t("stock.rememberChoiceNote", "Your choice will be saved and automatically applied when similar price differences are detected.")}
               </p>
             )}
           </div>
 
           {/* Action Buttons */}
-          <div className="space-y-4">
-            <p className="text-base text-muted-foreground text-center font-medium">
+          <div>
+            <p className="text-sm text-muted-foreground text-center mb-2">
               {t("stock.calculateBestPrice", "Do you want to calculate the best bought price")}{" "}
               {t("stock.orKeepNewPrice", "or just keep the new bought price?")}
             </p>
 
-            <div className={`flex gap-4 ${isRTL ? "flex-row-reverse" : ""}`}>
+            <div className={`flex gap-2 ${isRTL ? "flex-row-reverse" : ""}`}>
               <Button
                 onClick={() => handleAction('weighted')}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 text-base py-3"
-                size="lg"
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-sm py-2"
               >
-                {t("stock.calculateWeightedAverage", "Calculate Weighted Average")}
+                {t("stock.calculateWeightedAverage", "Calculate Weighted Average")} ({weightedAveragePrice.toLocaleString()} {t("cashier.currency", "DA")})
               </Button>
               <Button
                 onClick={() => handleAction('new')}
                 variant="outline"
-                className="flex-1 text-base py-3"
-                size="lg"
+                className="flex-1 text-sm py-2"
               >
                 {t("stock.keepNewPrice", "Keep New Price")}
               </Button>

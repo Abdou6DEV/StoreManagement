@@ -46,6 +46,15 @@ interface Seller {
   notes?: string;
 }
 
+interface Seller {
+  id: string;
+  name: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  notes?: string;
+}
+
 interface PendingProductsListProps {
   pendingProducts: PendingProduct[];
   removePendingProduct: (id: string) => void;
@@ -70,6 +79,9 @@ export default function PendingProductsList({
   onFinishPurchase,
 }: PendingProductsListProps) {
   const { t } = useTranslation();
+  
+  const [filteredSellers, setFilteredSellers] = React.useState(sellers);
+  const [showSellerDropdown, setShowSellerDropdown] = React.useState(false);
 
   return (
     <div className="space-y-4">
@@ -198,72 +210,68 @@ export default function PendingProductsList({
             {t("stock.seller", "Seller")} (
             {t("stock.forAllProducts", "for all products")})
           </label>
-          <div className="flex items-center gap-2">
+          <div className="relative">
             <input
               type="text"
+              data-field="seller-name"
               placeholder={t("stock.seller", "Seller")}
-              value={
-                multiSellerName ||
-                sellers.find((s) => s.id === multiSellerId)?.name ||
-                ""
-              }
+              value={multiSellerName || sellers.find(s => s.id === multiSellerId)?.name || ""}
               onChange={(e) => {
                 const value = e.target.value;
                 setMultiSellerName(value);
-
-                // If exact match found, set sellerId
-                const matchingSeller = sellers.find(
-                  (s) => s.name.toLowerCase() === value.toLowerCase()
-                );
-                if (matchingSeller) {
-                  setMultiSellerId(matchingSeller.id);
-                  setMultiSellerName(""); // Clear sellerName when ID is set
+                setMultiSellerId(""); // Clear selected seller when typing
+                
+                // Filter sellers based on input
+                if (value.trim()) {
+                  const filtered = sellers.filter(s => 
+                    s.name.toLowerCase().includes(value.toLowerCase())
+                  );
+                  setFilteredSellers(filtered);
+                  setShowSellerDropdown(true);
                 } else {
-                  setMultiSellerId(""); // Clear sellerId for new names
+                  setFilteredSellers([]);
+                  setShowSellerDropdown(false);
                 }
               }}
-              className="flex-1 px-3 py-2 rounded border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-green-500/50"
+              onKeyDown={(e) => {
+                if (e.key === "Escape") {
+                  setShowSellerDropdown(false);
+                }
+              }}
+              onFocus={() => {
+                if (multiSellerName.trim()) {
+                  setShowSellerDropdown(true);
+                }
+              }}
+              className="w-full px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-green-500/50 focus:border-green-500 transition-all"
             />
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button type="button" variant="outline" size="sm">
-                  {t("stock.choose", "Choose")}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-[250px] p-0">
-                <Command>
-                  <CommandInput
-                    placeholder={t("stock.searchSeller", "Search seller...")}
-                  />
-                  <CommandList>
-                    <CommandEmpty>
-                      {t("stock.noSeller", "No seller found.")}
-                    </CommandEmpty>
-                    <CommandGroup>
-                      <CommandItem
-                        onSelect={() => {
-                          setMultiSellerId("");
-                          setMultiSellerName("");
-                        }}
-                      >
-                        {t("stock.noSeller", "No Seller")}
-                      </CommandItem>
-                      {sellers.map((seller) => (
-                        <CommandItem
-                          key={seller.id}
-                          onSelect={() => {
-                            setMultiSellerId(seller.id);
-                            setMultiSellerName("");
-                          }}
-                        >
-                          {seller.name}
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
-                  </CommandList>
-                </Command>
-              </PopoverContent>
-            </Popover>
+            {showSellerDropdown && filteredSellers.length > 0 && (
+              <div 
+                data-seller-dropdown
+                className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-lg shadow-lg z-50 max-h-80 overflow-y-auto"
+              >
+                {filteredSellers.map((seller) => (
+                  <div
+                    key={seller.id}
+                    className="px-4 py-2 cursor-pointer hover:bg-accent/50"
+                    onClick={() => {
+                      setMultiSellerId(seller.id);
+                      setMultiSellerName("");
+                      setShowSellerDropdown(false);
+                    }}
+                  >
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium">{seller.name}</span>
+                      {seller.phone && (
+                        <span className="text-xs text-muted-foreground">
+                          {seller.phone}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
