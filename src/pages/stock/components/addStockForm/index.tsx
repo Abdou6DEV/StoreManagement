@@ -4,8 +4,9 @@ import { useStock } from "../../../../lib/contexts/stockContext";
 import { Product } from "@prisma/client";
 import StyledNumberInput from "../../../../lib/components/inputNumber";
 import { Button } from "../../../../lib/components/button";
-import { AlertTriangle, Loader2, Package, ChevronUp } from "lucide-react";
+import { AlertTriangle, Loader2, Package, ChevronUp, Barcode } from "lucide-react";
 import { ImageUpload } from "../../../../lib/components/imageUpload";
+import { generateBarcode, isValidEAN13, formatBarcode } from "../../../../lib/utils/barcodeGenerator";
 import type { AddStockFormState } from "../../../../types";
 import { useToast } from "../../../../lib/contexts/toastContext";
 import rendererLogger from "../../../../lib/logger/rendererLogger";
@@ -19,15 +20,29 @@ import CategorySelection from "./CategorySelection";
 import SellerSelection from "./SellerSelection";
 import PendingProductsList from "./PendingProductsList";
 
-// Helper function for safe price calculations with 2 decimal precision
+// Helper function for safe price calculations with proper rounding
 const safePrice = (value: number | string | undefined): number => {
   const num = Number(value || 0);
-  return parseFloat(num.toFixed(2));
+  return Math.round(num * 100) / 100; // Rounds to 2 decimal places without string conversion
 };
 
 // Helper function for safe price comparison with tolerance
 const isPriceDifferent = (price1: number, price2: number): boolean => {
   return Math.abs(price1 - price2) > 0.01;
+};
+
+// Helper function for calculating weighted average price safely
+const calculateWeightedAverage = (
+  currentQuantity: number,
+  currentPrice: number,
+  newQuantity: number,
+  newPrice: number
+): number => {
+  const totalQuantity = currentQuantity + newQuantity;
+  if (totalQuantity <= 0) return newPrice;
+  
+  const totalValue = (currentQuantity * currentPrice) + (newQuantity * newPrice);
+  return Math.round((totalValue / totalQuantity) * 100) / 100;
 };
 
 const initialForm: AddStockFormState = {
@@ -110,25 +125,46 @@ export default function AddStockForm({
   const [loading, setLoading] = useState(false);
   const [finishingPurchase, setFinishingPurchase] = useState(false);
 
+  // Normalize string for comparison
+  const normalizeString = (str: string): string => {
+    return str.toLowerCase().trim().replace(/\s+/g, ' ');
+  };
+
   // Helper to prevent duplicate entries in pending list (multi-mode)
   const isPendingDuplicate = (candidate: {
     name: string;
     categoryName: string;
+    codebar?: string;
     existingProductId?: string;
     isNewProduct: boolean;
   }) => {
-    const nameLc = candidate.name.toLowerCase().trim();
-    const catLc = candidate.categoryName.toLowerCase().trim();
+    // Normalize strings for comparison
+    const nameLc = normalizeString(candidate.name);
+    const catLc = normalizeString(candidate.categoryName);
+    const codebarLc = candidate.codebar ? normalizeString(candidate.codebar) : null;
+
     return pendingProducts.some((p) => {
+      // First check existingProductId for exact matches
       if (candidate.existingProductId && p.existingProductId) {
         return p.existingProductId === candidate.existingProductId;
       }
+
+      // For new products, check multiple criteria
       if (candidate.isNewProduct && p.isNewProduct) {
-        return (
-          p.name.toLowerCase().trim() === nameLc &&
-          p.categoryName.toLowerCase().trim() === catLc
-        );
+        // If both have codebars, that's the primary match criteria
+        if (codebarLc && p.codebar && normalizeString(p.codebar) === codebarLc) {
+          return true;
+        }
+
+        // If no codebar match, check name and category
+        if (
+          normalizeString(p.name) === nameLc &&
+          normalizeString(p.categoryName) === catLc
+        ) {
+          return true;
+        }
       }
+
       return false;
     });
   };
@@ -697,51 +733,23 @@ export default function AddStockForm({
       return;
     }
 
-    // Validate seller selection
-    if (!multiSellerId && !multiSellerName) {
+    // Validate seller selection - must have an existing seller selected
+    if (!multiSellerId) {
       showToast(
-        t("stock.sellerRequired", "Please select a seller for the purchase"),
+        t("stock.existingSellerRequired", "Please select an existing seller for the purchase"),
         "error"
       );
       return;
     }
 
-    // Check if seller name was entered but doesn't exist, and create it if needed
-    if (multiSellerId === "" && multiSellerName) {
-      const sellerName = multiSellerName.trim();
-      if (
-        sellerName &&
-        !sellers.find((s) => s.name.toLowerCase() === sellerName.toLowerCase())
-      ) {
-        try {
-          const newSeller = await window.api.database.sellers.create({
-            name: sellerName,
-          });
-
-          // Add to local sellers list
-          setSellers((prev) => [...prev, newSeller]);
-          setFilteredSellers((prev) => [...prev, newSeller]);
-
-          // Update multiSellerId so purchase uses it
-          setMultiSellerId(newSeller.id);
-
-          showToast(
-            t("stock.sellerCreated", "New seller created successfully"),
-            "success"
-          );
-        } catch (error) {
-          rendererLogger.error(
-            "Failed to create seller",
-            "AddStockForm",
-            error
-          );
-          showToast(
-            t("stock.sellerCreateError", "Failed to create seller"),
-            "error"
-          );
-          return;
-        }
-      }
+    // Verify the seller still exists
+    const selectedSeller = sellers.find(s => s.id === multiSellerId);
+    if (!selectedSeller) {
+      showToast(
+        t("stock.sellerNotFound", "The selected seller no longer exists. Please select another seller."),
+        "error"
+      );
+      return;
     }
 
     // Validate that all products have required data
@@ -928,13 +936,13 @@ export default function AddStockForm({
         const newQuantity = priceConfirmationData.quantity;
         const newPrice = priceConfirmationData.newPrice;
 
-        // Calculate weighted average price
-        const totalValue =
-          currentQuantity * currentPrice + newQuantity * newPrice;
-        const totalQuantity = currentQuantity + newQuantity;
-        const weightedPrice = totalQuantity > 0
-          ? parseFloat((totalValue / totalQuantity).toFixed(2))
-          : parseFloat(newPrice.toFixed(2));
+        // Calculate weighted average price using the safe calculation function
+        const weightedPrice = calculateWeightedAverage(
+          currentQuantity,
+          currentPrice,
+          newQuantity,
+          newPrice
+        );
 
         const pendingProduct: PendingProduct = {
           id: Date.now().toString(),
@@ -1708,14 +1716,11 @@ export default function AddStockForm({
 
   // Handler for mode change
   const handleModeChange = () => {
-    // Reset forms when switching modes
-    setForm({ ...initialForm, sellerId: "" });
-    setPendingProducts([]);
-    setMultiSellerId("");
-    setMultiSellerName("");
+    // Reset all state when switching modes
+    resetAllState();
 
     // Focus on product name field after mode change
-    setTimeout(() => {
+    const focusTimeout = setTimeout(() => {
       const productNameInput = document.querySelector(
         '[data-field="product-name"]'
       ) as HTMLInputElement;
@@ -1723,6 +1728,9 @@ export default function AddStockForm({
         productNameInput.focus();
       }
     }, 100); // Small delay to ensure the form is fully rendered
+
+    // Cleanup timeout to prevent memory leaks
+    return () => clearTimeout(focusTimeout);
   };
 
   // Smart tab system functions
@@ -1773,13 +1781,33 @@ export default function AddStockForm({
     }
   };
 
+  // Reset all form and related state
+  const resetAllState = () => {
+    setForm(initialForm);
+    setMultiSellerId("");
+    setMultiSellerName("");
+    setPendingProducts([]);
+    setShowProductDropdown(false);
+    setShowCategoryDropdown(false);
+    setShowSellerDropdown(false);
+    setDropdownProductSearch("");
+    setDropdownSellerSearch("");
+    setShowPriceConfirmation(false);
+    setPriceConfirmationData(null);
+    setShowSellingPriceWarning(false);
+    setSellingPriceWarningData(null);
+  };
+
   // Handler for opening the add stock panel and focusing on product name
   const handleOpenPanel = () => {
     const newPanelState = openPanel === "add" ? null : "add";
     setOpenPanel(newPanelState);
 
-    // If opening the panel, focus on product name field after a short delay
-    if (newPanelState === "add") {
+    if (newPanelState === null) {
+      // Reset all state when closing the panel
+      resetAllState();
+    } else {
+      // If opening the panel, focus on product name field after a short delay
       setTimeout(() => {
         const productNameInput = document.querySelector(
           '[data-field="product-name"]'
@@ -1944,21 +1972,39 @@ export default function AddStockForm({
 
               <div className="space-y-2">
                 <label>{t("stock.codebar")}</label>
-                <input
-                  data-field="codebar"
-                  type="text"
-                  placeholder={t("stock.codebar")}
-                  value={form.codebar}
-                  onChange={(e) => handleFormChange("codebar", e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      focusNextField("codebar");
-                    }
-                  }}
-                  onFocus={() => handleFieldFocus("codebar")}
-                  className="w-full px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-green-500/50 focus:border-green-500 transition-all"
-                />
+                <div className="flex gap-2">
+                  <input
+                    data-field="codebar"
+                    type="text"
+                    placeholder={t("stock.codebar")}
+                    value={form.codebar}
+                    onChange={(e) => handleFormChange("codebar", e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        focusNextField("codebar");
+                      }
+                    }}
+                    onFocus={() => handleFieldFocus("codebar")}
+                    className="flex-1 px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-green-500/50 focus:border-green-500 transition-all"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={async () => {
+                      try {
+                        const barcode = await generateBarcode();
+                        handleFormChange("codebar", barcode);
+                        showToast(t("stock.barcodeGenerated", "Barcode generated successfully"), "success");
+                      } catch (error) {
+                        showToast(t("stock.barcodeGenerationError", "Failed to generate barcode"), "error");
+                      }
+                    }}
+                    className="shrink-0"
+                  >
+                    {t("stock.generateBarcode", "Generate")}
+                  </Button>
+                </div>
               </div>
 
               <div className="space-y-2">

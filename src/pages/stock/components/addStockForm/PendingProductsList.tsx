@@ -46,15 +46,6 @@ interface Seller {
   notes?: string;
 }
 
-interface Seller {
-  id: string;
-  name: string;
-  phone?: string;
-  email?: string;
-  address?: string;
-  notes?: string;
-}
-
 interface PendingProductsListProps {
   pendingProducts: PendingProduct[];
   removePendingProduct: (id: string) => void;
@@ -80,7 +71,6 @@ export default function PendingProductsList({
 }: PendingProductsListProps) {
   const { t } = useTranslation();
   
-  const [filteredSellers, setFilteredSellers] = React.useState(sellers);
   const [showSellerDropdown, setShowSellerDropdown] = React.useState(false);
 
   return (
@@ -211,67 +201,52 @@ export default function PendingProductsList({
             {t("stock.forAllProducts", "for all products")})
           </label>
           <div className="relative">
-            <input
-              type="text"
-              data-field="seller-name"
-              placeholder={t("stock.seller", "Seller")}
-              value={multiSellerName || sellers.find(s => s.id === multiSellerId)?.name || ""}
-              onChange={(e) => {
-                const value = e.target.value;
-                setMultiSellerName(value);
-                setMultiSellerId(""); // Clear selected seller when typing
-                
-                // Filter sellers based on input
-                if (value.trim()) {
-                  const filtered = sellers.filter(s => 
-                    s.name.toLowerCase().includes(value.toLowerCase())
-                  );
-                  setFilteredSellers(filtered);
-                  setShowSellerDropdown(true);
-                } else {
-                  setFilteredSellers([]);
-                  setShowSellerDropdown(false);
-                }
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Escape") {
-                  setShowSellerDropdown(false);
-                }
-              }}
-              onFocus={() => {
-                if (multiSellerName.trim()) {
-                  setShowSellerDropdown(true);
-                }
-              }}
-              className="w-full px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-green-500/50 focus:border-green-500 transition-all"
-            />
-            {showSellerDropdown && filteredSellers.length > 0 && (
-              <div 
-                data-seller-dropdown
-                className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-lg shadow-lg z-50 max-h-80 overflow-y-auto"
-              >
-                {filteredSellers.map((seller) => (
-                  <div
-                    key={seller.id}
-                    className="px-4 py-2 cursor-pointer hover:bg-accent/50"
-                    onClick={() => {
-                      setMultiSellerId(seller.id);
-                      setMultiSellerName("");
-                      setShowSellerDropdown(false);
-                    }}
-                  >
-                    <div className="flex flex-col">
-                      <span className="text-sm font-medium">{seller.name}</span>
-                      {seller.phone && (
-                        <span className="text-xs text-muted-foreground">
-                          {seller.phone}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+            <Popover open={showSellerDropdown} onOpenChange={setShowSellerDropdown}>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  className={`w-full px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-green-500/50 focus:border-green-500 transition-all text-left ${
+                    !multiSellerId ? "text-muted-foreground" : ""
+                  }`}
+                >
+                  {multiSellerId
+                    ? sellers.find((s) => s.id === multiSellerId)?.name
+                    : t("stock.chooseSeller", "Choose seller")}
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[400px] p-0" align="start">
+                <Command>
+                  <CommandInput
+                    placeholder={t("stock.searchSeller", "Search seller...")}
+                    className="h-9"
+                  />
+                  <CommandList>
+                    <CommandEmpty>{t("stock.noSellerFound", "No seller found")}</CommandEmpty>
+                    <CommandGroup>
+                      {sellers.map((seller) => (
+                        <CommandItem
+                          key={seller.id}
+                          value={seller.id}
+                          onSelect={() => {
+                            setMultiSellerId(seller.id);
+                            setShowSellerDropdown(false);
+                          }}
+                        >
+                          <span className="flex flex-col">
+                            <span className="text-sm font-medium">{seller.name}</span>
+                            {seller.phone && (
+                              <span className="text-xs text-muted-foreground">
+                                {seller.phone}
+                              </span>
+                            )}
+                          </span>
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </div>
         </div>
 
@@ -285,12 +260,12 @@ export default function PendingProductsList({
             {finishingPurchase ? (
               <>
                 <div className="w-4 h-4 animate-spin mr-2 border-2 border-white border-t-transparent rounded-full" />
-                {t("stock.completing", "Completing...")}
+                {t("history.loadingPeriodData", "Loading...")}
               </>
             ) : (
               <>
                 <ShoppingCart className="w-4 h-4 mr-2" />
-                {t("stock.finishPurchase", "Finish Purchase")}
+                {t("cashier.confirm", "Confirm")}
               </>
             )}
           </Button>
