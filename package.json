@@ -78,6 +78,7 @@
     "cmdk": "^1.1.1",
     "electron-squirrel-startup": "^1.0.1",
     "i18next": "^25.3.2",
+    "jsbarcode": "^3.12.1",
     "lucide-react": "^0.525.0",
     "react": "^19.1.0",
     "react-day-picker": "^9.8.0",

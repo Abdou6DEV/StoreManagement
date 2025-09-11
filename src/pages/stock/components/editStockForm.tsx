@@ -70,10 +70,18 @@ export default function EditStockForm({
       );
       setProductID(null);
     } catch (err) {
-      showToast(
-        t("stock.toastUpdateError", "Failed to update product"),
-        "error",
-      );
+      // Handle barcode conflict specifically
+      if (err instanceof Error && err.message.includes("already exists")) {
+        showToast(
+          t("stock.barcodeExists", `Barcode conflict: ${err.message}`),
+          "error"
+        );
+      } else {
+        showToast(
+          t("stock.toastUpdateError", "Failed to update product"),
+          "error",
+        );
+      }
     } finally {
       setLoading(false);
       refetchProducts();

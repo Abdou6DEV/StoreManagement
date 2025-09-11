@@ -574,7 +574,22 @@
     "lineTotal": "Line Total",
     "oldShort": "Old",
     "newShort": "New",
-    "sellingShort": "Selling"
+    "sellingShort": "Selling",
+    "barcodeExists": "Barcode already exists. Please use a different barcode.",
+    "barcodeGenerated": "Barcode generated successfully",
+    "barcodeGenerationError": "Failed to generate barcode",
+    "generateBarcode": "Generate",
+    "printBarcode": "Print",
+    "barcodePrint": "Printing barcode...",
+    "barcodePrintError": "Failed to print barcode",
+    "previewBarcode": "Preview",
+    "barcodePreview": "Barcode Label Preview",
+    "barcodePreviewError": "Product name and barcode are required for preview",
+    "noPrice": "No price",
+    "currency": "DA",
+    "barcodeFormat": "Format",
+    "barcodeLength": "Length",
+    "quantity": "Quantity"
   },
   "clients": {
     "itemsPerPage": "Items per page:",

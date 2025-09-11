@@ -415,7 +415,18 @@
     "sellingShort": "Vente",
     "toastAddSuccess": "Produit ajouté avec succès",
     "toastUpdateSuccess": "Produit mis à jour avec succès",
-    "toastDeleteSuccess": "Produit supprimé avec succès"
+    "toastDeleteSuccess": "Produit supprimé avec succès",
+    "barcodeExists": "Le code-barres existe déjà. Veuillez utiliser un code-barres différent.",
+    "barcodeGenerated": "Code-barres généré avec succès",
+    "barcodeGenerationError": "Échec de la génération du code-barres",
+    "generateBarcode": "Générer",
+    "printBarcode": "Imprimer",
+    "barcodePrint": "Impression du code-barres...",
+    "barcodePrintError": "Échec de l'impression du code-barres",
+    "previewBarcode": "Aperçu",
+    "barcodePreview": "Aperçu de l'étiquette code-barres",
+    "barcodePreviewError": "Le nom du produit et le code-barres sont requis pour l'aperçu",
+    "currency": "DA"
   },
   "cashier": {
     "total": "Total",

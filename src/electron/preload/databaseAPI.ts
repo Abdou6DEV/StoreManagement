@@ -25,6 +25,7 @@ export const databaseAPI = {
       updateBoughtPrice?: boolean;
       newSellingPrice?: number;
     }) => ipcRenderer.invoke("db:products:updateWithPurchase", data),
+    generateUniqueBarcode: () => ipcRenderer.invoke("db:products:generateUniqueBarcode"),
   },
   categories: {
     getAll: () => ipcRenderer.invoke("db:categories:getAll"),

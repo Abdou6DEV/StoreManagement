@@ -45,7 +45,7 @@ model Product {
   quantity     Int
   boughtPrice  Int
   sellingPrice Int
-  codebar      String?
+  codebar      String? @unique
   photo        String?
 
   createdAt DateTime @default(now())

@@ -57,6 +57,7 @@ export type DatabaseAPI = {
       updateBoughtPrice?: boolean;
       newSellingPrice?: number;
     }) => Promise<any>;
+    generateUniqueBarcode: () => Promise<string>;
   };
   categories: {
     getAll: () => Promise<Category[]>;

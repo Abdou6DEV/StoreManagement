@@ -571,7 +571,18 @@
     "lineTotal": "إجمالي السطر",
     "oldShort": "السابق",
     "newShort": "الجديد",
-    "sellingShort": "البيع"
+    "sellingShort": "البيع",
+    "barcodeExists": "الباركود موجود بالفعل. يرجى استخدام باركود مختلف.",
+    "barcodeGenerated": "تم إنشاء الباركود بنجاح",
+    "barcodeGenerationError": "فشل في إنشاء الباركود",
+    "generateBarcode": "إنشاء",
+    "printBarcode": "طباعة",
+    "barcodePrint": "جاري طباعة الباركود...",
+    "barcodePrintError": "فشل في طباعة الباركود",
+    "previewBarcode": "معاينة",
+    "barcodePreview": "معاينة ملصق الباركود",
+    "barcodePreviewError": "اسم المنتج والباركود مطلوبان للمعاينة",
+    "currency": "دج"
   },
   "clients": {
     "itemsPerPage": "العناصر لكل صفحة:",

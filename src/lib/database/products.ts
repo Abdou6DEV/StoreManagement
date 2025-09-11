@@ -5,7 +5,76 @@ export async function getAllProducts() {
   return await prisma.product.findMany();
 }
 
+// Check if a barcode already exists
+export async function isBarcodeExists(codebar: string): Promise<boolean> {
+  if (!codebar || codebar.trim() === '') {
+    return false;
+  }
+  
+  const existing = await prisma.product.findFirst({
+    where: { codebar: codebar.trim() }
+  });
+  
+  return !!existing;
+}
+
+// Find product by barcode
+export async function findProductByBarcode(codebar: string) {
+  if (!codebar || codebar.trim() === '') {
+    return null;
+  }
+  
+  return await prisma.product.findFirst({
+    where: { codebar: codebar.trim() }
+  });
+}
+
+// Generate a unique barcode with collision detection and retry mechanism
+export async function generateUniqueBarcode(): Promise<string> {
+  const maxAttempts = 10;
+  let attempts = 0;
+  
+  while (attempts < maxAttempts) {
+    try {
+      // Generate barcode using the existing generator
+      const { generateBarcode } = await import('../utils/barcodeGenerator');
+      const barcode = await generateBarcode();
+      
+      // Check if barcode already exists in database
+      const existing = await prisma.product.findFirst({
+        where: { codebar: barcode }
+      });
+      
+      if (!existing) {
+        return barcode;
+      }
+      
+      // If barcode exists, wait a bit and try again
+      await new Promise(resolve => setTimeout(resolve, 100));
+      attempts++;
+    } catch (error) {
+      console.error(`Barcode generation attempt ${attempts + 1} failed:`, error);
+      attempts++;
+      if (attempts >= maxAttempts) {
+        throw new Error(`Unable to generate unique barcode after ${maxAttempts} attempts: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
+      // Wait before retrying
+      await new Promise(resolve => setTimeout(resolve, 200));
+    }
+  }
+  
+  throw new Error('Unable to generate unique barcode after maximum attempts');
+}
+
 export async function addProduct(product: Product) {
+  // Check barcode uniqueness if provided
+  if (product.codebar && product.codebar.trim() !== '') {
+    const exists = await isBarcodeExists(product.codebar);
+    if (exists) {
+      throw new Error(`Barcode '${product.codebar}' already exists. Please use a different barcode.`);
+    }
+  }
+  
   return await prisma.product.create({ data: product });
 }
 
@@ -18,6 +87,19 @@ export async function deleteProduct(id: string) {
 export async function updateProduct(id: string, data: any) {
   const { categoryName, ...rest } = data;
   const updateData: any = { ...rest };
+
+  // Check barcode uniqueness if provided
+  if (data.codebar && data.codebar.trim() !== '') {
+    const existing = await prisma.product.findFirst({
+      where: { 
+        codebar: data.codebar.trim(),
+        id: { not: id }  // Exclude current product
+      }
+    });
+    if (existing) {
+      throw new Error(`Barcode '${data.codebar}' already exists. Please use a different barcode.`);
+    }
+  }
 
   if (categoryName) {
     updateData.category = { connect: { name: categoryName } };
@@ -73,6 +155,16 @@ export async function createProductWithPurchase(
   },
 ) {
   return await prisma.$transaction(async (tx) => {
+    // Check barcode uniqueness if provided
+    if (productData.codebar && productData.codebar.trim() !== '') {
+      const existing = await tx.product.findFirst({
+        where: { codebar: productData.codebar.trim() }
+      });
+      if (existing) {
+        throw new Error(`Barcode '${productData.codebar}' already exists. Please use a different barcode.`);
+      }
+    }
+    
     // Create the product
     const product = await tx.product.create({
       data: productData,

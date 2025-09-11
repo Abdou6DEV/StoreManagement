@@ -11,6 +11,7 @@ import {
   getProductWithPurchaseHistory,
   createProductWithPurchase,
   updateProductWithPurchase,
+  generateUniqueBarcode,
 } from "../../lib/database/products";
 import {
   getAllClients,
@@ -135,6 +136,10 @@ export function setupDatabaseHandlers() {
       );
     }
   );
+
+  ipcMain.handle("db:products:generateUniqueBarcode", async () => {
+    return await generateUniqueBarcode();
+  });
 
   // Categories handlers
   ipcMain.handle("db:categories:getAll", async () => {

@@ -4,14 +4,16 @@ import { useStock } from "../../../../lib/contexts/stockContext";
 import { Product } from "@prisma/client";
 import StyledNumberInput from "../../../../lib/components/inputNumber";
 import { Button } from "../../../../lib/components/button";
-import { AlertTriangle, Loader2, Package, ChevronUp, Barcode } from "lucide-react";
+import { AlertTriangle, Loader2, Package, ChevronUp, QrCode, Printer, Eye } from "lucide-react";
 import { ImageUpload } from "../../../../lib/components/imageUpload";
-import { generateBarcode, isValidEAN13, formatBarcode } from "../../../../lib/utils/barcodeGenerator";
+// Barcode generation is now handled by the database layer
 import type { AddStockFormState } from "../../../../types";
 import { useToast } from "../../../../lib/contexts/toastContext";
 import rendererLogger from "../../../../lib/logger/rendererLogger";
 import { PriceConfirmationDialog } from "../priceConfirmationDialog";
 import { SellingPriceWarningDialog } from "../sellingPriceWarningDialog";
+import { BarcodePreviewModal } from "./BarcodePreviewModal";
+import { printBarcodeLabel } from "./barcodePrintUtils";
 
 // Import the new components
 import ModeToggle from "./ModeToggle";
@@ -56,6 +58,7 @@ const initialForm: AddStockFormState = {
   sellerName: "",
   photo: null,
 };
+
 
 interface PendingProduct {
   id: string;
@@ -124,6 +127,30 @@ export default function AddStockForm({
   const [form, setForm] = useState<AddStockFormState>(initialForm);
   const [loading, setLoading] = useState(false);
   const [finishingPurchase, setFinishingPurchase] = useState(false);
+
+  // Function to show barcode preview
+  const showBarcodePreviewModal = () => {
+    if (!form.codebar || !form.name || form.codebar.trim() === '') {
+      showToast(t("stock.barcodePreviewError", "Product name and barcode are required for preview"), "error");
+      return;
+    }
+    setShowBarcodePreview(true);
+  };
+
+  // Function to handle barcode printing
+  const handlePrintBarcode = async (quantity: number = 1) => {
+    try {
+      await printBarcodeLabel({
+        productName: form.name,
+        price: form.sellingPrice,
+        barcode: form.codebar,
+      }, quantity);
+      setShowBarcodePreview(false);
+      showToast(t("stock.barcodePrint", "Printing barcode..."), "info");
+    } catch (error) {
+      showToast(t("stock.barcodePrintError", "Failed to print barcode"), "error");
+    }
+  };
 
   // Normalize string for comparison
   const normalizeString = (str: string): string => {
@@ -202,6 +229,9 @@ export default function AddStockForm({
     isMultiMode: boolean;
     productCount?: number;
   } | null>(null);
+
+  // Barcode preview modal state
+  const [showBarcodePreview, setShowBarcodePreview] = useState(false);
 
   // For infinite scroll in product dropdown
   const PAGE_SIZE = 50;
@@ -718,7 +748,15 @@ export default function AddStockForm({
         refetchCategories();
       }
     } catch (err) {
-      showToast(t("stock.toastAddError", "Failed to add product"), "error");
+      // Handle barcode conflict specifically
+      if (err instanceof Error && err.message.includes("already exists")) {
+        showToast(
+          t("stock.barcodeExists", `Barcode conflict: ${err.message}`),
+          "error"
+        );
+      } else {
+        showToast(t("stock.toastAddError", "Failed to add product"), "error");
+      }
     } finally {
       setLoading(false);
     }
@@ -1018,7 +1056,15 @@ export default function AddStockForm({
       setShowPriceConfirmation(false);
       setPriceConfirmationData(null);
     } catch (err) {
-      showToast(t("stock.toastAddError", "Failed to add product"), "error");
+      // Handle barcode conflict specifically
+      if (err instanceof Error && err.message.includes("already exists")) {
+        showToast(
+          t("stock.barcodeExists", `Barcode conflict: ${err.message}`),
+          "error"
+        );
+      } else {
+        showToast(t("stock.toastAddError", "Failed to add product"), "error");
+      }
     } finally {
       setLoading(false);
     }
@@ -1107,7 +1153,15 @@ export default function AddStockForm({
       setShowPriceConfirmation(false);
       setPriceConfirmationData(null);
     } catch (err) {
-      showToast(t("stock.toastAddError", "Failed to add product"), "error");
+      // Handle barcode conflict specifically
+      if (err instanceof Error && err.message.includes("already exists")) {
+        showToast(
+          t("stock.barcodeExists", `Barcode conflict: ${err.message}`),
+          "error"
+        );
+      } else {
+        showToast(t("stock.toastAddError", "Failed to add product"), "error");
+      }
     } finally {
       setLoading(false);
     }
@@ -1445,7 +1499,15 @@ export default function AddStockForm({
         refetchCategories();
       }
     } catch (err) {
-      showToast(t("stock.toastAddError", "Failed to add product"), "error");
+      // Handle barcode conflict specifically
+      if (err instanceof Error && err.message.includes("already exists")) {
+        showToast(
+          t("stock.barcodeExists", `Barcode conflict: ${err.message}`),
+          "error"
+        );
+      } else {
+        showToast(t("stock.toastAddError", "Failed to add product"), "error");
+      }
     } finally {
       setLoading(false);
     }
@@ -1992,17 +2054,35 @@ export default function AddStockForm({
                     type="button"
                     variant="outline"
                     onClick={async () => {
-                      try {
-                        const barcode = await generateBarcode();
-                        handleFormChange("codebar", barcode);
-                        showToast(t("stock.barcodeGenerated", "Barcode generated successfully"), "success");
-                      } catch (error) {
-                        showToast(t("stock.barcodeGenerationError", "Failed to generate barcode"), "error");
+                      if (form.codebar && form.codebar.trim()) {
+                        // Show preview modal if barcode exists
+                        showBarcodePreviewModal();
+                      } else {
+                        // Generate new barcode if input is empty
+                        try {
+                          const barcode = await window.api.database.products.generateUniqueBarcode();
+                          handleFormChange("codebar", barcode);
+                          showToast(t("stock.barcodeGenerated", "Barcode generated successfully"), "success");
+                        } catch (error) {
+                          showToast(t("stock.barcodeGenerationError", "Failed to generate barcode"), "error");
+                        }
                       }
                     }}
-                    className="shrink-0"
+                    className="shrink-0 h-12 px-3"
                   >
-                    {t("stock.generateBarcode", "Generate")}
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium">
+                        {form.codebar && form.codebar.trim() 
+                          ? t("stock.previewBarcode", "Preview")
+                          : t("stock.generateBarcode", "Generate")
+                        }
+                      </span>
+                      {form.codebar && form.codebar.trim() ? (
+                        <Eye className="w-4 h-4" />
+                      ) : (
+                        <QrCode className="w-4 h-4" />
+                      )}
+                    </div>
                   </Button>
                 </div>
               </div>
@@ -2124,6 +2204,16 @@ export default function AddStockForm({
         onCancel={handleSellingPriceWarningCancel}
         isMultiMode={sellingPriceWarningData?.isMultiMode || false}
         productCount={sellingPriceWarningData?.productCount}
+      />
+
+      {/* Barcode Preview Modal */}
+      <BarcodePreviewModal
+        open={showBarcodePreview}
+        onOpenChange={setShowBarcodePreview}
+        productName={form.name}
+        price={form.sellingPrice}
+        barcode={form.codebar}
+        onPrint={handlePrintBarcode}
       />
     </section>
   );
