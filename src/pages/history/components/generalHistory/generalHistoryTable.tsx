@@ -24,6 +24,16 @@ export default function GeneralHistoryTable({
 }: GeneralHistoryTableProps) {
   const { t } = useTranslation();
 
+  // Debug: Log the data being displayed (only when debugging)
+  // console.log("🔍 Table rendering data:", {
+  //   dataLength: data.length,
+  //   firstItem: data[0],
+  //   lastItem: data[data.length - 1],
+  //   allDataLength: allData.length,
+  //   todayInData: data.find(item => item.period === new Date().toISOString().split('T')[0]),
+  //   dataArray: data
+  // });
+
   // Calculate average profit for comparison from all data
   const averageProfit =
     allData.length > 0
@@ -31,22 +41,22 @@ export default function GeneralHistoryTable({
       : 0;
 
   const getRowHighlightClass = (profit: number) => {
-    console.log("Highlight enabled:", highlightEnabled);
-    console.log("Profit:", profit);
-    console.log("Average profit:", averageProfit);
+    // console.log("Highlight enabled:", highlightEnabled);
+    // console.log("Profit:", profit);
+    // console.log("Average profit:", averageProfit);
 
     if (!highlightEnabled) return "";
 
     // Compare with average profit
     const profitDiff =
       ((profit - averageProfit) / Math.abs(averageProfit)) * 100;
-    console.log("Profit difference:", profitDiff);
+    // console.log("Profit difference:", profitDiff);
 
     if (profitDiff >= 10) {
-      console.log("Should be green");
+      // console.log("Should be green");
       return "bg-green-500/20 hover:bg-green-500/30";
     } else if (profitDiff < 0) {
-      console.log("Should be red");
+      // console.log("Should be red");
       return "bg-red-500/20 hover:bg-red-500/30";
     }
     return "hover:bg-muted/50";
@@ -95,12 +105,14 @@ export default function GeneralHistoryTable({
             </tr>
           </thead>
           <tbody className="divide-y divide-border/40">
-            {data.map((item) => (
-              <tr
-                key={item.period}
-                className={`group transition-all duration-200 hover:border-l-primary hover:border-r-primary border-l-4 border-r-4 border-l-transparent border-r-transparent cursor-pointer ${getRowHighlightClass(item.profit)}`}
-                onDoubleClick={() => onRowDoubleClick(item.period)}
-              >
+            {data.map((item, index) => {
+              // console.log(`🔍 Rendering row ${index}:`, item);
+              return (
+                <tr
+                  key={item.period}
+                  className={`group transition-all duration-200 hover:border-l-primary hover:border-r-primary border-l-4 border-r-4 border-l-transparent border-r-transparent cursor-pointer ${getRowHighlightClass(item.profit)}`}
+                  onDoubleClick={() => onRowDoubleClick(item.period)}
+                >
                 <td className="px-4 py-3 font-medium text-foreground">
                   <div className="flex items-center gap-2.5">
                     <div className="w-2 h-2 rounded-full bg-primary/60"></div>
@@ -153,7 +165,8 @@ export default function GeneralHistoryTable({
                   </div>
                 </td>
               </tr>
-            ))}
+            );
+            })}
           </tbody>
         </table>
       </div>

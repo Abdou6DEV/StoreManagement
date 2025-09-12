@@ -646,7 +646,11 @@ export async function getSalesAggregatedByPeriod(
     let periodKey: string;
 
     if (period === "day") {
-      periodKey = saleDate.toISOString().split("T")[0]; // YYYY-MM-DD
+      // Use local timezone to avoid UTC conversion issues
+      const year = saleDate.getFullYear();
+      const month = String(saleDate.getMonth() + 1).padStart(2, "0");
+      const day = String(saleDate.getDate()).padStart(2, "0");
+      periodKey = `${year}-${month}-${day}`;
     } else if (period === "month") {
       periodKey = `${saleDate.getFullYear()}-${String(saleDate.getMonth() + 1).padStart(2, "0")}`;
     } else {
@@ -733,8 +737,50 @@ export async function getSalesAggregatedByPeriod(
     }
   });
 
+  // Fill in missing periods with zero values
+  const fillMissingPeriods = (data: Map<string, any>, start: Date, end: Date, period: "day" | "month" | "year") => {
+    const filledData = new Map(data);
+    const current = new Date(start);
+    
+    while (current <= end) {
+      let periodKey: string;
+      
+      if (period === "day") {
+        periodKey = current.toISOString().split("T")[0]; // YYYY-MM-DD
+      } else if (period === "month") {
+        periodKey = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, "0")}`;
+      } else {
+        periodKey = current.getFullYear().toString();
+      }
+      
+      if (!filledData.has(periodKey)) {
+        filledData.set(periodKey, {
+          period: periodKey,
+          revenue: 0,
+          profit: 0,
+          purchases: 0,
+          count: 0,
+        });
+      }
+      
+      // Move to next period
+      if (period === "day") {
+        current.setDate(current.getDate() + 1);
+      } else if (period === "month") {
+        current.setMonth(current.getMonth() + 1);
+      } else {
+        current.setFullYear(current.getFullYear() + 1);
+      }
+    }
+    
+    return filledData;
+  };
+
+  // Fill missing periods
+  const filledData = fillMissingPeriods(groupedData, startDate, endDate, period);
+
   // Convert to array and sort by period
-  const result = Array.from(groupedData.values()).sort((a, b) =>
+  const result = Array.from(filledData.values()).sort((a, b) =>
     a.period.localeCompare(b.period)
   );
 

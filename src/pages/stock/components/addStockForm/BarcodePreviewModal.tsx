@@ -5,6 +5,7 @@ import { Modal } from '../../../../lib/components/modal';
 import { Button } from '../../../../lib/components/button';
 import StyledNumberInput from '../../../../lib/components/inputNumber';
 import { generateRealBarcode, getRecommendedFormat } from '../../../../lib/utils/barcodeVisual';
+import { Tooltip } from '../../../../lib/components/tooltip';
 
 interface BarcodePreviewModalProps {
   open: boolean;
@@ -175,20 +176,30 @@ export const BarcodePreviewModal: React.FC<BarcodePreviewModalProps> = ({
 
         {/* Action Buttons */}
         <div className="flex gap-3 justify-end">
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
+          <Tooltip
+            content={t('common.cancelTooltip', 'Cancel and close preview')}
+            position="top"
           >
-            <X className="w-4 h-4 mr-2" />
-            {t('common.cancel', 'Cancel')}
-          </Button>
-          <Button
-            onClick={() => onPrint(quantity || 1)}
-            className="bg-green-600 hover:bg-green-700 text-white"
+            <Button
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
+              <X className="w-4 h-4 mr-2" />
+              {t('common.cancel', 'Cancel')}
+            </Button>
+          </Tooltip>
+          <Tooltip
+            content={t('stock.printBarcodeTooltip', 'Print barcode label(s)')}
+            position="top"
           >
-            <Printer className="w-4 h-4 mr-2" />
-            {t('stock.printBarcode', 'Print')} {(quantity || 1) > 1 ? `(${quantity || 1})` : ''}
-          </Button>
+            <Button
+              onClick={() => onPrint(quantity || 1)}
+              className="bg-green-600 hover:bg-green-700 text-white"
+            >
+              <Printer className="w-4 h-4 mr-2" />
+              {t('stock.printBarcode', 'Print')} {(quantity || 1) > 1 ? `(${quantity || 1})` : ''}
+            </Button>
+          </Tooltip>
         </div>
       </div>
     </Modal>

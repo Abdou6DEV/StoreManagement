@@ -1,9 +1,10 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { Printer, Eye, FileText } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Modal } from "../../../lib/components/modal";
 import type { CartItem } from "../../../types";
 import rendererLogger from "../../../lib/logger/rendererLogger";
+import { generateRealBarcode } from "../../../lib/utils/barcodeVisual";
 
 interface Props {
   open: boolean;
@@ -31,18 +32,67 @@ export default function ReceiptModal({
   const { t } = useTranslation();
   const [isPrinting, setIsPrinting] = useState(false);
 
-  // Store information (configurable via props or use defaults)
-  const storeInfo = {
+  // Store information - will be loaded from database
+  const [storeInfo, setStoreInfo] = useState({
     name: "Store Management",
     address: "Your Store Address",
     phone: "Phone: +1234567890",
-  };
+  });
+  const [footerMessage, setFooterMessage] = useState("");
+
+  // Load store information from database
+  React.useEffect(() => {
+    const loadStoreInfo = async () => {
+      try {
+        const [name, address, phone, footer] = await Promise.all([
+          window.api.database.options.get("storeName"),
+          window.api.database.options.get("storeAddress"),
+          window.api.database.options.get("storePhone"),
+          window.api.database.options.get("receiptFooterMessage"),
+        ]);
+        
+        setStoreInfo({
+          name: name || "Store Management",
+          address: address || "Your Store Address",
+          phone: phone ? `Phone: ${phone}` : "Phone: +1234567890",
+        });
+        setFooterMessage(footer || "");
+      } catch (error) {
+        console.error("Failed to load store information:", error);
+      }
+    };
+    
+    loadStoreInfo();
+  }, []);
 
   // Calculate totals
   const total = cart.reduce((sum, item) => sum + item.qty * item.price, 0);
   const finalTotal = total - discount;
   const currentDate = new Date();
   const receiptNumber = saleId || `TEMP-${Date.now()}`;
+
+  // Generate barcode from first 15 characters of receipt ID
+  const generateReceiptBarcode = () => {
+    try {
+      // Use exactly first 15 characters of the receipt ID
+      const barcodeId = receiptNumber.substring(0, 15);
+      
+      return generateRealBarcode(barcodeId, {
+        format: 'CODE128', // Best format for mobile scanning
+        width: 2,
+        height: 80,
+        displayValue: false,
+        fontSize: 12,
+        margin: 10,
+      });
+    } catch (error) {
+      console.error('Failed to generate receipt barcode:', error);
+      return null;
+    }
+  };
+
+  const receiptBarcode = generateReceiptBarcode();
+  const shortReceiptId = receiptNumber.substring(0, 15);
 
   const handlePrint = async () => {
     setIsPrinting(true);
@@ -339,16 +389,23 @@ export default function ReceiptModal({
                 : ""
             }
 
-            <!-- Receipt ID -->
+            <!-- Receipt ID with Barcode -->
             <div class="receipt-id">
-              <div class="receipt-id-text">ID: ${receiptNumber.substring(0, 12)}</div>
+              ${receiptBarcode ? `
+                <div style="text-align: center; margin-bottom: 8px;">
+                  <img src="${receiptBarcode}" alt="Receipt Barcode" style="max-width: 300px; height: 80px;" />
+                </div>
+              ` : ''}
+              <div class="receipt-id-text">ID: ${shortReceiptId}</div>
             </div>
 
             <!-- Welcome Message -->
             <div class="welcome">
-              <div>Thank you for your purchase!</div>
-              <div>Please come again</div>
-              <div style="margin-top: 5px;">We appreciate your business</div>
+              ${footerMessage ? footerMessage : `
+                <div>Thank you for your purchase!</div>
+                <div>Please come again</div>
+                <div style="margin-top: 5px;">We appreciate your business</div>
+              `}
             </div>
           </div>
         </body>
@@ -499,20 +556,35 @@ export default function ReceiptModal({
             </>
           )}
 
-          {/* Receipt ID */}
+          {/* Receipt ID with Barcode */}
           <div className="border-t border-black dark:border-white my-2" />
           <div className="text-center my-3 flex flex-col items-center py-2">
+            {receiptBarcode && (
+              <div className="mb-2">
+                <img 
+                  src={receiptBarcode} 
+                  alt="Receipt Barcode" 
+                  className="max-w-[300px] h-[80px] mx-auto"
+                />
+              </div>
+            )}
             <div className="text-xs mt-2">
-              ID: {receiptNumber.substring(0, 12)}
+              ID: {shortReceiptId}
             </div>
           </div>
 
           {/* Welcome Message */}
           <div className="border-t border-black dark:border-white my-2" />
           <div className="text-center text-xs font-bold mt-2">
-            <div>Thank you for your purchase!</div>
-            <div>Please come again</div>
-            <div className="mt-1">We appreciate your business</div>
+            {footerMessage ? (
+              <div>{footerMessage}</div>
+            ) : (
+              <>
+                <div>Thank you for your purchase!</div>
+                <div>Please come again</div>
+                <div className="mt-1">We appreciate your business</div>
+              </>
+            )}
           </div>
         </div>
       </div>

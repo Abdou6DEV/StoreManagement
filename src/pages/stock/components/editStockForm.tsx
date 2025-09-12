@@ -2,10 +2,13 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import StyledNumberInput from "../../../lib/components/inputNumber";
 import { Button } from "../../../lib/components/button";
-import { Save, X, Loader2, Package } from "lucide-react";
+import { Save, X, Loader2, Package, QrCode, Eye } from "lucide-react";
 import { useStock } from "../../../lib/contexts/stockContext";
 import { ImageUpload } from "../../../lib/components/imageUpload";
 import { useToast } from "../../../lib/contexts/toastContext";
+import { BarcodePreviewModal } from "./addStockForm/BarcodePreviewModal";
+import { printBarcodeLabel } from "./addStockForm/barcodePrintUtils";
+import { Tooltip } from "../../../lib/components/tooltip";
 
 export default function EditStockForm({
   productID,
@@ -21,6 +24,7 @@ export default function EditStockForm({
   const product = products.find((p) => p.id === productID);
 
   const [loading, setLoading] = useState(false);
+  const [showBarcodePreviewModal, setShowBarcodePreviewModal] = useState(false);
   const [form, setForm] = useState(() => {
     if (!product) return null;
     // Only include editable fields, exclude totalSold and other computed fields
@@ -33,6 +37,39 @@ export default function EditStockForm({
     value: string | number | string | null,
   ) => {
     setForm((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const handleBarcodeAction = async () => {
+    if (!form) return;
+    
+    if (form.codebar && form.codebar.trim()) {
+      // Show preview modal if barcode exists
+      setShowBarcodePreviewModal(true);
+    } else {
+      // Generate new barcode if input is empty
+      try {
+        const barcode = await window.api.database.products.generateUniqueBarcode();
+        handleEditFormChange("codebar", barcode);
+        showToast(t("stock.barcodeGenerated", "Barcode generated successfully"), "success");
+      } catch (error) {
+        showToast(t("stock.barcodeGenerationError", "Failed to generate barcode"), "error");
+      }
+    }
+  };
+
+  const handlePrintBarcode = async (quantity: number) => {
+    if (!form) return;
+    
+    try {
+      await printBarcodeLabel({
+        productName: form.name,
+        price: form.sellingPrice,
+        barcode: form.codebar || "",
+      }, quantity);
+      showToast(t("stock.barcodePrinted", "Barcode printed successfully"), "success");
+    } catch (error) {
+      showToast(t("stock.barcodePrintError", "Failed to print barcode"), "error");
+    }
   };
 
   const handleUpdateProduct = async (e: React.FormEvent) => {
@@ -175,6 +212,35 @@ export default function EditStockForm({
                 }
                 className="flex-1 px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-green-500/50 focus:border-green-500 transition-all"
               />
+              <Tooltip
+                content={
+                  form.codebar && form.codebar.trim()
+                    ? t("stock.previewBarcodeTooltip", "Preview and print barcode label")
+                    : t("stock.generateBarcodeTooltip", "Generate a new unique barcode")
+                }
+                position="top"
+              >
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleBarcodeAction}
+                  className="shrink-0 h-12 px-3"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">
+                      {form.codebar && form.codebar.trim() 
+                        ? t("stock.previewBarcode", "Preview")
+                        : t("stock.generateBarcode", "Generate")
+                      }
+                    </span>
+                    {form.codebar && form.codebar.trim() ? (
+                      <Eye className="w-4 h-4" />
+                    ) : (
+                      <QrCode className="w-4 h-4" />
+                    )}
+                  </div>
+                </Button>
+              </Tooltip>
             </div>
           </div>
           <div className="space-y-2">
@@ -221,6 +287,16 @@ export default function EditStockForm({
           </Button>
         </div>
       </form>
+
+      {/* Barcode Preview Modal */}
+      <BarcodePreviewModal
+        open={showBarcodePreviewModal}
+        onOpenChange={setShowBarcodePreviewModal}
+        productName={form.name}
+        price={form.sellingPrice}
+        barcode={form.codebar || ""}
+        onPrint={handlePrintBarcode}
+      />
     </>
   );
 }

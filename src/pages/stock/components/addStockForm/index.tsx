@@ -4,7 +4,7 @@ import { useStock } from "../../../../lib/contexts/stockContext";
 import { Product } from "@prisma/client";
 import StyledNumberInput from "../../../../lib/components/inputNumber";
 import { Button } from "../../../../lib/components/button";
-import { AlertTriangle, Loader2, Package, ChevronUp, QrCode, Printer, Eye } from "lucide-react";
+import { AlertTriangle, Loader2, Package, ChevronUp, QrCode, Eye } from "lucide-react";
 import { ImageUpload } from "../../../../lib/components/imageUpload";
 // Barcode generation is now handled by the database layer
 import type { AddStockFormState } from "../../../../types";
@@ -14,6 +14,7 @@ import { PriceConfirmationDialog } from "../priceConfirmationDialog";
 import { SellingPriceWarningDialog } from "../sellingPriceWarningDialog";
 import { BarcodePreviewModal } from "./BarcodePreviewModal";
 import { printBarcodeLabel } from "./barcodePrintUtils";
+import { Tooltip } from "../../../../lib/components/tooltip";
 
 // Import the new components
 import ModeToggle from "./ModeToggle";
@@ -138,7 +139,7 @@ export default function AddStockForm({
   };
 
   // Function to handle barcode printing
-  const handlePrintBarcode = async (quantity: number = 1) => {
+  const handlePrintBarcode = async (quantity = 1) => {
     try {
       await printBarcodeLabel({
         productName: form.name,
@@ -2050,40 +2051,49 @@ export default function AddStockForm({
                     onFocus={() => handleFieldFocus("codebar")}
                     className="flex-1 px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-green-500/50 focus:border-green-500 transition-all"
                   />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={async () => {
-                      if (form.codebar && form.codebar.trim()) {
-                        // Show preview modal if barcode exists
-                        showBarcodePreviewModal();
-                      } else {
-                        // Generate new barcode if input is empty
-                        try {
-                          const barcode = await window.api.database.products.generateUniqueBarcode();
-                          handleFormChange("codebar", barcode);
-                          showToast(t("stock.barcodeGenerated", "Barcode generated successfully"), "success");
-                        } catch (error) {
-                          showToast(t("stock.barcodeGenerationError", "Failed to generate barcode"), "error");
-                        }
-                      }
-                    }}
-                    className="shrink-0 h-12 px-3"
+                  <Tooltip
+                    content={
+                      form.codebar && form.codebar.trim()
+                        ? t("stock.previewBarcodeTooltip", "Preview and print barcode label")
+                        : t("stock.generateBarcodeTooltip", "Generate a new unique barcode")
+                    }
+                    position="top"
                   >
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium">
-                        {form.codebar && form.codebar.trim() 
-                          ? t("stock.previewBarcode", "Preview")
-                          : t("stock.generateBarcode", "Generate")
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={async () => {
+                        if (form.codebar && form.codebar.trim()) {
+                          // Show preview modal if barcode exists
+                          showBarcodePreviewModal();
+                        } else {
+                          // Generate new barcode if input is empty
+                          try {
+                            const barcode = await window.api.database.products.generateUniqueBarcode();
+                            handleFormChange("codebar", barcode);
+                            showToast(t("stock.barcodeGenerated", "Barcode generated successfully"), "success");
+                          } catch (error) {
+                            showToast(t("stock.barcodeGenerationError", "Failed to generate barcode"), "error");
+                          }
                         }
-                      </span>
-                      {form.codebar && form.codebar.trim() ? (
-                        <Eye className="w-4 h-4" />
-                      ) : (
-                        <QrCode className="w-4 h-4" />
-                      )}
-                    </div>
-                  </Button>
+                      }}
+                      className="shrink-0 h-12 px-3"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium">
+                          {form.codebar && form.codebar.trim() 
+                            ? t("stock.previewBarcode", "Preview")
+                            : t("stock.generateBarcode", "Generate")
+                          }
+                        </span>
+                        {form.codebar && form.codebar.trim() ? (
+                          <Eye className="w-4 h-4" />
+                        ) : (
+                          <QrCode className="w-4 h-4" />
+                        )}
+                      </div>
+                    </Button>
+                  </Tooltip>
                 </div>
               </div>
 
