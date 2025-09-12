@@ -30,6 +30,7 @@ interface CashierLayoutProps {
   onSaleCompleted: (saleId?: string) => void;
   outOfStockConfirmed?: boolean;
   maxSessions: number;
+  isLongPressing?: boolean; // Long press state for receipt button
 }
 
 export default function CashierLayout({
@@ -56,6 +57,7 @@ export default function CashierLayout({
   onSaleCompleted,
   outOfStockConfirmed,
   maxSessions,
+  isLongPressing,
 }: CashierLayoutProps) {
   const currentSession = sessions[activeSession] || sessions[0];
 
@@ -118,17 +120,15 @@ export default function CashierLayout({
                 onUpdateSessionCart(sessionIndex, cart);
               }}
               onOutOfStock={onOutOfStock}
-              onReceiptData={onReceiptData}
               onSaleComplete={onSaleComplete}
               onSaleCompleted={onSaleCompleted}
               outOfStockConfirmed={outOfStockConfirmed}
-              onShowProductBrowser={onShowProductBrowser}
-              onShowManualProductModal={onShowManualProductModal}
               isActive={activeSession === sessionIndex}
               discount={session.discount}
               setDiscount={(newDiscount: string) =>
                 onUpdateSessionDiscount(sessionIndex, newDiscount)
               }
+              isLongPressing={isLongPressing}
             />
           ))}
         </div>

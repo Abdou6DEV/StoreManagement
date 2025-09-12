@@ -250,6 +250,8 @@
     "page": "الصفحة {{number}}",
     "failedAddClient": "فشل في إضافة العميل",
     "saleRecorded": "تم تسجيل البيع بنجاح",
+    "saleCompleted": "تم إتمام البيع بنجاح!",
+    "saleWithReceiptSuccess": "تم إتمام البيع وطباعة الإيصال بنجاح!",
     "failedRecordSale": "فشل في تسجيل البيع",
     "clientName": "اسم العميل",
     "enterClientName": "أدخل اسم العميل",

@@ -251,6 +251,8 @@
     "page": "Page {{number}}",
     "failedAddClient": "Failed to add client",
     "saleRecorded": "Sale recorded successfully",
+    "saleCompleted": "Sale completed successfully!",
+    "saleWithReceiptSuccess": "Sale completed and receipt printed successfully!",
     "failedRecordSale": "Failed to record sale",
     "clientName": "Client name",
     "enterClientName": "Enter client name",

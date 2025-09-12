@@ -1,10 +1,11 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import type { ProductWithSales, CartItem } from "../../../types";
 import { useTranslation } from "react-i18next";
 import PaymentSummary from "../../../lib/components/paymentSummary";
 import ActionButtons from "./actionButtons";
 import { useToast } from "../../../lib/contexts/toastContext";
 import { Client } from "@prisma/client";
+import { printReceiptDirectly } from "./receiptModal";
 
 interface CashierSessionProps {
   allProducts: ProductWithSales[];
@@ -13,22 +14,13 @@ interface CashierSessionProps {
   cart: CartItem[];
   setCart: (cart: CartItem[] | ((prev: CartItem[]) => CartItem[])) => void;
   onOutOfStock: (items: CartItem[]) => void;
-  onReceiptData: (data: {
-    cart: CartItem[];
-    clientName: string;
-    discount: number;
-    paymentAmount: number;
-    paymentType: "none" | "credit" | "versement";
-    paymentDate?: Date;
-  }) => void;
   onSaleComplete: (saleId?: string) => void;
   onSaleCompleted: (saleId?: string) => void;
-  onShowProductBrowser: () => void;
-  onShowManualProductModal: () => void;
   outOfStockConfirmed?: boolean;
   isActive: boolean;
   discount: string;
   setDiscount: (discount: string) => void;
+  isLongPressing?: boolean;
 }
 
 export default function CashierSession({
@@ -37,13 +29,13 @@ export default function CashierSession({
   cart,
   setCart,
   onOutOfStock,
-  onReceiptData,
   onSaleComplete,
   onSaleCompleted,
   outOfStockConfirmed,
   isActive,
   discount,
   setDiscount,
+  isLongPressing,
 }: CashierSessionProps) {
   const { t } = useTranslation();
   const { showToast } = useToast();
@@ -62,99 +54,8 @@ export default function CashierSession({
     [cart],
   );
 
-  // Clear the cart and reset session state
-  const handleClear = () => {
-    setCart([]);
-    setDiscount("");
-    setClientName("");
-    setClientId(null);
-    setPaymentAmount(0);
-    setPaymentType("none");
-    setPaymentDate(undefined);
-  };
-
-  const handleFinish = async () => {
-    if (cart.length === 0) return;
-    const cartTotal = cart.reduce(
-      (sum, item) => sum + item.qty * item.price,
-      0,
-    );
-    if (Number(discount) > cartTotal) {
-      return;
-    }
-
-    // Check for out-of-stock items
-    const outOfStock = cart.filter((item) => {
-      // Skip manual products and services as they don't have inventory constraints
-      if (item.isManual || item.isService) return false;
-
-      const product = allProducts.find((p) => p.id === item.id);
-      return product && item.qty > product.quantity;
-    });
-
-    if (outOfStock.length > 0 && !outOfStockConfirmed) {
-      onOutOfStock(outOfStock);
-      return;
-    }
-
-    const saleId = await proceedWithSale();
-    if (saleId) {
-      onSaleCompleted(saleId);
-    }
-    setPaymentAmount(0);
-    setPaymentType("none");
-    setPaymentDate(undefined);
-  };
-
-  const handleFinishWithReceipt = async () => {
-    if (cart.length === 0) {
-      return;
-    }
-
-    const cartTotal = cart.reduce(
-      (sum, item) => sum + item.qty * item.price,
-      0,
-    );
-    if (Number(discount) > cartTotal) {
-      return;
-    }
-
-    // Check for out-of-stock items
-    const outOfStock = cart.filter((item) => {
-      // Skip manual products as they don't have inventory constraints
-      if (item.isManual) return false;
-
-      const product = allProducts.find((p) => p.id === item.id);
-      return product && item.qty > product.quantity;
-    });
-
-    if (outOfStock.length > 0 && !outOfStockConfirmed) {
-      onOutOfStock(outOfStock);
-      return;
-    }
-
-    // Store receipt data before clearing cart
-    onReceiptData({
-      cart: [...cart],
-      clientName,
-      discount: Number(discount) || 0,
-      paymentAmount,
-      paymentType,
-      paymentDate,
-    });
-
-    // Proceed with sale and get the sale ID
-    const saleId = await proceedWithSale();
-    if (saleId) {
-      onSaleComplete(saleId);
-    }
-    setPaymentAmount(0);
-    setPaymentType("none");
-    setPaymentDate(undefined);
-  };
-
   // Common sale logic that both regular and receipt sales can use
-  const proceedWithSale = async (): Promise<string | undefined> => {
+  const proceedWithSale = useCallback(async (showSuccessMessage = true): Promise<string | undefined> => {
     let saleClientId = clientId;
     try {
       if (clientName.trim() && !clientId) {
@@ -217,16 +118,169 @@ export default function CashierSession({
       setPaymentType("none");
       setPaymentDate(undefined);
       setProductRefreshKey((k: number) => k + 1);
-      showToast(
-        t("cashier.saleRecorded", "Sale recorded successfully"),
-        "success",
-      );
+      
+      if (showSuccessMessage) {
+        showToast(
+          t("cashier.saleRecorded", "Sale recorded successfully"),
+          "success",
+        );
+      }
+      
       return sale.id;
     } catch (err) {
       showToast(t("cashier.saleError", "Failed to record sale"), "error");
       return undefined;
     }
+  }, [cart, clientName, clientId, discount, paymentAmount, paymentType, paymentDate, setCart, setClientName, setClientId, setDiscount, setPaymentAmount, setPaymentType, setPaymentDate, setProductRefreshKey, showToast, t]);
+
+  // Clear the cart and reset session state
+  const handleClear = () => {
+    setCart([]);
+    setDiscount("");
+    setClientName("");
+    setClientId(null);
+    setPaymentAmount(0);
+    setPaymentType("none");
+    setPaymentDate(undefined);
   };
+
+  const handleFinish = useCallback(async () => {
+    if (cart.length === 0) return;
+    const cartTotal = cart.reduce(
+      (sum, item) => sum + item.qty * item.price,
+      0,
+    );
+    if (Number(discount) > cartTotal) {
+      return;
+    }
+
+    // Check for out-of-stock items
+    const outOfStock = cart.filter((item) => {
+      // Skip manual products and services as they don't have inventory constraints
+      if (item.isManual || item.isService) return false;
+
+      const product = allProducts.find((p) => p.id === item.id);
+      return product && item.qty > product.quantity;
+    });
+
+    if (outOfStock.length > 0 && !outOfStockConfirmed) {
+      onOutOfStock(outOfStock);
+      return;
+    }
+
+    const saleId = await proceedWithSale(false);
+    if (saleId) {
+      // Show specific success message for regular sales
+      showToast(
+        t("cashier.saleCompleted", "Sale completed successfully!"),
+        "success",
+      );
+      onSaleCompleted(saleId);
+    }
+    setPaymentAmount(0);
+    setPaymentType("none");
+    setPaymentDate(undefined);
+  }, [cart, discount, allProducts, outOfStockConfirmed, onOutOfStock, proceedWithSale, showToast, t, onSaleCompleted]);
+
+  const handleFinishWithReceipt = useCallback(async () => {
+    console.log('🚀 handleFinishWithReceipt called:', { cartLength: cart.length });
+    
+    if (cart.length === 0) {
+      console.log('❌ Cart is empty - returning');
+      return;
+    }
+
+    const cartTotal = cart.reduce(
+      (sum, item) => sum + item.qty * item.price,
+      0,
+    );
+    if (Number(discount) > cartTotal) {
+      console.log('❌ Discount greater than cart total - returning');
+      return;
+    }
+
+    // Check for out-of-stock items
+    const outOfStock = cart.filter((item) => {
+      // Skip manual products as they don't have inventory constraints
+      if (item.isManual) return false;
+
+      const product = allProducts.find((p) => p.id === item.id);
+      return product && item.qty > product.quantity;
+    });
+
+    if (outOfStock.length > 0 && !outOfStockConfirmed) {
+      console.log('⚠️ Out of stock items found - showing warning');
+      onOutOfStock(outOfStock);
+      return;
+    }
+
+    console.log('✅ Proceeding with sale...');
+    // Proceed with sale and get the sale ID (don't show generic success message)
+    const saleId = await proceedWithSale(false);
+    console.log('📝 Sale ID returned:', saleId);
+    
+    // Print receipt directly without showing modal
+    if (saleId) {
+      console.log('🖨️ Printing receipt...');
+      await printReceiptDirectly(
+        [...cart],
+        clientName,
+        Number(discount) || 0,
+        paymentAmount,
+        paymentType,
+        paymentDate,
+        saleId,
+        showToast,
+        (key: string, fallback?: string) => t(key, fallback)
+      );
+      
+      // Show specific success message for receipt sales
+      showToast(
+        t("cashier.saleWithReceiptSuccess", "Sale completed and receipt printed successfully!"),
+        "success",
+      );
+      
+      onSaleComplete(saleId);
+      console.log('✅ Receipt process completed');
+    } else {
+      console.log('❌ No sale ID - receipt process failed');
+    }
+    
+    setPaymentAmount(0);
+    setPaymentType("none");
+    setPaymentDate(undefined);
+  }, [cart, discount, allProducts, outOfStockConfirmed, onOutOfStock, proceedWithSale, clientName, paymentAmount, paymentType, paymentDate, showToast, t, onSaleComplete]);
+
+  // Listen for global ENTER key to finish sale
+  useEffect(() => {
+    const handleGlobalFinish = () => {
+      console.log('🎯 Global finish event received:', { cartLength: cart.length });
+      if (cart.length > 0) {
+        handleFinish();
+      } else {
+        console.log('❌ Cart is empty - not finishing');
+      }
+    };
+    
+    const handleGlobalFinishWithReceipt = () => {
+      console.log('🎯 Global finish with receipt event received:', { cartLength: cart.length });
+      if (cart.length > 0) {
+        handleFinishWithReceipt();
+      } else {
+        console.log('❌ Cart is empty - not finishing with receipt');
+      }
+    };
+    
+    // Use capture phase for faster event handling
+    window.addEventListener('cashier-finish-sale', handleGlobalFinish, { capture: true });
+    window.addEventListener('cashier-finish-with-receipt', handleGlobalFinishWithReceipt, { capture: true });
+    
+    return () => {
+      window.removeEventListener('cashier-finish-sale', handleGlobalFinish, { capture: true });
+      window.removeEventListener('cashier-finish-with-receipt', handleGlobalFinishWithReceipt, { capture: true });
+    };
+  }, [cart.length, handleFinish, handleFinishWithReceipt]);
+
 
   // Automatically continue with sale when out-of-stock is confirmed
   useEffect(() => {
@@ -290,6 +344,7 @@ export default function CashierSession({
             setPaymentType={setPaymentType}
             paymentDate={paymentDate}
             setPaymentDate={setPaymentDate}
+            isLongPressing={isLongPressing}
           />
         </div>
       </section>

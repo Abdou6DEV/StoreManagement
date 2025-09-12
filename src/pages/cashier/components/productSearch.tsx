@@ -183,7 +183,19 @@ export default function ProductSearch({ onAdd, refreshKey }: Props) {
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
+      console.log('🔍 ProductSearch KeyDown:', { search: search.trim(), isEmpty: search.trim() === "" });
+      
+      // If search is empty, let the global handler take care of it
+      // Don't immediately trigger finish - let long press detection work
+      if (search.trim() === "") {
+        console.log('✅ ProductSearch: Empty search - letting global handler take over');
+        // Don't prevent default or stop propagation - let the global handler work
+        return;
+      }
+      
+      console.log('🔍 ProductSearch: Has search content - handling locally');
       e.preventDefault();
+      e.stopPropagation();
       
       // First, try to find exact barcode match
       const exactBarcodeMatch = allProducts.find(p => 

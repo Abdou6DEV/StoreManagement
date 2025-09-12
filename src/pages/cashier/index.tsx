@@ -64,6 +64,7 @@ export default function CashierPage() {
     paymentDate?: Date;
   } | null>(null);
   const [outOfStockConfirmed, setOutOfStockConfirmed] = useState(false);
+  const [isLongPressing, setIsLongPressing] = useState(false);
 
   // Fetch all products with sales counts
   useEffect(() => {
@@ -76,7 +77,7 @@ export default function CashierPage() {
 
         // Merge salesCounts into products
         const salesMap = new Map(
-          salesCounts.map((s: any) => [s.productId, s.totalSold])
+          salesCounts.map((s: { productId: string; totalSold: number }) => [s.productId, s.totalSold])
         );
         const merged = products.map((p: Product) => ({
           ...p,
@@ -135,7 +136,7 @@ export default function CashierPage() {
   const handleSaleComplete = (saleId?: string) => {
     if (saleId) {
       setLastSaleId(saleId);
-      setShowReceiptModal(true);
+      // Don't show receipt modal - printing is handled directly in cashier session
     }
 
     // Refresh sales history when a sale is completed
@@ -176,6 +177,160 @@ export default function CashierPage() {
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [showProductBrowser]);
+
+  // Optimized ENTER key handler for finishing sales
+  useEffect(() => {
+    let enterPressStartTime: number | null = null;
+    let enterPressTimer: NodeJS.Timeout | null = null;
+    let isEnterPressed = false;
+    let hasTriggeredLongPress = false;
+    let lastEventTime = 0;
+    const DEBOUNCE_TIME = 50; // 50ms debounce - reduced for better responsiveness
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Only handle ENTER key
+      if (e.key !== "Enter") return;
+      
+      console.log('🔍 KeyDown detected:', {
+        target: e.target,
+        isEnterPressed,
+        hasTriggeredLongPress,
+        timeSinceLastEvent: Date.now() - lastEventTime
+      });
+      
+      // Debounce rapid key presses
+      const now = Date.now();
+      if (now - lastEventTime < DEBOUNCE_TIME) {
+        console.log('⏱️ Debounced - too soon');
+        return;
+      }
+      lastEventTime = now;
+      
+      // Check if we should handle this key press
+      const target = e.target as HTMLElement;
+      const isInputField = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA';
+      const isSearchInput = target instanceof HTMLInputElement && 
+        target.placeholder && 
+        (target.placeholder.includes('Type name or scan barcode') ||
+         target.placeholder.includes('Tapez le nom ou scannez le code-barres') ||
+         target.placeholder.includes('اكتب الاسم أو امسح الباركود'));
+      
+      console.log('🎯 Target analysis:', {
+        tagName: target.tagName,
+        isInputField,
+        isSearchInput,
+        placeholder: target instanceof HTMLInputElement ? target.placeholder : 'N/A'
+      });
+      
+      // Skip input fields except search input
+      if (isInputField && !isSearchInput) {
+        console.log('❌ Skipped - not search input');
+        return;
+      }
+      
+      // Prevent default behavior and stop propagation
+      e.preventDefault();
+      e.stopPropagation();
+      
+      // If already pressed, ignore repeated keydown events
+      if (isEnterPressed) {
+        console.log('⚠️ Already pressed - ignoring');
+        return;
+      }
+      
+      // Reset state
+      isEnterPressed = true;
+      hasTriggeredLongPress = false;
+      enterPressStartTime = now;
+      
+      console.log('✅ Starting long press detection');
+      
+      // Show visual indicator immediately
+      setIsLongPressing(true);
+      
+      // Start timer for long press (0.6 seconds)
+      enterPressTimer = setTimeout(() => {
+        console.log('⏰ Long press timer fired:', {
+          isEnterPressed,
+          hasTriggeredLongPress,
+          timeElapsed: Date.now() - enterPressStartTime
+        });
+        
+        if (isEnterPressed && !hasTriggeredLongPress) {
+          hasTriggeredLongPress = true;
+          console.log('🎉 Long press confirmed - triggering receipt');
+          // Long press detected - trigger receipt
+          requestAnimationFrame(() => {
+            const event = new CustomEvent('cashier-finish-with-receipt');
+            window.dispatchEvent(event);
+            setIsLongPressing(false);
+          });
+        }
+      }, 600);
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.key !== "Enter" || !isEnterPressed) {
+        return;
+      }
+      
+      console.log('🔍 KeyUp detected:', {
+        isEnterPressed,
+        hasTriggeredLongPress,
+        timeElapsed: enterPressStartTime ? Date.now() - enterPressStartTime : 0
+      });
+      
+      // Prevent default behavior and stop propagation
+      e.preventDefault();
+      e.stopPropagation();
+      
+      // Reset state
+      isEnterPressed = false;
+      
+      // Hide visual indicator
+      setIsLongPressing(false);
+      
+      // Clear timer
+      if (enterPressTimer) {
+        clearTimeout(enterPressTimer);
+        enterPressTimer = null;
+        console.log('⏰ Timer cleared');
+      }
+      
+      // If it was a short press (less than 0.6 seconds) and no long press was triggered
+      if (enterPressStartTime && 
+          Date.now() - enterPressStartTime < 600 && 
+          !hasTriggeredLongPress) {
+        console.log('⚡ Short press detected - triggering normal finish');
+        // Use requestAnimationFrame for smoother execution
+        requestAnimationFrame(() => {
+          const event = new CustomEvent('cashier-finish-sale');
+          window.dispatchEvent(event);
+        });
+      } else if (hasTriggeredLongPress) {
+        console.log('✅ Long press was already triggered');
+      } else {
+        console.log('❌ No action - conditions not met');
+      }
+      
+      // Reset tracking variables
+      enterPressStartTime = null;
+      hasTriggeredLongPress = false;
+    };
+    
+    // Use capture phase for better event handling and prevent conflicts
+    // Add with high priority to ensure we handle the event first
+    document.addEventListener("keydown", handleKeyDown, { capture: true, passive: false });
+    document.addEventListener("keyup", handleKeyUp, { capture: true, passive: false });
+    
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown, { capture: true });
+      document.removeEventListener("keyup", handleKeyUp, { capture: true });
+      if (enterPressTimer) {
+        clearTimeout(enterPressTimer);
+      }
+    };
+  }, []);
 
   return (
     <SessionManager maxSessions={MAX_SESSIONS}>
@@ -219,6 +374,7 @@ export default function CashierPage() {
             onSaleCompleted={handleSaleCompleted}
             outOfStockConfirmed={outOfStockConfirmed}
             maxSessions={MAX_SESSIONS}
+            isLongPressing={isLongPressing}
           />
 
           {/* Product Browser as a modal */}
@@ -293,6 +449,7 @@ export default function CashierPage() {
             paymentDate={receiptData?.paymentDate}
             saleId={lastSaleId}
           />
+
         </>
       )}
     </SessionManager>

@@ -34,6 +34,7 @@ interface Props {
   paymentDate: Date | undefined;
   setPaymentDate: (val: Date | undefined) => void;
   onConfirmWithReceipt?: () => void;
+  isLongPressing?: boolean;
 }
 
 export default function ActionButtons({
@@ -52,6 +53,7 @@ export default function ActionButtons({
   paymentDate,
   setPaymentDate,
   onConfirmWithReceipt,
+  isLongPressing,
 }: Props) {
   const { t, i18n } = useTranslation();
   const { showToast } = useToast();
@@ -295,7 +297,11 @@ export default function ActionButtons({
             });
             onConfirmWithReceipt?.();
           }}
-          className="flex-1 flex items-center justify-center gap-2 py-3 rounded-md bg-primary text-primary-foreground font-bold text-base tracking-wide shadow-md hover:bg-primary/90 transition focus:outline-none focus:ring-2 focus:ring-primary/50 min-w-0 w-full"
+          className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-md font-bold text-base tracking-wide shadow-md transition focus:outline-none focus:ring-2 min-w-0 w-full ${
+            isLongPressing 
+              ? "bg-green-500 text-white hover:bg-green-600 focus:ring-green-500/50" 
+              : "bg-primary text-primary-foreground hover:bg-primary/90 focus:ring-primary/50"
+          }`}
         >
           <Printer className="w-6 h-6" />
           <span className="hidden sm:inline whitespace-nowrap">

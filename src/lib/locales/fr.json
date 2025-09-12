@@ -449,6 +449,8 @@
     "page": "Page {{number}}",
     "failedAddClient": "Échec de l'ajout du client",
     "saleRecorded": "Vente enregistrée avec succès",
+    "saleCompleted": "Vente terminée avec succès !",
+    "saleWithReceiptSuccess": "Vente terminée et reçu imprimé avec succès !",
     "failedRecordSale": "Échec de l'enregistrement de la vente",
     "clientName": "Nom du client",
     "enterClientName": "Entrer le nom du client",
