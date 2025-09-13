@@ -60,8 +60,6 @@ export const generateBarcode = async (): Promise<string> => {
   const now = new Date();
   
   try {
-    console.log('Generating EAN13 compatible barcode');
-    
     // Generate a 12-digit base code for EAN13
     // Format: YYMMDDXXXXXX (12 digits)
     const year = now.getFullYear().toString().slice(-2);
@@ -74,13 +72,10 @@ export const generateBarcode = async (): Promise<string> => {
     
     // Combine to create 12-digit base
     const baseCode = `${year}${month}${day}${sequenceStr}`;
-    console.log('Base code (12 digits):', baseCode);
     
     // Calculate EAN13 check digit
     const checkDigit = calculateEAN13CheckDigit(baseCode);
     const barcode = `${baseCode}${checkDigit}`;
-    
-    console.log('Final EAN13 barcode (13 digits):', barcode);
     
     return barcode;
   } catch (error) {

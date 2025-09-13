@@ -24,13 +24,11 @@ export const generateRealBarcode = (
 
     // Auto-detect format if not specified
     const format = options.format || getRecommendedFormat(code);
-    console.log(`Attempting to generate barcode "${code}" with format: ${format}`);
     
     // Validate format compatibility
     if (!validateBarcode(code, format)) {
       // Fallback to CODE128 if validation fails
       const fallbackFormat = 'CODE128';
-      console.warn(`Barcode "${code}" is not valid for ${format}, falling back to ${fallbackFormat}`);
       options.format = fallbackFormat;
     }
 
@@ -38,13 +36,6 @@ export const generateRealBarcode = (
     const canvas = document.createElement('canvas');
     
     // Generate the barcode
-    console.log(`Generating barcode with JsBarcode:`, {
-      code,
-      format: options.format,
-      width: options.width || 2,
-      height: options.height || 100
-    });
-    
     JsBarcode(canvas, code, {
       format: options.format,
       width: options.width || 2,

@@ -16,12 +16,14 @@ type GroupedSuggestions = {
 export default function ProductSearch({ onAdd, refreshKey }: Props) {
   const { t } = useTranslation();
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [highlight, setHighlight] = useState<{
     catIdx: number;
     itemIdx: number;
   }>({ catIdx: 0, itemIdx: 0 });
+  
 
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -36,6 +38,15 @@ export default function ProductSearch({ onAdd, refreshKey }: Props) {
       inputRef.current.focus();
     }
   }, [refreshKey]);
+
+  // Debounce search input to prevent excessive filtering
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 150); // 150ms debounce
+
+    return () => clearTimeout(timer);
+  }, [search]);
 
   // Focus search input when user starts typing anywhere on the page (but not in modals)
   useEffect(() => {
@@ -123,19 +134,24 @@ export default function ProductSearch({ onAdd, refreshKey }: Props) {
   }, [showSuggestions]);
 
   const grouped = React.useMemo((): GroupedSuggestions => {
-    const trimmed = search.trim().toLowerCase();
-    if (!trimmed) return [];
+    const trimmed = debouncedSearch.trim().toLowerCase();
+    if (!trimmed || trimmed.length < 2) return []; // Only search after 2+ characters
 
-    // Only search by name for suggestions (barcode searches are handled separately)
-    const matches = allProducts.filter((p) =>
-      p.name.toLowerCase().includes(trimmed)
-    );
-    const sliced = matches.slice(0, 50);
+    // Use a more efficient search with early termination
+    const matches: Product[] = [];
+    const maxResults = 50;
+    
+    for (const p of allProducts) {
+      if (matches.length >= maxResults) break;
+      if (p.name.toLowerCase().includes(trimmed)) {
+        matches.push(p);
+      }
+    }
+
     const groups: Record<string, Product[]> = {};
-
-    for (const p of sliced) {
+    for (const p of matches) {
       const cat = p.categoryName || "Other";
-      groups[cat] = groups[cat] || [];
+      if (!groups[cat]) groups[cat] = [];
       groups[cat].push(p);
     }
 
@@ -143,27 +159,27 @@ export default function ProductSearch({ onAdd, refreshKey }: Props) {
       category,
       items: items.slice(0, 10),
     }));
-  }, [search, allProducts]);
+  }, [debouncedSearch, allProducts]);
 
   useEffect(() => {
     setShowSuggestions(grouped.length > 0);
     setHighlight({ catIdx: 0, itemIdx: 0 });
   }, [grouped]);
 
-  const handleSelect = (product: Product) => {
+  const handleSelect = React.useCallback((product: Product) => {
     onAdd(product);
     setSearch("");
     setShowSuggestions(false);
     
     // Ensure focus returns to search input for next scan
-    setTimeout(() => {
+    requestAnimationFrame(() => {
       if (inputRef.current) {
         inputRef.current.focus();
       }
-    }, 10);
-  };
+    });
+  }, [onAdd]);
 
-  const moveHighlight = (deltaCat: number, deltaItem: number) => {
+  const moveHighlight = React.useCallback((deltaCat: number, deltaItem: number) => {
     const { catIdx, itemIdx } = highlight;
     const newCat = Math.min(Math.max(0, catIdx + deltaCat), grouped.length - 1);
     const itemsLen = grouped[newCat]?.items.length || 0;
@@ -173,29 +189,22 @@ export default function ProductSearch({ onAdd, refreshKey }: Props) {
         : Math.min(Math.max(0, itemIdx + deltaItem), itemsLen - 1);
     setHighlight({ catIdx: newCat, itemIdx: newItem });
     scrollIntoView(newCat, newItem);
-  };
+  }, [highlight, grouped]);
 
-  const scrollIntoView = (catIdx: number, itemIdx: number) => {
+  const scrollIntoView = React.useCallback((catIdx: number, itemIdx: number) => {
     const selector = `#group-${catIdx}-item-${itemIdx}`;
     const el = dropdownRef.current?.querySelector(selector) as HTMLElement;
-    el?.scrollIntoView({ block: "nearest" });
-  };
+    if (el) {
+      // Use requestAnimationFrame to prevent forced reflow
+      requestAnimationFrame(() => {
+        el.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      });
+    }
+  }, []);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
-      console.log('🔍 ProductSearch KeyDown:', { search: search.trim(), isEmpty: search.trim() === "" });
-      
-      // If search is empty, let the global handler take care of it
-      // Don't immediately trigger finish - let long press detection work
-      if (search.trim() === "") {
-        console.log('✅ ProductSearch: Empty search - letting global handler take over');
-        // Don't prevent default or stop propagation - let the global handler work
-        return;
-      }
-      
-      console.log('🔍 ProductSearch: Has search content - handling locally');
       e.preventDefault();
-      e.stopPropagation();
       
       // First, try to find exact barcode match
       const exactBarcodeMatch = allProducts.find(p => 
@@ -203,7 +212,7 @@ export default function ProductSearch({ onAdd, refreshKey }: Props) {
       );
       
       if (exactBarcodeMatch) {
-        // Direct barcode match - add immediately
+        // Direct barcode match - add product
         handleSelect(exactBarcodeMatch);
         return;
       }

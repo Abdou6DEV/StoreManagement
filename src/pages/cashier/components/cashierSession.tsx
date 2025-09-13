@@ -16,11 +16,9 @@ interface CashierSessionProps {
   onOutOfStock: (items: CartItem[]) => void;
   onSaleComplete: (saleId?: string) => void;
   onSaleCompleted: (saleId?: string) => void;
-  outOfStockConfirmed?: boolean;
   isActive: boolean;
   discount: string;
   setDiscount: (discount: string) => void;
-  isLongPressing?: boolean;
 }
 
 export default function CashierSession({
@@ -31,11 +29,9 @@ export default function CashierSession({
   onOutOfStock,
   onSaleComplete,
   onSaleCompleted,
-  outOfStockConfirmed,
   isActive,
   discount,
   setDiscount,
-  isLongPressing,
 }: CashierSessionProps) {
   const { t } = useTranslation();
   const { showToast } = useToast();
@@ -154,19 +150,8 @@ export default function CashierSession({
       return;
     }
 
-    // Check for out-of-stock items
-    const outOfStock = cart.filter((item) => {
-      // Skip manual products and services as they don't have inventory constraints
-      if (item.isManual || item.isService) return false;
-
-      const product = allProducts.find((p) => p.id === item.id);
-      return product && item.qty > product.quantity;
-    });
-
-    if (outOfStock.length > 0 && !outOfStockConfirmed) {
-      onOutOfStock(outOfStock);
-      return;
-    }
+    // Out-of-stock check is now handled when adding products to cart
+    // No need to check here as products are validated before being added
 
     const saleId = await proceedWithSale(false);
     if (saleId) {
@@ -180,13 +165,10 @@ export default function CashierSession({
     setPaymentAmount(0);
     setPaymentType("none");
     setPaymentDate(undefined);
-  }, [cart, discount, allProducts, outOfStockConfirmed, onOutOfStock, proceedWithSale, showToast, t, onSaleCompleted]);
+  }, [cart, discount, proceedWithSale, showToast, t, onSaleCompleted]);
 
   const handleFinishWithReceipt = useCallback(async () => {
-    console.log('🚀 handleFinishWithReceipt called:', { cartLength: cart.length });
-    
     if (cart.length === 0) {
-      console.log('❌ Cart is empty - returning');
       return;
     }
 
@@ -195,33 +177,17 @@ export default function CashierSession({
       0,
     );
     if (Number(discount) > cartTotal) {
-      console.log('❌ Discount greater than cart total - returning');
       return;
     }
 
-    // Check for out-of-stock items
-    const outOfStock = cart.filter((item) => {
-      // Skip manual products as they don't have inventory constraints
-      if (item.isManual) return false;
+    // Out-of-stock check is now handled when adding products to cart
+    // No need to check here as products are validated before being added
 
-      const product = allProducts.find((p) => p.id === item.id);
-      return product && item.qty > product.quantity;
-    });
-
-    if (outOfStock.length > 0 && !outOfStockConfirmed) {
-      console.log('⚠️ Out of stock items found - showing warning');
-      onOutOfStock(outOfStock);
-      return;
-    }
-
-    console.log('✅ Proceeding with sale...');
     // Proceed with sale and get the sale ID (don't show generic success message)
     const saleId = await proceedWithSale(false);
-    console.log('📝 Sale ID returned:', saleId);
     
     // Print receipt directly without showing modal
     if (saleId) {
-      console.log('🖨️ Printing receipt...');
       await printReceiptDirectly(
         [...cart],
         clientName,
@@ -241,33 +207,24 @@ export default function CashierSession({
       );
       
       onSaleComplete(saleId);
-      console.log('✅ Receipt process completed');
-    } else {
-      console.log('❌ No sale ID - receipt process failed');
     }
     
     setPaymentAmount(0);
     setPaymentType("none");
     setPaymentDate(undefined);
-  }, [cart, discount, allProducts, outOfStockConfirmed, onOutOfStock, proceedWithSale, clientName, paymentAmount, paymentType, paymentDate, showToast, t, onSaleComplete]);
+  }, [cart, discount, proceedWithSale, clientName, paymentAmount, paymentType, paymentDate, showToast, t, onSaleComplete]);
 
   // Listen for global ENTER key to finish sale
   useEffect(() => {
     const handleGlobalFinish = () => {
-      console.log('🎯 Global finish event received:', { cartLength: cart.length });
       if (cart.length > 0) {
         handleFinish();
-      } else {
-        console.log('❌ Cart is empty - not finishing');
       }
     };
     
     const handleGlobalFinishWithReceipt = () => {
-      console.log('🎯 Global finish with receipt event received:', { cartLength: cart.length });
       if (cart.length > 0) {
         handleFinishWithReceipt();
-      } else {
-        console.log('❌ Cart is empty - not finishing with receipt');
       }
     };
     
@@ -282,23 +239,8 @@ export default function CashierSession({
   }, [cart.length, handleFinish, handleFinishWithReceipt]);
 
 
-  // Automatically continue with sale when out-of-stock is confirmed
-  useEffect(() => {
-    if (outOfStockConfirmed && cart.length > 0) {
-      // Automatically proceed with the sale
-      const proceedWithConfirmedSale = async () => {
-        const saleId = await proceedWithSale();
-        if (saleId) {
-          onSaleCompleted(saleId);
-        }
-        setPaymentAmount(0);
-        setPaymentType("none");
-        setPaymentDate(undefined);
-      };
-      
-      proceedWithConfirmedSale();
-    }
-  }, [outOfStockConfirmed, cart, onSaleCompleted, proceedWithSale]);
+  // Out-of-stock handling is now done at product addition time
+  // No need for this useEffect anymore
 
   if (!isActive) {
     return null;
@@ -344,7 +286,6 @@ export default function CashierSession({
             setPaymentType={setPaymentType}
             paymentDate={paymentDate}
             setPaymentDate={setPaymentDate}
-            isLongPressing={isLongPressing}
           />
         </div>
       </section>

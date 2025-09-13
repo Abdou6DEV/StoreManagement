@@ -12,6 +12,9 @@ const ProductBrowserGrid: React.FC<ProductBrowserGridProps> = ({
   setCart,
   toggleFavorite,
   handleScroll,
+  addProductToCart,
+  onOutOfStock,
+  allProducts,
 }) => {
   return (
     <div
@@ -30,24 +33,17 @@ const ProductBrowserGrid: React.FC<ProductBrowserGridProps> = ({
             return item ? item.qty : 0;
           }}
           handleAddToCart={(product) => {
-            const exists = cart.find((item) => item.id === product.id);
-            if (exists) {
-              setCart((prev) => prev.filter((item) => item.id !== product.id));
-            } else {
-              setCart((prev) => [
-                ...prev,
-                {
-                  id: product.id,
-                  name: product.name,
-                  price: product.sellingPrice,
-                  qty: 1,
-                },
-              ]);
+            const updatedCart = addProductToCart(cart, product, allProducts, onOutOfStock);
+            if (updatedCart) {
+              setCart(updatedCart);
             }
           }}
           handleQuantityChange={(product, newQty) => {
             if (newQty <= 0) {
               setCart((prev) => prev.filter((item) => item.id !== product.id));
+            } else if (newQty > product.quantity) {
+              // Product is out of stock, show modal
+              onOutOfStock(product, cart.find((item) => item.id === product.id)?.qty || 0);
             } else {
               setCart((prev) => {
                 const updated = [...prev];

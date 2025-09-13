@@ -6,6 +6,8 @@ export interface ProductBrowserProps {
   onClose: () => void;
   cart: CartItem[];
   setCart: React.Dispatch<React.SetStateAction<CartItem[]>>;
+  addProductToCart: (cart: CartItem[], product: ProductWithSales, allProducts: ProductWithSales[], onOutOfStock: (product: ProductWithSales, currentQty: number) => void) => CartItem[] | null;
+  onOutOfStock: (product: ProductWithSales, currentQty: number) => void;
 }
 
 export interface ProductBrowserHeaderProps {
@@ -30,6 +32,9 @@ export interface ProductBrowserGridProps {
   setCart: React.Dispatch<React.SetStateAction<CartItem[]>>;
   toggleFavorite: (productId: string) => void;
   handleScroll: (e: React.UIEvent<HTMLDivElement>) => void;
+  addProductToCart: (cart: CartItem[], product: ProductWithSales, allProducts: ProductWithSales[], onOutOfStock: (product: ProductWithSales, currentQty: number) => void) => CartItem[] | null;
+  onOutOfStock: (product: ProductWithSales, currentQty: number) => void;
+  allProducts: ProductWithSales[];
 }
 
 export interface ProductBrowserActionsProps {

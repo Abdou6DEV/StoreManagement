@@ -11,6 +11,8 @@ interface TabbedBrowserProps {
   cart: CartItem[];
   setCart: React.Dispatch<React.SetStateAction<CartItem[]>>;
   salesRefreshKey?: number;
+  addProductToCart: (cart: CartItem[], product: ProductWithSales, allProducts: ProductWithSales[], onOutOfStock: (product: ProductWithSales, currentQty: number) => void) => CartItem[] | null;
+  onOutOfStock: (product: ProductWithSales, currentQty: number) => void;
 }
 
 type TabType = "favorites" | "history";
@@ -20,6 +22,8 @@ const TabbedBrowser: React.FC<TabbedBrowserProps> = ({
   cart,
   setCart,
   salesRefreshKey,
+  addProductToCart,
+  onOutOfStock,
 }) => {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<TabType>("favorites");
@@ -83,6 +87,8 @@ const TabbedBrowser: React.FC<TabbedBrowserProps> = ({
             allProducts={allProducts}
             cart={cart}
             setCart={setCart}
+            addProductToCart={addProductToCart}
+            onOutOfStock={onOutOfStock}
           />
         </div>
 

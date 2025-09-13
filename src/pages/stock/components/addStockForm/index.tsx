@@ -402,9 +402,6 @@ export default function AddStockForm({
           sellerIdToUse = newSeller.id;
           form.sellerId = newSeller.id; // Force update the form object directly
 
-          console.log("DEBUG: Created seller with ID:", newSeller.id);
-          console.log("DEBUG: Will use sellerId:", sellerIdToUse);
-          console.log("DEBUG: form.sellerId is now:", form.sellerId);
 
           showToast(
             t("stock.sellerCreated", "New seller created successfully"),

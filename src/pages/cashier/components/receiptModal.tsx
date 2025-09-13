@@ -31,6 +31,7 @@ export const printReceiptDirectly = async (
   showToast?: (message: string, type?: "success" | "error" | "info") => void,
   t?: (key: string, fallback?: string) => string
 ) => {
+  
   // Store information - will be loaded from database
   let storeInfo = {
     name: "Store Management",
@@ -63,6 +64,7 @@ export const printReceiptDirectly = async (
   const finalTotal = total - discount;
   const currentDate = new Date();
   const receiptNumber = saleId || `TEMP-${Date.now()}`;
+  
 
   // Generate barcode from first 12 characters of receipt ID
   const generateReceiptBarcode = () => {
@@ -374,13 +376,23 @@ export const printReceiptDirectly = async (
     }
 
     const receiptHTML = generateReceiptHTML();
+    
+    
     printWindow.document.write(receiptHTML);
     printWindow.document.close();
 
+    // Wait for the content to fully load, then show both preview and print dialog
     printWindow.onload = () => {
-      printWindow.print();
-      printWindow.close();
-      // Success message is handled by the caller
+      // Focus the window to make sure content is visible
+      printWindow.focus();
+      
+      
+      // Wait a bit more to ensure content is fully rendered, then print
+      setTimeout(() => {
+        printWindow.print();
+        // Don't close immediately, let user see the preview
+        // printWindow.close();
+      }, 200);
     };
   } catch (error) {
     console.error("Print error:", error);

@@ -17,7 +17,7 @@ import type { ProductBrowserProps } from "./productBrowserTypes";
 const ProductBrowser = forwardRef<
   { handleClose: () => void },
   ProductBrowserProps
->(({ allProducts, open, onClose, cart, setCart }, ref) => {
+>(({ allProducts, open, onClose, cart, setCart, addProductToCart, onOutOfStock }, ref) => {
   const [productFilter, setProductFilter] = useState("");
   const [minPrice, setMinPrice] = useState<number | undefined>(undefined);
   const [maxPrice, setMaxPrice] = useState<number | undefined>(undefined);
@@ -190,6 +190,9 @@ const ProductBrowser = forwardRef<
           setCart={setCart}
           toggleFavorite={toggleFavorite}
           handleScroll={handleScroll}
+          addProductToCart={addProductToCart}
+          onOutOfStock={onOutOfStock}
+          allProducts={allProducts}
         />
 
         <ProductBrowserActions

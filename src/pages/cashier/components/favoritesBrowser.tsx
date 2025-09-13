@@ -9,12 +9,16 @@ interface FavoritesBrowserProps {
   allProducts: ProductWithSales[];
   cart: CartItem[];
   setCart: React.Dispatch<React.SetStateAction<CartItem[]>>;
+  addProductToCart: (cart: CartItem[], product: ProductWithSales, allProducts: ProductWithSales[], onOutOfStock: (product: ProductWithSales, currentQty: number) => void) => CartItem[] | null;
+  onOutOfStock: (product: ProductWithSales, currentQty: number) => void;
 }
 
 const FavoritesBrowser: React.FC<FavoritesBrowserProps> = ({
   allProducts,
   cart,
   setCart,
+  addProductToCart,
+  onOutOfStock,
 }) => {
   const { t } = useTranslation();
   const [favorites, setFavorites] = useState<string[]>([]);
@@ -88,21 +92,9 @@ const FavoritesBrowser: React.FC<FavoritesBrowserProps> = ({
   }, [allProducts, favorites]);
 
   const handleAddToCart = (product: ProductWithSales) => {
-    const exists = cart.find((item) => item.id === product.id);
-    if (exists) {
-      // If product is already in cart, remove it
-      setCart((prev) => prev.filter((item) => item.id !== product.id));
-    } else {
-      // If product is not in cart, add it
-      setCart((prev) => [
-        ...prev,
-        {
-          id: product.id,
-          name: product.name,
-          price: product.sellingPrice,
-          qty: 1,
-        },
-      ]);
+    const updatedCart = addProductToCart(cart, product, allProducts, onOutOfStock);
+    if (updatedCart) {
+      setCart(updatedCart);
     }
   };
 
@@ -134,6 +126,9 @@ const FavoritesBrowser: React.FC<FavoritesBrowserProps> = ({
   const handleQuantityChange = (product: ProductWithSales, newQty: number) => {
     if (newQty <= 0) {
       setCart((prev) => prev.filter((item) => item.id !== product.id));
+    } else if (newQty > product.quantity) {
+      // Product is out of stock, show modal
+      onOutOfStock(product, cart.find((item) => item.id === product.id)?.qty || 0);
     } else {
       setCart((prev) => {
         const updated = [...prev];

@@ -83,22 +83,18 @@ export default function SalesSection({
 
   const handlePrintReceipt = (sale: Sale) => {
     // TODO: Implement print functionality
-    console.log("Printing receipt for sale:", sale.id);
   };
 
   const handleModifySale = (sale: Sale) => {
     // This is handled in the modal
-    console.log("Modifying sale:", sale.id);
   };
 
   const handleSaleUpdated = (updatedSale: Sale) => {
     // Handle sale updates if needed
-    console.log("Sale updated:", updatedSale.id);
   };
 
   const handleSaleDeleted = (saleId: string) => {
     // Handle sale deletion if needed
-    console.log("Sale deleted:", saleId);
     handleCloseModal();
   };
 
@@ -112,9 +108,6 @@ export default function SalesSection({
     
     setIsDeleting(true);
     try {
-      console.log("Attempting to delete sale with ID:", saleToDelete.id);
-      console.log("Sale object:", saleToDelete);
-      
       // Delete the sale using the API
       await window.api.database.sales.delete(saleToDelete.id);
       
@@ -129,11 +122,8 @@ export default function SalesSection({
       
       // Show success message
       showToast(t("cashier.saleDeleted", "Sale deleted successfully"), "success");
-      console.log("Sale deleted successfully:", saleToDelete.id);
     } catch (error) {
       console.error("Failed to delete sale:", error);
-      console.error("Sale ID that failed:", saleToDelete.id);
-      console.error("Full error details:", error);
       
       // Show error message
       showToast(t("cashier.saleDeleteError", "Failed to delete sale"), "error");
