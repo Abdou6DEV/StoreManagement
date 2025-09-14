@@ -4,6 +4,7 @@ import Layout from "../lib/components/layout";
 import ScrollToTop from "../lib/components/scrollToTop";
 import Sidebar from "../lib/components/sidebar";
 import { StockProvider } from "../lib/contexts/stockContext";
+import { LowStockProvider } from "../lib/contexts/lowStockContext";
 import { useTranslation } from "react-i18next";
 import { ToastProvider } from "../lib/contexts/toastContext";
 import rendererLogger from "../lib/logger/rendererLogger";
@@ -68,7 +69,8 @@ export default function App() {
                   <Layout>
                     <ScrollToTop />
                     <StockProvider>
-                      <Routes>
+                      <LowStockProvider>
+                        <Routes>
                         <Route path="/" element={<MainMenu />} />
                         <Route
                           element={
@@ -128,7 +130,8 @@ export default function App() {
                             element={<h1 className="">Soon..</h1>}
                           />
                         </Route>
-                      </Routes>
+                        </Routes>
+                      </LowStockProvider>
                     </StockProvider>
                   </Layout>
                 </ProtectedRoute>

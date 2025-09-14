@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { useRef, useEffect, useState } from "react";
 import { ProductInfoModal } from "../../stock/components/productInfoModal";
 import { ProductAvatar } from "../../../lib/components/productAvatar";
+import { useLowStock } from "../../../lib/contexts/lowStockContext";
 
 export default function ProductCard({
   product,
@@ -24,10 +25,11 @@ export default function ProductCard({
   toggleFavorite: (productId: string) => void;
 }) {
   const { t } = useTranslation();
+  const { lowStockThreshold } = useLowStock();
   const nameRef = useRef<HTMLDivElement>(null);
   const [isTextTruncated, setIsTextTruncated] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
-  const [productInfoData, setProductInfoData] = useState<any>(null);
+  const [productInfoData, setProductInfoData] = useState<ProductWithSales | null>(null);
   const [productInfoLoading, setProductInfoLoading] = useState(false);
 
   useEffect(() => {
@@ -85,17 +87,28 @@ export default function ProductCard({
     >
       {/* Stock Quantity Badge */}
       <div className="absolute top-3 right-3 z-10">
-        <div
-          className={`text-xs font-semibold px-2.5 py-1.5 rounded-full shadow-sm ${
-            isInCart(product.id)
-              ? "bg-primary text-primary-foreground"
-              : "bg-gray-600 text-white"
-          }`}
-        >
-          {isInCart(product.id)
+        {(() => {
+          const currentQuantity = isInCart(product.id)
             ? product.quantity - getCartQuantity(product.id)
-            : product.quantity}
-        </div>
+            : product.quantity;
+          const isLowStock = currentQuantity <= lowStockThreshold;
+          
+          return (
+            <div
+              className={`text-xs font-semibold px-2 py-1 rounded-full shadow-sm ${
+                isInCart(product.id)
+                  ? isLowStock
+                    ? "bg-red-500 text-white"
+                    : "bg-primary text-primary-foreground"
+                  : isLowStock
+                  ? "bg-red-500 text-white"
+                  : "bg-gray-600 text-white"
+              }`}
+            >
+              {currentQuantity}
+            </div>
+          );
+        })()}
       </div>
 
       {/* Product Image/Icon Area */}

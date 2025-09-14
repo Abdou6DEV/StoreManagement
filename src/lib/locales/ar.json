@@ -81,7 +81,9 @@
     "administrator": "المسؤول",
     "administratorDesc": "إدارة إعدادات وتكوينات التطبيق",
     "history": "التاريخ",
-    "historyDesc": "عرض تاريخ المبيعات والمشتريات، تتبع المعاملات"
+    "historyDesc": "عرض تاريخ المبيعات والمشتريات، تتبع المعاملات",
+    "oneProductOutOfStock": "منتج واحد غير متوفر",
+    "productsOutOfStock": "{{count}} منتجات غير متوفرة"
   },
   "history": {
     "title": "التاريخ",

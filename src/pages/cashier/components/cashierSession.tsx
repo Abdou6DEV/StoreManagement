@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import PaymentSummary from "../../../lib/components/paymentSummary";
 import ActionButtons from "./actionButtons";
 import { useToast } from "../../../lib/contexts/toastContext";
+import { useStock } from "../../../lib/contexts/stockContext";
 import { Client } from "@prisma/client";
 import { printReceiptDirectly } from "./receiptModal";
 
@@ -44,6 +45,7 @@ export default function CashierSession({
 }: CashierSessionProps) {
   const { t } = useTranslation();
   const { showToast } = useToast();
+  const { refetchProducts } = useStock();
 
   // Session-specific state
   const [clientName, setClientName] = useState("");
@@ -124,6 +126,9 @@ export default function CashierSession({
       setPaymentDate(undefined);
       setProductRefreshKey((k: number) => k + 1);
       
+      // Also refresh the StockContext to update badges
+      await refetchProducts();
+      
       if (showSuccessMessage) {
         showToast(
           t("cashier.saleRecorded", "Sale recorded successfully"),
@@ -136,7 +141,7 @@ export default function CashierSession({
       showToast(t("cashier.saleError", "Failed to record sale"), "error");
       return undefined;
     }
-  }, [cart, clientName, clientId, discount, paymentAmount, paymentType, paymentDate, setCart, setClientName, setClientId, setDiscount, setPaymentAmount, setPaymentType, setPaymentDate, setProductRefreshKey, showToast, t]);
+  }, [cart, clientName, clientId, discount, paymentAmount, paymentType, paymentDate, setCart, setClientName, setClientId, setDiscount, setPaymentAmount, setPaymentType, setPaymentDate, setProductRefreshKey, refetchProducts, showToast, t]);
 
   // Clear the cart and reset session state
   const handleClear = () => {

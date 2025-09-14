@@ -9,11 +9,13 @@ import {
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../lib/contexts/authContext";
+import { useLowStock } from "../../lib/contexts/lowStockContext";
 import "../../lib/i18n";
 
 export default function MainMenu() {
   const { t } = useTranslation();
   const { isAdmin } = useAuth();
+  const { unseenLowStockCount } = useLowStock();
 
   const allMenuItems = [
     {
@@ -64,7 +66,7 @@ export default function MainMenu() {
           <Link
             to={`/${item.key}`}
             className="group p-6 border rounded-xl bg-card transition-all duration-300 flex flex-col h-full
-                      hover:border-red-400 hover:-translate-y-1 hover:shadow-md"
+                      hover:border-red-400 hover:-translate-y-1 hover:shadow-md relative"
             key={item.key}
           >
             <div className="flex items-center gap-4 mb-3">
@@ -75,6 +77,21 @@ export default function MainMenu() {
               <h2 className="font-bold capitalize text-lg transition-colors duration-300 group-hover:text-primary">
                 {t(`mainMenu.${item.key}`)}
               </h2>
+              {item.key === "stock" && unseenLowStockCount > 0 && (
+                <div className="absolute top-0 right-0 transform -translate-y-1/2">
+                  <div className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full transition-all duration-300 ease-in-out overflow-hidden group-hover:px-3 group-hover:min-w-[200px] min-w-[18px] h-[18px] flex items-center justify-end origin-right">
+                    <span className="whitespace-nowrap opacity-100 group-hover:opacity-0 transition-opacity duration-150">
+                      {unseenLowStockCount}
+                    </span>
+                    <span className="absolute whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-150 delay-75 right-2">
+                      {unseenLowStockCount === 1 
+                        ? t("mainMenu.oneProductOutOfStock", "1 product is out of stock")
+                        : t("mainMenu.productsOutOfStock", "{{count}} products are out of stock", { count: unseenLowStockCount })
+                      }
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
             <p className="text-muted-foreground text-sm flex-grow transition-colors duration-300 group-hover:text-foreground">
               {t(`mainMenu.${item.key}Desc`)}

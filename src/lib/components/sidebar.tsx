@@ -15,6 +15,8 @@ import "../../lib/i18n";
 import { useState, useRef } from "react";
 import { cn } from "../utils";
 import { useAuth } from "../contexts/authContext";
+import { useLowStock } from "../contexts/lowStockContext";
+import { BadgeNotification } from "./badgeNotification";
 
 const menuItems = [
   { key: "title", path: "/", icon: Home, color: "text-primary" },
@@ -55,6 +57,7 @@ export default function Sidebar() {
   const location = useLocation();
   const { t } = useTranslation();
   const { logout, isAdmin } = useAuth();
+  const { unseenLowStockCount } = useLowStock();
   const savedCollapsedState = localStorage.getItem("sidebarCollapsed");
   const [collapsed, setCollapsed] = useState(savedCollapsedState === "true");
   const [showText, setShowText] = useState(!collapsed);
@@ -136,9 +139,14 @@ export default function Sidebar() {
             data-is-active={location.pathname === item.path}
             to={item.path}
             key={item.key}
-            className="max-w-full gap-4 flex items-center rounded-xl m-2 p-2 -mt-1 capitalize hover:bg-secondary data-[is-active=true]:bg-secondary font-semibold data-[is-active=true]:font-bold"
+            className="max-w-full gap-4 flex items-center rounded-xl m-2 p-2 -mt-1 capitalize hover:bg-secondary data-[is-active=true]:bg-secondary font-semibold data-[is-active=true]:font-bold relative"
           >
-            <item.icon className={`${item.color}`} />
+            <div className="relative">
+              <item.icon className={`${item.color}`} />
+              {item.key === "stock" && unseenLowStockCount > 0 && (
+                <BadgeNotification count={unseenLowStockCount} />
+              )}
+            </div>
             {showText && <span>{t(`mainMenu.${item.key}`)}</span>}
           </Link>
         ))}

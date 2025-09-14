@@ -24,8 +24,9 @@ export function MonthPicker({
   min,
   max,
 }: MonthPickerProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const defaultPlaceholder = t("datePicker.selectMonth");
+  const isRTL = i18n.language === "ar";
   const [isOpen, setIsOpen] = useState(false);
   const [currentYear, setCurrentYear] = useState(() => {
     if (value) {
@@ -154,7 +155,7 @@ export function MonthPicker({
               className="h-7 w-7 p-0"
               aria-label={t("datePicker.previousYear")}
             >
-              <ChevronLeft className="h-4 w-4" />
+              {isRTL ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
             </Button>
             <div className="text-sm font-medium">
               {currentYear}
@@ -166,7 +167,7 @@ export function MonthPicker({
               className="h-7 w-7 p-0"
               aria-label={t("datePicker.nextYear")}
             >
-              <ChevronRight className="h-4 w-4" />
+              {isRTL ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
             </Button>
           </div>
           

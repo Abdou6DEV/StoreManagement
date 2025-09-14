@@ -24,8 +24,9 @@ export function DatePicker({
   min,
   max,
 }: DatePickerProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const defaultPlaceholder = t("datePicker.selectDate");
+  const isRTL = i18n.language === "ar";
   const [isOpen, setIsOpen] = useState(false);
   const [currentDate, setCurrentDate] = useState(() => {
     try {
@@ -293,7 +294,7 @@ export function DatePicker({
                 className="h-7 w-7 p-0"
                 aria-label={t("datePicker.previousMonth")}
               >
-                <ChevronLeft className="h-4 w-4" />
+                {isRTL ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
               </Button>
               <div className="text-sm font-medium min-w-[60px] text-center">
                 {monthNames[currentDate.getMonth()]}
@@ -305,7 +306,7 @@ export function DatePicker({
                 className="h-7 w-7 p-0"
                 aria-label={t("datePicker.nextMonth")}
               >
-                <ChevronRight className="h-4 w-4" />
+                {isRTL ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
               </Button>
             </div>
 
@@ -318,7 +319,7 @@ export function DatePicker({
                 className="h-7 w-7 p-0"
                 aria-label={t("datePicker.previousYear")}
               >
-                <ChevronLeft className="h-4 w-4" />
+                {isRTL ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
               </Button>
               <div className="text-sm font-medium min-w-[50px] text-center">
                 {currentDate.getFullYear()}
@@ -330,7 +331,7 @@ export function DatePicker({
                 className="h-7 w-7 p-0"
                 aria-label={t("datePicker.nextYear")}
               >
-                <ChevronRight className="h-4 w-4" />
+                {isRTL ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
               </Button>
             </div>
           </div>

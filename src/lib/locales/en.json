@@ -81,7 +81,9 @@
     "administrator": "Administrator",
     "administratorDesc": "Manage your app settings and configurations",
     "history": "History",
-    "historyDesc": "View sales and purchase history, track transactions"
+    "historyDesc": "View sales and purchase history, track transactions",
+    "oneProductOutOfStock": "1 product is out of stock",
+    "productsOutOfStock": "{{count}} products are out of stock"
   },
   "history": {
     "title": "History",

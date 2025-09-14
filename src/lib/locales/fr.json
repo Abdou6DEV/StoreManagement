@@ -81,7 +81,9 @@
     "administrator": "Administrateur",
     "administratorDesc": "Gérez les paramètres et configurations de l'application",
     "history": "Historique",
-    "historyDesc": "Voir l'historique des ventes et achats, suivre les transactions"
+    "historyDesc": "Voir l'historique des ventes et achats, suivre les transactions",
+    "oneProductOutOfStock": "1 produit est en rupture de stock",
+    "productsOutOfStock": "{{count}} produits sont en rupture de stock"
   },
   "history": {
     "title": "Historique",

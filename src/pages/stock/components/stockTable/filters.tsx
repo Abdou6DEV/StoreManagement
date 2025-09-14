@@ -29,6 +29,8 @@ import {
   handleTooltipEnter,
   handleTooltipLeave,
 } from "../../../../lib/utils/tooltipUtils";
+import { useLowStock } from "../../../../lib/contexts/lowStockContext";
+import { BadgeNotification } from "../../../../lib/components/badgeNotification";
 import type { FiltersProps } from "./types";
 
 export const Filters = ({
@@ -44,6 +46,7 @@ export const Filters = ({
   getActiveFiltersSummary,
 }: FiltersProps) => {
   const { t } = useTranslation();
+  const { unseenLowStockCount, markLowStockAsSeen } = useLowStock();
   const [categorySearch, setCategorySearch] = useState("");
   const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
 
@@ -186,14 +189,14 @@ export const Filters = ({
         )}
       </div>
 
-      {/* Filters Section - only in product view */}
+        {/* Filters Section - only in product view */}
       {viewMode === "product" && (
         <Popover>
           <PopoverTrigger asChild>
             <div className="relative inline-block">
               <Button
                 variant="outline"
-                className="px-3 py-1.5 min-w-[120px] justify-start"
+                className="px-3 py-1.5 min-w-[120px] justify-start relative"
                 aria-label={t("stock.filters", "Filters")}
                 onMouseEnter={handleTooltipEnter}
                 onMouseLeave={handleTooltipLeave}
@@ -230,6 +233,9 @@ export const Filters = ({
                   t("stock.filters", "Filters")
                 )}
                 <ChevronDown className="ml-auto w-4 h-4" />
+                {unseenLowStockCount > 0 && (
+                  <BadgeNotification count={unseenLowStockCount} />
+                )}
               </Button>
               <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-full z-[9999] whitespace-nowrap px-2 py-1 rounded bg-black text-white dark:bg-white dark:text-black text-xs opacity-0 scale-95 transition-all duration-200">
                 {t(
@@ -251,7 +257,13 @@ export const Filters = ({
                 <div
                   className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-accent"
                   style={{ width: "100%", minWidth: "198px" }}
-                  onClick={() => onToggleFilter("lowStock")}
+                  onClick={() => {
+                    onToggleFilter("lowStock");
+                    // Mark low stock products as seen when filter is activated
+                    if (!filters.lowStock) {
+                      markLowStockAsSeen();
+                    }
+                  }}
                 >
                   <AlertTriangle
                     className={cn(
@@ -262,9 +274,14 @@ export const Filters = ({
                     )}
                   />
                   <span className="flex-1">{t("stock.lowStock")}</span>
-                  {filters.lowStock && (
-                    <Check className="w-4 h-4 text-yellow-600" />
-                  )}
+                  <div className="flex items-center gap-2">
+                    {unseenLowStockCount > 0 && (
+                      <BadgeNotification count={unseenLowStockCount} />
+                    )}
+                    {filters.lowStock && (
+                      <Check className="w-4 h-4 text-yellow-600" />
+                    )}
+                  </div>
                 </div>
               </Tooltip>
               <Tooltip
