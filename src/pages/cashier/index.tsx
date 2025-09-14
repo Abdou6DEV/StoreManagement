@@ -18,13 +18,15 @@ function addProductToCart(
   cart: CartItem[],
   product: ProductWithSales,
   allProducts: ProductWithSales[],
-  onOutOfStock: (product: ProductWithSales, currentQty: number) => void
+  onOutOfStock: (product: ProductWithSales, currentQty: number) => void,
+  outOfStockConfirmed = false
 ): CartItem[] | null {
   // Check if product is out of stock before adding
   const currentQty = cart.find((item) => item.id === product.id)?.qty || 0;
   const newQty = currentQty + 1;
   
-  if (newQty > product.quantity) {
+  // Only check stock for products that actually have stock (quantity > 0)
+  if (product.quantity > 0 && newQty > product.quantity && !outOfStockConfirmed) {
     // Product is out of stock, show modal
     onOutOfStock(product, currentQty);
     return null; // Don't add to cart
@@ -144,6 +146,9 @@ export default function CashierPage() {
     document.body.style.overflow = "hidden";
     document.documentElement.style.overflow = "hidden";
 
+    // Reset out of stock confirmation when entering cashier page
+    setOutOfStockConfirmed(false);
+
     // Re-enable scrolling when component unmounts
     return () => {
       document.body.style.overflow = "auto";
@@ -156,9 +161,13 @@ export default function CashierPage() {
   };
 
   const handleProductOutOfStock = (product: ProductWithSales, currentQty: number) => {
-    setOutOfStockProduct(product);
-    setOutOfStockCurrentQty(currentQty);
-    setShowProductOutOfStockModal(true);
+    // Only show modal if user hasn't been warned yet in this session
+    if (!outOfStockConfirmed) {
+      setOutOfStockProduct(product);
+      setOutOfStockCurrentQty(currentQty);
+      setShowProductOutOfStockModal(true);
+    }
+    // If user already confirmed, the product will be added directly in the component logic
   };
 
   const handleReceiptData = (data: {
@@ -243,17 +252,25 @@ export default function CashierPage() {
         const proceedWithOutOfStockProduct = () => {
           if (outOfStockProduct) {
             const currentSession = sessionActions.getCurrentSession();
-            const updatedCart = addProductToCart(
-              currentSession.cart,
-              outOfStockProduct,
-              allProducts,
-              handleProductOutOfStock
-            );
-            
-            if (updatedCart) {
-              sessionActions.updateSessionCart(activeSession, updatedCart);
+            const updatedCart = [...currentSession.cart];
+            const exists = updatedCart.find((item) => item.id === outOfStockProduct.id);
+
+            if (exists) {
+              exists.qty += 1;
+            } else {
+              updatedCart.push({
+                id: outOfStockProduct.id,
+                name: outOfStockProduct.name,
+                price: outOfStockProduct.sellingPrice,
+                qty: 1,
+              });
             }
+            
+            sessionActions.updateSessionCart(activeSession, updatedCart);
           }
+          
+          // Set the confirmation flag so modal won't show again in this session
+          setOutOfStockConfirmed(true);
           setShowProductOutOfStockModal(false);
           setOutOfStockProduct(null);
           setOutOfStockCurrentQty(0);
@@ -261,68 +278,73 @@ export default function CashierPage() {
 
   return (
         <>
-          <CashierLayout
-            sessions={sessions}
-            activeSession={activeSession}
-            allProducts={allProducts}
-            isRTL={isRTL}
-            productRefreshKey={productRefreshKey}
-            setProductRefreshKey={setProductRefreshKey}
-            salesRefreshKey={salesRefreshKey}
-            onShowProductBrowser={() => setShowProductBrowser(true)}
-            onShowManualProductModal={() => setShowManualProductModal(true)}
-            onShowServiceModal={() => setShowServiceModal(true)}
-            onAddProduct={(product: ProductWithSales) => {
-              const currentSession = sessionActions.getCurrentSession();
-              const updatedCart = addProductToCart(
-                currentSession.cart,
-                product,
-                allProducts,
-                handleProductOutOfStock
-              );
-              
-              if (updatedCart) {
-                sessionActions.updateSessionCart(activeSession, updatedCart);
-              }
-            }}
-            onAddManualProduct={(product: CartItem) => {
-              const currentSession = sessionActions.getCurrentSession();
-              const updatedCart = addManualProductToCart(
-                currentSession.cart,
-                product
-              );
-              sessionActions.updateSessionCart(activeSession, updatedCart);
-            }}
-            onSessionChange={sessionActions.setActiveSession}
-            onAddSession={sessionActions.addSession}
-            onRemoveSession={sessionActions.removeSession}
-            onUpdateSessionCart={sessionActions.updateSessionCart}
-            onUpdateSessionDiscount={sessionActions.updateSessionDiscount}
-            onOutOfStock={handleOutOfStock}
-            onReceiptData={handleReceiptData}
-            onSaleComplete={handleSaleComplete}
-            onSaleCompleted={handleSaleCompleted}
-            maxSessions={MAX_SESSIONS}
-            addProductToCart={addProductToCart}
-            onProductOutOfStock={handleProductOutOfStock}
-          />
+           <CashierLayout
+             sessions={sessions}
+             activeSession={activeSession}
+             allProducts={allProducts}
+             isRTL={isRTL}
+             productRefreshKey={productRefreshKey}
+             setProductRefreshKey={setProductRefreshKey}
+             salesRefreshKey={salesRefreshKey}
+             onShowProductBrowser={() => setShowProductBrowser(true)}
+             onShowManualProductModal={() => setShowManualProductModal(true)}
+             onShowServiceModal={() => setShowServiceModal(true)}
+             onAddProduct={(product: ProductWithSales) => {
+               const currentSession = sessionActions.getCurrentSession();
+               const updatedCart = addProductToCart(
+                 currentSession.cart,
+                 product,
+                 allProducts,
+                 handleProductOutOfStock,
+                 outOfStockConfirmed
+               );
+               
+               if (updatedCart) {
+                 sessionActions.updateSessionCart(activeSession, updatedCart);
+               }
+             }}
+             onAddManualProduct={(product: CartItem) => {
+               const currentSession = sessionActions.getCurrentSession();
+               const updatedCart = addManualProductToCart(
+                 currentSession.cart,
+                 product
+               );
+               sessionActions.updateSessionCart(activeSession, updatedCart);
+             }}
+             onSessionChange={sessionActions.setActiveSession}
+             onAddSession={sessionActions.addSession}
+             onRemoveSession={sessionActions.removeSession}
+             onUpdateSessionCart={sessionActions.updateSessionCart}
+             onUpdateSessionDiscount={sessionActions.updateSessionDiscount}
+             onOutOfStock={handleOutOfStock}
+             onReceiptData={handleReceiptData}
+             onSaleComplete={handleSaleComplete}
+             onSaleCompleted={handleSaleCompleted}
+             maxSessions={MAX_SESSIONS}
+             addProductToCart={addProductToCart}
+             onProductOutOfStock={handleProductOutOfStock}
+             outOfStockConfirmed={outOfStockConfirmed}
+           />
 
           {/* Product Browser as a modal */}
-          <ProductBrowser
-            ref={productBrowserRef}
-            allProducts={allProducts}
-            open={showProductBrowser}
-            onClose={() => setShowProductBrowser(false)}
-            cart={sessionActions.getCurrentSession().cart}
-            setCart={(updater) => {
-              const currentCart = sessionActions.getCurrentSession().cart;
-              const result =
-                typeof updater === "function" ? updater(currentCart) : updater;
-              sessionActions.updateSessionCart(activeSession, result);
-            }}
-            addProductToCart={addProductToCart}
-            onOutOfStock={handleProductOutOfStock}
-          />
+           <ProductBrowser
+             ref={productBrowserRef}
+             allProducts={allProducts}
+             open={showProductBrowser}
+             onClose={() => setShowProductBrowser(false)}
+             cart={sessionActions.getCurrentSession().cart}
+             setCart={(updater) => {
+               const currentCart = sessionActions.getCurrentSession().cart;
+               const result =
+                 typeof updater === "function" ? updater(currentCart) : updater;
+               sessionActions.updateSessionCart(activeSession, result);
+             }}
+             addProductToCart={(cart, product, allProducts, onOutOfStock) => 
+               addProductToCart(cart, product, allProducts, onOutOfStock, outOfStockConfirmed)
+             }
+             onOutOfStock={handleProductOutOfStock}
+             outOfStockConfirmed={outOfStockConfirmed}
+           />
 
           {/* Out of Stock Warning Modal */}
           <ConfirmDialog

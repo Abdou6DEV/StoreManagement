@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Modal } from "../../../lib/components/modal";
 import type { CartItem } from "../../../types";
 import rendererLogger from "../../../lib/logger/rendererLogger";
-import { generateRealBarcode } from "../../../lib/utils/barcodeVisual";
+import { generateReceiptBarcode } from "../../../lib/utils/barcodeVisual";
 import { useToast } from "../../../lib/contexts/toastContext";
 
 interface Props {
@@ -42,17 +42,23 @@ export const printReceiptDirectly = async (
 
   // Load store information from database
   try {
-    const [name, address, phone, footer] = await Promise.all([
+    const [name, address, phone, phones, footer] = await Promise.all([
       window.api.database.options.get("storeName"),
       window.api.database.options.get("storeAddress"),
       window.api.database.options.get("storePhone"),
+      window.api.database.options.get("storePhoneNumbers"),
       window.api.database.options.get("receiptFooterMessage"),
     ]);
-    
+
+    const allPhones = [phone, ...(phones ? JSON.parse(phones) : [])].filter(p => p && p.trim() !== "");
+    const phoneDisplay = allPhones.length > 0 
+      ? allPhones.map(p => `Phone: ${p}`).join('<br>')
+      : "Phone: +1234567890";
+
     storeInfo = {
       name: name || "Store Management",
-      address: address || "Your Store Address",
-      phone: phone ? `Phone: ${phone}` : "Phone: +1234567890",
+      address: address ? `Address: ${address}` : "Address: Your Store Address",
+      phone: phoneDisplay,
     };
     footerMessage = footer || "";
   } catch (error) {
@@ -66,19 +72,17 @@ export const printReceiptDirectly = async (
   const receiptNumber = saleId || `TEMP-${Date.now()}`;
   
 
-  // Generate barcode from first 12 characters of receipt ID
-  const generateReceiptBarcode = () => {
+  // Generate barcode from receipt ID (8 characters max)
+  const generateReceiptBarcodeData = () => {
     try {
-      // Use exactly first 12 characters of the receipt ID
-      const barcodeId = receiptNumber.substring(0, 12);
-      
-      return generateRealBarcode(barcodeId, {
-        format: 'CODE128', // Best format for mobile scanning
-        width: 1.5,
-        height: 60,
+      // Use the new 8-character receipt barcode function
+      return generateReceiptBarcode(receiptNumber, {
+        format: 'CODE128',
+        width: 2.5,
+        height: 80,
         displayValue: false,
-        fontSize: 10,
-        margin: 8,
+        fontSize: 12,
+        margin: 15,
       });
     } catch (error) {
       console.error('Failed to generate receipt barcode:', error);
@@ -86,7 +90,7 @@ export const printReceiptDirectly = async (
     }
   };
 
-  const receiptBarcode = generateReceiptBarcode();
+  const receiptBarcode = generateReceiptBarcodeData();
 
   const generateReceiptHTML = () => {
     return `
@@ -118,15 +122,17 @@ export const printReceiptDirectly = async (
               margin-bottom: 15px;
             }
             .store-name {
-              font-size: 16px;
-              font-weight: bold;
-              margin-bottom: 8px;
+              font-size: 20px;
+              font-weight: 900;
+              margin-bottom: 10px;
               color: #000;
+              letter-spacing: 0.5px;
             }
             .store-info {
-              font-size: 11px;
-              margin-bottom: 5px;
-              color: #666;
+              font-size: 12px;
+              margin-bottom: 6px;
+              color: #333;
+              font-weight: 600;
             }
             .receipt-info {
               font-size: 11px;
@@ -223,13 +229,13 @@ export const printReceiptDirectly = async (
             }
             .receipt-id {
               text-align: center;
-              margin: 25px 0;
-              padding: 15px 0;
+              margin: 15px 0;
+              padding: 10px 0;
               border-top: 1px solid #000;
             }
             .receipt-id-text {
               font-size: 10px;
-              margin-top: 8px;
+              margin-top: 5px;
               color: #000;
             }
             .welcome {
@@ -348,10 +354,10 @@ export const printReceiptDirectly = async (
             <div class="receipt-id">
               ${receiptBarcode ? `
                 <div style="text-align: center; margin-bottom: 8px;">
-                  <img src="${receiptBarcode}" alt="Receipt Barcode" style="max-width: 250px; height: 60px;" />
+                  <img src="${receiptBarcode}" alt="Receipt Barcode" style="max-width: 280px; height: 80px;" />
                 </div>
               ` : ''}
-              <div class="receipt-id-text">ID: ${receiptNumber.substring(0, 12)}</div>
+              <div class="receipt-id-text">ID: ${receiptNumber.substring(0, 8)}</div>
             </div>
 
             <!-- Welcome Message -->
@@ -418,7 +424,7 @@ export default function ReceiptModal({
   // Store information - will be loaded from database
   const [storeInfo, setStoreInfo] = useState({
     name: "Store Management",
-    address: "Your Store Address",
+    address: "Address: Your Store Address",
     phone: "Phone: +1234567890",
   });
   const [footerMessage, setFooterMessage] = useState("");
@@ -427,17 +433,23 @@ export default function ReceiptModal({
   React.useEffect(() => {
     const loadStoreInfo = async () => {
       try {
-        const [name, address, phone, footer] = await Promise.all([
+        const [name, address, phone, phones, footer] = await Promise.all([
           window.api.database.options.get("storeName"),
           window.api.database.options.get("storeAddress"),
           window.api.database.options.get("storePhone"),
+          window.api.database.options.get("storePhoneNumbers"),
           window.api.database.options.get("receiptFooterMessage"),
         ]);
         
+        const allPhones = [phone, ...(phones ? JSON.parse(phones) : [])].filter(p => p && p.trim() !== "");
+        const phoneDisplay = allPhones.length > 0 
+          ? allPhones.map(p => `Phone: ${p}`).join('<br>')
+          : "Phone: +1234567890";
+        
         setStoreInfo({
           name: name || "Store Management",
-          address: address || "Your Store Address",
-          phone: phone ? `Phone: ${phone}` : "Phone: +1234567890",
+          address: address ? `Address: ${address}` : "Address: Your Store Address",
+          phone: phoneDisplay,
         });
         setFooterMessage(footer || "");
       } catch (error) {
@@ -454,19 +466,17 @@ export default function ReceiptModal({
   const currentDate = new Date();
   const receiptNumber = saleId || `TEMP-${Date.now()}`;
 
-  // Generate barcode from first 12 characters of receipt ID
-  const generateReceiptBarcode = () => {
+  // Generate barcode from receipt ID (8 characters max)
+  const generateReceiptBarcodeData = () => {
     try {
-      // Use exactly first 12 characters of the receipt ID
-      const barcodeId = receiptNumber.substring(0, 12);
-      
-      return generateRealBarcode(barcodeId, {
-        format: 'CODE128', // Best format for mobile scanning
-        width: 1.5,
-        height: 60,
+      // Use the new 8-character receipt barcode function
+      return generateReceiptBarcode(receiptNumber, {
+        format: 'CODE128',
+        width: 2.5,
+        height: 80,
         displayValue: false,
-        fontSize: 10,
-        margin: 8,
+        fontSize: 12,
+        margin: 15,
       });
     } catch (error) {
       console.error('Failed to generate receipt barcode:', error);
@@ -474,8 +484,8 @@ export default function ReceiptModal({
     }
   };
 
-  const receiptBarcode = generateReceiptBarcode();
-  const shortReceiptId = receiptNumber.substring(0, 12);
+  const receiptBarcode = generateReceiptBarcodeData();
+  const shortReceiptId = receiptNumber.substring(0, 8);
 
   const handlePrint = async () => {
     setIsPrinting(true);
@@ -547,15 +557,17 @@ export default function ReceiptModal({
               margin-bottom: 15px;
             }
             .store-name {
-              font-size: 16px;
-              font-weight: bold;
-              margin-bottom: 8px;
+              font-size: 20px;
+              font-weight: 900;
+              margin-bottom: 10px;
               color: #000;
+              letter-spacing: 0.5px;
             }
             .store-info {
-              font-size: 11px;
-              margin-bottom: 5px;
-              color: #666;
+              font-size: 12px;
+              margin-bottom: 6px;
+              color: #333;
+              font-weight: 600;
             }
             .receipt-info {
               font-size: 11px;
@@ -652,13 +664,13 @@ export default function ReceiptModal({
             }
             .receipt-id {
               text-align: center;
-              margin: 25px 0;
-              padding: 15px 0;
+              margin: 15px 0;
+              padding: 10px 0;
               border-top: 1px solid #000;
             }
             .receipt-id-text {
               font-size: 10px;
-              margin-top: 8px;
+              margin-top: 5px;
               color: #000;
             }
             .welcome {
@@ -777,7 +789,7 @@ export default function ReceiptModal({
             <div class="receipt-id">
               ${receiptBarcode ? `
                 <div style="text-align: center; margin-bottom: 8px;">
-                  <img src="${receiptBarcode}" alt="Receipt Barcode" style="max-width: 250px; height: 60px;" />
+                  <img src="${receiptBarcode}" alt="Receipt Barcode" style="max-width: 280px; height: 80px;" />
                 </div>
               ` : ''}
               <div class="receipt-id-text">ID: ${shortReceiptId}</div>

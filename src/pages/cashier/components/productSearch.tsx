@@ -135,6 +135,7 @@ export default function ProductSearch({ onAdd, refreshKey }: Props) {
 
   const grouped = React.useMemo((): GroupedSuggestions => {
     const trimmed = debouncedSearch.trim().toLowerCase();
+    
     if (!trimmed || trimmed.length < 2) return []; // Only search after 2+ characters
 
     // Use a more efficient search with early termination
@@ -155,10 +156,12 @@ export default function ProductSearch({ onAdd, refreshKey }: Props) {
       groups[cat].push(p);
     }
 
-    return Object.entries(groups).map(([category, items]) => ({
+    const result = Object.entries(groups).map(([category, items]) => ({
       category,
       items: items.slice(0, 10),
     }));
+    
+    return result;
   }, [debouncedSearch, allProducts]);
 
   useEffect(() => {

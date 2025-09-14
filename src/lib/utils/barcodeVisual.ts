@@ -1,7 +1,7 @@
 import JsBarcode from 'jsbarcode';
 
 export interface BarcodeVisualOptions {
-  format: 'EAN13' | 'CODE128' | 'UPC';
+  format?: 'EAN13' | 'CODE128' | 'UPC';
   width?: number;
   height?: number;
   displayValue?: boolean;
@@ -101,6 +101,26 @@ export const generateBarcodeSVG = (
 };
 
 /**
+ * Generate barcode specifically for receipts (8 characters max)
+ */
+export const generateReceiptBarcode = (
+  code: string, 
+  options?: BarcodeVisualOptions
+): string => {
+  // Truncate to 8 characters for receipts
+  const receiptCode = truncateForReceipt(code);
+  
+  return generateRealBarcode(receiptCode, {
+    ...options,
+    format: 'CODE128', // Always use CODE128 for receipts
+    width: options.width || 2.5, // Wider bars for better scanning
+    height: options.height || 80, // Taller for better scanning
+    fontSize: options.fontSize || 12, // Larger font for readability
+    margin: options.margin || 15, // More margin for better scanning
+  });
+};
+
+/**
  * Validate barcode format
  */
 export const validateBarcode = (code: string, format: BarcodeVisualOptions['format']): boolean => {
@@ -123,9 +143,20 @@ export const validateBarcode = (code: string, format: BarcodeVisualOptions['form
 };
 
 /**
+ * Truncate barcode code to 8 characters for receipts
+ */
+export const truncateForReceipt = (code: string): string => {
+  if (!code) return '';
+  // Take first 8 characters and pad with zeros if needed
+  return code.substring(0, 8).padEnd(8, '0');
+};
+
+/**
  * Get recommended barcode format based on code length
  */
 export const getRecommendedFormat = (code: string): BarcodeVisualOptions['format'] => {
+  // For receipt barcodes, limit to 8 characters and use CODE128
+  if (code.length <= 8) return 'CODE128';
   // Always use EAN13 for our barcodes (13 digits)
   if (/^\d{13}$/.test(code)) return 'EAN13';
   // Fallback to CODE128 for any other format

@@ -73,7 +73,15 @@ export default function ProductCard({
           ? "border-primary bg-primary/10"
           : "border-border hover:border-primary hover:shadow-md"
       }`}
-      onClick={() => handleAddToCart(product)}
+      onClick={() => {
+        if (isInCart(product.id)) {
+          // If product is in cart, remove it
+          handleQuantityChange(product, 0);
+        } else {
+          // If product is not in cart, add it
+          handleAddToCart(product);
+        }
+      }}
     >
       {/* Stock Quantity Badge */}
       <div className="absolute top-3 right-3 z-10">

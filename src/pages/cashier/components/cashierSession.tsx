@@ -13,12 +13,13 @@ interface CashierSessionProps {
   setProductRefreshKey: (key: number | ((prev: number) => number)) => void;
   cart: CartItem[];
   setCart: (cart: CartItem[] | ((prev: CartItem[]) => CartItem[])) => void;
-  onOutOfStock: (items: CartItem[]) => void;
+  onProductOutOfStock: (product: ProductWithSales, currentQty: number) => void;
   onSaleComplete: (saleId?: string) => void;
   onSaleCompleted: (saleId?: string) => void;
   isActive: boolean;
   discount: string;
   setDiscount: (discount: string) => void;
+  outOfStockConfirmed: boolean;
 }
 
 export default function CashierSession({
@@ -26,12 +27,13 @@ export default function CashierSession({
   setProductRefreshKey,
   cart,
   setCart,
-  onOutOfStock,
+  onProductOutOfStock,
   onSaleComplete,
   onSaleCompleted,
   isActive,
   discount,
   setDiscount,
+  outOfStockConfirmed,
 }: CashierSessionProps) {
   const { t } = useTranslation();
   const { showToast } = useToast();
@@ -264,6 +266,9 @@ export default function CashierSession({
             interactive={true}
             allowDiscountEdit={false}
             setCart={setCart}
+            allProducts={allProducts}
+            onOutOfStock={onProductOutOfStock}
+            outOfStockConfirmed={outOfStockConfirmed}
           />
         </div>
 

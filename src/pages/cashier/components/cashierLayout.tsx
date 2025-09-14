@@ -31,6 +31,7 @@ interface CashierLayoutProps {
   maxSessions: number;
   addProductToCart: (cart: CartItem[], product: ProductWithSales, allProducts: ProductWithSales[], onOutOfStock: (product: ProductWithSales, currentQty: number) => void) => CartItem[] | null;
   onProductOutOfStock: (product: ProductWithSales, currentQty: number) => void;
+  outOfStockConfirmed: boolean;
 }
 
 export default function CashierLayout({
@@ -58,6 +59,7 @@ export default function CashierLayout({
   maxSessions,
   addProductToCart,
   onProductOutOfStock,
+  outOfStockConfirmed,
 }: CashierLayoutProps) {
   const currentSession = sessions[activeSession] || sessions[0];
 
@@ -100,6 +102,7 @@ export default function CashierLayout({
               salesRefreshKey={salesRefreshKey}
               addProductToCart={addProductToCart}
               onOutOfStock={onProductOutOfStock}
+              outOfStockConfirmed={outOfStockConfirmed}
             />
           </div>
         </div>
@@ -121,7 +124,7 @@ export default function CashierLayout({
                     : newCart;
                 onUpdateSessionCart(sessionIndex, cart);
               }}
-              onOutOfStock={onOutOfStock}
+              onProductOutOfStock={onProductOutOfStock}
               onSaleComplete={onSaleComplete}
               onSaleCompleted={onSaleCompleted}
               isActive={activeSession === sessionIndex}
@@ -129,6 +132,7 @@ export default function CashierLayout({
               setDiscount={(newDiscount: string) =>
                 onUpdateSessionDiscount(sessionIndex, newDiscount)
               }
+              outOfStockConfirmed={outOfStockConfirmed}
             />
           ))}
         </div>

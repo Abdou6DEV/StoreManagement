@@ -15,6 +15,7 @@ const ProductBrowserGrid: React.FC<ProductBrowserGridProps> = ({
   addProductToCart,
   onOutOfStock,
   allProducts,
+  outOfStockConfirmed,
 }) => {
   return (
     <div
@@ -41,8 +42,8 @@ const ProductBrowserGrid: React.FC<ProductBrowserGridProps> = ({
           handleQuantityChange={(product, newQty) => {
             if (newQty <= 0) {
               setCart((prev) => prev.filter((item) => item.id !== product.id));
-            } else if (newQty > product.quantity) {
-              // Product is out of stock, show modal
+            } else if (product.quantity > 0 && newQty > product.quantity && !outOfStockConfirmed) {
+              // Product is out of stock, show modal (only for products with stock > 0)
               onOutOfStock(product, cart.find((item) => item.id === product.id)?.qty || 0);
             } else {
               setCart((prev) => {

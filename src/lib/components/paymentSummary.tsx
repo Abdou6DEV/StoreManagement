@@ -14,6 +14,9 @@ interface Props {
   allowDiscountEdit?: boolean;
   setCart?: React.Dispatch<React.SetStateAction<CartItem[]>>;
   setDiscount?: (discount: number) => void;
+  allProducts?: any[];
+  onOutOfStock?: (product: any, currentQty: number) => void;
+  outOfStockConfirmed?: boolean;
 }
 
 export default function PaymentSummary({
@@ -27,6 +30,9 @@ export default function PaymentSummary({
   allowDiscountEdit = false,
   setCart,
   setDiscount,
+  allProducts = [],
+  onOutOfStock,
+  outOfStockConfirmed = false,
 }: Props) {
   const { t, i18n } = useTranslation();
   const isRTL = i18n.language === "ar";
@@ -149,6 +155,20 @@ export default function PaymentSummary({
       removeItem(index);
       return;
     }
+
+    // Find the product in allProducts to check stock
+    const cartItem = cart[index];
+    const product = allProducts.find(p => p.id === cartItem.id);
+    
+    if (product && onOutOfStock) {
+      // Check if product has stock and would exceed available quantity
+      if (product.quantity > 0 && newQty > product.quantity && !outOfStockConfirmed) {
+        // Product is out of stock, show modal
+        onOutOfStock(product, cartItem.qty);
+        return;
+      }
+    }
+
     setCart((prev) =>
       prev.map((item, i) => (i === index ? { ...item, qty: newQty } : item)),
     );
