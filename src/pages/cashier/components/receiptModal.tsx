@@ -229,21 +229,31 @@ export const printReceiptDirectly = async (
             }
             .receipt-id {
               text-align: center;
-              margin: 15px 0;
-              padding: 10px 0;
+              margin: 8px 0;
+              padding: 6px 0;
               border-top: 1px solid #000;
             }
             .receipt-id-text {
               font-size: 10px;
-              margin-top: 5px;
+              margin-top: 3px;
               color: #000;
             }
             .welcome {
               text-align: center;
-              margin-top: 15px;
-              font-size: 11px;
+              margin-top: 8px;
+              font-size: 12px;
               font-weight: bold;
               color: #000;
+            }
+            .watermark {
+              text-align: center;
+              margin-top: 8px;
+              padding-top: 4px;
+              border-top: 1px dashed #000;
+              font-size: 8px;
+              color: #000;
+              font-weight: bold;
+              line-height: 1.2;
             }
             @media print {
               body {
@@ -367,6 +377,12 @@ export const printReceiptDirectly = async (
                 <div>Please come again</div>
                 <div style="margin-top: 5px;">We appreciate your business</div>
               `}
+            </div>
+            
+            <!-- Watermark -->
+            <div class="watermark">
+              <div>Store Management System</div>
+              <div>Contact: 0793420745</div>
             </div>
           </div>
         </body>
@@ -664,21 +680,31 @@ export default function ReceiptModal({
             }
             .receipt-id {
               text-align: center;
-              margin: 15px 0;
-              padding: 10px 0;
+              margin: 8px 0;
+              padding: 6px 0;
               border-top: 1px solid #000;
             }
             .receipt-id-text {
               font-size: 10px;
-              margin-top: 5px;
+              margin-top: 3px;
               color: #000;
             }
             .welcome {
               text-align: center;
-              margin-top: 15px;
-              font-size: 11px;
+              margin-top: 8px;
+              font-size: 12px;
               font-weight: bold;
               color: #000;
+            }
+            .watermark {
+              text-align: center;
+              margin-top: 8px;
+              padding-top: 4px;
+              border-top: 1px dashed #000;
+              font-size: 8px;
+              color: #000;
+              font-weight: bold;
+              line-height: 1.2;
             }
             @media print {
               body {
@@ -802,6 +828,12 @@ export default function ReceiptModal({
                 <div>Please come again</div>
                 <div style="margin-top: 5px;">We appreciate your business</div>
               `}
+            </div>
+            
+            <!-- Watermark -->
+            <div class="watermark">
+              <div>Store Management System</div>
+              <div>Contact: 0793420745</div>
             </div>
           </div>
         </body>
@@ -953,10 +985,10 @@ export default function ReceiptModal({
           )}
 
           {/* Receipt ID with Barcode */}
-          <div className="border-t border-black dark:border-white my-2" />
-          <div className="text-center my-3 flex flex-col items-center py-2">
+          <div className="border-t border-black dark:border-white my-1" />
+          <div className="text-center my-2 flex flex-col items-center py-1">
             {receiptBarcode && (
-              <div className="mb-2">
+              <div className="mb-1">
                 <img 
                   src={receiptBarcode} 
                   alt="Receipt Barcode" 
@@ -964,14 +996,14 @@ export default function ReceiptModal({
                 />
               </div>
             )}
-            <div className="text-xs mt-2">
+            <div className="text-xs mt-1">
               ID: {shortReceiptId}
             </div>
           </div>
 
           {/* Welcome Message */}
-          <div className="border-t border-black dark:border-white my-2" />
-          <div className="text-center text-xs font-bold mt-2">
+          <div className="border-t border-black dark:border-white my-1" />
+          <div className="text-center text-sm font-bold mt-1">
             {footerMessage ? (
               <div>{footerMessage}</div>
             ) : (
@@ -981,6 +1013,13 @@ export default function ReceiptModal({
                 <div className="mt-1">We appreciate your business</div>
               </>
             )}
+          </div>
+          
+          {/* Watermark */}
+          <div className="border-t border-dashed border-black my-1" />
+          <div className="text-center text-[8px] text-black mt-1 font-bold leading-tight">
+            <div>Store Management System</div>
+            <div>Contact: 0793420745</div>
           </div>
         </div>
       </div>

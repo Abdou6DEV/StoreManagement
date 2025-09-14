@@ -28,6 +28,12 @@ export const ReceiptConfig: React.FC = () => {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [previewReceipt, setPreviewReceipt] = useState<string>("");
+  const [previewOptions, setPreviewOptions] = useState({
+    showDiscount: true,
+    showCredit: true,
+    showVersement: false,
+    showClient: true,
+  });
 
   // Generate preview receipt
   const generatePreviewReceipt = () => {
@@ -37,6 +43,8 @@ export const ReceiptConfig: React.FC = () => {
     ];
     
     const total = sampleCart.reduce((sum, item) => sum + item.qty * item.price, 0);
+    const discount = previewOptions.showDiscount ? 10 : 0;
+    const finalTotal = total - discount;
     const receiptNumber = "PREVIEW-12345678";
     
     // Generate barcode
@@ -191,21 +199,36 @@ export const ReceiptConfig: React.FC = () => {
             }
             .receipt-id {
               text-align: center;
-              margin: 15px 0;
-              padding: 10px 0;
+              margin: 8px 0;
+              padding: 6px 0;
               border-top: 1px solid #000;
             }
             .receipt-id-text {
               font-size: 10px;
-              margin-top: 5px;
+              margin-top: 3px;
               color: #000;
             }
             .welcome {
               text-align: center;
-              margin-top: 15px;
-              font-size: 11px;
+              margin-top: 8px;
+              font-size: 12px;
               font-weight: bold;
               color: #000;
+            }
+            .payment-info {
+              margin-top: 10px;
+              font-size: 11px;
+              color: #000;
+            }
+            .watermark {
+              text-align: center;
+              margin-top: 8px;
+              padding-top: 4px;
+              border-top: 1px dashed #000;
+              font-size: 8px;
+              color: #000;
+              font-weight: bold;
+              line-height: 1.2;
             }
           </style>
         </head>
@@ -225,7 +248,7 @@ export const ReceiptConfig: React.FC = () => {
             </div>
 
             <!-- Client Info -->
-            <div class="client-info">Client: Sample Customer</div>
+            ${previewOptions.showClient ? '<div class="client-info">Client: Sample Customer</div>' : ''}
 
             <div class="divider"></div>
 
@@ -255,11 +278,30 @@ export const ReceiptConfig: React.FC = () => {
                 <span>Subtotal:</span>
                 <span>${total.toLocaleString()} DA</span>
               </div>
-              <div class="total-row">
-                <span>Total:</span>
-                <span>${total.toLocaleString()} DA</span>
-              </div>
+              ${discount > 0 ? `
+                <div class="total-row">
+                  <span>Discount:</span>
+                  <span>-${discount.toLocaleString()} DA</span>
+                </div>
+              ` : ''}
+              ${discount > 0 || previewOptions.showCredit || previewOptions.showVersement ? `
+                <div class="total-row">
+                  <span>New Total:</span>
+                  <span>${finalTotal.toLocaleString()} DA</span>
+                </div>
+              ` : ''}
             </div>
+
+            <!-- Payment Info -->
+            ${(previewOptions.showCredit || previewOptions.showVersement) ? `
+              <div class="payment-info">
+                <div class="divider"></div>
+                <div>Payment Type: ${previewOptions.showCredit ? 'Credit' : 'Versement'}</div>
+                <div>Amount Paid: 30.00 DA</div>
+                <div>Due Date: ${new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString()}</div>
+                <div>Remaining: ${(finalTotal - 30).toLocaleString()} DA</div>
+              </div>
+            ` : ''}
 
             <!-- Receipt ID with Barcode -->
             <div class="receipt-id">
@@ -275,6 +317,12 @@ export const ReceiptConfig: React.FC = () => {
             <div class="welcome">
               ${footerMessage || "Thank you for your business!"}
             </div>
+            
+            <!-- Watermark -->
+            <div class="watermark">
+              <div>Store Management System</div>
+              <div>Contact: 0793420745</div>
+            </div>
           </div>
         </body>
       </html>
@@ -286,7 +334,7 @@ export const ReceiptConfig: React.FC = () => {
     if (!loading) {
       setPreviewReceipt(generatePreviewReceipt());
     }
-  }, [storeName, storeAddress, storePhone, phoneNumbers, footerMessage, loading]);
+  }, [storeName, storeAddress, storePhone, phoneNumbers, footerMessage, loading, previewOptions]);
 
   useEffect(() => {
     setLoading(true);
@@ -429,7 +477,7 @@ export const ReceiptConfig: React.FC = () => {
           </div>
 
           {/* Store Phone Numbers Setting */}
-          <div className="flex flex-col gap-4 bg-muted/40 border border-border rounded-lg p-6">
+          <div className="flex flex-col gap-4 bg-muted/40 border border-border rounded-lg p-6 lg:col-span-2">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
                 <Phone className="w-6 h-6 text-green-600" />
@@ -583,29 +631,89 @@ export const ReceiptConfig: React.FC = () => {
           </h2>
         </div>
         
-        <div className="h-full overflow-auto flex justify-center">
-          {previewReceipt ? (
-            <div className="w-fit">
-              <iframe
-                srcDoc={previewReceipt}
-                className="border border-border rounded-lg"
-                title="Receipt Preview"
-                style={{ 
-                  width: '400px', 
-                  height: '600px',
-                  transform: 'scale(1.0)', 
-                  transformOrigin: 'top center' 
-                }}
-              />
-            </div>
-          ) : (
-            <div className="flex items-center justify-center h-64 text-muted-foreground">
-              <div className="text-center">
-                <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2" />
-                <p>Loading preview...</p>
+        <div className="h-full rounded-lg overflow-auto flex flex-col">
+          <div className="flex justify-center">
+            {previewReceipt ? (
+              <div className="w-fit">
+                <iframe
+                  srcDoc={previewReceipt}
+                  className="border border-border rounded-lg"
+                  title="Receipt Preview"
+                  style={{ 
+                    width: '400px', 
+                    height: '600px',
+                    transform: 'scale(0.9)', 
+                    transformOrigin: 'top center' 
+                  }}
+                />
               </div>
+            ) : (
+              <div className="flex items-center justify-center h-64 text-muted-foreground">
+                <div className="text-center">
+                  <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2" />
+                  <p>Loading preview...</p>
+                </div>
+              </div>
+            )}
+          </div>
+          
+          {/* Preview Options */}
+          <div className="p-3 bg-muted/40 rounded-lg border border-border">
+            <h3 className="text-sm font-semibold mb-3 text-muted-foreground">{t("admin.previewOptions", "Preview Options")}</h3>
+            <div className="grid grid-cols-2 gap-3">
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={previewOptions.showClient}
+                  onChange={(e) => setPreviewOptions(prev => ({ ...prev, showClient: e.target.checked }))}
+                  className="rounded border-border"
+                />
+                <span className="text-sm">{t("admin.showClient", "Show Client")}</span>
+              </label>
+              
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={previewOptions.showDiscount}
+                  onChange={(e) => setPreviewOptions(prev => ({ ...prev, showDiscount: e.target.checked }))}
+                  className="rounded border-border"
+                />
+                <span className="text-sm">{t("admin.showDiscount", "Show Discount")}</span>
+              </label>
+              
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={previewOptions.showCredit}
+                  onChange={(e) => {
+                    setPreviewOptions(prev => ({ 
+                      ...prev, 
+                      showCredit: e.target.checked,
+                      showVersement: e.target.checked ? false : prev.showVersement
+                    }));
+                  }}
+                  className="rounded border-border"
+                />
+                <span className="text-sm">{t("admin.showCredit", "Show Credit")}</span>
+              </label>
+              
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={previewOptions.showVersement}
+                  onChange={(e) => {
+                    setPreviewOptions(prev => ({ 
+                      ...prev, 
+                      showVersement: e.target.checked,
+                      showCredit: e.target.checked ? false : prev.showCredit
+                    }));
+                  }}
+                  className="rounded border-border"
+                />
+                <span className="text-sm">{t("admin.showVersement", "Show Versement")}</span>
+              </label>
             </div>
-          )}
+          </div>
         </div>
       </section>
     </div>

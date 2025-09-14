@@ -672,17 +672,14 @@ export async function getSalesAggregatedByPeriod(
           item.product.boughtPrice;
         return sum + boughtPrice * item.quantity;
       }
-      if (
-        item.manualProduct &&
-        (item.manualProduct as { costPrice?: number }).costPrice
-      ) {
+      if (item.manualProduct && "costPrice" in item.manualProduct) {
         return (
           sum +
           (item.manualProduct as { costPrice: number }).costPrice *
             item.quantity
         );
       }
-      if (item.service && (item.service as { costPrice?: number }).costPrice) {
+      if (item.service && "costPrice" in item.service) {
         return (
           sum +
           (item.service as { costPrice: number }).costPrice * item.quantity
@@ -858,17 +855,14 @@ export async function getSalesSummary(startDate: Date, endDate: Date) {
           item.product.boughtPrice;
         return sum + boughtPrice * item.quantity;
       }
-      if (
-        item.manualProduct &&
-        (item.manualProduct as { costPrice?: number }).costPrice
-      ) {
+      if (item.manualProduct && "costPrice" in item.manualProduct) {
         return (
           sum +
           (item.manualProduct as { costPrice: number }).costPrice *
             item.quantity
         );
       }
-      if (item.service && (item.service as { costPrice?: number }).costPrice) {
+      if (item.service && "costPrice" in item.service) {
         return (
           sum +
           (item.service as { costPrice: number }).costPrice * item.quantity

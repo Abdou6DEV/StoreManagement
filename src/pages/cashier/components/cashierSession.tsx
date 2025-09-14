@@ -20,6 +20,10 @@ interface CashierSessionProps {
   discount: string;
   setDiscount: (discount: string) => void;
   outOfStockConfirmed: boolean;
+  // Session navigation props
+  sessions: Array<{ id: number; cart: CartItem[]; discount: string }>;
+  activeSession: number;
+  onSessionChange: (sessionIndex: number) => void;
 }
 
 export default function CashierSession({
@@ -34,6 +38,9 @@ export default function CashierSession({
   discount,
   setDiscount,
   outOfStockConfirmed,
+  sessions,
+  activeSession,
+  onSessionChange,
 }: CashierSessionProps) {
   const { t } = useTranslation();
   const { showToast } = useToast();
@@ -239,6 +246,46 @@ export default function CashierSession({
       window.removeEventListener('cashier-finish-with-receipt', handleGlobalFinishWithReceipt, { capture: true });
     };
   }, [cart.length, handleFinish, handleFinishWithReceipt]);
+
+  // Listen for arrow keys to navigate between sessions
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Only handle arrow keys when this session is active
+      if (!isActive) return;
+      
+      // Only handle left and right arrow keys for session navigation
+      if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+      
+      // Don't handle if user is typing in an input field (except when search is empty)
+      if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
+        const input = event.target as HTMLInputElement;
+        // Allow navigation if the search input is empty
+        if (input.value.trim() !== '') {
+          return;
+        }
+      }
+      
+      if (event.key === 'ArrowLeft') {
+        event.preventDefault();
+        const prevSession = activeSession - 1;
+        if (prevSession >= 0) {
+          onSessionChange(prevSession);
+        }
+      } else if (event.key === 'ArrowRight') {
+        event.preventDefault();
+        const nextSession = activeSession + 1;
+        if (nextSession < sessions.length) {
+          onSessionChange(nextSession);
+        }
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isActive, activeSession, sessions.length, onSessionChange]);
 
 
   // Out-of-stock handling is now done at product addition time

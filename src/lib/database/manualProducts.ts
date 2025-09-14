@@ -30,6 +30,13 @@ export async function findOrCreateManualProduct(data: {
   });
 
   if (existing) {
+    // Update costPrice if provided and different from existing
+    if (data.costPrice !== undefined && data.costPrice !== existing.costPrice) {
+      return await prisma.manualProduct.update({
+        where: { id: existing.id },
+        data: { costPrice: data.costPrice },
+      });
+    }
     return existing;
   }
 

@@ -815,7 +815,13 @@
       "clearConfirmMessage": "هل أنت متأكد من أنك تريد مسح جميع ملفات السجلات؟ لا يمكن التراجع عن هذا الإجراء.",
       "clearConfirmText": "مسح جميع السجلات",
       "cancel": "إلغاء"
-    }
+    },
+    "previewOptions": "خيارات المعاينة",
+    "showClient": "عرض العميل",
+    "showDiscount": "عرض الخصم",
+    "showCredit": "عرض الائتمان",
+    "showVersement": "عرض الدفعة",
+    "receiptPreview": "معاينة مباشرة"
   },
   "common": {
     "refresh": "تحديث",

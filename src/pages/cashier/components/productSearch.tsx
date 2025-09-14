@@ -228,7 +228,9 @@ export default function ProductSearch({ onAdd, refreshKey }: Props) {
       return;
     }
 
-    if (!showSuggestions) return;
+    // Only handle arrow keys if there are suggestions to navigate through
+    // If search is empty or no suggestions, let the event bubble up for session navigation
+    if (!showSuggestions || !search.trim() || grouped.length === 0) return;
 
     if (e.key === "ArrowDown") {
       e.preventDefault();

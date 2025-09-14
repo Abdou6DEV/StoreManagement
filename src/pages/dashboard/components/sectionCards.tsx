@@ -48,11 +48,11 @@ export function SectionCards() {
                   item.boughtPrice || item.product.boughtPrice;
                 return itemSum + boughtPrice * item.quantity;
               }
-              if (item.manualProduct && item.manualProduct.costPrice) {
+              if (item.manualProduct && "costPrice" in item.manualProduct) {
                 // For manual products, use actual cost price
                 return itemSum + item.manualProduct.costPrice * item.quantity;
               }
-              if (item.service && item.service.costPrice) {
+              if (item.service && "costPrice" in item.service) {
                 // For services, use actual cost price
                 return itemSum + item.service.costPrice * item.quantity;
               }

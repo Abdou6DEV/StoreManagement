@@ -32,7 +32,7 @@ export const EditProductModal = ({
       subtitle={`Editing ${currentProduct?.name || "Unknown"}`}
       icon={<Edit className="w-5 h-5 text-green-600" />}
       size="lg"
-      className="min-w-[70%]"
+      className="min-w-[85%]"
       showCloseButton={false}
       showFooter={false}
     >

@@ -237,12 +237,12 @@ export default function PaymentSummary({
     return (
       <tr className="border-b border-dashed border-primary/40 hover:bg-accent/40 transition-colors group">
         <td
-          className={`py-2 px-2 font-medium truncate ${isRTL ? "text-right" : "text-left"}`}
+          className={`py-2 px-2 font-medium truncate ${isRTL ? "text-right" : "text-left"} ${interactive ? "w-[35%]" : "w-1/2"}`}
         >
           {item.isService ? `🔧 ${item.name}` : item.name}
         </td>
         <td
-          className="py-2 px-2 text-right cursor-pointer select-none hover:bg-primary/20 rounded"
+          className={`py-2 px-2 text-right cursor-pointer select-none hover:bg-primary/20 rounded ${interactive ? "w-[15%]" : "w-1/6"}`}
           onDoubleClick={handleDoubleClick}
         >
           {isEditing ? (
@@ -259,11 +259,11 @@ export default function PaymentSummary({
             item.qty
           )}
         </td>
-        <td className="py-1 px-2 text-right">{item.price.toLocaleString()}</td>
-        <td className="py-1 px-2 text-right">
+        <td className={`py-1 px-2 text-right ${interactive ? "w-[15%]" : "w-1/6"}`}>{item.price.toLocaleString()}</td>
+        <td className={`py-1 px-2 text-right ${interactive ? "w-[15%]" : "w-1/6"}`}>
           {(item.qty * item.price).toLocaleString()}
         </td>
-        <td className="py-1 px-2 text-right">
+        <td className="py-1 px-2 text-right w-[20%]">
           <div
             className={`flex gap-1 ${isRTL ? "justify-start" : "justify-end"}`}
           >
@@ -345,7 +345,7 @@ export default function PaymentSummary({
 
       {/* === Fixed Header Table === */}
       <div className="flex-shrink-0">
-        <table className="w-full text-sm">
+        <table className="w-full text-sm table-fixed">
           <thead>
             <tr className="font-semibold text-xs uppercase tracking-wider border-b border-black dark:border-white">
               <th
@@ -387,7 +387,7 @@ export default function PaymentSummary({
         }`}
         ref={scrollRef}
       >
-        <table className="w-full text-sm">
+        <table className="w-full text-sm table-fixed">
           <tbody>
             {cart.length > 0
               ? cart.map((item, index) =>
@@ -405,15 +405,15 @@ export default function PaymentSummary({
                       className="border-b border-dashed border-primary/40 hover:bg-accent/40 transition-colors"
                     >
                       <td
-                        className={`py-2 px-2 font-medium truncate ${isRTL ? "text-right" : "text-left"}`}
+                        className={`py-2 px-2 font-medium truncate ${isRTL ? "text-right" : "text-left"} ${interactive ? "w-[35%]" : "w-1/2"}`}
                       >
                         {item.isService ? `🔧 ${item.name}` : item.name}
                       </td>
-                      <td className="py-2 px-2 text-right">{item.qty}</td>
-                      <td className="py-2 px-2 text-right">
+                      <td className={`py-2 px-2 text-right ${interactive ? "w-[15%]" : "w-1/6"}`}>{item.qty}</td>
+                      <td className={`py-2 px-2 text-right ${interactive ? "w-[15%]" : "w-1/6"}`}>
                         {item.price.toLocaleString()}
                       </td>
-                      <td className="py-2 px-2 text-right">
+                      <td className={`py-2 px-2 text-right ${interactive ? "w-[15%]" : "w-1/6"}`}>
                         {(item.qty * item.price).toLocaleString()}
                       </td>
                     </tr>
@@ -424,11 +424,11 @@ export default function PaymentSummary({
                     key={i}
                     className="opacity-0 pointer-events-none select-none"
                   >
-                    <td className="py-2 px-2">Placeholder</td>
-                    <td className="py-2 px-2 text-right">0</td>
-                    <td className="py-2 px-2 text-right">0</td>
-                    <td className="py-2 px-2 text-right">0</td>
-                    {interactive && <td className="py-2 px-2 text-right"></td>}
+                    <td className={`py-2 px-2 ${interactive ? "w-[35%]" : "w-1/2"}`}>Placeholder</td>
+                    <td className={`py-2 px-2 text-right ${interactive ? "w-[15%]" : "w-1/6"}`}>0</td>
+                    <td className={`py-2 px-2 text-right ${interactive ? "w-[15%]" : "w-1/6"}`}>0</td>
+                    <td className={`py-2 px-2 text-right ${interactive ? "w-[15%]" : "w-1/6"}`}>0</td>
+                    {interactive && <td className="py-2 px-2 text-right w-[20%]"></td>}
                   </tr>
                 ))}
           </tbody>

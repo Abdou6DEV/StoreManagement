@@ -816,7 +816,13 @@
       "clearConfirmMessage": "Êtes-vous sûr de vouloir effacer tous les fichiers de journaux ? Cette action ne peut pas être annulée.",
       "clearConfirmText": "Effacer tous les journaux",
       "cancel": "Annuler"
-    }
+    },
+    "previewOptions": "Options d'aperçu",
+    "showClient": "Afficher le client",
+    "showDiscount": "Afficher la remise",
+    "showCredit": "Afficher le crédit",
+    "showVersement": "Afficher le versement",
+    "receiptPreview": "Aperçu en direct"
   },
   "common": {
     "refresh": "Actualiser",

@@ -819,7 +819,13 @@
       "clearConfirmMessage": "Are you sure you want to clear all log files? This action cannot be undone.",
       "clearConfirmText": "Clear All Logs",
       "cancel": "Cancel"
-    }
+    },
+    "previewOptions": "Preview Options",
+    "showClient": "Show Client",
+    "showDiscount": "Show Discount",
+    "showCredit": "Show Credit",
+    "showVersement": "Show Versement",
+    "receiptPreview": "Live Preview"
   },
   "common": {
     "refresh": "Refresh",

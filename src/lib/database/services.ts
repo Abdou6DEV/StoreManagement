@@ -27,6 +27,13 @@ export async function findOrCreateService(data: {
   });
 
   if (existing) {
+    // Update costPrice if provided and different from existing
+    if (data.costPrice !== undefined && data.costPrice !== existing.costPrice) {
+      return await prisma.service.update({
+        where: { id: existing.id },
+        data: { costPrice: data.costPrice },
+      });
+    }
     return existing;
   }
 

@@ -133,6 +133,9 @@ export default function CashierLayout({
                 onUpdateSessionDiscount(sessionIndex, newDiscount)
               }
               outOfStockConfirmed={outOfStockConfirmed}
+              sessions={sessions}
+              activeSession={activeSession}
+              onSessionChange={onSessionChange}
             />
           ))}
         </div>
