@@ -4,12 +4,12 @@ export const isOverdue = (dueDate: Date) => {
   return new Date(dueDate) < new Date() && new Date(dueDate).getTime() !== 0;
 };
 
-export const isDueSoon = (dueDate: Date) => {
+export const isDueSoon = (dueDate: Date, thresholdDays: number = 2) => {
   const today = new Date();
   const due = new Date(dueDate);
   const diffTime = due.getTime() - today.getTime();
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  return diffDays >= 0 && diffDays <= 7;
+  return diffDays > 0 && diffDays <= thresholdDays;
 };
 
 export const getFilteredPayments = (
@@ -18,6 +18,7 @@ export const getFilteredPayments = (
   statusFilter: "all" | "paid" | "unpaid",
   typeFilter: "all" | "CREDIT" | "VERSEMENT",
   dateFilter: "all" | "overdue" | "dueSoon",
+  dueSoonThresholdDays: number = 2,
 ) => {
   return payments.filter((payment) => {
     // Search filter
@@ -41,7 +42,7 @@ export const getFilteredPayments = (
       matchesDate = !payment.paidDate && isOverdue(payment.dueDate);
     } else if (dateFilter === "dueSoon") {
       // Only show due soon for unpaid payments
-      matchesDate = !payment.paidDate && isDueSoon(payment.dueDate);
+      matchesDate = !payment.paidDate && isDueSoon(payment.dueDate, dueSoonThresholdDays);
     }
 
     return matchesSearch && matchesStatus && matchesType && matchesDate;

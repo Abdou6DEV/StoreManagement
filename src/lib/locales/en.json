@@ -83,7 +83,11 @@
     "history": "History",
     "historyDesc": "View sales and purchase history, track transactions",
     "oneProductOutOfStock": "1 product is out of stock",
-    "productsOutOfStock": "{{count}} products are out of stock"
+    "productsOutOfStock": "{{count}} products are out of stock",
+    "oneOverduePayment": "1 overdue payment",
+    "overduePayments": "{{count}} overdue payments",
+    "oneDueSoonPayment": "1 due soon payment",
+    "dueSoonPayments": "{{count}} due soon payments"
   },
   "history": {
     "title": "History",
@@ -776,6 +780,14 @@
     "lowStockDesc": "Set the minimum quantity before a product is considered low in stock",
     "storeCash": "Store Cash",
     "storeCashDesc": "Default cash amount in store",
+    "enableOverduePaymentsBadge": "Enable Overdue Payments Notification Badge",
+    "enableOverdueBadgeDesc": "Show notification badge on clients menu item when there are overdue credits and versements",
+    "enableDueSoonPaymentsBadge": "Enable Due Soon Payments Notification Badge",
+    "enableDueSoonBadgeDesc": "Show notification badge on clients menu item when there are credits and versements due soon",
+    "dueSoonThreshold": "Due Soon Threshold (Days)",
+    "dueSoonThresholdDesc": "Number of days before due date to consider a payment as 'due soon'",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
     "save": "Save Settings",
     "saving": "Saving...",
     "saved": "Settings saved!",
@@ -827,7 +839,13 @@
     "showDiscount": "Show Discount",
     "showCredit": "Show Credit",
     "showVersement": "Show Versement",
-    "receiptPreview": "Live Preview"
+    "receiptPreview": "Live Preview",
+    "enableOverduePaymentsBadge": "Enable Overdue Payments Notification Badge",
+    "enableOverdueBadgeDesc": "Show notification badge on clients menu item when there are overdue credits and versements",
+    "enableDueSoonPaymentsBadge": "Enable Due Soon Payments Notification Badge",
+    "enableDueSoonBadgeDesc": "Show notification badge on clients menu item when there are credits and versements due within 7 days",
+    "enabled": "Enabled",
+    "disabled": "Disabled"
   },
   "common": {
     "refresh": "Refresh",

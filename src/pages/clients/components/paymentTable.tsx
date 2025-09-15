@@ -16,6 +16,8 @@ interface PaymentTableProps {
   onMarkAsUnpaidConfirm: (paymentId: string) => void;
   isOverdue: (dueDate: Date) => boolean;
   isDueSoon: (dueDate: Date) => boolean;
+  newlyOverdueIds?: Set<string>; // IDs of newly overdue payments to highlight
+  newlyDueSoonIds?: Set<string>; // IDs of newly due soon payments to highlight
 }
 
 const PaymentTable: React.FC<PaymentTableProps> = ({
@@ -30,6 +32,8 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
   onMarkAsUnpaidConfirm,
   isOverdue,
   isDueSoon,
+  newlyOverdueIds = new Set(),
+  newlyDueSoonIds = new Set(),
 }) => {
   const { t, i18n } = useTranslation();
   const isRTL = i18n.language === "ar";
@@ -73,6 +77,8 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
               onMarkAsUnpaidConfirm={onMarkAsUnpaidConfirm}
               isOverdue={isOverdue}
               isDueSoon={isDueSoon}
+              isNewlyOverdue={newlyOverdueIds.has(payment.id)}
+              isNewlyDueSoon={newlyDueSoonIds.has(payment.id)}
             />
           ))}
         </tbody>

@@ -83,7 +83,11 @@
     "history": "التاريخ",
     "historyDesc": "عرض تاريخ المبيعات والمشتريات، تتبع المعاملات",
     "oneProductOutOfStock": "منتج واحد غير متوفر",
-    "productsOutOfStock": "{{count}} منتجات غير متوفرة"
+    "productsOutOfStock": "{{count}} منتجات غير متوفرة",
+    "oneOverduePayment": "مدفوع واحد متأخر",
+    "overduePayments": "{{count}} مدفوعات متأخرة",
+    "oneDueSoonPayment": "مدفوع واحد قريب الاستحقاق",
+    "dueSoonPayments": "{{count}} مدفوعات قريبة الاستحقاق"
   },
   "history": {
     "title": "التاريخ",
@@ -772,6 +776,14 @@
     "lowStockDesc": "حدد الكمية الدنيا قبل اعتبار المنتج منخفض المخزون",
     "storeCash": "النقدية الافتراضية في المتجر",
     "storeCashDesc": "مبلغ النقدية الافتراضي في المتجر",
+    "enableOverduePaymentsBadge": "تفعيل شارة إشعار المدفوعات المتأخرة",
+    "enableOverdueBadgeDesc": "إظهار شارة الإشعار على عنصر قائمة العملاء عند وجود ائتمانات ودفعات متأخرة",
+    "enableDueSoonPaymentsBadge": "تفعيل شارة إشعار المدفوعات المستحقة قريباً",
+    "enableDueSoonBadgeDesc": "إظهار شارة الإشعار على عنصر قائمة العملاء عند وجود ائتمانات ودفعات مستحقة قريباً",
+    "dueSoonThreshold": "حد الاستحقاق قريباً (أيام)",
+    "dueSoonThresholdDesc": "عدد الأيام قبل تاريخ الاستحقاق لاعتبار الدفعة 'مستحقة قريباً'",
+    "enabled": "مفعل",
+    "disabled": "معطل",
     "save": "حفظ الإعدادات",
     "saving": "جارٍ الحفظ...",
     "saved": "تم حفظ الإعدادات!",
@@ -823,7 +835,13 @@
     "showDiscount": "عرض الخصم",
     "showCredit": "عرض الائتمان",
     "showVersement": "عرض الدفعة",
-    "receiptPreview": "معاينة مباشرة"
+    "receiptPreview": "معاينة مباشرة",
+    "enableOverduePaymentsBadge": "تفعيل شارة إشعار المدفوعات المتأخرة",
+    "enableOverdueBadgeDesc": "إظهار شارة الإشعار على عنصر قائمة العملاء عند وجود ائتمانات ودفعات متأخرة",
+    "enableDueSoonPaymentsBadge": "تفعيل شارة إشعار المدفوعات قريبة الاستحقاق",
+    "enableDueSoonBadgeDesc": "إظهار شارة الإشعار على عنصر قائمة العملاء عند وجود ائتمانات ودفعات مستحقة خلال 7 أيام",
+    "enabled": "مفعل",
+    "disabled": "معطل"
   },
   "common": {
     "refresh": "تحديث",

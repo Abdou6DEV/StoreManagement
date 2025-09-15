@@ -4,6 +4,9 @@ import { ConfirmDialog } from "../../../lib/components/confirmDialog";
 import { Loader2, CreditCard, ArrowUpCircle, Users } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useToast } from "../../../lib/contexts/toastContext";
+import { useOverduePayments } from "../../../lib/contexts/overduePaymentsContext";
+import { useDueSoonPayments } from "../../../lib/contexts/dueSoonPaymentsContext";
+import { useState as useStateReact, useEffect as useEffectReact } from "react";
 import type { PaymentWithClient } from "../../../types";
 import PaymentFilters from "./paymentFilters";
 import PaymentTable from "./paymentTable";
@@ -40,6 +43,14 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
 }) => {
   const { t } = useTranslation();
   const { showToast } = useToast();
+  const { unseenOverdueCreditsCount, unseenOverdueVersementsCount, markOverdueCreditsAsSeen, markOverdueVersementsAsSeen } = useOverduePayments();
+  const { unseenDueSoonCreditsCount, unseenDueSoonVersementsCount, markDueSoonCreditsAsSeen, markDueSoonVersementsAsSeen, dueSoonThresholdDays } = useDueSoonPayments();
+  
+  // We need to access the seen payments from localStorage to determine which ones are truly unseen
+  const [seenOverdueCredits, setSeenOverdueCredits] = useStateReact<Set<string>>(new Set());
+  const [seenOverdueVersements, setSeenOverdueVersements] = useStateReact<Set<string>>(new Set());
+  const [seenDueSoonCredits, setSeenDueSoonCredits] = useStateReact<Set<string>>(new Set());
+  const [seenDueSoonVersements, setSeenDueSoonVersements] = useStateReact<Set<string>>(new Set());
   const [editingPayment, setEditingPayment] = useState<string | null>(null);
   const [editAmount, setEditAmount] = useState<number>(0);
   const [search, setSearch] = useState("");
@@ -56,6 +67,119 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
     open: boolean;
     paymentId: string | null;
   }>({ open: false, paymentId: null });
+
+  // State to track newly overdue payment IDs for highlighting
+  const [newlyOverdueCreditsIds, setNewlyOverdueCreditsIds] = useStateReact<Set<string>>(new Set());
+  const [newlyOverdueVersementsIds, setNewlyOverdueVersementsIds] = useStateReact<Set<string>>(new Set());
+  
+  // State to track newly due soon payment IDs for highlighting
+  const [newlyDueSoonCreditsIds, setNewlyDueSoonCreditsIds] = useStateReact<Set<string>>(new Set());
+  const [newlyDueSoonVersementsIds, setNewlyDueSoonVersementsIds] = useStateReact<Set<string>>(new Set());
+  
+  // Track if we've been in overdue filter to know when to mark as seen
+  const [hasBeenInOverdueFilter, setHasBeenInOverdueFilter] = useStateReact(false);
+  
+  // Track if we're currently viewing the overdue table
+  const [isViewingOverdueTable, setIsViewingOverdueTable] = useStateReact(false);
+  
+  // Track if we've been in due soon filter to know when to mark as seen
+  const [hasBeenInDueSoonFilter, setHasBeenInDueSoonFilter] = useStateReact(false);
+  
+  // Track if we're currently viewing the due soon table
+  const [isViewingDueSoonTable, setIsViewingDueSoonTable] = useStateReact(false);
+
+  // Load seen payments from localStorage
+  useEffectReact(() => {
+    const savedCredits = localStorage.getItem('seenOverdueCredits');
+    const savedVersements = localStorage.getItem('seenOverdueVersements');
+    const savedDueSoonCredits = localStorage.getItem('seenDueSoonCredits');
+    const savedDueSoonVersements = localStorage.getItem('seenDueSoonVersements');
+    
+    if (savedCredits) {
+      try {
+        setSeenOverdueCredits(new Set(JSON.parse(savedCredits)));
+      } catch (error) {
+        console.error('Failed to load seen overdue credits:', error);
+      }
+    }
+    
+    if (savedVersements) {
+      try {
+        setSeenOverdueVersements(new Set(JSON.parse(savedVersements)));
+      } catch (error) {
+        console.error('Failed to load seen overdue versements:', error);
+      }
+    }
+    
+    if (savedDueSoonCredits) {
+      try {
+        setSeenDueSoonCredits(new Set(JSON.parse(savedDueSoonCredits)));
+      } catch (error) {
+        console.error('Failed to load seen due soon credits:', error);
+      }
+    }
+    
+    if (savedDueSoonVersements) {
+      try {
+        setSeenDueSoonVersements(new Set(JSON.parse(savedDueSoonVersements)));
+      } catch (error) {
+        console.error('Failed to load seen due soon versements:', error);
+      }
+    }
+  }, []);
+
+  // Sync seen payments with localStorage changes (when context updates them)
+  useEffectReact(() => {
+    const handleStorageChange = () => {
+      const savedCredits = localStorage.getItem('seenOverdueCredits');
+      const savedVersements = localStorage.getItem('seenOverdueVersements');
+      const savedDueSoonCredits = localStorage.getItem('seenDueSoonCredits');
+      const savedDueSoonVersements = localStorage.getItem('seenDueSoonVersements');
+      
+      if (savedCredits) {
+        try {
+          setSeenOverdueCredits(new Set(JSON.parse(savedCredits)));
+        } catch (error) {
+          console.error('Failed to sync seen overdue credits:', error);
+        }
+      }
+      
+      if (savedVersements) {
+        try {
+          setSeenOverdueVersements(new Set(JSON.parse(savedVersements)));
+        } catch (error) {
+          console.error('Failed to sync seen overdue versements:', error);
+        }
+      }
+      
+      if (savedDueSoonCredits) {
+        try {
+          setSeenDueSoonCredits(new Set(JSON.parse(savedDueSoonCredits)));
+        } catch (error) {
+          console.error('Failed to sync seen due soon credits:', error);
+        }
+      }
+      
+      if (savedDueSoonVersements) {
+        try {
+          setSeenDueSoonVersements(new Set(JSON.parse(savedDueSoonVersements)));
+        } catch (error) {
+          console.error('Failed to sync seen due soon versements:', error);
+        }
+      }
+    };
+
+    // Listen for storage changes
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Also poll every 1 second to catch local updates
+    const interval = setInterval(handleStorageChange, 1000);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(interval);
+    };
+  }, []);
 
   // Pagination state for credits
   const [creditsCurrentPage, setCreditsCurrentPage] = useState(1);
@@ -140,6 +264,7 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
     statusFilter,
     typeFilter,
     dateFilter,
+    dueSoonThresholdDays,
   );
   const filteredVersements = getFilteredPayments(
     versements,
@@ -147,6 +272,7 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
     statusFilter,
     typeFilter,
     dateFilter,
+    dueSoonThresholdDays,
   );
 
   // Pagination logic for credits
@@ -175,6 +301,114 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
     setVersementsCurrentPage(1);
   }, [search, statusFilter, typeFilter, dateFilter]);
 
+  // Calculate newly overdue payment IDs when overdue filter is applied
+  useEffectReact(() => {
+    if (dateFilter === "overdue") {
+      // Mark that we've been in overdue filter and are viewing the table
+      setHasBeenInOverdueFilter(true);
+      setIsViewingOverdueTable(true);
+      
+      // Get current overdue credits that are truly unseen
+      const overdueCredits = payments.filter(payment => 
+        payment.type === "CREDIT" && 
+        !payment.paidDate && 
+        isOverdue(payment.dueDate) &&
+        !seenOverdueCredits.has(payment.id)
+      );
+      
+      // Get current overdue versements that are truly unseen
+      const overdueVersements = payments.filter(payment => 
+        payment.type === "VERSEMENT" && 
+        !payment.paidDate && 
+        isOverdue(payment.dueDate) &&
+        !seenOverdueVersements.has(payment.id)
+      );
+
+      // Only highlight truly unseen overdue payments
+      setNewlyOverdueCreditsIds(new Set(overdueCredits.map(p => p.id)));
+      setNewlyOverdueVersementsIds(new Set(overdueVersements.map(p => p.id)));
+
+      // Don't mark as seen automatically - let user see the highlighting
+    } else if (dateFilter === "dueSoon") {
+      // Mark that we've been in due soon filter and are viewing the table
+      setHasBeenInDueSoonFilter(true);
+      setIsViewingDueSoonTable(true);
+      
+      // Get current due soon credits that are truly unseen
+      const dueSoonCredits = payments.filter(payment => 
+        payment.type === "CREDIT" && 
+        !payment.paidDate && 
+        isDueSoon(payment.dueDate) &&
+        !seenDueSoonCredits.has(payment.id)
+      );
+      
+      // Get current due soon versements that are truly unseen
+      const dueSoonVersements = payments.filter(payment => 
+        payment.type === "VERSEMENT" && 
+        !payment.paidDate && 
+        isDueSoon(payment.dueDate) &&
+        !seenDueSoonVersements.has(payment.id)
+      );
+
+      // Only highlight truly unseen due soon payments
+      setNewlyDueSoonCreditsIds(new Set(dueSoonCredits.map(p => p.id)));
+      setNewlyDueSoonVersementsIds(new Set(dueSoonVersements.map(p => p.id)));
+
+      // Don't mark as seen automatically - let user see the highlighting
+    } else {
+      // Mark as seen when filter is changed away from overdue (only if we were viewing the table)
+      if (isViewingOverdueTable && dateFilter !== "overdue") {
+        markOverdueCreditsAsSeen();
+        markOverdueVersementsAsSeen();
+        setHasBeenInOverdueFilter(false);
+        setIsViewingOverdueTable(false);
+      }
+      
+      // Mark as seen when filter is changed away from due soon (only if we were viewing the table)
+      if (isViewingDueSoonTable && dateFilter !== "dueSoon") {
+        markDueSoonCreditsAsSeen();
+        markDueSoonVersementsAsSeen();
+        setHasBeenInDueSoonFilter(false);
+        setIsViewingDueSoonTable(false);
+      }
+      
+      // Clear highlighting when filter is not overdue or due soon
+      setNewlyOverdueCreditsIds(new Set());
+      setNewlyOverdueVersementsIds(new Set());
+      setNewlyDueSoonCreditsIds(new Set());
+      setNewlyDueSoonVersementsIds(new Set());
+    }
+  }, [dateFilter, payments, seenOverdueCredits, seenOverdueVersements, seenDueSoonCredits, seenDueSoonVersements, isViewingOverdueTable, isViewingDueSoonTable]);
+
+  // Handle back button click - mark as seen if viewing overdue or due soon table
+  const handleBackClick = () => {
+    if (isViewingOverdueTable) {
+      markOverdueCreditsAsSeen();
+      markOverdueVersementsAsSeen();
+    }
+    if (isViewingDueSoonTable) {
+      markDueSoonCreditsAsSeen();
+      markDueSoonVersementsAsSeen();
+    }
+    onBack();
+  };
+
+  // Mark as seen when component unmounts (when navigating away from the page)
+  useEffectReact(() => {
+    return () => {
+      // Only mark as seen if we were viewing the overdue table
+      if (isViewingOverdueTable) {
+        markOverdueCreditsAsSeen();
+        markOverdueVersementsAsSeen();
+      }
+      // Only mark as seen if we were viewing the due soon table
+      if (isViewingDueSoonTable) {
+        markDueSoonCreditsAsSeen();
+        markDueSoonVersementsAsSeen();
+      }
+    };
+  }, [isViewingOverdueTable, isViewingDueSoonTable, markOverdueCreditsAsSeen, markOverdueVersementsAsSeen, markDueSoonCreditsAsSeen, markDueSoonVersementsAsSeen]);
+
   return (
     <div className="bg-card border border-border rounded-xl shadow-sm p-6 space-y-5">
       {/* Header */}
@@ -192,7 +426,7 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
           )}
         >
           <Button
-            onClick={onBack}
+            onClick={handleBackClick}
             variant="outline"
             className="flex items-center gap-2"
           >
@@ -251,6 +485,8 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
                   onMarkAsUnpaidConfirm={handleMarkAsUnpaidConfirm}
                   isOverdue={isOverdue}
                   isDueSoon={isDueSoon}
+                  newlyOverdueIds={newlyOverdueCreditsIds}
+                  newlyDueSoonIds={newlyDueSoonCreditsIds}
                 />
                 {/* Pagination for Credits */}
                 {creditsTotalPages > 1 && (
@@ -371,6 +607,8 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
                   onMarkAsUnpaidConfirm={handleMarkAsUnpaidConfirm}
                   isOverdue={isOverdue}
                   isDueSoon={isDueSoon}
+                  newlyOverdueIds={newlyOverdueVersementsIds}
+                  newlyDueSoonIds={newlyDueSoonVersementsIds}
                 />
                 {/* Pagination for Versements */}
                 {versementsTotalPages > 1 && (

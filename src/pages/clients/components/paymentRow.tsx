@@ -19,6 +19,8 @@ interface PaymentRowProps {
   onMarkAsUnpaidConfirm: (paymentId: string) => void;
   isOverdue: (dueDate: Date) => boolean;
   isDueSoon: (dueDate: Date) => boolean;
+  isNewlyOverdue?: boolean; // Whether this payment is newly overdue and should be highlighted
+  isNewlyDueSoon?: boolean; // Whether this payment is newly due soon and should be highlighted
 }
 
 const PaymentRow: React.FC<PaymentRowProps> = ({
@@ -32,12 +34,20 @@ const PaymentRow: React.FC<PaymentRowProps> = ({
   onMarkAsUnpaidConfirm,
   isOverdue,
   isDueSoon,
+  isNewlyOverdue = false,
+  isNewlyDueSoon = false,
 }) => {
   const { t, i18n } = useTranslation();
   const isRTL = i18n.language === "ar";
 
   return (
-    <tr className="hover:bg-muted/40 transition">
+    <tr className={`hover:bg-muted/40 transition ${
+      isNewlyOverdue
+        ? "bg-red-50 dark:bg-red-950/20 border-l-4 border-l-red-500"
+        : isNewlyDueSoon
+        ? "bg-orange-50 dark:bg-orange-950/20 border-l-4 border-l-orange-500"
+        : ""
+    }`}>
       <td className="px-4 py-2">
         <div className="flex items-center gap-2">
           <User className="w-4 h-4 text-muted-foreground" />

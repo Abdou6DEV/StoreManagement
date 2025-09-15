@@ -44,6 +44,9 @@ import {
 import type { Client, Seller } from "@prisma/client";
 import type { ClientWithTotalPurchases, PaymentWithClient } from "../../types";
 import { useToast } from "../../lib/contexts/toastContext";
+import { useOverduePayments } from "../../lib/contexts/overduePaymentsContext";
+import { useDueSoonPayments } from "../../lib/contexts/dueSoonPaymentsContext";
+import { BadgeNotification } from "../../lib/components/badgeNotification";
 import { ConfirmDialog } from "../../lib/components/confirmDialog";
 import { Button } from "../../lib/components/button";
 import { cn } from "../../lib/utils";
@@ -52,6 +55,8 @@ import { Tooltip } from "../../lib/components/tooltip";
 export default function Clients() {
   const { t } = useTranslation();
   const { showToast } = useToast();
+  const { unseenOverdueCreditsCount, unseenOverdueVersementsCount, markOverdueCreditsAsSeen, markOverdueVersementsAsSeen } = useOverduePayments();
+  const { unseenDueSoonCreditsCount, unseenDueSoonVersementsCount, markDueSoonCreditsAsSeen, markDueSoonVersementsAsSeen } = useDueSoonPayments();
   const [clients, setClients] = useState<ClientWithTotalPurchases[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -148,6 +153,9 @@ export default function Clients() {
     fetchSuppliers();
     fetchPayments();
   }, []);
+
+  // Note: Overdue payments are now marked as seen only when the overdue filter is applied
+  // This allows users to see which payments are newly overdue before they are marked as seen
 
   const handleDelete = async (id: string) => {
     const client = clients.find((c) => c.id === id);
@@ -400,10 +408,20 @@ export default function Clients() {
                   <Button
                     onClick={() => setViewMode("payments")}
                     variant="outline"
-                    className="flex items-center gap-2"
+                    className="flex items-center gap-2 relative"
                   >
                     <CreditCard className="w-4 h-4" />
                     {t("clients.viewAllPayments", "View All Payments")}
+                    {(unseenOverdueCreditsCount > 0 || unseenOverdueVersementsCount > 0) && (
+                      <BadgeNotification count={unseenOverdueCreditsCount + unseenOverdueVersementsCount} />
+                    )}
+                    {(unseenDueSoonCreditsCount > 0 || unseenDueSoonVersementsCount > 0) && (
+                      <div className="absolute top-0 right-0 rtl:right-auto rtl:left-0 transform translate-x-1/2 -translate-y-1/2 rtl:translate-x-[-50%]">
+                        <div className="bg-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full h-[18px] flex items-center justify-center">
+                          {unseenDueSoonCreditsCount + unseenDueSoonVersementsCount}
+                        </div>
+                      </div>
+                    )}
                   </Button>
                 </Tooltip>
               </div>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Check,
@@ -49,6 +49,27 @@ export const Filters = ({
   const { unseenLowStockCount, markLowStockAsSeen } = useLowStock();
   const [categorySearch, setCategorySearch] = useState("");
   const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
+  const [enableBadge, setEnableBadge] = useState(false); // Start as false to prevent flash
+  const [badgeLoaded, setBadgeLoaded] = useState(false);
+
+  useEffect(() => {
+    const loadBadgeSetting = () => {
+      window.api.database.options
+        .get("enableLowStockBadge")
+        .then((val) => {
+          setEnableBadge(val !== "false"); // Default to true if not set
+          setBadgeLoaded(true); // Mark as loaded
+        });
+    };
+
+    // Load initial setting
+    loadBadgeSetting();
+
+    // Poll for changes every 1 second
+    const interval = setInterval(loadBadgeSetting, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-4">
@@ -233,7 +254,7 @@ export const Filters = ({
                   t("stock.filters", "Filters")
                 )}
                 <ChevronDown className="ml-auto w-4 h-4" />
-                {unseenLowStockCount > 0 && (
+                {unseenLowStockCount > 0 && enableBadge && badgeLoaded && (
                   <BadgeNotification count={unseenLowStockCount} />
                 )}
               </Button>
@@ -259,10 +280,7 @@ export const Filters = ({
                   style={{ width: "100%", minWidth: "198px" }}
                   onClick={() => {
                     onToggleFilter("lowStock");
-                    // Mark low stock products as seen when filter is activated
-                    if (!filters.lowStock) {
-                      markLowStockAsSeen();
-                    }
+                    // Don't mark as seen immediately - let the table handle it
                   }}
                 >
                   <AlertTriangle
@@ -275,7 +293,7 @@ export const Filters = ({
                   />
                   <span className="flex-1">{t("stock.lowStock")}</span>
                   <div className="flex items-center gap-2">
-                    {unseenLowStockCount > 0 && (
+                    {unseenLowStockCount > 0 && enableBadge && badgeLoaded && (
                       <BadgeNotification count={unseenLowStockCount} />
                     )}
                     {filters.lowStock && (

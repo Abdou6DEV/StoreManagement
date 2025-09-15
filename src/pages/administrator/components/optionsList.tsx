@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Input } from "../../../lib/components/input";
 import { Button } from "../../../lib/components/button";
+import { Switch } from "../../../lib/components/switch";
 import { useTranslation } from "react-i18next";
 import {
   Shield,
@@ -8,12 +9,17 @@ import {
   AlertCircle,
   DollarSign,
   Package,
+  Bell,
 } from "lucide-react";
 
 export const OptionsList: React.FC = () => {
   const { t } = useTranslation();
   const [lowStock, setLowStock] = useState(0);
   const [storeCash, setStoreCash] = useState(0);
+  const [enableLowStockBadge, setEnableLowStockBadge] = useState(true);
+  const [enableOverduePaymentsBadge, setEnableOverduePaymentsBadge] = useState(true);
+  const [enableDueSoonPaymentsBadge, setEnableDueSoonPaymentsBadge] = useState(true);
+  const [dueSoonThresholdDays, setDueSoonThresholdDays] = useState(2);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -24,10 +30,18 @@ export const OptionsList: React.FC = () => {
     Promise.all([
       window.api.database.options.get("lowStockThreshold"),
       window.api.database.options.get("storeCash"),
+      window.api.database.options.get("enableLowStockBadge"),
+      window.api.database.options.get("enableOverduePaymentsBadge"),
+      window.api.database.options.get("enableDueSoonPaymentsBadge"),
+      window.api.database.options.get("dueSoonThresholdDays"),
     ])
-      .then(([lowStockVal, storeCashVal]) => {
+      .then(([lowStockVal, storeCashVal, enableBadgeVal, enableOverdueVal, enableDueSoonVal, dueSoonThresholdVal]) => {
         setLowStock(lowStockVal ? Number(lowStockVal) : 0);
         setStoreCash(storeCashVal ? Number(storeCashVal) : 0);
+        setEnableLowStockBadge(enableBadgeVal !== "false"); // Default to true if not set
+        setEnableOverduePaymentsBadge(enableOverdueVal !== "false"); // Default to true if not set
+        setEnableDueSoonPaymentsBadge(enableDueSoonVal !== "false"); // Default to true if not set
+        setDueSoonThresholdDays(dueSoonThresholdVal ? Number(dueSoonThresholdVal) : 2); // Default to 2 days
         setLoading(false);
       })
       .catch(() => {
@@ -44,6 +58,10 @@ export const OptionsList: React.FC = () => {
       await Promise.all([
         window.api.database.options.set("lowStockThreshold", String(lowStock)),
         window.api.database.options.set("storeCash", String(storeCash)),
+        window.api.database.options.set("enableLowStockBadge", String(enableLowStockBadge)),
+        window.api.database.options.set("enableOverduePaymentsBadge", String(enableOverduePaymentsBadge)),
+        window.api.database.options.set("enableDueSoonPaymentsBadge", String(enableDueSoonPaymentsBadge)),
+        window.api.database.options.set("dueSoonThresholdDays", String(dueSoonThresholdDays)),
       ]);
       setSuccess(true);
       setTimeout(() => setSuccess(false), 2000);
@@ -66,6 +84,34 @@ export const OptionsList: React.FC = () => {
 
       {/* Settings Form */}
       <form onSubmit={handleSave} className="space-y-6">
+        {/* Store Cash Setting */}
+        <div className="flex flex-col md:flex-row items-start md:items-center gap-4 bg-muted/40 border border-border rounded-lg p-6">
+          <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
+            <DollarSign className="w-6 h-6 text-blue-600" />
+          </div>
+          <div className="flex-1 w-full">
+            <label
+              className="block text-base font-semibold mb-2"
+              htmlFor="storeCash"
+            >
+              {t("admin.storeCash", "Store Cash")}
+            </label>
+            <p className="text-sm text-muted-foreground mb-3">
+              {t("admin.storeCashDesc", "Default cash amount in store")}
+            </p>
+            <Input
+              id="storeCash"
+              type="number"
+              min={0}
+              value={storeCash}
+              onChange={(e) => setStoreCash(Number(e.target.value))}
+              className="w-40 text-lg"
+              disabled={loading || saving}
+              aria-label={t("admin.storeCash", "Store Cash")}
+            />
+          </div>
+        </div>
+
         {/* Low Stock Threshold Setting */}
         <div className="flex flex-col md:flex-row items-start md:items-center gap-4 bg-muted/40 border border-border rounded-lg p-6">
           <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
@@ -97,31 +143,143 @@ export const OptionsList: React.FC = () => {
           </div>
         </div>
 
-        {/* Store Cash Setting */}
+        {/* Low Stock Notification Badge Setting */}
         <div className="flex flex-col md:flex-row items-start md:items-center gap-4 bg-muted/40 border border-border rounded-lg p-6">
-          <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
-            <DollarSign className="w-6 h-6 text-blue-600" />
+          <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg flex items-center justify-center">
+            <Bell className="w-6 h-6 text-orange-600" />
           </div>
           <div className="flex-1 w-full">
             <label
               className="block text-base font-semibold mb-2"
-              htmlFor="storeCash"
+              htmlFor="enableBadge"
             >
-              {t("admin.storeCash", "Store Cash")}
+              {t("admin.enableLowStockBadge", "Enable Low Stock Notification Badge")}
             </label>
             <p className="text-sm text-muted-foreground mb-3">
-              {t("admin.storeCashDesc", "Default cash amount in store")}
+              {t(
+                "admin.enableBadgeDesc",
+                "Show notification badge on stock menu item when products are low in stock",
+              )}
+            </p>
+            <div className="flex items-center gap-3">
+              <Switch
+                id="enableBadge"
+                checked={enableLowStockBadge}
+                onCheckedChange={setEnableLowStockBadge}
+                disabled={loading || saving}
+                aria-label={t("admin.enableLowStockBadge", "Enable Low Stock Notification Badge")}
+              />
+              <span className="text-sm font-medium">
+                {enableLowStockBadge 
+                  ? t("admin.enabled", "Enabled") 
+                  : t("admin.disabled", "Disabled")
+                }
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Due Soon Threshold Setting */}
+        <div className="flex flex-col md:flex-row items-start md:items-center gap-4 bg-muted/40 border border-border rounded-lg p-6">
+          <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg flex items-center justify-center">
+            <Bell className="w-6 h-6 text-orange-600" />
+          </div>
+          <div className="flex-1 w-full">
+            <label
+              className="block text-base font-semibold mb-2"
+              htmlFor="dueSoonThreshold"
+            >
+              {t("admin.dueSoonThreshold", "Due Soon Threshold (Days)")}
+            </label>
+            <p className="text-sm text-muted-foreground mb-3">
+              {t(
+                "admin.dueSoonThresholdDesc",
+                "Number of days before due date to consider a payment as 'due soon'",
+              )}
             </p>
             <Input
-              id="storeCash"
+              id="dueSoonThreshold"
               type="number"
-              min={0}
-              value={storeCash}
-              onChange={(e) => setStoreCash(Number(e.target.value))}
+              min={1}
+              max={30}
+              value={dueSoonThresholdDays}
+              onChange={(e) => setDueSoonThresholdDays(Number(e.target.value))}
               className="w-40 text-lg"
               disabled={loading || saving}
-              aria-label={t("admin.storeCash", "Store Cash")}
+              aria-label={t("admin.dueSoonThreshold", "Due Soon Threshold (Days)")}
             />
+          </div>
+        </div>
+
+        {/* Due Soon Payments Notification Badge Setting */}
+        <div className="flex flex-col md:flex-row items-start md:items-center gap-4 bg-muted/40 border border-border rounded-lg p-6">
+          <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg flex items-center justify-center">
+            <Bell className="w-6 h-6 text-orange-600" />
+          </div>
+          <div className="flex-1 w-full">
+            <label
+              className="block text-base font-semibold mb-2"
+              htmlFor="enableDueSoonBadge"
+            >
+              {t("admin.enableDueSoonPaymentsBadge", "Enable Due Soon Payments Notification Badge")}
+            </label>
+            <p className="text-sm text-muted-foreground mb-3">
+              {t(
+                "admin.enableDueSoonBadgeDesc",
+                "Show notification badge on clients menu item when there are credits and versements due soon",
+              )}
+            </p>
+            <div className="flex items-center gap-3">
+              <Switch
+                id="enableDueSoonBadge"
+                checked={enableDueSoonPaymentsBadge}
+                onCheckedChange={setEnableDueSoonPaymentsBadge}
+                disabled={loading || saving}
+                aria-label={t("admin.enableDueSoonPaymentsBadge", "Enable Due Soon Payments Notification Badge")}
+              />
+              <span className="text-sm font-medium">
+                {enableDueSoonPaymentsBadge 
+                  ? t("admin.enabled", "Enabled") 
+                  : t("admin.disabled", "Disabled")
+                }
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Overdue Payments Notification Badge Setting */}
+        <div className="flex flex-col md:flex-row items-start md:items-center gap-4 bg-muted/40 border border-border rounded-lg p-6">
+          <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg flex items-center justify-center">
+            <Bell className="w-6 h-6 text-orange-600" />
+          </div>
+          <div className="flex-1 w-full">
+            <label
+              className="block text-base font-semibold mb-2"
+              htmlFor="enableOverdueBadge"
+            >
+              {t("admin.enableOverduePaymentsBadge", "Enable Overdue Payments Notification Badge")}
+            </label>
+            <p className="text-sm text-muted-foreground mb-3">
+              {t(
+                "admin.enableOverdueBadgeDesc",
+                "Show notification badge on clients menu item when there are overdue credits and versements",
+              )}
+            </p>
+            <div className="flex items-center gap-3">
+              <Switch
+                id="enableOverdueBadge"
+                checked={enableOverduePaymentsBadge}
+                onCheckedChange={setEnableOverduePaymentsBadge}
+                disabled={loading || saving}
+                aria-label={t("admin.enableOverduePaymentsBadge", "Enable Overdue Payments Notification Badge")}
+              />
+              <span className="text-sm font-medium">
+                {enableOverduePaymentsBadge 
+                  ? t("admin.enabled", "Enabled") 
+                  : t("admin.disabled", "Disabled")
+                }
+              </span>
+            </div>
           </div>
         </div>
 

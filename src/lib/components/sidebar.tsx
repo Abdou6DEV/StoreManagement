@@ -12,10 +12,12 @@ import {
 import { Link, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import "../../lib/i18n";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { cn } from "../utils";
 import { useAuth } from "../contexts/authContext";
 import { useLowStock } from "../contexts/lowStockContext";
+import { useOverduePayments } from "../contexts/overduePaymentsContext";
+import { useDueSoonPayments } from "../contexts/dueSoonPaymentsContext";
 import { BadgeNotification } from "./badgeNotification";
 
 const menuItems = [
@@ -58,12 +60,69 @@ export default function Sidebar() {
   const { t } = useTranslation();
   const { logout, isAdmin } = useAuth();
   const { unseenLowStockCount } = useLowStock();
+  const { unseenOverdueCreditsCount, unseenOverdueVersementsCount } = useOverduePayments();
+  const { unseenDueSoonCreditsCount, unseenDueSoonVersementsCount } = useDueSoonPayments();
   const savedCollapsedState = localStorage.getItem("sidebarCollapsed");
   const [collapsed, setCollapsed] = useState(savedCollapsedState === "true");
   const [showText, setShowText] = useState(!collapsed);
   const [isDisabled, setIsDisabled] = useState(false);
+  const [enableBadge, setEnableBadge] = useState(false); // Start as false to prevent flash
+  const [badgeLoaded, setBadgeLoaded] = useState(false);
+  const [showOverdueBadge, setShowOverdueBadge] = useState(true); // Start with overdue badge
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const textTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const badgeCycleRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Load badge setting and listen for changes
+  useEffect(() => {
+    const loadBadgeSetting = () => {
+      window.api.database.options
+        .get("enableLowStockBadge")
+        .then((val) => {
+          setEnableBadge(val !== "false"); // Default to true if not set
+          setBadgeLoaded(true); // Mark as loaded
+        });
+    };
+
+    // Load initial setting
+    loadBadgeSetting();
+
+    // Poll for changes every 1 second
+    const interval = setInterval(loadBadgeSetting, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Cycling badge logic for clients - alternate between overdue and due soon every 10 seconds
+  useEffect(() => {
+    const hasOverdue = (unseenOverdueCreditsCount > 0 || unseenOverdueVersementsCount > 0);
+    const hasDueSoon = (unseenDueSoonCreditsCount > 0 || unseenDueSoonVersementsCount > 0);
+    
+    // Only cycle if both badges exist
+    if (hasOverdue && hasDueSoon) {
+      // Clear any existing cycle
+      if (badgeCycleRef.current) {
+        clearInterval(badgeCycleRef.current);
+      }
+      
+      // Start cycling every 10 seconds
+      badgeCycleRef.current = setInterval(() => {
+        setShowOverdueBadge(prev => !prev);
+      }, 10000);
+      
+      return () => {
+        if (badgeCycleRef.current) {
+          clearInterval(badgeCycleRef.current);
+        }
+      };
+    } else {
+      // If only one type exists, show that one and stop cycling
+      setShowOverdueBadge(hasOverdue);
+      if (badgeCycleRef.current) {
+        clearInterval(badgeCycleRef.current);
+      }
+    }
+  }, [unseenOverdueCreditsCount, unseenOverdueVersementsCount, unseenDueSoonCreditsCount, unseenDueSoonVersementsCount]);
 
   // Filter menu items based on user role
   const filteredMenuItems = menuItems.filter((item) => {
@@ -143,8 +202,24 @@ export default function Sidebar() {
           >
             <div className="relative">
               <item.icon className={`${item.color}`} />
-              {item.key === "stock" && unseenLowStockCount > 0 && (
+              {item.key === "stock" && unseenLowStockCount > 0 && enableBadge && badgeLoaded && (
                 <BadgeNotification count={unseenLowStockCount} />
+              )}
+              {item.key === "clients" && ((unseenOverdueCreditsCount > 0 || unseenOverdueVersementsCount > 0) || (unseenDueSoonCreditsCount > 0 || unseenDueSoonVersementsCount > 0)) && (
+                <div className="absolute top-0 right-0 rtl:right-auto rtl:left-0 transform translate-x-1/2 -translate-y-1/2 rtl:translate-x-[-50%]">
+                  {/* Overdue Badge - Show when cycling to overdue or when only overdue exists */}
+                  {showOverdueBadge && (unseenOverdueCreditsCount > 0 || unseenOverdueVersementsCount > 0) && (
+                    <div className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full h-[18px] flex items-center justify-center min-w-[18px] transition-all duration-500 ease-in-out">
+                      {unseenOverdueCreditsCount + unseenOverdueVersementsCount}
+                    </div>
+                  )}
+                  {/* Due Soon Badge - Show when cycling to due soon or when only due soon exists */}
+                  {!showOverdueBadge && (unseenDueSoonCreditsCount > 0 || unseenDueSoonVersementsCount > 0) && (
+                    <div className="bg-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full h-[18px] flex items-center justify-center min-w-[18px] transition-all duration-500 ease-in-out">
+                      {unseenDueSoonCreditsCount + unseenDueSoonVersementsCount}
+                    </div>
+                  )}
+                </div>
               )}
             </div>
             {showText && <span>{t(`mainMenu.${item.key}`)}</span>}

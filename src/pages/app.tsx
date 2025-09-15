@@ -5,6 +5,8 @@ import ScrollToTop from "../lib/components/scrollToTop";
 import Sidebar from "../lib/components/sidebar";
 import { StockProvider } from "../lib/contexts/stockContext";
 import { LowStockProvider } from "../lib/contexts/lowStockContext";
+import { OverduePaymentsProvider } from "../lib/contexts/overduePaymentsContext";
+import { DueSoonPaymentsProvider } from "../lib/contexts/dueSoonPaymentsContext";
 import { useTranslation } from "react-i18next";
 import { ToastProvider } from "../lib/contexts/toastContext";
 import rendererLogger from "../lib/logger/rendererLogger";
@@ -68,7 +70,9 @@ export default function App() {
                 <ProtectedRoute>
                   <StockProvider>
                     <LowStockProvider>
-                      <Layout>
+                      <OverduePaymentsProvider>
+                        <DueSoonPaymentsProvider>
+                        <Layout>
                         <ScrollToTop />
                         <Routes>
                         <Route path="/" element={<MainMenu />} />
@@ -131,7 +135,9 @@ export default function App() {
                           />
                         </Route>
                         </Routes>
-                      </Layout>
+                        </Layout>
+                        </DueSoonPaymentsProvider>
+                      </OverduePaymentsProvider>
                     </LowStockProvider>
                   </StockProvider>
                 </ProtectedRoute>

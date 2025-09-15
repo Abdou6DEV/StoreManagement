@@ -1,7 +1,8 @@
 import { useTranslation } from "react-i18next";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Package, Folder } from "lucide-react";
 import { useStock } from "../../../../lib/contexts/stockContext";
+import { useLowStock } from "../../../../lib/contexts/lowStockContext";
 import { useToast } from "../../../../lib/contexts/toastContext";
 import { ConfirmModal } from "../../../../lib/components/modal";
 import { ProductInfoModal } from "../productInfoModal";
@@ -21,6 +22,7 @@ import type {
 export const StockTable = () => {
   const { t } = useTranslation();
   const { categories, products, refetchProducts } = useStock();
+  const { unseenLowStockCount, lowStockThreshold: contextThreshold, markLowStockAsSeen } = useLowStock();
   const { showToast } = useToast();
 
   const [filters, setFilters] = useState<StockTableFilters>({
@@ -47,6 +49,7 @@ export const StockTable = () => {
     loading: false,
   });
   const [viewMode, setViewMode] = useState<"product" | "category">("product");
+  const hasMarkedAsSeenRef = useRef(false);
 
   useEffect(() => {
     window.api.database.options
@@ -223,8 +226,54 @@ export const StockTable = () => {
     );
   });
 
-  // Sort for bestSelling or worstSelling
+  // Identify newly low stock products (products that are low stock but haven't been seen)
+  // We need to capture this BEFORE the filter is applied to avoid timing issues
+  const getNewlyLowStockProductIds = () => {
+    if (!products.length || lowStockThreshold === 0) return new Set();
+    
+    const lowStockProducts = products.filter(product => product.quantity <= lowStockThreshold);
+    const seenProducts = JSON.parse(localStorage.getItem('seenLowStockProducts') || '[]');
+    const seenSet = new Set(seenProducts);
+    
+    const newlyLowStockIds = lowStockProducts
+      .filter(product => !seenSet.has(product.id))
+      .map(product => product.id);
+    
+    return new Set(newlyLowStockIds);
+  };
+
+  // Capture newly low stock products BEFORE any filtering/sorting happens
+  const newlyLowStockProductIds = getNewlyLowStockProductIds();
+
+  // Mark low stock products as seen when the low stock filter is deactivated
+  useEffect(() => {
+    // When low stock filter is turned OFF, mark all current low stock products as seen
+    if (!filters.lowStock && hasMarkedAsSeenRef.current) {
+      markLowStockAsSeen();
+      hasMarkedAsSeenRef.current = false;
+    }
+  }, [filters.lowStock, markLowStockAsSeen]);
+
+  // Mark low stock products as seen when component unmounts (user navigates away)
+  useEffect(() => {
+    return () => {
+      // When component unmounts, mark all current low stock products as seen
+      if (filters.lowStock && hasMarkedAsSeenRef.current) {
+        markLowStockAsSeen();
+      }
+    };
+  }, [filters.lowStock, markLowStockAsSeen]);
+
+  // Track when we start viewing low stock products
+  useEffect(() => {
+    if (filters.lowStock && newlyLowStockProductIds.size > 0) {
+      hasMarkedAsSeenRef.current = true;
+    }
+  }, [filters.lowStock, newlyLowStockProductIds.size]);
+
+  // Sort the filtered list
   const sortedList = [...filteredList];
+  
   if (filters.bestSelling) {
     sortedList.sort((a, b) => {
       const soldA = a.totalSold ?? 0;
@@ -236,6 +285,19 @@ export const StockTable = () => {
       const soldA = a.totalSold ?? 0;
       const soldB = b.totalSold ?? 0;
       return soldA - soldB;
+    });
+  } else if (filters.lowStock) {
+    // When low stock filter is active, prioritize newly low stock products first
+    sortedList.sort((a, b) => {
+      const aIsNewlyLowStock = newlyLowStockProductIds.has(a.id);
+      const bIsNewlyLowStock = newlyLowStockProductIds.has(b.id);
+      
+      // Newly low stock products come first
+      if (aIsNewlyLowStock && !bIsNewlyLowStock) return -1;
+      if (!aIsNewlyLowStock && bIsNewlyLowStock) return 1;
+      
+      // Within each group, sort by quantity (lowest first for low stock)
+      return a.quantity - b.quantity;
     });
   } else {
     // Default sorting by quantity (highest to lowest)
@@ -350,6 +412,7 @@ export const StockTable = () => {
                     setEditingProductID={setEditingProductID}
                     handleDeleteProduct={handleDeleteProduct}
                     handleViewProductInfo={handleViewProductInfo}
+                    isNewlyLowStock={newlyLowStockProductIds.has(product.id)}
                   />
                 ))}
               </tbody>

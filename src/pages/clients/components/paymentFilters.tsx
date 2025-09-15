@@ -3,6 +3,9 @@ import { Input } from "../../../lib/components/input";
 import { Filter, Search, ChevronDown, Check } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "../../../lib/components/button";
+import { BadgeNotification } from "../../../lib/components/badgeNotification";
+import { useOverduePayments } from "../../../lib/contexts/overduePaymentsContext";
+import { useDueSoonPayments } from "../../../lib/contexts/dueSoonPaymentsContext";
 import {
   Command,
   CommandGroup,
@@ -38,6 +41,8 @@ const PaymentFilters: React.FC<PaymentFiltersProps> = ({
   setDateFilter,
 }) => {
   const { t } = useTranslation();
+  const { unseenOverdueCreditsCount, unseenOverdueVersementsCount } = useOverduePayments();
+  const { unseenDueSoonCreditsCount, unseenDueSoonVersementsCount } = useDueSoonPayments();
 
   return (
     <div className="bg-card border border-border rounded-xl p-4 space-y-4">
@@ -86,7 +91,7 @@ const PaymentFilters: React.FC<PaymentFiltersProps> = ({
                 <ChevronDown className="ml-2 w-4 h-4" />
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-[200px] p-0 z-50">
+            <PopoverContent className="w-[250px] p-0 z-50">
               <Command shouldFilter={false}>
                 <CommandList>
                   <CommandGroup>
@@ -155,7 +160,7 @@ const PaymentFilters: React.FC<PaymentFiltersProps> = ({
                 <ChevronDown className="ml-2 w-4 h-4" />
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-[200px] p-0 z-50">
+            <PopoverContent className="w-[250px] p-0 z-50">
               <Command shouldFilter={false}>
                 <CommandList>
                   <CommandGroup>
@@ -213,18 +218,28 @@ const PaymentFilters: React.FC<PaymentFiltersProps> = ({
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
-                className="w-full justify-between"
+                className="w-full justify-between relative"
                 aria-label={t("clients.selectDateFilter", "Select date filter")}
               >
-                {dateFilter === "all"
-                  ? t("clients.allDates", "All Dates")
-                  : dateFilter === "overdue"
-                    ? t("clients.overdue", "Overdue")
-                    : t("clients.dueSoon", "Due Soon")}
+                <div className="flex items-center gap-2">
+                  {dateFilter === "all"
+                    ? t("clients.allDates", "All Dates")
+                    : dateFilter === "overdue"
+                      ? t("clients.overdue", "Overdue")
+                      : t("clients.dueSoon", "Due Soon")}
+                  {(unseenOverdueCreditsCount > 0 || unseenOverdueVersementsCount > 0) && (
+                    <BadgeNotification count={unseenOverdueCreditsCount + unseenOverdueVersementsCount} />
+                  )}
+                  {(unseenDueSoonCreditsCount > 0 || unseenDueSoonVersementsCount > 0) && (
+                    <div className="bg-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full h-[18px] flex items-center justify-center">
+                      {unseenDueSoonCreditsCount + unseenDueSoonVersementsCount}
+                    </div>
+                  )}
+                </div>
                 <ChevronDown className="ml-2 w-4 h-4" />
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-[200px] p-0 z-50">
+            <PopoverContent className="w-[250px] p-0 z-50">
               <Command shouldFilter={false}>
                 <CommandList>
                   <CommandGroup>
@@ -243,8 +258,16 @@ const PaymentFilters: React.FC<PaymentFiltersProps> = ({
                     <CommandItem
                       value="overdue"
                       onSelect={() => setDateFilter("overdue")}
+                      className="relative"
                     >
-                      {t("clients.overdue", "Overdue")}
+                      <div className="flex items-center justify-between w-full">
+                        <span>{t("clients.overdue", "Overdue")}</span>
+                        {(unseenOverdueCreditsCount > 0 || unseenOverdueVersementsCount > 0) && (
+                          <div className="absolute top-1 right-3 rtl:right-auto rtl:left-3">
+                            <BadgeNotification count={unseenOverdueCreditsCount + unseenOverdueVersementsCount} />
+                          </div>
+                        )}
+                      </div>
                       <Check
                         className={cn(
                           "ml-auto h-4 w-4",
@@ -257,8 +280,18 @@ const PaymentFilters: React.FC<PaymentFiltersProps> = ({
                     <CommandItem
                       value="dueSoon"
                       onSelect={() => setDateFilter("dueSoon")}
+                      className="relative"
                     >
-                      {t("clients.dueSoon", "Due Soon")}
+                      <div className="flex items-center justify-between w-full">
+                        <span>{t("clients.dueSoon", "Due Soon")}</span>
+                        {(unseenDueSoonCreditsCount > 0 || unseenDueSoonVersementsCount > 0) && (
+                          <div className="absolute top-1 right-3 rtl:right-auto rtl:left-3">
+                            <div className="bg-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full h-[18px] flex items-center justify-center">
+                              {unseenDueSoonCreditsCount + unseenDueSoonVersementsCount}
+                            </div>
+                          </div>
+                        )}
+                      </div>
                       <Check
                         className={cn(
                           "ml-auto h-4 w-4",

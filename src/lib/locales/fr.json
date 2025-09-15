@@ -83,7 +83,11 @@
     "history": "Historique",
     "historyDesc": "Voir l'historique des ventes et achats, suivre les transactions",
     "oneProductOutOfStock": "1 produit est en rupture de stock",
-    "productsOutOfStock": "{{count}} produits sont en rupture de stock"
+    "productsOutOfStock": "{{count}} produits sont en rupture de stock",
+    "oneOverduePayment": "1 paiement en retard",
+    "overduePayments": "{{count}} paiements en retard",
+    "oneDueSoonPayment": "1 paiement bientôt dû",
+    "dueSoonPayments": "{{count}} paiements bientôt dus"
   },
   "history": {
     "title": "Historique",
@@ -773,6 +777,14 @@
     "lowStockDesc": "Définissez la quantité minimale avant qu'un produit ne soit considéré comme en rupture de stock",
     "storeCash": "Caisse du magasin",
     "storeCashDesc": "Montant de caisse par défaut dans le magasin",
+    "enableOverduePaymentsBadge": "Activer le badge de notification des paiements en retard",
+    "enableOverdueBadgeDesc": "Afficher le badge de notification sur l'élément de menu clients lorsqu'il y a des crédits et versements en retard",
+    "enableDueSoonPaymentsBadge": "Activer le badge de notification des paiements à échéance proche",
+    "enableDueSoonBadgeDesc": "Afficher le badge de notification sur l'élément de menu clients lorsqu'il y a des crédits et versements à échéance proche",
+    "dueSoonThreshold": "Seuil d'échéance proche (Jours)",
+    "dueSoonThresholdDesc": "Nombre de jours avant la date d'échéance pour considérer un paiement comme 'à échéance proche'",
+    "enabled": "Activé",
+    "disabled": "Désactivé",
     "save": "Enregistrer les paramètres",
     "saving": "Enregistrement...",
     "saved": "Paramètres enregistrés !",
@@ -824,7 +836,13 @@
     "showDiscount": "Afficher la remise",
     "showCredit": "Afficher le crédit",
     "showVersement": "Afficher le versement",
-    "receiptPreview": "Aperçu en direct"
+    "receiptPreview": "Aperçu en direct",
+    "enableOverduePaymentsBadge": "Activer le badge de notification des paiements en retard",
+    "enableOverdueBadgeDesc": "Afficher le badge de notification sur l'élément de menu clients lorsqu'il y a des crédits et versements en retard",
+    "enableDueSoonPaymentsBadge": "Activer le badge de notification des paiements bientôt dus",
+    "enableDueSoonBadgeDesc": "Afficher le badge de notification sur l'élément de menu clients lorsqu'il y a des crédits et versements dus dans les 7 jours",
+    "enabled": "Activé",
+    "disabled": "Désactivé"
   },
   "common": {
     "refresh": "Actualiser",
