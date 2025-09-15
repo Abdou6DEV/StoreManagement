@@ -3,12 +3,14 @@ import { useTranslation } from "react-i18next";
 import SaleDetailsModal from "../../../../lib/components/saleDetailsModal";
 import { useStock } from "../../../../lib/contexts/stockContext";
 import { useToast } from "../../../../lib/contexts/toastContext";
+import { useCashierHistory } from "../../../../lib/contexts/cashierHistoryContext";
 import { Sale } from "../../../../types";
 import rendererLogger from "../../../../lib/logger/rendererLogger";
 import { HistoryBrowserProps } from "./types";
 import SearchBar from "./searchBar";
 import SalesList from "./salesList";
 import { ConfirmDialog } from "../../../../lib/components/confirmDialog";
+import { Lock } from "lucide-react";
 
 const HistoryBrowser: React.FC<HistoryBrowserProps> = ({
   onSaleSelect,
@@ -17,6 +19,7 @@ const HistoryBrowser: React.FC<HistoryBrowserProps> = ({
   const { t } = useTranslation();
   const { refetchProducts } = useStock();
   const { showToast } = useToast();
+  const { isEnabled: isHistoryEnabled, isLoading: isHistoryLoading } = useCashierHistory();
   const [sales, setSales] = useState<Sale[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -27,7 +30,7 @@ const HistoryBrowser: React.FC<HistoryBrowserProps> = ({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const fetchSales = async () => {
+  const fetchSales = async (searchTerm?: string) => {
     try {
       // Don't show loading state if we already have data (smoother refresh)
       if (sales.length === 0) {
@@ -36,7 +39,25 @@ const HistoryBrowser: React.FC<HistoryBrowserProps> = ({
         setRefreshing(true);
       }
 
-      const result = await window.api.database.sales.getRecent({ limit: 100 });
+      // Get the configurable number of days from options
+      const daysSetting = await window.api.database.options.get("cashierSalesHistoryDays");
+      const days = daysSetting ? Number(daysSetting) : 7; // Default to 7 days
+      
+      console.log("Cashier Sales History Days setting:", daysSetting, "Parsed days:", days);
+
+      let result;
+      if (searchTerm && searchTerm.trim()) {
+        // Use server-side search
+        result = await window.api.database.sales.search({ 
+          searchTerm: searchTerm.trim(), 
+          limit: 100, 
+          days 
+        });
+      } else {
+        // Use regular recent sales fetch
+        result = await window.api.database.sales.getRecent({ limit: 100, days });
+      }
+      
       setSales(result.sales);
     } catch (error) {
       rendererLogger.error("Error fetching sales", "HistoryBrowser", error);
@@ -50,36 +71,17 @@ const HistoryBrowser: React.FC<HistoryBrowserProps> = ({
     fetchSales();
   }, [salesRefreshKey]);
 
-  // Filter and search sales (only search filter needed since date is already filtered)
-  const filteredSales = useMemo(() => {
-    if (!searchTerm.trim()) {
-      return sales; // No search term, return all recent sales
-    }
+  // Search effect - trigger search when search term changes
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      fetchSales(searchTerm);
+    }, 300); // Debounce search by 300ms
 
-    const searchLower = searchTerm.toLowerCase();
-    return sales.filter((sale) => {
-      // Search in client name
-      if (sale.client?.name.toLowerCase().includes(searchLower)) return true;
+    return () => clearTimeout(timeoutId);
+  }, [searchTerm]);
 
-      // Search in product names
-      if (
-        sale.saleItems.some((item) => {
-          const productName =
-            item.product?.name ||
-            item.manualProduct?.name ||
-            item.service?.name ||
-            "";
-          return productName.toLowerCase().includes(searchLower);
-        })
-      )
-        return true;
-
-      // Search in sale ID
-      if (sale.id.toLowerCase().includes(searchLower)) return true;
-
-      return false;
-    });
-  }, [sales, searchTerm]);
+  // No more client-side filtering - sales are already filtered by the server
+  const filteredSales = sales;
 
   const handleSaleClick = (sale: Sale) => {
     setSelectedSale(sale);
@@ -186,6 +188,21 @@ const HistoryBrowser: React.FC<HistoryBrowserProps> = ({
       setSaleToDelete(null);
     }
   };
+
+  // Show disabled message if history is not enabled
+  if (!isHistoryEnabled) {
+    return (
+      <div className="h-full flex flex-col items-center justify-center p-6 text-center">
+        <Lock className="w-16 h-16 text-muted-foreground/50 mb-4" />
+        <h3 className="text-lg font-semibold text-muted-foreground mb-2">
+          {t("cashier.historyDisabled", "History Disabled")}
+        </h3>
+        <p className="text-sm text-muted-foreground">
+          {t("cashier.historyDisabledDesc", "Cashier history has been disabled by the administrator")}
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="h-full flex flex-col">

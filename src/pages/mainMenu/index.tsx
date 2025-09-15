@@ -105,7 +105,7 @@ export default function MainMenu() {
               </h2>
               {item.key === "stock" && unseenLowStockCount > 0 && enableBadge && badgeLoaded && (
                 <div className="absolute top-0 right-0 rtl:right-auto rtl:left-0">
-                  <div className="bg-red-500 text-white text-xs font-bold px-3 py-1 border-2 border-red-500 shadow-lg transition-all duration-300 ease-in-out h-[20px] flex items-center justify-center min-w-[60px] rounded-tr-lg rounded-bl-lg">
+                  <div className="bg-red-500 text-white text-xs font-bold px-3 py-1 border-2 border-red-500 shadow-lg transition-all duration-300 ease-in-out h-[20px] flex items-center justify-center min-w-[60px] rounded-tr-lg rounded-bl-lg rtl:rounded-tl-lg rtl:rounded-br-lg rtl:rounded-tr-none rtl:rounded-bl-none">
                     {unseenLowStockCount === 1 
                       ? t("mainMenu.oneProductOutOfStock", "1 product is out of stock")
                       : t("mainMenu.productsOutOfStock", "{{count}} products are out of stock", { count: unseenLowStockCount })
@@ -120,8 +120,8 @@ export default function MainMenu() {
                    {(unseenOverdueCreditsCount > 0 || unseenOverdueVersementsCount > 0) && (
                      <div className={`bg-red-500 text-white text-xs font-bold px-3 py-1 border-2 border-red-500 shadow-lg transition-all duration-300 ease-in-out h-[20px] flex items-center justify-center min-w-[60px] ${
                        (unseenDueSoonCreditsCount > 0 || unseenDueSoonVersementsCount > 0) 
-                         ? 'rounded-tr-lg' // Only top-right rounded when due soon exists below
-                         : 'rounded-tr-lg rounded-bl-lg' // Top-right rounded, bottom-left rounded when only overdue exists
+                         ? 'rounded-tr-lg rtl:rounded-tl-lg rtl:rounded-tr-none' // Only top-right rounded when due soon exists below
+                         : 'rounded-tr-lg rounded-bl-lg rtl:rounded-tl-lg rtl:rounded-br-lg rtl:rounded-tr-none rtl:rounded-bl-none' // Top-right rounded, bottom-left rounded when only overdue exists
                      }`}>
                        {unseenOverdueCreditsCount + unseenOverdueVersementsCount === 1 
                          ? t("mainMenu.oneOverduePayment", "1 overdue payment")
@@ -133,8 +133,8 @@ export default function MainMenu() {
                    {(unseenDueSoonCreditsCount > 0 || unseenDueSoonVersementsCount > 0) && (
                      <div className={`bg-orange-500 text-white text-xs font-bold px-3 py-1 border-2 border-orange-500 shadow-lg transition-all duration-300 ease-in-out h-[20px] flex items-center justify-center min-w-[60px] ${
                        (unseenOverdueCreditsCount > 0 || unseenOverdueVersementsCount > 0) 
-                         ? 'rounded-bl-lg' // Only bottom-left rounded when overdue exists above
-                         : 'rounded-tr-lg rounded-bl-lg' // Top-right rounded, bottom-left rounded when only due soon exists
+                         ? 'rounded-bl-lg rtl:rounded-br-lg rtl:rounded-bl-none' // Only bottom-left rounded when overdue exists above
+                         : 'rounded-tr-lg rounded-bl-lg rtl:rounded-tl-lg rtl:rounded-br-lg rtl:rounded-tr-none rtl:rounded-bl-none' // Top-right rounded, bottom-left rounded when only due soon exists
                      }`}>
                        {unseenDueSoonCreditsCount + unseenDueSoonVersementsCount === 1 
                          ? t("mainMenu.oneDueSoonPayment", "1 due soon payment")

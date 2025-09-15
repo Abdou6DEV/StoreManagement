@@ -412,16 +412,17 @@ export default function Clients() {
                   >
                     <CreditCard className="w-4 h-4" />
                     {t("clients.viewAllPayments", "View All Payments")}
-                    {(unseenOverdueCreditsCount > 0 || unseenOverdueVersementsCount > 0) && (
-                      <BadgeNotification count={unseenOverdueCreditsCount + unseenOverdueVersementsCount} />
-                    )}
-                    {(unseenDueSoonCreditsCount > 0 || unseenDueSoonVersementsCount > 0) && (
-                      <div className="absolute top-0 right-0 rtl:right-auto rtl:left-0 transform translate-x-1/2 -translate-y-1/2 rtl:translate-x-[-50%]">
-                        <div className="bg-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full h-[18px] flex items-center justify-center">
-                          {unseenDueSoonCreditsCount + unseenDueSoonVersementsCount}
-                        </div>
-                      </div>
-                    )}
+                    {(() => {
+                      const hasRedBadge = (unseenOverdueCreditsCount > 0 || unseenOverdueVersementsCount > 0);
+                      const hasOrangeBadge = (unseenDueSoonCreditsCount > 0 || unseenDueSoonVersementsCount > 0);
+                      
+                      if (hasRedBadge) {
+                        return <BadgeNotification count={unseenOverdueCreditsCount + unseenOverdueVersementsCount} variant="red" />;
+                      } else if (hasOrangeBadge) {
+                        return <BadgeNotification count={unseenDueSoonCreditsCount + unseenDueSoonVersementsCount} variant="orange" />;
+                      }
+                      return null;
+                    })()}
                   </Button>
                 </Tooltip>
               </div>
@@ -862,3 +863,5 @@ export default function Clients() {
     </main>
   );
 }
+
+

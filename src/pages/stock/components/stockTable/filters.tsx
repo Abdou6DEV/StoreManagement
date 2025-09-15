@@ -46,7 +46,7 @@ export const Filters = ({
   getActiveFiltersSummary,
 }: FiltersProps) => {
   const { t } = useTranslation();
-  const { unseenLowStockCount, markLowStockAsSeen } = useLowStock();
+  const { unseenLowStockCount } = useLowStock();
   const [categorySearch, setCategorySearch] = useState("");
   const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
   const [enableBadge, setEnableBadge] = useState(false); // Start as false to prevent flash

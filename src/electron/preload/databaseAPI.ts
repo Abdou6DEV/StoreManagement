@@ -59,8 +59,10 @@ export const databaseAPI = {
       discount?: number;
     }) => ipcRenderer.invoke("db:sales:create", data),
     getAll: () => ipcRenderer.invoke("db:sales:getAll"),
-    getRecent: (options?: { limit?: number; offset?: number }) =>
+    getRecent: (options?: { limit?: number; offset?: number; days?: number }) =>
       ipcRenderer.invoke("db:sales:getRecent", options),
+    search: (options: { searchTerm: string; limit?: number; offset?: number; days?: number }) =>
+      ipcRenderer.invoke("db:sales:search", options),
     getAggregatedByPeriod: (
       period: "day" | "month" | "year",
       startDate: Date,

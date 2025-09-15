@@ -1,10 +1,11 @@
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Star, Clock } from "lucide-react";
+import { Star, Clock, Lock } from "lucide-react";
 import FavoritesBrowser from "./favoritesBrowser";
 import HistoryBrowser from "./historyBrowser";
 import type { ProductWithSales, CartItem } from "../../../types";
 import rendererLogger from "../../../lib/logger/rendererLogger";
+import { useCashierHistory } from "../../../lib/contexts/cashierHistoryContext";
 
 interface TabbedBrowserProps {
   allProducts: ProductWithSales[];
@@ -28,6 +29,7 @@ const TabbedBrowser: React.FC<TabbedBrowserProps> = ({
   outOfStockConfirmed,
 }) => {
   const { t } = useTranslation();
+  const { isEnabled: isHistoryEnabled, isLoading: isHistoryLoading } = useCashierHistory();
   const [activeTab, setActiveTab] = useState<TabType>("favorites");
 
   const tabs = [
@@ -36,18 +38,27 @@ const TabbedBrowser: React.FC<TabbedBrowserProps> = ({
       label: t("cashier.favorites", "Favorites"),
       icon: Star,
       count: 0, // Will be updated by FavoritesBrowser
+      disabled: false,
     },
     {
       id: "history" as TabType,
       label: t("cashier.history", "History"),
-      icon: Clock,
+      icon: isHistoryEnabled ? Clock : Lock,
       count: 0, // Will be updated by HistoryBrowser
+      disabled: !isHistoryEnabled || isHistoryLoading,
     },
   ];
 
   const handleSaleSelect = (sale: any) => {
     // Optional: Handle sale selection (e.g., show details modal)
     rendererLogger.debug("Selected sale", "TabbedBrowser", { saleId: sale.id });
+  };
+
+  const handleTabClick = (tabId: TabType) => {
+    const tab = tabs.find(t => t.id === tabId);
+    if (tab && !tab.disabled) {
+      setActiveTab(tabId);
+    }
   };
 
   return (
@@ -61,16 +72,19 @@ const TabbedBrowser: React.FC<TabbedBrowserProps> = ({
           return (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => handleTabClick(tab.id)}
+              disabled={tab.disabled}
               className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium transition-all duration-200 ${
-                isActive
+                tab.disabled
+                  ? "text-muted-foreground/50 cursor-not-allowed opacity-50"
+                  : isActive
                   ? "text-primary bg-background border-b-2 border-primary"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
               }`}
             >
               <IconComponent className="w-4 h-4" />
               <span>{tab.label}</span>
-              {tab.count > 0 && (
+              {tab.count > 0 && !tab.disabled && (
                 <span className="bg-primary/20 text-primary px-1.5 py-0.5 rounded-full text-xs font-bold">
                   {tab.count}
                 </span>

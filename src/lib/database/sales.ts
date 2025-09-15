@@ -450,11 +450,16 @@ export async function getAllSales() {
   });
 }
 
-export async function getRecentSales(limit = 50, offset = 0) {
-  // Calculate date filter - last 7 days
-  const oneWeekAgo = new Date();
-  oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-  oneWeekAgo.setHours(0, 0, 0, 0);
+export async function getRecentSales(limit = 50, offset = 0, days = 7) {
+  // Calculate date filter - configurable number of days
+  const endDate = new Date();
+  endDate.setHours(23, 59, 59, 999); // End of today
+  
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() - days);
+  startDate.setHours(0, 0, 0, 0); // Start of the day 'days' ago
+  
+  console.log("getRecentSales called with days:", days, "Start date:", startDate, "End date:", endDate);
 
   // Get total count first (for potential future use)
   // const totalCount = await prisma.sale.count({
@@ -468,7 +473,8 @@ export async function getRecentSales(limit = 50, offset = 0) {
   const sales = await prisma.sale.findMany({
     where: {
       createdAt: {
-        gte: oneWeekAgo,
+        gte: startDate,
+        lte: endDate,
       },
     },
     include: {
@@ -562,6 +568,11 @@ export async function getRecentSales(limit = 50, offset = 0) {
       isPaidInCash: !sale.payment,
     };
   });
+
+  console.log(`Found ${salesWithTotals.length} sales in the last ${days} days`);
+  if (salesWithTotals.length > 0) {
+    console.log("Sample sale dates:", salesWithTotals.slice(0, 3).map(s => s.createdAt));
+  }
 
   return {
     sales: salesWithTotals,
@@ -939,6 +950,236 @@ export async function getSalesByDateRange(startDate: Date, endDate: Date) {
       sale.payment.type === "VERSEMENT" && sale.payment.paidDate === null
     );
   });
+}
+
+export async function searchSales(
+  searchTerm: string,
+  limit = 100,
+  offset = 0,
+  days = 7
+) {
+  // Calculate date filter - configurable number of days
+  const endDate = new Date();
+  endDate.setHours(23, 59, 59, 999); // End of today
+  
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() - days);
+  startDate.setHours(0, 0, 0, 0); // Start of the day 'days' ago
+
+  console.log("searchSales called with searchTerm:", searchTerm, "days:", days, "Start date:", startDate, "End date:", endDate);
+
+  const searchLower = searchTerm.toLowerCase();
+
+  const sales = await prisma.sale.findMany({
+    where: {
+      AND: [
+        {
+          createdAt: {
+            gte: startDate,
+            lte: endDate,
+          },
+        },
+        {
+          OR: [
+            // Search in client name
+            {
+              client: {
+                name: {
+                  contains: searchTerm,
+                },
+              },
+            },
+            // Search in sale ID
+            {
+              id: {
+                contains: searchTerm,
+              },
+            },
+            // Search in product names
+            {
+              saleItems: {
+                some: {
+                  product: {
+                    name: {
+                      contains: searchTerm,
+                    },
+                  },
+                },
+              },
+            },
+            // Search in manual product names
+            {
+              saleItems: {
+                some: {
+                  manualProduct: {
+                    name: {
+                      contains: searchTerm,
+                    },
+                  },
+                },
+              },
+            },
+            // Search in service names
+            {
+              saleItems: {
+                some: {
+                  service: {
+                    name: {
+                      contains: searchTerm,
+                    },
+                  },
+                },
+              },
+            },
+          ],
+        },
+      ],
+    },
+    include: {
+      client: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+      saleItems: {
+        include: {
+          product: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          manualProduct: {
+            select: {
+              id: true,
+              name: true,
+              type: true,
+            },
+          },
+          service: {
+            select: {
+              id: true,
+              name: true,
+              description: true,
+            },
+          },
+        },
+      },
+      payment: {
+        select: {
+          id: true,
+          givenAmount: true,
+          type: true,
+          paidDate: true,
+        },
+      },
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+    take: limit,
+    skip: offset,
+  });
+
+  // Filter to exclude unpaid VERSEMENT sales and apply case-insensitive search
+  const filteredSales = sales.filter((sale) => {
+    // First filter: exclude unpaid VERSEMENT sales
+    const isUnpaidVersement = (() => {
+      // Cash sales (no payment record) are always included
+      if (!sale.payment) {
+        return false;
+      }
+
+      // CREDIT sales are always included
+      if (sale.payment.type === "CREDIT") {
+        return false;
+      }
+
+      // VERSEMENT sales are only excluded if not paid
+      return (
+        sale.payment.type === "VERSEMENT" && sale.payment.paidDate === null
+      );
+    })();
+
+    if (isUnpaidVersement) {
+      return false;
+    }
+
+    // Second filter: case-insensitive search (since Prisma doesn't support mode: 'insensitive')
+    const searchLower = searchTerm.toLowerCase();
+    
+    // Search in client name
+    if (sale.client?.name.toLowerCase().includes(searchLower)) {
+      return true;
+    }
+
+    // Search in sale ID
+    if (sale.id.toLowerCase().includes(searchLower)) {
+      return true;
+    }
+
+    // Search in product names
+    if (sale.saleItems.some((item) => {
+      const productName = item.product?.name || "";
+      return productName.toLowerCase().includes(searchLower);
+    })) {
+      return true;
+    }
+
+    // Search in manual product names
+    if (sale.saleItems.some((item) => {
+      const manualProductName = item.manualProduct?.name || "";
+      return manualProductName.toLowerCase().includes(searchLower);
+    })) {
+      return true;
+    }
+
+    // Search in service names
+    if (sale.saleItems.some((item) => {
+      const serviceName = item.service?.name || "";
+      return serviceName.toLowerCase().includes(searchLower);
+    })) {
+      return true;
+    }
+
+    return false;
+  });
+
+  const salesWithTotals = filteredSales.map((sale) => {
+    const totalAmount = sale.saleItems.reduce(
+      (sum, item) => sum + item.price * item.quantity,
+      0
+    );
+    const totalAmountWithDiscount = totalAmount - sale.discount;
+
+    const paidAmount = sale.payment
+      ? sale.payment.givenAmount || 0
+      : totalAmountWithDiscount;
+
+    const totalItems = sale.saleItems.reduce(
+      (sum, item) => sum + item.quantity,
+      0
+    );
+
+    return {
+      ...sale,
+      totalAmount,
+      totalAmountWithDiscount,
+      paidAmount,
+      remainingAmount: totalAmountWithDiscount - paidAmount,
+      totalItems,
+      isPaidInCash: !sale.payment,
+    };
+  });
+
+  console.log(`Found ${salesWithTotals.length} sales matching "${searchTerm}" in the last ${days} days`);
+
+  return {
+    sales: salesWithTotals,
+    totalCount: filteredSales.length,
+    hasMore: false,
+  };
 }
 
 export async function getSalesBySpecificPeriod(

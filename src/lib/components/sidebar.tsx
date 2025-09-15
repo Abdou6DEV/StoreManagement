@@ -206,20 +206,24 @@ export default function Sidebar() {
                 <BadgeNotification count={unseenLowStockCount} />
               )}
               {item.key === "clients" && ((unseenOverdueCreditsCount > 0 || unseenOverdueVersementsCount > 0) || (unseenDueSoonCreditsCount > 0 || unseenDueSoonVersementsCount > 0)) && (
-                <div className="absolute top-0 right-0 rtl:right-auto rtl:left-0 transform translate-x-1/2 -translate-y-1/2 rtl:translate-x-[-50%]">
+                <>
                   {/* Overdue Badge - Show when cycling to overdue or when only overdue exists */}
                   {showOverdueBadge && (unseenOverdueCreditsCount > 0 || unseenOverdueVersementsCount > 0) && (
-                    <div className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full h-[18px] flex items-center justify-center min-w-[18px] transition-all duration-500 ease-in-out">
-                      {unseenOverdueCreditsCount + unseenOverdueVersementsCount}
-                    </div>
+                    <BadgeNotification 
+                      count={unseenOverdueCreditsCount + unseenOverdueVersementsCount} 
+                      variant="red"
+                      className="transition-all duration-500 ease-in-out"
+                    />
                   )}
                   {/* Due Soon Badge - Show when cycling to due soon or when only due soon exists */}
                   {!showOverdueBadge && (unseenDueSoonCreditsCount > 0 || unseenDueSoonVersementsCount > 0) && (
-                    <div className="bg-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full h-[18px] flex items-center justify-center min-w-[18px] transition-all duration-500 ease-in-out">
-                      {unseenDueSoonCreditsCount + unseenDueSoonVersementsCount}
-                    </div>
+                    <BadgeNotification 
+                      count={unseenDueSoonCreditsCount + unseenDueSoonVersementsCount} 
+                      variant="orange"
+                      className="transition-all duration-500 ease-in-out"
+                    />
                   )}
-                </div>
+                </>
               )}
             </div>
             {showText && <span>{t(`mainMenu.${item.key}`)}</span>}

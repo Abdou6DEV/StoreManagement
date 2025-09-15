@@ -26,6 +26,7 @@ import {
   getAllSales,
   updateSale,
   getRecentSales,
+  searchSales,
   deleteSale,
   getSalesAggregatedByPeriod,
   getSalesSummary,
@@ -184,8 +185,12 @@ export function setupDatabaseHandlers() {
     return await getAllSales();
   });
 
-  ipcMain.handle("db:sales:getRecent", async (_event, { limit, offset }) => {
-    return await getRecentSales(limit, offset);
+  ipcMain.handle("db:sales:getRecent", async (_event, { limit, offset, days }) => {
+    return await getRecentSales(limit, offset, days);
+  });
+
+  ipcMain.handle("db:sales:search", async (_event, { searchTerm, limit, offset, days }) => {
+    return await searchSales(searchTerm, limit, offset, days);
   });
 
   ipcMain.handle("db:sales:update", async (_event, { id, data }) => {

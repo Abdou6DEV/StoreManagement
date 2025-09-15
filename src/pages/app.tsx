@@ -7,6 +7,7 @@ import { StockProvider } from "../lib/contexts/stockContext";
 import { LowStockProvider } from "../lib/contexts/lowStockContext";
 import { OverduePaymentsProvider } from "../lib/contexts/overduePaymentsContext";
 import { DueSoonPaymentsProvider } from "../lib/contexts/dueSoonPaymentsContext";
+import { CashierHistoryProvider } from "../lib/contexts/cashierHistoryContext";
 import { useTranslation } from "react-i18next";
 import { ToastProvider } from "../lib/contexts/toastContext";
 import rendererLogger from "../lib/logger/rendererLogger";
@@ -72,6 +73,7 @@ export default function App() {
                     <LowStockProvider>
                       <OverduePaymentsProvider>
                         <DueSoonPaymentsProvider>
+                        <CashierHistoryProvider>
                         <Layout>
                         <ScrollToTop />
                         <Routes>
@@ -136,6 +138,7 @@ export default function App() {
                         </Route>
                         </Routes>
                         </Layout>
+                        </CashierHistoryProvider>
                         </DueSoonPaymentsProvider>
                       </OverduePaymentsProvider>
                     </LowStockProvider>

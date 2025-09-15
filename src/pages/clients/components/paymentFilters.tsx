@@ -227,19 +227,22 @@ const PaymentFilters: React.FC<PaymentFiltersProps> = ({
                     : dateFilter === "overdue"
                       ? t("clients.overdue", "Overdue")
                       : t("clients.dueSoon", "Due Soon")}
-                  {(unseenOverdueCreditsCount > 0 || unseenOverdueVersementsCount > 0) && (
-                    <BadgeNotification count={unseenOverdueCreditsCount + unseenOverdueVersementsCount} />
-                  )}
-                  {(unseenDueSoonCreditsCount > 0 || unseenDueSoonVersementsCount > 0) && (
-                    <div className="bg-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full h-[18px] flex items-center justify-center">
-                      {unseenDueSoonCreditsCount + unseenDueSoonVersementsCount}
-                    </div>
-                  )}
                 </div>
+                {(() => {
+                  const hasRedBadge = (unseenOverdueCreditsCount > 0 || unseenOverdueVersementsCount > 0);
+                  const hasOrangeBadge = (unseenDueSoonCreditsCount > 0 || unseenDueSoonVersementsCount > 0);
+                  
+                  if (hasRedBadge) {
+                    return <BadgeNotification count={unseenOverdueCreditsCount + unseenOverdueVersementsCount} />;
+                  } else if (hasOrangeBadge) {
+                    return <BadgeNotification count={unseenDueSoonCreditsCount + unseenDueSoonVersementsCount} variant="orange" />;
+                  }
+                  return null;
+                })()}
                 <ChevronDown className="ml-2 w-4 h-4" />
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-[250px] p-0 z-50">
+            <PopoverContent className="w-[280px] p-0 z-50">
               <Command shouldFilter={false}>
                 <CommandList>
                   <CommandGroup>
@@ -260,12 +263,14 @@ const PaymentFilters: React.FC<PaymentFiltersProps> = ({
                       onSelect={() => setDateFilter("overdue")}
                       className="relative"
                     >
-                      <div className="flex items-center justify-between w-full">
+                      <div className="flex items-center justify-between w-full pr-6">
                         <span>{t("clients.overdue", "Overdue")}</span>
                         {(unseenOverdueCreditsCount > 0 || unseenOverdueVersementsCount > 0) && (
-                          <div className="absolute top-1 right-3 rtl:right-auto rtl:left-3">
-                            <BadgeNotification count={unseenOverdueCreditsCount + unseenOverdueVersementsCount} />
-                          </div>
+                          <BadgeNotification 
+                            count={unseenOverdueCreditsCount + unseenOverdueVersementsCount} 
+                            variant="red" 
+                            className="absolute top-1 right-3 z-10"
+                          />
                         )}
                       </div>
                       <Check
@@ -282,14 +287,14 @@ const PaymentFilters: React.FC<PaymentFiltersProps> = ({
                       onSelect={() => setDateFilter("dueSoon")}
                       className="relative"
                     >
-                      <div className="flex items-center justify-between w-full">
+                      <div className="flex items-center justify-between w-full pr-6">
                         <span>{t("clients.dueSoon", "Due Soon")}</span>
                         {(unseenDueSoonCreditsCount > 0 || unseenDueSoonVersementsCount > 0) && (
-                          <div className="absolute top-1 right-3 rtl:right-auto rtl:left-3">
-                            <div className="bg-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full h-[18px] flex items-center justify-center">
-                              {unseenDueSoonCreditsCount + unseenDueSoonVersementsCount}
-                            </div>
-                          </div>
+                          <BadgeNotification 
+                            count={unseenDueSoonCreditsCount + unseenDueSoonVersementsCount} 
+                            variant="orange" 
+                            className="absolute top-1 right-3 z-10"
+                          />
                         )}
                       </div>
                       <Check
