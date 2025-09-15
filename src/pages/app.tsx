@@ -66,10 +66,10 @@ export default function App() {
               path="/*"
               element={
                 <ProtectedRoute>
-                  <Layout>
-                    <ScrollToTop />
-                    <StockProvider>
-                      <LowStockProvider>
+                  <StockProvider>
+                    <LowStockProvider>
+                      <Layout>
+                        <ScrollToTop />
                         <Routes>
                         <Route path="/" element={<MainMenu />} />
                         <Route
@@ -131,9 +131,9 @@ export default function App() {
                           />
                         </Route>
                         </Routes>
-                      </LowStockProvider>
-                    </StockProvider>
-                  </Layout>
+                      </Layout>
+                    </LowStockProvider>
+                  </StockProvider>
                 </ProtectedRoute>
               }
             />
