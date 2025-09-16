@@ -672,7 +672,7 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
 
           !payment.paidDate && 
 
-          isDueSoon(payment.dueDate) &&
+          isDueSoon(payment.dueDate, dueSoonThresholdDays) &&
 
           !seenDueSoonCredits.has(payment.id)
 
@@ -688,7 +688,7 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
 
           !payment.paidDate && 
 
-          isDueSoon(payment.dueDate) &&
+          isDueSoon(payment.dueDate, dueSoonThresholdDays) &&
 
           !seenDueSoonVersements.has(payment.id)
 
@@ -960,7 +960,7 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
 
                   isOverdue={isOverdue}
 
-                  isDueSoon={isDueSoon}
+                  isDueSoon={(dueDate) => isDueSoon(dueDate, dueSoonThresholdDays)}
 
                   newlyOverdueIds={newlyOverdueCreditsIds}
 
@@ -1204,7 +1204,7 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
 
                   isOverdue={isOverdue}
 
-                  isDueSoon={isDueSoon}
+                  isDueSoon={(dueDate) => isDueSoon(dueDate, dueSoonThresholdDays)}
 
                   newlyOverdueIds={newlyOverdueVersementsIds}
 

@@ -5,6 +5,7 @@ export const isOverdue = (dueDate: Date) => {
 };
 
 export const isDueSoon = (dueDate: Date, thresholdDays: number = 2) => {
+  if (!dueDate) return false;
   const today = new Date();
   const due = new Date(dueDate);
   const diffTime = due.getTime() - today.getTime();
