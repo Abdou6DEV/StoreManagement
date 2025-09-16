@@ -25,7 +25,7 @@ export const BadgeNotification: React.FC<BadgeNotificationProps> = ({
 
   // Color variants
   const colorClasses = {
-    red: "bg-red-500 hover:bg-red-600 border-red-500",
+    red: "bg-red-600 hover:bg-red-700 border-red-600",
     orange: "bg-orange-500 hover:bg-orange-600 border-orange-500",
     blue: "bg-blue-500 hover:bg-blue-600 border-blue-500",
     green: "bg-green-500 hover:bg-green-600 border-green-500",

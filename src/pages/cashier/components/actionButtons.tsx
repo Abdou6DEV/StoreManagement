@@ -251,7 +251,7 @@ export default function ActionButtons({
             if (/^\d*$/.test(val)) {
               setDraftDiscount(val);
               if (val === "") {
-                onDiscountChange("0");
+                onDiscountChange("");
               } else if (Number(val) <= cartTotal) {
                 onDiscountChange(val);
               }

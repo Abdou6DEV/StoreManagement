@@ -292,9 +292,14 @@ export default function PaymentSummary({
   });
 
   // Auto-scroll to bottom when new items are added in interactive mode
+  const prevCartLength = useRef(cart.length);
   useEffect(() => {
     if (interactive && scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      // Only auto-scroll if items were added (cart length increased)
+      if (cart.length > prevCartLength.current) {
+        scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      }
+      prevCartLength.current = cart.length;
     }
   }, [cart, interactive]);
 
