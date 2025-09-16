@@ -56,13 +56,14 @@ export const ProductInfoModal = ({
       size="lg"
       className="min-w-[70%] max-h-[70vh] overflow-y-auto"
       showFooter={false}
+      onClick={(e) => e.stopPropagation()}
     >
       {loading ? (
         <div className="flex items-center justify-center py-8">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         </div>
       ) : productData ? (
-        <div className="space-y-6">
+        <div className="space-y-6" onClick={(e) => e.stopPropagation()}>
           {/* Product Photo and Details Side by Side */}
           <div className="flex gap-6 items-center justify-center">
             {/* Product Details */}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import type { ProductWithSales, CartItem } from "../../../types";
 import { useTranslation } from "react-i18next";
 import { Star } from "lucide-react";
@@ -70,9 +70,13 @@ const FavoritesBrowser: React.FC<FavoritesBrowserProps> = ({
     };
   }, []);
 
-  // Save favorites to localStorage whenever they change
+  // Save favorites to localStorage whenever they change (debounced)
   useEffect(() => {
-    localStorage.setItem("cashier-favorites", JSON.stringify(favorites));
+    const timeoutId = setTimeout(() => {
+      localStorage.setItem("cashier-favorites", JSON.stringify(favorites));
+    }, 100); // Small delay to batch rapid changes
+
+    return () => clearTimeout(timeoutId);
   }, [favorites]);
 
   // Get favorite products
@@ -93,39 +97,36 @@ const FavoritesBrowser: React.FC<FavoritesBrowserProps> = ({
       .slice(0, 10); // Show top 10
   }, [allProducts, favorites]);
 
-  const handleAddToCart = (product: ProductWithSales) => {
+  const handleAddToCart = useCallback((product: ProductWithSales) => {
     const updatedCart = addProductToCart(cart, product, allProducts, onOutOfStock);
     if (updatedCart) {
       setCart(updatedCart);
     }
-  };
+  }, [cart, addProductToCart, allProducts, onOutOfStock, setCart]);
 
-  const toggleFavorite = (productId: string) => {
+  const toggleFavorite = useCallback((productId: string) => {
     setFavorites((prev) => {
       const newFavorites = prev.includes(productId)
         ? prev.filter((id) => id !== productId)
         : [...prev, productId];
 
-      // Save to localStorage
-      localStorage.setItem("cashier-favorites", JSON.stringify(newFavorites));
-
-      // Dispatch custom event to notify other components
+      // Dispatch custom event to notify other components (localStorage is handled by useEffect)
       window.dispatchEvent(new CustomEvent("favorites-updated"));
 
       return newFavorites;
     });
-  };
+  }, []);
 
-  const isInCart = (productId: string) => {
+  const isInCart = useCallback((productId: string) => {
     return cart.some((item) => item.id === productId);
-  };
+  }, [cart]);
 
-  const getCartQuantity = (productId: string) => {
+  const getCartQuantity = useCallback((productId: string) => {
     const item = cart.find((item) => item.id === productId);
     return item ? item.qty : 0;
-  };
+  }, [cart]);
 
-  const handleQuantityChange = (product: ProductWithSales, newQty: number) => {
+  const handleQuantityChange = useCallback((product: ProductWithSales, newQty: number) => {
     if (newQty <= 0) {
       setCart((prev) => prev.filter((item) => item.id !== product.id));
     } else if (product.quantity > 0 && newQty > product.quantity && !outOfStockConfirmed) {
@@ -148,7 +149,7 @@ const FavoritesBrowser: React.FC<FavoritesBrowserProps> = ({
         return updated;
       });
     }
-  };
+  }, [setCart, outOfStockConfirmed, onOutOfStock, cart]);
 
   return (
     <div className="h-full overflow-hidden flex flex-col p-3">

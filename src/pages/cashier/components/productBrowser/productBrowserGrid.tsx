@@ -67,9 +67,9 @@ const ProductBrowserGrid: React.FC<ProductBrowserGridProps> = ({
         />
       ))}
 
-      {/* Loading skeletons */}
+      {/* Loading skeletons - Reduced from 100 to 20 for better performance */}
       {loadingMore &&
-        Array.from({ length: 100 }).map((_, index) => (
+        Array.from({ length: 20 }).map((_, index) => (
           <div
             key={`skeleton-${index}`}
             className="p-4 border rounded-lg h-[200px] flex flex-col gap-2"

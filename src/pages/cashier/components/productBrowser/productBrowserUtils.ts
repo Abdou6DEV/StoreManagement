@@ -26,23 +26,36 @@ export const filterProducts = (
   productFilter: string,
   selectedCategory: string,
 ): ProductWithSales[] => {
+  // Early return if no filters applied
+  if (!productFilter && selectedCategory === "All") {
+    return allProducts;
+  }
+
   let products = allProducts;
 
+  // Apply name filter with optimized string operations
   if (productFilter) {
+    const filterLower = productFilter.toLowerCase();
     products = products.filter((product) =>
-      product.name.toLowerCase().includes(productFilter.toLowerCase()),
+      product.name.toLowerCase().includes(filterLower),
     );
   }
 
+  // Apply category filter
   if (selectedCategory !== "All") {
     products = products.filter(
       (product) => product.categoryName === selectedCategory,
     );
   }
 
+  // Optimized sorting - only sort if we have products to sort
+  if (products.length === 0) {
+    return products;
+  }
+
   return products.sort((a, b) => {
-    const aHasBarcode = a.codebar && a.codebar.trim() !== "";
-    const bHasBarcode = b.codebar && b.codebar.trim() !== "";
+    const aHasBarcode = Boolean(a.codebar?.trim());
+    const bHasBarcode = Boolean(b.codebar?.trim());
 
     if (aHasBarcode && !bHasBarcode) return 1;
     if (!aHasBarcode && bHasBarcode) return -1;

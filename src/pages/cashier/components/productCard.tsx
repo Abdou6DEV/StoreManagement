@@ -2,12 +2,14 @@ import { Star, Plus, Minus, Info } from "lucide-react";
 import { Tooltip } from "../../../lib/components/tooltip";
 import type { ProductWithSales } from "../../../types";
 import { useTranslation } from "react-i18next";
-import { useRef, useEffect, useState } from "react";
-import { ProductInfoModal } from "../../stock/components/productInfoModal";
+import { useRef, useEffect, useState, useMemo, memo, useCallback, Suspense, lazy } from "react";
 import { ProductAvatar } from "../../../lib/components/productAvatar";
 import { useLowStock } from "../../../lib/contexts/lowStockContext";
 
-export default function ProductCard({
+// Lazy load the ProductInfoModal to improve initial bundle size
+const ProductInfoModal = lazy(() => import("../../stock/components/productInfoModal").then(module => ({ default: module.ProductInfoModal })));
+
+const ProductCard = memo(function ProductCard({
   product,
   favorites,
   isInCart,
@@ -32,24 +34,34 @@ export default function ProductCard({
   const [productInfoData, setProductInfoData] = useState<ProductWithSales | null>(null);
   const [productInfoLoading, setProductInfoLoading] = useState(false);
 
+  // Memoize text truncation check to avoid expensive DOM calculations
+  const checkTextTruncation = useCallback(() => {
+    if (nameRef.current) {
+      const element = nameRef.current;
+      // Check if text exceeds 2 lines (approximately 2.5rem height)
+      const lineHeight = parseFloat(getComputedStyle(element).lineHeight);
+      const maxHeight = lineHeight * 2; // Exactly 2 lines
+      setIsTextTruncated(element.scrollHeight > maxHeight);
+    }
+  }, []);
+
   useEffect(() => {
-    const checkTextTruncation = () => {
-      if (nameRef.current) {
-        const element = nameRef.current;
-        // Check if text exceeds 2 lines (approximately 2.5rem height)
-        const lineHeight = parseFloat(getComputedStyle(element).lineHeight);
-        const maxHeight = lineHeight * 2; // Exactly 2 lines
-        setIsTextTruncated(element.scrollHeight > maxHeight);
-      }
-    };
-
     checkTextTruncation();
-    // Re-check on window resize
-    window.addEventListener("resize", checkTextTruncation);
-    return () => window.removeEventListener("resize", checkTextTruncation);
-  }, [product.name]);
+    // Re-check on window resize with throttling
+    let timeoutId: NodeJS.Timeout;
+    const throttledCheck = () => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(checkTextTruncation, 100);
+    };
+    
+    window.addEventListener("resize", throttledCheck);
+    return () => {
+      window.removeEventListener("resize", throttledCheck);
+      clearTimeout(timeoutId);
+    };
+  }, [checkTextTruncation]);
 
-  const handleShowInfo = async (e: React.MouseEvent) => {
+  const handleShowInfo = useCallback(async (e: React.MouseEvent) => {
     e.stopPropagation();
     setShowInfo(true);
     
@@ -65,18 +77,37 @@ export default function ProductCard({
     } finally {
       setProductInfoLoading(false);
     }
-  };
+  }, [product.id, product]);
+
+  // Memoize expensive calculations
+  const currentQuantity = useMemo(() => {
+    return isInCart(product.id)
+      ? product.quantity - getCartQuantity(product.id)
+      : product.quantity;
+  }, [isInCart, product.id, product.quantity, getCartQuantity]);
+
+  const isLowStock = useMemo(() => {
+    return currentQuantity <= lowStockThreshold;
+  }, [currentQuantity, lowStockThreshold]);
+
+  const isInCartValue = useMemo(() => {
+    return isInCart(product.id);
+  }, [isInCart, product.id]);
+
+  const cartQuantity = useMemo(() => {
+    return getCartQuantity(product.id);
+  }, [getCartQuantity, product.id]);
 
   return (
     <div
       key={product.id}
       className={`p-3 border rounded-lg h-[180px] cursor-pointer transition-all flex flex-col justify-between relative overflow-hidden w-full ${
-        isInCart(product.id)
+        isInCartValue
           ? "border-primary bg-primary/10"
           : "border-border hover:border-primary hover:shadow-md"
       }`}
       onClick={() => {
-        if (isInCart(product.id)) {
+        if (isInCartValue) {
           // If product is in cart, remove it
           handleQuantityChange(product, 0);
         } else {
@@ -87,28 +118,19 @@ export default function ProductCard({
     >
       {/* Stock Quantity Badge */}
       <div className="absolute top-3 right-3 z-10">
-        {(() => {
-          const currentQuantity = isInCart(product.id)
-            ? product.quantity - getCartQuantity(product.id)
-            : product.quantity;
-          const isLowStock = currentQuantity <= lowStockThreshold;
-          
-          return (
-            <div
-              className={`text-xs font-semibold px-2 py-1 rounded-full shadow-sm ${
-                isInCart(product.id)
-                  ? isLowStock
-                    ? "bg-red-500 text-white"
-                    : "bg-primary text-primary-foreground"
-                  : isLowStock
-                  ? "bg-red-500 text-white"
-                  : "bg-gray-600 text-white"
-              }`}
-            >
-              {currentQuantity}
-            </div>
-          );
-        })()}
+        <div
+          className={`text-xs font-semibold px-2 py-1 rounded-full shadow-sm ${
+            isInCartValue
+              ? isLowStock
+                ? "bg-red-500 text-white"
+                : "bg-primary text-primary-foreground"
+              : isLowStock
+              ? "bg-red-500 text-white"
+              : "bg-gray-600 text-white"
+          }`}
+        >
+          {currentQuantity}
+        </div>
       </div>
 
       {/* Product Image/Icon Area */}
@@ -210,37 +232,46 @@ export default function ProductCard({
             />
           </button>
         </Tooltip>
-        {/* Product Info Modal */}
-        {showInfo && (
-          <ProductInfoModal
-            open={showInfo}
-            onOpenChange={setShowInfo}
-            productData={productInfoData}
-            loading={productInfoLoading}
-          />
-        )}
       </div>
 
-      {isInCart(product.id) && (
+        {/* Product Info Modal - Moved outside clickable area */}
+        {showInfo && (
+          <Suspense fallback={
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+              <div className="bg-card border border-border rounded-lg p-4">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              </div>
+            </div>
+          }>
+            <ProductInfoModal
+              open={showInfo}
+              onOpenChange={setShowInfo}
+              productData={productInfoData}
+              loading={productInfoLoading}
+            />
+          </Suspense>
+        )}
+
+      {isInCartValue && (
         <div className="absolute left-0 right-0 bottom-3 flex items-center justify-center z-10 pointer-events-none">
           <div className="flex items-center gap-2 pointer-events-auto z-20 bg-background/95 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg border border-border">
             <button
               className="w-7 h-7 rounded-full bg-muted hover:bg-primary hover:text-primary-foreground text-muted-foreground transition-all duration-200 flex items-center justify-center border border-border hover:border-primary hover:scale-105 active:scale-95"
               onClick={(e) => {
                 e.stopPropagation();
-                handleQuantityChange(product, getCartQuantity(product.id) - 1);
+                handleQuantityChange(product, cartQuantity - 1);
               }}
             >
               <Minus className="w-3.5 h-3.5" />
             </button>
             <span className="px-2.5 text-sm font-semibold select-none cursor-pointer text-foreground min-w-[2rem] text-center">
-              {getCartQuantity(product.id)}
+              {cartQuantity}
             </span>
             <button
               className="w-7 h-7 rounded-full bg-muted hover:bg-primary hover:text-primary-foreground text-muted-foreground transition-all duration-200 flex items-center justify-center border border-border hover:border-primary hover:scale-105 active:scale-95"
               onClick={(e) => {
                 e.stopPropagation();
-                handleQuantityChange(product, getCartQuantity(product.id) + 1);
+                handleQuantityChange(product, cartQuantity + 1);
               }}
             >
               <Plus className="w-3.5 h-3.5" />
@@ -250,4 +281,6 @@ export default function ProductCard({
       )}
     </div>
   );
-}
+});
+
+export default ProductCard;

@@ -109,35 +109,42 @@ export default function CashierLayout({
 
         {/* RIGHT: Session Content (3/5) */}
         <div className="w-3/5 flex flex-col min-h-0 h-full">
-          {/* Session Content */}
-          {sessions.map((session, sessionIndex) => (
-            <CashierSession
-              key={sessionIndex}
-              allProducts={allProducts}
-              productRefreshKey={productRefreshKey}
-              setProductRefreshKey={setProductRefreshKey}
-              cart={session.cart}
-              setCart={(newCart) => {
-                const cart =
-                  typeof newCart === "function"
-                    ? newCart(session.cart)
-                    : newCart;
-                onUpdateSessionCart(sessionIndex, cart);
-              }}
-              onProductOutOfStock={onProductOutOfStock}
-              onSaleComplete={onSaleComplete}
-              onSaleCompleted={onSaleCompleted}
-              isActive={activeSession === sessionIndex}
-              discount={session.discount}
-              setDiscount={(newDiscount: string) =>
-                onUpdateSessionDiscount(sessionIndex, newDiscount)
-              }
-              outOfStockConfirmed={outOfStockConfirmed}
-              sessions={sessions}
-              activeSession={activeSession}
-              onSessionChange={onSessionChange}
-            />
-          ))}
+          {/* Session Content - Only render active session for performance */}
+          {sessions.map((session, sessionIndex) => {
+            // Only render the active session to improve performance
+            if (activeSession !== sessionIndex) {
+              return null;
+            }
+            
+            return (
+              <CashierSession
+                key={sessionIndex}
+                allProducts={allProducts}
+                productRefreshKey={productRefreshKey}
+                setProductRefreshKey={setProductRefreshKey}
+                cart={session.cart}
+                setCart={(newCart) => {
+                  const cart =
+                    typeof newCart === "function"
+                      ? newCart(session.cart)
+                      : newCart;
+                  onUpdateSessionCart(sessionIndex, cart);
+                }}
+                onProductOutOfStock={onProductOutOfStock}
+                onSaleComplete={onSaleComplete}
+                onSaleCompleted={onSaleCompleted}
+                isActive={true} // Always true since we only render active session
+                discount={session.discount}
+                setDiscount={(newDiscount: string) =>
+                  onUpdateSessionDiscount(sessionIndex, newDiscount)
+                }
+                outOfStockConfirmed={outOfStockConfirmed}
+                sessions={sessions}
+                activeSession={activeSession}
+                onSessionChange={onSessionChange}
+              />
+            );
+          })}
         </div>
       </div>
 

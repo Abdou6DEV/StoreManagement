@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import {
   CheckCircle,
   Trash2,
@@ -16,6 +16,7 @@ import PaymentsModal from "../../../lib/components/paymentsModal";
 import { useToast } from "../../../lib/contexts/toastContext";
 import { Tooltip } from "../../../lib/components/tooltip";
 import rendererLogger from "../../../lib/logger/rendererLogger";
+import { useDebounce } from "../../../lib/hooks/useDebounce";
 
 interface Props {
   clientName: string;
@@ -90,12 +91,18 @@ export default function ActionButtons({
   const inputRef = useRef<HTMLInputElement>(null);
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
 
-  const filteredSuggestions =
-    clientName.length > 0
-      ? clientSuggestions.filter((c) =>
-          c.name.toLowerCase().includes(clientName.toLowerCase()),
-        )
-      : [];
+  // Debounce client name for filtering suggestions
+  const debouncedClientName = useDebounce(clientName, 300);
+
+  // Memoize filtered suggestions to avoid recalculating on every render
+  const filteredSuggestions = useMemo(() => {
+    if (debouncedClientName.length === 0) return [];
+    
+    const searchLower = debouncedClientName.toLowerCase();
+    return clientSuggestions.filter((c) =>
+      c.name.toLowerCase().includes(searchLower),
+    );
+  }, [clientSuggestions, debouncedClientName]);
 
   const handleSuggestionClick = (name: string, id: string) => {
     setClientName(name);
