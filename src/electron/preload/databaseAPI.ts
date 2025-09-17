@@ -250,4 +250,43 @@ export const databaseAPI = {
       ipcRenderer.invoke("db:services:update", { id, data }),
     delete: (id: string) => ipcRenderer.invoke("db:services:delete", id),
   },
+  bills: {
+    create: (data: {
+      title: string;
+      description?: string;
+      type: string;
+      amount: number;
+      nextBillDate: Date;
+      duration: string;
+      notes?: string;
+    }) => ipcRenderer.invoke("db:bills:create", data),
+    getAll: () => ipcRenderer.invoke("db:bills:getAll"),
+    getById: (id: string) => ipcRenderer.invoke("db:bills:getById", id),
+    update: (id: string, data: {
+      title?: string;
+      description?: string;
+      type?: string;
+      amount?: number;
+      nextBillDate?: Date;
+      duration?: string;
+      notes?: string;
+    }) => ipcRenderer.invoke("db:bills:update", { id, data }),
+    delete: (id: string) => ipcRenderer.invoke("db:bills:delete", id),
+    getFiltered: (filters?: {
+      type?: string;
+      duration?: string;
+      search?: string;
+      dateFrom?: Date;
+      dateTo?: Date;
+    }) => ipcRenderer.invoke("db:bills:getFiltered", filters),
+    getDueSoon: (days?: number) => ipcRenderer.invoke("db:bills:getDueSoon", days),
+    getStats: () => ipcRenderer.invoke("db:bills:getStats"),
+    getBillTypes: () => ipcRenderer.invoke("db:bills:getBillTypes"),
+    getBillTitles: () => ipcRenderer.invoke("db:bills:getBillTitles"),
+    getBillByTitle: (title: string) => ipcRenderer.invoke("db:bills:getBillByTitle", title),
+    recordPayment: (billId: string, amount: number, notes?: string) => ipcRenderer.invoke("db:bills:recordPayment", billId, amount, notes),
+    getBillWithPayments: (billId: string) => ipcRenderer.invoke("db:bills:getBillWithPayments", billId),
+    getAllPayments: () => ipcRenderer.invoke("db:bills:getAllPayments"),
+    resetBillToNextDuration: (id: string) => ipcRenderer.invoke("db:bills:resetBillToNextDuration", id),
+  },
 };

@@ -21,6 +21,7 @@ const Clients = React.lazy(() => import("./clients"));
 const Cashier = React.lazy(() => import("./cashier"));
 const Stock = React.lazy(() => import("./stock"));
 const History = React.lazy(() => import("./history"));
+const Bills = React.lazy(() => import("./bills"));
 const Administrator = React.lazy(() => import("./administrator"));
 
 export default function App() {
@@ -120,6 +121,14 @@ export default function App() {
                             element={
                               <ProtectedRoute requireAdmin>
                                 <History />
+                              </ProtectedRoute>
+                            }
+                          />
+                          <Route
+                            path="/bills"
+                            element={
+                              <ProtectedRoute requireAdmin>
+                                <Bills />
                               </ProtectedRoute>
                             }
                           />

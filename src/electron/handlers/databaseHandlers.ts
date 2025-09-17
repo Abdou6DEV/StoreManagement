@@ -83,6 +83,7 @@ import {
   updateService,
   deleteService,
 } from "../../lib/database/services";
+import { bills } from "../../lib/database/bills";
 
 export function setupDatabaseHandlers() {
   // Products handlers
@@ -425,4 +426,70 @@ export function setupDatabaseHandlers() {
   ipcMain.handle("db:services:delete", async (_event, id: string) => {
     return await deleteService(id);
   });
+
+  // Bills handlers
+  ipcMain.handle("db:bills:create", async (_event, data) => {
+    return await bills.create(data);
+  });
+
+  ipcMain.handle("db:bills:getAll", async () => {
+    return await bills.getAll();
+  });
+
+  ipcMain.handle("db:bills:getById", async (_event, id: string) => {
+    return await bills.getById(id);
+  });
+
+  ipcMain.handle("db:bills:update", async (_event, { id, data }) => {
+    return await bills.update(id, data);
+  });
+
+  ipcMain.handle("db:bills:delete", async (_event, id: string) => {
+    return await bills.delete(id);
+  });
+
+
+  ipcMain.handle("db:bills:getFiltered", async (_event, filters) => {
+    return await bills.getFiltered(filters);
+  });
+
+  ipcMain.handle("db:bills:getOverdue", async () => {
+    return await bills.getOverdue();
+  });
+
+  ipcMain.handle("db:bills:getDueSoon", async (_event, days) => {
+    return await bills.getDueSoon(days);
+  });
+
+  ipcMain.handle("db:bills:getStats", async () => {
+    return await bills.getStats();
+  });
+
+  ipcMain.handle("db:bills:getBillTypes", async () => {
+    return await bills.getBillTypes();
+  });
+
+  ipcMain.handle("db:bills:resetBillToNextDuration", async (_event, id: string) => {
+    return await bills.resetBillToNextDuration(id);
+  });
+
+  ipcMain.handle("db:bills:getBillTitles", async () => {
+    return await bills.getBillTitles();
+  });
+
+  ipcMain.handle("db:bills:getBillByTitle", async (_event, title: string) => {
+    return await bills.getBillByTitle(title);
+  });
+
+  ipcMain.handle("db:bills:recordPayment", async (_event, billId: string, amount: number, notes?: string) => {
+    return await bills.recordPayment(billId, amount, notes);
+  });
+
+ipcMain.handle("db:bills:getBillWithPayments", async (_event, billId: string) => {
+  return await bills.getBillWithPayments(billId);
+});
+
+ipcMain.handle("db:bills:getAllPayments", async () => {
+  return await bills.getAllPayments();
+});
 }
