@@ -33,6 +33,7 @@ import { Tooltip } from "../../../lib/components/tooltip";
 import { ConfirmDialog } from "../../../lib/components/confirmDialog";
 import { Badge } from "../../../lib/components/badge";
 import BillsHistoryModal from "./billsHistoryModal";
+import EditBillModal from "./editBillModal";
 
 interface BillsTableProps {
   bills: Bill[];
@@ -75,11 +76,13 @@ const BillsTable: React.FC<BillsTableProps> = ({
   const isRTL = i18n.language === "ar";
   const [selectedBill, setSelectedBill] = useState<Bill | null>(null);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingBill, setEditingBill] = useState<Bill | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   const formatCurrency = (amount: number) => {
     const value = amount / 100;
-    return `${value % 1 === 0 ? value.toFixed(0) : value.toFixed(2)} DA`;
+    return `${value % 1 === 0 ? value.toFixed(0) : value.toFixed(2)} ${t("bills.currency", "DA")}`;
   };
 
   const formatDate = (date: Date) => {
@@ -140,6 +143,20 @@ const BillsTable: React.FC<BillsTableProps> = ({
     } catch (error) {
       console.error("Error loading payment history:", error);
     }
+  };
+
+  const handleEditBill = (bill: Bill) => {
+    setEditingBill(bill);
+    setShowEditModal(true);
+  };
+
+  const handleEditModalClose = () => {
+    setShowEditModal(false);
+    setEditingBill(null);
+  };
+
+  const handleBillUpdated = () => {
+    onEdit(editingBill!); // This will trigger a refresh in the parent component
   };
 
   // Mark bills as seen when viewing filtered tables
@@ -314,11 +331,11 @@ const BillsTable: React.FC<BillsTableProps> = ({
                       <span>{formatDate(bill.nextBillDate)}</span>
                       {isOverdue(bill.nextBillDate, bill.duration) ? (
                         <Badge className="bg-red-100 text-red-800 text-xs hover:bg-red-100">
-                          Overdue
+                          {t("bills.overdue", "Overdue")}
                         </Badge>
                       ) : isDueSoon(bill.nextBillDate, bill.duration) && (
                         <Badge className="bg-orange-100 text-orange-800 text-xs hover:bg-orange-100">
-                          Due Soon
+                          {t("bills.dueSoon", "Due Soon")}
                         </Badge>
                       )}
                     </div>
@@ -346,7 +363,7 @@ const BillsTable: React.FC<BillsTableProps> = ({
 
                     <Tooltip content={t("bills.editTooltip", "Edit bill")}>
                       <Button
-                        onClick={() => onEdit(bill)}
+                        onClick={() => handleEditBill(bill)}
                         size="sm"
                         variant="outline"
                         className="text-green-600 border-green-200 hover:bg-green-50 dark:text-green-400 dark:border-green-800 dark:hover:bg-green-950/30"
@@ -430,11 +447,18 @@ const BillsTable: React.FC<BillsTableProps> = ({
         onClose={() => setShowHistoryModal(false)}
       />
 
+      <EditBillModal
+        isOpen={showEditModal}
+        onClose={handleEditModalClose}
+        bill={editingBill}
+        onBillUpdated={handleBillUpdated}
+      />
+
       <ConfirmDialog
         open={deleteConfirmId !== null}
         onOpenChange={(open) => !open && setDeleteConfirmId(null)}
-        title="Delete Bill"
-        message="Are you sure you want to delete this bill? This action cannot be undone."
+        title={t("bills.deleteBill", "Delete Bill")}
+        message={t("bills.deleteBillConfirm", "Are you sure you want to delete this bill? This action cannot be undone.")}
         onConfirm={() => {
           if (deleteConfirmId) {
             onDelete(deleteConfirmId);

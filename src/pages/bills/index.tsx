@@ -76,6 +76,10 @@ export default function BillsPage() {
   const [typeFilter, setTypeFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [dueFilter, setDueFilter] = useState("all");
+  
+  // Payments filter states
+  const [paymentsSearchTerm, setPaymentsSearchTerm] = useState("");
+  const [paymentsTypeFilter, setPaymentsTypeFilter] = useState("all");
   const [billTypes, setBillTypes] = useState<string[]>([]);
   const [allBills, setAllBills] = useState<Bill[]>([]);
   const [seenOverdueBills, setSeenOverdueBills] = useState<Set<string>>(new Set());
@@ -92,7 +96,7 @@ export default function BillsPage() {
       setAllBills(billsData);
     } catch (error) {
       console.error("Error loading bills:", error);
-      showToast("Failed to load bills", "error");
+      showToast(t("bills.failedToLoadBills", "Failed to load bills"), "error");
     } finally {
       setLoading(false);
     }
@@ -210,16 +214,36 @@ export default function BillsPage() {
     setBillsCurrentPage(1);
   }, [searchTerm, typeFilter, statusFilter, dueFilter, dueSoonThresholdDays]);
 
+  // Reset payments pagination when payments filters change
+  useEffect(() => {
+    setPaymentsCurrentPage(1);
+  }, [paymentsSearchTerm, paymentsTypeFilter]);
+
+  // Filter payments
+  const filteredPayments = allPayments.filter((payment) => {
+    // Search filter
+    const search = paymentsSearchTerm.toLowerCase();
+    const matchesSearch = !search || 
+      payment.bill.title.toLowerCase().includes(search) ||
+      payment.bill.type.toLowerCase().includes(search) ||
+      (payment.notes && payment.notes.toLowerCase().includes(search));
+
+    // Type filter
+    const matchesType = paymentsTypeFilter === "all" || payment.bill.type === paymentsTypeFilter;
+
+    return matchesSearch && matchesType;
+  });
+
   // Pagination calculations
   const billsTotalPages = Math.ceil(filteredBills.length / billsItemsPerPage);
-  const paymentsTotalPages = Math.ceil(allPayments.length / paymentsItemsPerPage);
+  const paymentsTotalPages = Math.ceil(filteredPayments.length / paymentsItemsPerPage);
   
   const paginatedBills = filteredBills.slice(
     (billsCurrentPage - 1) * billsItemsPerPage,
     billsCurrentPage * billsItemsPerPage
   );
-  
-  const paginatedPayments = allPayments.slice(
+
+  const paginatedPayments = filteredPayments.slice(
     (paymentsCurrentPage - 1) * paymentsItemsPerPage,
     paymentsCurrentPage * paymentsItemsPerPage
   );
@@ -244,7 +268,7 @@ export default function BillsPage() {
       setAllPayments(payments);
     } catch (error) {
       console.error("Error loading all payments:", error);
-      showToast("Failed to load payments", "error");
+      showToast(t("bills.failedToLoadPayments", "Failed to load payments"), "error");
     }
   };
 
@@ -278,8 +302,9 @@ export default function BillsPage() {
   }, []);
 
   const handleEdit = (bill: Bill) => {
-    setEditingBill(bill);
-    setOpenPanel("add");
+    // This will be handled by the EditBillModal in the BillsTable component
+    // We just need to refresh the bills list
+    loadBills();
   };
 
   const handleDelete = async (billId: string) => {
@@ -287,10 +312,10 @@ export default function BillsPage() {
       setDeleteLoading(billId);
       await window.api.database.bills.delete(billId);
       await loadBills();
-      showToast("Bill deleted successfully", "success");
+      showToast(t("bills.billDeletedSuccessfully", "Bill deleted successfully"), "success");
     } catch (error) {
       console.error("Error deleting bill:", error);
-      showToast("Failed to delete bill", "error");
+      showToast(t("bills.failedToDeleteBill", "Failed to delete bill"), "error");
     } finally {
       setDeleteLoading(null);
     }
@@ -482,8 +507,8 @@ export default function BillsPage() {
                       aria-label={t("bills.filterByStatus", "Filter by status")}
                     >
                       {statusFilter === "all" ? t("bills.allStatuses", "All Statuses") : 
-                       statusFilter === "recurring" ? t("bills.recurring", "Recurring") : 
-                       t("bills.oneTime", "One-time")}
+                       statusFilter === "recurring" ? t("bills.actif", "Actif") : 
+                       t("bills.inactif", "Inactif")}
                       <ChevronDown className="ml-2 w-4 h-4" />
                     </Button>
                   </PopoverTrigger>
@@ -509,7 +534,7 @@ export default function BillsPage() {
                             value="recurring"
                             onSelect={() => setStatusFilter("recurring")}
                           >
-                            {t("bills.recurring", "Recurring")}
+                            {t("bills.actif", "Actif")}
                             <Check
                               className={cn(
                                 "ml-auto h-4 w-4",
@@ -522,7 +547,7 @@ export default function BillsPage() {
                             value="oneTime"
                             onSelect={() => setStatusFilter("oneTime")}
                           >
-                            {t("bills.oneTime", "One-time")}
+                            {t("bills.inactif", "Inactif")}
                             <Check
                               className={cn(
                                 "ml-auto h-4 w-4",
@@ -541,12 +566,28 @@ export default function BillsPage() {
                   <PopoverTrigger asChild>
                     <Button
                       variant="outline"
-                      className="px-3 py-1.5"
+                      className="px-3 py-1.5 relative"
                       aria-label={t("bills.filterByDueStatus", "Filter by due status")}
                     >
-                      {dueFilter === "all" ? t("bills.allDueStatuses", "All Due Statuses") : 
-                       dueFilter === "dueSoon" ? t("bills.dueSoon", "Due Soon") : 
-                       t("bills.overdue", "Overdue")}
+                      <div className="flex items-center gap-2">
+                        {dueFilter === "all" ? t("bills.allDueStatuses", "All Due Statuses") : 
+                         dueFilter === "dueSoon" ? t("bills.dueSoon", "Due Soon") : 
+                         t("bills.overdue", "Overdue")}
+                        {unseenOverdueBillsCount > 0 && (
+                          <BadgeNotification 
+                            count={unseenOverdueBillsCount} 
+                            variant="red"
+                            className="h-4 text-xs"
+                          />
+                        )}
+                        {unseenOverdueBillsCount === 0 && unseenDueSoonBillsCount > 0 && (
+                          <BadgeNotification 
+                            count={unseenDueSoonBillsCount} 
+                            variant="orange"
+                            className="h-4 text-xs"
+                          />
+                        )}
+                      </div>
                       <ChevronDown className="ml-2 w-4 h-4" />
                     </Button>
                   </PopoverTrigger>
@@ -578,7 +619,7 @@ export default function BillsPage() {
                                 <BadgeNotification 
                                   count={unseenDueSoonBillsCount} 
                                   variant="orange"
-                                  className="h-4 text-xs"
+                                  className="absolute top-1 right-3 z-10"
                                 />
                               )}
                             </div>
@@ -600,7 +641,7 @@ export default function BillsPage() {
                                 <BadgeNotification 
                                   count={unseenOverdueBillsCount} 
                                   variant="red"
-                                  className="h-4 text-xs"
+                                  className="absolute top-1 right-3 z-10"
                                 />
                               )}
                             </div>
@@ -670,6 +711,66 @@ export default function BillsPage() {
                     </PopoverContent>
                   </Popover>
                 </div>
+
+                {/* Search input - shown in both views */}
+                <input
+                    type="text"
+                    placeholder={t("bills.searchPayments", "Search payments...")}
+                    value={paymentsSearchTerm}
+                    onChange={(e) => setPaymentsSearchTerm(e.target.value)}
+                  className="px-3 py-1.5 rounded-md border-2 border-primary/20 bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition max-w-[220px]"
+                  aria-label={t("bills.searchPayments", "Search payments")}
+                />
+
+                {/* Type Filter Dropdown */}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="px-3 py-1.5"
+                      aria-label={t("bills.filterByType", "Filter by type")}
+                    >
+                      {paymentsTypeFilter === "all" ? t("bills.allTypes", "All Types") : paymentsTypeFilter}
+                      <ChevronDown className="ml-2 w-4 h-4" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[200px] p-0 z-50">
+                    <Command shouldFilter={false}>
+                      <CommandList>
+                        <CommandGroup>
+                          <CommandItem
+                            key="all"
+                            value=""
+                            onSelect={() => setPaymentsTypeFilter("all")}
+                          >
+                            {t("bills.allTypes", "All Types")}
+                            <Check
+                              className={cn(
+                                "ml-auto h-4 w-4",
+                                paymentsTypeFilter === "all" ? "opacity-100" : "opacity-0",
+                              )}
+                            />
+                          </CommandItem>
+                    {billTypes.map(type => (
+                            <CommandItem
+                              key={type}
+                              value={type}
+                              onSelect={() => setPaymentsTypeFilter(type)}
+                            >
+                              {type}
+                              <Check
+                                className={cn(
+                                  "ml-auto h-4 w-4",
+                                  paymentsTypeFilter === type ? "opacity-100" : "opacity-0",
+                                )}
+                              />
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
             </div>
           )}
@@ -683,6 +784,11 @@ export default function BillsPage() {
                      itemsPerPage={paymentsItemsPerPage}
                      onPageChange={setPaymentsCurrentPage}
                      onItemsPerPageChange={setPaymentsItemsPerPage}
+                     searchTerm={paymentsSearchTerm}
+                     onSearchChange={setPaymentsSearchTerm}
+                     typeFilter={paymentsTypeFilter}
+                     onTypeFilterChange={setPaymentsTypeFilter}
+                     billTypes={billTypes}
                    />
                  ) : (
                    <>

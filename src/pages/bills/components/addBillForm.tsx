@@ -36,20 +36,20 @@ const initialForm = {
   notes: "",
 };
 
-const durationOptions = [
-  { value: "NO_NEXT", label: "No next bill" },
-  { value: "1_MONTH", label: "1 month" },
-  { value: "2_MONTHS", label: "2 months" },
-  { value: "3_MONTHS", label: "3 months" },
-  { value: "4_MONTHS", label: "4 months" },
-  { value: "5_MONTHS", label: "5 months" },
-  { value: "6_MONTHS", label: "6 months" },
-  { value: "7_MONTHS", label: "7 months" },
-  { value: "8_MONTHS", label: "8 months" },
-  { value: "9_MONTHS", label: "9 months" },
-  { value: "10_MONTHS", label: "10 months" },
-  { value: "11_MONTHS", label: "11 months" },
-  { value: "ANNUALLY", label: "Annually" },
+const getDurationOptions = (t: any) => [
+  { value: "NO_NEXT", label: t("bills.noNextBill", "No next bill") },
+  { value: "1_MONTH", label: t("bills.oneMonth", "1 month") },
+  { value: "2_MONTHS", label: t("bills.twoMonths", "2 months") },
+  { value: "3_MONTHS", label: t("bills.threeMonths", "3 months") },
+  { value: "4_MONTHS", label: t("bills.fourMonths", "4 months") },
+  { value: "5_MONTHS", label: t("bills.fiveMonths", "5 months") },
+  { value: "6_MONTHS", label: t("bills.sixMonths", "6 months") },
+  { value: "7_MONTHS", label: t("bills.sevenMonths", "7 months") },
+  { value: "8_MONTHS", label: t("bills.eightMonths", "8 months") },
+  { value: "9_MONTHS", label: t("bills.nineMonths", "9 months") },
+  { value: "10_MONTHS", label: t("bills.tenMonths", "10 months") },
+  { value: "11_MONTHS", label: t("bills.elevenMonths", "11 months") },
+  { value: "ANNUALLY", label: t("bills.annually", "Annually") },
 ];
 
 // Calculate next bill date based on duration
@@ -116,6 +116,8 @@ export default function AddBillForm({
   // Refs for dropdown management
   const titleInputRef = useRef<HTMLInputElement>(null);
   const typeInputRef = useRef<HTMLInputElement>(null);
+  
+  const durationOptions = getDurationOptions(t);
 
   useEffect(() => {
     if (editingBill) {
@@ -333,7 +335,7 @@ export default function AddBillForm({
 
         await window.api.database.bills.update(editingBill.id, billData);
         onBillUpdated?.();
-        showToast("Bill updated successfully", "success");
+        showToast(t("bills.billUpdatedSuccessfully", "Bill updated successfully"), "success");
       } else if (isExistingBill) {
         // Record payment for existing bill
         const existingBill = await window.api.database.bills.getBillByTitle(form.title.trim());
@@ -344,7 +346,7 @@ export default function AddBillForm({
             form.notes.trim() || undefined
           );
           onBillAdded?.();
-          showToast("Payment recorded successfully", "success");
+          showToast(t("bills.paymentRecordedSuccessfully", "Payment recorded successfully"), "success");
         }
       } else {
         // Create new bill
@@ -362,13 +364,13 @@ export default function AddBillForm({
 
         await window.api.database.bills.create(billData);
         onBillAdded?.();
-        showToast("Bill added successfully", "success");
+        showToast(t("bills.billAddedSuccessfully", "Bill added successfully"), "success");
       }
       
       setForm(initialForm);
       setIsExistingBill(false);
     } catch (err) {
-      showToast("Failed to save bill", "error");
+      showToast(t("bills.failedToSaveBill", "Failed to save bill"), "error");
     } finally {
       setLoading(false);
     }
@@ -386,7 +388,7 @@ export default function AddBillForm({
             <FileText className="w-5 h-5 text-purple-600" />
           </div>
           <h2 className="text-lg font-bold text-foreground">
-            {editingBill ? "Edit Bill" : isExistingBill ? "Pay Bill" : "Add Bill"}
+            {editingBill ? t("bills.editBill", "Edit Bill") : isExistingBill ? t("bills.payBill", "Pay Bill") : t("bills.addBill", "Add Bill")}
           </h2>
         </div>
         {openPanel === "add" ? (
@@ -399,13 +401,13 @@ export default function AddBillForm({
         <form onSubmit={handleAddBill} className="p-6 space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
             <Legend>
-              <label>Title</label>
+              <label>{t("bills.title", "Title")}</label>
               <div className="relative">
                 <input
                   ref={titleInputRef}
                   data-field="bill-title"
                   type="text"
-                  placeholder="Enter bill title"
+                  placeholder={t("bills.enterBillTitle", "Enter bill title")}
                   value={form.title}
                   onChange={(e) => handleTitleSearch(e.target.value)}
                   onKeyDown={handleTitleKeyDown}
@@ -441,7 +443,7 @@ export default function AddBillForm({
                         <div className="text-sm text-muted-foreground">
                           {(bill.amount / 100) % 1 === 0 
                             ? (bill.amount / 100).toFixed(0) 
-                            : (bill.amount / 100).toFixed(2)} DA
+                            : (bill.amount / 100).toFixed(2)} {t("bills.currency", "DA")}
                         </div>
                       </div>
                     ))}
@@ -449,14 +451,14 @@ export default function AddBillForm({
                 )}
               </div>
             </Legend>
-            <Legend>
-              <label>Type</label>
+              <Legend>
+                <label>{t("bills.type", "Type")}</label>
               <div className="relative">
                 <input
                   ref={typeInputRef}
                   data-field="bill-type"
                   type="text"
-                  placeholder="Enter bill type"
+                  placeholder={t("bills.enterBillType", "Enter bill type")}
                   value={form.type}
                   onChange={(e) => handleTypeSearch(e.target.value)}
                   onKeyDown={handleTypeKeyDown}
@@ -496,13 +498,13 @@ export default function AddBillForm({
               </div>
             </Legend>
             <Legend>
-              <label>Amount (DA)</label>
+              <label>{t("bills.amountLabel", "Amount")} ({t("bills.currency", "DA")})</label>
               <input
                 data-field="bill-amount"
                 type="number"
                 step="0.01"
                 min="0"
-                placeholder="Enter amount"
+                placeholder={t("bills.enterAmount", "Enter amount")}
                 value={form.amount}
                 onChange={(e) => handleFormChange("amount", e.target.value)}
                 className="w-full px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-purple-500/50 focus:border-purple-500 transition-all"
@@ -510,13 +512,13 @@ export default function AddBillForm({
               />
             </Legend>
             <Legend>
-              <label>Next Bill</label>
+              <label>{t("bills.nextBill", "Next Bill")}</label>
               <Select
                 value={form.duration}
                 onValueChange={(value) => handleFormChange("duration", value)}
               >
                 <SelectTrigger className="w-full h-12 px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-purple-500/50 focus:border-purple-500 transition-all">
-                  <SelectValue placeholder="Select duration" />
+                  <SelectValue placeholder={t("bills.selectDuration", "Select duration")} />
                 </SelectTrigger>
                 <SelectContent>
                   {durationOptions.map((option) => (
@@ -528,20 +530,20 @@ export default function AddBillForm({
               </Select>
             </Legend>
             <Legend>
-              <label>Description</label>
+              <label>{t("bills.description", "Description")}</label>
               <input
                 type="text"
-                placeholder="Enter description (optional)"
+                placeholder={t("bills.enterDescriptionOptional", "Enter description (optional)")}
                 value={form.description}
                 onChange={(e) => handleFormChange("description", e.target.value)}
                 className="w-full px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-purple-500/50 focus:border-purple-500 transition-all"
               />
             </Legend>
             <Legend>
-              <label>Notes</label>
+              <label>{t("bills.notes", "Notes")}</label>
               <input
                 type="text"
-                placeholder="Enter notes (optional)"
+                placeholder={t("bills.enterNotesOptional", "Enter notes (optional)")}
                 value={form.notes}
                 onChange={(e) => handleFormChange("notes", e.target.value)}
                 className="w-full px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-purple-500/50 focus:border-purple-500 transition-all"
@@ -558,12 +560,12 @@ export default function AddBillForm({
               {loading ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  {editingBill ? "Updating..." : isExistingBill ? "Recording Payment..." : "Adding..."}
+                  {editingBill ? t("bills.updating", "Updating...") : isExistingBill ? t("bills.recordingPayment", "Recording Payment...") : t("bills.adding", "Adding...")}
                 </>
               ) : (
                 <>
                   <FileText className="w-4 h-4" />
-                  {editingBill ? "Update Bill" : isExistingBill ? "Record Payment" : "Add Bill"}
+                  {editingBill ? t("bills.updateBill", "Update Bill") : isExistingBill ? t("bills.recordPayment", "Record Payment") : t("bills.addBill", "Add Bill")}
                 </>
               )}
             </Button>

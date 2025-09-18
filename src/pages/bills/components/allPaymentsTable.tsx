@@ -1,8 +1,21 @@
 import React from "react";
-import { Calendar, DollarSign } from "lucide-react";
+import { Calendar, CreditCard, ChevronDown, Check } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Tooltip } from "../../../lib/components/tooltip";
 import { Badge } from "../../../lib/components/badge";
+import { Button } from "../../../lib/components/button";
+import {
+  Command,
+  CommandGroup,
+  CommandItem,
+  CommandList,
+} from "../../../lib/components/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "../../../lib/components/popover";
+import { cn } from "../../../lib/utils";
 import {
   Pagination,
   PaginationContent,
@@ -34,6 +47,12 @@ interface AllPaymentsTableProps {
   itemsPerPage: number;
   onPageChange: (page: number) => void;
   onItemsPerPageChange: (size: number) => void;
+  searchTerm: string;
+  onSearchChange: (term: string) => void;
+  typeFilter: string;
+  onTypeFilterChange: (type: string) => void;
+  billTypes: string[];
+  showFilters?: boolean;
 }
 
 const AllPaymentsTable: React.FC<AllPaymentsTableProps> = ({ 
@@ -42,14 +61,20 @@ const AllPaymentsTable: React.FC<AllPaymentsTableProps> = ({
   totalPages, 
   itemsPerPage, 
   onPageChange, 
-  onItemsPerPageChange 
+  onItemsPerPageChange,
+  searchTerm,
+  onSearchChange,
+  typeFilter,
+  onTypeFilterChange,
+  billTypes,
+  showFilters = true
 }) => {
   const { t, i18n } = useTranslation();
   const isRTL = i18n.language === "ar";
 
   const formatCurrency = (amount: number) => {
     const value = amount / 100;
-    return `${value % 1 === 0 ? value.toFixed(0) : value.toFixed(2)} DA`;
+    return `${value % 1 === 0 ? value.toFixed(0) : value.toFixed(2)} ${t("bills.currency", "DA")}`;
   };
 
   const formatDate = (date: Date) => {
@@ -117,7 +142,7 @@ const AllPaymentsTable: React.FC<AllPaymentsTableProps> = ({
   if (payments.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 gap-3 text-center">
-        <DollarSign className="w-12 h-12 text-green-500 mb-1" />
+        <CreditCard className="w-12 h-12 text-blue-500 mb-1" />
         <h3 className="text-xl font-semibold text-foreground">
           {t("bills.noPaymentsTitle", "No payments found")}
         </h3>
@@ -130,13 +155,6 @@ const AllPaymentsTable: React.FC<AllPaymentsTableProps> = ({
 
   return (
     <>
-      {/* Payment count badge */}
-      <div className="flex justify-end mb-4">
-        <Badge className="bg-green-100 text-green-800">
-          {payments.length} payments
-        </Badge>
-      </div>
-
       {/* Table */}
       <div className="overflow-auto rounded-lg border border-muted">
         <table
@@ -145,6 +163,9 @@ const AllPaymentsTable: React.FC<AllPaymentsTableProps> = ({
           <thead className="bg-muted text-muted-foreground">
             <tr>
               <th className={`px-4 py-3 ${isRTL ? "text-right" : "text-left"}`}>
+                {t("bills.paymentDate", "Payment Date")}
+              </th>
+              <th className={`px-4 py-3 ${isRTL ? "text-right" : "text-left"}`}>
                 {t("bills.billName", "Bill Name")}
               </th>
               <th className={`px-4 py-3 ${isRTL ? "text-right" : "text-left"}`}>
@@ -152,9 +173,6 @@ const AllPaymentsTable: React.FC<AllPaymentsTableProps> = ({
               </th>
               <th className={`px-4 py-3 ${isRTL ? "text-right" : "text-left"}`}>
                 {t("bills.amount", "Amount")}
-              </th>
-              <th className={`px-4 py-3 ${isRTL ? "text-right" : "text-left"}`}>
-                {t("bills.paymentDate", "Payment Date")}
               </th>
               <th className={`px-4 py-3 ${isRTL ? "text-right" : "text-left"}`}>
                 {t("bills.notes", "Notes")}
@@ -167,28 +185,26 @@ const AllPaymentsTable: React.FC<AllPaymentsTableProps> = ({
                 key={payment.id}
                 className="h-[48px] hover:bg-muted/40 transition"
               >
+                <td className={`px-4 py-2 ${isRTL ? "text-right" : "text-left"}`}>
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-muted-foreground" />
+                    <span>{formatDate(payment.paidDate)}</span>
+                  </div>
+                </td>
                 <td
                   className={`px-4 py-2 font-medium ${isRTL ? "text-right" : "text-left"}`}
                 >
                   {payment.bill.title}
                 </td>
-                <td className={`px-4 py-2 ${isRTL ? "text-right" : "text-left"}`}>
-                  <Badge className="bg-blue-100 text-blue-800 text-xs">
-                    {payment.bill.type}
-                  </Badge>
+                <td className={`px-4 py-2 font-medium ${isRTL ? "text-right" : "text-left"}`}>
+                  {payment.bill.type}
                 </td>
                 <td className={`px-4 py-2 ${isRTL ? "text-right" : "text-left"}`}>
                   <div className="flex items-center gap-2">
-                    <DollarSign className="w-4 h-4 text-green-600" />
-                    <span className="font-medium text-green-700">
+                    <CreditCard className="w-4 h-4 text-blue-600" />
+                    <span className="font-medium text-blue-700">
                       {formatCurrency(payment.amount)}
                     </span>
-                  </div>
-                </td>
-                <td className={`px-4 py-2 ${isRTL ? "text-right" : "text-left"}`}>
-                  <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-muted-foreground" />
-                    <span>{formatDate(payment.paidDate)}</span>
                   </div>
                 </td>
                 <td className={`px-4 py-2 ${isRTL ? "text-right" : "text-left"}`}>

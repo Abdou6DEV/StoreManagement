@@ -53,21 +53,71 @@ export default function BillsHistoryModal({ bill, isOpen, onClose }: BillsHistor
 
   const formatCurrency = (amount: number) => {
     const value = amount / 100;
-    return `${value % 1 === 0 ? value.toFixed(0) : value.toFixed(2)} DA`;
+    return `${value % 1 === 0 ? value.toFixed(0) : value.toFixed(2)} ${t("bills.currency", "DA")}`;
   };
 
   const formatDate = (date: Date) => {
-    return new Date(date).toLocaleDateString(i18n.language);
+    return new Date(date).toLocaleDateString(i18n.language, {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
   };
 
   const formatDateTime = (date: Date) => {
     return new Date(date).toLocaleString(i18n.language, {
+      day: '2-digit',
+      month: '2-digit',
       year: 'numeric',
-      month: 'short',
-      day: 'numeric',
       hour: '2-digit',
       minute: '2-digit'
     });
+  };
+
+  const formatDuration = (duration: string) => {
+    if (duration === "NO_NEXT") return t("bills.noNext", "No Next");
+    
+    // Handle formats like "6_MONTHS", "1_YEAR", "30_DAYS", etc.
+    const parts = duration.split("_");
+    if (parts.length === 2) {
+      const number = parts[0];
+      const unit = parts[1].toLowerCase();
+      
+      switch (unit) {
+        case "day":
+        case "days":
+          return `${number} ${number === "1" ? t("bills.day", "day") : t("bills.days", "days")}`;
+        case "month":
+        case "months":
+          return `${number} ${number === "1" ? t("bills.month", "month") : t("bills.months", "months")}`;
+        case "year":
+        case "years":
+          return `${number} ${number === "1" ? t("bills.year", "year") : t("bills.years", "years")}`;
+        default:
+          return duration; // fallback to original if format is unexpected
+      }
+    }
+    
+    return duration; // fallback to original if format is unexpected
+  };
+
+  const calculateDurationBetweenPayments = (currentPayment: any, previousPayment: any) => {
+    if (!previousPayment) return null;
+    
+    const currentDate = new Date(currentPayment.paidDate);
+    const previousDate = new Date(previousPayment.paidDate);
+    const diffInMs = currentDate.getTime() - previousDate.getTime();
+    const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+    
+    if (diffInDays === 0) return t("bills.sameDay", "Same day");
+    if (diffInDays === 1) return t("bills.oneDay", "1 day");
+    if (diffInDays < 30) return `${diffInDays} ${t("bills.days", "days")}`;
+    if (diffInDays < 365) {
+      const months = Math.floor(diffInDays / 30);
+      return `${months} ${months === 1 ? t("bills.month", "month") : t("bills.months", "months")}`;
+    }
+    const years = Math.floor(diffInDays / 365);
+    return `${years} ${years === 1 ? t("bills.year", "year") : t("bills.years", "years")}`;
   };
 
   const statusConfig = getBillStatus(bill.duration);
@@ -118,11 +168,11 @@ export default function BillsHistoryModal({ bill, isOpen, onClose }: BillsHistor
           </div>
           <div className={isRTL ? "text-right" : "text-left"}>
             <label className="text-sm font-medium text-muted-foreground">
-              {t("bills.status", "Status")}
+              {t("bills.duration", "Duration")}
             </label>
-            <Badge className={`text-xs ${statusConfig.color}`}>
-              {statusConfig.label}
-            </Badge>
+            <p className="text-foreground font-medium text-purple-600">
+              {formatDuration(bill.duration)}
+            </p>
           </div>
           <div className={isRTL ? "text-right" : "text-left"}>
             <label className="text-sm font-medium text-muted-foreground">
