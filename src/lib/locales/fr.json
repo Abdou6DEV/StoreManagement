@@ -922,5 +922,10 @@
       "5": "Ven",
       "6": "Sam"
     }
+  },
+
+  "bills": {
+    "active": "Actif",
+    "notActive": "Inactif"
   }
 }

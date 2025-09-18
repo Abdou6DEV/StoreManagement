@@ -518,6 +518,10 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
 
     dueSoonThresholdDays,
 
+    newlyOverdueCreditsIds,
+
+    newlyDueSoonCreditsIds,
+
   );
 
   const filteredVersements = getFilteredPayments(
@@ -533,6 +537,10 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
     dateFilter,
 
     dueSoonThresholdDays,
+
+    newlyOverdueVersementsIds,
+
+    newlyDueSoonVersementsIds,
 
   );
 

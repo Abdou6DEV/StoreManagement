@@ -13,6 +13,7 @@ import {
   Users,
   ShoppingCart,
   History,
+  FileText,
 } from "lucide-react";
 
 export const OptionsList: React.FC = () => {
@@ -22,7 +23,10 @@ export const OptionsList: React.FC = () => {
   const [enableLowStockBadge, setEnableLowStockBadge] = useState(true);
   const [enableOverduePaymentsBadge, setEnableOverduePaymentsBadge] = useState(true);
   const [enableDueSoonPaymentsBadge, setEnableDueSoonPaymentsBadge] = useState(true);
+  const [enableOverdueBillsBadge, setEnableOverdueBillsBadge] = useState(true);
+  const [enableDueSoonBillsBadge, setEnableDueSoonBillsBadge] = useState(true);
   const [dueSoonThresholdDays, setDueSoonThresholdDays] = useState(2);
+  const [dueSoonBillsThresholdDays, setDueSoonBillsThresholdDays] = useState(2);
   const [cashierSalesHistoryDays, setCashierSalesHistoryDays] = useState(7);
   const [enableCashierHistory, setEnableCashierHistory] = useState(true);
   const [loading, setLoading] = useState(true);
@@ -38,17 +42,23 @@ export const OptionsList: React.FC = () => {
       window.api.database.options.get("enableLowStockBadge"),
       window.api.database.options.get("enableOverduePaymentsBadge"),
       window.api.database.options.get("enableDueSoonPaymentsBadge"),
+      window.api.database.options.get("enableOverdueBillsBadge"),
+      window.api.database.options.get("enableDueSoonBillsBadge"),
       window.api.database.options.get("dueSoonThresholdDays"),
+      window.api.database.options.get("dueSoonBillsThresholdDays"),
       window.api.database.options.get("cashierSalesHistoryDays"),
       window.api.database.options.get("enableCashierHistory"),
     ])
-      .then(([lowStockVal, storeCashVal, enableBadgeVal, enableOverdueVal, enableDueSoonVal, dueSoonThresholdVal, cashierSalesHistoryDaysVal, enableCashierHistoryVal]) => {
+      .then(([lowStockVal, storeCashVal, enableBadgeVal, enableOverdueVal, enableDueSoonVal, enableOverdueBillsVal, enableDueSoonBillsVal, dueSoonThresholdVal, dueSoonBillsThresholdVal, cashierSalesHistoryDaysVal, enableCashierHistoryVal]) => {
         setLowStock(lowStockVal ? Number(lowStockVal) : 0);
         setStoreCash(storeCashVal ? Number(storeCashVal) : 0);
         setEnableLowStockBadge(enableBadgeVal !== "false"); // Default to true if not set
         setEnableOverduePaymentsBadge(enableOverdueVal !== "false"); // Default to true if not set
         setEnableDueSoonPaymentsBadge(enableDueSoonVal !== "false"); // Default to true if not set
+        setEnableOverdueBillsBadge(enableOverdueBillsVal !== "false"); // Default to true if not set
+        setEnableDueSoonBillsBadge(enableDueSoonBillsVal !== "false"); // Default to true if not set
         setDueSoonThresholdDays(dueSoonThresholdVal ? Number(dueSoonThresholdVal) : 2); // Default to 2 days
+        setDueSoonBillsThresholdDays(dueSoonBillsThresholdVal ? Number(dueSoonBillsThresholdVal) : 2); // Default to 2 days
         setCashierSalesHistoryDays(cashierSalesHistoryDaysVal ? Number(cashierSalesHistoryDaysVal) : 7); // Default to 7 days
         setEnableCashierHistory(enableCashierHistoryVal !== "false"); // Default to true if not set
         setLoading(false);
@@ -70,7 +80,10 @@ export const OptionsList: React.FC = () => {
         window.api.database.options.set("enableLowStockBadge", String(enableLowStockBadge)),
         window.api.database.options.set("enableOverduePaymentsBadge", String(enableOverduePaymentsBadge)),
         window.api.database.options.set("enableDueSoonPaymentsBadge", String(enableDueSoonPaymentsBadge)),
+        window.api.database.options.set("enableOverdueBillsBadge", String(enableOverdueBillsBadge)),
+        window.api.database.options.set("enableDueSoonBillsBadge", String(enableDueSoonBillsBadge)),
         window.api.database.options.set("dueSoonThresholdDays", String(dueSoonThresholdDays)),
+        window.api.database.options.set("dueSoonBillsThresholdDays", String(dueSoonBillsThresholdDays)),
         window.api.database.options.set("cashierSalesHistoryDays", String(cashierSalesHistoryDays)),
         window.api.database.options.set("enableCashierHistory", String(enableCashierHistory)),
       ]);
@@ -355,6 +368,115 @@ export const OptionsList: React.FC = () => {
                   : t("admin.disabled", "Disabled")
                 }
               </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Bills Notifications Section */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-3 mb-4">
+            <FileText className="w-6 h-6 text-purple-500" />
+            <h3 className="text-lg font-semibold text-purple-600">
+              {t("admin.billsNotifications", "Bills Notifications")}
+            </h3>
+          </div>
+
+          {/* Overdue Bills Notification Badge Setting */}
+          <div className="flex flex-col md:flex-row items-start md:items-center gap-4 bg-muted/40 border border-border rounded-lg p-6">
+            <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center">
+              <Bell className="w-6 h-6 text-red-600" />
+            </div>
+            <div className="flex-1 w-full">
+              <label
+                className="block text-base font-semibold mb-2"
+                htmlFor="enableOverdueBillsBadge"
+              >
+                {t("admin.enableOverdueBillsBadge", "Enable Overdue Bills Notification Badge")}
+              </label>
+              <p className="text-sm text-muted-foreground mb-3">
+                {t("admin.enableOverdueBillsBadgeDesc", "Show notification badge on bills menu item when there are overdue bills")}
+              </p>
+              <div className="flex items-center gap-3">
+                <Switch
+                  id="enableOverdueBillsBadge"
+                  checked={enableOverdueBillsBadge}
+                  onCheckedChange={setEnableOverdueBillsBadge}
+                  disabled={loading || saving}
+                  aria-label={t("admin.enableOverdueBillsBadge", "Enable Overdue Bills Notification Badge")}
+                />
+                <span className="text-sm font-medium">
+                  {enableOverdueBillsBadge 
+                    ? t("admin.enabled", "Enabled") 
+                    : t("admin.disabled", "Disabled")
+                  }
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Due Soon Bills Notification Badge Setting */}
+          <div className="flex flex-col md:flex-row items-start md:items-center gap-4 bg-muted/40 border border-border rounded-lg p-6">
+            <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg flex items-center justify-center">
+              <Bell className="w-6 h-6 text-orange-600" />
+            </div>
+            <div className="flex-1 w-full">
+              <label
+                className="block text-base font-semibold mb-2"
+                htmlFor="enableDueSoonBillsBadge"
+              >
+                {t("admin.enableDueSoonBillsBadge", "Enable Due Soon Bills Notification Badge")}
+              </label>
+              <p className="text-sm text-muted-foreground mb-3">
+                {t("admin.enableDueSoonBillsBadgeDesc", "Show notification badge on bills menu item when there are bills due soon")}
+              </p>
+              <div className="flex items-center gap-3">
+                <Switch
+                  id="enableDueSoonBillsBadge"
+                  checked={enableDueSoonBillsBadge}
+                  onCheckedChange={setEnableDueSoonBillsBadge}
+                  disabled={loading || saving}
+                  aria-label={t("admin.enableDueSoonBillsBadge", "Enable Due Soon Bills Notification Badge")}
+                />
+                <span className="text-sm font-medium">
+                  {enableDueSoonBillsBadge 
+                    ? t("admin.enabled", "Enabled") 
+                    : t("admin.disabled", "Disabled")
+                  }
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Due Soon Bills Threshold Setting */}
+          <div className="flex flex-col md:flex-row items-start md:items-center gap-4 bg-muted/40 border border-border rounded-lg p-6">
+            <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg flex items-center justify-center">
+              <Bell className="w-6 h-6 text-orange-600" />
+            </div>
+            <div className="flex-1 w-full">
+              <label
+                className="block text-base font-semibold mb-2"
+                htmlFor="dueSoonBillsThreshold"
+              >
+                {t("admin.dueSoonBillsThreshold", "Due Soon Bills Threshold (Days)")}
+              </label>
+              <p className="text-sm text-muted-foreground mb-3">
+                {t("admin.dueSoonBillsThresholdDesc", "Number of days before due date to show 'due soon' notification for bills")}
+              </p>
+              <div className="flex items-center gap-3">
+                <Input
+                  id="dueSoonBillsThreshold"
+                  type="number"
+                  min="1"
+                  max="30"
+                  value={dueSoonBillsThresholdDays}
+                  onChange={(e) => setDueSoonBillsThresholdDays(Number(e.target.value))}
+                  disabled={loading || saving}
+                  className="w-20"
+                />
+                <span className="text-sm text-muted-foreground">
+                  {t("admin.days", "days")}
+                </span>
+              </div>
             </div>
           </div>
         </div>

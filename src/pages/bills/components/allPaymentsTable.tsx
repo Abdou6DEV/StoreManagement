@@ -53,13 +53,13 @@ const AllPaymentsTable: React.FC<AllPaymentsTableProps> = ({
   };
 
   const formatDate = (date: Date) => {
-    return new Date(date).toLocaleDateString(i18n.language, {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    const d = new Date(date);
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    return `${day}/${month}/${year} ${hours}:${minutes}`;
   };
 
   const renderPageNumbers = () => {
@@ -201,25 +201,8 @@ const AllPaymentsTable: React.FC<AllPaymentsTableProps> = ({
       </div>
 
       {/* Pagination Controls */}
-      {totalPages > 1 && (
-        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mt-6">
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">
-              {t("pagination.itemsPerPage", "Items per page")}:
-            </span>
-            <Select value={itemsPerPage.toString()} onValueChange={(value) => onItemsPerPageChange(parseInt(value))}>
-              <SelectTrigger className="w-20">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="5">5</SelectItem>
-                <SelectItem value="10">10</SelectItem>
-                <SelectItem value="20">20</SelectItem>
-                <SelectItem value="50">50</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
+      {payments.length > 0 && (
+        <div className="flex justify-center mt-6">
           <Pagination>
             <PaginationContent>
               <PaginationItem>

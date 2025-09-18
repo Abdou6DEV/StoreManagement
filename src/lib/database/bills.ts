@@ -73,6 +73,13 @@ export const bills = {
 
   async getAll(): Promise<Bill[]> {
     return prisma.bill.findMany({
+      include: {
+        payments: {
+          orderBy: {
+            paidDate: 'desc'
+          }
+        }
+      },
       orderBy: {
         createdAt: "desc",
       },
@@ -122,7 +129,7 @@ export const bills = {
     const where: any = {};
 
     if (filters.type) {
-      where.type = { contains: filters.type, mode: "insensitive" };
+      where.type = { contains: filters.type };
     }
 
     if (filters.duration) {
@@ -131,10 +138,10 @@ export const bills = {
 
     if (filters.search) {
       where.OR = [
-        { title: { contains: filters.search, mode: "insensitive" } },
-        { description: { contains: filters.search, mode: "insensitive" } },
-        { type: { contains: filters.search, mode: "insensitive" } },
-        { notes: { contains: filters.search, mode: "insensitive" } },
+        { title: { contains: filters.search } },
+        { description: { contains: filters.search } },
+        { type: { contains: filters.search } },
+        { notes: { contains: filters.search } },
       ];
     }
 

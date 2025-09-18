@@ -19,6 +19,8 @@ import { useAuth } from "../contexts/authContext";
 import { useLowStock } from "../contexts/lowStockContext";
 import { useOverduePayments } from "../contexts/overduePaymentsContext";
 import { useDueSoonPayments } from "../contexts/dueSoonPaymentsContext";
+import { useOverdueBills } from "../contexts/overdueBillsContext";
+import { useDueSoonBills } from "../contexts/dueSoonBillsContext";
 import { BadgeNotification } from "./badgeNotification";
 
 const menuItems = [
@@ -69,6 +71,8 @@ export default function Sidebar() {
   const { unseenLowStockCount } = useLowStock();
   const { unseenOverdueCreditsCount, unseenOverdueVersementsCount } = useOverduePayments();
   const { unseenDueSoonCreditsCount, unseenDueSoonVersementsCount } = useDueSoonPayments();
+  const { unseenOverdueBillsCount } = useOverdueBills();
+  const { unseenDueSoonBillsCount } = useDueSoonBills();
   const savedCollapsedState = localStorage.getItem("sidebarCollapsed");
   const [collapsed, setCollapsed] = useState(savedCollapsedState === "true");
   const [showText, setShowText] = useState(!collapsed);
@@ -76,9 +80,11 @@ export default function Sidebar() {
   const [enableBadge, setEnableBadge] = useState(false); // Start as false to prevent flash
   const [badgeLoaded, setBadgeLoaded] = useState(false);
   const [showOverdueBadge, setShowOverdueBadge] = useState(true); // Start with overdue badge
+  const [showOverdueBillsBadge, setShowOverdueBillsBadge] = useState(true); // Start with overdue bills badge
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const textTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const badgeCycleRef = useRef<NodeJS.Timeout | null>(null);
+  const billsBadgeCycleRef = useRef<NodeJS.Timeout | null>(null);
 
   // Load badge setting and listen for changes
   useEffect(() => {
@@ -130,6 +136,37 @@ export default function Sidebar() {
       }
     }
   }, [unseenOverdueCreditsCount, unseenOverdueVersementsCount, unseenDueSoonCreditsCount, unseenDueSoonVersementsCount]);
+
+  // Cycling badge logic for bills - alternate between overdue and due soon every 10 seconds
+  useEffect(() => {
+    const hasOverdueBills = unseenOverdueBillsCount > 0;
+    const hasDueSoonBills = unseenDueSoonBillsCount > 0;
+    
+    // Only cycle if both badges exist
+    if (hasOverdueBills && hasDueSoonBills) {
+      // Clear any existing cycle
+      if (billsBadgeCycleRef.current) {
+        clearInterval(billsBadgeCycleRef.current);
+      }
+      
+      // Start cycling every 10 seconds
+      billsBadgeCycleRef.current = setInterval(() => {
+        setShowOverdueBillsBadge(prev => !prev);
+      }, 10000);
+      
+      return () => {
+        if (billsBadgeCycleRef.current) {
+          clearInterval(billsBadgeCycleRef.current);
+        }
+      };
+    } else {
+      // If only one type exists, show that one and stop cycling
+      setShowOverdueBillsBadge(hasOverdueBills);
+      if (billsBadgeCycleRef.current) {
+        clearInterval(billsBadgeCycleRef.current);
+      }
+    }
+  }, [unseenOverdueBillsCount, unseenDueSoonBillsCount]);
 
   // Filter menu items based on user role
   const filteredMenuItems = menuItems.filter((item) => {
@@ -226,6 +263,26 @@ export default function Sidebar() {
                   {!showOverdueBadge && (unseenDueSoonCreditsCount > 0 || unseenDueSoonVersementsCount > 0) && (
                     <BadgeNotification 
                       count={unseenDueSoonCreditsCount + unseenDueSoonVersementsCount} 
+                      variant="orange"
+                      className="transition-all duration-500 ease-in-out"
+                    />
+                  )}
+                </>
+              )}
+              {item.key === "bills" && (unseenOverdueBillsCount > 0 || unseenDueSoonBillsCount > 0) && (
+                <>
+                  {/* Overdue Bills Badge - Show when cycling to overdue or when only overdue exists */}
+                  {showOverdueBillsBadge && unseenOverdueBillsCount > 0 && (
+                    <BadgeNotification 
+                      count={unseenOverdueBillsCount} 
+                      variant="red"
+                      className="transition-all duration-500 ease-in-out"
+                    />
+                  )}
+                  {/* Due Soon Bills Badge - Show when cycling to due soon or when only due soon exists */}
+                  {!showOverdueBillsBadge && unseenDueSoonBillsCount > 0 && (
+                    <BadgeNotification 
+                      count={unseenDueSoonBillsCount} 
                       variant="orange"
                       className="transition-all duration-500 ease-in-out"
                     />

@@ -37,20 +37,11 @@ interface BillsHistoryModalProps {
   onClose: () => void;
 }
 
-const durationConfig: Record<string, { label: string; color: string }> = {
-  NO_NEXT: { label: "No next bill", color: "bg-gray-100 text-gray-800" },
-  "1_MONTH": { label: "1 month", color: "bg-blue-100 text-blue-800" },
-  "2_MONTHS": { label: "2 months", color: "bg-green-100 text-green-800" },
-  "3_MONTHS": { label: "3 months", color: "bg-yellow-100 text-yellow-800" },
-  "4_MONTHS": { label: "4 months", color: "bg-orange-100 text-orange-800" },
-  "5_MONTHS": { label: "5 months", color: "bg-red-100 text-red-800" },
-  "6_MONTHS": { label: "6 months", color: "bg-purple-100 text-purple-800" },
-  "7_MONTHS": { label: "7 months", color: "bg-pink-100 text-pink-800" },
-  "8_MONTHS": { label: "8 months", color: "bg-indigo-100 text-indigo-800" },
-  "9_MONTHS": { label: "9 months", color: "bg-cyan-100 text-cyan-800" },
-  "10_MONTHS": { label: "10 months", color: "bg-teal-100 text-teal-800" },
-  "11_MONTHS": { label: "11 months", color: "bg-lime-100 text-lime-800" },
-  ANNUALLY: { label: "Annually", color: "bg-emerald-100 text-emerald-800" },
+const getBillStatus = (duration: string) => {
+  if (duration === "NO_NEXT") {
+    return { label: "Not Active", color: "bg-gray-100 text-gray-800" };
+  }
+  return { label: "Active", color: "bg-green-100 text-green-800" };
 };
 
 export default function BillsHistoryModal({ bill, isOpen, onClose }: BillsHistoryModalProps) {
@@ -79,10 +70,7 @@ export default function BillsHistoryModal({ bill, isOpen, onClose }: BillsHistor
     });
   };
 
-  const durationConfigItem = durationConfig[bill.duration] || { 
-    label: bill.duration, 
-    color: "bg-gray-100 text-gray-800" 
-  };
+  const statusConfig = getBillStatus(bill.duration);
 
   const totalPaid = bill.payments?.reduce((sum, payment) => sum + payment.amount, 0) || 0;
   const averagePayment = bill.payments && bill.payments.length > 0 
@@ -130,10 +118,10 @@ export default function BillsHistoryModal({ bill, isOpen, onClose }: BillsHistor
           </div>
           <div className={isRTL ? "text-right" : "text-left"}>
             <label className="text-sm font-medium text-muted-foreground">
-              {t("bills.duration", "Duration")}
+              {t("bills.status", "Status")}
             </label>
-            <Badge className={`text-xs ${durationConfigItem.color}`}>
-              {durationConfigItem.label}
+            <Badge className={`text-xs ${statusConfig.color}`}>
+              {statusConfig.label}
             </Badge>
           </div>
           <div className={isRTL ? "text-right" : "text-left"}>
@@ -186,7 +174,7 @@ export default function BillsHistoryModal({ bill, isOpen, onClose }: BillsHistor
                 {t("bills.paymentFrequency", "Payment Frequency")}
               </label>
               <p className="text-foreground font-semibold text-purple-600">
-                {durationConfigItem.label}
+                {statusConfig.label}
               </p>
             </div>
             <div className={isRTL ? "text-right" : "text-left"}>

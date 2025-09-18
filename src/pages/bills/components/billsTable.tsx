@@ -11,7 +11,6 @@ import {
   PaginationNext,
   PaginationEllipsis,
 } from "../../../lib/components/pagination";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../lib/components/select";
 interface Bill {
   id: string;
   title: string;
@@ -46,6 +45,12 @@ interface BillsTableProps {
   itemsPerPage: number;
   onPageChange: (page: number) => void;
   onItemsPerPageChange: (size: number) => void;
+  dueFilter?: string;
+  dueSoonThresholdDays?: number;
+  newlyOverdueBillsIds?: Set<string>;
+  newlyDueSoonBillsIds?: Set<string>;
+  onMarkOverdueAsSeen?: () => void;
+  onMarkDueSoonAsSeen?: () => void;
 }
 
 const BillsTable: React.FC<BillsTableProps> = ({
@@ -59,6 +64,12 @@ const BillsTable: React.FC<BillsTableProps> = ({
   itemsPerPage,
   onPageChange,
   onItemsPerPageChange,
+  dueFilter = "all",
+  dueSoonThresholdDays = 7,
+  newlyOverdueBillsIds = new Set(),
+  newlyDueSoonBillsIds = new Set(),
+  onMarkOverdueAsSeen,
+  onMarkDueSoonAsSeen,
 }) => {
   const { t, i18n } = useTranslation();
   const isRTL = i18n.language === "ar";
@@ -72,25 +83,54 @@ const BillsTable: React.FC<BillsTableProps> = ({
   };
 
   const formatDate = (date: Date) => {
-    return new Date(date).toLocaleDateString(i18n.language, {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
+    const d = new Date(date);
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    return `${day}/${month}/${year}`;
   };
 
-  const isDueSoon = (date: Date) => {
+  const isDueSoon = (date: Date, duration: string) => {
+    // One-time bills (NO_NEXT) should never show as due soon
+    if (duration === "NO_NEXT") return false;
+    
     const today = new Date();
     const dueDate = new Date(date);
     const diffTime = dueDate.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays <= 7 && diffDays >= 0;
+    return diffDays <= dueSoonThresholdDays && diffDays >= 0;
+  };
+
+  const isOverdue = (date: Date, duration: string) => {
+    // One-time bills (NO_NEXT) should never show as overdue
+    if (duration === "NO_NEXT") return false;
+    
+    const today = new Date();
+    const dueDate = new Date(date);
+    const diffTime = dueDate.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays < 0;
+  };
+
+  const getBillStatus = (duration: string) => {
+    if (duration === "NO_NEXT") {
+      return t("bills.notActive", "Not Active");
+    }
+    return t("bills.active", "Active");
   };
 
   const getTotalPaidAmount = (payments: any[]) => {
     if (!payments || payments.length === 0) return 0;
     return payments.reduce((total, payment) => total + payment.amount, 0);
   };
+
+  const getLastPaymentDate = (payments: any[]) => {
+    if (!payments || payments.length === 0) return null;
+    // Sort payments by date (most recent first) and get the first one
+    const sortedPayments = payments.sort((a, b) => new Date(b.paidDate).getTime() - new Date(a.paidDate).getTime());
+    return sortedPayments[0].paidDate;
+  };
+
 
   const loadPaymentHistory = async (billId: string) => {
     try {
@@ -101,6 +141,15 @@ const BillsTable: React.FC<BillsTableProps> = ({
       console.error("Error loading payment history:", error);
     }
   };
+
+  // Mark bills as seen when viewing filtered tables
+  useEffect(() => {
+    if (dueFilter === "overdue" && newlyOverdueBillsIds.size > 0 && onMarkOverdueAsSeen) {
+      onMarkOverdueAsSeen();
+    } else if (dueFilter === "dueSoon" && newlyDueSoonBillsIds.size > 0 && onMarkDueSoonAsSeen) {
+      onMarkDueSoonAsSeen();
+    }
+  }, [dueFilter, newlyOverdueBillsIds.size, newlyDueSoonBillsIds.size, onMarkOverdueAsSeen, onMarkDueSoonAsSeen]);
 
   const renderPageNumbers = () => {
     const items = [];
@@ -185,7 +234,13 @@ const BillsTable: React.FC<BillsTableProps> = ({
                 {t("bills.type", "Type")}
               </th>
               <th className={`px-4 py-3 ${isRTL ? "text-right" : "text-left"}`}>
+                {t("bills.status", "Status")}
+              </th>
+              <th className={`px-4 py-3 ${isRTL ? "text-right" : "text-left"}`}>
                 {t("bills.totalPaidAmount", "Total Paid Amount")}
+              </th>
+              <th className={`px-4 py-3 ${isRTL ? "text-right" : "text-left"}`}>
+                {t("bills.lastPaymentDate", "Last Payment Date")}
               </th>
               <th className={`px-4 py-3 ${isRTL ? "text-right" : "text-left"}`}>
                 {t("bills.nextPaymentDate", "Next Payment Date")}
@@ -196,10 +251,22 @@ const BillsTable: React.FC<BillsTableProps> = ({
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {bills.map((bill) => (
+            {bills.map((bill) => {
+              const isNewlyOverdue = newlyOverdueBillsIds.has(bill.id);
+              const isNewlyDueSoon = newlyDueSoonBillsIds.has(bill.id);
+              const shouldHighlight = isNewlyOverdue || isNewlyDueSoon;
+              
+              
+              return (
               <tr
                 key={bill.id}
-                className="h-[48px] hover:bg-muted/40 transition"
+                className={`h-[48px] hover:bg-muted/40 transition ${
+                  shouldHighlight
+                    ? isNewlyOverdue
+                      ? "bg-red-50 dark:bg-red-950/20 border-l-4 border-l-red-500"
+                      : "bg-orange-50 dark:bg-orange-950/20 border-l-4 border-l-orange-500"
+                    : ""
+                }`}
               >
                 <td
                   className={`px-4 py-2 font-medium ${isRTL ? "text-right" : "text-left"}`}
@@ -210,19 +277,52 @@ const BillsTable: React.FC<BillsTableProps> = ({
                   {bill.type}
                 </td>
                 <td className={`px-4 py-2 ${isRTL ? "text-right" : "text-left"}`}>
+                  <span className={`text-xs px-2 py-1 rounded-full ${
+                    bill.duration === "NO_NEXT" 
+                      ? "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300" 
+                      : "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300"
+                  }`}>
+                    {getBillStatus(bill.duration)}
+                  </span>
+                </td>
+                <td className={`px-4 py-2 ${isRTL ? "text-right" : "text-left"}`}>
                   <span className="font-bold text-blue-600 dark:text-blue-400">
                     {formatCurrency(getTotalPaidAmount(bill.payments || []))}
                   </span>
                 </td>
                 <td className={`px-4 py-2 ${isRTL ? "text-right" : "text-left"}`}>
-                  <div className="flex items-center gap-2">
-                    <span>{formatDate(bill.nextBillDate)}</span>
-                    {isDueSoon(bill.nextBillDate) && (
-                      <Badge className="bg-orange-100 text-orange-800 text-xs hover:bg-orange-100">
-                        Due Soon
-                      </Badge>
-                    )}
-                  </div>
+                  {(() => {
+                    const lastPaymentDate = getLastPaymentDate(bill.payments || []);
+                    return lastPaymentDate ? (
+                      <span className="text-primary">
+                        {formatDate(lastPaymentDate)}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground italic">
+                        {t("bills.noPaymentsYet", "No payments yet")}
+                      </span>
+                    );
+                  })()}
+                </td>
+                <td className={`px-4 py-2 ${isRTL ? "text-right" : "text-left"}`}>
+                  {bill.duration === "NO_NEXT" ? (
+                    <span className="text-muted-foreground italic">
+                      {t("bills.noNextPayment", "No next payment")}
+                    </span>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <span>{formatDate(bill.nextBillDate)}</span>
+                      {isOverdue(bill.nextBillDate, bill.duration) ? (
+                        <Badge className="bg-red-100 text-red-800 text-xs hover:bg-red-100">
+                          Overdue
+                        </Badge>
+                      ) : isDueSoon(bill.nextBillDate, bill.duration) && (
+                        <Badge className="bg-orange-100 text-orange-800 text-xs hover:bg-orange-100">
+                          Due Soon
+                        </Badge>
+                      )}
+                    </div>
+                  )}
                 </td>
                 <td className={`px-4 py-2 ${isRTL ? "text-right" : "text-left"}`}>
                   <div
@@ -275,31 +375,15 @@ const BillsTable: React.FC<BillsTableProps> = ({
                   </div>
                 </td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
       </div>
 
       {/* Pagination Controls */}
-      {totalPages > 1 && (
-        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mt-6">
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">
-              {t("pagination.itemsPerPage", "Items per page")}:
-            </span>
-            <Select value={itemsPerPage.toString()} onValueChange={(value) => onItemsPerPageChange(parseInt(value))}>
-              <SelectTrigger className="w-20">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="5">5</SelectItem>
-                <SelectItem value="10">10</SelectItem>
-                <SelectItem value="20">20</SelectItem>
-                <SelectItem value="50">50</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
+      {bills.length > 0 && (
+        <div className="flex justify-center mt-6">
           <Pagination>
             <PaginationContent>
               <PaginationItem>

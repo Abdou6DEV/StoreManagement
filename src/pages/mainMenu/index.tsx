@@ -14,6 +14,8 @@ import { useAuth } from "../../lib/contexts/authContext";
 import { useLowStock } from "../../lib/contexts/lowStockContext";
 import { useOverduePayments } from "../../lib/contexts/overduePaymentsContext";
 import { useDueSoonPayments } from "../../lib/contexts/dueSoonPaymentsContext";
+import { useOverdueBills } from "../../lib/contexts/overdueBillsContext";
+import { useDueSoonBills } from "../../lib/contexts/dueSoonBillsContext";
 import "../../lib/i18n";
 
 export default function MainMenu() {
@@ -22,6 +24,8 @@ export default function MainMenu() {
   const { unseenLowStockCount } = useLowStock();
   const { unseenOverdueCreditsCount, unseenOverdueVersementsCount } = useOverduePayments();
   const { unseenDueSoonCreditsCount, unseenDueSoonVersementsCount } = useDueSoonPayments();
+  const { unseenOverdueBillsCount } = useOverdueBills();
+  const { unseenDueSoonBillsCount } = useDueSoonBills();
   const [enableBadge, setEnableBadge] = useState(false); // Start as false to prevent flash
   const [badgeLoaded, setBadgeLoaded] = useState(false);
 
@@ -146,6 +150,37 @@ export default function MainMenu() {
                        {unseenDueSoonCreditsCount + unseenDueSoonVersementsCount === 1 
                          ? t("mainMenu.oneDueSoonPayment", "1 due soon payment")
                          : t("mainMenu.dueSoonPayments", "{{count}} due soon payments", { count: unseenDueSoonCreditsCount + unseenDueSoonVersementsCount })
+                       }
+                     </div>
+                   )}
+                </div>
+              )}
+              {/* Bills Badges - Positioned inside container with border sharing */}
+              {item.key === "bills" && (unseenOverdueBillsCount > 0 || unseenDueSoonBillsCount > 0) && (
+                <div className="absolute top-0 right-0 rtl:right-auto rtl:left-0 flex flex-col">
+                   {/* Overdue Badge */}
+                   {unseenOverdueBillsCount > 0 && (
+                     <div className={`bg-red-600 text-white text-xs font-bold px-3 py-1 border-2 border-red-600 shadow-lg transition-all duration-300 ease-in-out h-[20px] flex items-center justify-center min-w-[60px] ${
+                       unseenDueSoonBillsCount > 0 
+                         ? 'rounded-tr-lg rtl:rounded-tl-lg rtl:rounded-tr-none' // Only top-right rounded when due soon exists below
+                         : 'rounded-tr-lg rounded-bl-lg rtl:rounded-tl-lg rtl:rounded-br-lg rtl:rounded-tr-none rtl:rounded-bl-none' // Top-right rounded, bottom-left rounded when only overdue exists
+                     }`}>
+                       {unseenOverdueBillsCount === 1 
+                         ? t("mainMenu.oneOverdueBill", "1 overdue bill")
+                         : t("mainMenu.overdueBills", "{{count}} overdue bills", { count: unseenOverdueBillsCount })
+                       }
+                     </div>
+                   )}
+                   {/* Due Soon Badge */}
+                   {unseenDueSoonBillsCount > 0 && (
+                     <div className={`bg-orange-500 text-white text-xs font-bold px-3 py-1 border-2 border-orange-500 shadow-lg transition-all duration-300 ease-in-out h-[20px] flex items-center justify-center min-w-[60px] ${
+                       unseenOverdueBillsCount > 0 
+                         ? 'rounded-bl-lg rtl:rounded-br-lg rtl:rounded-bl-none' // Only bottom-left rounded when overdue exists above
+                         : 'rounded-tr-lg rounded-bl-lg rtl:rounded-tl-lg rtl:rounded-br-lg rtl:rounded-tr-none rtl:rounded-bl-none' // Top-right rounded, bottom-left rounded when only due soon exists
+                     }`}>
+                       {unseenDueSoonBillsCount === 1 
+                         ? t("mainMenu.oneDueSoonBill", "1 due soon bill")
+                         : t("mainMenu.dueSoonBills", "{{count}} due soon bills", { count: unseenDueSoonBillsCount })
                        }
                      </div>
                    )}

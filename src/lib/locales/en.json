@@ -119,6 +119,8 @@
     "dueSoon": "Due Soon",
     "pending": "Pending",
     "oneTime": "One Time",
+    "active": "Active",
+    "notActive": "Not Active",
     "monthly": "Monthly",
     "annually": "Annually",
     "rent": "Rent",

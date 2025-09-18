@@ -1,12 +1,23 @@
 import { useState, useEffect } from "react";
 import { Button } from "../../lib/components/button";
-import { Plus, FileText } from "lucide-react";
+import { FileText, ChevronDown, Check, CreditCard, DollarSign } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useToast } from "../../lib/contexts/toastContext";
-import { Input } from "../../lib/components/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../lib/components/select";
-import { Badge } from "../../lib/components/badge";
-import { Search, Calendar } from "lucide-react";
+import { useOverdueBills } from "../../lib/contexts/overdueBillsContext";
+import { useDueSoonBills } from "../../lib/contexts/dueSoonBillsContext";
+import {
+  Command,
+  CommandGroup,
+  CommandItem,
+  CommandList,
+} from "../../lib/components/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "../../lib/components/popover";
+import { cn } from "../../lib/utils";
+import { BadgeNotification } from "../../lib/components/badgeNotification";
 
 import BillsTable from "./components/billsTable";
 import AllPaymentsTable from "./components/allPaymentsTable";
@@ -34,9 +45,10 @@ interface Bill {
 export default function BillsPage() {
   const { t } = useTranslation();
   const { showToast } = useToast();
+  const { unseenOverdueBillsCount, markOverdueBillsAsSeen } = useOverdueBills();
+  const { unseenDueSoonBillsCount, markDueSoonBillsAsSeen, dueSoonThresholdDays } = useDueSoonBills();
   const [openPanel, setOpenPanel] = useState<"add" | null>(null);
   const [showAllPayments, setShowAllPayments] = useState(false);
-  const [bills, setBills] = useState<Bill[]>([]);
   const [allPayments, setAllPayments] = useState<{
     id: string;
     billId: string;
@@ -62,31 +74,22 @@ export default function BillsPage() {
   // Filter states
   const [searchTerm, setSearchTerm] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
-  const [durationFilter, setDurationFilter] = useState("all");
-  const [dueSoonFilter, setDueSoonFilter] = useState(false);
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [dueFilter, setDueFilter] = useState("all");
   const [billTypes, setBillTypes] = useState<string[]>([]);
+  const [allBills, setAllBills] = useState<Bill[]>([]);
+  const [seenOverdueBills, setSeenOverdueBills] = useState<Set<string>>(new Set());
+  const [seenDueSoonBills, setSeenDueSoonBills] = useState<Set<string>>(new Set());
+  const [newlyOverdueBillsIds, setNewlyOverdueBillsIds] = useState<Set<string>>(new Set());
+  const [newlyDueSoonBillsIds, setNewlyDueSoonBillsIds] = useState<Set<string>>(new Set());
+  const [isViewingOverdueTable, setIsViewingOverdueTable] = useState(false);
+  const [isViewingDueSoonTable, setIsViewingDueSoonTable] = useState(false);
 
   const loadBills = async () => {
     try {
       setLoading(true);
-      const billsData = await window.api.database.bills.getFiltered({
-        search: searchTerm || undefined,
-        type: typeFilter !== "all" ? typeFilter : undefined,
-        duration: durationFilter !== "all" ? durationFilter : undefined,
-      });
-      
-      // Filter for due soon if needed
-      const filteredBills = dueSoonFilter 
-        ? billsData.filter((bill: Bill) => {
-            const today = new Date();
-            const dueDate = new Date(bill.nextBillDate);
-            const diffTime = dueDate.getTime() - today.getTime();
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            return diffDays <= 7 && diffDays >= 0;
-          })
-        : billsData;
-      
-      setBills(filteredBills);
+      const billsData = await window.api.database.bills.getAll();
+      setAllBills(billsData);
     } catch (error) {
       console.error("Error loading bills:", error);
       showToast("Failed to load bills", "error");
@@ -95,11 +98,123 @@ export default function BillsPage() {
     }
   };
 
+  // Client-side filtering and sorting logic (like stock table)
+  const filteredBills = allBills
+    .filter((bill: Bill) => {
+      // Search filter
+      const search = searchTerm.toLowerCase();
+      const matchesSearch = !search || 
+        bill.title.toLowerCase().includes(search) ||
+        (bill.description && bill.description.toLowerCase().includes(search)) ||
+        bill.type.toLowerCase().includes(search) ||
+        (bill.notes && bill.notes.toLowerCase().includes(search));
+
+      // Type filter
+      const matchesType = typeFilter === "all" || bill.type === typeFilter;
+
+      // Status filter (recurring vs one-time)
+      const matchesStatus = statusFilter === "all" || 
+        (statusFilter === "recurring" && bill.duration !== "NO_NEXT") ||
+        (statusFilter === "oneTime" && bill.duration === "NO_NEXT");
+
+      // Due status filter
+      let matchesDueStatus = true;
+      if (dueFilter !== "all") {
+        // Exclude one-time bills from due status filtering
+        if (bill.duration === "NO_NEXT") {
+          matchesDueStatus = false;
+        } else {
+          const today = new Date();
+          const dueDate = new Date(bill.nextBillDate);
+          const diffTime = dueDate.getTime() - today.getTime();
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          
+          if (dueFilter === "dueSoon") {
+            matchesDueStatus = diffDays <= dueSoonThresholdDays && diffDays >= 0;
+          } else if (dueFilter === "overdue") {
+            matchesDueStatus = diffDays < 0;
+          }
+        }
+      }
+
+      return matchesSearch && matchesType && matchesStatus && matchesDueStatus;
+    })
+    .sort((a, b) => {
+      // Prioritize highlighted bills (newly overdue and due soon)
+      const aIsHighlighted = newlyOverdueBillsIds.has(a.id) || newlyDueSoonBillsIds.has(a.id);
+      const bIsHighlighted = newlyOverdueBillsIds.has(b.id) || newlyDueSoonBillsIds.has(b.id);
+      
+      if (aIsHighlighted && !bIsHighlighted) return -1;
+      if (!aIsHighlighted && bIsHighlighted) return 1;
+      
+      // If both or neither are highlighted, sort by next bill date
+      return new Date(a.nextBillDate).getTime() - new Date(b.nextBillDate).getTime();
+    });
+
+  // Calculate newly overdue/due soon bills for highlighting
+  useEffect(() => {
+    if (dueFilter === "overdue") {
+      // Mark that we're viewing the overdue table
+      setIsViewingOverdueTable(true);
+      setIsViewingDueSoonTable(false);
+      
+      // Only calculate highlighting if we weren't already viewing the overdue table
+      if (!isViewingOverdueTable) {
+        const overdueBills = allBills.filter(bill => {
+          if (bill.duration === "NO_NEXT") return false;
+          const today = new Date();
+          const dueDate = new Date(bill.nextBillDate);
+          return dueDate < today && !seenOverdueBills.has(bill.id);
+        });
+        setNewlyOverdueBillsIds(new Set(overdueBills.map(bill => bill.id)));
+        setNewlyDueSoonBillsIds(new Set());
+      }
+    } else if (dueFilter === "dueSoon") {
+      // Mark that we're viewing the due soon table
+      setIsViewingDueSoonTable(true);
+      setIsViewingOverdueTable(false);
+      
+      // Only calculate highlighting if we weren't already viewing the due soon table
+      if (!isViewingDueSoonTable) {
+        const dueSoonBills = allBills.filter(bill => {
+          if (bill.duration === "NO_NEXT") return false;
+          const today = new Date();
+          const dueDate = new Date(bill.nextBillDate);
+          const diffTime = dueDate.getTime() - today.getTime();
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          return diffDays <= dueSoonThresholdDays && diffDays >= 0 && !seenDueSoonBills.has(bill.id);
+        });
+        setNewlyDueSoonBillsIds(new Set(dueSoonBills.map(bill => bill.id)));
+        setNewlyOverdueBillsIds(new Set());
+      }
+    } else {
+      // Mark as seen when filter is changed away from overdue or due soon
+      if (isViewingOverdueTable) {
+        markOverdueBillsAsSeen();
+        setIsViewingOverdueTable(false);
+      }
+      if (isViewingDueSoonTable) {
+        markDueSoonBillsAsSeen();
+        setIsViewingDueSoonTable(false);
+      }
+      
+      // Clear highlighting when filter is not overdue or due soon
+      setNewlyOverdueBillsIds(new Set());
+      setNewlyDueSoonBillsIds(new Set());
+    }
+  }, [dueFilter, allBills, seenOverdueBills, seenDueSoonBills, dueSoonThresholdDays, isViewingOverdueTable, isViewingDueSoonTable]);
+
+
+  // Reset pagination when filters change
+  useEffect(() => {
+    setBillsCurrentPage(1);
+  }, [searchTerm, typeFilter, statusFilter, dueFilter, dueSoonThresholdDays]);
+
   // Pagination calculations
-  const billsTotalPages = Math.ceil(bills.length / billsItemsPerPage);
+  const billsTotalPages = Math.ceil(filteredBills.length / billsItemsPerPage);
   const paymentsTotalPages = Math.ceil(allPayments.length / paymentsItemsPerPage);
   
-  const paginatedBills = bills.slice(
+  const paginatedBills = filteredBills.slice(
     (billsCurrentPage - 1) * billsItemsPerPage,
     billsCurrentPage * billsItemsPerPage
   );
@@ -109,10 +224,6 @@ export default function BillsPage() {
     paymentsCurrentPage * paymentsItemsPerPage
   );
 
-  // Reset pagination when filters change
-  useEffect(() => {
-    setBillsCurrentPage(1);
-  }, [searchTerm, typeFilter, durationFilter, dueSoonFilter]);
 
   useEffect(() => {
     setPaymentsCurrentPage(1);
@@ -137,11 +248,32 @@ export default function BillsPage() {
     }
   };
 
+
+
+  // Load seen bills from localStorage
   useEffect(() => {
-    loadBills();
-  }, [searchTerm, typeFilter, durationFilter, dueSoonFilter]);
+    const savedOverdue = localStorage.getItem('seenOverdueBills');
+    const savedDueSoon = localStorage.getItem('seenDueSoonBills');
+    
+    if (savedOverdue) {
+      setSeenOverdueBills(new Set(JSON.parse(savedOverdue)));
+    }
+    if (savedDueSoon) {
+      setSeenDueSoonBills(new Set(JSON.parse(savedDueSoon)));
+    }
+  }, []);
+
+  // Save seen bills to localStorage when they change
+  useEffect(() => {
+    localStorage.setItem('seenOverdueBills', JSON.stringify(Array.from(seenOverdueBills)));
+  }, [seenOverdueBills]);
 
   useEffect(() => {
+    localStorage.setItem('seenDueSoonBills', JSON.stringify(Array.from(seenDueSoonBills)));
+  }, [seenDueSoonBills]);
+
+  useEffect(() => {
+    loadBills();
     loadBillTypes();
   }, []);
 
@@ -185,6 +317,7 @@ export default function BillsPage() {
     setShowAllPayments(false);
   };
 
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -206,72 +339,337 @@ export default function BillsPage() {
       <div className="bg-card rounded-xl border border-border shadow-sm">
         <div className="p-6 space-y-4">
           {/* Header with toggle button */}
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-foreground">
+          <div className="flex items-center justify-between border-b border-border pb-3">
+            <div className="flex items-center gap-3">
+              {showAllPayments ? (
+                <DollarSign className="w-7 h-7 text-green-600" />
+              ) : (
+                <CreditCard className="w-7 h-7 text-purple-600" />
+              )}
+              <h1 className="text-2xl font-bold">
               {showAllPayments ? t("bills.allPayments", "All Payments") : t("bills.billsList", "Bills List")}
-            </h2>
+              </h1>
+            </div>
+            <div className="flex items-center gap-3">
             <Button
               onClick={showAllPayments ? handleBackToBills : handleViewPayments}
               variant="outline"
-              size="sm"
-              className="flex items-center gap-2"
+                className="gap-2"
             >
               <FileText className="w-4 h-4" />
               {showAllPayments ? t("bills.backToBills", "Back to Bills") : t("bills.allPaymentsView", "All Payments View")}
             </Button>
+            </div>
           </div>
 
           {/* Filters - only show for bills view */}
           {!showAllPayments && (
-            <div className="flex flex-wrap gap-4 items-center justify-between">
-              <div className="flex flex-wrap gap-4 items-center">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                  <Input
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div className="flex flex-wrap items-center gap-4">
+                {/* Items per page selector - shown in both views */}
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">
+                    {t("stock.itemsPerPage", "Items per page:")}
+                  </span>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="px-3 py-1.5 min-w-[70px]"
+                        aria-label={t(
+                          "stock.selectItemsPerPage",
+                          "Select items per page",
+                        )}
+                      >
+                        {billsItemsPerPage}
+                        <ChevronDown className="ml-2 w-4 h-4" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[120px] p-0 z-50">
+                      <Command shouldFilter={false}>
+                        <CommandList>
+                          <CommandGroup>
+                            {[5, 10, 25, 50, 100].map((size) => (
+                              <CommandItem
+                                key={size}
+                                value={size.toString()}
+                                onSelect={() => {
+                                  setBillsItemsPerPage(size);
+                                }}
+                              >
+                                {size}
+                                <Check
+                                  className={cn(
+                                    "ml-auto h-4 w-4",
+                                    billsItemsPerPage === size ? "opacity-100" : "opacity-0",
+                                  )}
+                                />
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                {/* Search input - shown in both views */}
+                <input
                     type="text"
                     placeholder={t("bills.searchBills", "Search bills...")}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 w-64"
-                  />
-                </div>
-                
-                <Select value={typeFilter} onValueChange={setTypeFilter}>
-                  <SelectTrigger className="w-40">
-                    <SelectValue placeholder="All Types" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Types</SelectItem>
+                  className="px-3 py-1.5 rounded-md border-2 border-primary/20 bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition max-w-[220px]"
+                  aria-label={t("bills.searchBills", "Search bills")}
+                />
+
+                {/* Type Filter Dropdown */}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="px-3 py-1.5"
+                      aria-label={t("bills.filterByType", "Filter by type")}
+                    >
+                      {typeFilter === "all" ? t("bills.allTypes", "All Types") : typeFilter}
+                      <ChevronDown className="ml-2 w-4 h-4" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[200px] p-0 z-50">
+                    <Command shouldFilter={false}>
+                      <CommandList>
+                        <CommandGroup>
+                          <CommandItem
+                            key="all"
+                            value=""
+                            onSelect={() => setTypeFilter("all")}
+                          >
+                            {t("bills.allTypes", "All Types")}
+                            <Check
+                              className={cn(
+                                "ml-auto h-4 w-4",
+                                typeFilter === "all" ? "opacity-100" : "opacity-0",
+                              )}
+                            />
+                          </CommandItem>
                     {billTypes.map(type => (
-                      <SelectItem key={type} value={type}>{type}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                            <CommandItem
+                              key={type}
+                              value={type}
+                              onSelect={() => setTypeFilter(type)}
+                            >
+                              {type}
+                              <Check
+                                className={cn(
+                                  "ml-auto h-4 w-4",
+                                  typeFilter === type ? "opacity-100" : "opacity-0",
+                                )}
+                              />
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
 
-                <Select value={durationFilter} onValueChange={setDurationFilter}>
-                  <SelectTrigger className="w-40">
-                    <SelectValue placeholder="All Durations" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Durations</SelectItem>
-                    <SelectItem value="NO_NEXT">No next bill</SelectItem>
-                    <SelectItem value="1_MONTH">1 month</SelectItem>
-                    <SelectItem value="2_MONTHS">2 months</SelectItem>
-                    <SelectItem value="3_MONTHS">3 months</SelectItem>
-                    <SelectItem value="6_MONTHS">6 months</SelectItem>
-                    <SelectItem value="ANNUALLY">Annually</SelectItem>
-                  </SelectContent>
-                </Select>
+                {/* Status Filter Dropdown */}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="px-3 py-1.5"
+                      aria-label={t("bills.filterByStatus", "Filter by status")}
+                    >
+                      {statusFilter === "all" ? t("bills.allStatuses", "All Statuses") : 
+                       statusFilter === "recurring" ? t("bills.recurring", "Recurring") : 
+                       t("bills.oneTime", "One-time")}
+                      <ChevronDown className="ml-2 w-4 h-4" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[200px] p-0 z-50">
+                    <Command shouldFilter={false}>
+                      <CommandList>
+                        <CommandGroup>
+                          <CommandItem
+                            key="all"
+                            value=""
+                            onSelect={() => setStatusFilter("all")}
+                          >
+                            {t("bills.allStatuses", "All Statuses")}
+                            <Check
+                              className={cn(
+                                "ml-auto h-4 w-4",
+                                statusFilter === "all" ? "opacity-100" : "opacity-0",
+                              )}
+                            />
+                          </CommandItem>
+                          <CommandItem
+                            key="recurring"
+                            value="recurring"
+                            onSelect={() => setStatusFilter("recurring")}
+                          >
+                            {t("bills.recurring", "Recurring")}
+                            <Check
+                              className={cn(
+                                "ml-auto h-4 w-4",
+                                statusFilter === "recurring" ? "opacity-100" : "opacity-0",
+                              )}
+                            />
+                          </CommandItem>
+                          <CommandItem
+                            key="oneTime"
+                            value="oneTime"
+                            onSelect={() => setStatusFilter("oneTime")}
+                          >
+                            {t("bills.oneTime", "One-time")}
+                            <Check
+                              className={cn(
+                                "ml-auto h-4 w-4",
+                                statusFilter === "oneTime" ? "opacity-100" : "opacity-0",
+                              )}
+                            />
+                          </CommandItem>
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
 
+                {/* Due Status Filter Dropdown */}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="px-3 py-1.5"
+                      aria-label={t("bills.filterByDueStatus", "Filter by due status")}
+                    >
+                      {dueFilter === "all" ? t("bills.allDueStatuses", "All Due Statuses") : 
+                       dueFilter === "dueSoon" ? t("bills.dueSoon", "Due Soon") : 
+                       t("bills.overdue", "Overdue")}
+                      <ChevronDown className="ml-2 w-4 h-4" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[200px] p-0 z-50">
+                    <Command shouldFilter={false}>
+                      <CommandList>
+                        <CommandGroup>
+                          <CommandItem
+                            key="all"
+                            value=""
+                            onSelect={() => setDueFilter("all")}
+                          >
+                            {t("bills.allDueStatuses", "All Due Statuses")}
+                            <Check
+                              className={cn(
+                                "ml-auto h-4 w-4",
+                                dueFilter === "all" ? "opacity-100" : "opacity-0",
+                              )}
+                            />
+                          </CommandItem>
+                          <CommandItem
+                            key="dueSoon"
+                            value="dueSoon"
+                            onSelect={() => setDueFilter("dueSoon")}
+                          >
+                            <div className="flex items-center gap-2">
+                              {t("bills.dueSoon", "Due Soon")}
+                              {unseenDueSoonBillsCount > 0 && (
+                                <BadgeNotification 
+                                  count={unseenDueSoonBillsCount} 
+                                  variant="orange"
+                                  className="h-4 text-xs"
+                                />
+                              )}
+                            </div>
+                            <Check
+                              className={cn(
+                                "ml-auto h-4 w-4",
+                                dueFilter === "dueSoon" ? "opacity-100" : "opacity-0",
+                              )}
+                            />
+                          </CommandItem>
+                          <CommandItem
+                            key="overdue"
+                            value="overdue"
+                            onSelect={() => setDueFilter("overdue")}
+                          >
+                            <div className="flex items-center gap-2">
+                              {t("bills.overdue", "Overdue")}
+                              {unseenOverdueBillsCount > 0 && (
+                                <BadgeNotification 
+                                  count={unseenOverdueBillsCount} 
+                                  variant="red"
+                                  className="h-4 text-xs"
+                                />
+                              )}
+                            </div>
+                            <Check
+                              className={cn(
+                                "ml-auto h-4 w-4",
+                                dueFilter === "overdue" ? "opacity-100" : "opacity-0",
+                              )}
+                            />
+                          </CommandItem>
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </div>
+          )}
+
+          {/* Filters for payments view */}
+          {showAllPayments && (
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div className="flex flex-wrap items-center gap-4">
+                {/* Items per page selector - shown in both views */}
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">
+                    {t("stock.itemsPerPage", "Items per page:")}
+                  </span>
+                  <Popover>
+                    <PopoverTrigger asChild>
                 <Button
-                  variant={dueSoonFilter ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setDueSoonFilter(!dueSoonFilter)}
-                  className="flex items-center gap-2"
-                >
-                  <Calendar className="w-4 h-4" />
-                  Due Soon
+                        variant="outline"
+                        className="px-3 py-1.5 min-w-[70px]"
+                        aria-label={t(
+                          "stock.selectItemsPerPage",
+                          "Select items per page",
+                        )}
+                      >
+                        {paymentsItemsPerPage}
+                        <ChevronDown className="ml-2 w-4 h-4" />
                 </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[120px] p-0 z-50">
+                      <Command shouldFilter={false}>
+                        <CommandList>
+                          <CommandGroup>
+                            {[5, 10, 25, 50, 100].map((size) => (
+                              <CommandItem
+                                key={size}
+                                value={size.toString()}
+                                onSelect={() => {
+                                  setPaymentsItemsPerPage(size);
+                                }}
+                              >
+                                {size}
+                                <Check
+                                  className={cn(
+                                    "ml-auto h-4 w-4",
+                                    paymentsItemsPerPage === size ? "opacity-100" : "opacity-0",
+                                  )}
+                                />
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                </div>
               </div>
             </div>
           )}
@@ -287,7 +685,8 @@ export default function BillsPage() {
                      onItemsPerPageChange={setPaymentsItemsPerPage}
                    />
                  ) : (
-                   <BillsTable
+                   <>
+                     <BillsTable
                      bills={paginatedBills}
                      onEdit={handleEdit}
                      onDelete={handleDelete}
@@ -298,7 +697,14 @@ export default function BillsPage() {
                      itemsPerPage={billsItemsPerPage}
                      onPageChange={setBillsCurrentPage}
                      onItemsPerPageChange={setBillsItemsPerPage}
+                      dueFilter={dueFilter}
+                      dueSoonThresholdDays={dueSoonThresholdDays}
+                      newlyOverdueBillsIds={newlyOverdueBillsIds}
+                      newlyDueSoonBillsIds={newlyDueSoonBillsIds}
+            onMarkOverdueAsSeen={markOverdueBillsAsSeen}
+            onMarkDueSoonAsSeen={markDueSoonBillsAsSeen}
                    />
+                   </>
                  )}
         </div>
       </div>
