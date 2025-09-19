@@ -107,7 +107,16 @@ export const OptionsList: React.FC = () => {
       </div>
 
       {/* Settings Form */}
-      <form onSubmit={handleSave} className="space-y-6">
+      <form onSubmit={handleSave} className="space-y-8">
+        {/* Store Settings Section */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-3 mb-4">
+            <DollarSign className="w-6 h-6 text-muted-foreground" />
+            <h3 className="text-lg font-semibold text-muted-foreground">
+              {t("admin.storeSettings", "Store Settings")}
+            </h3>
+          </div>
+
         {/* Store Cash Setting */}
         <div className="flex flex-col md:flex-row items-start md:items-center gap-4 bg-muted/40 border border-border rounded-lg p-6">
           <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
@@ -135,8 +144,17 @@ export const OptionsList: React.FC = () => {
             />
           </div>
         </div>
+        </div>
 
-        {/* Low Stock Settings Grid */}
+        {/* Stock Management Section */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-3 mb-4">
+            <Package className="w-6 h-6 text-muted-foreground" />
+            <h3 className="text-lg font-semibold text-muted-foreground">
+              {t("admin.stockManagement", "Stock Management")}
+            </h3>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Low Stock Threshold Setting */}
           <div className="flex flex-col md:flex-row items-start md:items-center gap-4 bg-muted/40 border border-border rounded-lg p-6">
@@ -171,8 +189,8 @@ export const OptionsList: React.FC = () => {
 
           {/* Low Stock Notification Badge Setting */}
           <div className="flex flex-col md:flex-row items-start md:items-center gap-4 bg-muted/40 border border-border rounded-lg p-6">
-            <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg flex items-center justify-center">
-              <Bell className="w-6 h-6 text-orange-600" />
+              <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center">
+                <Bell className="w-6 h-6 text-red-600" />
             </div>
             <div className="flex-1 w-full">
               <label
@@ -202,38 +220,48 @@ export const OptionsList: React.FC = () => {
             </div>
           </div>
         </div>
+        </div>
 
-        {/* Due Soon Settings Grid */}
+        {/* Payment Notifications Section */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-3 mb-4">
+            <Users className="w-6 h-6 text-muted-foreground" />
+            <h3 className="text-lg font-semibold text-muted-foreground">
+              {t("admin.paymentNotifications", "Payment Notifications")}
+            </h3>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* Due Soon Threshold Setting */}
+            {/* Overdue Payments Notification Badge Setting */}
           <div className="flex flex-col md:flex-row items-start md:items-center gap-4 bg-muted/40 border border-border rounded-lg p-6">
             <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center">
-              <Users className="w-6 h-6 text-red-600" />
+                <Bell className="w-6 h-6 text-red-600" />
             </div>
             <div className="flex-1 w-full">
               <label
                 className="block text-base font-semibold mb-2"
-                htmlFor="dueSoonThreshold"
+                  htmlFor="enableOverdueBadge"
               >
-                {t("admin.dueSoonThreshold", "Due Soon Threshold (Days)")}
+                  {t("admin.enableOverduePaymentsBadge", "Enable Overdue Payments Notification Badge")}
               </label>
               <p className="text-sm text-muted-foreground mb-3">
-                {t(
-                  "admin.dueSoonThresholdDesc",
-                  "Number of days before due date to consider a payment as 'due soon'",
-                )}
-              </p>
-              <Input
-                id="dueSoonThreshold"
-                type="number"
-                min={1}
-                max={30}
-                value={dueSoonThresholdDays}
-                onChange={(e) => setDueSoonThresholdDays(Number(e.target.value))}
-                className="w-40 text-lg"
+                  {t("admin.enableOverdueBadgeDesc", "Show notification badge on clients menu item when there are overdue credits and versements")}
+                </p>
+                <div className="flex items-center gap-3">
+                  <Switch
+                    id="enableOverdueBadge"
+                    checked={enableOverduePaymentsBadge}
+                    onCheckedChange={setEnableOverduePaymentsBadge}
                 disabled={loading || saving}
-                aria-label={t("admin.dueSoonThreshold", "Due Soon Threshold (Days)")}
-              />
+                    aria-label={t("admin.enableOverduePaymentsBadge", "Enable Overdue Payments Notification Badge")}
+                  />
+                  <span className="text-sm font-medium">
+                    {enableOverduePaymentsBadge 
+                      ? t("admin.enabled", "Enabled") 
+                      : t("admin.disabled", "Disabled")
+                    }
+                  </span>
+                </div>
             </div>
           </div>
 
@@ -271,8 +299,194 @@ export const OptionsList: React.FC = () => {
           </div>
         </div>
 
-        {/* Cashier Settings Grid */}
+          {/* Due Soon Payments Threshold Setting */}
+          <div className="flex flex-col md:flex-row items-start md:items-center gap-4 bg-muted/40 border border-border rounded-lg p-6">
+            <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center">
+              <Users className="w-6 h-6 text-red-600" />
+            </div>
+            <div className="flex-1 w-full">
+              <label
+                className="block text-base font-semibold mb-2"
+                htmlFor="dueSoonThreshold"
+              >
+                {t("admin.dueSoonThreshold", "Due Soon Payments Threshold (Days)")}
+              </label>
+              <p className="text-sm text-muted-foreground mb-3">
+                {t(
+                  "admin.dueSoonThresholdDesc",
+                  "Number of days before due date to consider a payment as 'due soon'",
+                )}
+              </p>
+              <Input
+                id="dueSoonThreshold"
+                type="number"
+                min={1}
+                max={30}
+                value={dueSoonThresholdDays}
+                onChange={(e) => setDueSoonThresholdDays(Number(e.target.value))}
+                className="w-40 text-lg"
+                disabled={loading || saving}
+                aria-label={t("admin.dueSoonThreshold", "Due Soon Payments Threshold (Days)")}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Bills Notifications Section */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-3 mb-4">
+            <FileText className="w-6 h-6 text-muted-foreground" />
+            <h3 className="text-lg font-semibold text-muted-foreground">
+              {t("admin.billsNotifications", "Bills Notifications")}
+            </h3>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* Overdue Bills Notification Badge Setting */}
+            <div className="flex flex-col md:flex-row items-start md:items-center gap-4 bg-muted/40 border border-border rounded-lg p-6">
+              <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center">
+                <Bell className="w-6 h-6 text-red-600" />
+              </div>
+              <div className="flex-1 w-full">
+                <label
+                  className="block text-base font-semibold mb-2"
+                  htmlFor="enableOverdueBillsBadge"
+                >
+                  {t("admin.enableOverdueBillsBadge", "Enable Overdue Bills Notification Badge")}
+                </label>
+                <p className="text-sm text-muted-foreground mb-3">
+                  {t("admin.enableOverdueBillsBadgeDesc", "Show notification badge on bills menu item when there are overdue bills")}
+                </p>
+                <div className="flex items-center gap-3">
+                  <Switch
+                    id="enableOverdueBillsBadge"
+                    checked={enableOverdueBillsBadge}
+                    onCheckedChange={setEnableOverdueBillsBadge}
+                    disabled={loading || saving}
+                    aria-label={t("admin.enableOverdueBillsBadge", "Enable Overdue Bills Notification Badge")}
+                  />
+                  <span className="text-sm font-medium">
+                    {enableOverdueBillsBadge 
+                      ? t("admin.enabled", "Enabled") 
+                      : t("admin.disabled", "Disabled")
+                    }
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Due Soon Bills Notification Badge Setting */}
+            <div className="flex flex-col md:flex-row items-start md:items-center gap-4 bg-muted/40 border border-border rounded-lg p-6">
+              <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg flex items-center justify-center">
+                <Bell className="w-6 h-6 text-orange-600" />
+              </div>
+              <div className="flex-1 w-full">
+                <label
+                  className="block text-base font-semibold mb-2"
+                  htmlFor="enableDueSoonBillsBadge"
+                >
+                  {t("admin.enableDueSoonBillsBadge", "Enable Due Soon Bills Notification Badge")}
+                </label>
+                <p className="text-sm text-muted-foreground mb-3">
+                  {t("admin.enableDueSoonBillsBadgeDesc", "Show notification badge on bills menu item when there are bills due soon")}
+                </p>
+                <div className="flex items-center gap-3">
+                  <Switch
+                    id="enableDueSoonBillsBadge"
+                    checked={enableDueSoonBillsBadge}
+                    onCheckedChange={setEnableDueSoonBillsBadge}
+                    disabled={loading || saving}
+                    aria-label={t("admin.enableDueSoonBillsBadge", "Enable Due Soon Bills Notification Badge")}
+                  />
+                  <span className="text-sm font-medium">
+                    {enableDueSoonBillsBadge 
+                      ? t("admin.enabled", "Enabled") 
+                      : t("admin.disabled", "Disabled")
+                    }
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Due Soon Bills Threshold Setting */}
+          <div className="flex flex-col md:flex-row items-start md:items-center gap-4 bg-muted/40 border border-border rounded-lg p-6">
+            <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg flex items-center justify-center">
+              <FileText className="w-6 h-6 text-orange-600" />
+            </div>
+            <div className="flex-1 w-full">
+              <label
+                className="block text-base font-semibold mb-2"
+                htmlFor="dueSoonBillsThreshold"
+              >
+                {t("admin.dueSoonBillsThreshold", "Due Soon Bills Threshold (Days)")}
+              </label>
+              <p className="text-sm text-muted-foreground mb-3">
+                {t("admin.dueSoonBillsThresholdDesc", "Number of days before due date to show 'due soon' notification for bills")}
+              </p>
+              <div className="flex items-center gap-3">
+                <Input
+                  id="dueSoonBillsThreshold"
+                  type="number"
+                  min="1"
+                  max="30"
+                  value={dueSoonBillsThresholdDays}
+                  onChange={(e) => setDueSoonBillsThresholdDays(Number(e.target.value))}
+                  disabled={loading || saving}
+                  className="w-20"
+                />
+                <span className="text-sm text-muted-foreground">
+                  {t("admin.days", "days")}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+
+        {/* Cashier Settings Section */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-3 mb-4">
+            <ShoppingCart className="w-6 h-6 text-muted-foreground" />
+            <h3 className="text-lg font-semibold text-muted-foreground">
+              {t("admin.cashierSettings", "Cashier Settings")}
+            </h3>
+          </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* Enable Cashier History Setting */}
+            <div className="flex flex-col md:flex-row items-start md:items-center gap-4 bg-muted/40 border border-border rounded-lg p-6">
+              <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
+                <History className="w-6 h-6 text-blue-600" />
+              </div>
+              <div className="flex-1 w-full">
+                <label
+                  className="block text-base font-semibold mb-2"
+                  htmlFor="enableCashierHistory"
+                >
+                  {t("admin.enableCashierHistory", "Enable Cashier History")}
+                </label>
+                <p className="text-sm text-muted-foreground mb-3">
+                  {t("admin.enableCashierHistoryDesc", "Allow users to access the history tab in the cashier interface")}
+                </p>
+                <div className="flex items-center gap-3">
+                  <Switch
+                    id="enableCashierHistory"
+                    checked={enableCashierHistory}
+                    onCheckedChange={setEnableCashierHistory}
+                    disabled={loading || saving}
+                    aria-label={t("admin.enableCashierHistory", "Enable Cashier History")}
+                  />
+                  <span className="text-sm font-medium">
+                    {enableCashierHistory 
+                      ? t("admin.enabled", "Enabled") 
+                      : t("admin.disabled", "Disabled")
+                    }
+                  </span>
+                </div>
+              </div>
+            </div>
+
           {/* Cashier Sales History Days Setting */}
           <div className={`flex flex-col md:flex-row items-start md:items-center gap-4 bg-muted/40 border border-border rounded-lg p-6 ${!enableCashierHistory ? 'opacity-60' : ''}`}>
             <div className="p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg flex items-center justify-center">
@@ -303,180 +517,6 @@ export const OptionsList: React.FC = () => {
                 aria-label={t("admin.cashierSalesHistoryDays", "Cashier Sales History Days")}
               />
             </div>
-          </div>
-
-          {/* Enable Cashier History Setting */}
-          <div className="flex flex-col md:flex-row items-start md:items-center gap-4 bg-muted/40 border border-border rounded-lg p-6">
-            <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
-              <History className="w-6 h-6 text-blue-600" />
-            </div>
-            <div className="flex-1 w-full">
-              <label
-                className="block text-base font-semibold mb-2"
-                htmlFor="enableCashierHistory"
-              >
-                {t("admin.enableCashierHistory", "Enable Cashier History")}
-              </label>
-              <p className="text-sm text-muted-foreground mb-3">
-                {t("admin.enableCashierHistoryDesc", "Allow users to access the history tab in the cashier interface")}
-              </p>
-              <div className="flex items-center gap-3">
-                <Switch
-                  id="enableCashierHistory"
-                  checked={enableCashierHistory}
-                  onCheckedChange={setEnableCashierHistory}
-                  disabled={loading || saving}
-                  aria-label={t("admin.enableCashierHistory", "Enable Cashier History")}
-                />
-                <span className="text-sm font-medium">
-                  {enableCashierHistory 
-                    ? t("admin.enabled", "Enabled") 
-                    : t("admin.disabled", "Disabled")
-                  }
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Overdue Payments Notification Badge Setting */}
-        <div className="flex flex-col md:flex-row items-start md:items-center gap-4 bg-muted/40 border border-border rounded-lg p-6">
-          <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg flex items-center justify-center">
-            <Bell className="w-6 h-6 text-orange-600" />
-          </div>
-          <div className="flex-1 w-full">
-            <label
-              className="block text-base font-semibold mb-2"
-              htmlFor="enableOverdueBadge"
-            >
-              {t("admin.enableOverduePaymentsBadge", "Enable Overdue Payments Notification Badge")}
-            </label>
-            <p className="text-sm text-muted-foreground mb-3">
-              {t("admin.enableOverdueBadgeDesc", "Show notification badge on clients menu item when there are overdue credits and versements")}
-            </p>
-            <div className="flex items-center gap-3">
-              <Switch
-                id="enableOverdueBadge"
-                checked={enableOverduePaymentsBadge}
-                onCheckedChange={setEnableOverduePaymentsBadge}
-                disabled={loading || saving}
-                aria-label={t("admin.enableOverduePaymentsBadge", "Enable Overdue Payments Notification Badge")}
-              />
-              <span className="text-sm font-medium">
-                {enableOverduePaymentsBadge 
-                  ? t("admin.enabled", "Enabled") 
-                  : t("admin.disabled", "Disabled")
-                }
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Bills Notifications Section */}
-        <div className="space-y-4">
-          <div className="flex items-center gap-3 mb-4">
-            <FileText className="w-6 h-6 text-purple-500" />
-            <h3 className="text-lg font-semibold text-purple-600">
-              {t("admin.billsNotifications", "Bills Notifications")}
-            </h3>
-          </div>
-
-          {/* Overdue Bills Notification Badge Setting */}
-          <div className="flex flex-col md:flex-row items-start md:items-center gap-4 bg-muted/40 border border-border rounded-lg p-6">
-            <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center">
-              <Bell className="w-6 h-6 text-red-600" />
-            </div>
-            <div className="flex-1 w-full">
-              <label
-                className="block text-base font-semibold mb-2"
-                htmlFor="enableOverdueBillsBadge"
-              >
-                {t("admin.enableOverdueBillsBadge", "Enable Overdue Bills Notification Badge")}
-              </label>
-              <p className="text-sm text-muted-foreground mb-3">
-                {t("admin.enableOverdueBillsBadgeDesc", "Show notification badge on bills menu item when there are overdue bills")}
-              </p>
-              <div className="flex items-center gap-3">
-                <Switch
-                  id="enableOverdueBillsBadge"
-                  checked={enableOverdueBillsBadge}
-                  onCheckedChange={setEnableOverdueBillsBadge}
-                  disabled={loading || saving}
-                  aria-label={t("admin.enableOverdueBillsBadge", "Enable Overdue Bills Notification Badge")}
-                />
-                <span className="text-sm font-medium">
-                  {enableOverdueBillsBadge 
-                    ? t("admin.enabled", "Enabled") 
-                    : t("admin.disabled", "Disabled")
-                  }
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Due Soon Bills Notification Badge Setting */}
-          <div className="flex flex-col md:flex-row items-start md:items-center gap-4 bg-muted/40 border border-border rounded-lg p-6">
-            <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg flex items-center justify-center">
-              <Bell className="w-6 h-6 text-orange-600" />
-            </div>
-            <div className="flex-1 w-full">
-              <label
-                className="block text-base font-semibold mb-2"
-                htmlFor="enableDueSoonBillsBadge"
-              >
-                {t("admin.enableDueSoonBillsBadge", "Enable Due Soon Bills Notification Badge")}
-              </label>
-              <p className="text-sm text-muted-foreground mb-3">
-                {t("admin.enableDueSoonBillsBadgeDesc", "Show notification badge on bills menu item when there are bills due soon")}
-              </p>
-              <div className="flex items-center gap-3">
-                <Switch
-                  id="enableDueSoonBillsBadge"
-                  checked={enableDueSoonBillsBadge}
-                  onCheckedChange={setEnableDueSoonBillsBadge}
-                  disabled={loading || saving}
-                  aria-label={t("admin.enableDueSoonBillsBadge", "Enable Due Soon Bills Notification Badge")}
-                />
-                <span className="text-sm font-medium">
-                  {enableDueSoonBillsBadge 
-                    ? t("admin.enabled", "Enabled") 
-                    : t("admin.disabled", "Disabled")
-                  }
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Due Soon Bills Threshold Setting */}
-          <div className="flex flex-col md:flex-row items-start md:items-center gap-4 bg-muted/40 border border-border rounded-lg p-6">
-            <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg flex items-center justify-center">
-              <Bell className="w-6 h-6 text-orange-600" />
-            </div>
-            <div className="flex-1 w-full">
-              <label
-                className="block text-base font-semibold mb-2"
-                htmlFor="dueSoonBillsThreshold"
-              >
-                {t("admin.dueSoonBillsThreshold", "Due Soon Bills Threshold (Days)")}
-              </label>
-              <p className="text-sm text-muted-foreground mb-3">
-                {t("admin.dueSoonBillsThresholdDesc", "Number of days before due date to show 'due soon' notification for bills")}
-              </p>
-              <div className="flex items-center gap-3">
-                <Input
-                  id="dueSoonBillsThreshold"
-                  type="number"
-                  min="1"
-                  max="30"
-                  value={dueSoonBillsThresholdDays}
-                  onChange={(e) => setDueSoonBillsThresholdDays(Number(e.target.value))}
-                  disabled={loading || saving}
-                  className="w-20"
-                />
-                <span className="text-sm text-muted-foreground">
-                  {t("admin.days", "days")}
-                </span>
-              </div>
             </div>
           </div>
         </div>

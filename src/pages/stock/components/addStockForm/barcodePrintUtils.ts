@@ -9,7 +9,7 @@ export interface BarcodeLabelData {
 /**
  * Print barcode label with real, scannable barcode
  */
-export const printBarcodeLabel = async (data: BarcodeLabelData, quantity: number = 1): Promise<void> => {
+export const printBarcodeLabel = async (data: BarcodeLabelData, quantity = 1): Promise<void> => {
   const { productName, price, barcode } = data;
 
   if (!barcode || !productName) {

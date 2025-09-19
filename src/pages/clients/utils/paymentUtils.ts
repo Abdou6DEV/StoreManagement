@@ -4,7 +4,7 @@ export const isOverdue = (dueDate: Date) => {
   return new Date(dueDate) < new Date() && new Date(dueDate).getTime() !== 0;
 };
 
-export const isDueSoon = (dueDate: Date, thresholdDays: number = 2) => {
+export const isDueSoon = (dueDate: Date, thresholdDays = 2) => {
   if (!dueDate) return false;
   const today = new Date();
   const due = new Date(dueDate);
@@ -19,7 +19,7 @@ export const getFilteredPayments = (
   statusFilter: "all" | "paid" | "unpaid",
   typeFilter: "all" | "CREDIT" | "VERSEMENT",
   dateFilter: "all" | "overdue" | "dueSoon",
-  dueSoonThresholdDays: number = 2,
+  dueSoonThresholdDays = 2,
   newlyOverdueIds?: Set<string>,
   newlyDueSoonIds?: Set<string>,
 ) => {

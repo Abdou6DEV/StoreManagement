@@ -18,6 +18,7 @@ import {
 } from "../../lib/components/popover";
 import { cn } from "../../lib/utils";
 import { BadgeNotification } from "../../lib/components/badgeNotification";
+import { Tooltip } from "../../lib/components/tooltip";
 
 import BillsTable from "./components/billsTable";
 import AllPaymentsTable from "./components/allPaymentsTable";
@@ -242,7 +243,7 @@ export default function BillsPage() {
     (billsCurrentPage - 1) * billsItemsPerPage,
     billsCurrentPage * billsItemsPerPage
   );
-
+  
   const paginatedPayments = filteredPayments.slice(
     (paymentsCurrentPage - 1) * paymentsItemsPerPage,
     paymentsCurrentPage * paymentsItemsPerPage
@@ -301,7 +302,7 @@ export default function BillsPage() {
     loadBillTypes();
   }, []);
 
-  const handleEdit = (bill: Bill) => {
+  const handleEdit = () => {
     // This will be handled by the EditBillModal in the BillsTable component
     // We just need to refresh the bills list
     loadBills();
@@ -367,7 +368,7 @@ export default function BillsPage() {
           <div className="flex items-center justify-between border-b border-border pb-3">
             <div className="flex items-center gap-3">
               {showAllPayments ? (
-                <DollarSign className="w-7 h-7 text-green-600" />
+                <CreditCard className="w-7 h-7 text-purple-600" />
               ) : (
                 <CreditCard className="w-7 h-7 text-purple-600" />
               )}
@@ -376,6 +377,12 @@ export default function BillsPage() {
               </h1>
             </div>
             <div className="flex items-center gap-3">
+            <Tooltip
+              content={showAllPayments 
+                ? t("bills.backToBillsTooltip", "Return to bills management view") 
+                : t("bills.viewAllPaymentsTooltip", "View all payments history")
+              }
+            >
             <Button
               onClick={showAllPayments ? handleBackToBills : handleViewPayments}
               variant="outline"
@@ -384,6 +391,7 @@ export default function BillsPage() {
               <FileText className="w-4 h-4" />
               {showAllPayments ? t("bills.backToBills", "Back to Bills") : t("bills.allPaymentsView", "All Payments View")}
             </Button>
+            </Tooltip>
             </div>
           </div>
 
@@ -658,7 +666,7 @@ export default function BillsPage() {
                   </PopoverContent>
                 </Popover>
               </div>
-            </div>
+                </div>
           )}
 
           {/* Filters for payments view */}
@@ -725,14 +733,14 @@ export default function BillsPage() {
                 {/* Type Filter Dropdown */}
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button
+                <Button
                       variant="outline"
                       className="px-3 py-1.5"
                       aria-label={t("bills.filterByType", "Filter by type")}
                     >
                       {paymentsTypeFilter === "all" ? t("bills.allTypes", "All Types") : paymentsTypeFilter}
                       <ChevronDown className="ml-2 w-4 h-4" />
-                    </Button>
+                </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-[200px] p-0 z-50">
                     <Command shouldFilter={false}>
@@ -792,7 +800,7 @@ export default function BillsPage() {
                    />
                  ) : (
                    <>
-                     <BillsTable
+                   <BillsTable
                      bills={paginatedBills}
                      onEdit={handleEdit}
                      onDelete={handleDelete}

@@ -225,7 +225,10 @@ export default function EditBillModal({
                 {t("bills.currentAmount", "Current Amount")}
               </label>
               <div className="w-full px-4 py-3 rounded-lg border border-border bg-muted text-sm text-muted-foreground">
-                {t("bills.currency", "DA")} {(bill.amount / 100).toFixed(2)}
+                {(() => {
+                  const value = bill.amount / 100;
+                  return `${value % 1 === 0 ? value.toFixed(0) : value.toFixed(2)} ${t("bills.currency", "DA")}`;
+                })()}
               </div>
               <p className="text-xs text-muted-foreground">
                 {t("bills.amountCannotBeChanged", "Amount cannot be changed as payments have been recorded")}

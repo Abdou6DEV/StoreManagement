@@ -987,6 +987,8 @@
     "allPayments": "Tous les Paiements",
     "allPaymentsView": "Vue de Tous les Paiements",
     "backToBills": "Retour aux Factures",
+    "viewAllPaymentsTooltip": "Voir l'historique de tous les paiements",
+    "backToBillsTooltip": "Retourner à la vue de gestion des factures",
     "filterByType": "Filtrer par type",
     "filterByStatus": "Filtrer par statut",
     "filterByDueStatus": "Filtrer par statut d'échéance",
@@ -1087,5 +1089,14 @@
     "amountCannotBeChanged": "Le montant ne peut pas être modifié car des paiements ont été enregistrés",
     "deleteBillConfirm": "Êtes-vous sûr de vouloir supprimer cette facture ? Cette action ne peut pas être annulée.",
     "delete": "Supprimer"
+  },
+
+  "admin": {
+    "storeSettings": "Paramètres du magasin",
+    "stockManagement": "Gestion des stocks", 
+    "paymentNotifications": "Notifications de paiement",
+    "billsNotifications": "Notifications de factures",
+    "thresholds": "Seuils",
+    "cashierSettings": "Paramètres de la caisse"
   }
 }

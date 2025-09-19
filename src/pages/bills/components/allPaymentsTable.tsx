@@ -142,7 +142,7 @@ const AllPaymentsTable: React.FC<AllPaymentsTableProps> = ({
   if (payments.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 gap-3 text-center">
-        <CreditCard className="w-12 h-12 text-blue-500 mb-1" />
+        <CreditCard className="w-12 h-12 text-purple-500 mb-1" />
         <h3 className="text-xl font-semibold text-foreground">
           {t("bills.noPaymentsTitle", "No payments found")}
         </h3>

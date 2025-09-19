@@ -453,10 +453,6 @@ export function setupDatabaseHandlers() {
     return await bills.getFiltered(filters);
   });
 
-  ipcMain.handle("db:bills:getOverdue", async () => {
-    return await bills.getOverdue();
-  });
-
   ipcMain.handle("db:bills:getDueSoon", async (_event, days) => {
     return await bills.getDueSoon(days);
   });
