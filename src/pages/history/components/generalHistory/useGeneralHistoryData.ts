@@ -265,19 +265,10 @@ export function useGeneralHistoryData() {
         endDateObj,
       );
 
-      // console.log("📊 Raw aggregated data:", aggregated);
-      // console.log("📊 Data count:", aggregated?.length || 0);
-      
-      // Debug: Check if today's data is in the results
-      // if (aggregated && Array.isArray(aggregated)) {
-      //   const todayData = aggregated.find(item => item.period === today);
-      //   console.log("📅 Today's data in results:", todayData);
-      // }
 
       // Validate and sort data
       const validData = Array.isArray(aggregated) ? aggregated : [];
       
-      // console.log("✅ Valid data count:", validData.length);
       
       const sortedData = validData.sort((a: AggregatedData, b: AggregatedData) => {
         try {
@@ -298,7 +289,6 @@ export function useGeneralHistoryData() {
         }
       });
 
-      // console.log("📈 Sorted data:", sortedData);
 
       setAggregatedData(sortedData);
 

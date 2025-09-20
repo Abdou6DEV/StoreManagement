@@ -488,4 +488,12 @@ ipcMain.handle("db:bills:getBillWithPayments", async (_event, billId: string) =>
 ipcMain.handle("db:bills:getAllPayments", async () => {
   return await bills.getAllPayments();
 });
+
+ipcMain.handle("db:bills:getBillsPaymentsAggregatedByPeriod", async (_event, period, startDate, endDate) => {
+  return await bills.getBillsPaymentsAggregatedByPeriod(period, startDate, endDate);
+});
+
+ipcMain.handle("db:bills:getBySpecificPeriod", async (_event, period, periodValue) => {
+  return await bills.getBySpecificPeriod(period, periodValue);
+});
 }

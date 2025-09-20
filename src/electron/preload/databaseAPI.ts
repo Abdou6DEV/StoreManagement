@@ -287,6 +287,15 @@ export const databaseAPI = {
     recordPayment: (billId: string, amount: number, notes?: string) => ipcRenderer.invoke("db:bills:recordPayment", billId, amount, notes),
     getBillWithPayments: (billId: string) => ipcRenderer.invoke("db:bills:getBillWithPayments", billId),
     getAllPayments: () => ipcRenderer.invoke("db:bills:getAllPayments"),
+    getBillsPaymentsAggregatedByPeriod: (
+      period: "day" | "month" | "year",
+      startDate: Date,
+      endDate: Date
+    ) => ipcRenderer.invoke("db:bills:getBillsPaymentsAggregatedByPeriod", period, startDate, endDate),
+    getBySpecificPeriod: (
+      period: "day" | "month" | "year",
+      periodValue: string
+    ) => ipcRenderer.invoke("db:bills:getBySpecificPeriod", period, periodValue),
     resetBillToNextDuration: (id: string) => ipcRenderer.invoke("db:bills:resetBillToNextDuration", id),
   },
 };

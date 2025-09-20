@@ -5,11 +5,11 @@ import { createPortal } from "react-dom";
 import { useTooltip } from "../../../../lib/contexts/tooltipContext";
 
 interface DetailsHistoryTabsProps {
-  activeSection: "sales" | "purchases" | "payments";
-  onSectionChange: (section: "sales" | "purchases" | "payments") => void;
+  activeSection: "sales" | "purchases" | "billsPayments";
+  onSectionChange: (section: "sales" | "purchases" | "billsPayments") => void;
   salesCount: number;
   purchasesCount: number;
-  paymentsCount: number;
+  billsPaymentsCount: number;
 }
 
 export default function DetailsHistoryTabs({
@@ -17,7 +17,7 @@ export default function DetailsHistoryTabs({
   onSectionChange,
   salesCount,
   purchasesCount,
-  paymentsCount,
+  billsPaymentsCount,
 }: DetailsHistoryTabsProps) {
   const { t } = useTranslation();
   const { showTooltips } = useTooltip();
@@ -36,11 +36,11 @@ export default function DetailsHistoryTabs({
       tooltip: t("history.tooltips.salesTab"),
     },
     {
-      id: "payments" as const,
-      label: t("history.payments"),
+      id: "billsPayments" as const,
+      label: t("history.billsPayments"),
       icon: CreditCard,
-      count: paymentsCount,
-      tooltip: t("history.tooltips.paymentsTab"),
+      count: billsPaymentsCount,
+      tooltip: t("history.tooltips.billsPaymentsTab"),
     },
     {
       id: "purchases" as const,

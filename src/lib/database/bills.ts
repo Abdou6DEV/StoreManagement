@@ -377,4 +377,163 @@ export const bills = {
       }
     });
   },
+
+  async getBySpecificPeriod(
+    period: "day" | "month" | "year",
+    periodValue: string
+  ): Promise<any[]> {
+    let startDate: Date;
+    let endDate: Date;
+
+    if (period === "day") {
+      startDate = new Date(periodValue);
+      endDate = new Date(periodValue);
+      endDate.setHours(23, 59, 59, 999);
+    } else if (period === "month") {
+      const [year, month] = periodValue.split("-");
+      startDate = new Date(parseInt(year), parseInt(month) - 1, 1);
+      endDate = new Date(parseInt(year), parseInt(month), 0, 23, 59, 59, 999);
+    } else {
+      startDate = new Date(parseInt(periodValue), 0, 1);
+      endDate = new Date(parseInt(periodValue), 11, 31, 23, 59, 59, 999);
+    }
+
+    return prisma.billPayment.findMany({
+      where: {
+        paidDate: {
+          gte: startDate,
+          lte: endDate,
+        },
+      },
+      include: {
+        bill: {
+          select: {
+            id: true,
+            title: true,
+            type: true,
+          }
+        }
+      },
+      orderBy: {
+        paidDate: 'desc'
+      }
+    });
+  },
+
+  async getBillsPaymentsAggregatedByPeriod(
+    period: "day" | "month" | "year",
+    startDate: Date,
+    endDate: Date
+  ) {
+    const billPayments = await prisma.billPayment.findMany({
+      where: {
+        paidDate: {
+          gte: startDate,
+          lte: endDate,
+        },
+      },
+      include: {
+        bill: {
+          select: {
+            id: true,
+            title: true,
+            type: true,
+          }
+        }
+      },
+      orderBy: {
+        paidDate: 'desc'
+      }
+    });
+
+    // Group payments by period
+    const groupedData = new Map<
+      string,
+      {
+        period: string;
+        totalAmount: number;
+        count: number;
+      }
+    >();
+
+    billPayments.forEach((payment) => {
+      const paymentDate = new Date(payment.paidDate);
+      let periodKey: string;
+
+      if (period === "day") {
+        // Use local timezone to match the sales data processing
+        const year = paymentDate.getFullYear();
+        const month = String(paymentDate.getMonth() + 1).padStart(2, "0");
+        const day = String(paymentDate.getDate()).padStart(2, "0");
+        periodKey = `${year}-${month}-${day}`;
+      } else if (period === "month") {
+        periodKey = `${paymentDate.getFullYear()}-${String(paymentDate.getMonth() + 1).padStart(2, "0")}`;
+      } else {
+        periodKey = paymentDate.getFullYear().toString();
+      }
+
+      const existing = groupedData.get(periodKey);
+      if (existing) {
+        existing.totalAmount += payment.amount;
+        existing.count += 1;
+      } else {
+        groupedData.set(periodKey, {
+          period: periodKey,
+          totalAmount: payment.amount,
+          count: 1,
+        });
+      }
+    });
+
+    // Fill in missing periods with zero values
+    const fillMissingPeriods = (data: Map<string, any>, start: Date, end: Date, period: "day" | "month" | "year") => {
+      const filledData = new Map(data);
+      const current = new Date(start);
+      
+      while (current <= end) {
+        let periodKey: string;
+        
+        if (period === "day") {
+          // Use local timezone to match the sales data processing
+          const year = current.getFullYear();
+          const month = String(current.getMonth() + 1).padStart(2, "0");
+          const day = String(current.getDate()).padStart(2, "0");
+          periodKey = `${year}-${month}-${day}`;
+        } else if (period === "month") {
+          periodKey = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, "0")}`;
+        } else {
+          periodKey = current.getFullYear().toString();
+        }
+        
+        if (!filledData.has(periodKey)) {
+          filledData.set(periodKey, {
+            period: periodKey,
+            totalAmount: 0,
+            count: 0,
+          });
+        }
+        
+        // Move to next period
+        if (period === "day") {
+          current.setDate(current.getDate() + 1);
+        } else if (period === "month") {
+          current.setMonth(current.getMonth() + 1);
+        } else {
+          current.setFullYear(current.getFullYear() + 1);
+        }
+      }
+      
+      return filledData;
+    };
+
+    // Fill missing periods
+    const filledData = fillMissingPeriods(groupedData, startDate, endDate, period);
+
+    // Convert to array and sort by period
+    const result = Array.from(filledData.values()).sort((a, b) =>
+      a.period.localeCompare(b.period)
+    );
+
+    return result;
+  },
 };

@@ -88,6 +88,9 @@ export default function GeneralHistoryTable({
                 {t("history.period")}
               </th>
               <th className="text-right rtl:text-left p-4 font-semibold text-foreground text-sm uppercase tracking-wide">
+                {t("history.sales")}
+              </th>
+              <th className="text-right rtl:text-left p-4 font-semibold text-foreground text-sm uppercase tracking-wide">
                 {t("history.revenue")}
               </th>
               <th className="text-right rtl:text-left p-4 font-semibold text-foreground text-sm uppercase tracking-wide">
@@ -97,7 +100,7 @@ export default function GeneralHistoryTable({
                 {t("history.purchases")}
               </th>
               <th className="text-right rtl:text-left p-4 font-semibold text-foreground text-sm uppercase tracking-wide">
-                {t("history.sales")}
+                {t("history.billsPayments")}
               </th>
               <th className="text-right rtl:text-left p-4 font-semibold text-foreground text-sm uppercase tracking-wide">
                 {t("history.averagepercent")}
@@ -106,7 +109,6 @@ export default function GeneralHistoryTable({
           </thead>
           <tbody className="divide-y divide-border/40">
             {data.map((item, index) => {
-              // console.log(`🔍 Rendering row ${index}:`, item);
               return (
                 <tr
                   key={item.period}
@@ -118,6 +120,13 @@ export default function GeneralHistoryTable({
                     <div className="w-2 h-2 rounded-full bg-primary/60"></div>
                     <span className="text-sm font-semibold">
                       {formatPeriod(item.period, aggregationLevel)}
+                    </span>
+                  </div>
+                </td>
+                <td className="px-4 text-right">
+                  <div className="flex flex-col items-end">
+                    <span className="font-semibold text-foreground text-base">
+                      {formatNumber(item.count)}
                     </span>
                   </div>
                 </td>
@@ -140,14 +149,14 @@ export default function GeneralHistoryTable({
                 <td className="px-4 text-right">
                   <div className="flex flex-col items-end">
                     <span className="font-semibold text-foreground text-base">
-                      {formatNumber(item.purchases)}
+                      {formatCurrency(item.purchases)}
                     </span>
                   </div>
                 </td>
                 <td className="px-4 text-right">
                   <div className="flex flex-col items-end">
                     <span className="font-semibold text-foreground text-base">
-                      {formatNumber(item.count)}
+                      {formatCurrency(item.billsPayments)}
                     </span>
                   </div>
                 </td>

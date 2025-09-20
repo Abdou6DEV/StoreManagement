@@ -7,7 +7,8 @@ interface DetailsHistoryHeaderProps {
   selectedPeriod: SelectedPeriod;
   salesCount: number;
   purchasesCount: number;
-  paymentsCount: number;
+  billsPaymentsCount: number;
+  billsPaymentsTotal: number;
   salesTotal: number;
   salesProfit: number;
   purchasesTotal: number;
@@ -24,7 +25,8 @@ export default function DetailsHistoryHeader({
   selectedPeriod,
   salesCount,
   purchasesCount,
-  paymentsCount,
+  billsPaymentsCount,
+  billsPaymentsTotal,
   salesTotal,
   salesProfit,
   purchasesTotal,
@@ -135,9 +137,9 @@ export default function DetailsHistoryHeader({
              <div className="flex items-center gap-2">
                <CreditCard className="w-5 h-5 text-purple-600" />
                <div>
-                 <div className="font-bold text-xl">{paymentsCount} {t("history.payments")}</div>
+                 <div className="font-bold text-xl">{billsPaymentsCount} {t("history.billsPayments")}</div>
                  <div className="text-base text-muted-foreground font-semibold">
-                   {t("history.credit")} & {t("history.versement")}
+                   {formatCurrency(isNaN(billsPaymentsTotal) ? 0 : billsPaymentsTotal)}
                  </div>
                </div>
              </div>

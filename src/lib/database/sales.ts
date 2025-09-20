@@ -586,8 +586,11 @@ export async function getSalesAggregatedByPeriod(
   startDate: Date,
   endDate: Date
 ) {
-  // Fetch both sales and purchases data
-  const [sales, purchases] = await Promise.all([
+  // Import bills module to get bills payments data
+  const { bills } = await import("./bills");
+  
+  // Fetch sales, purchases, and bills payments data
+  const [sales, purchases, billsPayments] = await Promise.all([
     prisma.sale.findMany({
       where: {
         createdAt: {
@@ -614,6 +617,7 @@ export async function getSalesAggregatedByPeriod(
       },
     }),
     getPurchasesByDateRange(startDate, endDate),
+    bills.getBillsPaymentsAggregatedByPeriod(period, startDate, endDate),
   ]);
 
   // Group sales by period
@@ -625,6 +629,7 @@ export async function getSalesAggregatedByPeriod(
       profit: number;
       purchases: number;
       count: number;
+      billsPayments: number;
     }
   >();
 
@@ -714,11 +719,12 @@ export async function getSalesAggregatedByPeriod(
         profit: profit,
         purchases: 0, // Will be set by purchase data
         count: 1,
+        billsPayments: 0, // Will be set by bills payments data
       });
     }
   });
 
-  // Process purchase data to count actual purchases
+  // Process purchase data to sum purchase amounts
   purchases.forEach((purchase) => {
     const purchaseDate = new Date(purchase.createdAt);
     let periodKey: string;
@@ -731,16 +737,40 @@ export async function getSalesAggregatedByPeriod(
       periodKey = purchaseDate.getFullYear().toString();
     }
 
+    // Calculate total purchase amount from all items
+    const totalPurchaseAmount = purchase.PurchaseItems.reduce(
+      (sum, item) => sum + (item.price * item.quantity),
+      0
+    );
+
     const existing = groupedData.get(periodKey);
     if (existing) {
-      existing.purchases += 1; // Count each purchase transaction
+      existing.purchases += totalPurchaseAmount; // Sum purchase amounts
     } else {
       groupedData.set(periodKey, {
         period: periodKey,
         revenue: 0,
         profit: 0,
-        purchases: 1, // Count each purchase transaction
+        purchases: totalPurchaseAmount, // Sum purchase amounts
         count: 0,
+        billsPayments: 0, // Will be set by bills payments data
+      });
+    }
+  });
+
+  // Process bills payments data
+  billsPayments.forEach((billsData) => {
+    const existing = groupedData.get(billsData.period);
+    if (existing) {
+      existing.billsPayments += billsData.totalAmount;
+    } else {
+      groupedData.set(billsData.period, {
+        period: billsData.period,
+        revenue: 0,
+        profit: 0,
+        purchases: 0,
+        count: 0,
+        billsPayments: billsData.totalAmount,
       });
     }
   });
@@ -754,7 +784,11 @@ export async function getSalesAggregatedByPeriod(
       let periodKey: string;
       
       if (period === "day") {
-        periodKey = current.toISOString().split("T")[0]; // YYYY-MM-DD
+        // Use local timezone to match the sales data processing
+        const year = current.getFullYear();
+        const month = String(current.getMonth() + 1).padStart(2, "0");
+        const day = String(current.getDate()).padStart(2, "0");
+        periodKey = `${year}-${month}-${day}`;
       } else if (period === "month") {
         periodKey = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, "0")}`;
       } else {
@@ -768,6 +802,7 @@ export async function getSalesAggregatedByPeriod(
           profit: 0,
           purchases: 0,
           count: 0,
+          billsPayments: 0,
         });
       }
       

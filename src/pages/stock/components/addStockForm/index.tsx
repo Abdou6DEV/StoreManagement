@@ -18,6 +18,7 @@ import { Tooltip } from "../../../../lib/components/tooltip";
 
 // Import the new components
 import ModeToggle from "./ModeToggle";
+import PurchaseToggle from "./PurchaseToggle";
 import ProductSelection from "./ProductSelection";
 import CategorySelection from "./CategorySelection";
 import SellerSelection from "./SellerSelection";
@@ -92,6 +93,9 @@ export default function AddStockForm({
 
   // Mode toggle
   const [isMultiMode, setIsMultiMode] = useState(false);
+  
+  // Purchase toggle - whether to record as purchase or just add to inventory
+  const [isPurchaseMode, setIsPurchaseMode] = useState(true);
 
   // Pending products for multi-mode
   const [pendingProducts, setPendingProducts] = useState<PendingProduct[]>([]);
@@ -614,38 +618,75 @@ export default function AddStockForm({
                   price: boughtPrice,
                 };
 
-                if (rememberedChoice === "weighted") {
-                  // Apply weighted average
-                  await window.api.database.products.updateWithPurchase({
-                    productId: existingProduct.id,
-                    additionalQuantity: quantity,
-                    purchaseData: purchaseData,
-                    updateBoughtPrice: true,
-                    newSellingPrice: safePrice(form.sellingPrice),
-                  });
-                  showToast(
-                    t(
-                      "stock.toastUpdateSuccess",
-                      "Product updated successfully with weighted average price!"
-                    ),
-                    "success"
-                  );
+                if (isPurchaseMode) {
+                  if (rememberedChoice === "weighted") {
+                    // Apply weighted average
+                    await window.api.database.products.updateWithPurchase({
+                      productId: existingProduct.id,
+                      additionalQuantity: quantity,
+                      purchaseData: purchaseData,
+                      updateBoughtPrice: true,
+                      newSellingPrice: safePrice(form.sellingPrice),
+                    });
+                    showToast(
+                      t(
+                        "stock.toastUpdateSuccess",
+                        "Product updated successfully with weighted average price!"
+                      ),
+                      "success"
+                    );
+                  } else {
+                    // Apply new price
+                    await window.api.database.products.updateWithPurchase({
+                      productId: existingProduct.id,
+                      additionalQuantity: quantity,
+                      purchaseData: purchaseData,
+                      updateBoughtPrice: false,
+                      newSellingPrice: safePrice(form.sellingPrice),
+                    });
+                    showToast(
+                      t(
+                        "stock.toastUpdateSuccess",
+                        "Product updated successfully!"
+                      ),
+                      "success"
+                    );
+                  }
                 } else {
-                  // Apply new price
-                  await window.api.database.products.updateWithPurchase({
-                    productId: existingProduct.id,
-                    additionalQuantity: quantity,
-                    purchaseData: purchaseData,
-                    updateBoughtPrice: false,
-                    newSellingPrice: safePrice(form.sellingPrice),
-                  });
-                  showToast(
-                    t(
-                      "stock.toastUpdateSuccess",
-                      "Product updated successfully!"
-                    ),
-                    "success"
-                  );
+                  // Just update inventory without purchase record
+                  if (rememberedChoice === "weighted") {
+                    const weightedPrice = calculateWeightedAverage(
+                      existingProduct.quantity,
+                      existingProduct.boughtPrice,
+                      quantity,
+                      boughtPrice
+                    );
+                    await window.api.database.products.update(existingProduct.id, {
+                      quantity: existingProduct.quantity + quantity,
+                      boughtPrice: weightedPrice,
+                      sellingPrice: safePrice(form.sellingPrice),
+                    });
+                    showToast(
+                      t(
+                        "stock.inventoryUpdatedSuccess",
+                        "Inventory updated successfully with weighted average price!"
+                      ),
+                      "success"
+                    );
+                  } else {
+                    await window.api.database.products.update(existingProduct.id, {
+                      quantity: existingProduct.quantity + quantity,
+                      boughtPrice: boughtPrice,
+                      sellingPrice: safePrice(form.sellingPrice),
+                    });
+                    showToast(
+                      t(
+                        "stock.inventoryUpdatedSuccess",
+                        "Inventory updated successfully!"
+                      ),
+                      "success"
+                    );
+                  }
                 }
 
                 setForm(initialForm);
@@ -709,17 +750,28 @@ export default function AddStockForm({
           }
 
           // Same price, proceed normally
-          await window.api.database.products.updateWithPurchase({
-            productId: existingProduct.id,
-            additionalQuantity: quantity,
-            purchaseData: purchaseData,
-            updateBoughtPrice: false,
-            newSellingPrice: safePrice(form.sellingPrice),
-          });
-          showToast(
-            t("stock.toastUpdateSuccess", "Product updated successfully!"),
-            "success"
-          );
+          if (isPurchaseMode) {
+            await window.api.database.products.updateWithPurchase({
+              productId: existingProduct.id,
+              additionalQuantity: quantity,
+              purchaseData: purchaseData,
+              updateBoughtPrice: false,
+              newSellingPrice: safePrice(form.sellingPrice),
+            });
+            showToast(
+              t("stock.toastUpdateSuccess", "Product updated successfully!"),
+              "success"
+            );
+          } else {
+            await window.api.database.products.update(existingProduct.id, {
+              quantity: existingProduct.quantity + quantity,
+              sellingPrice: safePrice(form.sellingPrice),
+            });
+            showToast(
+              t("stock.inventoryUpdatedSuccess", "Inventory updated successfully!"),
+              "success"
+            );
+          }
         } else {
           const productData = {
             name: form.name,
@@ -731,14 +783,22 @@ export default function AddStockForm({
             photo: form.photo,
           };
 
-          await window.api.database.products.createWithPurchase({
-            productData: productData,
-            purchaseData: purchaseData,
-          });
-          showToast(
-            t("stock.toastAddSuccess", "Product added successfully!"),
-            "success"
-          );
+          if (isPurchaseMode) {
+            await window.api.database.products.createWithPurchase({
+              productData: productData,
+              purchaseData: purchaseData,
+            });
+            showToast(
+              t("stock.toastAddSuccess", "Product added successfully!"),
+              "success"
+            );
+          } else {
+            await window.api.database.products.add(productData);
+            showToast(
+              t("stock.inventoryUpdatedSuccess", "Inventory updated successfully!"),
+              "success"
+            );
+          }
         }
 
         setForm(initialForm);
@@ -898,8 +958,8 @@ export default function AddStockForm({
         }
       }
 
-      // Create the multi-product purchase
-      if (purchaseItems.length > 0) {
+      // Create the multi-product purchase only if purchase mode is enabled
+      if (isPurchaseMode && purchaseItems.length > 0) {
         try {
           await window.api.database.purchases.createWithItems({
             sellerId: multiSellerId || undefined,
@@ -927,6 +987,14 @@ export default function AddStockForm({
             "error"
           );
         }
+      } else if (!isPurchaseMode) {
+        showToast(
+          t(
+            "stock.inventoryUpdatedSuccess",
+            "Inventory updated successfully!"
+          ),
+          "success"
+        );
       } else {
         showToast(
           t("stock.noPurchaseItems", "No purchase items to record"),
@@ -1027,22 +1095,49 @@ export default function AddStockForm({
           price: priceConfirmationData.newPrice,
         };
 
-        // Update with weighted average
-        await window.api.database.products.updateWithPurchase({
-          productId: priceConfirmationData.productId,
-          additionalQuantity: priceConfirmationData.quantity,
-          purchaseData: purchaseData,
-          updateBoughtPrice: true,
-          newSellingPrice: safePrice(form.sellingPrice),
-        });
+        if (isPurchaseMode) {
+          // Update with weighted average
+          await window.api.database.products.updateWithPurchase({
+            productId: priceConfirmationData.productId,
+            additionalQuantity: priceConfirmationData.quantity,
+            purchaseData: purchaseData,
+            updateBoughtPrice: true,
+            newSellingPrice: safePrice(form.sellingPrice),
+          });
 
-        showToast(
-          t(
-            "stock.toastUpdateSuccess",
-            "Product updated successfully with weighted average price!"
-          ),
-          "success"
-        );
+          showToast(
+            t(
+              "stock.toastUpdateSuccess",
+              "Product updated successfully with weighted average price!"
+            ),
+            "success"
+          );
+        } else {
+          // Just update inventory without purchase record
+          const currentProduct = products.find(p => p.id === priceConfirmationData.productId);
+          if (currentProduct) {
+            const weightedPrice = calculateWeightedAverage(
+              currentProduct.quantity,
+              currentProduct.boughtPrice,
+              priceConfirmationData.quantity,
+              priceConfirmationData.newPrice
+            );
+            
+            await window.api.database.products.update(priceConfirmationData.productId, {
+              quantity: currentProduct.quantity + priceConfirmationData.quantity,
+              boughtPrice: weightedPrice,
+              sellingPrice: safePrice(form.sellingPrice),
+            });
+          }
+
+          showToast(
+            t(
+              "stock.inventoryUpdatedSuccess",
+              "Inventory updated successfully with weighted average price!"
+            ),
+            "success"
+          );
+        }
 
         // Refresh data
         refetchProducts();
@@ -1127,19 +1222,36 @@ export default function AddStockForm({
           price: priceConfirmationData.newPrice,
         };
 
-        // Update with NEW bought price (not weighted average)
-        await window.api.database.products.updateWithPurchase({
-          productId: priceConfirmationData.productId,
-          additionalQuantity: priceConfirmationData.quantity,
-          purchaseData: purchaseData,
-          updateBoughtPrice: false, // false = keep NEW price, true = calculate weighted average
-          newSellingPrice: safePrice(form.sellingPrice),
-        });
+        if (isPurchaseMode) {
+          // Update with NEW bought price (not weighted average)
+          await window.api.database.products.updateWithPurchase({
+            productId: priceConfirmationData.productId,
+            additionalQuantity: priceConfirmationData.quantity,
+            purchaseData: purchaseData,
+            updateBoughtPrice: false, // false = keep NEW price, true = calculate weighted average
+            newSellingPrice: safePrice(form.sellingPrice),
+          });
 
-        showToast(
-          t("stock.toastUpdateSuccess", "Product updated successfully!"),
-          "success"
-        );
+          showToast(
+            t("stock.toastUpdateSuccess", "Product updated successfully!"),
+            "success"
+          );
+        } else {
+          // Just update inventory without purchase record
+          const currentProduct = products.find(p => p.id === priceConfirmationData.productId);
+          if (currentProduct) {
+            await window.api.database.products.update(priceConfirmationData.productId, {
+              quantity: currentProduct.quantity + priceConfirmationData.quantity,
+              boughtPrice: priceConfirmationData.newPrice,
+              sellingPrice: safePrice(form.sellingPrice),
+            });
+          }
+
+          showToast(
+            t("stock.inventoryUpdatedSuccess", "Inventory updated successfully!"),
+            "success"
+          );
+        }
 
         // Refresh data
         refetchProducts();
@@ -1365,38 +1477,75 @@ export default function AddStockForm({
                   price: boughtPrice,
                 };
 
-                if (rememberedChoice === "weighted") {
-                  // Apply weighted average
-                  await window.api.database.products.updateWithPurchase({
-                    productId: existingProduct.id,
-                    additionalQuantity: quantity,
-                    purchaseData: purchaseData,
-                    updateBoughtPrice: true,
-                    newSellingPrice: safePrice(form.sellingPrice),
-                  });
-                  showToast(
-                    t(
-                      "stock.toastUpdateSuccess",
-                      "Product updated successfully with weighted average price!"
-                    ),
-                    "success"
-                  );
+                if (isPurchaseMode) {
+                  if (rememberedChoice === "weighted") {
+                    // Apply weighted average
+                    await window.api.database.products.updateWithPurchase({
+                      productId: existingProduct.id,
+                      additionalQuantity: quantity,
+                      purchaseData: purchaseData,
+                      updateBoughtPrice: true,
+                      newSellingPrice: safePrice(form.sellingPrice),
+                    });
+                    showToast(
+                      t(
+                        "stock.toastUpdateSuccess",
+                        "Product updated successfully with weighted average price!"
+                      ),
+                      "success"
+                    );
+                  } else {
+                    // Apply new price
+                    await window.api.database.products.updateWithPurchase({
+                      productId: existingProduct.id,
+                      additionalQuantity: quantity,
+                      purchaseData: purchaseData,
+                      updateBoughtPrice: false,
+                      newSellingPrice: safePrice(form.sellingPrice),
+                    });
+                    showToast(
+                      t(
+                        "stock.toastUpdateSuccess",
+                        "Product updated successfully!"
+                      ),
+                      "success"
+                    );
+                  }
                 } else {
-                  // Apply new price
-                  await window.api.database.products.updateWithPurchase({
-                    productId: existingProduct.id,
-                    additionalQuantity: quantity,
-                    purchaseData: purchaseData,
-                    updateBoughtPrice: false,
-                    newSellingPrice: safePrice(form.sellingPrice),
-                  });
-                  showToast(
-                    t(
-                      "stock.toastUpdateSuccess",
-                      "Product updated successfully!"
-                    ),
-                    "success"
-                  );
+                  // Just update inventory without purchase record
+                  if (rememberedChoice === "weighted") {
+                    const weightedPrice = calculateWeightedAverage(
+                      existingProduct.quantity,
+                      existingProduct.boughtPrice,
+                      quantity,
+                      boughtPrice
+                    );
+                    await window.api.database.products.update(existingProduct.id, {
+                      quantity: existingProduct.quantity + quantity,
+                      boughtPrice: weightedPrice,
+                      sellingPrice: safePrice(form.sellingPrice),
+                    });
+                    showToast(
+                      t(
+                        "stock.inventoryUpdatedSuccess",
+                        "Inventory updated successfully with weighted average price!"
+                      ),
+                      "success"
+                    );
+                  } else {
+                    await window.api.database.products.update(existingProduct.id, {
+                      quantity: existingProduct.quantity + quantity,
+                      boughtPrice: boughtPrice,
+                      sellingPrice: safePrice(form.sellingPrice),
+                    });
+                    showToast(
+                      t(
+                        "stock.inventoryUpdatedSuccess",
+                        "Inventory updated successfully!"
+                      ),
+                      "success"
+                    );
+                  }
                 }
 
                 setForm(initialForm);
@@ -1460,17 +1609,28 @@ export default function AddStockForm({
           }
 
           // Same price, proceed normally
-          await window.api.database.products.updateWithPurchase({
-            productId: existingProduct.id,
-            additionalQuantity: quantity,
-            purchaseData: purchaseData,
-            updateBoughtPrice: false,
-            newSellingPrice: safePrice(form.sellingPrice),
-          });
-          showToast(
-            t("stock.toastUpdateSuccess", "Product updated successfully!"),
-            "success"
-          );
+          if (isPurchaseMode) {
+            await window.api.database.products.updateWithPurchase({
+              productId: existingProduct.id,
+              additionalQuantity: quantity,
+              purchaseData: purchaseData,
+              updateBoughtPrice: false,
+              newSellingPrice: safePrice(form.sellingPrice),
+            });
+            showToast(
+              t("stock.toastUpdateSuccess", "Product updated successfully!"),
+              "success"
+            );
+          } else {
+            await window.api.database.products.update(existingProduct.id, {
+              quantity: existingProduct.quantity + quantity,
+              sellingPrice: safePrice(form.sellingPrice),
+            });
+            showToast(
+              t("stock.inventoryUpdatedSuccess", "Inventory updated successfully!"),
+              "success"
+            );
+          }
         } else {
           const productData = {
             name: form.name,
@@ -1482,14 +1642,22 @@ export default function AddStockForm({
             photo: form.photo,
           };
 
-          await window.api.database.products.createWithPurchase({
-            productData: productData,
-            purchaseData: purchaseData,
-          });
-          showToast(
-            t("stock.toastAddSuccess", "Product added successfully!"),
-            "success"
-          );
+          if (isPurchaseMode) {
+            await window.api.database.products.createWithPurchase({
+              productData: productData,
+              purchaseData: purchaseData,
+            });
+            showToast(
+              t("stock.toastAddSuccess", "Product added successfully!"),
+              "success"
+            );
+          } else {
+            await window.api.database.products.add(productData);
+            showToast(
+              t("stock.inventoryUpdatedSuccess", "Inventory updated successfully!"),
+              "success"
+            );
+          }
         }
 
         setForm(initialForm);
@@ -1628,8 +1796,8 @@ export default function AddStockForm({
         }
       }
 
-      // Create the multi-product purchase
-      if (purchaseItems.length > 0) {
+      // Create the multi-product purchase only if purchase mode is enabled
+      if (isPurchaseMode && purchaseItems.length > 0) {
         try {
           await window.api.database.purchases.createWithItems({
             sellerId: multiSellerId || undefined,
@@ -1657,6 +1825,14 @@ export default function AddStockForm({
             "error"
           );
         }
+      } else if (!isPurchaseMode) {
+        showToast(
+          t(
+            "stock.inventoryUpdatedSuccess",
+            "Inventory updated successfully!"
+          ),
+          "success"
+        );
       } else {
         showToast(
           t("stock.noPurchaseItems", "No purchase items to record"),
@@ -1905,6 +2081,14 @@ export default function AddStockForm({
             setIsMultiMode={setIsMultiMode}
             onModeChange={handleModeChange}
           />
+          
+          {/* Purchase Toggle */}
+          <div className="-mt-2">
+            <PurchaseToggle
+              isPurchaseMode={isPurchaseMode}
+              setIsPurchaseMode={setIsPurchaseMode}
+            />
+          </div>
 
           {/* Main Form */}
           <form onSubmit={handleAddProduct} className="space-y-6">

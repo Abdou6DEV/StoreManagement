@@ -5,7 +5,7 @@ import DetailsHistoryHeader from "./detailsHistoryHeader";
 import DetailsHistoryTabs from "./detailsHistoryTabs";
 import SalesSection from "./salesSection";
 import PurchasesSection from "./purchasesSection";
-import PaymentsSection from "./paymentsSection";
+import BillsPaymentsSection from "./billsPaymentsSection";
 import EmptyState from "./emptyState";
 import LoadingState from "./loadingState";
 
@@ -17,7 +17,7 @@ export default function DetailsHistory({
   selectedPeriod,
 }: DetailsHistoryProps) {
   const [activeSection, setActiveSection] = useState<
-    "sales" | "purchases" | "payments"
+    "sales" | "purchases" | "billsPayments"
   >("sales");
 
   // Memoize today's period to prevent unnecessary recalculations
@@ -37,24 +37,25 @@ export default function DetailsHistory({
 
   const {
     sales,
-    payments,
+    billsPayments,
     purchases,
     loading,
     salesPage,
-    paymentsPage,
+    billsPaymentsPage,
     purchasesPage,
     setSalesPage,
-    setPaymentsPage,
+    setBillsPaymentsPage,
     setPurchasesPage,
     salesTotalPages,
-    paymentsTotalPages,
+    billsPaymentsTotalPages,
     purchasesTotalPages,
     currentSales,
-    currentPayments,
+    currentBillsPayments,
     currentPurchases,
     salesTotal,
     salesProfit,
     purchasesTotal,
+    billsPaymentsTotal,
     previousSalesTotal,
     previousPurchasesTotal,
     historicalAverages,
@@ -71,7 +72,8 @@ export default function DetailsHistory({
         selectedPeriod={effectivePeriod}
         salesCount={sales.length}
         purchasesCount={purchases.length}
-        paymentsCount={payments.length}
+        billsPaymentsCount={billsPayments.length}
+        billsPaymentsTotal={billsPaymentsTotal}
         salesTotal={salesTotal}
         salesProfit={salesProfit}
         purchasesTotal={purchasesTotal}
@@ -85,7 +87,7 @@ export default function DetailsHistory({
         onSectionChange={setActiveSection}
         salesCount={sales.length}
         purchasesCount={purchases.length}
-        paymentsCount={payments.length}
+        billsPaymentsCount={billsPayments.length}
       />
 
       <div className="min-h-[400px]">
@@ -100,13 +102,13 @@ export default function DetailsHistory({
           />
         )}
 
-        {activeSection === "payments" && (
-          <PaymentsSection
-            payments={payments}
-            currentPayments={currentPayments}
-            currentPage={paymentsPage}
-            totalPages={paymentsTotalPages}
-            onPageChange={setPaymentsPage}
+        {activeSection === "billsPayments" && (
+          <BillsPaymentsSection
+            billsPayments={billsPayments}
+            currentBillsPayments={currentBillsPayments}
+            currentPage={billsPaymentsPage}
+            totalPages={billsPaymentsTotalPages}
+            onPageChange={setBillsPaymentsPage}
           />
         )}
 

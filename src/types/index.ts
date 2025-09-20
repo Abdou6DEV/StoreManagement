@@ -223,4 +223,5 @@ export interface AggregatedData {
   profit: number;
   purchases: number;
   count: number;
+  billsPayments: number;
 }

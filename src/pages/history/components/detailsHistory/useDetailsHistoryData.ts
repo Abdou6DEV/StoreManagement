@@ -9,7 +9,7 @@ import type {
 
 export function useDetailsHistoryData(period: SelectedPeriod) {
   const [sales, setSales] = useState<SaleForHistory[]>([]);
-  const [payments, setPayments] = useState<PaymentForHistory[]>([]);
+  const [billsPayments, setBillsPayments] = useState<any[]>([]);
   const [purchases, setPurchases] = useState<PurchaseForHistory[]>([]);
   const [previousSalesData, setPreviousSalesData] = useState<SaleForHistory[]>(
     []
@@ -26,22 +26,22 @@ export function useDetailsHistoryData(period: SelectedPeriod) {
 
   // Pagination state for each section
   const [salesPage, setSalesPage] = useState(1);
-  const [paymentsPage, setPaymentsPage] = useState(1);
+  const [billsPaymentsPage, setBillsPaymentsPage] = useState(1);
   const [purchasesPage, setPurchasesPage] = useState(1);
   const [itemsPerPage] = useState(10);
 
   // Calculate pagination for each section
   const salesTotalPages = Math.ceil(sales.length / itemsPerPage);
-  const paymentsTotalPages = Math.ceil(payments.length / itemsPerPage);
+  const billsPaymentsTotalPages = Math.ceil(billsPayments.length / itemsPerPage);
   const purchasesTotalPages = Math.ceil(purchases.length / itemsPerPage);
 
   const salesStartIndex = (salesPage - 1) * itemsPerPage;
   const salesEndIndex = salesStartIndex + itemsPerPage;
   const currentSales = sales.slice(salesStartIndex, salesEndIndex);
 
-  const paymentsStartIndex = (paymentsPage - 1) * itemsPerPage;
-  const paymentsEndIndex = paymentsStartIndex + itemsPerPage;
-  const currentPayments = payments.slice(paymentsStartIndex, paymentsEndIndex);
+  const billsPaymentsStartIndex = (billsPaymentsPage - 1) * itemsPerPage;
+  const billsPaymentsEndIndex = billsPaymentsStartIndex + itemsPerPage;
+  const currentBillsPayments = billsPayments.slice(billsPaymentsStartIndex, billsPaymentsEndIndex);
 
   const purchasesStartIndex = (purchasesPage - 1) * itemsPerPage;
   const purchasesEndIndex = purchasesStartIndex + itemsPerPage;
@@ -104,6 +104,10 @@ export function useDetailsHistoryData(period: SelectedPeriod) {
     return sum + totalAmount;
   }, 0);
 
+  const billsPaymentsTotal = billsPayments.reduce((sum, payment) => {
+    return sum + payment.amount;
+  }, 0);
+
   // Get previous period for comparison
   const getPreviousPeriod = (currentPeriod: SelectedPeriod): SelectedPeriod => {
     if (currentPeriod.period === "day") {
@@ -153,7 +157,7 @@ export function useDetailsHistoryData(period: SelectedPeriod) {
       // Fetch data for the selected period, previous period, and historical averages
       const [
         salesData,
-        paymentsData,
+        billsPaymentsData,
         purchasesData,
         previousSalesData,
         previousPurchasesData,
@@ -163,7 +167,7 @@ export function useDetailsHistoryData(period: SelectedPeriod) {
           period.period,
           period.periodValue
         ),
-        window.api.database.payments.getBySpecificPeriod(
+        window.api.database.bills.getBySpecificPeriod(
           period.period,
           period.periodValue
         ),
@@ -186,7 +190,7 @@ export function useDetailsHistoryData(period: SelectedPeriod) {
       ]);
 
       setSales(salesData);
-      setPayments(paymentsData);
+      setBillsPayments(billsPaymentsData);
       setPurchases(purchasesData);
       setPreviousSalesData(previousSalesData);
       setPreviousPurchasesData(previousPurchasesData);
@@ -203,7 +207,7 @@ export function useDetailsHistoryData(period: SelectedPeriod) {
           period: period.period,
           periodValue: period.periodValue,
           salesCount: salesData.length,
-          paymentsCount: paymentsData.length,
+          billsPaymentsCount: billsPaymentsData.length,
           purchasesCount: purchasesData.length,
         }
       );
@@ -221,14 +225,14 @@ export function useDetailsHistoryData(period: SelectedPeriod) {
   // Reset pagination when section changes
   useEffect(() => {
     setSalesPage(1);
-    setPaymentsPage(1);
+    setBillsPaymentsPage(1);
     setPurchasesPage(1);
   }, []);
 
   // Reset pagination and fetch data when period changes
   useEffect(() => {
     setSalesPage(1);
-    setPaymentsPage(1);
+    setBillsPaymentsPage(1);
     setPurchasesPage(1);
     fetchPeriodData();
   }, [fetchPeriodData]);
@@ -255,24 +259,25 @@ export function useDetailsHistoryData(period: SelectedPeriod) {
 
   return {
     sales,
-    payments,
+    billsPayments,
     purchases,
     loading,
     salesPage,
-    paymentsPage,
+    billsPaymentsPage,
     purchasesPage,
     setSalesPage,
-    setPaymentsPage,
+    setBillsPaymentsPage,
     setPurchasesPage,
     salesTotalPages,
-    paymentsTotalPages,
+    billsPaymentsTotalPages,
     purchasesTotalPages,
     currentSales,
-    currentPayments,
+    currentBillsPayments,
     currentPurchases,
     salesTotal,
     salesProfit,
     purchasesTotal,
+    billsPaymentsTotal,
     previousSalesTotal,
     previousPurchasesTotal,
     historicalAverages,

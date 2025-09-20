@@ -23,9 +23,9 @@ export default function PurchasesSection({
 
   if (purchases.length === 0) {
     return (
-      <div className="text-center py-8 text-muted-foreground">
-        <FileText className="w-12 h-12 mx-auto mb-4 opacity-40" />
-        <p>{t("history.noPurchasesFoundForPeriod")}</p>
+      <div className="text-center py-12 text-muted-foreground">
+        <FileText className="w-16 h-16 mx-auto mb-6 opacity-40" />
+        <p className="text-lg font-medium">{t("history.noPurchasesFoundForPeriod")}</p>
       </div>
     );
   }
@@ -38,18 +38,18 @@ export default function PurchasesSection({
             key={purchase.id}
             className="bg-card border border-border rounded-lg p-4"
           >
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-3">
-                <span className="text-sm text-muted-foreground">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-4">
+                <span className="text-base text-muted-foreground font-medium">
                   {formatDateTime(purchase.createdAt)}
                 </span>
                 {purchase.seller && (
-                  <span className="text-sm font-medium">
+                  <span className="text-base font-semibold text-foreground">
                     {t("history.seller")}: {purchase.seller.name}
                   </span>
                 )}
               </div>
-              <span className="text-sm font-semibold text-primary">
+              <span className="text-xl font-bold text-green-600">
                 {formatCurrency(
                   purchase.PurchaseItems.reduce(
                     (sum, item) => sum + item.price * item.quantity,
@@ -58,17 +58,17 @@ export default function PurchasesSection({
                 )}
               </span>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-3">
               {purchase.PurchaseItems.map((item, index) => (
                 <div
                   key={index}
-                  className="flex items-center justify-between text-sm"
+                  className="flex items-center justify-between text-base py-2 px-3 bg-muted/30 rounded-md"
                 >
-                  <span>
+                  <span className="font-medium text-foreground">
                     {item.product.name} ({item.product.categoryName}) x{" "}
-                    {item.quantity}
+                    <span className="font-bold text-primary">{item.quantity}</span>
                   </span>
-                  <span className="text-muted-foreground">
+                  <span className="text-lg font-bold text-foreground">
                     {formatCurrency(item.price * item.quantity)}
                   </span>
                 </div>
