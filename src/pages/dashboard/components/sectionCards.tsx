@@ -14,13 +14,19 @@ import {
   ArrowUpIcon,
   ArrowDownIcon,
   CalendarIcon,
+  TrendingUp,
+  TrendingDown,
 } from "lucide-react";
+import { ProfitChart } from "./profitCharts";
 
 export function SectionCards() {
   const { t, i18n } = useTranslation();
   const [salesStats, setSalesStats] = useState<any[]>([]);
   const [stockStats, setStockStats] = useState<any[]>([]);
   const [clientStats, setClientStats] = useState<any[]>([]);
+  const [todayVsAverage, setTodayVsAverage] = useState<{ percentage: number; direction: 'up' | 'down' }>({ percentage: 0, direction: 'up' });
+  const [monthVsAverage, setMonthVsAverage] = useState<{ percentage: number; direction: 'up' | 'down' }>({ percentage: 0, direction: 'up' });
+  const [yearVsAverage, setYearVsAverage] = useState<{ percentage: number; direction: 'up' | 'down' }>({ percentage: 0, direction: 'up' });
 
   const formatCurrency = (amount: number) =>
     `${amount.toLocaleString()} ${t("currency")}`;
@@ -179,6 +185,106 @@ export function SectionCards() {
       const monthStats = calcSalesStats("thisMonth", isThisMonth);
       const yearStats = calcSalesStats("thisYear", isThisYear);
       const overallStats = calcSalesStats("overall", () => true);
+
+       // Calculate today vs average for the Today card
+       const todayTotalProfit = todayStats.profit ? parseFloat(todayStats.profit.replace(/[^\d.-]/g, '')) : 0;
+       
+       // Get historical data for average calculation (last 30 days excluding today)
+       const now = new Date();
+       const thirtyDaysAgo = new Date(now);
+       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+       const yesterday = new Date(now);
+       yesterday.setDate(yesterday.getDate() - 1);
+       
+       try {
+         const historicalData = await window.api.database.sales.getAggregatedByPeriod(
+           "day",
+           thirtyDaysAgo.toISOString(),
+           yesterday.toISOString()
+         );
+
+         // Calculate average daily profit from historical data (excluding today)
+         const averageDailyProfit = historicalData.length > 0 
+           ? historicalData.reduce((sum: number, item: any) => sum + (item.profit || 0), 0) / historicalData.length 
+           : 0;
+
+         const percentage = averageDailyProfit !== 0 
+           ? ((todayTotalProfit - averageDailyProfit) / Math.abs(averageDailyProfit)) * 100 
+           : 0;
+         
+         setTodayVsAverage({
+           percentage: Math.abs(percentage),
+           direction: percentage >= 0 ? 'up' : 'down'
+         });
+       } catch (error) {
+         console.error('Error calculating today vs average:', error);
+         setTodayVsAverage({ percentage: 0, direction: 'up' });
+       }
+
+       // Calculate month vs average
+       try {
+         // Get historical data from previous months (last 12 months excluding current month)
+         const twelveMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 12, 1);
+         const lastMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
+         
+         const historicalMonthData = await window.api.database.sales.getAggregatedByPeriod(
+           "month",
+           twelveMonthsAgo.toISOString(),
+           lastMonth.toISOString()
+         );
+         
+         const monthTotalProfit = monthStats.profit ? parseFloat(monthStats.profit.replace(/[^\d.-]/g, '')) : 0;
+         
+         // Calculate average monthly profit from historical data
+         const averageMonthlyProfit = historicalMonthData.length > 0 
+           ? historicalMonthData.reduce((sum: number, item: any) => sum + (item.profit || 0), 0) / historicalMonthData.length 
+           : 0;
+         
+         const monthPercentage = averageMonthlyProfit !== 0 
+           ? ((monthTotalProfit - averageMonthlyProfit) / Math.abs(averageMonthlyProfit)) * 100 
+           : 0;
+         
+         setMonthVsAverage({
+           percentage: Math.abs(monthPercentage),
+           direction: monthPercentage >= 0 ? 'up' : 'down'
+         });
+       } catch (error) {
+         console.error('Error calculating month vs average:', error);
+         setMonthVsAverage({ percentage: 0, direction: 'up' });
+       }
+
+       // Calculate year vs average
+       try {
+         // Get historical data from previous years (last 5 years excluding current year)
+         const fiveYearsAgo = new Date(now.getFullYear() - 5, 0, 1);
+         const lastYear = new Date(now.getFullYear() - 1, 11, 31, 23, 59, 59);
+         
+         const historicalYearData = await window.api.database.sales.getAggregatedByPeriod(
+           "year",
+           fiveYearsAgo.toISOString(),
+           lastYear.toISOString()
+         );
+         
+         const yearTotalProfit = yearStats.profit ? parseFloat(yearStats.profit.replace(/[^\d.-]/g, '')) : 0;
+         
+         // Calculate average yearly profit from historical data
+         const averageYearlyProfit = historicalYearData.length > 0 
+           ? historicalYearData.reduce((sum: number, item: any) => sum + (item.profit || 0), 0) / historicalYearData.length 
+           : 0;
+         
+         const yearPercentage = averageYearlyProfit !== 0 
+           ? ((yearTotalProfit - averageYearlyProfit) / Math.abs(averageYearlyProfit)) * 100 
+           : 0;
+         
+         setYearVsAverage({
+           percentage: Math.abs(yearPercentage),
+           direction: yearPercentage >= 0 ? 'up' : 'down'
+         });
+       } catch (error) {
+         console.error('Error calculating year vs average:', error);
+         setYearVsAverage({ percentage: 0, direction: 'up' });
+       }
+
 
       // Calculate purchases stats for each period
       const todayPurchases = calcPurchasesStats("today", isToday);
@@ -340,8 +446,129 @@ export function SectionCards() {
           return (
             <div
               key={stat.labelKey}
-              className="p-8 bg-card rounded-xl shadow-md border flex flex-col items-start space-y-3 hover:shadow-lg transition-shadow duration-300 relative min-h-[140px]"
+              className={`p-8 bg-card rounded-xl shadow-md border flex flex-col items-start space-y-3 hover:shadow-lg transition-shadow duration-300 relative min-h-[280px]`}
             >
+                  {stat.revenue && stat.profit ? (
+                    // Unified layout for all sales cards
+                    <div className="w-full space-y-2">
+                      <div className="flex items-center justify-between w-full">
+                        <div className="flex items-center gap-2">
+                          {IconComponent && (
+                            <IconComponent className="h-6 w-6 text-primary" />
+                          )}
+                          <div>
+                            <h3 className="text-xl font-bold text-foreground">
+                              {t(stat.labelKey)}
+                            </h3>
+                            {stat.labelKey === 'dashboard.today' && (
+                              <div className="text-sm text-muted-foreground">
+                                {new Date().toLocaleDateString('en-GB')}
+                              </div>
+                            )}
+                            {stat.labelKey === 'dashboard.thisMonth' && (
+                              <div className="text-sm text-muted-foreground">
+                                {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                              </div>
+                            )}
+                            {stat.labelKey === 'dashboard.thisYear' && (
+                              <div className="text-sm text-muted-foreground">
+                                {new Date().getFullYear().toString()}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        {/* Average percentage indicators for Today, Month, Year cards */}
+                        {stat.labelKey === 'dashboard.today' && todayVsAverage.percentage > 0 && (
+                          <div className={`flex items-center gap-1 text-sm ${
+                            todayVsAverage.direction === 'up' 
+                              ? "text-green-600 dark:text-green-400" 
+                              : "text-red-600 dark:text-red-400"
+                          }`}>
+                            {todayVsAverage.direction === 'up' ? (
+                              <TrendingUp className="h-4 w-4" />
+                            ) : (
+                              <TrendingDown className="h-4 w-4" />
+                            )}
+                            <span className="font-semibold">
+                              {todayVsAverage.percentage.toFixed(1)}%
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              {todayVsAverage.direction === 'up' ? t("dashboard.above") : t("dashboard.below")} {t("dashboard.average")}
+                            </span>
+                          </div>
+                        )}
+                        {stat.labelKey === 'dashboard.thisMonth' && monthVsAverage.percentage > 0 && (
+                          <div className={`flex items-center gap-1 text-sm ${
+                            monthVsAverage.direction === 'up' 
+                              ? "text-green-600 dark:text-green-400" 
+                              : "text-red-600 dark:text-red-400"
+                          }`}>
+                            {monthVsAverage.direction === 'up' ? (
+                              <TrendingUp className="h-4 w-4" />
+                            ) : (
+                              <TrendingDown className="h-4 w-4" />
+                            )}
+                            <span className="font-semibold">
+                              {monthVsAverage.percentage.toFixed(1)}%
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              {monthVsAverage.direction === 'up' ? t("dashboard.above") : t("dashboard.below")} {t("dashboard.average")}
+                            </span>
+                          </div>
+                        )}
+                        {stat.labelKey === 'dashboard.thisYear' && yearVsAverage.percentage > 0 && (
+                          <div className={`flex items-center gap-1 text-sm ${
+                            yearVsAverage.direction === 'up' 
+                              ? "text-green-600 dark:text-green-400" 
+                              : "text-red-600 dark:text-red-400"
+                          }`}>
+                            {yearVsAverage.direction === 'up' ? (
+                              <TrendingUp className="h-4 w-4" />
+                            ) : (
+                              <TrendingDown className="h-4 w-4" />
+                            )}
+                            <span className="font-semibold">
+                              {yearVsAverage.percentage.toFixed(1)}%
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              {yearVsAverage.direction === 'up' ? t("dashboard.above") : t("dashboard.below")} {t("dashboard.average")}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                   {stat.revenue && (
+                     <div className="flex flex-col items-center gap-1">
+                       <span className="text-3xl font-bold text-primary">
+                         {stat.revenue}
+                       </span>
+                       <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                         {t("dashboard.revenue")}
+                       </span>
+                     </div>
+                   )}
+                   {stat.profit && (
+                     <div className="flex flex-col items-center gap-1">
+                       <span className="text-3xl font-bold text-green-600">
+                         {stat.profit}
+                       </span>
+                       <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                         {t("dashboard.profit")}
+                       </span>
+                     </div>
+                   )}
+                   {stat.itemsSold && (
+                     <div className="flex flex-col items-center gap-1">
+                       <span className="text-2xl font-bold text-orange-600">
+                         {stat.itemsSold}
+                       </span>
+                       <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                         {t("dashboard.itemsSold")}
+                       </span>
+                     </div>
+                   )}
+                 </div>
+              ) : (
+                // Regular layout for non-sales cards
               <div className="flex items-center justify-between w-full">
                 <div className="text-muted-foreground text-sm font-medium">
                   {t(stat.labelKey)}
@@ -349,43 +576,6 @@ export function SectionCards() {
                 {IconComponent && (
                   <IconComponent className="h-5 w-5 text-muted-foreground" />
                 )}
-              </div>
-              {stat.revenue && (
-                <div className="flex items-center justify-between w-full mt-3">
-                  <span className="text-sm text-muted-foreground">
-                    {t("dashboard.revenue")}
-                  </span>
-                  <span className="text-lg font-semibold">{stat.revenue}</span>
-                </div>
-              )}
-              {stat.revenue && (
-                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mt-2">
-                  <div className="bg-green-500 h-2 rounded-full" style={{width: `${stat.revenueProgress}%`}}></div>
-                </div>
-              )}
-              {stat.profit && (
-                <div className="flex items-center justify-between w-full">
-                  <span className="text-sm text-muted-foreground">
-                    {t("dashboard.profit")}
-                  </span>
-                  <span className="text-lg font-semibold text-green-600">
-                    {stat.profit}
-                  </span>
-                </div>
-              )}
-              {stat.profit && (
-                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mt-2">
-                  <div className="bg-emerald-500 h-2 rounded-full" style={{width: `${stat.profitProgress}%`}}></div>
-                </div>
-              )}
-              {stat.itemsSold && (
-                <div className="flex items-center justify-between w-full">
-                  <span className="text-sm text-muted-foreground">
-                    {t("dashboard.itemsSold")}
-                  </span>
-                  <span className="text-lg font-semibold">
-                    {stat.itemsSold}
-                  </span>
                 </div>
               )}
               {stat.value &&
@@ -394,6 +584,27 @@ export function SectionCards() {
                 !stat.itemsSold && (
                   <div className="text-3xl font-bold text-card-foreground mb-3 mt-3">
                     {stat.value}
+                  </div>
+                )}
+              
+              {/* Add profit chart for sales stats */}
+              {stat.revenue && stat.profit && (
+                <div className="w-full mt-4 text-center">
+                  <div className="text-xs text-muted-foreground mb-2 text-center">
+                    {stat.labelKey === 'dashboard.today' && t("dashboard.todayProfitChart")}
+                    {stat.labelKey === 'dashboard.thisMonth' && t("dashboard.monthProfitChart")}
+                    {stat.labelKey === 'dashboard.thisYear' && t("dashboard.yearProfitChart")}
+                    {stat.labelKey === 'dashboard.overall' && t("dashboard.overallProfitChart")}
+                  </div>
+                  <ProfitChart 
+                    period={
+                      stat.labelKey === 'dashboard.today' ? 'today' :
+                      stat.labelKey === 'dashboard.thisMonth' ? 'month' :
+                      stat.labelKey === 'dashboard.thisYear' ? 'year' :
+                      'overall'
+                    }
+                    className="h-40"
+                  />
                   </div>
                 )}
             </div>
