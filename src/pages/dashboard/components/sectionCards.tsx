@@ -6,6 +6,14 @@ import {
   CreditCardIcon,
   AlertTriangleIcon,
   WalletIcon,
+  ShoppingCartIcon,
+  ReceiptIcon,
+  UsersIcon,
+  TrendingUpIcon,
+  TrendingDownIcon,
+  ArrowUpIcon,
+  ArrowDownIcon,
+  CalendarIcon,
 } from "lucide-react";
 
 export function SectionCards() {
@@ -19,13 +27,15 @@ export function SectionCards() {
 
   useEffect(() => {
     async function fetchStats() {
-      const [sales, products, payments, clients, lowStockThreshold] =
+      const [sales, products, payments, clients, lowStockThreshold, purchases, billsPayments] =
         await Promise.all([
           window.api.database.sales.getAll(),
           window.api.database.products.getAll(),
           window.api.database.payments.getAll(),
           window.api.database.clients.getAll(),
           window.api.database.options.get("lowStockThreshold"),
+          window.api.database.purchases.getAll(),
+          window.api.database.bills.getAllPayments(),
         ]);
 
       function calcSalesStats(
@@ -95,11 +105,147 @@ export function SectionCards() {
         const now = new Date();
         return d.getFullYear() === now.getFullYear();
       };
+
+      // Calculate purchases stats
+      function calcPurchasesStats(
+        labelKey: string,
+        filterFn: (date: Date) => boolean
+      ) {
+        const filtered = purchases.filter((p: any) => filterFn(p.createdAt));
+        const totalAmount = filtered.reduce(
+          (sum: number, p: any) => {
+            const purchaseItemsTotal = p.PurchaseItems?.reduce(
+              (itemSum: number, item: any) => itemSum + (item.price * item.quantity),
+              0
+            ) || 0;
+            return sum + purchaseItemsTotal;
+          },
+          0
+        );
+        const totalItems = filtered.reduce(
+          (sum: number, p: any) => {
+            const purchaseItemsCount = p.PurchaseItems?.reduce(
+              (itemSum: number, item: any) => itemSum + item.quantity,
+              0
+            ) || 0;
+            return sum + purchaseItemsCount;
+          },
+          0
+        );
+        return {
+          labelKey: `dashboard.${labelKey}`,
+          amount: formatCurrency(totalAmount),
+          itemsCount: totalItems.toLocaleString(),
+        };
+      }
+
+      // Calculate bills payments stats
+      function calcBillsStats(
+        labelKey: string,
+        filterFn: (date: Date) => boolean
+      ) {
+        const filtered = billsPayments.filter((p: any) => filterFn(p.paidDate));
+        const totalAmount = filtered.reduce(
+          (sum: number, p: any) => sum + p.amount,
+          0
+        );
+        return {
+          labelKey: `dashboard.${labelKey}`,
+          amount: formatCurrency(totalAmount),
+          count: filtered.length.toLocaleString(),
+        };
+      }
+
+      // Calculate client credit payments stats
+      function calcClientCreditStats(
+        labelKey: string,
+        filterFn: (date: Date) => boolean
+      ) {
+        const filtered = payments.filter((p: any) => 
+          p.type === "CREDIT" && p.paidDate && filterFn(p.paidDate)
+        );
+        const totalAmount = filtered.reduce(
+          (sum: number, p: any) => sum + p.givenAmount,
+          0
+        );
+        return {
+          labelKey: `dashboard.${labelKey}`,
+          amount: formatCurrency(totalAmount),
+          count: filtered.length.toLocaleString(),
+        };
+      }
+
       const todayStats = calcSalesStats("today", isToday);
       const monthStats = calcSalesStats("thisMonth", isThisMonth);
       const yearStats = calcSalesStats("thisYear", isThisYear);
       const overallStats = calcSalesStats("overall", () => true);
-      setSalesStats([todayStats, monthStats, yearStats, overallStats]);
+
+      // Calculate purchases stats for each period
+      const todayPurchases = calcPurchasesStats("today", isToday);
+      const monthPurchases = calcPurchasesStats("thisMonth", isThisMonth);
+      const yearPurchases = calcPurchasesStats("thisYear", isThisYear);
+      const overallPurchases = calcPurchasesStats("overall", () => true);
+
+      // Calculate bills payments stats for each period
+      const todayBills = calcBillsStats("today", isToday);
+      const monthBills = calcBillsStats("thisMonth", isThisMonth);
+      const yearBills = calcBillsStats("thisYear", isThisYear);
+      const overallBills = calcBillsStats("overall", () => true);
+
+      // Calculate client credit payments stats for each period
+      const todayClientCredit = calcClientCreditStats("today", isToday);
+      const monthClientCredit = calcClientCreditStats("thisMonth", isThisMonth);
+      const yearClientCredit = calcClientCreditStats("thisYear", isThisYear);
+      const overallClientCredit = calcClientCreditStats("overall", () => true);
+
+      // Calculate trends and percentages
+      const calculateTrend = (current: number, previous: number) => {
+        if (previous === 0) return { percentage: 100, trend: 'up' };
+        const percentage = ((current - previous) / previous) * 100;
+        return {
+          percentage: Math.abs(percentage),
+          trend: percentage >= 0 ? 'up' : 'down'
+        };
+      };
+
+      // Calculate max values for progress bars
+      const allRevenues = [todayStats, monthStats, yearStats, overallStats].map(s => parseFloat(s.revenue.replace(/[^\d.-]/g, '')));
+      const allProfits = [todayStats, monthStats, yearStats, overallStats].map(s => parseFloat(s.profit.replace(/[^\d.-]/g, '')));
+      const allPurchases = [todayPurchases, monthPurchases, yearPurchases, overallPurchases].map(s => parseFloat(s.amount.replace(/[^\d.-]/g, '')));
+      const allBills = [todayBills, monthBills, yearBills, overallBills].map(s => parseFloat(s.amount.replace(/[^\d.-]/g, '')));
+      const allCredits = [todayClientCredit, monthClientCredit, yearClientCredit, overallClientCredit].map(s => parseFloat(s.amount.replace(/[^\d.-]/g, '')));
+
+      const maxRevenue = Math.max(...allRevenues);
+      const maxProfit = Math.max(...allProfits);
+      const maxPurchases = Math.max(...allPurchases);
+      const maxBills = Math.max(...allBills);
+      const maxCredits = Math.max(...allCredits);
+
+      // Combine only revenue, profit, and items sold stats
+      const combinedStats = [
+        {
+          ...todayStats,
+          revenueProgress: maxRevenue > 0 ? (parseFloat(todayStats.revenue.replace(/[^\d.-]/g, '')) / maxRevenue) * 100 : 0,
+          profitProgress: maxProfit > 0 ? (parseFloat(todayStats.profit.replace(/[^\d.-]/g, '')) / maxProfit) * 100 : 0,
+        },
+        {
+          ...monthStats,
+          revenueProgress: maxRevenue > 0 ? (parseFloat(monthStats.revenue.replace(/[^\d.-]/g, '')) / maxRevenue) * 100 : 0,
+          profitProgress: maxProfit > 0 ? (parseFloat(monthStats.profit.replace(/[^\d.-]/g, '')) / maxProfit) * 100 : 0,
+        },
+        {
+          ...yearStats,
+          revenueProgress: maxRevenue > 0 ? (parseFloat(yearStats.revenue.replace(/[^\d.-]/g, '')) / maxRevenue) * 100 : 0,
+          profitProgress: maxProfit > 0 ? (parseFloat(yearStats.profit.replace(/[^\d.-]/g, '')) / maxProfit) * 100 : 0,
+        },
+        {
+          ...overallStats,
+          revenueProgress: 100,
+          profitProgress: 100,
+        },
+      ];
+
+      setSalesStats(combinedStats);
 
       const totalProducts = products.length;
       const threshold = lowStockThreshold ? Number(lowStockThreshold) : 5; // Default to 5 if not set
@@ -184,50 +330,60 @@ export function SectionCards() {
   }, [i18n.language]);
 
   const renderSection = (titleKey: string, cards: any[]) => (
-    <div className="space-y-4">
-      <h2 className="text-lg font-semibold text-foreground mb-2">
+    <div className="space-y-6">
+      <h2 className="text-xl font-semibold text-foreground mb-4">
         {t(`dashboard.${titleKey}`)}
       </h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {cards.map((stat) => {
           const IconComponent = stat.icon;
           return (
             <div
               key={stat.labelKey}
-              className="p-6 bg-card rounded-xl shadow-md border flex flex-col items-start space-y-1 hover:shadow-lg transition-shadow duration-300 relative"
+              className="p-8 bg-card rounded-xl shadow-md border flex flex-col items-start space-y-3 hover:shadow-lg transition-shadow duration-300 relative min-h-[140px]"
             >
               <div className="flex items-center justify-between w-full">
-                <div className="text-muted-foreground text-xs font-medium">
+                <div className="text-muted-foreground text-sm font-medium">
                   {t(stat.labelKey)}
                 </div>
                 {IconComponent && (
-                  <IconComponent className="h-4 w-4 text-muted-foreground" />
+                  <IconComponent className="h-5 w-5 text-muted-foreground" />
                 )}
               </div>
               {stat.revenue && (
-                <div className="flex items-center justify-between w-full mt-2">
-                  <span className="text-xs text-muted-foreground">
+                <div className="flex items-center justify-between w-full mt-3">
+                  <span className="text-sm text-muted-foreground">
                     {t("dashboard.revenue")}
                   </span>
-                  <span className="text-sm font-semibold">{stat.revenue}</span>
+                  <span className="text-lg font-semibold">{stat.revenue}</span>
+                </div>
+              )}
+              {stat.revenue && (
+                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mt-2">
+                  <div className="bg-green-500 h-2 rounded-full" style={{width: `${stat.revenueProgress}%`}}></div>
                 </div>
               )}
               {stat.profit && (
                 <div className="flex items-center justify-between w-full">
-                  <span className="text-xs text-muted-foreground">
+                  <span className="text-sm text-muted-foreground">
                     {t("dashboard.profit")}
                   </span>
-                  <span className="text-sm font-semibold text-green-600">
+                  <span className="text-lg font-semibold text-green-600">
                     {stat.profit}
                   </span>
                 </div>
               )}
+              {stat.profit && (
+                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mt-2">
+                  <div className="bg-emerald-500 h-2 rounded-full" style={{width: `${stat.profitProgress}%`}}></div>
+                </div>
+              )}
               {stat.itemsSold && (
                 <div className="flex items-center justify-between w-full">
-                  <span className="text-xs text-muted-foreground">
+                  <span className="text-sm text-muted-foreground">
                     {t("dashboard.itemsSold")}
                   </span>
-                  <span className="text-sm font-semibold">
+                  <span className="text-lg font-semibold">
                     {stat.itemsSold}
                   </span>
                 </div>
@@ -236,7 +392,7 @@ export function SectionCards() {
                 !stat.revenue &&
                 !stat.profit &&
                 !stat.itemsSold && (
-                  <div className="text-2xl font-bold text-card-foreground mb-2 mt-2">
+                  <div className="text-3xl font-bold text-card-foreground mb-3 mt-3">
                     {stat.value}
                   </div>
                 )}
