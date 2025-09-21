@@ -87,7 +87,13 @@
     "oneOverduePayment": "1 paiement en retard",
     "overduePayments": "{{count}} paiements en retard",
     "oneDueSoonPayment": "1 paiement bientôt dû",
-    "dueSoonPayments": "{{count}} paiements bientôt dus"
+    "dueSoonPayments": "{{count}} paiements bientôt dus",
+    "bills": "Factures et Dépenses",
+    "billsDesc": "Gérer les factures et dépenses du magasin",
+    "oneOverdueBill": "1 facture en retard",
+    "overdueBills": "{{count}} factures en retard",
+    "oneDueSoonBill": "1 facture bientôt due",
+    "dueSoonBills": "{{count}} factures bientôt dues"
   },
   "history": {
     "title": "Historique",

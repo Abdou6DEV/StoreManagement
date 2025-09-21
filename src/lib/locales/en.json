@@ -341,6 +341,7 @@
     "items": "items",
     "more": "more",
     "products": "products",
+    "currency": "DA",
     "tooltips": {
       "aggregationLevel": "Choose how to group your data: daily, monthly, or yearly",
       "dateRange": "Select the date range to filter your data",
@@ -1005,7 +1006,8 @@
   "today": "Today",
   "datePicker": {
     "selectMonth": "Select month"
-  }
+  },
+  "currency": "DA"
 }
 
 
