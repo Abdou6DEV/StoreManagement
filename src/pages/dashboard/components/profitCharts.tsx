@@ -135,8 +135,8 @@ export function ProfitChart({ period, className = "" }: ProfitChartProps) {
           // Use the proper database aggregation function for other periods
           const aggregatedData = await window.api.database.sales.getAggregatedByPeriod(
             periodType,
-            startDate.toISOString(),
-            endDate.toISOString()
+            startDate,
+            endDate
           );
 
           // Transform the data for the chart

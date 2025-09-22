@@ -451,14 +451,14 @@ export function SectionCards() {
                   {stat.revenue && stat.profit ? (
                     // Unified layout for all sales cards
                     <div className="w-full space-y-2">
-                      <div className="flex items-center justify-between w-full">
+              <div className="flex items-center justify-between w-full">
                         <div className="flex items-center gap-2">
                           {IconComponent && (
                             <IconComponent className="h-6 w-6 text-primary" />
                           )}
                           <div>
                             <h3 className="text-xl font-bold text-foreground">
-                              {t(stat.labelKey)}
+                  {t(stat.labelKey)}
                             </h3>
                             {stat.labelKey === 'dashboard.today' && (
                               <div className="text-sm text-muted-foreground">
@@ -533,37 +533,37 @@ export function SectionCards() {
                             <span className="text-xs text-muted-foreground">
                               {yearVsAverage.direction === 'up' ? t("dashboard.above") : t("dashboard.below")} {t("dashboard.average")}
                             </span>
-                          </div>
-                        )}
-                      </div>
-                   {stat.revenue && (
+                </div>
+                )}
+              </div>
+              {stat.revenue && (
                      <div className="flex flex-col items-center gap-1">
                        <span className="text-3xl font-bold text-primary">
                          {stat.revenue}
                        </span>
                        <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-                         {t("dashboard.revenue")}
-                       </span>
-                     </div>
-                   )}
-                   {stat.profit && (
+                    {t("dashboard.revenue")}
+                  </span>
+                </div>
+              )}
+              {stat.profit && (
                      <div className="flex flex-col items-center gap-1">
                        <span className="text-3xl font-bold text-green-600">
                          {stat.profit}
                        </span>
                        <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-                         {t("dashboard.profit")}
-                       </span>
-                     </div>
-                   )}
-                   {stat.itemsSold && (
+                    {t("dashboard.profit")}
+                  </span>
+                </div>
+              )}
+              {stat.itemsSold && (
                      <div className="flex flex-col items-center gap-1">
                        <span className="text-2xl font-bold text-orange-600">
                          {stat.itemsSold}
                        </span>
                        <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-                         {t("dashboard.itemsSold")}
-                       </span>
+                    {t("dashboard.itemsSold")}
+                  </span>
                      </div>
                    )}
                  </div>
