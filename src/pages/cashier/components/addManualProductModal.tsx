@@ -32,6 +32,9 @@ interface AddManualProductModalProps {
   onAdd: (product: CartItem) => void;
 }
 
+// Maximum value for INT column in SQLite (2^31 - 1)
+const MAX_PRICE = 2147483647;
+
 export default function AddManualProductModal({
   open,
   onClose,
@@ -286,9 +289,25 @@ export default function AddManualProductModal({
       return;
     }
 
+    if (Number(manualProduct.sold) > MAX_PRICE) {
+      showToast(
+        t("cashier.priceTooLarge", "Price is too large. Maximum allowed value is 2,147,483,647"),
+        "error"
+      );
+      return;
+    }
+
     if (!manualProduct.costPrice || Number(manualProduct.costPrice) < 0) {
       showToast(
         t("cashier.costPriceRequired", "Cost price is required and must be 0 or greater"),
+        "error"
+      );
+      return;
+    }
+
+    if (Number(manualProduct.costPrice) > MAX_PRICE) {
+      showToast(
+        t("cashier.priceTooLarge", "Price is too large. Maximum allowed value is 2,147,483,647"),
         "error"
       );
       return;

@@ -5,6 +5,7 @@ import StyledNumberInput from "../../../lib/components/inputNumber";
 import { Plus } from "lucide-react";
 import type { CartItem } from "../../../types";
 import type { Service } from "@prisma/client";
+import { useToast } from "../../../lib/contexts/toastContext";
 
 interface AddServiceModalProps {
   open: boolean;
@@ -12,12 +13,16 @@ interface AddServiceModalProps {
   onAdd: (service: CartItem) => void;
 }
 
+// Maximum value for INT column in SQLite (2^31 - 1)
+const MAX_PRICE = 2147483647;
+
 export default function AddServiceModal({
   open,
   onClose,
   onAdd,
 }: AddServiceModalProps) {
   const { t } = useTranslation();
+  const { showToast } = useToast();
   const [service, setService] = useState({
     name: "",
     description: "",
@@ -177,6 +182,23 @@ export default function AddServiceModal({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!service.name.trim() || !service.price) return;
+
+    // Validate price limits
+    if (Number(service.price) > MAX_PRICE) {
+      showToast(
+        t("cashier.servicePriceTooLarge", "Service price is too large. Maximum allowed value is 2,147,483,647"),
+        "error"
+      );
+      return;
+    }
+
+    if (Number(service.costPrice) > MAX_PRICE) {
+      showToast(
+        t("cashier.priceTooLarge", "Price is too large. Maximum allowed value is 2,147,483,647"),
+        "error"
+      );
+      return;
+    }
 
     onAdd({
       id: `service-${Date.now()}`,

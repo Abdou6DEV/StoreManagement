@@ -18,6 +18,7 @@ import {
   TrendingDown,
 } from "lucide-react";
 import { ProfitChart } from "./profitCharts";
+import { StockStatsCard } from "./stockStatsCard";
 
 export function SectionCards() {
   const { t, i18n } = useTranslation();
@@ -435,13 +436,23 @@ export function SectionCards() {
     fetchStats();
   }, [i18n.language]);
 
-  const renderSection = (titleKey: string, cards: any[]) => (
-    <div className="space-y-6">
-      <h2 className="text-xl font-semibold text-foreground mb-4">
-        {t(`dashboard.${titleKey}`)}
-      </h2>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {cards.map((stat) => {
+  const renderSection = (titleKey: string, cards: any[]) => {
+    // Special handling for stock stats section
+    if (titleKey === "stockStatsSection") {
+      return (
+        <div className="space-y-6">
+          <StockStatsCard />
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-6">
+        <h2 className="text-xl font-semibold text-foreground mb-4">
+          {t(`dashboard.${titleKey}`)}
+        </h2>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {cards.map((stat) => {
           const IconComponent = stat.icon;
           return (
             <div
@@ -610,9 +621,10 @@ export function SectionCards() {
             </div>
           );
         })}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="space-y-8">

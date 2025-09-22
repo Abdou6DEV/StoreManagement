@@ -3,6 +3,9 @@ import { findOrCreateManualProduct } from "./manualProducts";
 import { findOrCreateService } from "./services";
 import { getPurchasesByDateRange } from "./purchases";
 
+// Maximum value for INT column in SQLite (2^31 - 1)
+const MAX_PRICE = 2147483647;
+
 export async function createSale(data: {
   clientId?: string;
   items: {
@@ -29,6 +32,15 @@ export async function createSale(data: {
     }
     if (item.price < 0) {
       throw new Error("Item price cannot be negative");
+    }
+    if (item.price > MAX_PRICE) {
+      throw new Error(`Item price cannot exceed ${MAX_PRICE.toLocaleString()}`);
+    }
+    if (item.manualProductCostPrice && item.manualProductCostPrice > MAX_PRICE) {
+      throw new Error(`Manual product cost price cannot exceed ${MAX_PRICE.toLocaleString()}`);
+    }
+    if (item.serviceCostPrice && item.serviceCostPrice > MAX_PRICE) {
+      throw new Error(`Service cost price cannot exceed ${MAX_PRICE.toLocaleString()}`);
     }
   }
 
@@ -147,6 +159,15 @@ export async function updateSale(
     }
     if (item.price < 0) {
       throw new Error("Item price cannot be negative");
+    }
+    if (item.price > MAX_PRICE) {
+      throw new Error(`Item price cannot exceed ${MAX_PRICE.toLocaleString()}`);
+    }
+    if (item.manualProductCostPrice && item.manualProductCostPrice > MAX_PRICE) {
+      throw new Error(`Manual product cost price cannot exceed ${MAX_PRICE.toLocaleString()}`);
+    }
+    if (item.serviceCostPrice && item.serviceCostPrice > MAX_PRICE) {
+      throw new Error(`Service cost price cannot exceed ${MAX_PRICE.toLocaleString()}`);
     }
   }
 

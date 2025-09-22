@@ -17,7 +17,7 @@ export async function seedProducts(
   const twoYearsAgo = new Date();
   twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
 
-  for (let i = 0; i < 1000; i++) {
+  for (let i = 0; i < 6000; i++) {
     let productName: string;
     do {
       productName = generateUniqueProductName();
@@ -163,7 +163,7 @@ export async function seedProducts(
     }
   }
 
-  console.log(`   - ${1000} products with purchases created`);
+  console.log(`   - ${6000} products with purchases created`);
   console.log(`   - Products array contains ${products.length} products`);
 
   // Check how many products have stock

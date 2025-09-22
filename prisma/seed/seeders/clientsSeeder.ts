@@ -9,7 +9,7 @@ export async function seedClients(prisma: PrismaClient) {
   const twoYearsAgo = new Date();
   twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
 
-  for (let i = 0; i < 50; i++) {
+  for (let i = 0; i < 300; i++) {
     let clientName: string;
     do {
       clientName = generateUniqueClientName();
@@ -30,5 +30,5 @@ export async function seedClients(prisma: PrismaClient) {
     });
   }
 
-  console.log(`   - 50 clients created`);
+  console.log(`   - 300 clients created`);
 }

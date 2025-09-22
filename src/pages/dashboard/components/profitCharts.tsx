@@ -322,7 +322,7 @@ export function ProfitChart({ period, className = "" }: ProfitChartProps) {
             axisLine={false}
             tickMargin={8}
             tickFormatter={(value) => {
-              return `${value.toLocaleString()} ${t("currency")}`;
+              return `${value.toLocaleString()}${t("currency")}`;
             }}
             fontSize={12}
             fill={axisColor}

@@ -1,0 +1,662 @@
+"use client"
+
+import * as React from "react"
+import { useEffect, useState } from "react"
+import { useTranslation } from "react-i18next"
+import { TrendingUp, PackageIcon, AlertTriangleIcon, DollarSignIcon, ShoppingCartIcon, BarChart3, PieChart as PieChartIcon } from "lucide-react"
+import { Pie, PieChart, Tooltip, ResponsiveContainer } from "recharts"
+
+// Using div elements with card styling like other components in the project
+
+interface StockStats {
+  totalProducts: number
+  lowStockItems: number
+  outOfStock: number
+  stockValue: number
+  averageMargin: number
+  averageMarginPercentage: number
+  averageROI: number
+  productsWithoutCodebar: number
+  worstSellingProducts: Array<{
+    name: string
+    sold: number
+    category: string
+    fill: string
+  }>
+  categoriesData: Array<{
+    category: string
+    sold: number
+    fill: string
+  }>
+  topProducts: Array<{
+    name: string
+    sold: number
+    category: string
+    fill: string
+  }>
+}
+
+type ViewMode = 'categories' | 'products'
+
+// Chart configuration for the pie chart
+const chartConfig = {
+  sold: {
+    label: "Items Sold",
+  },
+  category1: {
+    label: "Category 1",
+    color: "var(--chart-1)",
+  },
+  category2: {
+    label: "Category 2", 
+    color: "var(--chart-2)",
+  },
+  category3: {
+    label: "Category 3",
+    color: "var(--chart-3)",
+  },
+  category4: {
+    label: "Category 4",
+    color: "var(--chart-4)",
+  },
+  category5: {
+    label: "Category 5",
+    color: "var(--chart-5)",
+  },
+  others: {
+    label: "Others",
+    color: "var(--chart-6)",
+  },
+}
+
+// Using CSS variables for chart colors defined in chartConfig
+
+// Define vibrant chart colors
+const chartColors = [
+  "#3b82f6", // Blue
+  "#10b981", // Green
+  "#f59e0b", // Amber
+  "#ef4444", // Red
+  "#8b5cf6", // Purple
+  "#06b6d4", // Cyan
+  "#84cc16", // Lime
+  "#f97316", // Orange
+]
+
+// Custom tooltip component
+const CustomTooltip = ({ active, payload, totalItemsSold, t }: any) => {
+  if (active && payload && payload.length) {
+    const data = payload[0].payload;
+    const percentage = totalItemsSold > 0 
+      ? ((data.sold / totalItemsSold) * 100).toFixed(1)
+      : "0";
+    
+    return (
+      <div className="bg-card border border-border rounded-lg p-3 shadow-lg backdrop-blur-sm">
+        <div className="flex items-center gap-2 mb-2">
+          <div 
+            className="w-3 h-3 rounded-full"
+            style={{ backgroundColor: data.fill }}
+          />
+          <p className="font-medium text-foreground">
+            {data.category}
+          </p>
+        </div>
+        <p className="text-sm text-muted-foreground">
+          {t("dashboard.itemsSold")}: <span className="font-semibold text-foreground">{data.sold.toLocaleString()}</span>
+        </p>
+        <p className="text-sm text-muted-foreground">
+          {t("dashboard.percentage")}: <span className="font-semibold text-foreground">{percentage}%</span>
+        </p>
+      </div>
+    );
+  }
+  return null;
+};
+
+export function StockStatsCard() {
+  const { t } = useTranslation()
+  const [viewMode, setViewMode] = useState<ViewMode>('categories')
+  const [stockStats, setStockStats] = useState<StockStats>({
+    totalProducts: 0,
+    lowStockItems: 0,
+    outOfStock: 0,
+    stockValue: 0,
+    averageMargin: 0,
+    averageMarginPercentage: 0,
+    averageROI: 0,
+    productsWithoutCodebar: 0,
+    worstSellingProducts: [],
+    categoriesData: [],
+    topProducts: []
+  })
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function fetchStockStats() {
+      try {
+        const [products, sales, lowStockThreshold] = await Promise.all([
+          window.api.database.products.getAll(),
+          window.api.database.sales.getAll(),
+          window.api.database.options.get("lowStockThreshold")
+        ])
+
+        const threshold = lowStockThreshold ? Number(lowStockThreshold) : 5
+        const lowStockItems = products.filter(
+          (p: any) => p.quantity <= threshold && p.quantity > 0
+        ).length
+        const outOfStock = products.filter((p: any) => p.quantity === 0).length
+         const stockValue = products.reduce(
+           (sum: number, p: any) => sum + p.boughtPrice * p.quantity,
+           0
+         )
+
+         // Calculate average margin and ROI
+         const margins = products.map((p: any) => p.sellingPrice - p.boughtPrice)
+         const averageMargin = margins.length > 0 ? margins.reduce((sum: number, margin: number) => sum + margin, 0) / margins.length : 0
+         
+         // Calculate average margin percentage
+         const marginPercentages = products.map((p: any) => {
+           if (p.sellingPrice === 0) return 0
+           return ((p.sellingPrice - p.boughtPrice) / p.sellingPrice) * 100
+         })
+         const averageMarginPercentage = marginPercentages.length > 0 ? marginPercentages.reduce((sum: number, percentage: number) => sum + percentage, 0) / marginPercentages.length : 0
+         
+         const rois = products.map((p: any) => {
+           if (p.boughtPrice === 0) return 0
+           return ((p.sellingPrice - p.boughtPrice) / p.boughtPrice) * 100
+         })
+         const averageROI = rois.length > 0 ? rois.reduce((sum: number, roi: number) => sum + roi, 0) / rois.length : 0
+
+         // Calculate products without codebar
+         const productsWithoutCodebar = products.filter((p: any) => !p.codebar || p.codebar.trim() === '').length
+
+        // Calculate top 5 categories by items sold
+        const categorySales: { [key: string]: number } = {}
+        
+        sales.forEach((sale: any) => {
+          if (sale.saleItems) {
+            sale.saleItems.forEach((item: any) => {
+              if (item.product && item.product.categoryName) {
+                const category = item.product.categoryName
+                categorySales[category] = (categorySales[category] || 0) + item.quantity
+              }
+            })
+          }
+        })
+
+        // Sort categories by items sold and take top 5
+        const sortedCategories = Object.entries(categorySales)
+          .sort(([,a], [,b]) => b - a)
+          
+        const top5Categories = sortedCategories.slice(0, 5)
+        const otherCategories = sortedCategories.slice(5)
+        
+        // Calculate total for "Others" category
+        const othersTotal = otherCategories.reduce((sum, [, sold]) => sum + sold, 0)
+
+        let categoriesData = top5Categories.map(([category, sold], index) => ({
+          category,
+          sold,
+          fill: chartColors[index % chartColors.length]
+        }))
+
+        // Add "Others" category if there are more than 5 categories
+        if (othersTotal > 0) {
+          categoriesData.push({
+            category: "Others",
+            sold: othersTotal,
+            fill: "#6b7280" // Gray for "Others"
+          })
+        }
+
+        // Calculate top 10 products sold
+        const productSales: { [key: string]: { name: string; sold: number; category: string } } = {}
+        
+        sales.forEach((sale: any) => {
+          sale.saleItems.forEach((item: any) => {
+            if (item.product) {
+              const productId = item.product.id
+              if (!productSales[productId]) {
+                productSales[productId] = {
+                  name: item.product.name,
+                  sold: 0,
+                  category: item.product.categoryName || 'Unknown'
+                }
+              }
+              productSales[productId].sold += item.quantity
+            }
+          })
+        })
+
+        const allProducts = Object.values(productSales)
+          .sort((a, b) => b.sold - a.sold)
+        
+        const top10Products = allProducts.slice(0, 10)
+        const otherProducts = allProducts.slice(10)
+        
+        // Calculate total for "Others" products
+        const othersProductsTotal = otherProducts.reduce((sum, product) => sum + product.sold, 0)
+        
+        let topProducts = top10Products.map((product, index) => ({
+          name: product.name,
+          sold: product.sold,
+          category: product.category,
+          fill: chartColors[index % chartColors.length]
+        }))
+        
+         // Add "Others" category if there are more than 10 products
+         if (othersProductsTotal > 0) {
+           topProducts.push({
+             name: "Others",
+             sold: othersProductsTotal,
+             category: "Various",
+             fill: "#6b7280" // Gray color for "Others"
+           })
+         }
+
+         // Calculate worst selling products (bottom 5)
+         const worstProducts = allProducts
+           .filter(product => product.sold > 0) // Only products that have been sold
+           .sort((a, b) => a.sold - b.sold) // Sort by lowest sales first
+           .slice(0, 5)
+           .map((product, index) => ({
+             name: product.name,
+             sold: product.sold,
+             category: product.category,
+             fill: chartColors[index % chartColors.length]
+           }))
+
+        setStockStats({
+          totalProducts: products.length,
+          lowStockItems,
+          outOfStock,
+          stockValue,
+          averageMargin,
+          averageMarginPercentage,
+          averageROI,
+          productsWithoutCodebar,
+          worstSellingProducts: worstProducts,
+          categoriesData,
+          topProducts
+        })
+      } catch (error) {
+        console.error("Error fetching stock stats:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchStockStats()
+  }, [])
+
+  const formatCurrency = (amount: number) =>
+    `${amount.toLocaleString()} ${t("currency")}`
+
+  const totalItemsSold = React.useMemo(() => {
+    return stockStats.categoriesData.reduce((acc, curr) => acc + curr.sold, 0)
+  }, [stockStats.categoriesData])
+
+  if (loading) {
+    return (
+      <div className="w-full p-8 bg-card rounded-xl shadow-md border flex flex-col space-y-3">
+        <div className="flex items-center gap-2 mb-4">
+          <PackageIcon className="h-6 w-6 text-primary" />
+          <h2 className="text-xl font-semibold text-foreground">
+            {t("dashboard.stockStatsSection")}
+          </h2>
+        </div>
+        <p className="text-muted-foreground mb-4">
+          {t("dashboard.stockStatsDesc", "Comprehensive stock overview and category performance")}
+        </p>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-muted-foreground">Loading...</div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="w-full p-8 bg-card rounded-xl shadow-md border flex flex-col space-y-3">
+      <div className="flex items-center gap-2 mb-4">
+        <PackageIcon className="h-6 w-6 text-primary" />
+        <h2 className="text-xl font-semibold text-foreground">
+          {t("dashboard.stockStatsSection")}
+        </h2>
+      </div>
+      <p className="text-muted-foreground mb-6">
+        {t("dashboard.stockStatsDesc", "Comprehensive stock overview and category performance")}
+      </p>
+      <div className="space-y-6">
+        {/* Stock Overview Stats */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="flex items-center space-x-3 p-4 bg-muted/50 rounded-lg">
+            <PackageIcon className="h-8 w-8 text-blue-600" />
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">
+                {t("dashboard.totalProducts")}
+              </p>
+              <p className="text-2xl font-bold text-foreground">
+                {stockStats.totalProducts.toLocaleString()}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-3 p-4 bg-muted/50 rounded-lg">
+            <AlertTriangleIcon className="h-8 w-8 text-yellow-600" />
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">
+                {t("dashboard.lowStockItems")}
+              </p>
+              <p className="text-2xl font-bold text-foreground">
+                {stockStats.lowStockItems.toLocaleString()}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-3 p-4 bg-muted/50 rounded-lg">
+            <ShoppingCartIcon className="h-8 w-8 text-red-600" />
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">
+                {t("dashboard.outOfStock")}
+              </p>
+              <p className="text-2xl font-bold text-foreground">
+                {stockStats.outOfStock.toLocaleString()}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-3 p-4 bg-muted/50 rounded-lg">
+            <DollarSignIcon className="h-8 w-8 text-green-600" />
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">
+                {t("dashboard.stockValue")}
+              </p>
+              <p className="text-2xl font-bold text-foreground">
+                {formatCurrency(stockStats.stockValue)}
+              </p>
+            </div>
+           </div>
+         </div>
+
+         {/* Additional Stats */}
+         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+           <div className="flex items-center space-x-3 p-4 bg-muted/50 rounded-lg">
+             <TrendingUp className="h-8 w-8 text-purple-600" />
+             <div>
+               <p className="text-sm font-medium text-muted-foreground">
+                 {t("dashboard.averageMargin", "Avg Margin")}
+               </p>
+               <p className="text-2xl font-bold text-foreground">
+                 {formatCurrency(stockStats.averageMargin)}
+               </p>
+               <p className="text-sm text-muted-foreground">
+                 {stockStats.averageMarginPercentage.toFixed(1)}%
+               </p>
+             </div>
+           </div>
+
+           <div className="flex items-center space-x-3 p-4 bg-muted/50 rounded-lg">
+             <BarChart3 className="h-8 w-8 text-indigo-600" />
+             <div>
+               <p className="text-sm font-medium text-muted-foreground">
+                 {t("dashboard.averageROI", "Avg ROI")}
+               </p>
+               <p className="text-2xl font-bold text-foreground">
+                 {stockStats.averageROI.toFixed(1)}%
+               </p>
+             </div>
+           </div>
+
+           <div className="flex items-center space-x-3 p-4 bg-muted/50 rounded-lg">
+             <AlertTriangleIcon className="h-8 w-8 text-orange-600" />
+             <div>
+               <p className="text-sm font-medium text-muted-foreground">
+                 {t("dashboard.noCodebar", "No Barcode")}
+               </p>
+               <p className="text-2xl font-bold text-foreground">
+                 {stockStats.productsWithoutCodebar.toLocaleString()}
+               </p>
+             </div>
+           </div>
+
+           <div className="flex items-center space-x-3 p-4 bg-muted/50 rounded-lg">
+             <ShoppingCartIcon className="h-8 w-8 text-pink-600" />
+             <div>
+               <p className="text-sm font-medium text-muted-foreground">
+                 {t("dashboard.worstSelling", "Worst Selling")}
+               </p>
+               <p className="text-2xl font-bold text-foreground">
+                 {stockStats.worstSellingProducts.length}
+               </p>
+             </div>
+           </div>
+         </div>
+
+         {/* Chart Section with Toggle */}
+        {((viewMode === 'categories' && stockStats.categoriesData.length > 0) || 
+          (viewMode === 'products' && stockStats.topProducts.length > 0)) && (
+          <div className="space-y-4">
+             <div className="flex items-center justify-end mb-4">
+               <div className="flex gap-1 bg-muted rounded-lg p-1">
+                 <button
+                   onClick={() => setViewMode('categories')}
+                   className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                     viewMode === 'categories'
+                       ? 'bg-background text-foreground shadow-sm'
+                       : 'text-muted-foreground hover:text-foreground'
+                   }`}
+                 >
+                   <PieChartIcon className="h-4 w-4" />
+                   {t("dashboard.categories", "Categories")}
+                 </button>
+                 <button
+                   onClick={() => setViewMode('products')}
+                   className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                     viewMode === 'products'
+                       ? 'bg-background text-foreground shadow-sm'
+                       : 'text-muted-foreground hover:text-foreground'
+                   }`}
+                 >
+                   <BarChart3 className="h-4 w-4" />
+                   {t("dashboard.products", "Products")}
+                 </button>
+               </div>
+             </div>
+
+            <div className="flex flex-col lg:flex-row items-center gap-6">
+               {viewMode === 'categories' ? (
+                 <>
+                   {/* Pie Chart */}
+                   <div className="flex-1 max-w-md">
+                     <div className="text-center mb-4">
+                       <h3 className="text-lg font-semibold text-foreground mb-2">
+                         {t("dashboard.topCategoriesSold", "Top Categories Sold")}
+                       </h3>
+                       <p className="text-sm text-muted-foreground">
+                         {t("dashboard.categoriesChartDesc", "Distribution of items sold by category (Top 5 + Others)")}
+                       </p>
+                     </div>
+                     <div className="w-full h-[300px] overflow-hidden rounded-lg">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Tooltip
+                            content={<CustomTooltip totalItemsSold={totalItemsSold} t={t} />}
+                          />
+                          <Pie
+                            data={stockStats.categoriesData}
+                            dataKey="sold"
+                            nameKey="category"
+                            cx="50%"
+                            cy="50%"
+                            outerRadius={120}
+                            labelLine={false}
+                            label={({ payload, ...props }) => {
+                              const percentage = totalItemsSold > 0 
+                                ? ((payload.sold / totalItemsSold) * 100).toFixed(1)
+                                : "0"
+                              return (
+                                <text
+                                  cx={props.cx}
+                                  cy={props.cy}
+                                  x={props.x}
+                                  y={props.y}
+                                  textAnchor={props.textAnchor}
+                                  dominantBaseline={props.dominantBaseline}
+                                  fill="hsl(var(--primary))"
+                                  className="text-sm font-bold pointer-events-none drop-shadow-sm"
+                                >
+                                  {percentage}%
+                                </text>
+                              )
+                            }}
+                            className="cursor-pointer"
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+
+                  {/* Legend */}
+                  <div className="flex-1 space-y-2">
+                    <h4 className="font-medium text-foreground mb-3">
+                      {t("dashboard.categoryBreakdown", "Category Breakdown")}
+                    </h4>
+                    {stockStats.categoriesData.map((item, index) => {
+                      const percentage = totalItemsSold > 0 
+                        ? ((item.sold / totalItemsSold) * 100).toFixed(1)
+                        : "0"
+                      
+                      return (
+                        <div key={item.category} className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div 
+                              className="w-3 h-3 rounded-full"
+                              style={{ backgroundColor: item.fill }}
+                            />
+                            <span className="text-sm font-medium text-foreground">
+                              {item.category}
+                            </span>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-sm font-bold text-foreground">
+                              {item.sold.toLocaleString()}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {percentage}%
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </>
+               ) : (
+                 <>
+                   {/* Products Pie Chart */}
+                   <div className="flex-1 max-w-md">
+                     <div className="text-center mb-4">
+                       <h3 className="text-lg font-semibold text-foreground mb-2">
+                         {t("dashboard.topProductsSold", "Top Products Sold")}
+                       </h3>
+                       <p className="text-sm text-muted-foreground">
+                         {t("dashboard.productsChartDesc", "Top 10 best-selling products")}
+                       </p>
+                     </div>
+                     <div className="w-full h-[300px] overflow-hidden rounded-lg">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Tooltip
+                            content={<CustomTooltip totalItemsSold={totalItemsSold} t={t} />}
+                          />
+                          <Pie
+                            data={stockStats.topProducts}
+                            dataKey="sold"
+                            nameKey="name"
+                            cx="50%"
+                            cy="50%"
+                            outerRadius={120}
+                            labelLine={false}
+                            label={({ payload, ...props }) => {
+                              const percentage = totalItemsSold > 0 
+                                ? ((payload.sold / totalItemsSold) * 100).toFixed(1)
+                                : "0"
+                              return (
+                                <text
+                                  cx={props.cx}
+                                  cy={props.cy}
+                                  x={props.x}
+                                  y={props.y}
+                                  textAnchor={props.textAnchor}
+                                  dominantBaseline={props.dominantBaseline}
+                                  fill="hsl(var(--primary))"
+                                  className="text-sm font-bold pointer-events-none drop-shadow-sm"
+                                >
+                                  {percentage}%
+                                </text>
+                              )
+                            }}
+                            className="cursor-pointer"
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+
+                  {/* Products Legend */}
+                  <div className="flex-1">
+                    <h4 className="font-medium text-foreground mb-3">
+                      {t("dashboard.productsBreakdown", "Products Breakdown")}
+                    </h4>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                      {stockStats.topProducts.map((product, index) => {
+                        const percentage = totalItemsSold > 0 
+                          ? ((product.sold / totalItemsSold) * 100).toFixed(1)
+                          : "0"
+                        
+                        return (
+                          <div key={product.name} className="flex items-center justify-between p-2 bg-muted/30 rounded-lg">
+                            <div className="flex items-center gap-2">
+                              <div 
+                                className="w-3 h-3 rounded-full"
+                                style={{ backgroundColor: product.fill }}
+                              />
+                              <div className="flex flex-col">
+                                <span className="text-sm font-medium text-foreground">
+                                  {product.name}
+                                </span>
+                                <span className="text-xs text-muted-foreground">
+                                  {product.category}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-sm font-bold text-foreground">
+                                {product.sold.toLocaleString()}
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                {percentage}%
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Footer with trend info */}
+        <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground pt-4 border-t">
+          <TrendingUp className="h-4 w-4" />
+          <span>
+            {t("dashboard.stockStatsFooter", "Real-time stock monitoring and category performance analysis")}
+          </span>
+        </div>
+      </div>
+    </div>
+  )
+}

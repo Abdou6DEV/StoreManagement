@@ -8,7 +8,7 @@ export async function seedSellers(prisma: PrismaClient): Promise<Seller[]> {
   const usedSellerNames = new Set<string>();
   const sellers: Seller[] = [];
 
-  for (let i = 0; i < 30; i++) {
+  for (let i = 0; i < 180; i++) {
     let sellerName: string;
     do {
       sellerName = generateUniqueSellerName();

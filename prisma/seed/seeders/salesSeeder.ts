@@ -11,7 +11,7 @@ export async function seedSales(prisma: PrismaClient, products: Product[]) {
   const twoYearsAgo = new Date();
   twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
 
-  for (let i = 0; i < 200; i++) {
+  for (let i = 0; i < 1200; i++) {
     const client = faker.helpers.maybe(
       () => faker.helpers.arrayElement(clients),
       { probability: 0.7 }
