@@ -139,7 +139,7 @@ export default function DetailsHistoryHeader({
                <div>
                  <div className="font-bold text-xl">{billsPaymentsCount} {t("history.billsPayments")}</div>
                  <div className="text-base text-muted-foreground font-semibold">
-                   {formatCurrency(isNaN(billsPaymentsTotal) ? 0 : billsPaymentsTotal)}
+                   {formatCurrency(isNaN(billsPaymentsTotal) ? 0 : billsPaymentsTotal / 100)}
                  </div>
                </div>
              </div>

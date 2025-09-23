@@ -45,7 +45,8 @@ export default function AddServiceModal({
       ...prev,
       name: selectedService.name,
       description: selectedService.description || "",
-      costPrice: (selectedService as any).costPrice || 0,
+      // Don't set costPrice - let user enter it fresh each time
+      costPrice: prev.costPrice, // Keep current value or 0
     }));
   };
   const [suggestions, setSuggestions] = useState<Service[]>([]);

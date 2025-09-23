@@ -2,21 +2,15 @@ import i18next from "i18next";
 
 export const formatCurrency = (amount: number) => {
   const currency = i18next.t("currency");
-  // Remove last two zeros to bypass the 00 issue
-  const amountStr = amount.toString();
-  const formattedAmount = amountStr.endsWith('00') ? amountStr.slice(0, -2) : amountStr;
-  return `${formattedAmount.toLocaleString()} ${currency}`;
+  return `${amount.toLocaleString()} ${currency}`;
 };
 
 export const formatCurrencyWithStyle = (amount: number) => {
   const currency = i18next.t("currency");
-  // Remove last two zeros to bypass the 00 issue
-  const amountStr = amount.toString();
-  const formattedAmount = amountStr.endsWith('00') ? amountStr.slice(0, -2) : amountStr;
   return {
-    amount: formattedAmount.toLocaleString(),
+    amount: amount.toLocaleString(),
     currency: currency,
-    full: `${formattedAmount.toLocaleString()} ${currency}`
+    full: `${amount.toLocaleString()} ${currency}`
   };
 };
 

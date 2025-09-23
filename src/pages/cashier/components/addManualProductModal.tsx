@@ -109,7 +109,8 @@ export default function AddManualProductModal({
       ...prev,
       name: selectedProduct.name || "",
       type: selectedProduct.type || "",
-      costPrice: safePrice(selectedProduct.costPrice) || 0,
+      // Don't set costPrice - let user enter it fresh each time
+      costPrice: prev.costPrice, // Keep current value or 0
       barcode: selectedProduct.codebar || "",
     }));
   };
@@ -220,7 +221,8 @@ export default function AddManualProductModal({
       ...prev,
       name: suggestion.name,
       type: suggestion.type,
-      costPrice: suggestion.costPrice || 0,
+      // Don't set costPrice - let user enter it fresh each time
+      costPrice: prev.costPrice, // Keep current value or 0
       barcode: suggestion.codebar || "",
     }));
     // Close dropdown and reset selection

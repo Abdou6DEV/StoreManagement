@@ -38,36 +38,6 @@ interface StockStats {
 
 type ViewMode = 'categories' | 'products'
 
-// Chart configuration for the pie chart
-const chartConfig = {
-  sold: {
-    label: "Items Sold",
-  },
-  category1: {
-    label: "Category 1",
-    color: "var(--chart-1)",
-  },
-  category2: {
-    label: "Category 2", 
-    color: "var(--chart-2)",
-  },
-  category3: {
-    label: "Category 3",
-    color: "var(--chart-3)",
-  },
-  category4: {
-    label: "Category 4",
-    color: "var(--chart-4)",
-  },
-  category5: {
-    label: "Category 5",
-    color: "var(--chart-5)",
-  },
-  others: {
-    label: "Others",
-    color: "var(--chart-6)",
-  },
-}
 
 // Using CSS variables for chart colors defined in chartConfig
 
@@ -84,7 +54,12 @@ const chartColors = [
 ]
 
 // Custom tooltip component
-const CustomTooltip = ({ active, payload, totalItemsSold, t }: any) => {
+const CustomTooltip = ({ active, payload, totalItemsSold, t }: {
+  active?: boolean;
+  payload?: Array<{ payload: { sold: number; fill: string; category: string } }>;
+  totalItemsSold: number;
+  t: (key: string) => string;
+}) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
     const percentage = totalItemsSold > 0 
@@ -143,40 +118,42 @@ export function StockStatsCard() {
 
         const threshold = lowStockThreshold ? Number(lowStockThreshold) : 5
         const lowStockItems = products.filter(
-          (p: any) => p.quantity <= threshold && p.quantity > 0
+          (p: { quantity: number }) => p.quantity <= threshold && p.quantity > 0
         ).length
-        const outOfStock = products.filter((p: any) => p.quantity === 0).length
+        const outOfStock = products.filter((p: { quantity: number }) => p.quantity === 0).length
          const stockValue = products.reduce(
-           (sum: number, p: any) => sum + p.boughtPrice * p.quantity,
+           (sum: number, p: { boughtPrice: number; quantity: number }) => sum + p.boughtPrice * p.quantity,
            0
          )
 
          // Calculate average margin and ROI
-         const margins = products.map((p: any) => p.sellingPrice - p.boughtPrice)
+         const margins = products.map((p: { sellingPrice: number; boughtPrice: number }) => p.sellingPrice - p.boughtPrice)
+         
+         
          const averageMargin = margins.length > 0 ? margins.reduce((sum: number, margin: number) => sum + margin, 0) / margins.length : 0
          
          // Calculate average margin percentage
-         const marginPercentages = products.map((p: any) => {
+         const marginPercentages = products.map((p: { sellingPrice: number; boughtPrice: number }) => {
            if (p.sellingPrice === 0) return 0
            return ((p.sellingPrice - p.boughtPrice) / p.sellingPrice) * 100
          })
          const averageMarginPercentage = marginPercentages.length > 0 ? marginPercentages.reduce((sum: number, percentage: number) => sum + percentage, 0) / marginPercentages.length : 0
          
-         const rois = products.map((p: any) => {
+         const rois = products.map((p: { sellingPrice: number; boughtPrice: number }) => {
            if (p.boughtPrice === 0) return 0
            return ((p.sellingPrice - p.boughtPrice) / p.boughtPrice) * 100
          })
          const averageROI = rois.length > 0 ? rois.reduce((sum: number, roi: number) => sum + roi, 0) / rois.length : 0
 
          // Calculate products without codebar
-         const productsWithoutCodebar = products.filter((p: any) => !p.codebar || p.codebar.trim() === '').length
+         const productsWithoutCodebar = products.filter((p: { codebar?: string }) => !p.codebar || p.codebar.trim() === '').length
 
         // Calculate top 5 categories by items sold
         const categorySales: { [key: string]: number } = {}
         
-        sales.forEach((sale: any) => {
+        sales.forEach((sale: { saleItems?: Array<{ product?: { categoryName?: string }; quantity: number }> }) => {
           if (sale.saleItems) {
-            sale.saleItems.forEach((item: any) => {
+            sale.saleItems.forEach((item: { product?: { categoryName?: string }; quantity: number }) => {
               if (item.product && item.product.categoryName) {
                 const category = item.product.categoryName
                 categorySales[category] = (categorySales[category] || 0) + item.quantity
@@ -195,7 +172,7 @@ export function StockStatsCard() {
         // Calculate total for "Others" category
         const othersTotal = otherCategories.reduce((sum, [, sold]) => sum + sold, 0)
 
-        let categoriesData = top5Categories.map(([category, sold], index) => ({
+        const categoriesData = top5Categories.map(([category, sold], index) => ({
           category,
           sold,
           fill: chartColors[index % chartColors.length]
@@ -213,8 +190,8 @@ export function StockStatsCard() {
         // Calculate top 10 products sold
         const productSales: { [key: string]: { name: string; sold: number; category: string } } = {}
         
-        sales.forEach((sale: any) => {
-          sale.saleItems.forEach((item: any) => {
+        sales.forEach((sale: { saleItems: Array<{ product?: { id: string; name: string; categoryName?: string }; quantity: number }> }) => {
+          sale.saleItems.forEach((item: { product?: { id: string; name: string; categoryName?: string }; quantity: number }) => {
             if (item.product) {
               const productId = item.product.id
               if (!productSales[productId]) {
@@ -238,7 +215,7 @@ export function StockStatsCard() {
         // Calculate total for "Others" products
         const othersProductsTotal = otherProducts.reduce((sum, product) => sum + product.sold, 0)
         
-        let topProducts = top10Products.map((product, index) => ({
+        const topProducts = top10Products.map((product, index) => ({
           name: product.name,
           sold: product.sold,
           category: product.category,
@@ -328,108 +305,84 @@ export function StockStatsCard() {
         {t("dashboard.stockStatsDesc", "Comprehensive stock overview and category performance")}
       </p>
       <div className="space-y-6">
-        {/* Stock Overview Stats */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="flex items-center space-x-3 p-4 bg-muted/50 rounded-lg">
-            <PackageIcon className="h-8 w-8 text-blue-600" />
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">
-                {t("dashboard.totalProducts")}
-              </p>
-              <p className="text-2xl font-bold text-foreground">
-                {stockStats.totalProducts.toLocaleString()}
-              </p>
-            </div>
-          </div>
+         {/* Stock Overview Stats */}
+         <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+           <div className="flex flex-col items-center gap-1">
+             <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+               {t("dashboard.totalProducts")}
+             </span>
+             <span className="text-3xl font-bold text-foreground">
+               {stockStats.totalProducts.toLocaleString()}
+             </span>
+           </div>
 
-          <div className="flex items-center space-x-3 p-4 bg-muted/50 rounded-lg">
-            <AlertTriangleIcon className="h-8 w-8 text-yellow-600" />
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">
-                {t("dashboard.lowStockItems")}
-              </p>
-              <p className="text-2xl font-bold text-foreground">
-                {stockStats.lowStockItems.toLocaleString()}
-              </p>
-            </div>
-          </div>
+           <div className="flex flex-col items-center gap-1">
+             <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+               {t("dashboard.lowStockItems")}
+             </span>
+             <span className="text-3xl font-bold text-orange-600">
+               {stockStats.lowStockItems.toLocaleString()}
+             </span>
+           </div>
 
-          <div className="flex items-center space-x-3 p-4 bg-muted/50 rounded-lg">
-            <ShoppingCartIcon className="h-8 w-8 text-red-600" />
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">
-                {t("dashboard.outOfStock")}
-              </p>
-              <p className="text-2xl font-bold text-foreground">
-                {stockStats.outOfStock.toLocaleString()}
-              </p>
-            </div>
-          </div>
+           <div className="flex flex-col items-center gap-1">
+             <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+               {t("dashboard.outOfStock")}
+             </span>
+             <span className="text-3xl font-bold text-red-600">
+               {stockStats.outOfStock.toLocaleString()}
+             </span>
+           </div>
 
-          <div className="flex items-center space-x-3 p-4 bg-muted/50 rounded-lg">
-            <DollarSignIcon className="h-8 w-8 text-green-600" />
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">
-                {t("dashboard.stockValue")}
-              </p>
-              <p className="text-2xl font-bold text-foreground">
-                {formatCurrency(stockStats.stockValue)}
-              </p>
-            </div>
+           <div className="flex flex-col items-center gap-1">
+             <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+               {t("dashboard.stockValue")}
+             </span>
+             <span className="text-3xl font-bold text-foreground">
+               {formatCurrency(stockStats.stockValue)}
+             </span>
            </div>
          </div>
 
          {/* Additional Stats */}
-         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-           <div className="flex items-center space-x-3 p-4 bg-muted/50 rounded-lg">
-             <TrendingUp className="h-8 w-8 text-purple-600" />
-             <div>
-               <p className="text-sm font-medium text-muted-foreground">
-                 {t("dashboard.averageMargin", "Avg Margin")}
-               </p>
-               <p className="text-2xl font-bold text-foreground">
-                 {formatCurrency(stockStats.averageMargin)}
-               </p>
-               <p className="text-sm text-muted-foreground">
-                 {stockStats.averageMarginPercentage.toFixed(1)}%
-               </p>
-             </div>
+         <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+           <div className="flex flex-col items-center gap-1">
+             <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+               {t("dashboard.averageMargin", "Avg Margin")}
+             </span>
+             <span className="text-3xl font-bold text-foreground">
+               {Math.round(stockStats.averageMargin).toLocaleString()} {t("currency")}
+             </span>
+             <span className="text-sm text-muted-foreground">
+               {stockStats.averageMarginPercentage.toFixed(1)}%
+             </span>
            </div>
 
-           <div className="flex items-center space-x-3 p-4 bg-muted/50 rounded-lg">
-             <BarChart3 className="h-8 w-8 text-indigo-600" />
-             <div>
-               <p className="text-sm font-medium text-muted-foreground">
-                 {t("dashboard.averageROI", "Avg ROI")}
-               </p>
-               <p className="text-2xl font-bold text-foreground">
-                 {stockStats.averageROI.toFixed(1)}%
-               </p>
-             </div>
+           <div className="flex flex-col items-center gap-1">
+             <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+               {t("dashboard.averageROI", "Avg ROI")}
+             </span>
+             <span className="text-3xl font-bold text-foreground">
+               {stockStats.averageROI.toFixed(1)}%
+             </span>
            </div>
 
-           <div className="flex items-center space-x-3 p-4 bg-muted/50 rounded-lg">
-             <AlertTriangleIcon className="h-8 w-8 text-orange-600" />
-             <div>
-               <p className="text-sm font-medium text-muted-foreground">
-                 {t("dashboard.noCodebar", "No Barcode")}
-               </p>
-               <p className="text-2xl font-bold text-foreground">
-                 {stockStats.productsWithoutCodebar.toLocaleString()}
-               </p>
-             </div>
+           <div className="flex flex-col items-center gap-1">
+             <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+               {t("dashboard.noCodebar", "No Barcode")}
+             </span>
+             <span className="text-3xl font-bold text-foreground">
+               {stockStats.productsWithoutCodebar.toLocaleString()}
+             </span>
            </div>
 
-           <div className="flex items-center space-x-3 p-4 bg-muted/50 rounded-lg">
-             <ShoppingCartIcon className="h-8 w-8 text-pink-600" />
-             <div>
-               <p className="text-sm font-medium text-muted-foreground">
-                 {t("dashboard.worstSelling", "Worst Selling")}
-               </p>
-               <p className="text-2xl font-bold text-foreground">
-                 {stockStats.worstSellingProducts.length}
-               </p>
-             </div>
+           <div className="flex flex-col items-center gap-1">
+             <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+               {t("dashboard.worstSelling", "Worst Selling")}
+             </span>
+             <span className="text-3xl font-bold text-foreground">
+               {stockStats.worstSellingProducts.length}
+             </span>
            </div>
          </div>
 
@@ -477,9 +430,13 @@ export function StockStatsCard() {
                          {t("dashboard.categoriesChartDesc", "Distribution of items sold by category (Top 5 + Others)")}
                        </p>
                      </div>
-                     <div className="w-full h-[300px] overflow-hidden rounded-lg">
+                     <div className="w-full h-[300px] overflow-hidden rounded-lg bg-card">
                       <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
+                        <PieChart
+                          style={{
+                            background: 'transparent'
+                          }}
+                        >
                           <Tooltip
                             content={<CustomTooltip totalItemsSold={totalItemsSold} t={t} />}
                           />
@@ -503,14 +460,18 @@ export function StockStatsCard() {
                                   y={props.y}
                                   textAnchor={props.textAnchor}
                                   dominantBaseline={props.dominantBaseline}
-                                  fill="hsl(var(--primary))"
-                                  className="text-sm font-bold pointer-events-none drop-shadow-sm"
+                                  fill="currentColor"
+                                  className="text-sm font-bold pointer-events-none drop-shadow-sm text-primary"
                                 >
                                   {percentage}%
                                 </text>
                               )
                             }}
-                            className="cursor-pointer"
+                            className="cursor-default"
+                            stroke="none"
+                            onClick={(e) => e.preventDefault()}
+                            onMouseDown={(e) => e.preventDefault()}
+                            onMouseUp={(e) => e.preventDefault()}
                           />
                         </PieChart>
                       </ResponsiveContainer>
@@ -522,7 +483,7 @@ export function StockStatsCard() {
                     <h4 className="font-medium text-foreground mb-3">
                       {t("dashboard.categoryBreakdown", "Category Breakdown")}
                     </h4>
-                    {stockStats.categoriesData.map((item, index) => {
+                    {stockStats.categoriesData.map((item) => {
                       const percentage = totalItemsSold > 0 
                         ? ((item.sold / totalItemsSold) * 100).toFixed(1)
                         : "0"
@@ -563,9 +524,13 @@ export function StockStatsCard() {
                          {t("dashboard.productsChartDesc", "Top 10 best-selling products")}
                        </p>
                      </div>
-                     <div className="w-full h-[300px] overflow-hidden rounded-lg">
+                     <div className="w-full h-[300px] overflow-hidden rounded-lg bg-card">
                       <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
+                        <PieChart
+                          style={{
+                            background: 'transparent'
+                          }}
+                        >
                           <Tooltip
                             content={<CustomTooltip totalItemsSold={totalItemsSold} t={t} />}
                           />
@@ -589,14 +554,18 @@ export function StockStatsCard() {
                                   y={props.y}
                                   textAnchor={props.textAnchor}
                                   dominantBaseline={props.dominantBaseline}
-                                  fill="hsl(var(--primary))"
-                                  className="text-sm font-bold pointer-events-none drop-shadow-sm"
+                                  fill="currentColor"
+                                  className="text-sm font-bold pointer-events-none drop-shadow-sm text-primary"
                                 >
                                   {percentage}%
                                 </text>
                               )
                             }}
-                            className="cursor-pointer"
+                            className="cursor-default"
+                            stroke="none"
+                            onClick={(e) => e.preventDefault()}
+                            onMouseDown={(e) => e.preventDefault()}
+                            onMouseUp={(e) => e.preventDefault()}
                           />
                         </PieChart>
                       </ResponsiveContainer>
@@ -609,7 +578,7 @@ export function StockStatsCard() {
                       {t("dashboard.productsBreakdown", "Products Breakdown")}
                     </h4>
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-                      {stockStats.topProducts.map((product, index) => {
+                      {stockStats.topProducts.map((product) => {
                         const percentage = totalItemsSold > 0 
                           ? ((product.sold / totalItemsSold) * 100).toFixed(1)
                           : "0"

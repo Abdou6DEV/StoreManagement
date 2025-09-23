@@ -61,14 +61,16 @@ export function useChartData() {
         });
 
         const profits = daySales.reduce(
-          (sum: number, s: Sale) =>
-            sum +
-            (s.saleItems?.reduce(
-              (itemSum: number, item: any) =>
-                itemSum +
-                (item.price - (item.product?.boughtPrice || 0)) * item.quantity,
-              0,
-            ) || 0),
+          (sum: number, s: Sale) => {
+            const revenue = s.totalAmountWithDiscount || 0;
+            const cost = s.saleItems?.reduce((itemSum: number, item: any) => {
+              // All items (products, manual products, services) have their cost stored in boughtPrice
+              const boughtPrice = item.boughtPrice || 0;
+              return itemSum + boughtPrice * item.quantity;
+            }, 0) || 0;
+            
+            return sum + (revenue - cost);
+          },
           0,
         );
 
@@ -105,14 +107,16 @@ export function useChartData() {
         });
 
         const profits = monthSales.reduce(
-          (sum: number, s: Sale) =>
-            sum +
-            (s.saleItems?.reduce(
-              (itemSum: number, item: any) =>
-                itemSum +
-                (item.price - (item.product?.boughtPrice || 0)) * item.quantity,
-              0,
-            ) || 0),
+          (sum: number, s: Sale) => {
+            const revenue = s.totalAmountWithDiscount || 0;
+            const cost = s.saleItems?.reduce((itemSum: number, item: any) => {
+              // All items (products, manual products, services) have their cost stored in boughtPrice
+              const boughtPrice = item.boughtPrice || 0;
+              return itemSum + boughtPrice * item.quantity;
+            }, 0) || 0;
+            
+            return sum + (revenue - cost);
+          },
           0,
         );
 
@@ -145,14 +149,16 @@ export function useChartData() {
         });
 
         const profits = yearSales.reduce(
-          (sum: number, s: Sale) =>
-            sum +
-            (s.saleItems?.reduce(
-              (itemSum: number, item: any) =>
-                itemSum +
-                (item.price - (item.product?.boughtPrice || 0)) * item.quantity,
-              0,
-            ) || 0),
+          (sum: number, s: Sale) => {
+            const revenue = s.totalAmountWithDiscount || 0;
+            const cost = s.saleItems?.reduce((itemSum: number, item: any) => {
+              // All items (products, manual products, services) have their cost stored in boughtPrice
+              const boughtPrice = item.boughtPrice || 0;
+              return itemSum + boughtPrice * item.quantity;
+            }, 0) || 0;
+            
+            return sum + (revenue - cost);
+          },
           0,
         );
 

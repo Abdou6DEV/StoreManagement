@@ -73,8 +73,11 @@ const AllPaymentsTable: React.FC<AllPaymentsTableProps> = ({
   const isRTL = i18n.language === "ar";
 
   const formatCurrency = (amount: number) => {
+    // Bills are stored in centimes, so always divide by 100
     const value = amount / 100;
-    return `${value % 1 === 0 ? value.toFixed(0) : value.toFixed(2)} ${t("bills.currency", "DA")}`;
+    // Remove trailing .00 if it's a whole number
+    const cleanValue = value % 1 === 0 ? value.toFixed(0) : value.toFixed(2);
+    return `${cleanValue} ${t("bills.currency", "DA")}`;
   };
 
   const formatDate = (date: Date) => {

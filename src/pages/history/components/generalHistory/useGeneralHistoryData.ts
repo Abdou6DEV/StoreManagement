@@ -264,6 +264,9 @@ export function useGeneralHistoryData() {
         startDateObj,
         endDateObj,
       );
+      
+      // DEBUG: Log the aggregated data
+      console.log('🔍 General History Aggregated Data:', aggregated);
 
 
       // Validate and sort data

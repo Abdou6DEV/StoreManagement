@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { TrendingUp, TrendingDown } from "lucide-react";
 import { CartesianGrid, Line, LineChart, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
 import { useTheme } from "../../../lib/hooks/useTheme";
 
@@ -21,7 +20,6 @@ export function ProfitChart({ period, className = "" }: ProfitChartProps) {
   const { isDark } = useTheme();
   const [chartData, setChartData] = useState<ProfitData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [trend, setTrend] = useState<{ percentage: number; direction: 'up' | 'down' }>({ percentage: 0, direction: 'up' });
 
   useEffect(() => {
     async function fetchProfitData() {
@@ -59,31 +57,13 @@ export function ProfitChart({ period, className = "" }: ProfitChartProps) {
         if (period === 'today') {
           // For today, get all sales and aggregate by hour manually
           const sales = await window.api.database.sales.getAll();
-          const todaySales = sales.filter((sale: any) => {
+          const todaySales = sales.filter((sale: { createdAt: string | Date }) => {
             const saleDate = new Date(sale.createdAt);
             return saleDate.getFullYear() === now.getFullYear() &&
                    saleDate.getMonth() === now.getMonth() &&
                    saleDate.getDate() === now.getDate();
           });
 
-          // Calculate today's total profit
-          const todayTotalProfit = todaySales.reduce((sum: number, sale: any) => {
-            const revenue = sale.totalAmountWithDiscount || 0;
-            const cost = sale.saleItems?.reduce((itemSum: number, item: any) => {
-              if (item.product && item.product.boughtPrice) {
-                const boughtPrice = item.boughtPrice || item.product.boughtPrice;
-                return itemSum + boughtPrice * item.quantity;
-              }
-              if (item.manualProduct && "costPrice" in item.manualProduct) {
-                return itemSum + item.manualProduct.costPrice * item.quantity;
-              }
-              if (item.service && "costPrice" in item.service) {
-                return itemSum + item.service.costPrice * item.quantity;
-              }
-              return itemSum + item.price * item.quantity * 0.3;
-            }, 0) || 0;
-            return sum + (revenue - cost);
-          }, 0);
 
 
           // Group by hour
@@ -95,23 +75,15 @@ export function ProfitChart({ period, className = "" }: ProfitChartProps) {
           }
 
           // Process each sale
-          todaySales.forEach((sale: any) => {
+          todaySales.forEach((sale: { createdAt: string | Date; totalAmountWithDiscount?: number; saleItems?: Array<{ product?: { boughtPrice?: number }; manualProduct?: { costPrice: number }; service?: { costPrice: number }; boughtPrice?: number; price: number; quantity: number }> }) => {
             const saleDate = new Date(sale.createdAt);
             const hour = saleDate.getHours();
             
             const revenue = sale.totalAmountWithDiscount || 0;
-            const cost = sale.saleItems?.reduce((itemSum: number, item: any) => {
-              if (item.product && item.product.boughtPrice) {
-                const boughtPrice = item.boughtPrice || item.product.boughtPrice;
-                return itemSum + boughtPrice * item.quantity;
-              }
-              if (item.manualProduct && "costPrice" in item.manualProduct) {
-                return itemSum + item.manualProduct.costPrice * item.quantity;
-              }
-              if (item.service && "costPrice" in item.service) {
-                return itemSum + item.service.costPrice * item.quantity;
-              }
-              return itemSum + item.price * item.quantity * 0.3;
+            const cost = sale.saleItems?.reduce((itemSum: number, item: { product?: { boughtPrice?: number }; manualProduct?: { costPrice: number }; service?: { costPrice: number }; boughtPrice?: number; price: number; quantity: number }) => {
+              // All items (products, manual products, services) have their cost stored in boughtPrice
+              const boughtPrice = item.boughtPrice || 0;
+              return itemSum + boughtPrice * item.quantity;
             }, 0) || 0;
             
             const profit = revenue - cost;
@@ -140,7 +112,7 @@ export function ProfitChart({ period, className = "" }: ProfitChartProps) {
           );
 
           // Transform the data for the chart
-          data = aggregatedData.map((item: any) => {
+          data = aggregatedData.map((item: { period: string; profit?: number; revenue?: number }) => {
             let periodLabel: string;
             
             if (period === 'month') {
@@ -208,20 +180,7 @@ export function ProfitChart({ period, className = "" }: ProfitChartProps) {
         
         setChartData(filledData);
         
-        // Calculate trend
-        if (filledData.length >= 2) {
-          const firstHalf = filledData.slice(0, Math.floor(filledData.length / 2));
-          const secondHalf = filledData.slice(Math.floor(filledData.length / 2));
-          
-          const firstHalfAvg = firstHalf.reduce((sum, item) => sum + item.profit, 0) / firstHalf.length;
-          const secondHalfAvg = secondHalf.reduce((sum, item) => sum + item.profit, 0) / secondHalf.length;
-          
-          const percentage = firstHalfAvg > 0 ? ((secondHalfAvg - firstHalfAvg) / firstHalfAvg) * 100 : 0;
-          setTrend({
-            percentage: Math.abs(percentage),
-            direction: percentage >= 0 ? 'up' : 'down'
-          });
-        }
+        // Trend calculation removed as it was unused
       } catch (error) {
         console.error('Error fetching profit data:', error);
         setChartData([]);
@@ -233,39 +192,8 @@ export function ProfitChart({ period, className = "" }: ProfitChartProps) {
     fetchProfitData();
   }, [period]);
 
-  const getTitle = () => {
-    switch (period) {
-      case 'today':
-        return t("dashboard.profitToday");
-      case 'month':
-        return t("dashboard.profitThisMonth");
-      case 'year':
-        return t("dashboard.profitThisYear");
-      case 'overall':
-        return t("dashboard.profitOverall");
-      default:
-        return t("dashboard.profit");
-    }
-  };
 
-  const getDescription = () => {
-    switch (period) {
-      case 'today':
-        return t("dashboard.hourlyProfitTrend");
-      case 'month':
-        return t("dashboard.dailyProfitTrend");
-      case 'year':
-        return t("dashboard.monthlyProfitTrend");
-      case 'overall':
-        return t("dashboard.yearlyProfitTrend");
-      default:
-        return t("dashboard.profitTrend");
-    }
-  };
 
-  const formatValue = (value: number) => {
-    return `${value.toLocaleString()} ${t("currency")}`;
-  };
 
   const formatTooltipValue = (value: number) => {
     return `${value.toLocaleString()} ${t("currency")}`;

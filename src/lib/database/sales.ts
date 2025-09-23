@@ -111,6 +111,16 @@ export async function createSale(data: {
                 });
                 boughtPrice = product?.boughtPrice || null;
               }
+              
+              // For manual products, use the cost price from the sale data
+              if (item.manualProductId && item.manualProductCostPrice !== undefined) {
+                boughtPrice = item.manualProductCostPrice;
+              }
+              
+              // For services, use the cost price from the sale data
+              if (item.serviceId && item.serviceCostPrice !== undefined) {
+                boughtPrice = item.serviceCostPrice;
+              }
 
               return {
                 productId: item.productId || null,
@@ -272,6 +282,16 @@ export async function updateSale(
                     select: { boughtPrice: true },
                   });
                   boughtPrice = product?.boughtPrice || null;
+                }
+                
+                // For manual products, use the cost price from the sale data
+                if (item.manualProductId && item.manualProductCostPrice !== undefined) {
+                  boughtPrice = item.manualProductCostPrice;
+                }
+                
+                // For services, use the cost price from the sale data
+                if (item.serviceId && item.serviceCostPrice !== undefined) {
+                  boughtPrice = item.serviceCostPrice;
                 }
 
                 return {
@@ -702,31 +722,36 @@ export async function getSalesAggregatedByPeriod(
 
     // Calculate profit (revenue - cost)
     const totalCost = sale.saleItems.reduce((sum, item) => {
-      if (item.product) {
-        // Use stored bought price if available, otherwise use current product bought price
-        const boughtPrice =
-          (item as { boughtPrice?: number }).boughtPrice ||
-          item.product.boughtPrice;
-        return sum + boughtPrice * item.quantity;
-      }
-      if (item.manualProduct && "costPrice" in item.manualProduct) {
-        return (
-          sum +
-          (item.manualProduct as { costPrice: number }).costPrice *
-            item.quantity
-        );
-      }
-      if (item.service && "costPrice" in item.service) {
-        return (
-          sum +
-          (item.service as { costPrice: number }).costPrice * item.quantity
-        );
-      }
-      // Fallback: if no cost price is available, assume 70% profit margin
-      return sum + item.price * item.quantity * 0.3;
+      // All items (products, manual products, services) have their cost stored in boughtPrice
+      const boughtPrice = (item as { boughtPrice?: number }).boughtPrice || 0;
+      
+      // DEBUG: Log each item's details
+      console.log('🔍 Database Sale Item Debug:', {
+        itemName: item.product?.name || item.manualProduct?.name || item.service?.name || 'Unknown',
+        price: item.price,
+        quantity: item.quantity,
+        boughtPrice: boughtPrice,
+        itemCost: boughtPrice * item.quantity
+      });
+      
+      return sum + boughtPrice * item.quantity;
     }, 0);
 
     const profit = totalAmountWithDiscount - totalCost;
+    
+    console.log('🔍 Database Sale Profit Debug:', {
+      saleId: sale.id,
+      revenue: totalAmountWithDiscount,
+      cost: totalCost,
+      profit: profit
+    });
+    
+    // DEBUG: Log the period key and profit being added
+    console.log('🔍 Database Period Debug:', {
+      periodKey: periodKey,
+      profit: profit,
+      existingProfit: groupedData.get(periodKey)?.profit || 0
+    });
 
     const existing = groupedData.get(periodKey);
     if (existing) {
@@ -915,28 +940,9 @@ export async function getSalesSummary(startDate: Date, endDate: Date) {
 
     // Calculate profit (revenue - cost)
     const totalCost = sale.saleItems.reduce((sum, item) => {
-      if (item.product) {
-        // Use stored bought price if available, otherwise use current product bought price
-        const boughtPrice =
-          (item as { boughtPrice?: number }).boughtPrice ||
-          item.product.boughtPrice;
-        return sum + boughtPrice * item.quantity;
-      }
-      if (item.manualProduct && "costPrice" in item.manualProduct) {
-        return (
-          sum +
-          (item.manualProduct as { costPrice: number }).costPrice *
-            item.quantity
-        );
-      }
-      if (item.service && "costPrice" in item.service) {
-        return (
-          sum +
-          (item.service as { costPrice: number }).costPrice * item.quantity
-        );
-      }
-      // Fallback: if no cost price is available, assume 70% profit margin
-      return sum + item.price * item.quantity * 0.3;
+      // All items (products, manual products, services) have their cost stored in boughtPrice
+      const boughtPrice = (item as { boughtPrice?: number }).boughtPrice || 0;
+      return sum + boughtPrice * item.quantity;
     }, 0);
 
     totalRevenue += totalAmountWithDiscount;

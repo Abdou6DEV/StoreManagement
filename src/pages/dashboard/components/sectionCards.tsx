@@ -6,14 +6,6 @@ import {
   CreditCardIcon,
   AlertTriangleIcon,
   WalletIcon,
-  ShoppingCartIcon,
-  ReceiptIcon,
-  UsersIcon,
-  TrendingUpIcon,
-  TrendingDownIcon,
-  ArrowUpIcon,
-  ArrowDownIcon,
-  CalendarIcon,
   TrendingUp,
   TrendingDown,
 } from "lucide-react";
@@ -22,65 +14,74 @@ import { StockStatsCard } from "./stockStatsCard";
 
 export function SectionCards() {
   const { t, i18n } = useTranslation();
-  const [salesStats, setSalesStats] = useState<any[]>([]);
-  const [stockStats, setStockStats] = useState<any[]>([]);
-  const [clientStats, setClientStats] = useState<any[]>([]);
+  const [salesStats, setSalesStats] = useState<Array<{
+    labelKey: string;
+    revenue?: string;
+    profit?: string;
+    itemsSold?: string;
+    revenueProgress?: number;
+    profitProgress?: number;
+  }>>([]);
+  const [stockStats, setStockStats] = useState<Array<{
+    labelKey: string;
+    value: string;
+    descriptionKey: string;
+    icon: React.ComponentType<{ className?: string }>;
+  }>>([]);
+  const [clientStats, setClientStats] = useState<Array<{
+    labelKey: string;
+    value: string;
+    descriptionKey: string;
+    icon: React.ComponentType<{ className?: string }>;
+  }>>([]);
   const [todayVsAverage, setTodayVsAverage] = useState<{ percentage: number; direction: 'up' | 'down' }>({ percentage: 0, direction: 'up' });
   const [monthVsAverage, setMonthVsAverage] = useState<{ percentage: number; direction: 'up' | 'down' }>({ percentage: 0, direction: 'up' });
   const [yearVsAverage, setYearVsAverage] = useState<{ percentage: number; direction: 'up' | 'down' }>({ percentage: 0, direction: 'up' });
+  const [activeClients, setActiveClients] = useState(0);
+  const [newClientsThisMonth, setNewClientsThisMonth] = useState(0);
+  const [totalCreditAmount, setTotalCreditAmount] = useState(0);
+  const [totalVersementAmount, setTotalVersementAmount] = useState(0);
+  const [unpaidCreditAmount, setUnpaidCreditAmount] = useState(0);
+  const [unpaidVersementAmount, setUnpaidVersementAmount] = useState(0);
+  const [numberOfClients, setNumberOfClients] = useState(0);
 
   const formatCurrency = (amount: number) =>
     `${amount.toLocaleString()} ${t("currency")}`;
 
   useEffect(() => {
     async function fetchStats() {
-      const [sales, products, payments, clients, lowStockThreshold, purchases, billsPayments] =
+      const [sales, products, payments, clients, lowStockThreshold] =
         await Promise.all([
           window.api.database.sales.getAll(),
           window.api.database.products.getAll(),
           window.api.database.payments.getAll(),
           window.api.database.clients.getAll(),
           window.api.database.options.get("lowStockThreshold"),
-          window.api.database.purchases.getAll(),
-          window.api.database.bills.getAllPayments(),
         ]);
 
       function calcSalesStats(
         labelKey: string,
         filterFn: (date: Date) => boolean
       ) {
-        const filtered = sales.filter((s: any) => filterFn(s.createdAt));
+        const filtered = sales.filter((s: { createdAt: string | Date }) => filterFn(new Date(s.createdAt)));
         const revenue = filtered.reduce(
-          (sum: number, s: any) => sum + (s.totalAmountWithDiscount || 0),
+          (sum: number, s: { totalAmountWithDiscount?: number }) => sum + (s.totalAmountWithDiscount || 0),
           0
         );
-        const profit = filtered.reduce((sum: number, s: any) => {
+        const profit = filtered.reduce((sum: number, s: { totalAmountWithDiscount?: number; saleItems?: Array<{ product?: { boughtPrice?: number }; manualProduct?: { costPrice: number }; service?: { costPrice: number }; boughtPrice?: number; price: number; quantity: number }> }) => {
           const revenue = s.totalAmountWithDiscount || 0;
 
           const cost =
-            s.saleItems?.reduce((itemSum: number, item: any) => {
-              if (item.product && item.product.boughtPrice) {
-                // Use stored bought price if available, otherwise use current product bought price
-                const boughtPrice =
-                  item.boughtPrice || item.product.boughtPrice;
-                return itemSum + boughtPrice * item.quantity;
-              }
-              if (item.manualProduct && "costPrice" in item.manualProduct) {
-                // For manual products, use actual cost price
-                return itemSum + item.manualProduct.costPrice * item.quantity;
-              }
-              if (item.service && "costPrice" in item.service) {
-                // For services, use actual cost price
-                return itemSum + item.service.costPrice * item.quantity;
-              }
-              // Fallback: if no cost price is available, assume 70% profit margin
-              return itemSum + item.price * item.quantity * 0.3;
+            s.saleItems?.reduce((itemSum: number, item: { product?: { boughtPrice?: number }; manualProduct?: { costPrice: number }; service?: { costPrice: number }; boughtPrice?: number; price: number; quantity: number }) => {
+              // All items (products, manual products, services) have their cost stored in boughtPrice
+              const boughtPrice = item.boughtPrice || 0;
+              return itemSum + boughtPrice * item.quantity;
             }, 0) || 0;
 
           return sum + (revenue - cost);
         }, 0);
         const itemsSold = filtered.reduce(
-          (sum: number, s: any) => sum + (s.totalItems || 0),
+          (sum: number, s: { totalItems?: number }) => sum + (s.totalItems || 0),
           0
         );
         return {
@@ -113,74 +114,8 @@ export function SectionCards() {
         return d.getFullYear() === now.getFullYear();
       };
 
-      // Calculate purchases stats
-      function calcPurchasesStats(
-        labelKey: string,
-        filterFn: (date: Date) => boolean
-      ) {
-        const filtered = purchases.filter((p: any) => filterFn(p.createdAt));
-        const totalAmount = filtered.reduce(
-          (sum: number, p: any) => {
-            const purchaseItemsTotal = p.PurchaseItems?.reduce(
-              (itemSum: number, item: any) => itemSum + (item.price * item.quantity),
-              0
-            ) || 0;
-            return sum + purchaseItemsTotal;
-          },
-          0
-        );
-        const totalItems = filtered.reduce(
-          (sum: number, p: any) => {
-            const purchaseItemsCount = p.PurchaseItems?.reduce(
-              (itemSum: number, item: any) => itemSum + item.quantity,
-              0
-            ) || 0;
-            return sum + purchaseItemsCount;
-          },
-          0
-        );
-        return {
-          labelKey: `dashboard.${labelKey}`,
-          amount: formatCurrency(totalAmount),
-          itemsCount: totalItems.toLocaleString(),
-        };
-      }
 
-      // Calculate bills payments stats
-      function calcBillsStats(
-        labelKey: string,
-        filterFn: (date: Date) => boolean
-      ) {
-        const filtered = billsPayments.filter((p: any) => filterFn(p.paidDate));
-        const totalAmount = filtered.reduce(
-          (sum: number, p: any) => sum + p.amount,
-          0
-        );
-        return {
-          labelKey: `dashboard.${labelKey}`,
-          amount: formatCurrency(totalAmount),
-          count: filtered.length.toLocaleString(),
-        };
-      }
 
-      // Calculate client credit payments stats
-      function calcClientCreditStats(
-        labelKey: string,
-        filterFn: (date: Date) => boolean
-      ) {
-        const filtered = payments.filter((p: any) => 
-          p.type === "CREDIT" && p.paidDate && filterFn(p.paidDate)
-        );
-        const totalAmount = filtered.reduce(
-          (sum: number, p: any) => sum + p.givenAmount,
-          0
-        );
-        return {
-          labelKey: `dashboard.${labelKey}`,
-          amount: formatCurrency(totalAmount),
-          count: filtered.length.toLocaleString(),
-        };
-      }
 
       const todayStats = calcSalesStats("today", isToday);
       const monthStats = calcSalesStats("thisMonth", isThisMonth);
@@ -200,13 +135,13 @@ export function SectionCards() {
        try {
          const historicalData = await window.api.database.sales.getAggregatedByPeriod(
            "day",
-           thirtyDaysAgo.toISOString(),
-           yesterday.toISOString()
+           thirtyDaysAgo,
+           yesterday
          );
 
          // Calculate average daily profit from historical data (excluding today)
          const averageDailyProfit = historicalData.length > 0 
-           ? historicalData.reduce((sum: number, item: any) => sum + (item.profit || 0), 0) / historicalData.length 
+           ? historicalData.reduce((sum: number, item: { profit?: number }) => sum + (item.profit || 0), 0) / historicalData.length 
            : 0;
 
          const percentage = averageDailyProfit !== 0 
@@ -230,15 +165,15 @@ export function SectionCards() {
          
          const historicalMonthData = await window.api.database.sales.getAggregatedByPeriod(
            "month",
-           twelveMonthsAgo.toISOString(),
-           lastMonth.toISOString()
+           twelveMonthsAgo,
+           lastMonth
          );
          
          const monthTotalProfit = monthStats.profit ? parseFloat(monthStats.profit.replace(/[^\d.-]/g, '')) : 0;
          
          // Calculate average monthly profit from historical data
          const averageMonthlyProfit = historicalMonthData.length > 0 
-           ? historicalMonthData.reduce((sum: number, item: any) => sum + (item.profit || 0), 0) / historicalMonthData.length 
+           ? historicalMonthData.reduce((sum: number, item: { profit?: number }) => sum + (item.profit || 0), 0) / historicalMonthData.length 
            : 0;
          
          const monthPercentage = averageMonthlyProfit !== 0 
@@ -262,15 +197,15 @@ export function SectionCards() {
          
          const historicalYearData = await window.api.database.sales.getAggregatedByPeriod(
            "year",
-           fiveYearsAgo.toISOString(),
-           lastYear.toISOString()
+           fiveYearsAgo,
+           lastYear
          );
          
          const yearTotalProfit = yearStats.profit ? parseFloat(yearStats.profit.replace(/[^\d.-]/g, '')) : 0;
          
          // Calculate average yearly profit from historical data
          const averageYearlyProfit = historicalYearData.length > 0 
-           ? historicalYearData.reduce((sum: number, item: any) => sum + (item.profit || 0), 0) / historicalYearData.length 
+           ? historicalYearData.reduce((sum: number, item: { profit?: number }) => sum + (item.profit || 0), 0) / historicalYearData.length 
            : 0;
          
          const yearPercentage = averageYearlyProfit !== 0 
@@ -287,46 +222,15 @@ export function SectionCards() {
        }
 
 
-      // Calculate purchases stats for each period
-      const todayPurchases = calcPurchasesStats("today", isToday);
-      const monthPurchases = calcPurchasesStats("thisMonth", isThisMonth);
-      const yearPurchases = calcPurchasesStats("thisYear", isThisYear);
-      const overallPurchases = calcPurchasesStats("overall", () => true);
+      // Purchase, bills, and client credit stats calculations removed as they were unused
 
-      // Calculate bills payments stats for each period
-      const todayBills = calcBillsStats("today", isToday);
-      const monthBills = calcBillsStats("thisMonth", isThisMonth);
-      const yearBills = calcBillsStats("thisYear", isThisYear);
-      const overallBills = calcBillsStats("overall", () => true);
-
-      // Calculate client credit payments stats for each period
-      const todayClientCredit = calcClientCreditStats("today", isToday);
-      const monthClientCredit = calcClientCreditStats("thisMonth", isThisMonth);
-      const yearClientCredit = calcClientCreditStats("thisYear", isThisYear);
-      const overallClientCredit = calcClientCreditStats("overall", () => true);
-
-      // Calculate trends and percentages
-      const calculateTrend = (current: number, previous: number) => {
-        if (previous === 0) return { percentage: 100, trend: 'up' };
-        const percentage = ((current - previous) / previous) * 100;
-        return {
-          percentage: Math.abs(percentage),
-          trend: percentage >= 0 ? 'up' : 'down'
-        };
-      };
 
       // Calculate max values for progress bars
       const allRevenues = [todayStats, monthStats, yearStats, overallStats].map(s => parseFloat(s.revenue.replace(/[^\d.-]/g, '')));
       const allProfits = [todayStats, monthStats, yearStats, overallStats].map(s => parseFloat(s.profit.replace(/[^\d.-]/g, '')));
-      const allPurchases = [todayPurchases, monthPurchases, yearPurchases, overallPurchases].map(s => parseFloat(s.amount.replace(/[^\d.-]/g, '')));
-      const allBills = [todayBills, monthBills, yearBills, overallBills].map(s => parseFloat(s.amount.replace(/[^\d.-]/g, '')));
-      const allCredits = [todayClientCredit, monthClientCredit, yearClientCredit, overallClientCredit].map(s => parseFloat(s.amount.replace(/[^\d.-]/g, '')));
 
       const maxRevenue = Math.max(...allRevenues);
       const maxProfit = Math.max(...allProfits);
-      const maxPurchases = Math.max(...allPurchases);
-      const maxBills = Math.max(...allBills);
-      const maxCredits = Math.max(...allCredits);
 
       // Combine only revenue, profit, and items sold stats
       const combinedStats = [
@@ -357,11 +261,11 @@ export function SectionCards() {
       const totalProducts = products.length;
       const threshold = lowStockThreshold ? Number(lowStockThreshold) : 5; // Default to 5 if not set
       const lowStockItems = products.filter(
-        (p: any) => p.quantity <= threshold && p.quantity > 0
+        (p: { quantity: number }) => p.quantity <= threshold && p.quantity > 0
       ).length;
-      const outOfStock = products.filter((p: any) => p.quantity === 0).length;
+      const outOfStock = products.filter((p: { quantity: number }) => p.quantity === 0).length;
       const stockValue = products.reduce(
-        (sum: number, p: any) => sum + p.boughtPrice * p.quantity,
+        (sum: number, p: { boughtPrice: number; quantity: number }) => sum + p.boughtPrice * p.quantity,
         0
       );
       setStockStats([
@@ -392,14 +296,46 @@ export function SectionCards() {
       ]);
 
       const numberOfClients = clients.length;
-      const totalCredit = payments.filter((p: any) => p.type === "CREDIT");
+      const totalCredit = payments.filter((p: { type: string }) => p.type === "CREDIT");
       const totalVersement = payments.filter(
-        (p: any) => p.type === "VERSEMENT"
+        (p: { type: string }) => p.type === "VERSEMENT"
       );
-      const unpaidCredit = totalCredit.filter((p: any) => !p.paidDate).length;
+      const unpaidCredit = totalCredit.filter((p: { paidDate?: string | Date }) => !p.paidDate).length;
       const unpaidVersement = totalVersement.filter(
-        (p: any) => !p.paidDate
+        (p: { paidDate?: string | Date }) => !p.paidDate
       ).length;
+      // Calculate additional client stats
+      const calculatedTotalCreditAmount = totalCredit.reduce((sum: number, p: { givenAmount: number }) => sum + p.givenAmount, 0);
+      const calculatedTotalVersementAmount = totalVersement.reduce((sum: number, p: { givenAmount: number }) => sum + p.givenAmount, 0);
+      const calculatedUnpaidCreditAmount = totalCredit.filter((p: { paidDate?: string | Date; givenAmount: number }) => !p.paidDate)
+        .reduce((sum: number, p: { givenAmount: number }) => sum + p.givenAmount, 0);
+      const calculatedUnpaidVersementAmount = totalVersement.filter((p: { paidDate?: string | Date; givenAmount: number }) => !p.paidDate)
+        .reduce((sum: number, p: { givenAmount: number }) => sum + p.givenAmount, 0);
+      
+      // Calculate client activity stats
+      const calculatedActiveClients = clients.filter((c: { lastPurchaseDate?: string | Date }) => {
+        if (!c.lastPurchaseDate) return false;
+        const lastPurchase = new Date(c.lastPurchaseDate);
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        return lastPurchase >= thirtyDaysAgo;
+      }).length;
+      
+      const calculatedNewClientsThisMonth = clients.filter((c: { createdAt: string | Date }) => {
+        const created = new Date(c.createdAt);
+        const now = new Date();
+        return created.getFullYear() === now.getFullYear() && created.getMonth() === now.getMonth();
+      }).length;
+
+      // Set state variables
+      setNumberOfClients(numberOfClients);
+      setTotalCreditAmount(calculatedTotalCreditAmount);
+      setTotalVersementAmount(calculatedTotalVersementAmount);
+      setUnpaidCreditAmount(calculatedUnpaidCreditAmount);
+      setUnpaidVersementAmount(calculatedUnpaidVersementAmount);
+      setActiveClients(calculatedActiveClients);
+      setNewClientsThisMonth(calculatedNewClientsThisMonth);
+
       setClientStats([
         {
           labelKey: "dashboard.numberOfClients",
@@ -436,12 +372,141 @@ export function SectionCards() {
     fetchStats();
   }, [i18n.language]);
 
-  const renderSection = (titleKey: string, cards: any[]) => {
+  const renderSection = (titleKey: string, cards: Array<{
+    labelKey: string;
+    value?: string;
+    descriptionKey?: string;
+    icon?: React.ComponentType<{ className?: string }>;
+    revenue?: string;
+    profit?: string;
+    itemsSold?: string;
+    revenueProgress?: number;
+    profitProgress?: number;
+  }>) => {
     // Special handling for stock stats section
     if (titleKey === "stockStatsSection") {
       return (
         <div className="space-y-6">
           <StockStatsCard />
+        </div>
+      );
+    }
+
+    // Special handling for client stats section
+    if (titleKey === "clientStatsSection") {
+      return (
+        <div className="space-y-6">
+          <h2 className="text-xl font-semibold text-foreground mb-4">
+            {t("dashboard.clientStatsSection")}
+          </h2>
+          
+          {/* Simple Client Stats Grid */}
+          <div className="p-6 bg-card rounded-xl shadow-md border">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="flex flex-col items-center gap-1">
+                <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                  {t("dashboard.numberOfClients")}
+                </span>
+                <span className="text-3xl font-bold text-foreground">
+                  {clientStats.find(s => s.labelKey === "dashboard.numberOfClients")?.value || "0"}
+                </span>
+              </div>
+
+              <div className="flex flex-col items-center gap-1">
+                <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                  {t("dashboard.activeClients", "Active Clients")}
+                </span>
+                <span className="text-3xl font-bold text-green-600">
+                  {activeClients.toLocaleString()}
+                </span>
+              </div>
+
+              <div className="flex flex-col items-center gap-1">
+                <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                  {t("dashboard.newClientsThisMonth", "New This Month")}
+                </span>
+                <span className="text-3xl font-bold text-blue-600">
+                  {newClientsThisMonth.toLocaleString()}
+                </span>
+              </div>
+
+              <div className="flex flex-col items-center gap-1">
+                <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                  {t("dashboard.clientRetention", "Retention Rate")}
+                </span>
+                <span className="text-3xl font-bold text-purple-600">
+                  {numberOfClients > 0 ? Math.round((activeClients / numberOfClients) * 100) : 0}%
+                </span>
+              </div>
+
+              <div className="flex flex-col items-center gap-1">
+                <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                  {t("dashboard.totalCreditAmount", "Total Credit")}
+                </span>
+                <span className="text-3xl font-bold text-foreground">
+                  {formatCurrency(totalCreditAmount)}
+                </span>
+              </div>
+
+              <div className="flex flex-col items-center gap-1">
+                <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                  {t("dashboard.totalVersementAmount", "Total Versement")}
+                </span>
+                <span className="text-3xl font-bold text-foreground">
+                  {formatCurrency(totalVersementAmount)}
+                </span>
+              </div>
+
+              <div className="flex flex-col items-center gap-1">
+                <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                  {t("dashboard.unpaidCreditAmount", "Unpaid Credit")}
+                </span>
+                <span className="text-3xl font-bold text-red-600">
+                  {formatCurrency(unpaidCreditAmount)}
+                </span>
+              </div>
+
+              <div className="flex flex-col items-center gap-1">
+                <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                  {t("dashboard.unpaidVersementAmount", "Unpaid Versement")}
+                </span>
+                <span className="text-3xl font-bold text-orange-600">
+                  {formatCurrency(unpaidVersementAmount)}
+                </span>
+              </div>
+
+              <div className="flex flex-col items-center gap-1">
+                <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                  {t("dashboard.totalOutstanding", "Total Outstanding")}
+                </span>
+                <span className="text-3xl font-bold text-red-600">
+                  {formatCurrency(unpaidCreditAmount + unpaidVersementAmount)}
+                </span>
+              </div>
+
+              <div className="flex flex-col items-center gap-1">
+                <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                  {t("dashboard.paymentRate", "Payment Rate")}
+                </span>
+                <span className="text-3xl font-bold text-green-600">
+                  {totalCreditAmount + totalVersementAmount > 0 
+                    ? Math.round(((totalCreditAmount + totalVersementAmount - unpaidCreditAmount - unpaidVersementAmount) / (totalCreditAmount + totalVersementAmount)) * 100)
+                    : 0}%
+                </span>
+              </div>
+
+              <div className="flex flex-col items-center gap-1">
+                <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                  {t("dashboard.averageClientValue", "Avg Client Value")}
+                </span>
+                <span className="text-3xl font-bold text-foreground">
+                  {numberOfClients > 0 
+                    ? formatCurrency((totalCreditAmount + totalVersementAmount) / numberOfClients)
+                    : formatCurrency(0)}
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
       );
     }

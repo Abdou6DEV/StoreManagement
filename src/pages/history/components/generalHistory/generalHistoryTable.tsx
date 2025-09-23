@@ -156,7 +156,7 @@ export default function GeneralHistoryTable({
                 <td className="px-4 text-right">
                   <div className="flex flex-col items-end">
                     <span className="font-semibold text-foreground text-base">
-                      {formatCurrency(item.billsPayments)}
+                      {formatCurrency(item.billsPayments / 100)}
                     </span>
                   </div>
                 </td>
@@ -165,11 +165,7 @@ export default function GeneralHistoryTable({
                     <span
                       className={`font-semibold text-base ${getProfitTextClass(item.profit)}`}
                     >
-                      {(() => {
-                        const percentage = ((item.profit - averageProfit) / Math.abs(averageProfit)) * 100;
-                        const formattedPercentage = percentage.toFixed(1);
-                        return percentage >= 0 ? `+${formattedPercentage}%` : `${formattedPercentage}%`;
-                      })()}
+                      {formatCurrency(item.profit)}
                     </span>
                   </div>
                 </td>

@@ -30,21 +30,15 @@ export async function findOrCreateManualProduct(data: {
   });
 
   if (existing) {
-    // Update costPrice if provided and different from existing
-    if (data.costPrice !== undefined && data.costPrice !== existing.costPrice) {
-      return await prisma.manualProduct.update({
-        where: { id: existing.id },
-        data: { costPrice: data.costPrice },
-      });
-    }
+    // Just return existing - each sale stores its own cost price
     return existing;
   }
 
-  // Create new manual product if not found
+  // Create new manual product if not found (costPrice is just for template)
   return await createManualProduct({
     name: data.name,
     type: data.type,
-    costPrice: data.costPrice,
+    costPrice: 0, // Always 0 - each sale has its own cost
   });
 }
 

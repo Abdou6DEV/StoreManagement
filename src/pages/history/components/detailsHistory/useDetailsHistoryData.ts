@@ -67,34 +67,45 @@ export function useDetailsHistoryData(period: SelectedPeriod) {
       ) - sale.discount;
 
     const cost = sale.saleItems.reduce((itemSum, item) => {
-      if (item.product && "boughtPrice" in item.product) {
-        // Use stored bought price if available, otherwise use current product bought price
-        const boughtPrice =
-          (item as { boughtPrice?: number }).boughtPrice ||
-          (item.product as { boughtPrice: number }).boughtPrice;
-        return itemSum + boughtPrice * item.quantity;
-      }
-      if (item.manualProduct && "costPrice" in item.manualProduct) {
-        // For manual products, use actual cost price
-        return (
-          itemSum +
-          (item.manualProduct as { costPrice: number }).costPrice *
-            item.quantity
-        );
-      }
-      if (item.service && "costPrice" in item.service) {
-        // For services, use actual cost price
-        return (
-          itemSum +
-          (item.service as { costPrice: number }).costPrice * item.quantity
-        );
-      }
-      // Fallback: if no cost price is available, assume 70% profit margin
-      return itemSum + item.price * item.quantity * 0.3;
+      // All items (products, manual products, services) have their cost stored in boughtPrice
+      const boughtPrice = (item as { boughtPrice?: number }).boughtPrice || 0;
+      
+      // Debug logging
+      console.log('🔍 Sale Item Debug:', {
+        itemName: item.product?.name || item.manualProduct?.name || item.service?.name || 'Unknown',
+        price: item.price,
+        quantity: item.quantity,
+        boughtPrice: boughtPrice,
+        itemCost: boughtPrice * item.quantity
+      });
+      
+      return itemSum + boughtPrice * item.quantity;
     }, 0);
 
-    return sum + (revenue - cost);
+    const profit = revenue - cost;
+    console.log('🔍 Sale Profit Debug:', {
+      saleId: sale.id,
+      revenue: revenue,
+      cost: cost,
+      profit: profit
+    });
+
+    return sum + profit;
   }, 0);
+  
+  // DEBUG: Log the total profit calculation
+  console.log('🔍 TOTAL PROFIT DEBUG:', {
+    totalProfit: salesProfit,
+    salesCount: sales.length,
+    individualProfits: sales.map(sale => {
+      const revenue = sale.saleItems.reduce((sum, item) => sum + item.price * item.quantity, 0) - sale.discount;
+      const cost = sale.saleItems.reduce((sum, item) => {
+        const boughtPrice = (item as { boughtPrice?: number }).boughtPrice || 0;
+        return sum + boughtPrice * item.quantity;
+      }, 0);
+      return revenue - cost;
+    })
+  });
 
   const purchasesTotal = purchases.reduce((sum, purchase) => {
     const totalAmount = purchase.PurchaseItems.reduce(

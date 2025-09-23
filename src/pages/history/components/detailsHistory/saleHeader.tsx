@@ -40,7 +40,7 @@ const SaleHeader: React.FC<SaleHeaderProps> = ({ sale }) => {
     sale.saleItems.reduce((sum, item) => sum + item.price * item.quantity, 0) -
     sale.discount;
 
-  // Calculate profit using the same logic as InfoProductModal
+  // Calculate profit using the correct method
   const saleProfit = (() => {
     const revenue =
       sale.saleItems.reduce(
@@ -48,30 +48,9 @@ const SaleHeader: React.FC<SaleHeaderProps> = ({ sale }) => {
         0
       ) - sale.discount;
     const cost = sale.saleItems.reduce((itemSum, item) => {
-      if (item.product && "boughtPrice" in item.product) {
-        // Use stored bought price if available, otherwise use current product bought price
-        const boughtPrice =
-          (item as { boughtPrice?: number }).boughtPrice ||
-          (item.product as { boughtPrice: number }).boughtPrice;
-        return itemSum + boughtPrice * item.quantity;
-      }
-      if (item.manualProduct && "costPrice" in item.manualProduct) {
-        // For manual products, use actual cost price
-        return (
-          itemSum +
-          (item.manualProduct as { costPrice: number }).costPrice *
-            item.quantity
-        );
-      }
-      if (item.service && "costPrice" in item.service) {
-        // For services, use actual cost price
-        return (
-          itemSum +
-          (item.service as { costPrice: number }).costPrice * item.quantity
-        );
-      }
-      // Fallback: if no cost price is available, assume 70% profit margin
-      return itemSum + item.price * item.quantity * 0.3;
+      // All items (products, manual products, services) have their cost stored in boughtPrice
+      const boughtPrice = (item as { boughtPrice?: number }).boughtPrice || 0;
+      return itemSum + boughtPrice * item.quantity;
     }, 0);
     return revenue - cost;
   })();

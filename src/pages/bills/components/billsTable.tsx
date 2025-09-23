@@ -81,6 +81,7 @@ const BillsTable: React.FC<BillsTableProps> = ({
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   const formatCurrency = (amount: number) => {
+    // Bills are stored in centimes, so always divide by 100
     const value = amount / 100;
     return `${value % 1 === 0 ? value.toFixed(0) : value.toFixed(2)} ${t("bills.currency", "DA")}`;
   };
