@@ -50,7 +50,6 @@ export default function GeneralHistoryControls({
     try {
       const dateObj = new Date(date);
       
-      // console.log("🔍 Formatting date for display:", { date, level, dateObj: dateObj.toISOString() });
       
       switch (level) {
         case "day":
@@ -123,12 +122,6 @@ export default function GeneralHistoryControls({
     // Format the value for display
     const displayValue = formatForDisplay(value, aggregationLevel);
     
-    // console.log("🔍 Date picker values:", {
-    //   isStartDate,
-    //   rawValue: value,
-    //   displayValue,
-    //   aggregationLevel
-    // });
 
     switch (aggregationLevel) {
       case "day":

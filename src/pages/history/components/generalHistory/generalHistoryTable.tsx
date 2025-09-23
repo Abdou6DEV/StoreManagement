@@ -4,6 +4,8 @@ import {
   formatCurrency,
   formatNumber,
   formatPeriod,
+  calculateGrowthRate,
+  formatGrowthRate,
 } from "./generalHistoryUtils";
 import { Tooltip } from "../../../../lib/components/tooltip";
 
@@ -13,6 +15,8 @@ interface GeneralHistoryTableProps {
   aggregationLevel: AggregationLevel;
   onRowDoubleClick: (period: string) => void;
   highlightEnabled: boolean;
+  currentPage: number;
+  itemsPerPage: number;
 }
 
 export default function GeneralHistoryTable({
@@ -21,42 +25,27 @@ export default function GeneralHistoryTable({
   aggregationLevel,
   onRowDoubleClick,
   highlightEnabled,
+  currentPage,
+  itemsPerPage,
 }: GeneralHistoryTableProps) {
   const { t } = useTranslation();
 
-  // Debug: Log the data being displayed (only when debugging)
-  // console.log("🔍 Table rendering data:", {
-  //   dataLength: data.length,
-  //   firstItem: data[0],
-  //   lastItem: data[data.length - 1],
-  //   allDataLength: allData.length,
-  //   todayInData: data.find(item => item.period === new Date().toISOString().split('T')[0]),
-  //   dataArray: data
-  // });
 
-  // Calculate average profit for comparison from all data
-  const averageProfit =
-    allData.length > 0
-      ? allData.reduce((sum, item) => sum + item.profit, 0) / allData.length
-      : 0;
+  // Calculate simple average profit from all filtered periods
+  const averageProfit = allData.length > 0 
+    ? allData.reduce((sum, item) => sum + item.profit, 0) / allData.length 
+    : 0;
 
   const getRowHighlightClass = (profit: number) => {
-    // console.log("Highlight enabled:", highlightEnabled);
-    // console.log("Profit:", profit);
-    // console.log("Average profit:", averageProfit);
-
     if (!highlightEnabled) return "";
 
     // Compare with average profit
     const profitDiff =
       ((profit - averageProfit) / Math.abs(averageProfit)) * 100;
-    // console.log("Profit difference:", profitDiff);
 
     if (profitDiff >= 10) {
-      // console.log("Should be green");
       return "bg-green-500/20 hover:bg-green-500/30";
     } else if (profitDiff < 0) {
-      // console.log("Should be red");
       return "bg-red-500/20 hover:bg-red-500/30";
     }
     return "hover:bg-muted/50";
@@ -76,6 +65,20 @@ export default function GeneralHistoryTable({
       return "text-red-600 dark:text-red-400 font-bold";
     }
     return "text-foreground";
+  };
+
+  const getGrowthRateForRow = (item: AggregatedData, currentPageIndex: number) => {
+    // Simple: Compare this period's profit with the average of all other periods
+    return calculateGrowthRate(item.profit, averageProfit);
+  };
+
+  const getGrowthRateTextClass = (growthRate: number) => {
+    if (growthRate > 0) {
+      return "text-green-600 dark:text-green-400 font-bold";
+    } else if (growthRate < 0) {
+      return "text-red-600 dark:text-red-400 font-bold";
+    }
+    return "text-muted-foreground";
   };
 
   return (
@@ -163,9 +166,9 @@ export default function GeneralHistoryTable({
                 <td className="px-4 text-right">
                   <div className="flex flex-col items-end">
                     <span
-                      className={`font-semibold text-base ${getProfitTextClass(item.profit)}`}
+                      className={`font-semibold text-base ${getGrowthRateTextClass(getGrowthRateForRow(item, index))}`}
                     >
-                      {formatCurrency(item.profit)}
+                      {formatGrowthRate(getGrowthRateForRow(item, index))}
                     </span>
                   </div>
                 </td>

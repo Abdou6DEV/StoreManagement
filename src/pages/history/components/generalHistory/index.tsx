@@ -61,6 +61,8 @@ export default function GeneralHistory({
             aggregationLevel={aggregationLevel}
             onRowDoubleClick={handleRowDoubleClick}
             highlightEnabled={highlightEnabled}
+            currentPage={currentPage}
+            itemsPerPage={10}
           />
           <SharedPagination
             currentPage={currentPage}

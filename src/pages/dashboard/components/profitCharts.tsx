@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { CartesianGrid, Line, LineChart, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
 import { useTheme } from "../../../lib/hooks/useTheme";
+import { Skeleton } from "../../../lib/components/skeleton";
 
 interface ProfitChartProps {
   period: 'today' | 'month' | 'year' | 'overall';
@@ -206,9 +207,9 @@ export function ProfitChart({ period, className = "" }: ProfitChartProps) {
   if (loading) {
     return (
       <div className={`p-4 ${className}`}>
-        <div className="animate-pulse">
-          <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/4 mb-2"></div>
-          <div className="h-32 bg-gray-200 dark:bg-gray-700 rounded"></div>
+        <div className="space-y-3">
+          <Skeleton className="h-4 w-1/4" />
+          <Skeleton className="h-32 w-full rounded" />
         </div>
       </div>
     );

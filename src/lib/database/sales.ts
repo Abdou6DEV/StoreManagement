@@ -725,33 +725,13 @@ export async function getSalesAggregatedByPeriod(
       // All items (products, manual products, services) have their cost stored in boughtPrice
       const boughtPrice = (item as { boughtPrice?: number }).boughtPrice || 0;
       
-      // DEBUG: Log each item's details
-      console.log('🔍 Database Sale Item Debug:', {
-        itemName: item.product?.name || item.manualProduct?.name || item.service?.name || 'Unknown',
-        price: item.price,
-        quantity: item.quantity,
-        boughtPrice: boughtPrice,
-        itemCost: boughtPrice * item.quantity
-      });
       
       return sum + boughtPrice * item.quantity;
     }, 0);
 
     const profit = totalAmountWithDiscount - totalCost;
     
-    console.log('🔍 Database Sale Profit Debug:', {
-      saleId: sale.id,
-      revenue: totalAmountWithDiscount,
-      cost: totalCost,
-      profit: profit
-    });
     
-    // DEBUG: Log the period key and profit being added
-    console.log('🔍 Database Period Debug:', {
-      periodKey: periodKey,
-      profit: profit,
-      existingProfit: groupedData.get(periodKey)?.profit || 0
-    });
 
     const existing = groupedData.get(periodKey);
     if (existing) {

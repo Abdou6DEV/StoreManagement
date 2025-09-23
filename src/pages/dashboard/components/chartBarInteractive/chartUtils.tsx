@@ -11,6 +11,7 @@ export function getPeriodLabel(
   t: (key: string) => string,
 ) {
   if (type === "day") {
+    // Use shorter labels for daily view to avoid overcrowding
     return (idx + 1).toString();
   }
   if (type === "month") {
@@ -191,7 +192,7 @@ export function useChartConfigs() {
     profits: {
       title: t("dashboard.chartProfitsTitle"),
       description: t("dashboard.chartProfitsDesc"),
-      format: (value: number) => `${value.toLocaleString()} ${t("currency")}`,
+      format: (value: number) => `${value.toLocaleString()} DA`,
       dataKey: "profits" as const,
       label: t("dashboard.profits"),
     },
@@ -205,7 +206,7 @@ export function useChartConfigs() {
     sales: {
       title: t("dashboard.chartSalesTitle"),
       description: t("dashboard.chartSalesDesc"),
-      format: (value: number) => `${value.toLocaleString()} ${t("currency")}`,
+      format: (value: number) => `${value.toLocaleString()} DA`,
       dataKey: "sales" as const,
       label: t("dashboard.sales"),
     },

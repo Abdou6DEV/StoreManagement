@@ -88,7 +88,7 @@ export function ChartControls({
             }`}
           >
             {key === "1m"
-              ? t("dashboard.1M")
+              ? t("dashboard.last30Days")
               : key === "12m"
                 ? t("dashboard.12M")
                 : t("dashboard.years")}

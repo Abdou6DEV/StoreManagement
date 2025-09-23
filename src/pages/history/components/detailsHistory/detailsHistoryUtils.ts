@@ -2,15 +2,19 @@ import i18next from "i18next";
 
 export const formatCurrency = (amount: number) => {
   const currency = i18next.t("currency");
-  return `${amount.toLocaleString()} ${currency}`;
+  // Convert from centimes to main currency unit
+  const mainAmount = amount / 100;
+  return `${mainAmount.toLocaleString()} ${currency}`;
 };
 
 export const formatCurrencyWithStyle = (amount: number) => {
   const currency = i18next.t("currency");
+  // Convert from centimes to main currency unit
+  const mainAmount = amount / 100;
   return {
-    amount: amount.toLocaleString(),
+    amount: mainAmount.toLocaleString(),
     currency: currency,
-    full: `${amount.toLocaleString()} ${currency}`
+    full: `${mainAmount.toLocaleString()} ${currency}`
   };
 };
 

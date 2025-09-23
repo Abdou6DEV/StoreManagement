@@ -16,6 +16,8 @@ import {
   Settings,
   User,
   LogOut,
+  History,
+  FileText,
 } from "lucide-react";
 import { ThemeToggleButton } from "./themeToggleButton";
 import { FullscreenToggleButton } from "./fullscreenToggleButton";
@@ -171,6 +173,8 @@ export default function Navigation() {
                 clients: <Users className="w-8 h-8 text-red-500" />,
                 cashier: <ShoppingCart className="w-8 h-8 text-yellow-500" />,
                 stock: <PackageSearch className="w-8 h-8 text-green-600" />,
+                history: <History className="w-8 h-8 text-blue-500" />,
+                bills: <FileText className="w-8 h-8 text-purple-500" />,
                 administrator: <Settings className="w-8 h-8 text-orange-500" />,
               };
               return (

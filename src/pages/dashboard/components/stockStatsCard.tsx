@@ -5,6 +5,7 @@ import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { TrendingUp, PackageIcon, AlertTriangleIcon, DollarSignIcon, ShoppingCartIcon, BarChart3, PieChart as PieChartIcon } from "lucide-react"
 import { Pie, PieChart, Tooltip, ResponsiveContainer } from "recharts"
+import { Tooltip as UITooltip } from "../../../lib/components/tooltip"
 
 // Using div elements with card styling like other components in the project
 
@@ -286,8 +287,31 @@ export function StockStatsCard() {
         <p className="text-muted-foreground mb-4">
           {t("dashboard.stockStatsDesc", "Comprehensive stock overview and category performance")}
         </p>
-        <div className="flex items-center justify-center h-64">
-          <div className="text-muted-foreground">Loading...</div>
+        
+        {/* Skeleton for stats grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="bg-muted/50 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-2">
+                <div className="h-4 w-20 bg-muted-foreground/20 rounded animate-pulse" />
+                <div className="h-5 w-5 bg-muted-foreground/20 rounded animate-pulse" />
+              </div>
+              <div className="h-6 w-16 bg-muted-foreground/20 rounded animate-pulse mb-1" />
+              <div className="h-3 w-12 bg-muted-foreground/20 rounded animate-pulse" />
+            </div>
+          ))}
+        </div>
+
+        {/* Skeleton for charts */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="space-y-3">
+            <div className="h-5 w-32 bg-muted-foreground/20 rounded animate-pulse" />
+            <div className="h-48 w-full bg-muted-foreground/20 rounded animate-pulse" />
+          </div>
+          <div className="space-y-3">
+            <div className="h-5 w-32 bg-muted-foreground/20 rounded animate-pulse" />
+            <div className="h-48 w-full bg-muted-foreground/20 rounded animate-pulse" />
+          </div>
         </div>
       </div>
     )
@@ -390,32 +414,36 @@ export function StockStatsCard() {
         {((viewMode === 'categories' && stockStats.categoriesData.length > 0) || 
           (viewMode === 'products' && stockStats.topProducts.length > 0)) && (
           <div className="space-y-4">
-             <div className="flex items-center justify-end mb-4">
-               <div className="flex gap-1 bg-muted rounded-lg p-1">
-                 <button
-                   onClick={() => setViewMode('categories')}
-                   className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                     viewMode === 'categories'
-                       ? 'bg-background text-foreground shadow-sm'
-                       : 'text-muted-foreground hover:text-foreground'
-                   }`}
-                 >
-                   <PieChartIcon className="h-4 w-4" />
-                   {t("dashboard.categories", "Categories")}
-                 </button>
-                 <button
-                   onClick={() => setViewMode('products')}
-                   className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                     viewMode === 'products'
-                       ? 'bg-background text-foreground shadow-sm'
-                       : 'text-muted-foreground hover:text-foreground'
-                   }`}
-                 >
-                   <BarChart3 className="h-4 w-4" />
-                   {t("dashboard.products", "Products")}
-                 </button>
-               </div>
-             </div>
+              <div className="flex items-center justify-end mb-4">
+                <div className="flex gap-1 bg-muted rounded-lg p-1">
+                  <UITooltip content={t("dashboard.categoriesTooltip", "View sales distribution by product categories")}>
+                    <button
+                      onClick={() => setViewMode('categories')}
+                      className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                        viewMode === 'categories'
+                          ? 'bg-background text-foreground shadow-sm'
+                          : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      <PieChartIcon className="h-4 w-4" />
+                      {t("dashboard.categories", "Categories")}
+                    </button>
+                  </UITooltip>
+                  <UITooltip content={t("dashboard.productsTooltip", "View sales distribution by individual products")}>
+                    <button
+                      onClick={() => setViewMode('products')}
+                      className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                        viewMode === 'products'
+                          ? 'bg-background text-foreground shadow-sm'
+                          : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      <BarChart3 className="h-4 w-4" />
+                      {t("dashboard.products", "Products")}
+                    </button>
+                  </UITooltip>
+                </div>
+              </div>
 
             <div className="flex flex-col lg:flex-row items-center gap-6">
                {viewMode === 'categories' ? (

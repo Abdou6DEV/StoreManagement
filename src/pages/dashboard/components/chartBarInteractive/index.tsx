@@ -6,6 +6,7 @@ import { ChartControls } from "./chartControls";
 import { ChartContainer } from "./chartContainer";
 import { useChartData, useChartConfigs } from "./chartUtils";
 import { TimePeriodConfig } from "./types";
+import { Skeleton } from "../../../../lib/components/skeleton";
 
 export function ChartBarInteractive() {
   const { t } = useTranslation();
@@ -16,14 +17,24 @@ export function ChartBarInteractive() {
   const [chartType, setChartType] = React.useState<
     "profits" | "clients" | "sales"
   >("profits");
+  const [isLoading, setIsLoading] = React.useState(true);
 
   const chartData = useChartData();
   const { chartTypes } = useChartConfigs();
 
+  React.useEffect(() => {
+    // Simulate loading time for chart data
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [chartData]);
+
   const timePeriods: Record<string, TimePeriodConfig> = {
     "1m": {
       data: chartData["1m"],
-      label: t("dashboard.1M"),
+      label: t("dashboard.last30Days"),
       description: t("dashboard.last30Days"),
     },
     "12m": {
@@ -45,6 +56,31 @@ export function ChartBarInteractive() {
   const bgClass = isDark
     ? "bg-[#18181b] border border-gray-700 text-gray-100"
     : "bg-white border border-gray-200 text-gray-900";
+
+  if (isLoading) {
+    return (
+      <div className={`${bgClass} rounded-xl shadow-sm p-6`}>
+        {/* Header Skeleton */}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
+          <div className="space-y-2">
+            <Skeleton className="h-6 w-48" />
+            <Skeleton className="h-4 w-32" />
+          </div>
+          <div className="flex gap-2">
+            <Skeleton className="h-10 w-24" />
+            <Skeleton className="h-10 w-24" />
+            <Skeleton className="h-10 w-24" />
+          </div>
+        </div>
+
+        {/* Chart Skeleton */}
+        <div className="space-y-4">
+          <Skeleton className="h-6 w-32" />
+          <Skeleton className="h-80 w-full rounded" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`${bgClass} rounded-xl shadow-sm p-6`}>

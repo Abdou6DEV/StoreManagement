@@ -20,18 +20,6 @@ export function useGeneralHistoryData() {
   const endIndex = startIndex + itemsPerPage;
   const currentData = aggregatedData.slice(startIndex, endIndex);
 
-  // Debug: Log pagination info (only when debugging)
-  // console.log("🔍 Pagination debug:", {
-  //   totalData: aggregatedData.length,
-  //   currentPage,
-  //   totalPages,
-  //   startIndex,
-  //   endIndex,
-  //   currentDataLength: currentData.length,
-  //   firstItem: currentData[0],
-  //   lastItem: currentData[currentData.length - 1],
-  //   todayInCurrentData: currentData.find(item => item.period === new Date().toISOString().split('T')[0])
-  // });
 
   // Reset to first page when aggregation level or date range changes
   useEffect(() => {
@@ -45,65 +33,42 @@ export function useGeneralHistoryData() {
     return !isNaN(date.getTime());
   };
 
+  // Set default date range based on aggregation level
+  const setDefaultDateRange = (level: AggregationLevel) => {
+    const today = new Date();
+    const startDate = new Date();
+    
+    switch (level) {
+      case "day":
+        // Last month for daily view
+        startDate.setMonth(today.getMonth() - 1);
+        break;
+      case "month":
+        // Last 12 months for monthly view
+        startDate.setMonth(today.getMonth() - 12);
+        break;
+      case "year":
+        // All years - set to a very early date to include all data
+        startDate.setFullYear(2020);
+        break;
+    }
+    
+    setStartDate(startDate.toISOString().split('T')[0]);
+    setEndDate(today.toISOString().split('T')[0]);
+  };
+
   // Fetch the data range to set default dates
   const fetchDataRange = async () => {
     try {
-      // console.log("🔍 Fetching data range...");
-      
-      // Get all sales to find the date range
-      const allSales = await window.api.database.sales.getAll();
-      
-      // console.log("📊 All sales count:", allSales.length);
-      
-      if (allSales && allSales.length > 0) {
-        // Find min and max dates from sales data
-        const dates = allSales.map((sale: any) => new Date(sale.createdAt));
-        const minDate = new Date(Math.min(...dates.map((d: Date) => d.getTime())));
-        const maxDate = new Date(Math.max(...dates.map((d: Date) => d.getTime())));
-        
-        // Always include today's date in the range, even if no sales today
-        const today = new Date();
-        const actualMaxDate = maxDate > today ? maxDate : today;
-        
-        // console.log("🔍 Date range calculation:", {
-        //   minDate: minDate.toISOString().split('T')[0],
-        //   maxDate: maxDate.toISOString().split('T')[0],
-        //   today: today.toISOString().split('T')[0],
-        //   actualMaxDate: actualMaxDate.toISOString().split('T')[0]
-        // });
-        
-        const range = {
-          min: minDate.toISOString().split('T')[0],
-          max: actualMaxDate.toISOString().split('T')[0]
-        };
-        
-        // Set default dates to span the full data range including today
-        setStartDate(range.min);
-        setEndDate(range.max);
-        
-        // console.log("✅ Default dates set:", { start: range.min, end: range.max });
-        // console.log("📅 Today's date:", new Date().toISOString().split('T')[0]);
-      } else {
-        // Fallback to last month if no sales data, but always include today
-        const fallbackStart = new Date();
-        fallbackStart.setMonth(fallbackStart.getMonth() - 1);
-        const fallbackEnd = new Date(); // Today
-        
-        setStartDate(fallbackStart.toISOString().split('T')[0]);
-        setEndDate(fallbackEnd.toISOString().split('T')[0]);
-        
-        // console.log("⚠️ Using fallback dates:", { 
-        //   start: fallbackStart.toISOString().split('T')[0], 
-        //   end: fallbackEnd.toISOString().split('T')[0] 
-        // });
-      }
+      // Set default range based on current aggregation level
+      setDefaultDateRange(aggregationLevel);
     } catch (error) {
-      console.error("❌ Error fetching data range:", error);
+      console.error("❌ Error setting default date range:", error);
       
-      // Fallback to last month on error, but always include today
+      // Fallback to last month on error
       const fallbackStart = new Date();
       fallbackStart.setMonth(fallbackStart.getMonth() - 1);
-      const fallbackEnd = new Date(); // Today
+      const fallbackEnd = new Date();
       
       setStartDate(fallbackStart.toISOString().split('T')[0]);
       setEndDate(fallbackEnd.toISOString().split('T')[0]);
@@ -114,6 +79,11 @@ export function useGeneralHistoryData() {
   useEffect(() => {
     fetchDataRange();
   }, []);
+
+  // Update date range when aggregation level changes
+  useEffect(() => {
+    setDefaultDateRange(aggregationLevel);
+  }, [aggregationLevel]);
 
   // Fetch data when aggregation level or date range changes (only if dates are set)
   useEffect(() => {
@@ -199,18 +169,9 @@ export function useGeneralHistoryData() {
     try {
       setLoading(true);
 
-      // console.log("🔍 Fetching data with:", {
-      //   aggregationLevel,
-      //   startDate,
-      //   endDate,
-      //   startDateValid: isValidDate(startDate),
-      //   endDateValid: isValidDate(endDate)
-      // });
-      
-      // Debug: Check if today is in the date range
+      // Check if today is in the date range
       const today = new Date().toISOString().split('T')[0];
       const isTodayInRange = startDate <= today && endDate >= today;
-      // console.log("📅 Today in range check:", { today, startDate, endDate, isTodayInRange });
 
       // startDate and endDate are already in YYYY-MM-DD format
       if (!startDate || !endDate || !isValidDate(startDate) || !isValidDate(endDate)) {
@@ -225,38 +186,6 @@ export function useGeneralHistoryData() {
       const startDateObj = new Date(startDate + 'T00:00:00');
       const endDateObj = new Date(endDate + 'T23:59:59.999');
       
-      // Debug: Log the timezone-adjusted dates
-      // console.log("🔍 Timezone-adjusted dates:", {
-      //   startDate: startDate,
-      //   endDate: endDate,
-      //   startDateObj: startDateObj.toISOString(),
-      //   endDateObj: endDateObj.toISOString(),
-      //   startDateLocal: startDateObj.toLocaleString(),
-      //   endDateLocal: endDateObj.toLocaleString()
-      // });
-      
-      // Debug: Log the exact date range being queried (only when debugging)
-      // console.log("🔍 Database query date range:", {
-      //   startDate: startDate,
-      //   endDate: endDate,
-      //   startDateObj: startDateObj.toISOString(),
-      //   endDateObj: endDateObj.toISOString(),
-      //   today: new Date().toISOString().split('T')[0]
-      // });
-
-      // console.log("📅 Date objects:", {
-      //   startDateObj: startDateObj.toISOString(),
-      //   endDateObj: endDateObj.toISOString()
-      // });
-
-      // Debug: Check if today's sales exist (simplified)
-      // const rawSales = await window.api.database.sales.getAll();
-      // const todaySales = rawSales.filter((sale: any) => {
-      //   const saleDate = new Date(sale.createdAt).toLocaleDateString('en-CA');
-      //   const today = new Date().toLocaleDateString('en-CA');
-      //   return saleDate === today;
-      // });
-      // console.log("🔍 Today's sales found:", todaySales.length, "sales");
 
       // Fetch aggregated data
       const aggregated = await window.api.database.sales.getAggregatedByPeriod(
@@ -265,8 +194,6 @@ export function useGeneralHistoryData() {
         endDateObj,
       );
       
-      // DEBUG: Log the aggregated data
-      console.log('🔍 General History Aggregated Data:', aggregated);
 
 
       // Validate and sort data

@@ -48,14 +48,14 @@ export function ChartContainer({
 
   const formatValue = (value: number) => {
     if (chartType === "clients") return `${value}`;
-    return `${(value / 1000).toFixed(0)} ${t("dashboard.thousand")}`;
+    return `${value.toLocaleString()} DA`;
   };
 
   const formatTooltipValue = (value: number) => {
     if (chartType === "clients") {
       return `${value} ${t("dashboard.clients")}`;
     }
-    return `${value.toLocaleString()} ${t("currency")}`;
+    return `${value.toLocaleString()} DA`;
   };
 
   return (
@@ -67,7 +67,7 @@ export function ChartContainer({
             top: 20,
             right: 30,
             left: 20,
-            bottom: timePeriod === "1m" ? 60 : 20,
+            bottom: 20,
           }}
         >
           <defs>
@@ -94,18 +94,24 @@ export function ChartContainer({
             tickLine={false}
             axisLine={false}
             tickMargin={8}
-            angle={timePeriod === "1m" ? -45 : 0}
-            textAnchor={timePeriod === "1m" ? "end" : "middle"}
-            fontSize={12}
-            fill={axisColor}
+            angle={0}
+            textAnchor="middle"
+            fontSize={14}
+            fill={isDark ? "#ffffff" : "#000000"}
+            fontWeight={600}
+            stroke={isDark ? "#ffffff" : "#000000"}
+            strokeWidth={0.3}
           />
 
           <YAxis
             tickLine={false}
             axisLine={false}
             tickMargin={8}
-            fontSize={12}
-            fill={axisColor}
+            fontSize={14}
+            fill={isDark ? "#ffffff" : "#000000"}
+            fontWeight={600}
+            stroke={isDark ? "#ffffff" : "#000000"}
+            strokeWidth={0.3}
             tickFormatter={formatValue}
             textAnchor={i18n.language === "ar" ? "start" : "end"}
           />
@@ -133,8 +139,8 @@ export function ChartContainer({
                       <p
                         className={
                           isDark
-                            ? "text-sm font-medium text-gray-100"
-                            : "text-sm font-medium text-gray-900"
+                            ? "text-sm font-semibold text-white"
+                            : "text-sm font-semibold text-gray-900"
                         }
                       >
                         {label}
@@ -144,8 +150,8 @@ export function ChartContainer({
                       <span
                         className={
                           isDark
-                            ? "text-xs text-gray-400"
-                            : "text-xs text-gray-500"
+                            ? "text-sm font-medium text-gray-200"
+                            : "text-sm font-medium text-gray-700"
                         }
                       >
                         {t("dashboard.valueLabel")}
@@ -153,8 +159,8 @@ export function ChartContainer({
                       <span
                         className={
                           isDark
-                            ? "text-sm text-gray-100 mx-1"
-                            : "text-sm text-gray-900 mx-1"
+                            ? "text-sm font-semibold text-white mx-1"
+                            : "text-sm font-semibold text-gray-900 mx-1"
                         }
                       >
                         {formatTooltipValue(value)}

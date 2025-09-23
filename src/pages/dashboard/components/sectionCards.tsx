@@ -11,9 +11,11 @@ import {
 } from "lucide-react";
 import { ProfitChart } from "./profitCharts";
 import { StockStatsCard } from "./stockStatsCard";
+import { Skeleton } from "../../../lib/components/skeleton";
 
 export function SectionCards() {
   const { t, i18n } = useTranslation();
+  const [isLoading, setIsLoading] = useState(true);
   const [salesStats, setSalesStats] = useState<Array<{
     labelKey: string;
     revenue?: string;
@@ -50,14 +52,16 @@ export function SectionCards() {
 
   useEffect(() => {
     async function fetchStats() {
-      const [sales, products, payments, clients, lowStockThreshold] =
-        await Promise.all([
-          window.api.database.sales.getAll(),
-          window.api.database.products.getAll(),
-          window.api.database.payments.getAll(),
-          window.api.database.clients.getAll(),
-          window.api.database.options.get("lowStockThreshold"),
-        ]);
+      setIsLoading(true);
+      try {
+        const [sales, products, payments, clients, lowStockThreshold] =
+          await Promise.all([
+            window.api.database.sales.getAll(),
+            window.api.database.products.getAll(),
+            window.api.database.payments.getAll(),
+            window.api.database.clients.getAll(),
+            window.api.database.options.get("lowStockThreshold"),
+          ]);
 
       function calcSalesStats(
         labelKey: string,
@@ -368,6 +372,11 @@ export function SectionCards() {
           icon: WalletIcon,
         },
       ]);
+      } catch (error) {
+        console.error('Error fetching dashboard stats:', error);
+      } finally {
+        setIsLoading(false);
+      }
     }
     fetchStats();
   }, [i18n.language]);
@@ -690,6 +699,69 @@ export function SectionCards() {
       </div>
     );
   };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-8">
+        {/* Overview Section Skeleton */}
+        <div className="space-y-4">
+          <Skeleton className="h-8 w-48" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="bg-card rounded-xl border border-border p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <Skeleton className="h-6 w-24" />
+                  <Skeleton className="h-8 w-8 rounded-lg" />
+                </div>
+                <div className="space-y-3">
+                  <Skeleton className="h-8 w-32" />
+                  <Skeleton className="h-4 w-20" />
+                  <Skeleton className="h-4 w-16" />
+                </div>
+                <div className="mt-4">
+                  <Skeleton className="h-32 w-full rounded" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Stock Stats Section Skeleton */}
+        <div className="space-y-4">
+          <Skeleton className="h-8 w-48" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="bg-card rounded-xl border border-border p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <Skeleton className="h-6 w-24" />
+                  <Skeleton className="h-8 w-8 rounded-lg" />
+                </div>
+                <Skeleton className="h-8 w-32 mb-2" />
+                <Skeleton className="h-4 w-20" />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Client Stats Section Skeleton */}
+        <div className="space-y-4">
+          <Skeleton className="h-8 w-48" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="bg-card rounded-xl border border-border p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <Skeleton className="h-6 w-24" />
+                  <Skeleton className="h-8 w-8 rounded-lg" />
+                </div>
+                <Skeleton className="h-8 w-32 mb-2" />
+                <Skeleton className="h-4 w-20" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">

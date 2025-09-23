@@ -49,7 +49,8 @@ export async function seedBills(prisma: PrismaClient): Promise<Bill[]> {
 
   for (let i = 0; i < 20; i++) {
     const billType = billTypes[i];
-    const amount = faker.number.int({ min: 5000, max: 500000 }); // Amount in centimes (50 DA to 5000 DA)
+    // Generate clean integer amounts (100, 200, 360, etc.) - no decimals
+    const amount = Math.round(faker.number.int({ min: 10000, max: 500000 }) / 100) * 100; // Round to nearest 100
     const duration = faker.helpers.arrayElement(durations);
     
     // Calculate next bill date based on duration
@@ -131,10 +132,11 @@ export async function seedBills(prisma: PrismaClient): Promise<Bill[]> {
 async function createBillPayments(prisma: PrismaClient, bill: Bill, startDate: Date) {
   const payments = [];
   const billAmount = bill.amount;
-  const totalPaidAmount = faker.number.int({ 
+  // Generate clean integer total paid amount
+  const totalPaidAmount = Math.round(faker.number.int({ 
     min: Math.floor(billAmount * 0.3), // At least 30% paid
     max: billAmount * 2 // Up to 200% paid (overpaid)
-  });
+  }) / 100) * 100; // Round to nearest 100
 
   // Distribute the total paid amount across 10 payments
   let remainingAmount = totalPaidAmount;
@@ -148,14 +150,14 @@ async function createBillPayments(prisma: PrismaClient, bill: Bill, startDate: D
     } else {
       // Random amount, but ensure we don't exceed remaining
       const maxPayment = Math.floor(remainingAmount / (10 - i));
-      paymentAmount = faker.number.int({ 
+      paymentAmount = Math.round(faker.number.int({ 
         min: Math.floor(maxPayment * 0.1), // At least 10% of max
         max: maxPayment 
-      });
+      }) / 100) * 100; // Round to nearest 100
     }
 
-    // Ensure payment amount is positive
-    paymentAmount = Math.max(1, paymentAmount);
+    // Ensure payment amount is positive and rounded to nearest 100
+    paymentAmount = Math.max(100, Math.round(paymentAmount / 100) * 100);
     remainingAmount -= paymentAmount;
 
     // Generate payment date (spread over time since bill creation)
