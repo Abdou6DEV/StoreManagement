@@ -20,7 +20,7 @@ import "../../lib/i18n";
 
 export default function MainMenu() {
   const { t } = useTranslation();
-  const { isAdmin } = useAuth();
+  const { isAdmin, canAccessPage } = useAuth();
   const { unseenLowStockCount } = useLowStock();
   const { unseenOverdueCreditsCount, unseenOverdueVersementsCount } = useOverduePayments();
   const { unseenDueSoonCreditsCount, unseenDueSoonVersementsCount } = useDueSoonPayments();
@@ -93,8 +93,17 @@ export default function MainMenu() {
     },
   ];
 
-  // Filter menu items based on user role
-  const menuItems = allMenuItems.filter((item) => !item.adminOnly || isAdmin);
+  // Filter menu items based on user permissions
+  const menuItems = allMenuItems.filter((item) => {
+    if (item.key === "cashier") {
+      return canAccessPage("cashier");
+    }
+    if (item.key === "administrator") {
+      return canAccessPage("administrator");
+    }
+    // For other pages, check specific permissions
+    return canAccessPage(item.key);
+  });
 
   return (
     <main className="py-4 px-4 md:px-12 ml-20 flex-1 rounded-xl">

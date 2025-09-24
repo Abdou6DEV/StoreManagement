@@ -26,8 +26,34 @@ model User {
   role     UserRole @default(USER)
   isActive Boolean  @default(true)
 
+  // User permissions for different pages
+  permissions UserPermissions?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model UserPermissions {
+  id     String @id @default(uuid())
+  userId String @unique
+
+  // Page access permissions
+  canAccessCashier    Boolean @default(false)
+  canAccessStock      Boolean @default(false)
+  canAccessClients    Boolean @default(false)
+  canAccessBills      Boolean @default(false)
+  canAccessHistory    Boolean @default(false)
+  canAccessDashboard  Boolean @default(false)
+
+  // Admin permissions (only for admin role)
+  canManageUsers      Boolean @default(false)
+  canViewLogs         Boolean @default(false)
+  canManageSettings   Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Category {

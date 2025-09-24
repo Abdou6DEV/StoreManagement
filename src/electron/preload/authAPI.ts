@@ -9,6 +9,12 @@ const authAPI: AuthAPI = {
     ipcRenderer.invoke("auth:getUserByUsername", username),
   updateUserRole: (userId, role) =>
     ipcRenderer.invoke("auth:updateUserRole", userId, role),
+  updatePassword: (userId, newPassword) =>
+    ipcRenderer.invoke("auth:updatePassword", userId, newPassword),
+  updatePermissions: (userId, permissions) =>
+    ipcRenderer.invoke("auth:updatePermissions", userId, permissions),
+  getAllUsersWithPermissions: () =>
+    ipcRenderer.invoke("auth:getAllUsersWithPermissions"),
   getAllUsers: () => ipcRenderer.invoke("auth:getAllUsers"),
   deactivateUser: (userId) => ipcRenderer.invoke("auth:deactivateUser", userId),
   activateUser: (userId) => ipcRenderer.invoke("auth:activateUser", userId),

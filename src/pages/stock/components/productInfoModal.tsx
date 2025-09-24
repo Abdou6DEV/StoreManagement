@@ -56,7 +56,6 @@ export const ProductInfoModal = ({
       size="lg"
       className="min-w-[70%] max-h-[70vh] overflow-y-auto"
       showFooter={false}
-      onClick={(e) => e.stopPropagation()}
     >
       {loading ? (
         <div className="flex items-center justify-center py-8">

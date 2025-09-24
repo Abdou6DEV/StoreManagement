@@ -14,6 +14,7 @@ import { useTranslation } from "react-i18next";
 import { ToastProvider } from "../lib/contexts/toastContext";
 import rendererLogger from "../lib/logger/rendererLogger";
 import ProtectedRoute from "../lib/components/protectedRoute";
+import PermissionRoute from "../lib/components/permissionRoute";
 import Login from "./login";
 import LicenseValidation from "./licenseValidation";
 import { useAuth } from "../lib/contexts/authContext";
@@ -114,55 +115,61 @@ export default function App() {
                             </main>
                           }
                         >
-                          {/* Admin-only routes */}
+                          {/* Permission-based routes */}
                           <Route
                             path="/dashboard"
                             element={
-                              <ProtectedRoute requireAdmin>
+                              <PermissionRoute requiredPermission="dashboard">
                                 <Dashboard />
-                              </ProtectedRoute>
+                              </PermissionRoute>
                             }
                           />
                           <Route
                             path="/clients"
                             element={
-                              <ProtectedRoute requireAdmin>
+                              <PermissionRoute requiredPermission="clients">
                                 <Clients />
-                              </ProtectedRoute>
+                              </PermissionRoute>
                             }
                           />
                           <Route
                             path="/stock"
                             element={
-                              <ProtectedRoute requireAdmin>
+                              <PermissionRoute requiredPermission="stock">
                                 <Stock />
-                              </ProtectedRoute>
+                              </PermissionRoute>
                             }
                           />
-                          {/* User-accessible routes */}
-                          <Route path="/cashier" element={<Cashier />} />
+                          <Route
+                            path="/cashier"
+                            element={
+                              <PermissionRoute requiredPermission="cashier">
+                                <Cashier />
+                              </PermissionRoute>
+                            }
+                          />
                           <Route
                             path="/history"
                             element={
-                              <ProtectedRoute requireAdmin>
+                              <PermissionRoute requiredPermission="history">
                                 <History />
-                              </ProtectedRoute>
+                              </PermissionRoute>
                             }
                           />
                           <Route
                             path="/bills"
                             element={
-                              <ProtectedRoute requireAdmin>
+                              <PermissionRoute requiredPermission="bills">
                                 <Bills />
-                              </ProtectedRoute>
+                              </PermissionRoute>
                             }
                           />
                           <Route
                             path="/administrator"
                             element={
-                              <ProtectedRoute requireAdmin>
+                              <PermissionRoute requiredPermission="administrator">
                                 <Administrator />
-                              </ProtectedRoute>
+                              </PermissionRoute>
                             }
                           />
                           <Route

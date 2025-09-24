@@ -67,7 +67,7 @@ const menuItems = [
 export default function Sidebar() {
   const location = useLocation();
   const { t } = useTranslation();
-  const { logout, isAdmin } = useAuth();
+  const { logout, isAdmin, canAccessPage } = useAuth();
   const { unseenLowStockCount } = useLowStock();
   const { unseenOverdueCreditsCount, unseenOverdueVersementsCount } = useOverduePayments();
   const { unseenDueSoonCreditsCount, unseenDueSoonVersementsCount } = useDueSoonPayments();
@@ -168,12 +168,19 @@ export default function Sidebar() {
     }
   }, [unseenOverdueBillsCount, unseenDueSoonBillsCount]);
 
-  // Filter menu items based on user role
+  // Filter menu items based on user permissions
   const filteredMenuItems = menuItems.filter((item) => {
-    if (item.key === "title" || item.key === "cashier") {
-      return true; // Always show home and cashier
+    if (item.key === "title") {
+      return true; // Always show home
     }
-    return isAdmin; // Only show other items for admins
+    if (item.key === "cashier") {
+      return canAccessPage("cashier"); // Check cashier permission
+    }
+    if (item.key === "administrator") {
+      return canAccessPage("administrator"); // Check admin permission
+    }
+    // For other pages, check specific permissions
+    return canAccessPage(item.key);
   });
 
   const handleToggleCollapse = () => {

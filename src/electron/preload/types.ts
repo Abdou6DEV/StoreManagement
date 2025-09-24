@@ -236,6 +236,17 @@ export type AuthAPI = {
     email?: string;
     password: string;
     role?: UserRole;
+    permissions?: {
+      canAccessCashier: boolean;
+      canAccessStock: boolean;
+      canAccessClients: boolean;
+      canAccessBills: boolean;
+      canAccessHistory: boolean;
+      canAccessDashboard: boolean;
+      canManageUsers: boolean;
+      canViewLogs: boolean;
+      canManageSettings: boolean;
+    };
   }) => Promise<{
     success: boolean;
     user?: Omit<User, "password">;
@@ -257,6 +268,29 @@ export type AuthAPI = {
   ) => Promise<{
     success: boolean;
     user?: Omit<User, "password">;
+    error?: string;
+  }>;
+  updatePassword: (userId: string, newPassword: string) => Promise<{
+    success: boolean;
+    error?: string;
+  }>;
+  updatePermissions: (userId: string, permissions: {
+    canAccessCashier: boolean;
+    canAccessStock: boolean;
+    canAccessClients: boolean;
+    canAccessBills: boolean;
+    canAccessHistory: boolean;
+    canAccessDashboard: boolean;
+    canManageUsers: boolean;
+    canViewLogs: boolean;
+    canManageSettings: boolean;
+  }) => Promise<{
+    success: boolean;
+    error?: string;
+  }>;
+  getAllUsersWithPermissions: () => Promise<{
+    success: boolean;
+    users?: (Omit<User, "password"> & { permissions: any })[];
     error?: string;
   }>;
   getAllUsers: () => Promise<{
