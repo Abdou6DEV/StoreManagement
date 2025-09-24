@@ -756,7 +756,11 @@ export async function getSalesAggregatedByPeriod(
     let periodKey: string;
 
     if (period === "day") {
-      periodKey = purchaseDate.toISOString().split("T")[0]; // YYYY-MM-DD
+      // Use local timezone to match sales data processing
+      const year = purchaseDate.getFullYear();
+      const month = String(purchaseDate.getMonth() + 1).padStart(2, "0");
+      const day = String(purchaseDate.getDate()).padStart(2, "0");
+      periodKey = `${year}-${month}-${day}`;
     } else if (period === "month") {
       periodKey = `${purchaseDate.getFullYear()}-${String(purchaseDate.getMonth() + 1).padStart(2, "0")}`;
     } else {

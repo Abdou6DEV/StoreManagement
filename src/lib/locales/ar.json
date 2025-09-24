@@ -301,7 +301,21 @@
     "exitFullscreen": "الخروج من ملء الشاشة",
     "tooltipsOn": "تفعيل التلميحات",
     "tooltipsOff": "إلغاء التلميحات",
-    "logout": "تسجيل الخروج"
+    "logout": "تسجيل الخروج",
+    "welcome": "مرحباً",
+    "user": "المستخدم",
+    "welcomeToStoreManagement": "مرحباً بك في إدارة المتجر"
+  },
+  "login": {
+    "welcomeBack": "مرحباً",
+    "signInToAccount": "سجل دخولك إلى حساب إدارة المتجر",
+    "username": "اسم المستخدم",
+    "password": "كلمة المرور",
+    "enterUsername": "أدخل اسم المستخدم",
+    "enterPassword": "أدخل كلمة المرور",
+    "signingIn": "جاري تسجيل الدخول...",
+    "signIn": "تسجيل الدخول",
+    "copyright": "© 2025 نظام إدارة المتجر. جميع الحقوق محفوظة."
   },
   "cashier": {
     "costPrice": "سعر التكلفة",

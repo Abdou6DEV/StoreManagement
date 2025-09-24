@@ -6,6 +6,7 @@ import {
   setupDatabaseHandlers,
   setupLoggerHandlers,
   setupAuthHandlers,
+  setupSystemHandlers,
 } from "./handlers";
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
@@ -18,6 +19,7 @@ const createWindow = async () => {
   setupDatabaseHandlers();
   setupLoggerHandlers();
   setupAuthHandlers();
+  setupSystemHandlers();
 
   const { width, height, x, y } = screen.getPrimaryDisplay().workArea;
 

@@ -280,9 +280,28 @@ export type AuthAPI = {
   }>;
 };
 
+export type SystemAPI = {
+  getMachineId: () => Promise<{
+    success: boolean;
+    machineId?: string;
+    error?: string;
+  }>;
+  generateValidationKey: (machineId: string) => Promise<{
+    success: boolean;
+    validationKey?: string;
+    error?: string;
+  }>;
+  validateKey: (machineId: string, enteredKey: string) => Promise<{
+    success: boolean;
+    isValid?: boolean;
+    error?: string;
+  }>;
+};
+
 export type API = {
   database: DatabaseAPI;
   app: AppAPI;
   logger: LoggerAPI;
   auth: AuthAPI;
+  system: SystemAPI;
 };

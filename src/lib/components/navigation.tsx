@@ -67,7 +67,7 @@ export default function Navigation() {
             {/* User Info */}
             <DropdownMenuLabel className="font-semibold text-md flex items-center gap-2">
               <User className="w-4 h-4" />
-              Welcome, {user?.username || "User"}
+              {t("navigation.welcome", "Welcome")}, {user?.username || t("navigation.user", "User")}
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
 
@@ -140,9 +140,9 @@ export default function Navigation() {
     );
   }
   return (
-    <div className="w-full px-4 pt-4">
-      {/* Header Container with same border wrapping logo + nav */}
-      <div className="flex items-center justify-between rounded-xl border border-border px-6 h-20 bg-card">
+    <div className="w-full">
+      {/* Header Container with same styling as sidebar - connected to top */}
+      <div className="flex items-center justify-between rounded-xl border border-border px-6 h-20 bg-card shadow-md">
         <Link
           to="/"
           className="relative h-20 w-auto flex items-center justify-center"

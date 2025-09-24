@@ -299,7 +299,21 @@
     "exitFullscreen": "Quitter le plein écran",
     "tooltipsOn": "Infobulles Activées",
     "tooltipsOff": "Infobulles Désactivées",
-    "logout": "Déconnexion"
+    "logout": "Déconnexion",
+    "welcome": "Bienvenue",
+    "user": "Utilisateur",
+    "welcomeToStoreManagement": "Bienvenue dans la Gestion de Magasin"
+  },
+  "login": {
+    "welcomeBack": "Bienvenue",
+    "signInToAccount": "Connectez-vous à votre compte de Gestion de Magasin",
+    "username": "Nom d'utilisateur",
+    "password": "Mot de passe",
+    "enterUsername": "Entrez votre nom d'utilisateur",
+    "enterPassword": "Entrez votre mot de passe",
+    "signingIn": "Connexion en cours...",
+    "signIn": "Se Connecter",
+    "copyright": "© 2025 Système de Gestion de Magasin. Tous droits réservés."
   },
   "stock": {
     "product": "Nom du produit",

@@ -50,6 +50,52 @@ export function SectionCards() {
   const formatCurrency = (amount: number) =>
     `${amount.toLocaleString()} ${t("currency")}`;
 
+  const calcSalesStats = (
+    sales: Array<{
+      createdAt: string | Date;
+      totalAmountWithDiscount?: number;
+      saleItems?: Array<{
+        product?: { boughtPrice?: number };
+        manualProduct?: { costPrice: number };
+        service?: { costPrice: number };
+        boughtPrice?: number;
+        price: number;
+        quantity: number;
+      }>;
+      totalItems?: number;
+    }>,
+    labelKey: string,
+    filterFn: (date: Date) => boolean
+  ) => {
+    const filtered = sales.filter((s: { createdAt: string | Date }) => filterFn(new Date(s.createdAt)));
+    const revenue = filtered.reduce(
+      (sum: number, s: { totalAmountWithDiscount?: number }) => sum + (s.totalAmountWithDiscount || 0),
+      0
+    );
+    const profit = filtered.reduce((sum: number, s: { totalAmountWithDiscount?: number; saleItems?: Array<{ product?: { boughtPrice?: number }; manualProduct?: { costPrice: number }; service?: { costPrice: number }; boughtPrice?: number; price: number; quantity: number }> }) => {
+      const revenue = s.totalAmountWithDiscount || 0;
+
+      const cost =
+        s.saleItems?.reduce((itemSum: number, item: { product?: { boughtPrice?: number }; manualProduct?: { costPrice: number }; service?: { costPrice: number }; boughtPrice?: number; price: number; quantity: number }) => {
+          // All items (products, manual products, services) have their cost stored in boughtPrice
+          const boughtPrice = item.boughtPrice || 0;
+          return itemSum + boughtPrice * item.quantity;
+        }, 0) || 0;
+
+      return sum + (revenue - cost);
+    }, 0);
+    const itemsSold = filtered.reduce(
+      (sum: number, s: { totalItems?: number }) => sum + (s.totalItems || 0),
+      0
+    );
+    return {
+      labelKey: `dashboard.${labelKey}`,
+      revenue: formatCurrency(revenue),
+      profit: formatCurrency(profit),
+      itemsSold: itemsSold.toLocaleString(),
+    };
+  };
+
   useEffect(() => {
     async function fetchStats() {
       setIsLoading(true);
@@ -62,39 +108,6 @@ export function SectionCards() {
             window.api.database.clients.getAll(),
             window.api.database.options.get("lowStockThreshold"),
           ]);
-
-      function calcSalesStats(
-        labelKey: string,
-        filterFn: (date: Date) => boolean
-      ) {
-        const filtered = sales.filter((s: { createdAt: string | Date }) => filterFn(new Date(s.createdAt)));
-        const revenue = filtered.reduce(
-          (sum: number, s: { totalAmountWithDiscount?: number }) => sum + (s.totalAmountWithDiscount || 0),
-          0
-        );
-        const profit = filtered.reduce((sum: number, s: { totalAmountWithDiscount?: number; saleItems?: Array<{ product?: { boughtPrice?: number }; manualProduct?: { costPrice: number }; service?: { costPrice: number }; boughtPrice?: number; price: number; quantity: number }> }) => {
-          const revenue = s.totalAmountWithDiscount || 0;
-
-          const cost =
-            s.saleItems?.reduce((itemSum: number, item: { product?: { boughtPrice?: number }; manualProduct?: { costPrice: number }; service?: { costPrice: number }; boughtPrice?: number; price: number; quantity: number }) => {
-              // All items (products, manual products, services) have their cost stored in boughtPrice
-              const boughtPrice = item.boughtPrice || 0;
-              return itemSum + boughtPrice * item.quantity;
-            }, 0) || 0;
-
-          return sum + (revenue - cost);
-        }, 0);
-        const itemsSold = filtered.reduce(
-          (sum: number, s: { totalItems?: number }) => sum + (s.totalItems || 0),
-          0
-        );
-        return {
-          labelKey: `dashboard.${labelKey}`,
-          revenue: formatCurrency(revenue),
-          profit: formatCurrency(profit),
-          itemsSold: itemsSold.toLocaleString(),
-        };
-      }
       const isToday = (date: Date) => {
         const d = new Date(date);
         const now = new Date();
@@ -121,10 +134,10 @@ export function SectionCards() {
 
 
 
-      const todayStats = calcSalesStats("today", isToday);
-      const monthStats = calcSalesStats("thisMonth", isThisMonth);
-      const yearStats = calcSalesStats("thisYear", isThisYear);
-      const overallStats = calcSalesStats("overall", () => true);
+      const todayStats = calcSalesStats(sales, "today", isToday);
+      const monthStats = calcSalesStats(sales, "thisMonth", isThisMonth);
+      const yearStats = calcSalesStats(sales, "thisYear", isThisYear);
+      const overallStats = calcSalesStats(sales, "overall", () => true);
 
        // Calculate today vs average for the Today card
        const todayTotalProfit = todayStats.profit ? parseFloat(todayStats.profit.replace(/[^\d.-]/g, '')) : 0;

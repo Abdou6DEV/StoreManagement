@@ -45,7 +45,7 @@ model Product {
   quantity     Int
   boughtPrice  Int
   sellingPrice Int
-  codebar      String? @unique
+  codebar      String?
   photo        String?
 
   createdAt DateTime @default(now())
@@ -103,7 +103,7 @@ model SaleItem {
   saleId          String
   quantity        Int
   price           Int
-  boughtPrice     Int?    // Store the bought price at time of sale
+  boughtPrice     Int? // Store the bought price at time of sale
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -196,14 +196,14 @@ model PurchaseItem {
 }
 
 model Bill {
-  id          String   @id @default(uuid())
-  title       String
-  description String?
-  type        String   // Custom bill type (user can type anything)
-  amount      Int      // Amount in centimes (DA * 100)
+  id           String   @id @default(uuid())
+  title        String
+  description  String?
+  type         String // Custom bill type (user can type anything)
+  amount       Int // Amount in centimes (DA * 100)
   nextBillDate DateTime // Next bill due date
-  duration    String   // "NO_NEXT", "1_MONTH", "2_MONTHS", "3_MONTHS", "4_MONTHS", "5_MONTHS", "6_MONTHS", "7_MONTHS", "8_MONTHS", "9_MONTHS", "10_MONTHS", "11_MONTHS", "ANNUALLY"
-  notes       String?
+  duration     String // "NO_NEXT", "1_MONTH", "2_MONTHS", "3_MONTHS", "4_MONTHS", "5_MONTHS", "6_MONTHS", "7_MONTHS", "8_MONTHS", "9_MONTHS", "10_MONTHS", "11_MONTHS", "ANNUALLY"
+  notes        String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -213,11 +213,11 @@ model Bill {
 }
 
 model BillPayment {
-  id        String   @id @default(uuid())
-  billId    String
-  amount    Int      // Amount paid in centimes (DA * 100)
-  paidDate  DateTime @default(now())
-  notes     String?
+  id       String   @id @default(uuid())
+  billId   String
+  amount   Int // Amount paid in centimes (DA * 100)
+  paidDate DateTime @default(now())
+  notes    String?
 
   createdAt DateTime @default(now())
 

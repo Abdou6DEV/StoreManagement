@@ -6,7 +6,6 @@ import { seedProducts } from "./seeders/productsSeeder";
 import { seedSales } from "./seeders/salesSeeder";
 import { seedSellers } from "./seeders/sellersSeeder";
 import { seedBills } from "./seeders/billsSeeder";
-import { seedUsers } from "./usersSeeder";
 import { seedServices } from "./data/services";
 
 const prisma = new PrismaClient();
@@ -15,8 +14,8 @@ async function main() {
   console.log("🌱 Starting seed...");
 
   try {
-    // Seed users first (required for authentication)
-    await seedUsers();
+    // Note: Admin account (admin/admin) is hardcoded in the app
+    // Additional users can be created through the Administrator panel
 
     // Seed in order of dependencies
     await seedCategories(prisma);
@@ -30,7 +29,6 @@ async function main() {
 
     console.log("✅ Seed completed successfully!");
     console.log(`📊 Created:`);
-    console.log(`   - Users (admin and regular)`);
     console.log(`   - Categories`);
     console.log(`   - 180 sellers`);
     console.log(`   - 6,000 products with purchases`);
@@ -41,6 +39,7 @@ async function main() {
     );
     console.log(`   - Multiple payments`);
     console.log(`   - 20 bills with 200 payments`);
+    console.log(`   - Admin account (admin/admin) is hardcoded in the app`);
   } catch (error) {
     console.error("❌ Seed failed:", error);
     throw error;

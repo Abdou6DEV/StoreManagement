@@ -34,34 +34,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [userRole, setUserRole] = useState<UserRole | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Check if user is already authenticated on app start
+  // Always show login page on app start (no session persistence)
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const savedAuth = localStorage.getItem("storeManagementAuth");
-        if (savedAuth) {
-          const authData = JSON.parse(savedAuth);
-          if (authData.userId) {
-            const result = await window.api.auth.getUserById(authData.userId);
-            if (result.success && result.user) {
-              setUser(result.user);
-              setUserRole(result.user.role);
-              setIsAuthenticated(true);
-            } else {
-              // Invalid saved auth, clear it
-              localStorage.removeItem("storeManagementAuth");
-            }
-          }
-        }
-      } catch (error) {
-        console.error("Error checking authentication:", error);
-        localStorage.removeItem("storeManagementAuth");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    checkAuth();
+    // Skip authentication check - always show login page
+    setLoading(false);
   }, []);
 
   const login = async (
@@ -76,14 +52,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setUserRole(result.user.role);
         setIsAuthenticated(true);
 
-        // Save to localStorage for persistence
-        const authData = {
-          isAuthenticated: true,
-          userId: result.user.id,
-          username: result.user.username,
-          role: result.user.role,
-        };
-        localStorage.setItem("storeManagementAuth", JSON.stringify(authData));
+        // No session persistence - user must login every time
 
         return { success: true };
       } else {
@@ -99,7 +68,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setIsAuthenticated(false);
     setUser(null);
     setUserRole(null);
-    localStorage.removeItem("storeManagementAuth");
+    // No localStorage to clear - no session persistence
   };
 
   const value: AuthContextType = {

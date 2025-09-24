@@ -99,12 +99,24 @@ export async function seedSales(prisma: PrismaClient, products: Product[]) {
     // Add manual products if decided
     if (includeManualProducts && manualProductsAdded < maxManualProducts) {
       const manualProductCount = faker.number.int({ min: 1, max: 2 });
+      const usedManualProducts = new Set<string>(); // Track used manual products for this sale
 
       for (let j = 0; j < manualProductCount; j++) {
         const manualProductName =
           faker.helpers.arrayElement(manualProductNames);
         const manualProductType =
           faker.helpers.arrayElement(manualProductTypes);
+        
+        // Create a unique key for this manual product combination
+        const manualProductKey = `${manualProductName}-${manualProductType}`;
+        
+        // Skip if we already used this manual product in this sale
+        if (usedManualProducts.has(manualProductKey)) {
+          continue;
+        }
+        
+        usedManualProducts.add(manualProductKey);
+        
         const manualProductPrice = faker.commerce.price({
           min: 5,
           max: 200,

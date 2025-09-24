@@ -5,16 +5,19 @@ import { HashRouter } from "react-router-dom";
 import { ThemeProvider } from "./lib/contexts/themeContext";
 import { TooltipProvider } from "./lib/contexts/tooltipContext";
 import { AuthProvider } from "./lib/contexts/authContext";
+import { LicenseProvider } from "./lib/contexts/licenseContext";
 import App from "./pages/app";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <ThemeProvider>
     <TooltipProvider>
-      <AuthProvider>
-        <HashRouter>
-          <App />
-        </HashRouter>
-      </AuthProvider>
+      <LicenseProvider>
+        <AuthProvider>
+          <HashRouter>
+            <App />
+          </HashRouter>
+        </AuthProvider>
+      </LicenseProvider>
     </TooltipProvider>
   </ThemeProvider>,
 );

@@ -67,7 +67,7 @@ export async function generateUniqueBarcode(): Promise<string> {
 }
 
 export async function addProduct(product: Product) {
-  // Check barcode uniqueness if provided
+  // Check barcode uniqueness if provided and not empty
   if (product.codebar && product.codebar.trim() !== '') {
     const exists = await isBarcodeExists(product.codebar);
     if (exists) {
@@ -75,7 +75,13 @@ export async function addProduct(product: Product) {
     }
   }
   
-  return await prisma.product.create({ data: product });
+  // Set empty barcodes to null to avoid unique constraint issues
+  const productData = {
+    ...product,
+    codebar: product.codebar && product.codebar.trim() !== '' ? product.codebar : null
+  };
+  
+  return await prisma.product.create({ data: productData });
 }
 
 export async function deleteProduct(id: string) {
@@ -88,7 +94,7 @@ export async function updateProduct(id: string, data: any) {
   const { categoryName, ...rest } = data;
   const updateData: any = { ...rest };
 
-  // Check barcode uniqueness if provided
+  // Check barcode uniqueness if provided and not empty
   if (data.codebar && data.codebar.trim() !== '') {
     const existing = await prisma.product.findFirst({
       where: { 
@@ -99,6 +105,11 @@ export async function updateProduct(id: string, data: any) {
     if (existing) {
       throw new Error(`Barcode '${data.codebar}' already exists. Please use a different barcode.`);
     }
+  }
+
+  // Set empty barcodes to null to avoid unique constraint issues
+  if (data.codebar !== undefined) {
+    updateData.codebar = data.codebar && data.codebar.trim() !== '' ? data.codebar : null;
   }
 
   if (categoryName) {
@@ -155,7 +166,7 @@ export async function createProductWithPurchase(
   },
 ) {
   return await prisma.$transaction(async (tx) => {
-    // Check barcode uniqueness if provided
+    // Check barcode uniqueness if provided and not empty
     if (productData.codebar && productData.codebar.trim() !== '') {
       const existing = await tx.product.findFirst({
         where: { codebar: productData.codebar.trim() }
@@ -165,9 +176,15 @@ export async function createProductWithPurchase(
       }
     }
     
+    // Set empty barcodes to null to avoid unique constraint issues
+    const processedProductData = {
+      ...productData,
+      codebar: productData.codebar && productData.codebar.trim() !== '' ? productData.codebar : null
+    };
+    
     // Create the product
     const product = await tx.product.create({
-      data: productData,
+      data: processedProductData,
     });
 
     // Create the purchase record with purchase item

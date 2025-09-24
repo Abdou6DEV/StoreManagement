@@ -15,7 +15,9 @@ import { ToastProvider } from "../lib/contexts/toastContext";
 import rendererLogger from "../lib/logger/rendererLogger";
 import ProtectedRoute from "../lib/components/protectedRoute";
 import Login from "./login";
+import LicenseValidation from "./licenseValidation";
 import { useAuth } from "../lib/contexts/authContext";
+import { useLicense } from "../lib/contexts/licenseContext";
 
 const MainMenu = React.lazy(() => import("./mainMenu"));
 const Dashboard = React.lazy(() => import("./dashboard"));
@@ -29,9 +31,11 @@ const Administrator = React.lazy(() => import("./administrator"));
 export default function App() {
   const { i18n } = useTranslation();
   const { isAuthenticated, loading } = useAuth();
+  const { isLicenseValid, isLoading: licenseLoading } = useLicense();
   const location = useLocation();
   const dir = i18n.language === "ar" ? "rtl" : "ltr";
 
+  // All hooks must be called in the same order every time
   useEffect(() => {
     rendererLogger.info("Application initialized", "App");
   }, []);
@@ -39,6 +43,23 @@ export default function App() {
   useEffect(() => {
     rendererLogger.debug(`Route changed to: ${location.pathname}`, "App");
   }, [location.pathname]);
+
+  // Show license validation if license is not valid
+  if (!licenseLoading && !isLicenseValid) {
+    return <LicenseValidation />;
+  }
+
+  // Show loading while checking license
+  if (licenseLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Checking license...</p>
+        </div>
+      </div>
+    );
+  }
 
   // Show loading while checking authentication
   if (loading) {

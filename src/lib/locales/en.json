@@ -442,7 +442,21 @@
     "exitFullscreen": "Exit Fullscreen",
     "tooltipsOn": "Tooltips On",
     "tooltipsOff": "Tooltips Off",
-    "logout": "Logout"
+    "logout": "Logout",
+    "welcome": "Welcome",
+    "user": "User",
+    "welcomeToStoreManagement": "Welcome to Store Management"
+  },
+  "login": {
+    "welcomeBack": "Welcome",
+    "signInToAccount": "Sign in to your Store Management account",
+    "username": "Username",
+    "password": "Password",
+    "enterUsername": "Enter your username",
+    "enterPassword": "Enter your password",
+    "signingIn": "Signing in...",
+    "signIn": "Sign In",
+    "copyright": "© 2025 Store Management System. All rights reserved."
   },
   "cashier": {
     "costPrice": "Cost Price",
@@ -1055,6 +1069,7 @@
     "refresh": "Refresh",
     "export": "Export",
     "clear": "Clear",
+    "cancel": "Cancel",
     "cancelTooltip": "Cancel and close preview"
   },
   "imageUpload": {

@@ -125,9 +125,11 @@ export default function AddBillForm({
         title: editingBill.title,
         description: editingBill.description || "",
         type: editingBill.type,
-        amount: (editingBill.amount / 100) % 1 === 0 
-          ? (editingBill.amount / 100).toFixed(0) 
-          : (editingBill.amount / 100).toFixed(2), // Convert from centimes to DA
+        amount: (() => {
+          const value = editingBill.amount / 100;
+          const roundedValue = Math.round(value * 100) / 100;
+          return roundedValue % 1 === 0 ? roundedValue.toFixed(0) : roundedValue.toFixed(2);
+        })(), // Convert from centimes to DA
         duration: editingBill.duration,
         notes: editingBill.notes || "",
       });
@@ -441,9 +443,12 @@ export default function AddBillForm({
                           <div className="text-sm text-muted-foreground">{bill.type}</div>
                         </div>
                         <div className="text-sm text-muted-foreground">
-                          {(bill.amount / 100) % 1 === 0 
-                            ? (bill.amount / 100).toFixed(0) 
-                            : (bill.amount / 100).toFixed(2)} {t("bills.currency", "DA")}
+                          {(() => {
+                            const value = bill.amount / 100;
+                            // Use Math.round to avoid floating point precision issues
+                            const roundedValue = Math.round(value * 100) / 100;
+                            return roundedValue % 1 === 0 ? roundedValue.toFixed(0) : roundedValue.toFixed(2);
+                          })()} {t("bills.currency", "DA")}
                         </div>
                       </div>
                     ))}

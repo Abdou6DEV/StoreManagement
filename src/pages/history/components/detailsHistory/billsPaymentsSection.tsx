@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { CreditCard } from "lucide-react";
-import { formatCurrency, formatDateTime } from "./detailsHistoryUtils";
+import { formatDateTime } from "./detailsHistoryUtils";
 import SharedPagination from "../sharedPagination";
 
 interface BillsPaymentsSectionProps {
@@ -19,6 +19,13 @@ export default function BillsPaymentsSection({
   onPageChange,
 }: BillsPaymentsSectionProps) {
   const { t } = useTranslation();
+
+  // Format currency for bills payments (stored in centimes)
+  const formatBillsCurrency = (amount: number) => {
+    const value = amount / 100;
+    const roundedValue = Math.round(value * 100) / 100;
+    return `${roundedValue % 1 === 0 ? roundedValue.toFixed(0) : roundedValue.toFixed(2)} ${t("bills.currency", "DA")}`;
+  };
 
   if (billsPayments.length === 0) {
     return (
@@ -47,7 +54,7 @@ export default function BillsPaymentsSection({
                 </span>
               </div>
               <span className="text-xl font-bold text-primary">
-                {formatCurrency(payment.amount)}
+                {formatBillsCurrency(payment.amount)}
               </span>
             </div>
             <div className="space-y-3">
