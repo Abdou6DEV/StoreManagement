@@ -6,3 +6,5 @@ export const systemAPI = {
   validateKey: (machineId: string, enteredKey: string) => ipcRenderer.invoke("system:validateKey", machineId, enteredKey),
 };
 
+
+
