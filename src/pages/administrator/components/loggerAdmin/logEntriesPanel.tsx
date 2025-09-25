@@ -110,7 +110,7 @@ export const LogEntriesPanel: React.FC<LogEntriesPanelProps> = ({
             />
           ))}
           {filteredAndPaginatedEntries.entries.length === 0 && (
-            <p className="text-sm text-gray-500">No log entries to display</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">{t("admin.logger.noLogEntries", "No log entries to display")}</p>
           )}
         </div>
       </ScrollArea>

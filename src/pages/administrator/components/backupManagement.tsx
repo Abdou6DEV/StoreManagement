@@ -61,10 +61,10 @@ export function BackupManagement() {
       if (result.success) {
         setBackups(result.backups || []);
       } else {
-        showToast("Failed to load backups", "error");
+        showToast(t("admin.backup.failedToLoadBackups", "Failed to load backups"), "error");
       }
     } catch (error) {
-      showToast("Error loading backups", "error");
+      showToast(t("admin.backup.errorLoadingBackups", "Error loading backups"), "error");
       console.error("Error loading backups:", error);
     } finally {
       setLoading(false);
@@ -256,8 +256,8 @@ export function BackupManagement() {
   const confirmRestore = async () => {
     if (!selectedBackup) return;
     
-    if (confirmText !== "RESTORE") {
-      showToast("Please type 'RESTORE' to confirm", "error");
+    if (confirmText !== "YES") {
+      showToast("Please type 'YES' to confirm", "error");
       return;
     }
 
@@ -331,13 +331,13 @@ export function BackupManagement() {
     const diffInHours = (now.getTime() - backupDate.getTime()) / (1000 * 60 * 60);
     
     if (backup.type === "manual") {
-      return { status: "manual", color: "bg-blue-500", text: "Manual" };
+      return { status: "manual", color: "bg-blue-500", text: t("admin.backup.manual", "Manual") };
     } else if (diffInHours < 24) {
-      return { status: "recent", color: "bg-green-500", text: "Recent" };
+      return { status: "recent", color: "bg-green-500", text: t("admin.backup.recent", "Recent") };
     } else if (diffInHours < 48) {
-      return { status: "yesterday", color: "bg-yellow-500", text: "Yesterday" };
+      return { status: "yesterday", color: "bg-yellow-500", text: t("admin.backup.yesterday", "Yesterday") };
     } else {
-      return { status: "old", color: "bg-red-500", text: "Older" };
+      return { status: "old", color: "bg-red-500", text: t("admin.backup.older", "Older") };
     }
   };
 
@@ -358,8 +358,7 @@ export function BackupManagement() {
       <Alert>
         <CheckCircle className="h-4 w-4" />
         <AlertDescription>
-          <strong>Automatic Backup:</strong> The system automatically creates a backup every day at startup and keeps the 2 most recent backups. 
-          You can also create manual backups anytime.
+          <strong>{t("admin.backup.automaticBackup", "Automatic Backup:")}</strong> {t("admin.backup.automaticBackupDesc", "The system automatically creates a backup every day at startup and keeps the 2 most recent backups. You can also create manual backups anytime.")}
         </AlertDescription>
       </Alert>
 
@@ -372,7 +371,7 @@ export function BackupManagement() {
            className="flex items-center gap-2"
          >
            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-           Refresh
+           {t("admin.backup.refresh", "Refresh")}
          </Button>
          
          <Button 
@@ -382,7 +381,7 @@ export function BackupManagement() {
            className="flex items-center gap-2"
          >
            <Database className="w-4 h-4" />
-           Cleanup Old Backups
+           {t("admin.backup.cleanupOld", "Cleanup Old Backups")}
          </Button>
          
          <Button
@@ -392,7 +391,7 @@ export function BackupManagement() {
            className="flex items-center gap-2"
          >
            <FolderOpen className="w-4 h-4" />
-           Backup to Custom Path
+           {t("admin.backup.backupToCustomPath", "Backup to Custom Path")}
          </Button>
          
          <Button
@@ -402,7 +401,7 @@ export function BackupManagement() {
            className="flex items-center gap-2"
          >
            <Upload className="w-4 h-4" />
-           Restore from File
+           {t("admin.backup.restoreFromFile", "Restore from File")}
          </Button>
        </div>
 
@@ -415,14 +414,14 @@ export function BackupManagement() {
         {loading ? (
           <div className="flex items-center justify-center py-8">
             <RefreshCw className="w-6 h-6 animate-spin text-muted-foreground" />
-            <span className="ml-2 text-muted-foreground">Loading backups...</span>
+            <span className="ml-2 text-muted-foreground">{t("admin.backup.loadingBackups", "Loading backups...")}</span>
           </div>
         ) : backups.length === 0 ? (
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-8">
               <Database className="w-12 h-12 text-muted-foreground mb-4" />
               <p className="text-muted-foreground text-center">
-                No backups available. Create your first backup to get started.
+                {t("admin.backup.noBackupsAvailable", "No backups available. Create your first backup to get started.")}
               </p>
             </CardContent>
           </Card>
@@ -442,7 +441,7 @@ export function BackupManagement() {
                         </Badge>
                       </div>
                       <div className="text-sm text-muted-foreground">
-                        {index === 0 && "Latest"}
+                        {index === 0 && t("admin.backup.latest", "Latest")}
                       </div>
                     </div>
                   </CardHeader>
@@ -450,28 +449,28 @@ export function BackupManagement() {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                       <div className="flex items-center gap-2 text-sm">
                         <Calendar className="w-4 h-4 text-muted-foreground" />
-                        <span className="text-muted-foreground">Created:</span>
+                        <span className="text-muted-foreground">{t("admin.backup.created", "Created:")}</span>
                         <span className="font-medium">{formatDate(backup.date)}</span>
                       </div>
                       <div className="flex items-center gap-2 text-sm">
                         <HardDrive className="w-4 h-4 text-muted-foreground" />
-                        <span className="text-muted-foreground">Size:</span>
+                        <span className="text-muted-foreground">{t("admin.backup.size", "Size:")}</span>
                         <span className="font-medium">{formatFileSize(backup.size)}</span>
                       </div>
                       <div className="flex items-center gap-2 text-sm">
                         <Clock className="w-4 h-4 text-muted-foreground" />
-                        <span className="text-muted-foreground">Age:</span>
+                        <span className="text-muted-foreground">{t("admin.backup.age", "Age:")}</span>
                         <span className="font-medium">
-                          {Math.floor((Date.now() - new Date(backup.date).getTime()) / (1000 * 60 * 60 * 24))} days
+                          {Math.floor((Date.now() - new Date(backup.date).getTime()) / (1000 * 60 * 60 * 24))} {t("admin.backup.days", "days")}
                         </span>
                       </div>
                     </div>
                     
                     <div className="flex items-center gap-2 text-sm mb-4">
                       <Database className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-muted-foreground">Type:</span>
+                      <span className="text-muted-foreground">{t("admin.backup.type", "Type:")}</span>
                       <Badge variant={backup.type === "automatic" ? "default" : "secondary"}>
-                        {backup.type === "automatic" ? "Automatic" : "Manual"}
+                        {backup.type === "automatic" ? t("admin.backup.automatic", "Automatic") : t("admin.backup.manual", "Manual")}
                       </Badge>
                     </div>
                     
@@ -488,7 +487,7 @@ export function BackupManagement() {
                          ) : (
                            <Upload className="w-4 h-4" />
                          )}
-                         {restoring === backup.path ? "Restoring..." : "Restore"}
+                         {restoring === backup.path ? t("admin.backup.restoring", "Restoring...") : t("admin.backup.restore", "Restore")}
                        </Button>
                      </div>
                   </CardContent>
@@ -503,8 +502,7 @@ export function BackupManagement() {
        <Alert variant="destructive">
          <AlertTriangle className="h-4 w-4" />
          <AlertDescription>
-           <strong>Warning:</strong> Restoring a backup will completely replace your current database. 
-           Make sure to create a manual backup before restoring if you want to keep your current data.
+           <strong>{t("admin.backup.warning", "Warning:")}</strong> {t("admin.backup.warningDesc", "Restoring a backup will completely replace your current database. Make sure to create a manual backup before restoring if you want to keep your current data.")}
          </AlertDescription>
        </Alert>
 
@@ -514,26 +512,26 @@ export function BackupManagement() {
            <DialogHeader>
              <DialogTitle className="flex items-center gap-2 text-lg">
                <AlertTriangle className="w-5 h-5 text-orange-500" />
-               Restore Database
+               {t("admin.backup.restoreDatabase", "Restore Database")}
              </DialogTitle>
              <DialogDescription>
-               You are about to restore from: <strong>{selectedBackup?.name}</strong>
+               {t("admin.backup.restoreConfirmDesc", "You are about to restore from:")} <strong>{selectedBackup?.name}</strong>
                <br />
-               This will replace your current database with the selected backup.
+               {t("admin.backup.restoreConfirmDesc2", "This will replace your current database with the selected backup.")}
              </DialogDescription>
            </DialogHeader>
            
            <div className="space-y-4">
              <div className="space-y-2">
                <label htmlFor="confirm-text" className="text-sm font-medium">
-                 Type <strong>"RESTORE"</strong> to confirm:
+                 Type "YES" to confirm:
                </label>
                <input
                  id="confirm-text"
                  type="text"
                  value={confirmText}
                  onChange={(e) => setConfirmText(e.target.value)}
-                 placeholder="Type RESTORE here"
+                 placeholder="Type YES here"
                  className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                  autoComplete="off"
                />
@@ -546,12 +544,12 @@ export function BackupManagement() {
                onClick={closeRestoreDialog}
                disabled={restoring !== null}
              >
-               Cancel
+               {t("admin.backup.cancel", "Cancel")}
              </Button>
              <Button
                variant="destructive"
                onClick={confirmRestore}
-               disabled={confirmText !== "RESTORE" || restoring !== null}
+               disabled={confirmText !== "YES" || restoring !== null}
                className="flex items-center gap-2"
              >
                {restoring ? (
@@ -559,7 +557,7 @@ export function BackupManagement() {
                ) : (
                  <Upload className="w-4 h-4" />
                )}
-               {restoring ? "Restoring..." : "Restore"}
+               {restoring ? t("admin.backup.restoring", "Restoring...") : t("admin.backup.restore", "Restore")}
              </Button>
            </DialogFooter>
          </DialogContent>
@@ -747,24 +745,24 @@ export function BackupManagement() {
            <DialogHeader>
              <DialogTitle className="flex items-center gap-2 text-lg">
                <Upload className="w-5 h-5 text-primary" />
-               Restore from File
+               {t("admin.backup.restoreFromFileTitle", "Restore from File")}
              </DialogTitle>
              <DialogDescription>
-               Select a backup file from any location to restore your database
+               {t("admin.backup.restoreFromFileDesc", "Select a backup file from any location to restore your database")}
              </DialogDescription>
            </DialogHeader>
            
            <div className="space-y-4">
              <div>
                <label className="text-sm font-medium text-foreground mb-2 block">
-                 Select Backup File
+                 {t("admin.backup.selectBackupFile", "Select Backup File")}
                </label>
                <div className="flex gap-2">
                  <input
                    type="text"
                    value={selectedRestoreFile}
                    onChange={(e) => setSelectedRestoreFile(e.target.value)}
-                   placeholder="C:\MyBackups\backup_2025-09-24.db"
+                   placeholder={t("admin.backup.filePathPlaceholder", "C:\\MyBackups\\backup_2025-09-24.db")}
                    className="flex-1 px-3 py-2 border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                  />
                  <Button
@@ -776,28 +774,27 @@ export function BackupManagement() {
                        if (result.success && result.filePath) {
                          setSelectedRestoreFile(result.filePath);
                        } else if (!result.canceled) {
-                         showToast("Failed to select file", "error");
+                         showToast(t("admin.backup.failedToSelectFile", "Failed to select file"), "error");
                        }
                      } catch (error) {
-                       showToast("Error opening file dialog", "error");
+                       showToast(t("admin.backup.errorOpeningFileDialog", "Error opening file dialog"), "error");
                        console.error("File dialog error:", error);
                      }
                    }}
                    className="px-3"
                  >
-                   Browse
+                   {t("admin.backup.browse", "Browse")}
                  </Button>
                </div>
                <p className="text-xs text-muted-foreground mt-1">
-                 Example: D:\MyBackups\backup_2025-09-24.db or /media/usb/backup.db
+                 {t("admin.backup.fileExample", "Example: D:\\MyBackups\\backup_2025-09-24.db or /media/usb/backup.db")}
                </p>
              </div>
              
              <Alert>
                <AlertTriangle className="h-4 w-4" />
                <AlertDescription>
-                 <strong>Warning:</strong> This will replace your current database with the selected backup.
-                 A safety backup will be created before restoration.
+                 <strong>{t("admin.backup.warning", "Warning:")}</strong> {t("admin.backup.warningReplace", "This will replace your current database with the selected backup. A safety backup will be created before restoration.")}
                </AlertDescription>
              </Alert>
            </div>
@@ -811,7 +808,7 @@ export function BackupManagement() {
                }}
                disabled={!!restoring}
              >
-               Cancel
+               {t("admin.backup.cancel", "Cancel")}
              </Button>
              <Button
                onClick={restoreFromCustomFile}
@@ -823,7 +820,7 @@ export function BackupManagement() {
                ) : (
                  <Upload className="w-4 h-4" />
                )}
-               {restoring ? "Restoring..." : "Restore from File"}
+               {restoring ? t("admin.backup.restoring", "Restoring...") : t("admin.backup.restore", "Restore")}
              </Button>
            </DialogFooter>
          </DialogContent>

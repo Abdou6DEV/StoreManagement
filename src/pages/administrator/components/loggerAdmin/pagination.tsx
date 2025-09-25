@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "../../../../lib/components/button";
 
 interface PaginationProps {
@@ -16,14 +17,16 @@ export const Pagination: React.FC<PaginationProps> = ({
   hasPrevPage,
   onPageChange,
 }) => {
+  const { t } = useTranslation();
+  
   if (totalPages <= 1) {
     return null;
   }
 
   return (
     <div className="flex items-center justify-between">
-      <div className="text-sm text-gray-600">
-        Page {currentPage} of {totalPages}
+      <div className="text-sm text-gray-600 dark:text-gray-400">
+        {t("admin.logger.pageOf", "Page {current} of {total}", { current: currentPage, total: totalPages })}
       </div>
       <div className="flex gap-2">
         <Button
@@ -32,7 +35,7 @@ export const Pagination: React.FC<PaginationProps> = ({
           onClick={() => onPageChange(currentPage - 1)}
           disabled={!hasPrevPage}
         >
-          Previous
+          {t("admin.logger.previous", "Previous")}
         </Button>
         <Button
           variant="outline"
@@ -40,7 +43,7 @@ export const Pagination: React.FC<PaginationProps> = ({
           onClick={() => onPageChange(currentPage + 1)}
           disabled={!hasNextPage}
         >
-          Next
+          {t("admin.logger.next", "Next")}
         </Button>
       </div>
     </div>

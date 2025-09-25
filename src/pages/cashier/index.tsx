@@ -228,6 +228,9 @@ export default function CashierPage() {
       } else if (e.key === "F2") {
         e.preventDefault(); // Prevent browser help
         setShowManualProductModal((prev) => !prev);
+      } else if (e.key === "F3") {
+        e.preventDefault(); // Prevent browser help
+        setShowServiceModal((prev) => !prev);
       } else if (e.key === "F4") {
         e.preventDefault(); // Prevent browser help
         // Trigger normal sale
@@ -237,6 +240,11 @@ export default function CashierPage() {
         e.preventDefault(); // Prevent browser help
         // Trigger sale with receipt
         const event = new CustomEvent('cashier-finish-with-receipt');
+        window.dispatchEvent(event);
+      } else if (e.key === "F6") {
+        e.preventDefault(); // Prevent browser help
+        // Trigger clear cart
+        const event = new CustomEvent('cashier-clear-cart');
         window.dispatchEvent(event);
       }
     };

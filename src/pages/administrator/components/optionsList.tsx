@@ -3,6 +3,7 @@ import { Input } from "../../../lib/components/input";
 import { Button } from "../../../lib/components/button";
 import { Switch } from "../../../lib/components/switch";
 import { useTranslation } from "react-i18next";
+import { useToast } from "../../../lib/contexts/toastContext";
 import {
   Shield,
   Loader2,
@@ -18,6 +19,7 @@ import {
 
 export const OptionsList: React.FC = () => {
   const { t } = useTranslation();
+  const { showToast } = useToast();
   const [lowStock, setLowStock] = useState(0);
   const [storeCash, setStoreCash] = useState(0);
   const [enableLowStockBadge, setEnableLowStockBadge] = useState(true);
@@ -31,8 +33,6 @@ export const OptionsList: React.FC = () => {
   const [enableCashierHistory, setEnableCashierHistory] = useState(true);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     setLoading(true);
@@ -64,7 +64,7 @@ export const OptionsList: React.FC = () => {
         setLoading(false);
       })
       .catch(() => {
-        setError(t("admin.loadError", "Failed to load settings"));
+        showToast(t("admin.loadError", "Failed to load settings"), "error");
         setLoading(false);
       });
   }, []);
@@ -72,7 +72,6 @@ export const OptionsList: React.FC = () => {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
-    setError(null);
     try {
       await Promise.all([
         window.api.database.options.set("lowStockThreshold", String(lowStock)),
@@ -87,10 +86,9 @@ export const OptionsList: React.FC = () => {
         window.api.database.options.set("cashierSalesHistoryDays", String(cashierSalesHistoryDays)),
         window.api.database.options.set("enableCashierHistory", String(enableCashierHistory)),
       ]);
-      setSuccess(true);
-      setTimeout(() => setSuccess(false), 2000);
+      showToast(t("admin.saved", "Settings saved successfully!"), "success");
     } catch {
-      setError(t("admin.saveError", "Failed to save settings"));
+      showToast(t("admin.saveError", "Failed to save settings"), "error");
     } finally {
       setSaving(false);
     }
@@ -538,23 +536,11 @@ export const OptionsList: React.FC = () => {
             )}
           </Button>
 
-          {/* Status Messages */}
+          {/* Loading indicator */}
           {loading && (
             <span className="flex items-center gap-2 text-muted-foreground text-sm">
               <Loader2 className="w-4 h-4 animate-spin" />
               {t("admin.loading", "Loading settings...")}
-            </span>
-          )}
-          {success && (
-            <span className="flex items-center gap-2 text-green-600 text-sm font-medium">
-              <Shield className="w-4 h-4" />
-              {t("admin.saved", "Settings saved!")}
-            </span>
-          )}
-          {error && (
-            <span className="flex items-center gap-2 text-red-600 text-sm font-medium">
-              <AlertCircle className="w-4 h-4" />
-              {error}
             </span>
           )}
         </div>
