@@ -22,6 +22,7 @@ import {
 import { ThemeToggleButton } from "./themeToggleButton";
 import { FullscreenToggleButton } from "./fullscreenToggleButton";
 import { TooltipToggleButton } from "./tooltipToggleButton";
+import { UserBadge } from "./userBadge";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../contexts/authContext";
@@ -143,21 +144,7 @@ export default function Navigation() {
     <div className="w-full">
       {/* Header Container with same styling as sidebar - connected to top */}
       <div className="flex items-center justify-between rounded-xl border border-border px-6 h-20 bg-card shadow-md">
-        <Link
-          to="/"
-          className="relative h-20 w-auto flex items-center justify-center"
-        >
-          <img
-            src="/logolight.png"
-            alt="Store Logo Light"
-            className="h-20 object-contain dark:hidden"
-          />
-          <img
-            src="/logodark.png"
-            alt="Store Logo Dark"
-            className="h-20 object-contain hidden dark:block"
-          />
-        </Link>
+        <UserBadge size="md" className="h-16" />
         {/* === Dynamic Page Title === */}
         <h1 className="text-3xl font-bold flex items-center gap-3">
           {location.pathname === "/" ? (

@@ -332,10 +332,38 @@ export type SystemAPI = {
   }>;
 };
 
+export type BackupFile = {
+  name: string;
+  path: string;
+  size: number;
+  date: string;
+  readableDate: string;
+  type: "automatic" | "manual";
+};
+
+export type BackupResult = {
+  success: boolean;
+  error?: string;
+  backupPath?: string;
+  size?: number;
+  date?: string;
+  message?: string;
+  backups?: BackupFile[];
+};
+
+export type BackupAPI = {
+  create: () => Promise<BackupResult>;
+  createManual: () => Promise<BackupResult>;
+  list: () => Promise<{ success: boolean; backups?: BackupFile[]; error?: string }>;
+  restore: (backupPath: string) => Promise<BackupResult>;
+  getInfo: () => Promise<{ backupDir: string; databasePath: string; backupExists: boolean }>;
+};
+
 export type API = {
   database: DatabaseAPI;
   app: AppAPI;
   logger: LoggerAPI;
   auth: AuthAPI;
   system: SystemAPI;
+  backup: BackupAPI;
 };

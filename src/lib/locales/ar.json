@@ -306,6 +306,11 @@
     "user": "المستخدم",
     "welcomeToStoreManagement": "مرحباً بك في إدارة المتجر"
   },
+  "userBadge": {
+    "admin": "مدير",
+    "manager": "مشرف",
+    "user": "مستخدم"
+  },
   "login": {
     "welcomeBack": "مرحباً",
     "signInToAccount": "سجل دخولك إلى حساب إدارة المتجر",
@@ -885,6 +890,10 @@
   "admin": {
     "optionsList": "قائمة الخيارات",
     "settingsDesc": "قم بإدارة إعدادات تشغيل المتجر أدناه",
+    "backup": "النسخ الاحتياطي",
+    "backup.title": "إدارة النسخ الاحتياطي لقاعدة البيانات",
+    "backup.description": "إدارة نسخك الاحتياطية لقاعدة البيانات. يقوم النظام بإنشاء نسخ احتياطية يومية تلقائياً ويحتفظ بأحدث نسختين.",
+    "backup.availableBackups": "النسخ الاحتياطية المتاحة",
     "storeSettings": "إعدادات المتجر",
     "stockManagement": "إدارة المخزون", 
     "paymentNotifications": "إشعارات المدفوعات",

@@ -304,6 +304,11 @@
     "user": "Utilisateur",
     "welcomeToStoreManagement": "Bienvenue dans la Gestion de Magasin"
   },
+  "userBadge": {
+    "admin": "Admin",
+    "manager": "Gestionnaire",
+    "user": "Utilisateur"
+  },
   "login": {
     "welcomeBack": "Bienvenue",
     "signInToAccount": "Connectez-vous à votre compte de Gestion de Magasin",
@@ -861,6 +866,10 @@
     "category": "Catégorie"
   },
   "admin": {
+    "backup": "Sauvegarde",
+    "backup.title": "Gestion des Sauvegardes de Base de Données",
+    "backup.description": "Gérez vos sauvegardes de base de données. Le système crée automatiquement des sauvegardes quotidiennes et garde les 2 plus récentes.",
+    "backup.availableBackups": "Sauvegardes Disponibles",
     "enableLowStockBadge": "Activer le badge de notification de stock bas",
     "enableBadgeDesc": "Afficher le badge de notification sur l'élément de menu stock lorsque les produits sont en rupture de stock",
     "enableOverduePaymentsBadge": "Activer le badge de notification des paiements en retard",

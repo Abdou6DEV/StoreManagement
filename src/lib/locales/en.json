@@ -447,6 +447,11 @@
     "user": "User",
     "welcomeToStoreManagement": "Welcome to Store Management"
   },
+  "userBadge": {
+    "admin": "Admin",
+    "manager": "Manager",
+    "user": "User"
+  },
   "login": {
     "welcomeBack": "Welcome",
     "signInToAccount": "Sign in to your Store Management account",
@@ -990,6 +995,10 @@
   "admin": {
     "optionsList": "Options List",
     "settingsDesc": "Manage your store's operational settings below",
+    "backup": "Backup",
+    "backup.title": "Database Backup Management",
+    "backup.description": "Manage your database backups. The system automatically creates daily backups and keeps the 2 most recent ones.",
+    "backup.availableBackups": "Available Backups",
     "storeSettings": "Store Settings",
     "stockManagement": "Stock Management", 
     "paymentNotifications": "Payment Notifications",

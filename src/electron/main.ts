@@ -7,6 +7,8 @@ import {
   setupLoggerHandlers,
   setupAuthHandlers,
   setupSystemHandlers,
+  setupBackupHandlers,
+  performDailyBackup,
 } from "./handlers";
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
@@ -20,6 +22,7 @@ const createWindow = async () => {
   setupLoggerHandlers();
   setupAuthHandlers();
   setupSystemHandlers();
+  setupBackupHandlers();
 
   const { width, height, x, y } = screen.getPrimaryDisplay().workArea;
 
@@ -53,6 +56,37 @@ const createWindow = async () => {
 };
 
 app.on("ready", createWindow);
+
+// Set up automatic daily backup
+let backupInterval: NodeJS.Timeout | null = null;
+
+const scheduleDailyBackup = () => {
+  // Clear existing interval
+  if (backupInterval) {
+    clearInterval(backupInterval);
+  }
+
+  // Perform backup immediately on startup
+  performDailyBackup();
+
+  // Schedule backup every 24 hours (86400000 ms)
+  backupInterval = setInterval(() => {
+    performDailyBackup();
+  }, 24 * 60 * 60 * 1000);
+};
+
+// Start backup scheduling when app is ready
+app.on("ready", () => {
+  // Small delay to ensure database is initialized
+  setTimeout(scheduleDailyBackup, 5000);
+});
+
+// Clean up on app quit
+app.on("before-quit", () => {
+  if (backupInterval) {
+    clearInterval(backupInterval);
+  }
+});
 
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") {

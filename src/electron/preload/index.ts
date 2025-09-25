@@ -3,6 +3,7 @@ export { appAPI } from "./appAPI";
 export { loggerAPI } from "./loggerAPI";
 export { authAPI } from "./authAPI";
 export { systemAPI } from "./systemAPI";
+export { backupAPI } from "./backupAPI";
 export type {
   API,
   DatabaseAPI,
@@ -10,5 +11,8 @@ export type {
   LoggerAPI,
   AuthAPI,
   SystemAPI,
+  BackupAPI,
+  BackupFile,
+  BackupResult,
   SaleWithDetails,
 } from "./types";
