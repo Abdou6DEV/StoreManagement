@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { Input } from "../../../../lib/components/input";
 import {
   Select,
@@ -33,11 +34,13 @@ export const LogFilters: React.FC<LogFiltersProps> = ({
   totalEntries,
   visibleEntries,
 }) => {
+  const { t } = useTranslation();
+  
   return (
-    <div className="space-y-3 p-3 border rounded-lg bg-gray-50">
+    <div className="space-y-3 p-3 border rounded-lg bg-gray-50 dark:bg-gray-800">
       <div>
         <Input
-          placeholder="Search logs..."
+          placeholder={t("admin.logger.searchPlaceholder", "Search logs...")}
           value={searchTerm}
           onChange={(e) => onSearchChange(e.target.value)}
           className="text-sm"
@@ -55,7 +58,7 @@ export const LogFilters: React.FC<LogFiltersProps> = ({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="ALL">All Levels</SelectItem>
+            <SelectItem value="ALL">{t("admin.logger.allLevels", "All Levels")}</SelectItem>
             {Object.values(LogLevel).map((level) => (
               <SelectItem key={level} value={level}>
                 {level}
@@ -74,19 +77,21 @@ export const LogFilters: React.FC<LogFiltersProps> = ({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="ALL">All</SelectItem>
-            <SelectItem value="main">Main</SelectItem>
-            <SelectItem value="renderer">Renderer</SelectItem>
+            <SelectItem value="ALL">{t("admin.logger.allProcesses", "All")}</SelectItem>
+            <SelectItem value="main">{t("admin.logger.mainProcess", "Main")}</SelectItem>
+            <SelectItem value="renderer">{t("admin.logger.rendererProcess", "Renderer")}</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
-      <div className="text-xs text-gray-600">
-        Showing {visibleEntries} of {totalEntries} entries
+      <div className="text-xs text-gray-600 dark:text-gray-400">
+        {t("admin.logger.showingEntries", "Showing {visible} of {total} entries", { visible: visibleEntries, total: totalEntries })}
         {fileStats && (
           <div className="mt-1">
-            File: {fileStats.totalLines.toLocaleString()} lines,{" "}
-            {(fileStats.fileSize / 1024).toFixed(1)} KB
+            {t("admin.logger.fileInfo", "File: {lines} lines, {size} KB", { 
+              lines: fileStats.totalLines.toLocaleString(), 
+              size: (fileStats.fileSize / 1024).toFixed(1) 
+            })}
           </div>
         )}
       </div>

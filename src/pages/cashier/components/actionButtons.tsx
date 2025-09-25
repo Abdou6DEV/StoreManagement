@@ -145,6 +145,20 @@ export default function ActionButtons({
     setPaymentDate(paymentDateLocal);
   }, [paymentDateLocal, setPaymentDate]);
 
+  // Listen for F6 key to clear cart
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "F6") {
+        e.preventDefault();
+        setDraftDiscount("");
+        onClear();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onClear]);
+
   const handleAddClient = async () => {
     if (!clientName.trim()) return;
     try {

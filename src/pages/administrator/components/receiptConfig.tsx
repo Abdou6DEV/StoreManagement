@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Input } from "../../../lib/components/input";
 import { Button } from "../../../lib/components/button";
 import { useTranslation } from "react-i18next";
+import { useToast } from "../../../lib/contexts/toastContext";
 import {
   Shield,
   Loader2,
@@ -18,6 +19,7 @@ import { generateReceiptBarcode } from "../../../lib/utils/barcodeVisual";
 
 export const ReceiptConfig: React.FC = () => {
   const { t } = useTranslation();
+  const { showToast } = useToast();
   const [storeName, setStoreName] = useState("");
   const [storeAddress, setStoreAddress] = useState("");
   const [storePhone, setStorePhone] = useState("");
@@ -25,8 +27,6 @@ export const ReceiptConfig: React.FC = () => {
   const [footerMessage, setFooterMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [previewReceipt, setPreviewReceipt] = useState<string>("");
   const [previewOptions, setPreviewOptions] = useState({
     showDiscount: true,
@@ -354,7 +354,7 @@ export const ReceiptConfig: React.FC = () => {
         setLoading(false);
       })
       .catch(() => {
-        setError("Failed to load receipt settings");
+        showToast(t("admin.loadError", "Failed to load receipt settings"), "error");
         setLoading(false);
       });
   }, []);
@@ -376,7 +376,6 @@ export const ReceiptConfig: React.FC = () => {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
-    setError(null);
     try {
       await Promise.all([
         window.api.database.options.set("storeName", storeName),
@@ -385,10 +384,9 @@ export const ReceiptConfig: React.FC = () => {
         window.api.database.options.set("storePhoneNumbers", JSON.stringify(phoneNumbers)),
         window.api.database.options.set("receiptFooterMessage", footerMessage),
       ]);
-      setSuccess(true);
-      setTimeout(() => setSuccess(false), 2000);
+      showToast(t("admin.receiptSaved", "Receipt settings saved successfully!"), "success");
     } catch {
-      setError("Failed to save receipt settings");
+      showToast(t("admin.receiptSaveError", "Failed to save receipt settings"), "error");
     } finally {
       setSaving(false);
     }
@@ -599,23 +597,11 @@ export const ReceiptConfig: React.FC = () => {
             )}
           </Button>
 
-          {/* Status Messages */}
+          {/* Loading indicator */}
           {loading && (
             <span className="flex items-center gap-2 text-muted-foreground text-sm">
               <Loader2 className="w-4 h-4 animate-spin" />
               {t("admin.loading", "Loading settings...")}
-            </span>
-          )}
-          {success && (
-            <span className="flex items-center gap-2 text-green-600 text-sm font-medium">
-              <Shield className="w-4 h-4" />
-              {t("admin.saved", "Settings saved!")}
-            </span>
-          )}
-          {error && (
-            <span className="flex items-center gap-2 text-red-600 text-sm font-medium">
-              <AlertCircle className="w-4 h-4" />
-              {error}
             </span>
           )}
         </div>

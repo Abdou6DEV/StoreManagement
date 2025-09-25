@@ -24,8 +24,8 @@ export const LogFilesPanel: React.FC<LogFilesPanelProps> = ({
             key={index}
             className={`p-3 border rounded-lg cursor-pointer transition-colors ${
               selectedFile === file
-                ? "border-blue-500 bg-blue-50"
-                : "hover:bg-gray-50"
+                ? "border-blue-500 bg-blue-50 dark:bg-blue-950 dark:border-blue-400"
+                : "hover:bg-gray-50 dark:hover:bg-gray-800"
             }`}
             onClick={() => onFileSelect(file)}
           >
@@ -36,12 +36,12 @@ export const LogFilesPanel: React.FC<LogFilesPanelProps> = ({
               >
                 {file.split("/").pop() || file.split("\\").pop()}
               </span>
-              <Badge variant="secondary">Log File</Badge>
+              <Badge variant="secondary">{t("admin.logger.logFile", "Log File")}</Badge>
             </div>
           </div>
         ))}
         {logFiles.length === 0 && (
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-gray-500 dark:text-gray-400">
             {t("admin.logger.noLogFiles")}
           </p>
         )}
