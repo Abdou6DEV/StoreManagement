@@ -1,7 +1,11 @@
 import { app, BrowserWindow, screen } from "electron";
 import path from "node:path";
 import started from "electron-squirrel-startup";
-import { initializePrisma } from "../lib/database/prismaClient";
+import { prismaPromise } from "../lib/database/prismaClient";
+
+// Declare Vite environment variables
+declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string | undefined;
+declare const MAIN_WINDOW_VITE_NAME: string;
 import {
   setupDatabaseHandlers,
   setupLoggerHandlers,
@@ -17,7 +21,15 @@ if (started) {
 }
 
 const createWindow = async () => {
-  await initializePrisma();
+  // Initialize Prisma client first
+  try {
+    await prismaPromise;
+    console.log("Prisma client initialized successfully");
+  } catch (error) {
+    console.error("Failed to initialize Prisma client:", error);
+    // Don't prevent app from starting, but log the error
+  }
+  
   setupDatabaseHandlers();
   setupLoggerHandlers();
   setupAuthHandlers();

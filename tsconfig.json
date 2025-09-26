@@ -15,5 +15,12 @@
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "jsx": "react-jsx"
-  }
+  },
+  "exclude": [
+    "prisma/seed/**/*",
+    "scripts/**/*",
+    "node_modules",
+    "dist",
+    "out"
+  ]
 }

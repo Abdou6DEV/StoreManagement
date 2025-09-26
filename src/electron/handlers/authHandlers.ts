@@ -1,12 +1,10 @@
 import { ipcMain } from "electron";
-import { PrismaClient } from "@prisma/client";
 import {
   users,
   CreateUserData,
   LoginCredentials,
 } from "../../lib/database/users";
-
-const prisma = new PrismaClient();
+import { prisma } from "../../lib/database/prismaClient";
 
 export const setupAuthHandlers = () => {
   // Login handler

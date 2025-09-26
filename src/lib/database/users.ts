@@ -1,7 +1,6 @@
-import { PrismaClient, User, UserRole } from "@prisma/client";
+import { User, UserRole } from "@prisma/client";
 import bcrypt from "bcryptjs";
-
-const prisma = new PrismaClient();
+import { prisma, prismaPromise } from "./prismaClient";
 
 export interface CreateUserData {
   username: string;
@@ -34,6 +33,7 @@ export interface AuthResult {
 
 export const users = {
   async create(data: CreateUserData): Promise<User> {
+    await prismaPromise; // Ensure Prisma is ready
     const hashedPassword = await bcrypt.hash(data.password, 10);
 
     return prisma.user.create({
@@ -64,14 +64,23 @@ export const users = {
 
   async login(credentials: LoginCredentials): Promise<AuthResult> {
     try {
+      console.log("🔍 Login attempt:", credentials.username);
+      
+      // Ensure Prisma client is ready before proceeding
+      console.log("🔍 Waiting for Prisma client to initialize...");
+      await prismaPromise;
+      console.log("🔍 Prisma client ready!");
+      
       // First check if admin user exists in database
       if (credentials.username === "admin") {
+        console.log("🔍 Checking for admin user...");
         const adminUser = await prisma.user.findUnique({
           where: { username: "admin" },
           include: {
             permissions: true,
           },
         });
+        console.log("🔍 Admin user found:", !!adminUser);
 
         if (adminUser && adminUser.isActive) {
           // Admin user exists in database, check password
@@ -91,8 +100,10 @@ export const users = {
             };
           }
         } else {
+          console.log("🔍 Admin user not found, checking hardcoded credentials...");
           // Admin user doesn't exist in database, check hardcoded credentials
           if (credentials.password === "admin") {
+            console.log("🔍 Hardcoded admin credentials match!");
             return {
               success: true,
               user: {
@@ -121,12 +132,14 @@ export const users = {
       }
 
       // Check other users
+      console.log("🔍 Checking other users...");
       const user = await prisma.user.findUnique({
         where: { username: credentials.username },
         include: {
           permissions: true,
         },
       });
+      console.log("🔍 User found:", !!user);
 
       if (!user || !user.isActive) {
         return {
@@ -153,14 +166,18 @@ export const users = {
         user: userWithoutPassword,
       };
     } catch (error) {
+      console.error("🚨 Login error:", error);
+      console.error("🚨 Error details:", error.message);
+      console.error("🚨 Error stack:", error.stack);
       return {
         success: false,
-        error: "Authentication failed",
+        error: "Authentication failed: " + error.message,
       };
     }
   },
 
   async getById(id: string): Promise<(Omit<User, "password"> & { permissions?: any }) | null> {
+    await prismaPromise; // Ensure Prisma is ready
     // Handle hardcoded admin account
     if (id === "hardcoded-admin") {
       return {
@@ -254,6 +271,7 @@ export const users = {
   },
 
   async getAll(): Promise<(Omit<User, "password"> & { permissions?: any })[]> {
+    await prismaPromise; // Ensure Prisma is ready
     const users = await prisma.user.findMany({
       include: {
         permissions: true,
@@ -265,12 +283,14 @@ export const users = {
   },
 
   async delete(id: string): Promise<void> {
+    await prismaPromise; // Ensure Prisma is ready
     await prisma.user.delete({
       where: { id },
     });
   },
 
   async updatePassword(id: string, newPassword: string): Promise<User> {
+    await prismaPromise; // Ensure Prisma is ready
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     return prisma.user.update({
       where: { id },
@@ -289,6 +309,7 @@ export const users = {
     canViewLogs: boolean;
     canManageSettings: boolean;
   }): Promise<User> {
+    await prismaPromise; // Ensure Prisma is ready
     // First check if user exists
     const user = await prisma.user.findUnique({
       where: { id },

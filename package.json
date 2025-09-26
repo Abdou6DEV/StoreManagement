@@ -6,13 +6,16 @@
   "main": ".vite/build/main.js",
   "scripts": {
     "start": "electron-forge start",
-    "package": "electron-forge package",
-    "make": "electron-forge make",
+    "package": "npm run prisma:generate && electron-forge package",
+    "make": "npm run prisma:generate && electron-forge make",
     "publish": "electron-forge publish",
     "lint": "eslint . --ext .ts,.tsx",
     "format": "prettier --write .",
     "db:seed": "tsx prisma/seed/index.ts",
-    "logs:seed": "ts-node scripts/seedLogs.ts --"
+    "logs:seed": "ts-node scripts/seedLogs.ts --",
+    "prisma:generate": "prisma generate",
+    "prisma:push": "prisma db push",
+    "postinstall": "prisma generate"
   },
   "prisma": {
     "seed": "tsx prisma/seed/index.ts"
