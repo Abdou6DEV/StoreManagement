@@ -13,6 +13,191 @@ let prismaClientInstance: import("@prisma/client").PrismaClient | null = null;
 let isInitialized = false;
 let initializationPromise: Promise<import("@prisma/client").PrismaClient> | null = null;
 
+// Manual table creation as fallback
+async function createTablesManually(client: any) {
+  console.log("🔍 Creating tables manually...");
+  
+  // Simple table creation without complex constraints
+  const tables = [
+    `CREATE TABLE IF NOT EXISTS "User" (
+      "id" TEXT PRIMARY KEY,
+      "username" TEXT UNIQUE NOT NULL,
+      "email" TEXT,
+      "password" TEXT NOT NULL,
+      "role" TEXT NOT NULL DEFAULT 'USER',
+      "isActive" INTEGER NOT NULL DEFAULT 1,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )`,
+    
+    `CREATE TABLE IF NOT EXISTS "UserPermissions" (
+      "id" TEXT PRIMARY KEY,
+      "userId" TEXT UNIQUE NOT NULL,
+      "canAccessCashier" INTEGER NOT NULL DEFAULT 0,
+      "canAccessStock" INTEGER NOT NULL DEFAULT 0,
+      "canAccessClients" INTEGER NOT NULL DEFAULT 0,
+      "canAccessBills" INTEGER NOT NULL DEFAULT 0,
+      "canAccessHistory" INTEGER NOT NULL DEFAULT 0,
+      "canAccessDashboard" INTEGER NOT NULL DEFAULT 0,
+      "canManageUsers" INTEGER NOT NULL DEFAULT 0,
+      "canViewLogs" INTEGER NOT NULL DEFAULT 0,
+      "canManageSettings" INTEGER NOT NULL DEFAULT 0,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )`,
+    
+    `CREATE TABLE IF NOT EXISTS "Category" (
+      "name" TEXT PRIMARY KEY,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )`,
+    
+    `CREATE TABLE IF NOT EXISTS "Product" (
+      "id" TEXT PRIMARY KEY,
+      "name" TEXT UNIQUE NOT NULL,
+      "categoryName" TEXT NOT NULL,
+      "quantity" INTEGER NOT NULL,
+      "boughtPrice" INTEGER NOT NULL,
+      "sellingPrice" INTEGER NOT NULL,
+      "codebar" TEXT,
+      "photo" TEXT,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )`,
+    
+    `CREATE TABLE IF NOT EXISTS "Client" (
+      "id" TEXT PRIMARY KEY,
+      "name" TEXT UNIQUE NOT NULL,
+      "phone" TEXT,
+      "address" TEXT,
+      "notes" TEXT,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )`,
+    
+    `CREATE TABLE IF NOT EXISTS "Sale" (
+      "id" TEXT PRIMARY KEY,
+      "clientId" TEXT,
+      "discount" INTEGER NOT NULL DEFAULT 0,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )`,
+    
+    `CREATE TABLE IF NOT EXISTS "ManualProduct" (
+      "id" TEXT PRIMARY KEY,
+      "name" TEXT NOT NULL,
+      "type" TEXT NOT NULL,
+      "costPrice" INTEGER NOT NULL DEFAULT 0,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )`,
+    
+    `CREATE TABLE IF NOT EXISTS "Service" (
+      "id" TEXT PRIMARY KEY,
+      "name" TEXT UNIQUE NOT NULL,
+      "description" TEXT,
+      "costPrice" INTEGER NOT NULL DEFAULT 0,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )`,
+    
+    `CREATE TABLE IF NOT EXISTS "SaleItem" (
+      "id" TEXT PRIMARY KEY,
+      "productId" TEXT,
+      "manualProductId" TEXT,
+      "serviceId" TEXT,
+      "saleId" TEXT NOT NULL,
+      "quantity" INTEGER NOT NULL,
+      "price" INTEGER NOT NULL,
+      "boughtPrice" INTEGER,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )`,
+    
+    `CREATE TABLE IF NOT EXISTS "Payment" (
+      "id" TEXT PRIMARY KEY,
+      "saleId" TEXT,
+      "clientId" TEXT NOT NULL,
+      "givenAmount" INTEGER NOT NULL,
+      "dueDate" DATETIME NOT NULL,
+      "paidDate" DATETIME,
+      "type" TEXT NOT NULL,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )`,
+    
+    `CREATE TABLE IF NOT EXISTS "Seller" (
+      "id" TEXT PRIMARY KEY,
+      "name" TEXT UNIQUE NOT NULL,
+      "phone" TEXT,
+      "email" TEXT,
+      "address" TEXT,
+      "notes" TEXT,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )`,
+    
+    `CREATE TABLE IF NOT EXISTS "Purchase" (
+      "id" TEXT PRIMARY KEY,
+      "sellerId" TEXT,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )`,
+    
+    `CREATE TABLE IF NOT EXISTS "PurchaseItem" (
+      "id" TEXT PRIMARY KEY,
+      "productId" TEXT NOT NULL,
+      "purchaseId" TEXT NOT NULL,
+      "quantity" INTEGER NOT NULL,
+      "price" INTEGER NOT NULL,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )`,
+    
+    `CREATE TABLE IF NOT EXISTS "Bill" (
+      "id" TEXT PRIMARY KEY,
+      "title" TEXT NOT NULL,
+      "description" TEXT,
+      "type" TEXT NOT NULL,
+      "amount" INTEGER NOT NULL,
+      "nextBillDate" DATETIME NOT NULL,
+      "duration" TEXT NOT NULL,
+      "notes" TEXT,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )`,
+    
+    `CREATE TABLE IF NOT EXISTS "BillPayment" (
+      "id" TEXT PRIMARY KEY,
+      "billId" TEXT NOT NULL,
+      "amount" INTEGER NOT NULL,
+      "paidDate" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "notes" TEXT,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )`,
+    
+    `CREATE TABLE IF NOT EXISTS "Option" (
+      "key" TEXT PRIMARY KEY,
+      "value" TEXT NOT NULL,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )`
+  ];
+
+  for (const sql of tables) {
+    try {
+      await client.$executeRawUnsafe(sql);
+      console.log("✅ Created table");
+    } catch (tableError) {
+      console.error("❌ Failed to create table:", tableError);
+      // Continue with other tables
+    }
+  }
+  
+  console.log("✅ Manual table creation completed");
+  logger.info("Database schema created manually", "Database");
+}
+
 // Function to initialize database schema
 async function initializeDatabase() {
   if (!prismaClientInstance) {
@@ -33,228 +218,38 @@ async function initializeDatabase() {
       logger.info("Database schema already exists", "Database");
     } catch (error) {
       // If the query fails, it likely means tables don't exist
-      console.log("🔍 Database schema not found, creating tables...");
-      logger.info("Database schema not found, creating tables...", "Database");
+      console.log("🔍 Database schema not found, running migrations...");
+      logger.info("Database schema not found, running migrations...", "Database");
       
-      // Push the database schema
       try {
-        // In production, we'll use a more direct approach
-        await prismaClientInstance.$executeRawUnsafe(`
-          CREATE TABLE IF NOT EXISTS "User" (
-            "id" TEXT NOT NULL PRIMARY KEY,
-            "username" TEXT NOT NULL UNIQUE,
-            "email" TEXT,
-            "password" TEXT NOT NULL,
-            "role" TEXT NOT NULL DEFAULT 'USER',
-            "isActive" BOOLEAN NOT NULL DEFAULT true,
-            "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-          );
-        `);
+        // Use Prisma's db push functionality
+        console.log("🔍 Running Prisma db push...");
         
-        await prismaClientInstance.$executeRawUnsafe(`
-          CREATE TABLE IF NOT EXISTS "UserPermissions" (
-            "id" TEXT NOT NULL PRIMARY KEY,
-            "userId" TEXT NOT NULL UNIQUE,
-            "canAccessCashier" BOOLEAN NOT NULL DEFAULT false,
-            "canAccessStock" BOOLEAN NOT NULL DEFAULT false,
-            "canAccessClients" BOOLEAN NOT NULL DEFAULT false,
-            "canAccessBills" BOOLEAN NOT NULL DEFAULT false,
-            "canAccessHistory" BOOLEAN NOT NULL DEFAULT false,
-            "canAccessDashboard" BOOLEAN NOT NULL DEFAULT false,
-            "canManageUsers" BOOLEAN NOT NULL DEFAULT false,
-            "canViewLogs" BOOLEAN NOT NULL DEFAULT false,
-            "canManageSettings" BOOLEAN NOT NULL DEFAULT false,
-            "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE
-          );
-        `);
-
-        // Create other essential tables
-        await prismaClientInstance.$executeRawUnsafe(`
-          CREATE TABLE IF NOT EXISTS "Category" (
-            "name" TEXT NOT NULL PRIMARY KEY,
-            "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-          );
-        `);
-
-        await prismaClientInstance.$executeRawUnsafe(`
-          CREATE TABLE IF NOT EXISTS "Product" (
-            "id" TEXT NOT NULL PRIMARY KEY,
-            "name" TEXT NOT NULL UNIQUE,
-            "categoryName" TEXT NOT NULL,
-            "quantity" INTEGER NOT NULL,
-            "boughtPrice" INTEGER NOT NULL,
-            "sellingPrice" INTEGER NOT NULL,
-            "codebar" TEXT,
-            "photo" TEXT,
-            "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY ("categoryName") REFERENCES "Category"("name") ON DELETE CASCADE ON UPDATE CASCADE
-          );
-        `);
-
-        await prismaClientInstance.$executeRawUnsafe(`
-          CREATE TABLE IF NOT EXISTS "Client" (
-            "id" TEXT NOT NULL PRIMARY KEY,
-            "name" TEXT NOT NULL UNIQUE,
-            "phone" TEXT,
-            "address" TEXT,
-            "notes" TEXT,
-            "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-          );
-        `);
-
-        await prismaClientInstance.$executeRawUnsafe(`
-          CREATE TABLE IF NOT EXISTS "Sale" (
-            "id" TEXT NOT NULL PRIMARY KEY,
-            "clientId" TEXT,
-            "discount" INTEGER NOT NULL DEFAULT 0,
-            "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY ("clientId") REFERENCES "Client"("id") ON DELETE CASCADE ON UPDATE CASCADE
-          );
-        `);
-
-        await prismaClientInstance.$executeRawUnsafe(`
-          CREATE TABLE IF NOT EXISTS "ManualProduct" (
-            "id" TEXT NOT NULL PRIMARY KEY,
-            "name" TEXT NOT NULL,
-            "type" TEXT NOT NULL,
-            "costPrice" INTEGER NOT NULL DEFAULT 0,
-            "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            UNIQUE("name", "type")
-          );
-        `);
-
-        await prismaClientInstance.$executeRawUnsafe(`
-          CREATE TABLE IF NOT EXISTS "Service" (
-            "id" TEXT NOT NULL PRIMARY KEY,
-            "name" TEXT NOT NULL UNIQUE,
-            "description" TEXT,
-            "costPrice" INTEGER NOT NULL DEFAULT 0,
-            "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-          );
-        `);
-
-        await prismaClientInstance.$executeRawUnsafe(`
-          CREATE TABLE IF NOT EXISTS "SaleItem" (
-            "id" TEXT NOT NULL PRIMARY KEY,
-            "productId" TEXT,
-            "manualProductId" TEXT,
-            "serviceId" TEXT,
-            "saleId" TEXT NOT NULL,
-            "quantity" INTEGER NOT NULL,
-            "price" INTEGER NOT NULL,
-            "boughtPrice" INTEGER,
-            "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY ("productId") REFERENCES "Product"("id") ON DELETE CASCADE ON UPDATE CASCADE,
-            FOREIGN KEY ("manualProductId") REFERENCES "ManualProduct"("id") ON DELETE CASCADE ON UPDATE CASCADE,
-            FOREIGN KEY ("serviceId") REFERENCES "Service"("id") ON DELETE CASCADE ON UPDATE CASCADE,
-            FOREIGN KEY ("saleId") REFERENCES "Sale"("id") ON DELETE CASCADE ON UPDATE CASCADE,
-            UNIQUE("productId", "saleId"),
-            UNIQUE("manualProductId", "saleId"),
-            UNIQUE("serviceId", "saleId")
-          );
-        `);
-
-        await prismaClientInstance.$executeRawUnsafe(`
-          CREATE TABLE IF NOT EXISTS "Payment" (
-            "id" TEXT NOT NULL PRIMARY KEY,
-            "saleId" TEXT UNIQUE,
-            "clientId" TEXT NOT NULL,
-            "givenAmount" INTEGER NOT NULL,
-            "dueDate" DATETIME NOT NULL,
-            "paidDate" DATETIME,
-            "type" TEXT NOT NULL,
-            "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY ("saleId") REFERENCES "Sale"("id") ON DELETE CASCADE ON UPDATE CASCADE,
-            FOREIGN KEY ("clientId") REFERENCES "Client"("id") ON DELETE CASCADE ON UPDATE CASCADE
-          );
-        `);
-
-        await prismaClientInstance.$executeRawUnsafe(`
-          CREATE TABLE IF NOT EXISTS "Seller" (
-            "id" TEXT NOT NULL PRIMARY KEY,
-            "name" TEXT NOT NULL UNIQUE,
-            "phone" TEXT,
-            "email" TEXT,
-            "address" TEXT,
-            "notes" TEXT,
-            "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-          );
-        `);
-
-        await prismaClientInstance.$executeRawUnsafe(`
-          CREATE TABLE IF NOT EXISTS "Purchase" (
-            "id" TEXT NOT NULL PRIMARY KEY,
-            "sellerId" TEXT,
-            "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY ("sellerId") REFERENCES "Seller"("id") ON DELETE SET NULL ON UPDATE CASCADE
-          );
-        `);
-
-        await prismaClientInstance.$executeRawUnsafe(`
-          CREATE TABLE IF NOT EXISTS "PurchaseItem" (
-            "id" TEXT NOT NULL PRIMARY KEY,
-            "productId" TEXT NOT NULL,
-            "purchaseId" TEXT NOT NULL,
-            "quantity" INTEGER NOT NULL,
-            "price" INTEGER NOT NULL,
-            "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY ("productId") REFERENCES "Product"("id") ON DELETE CASCADE ON UPDATE CASCADE,
-            FOREIGN KEY ("purchaseId") REFERENCES "Purchase"("id") ON DELETE CASCADE ON UPDATE CASCADE
-          );
-        `);
-
-        await prismaClientInstance.$executeRawUnsafe(`
-          CREATE TABLE IF NOT EXISTS "Bill" (
-            "id" TEXT NOT NULL PRIMARY KEY,
-            "title" TEXT NOT NULL,
-            "description" TEXT,
-            "type" TEXT NOT NULL,
-            "amount" INTEGER NOT NULL,
-            "nextBillDate" DATETIME NOT NULL,
-            "duration" TEXT NOT NULL,
-            "notes" TEXT,
-            "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-          );
-        `);
-
-        await prismaClientInstance.$executeRawUnsafe(`
-          CREATE TABLE IF NOT EXISTS "BillPayment" (
-            "id" TEXT NOT NULL PRIMARY KEY,
-            "billId" TEXT NOT NULL,
-            "amount" INTEGER NOT NULL,
-            "paidDate" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            "notes" TEXT,
-            "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY ("billId") REFERENCES "Bill"("id") ON DELETE CASCADE ON UPDATE CASCADE
-          );
-        `);
-
-        await prismaClientInstance.$executeRawUnsafe(`
-          CREATE TABLE IF NOT EXISTS "Option" (
-            "key" TEXT NOT NULL PRIMARY KEY,
-            "value" TEXT NOT NULL,
-            "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-          );
-        `);
-
-        logger.info("Database schema created successfully", "Database");
+        // Import and execute Prisma CLI programmatically
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const { execSync } = require('child_process');
+        const schemaPath = path.join(__dirname, '../../../prisma/schema.prisma');
+        
+        // Set the database URL environment variable
+        process.env.DATABASE_URL = `file:${dbPath}`;
+        
+        // Run prisma db push
+        try {
+          execSync('npx prisma db push --force-reset --accept-data-loss', {
+            cwd: process.cwd(),
+            stdio: 'pipe',
+            env: { ...process.env, DATABASE_URL: `file:${dbPath}` }
+          });
+          console.log("✅ Prisma db push completed successfully");
+          logger.info("Database schema created via Prisma push", "Database");
+        } catch (pushError) {
+          console.error("❌ Prisma db push failed, trying manual schema creation...");
+          
+          // Fallback to manual table creation with proper error handling
+          await createTablesManually(prismaClientInstance);
+        }
       } catch (schemaError) {
+        console.error("❌ Failed to create database schema:", schemaError);
         logger.error("Failed to create database schema", "Database", schemaError);
         throw schemaError;
       }
