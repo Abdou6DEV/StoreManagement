@@ -298,4 +298,36 @@ export const databaseAPI = {
     ) => ipcRenderer.invoke("db:bills:getBySpecificPeriod", period, periodValue),
     resetBillToNextDuration: (id: string) => ipcRenderer.invoke("db:bills:resetBillToNextDuration", id),
   },
+  serviceAppointments: {
+    create: (data: {
+      name: string;
+      serviceType: string;
+      description?: string;
+      costPrice?: number;
+      servicePrice: number;
+      clientId: string;
+      dueDate: Date;
+      notes?: string;
+    }) => ipcRenderer.invoke("db:serviceAppointments:create", data),
+    getAll: () => ipcRenderer.invoke("db:serviceAppointments:getAll"),
+    getById: (id: string) => ipcRenderer.invoke("db:serviceAppointments:getById", id),
+    getByClient: (clientId: string) => ipcRenderer.invoke("db:serviceAppointments:getByClient", clientId),
+    getUpcoming: (days?: number) => ipcRenderer.invoke("db:serviceAppointments:getUpcoming", days),
+    getOverdue: () => ipcRenderer.invoke("db:serviceAppointments:getOverdue"),
+    search: (query: string) => ipcRenderer.invoke("db:serviceAppointments:search", query),
+    update: (id: string, data: {
+      name?: string;
+      serviceType?: string;
+      description?: string;
+      costPrice?: number;
+      servicePrice?: number;
+      clientId?: string;
+      dueDate?: Date;
+      notes?: string;
+    }) => ipcRenderer.invoke("db:serviceAppointments:update", { id, data }),
+    markCompleted: (id: string) => ipcRenderer.invoke("db:serviceAppointments:markCompleted", id),
+    markIncomplete: (id: string) => ipcRenderer.invoke("db:serviceAppointments:markIncomplete", id),
+    delete: (id: string) => ipcRenderer.invoke("db:serviceAppointments:delete", id),
+    getStats: () => ipcRenderer.invoke("db:serviceAppointments:getStats"),
+  },
 };

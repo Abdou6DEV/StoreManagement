@@ -84,6 +84,20 @@ import {
   deleteService,
 } from "../../lib/database/services";
 import { bills } from "../../lib/database/bills";
+import {
+  createServiceAppointment,
+  getAllServiceAppointments,
+  getServiceAppointmentById,
+  getServiceAppointmentsByClient,
+  getUpcomingServiceAppointments,
+  getOverdueServiceAppointments,
+  searchServiceAppointments,
+  updateServiceAppointment,
+  markServiceAppointmentCompleted,
+  markServiceAppointmentIncomplete,
+  deleteServiceAppointment,
+  getServiceAppointmentStats,
+} from "../../lib/database/serviceAppointments";
 
 export function setupDatabaseHandlers() {
   // Products handlers
@@ -496,4 +510,54 @@ ipcMain.handle("db:bills:getBillsPaymentsAggregatedByPeriod", async (_event, per
 ipcMain.handle("db:bills:getBySpecificPeriod", async (_event, period, periodValue) => {
   return await bills.getBySpecificPeriod(period, periodValue);
 });
+
+  // Service Appointments handlers
+  ipcMain.handle("db:serviceAppointments:create", async (_event, data) => {
+    return await createServiceAppointment(data);
+  });
+
+  ipcMain.handle("db:serviceAppointments:getAll", async () => {
+    return await getAllServiceAppointments();
+  });
+
+  ipcMain.handle("db:serviceAppointments:getById", async (_event, id: string) => {
+    return await getServiceAppointmentById(id);
+  });
+
+  ipcMain.handle("db:serviceAppointments:getByClient", async (_event, clientId: string) => {
+    return await getServiceAppointmentsByClient(clientId);
+  });
+
+  ipcMain.handle("db:serviceAppointments:getUpcoming", async (_event, days = 7) => {
+    return await getUpcomingServiceAppointments(days);
+  });
+
+  ipcMain.handle("db:serviceAppointments:getOverdue", async () => {
+    return await getOverdueServiceAppointments();
+  });
+
+  ipcMain.handle("db:serviceAppointments:search", async (_event, query: string) => {
+    return await searchServiceAppointments(query);
+  });
+
+  ipcMain.handle("db:serviceAppointments:update", async (_event, { id, data }) => {
+    return await updateServiceAppointment(id, data);
+  });
+
+  ipcMain.handle("db:serviceAppointments:markCompleted", async (_event, id: string) => {
+    return await markServiceAppointmentCompleted(id);
+  });
+
+  ipcMain.handle("db:serviceAppointments:markIncomplete", async (_event, id: string) => {
+    return await markServiceAppointmentIncomplete(id);
+  });
+
+  ipcMain.handle("db:serviceAppointments:delete", async (_event, id: string) => {
+    return await deleteServiceAppointment(id);
+  });
+
+  ipcMain.handle("db:serviceAppointments:getStats", async () => {
+    return await getServiceAppointmentStats();
+  });
+
 }

@@ -6,6 +6,7 @@ import {
   Settings as AdminIcon,
   History,
   FileText,
+  Calendar,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
@@ -83,6 +84,12 @@ export default function MainMenu() {
       key: "bills",
       icon: FileText,
       color: "text-purple-500",
+      adminOnly: true,
+    },
+    {
+      key: "services",
+      icon: Calendar,
+      color: "text-indigo-500",
       adminOnly: true,
     },
     {

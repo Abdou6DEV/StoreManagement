@@ -44,6 +44,7 @@ model UserPermissions {
   canAccessBills      Boolean @default(false)
   canAccessHistory    Boolean @default(false)
   canAccessDashboard  Boolean @default(false)
+  canAccessServices   Boolean @default(false)
 
   // Admin permissions (only for admin role)
   canManageUsers      Boolean @default(false)
@@ -154,8 +155,9 @@ model Client {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  sales    Sale[]
-  payments Payment[]
+  sales              Sale[]
+  payments           Payment[]
+  serviceAppointments ServiceAppointment[]
 }
 
 model Option {
@@ -249,4 +251,24 @@ model BillPayment {
 
   // Relations
   bill Bill @relation(fields: [billId], references: [id], onDelete: Cascade)
+}
+
+model ServiceAppointment {
+  id          String   @id @default(uuid())
+  name        String
+  serviceType String
+  description String?
+  costPrice   Int      @default(0)
+  servicePrice Int     @default(0)
+  clientId    String
+  dueDate     DateTime
+  notes       String?
+  isCompleted Boolean  @default(false)
+  completedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
 }

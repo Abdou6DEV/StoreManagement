@@ -27,6 +27,7 @@ const Cashier = React.lazy(() => import("./cashier"));
 const Stock = React.lazy(() => import("./stock"));
 const History = React.lazy(() => import("./history"));
 const Bills = React.lazy(() => import("./bills"));
+const Services = React.lazy(() => import("./services"));
 const Administrator = React.lazy(() => import("./administrator"));
 
 export default function App() {
@@ -161,6 +162,14 @@ export default function App() {
                             element={
                               <PermissionRoute requiredPermission="bills">
                                 <Bills />
+                              </PermissionRoute>
+                            }
+                          />
+                          <Route
+                            path="/services"
+                            element={
+                              <PermissionRoute requiredPermission="services">
+                                <Services />
                               </PermissionRoute>
                             }
                           />
