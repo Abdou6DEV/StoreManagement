@@ -8,6 +8,7 @@ import {
   ChevronsLeft,
   History,
   FileText,
+  Wrench,
   LogOut,
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
@@ -55,6 +56,12 @@ const menuItems = [
     path: "/bills",
     icon: FileText,
     color: "text-purple-500",
+  },
+  {
+    key: "services",
+    path: "/services",
+    icon: Wrench,
+    color: "text-cyan-500",
   },
   {
     key: "administrator",

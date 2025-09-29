@@ -97,6 +97,7 @@ import {
   markServiceAppointmentIncomplete,
   deleteServiceAppointment,
   getServiceAppointmentStats,
+  getServiceTypes,
 } from "../../lib/database/serviceAppointments";
 
 export function setupDatabaseHandlers() {
@@ -495,21 +496,21 @@ export function setupDatabaseHandlers() {
     return await bills.recordPayment(billId, amount, notes);
   });
 
-ipcMain.handle("db:bills:getBillWithPayments", async (_event, billId: string) => {
-  return await bills.getBillWithPayments(billId);
-});
+  ipcMain.handle("db:bills:getBillWithPayments", async (_event, billId: string) => {
+    return await bills.getBillWithPayments(billId);
+  });
 
-ipcMain.handle("db:bills:getAllPayments", async () => {
-  return await bills.getAllPayments();
-});
+  ipcMain.handle("db:bills:getAllPayments", async () => {
+    return await bills.getAllPayments();
+  });
 
-ipcMain.handle("db:bills:getBillsPaymentsAggregatedByPeriod", async (_event, period, startDate, endDate) => {
-  return await bills.getBillsPaymentsAggregatedByPeriod(period, startDate, endDate);
-});
+  ipcMain.handle("db:bills:getBillsPaymentsAggregatedByPeriod", async (_event, period, startDate, endDate) => {
+    return await bills.getBillsPaymentsAggregatedByPeriod(period, startDate, endDate);
+  });
 
-ipcMain.handle("db:bills:getBySpecificPeriod", async (_event, period, periodValue) => {
-  return await bills.getBySpecificPeriod(period, periodValue);
-});
+  ipcMain.handle("db:bills:getBySpecificPeriod", async (_event, period, periodValue) => {
+    return await bills.getBySpecificPeriod(period, periodValue);
+  });
 
   // Service Appointments handlers
   ipcMain.handle("db:serviceAppointments:create", async (_event, data) => {
@@ -560,4 +561,7 @@ ipcMain.handle("db:bills:getBySpecificPeriod", async (_event, period, periodValu
     return await getServiceAppointmentStats();
   });
 
+  ipcMain.handle("db:serviceAppointments:getServiceTypes", async () => {
+    return await getServiceTypes();
+  });
 }

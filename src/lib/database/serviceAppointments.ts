@@ -315,4 +315,16 @@ export async function getServiceAppointmentStats() {
   };
 }
 
+export async function getServiceTypes(): Promise<string[]> {
+  const serviceAppointments = await prisma.serviceAppointment.findMany({
+    select: { serviceType: true },
+    distinct: ['serviceType'],
+  });
+  return serviceAppointments.map(appointment => appointment.serviceType).sort();
+}
+
+// Alias methods for compatibility with the services table
+export const markCompleted = markServiceAppointmentCompleted;
+export const markIncomplete = markServiceAppointmentIncomplete;
+
 

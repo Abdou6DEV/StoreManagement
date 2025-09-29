@@ -329,5 +329,6 @@ export const databaseAPI = {
     markIncomplete: (id: string) => ipcRenderer.invoke("db:serviceAppointments:markIncomplete", id),
     delete: (id: string) => ipcRenderer.invoke("db:serviceAppointments:delete", id),
     getStats: () => ipcRenderer.invoke("db:serviceAppointments:getStats"),
+    getServiceTypes: () => ipcRenderer.invoke("db:serviceAppointments:getServiceTypes"),
   },
 };

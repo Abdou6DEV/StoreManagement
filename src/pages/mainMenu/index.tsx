@@ -6,7 +6,7 @@ import {
   Settings as AdminIcon,
   History,
   FileText,
-  Calendar,
+  Wrench,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
@@ -88,8 +88,8 @@ export default function MainMenu() {
     },
     {
       key: "services",
-      icon: Calendar,
-      color: "text-indigo-500",
+      icon: Wrench,
+      color: "text-cyan-500",
       adminOnly: true,
     },
     {
