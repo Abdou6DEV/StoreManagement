@@ -13,14 +13,14 @@ interface ServiceAppointment {
   description?: string;
   costPrice: number;
   servicePrice: number;
-  clientId: string;
+  clientId?: string;
   dueDate: string;
   notes?: string;
   isCompleted: boolean;
   completedAt?: string;
   createdAt: string;
   updatedAt: string;
-  client: {
+  client?: {
     id: string;
     name: string;
     phone?: string;
@@ -210,9 +210,15 @@ export default function EditServiceModal({
               {t("services.client", "Client")}
             </label>
             <div className="w-full px-4 py-3 rounded-lg border border-border bg-muted text-sm text-muted-foreground">
-              <div className="font-medium">{service.client.name}</div>
-              {service.client.phone && (
-                <div className="text-sm text-muted-foreground">{service.client.phone}</div>
+              {service.client ? (
+                <>
+                  <div className="font-medium">{service.client.name}</div>
+                  {service.client.phone && (
+                    <div className="text-sm text-muted-foreground">{service.client.phone}</div>
+                  )}
+                </>
+              ) : (
+                <div className="font-medium italic">{t("services.noClient", "No client assigned")}</div>
               )}
             </div>
             <p className="text-xs text-muted-foreground">

@@ -1,4 +1,4 @@
-import { ipcMain, BrowserWindow } from "electron";
+import { ipcMain } from "electron";
 import {
   getAllCategories,
   ensureCategory,
@@ -98,6 +98,8 @@ import {
   deleteServiceAppointment,
   getServiceAppointmentStats,
   getServiceTypes,
+  getServiceNames,
+  getCompletedServicesForCashier,
 } from "../../lib/database/serviceAppointments";
 
 export function setupDatabaseHandlers() {
@@ -563,5 +565,13 @@ export function setupDatabaseHandlers() {
 
   ipcMain.handle("db:serviceAppointments:getServiceTypes", async () => {
     return await getServiceTypes();
+  });
+
+  ipcMain.handle("db:serviceAppointments:getServiceNames", async () => {
+    return await getServiceNames();
+  });
+
+  ipcMain.handle("db:serviceAppointments:getCompletedForCashier", async () => {
+    return await getCompletedServicesForCashier();
   });
 }

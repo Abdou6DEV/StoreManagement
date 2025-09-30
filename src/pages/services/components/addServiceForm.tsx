@@ -22,14 +22,14 @@ interface ServiceAppointment {
   description?: string;
   costPrice: number;
   servicePrice: number;
-  clientId: string;
+  clientId?: string;
   dueDate: string;
   notes?: string;
   isCompleted: boolean;
   completedAt?: string;
   createdAt: string;
   updatedAt: string;
-  client: {
+  client?: {
     id: string;
     name: string;
     phone?: string;
@@ -68,23 +68,29 @@ export default function AddServiceForm({
   const [loading, setLoading] = useState(false);
   const [clients, setClients] = useState<Client[]>([]);
   const [serviceTypes, setServiceTypes] = useState<string[]>([]);
+  const [serviceNames, setServiceNames] = useState<string[]>([]);
   const [isExistingService, setIsExistingService] = useState(false);
   
   // Enhanced dropdown states
   const [showClientDropdown, setShowClientDropdown] = useState(false);
   const [showTypeDropdown, setShowTypeDropdown] = useState(false);
+  const [showNameDropdown, setShowNameDropdown] = useState(false);
   const [filteredClients, setFilteredClients] = useState<Client[]>([]);
   const [filteredTypes, setFilteredTypes] = useState<string[]>([]);
+  const [filteredNames, setFilteredNames] = useState<string[]>([]);
   const [clientSearch, setClientSearch] = useState("");
   const [typeSearch, setTypeSearch] = useState("");
+  const [nameSearch, setNameSearch] = useState("");
   const [selectedClientIndex, setSelectedClientIndex] = useState(-1);
   const [selectedTypeIndex, setSelectedTypeIndex] = useState(-1);
+  const [selectedNameIndex, setSelectedNameIndex] = useState(-1);
   const [clientPopoverOpen, setClientPopoverOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   
   // Refs for dropdown management
   const clientInputRef = useRef<HTMLInputElement>(null);
   const typeInputRef = useRef<HTMLInputElement>(null);
+  const nameInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (editingService) {
@@ -119,19 +125,21 @@ export default function AddServiceForm({
     }
   }, [openPanel]);
 
-  // Close type dropdown when clicking outside
+  // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Element;
       
       // Check if click is on a dropdown item (don't close if clicking on dropdown items)
-      if (target.closest("[data-type-dropdown]")) {
+      if (target.closest("[data-type-dropdown]") || target.closest("[data-name-dropdown]")) {
         return;
       }
       
-      // Close type dropdown
+      // Close dropdowns
       setShowTypeDropdown(false);
       setSelectedTypeIndex(-1);
+      setShowNameDropdown(false);
+      setSelectedNameIndex(-1);
     };
 
     document.addEventListener("mousedown", handleClickOutside);
@@ -142,13 +150,16 @@ export default function AddServiceForm({
 
   const loadServiceData = async () => {
     try {
-      const [clientsData, typesData] = await Promise.all([
+      const [clientsData, typesData, namesData] = await Promise.all([
         window.api.database.clients.getAll(),
-        window.api.database.serviceAppointments.getServiceTypes()
+        window.api.database.serviceAppointments.getServiceTypes(),
+        window.api.database.serviceAppointments.getServiceNames()
       ]);
       setClients(clientsData);
       setServiceTypes(typesData);
+      setServiceNames(namesData);
       setFilteredClients(clientsData); // Initialize filtered clients
+      setFilteredNames(namesData); // Initialize filtered names
     } catch (error) {
       console.error("Error loading service data:", error);
     }
@@ -220,6 +231,53 @@ export default function AddServiceForm({
     }
   };
 
+  // Service name search handler
+  const handleNameSearch = (value: string) => {
+    setForm((prev) => ({ ...prev, name: value }));
+    setNameSearch(value);
+    
+    if (value.trim()) {
+      const filtered = serviceNames.filter((name) =>
+        name.toLowerCase().includes(value.toLowerCase())
+      );
+      setFilteredNames(filtered);
+      setShowNameDropdown(true);
+      setSelectedNameIndex(-1);
+    } else {
+      setFilteredNames([]);
+      setShowNameDropdown(false);
+      setSelectedNameIndex(-1);
+    }
+  };
+
+  // Keyboard navigation for name dropdown
+  const handleNameKeyDown = (e: React.KeyboardEvent) => {
+    switch (e.key) {
+      case "ArrowDown":
+        if (!showNameDropdown || filteredNames.length === 0) return;
+        e.preventDefault();
+        setSelectedNameIndex(prev => 
+          prev < filteredNames.length - 1 ? prev + 1 : prev
+        );
+        break;
+      case "ArrowUp":
+        if (!showNameDropdown || filteredNames.length === 0) return;
+        e.preventDefault();
+        setSelectedNameIndex(prev => prev > 0 ? prev - 1 : prev);
+        break;
+      case "Enter":
+        e.preventDefault();
+        if (showNameDropdown && selectedNameIndex >= 0 && selectedNameIndex < filteredNames.length) {
+          selectName(filteredNames[selectedNameIndex]);
+        }
+        break;
+      case "Escape":
+        setShowNameDropdown(false);
+        setSelectedNameIndex(-1);
+        break;
+    }
+  };
+
   // Select client
   const selectClient = (client: Client) => {
     setSelectedClient(client);
@@ -231,6 +289,12 @@ export default function AddServiceForm({
     setForm(prev => ({ ...prev, serviceType: type }));
     setShowTypeDropdown(false);
     setSelectedTypeIndex(-1);
+  };
+
+  const selectName = (name: string) => {
+    setForm(prev => ({ ...prev, name: name }));
+    setShowNameDropdown(false);
+    setSelectedNameIndex(-1);
   };
 
   const handleAddService = async (e: React.FormEvent) => {
@@ -315,15 +379,47 @@ export default function AddServiceForm({
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
             <Legend>
               <label>{t("services.serviceName", "Service Name")}</label>
-              <input
-                data-field="service-name"
-                type="text"
-                placeholder={t("services.enterServiceName", "Enter service name")}
-                value={form.name}
-                onChange={(e) => handleFormChange("name", e.target.value)}
-                className="w-full px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all"
-                required
-              />
+              <div className="relative">
+                <input
+                  ref={nameInputRef}
+                  data-field="service-name"
+                  type="text"
+                  placeholder={t("services.enterServiceName", "Enter service name")}
+                  value={form.name}
+                  onChange={(e) => handleNameSearch(e.target.value)}
+                  onKeyDown={handleNameKeyDown}
+                  onFocus={() => {
+                    if (form.name.trim()) {
+                      setShowNameDropdown(true);
+                    }
+                  }}
+                  className="w-full px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all"
+                  required
+                />
+                
+                {/* Enhanced name dropdown */}
+                {showNameDropdown && filteredNames.length > 0 && (
+                  <div 
+                    data-name-dropdown
+                    className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-lg shadow-lg z-50 max-h-80 overflow-y-auto"
+                  >
+                    {filteredNames.map((name, index) => (
+                      <div
+                        key={name}
+                        className={cn(
+                          "px-4 py-3 cursor-pointer text-sm transition-colors border-b border-border last:border-b-0",
+                          index === selectedNameIndex
+                            ? "bg-cyan-50 text-cyan-700 dark:bg-cyan-950/30 dark:text-cyan-300"
+                            : "hover:bg-muted text-foreground"
+                        )}
+                        onClick={() => selectName(name)}
+                      >
+                        <div className="font-medium">{name}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </Legend>
             <Legend>
               <label>{t("services.serviceType", "Service Type")}</label>
@@ -372,7 +468,7 @@ export default function AddServiceForm({
                 </div>
             </Legend>
             <Legend>
-              <label>{t("services.client", "Client")}</label>
+              <label>{t("services.client", "Client")} <span className="text-muted-foreground text-xs">({t("common.optional", "Optional")})</span></label>
               <Popover
                 open={clientPopoverOpen}
                 onOpenChange={(open) => {

@@ -28,7 +28,7 @@ interface ServiceAppointment {
   completedAt?: string;
   createdAt: string;
   updatedAt: string;
-  client: {
+  client?: {
     id: string;
     name: string;
     phone?: string;
@@ -163,9 +163,17 @@ export default function ServiceAppointmentsTable({
                 <div className="flex items-center gap-2">
                   <User className="w-4 h-4 text-muted-foreground" />
                   <div>
-                    <div className="font-medium text-foreground">{appointment.client.name}</div>
-                    {appointment.client.phone && (
-                      <div className="text-sm text-muted-foreground">{appointment.client.phone}</div>
+                    {appointment.client ? (
+                      <>
+                        <div className="font-medium text-foreground">{appointment.client.name}</div>
+                        {appointment.client.phone && (
+                          <div className="text-sm text-muted-foreground">{appointment.client.phone}</div>
+                        )}
+                      </>
+                    ) : (
+                      <div className="font-medium text-muted-foreground italic">
+                        {t("services.noClient", "No client assigned")}
+                      </div>
                     )}
                   </div>
                 </div>

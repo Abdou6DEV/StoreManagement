@@ -416,6 +416,7 @@ export default function CashierPage() {
           <AddServiceModal
             open={showServiceModal}
             onClose={() => setShowServiceModal(false)}
+            cart={sessionActions.getCurrentSession().cart}
             onAdd={(service: CartItem) => {
               const currentSession = sessionActions.getCurrentSession();
               const updatedCart = addManualProductToCart(

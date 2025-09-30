@@ -38,18 +38,18 @@ model UserPermissions {
   userId String @unique
 
   // Page access permissions
-  canAccessCashier    Boolean @default(false)
-  canAccessStock      Boolean @default(false)
-  canAccessClients    Boolean @default(false)
-  canAccessBills      Boolean @default(false)
-  canAccessHistory    Boolean @default(false)
-  canAccessDashboard  Boolean @default(false)
-  canAccessServices   Boolean @default(false)
+  canAccessCashier   Boolean @default(false)
+  canAccessStock     Boolean @default(false)
+  canAccessClients   Boolean @default(false)
+  canAccessBills     Boolean @default(false)
+  canAccessHistory   Boolean @default(false)
+  canAccessDashboard Boolean @default(false)
+  canAccessServices  Boolean @default(false)
 
   // Admin permissions (only for admin role)
-  canManageUsers      Boolean @default(false)
-  canViewLogs         Boolean @default(false)
-  canManageSettings   Boolean @default(false)
+  canManageUsers    Boolean @default(false)
+  canViewLogs       Boolean @default(false)
+  canManageSettings Boolean @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -137,7 +137,7 @@ model SaleItem {
 
   product       Product?       @relation(fields: [productId], references: [id], onDelete: Cascade)
   manualProduct ManualProduct? @relation(fields: [manualProductId], references: [id], onDelete: Cascade)
-  service       Service?       @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  service       Service?       @relation(fields: [serviceId], references: [id], onDelete: Restrict)
   sale          Sale           @relation(fields: [saleId], references: [id], onDelete: Cascade)
 
   @@unique([productId, saleId])
@@ -155,8 +155,8 @@ model Client {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  sales              Sale[]
-  payments           Payment[]
+  sales               Sale[]
+  payments            Payment[]
   serviceAppointments ServiceAppointment[]
 }
 
@@ -254,21 +254,21 @@ model BillPayment {
 }
 
 model ServiceAppointment {
-  id          String   @id @default(uuid())
-  name        String
-  serviceType String
-  description String?
-  costPrice   Int      @default(0)
-  servicePrice Int     @default(0)
-  clientId    String
-  dueDate     DateTime
-  notes       String?
-  isCompleted Boolean  @default(false)
-  completedAt DateTime?
+  id           String    @id @default(uuid())
+  name         String
+  serviceType  String
+  description  String?
+  costPrice    Int       @default(0)
+  servicePrice Int       @default(0)
+  clientId     String?
+  dueDate      DateTime
+  notes        String?
+  isCompleted  Boolean   @default(false)
+  completedAt  DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   // Relations
-  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  client Client? @relation(fields: [clientId], references: [id], onDelete: Cascade)
 }

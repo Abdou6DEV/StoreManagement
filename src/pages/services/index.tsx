@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { Wrench, BarChart3 } from "lucide-react";
+import { Wrench, BarChart3, FileText } from "lucide-react";
 import { Button } from "../../lib/components/button";
+import { Tooltip } from "../../lib/components/tooltip";
 import { useTranslation } from "react-i18next";
 import ServicesTable from "./components/servicesTable";
 import ServicesFilters from "./components/servicesFilters";
@@ -14,14 +15,14 @@ interface ServiceAppointment {
   description?: string;
   costPrice: number;
   servicePrice: number;
-  clientId: string;
+  clientId?: string;
   dueDate: string;
   notes?: string;
   isCompleted: boolean;
   completedAt?: string;
   createdAt: string;
   updatedAt: string;
-  client: {
+  client?: {
     id: string;
     name: string;
     phone?: string;
@@ -63,7 +64,7 @@ export default function ServicesPage() {
         filteredServices = filteredServices.filter((service: ServiceAppointment) =>
           service.name.toLowerCase().includes(filters.search.toLowerCase()) ||
           service.serviceType.toLowerCase().includes(filters.search.toLowerCase()) ||
-          service.client.name.toLowerCase().includes(filters.search.toLowerCase())
+          (service.client && service.client.name.toLowerCase().includes(filters.search.toLowerCase()))
         );
       }
       
@@ -149,6 +150,14 @@ export default function ServicesPage() {
     setCurrentPage(1); // Reset to first page when filtering
   };
 
+  const handleViewServiceTypes = () => {
+    setShowServiceTypes(true);
+  };
+
+  const handleBackToServices = () => {
+    setShowServiceTypes(false);
+  };
+
 
   return (
     <main className="px-6 md:px-12 flex-1 space-y-4">
@@ -159,45 +168,50 @@ export default function ServicesPage() {
         onServiceUpdated={handleServiceUpdated}
       />
       
-      <div className="bg-card border border-border rounded-xl shadow-sm p-6 space-y-4">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <Wrench className="w-7 h-7 text-cyan-500" />
-            <h1 className="text-2xl font-bold">
-              {t("services.title", "Service Requests")}
-            </h1>
+      <div className="bg-card rounded-xl border border-border shadow-sm">
+        <div className="p-6 space-y-4">
+          {/* Header with toggle button */}
+          <div className="flex items-center justify-between border-b border-border pb-3">
+            <div className="flex items-center gap-3">
+              {showServiceTypes ? (
+                <BarChart3 className="w-7 h-7 text-cyan-500" />
+              ) : (
+                <Wrench className="w-7 h-7 text-cyan-500" />
+              )}
+              <h1 className="text-2xl font-bold">
+                {showServiceTypes ? t("services.serviceTypes", "Service Types") : t("services.serviceRequests", "Service Requests")}
+              </h1>
+            </div>
+            <div className="flex items-center gap-3">
+              <Tooltip
+                content={showServiceTypes 
+                  ? t("services.backToServicesTooltip", "Return to service requests view") 
+                  : t("services.viewServiceTypesTooltip", "View all service types")
+                }
+              >
+                <Button
+                  onClick={showServiceTypes ? handleBackToServices : handleViewServiceTypes}
+                  variant="outline"
+                  className="gap-2"
+                >
+                  <FileText className="w-4 h-4" />
+                  {showServiceTypes ? t("services.backToServices", "Back to Services") : t("services.viewServiceTypes", "Service Types View")}
+                </Button>
+              </Tooltip>
+            </div>
           </div>
-          <div className="flex gap-2">
-            <Button
-              onClick={() => setShowServiceTypes(false)}
-              variant={!showServiceTypes ? "default" : "outline"}
-              className={!showServiceTypes ? "bg-cyan-600 hover:bg-cyan-700 text-white" : "border-cyan-200 text-cyan-600 hover:bg-cyan-50 dark:border-cyan-800 dark:text-cyan-400 dark:hover:bg-cyan-950/30"}
-            >
-              <Wrench className="w-4 h-4 mr-2" />
-              {t("services.services", "Services")}
-            </Button>
-            <Button
-              onClick={() => setShowServiceTypes(true)}
-              variant={showServiceTypes ? "default" : "outline"}
-              className={showServiceTypes ? "bg-cyan-600 hover:bg-cyan-700 text-white" : "border-cyan-200 text-cyan-600 hover:bg-cyan-50 dark:border-cyan-800 dark:text-cyan-400 dark:hover:bg-cyan-950/30"}
-            >
-              <BarChart3 className="w-4 h-4 mr-2" />
-              {t("services.viewAllTypes", "View All Types")}
-            </Button>
-          </div>
-        </div>
-        
-        {!showServiceTypes ? (
-          <>
-            {/* Filters */}
+          {/* Filters - only show for services view */}
+          {!showServiceTypes && (
             <ServicesFilters
               filters={filters}
               itemsPerPage={itemsPerPage}
               onFilterChange={handleFilterChange}
               onItemsPerPageChange={setItemsPerPage}
             />
-            
-            {/* Services Table */}
+          )}
+          
+          {!showServiceTypes ? (
+            /* Services Table */
             <ServicesTable
               services={services}
               onEdit={handleServiceUpdated}
@@ -210,17 +224,17 @@ export default function ServicesPage() {
               onPageChange={setCurrentPage}
               onItemsPerPageChange={setItemsPerPage}
             />
-          </>
-        ) : (
-          /* Service Types Table */
-          <ServiceTypesTable
-            currentPage={currentPage}
-            totalPages={totalPages}
-            itemsPerPage={itemsPerPage}
-            onPageChange={setCurrentPage}
-            onItemsPerPageChange={setItemsPerPage}
-          />
-        )}
+          ) : (
+            /* Service Types Table */
+            <ServiceTypesTable
+              currentPage={currentPage}
+              totalPages={totalPages}
+              itemsPerPage={itemsPerPage}
+              onPageChange={setCurrentPage}
+              onItemsPerPageChange={setItemsPerPage}
+            />
+          )}
+        </div>
       </div>
 
     </main>

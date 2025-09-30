@@ -9,7 +9,7 @@ export async function createServiceAppointment(data: {
   description?: string;
   costPrice?: number;
   servicePrice: number;
-  clientId: string;
+  clientId?: string;
   dueDate: Date;
   notes?: string;
 }) {
@@ -321,6 +321,82 @@ export async function getServiceTypes(): Promise<string[]> {
     distinct: ['serviceType'],
   });
   return serviceAppointments.map(appointment => appointment.serviceType).sort();
+}
+
+export async function getServiceNames(): Promise<string[]> {
+  const serviceAppointments = await prisma.serviceAppointment.findMany({
+    select: { name: true },
+    distinct: ['name'],
+  });
+  return serviceAppointments.map(appointment => appointment.name).sort();
+}
+
+export async function getCompletedServicesForCashier() {
+  // Get all completed service appointments
+  const completedServices = await prisma.serviceAppointment.findMany({
+    where: {
+      isCompleted: true,
+    },
+    include: {
+      client: {
+        select: {
+          id: true,
+          name: true,
+          phone: true,
+        }
+      }
+    },
+    orderBy: {
+      completedAt: 'desc'
+    }
+  });
+
+  // Get all services that have been sold to filter them out
+  const soldServices = await prisma.saleItem.findMany({
+    where: {
+      service: {
+        isNot: null
+      }
+    },
+    include: {
+      service: {
+        select: {
+          name: true,
+          description: true,
+        }
+      },
+      sale: {
+        select: {
+          createdAt: true
+        }
+      }
+    },
+    orderBy: {
+      createdAt: 'desc'
+    }
+  });
+
+  // Filter out completed services that have been sold after completion
+  const availableServices = completedServices.filter(service => {
+    const completionDate = service.completedAt || service.updatedAt;
+    
+    // Check if this specific service (by name + description) has been sold after completion
+    const wasSoldAfterCompletion = soldServices.some(saleItem => {
+      if (!saleItem.service) return false;
+      
+      const matchesService = saleItem.service.name === service.name && 
+                            (saleItem.service.description || '') === (service.description || '');
+      
+      if (!matchesService) return false;
+      
+      // Check if this sale happened after the service was completed
+      return saleItem.sale.createdAt > completionDate;
+    });
+    
+    return !wasSoldAfterCompletion; // Include only if NOT sold after completion
+  });
+
+  return availableServices;
 }
 
 // Alias methods for compatibility with the services table

@@ -305,7 +305,7 @@ export const databaseAPI = {
       description?: string;
       costPrice?: number;
       servicePrice: number;
-      clientId: string;
+      clientId?: string;
       dueDate: Date;
       notes?: string;
     }) => ipcRenderer.invoke("db:serviceAppointments:create", data),
@@ -330,5 +330,7 @@ export const databaseAPI = {
     delete: (id: string) => ipcRenderer.invoke("db:serviceAppointments:delete", id),
     getStats: () => ipcRenderer.invoke("db:serviceAppointments:getStats"),
     getServiceTypes: () => ipcRenderer.invoke("db:serviceAppointments:getServiceTypes"),
+    getServiceNames: () => ipcRenderer.invoke("db:serviceAppointments:getServiceNames"),
+    getCompletedForCashier: () => ipcRenderer.invoke("db:serviceAppointments:getCompletedForCashier"),
   },
 };

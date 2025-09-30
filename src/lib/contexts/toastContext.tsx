@@ -99,8 +99,9 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({
     <ToastContext.Provider value={{ showToast }}>
       {children}
       {/* Toasts rendered here for global access */}
-      <div className="fixed z-[60] flex flex-col gap-3 p-4 top-16 right-4 max-w-sm w-full">
-        {toasts.map((toast) => {
+      {toasts.length > 0 && (
+        <div className="fixed z-[60] flex flex-col gap-3 p-4 top-4 right-4 max-w-sm w-full">
+          {toasts.map((toast) => {
           const styles = getToastStyles(toast.type);
           return (
             <div
@@ -168,7 +169,8 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({
             </div>
           );
         })}
-      </div>
+        </div>
+      )}
       
       {/* Add custom CSS for the progress animation */}
         <style dangerouslySetInnerHTML={{

@@ -10,14 +10,14 @@ interface ServiceAppointment {
   description?: string;
   costPrice: number;
   servicePrice: number;
-  clientId: string;
+  clientId?: string;
   dueDate: string;
   notes?: string;
   isCompleted: boolean;
   completedAt?: string;
   createdAt: string;
   updatedAt: string;
-  client: {
+  client?: {
     id: string;
     name: string;
     phone?: string;
@@ -109,11 +109,11 @@ export default function ServicesHistoryModal({
                   {t("services.clientName", "Client Name")}
                 </div>
                 <div className="text-sm font-medium">
-                  {service.client.name}
+                  {service.client ? service.client.name : t("services.noClient", "No client assigned")}
                 </div>
               </div>
               
-              {service.client.phone && (
+              {service.client?.phone && (
                 <div className="p-3 bg-muted/20 rounded-lg">
                   <div className="text-xs text-muted-foreground mb-1">
                     {t("services.phone", "Phone")}

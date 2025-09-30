@@ -162,10 +162,7 @@ export default function AddServiceAppointmentForm({
       return;
     }
     
-    if (!formData.clientId.trim()) {
-      showToast(t("services.clientRequired", "Client is required"), "error");
-      return;
-    }
+    // Client is now optional - no validation needed
     
     if (!formData.dueDate) {
       showToast(t("services.dueDateRequired", "Due date is required"), "error");
@@ -177,10 +174,13 @@ export default function AddServiceAppointmentForm({
       return;
     }
 
-    const selectedClient = clients.find(c => c.id === formData.clientId);
-    if (!selectedClient) {
-      showToast(t("services.clientNotFound", "Selected client not found"), "error");
-      return;
+    // Validate client only if one is selected
+    if (formData.clientId.trim()) {
+      const selectedClient = clients.find(c => c.id === formData.clientId);
+      if (!selectedClient) {
+        showToast(t("services.clientNotFound", "Selected client not found"), "error");
+        return;
+      }
     }
 
     onSubmit({
@@ -261,7 +261,7 @@ export default function AddServiceAppointmentForm({
         <div className="space-y-2 relative">
           <label className="text-sm font-medium text-foreground flex items-center gap-2">
             <User className="w-4 h-4" />
-            {t("services.client", "Client")} *
+            {t("services.client", "Client")} <span className="text-muted-foreground text-xs">({t("common.optional", "Optional")})</span>
           </label>
           <div className="relative">
             <input

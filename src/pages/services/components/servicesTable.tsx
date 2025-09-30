@@ -23,14 +23,14 @@ interface ServiceAppointment {
   description?: string;
   costPrice: number;
   servicePrice: number;
-  clientId: string;
+  clientId?: string;
   dueDate: string;
   notes?: string;
   isCompleted: boolean;
   completedAt?: string;
   createdAt: string;
   updatedAt: string;
-  client: {
+  client?: {
     id: string;
     name: string;
     phone?: string;
@@ -286,9 +286,17 @@ const ServicesTable: React.FC<ServicesTableProps> = ({
                   </td>
                   <td className={`px-4 py-2 ${isRTL ? "text-right" : "text-left"}`}>
                     <div>
-                      <div className="font-medium">{service.client.name}</div>
-                      {service.client.phone && (
-                        <div className="text-sm text-muted-foreground">{service.client.phone}</div>
+                      {service.client ? (
+                        <>
+                          <div className="font-medium">{service.client.name}</div>
+                          {service.client.phone && (
+                            <div className="text-sm text-muted-foreground">{service.client.phone}</div>
+                          )}
+                        </>
+                      ) : (
+                        <div className="font-medium text-muted-foreground italic">
+                          {t("services.noClient", "No client assigned")}
+                        </div>
                       )}
                     </div>
                   </td>

@@ -93,6 +93,18 @@ export async function updateService(
 }
 
 export async function deleteService(id: string) {
+  // First check if there are any sales using this service
+  const salesCount = await prisma.saleItem.count({
+    where: { serviceId: id },
+  });
+
+  if (salesCount > 0) {
+    throw new Error(
+      `Cannot delete service: It has been used in ${salesCount} sale(s). ` +
+      `Please delete the related sales first or contact an administrator.`
+    );
+  }
+
   return await prisma.service.delete({
     where: { id },
   });
