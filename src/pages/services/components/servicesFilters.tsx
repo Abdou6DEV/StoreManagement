@@ -17,6 +17,7 @@ import {
   PopoverTrigger,
 } from "../../../lib/components/popover";
 import { Button } from "../../../lib/components/button";
+import { BadgeNotification } from "../../../lib/components/badgeNotification";
 import { cn } from "../../../lib/utils";
 
 interface ServicesFiltersProps {
@@ -28,6 +29,8 @@ interface ServicesFiltersProps {
   itemsPerPage: number;
   onFilterChange: (key: string, value: any) => void;
   onItemsPerPageChange: (size: number) => void;
+  unseenOverdueCount?: number;
+  unseenDueSoonCount?: number;
 }
 
 const statusOptions = [
@@ -47,6 +50,8 @@ export default function ServicesFilters({
   itemsPerPage,
   onFilterChange,
   onItemsPerPageChange,
+  unseenOverdueCount = 0,
+  unseenDueSoonCount = 0,
 }: ServicesFiltersProps) {
   const { t } = useTranslation();
   const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
@@ -163,14 +168,30 @@ export default function ServicesFilters({
           <PopoverTrigger asChild>
             <Button
               variant="outline"
-              className="px-3 py-1.5"
+              className="px-3 py-1.5 relative"
               aria-label={t("services.filterByDate", "Filter by date")}
             >
-              {dateFilterOptions.find(option => option.value === filters.dateFilter)?.label || "All Dates"}
+              <div className="flex items-center gap-2">
+                {dateFilterOptions.find(option => option.value === filters.dateFilter)?.label || "All Dates"}
+                {unseenOverdueCount > 0 && (
+                  <BadgeNotification 
+                    count={unseenOverdueCount} 
+                    variant="red"
+                    className="h-4 text-xs"
+                  />
+                )}
+                {unseenOverdueCount === 0 && unseenDueSoonCount > 0 && (
+                  <BadgeNotification 
+                    count={unseenDueSoonCount} 
+                    variant="orange"
+                    className="h-4 text-xs"
+                  />
+                )}
+              </div>
               <ChevronDown className="ml-2 w-4 h-4" />
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-[140px] p-0 z-50">
+          <PopoverContent className="w-[160px] p-0 z-50">
             <Command shouldFilter={false}>
               <CommandList>
                 <CommandGroup>
@@ -183,7 +204,23 @@ export default function ServicesFilters({
                         setDateFilterDropdownOpen(false);
                       }}
                     >
-                      {option.label}
+                      <div className="flex items-center gap-2">
+                        {option.label}
+                        {option.value === "overdue" && unseenOverdueCount > 0 && (
+                          <BadgeNotification 
+                            count={unseenOverdueCount} 
+                            variant="red"
+                            className="absolute top-1 right-3 z-10"
+                          />
+                        )}
+                        {option.value === "dueSoon" && unseenDueSoonCount > 0 && (
+                          <BadgeNotification 
+                            count={unseenDueSoonCount} 
+                            variant="orange"
+                            className="absolute top-1 right-3 z-10"
+                          />
+                        )}
+                      </div>
                       <Check
                         className={cn(
                           "ml-auto h-4 w-4",

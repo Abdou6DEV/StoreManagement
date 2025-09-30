@@ -3,6 +3,8 @@ import { Wrench, BarChart3, FileText } from "lucide-react";
 import { Button } from "../../lib/components/button";
 import { Tooltip } from "../../lib/components/tooltip";
 import { useTranslation } from "react-i18next";
+import { useOverdueServices } from "../../lib/contexts/overdueServicesContext";
+import { useDueSoonServices } from "../../lib/contexts/dueSoonServicesContext";
 import ServicesTable from "./components/servicesTable";
 import ServicesFilters from "./components/servicesFilters";
 import AddServiceForm from "./components/addServiceForm";
@@ -31,6 +33,8 @@ interface ServiceAppointment {
 
 export default function ServicesPage() {
   const { t } = useTranslation();
+  const { unseenOverdueServicesCount, markOverdueServicesAsSeen } = useOverdueServices();
+  const { unseenDueSoonServicesCount, markDueSoonServicesAsSeen, dueSoonThresholdDays } = useDueSoonServices();
   const [openPanel, setOpenPanel] = useState<"add" | null>(null);
   const [showServiceTypes, setShowServiceTypes] = useState(false);
   const [services, setServices] = useState<ServiceAppointment[]>([]);
@@ -45,6 +49,12 @@ export default function ServicesPage() {
     status: "all",
     dateFilter: "all",
   });
+  const [seenOverdueServices, setSeenOverdueServices] = useState<Set<string>>(new Set());
+  const [seenDueSoonServices, setSeenDueSoonServices] = useState<Set<string>>(new Set());
+  const [newlyOverdueServicesIds, setNewlyOverdueServicesIds] = useState<Set<string>>(new Set());
+  const [newlyDueSoonServicesIds, setNewlyDueSoonServicesIds] = useState<Set<string>>(new Set());
+  const [isViewingOverdueTable, setIsViewingOverdueTable] = useState(false);
+  const [isViewingDueSoonTable, setIsViewingDueSoonTable] = useState(false);
 
   // Load services and service types
   useEffect(() => {
@@ -129,6 +139,28 @@ export default function ServicesPage() {
     }
   };
 
+  // Load seen services from localStorage
+  useEffect(() => {
+    const savedOverdue = localStorage.getItem('seenOverdueServices');
+    const savedDueSoon = localStorage.getItem('seenDueSoonServices');
+    
+    if (savedOverdue) {
+      setSeenOverdueServices(new Set(JSON.parse(savedOverdue)));
+    }
+    if (savedDueSoon) {
+      setSeenDueSoonServices(new Set(JSON.parse(savedDueSoon)));
+    }
+  }, []);
+
+  // Save seen services to localStorage when they change
+  useEffect(() => {
+    localStorage.setItem('seenOverdueServices', JSON.stringify(Array.from(seenOverdueServices)));
+  }, [seenOverdueServices]);
+
+  useEffect(() => {
+    localStorage.setItem('seenDueSoonServices', JSON.stringify(Array.from(seenDueSoonServices)));
+  }, [seenDueSoonServices]);
+
   const handleServiceAdded = () => {
     setOpenPanel(null);
     loadServices();
@@ -212,6 +244,8 @@ export default function ServicesPage() {
               itemsPerPage={itemsPerPage}
               onFilterChange={handleFilterChange}
               onItemsPerPageChange={setItemsPerPage}
+              unseenOverdueCount={unseenOverdueServicesCount}
+              unseenDueSoonCount={unseenDueSoonServicesCount}
             />
           )}
           
