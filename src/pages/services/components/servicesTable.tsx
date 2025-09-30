@@ -117,6 +117,8 @@ const ServicesTable: React.FC<ServicesTableProps> = ({
 
   const markAsComplete = async (serviceId: string) => {
     try {
+      // Mark the service as completed instead of deleting it
+      // This allows us to track completed services and show them in history if not sold
       await window.api.database.serviceAppointments.update(serviceId, {
         isCompleted: true,
         completedAt: new Date().toISOString(),
@@ -124,7 +126,7 @@ const ServicesTable: React.FC<ServicesTableProps> = ({
       // Refresh the service data by calling the parent's refresh function
       onEdit({} as ServiceAppointment); // This will trigger a refresh
     } catch (error) {
-      console.error("Error marking service as complete:", error);
+      console.error("Error completing service:", error);
     }
   };
 

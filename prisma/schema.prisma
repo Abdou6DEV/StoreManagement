@@ -81,6 +81,9 @@ model Product {
   category      Category       @relation(fields: [categoryName], references: [name], onDelete: Cascade)
   saleItems     SaleItem[]
   PurchaseItems PurchaseItem[]
+
+  @@index([categoryName])
+  @@index([name])
 }
 
 model ManualProduct {
@@ -98,15 +101,18 @@ model ManualProduct {
 }
 
 model Service {
-  id          String  @id @default(uuid())
-  name        String  @unique
-  description String?
-  costPrice   Int     @default(0)
+  id                    String  @id @default(uuid())
+  name                  String  @unique
+  description           String?
+  costPrice             Int     @default(0)
+  serviceAppointmentId  String? // Link back to the original ServiceAppointment
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   saleItems SaleItem[]
+
+  @@index([serviceAppointmentId])
 }
 
 model Sale {
@@ -143,6 +149,9 @@ model SaleItem {
   @@unique([productId, saleId])
   @@unique([manualProductId, saleId])
   @@unique([serviceId, saleId])
+  @@index([productId])
+  @@index([saleId])
+  @@index([serviceId])
 }
 
 model Client {
@@ -271,4 +280,8 @@ model ServiceAppointment {
 
   // Relations
   client Client? @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([isCompleted])
+  @@index([completedAt])
+  @@index([clientId])
 }

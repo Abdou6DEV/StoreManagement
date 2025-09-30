@@ -27,6 +27,7 @@ export async function createServiceAppointment(data: {
     throw new Error(`Service price cannot exceed ${MAX_PRICE.toLocaleString()}`);
   }
 
+
   return await prisma.serviceAppointment.create({
     data: {
       name: data.name,
@@ -229,6 +230,7 @@ export async function updateServiceAppointment(
     throw new Error(`Service price cannot exceed ${MAX_PRICE.toLocaleString()}`);
   }
 
+
   return await prisma.serviceAppointment.update({
     where: { id },
     data,
@@ -332,71 +334,64 @@ export async function getServiceNames(): Promise<string[]> {
 }
 
 export async function getCompletedServicesForCashier() {
-  // Get all completed service appointments
-  const completedServices = await prisma.serviceAppointment.findMany({
-    where: {
-      isCompleted: true,
-    },
-    include: {
-      client: {
-        select: {
-          id: true,
-          name: true,
-          phone: true,
-        }
-      }
-    },
-    orderBy: {
-      completedAt: 'desc'
-    }
-  });
+  // Optimized query: Use a single raw SQL query with subquery to filter out sold services
+  // This is much faster than loading all completed services and filtering in JavaScript
+  const availableServices = await prisma.$queryRaw<any[]>`
+    SELECT 
+      sa.id,
+      sa.name,
+      sa.serviceType,
+      sa.description,
+      sa.costPrice,
+      sa.servicePrice,
+      sa.clientId,
+      sa.dueDate,
+      sa.notes,
+      sa.isCompleted,
+      sa.completedAt,
+      sa.createdAt,
+      sa.updatedAt,
+      c.id as client_id,
+      c.name as client_name,
+      c.phone as client_phone
+    FROM ServiceAppointment sa
+    LEFT JOIN Client c ON sa.clientId = c.id
+    WHERE sa.isCompleted = 1
+    AND sa.id NOT IN (
+      SELECT DISTINCT s.serviceAppointmentId
+      FROM Service s
+      INNER JOIN SaleItem si ON si.serviceId = s.id
+      WHERE s.serviceAppointmentId IS NOT NULL
+    )
+    ORDER BY sa.completedAt DESC
+  `;
 
-  // Get all services that have been sold to filter them out
-  const soldServices = await prisma.saleItem.findMany({
-    where: {
-      service: {
-        isNot: null
-      }
-    },
-    include: {
-      service: {
-        select: {
-          name: true,
-          description: true,
-        }
-      },
-      sale: {
-        select: {
-          createdAt: true
-        }
-      }
-    },
-    orderBy: {
-      createdAt: 'desc'
-    }
-  });
+  // Transform the flat result into the expected structure with nested client
+  return availableServices.map(service => ({
+    id: service.id,
+    name: service.name,
+    serviceType: service.serviceType,
+    description: service.description,
+    costPrice: service.costPrice,
+    servicePrice: service.servicePrice,
+    clientId: service.clientId,
+    dueDate: new Date(service.dueDate),
+    notes: service.notes,
+    isCompleted: Boolean(service.isCompleted),
+    completedAt: service.completedAt ? new Date(service.completedAt) : null,
+    createdAt: new Date(service.createdAt),
+    updatedAt: new Date(service.updatedAt),
+    client: service.client_id ? {
+      id: service.client_id,
+      name: service.client_name,
+      phone: service.client_phone
+    } : null
+  }));
+}
 
-  // Filter out completed services that have been sold after completion
-  const availableServices = completedServices.filter(service => {
-    const completionDate = service.completedAt || service.updatedAt;
-    
-    // Check if this specific service (by name + description) has been sold after completion
-    const wasSoldAfterCompletion = soldServices.some(saleItem => {
-      if (!saleItem.service) return false;
-      
-      const matchesService = saleItem.service.name === service.name && 
-                            (saleItem.service.description || '') === (service.description || '');
-      
-      if (!matchesService) return false;
-      
-      // Check if this sale happened after the service was completed
-      return saleItem.sale.createdAt > completionDate;
-    });
-    
-    return !wasSoldAfterCompletion; // Include only if NOT sold after completion
-  });
-
-  return availableServices;
+export async function getServiceHistory() {
+  // Get all completed service appointments that haven't been sold
+  return await getCompletedServicesForCashier();
 }
 
 // Alias methods for compatibility with the services table

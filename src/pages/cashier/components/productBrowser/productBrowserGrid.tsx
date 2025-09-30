@@ -1,9 +1,9 @@
-import React from "react";
+import React, { memo } from "react";
 import ProductCard from "../productCard";
 import { Skeleton } from "../../../../lib/components/skeleton";
 import type { ProductBrowserGridProps } from "./productBrowserTypes";
 
-const ProductBrowserGrid: React.FC<ProductBrowserGridProps> = ({
+const ProductBrowserGrid: React.FC<ProductBrowserGridProps> = memo(({
   filteredProducts,
   visibleCount,
   loadingMore,
@@ -82,6 +82,8 @@ const ProductBrowserGrid: React.FC<ProductBrowserGridProps> = ({
         ))}
     </div>
   );
-};
+});
+
+ProductBrowserGrid.displayName = "ProductBrowserGrid";
 
 export default ProductBrowserGrid;

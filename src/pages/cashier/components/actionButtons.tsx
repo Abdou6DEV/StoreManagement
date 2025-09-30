@@ -83,9 +83,12 @@ export default function ActionButtons({
     window.api.database.clients.getAll().then(setClientSuggestions);
   };
 
+  // Lazy load clients only when user starts typing
   useEffect(() => {
-    refreshClientSuggestions();
-  }, []);
+    if (clientName.length > 0 && clientSuggestions.length === 0) {
+      refreshClientSuggestions();
+    }
+  }, [clientName]);
 
   const [showSuggestions, setShowSuggestions] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);

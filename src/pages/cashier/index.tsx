@@ -82,58 +82,35 @@ export default function CashierPage() {
   } | null>(null);
   const [outOfStockConfirmed, setOutOfStockConfirmed] = useState(false);
 
-  // Fetch all products with sales counts - optimized with caching
+  // Fetch all products - optimized without sales counts
   useEffect(() => {
     let isMounted = true;
     
-    const fetchProductsWithSales = async () => {
+    const fetchProducts = async () => {
       try {
-        // Use requestIdleCallback to defer non-critical operations
-        const fetchData = () => {
-          return Promise.all([
-          window.api.database.products.getAll(),
-          window.api.database.products.getSalesCounts(),
-        ]);
-        };
-
-        const [products, salesCounts] = await fetchData();
-
-        if (!isMounted) return;
-
-        // Merge salesCounts into products - optimized
-        const salesMap = new Map(
-          salesCounts.map((s: { productId: string; totalSold: number }) => [s.productId, s.totalSold])
-        );
-        
-        // Use more efficient mapping
-        const merged = products.map((p: Product) => ({
-          ...p,
-          totalSold: salesMap.get(p.id) || 0,
-        }));
-
-        setAllProducts(merged as ProductWithSales[]);
-      } catch (error) {
-        if (!isMounted) return;
-        
-        rendererLogger.error(
-          "Error fetching products with sales",
-          "CashierPage",
-          error
-        );
-        // Fallback to basic products if sales fetch fails
         const products = await window.api.database.products.getAll();
-        if (isMounted) {
+
+        if (!isMounted) return;
+
+        // Set products with totalSold as 0 (we'll fetch sales counts only when needed in product browser)
         setAllProducts(
           products.map((p: Product) => ({
             ...p,
             totalSold: 0,
           })) as ProductWithSales[]
         );
-        }
+      } catch (error) {
+        if (!isMounted) return;
+        
+        rendererLogger.error(
+          "Error fetching products",
+          "CashierPage",
+          error
+        );
       }
     };
 
-    fetchProductsWithSales();
+    fetchProducts();
     
     return () => {
       isMounted = false;

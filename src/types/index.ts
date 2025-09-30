@@ -63,6 +63,7 @@ export interface CartItem {
   manualProductType?: string;
   manualProductCostPrice?: number;
   isService?: boolean;
+  serviceId?: string; // Add serviceId for proper ID-based tracking
   description?: string;
   serviceCostPrice?: number;
 }

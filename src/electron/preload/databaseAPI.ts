@@ -55,7 +55,18 @@ export const databaseAPI = {
   sales: {
     create: (data: {
       clientId?: string;
-      items: { productId: string; quantity: number; price: number }[];
+      items: {
+        productId?: string;
+        quantity: number;
+        price: number;
+        manualProductName?: string;
+        manualProductType?: string;
+        manualProductCostPrice?: number;
+        serviceName?: string;
+        serviceDescription?: string;
+        serviceCostPrice?: number;
+        serviceAppointmentId?: string;
+      }[];
       discount?: number;
     }) => ipcRenderer.invoke("db:sales:create", data),
     getAll: () => ipcRenderer.invoke("db:sales:getAll"),

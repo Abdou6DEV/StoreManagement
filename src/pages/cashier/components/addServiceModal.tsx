@@ -60,7 +60,8 @@ export default function AddServiceModal({
   const [allServices, setAllServices] = useState<Service[]>([]);
   const [completedServices, setCompletedServices] = useState<CompletedServiceAppointment[]>([]);
   
-  // Fetch all services and completed service appointments when modal opens or cart changes
+  // Fetch all services and completed service appointments when modal opens
+  // Filter cart items on render instead of in useEffect for better performance
   useEffect(() => {
     if (open) {
       Promise.all([
@@ -69,27 +70,22 @@ export default function AddServiceModal({
       ])
         .then(([services, completed]) => {
           setAllServices(services);
-          
-          // Filter out completed services that are already in the cart
-          const servicesInCart = cart
-            .filter(item => item.isService)
-            .map(item => ({ name: item.name, description: item.description || '' }));
-          
-           const availableCompletedServices = completed.filter((service: CompletedServiceAppointment) => {
-             return !servicesInCart.some(cartService => 
-               cartService.name === service.name && 
-               cartService.description === (service.description || '')
-             );
-           });
-          
-          setCompletedServices(availableCompletedServices);
+          setCompletedServices(completed);
         })
         .catch(() => {
           setAllServices([]);
           setCompletedServices([]);
         });
     }
-  }, [open, cart]);
+  }, [open]); // Removed cart dependency - filter during render instead
+  
+  // Filter completed services based on cart (computed during render)
+  const availableCompletedServices = completedServices.filter((service) => {
+    const serviceIdsInCart = cart
+      .filter(item => item.isService && item.serviceId)
+      .map(item => item.serviceId);
+    return !serviceIdsInCart.includes(service.id);
+  });
 
   const handleSelectService = (selectedService: Service) => {
     // For service templates, just pre-fill the form instead of adding directly to cart
@@ -102,11 +98,9 @@ export default function AddServiceModal({
   };
 
   const handleSelectCompletedService = (completedService: CompletedServiceAppointment) => {
-    // Check if this service is already in the cart
+    // Check if this service is already in the cart using ID
     const isAlreadyInCart = cart.some(item => 
-      item.isService && 
-      item.name === completedService.name && 
-      (item.description || '') === (completedService.description || '')
+      item.isService && item.serviceId === completedService.id
     );
     
     if (isAlreadyInCart) {
@@ -114,9 +108,10 @@ export default function AddServiceModal({
       return;
     }
     
-    // Add service directly to cart with pre-filled prices
+    // Add service directly to cart with pre-filled prices and proper ID
     onAdd({
       id: `service-${Date.now()}`,
+      serviceId: completedService.id, // Use the actual service ID
       name: completedService.name,
       price: completedService.servicePrice || 0,
       qty: 1,
@@ -458,7 +453,7 @@ export default function AddServiceModal({
                     {t("cashier.completedServices", "Completed Services")}
                   </div>
                   <div className="grid grid-cols-3 gap-3 auto-rows-max">
-                    {completedServices.map((srv) => (
+                    {availableCompletedServices.map((srv) => (
                       <div
                         key={`completed-${srv.id}`}
                         className="p-3 border border-green-200 bg-green-50 dark:bg-green-950/20 dark:border-green-800 rounded-lg h-[80px] flex flex-col justify-between relative overflow-hidden w-full hover:border-green-400 hover:shadow-md transition-all cursor-pointer"

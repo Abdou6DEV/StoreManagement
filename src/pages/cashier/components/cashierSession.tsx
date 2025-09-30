@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback, memo } from "react";
 import type { ProductWithSales, CartItem } from "../../../types";
 import { useTranslation } from "react-i18next";
 import PaymentSummary from "../../../lib/components/paymentSummary";
@@ -27,7 +27,7 @@ interface CashierSessionProps {
   onSessionChange: (sessionIndex: number) => void;
 }
 
-export default function CashierSession({
+const CashierSession = memo(function CashierSession({
   allProducts,
   setProductRefreshKey,
   cart,
@@ -97,6 +97,7 @@ export default function CashierSession({
           serviceName: item.isService ? item.name : undefined,
           serviceDescription: item.isService ? item.description : undefined,
           serviceCostPrice: item.isService ? item.serviceCostPrice : undefined,
+          serviceAppointmentId: item.isService ? item.serviceId : undefined, // Pass the ServiceAppointment ID
         })),
         discount: Number(discount) || 0,
       });
@@ -348,4 +349,6 @@ export default function CashierSession({
       </section>
     </div>
   );
-}
+});
+
+export default CashierSession;

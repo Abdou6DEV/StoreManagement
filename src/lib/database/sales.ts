@@ -1,6 +1,28 @@
 import { prisma } from "./prismaClient";
 import { findOrCreateManualProduct } from "./manualProducts";
 import { findOrCreateService } from "./services";
+
+// Helper function to clean up orphaned services created from ServiceAppointments
+async function cleanupOrphanedServices(tx: any, saleItems: any[], saleId: string) {
+  for (const item of saleItems) {
+    if (item.service && item.service.serviceAppointmentId) {
+      // Check if this service is used in any other sales
+      const otherSalesCount = await tx.saleItem.count({
+        where: {
+          serviceId: item.service.id,
+          saleId: { not: saleId }
+        }
+      });
+
+      // If no other sales use this service, delete it
+      if (otherSalesCount === 0) {
+        await tx.service.delete({
+          where: { id: item.service.id }
+        });
+      }
+    }
+  }
+}
 import { getPurchasesByDateRange } from "./purchases";
 
 // Maximum value for INT column in SQLite (2^31 - 1)
@@ -18,6 +40,7 @@ export async function createSale(data: {
     serviceName?: string;
     serviceDescription?: string;
     serviceCostPrice?: number;
+    serviceAppointmentId?: string; // Add serviceAppointmentId for proper ID tracking
   }[];
   discount?: number;
 }) {
@@ -64,6 +87,7 @@ export async function createSale(data: {
           name: item.serviceName,
           description: item.serviceDescription,
           costPrice: item.serviceCostPrice,
+          serviceAppointmentId: item.serviceAppointmentId, // Pass the ServiceAppointment ID
         });
         serviceId = service.id;
       }
@@ -77,61 +101,75 @@ export async function createSale(data: {
   );
 
   return await prisma.$transaction(async (tx) => {
-    for (const item of data.items) {
-      // Only update product quantity if it's a regular product (has productId)
-      if (item.productId) {
-        const product = await tx.product.findUnique({
-          where: { id: item.productId },
-        });
-
-        if (product) {
-          const newQty = Math.max(0, product.quantity - item.quantity);
-          await tx.product.update({
-            where: { id: item.productId },
-            data: { quantity: newQty },
-          });
-        }
-      }
+    // Optimized: Batch fetch all products at once and update quantities
+    const productIds = processedItems
+      .filter(item => item.productId)
+      .map(item => item.productId!);
+    
+    // Fetch all products in a single query
+    const products = productIds.length > 0
+      ? await tx.product.findMany({
+          where: { id: { in: productIds } },
+          select: { id: true, quantity: true, boughtPrice: true }
+        })
+      : [];
+    
+    // Create a map for quick lookup
+    const productMap = new Map(products.map(p => [p.id, p]));
+    
+    // Update product quantities in batch
+    if (products.length > 0) {
+      await Promise.all(
+        processedItems
+          .filter(item => item.productId)
+          .map(item => {
+            const product = productMap.get(item.productId!);
+            if (product) {
+              const newQty = Math.max(0, product.quantity - item.quantity);
+              return tx.product.update({
+                where: { id: item.productId! },
+                data: { quantity: newQty },
+              });
+            }
+            return Promise.resolve();
+          })
+      );
     }
 
+    // Create sale with items - no additional product queries needed
     const sale = await tx.sale.create({
       data: {
         clientId: data.clientId,
         discount: data.discount ?? 0,
         saleItems: {
-          create: await Promise.all(
-            processedItems.map(async (item) => {
-              let boughtPrice = null;
+          create: processedItems.map((item) => {
+            let boughtPrice = null;
 
-              // Get the current bought price for regular products
-              if (item.productId) {
-                const product = await tx.product.findUnique({
-                  where: { id: item.productId },
-                  select: { boughtPrice: true },
-                });
-                boughtPrice = product?.boughtPrice || null;
-              }
-              
-              // For manual products, use the cost price from the sale data
-              if (item.manualProductId && item.manualProductCostPrice !== undefined) {
-                boughtPrice = item.manualProductCostPrice;
-              }
-              
-              // For services, use the cost price from the sale data
-              if (item.serviceId && item.serviceCostPrice !== undefined) {
-                boughtPrice = item.serviceCostPrice;
-              }
+            // Get bought price from our pre-fetched product map
+            if (item.productId) {
+              const product = productMap.get(item.productId);
+              boughtPrice = product?.boughtPrice || null;
+            }
+            
+            // For manual products, use the cost price from the sale data
+            if (item.manualProductId && item.manualProductCostPrice !== undefined) {
+              boughtPrice = item.manualProductCostPrice;
+            }
+            
+            // For services, use the cost price from the sale data
+            if (item.serviceId && item.serviceCostPrice !== undefined) {
+              boughtPrice = item.serviceCostPrice;
+            }
 
-              return {
-                productId: item.productId || null,
-                manualProductId: item.manualProductId,
-                serviceId: item.serviceId,
-                quantity: item.quantity,
-                price: item.price,
-                boughtPrice: boughtPrice,
-              };
-            })
-          ),
+            return {
+              productId: item.productId || null,
+              manualProductId: item.manualProductId,
+              serviceId: item.serviceId,
+              quantity: item.quantity,
+              price: item.price,
+              boughtPrice: boughtPrice,
+            };
+          }),
         },
       },
     });
@@ -154,6 +192,7 @@ export async function updateSale(
       serviceName?: string;
       serviceDescription?: string;
       serviceCostPrice?: number;
+      serviceAppointmentId?: string; // Add serviceAppointmentId for proper ID tracking
     }[];
     discount?: number;
   }
@@ -201,6 +240,7 @@ export async function updateSale(
           name: item.serviceName,
           description: item.serviceDescription,
           costPrice: item.serviceCostPrice,
+          serviceAppointmentId: item.serviceAppointmentId, // Pass the ServiceAppointment ID
         });
         serviceId = service.id;
       }
@@ -215,31 +255,60 @@ export async function updateSale(
 
   return await prisma.$transaction(
     async (tx) => {
-      // Get the original sale with items
+      // Get the original sale with items and services
       const originalSale = await tx.sale.findUnique({
         where: { id: saleId },
-        include: { saleItems: true },
+        include: { 
+          saleItems: {
+            include: {
+              service: true
+            }
+          }
+        },
       });
 
       if (!originalSale) {
         throw new Error("Sale not found");
       }
 
-      // Restore original quantities to products (only for regular products)
-      for (const item of originalSale.saleItems) {
-        if (item.productId) {
-          const product = await tx.product.findUnique({
-            where: { id: item.productId },
-          });
-
-          if (product) {
-            const newQty = product.quantity + item.quantity;
-            await tx.product.update({
-              where: { id: item.productId },
-              data: { quantity: newQty },
-            });
-          }
-        }
+      // Optimized: Batch fetch all affected products (old and new)
+      const oldProductIds = originalSale.saleItems
+        .filter(item => item.productId)
+        .map(item => item.productId!);
+      
+      const newProductIds = processedItems
+        .filter(item => item.productId)
+        .map(item => item.productId!);
+      
+      const allProductIds = [...new Set([...oldProductIds, ...newProductIds])];
+      
+      // Fetch all products in a single query
+      const products = allProductIds.length > 0
+        ? await tx.product.findMany({
+            where: { id: { in: allProductIds } },
+            select: { id: true, quantity: true, boughtPrice: true }
+          })
+        : [];
+      
+      const productMap = new Map(products.map(p => [p.id, p]));
+      
+      // Restore original quantities in batch
+      if (oldProductIds.length > 0) {
+        await Promise.all(
+          originalSale.saleItems
+            .filter(item => item.productId)
+            .map(item => {
+              const product = productMap.get(item.productId!);
+              if (product) {
+                const newQty = product.quantity + item.quantity;
+                return tx.product.update({
+                  where: { id: item.productId! },
+                  data: { quantity: newQty },
+                });
+              }
+              return Promise.resolve();
+            })
+        );
       }
 
       // Remove old sale items
@@ -247,63 +316,63 @@ export async function updateSale(
         where: { saleId },
       });
 
-      // Update quantities for new items (only for regular products)
-      for (const item of data.items) {
-        if (item.productId) {
-          const product = await tx.product.findUnique({
-            where: { id: item.productId },
-          });
+      // Clean up orphaned services
+      await cleanupOrphanedServices(tx, originalSale.saleItems, saleId);
 
-          if (product) {
-            const newQty = Math.max(0, product.quantity - item.quantity);
-            await tx.product.update({
-              where: { id: item.productId },
-              data: { quantity: newQty },
-            });
-          }
-        }
+      // Update quantities for new items in batch
+      if (newProductIds.length > 0) {
+        await Promise.all(
+          processedItems
+            .filter(item => item.productId)
+            .map(item => {
+              const product = productMap.get(item.productId!);
+              if (product) {
+                const newQty = Math.max(0, product.quantity - item.quantity);
+                return tx.product.update({
+                  where: { id: item.productId! },
+                  data: { quantity: newQty },
+                });
+              }
+              return Promise.resolve();
+            })
+        );
       }
 
-      // Update the sale
+      // Update the sale - no additional product queries needed
       const updatedSale = await tx.sale.update({
         where: { id: saleId },
         data: {
           clientId: data.clientId,
           discount: data.discount ?? 0,
           saleItems: {
-            create: await Promise.all(
-              processedItems.map(async (item) => {
-                let boughtPrice = null;
+            create: processedItems.map((item) => {
+              let boughtPrice = null;
 
-                // Get the current bought price for regular products
-                if (item.productId) {
-                  const product = await tx.product.findUnique({
-                    where: { id: item.productId },
-                    select: { boughtPrice: true },
-                  });
-                  boughtPrice = product?.boughtPrice || null;
-                }
-                
-                // For manual products, use the cost price from the sale data
-                if (item.manualProductId && item.manualProductCostPrice !== undefined) {
-                  boughtPrice = item.manualProductCostPrice;
-                }
-                
-                // For services, use the cost price from the sale data
-                if (item.serviceId && item.serviceCostPrice !== undefined) {
-                  boughtPrice = item.serviceCostPrice;
-                }
+              // Get bought price from our pre-fetched product map
+              if (item.productId) {
+                const product = productMap.get(item.productId);
+                boughtPrice = product?.boughtPrice || null;
+              }
+              
+              // For manual products, use the cost price from the sale data
+              if (item.manualProductId && item.manualProductCostPrice !== undefined) {
+                boughtPrice = item.manualProductCostPrice;
+              }
+              
+              // For services, use the cost price from the sale data
+              if (item.serviceId && item.serviceCostPrice !== undefined) {
+                boughtPrice = item.serviceCostPrice;
+              }
 
-                return {
-                  productId: item.productId || null,
-                  manualProductId: item.manualProductId,
-                  serviceId: item.serviceId,
-                  quantity: item.quantity,
-                  price: item.price,
-                  boughtPrice: boughtPrice,
-                };
-              })
-            ),
+              return {
+                productId: item.productId || null,
+                manualProductId: item.manualProductId,
+                serviceId: item.serviceId,
+                quantity: item.quantity,
+                price: item.price,
+                boughtPrice: boughtPrice,
+              };
+            }),
           },
         },
         include: {
@@ -361,31 +430,51 @@ export async function updateSale(
 
 export async function deleteSale(saleId: string) {
   return await prisma.$transaction(async (tx) => {
-    // Get the sale with items
+    // Get the sale with items and services
     const sale = await tx.sale.findUnique({
       where: { id: saleId },
-      include: { saleItems: true },
+      include: { 
+        saleItems: {
+          include: {
+            service: true
+          }
+        }
+      },
     });
 
     if (!sale) {
       throw new Error("Sale not found");
     }
 
-    // Restore quantities to products (only for regular products)
-    for (const item of sale.saleItems) {
-      if (item.productId) {
-        const product = await tx.product.findUnique({
-          where: { id: item.productId },
-        });
-
-        if (product) {
-          const newQty = product.quantity + item.quantity;
-          await tx.product.update({
-            where: { id: item.productId },
-            data: { quantity: newQty },
-          });
-        }
-      }
+    // Optimized: Batch fetch all products and restore quantities
+    const productIds = sale.saleItems
+      .filter(item => item.productId)
+      .map(item => item.productId!);
+    
+    if (productIds.length > 0) {
+      const products = await tx.product.findMany({
+        where: { id: { in: productIds } },
+        select: { id: true, quantity: true }
+      });
+      
+      const productMap = new Map(products.map(p => [p.id, p]));
+      
+      // Restore quantities in batch
+      await Promise.all(
+        sale.saleItems
+          .filter(item => item.productId)
+          .map(item => {
+            const product = productMap.get(item.productId!);
+            if (product) {
+              const newQty = product.quantity + item.quantity;
+              return tx.product.update({
+                where: { id: item.productId! },
+                data: { quantity: newQty },
+              });
+            }
+            return Promise.resolve();
+          })
+      );
     }
 
     // Delete associated payment if exists
@@ -397,6 +486,9 @@ export async function deleteSale(saleId: string) {
     await tx.saleItem.deleteMany({
       where: { saleId },
     });
+
+    // Clean up orphaned services
+    await cleanupOrphanedServices(tx, sale.saleItems, saleId);
 
     // Delete the sale
     await tx.sale.delete({

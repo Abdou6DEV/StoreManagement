@@ -4,12 +4,14 @@ export async function createService(data: {
   name: string;
   description?: string;
   costPrice?: number;
+  serviceAppointmentId?: string;
 }) {
   return await prisma.service.create({
     data: {
       name: data.name,
       description: data.description,
       costPrice: data.costPrice || 0,
+      serviceAppointmentId: data.serviceAppointmentId,
     },
   });
 }
@@ -18,8 +20,22 @@ export async function findOrCreateService(data: {
   name: string;
   description?: string;
   costPrice?: number;
+  serviceAppointmentId?: string;
 }) {
-  // Try to find existing service
+  // If we have a serviceAppointmentId, try to find existing service with that ID first
+  if (data.serviceAppointmentId) {
+    const existingByAppointmentId = await prisma.service.findFirst({
+      where: {
+        serviceAppointmentId: data.serviceAppointmentId,
+      },
+    });
+
+    if (existingByAppointmentId) {
+      return existingByAppointmentId;
+    }
+  }
+
+  // Try to find existing service by name
   const existing = await prisma.service.findUnique({
     where: {
       name: data.name,
@@ -31,11 +47,12 @@ export async function findOrCreateService(data: {
     return existing;
   }
 
-  // Create new service if not found (costPrice is just for template)
+  // Create new service if not found
   return await createService({
     name: data.name,
     description: data.description,
-    costPrice: 0, // Always 0 - each sale has its own cost
+    costPrice: data.costPrice || 0,
+    serviceAppointmentId: data.serviceAppointmentId,
   });
 }
 

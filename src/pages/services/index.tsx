@@ -70,9 +70,14 @@ export default function ServicesPage() {
       
       // Status filter
       if (filters.status === "complete") {
+        // Show only completed services
         filteredServices = filteredServices.filter((service: ServiceAppointment) => service.isCompleted);
       } else if (filters.status === "incomplete") {
+        // Show only incomplete services
         filteredServices = filteredServices.filter((service: ServiceAppointment) => !service.isCompleted);
+      } else {
+        // Default "all": show all services (both completed and incomplete)
+        // No filtering needed - show all services
       }
       
       // Date filter
