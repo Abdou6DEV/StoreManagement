@@ -19,7 +19,7 @@ import SuppliersTable from "./components/suppliersTable";
 import EditSupplierModal from "./components/editSupplierModal";
 import SupplierSearchBar from "./components/supplierSearchBar";
 import SupplierPurchasesModal from "./components/supplierPurchasesModal";
-import PaymentsModal from "../../lib/components/paymentsModal";
+import ClientDetailsModal from "../../lib/components/clientDetailsModal";
 import AllPaymentsView from "./components/allPaymentsView";
 import {
   Pagination,
@@ -819,11 +819,12 @@ export default function Clients() {
         onOpenChange={setShowPurchasesModal}
         supplier={viewingPurchasesFor}
       />
-      {/* PaymentsModal will be rendered here when paymentsClient is set */}
+      {/* ClientDetailsModal will be rendered here when paymentsClient is set */}
       {paymentsClient && (
-        <PaymentsModal
+        <ClientDetailsModal
+          open={!!paymentsClient}
+          onOpenChange={(open) => !open && setPaymentsClient(null)}
           client={paymentsClient}
-          onClose={() => setPaymentsClient(null)}
         />
       )}
       {/* Confirm Delete Dialog */}

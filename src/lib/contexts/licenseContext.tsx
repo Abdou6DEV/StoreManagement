@@ -14,10 +14,13 @@ export function LicenseProvider({ children }: { children: React.ReactNode }) {
 
   const checkLicense = async () => {
     try {
+      console.log("Checking license...");
       setIsLoading(true);
       
       // Check if license is already validated (stored in localStorage)
       const storedLicense = localStorage.getItem("storeManagementLicense");
+      console.log("Stored license:", storedLicense);
+      
       if (storedLicense) {
         const { machineId, validationKey, timestamp } = JSON.parse(storedLicense);
         
@@ -26,19 +29,27 @@ export function LicenseProvider({ children }: { children: React.ReactNode }) {
         const licenseAge = now - timestamp;
         const maxAge = 30 * 24 * 60 * 60 * 1000; // 30 days
         
+        console.log("License age:", licenseAge, "Max age:", maxAge);
+        
         if (licenseAge < maxAge) {
           // Verify the stored license is still valid
+          console.log("Validating stored license...");
           const result = await window.api.system.validateKey(machineId, validationKey);
+          console.log("Validation result:", result);
+          
           if (result.success && result.isValid) {
+            console.log("License is valid, setting state to true");
             setIsLicenseValid(true);
             return;
           }
         }
         
         // License expired or invalid, clear it
+        console.log("License expired or invalid, clearing...");
         localStorage.removeItem("storeManagementLicense");
       }
       
+      console.log("No valid license found, setting to false");
       setIsLicenseValid(false);
     } catch (error) {
       console.error("Error checking license:", error);

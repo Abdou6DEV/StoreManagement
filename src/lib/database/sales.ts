@@ -1045,6 +1045,54 @@ export async function getSalesByDateRange(startDate: Date, endDate: Date) {
   });
 }
 
+export async function getSalesByClient(clientId: string) {
+  try {
+    console.log("getSalesByClient called with clientId:", clientId);
+    
+    const sales = await prisma.sale.findMany({
+      where: {
+        clientId: clientId,
+      },
+      include: {
+        client: true,
+        saleItems: {
+          include: {
+            product: {
+              select: {
+                name: true,
+                categoryName: true,
+              },
+            },
+            service: {
+              select: {
+                name: true,
+                description: true,
+              },
+            },
+          },
+        },
+        payment: {
+          select: {
+            id: true,
+            givenAmount: true,
+            type: true,
+            paidDate: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    console.log("Found sales for client:", sales.length);
+    return sales;
+  } catch (error) {
+    console.error("Error in getSalesByClient:", error);
+    throw error;
+  }
+}
+
 export async function searchSales(
   searchTerm: string,
   limit = 100,

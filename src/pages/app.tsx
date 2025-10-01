@@ -20,6 +20,7 @@ import ProtectedRoute from "../lib/components/protectedRoute";
 import PermissionRoute from "../lib/components/permissionRoute";
 import Login from "./login";
 import LicenseValidation from "./licenseValidation";
+import PreloadLoading from "../lib/components/preloadLoading";
 import { useAuth } from "../lib/contexts/authContext";
 import { useLicense } from "../lib/contexts/licenseContext";
 
@@ -35,7 +36,7 @@ const Administrator = React.lazy(() => import("./administrator"));
 
 export default function App() {
   const { i18n } = useTranslation();
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, isPreloading, preloadComplete } = useAuth();
   const { isLicenseValid, isLoading: licenseLoading } = useLicense();
   const location = useLocation();
   const dir = i18n.language === "ar" ? "rtl" : "ltr";
@@ -73,6 +74,11 @@ export default function App() {
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
     );
+  }
+
+  // Show preloading screen after login
+  if (isAuthenticated && (isPreloading || !preloadComplete)) {
+    return <PreloadLoading />;
   }
 
   // Redirect to login if not authenticated and trying to access protected routes

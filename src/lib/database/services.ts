@@ -126,3 +126,44 @@ export async function deleteService(id: string) {
     where: { id },
   });
 }
+
+export async function getServicesByClient(clientId: string) {
+  try {
+    console.log("getServicesByClient called with clientId:", clientId);
+    
+    // Get service appointments directly (they contain all service info)
+    const serviceAppointments = await prisma.serviceAppointment.findMany({
+      where: {
+        clientId: clientId,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    console.log("Found service appointments for client:", serviceAppointments.length);
+
+    // Map appointments to service format
+    const services = serviceAppointments.map(appointment => ({
+      id: appointment.id,
+      name: appointment.name,
+      description: appointment.description,
+      costPrice: appointment.costPrice,
+      servicePrice: appointment.servicePrice,
+      serviceType: appointment.serviceType,
+      isCompleted: appointment.isCompleted,
+      completedAt: appointment.completedAt,
+      dueDate: appointment.dueDate,
+      notes: appointment.notes,
+      createdAt: appointment.createdAt,
+      updatedAt: appointment.updatedAt,
+      status: appointment.isCompleted ? "COMPLETED" : "PENDING",
+    }));
+
+    console.log("Mapped services for client:", services.length);
+    return services;
+  } catch (error) {
+    console.error("Error in getServicesByClient:", error);
+    throw error;
+  }
+}

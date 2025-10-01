@@ -348,7 +348,9 @@ export default function ServicesPage() {
               onEdit={handleServiceUpdated}
               onDelete={handleDeleteService}
               deleteLoading={deleteLoading}
-              onViewHistory={() => {}}
+              onViewHistory={() => {
+                // TODO: Implement service history view
+              }}
               currentPage={currentPage}
               totalPages={totalPages}
               itemsPerPage={itemsPerPage}

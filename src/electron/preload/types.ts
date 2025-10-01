@@ -97,6 +97,7 @@ export type DatabaseAPI = {
       totalCount: number;
       hasMore: boolean;
     }>;
+    getByClient: (clientId: string) => Promise<any[]>;
     update: (
       id: string,
       data: {
@@ -192,6 +193,16 @@ export type DatabaseAPI = {
       id: string,
       data: { name?: string; type?: string }
     ) => Promise<{ id: string; name: string; type: string }>;
+    delete: (id: string) => Promise<void>;
+  };
+  services: {
+    search: (query: string) => Promise<any[]>;
+    getAll: () => Promise<any[]>;
+    create: (data: { name: string; description?: string }) => Promise<any>;
+    findOrCreate: (data: { name: string; description?: string }) => Promise<any>;
+    getById: (id: string) => Promise<any>;
+    getByClient: (clientId: string) => Promise<any[]>;
+    update: (id: string, data: { name?: string; description?: string }) => Promise<any>;
     delete: (id: string) => Promise<void>;
   };
 };

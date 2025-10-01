@@ -12,6 +12,8 @@ interface AuthContextType {
   ) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   loading: boolean;
+  isPreloading: boolean;
+  preloadComplete: boolean;
   // Permission checking functions
   canAccessPage: (page: string) => boolean;
   hasPermission: (permission: string) => boolean;
@@ -36,6 +38,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<(Omit<User, "password"> & { permissions?: any }) | null>(null);
   const [userRole, setUserRole] = useState<UserRole | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isPreloading, setIsPreloading] = useState(false);
+  const [preloadComplete, setPreloadComplete] = useState(false);
 
   // Always show login page on app start (no session persistence)
   useEffect(() => {
@@ -55,7 +59,64 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setUserRole(result.user.role);
         setIsAuthenticated(true);
 
-        // No session persistence - user must login every time
+        // Start preloading after successful login
+        setIsPreloading(true);
+        setPreloadComplete(false);
+
+        // Preload all pages
+        const preloadPages = async () => {
+          const startTime = Date.now();
+          const minLoadingTime = 3000; // Minimum 3 seconds
+          
+          try {
+            const pageComponents = [
+              () => import("../../pages/mainMenu"),
+              () => import("../../pages/dashboard"),
+              () => import("../../pages/clients"),
+              () => import("../../pages/cashier"),
+              () => import("../../pages/stock"),
+              () => import("../../pages/history"),
+              () => import("../../pages/bills"),
+              () => import("../../pages/services"),
+              () => import("../../pages/administrator"),
+            ];
+
+            // Preload all pages with delays to show progress
+            for (let i = 0; i < pageComponents.length; i++) {
+              try {
+                await pageComponents[i]();
+                // Add delay between each page load for better UX (300ms per page)
+                await new Promise(resolve => setTimeout(resolve, 300));
+              } catch (error) {
+                console.error(`Failed to preload page ${i}:`, error);
+              }
+            }
+            
+            // Ensure minimum loading time has passed
+            const elapsed = Date.now() - startTime;
+            const remainingTime = Math.max(0, minLoadingTime - elapsed);
+            if (remainingTime > 0) {
+              await new Promise(resolve => setTimeout(resolve, remainingTime));
+            }
+            
+            // Mark preloading as complete
+            setPreloadComplete(true);
+            setIsPreloading(false);
+          } catch (error) {
+            console.error("Preloading failed:", error);
+            // Even if preloading fails, ensure minimum time has passed
+            const elapsed = Date.now() - startTime;
+            const remainingTime = Math.max(0, minLoadingTime - elapsed);
+            if (remainingTime > 0) {
+              await new Promise(resolve => setTimeout(resolve, remainingTime));
+            }
+            setPreloadComplete(true);
+            setIsPreloading(false);
+          }
+        };
+
+        // Start preloading in the background
+        preloadPages();
 
         return { success: true };
       } else {
@@ -71,6 +132,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setIsAuthenticated(false);
     setUser(null);
     setUserRole(null);
+    setIsPreloading(false);
+    setPreloadComplete(false);
     // No localStorage to clear - no session persistence
   };
 
@@ -120,6 +183,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     login,
     logout,
     loading,
+    isPreloading,
+    preloadComplete,
     canAccessPage,
     hasPermission,
   };

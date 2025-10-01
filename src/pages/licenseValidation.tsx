@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Key, Shield, AlertCircle, CheckCircle, Copy, Check } from "lucide-react";
+import { useLicense } from "../lib/contexts/licenseContext";
 
 export default function LicenseValidation() {
   const { t } = useTranslation();
+  const { checkLicense } = useLicense();
   const [machineId, setMachineId] = useState<string>("");
   const [validationKey, setValidationKey] = useState<string>("");
   const [enteredKey, setEnteredKey] = useState<string>("");
@@ -66,14 +68,21 @@ export default function LicenseValidation() {
             timestamp: Date.now()
           };
           localStorage.setItem("storeManagementLicense", JSON.stringify(licenseData));
+          console.log("License stored successfully:", licenseData);
           
           setValidationResult({
             isValid: true,
             message: "License validated successfully! Redirecting to app..."
           });
-          // Redirect to main app after successful validation
-          setTimeout(() => {
-            window.location.href = "/";
+          // Refresh license context to recognize the new valid license
+          setTimeout(async () => {
+            try {
+              await checkLicense();
+            } catch (error) {
+              console.error("Error refreshing license context:", error);
+              // If refresh fails, try a page reload as fallback
+              window.location.reload();
+            }
           }, 2000);
         } else {
           setValidationResult({

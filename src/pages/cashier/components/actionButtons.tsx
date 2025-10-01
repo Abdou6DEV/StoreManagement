@@ -12,7 +12,7 @@ import type { CartItem, ClientSuggestion } from "../../../types";
 import AddPaymentModal from "./addPaymentModal";
 import AddClientModal from "./addClientModal";
 import CalculatorModal from "./calculatorModal";
-import PaymentsModal from "../../../lib/components/paymentsModal";
+import ClientDetailsModal from "../../../lib/components/clientDetailsModal";
 import { useToast } from "../../../lib/contexts/toastContext";
 import { Tooltip } from "../../../lib/components/tooltip";
 import rendererLogger from "../../../lib/logger/rendererLogger";
@@ -384,9 +384,10 @@ export default function ActionButtons({
         onClose={() => setShowCalculatorModal(false)}
       />
       {selectedClientId && showHistoryModal && (
-        <PaymentsModal
-          client={clientSuggestions.find((c) => c.id === selectedClientId)}
-          onClose={() => setShowHistoryModal(false)}
+        <ClientDetailsModal
+          open={showHistoryModal}
+          onOpenChange={setShowHistoryModal}
+          client={clientSuggestions.find((c) => c.id === selectedClientId) || null}
         />
       )}
     </div>

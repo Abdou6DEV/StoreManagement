@@ -31,6 +31,7 @@ import {
   getSalesAggregatedByPeriod,
   getSalesSummary,
   getSalesBySpecificPeriod,
+  getSalesByClient,
 } from "../../lib/database/sales";
 import { getOption, setOption } from "../../lib/database/options";
 import {
@@ -82,6 +83,7 @@ import {
   getServiceById,
   updateService,
   deleteService,
+  getServicesByClient,
 } from "../../lib/database/services";
 import { bills } from "../../lib/database/bills";
 import {
@@ -240,6 +242,10 @@ export function setupDatabaseHandlers() {
       return await getSalesBySpecificPeriod(period, periodValue);
     }
   );
+
+  ipcMain.handle("db:sales:getByClient", async (_event, clientId: string) => {
+    return await getSalesByClient(clientId);
+  });
 
   // Options handlers
   ipcMain.handle("db:options:get", async (_event, key: string) => {
@@ -442,6 +448,10 @@ export function setupDatabaseHandlers() {
 
   ipcMain.handle("db:services:delete", async (_event, id: string) => {
     return await deleteService(id);
+  });
+
+  ipcMain.handle("db:services:getByClient", async (_event, clientId: string) => {
+    return await getServicesByClient(clientId);
   });
 
   // Bills handlers
