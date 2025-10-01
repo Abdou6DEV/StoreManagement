@@ -2,6 +2,8 @@ import { useTranslation } from "react-i18next";
 import { ShoppingCart, PlusCircle, Wrench } from "lucide-react";
 import ProductSearch from "./productSearch";
 import { Tooltip } from "../../../lib/components/tooltip";
+import { BadgeNotification } from "../../../lib/components/badgeNotification";
+import { useCompletedServices } from "../../../lib/contexts/completedServicesContext";
 
 interface ProductControlsProps {
   onShowProductBrowser: () => void;
@@ -19,6 +21,7 @@ export default function ProductControls({
   productRefreshKey,
 }: ProductControlsProps) {
   const { t } = useTranslation();
+  const { completedServicesCount } = useCompletedServices();
 
   return (
     <div className="bg-card border border-border rounded-xl p-3 shadow-sm flex-shrink-0">
@@ -55,9 +58,16 @@ export default function ProductControls({
         >
           <button
             onClick={onShowServiceModal}
-            className="flex h-8 w-8 p-1 text-sm font-semibold border-1 border-border items-center justify-center rounded-md bg-muted/40 hover:bg-muted hover:text-blue-500 transition"
+            className="flex h-8 w-8 p-1 text-sm font-semibold border-1 border-border items-center justify-center rounded-md bg-muted/40 hover:bg-muted hover:text-blue-500 transition relative"
           >
             <Wrench className="w-4 h-4" />
+            {completedServicesCount > 0 && (
+              <BadgeNotification 
+                count={completedServicesCount} 
+                variant="green"
+                className="absolute -top-1 -right-1 h-4 text-xs"
+              />
+            )}
           </button>
         </Tooltip>
       </div>

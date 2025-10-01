@@ -105,7 +105,7 @@ export default function EditServiceModal({
     <Modal 
       open={isOpen} 
       onOpenChange={(open) => !open && onClose()} 
-      size="lg"
+      size="xl"
       title={t("services.editService", "Edit Service")}
       icon={<Wrench className="w-5 h-5 text-cyan-600" />}
       showCloseButton={true}
@@ -113,7 +113,7 @@ export default function EditServiceModal({
       <div className="p-6">
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* Service Name */}
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">
@@ -174,34 +174,34 @@ export default function EditServiceModal({
                 required
               />
             </div>
-          </div>
 
-          {/* Description */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground">
-              {t("services.description", "Description")}
-            </label>
-            <input
-              type="text"
-              placeholder={t("services.enterDescriptionOptional", "Enter description (optional)")}
-              value={form.description}
-              onChange={(e) => handleFormChange("description", e.target.value)}
-              className="w-full px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all"
-            />
-          </div>
+            {/* Description */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">
+                {t("services.description", "Description")}
+              </label>
+              <input
+                type="text"
+                placeholder={t("services.enterDescriptionOptional", "Enter description (optional)")}
+                value={form.description}
+                onChange={(e) => handleFormChange("description", e.target.value)}
+                className="w-full px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all"
+              />
+            </div>
 
-          {/* Notes */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground">
-              {t("services.notes", "Notes")}
-            </label>
-            <input
-              type="text"
-              placeholder={t("services.enterNotesOptional", "Enter notes (optional)")}
-              value={form.notes}
-              onChange={(e) => handleFormChange("notes", e.target.value)}
-              className="w-full px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all"
-            />
+            {/* Notes */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">
+                {t("services.notes", "Notes")}
+              </label>
+              <input
+                type="text"
+                placeholder={t("services.enterNotesOptional", "Enter notes (optional)")}
+                value={form.notes}
+                onChange={(e) => handleFormChange("notes", e.target.value)}
+                className="w-full px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all"
+              />
+            </div>
           </div>
 
           {/* Client Info (Read-only) */}

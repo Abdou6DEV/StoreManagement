@@ -6,6 +6,7 @@ import StyledNumberInput from "../../../lib/components/inputNumber";
 import { Plus } from "lucide-react";
 import type { CartItem } from "../../../types";
 import type { Service } from "@prisma/client";
+import { useCompletedServices } from "../../../lib/contexts/completedServicesContext";
 
 interface CompletedServiceAppointment {
   id: string;
@@ -46,6 +47,7 @@ export default function AddServiceModal({
 }: AddServiceModalProps) {
   const { t } = useTranslation();
   const { showToast } = useToast();
+  const { refreshCompletedServicesCount } = useCompletedServices();
   const [service, setService] = useState<{
     name: string;
     description: string;
@@ -119,6 +121,9 @@ export default function AddServiceModal({
       description: completedService.description || undefined,
       serviceCostPrice: completedService.costPrice || 0,
     });
+    
+    // Refresh completed services count since this service is now being sold
+    refreshCompletedServicesCount();
     
     onClose();
   };

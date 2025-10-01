@@ -24,6 +24,7 @@ import { useOverdueBills } from "../contexts/overdueBillsContext";
 import { useDueSoonBills } from "../contexts/dueSoonBillsContext";
 import { useOverdueServices } from "../contexts/overdueServicesContext";
 import { useDueSoonServices } from "../contexts/dueSoonServicesContext";
+import { useCompletedServices } from "../contexts/completedServicesContext";
 import { BadgeNotification } from "./badgeNotification";
 
 const menuItems = [
@@ -84,6 +85,7 @@ export default function Sidebar() {
   const { unseenDueSoonBillsCount } = useDueSoonBills();
   const { unseenOverdueServicesCount, enableBadge: enableOverdueServicesBadge, badgeLoaded: overdueServicesBadgeLoaded } = useOverdueServices();
   const { unseenDueSoonServicesCount, enableBadge: enableDueSoonServicesBadge, badgeLoaded: dueSoonServicesBadgeLoaded } = useDueSoonServices();
+  const { completedServicesCount } = useCompletedServices();
   const savedCollapsedState = localStorage.getItem("sidebarCollapsed");
   const [collapsed, setCollapsed] = useState(savedCollapsedState === "true");
   const [showText, setShowText] = useState(!collapsed);
@@ -299,6 +301,9 @@ export default function Sidebar() {
               <item.icon className={`${item.color}`} />
               {item.key === "stock" && unseenLowStockCount > 0 && enableBadge && badgeLoaded && (
                 <BadgeNotification count={unseenLowStockCount} />
+              )}
+              {item.key === "cashier" && completedServicesCount > 0 && (
+                <BadgeNotification count={completedServicesCount} variant="green" />
               )}
               {item.key === "clients" && ((unseenOverdueCreditsCount > 0 || unseenOverdueVersementsCount > 0) || (unseenDueSoonCreditsCount > 0 || unseenDueSoonVersementsCount > 0)) && (
                 <>

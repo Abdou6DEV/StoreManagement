@@ -63,9 +63,12 @@ export function ProductAvatar({
 }: ProductAvatarProps) {
   // Get the first character and convert to uppercase
   const firstChar = name.charAt(0).toUpperCase();
+  
+  // Get the second character for color selection (or first if only one character)
+  const colorChar = name.length > 1 ? name.charAt(1).toUpperCase() : firstChar;
 
-  // Get color palette for the first character, fallback to a default if not found
-  const colors = colorPalettes[firstChar as keyof typeof colorPalettes] || [
+  // Get color palette for the second character, fallback to a default if not found
+  const colors = colorPalettes[colorChar as keyof typeof colorPalettes] || [
     "bg-gradient-to-br from-slate-400 to-slate-600",
     "text-white",
   ];

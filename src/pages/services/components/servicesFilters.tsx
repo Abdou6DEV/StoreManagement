@@ -33,16 +33,16 @@ interface ServicesFiltersProps {
   unseenDueSoonCount?: number;
 }
 
-const statusOptions = [
-  { value: "all", label: "All Status" },
-  { value: "complete", label: "Complete" },
-  { value: "incomplete", label: "Incomplete" },
+const getStatusOptions = (t: any) => [
+  { value: "all", label: t("services.allStatus", "All Status") },
+  { value: "complete", label: t("services.complete", "Complete") },
+  { value: "incomplete", label: t("services.incomplete", "Incomplete") },
 ];
 
-const dateFilterOptions = [
-  { value: "all", label: "All Dates" },
-  { value: "overdue", label: "Overdue" },
-  { value: "dueSoon", label: "Due Soon" },
+const getDateFilterOptions = (t: any) => [
+  { value: "all", label: t("services.allDates", "All Dates") },
+  { value: "overdue", label: t("services.overdue", "Overdue") },
+  { value: "dueSoon", label: t("services.dueSoon", "Due Soon") },
 ];
 
 export default function ServicesFilters({
@@ -56,6 +56,9 @@ export default function ServicesFilters({
   const { t } = useTranslation();
   const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
   const [dateFilterDropdownOpen, setDateFilterDropdownOpen] = useState(false);
+  
+  const statusOptions = getStatusOptions(t);
+  const dateFilterOptions = getDateFilterOptions(t);
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-4">
@@ -128,7 +131,7 @@ export default function ServicesFilters({
               className="px-3 py-1.5"
               aria-label={t("services.filterByStatus", "Filter by status")}
             >
-              {statusOptions.find(option => option.value === filters.status)?.label || "All Status"}
+              {statusOptions.find(option => option.value === filters.status)?.label || t("services.allStatus", "All Status")}
               <ChevronDown className="ml-2 w-4 h-4" />
             </Button>
           </PopoverTrigger>
@@ -172,7 +175,7 @@ export default function ServicesFilters({
               aria-label={t("services.filterByDate", "Filter by date")}
             >
               <div className="flex items-center gap-2">
-                {dateFilterOptions.find(option => option.value === filters.dateFilter)?.label || "All Dates"}
+                {dateFilterOptions.find(option => option.value === filters.dateFilter)?.label || t("services.allDates", "All Dates")}
                 {unseenOverdueCount > 0 && (
                   <BadgeNotification 
                     count={unseenOverdueCount} 

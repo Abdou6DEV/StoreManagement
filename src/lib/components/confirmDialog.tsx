@@ -2,6 +2,7 @@ import React from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "./dialog";
 import { Button } from "./button";
 import { AlertTriangle, Info, XCircle } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export interface ConfirmDialogProps {
   open: boolean;
@@ -21,13 +22,14 @@ export function ConfirmDialog({
   onOpenChange,
   title,
   message,
-  confirmText = "Confirm",
-  cancelText = "Cancel",
+  confirmText,
+  cancelText,
   variant = "info",
   onConfirm,
   onCancel,
   loading = false,
 }: ConfirmDialogProps) {
+  const { t } = useTranslation();
   const handleConfirm = async () => {
     try {
       await onConfirm();
@@ -88,7 +90,7 @@ export function ConfirmDialog({
           </p>
           <div className="flex gap-3 justify-end">
             <Button variant="outline" onClick={handleCancel} disabled={loading}>
-              {cancelText}
+              {cancelText || t("common.cancel", "Cancel")}
             </Button>
             <Button
               onClick={handleConfirm}
@@ -98,10 +100,10 @@ export function ConfirmDialog({
               {loading ? (
                 <>
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                  Loading...
+                  {t("common.loading", "Loading...")}
                 </>
               ) : (
-                confirmText
+                confirmText || t("common.confirm", "Confirm")
               )}
             </Button>
           </div>

@@ -15,6 +15,7 @@ import { Tooltip } from "../../../lib/components/tooltip";
 import { ConfirmDialog } from "../../../lib/components/confirmDialog";
 import { Badge } from "../../../lib/components/badge";
 import EditServiceModal from "./editServiceModal";
+import { useCompletedServices } from "../../../lib/contexts/completedServicesContext";
 
 interface ServiceAppointment {
   id: string;
@@ -79,6 +80,7 @@ const ServicesTable: React.FC<ServicesTableProps> = ({
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingService, setEditingService] = useState<ServiceAppointment | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const { refreshCompletedServicesCount } = useCompletedServices();
 
   const formatCurrency = (amount: number) => {
     return `${amount % 1 === 0 ? amount.toFixed(0) : amount.toFixed(2)} ${t("services.currency", "DA")}`;
@@ -123,6 +125,8 @@ const ServicesTable: React.FC<ServicesTableProps> = ({
         isCompleted: true,
         completedAt: new Date().toISOString(),
       });
+      // Refresh the completed services count
+      await refreshCompletedServicesCount();
       // Refresh the service data by calling the parent's refresh function
       onEdit({} as ServiceAppointment); // This will trigger a refresh
     } catch (error) {

@@ -45,27 +45,27 @@ interface AddServiceAppointmentFormProps {
   onCancel: () => void;
 }
 
-const serviceTypes = [
-  "Haircut",
-  "Hair Coloring",
-  "Hair Styling",
-  "Manicure",
-  "Pedicure",
-  "Facial Treatment",
-  "Massage",
-  "Consultation",
-  "Hair Wash",
-  "Hair Treatment",
-  "Eyebrow Shaping",
-  "Eyelash Extension",
-  "Makeup Application",
-  "Skin Analysis",
-  "Acne Treatment",
-  "Anti-Aging Treatment",
-  "Body Scrub",
-  "Body Wrap",
-  "Hot Stone Massage",
-  "Other",
+const getServiceTypes = (t: any) => [
+  t("admin.serviceOptions.haircut", "Haircut"),
+  t("admin.serviceOptions.hairColoring", "Hair Coloring"),
+  t("admin.serviceOptions.hairStyling", "Hair Styling"),
+  t("admin.serviceOptions.manicure", "Manicure"),
+  t("admin.serviceOptions.pedicure", "Pedicure"),
+  t("admin.serviceOptions.facialTreatment", "Facial Treatment"),
+  t("admin.serviceOptions.massage", "Massage"),
+  t("admin.serviceOptions.consultation", "Consultation"),
+  t("admin.serviceOptions.hairWash", "Hair Wash"),
+  t("admin.serviceOptions.hairTreatment", "Hair Treatment"),
+  t("admin.serviceOptions.eyebrowShaping", "Eyebrow Shaping"),
+  t("admin.serviceOptions.eyelashExtension", "Eyelash Extension"),
+  t("admin.serviceOptions.makeupApplication", "Makeup Application"),
+  t("admin.serviceOptions.skinAnalysis", "Skin Analysis"),
+  t("admin.serviceOptions.acneTreatment", "Acne Treatment"),
+  t("admin.serviceOptions.antiAgingTreatment", "Anti-Aging Treatment"),
+  t("admin.serviceOptions.bodyScrub", "Body Scrub"),
+  t("admin.serviceOptions.bodyWrap", "Body Wrap"),
+  t("admin.serviceOptions.hotStoneMassage", "Hot Stone Massage"),
+  t("admin.serviceOptions.other", "Other"),
 ];
 
 export default function AddServiceAppointmentForm({
@@ -249,7 +249,7 @@ export default function AddServiceAppointmentForm({
             required
           >
             <option value="">{t("services.selectServiceType", "Select service type")}</option>
-            {serviceTypes.map((type) => (
+            {getServiceTypes(t).map((type) => (
               <option key={type} value={type}>
                 {type}
               </option>
