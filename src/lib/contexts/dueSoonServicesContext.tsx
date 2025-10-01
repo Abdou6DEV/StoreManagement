@@ -5,18 +5,27 @@ interface DueSoonServicesContextType {
   markDueSoonServicesAsSeen: () => void;
   dueSoonThresholdDays: number;
   isLoading: boolean;
+  enableBadge: boolean;
+  badgeLoaded: boolean;
 }
 
 const DueSoonServicesContext = createContext<DueSoonServicesContextType | undefined>(undefined);
 
 export const DueSoonServicesProvider = ({ children }: { children: ReactNode }) => {
   const [unseenDueSoonServicesCount, setUnseenDueSoonServicesCount] = useState(0);
-  const [dueSoonThresholdDays, setDueSoonThresholdDays] = useState(7); // Default 7 days
+  const [dueSoonThresholdDays, setDueSoonThresholdDays] = useState(2); // Default 2 days
   const [isLoading, setIsLoading] = useState(true);
+  const [enableBadge, setEnableBadge] = useState(false); // Start as false to prevent flash
+  const [badgeLoaded, setBadgeLoaded] = useState(false);
 
   const calculateDueSoonServices = async () => {
     try {
       setIsLoading(true);
+      if (!enableBadge || !badgeLoaded) {
+        setUnseenDueSoonServicesCount(0);
+        return;
+      }
+
       const allServices = await window.api.database.serviceAppointments.getAll();
       const today = new Date();
       const dueSoonDate = new Date(today.getTime() + dueSoonThresholdDays * 24 * 60 * 60 * 1000);
@@ -58,13 +67,42 @@ export const DueSoonServicesProvider = ({ children }: { children: ReactNode }) =
     });
   };
 
+  // Load badge setting and listen for changes
   useEffect(() => {
-    // Load threshold from options if available
-    window.api.database.options.get("servicesDueSoonThresholdDays").then((value) => {
-      if (value) {
-        setDueSoonThresholdDays(Number(value));
-      }
-    });
+    const loadBadgeSetting = () => {
+      window.api.database.options
+        .get("enableDueSoonServicesBadge")
+        .then((val) => {
+          setEnableBadge(val !== "false"); // Default to true if not set
+          setBadgeLoaded(true); // Mark as loaded
+        });
+    };
+
+    // Load initial setting
+    loadBadgeSetting();
+
+    // Poll for changes every 1 second
+    const interval = setInterval(loadBadgeSetting, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const loadThresholdSetting = () => {
+      window.api.database.options.get("dueSoonServicesThresholdDays").then((value) => {
+        if (value) {
+          setDueSoonThresholdDays(Number(value));
+        }
+      });
+    };
+
+    // Load initial setting
+    loadThresholdSetting();
+
+    // Poll for changes every 1 second
+    const interval = setInterval(loadThresholdSetting, 1000);
+
+    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
@@ -74,10 +112,10 @@ export const DueSoonServicesProvider = ({ children }: { children: ReactNode }) =
     const interval = setInterval(calculateDueSoonServices, 60000);
     
     return () => clearInterval(interval);
-  }, [dueSoonThresholdDays]);
+  }, [dueSoonThresholdDays, enableBadge, badgeLoaded]);
 
   return (
-    <DueSoonServicesContext.Provider value={{ unseenDueSoonServicesCount, markDueSoonServicesAsSeen, dueSoonThresholdDays, isLoading }}>
+    <DueSoonServicesContext.Provider value={{ unseenDueSoonServicesCount, markDueSoonServicesAsSeen, dueSoonThresholdDays, isLoading, enableBadge, badgeLoaded }}>
       {children}
     </DueSoonServicesContext.Provider>
   );

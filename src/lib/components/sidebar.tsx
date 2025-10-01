@@ -22,6 +22,8 @@ import { useOverduePayments } from "../contexts/overduePaymentsContext";
 import { useDueSoonPayments } from "../contexts/dueSoonPaymentsContext";
 import { useOverdueBills } from "../contexts/overdueBillsContext";
 import { useDueSoonBills } from "../contexts/dueSoonBillsContext";
+import { useOverdueServices } from "../contexts/overdueServicesContext";
+import { useDueSoonServices } from "../contexts/dueSoonServicesContext";
 import { BadgeNotification } from "./badgeNotification";
 
 const menuItems = [
@@ -80,6 +82,8 @@ export default function Sidebar() {
   const { unseenDueSoonCreditsCount, unseenDueSoonVersementsCount } = useDueSoonPayments();
   const { unseenOverdueBillsCount } = useOverdueBills();
   const { unseenDueSoonBillsCount } = useDueSoonBills();
+  const { unseenOverdueServicesCount, enableBadge: enableOverdueServicesBadge, badgeLoaded: overdueServicesBadgeLoaded } = useOverdueServices();
+  const { unseenDueSoonServicesCount, enableBadge: enableDueSoonServicesBadge, badgeLoaded: dueSoonServicesBadgeLoaded } = useDueSoonServices();
   const savedCollapsedState = localStorage.getItem("sidebarCollapsed");
   const [collapsed, setCollapsed] = useState(savedCollapsedState === "true");
   const [showText, setShowText] = useState(!collapsed);
@@ -88,10 +92,12 @@ export default function Sidebar() {
   const [badgeLoaded, setBadgeLoaded] = useState(false);
   const [showOverdueBadge, setShowOverdueBadge] = useState(true); // Start with overdue badge
   const [showOverdueBillsBadge, setShowOverdueBillsBadge] = useState(true); // Start with overdue bills badge
+  const [showOverdueServicesBadge, setShowOverdueServicesBadge] = useState(true); // Start with overdue services badge
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const textTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const badgeCycleRef = useRef<NodeJS.Timeout | null>(null);
   const billsBadgeCycleRef = useRef<NodeJS.Timeout | null>(null);
+  const servicesBadgeCycleRef = useRef<NodeJS.Timeout | null>(null);
 
   // Load badge setting and listen for changes
   useEffect(() => {
@@ -174,6 +180,37 @@ export default function Sidebar() {
       }
     }
   }, [unseenOverdueBillsCount, unseenDueSoonBillsCount]);
+
+  // Cycling badge logic for services - alternate between overdue and due soon every 10 seconds
+  useEffect(() => {
+    const hasOverdueServices = unseenOverdueServicesCount > 0;
+    const hasDueSoonServices = unseenDueSoonServicesCount > 0;
+    
+    // Only cycle if both badges exist
+    if (hasOverdueServices && hasDueSoonServices) {
+      // Clear any existing cycle
+      if (servicesBadgeCycleRef.current) {
+        clearInterval(servicesBadgeCycleRef.current);
+      }
+      
+      // Start cycling every 10 seconds
+      servicesBadgeCycleRef.current = setInterval(() => {
+        setShowOverdueServicesBadge(prev => !prev);
+      }, 10000);
+      
+      return () => {
+        if (servicesBadgeCycleRef.current) {
+          clearInterval(servicesBadgeCycleRef.current);
+        }
+      };
+    } else {
+      // If only one type exists, show that one and stop cycling
+      setShowOverdueServicesBadge(hasOverdueServices);
+      if (servicesBadgeCycleRef.current) {
+        clearInterval(servicesBadgeCycleRef.current);
+      }
+    }
+  }, [unseenOverdueServicesCount, unseenDueSoonServicesCount]);
 
   // Filter menu items based on user permissions
   const filteredMenuItems = menuItems.filter((item) => {
@@ -297,6 +334,26 @@ export default function Sidebar() {
                   {!showOverdueBillsBadge && unseenDueSoonBillsCount > 0 && (
                     <BadgeNotification 
                       count={unseenDueSoonBillsCount} 
+                      variant="orange"
+                      className="transition-all duration-500 ease-in-out"
+                    />
+                  )}
+                </>
+              )}
+              {item.key === "services" && ((unseenOverdueServicesCount > 0 && enableOverdueServicesBadge && overdueServicesBadgeLoaded) || (unseenDueSoonServicesCount > 0 && enableDueSoonServicesBadge && dueSoonServicesBadgeLoaded)) && (
+                <>
+                  {/* Overdue Services Badge - Show when cycling to overdue or when only overdue exists */}
+                  {showOverdueServicesBadge && unseenOverdueServicesCount > 0 && enableOverdueServicesBadge && overdueServicesBadgeLoaded && (
+                    <BadgeNotification 
+                      count={unseenOverdueServicesCount} 
+                      variant="red"
+                      className="transition-all duration-500 ease-in-out"
+                    />
+                  )}
+                  {/* Due Soon Services Badge - Show when cycling to due soon or when only due soon exists */}
+                  {!showOverdueServicesBadge && unseenDueSoonServicesCount > 0 && enableDueSoonServicesBadge && dueSoonServicesBadgeLoaded && (
+                    <BadgeNotification 
+                      count={unseenDueSoonServicesCount} 
                       variant="orange"
                       className="transition-all duration-500 ease-in-out"
                     />

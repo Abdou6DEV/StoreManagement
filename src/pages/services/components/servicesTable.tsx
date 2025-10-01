@@ -68,7 +68,7 @@ const ServicesTable: React.FC<ServicesTableProps> = ({
   onPageChange,
   onItemsPerPageChange,
   statusFilter = "all",
-  dueSoonThresholdDays = 7,
+  dueSoonThresholdDays = 2,
   newlyOverdueServicesIds = new Set(),
   newlyDueSoonServicesIds = new Set(),
   onMarkOverdueAsSeen,

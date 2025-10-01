@@ -17,6 +17,8 @@ import { useOverduePayments } from "../../lib/contexts/overduePaymentsContext";
 import { useDueSoonPayments } from "../../lib/contexts/dueSoonPaymentsContext";
 import { useOverdueBills } from "../../lib/contexts/overdueBillsContext";
 import { useDueSoonBills } from "../../lib/contexts/dueSoonBillsContext";
+import { useOverdueServices } from "../../lib/contexts/overdueServicesContext";
+import { useDueSoonServices } from "../../lib/contexts/dueSoonServicesContext";
 import "../../lib/i18n";
 
 export default function MainMenu() {
@@ -27,6 +29,8 @@ export default function MainMenu() {
   const { unseenDueSoonCreditsCount, unseenDueSoonVersementsCount } = useDueSoonPayments();
   const { unseenOverdueBillsCount } = useOverdueBills();
   const { unseenDueSoonBillsCount } = useDueSoonBills();
+  const { unseenOverdueServicesCount, enableBadge: enableOverdueServicesBadge, badgeLoaded: overdueServicesBadgeLoaded } = useOverdueServices();
+  const { unseenDueSoonServicesCount, enableBadge: enableDueSoonServicesBadge, badgeLoaded: dueSoonServicesBadgeLoaded } = useDueSoonServices();
   const [enableBadge, setEnableBadge] = useState(false); // Start as false to prevent flash
   const [badgeLoaded, setBadgeLoaded] = useState(false);
 
@@ -197,6 +201,37 @@ export default function MainMenu() {
                        {unseenDueSoonBillsCount === 1 
                          ? t("mainMenu.oneDueSoonBill", "1 due soon bill")
                          : t("mainMenu.dueSoonBills", "{{count}} due soon bills", { count: unseenDueSoonBillsCount })
+                       }
+                     </div>
+                   )}
+                </div>
+              )}
+              {/* Services Badges - Positioned inside container with border sharing */}
+              {item.key === "services" && ((unseenOverdueServicesCount > 0 && enableOverdueServicesBadge && overdueServicesBadgeLoaded) || (unseenDueSoonServicesCount > 0 && enableDueSoonServicesBadge && dueSoonServicesBadgeLoaded)) && (
+                <div className="absolute top-0 right-0 rtl:right-auto rtl:left-0 flex flex-col">
+                   {/* Overdue Services Badge */}
+                   {unseenOverdueServicesCount > 0 && enableOverdueServicesBadge && overdueServicesBadgeLoaded && (
+                     <div className={`bg-red-600 text-white text-xs font-bold px-3 py-1 border-2 border-red-600 shadow-lg transition-all duration-300 ease-in-out h-[20px] flex items-center justify-center min-w-[60px] ${
+                       unseenDueSoonServicesCount > 0 
+                         ? 'rounded-tr-lg rtl:rounded-tl-lg rtl:rounded-tr-none' // Only top-right rounded when due soon exists below
+                         : 'rounded-tr-lg rounded-bl-lg rtl:rounded-tl-lg rtl:rounded-br-lg rtl:rounded-tr-none rtl:rounded-bl-none' // Top-right rounded, bottom-left rounded when only overdue exists
+                     }`}>
+                       {unseenOverdueServicesCount === 1 
+                         ? t("mainMenu.oneOverdueService", "1 overdue service")
+                         : t("mainMenu.overdueServices", "{{count}} overdue services", { count: unseenOverdueServicesCount })
+                       }
+                     </div>
+                   )}
+                   {/* Due Soon Services Badge */}
+                   {unseenDueSoonServicesCount > 0 && enableDueSoonServicesBadge && dueSoonServicesBadgeLoaded && (
+                     <div className={`bg-orange-500 text-white text-xs font-bold px-3 py-1 border-2 border-orange-500 shadow-lg transition-all duration-300 ease-in-out h-[20px] flex items-center justify-center min-w-[60px] ${
+                       unseenOverdueServicesCount > 0 
+                         ? 'rounded-bl-lg rtl:rounded-br-lg rtl:rounded-bl-none' // Only bottom-left rounded when overdue exists above
+                         : 'rounded-tr-lg rounded-bl-lg rtl:rounded-tl-lg rtl:rounded-br-lg rtl:rounded-tr-none rtl:rounded-bl-none' // Top-right rounded, bottom-left rounded when only due soon exists
+                     }`}>
+                       {unseenDueSoonServicesCount === 1 
+                         ? t("mainMenu.oneDueSoonService", "1 due soon service")
+                         : t("mainMenu.dueSoonServices", "{{count}} due soon services", { count: unseenDueSoonServicesCount })
                        }
                      </div>
                    )}

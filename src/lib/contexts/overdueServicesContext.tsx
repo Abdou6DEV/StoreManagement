@@ -4,6 +4,8 @@ interface OverdueServicesContextType {
   unseenOverdueServicesCount: number;
   markOverdueServicesAsSeen: () => void;
   isLoading: boolean;
+  enableBadge: boolean;
+  badgeLoaded: boolean;
 }
 
 const OverdueServicesContext = createContext<OverdueServicesContextType | undefined>(undefined);
@@ -11,10 +13,17 @@ const OverdueServicesContext = createContext<OverdueServicesContextType | undefi
 export const OverdueServicesProvider = ({ children }: { children: ReactNode }) => {
   const [unseenOverdueServicesCount, setUnseenOverdueServicesCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [enableBadge, setEnableBadge] = useState(false); // Start as false to prevent flash
+  const [badgeLoaded, setBadgeLoaded] = useState(false);
 
   const calculateOverdueServices = async () => {
     try {
       setIsLoading(true);
+      if (!enableBadge || !badgeLoaded) {
+        setUnseenOverdueServicesCount(0);
+        return;
+      }
+
       const allServices = await window.api.database.serviceAppointments.getAll();
       const today = new Date();
       
@@ -53,6 +62,26 @@ export const OverdueServicesProvider = ({ children }: { children: ReactNode }) =
     });
   };
 
+  // Load badge setting and listen for changes
+  useEffect(() => {
+    const loadBadgeSetting = () => {
+      window.api.database.options
+        .get("enableOverdueServicesBadge")
+        .then((val) => {
+          setEnableBadge(val !== "false"); // Default to true if not set
+          setBadgeLoaded(true); // Mark as loaded
+        });
+    };
+
+    // Load initial setting
+    loadBadgeSetting();
+
+    // Poll for changes every 1 second
+    const interval = setInterval(loadBadgeSetting, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   useEffect(() => {
     calculateOverdueServices();
     
@@ -60,10 +89,10 @@ export const OverdueServicesProvider = ({ children }: { children: ReactNode }) =
     const interval = setInterval(calculateOverdueServices, 60000);
     
     return () => clearInterval(interval);
-  }, []);
+  }, [enableBadge, badgeLoaded]);
 
   return (
-    <OverdueServicesContext.Provider value={{ unseenOverdueServicesCount, markOverdueServicesAsSeen, isLoading }}>
+    <OverdueServicesContext.Provider value={{ unseenOverdueServicesCount, markOverdueServicesAsSeen, isLoading, enableBadge, badgeLoaded }}>
       {children}
     </OverdueServicesContext.Provider>
   );

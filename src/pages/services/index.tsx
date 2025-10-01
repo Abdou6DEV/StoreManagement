@@ -99,16 +99,73 @@ export default function ServicesPage() {
         });
       } else if (filters.dateFilter === "dueSoon") {
         const today = new Date();
-        const dueSoonDate = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+        const dueSoonDate = new Date(today.getTime() + dueSoonThresholdDays * 24 * 60 * 60 * 1000);
         filteredServices = filteredServices.filter((service: ServiceAppointment) => {
           const dueDate = new Date(service.dueDate);
           return dueDate >= today && dueDate <= dueSoonDate && !service.isCompleted;
         });
       }
       
-      // Sort services: incomplete first, then by due date
+      // Calculate newly overdue/due soon services for highlighting
+      let currentNewlyOverdueServicesIds = new Set<string>();
+      let currentNewlyDueSoonServicesIds = new Set<string>();
+      
+      if (filters.dateFilter === "overdue") {
+        // Mark that we're viewing the overdue table
+        setIsViewingOverdueTable(true);
+        setIsViewingDueSoonTable(false);
+        
+        // Only calculate highlighting if we weren't already viewing the overdue table
+        if (!isViewingOverdueTable) {
+          const overdueServices = filteredServices.filter(service => {
+            const today = new Date();
+            const dueDate = new Date(service.dueDate);
+            return dueDate < today && !service.isCompleted && !seenOverdueServices.has(service.id);
+          });
+          currentNewlyOverdueServicesIds = new Set(overdueServices.map(service => service.id));
+          setNewlyOverdueServicesIds(currentNewlyOverdueServicesIds);
+          setNewlyDueSoonServicesIds(new Set());
+        } else {
+          currentNewlyOverdueServicesIds = newlyOverdueServicesIds;
+        }
+      } else if (filters.dateFilter === "dueSoon") {
+        // Mark that we're viewing the due soon table
+        setIsViewingOverdueTable(false);
+        setIsViewingDueSoonTable(true);
+        
+        // Only calculate highlighting if we weren't already viewing the due soon table
+        if (!isViewingDueSoonTable) {
+          const dueSoonServices = filteredServices.filter(service => {
+            const today = new Date();
+            const dueDate = new Date(service.dueDate);
+            const diffTime = dueDate.getTime() - today.getTime();
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            return diffDays <= dueSoonThresholdDays && diffDays >= 0 && !service.isCompleted && !seenDueSoonServices.has(service.id);
+          });
+          currentNewlyDueSoonServicesIds = new Set(dueSoonServices.map(service => service.id));
+          setNewlyOverdueServicesIds(new Set());
+          setNewlyDueSoonServicesIds(currentNewlyDueSoonServicesIds);
+        } else {
+          currentNewlyDueSoonServicesIds = newlyDueSoonServicesIds;
+        }
+      } else {
+        // Not viewing overdue or due soon tables
+        setIsViewingOverdueTable(false);
+        setIsViewingDueSoonTable(false);
+        setNewlyOverdueServicesIds(new Set());
+        setNewlyDueSoonServicesIds(new Set());
+      }
+      
+      // Sort services: highlighted first, then incomplete, then by due date
       filteredServices.sort((a: ServiceAppointment, b: ServiceAppointment) => {
-        // First sort by completion status (incomplete first)
+        // First prioritize highlighted services (newly overdue and due soon)
+        const aIsHighlighted = currentNewlyOverdueServicesIds.has(a.id) || currentNewlyDueSoonServicesIds.has(a.id);
+        const bIsHighlighted = currentNewlyOverdueServicesIds.has(b.id) || currentNewlyDueSoonServicesIds.has(b.id);
+        
+        if (aIsHighlighted && !bIsHighlighted) return -1;
+        if (!aIsHighlighted && bIsHighlighted) return 1;
+        
+        // If both or neither are highlighted, sort by completion status (incomplete first)
         if (a.isCompleted !== b.isCompleted) {
           return a.isCompleted ? 1 : -1;
         }
@@ -160,6 +217,41 @@ export default function ServicesPage() {
   useEffect(() => {
     localStorage.setItem('seenDueSoonServices', JSON.stringify(Array.from(seenDueSoonServices)));
   }, [seenDueSoonServices]);
+
+  // Mark services as seen when viewing overdue/due soon tables
+  useEffect(() => {
+    if (filters.dateFilter === "overdue" && isViewingOverdueTable) {
+      // Mark all overdue services as seen
+      const overdueServiceIds = services
+        .filter(service => {
+          const today = new Date();
+          const dueDate = new Date(service.dueDate);
+          return dueDate < today && !service.isCompleted;
+        })
+        .map(service => service.id);
+      
+      if (overdueServiceIds.length > 0) {
+        setSeenOverdueServices(prev => new Set([...prev, ...overdueServiceIds]));
+        markOverdueServicesAsSeen();
+      }
+    } else if (filters.dateFilter === "dueSoon" && isViewingDueSoonTable) {
+      // Mark all due soon services as seen
+      const dueSoonServiceIds = services
+        .filter(service => {
+          const today = new Date();
+          const dueDate = new Date(service.dueDate);
+          const diffTime = dueDate.getTime() - today.getTime();
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          return diffDays <= dueSoonThresholdDays && diffDays >= 0 && !service.isCompleted;
+        })
+        .map(service => service.id);
+      
+      if (dueSoonServiceIds.length > 0) {
+        setSeenDueSoonServices(prev => new Set([...prev, ...dueSoonServiceIds]));
+        markDueSoonServicesAsSeen();
+      }
+    }
+  }, [filters.dateFilter, isViewingOverdueTable, isViewingDueSoonTable, services, markOverdueServicesAsSeen, markDueSoonServicesAsSeen, dueSoonThresholdDays]);
 
   const handleServiceAdded = () => {
     setOpenPanel(null);
@@ -262,6 +354,11 @@ export default function ServicesPage() {
               itemsPerPage={itemsPerPage}
               onPageChange={setCurrentPage}
               onItemsPerPageChange={setItemsPerPage}
+              dueSoonThresholdDays={dueSoonThresholdDays}
+              newlyOverdueServicesIds={newlyOverdueServicesIds}
+              newlyDueSoonServicesIds={newlyDueSoonServicesIds}
+              onMarkOverdueAsSeen={markOverdueServicesAsSeen}
+              onMarkDueSoonAsSeen={markDueSoonServicesAsSeen}
             />
           ) : (
             /* Service Types Table */
