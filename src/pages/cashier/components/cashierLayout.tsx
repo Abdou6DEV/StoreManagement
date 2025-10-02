@@ -26,8 +26,8 @@ interface CashierLayoutProps {
   onUpdateSessionDiscount: (sessionIndex: number, newDiscount: string) => void;
   onOutOfStock: (items: CartItem[]) => void;
   onReceiptData: (data: any) => void;
-  onSaleComplete: (saleId?: string) => void;
-  onSaleCompleted: (saleId?: string) => void;
+  onSaleComplete: (saleId?: string, soldItems?: CartItem[]) => void;
+  onSaleCompleted: (saleId?: string, soldItems?: CartItem[]) => void;
   maxSessions: number;
   addProductToCart: (cart: CartItem[], product: ProductWithSales, allProducts: ProductWithSales[], onOutOfStock: (product: ProductWithSales, currentQty: number) => void) => CartItem[] | null;
   onProductOutOfStock: (product: ProductWithSales, currentQty: number) => void;

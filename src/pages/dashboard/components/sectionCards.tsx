@@ -15,7 +15,21 @@ import { Skeleton } from "../../../lib/components/skeleton";
 
 export function SectionCards() {
   const { t, i18n } = useTranslation();
-  const [isLoading, setIsLoading] = useState(true);
+  const [loadingStates, setLoadingStates] = useState({
+    salesStats: true,
+    stockStats: true,
+    clientStats: true,
+    todayVsAverage: true,
+    monthVsAverage: true,
+    yearVsAverage: true,
+    activeClients: true,
+    newClientsThisMonth: true,
+    totalCreditAmount: true,
+    totalVersementAmount: true,
+    unpaidCreditAmount: true,
+    unpaidVersementAmount: true,
+    numberOfClients: true,
+  });
   const [salesStats, setSalesStats] = useState<Array<{
     labelKey: string;
     revenue?: string;
@@ -98,16 +112,31 @@ export function SectionCards() {
 
   useEffect(() => {
     async function fetchStats() {
-      setIsLoading(true);
       try {
-        const [sales, products, payments, clients, lowStockThreshold] =
-          await Promise.all([
-            window.api.database.sales.getAll(),
-            window.api.database.products.getAll(),
-            window.api.database.payments.getAll(),
-            window.api.database.clients.getAll(),
-            window.api.database.options.get("lowStockThreshold"),
-          ]);
+        // Load sales data first (most important)
+        const sales = await window.api.database.sales.getAll();
+        setLoadingStates(prev => ({ ...prev, salesStats: false }));
+        
+        // Load products data
+        const products = await window.api.database.products.getAll();
+        setLoadingStates(prev => ({ ...prev, stockStats: false }));
+        
+        // Load clients data
+        const clients = await window.api.database.clients.getAll();
+        setLoadingStates(prev => ({ ...prev, clientStats: false, numberOfClients: false }));
+        
+        // Load payments data
+        const payments = await window.api.database.payments.getAll();
+        setLoadingStates(prev => ({ 
+          ...prev, 
+          totalCreditAmount: false, 
+          totalVersementAmount: false, 
+          unpaidCreditAmount: false, 
+          unpaidVersementAmount: false 
+        }));
+        
+        // Load options
+        const lowStockThreshold = await window.api.database.options.get("lowStockThreshold");
       const isToday = (date: Date) => {
         const d = new Date(date);
         const now = new Date();
@@ -134,10 +163,14 @@ export function SectionCards() {
 
 
 
+      // Process sales data progressively
       const todayStats = calcSalesStats(sales, "today", isToday);
       const monthStats = calcSalesStats(sales, "thisMonth", isThisMonth);
       const yearStats = calcSalesStats(sales, "thisYear", isThisYear);
       const overallStats = calcSalesStats(sales, "overall", () => true);
+      
+      // Set sales stats immediately
+      setSalesStats([todayStats, monthStats, yearStats, overallStats]);
 
        // Calculate today vs average for the Today card
        const todayTotalProfit = todayStats.profit ? parseFloat(todayStats.profit.replace(/[^\d.-]/g, '')) : 0;
@@ -275,6 +308,7 @@ export function SectionCards() {
 
       setSalesStats(combinedStats);
 
+      // Process stock data progressively
       const totalProducts = products.length;
       const threshold = lowStockThreshold ? Number(lowStockThreshold) : 5; // Default to 5 if not set
       const lowStockItems = products.filter(
@@ -285,6 +319,8 @@ export function SectionCards() {
         (sum: number, p: { boughtPrice: number; quantity: number }) => sum + p.boughtPrice * p.quantity,
         0
       );
+      
+      // Set stock stats immediately
       setStockStats([
         {
           labelKey: "dashboard.totalProducts",
@@ -312,6 +348,7 @@ export function SectionCards() {
         },
       ]);
 
+      // Process client data progressively
       const numberOfClients = clients.length;
       const totalCredit = payments.filter((p: { type: string }) => p.type === "CREDIT");
       const totalVersement = payments.filter(
@@ -321,6 +358,7 @@ export function SectionCards() {
       const unpaidVersement = totalVersement.filter(
         (p: { paidDate?: string | Date }) => !p.paidDate
       ).length;
+      
       // Calculate additional client stats
       const calculatedTotalCreditAmount = totalCredit.reduce((sum: number, p: { givenAmount: number }) => sum + p.givenAmount, 0);
       const calculatedTotalVersementAmount = totalVersement.reduce((sum: number, p: { givenAmount: number }) => sum + p.givenAmount, 0);
@@ -344,7 +382,7 @@ export function SectionCards() {
         return created.getFullYear() === now.getFullYear() && created.getMonth() === now.getMonth();
       }).length;
 
-      // Set state variables
+      // Set state variables immediately
       setNumberOfClients(numberOfClients);
       setTotalCreditAmount(calculatedTotalCreditAmount);
       setTotalVersementAmount(calculatedTotalVersementAmount);
@@ -353,6 +391,7 @@ export function SectionCards() {
       setActiveClients(calculatedActiveClients);
       setNewClientsThisMonth(calculatedNewClientsThisMonth);
 
+      // Set client stats immediately
       setClientStats([
         {
           labelKey: "dashboard.numberOfClients",
@@ -409,7 +448,13 @@ export function SectionCards() {
     if (titleKey === "stockStatsSection") {
       return (
         <div className="space-y-6">
-          <StockStatsCard />
+          {loadingStates.stockStats ? (
+            <div className="p-8 bg-card rounded-xl shadow-md border flex items-center justify-center min-h-[200px]">
+              <Skeleton className="h-8 w-32" />
+            </div>
+          ) : (
+            <StockStatsCard />
+          )}
         </div>
       );
     }
@@ -422,8 +467,13 @@ export function SectionCards() {
             {t("dashboard.clientStatsSection")}
           </h2>
           
-          {/* Simple Client Stats Grid */}
-          <div className="p-6 bg-card rounded-xl shadow-md border">
+          {loadingStates.clientStats ? (
+            <div className="p-6 bg-card rounded-xl shadow-md border flex items-center justify-center min-h-[200px]">
+              <Skeleton className="h-8 w-32" />
+            </div>
+          ) : (
+            /* Simple Client Stats Grid */
+            <div className="p-6 bg-card rounded-xl shadow-md border">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
               <div className="flex flex-col items-center gap-1">
                 <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
@@ -529,6 +579,7 @@ export function SectionCards() {
               </div>
             </div>
           </div>
+          )}
         </div>
       );
     }
@@ -541,11 +592,17 @@ export function SectionCards() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {cards.map((stat) => {
           const IconComponent = stat.icon;
+          const isLoading = loadingStates.salesStats && titleKey === "overviewSection";
           return (
             <div
               key={stat.labelKey}
               className={`p-8 bg-card rounded-xl shadow-md border flex flex-col items-start space-y-3 hover:shadow-lg transition-shadow duration-300 relative min-h-[280px]`}
             >
+              {isLoading && (
+                <div className="absolute inset-0 bg-background/80 backdrop-blur-sm rounded-xl flex items-center justify-center">
+                  <Skeleton className="h-8 w-32" />
+                </div>
+              )}
                   {stat.revenue && stat.profit ? (
                     // Unified layout for all sales cards
                     <div className="w-full space-y-2">
@@ -713,68 +770,6 @@ export function SectionCards() {
     );
   };
 
-  if (isLoading) {
-    return (
-      <div className="space-y-8">
-        {/* Overview Section Skeleton */}
-        <div className="space-y-4">
-          <Skeleton className="h-8 w-48" />
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="bg-card rounded-xl border border-border p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <Skeleton className="h-6 w-24" />
-                  <Skeleton className="h-8 w-8 rounded-lg" />
-                </div>
-                <div className="space-y-3">
-                  <Skeleton className="h-8 w-32" />
-                  <Skeleton className="h-4 w-20" />
-                  <Skeleton className="h-4 w-16" />
-                </div>
-                <div className="mt-4">
-                  <Skeleton className="h-32 w-full rounded" />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Stock Stats Section Skeleton */}
-        <div className="space-y-4">
-          <Skeleton className="h-8 w-48" />
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="bg-card rounded-xl border border-border p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <Skeleton className="h-6 w-24" />
-                  <Skeleton className="h-8 w-8 rounded-lg" />
-                </div>
-                <Skeleton className="h-8 w-32 mb-2" />
-                <Skeleton className="h-4 w-20" />
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Client Stats Section Skeleton */}
-        <div className="space-y-4">
-          <Skeleton className="h-8 w-48" />
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="bg-card rounded-xl border border-border p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <Skeleton className="h-6 w-24" />
-                  <Skeleton className="h-8 w-8 rounded-lg" />
-                </div>
-                <Skeleton className="h-8 w-32 mb-2" />
-                <Skeleton className="h-4 w-20" />
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-8">

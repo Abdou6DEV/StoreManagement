@@ -15,8 +15,8 @@ interface CashierSessionProps {
   cart: CartItem[];
   setCart: (cart: CartItem[] | ((prev: CartItem[]) => CartItem[])) => void;
   onProductOutOfStock: (product: ProductWithSales, currentQty: number) => void;
-  onSaleComplete: (saleId?: string) => void;
-  onSaleCompleted: (saleId?: string) => void;
+  onSaleComplete: (saleId?: string, soldItems?: CartItem[]) => void;
+  onSaleCompleted: (saleId?: string, soldItems?: CartItem[]) => void;
   isActive: boolean;
   discount: string;
   setDiscount: (discount: string) => void;
@@ -180,7 +180,7 @@ const CashierSession = memo(function CashierSession({
         t("cashier.saleCompleted", "Sale completed successfully!"),
         "success",
       );
-      onSaleCompleted(saleId);
+      onSaleCompleted(saleId, cart);
     }
     setPaymentAmount(0);
     setPaymentType("none");
@@ -226,7 +226,7 @@ const CashierSession = memo(function CashierSession({
         "success",
       );
       
-      onSaleComplete(saleId);
+      onSaleComplete(saleId, cart);
     }
     
     setPaymentAmount(0);

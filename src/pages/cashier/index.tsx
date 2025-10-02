@@ -162,10 +162,33 @@ export default function CashierPage() {
     setReceiptData(data);
   };
 
-  const handleSaleComplete = (saleId?: string) => {
+  // Function to update product quantities locally after a sale
+  const updateProductQuantitiesLocally = (soldItems: CartItem[]) => {
+    console.log('Updating product quantities locally for items:', soldItems);
+    setAllProducts(prevProducts => 
+      prevProducts.map(product => {
+        const soldItem = soldItems.find(item => item.id === product.id && !item.isManual && !item.isService);
+        if (soldItem) {
+          console.log(`Updating ${product.name}: ${product.quantity} -> ${Math.max(0, product.quantity - soldItem.qty)}`);
+          return {
+            ...product,
+            quantity: Math.max(0, product.quantity - soldItem.qty)
+          };
+        }
+        return product;
+      })
+    );
+  };
+
+  const handleSaleComplete = (saleId?: string, soldItems?: CartItem[]) => {
     if (saleId) {
       setLastSaleId(saleId);
       // Don't show receipt modal - printing is handled directly in cashier session
+    }
+
+    // Update product quantities locally for immediate UI feedback
+    if (soldItems) {
+      updateProductQuantitiesLocally(soldItems);
     }
 
     // Refresh sales history when a sale is completed
@@ -175,7 +198,13 @@ export default function CashierPage() {
     refreshCompletedServicesCount();
   };
 
-  const handleSaleCompleted = () => {
+  const handleSaleCompleted = (saleId?: string, soldItems?: CartItem[]) => {
+    console.log('handleSaleCompleted called with:', { saleId, soldItems });
+    // Update product quantities locally for immediate UI feedback
+    if (soldItems) {
+      updateProductQuantitiesLocally(soldItems);
+    }
+
     setSalesRefreshKey((prev) => prev + 1);
     
     // Refresh completed services count immediately

@@ -84,8 +84,8 @@ export async function createSale(data: {
   });
 
   // Only process manual products and services if they exist
-  let manualProductMap = new Map<string, string>();
-  let serviceMap = new Map<string, string>();
+  const manualProductMap = new Map<string, string>();
+  const serviceMap = new Map<string, string>();
 
   // Process manual products only if needed
   if (manualProductKeys.size > 0) {
@@ -205,7 +205,7 @@ export async function createSale(data: {
     // Optimized: Batch fetch all products at once and update quantities
     const productIds = processedItems
       .filter(item => item.productId)
-      .map(item => item.productId!);
+      .map(item => item.productId as string);
     
     // Fetch all products in a single query
     const products = productIds.length > 0
@@ -225,8 +225,9 @@ export async function createSale(data: {
       processedItems
         .filter(item => item.productId)
         .forEach(item => {
-          const currentChange = quantityChanges.get(item.productId!) || 0;
-          quantityChanges.set(item.productId!, currentChange - item.quantity);
+          const productId = item.productId as string;
+          const currentChange = quantityChanges.get(productId) || 0;
+          quantityChanges.set(productId, currentChange - item.quantity);
         });
 
       // Execute updates using raw SQL for better performance
@@ -386,11 +387,11 @@ export async function updateSale(
       // Optimized: Batch fetch all affected products (old and new)
       const oldProductIds = originalSale.saleItems
         .filter(item => item.productId)
-        .map(item => item.productId!);
+        .map(item => item.productId as string);
       
       const newProductIds = processedItems
         .filter(item => item.productId)
-        .map(item => item.productId!);
+        .map(item => item.productId as string);
       
       const allProductIds = [...new Set([...oldProductIds, ...newProductIds])];
       
@@ -410,11 +411,12 @@ export async function updateSale(
           originalSale.saleItems
             .filter(item => item.productId)
             .map(item => {
-              const product = productMap.get(item.productId!);
+              const productId = item.productId as string;
+              const product = productMap.get(productId);
               if (product) {
                 const newQty = product.quantity + item.quantity;
                 return tx.product.update({
-                  where: { id: item.productId! },
+                  where: { id: productId },
                   data: { quantity: newQty },
                 });
               }
@@ -437,11 +439,12 @@ export async function updateSale(
           processedItems
             .filter(item => item.productId)
             .map(item => {
-              const product = productMap.get(item.productId!);
+              const productId = item.productId as string;
+              const product = productMap.get(productId);
               if (product) {
                 const newQty = Math.max(0, product.quantity - item.quantity);
                 return tx.product.update({
-                  where: { id: item.productId! },
+                  where: { id: productId },
                   data: { quantity: newQty },
                 });
               }
@@ -567,7 +570,7 @@ export async function deleteSale(saleId: string) {
     // Optimized: Batch fetch all products and restore quantities
     const productIds = sale.saleItems
       .filter(item => item.productId)
-      .map(item => item.productId!);
+      .map(item => item.productId as string);
     
     if (productIds.length > 0) {
       const products = await tx.product.findMany({
@@ -582,11 +585,12 @@ export async function deleteSale(saleId: string) {
         sale.saleItems
           .filter(item => item.productId)
           .map(item => {
-            const product = productMap.get(item.productId!);
+            const productId = item.productId as string;
+            const product = productMap.get(productId);
             if (product) {
               const newQty = product.quantity + item.quantity;
               return tx.product.update({
-                where: { id: item.productId! },
+                where: { id: productId },
                 data: { quantity: newQty },
               });
             }
@@ -1227,7 +1231,7 @@ export async function searchSales(
 
   console.log("searchSales called with searchTerm:", searchTerm, "days:", days, "Start date:", startDate, "End date:", endDate);
 
-  const searchLower = searchTerm.toLowerCase();
+  // const searchLower = searchTerm.toLowerCase(); // Removed unused variable
 
   const sales = await prisma.sale.findMany({
     where: {
