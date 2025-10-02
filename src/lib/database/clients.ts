@@ -4,6 +4,12 @@ export async function getAllClients() {
   return await prisma.client.findMany();
 }
 
+export async function findClientByName(name: string) {
+  return await prisma.client.findFirst({
+    where: { name: name.trim() }
+  });
+}
+
 export async function getAllClientsWithTotalPurchases() {
   const clients = await prisma.client.findMany();
 

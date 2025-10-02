@@ -19,6 +19,7 @@ import {
   createClient,
   deleteClient,
   updateClient,
+  findClientByName,
 } from "../../lib/database/clients";
 import {
   createSale,
@@ -178,6 +179,10 @@ export function setupDatabaseHandlers() {
 
   ipcMain.handle("db:clients:getAll", async () => {
     return await getAllClients();
+  });
+
+  ipcMain.handle("db:clients:findByName", async (_event, name: string) => {
+    return await findClientByName(name);
   });
 
   ipcMain.handle("db:clients:delete", async (_event, id: string) => {

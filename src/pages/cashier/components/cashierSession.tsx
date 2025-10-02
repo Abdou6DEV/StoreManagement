@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import PaymentSummary from "../../../lib/components/paymentSummary";
 import ActionButtons from "./actionButtons";
 import { useToast } from "../../../lib/contexts/toastContext";
-import { useStock } from "../../../lib/contexts/stockContext";
+// import { useStock } from "../../../lib/contexts/stockContext"; // Removed - was causing performance issues
 import { Client } from "@prisma/client";
 import { printReceiptDirectly } from "./receiptModal";
 
@@ -45,7 +45,7 @@ const CashierSession = memo(function CashierSession({
 }: CashierSessionProps) {
   const { t } = useTranslation();
   const { showToast } = useToast();
-  const { refetchProducts } = useStock();
+  // const { refetchProducts } = useStock(); // Removed - was causing performance issues
 
   // Session-specific state
   const [clientName, setClientName] = useState("");
@@ -66,17 +66,22 @@ const CashierSession = memo(function CashierSession({
     let saleClientId = clientId;
     try {
       if (clientName.trim() && !clientId) {
-        // First try to find an existing client with this name
-        const allClients = await window.api.database.clients.getAll();
-        const existingClient = allClients.find(
-          (c: Client) => c.name === clientName.trim(),
-        );
-
-        if (existingClient) {
-          saleClientId = existingClient.id;
-          setClientId(existingClient.id);
-        } else {
-          // Only create a new client if one doesn't exist
+        // Search for existing client by name directly (much faster than getAll)
+        try {
+          const existingClient = await window.api.database.clients.findByName(clientName.trim());
+          if (existingClient) {
+            saleClientId = existingClient.id;
+            setClientId(existingClient.id);
+          } else {
+            // Create a new client if not found
+            const client = await window.api.database.clients.create({
+              name: clientName.trim(),
+            });
+            saleClientId = client.id;
+            setClientId(client.id);
+          }
+        } catch (error) {
+          // If findByName doesn't exist, create directly (fallback)
           const client = await window.api.database.clients.create({
             name: clientName.trim(),
           });
@@ -126,10 +131,9 @@ const CashierSession = memo(function CashierSession({
       setPaymentAmount(0);
       setPaymentType("none");
       setPaymentDate(undefined);
-      setProductRefreshKey((k: number) => k + 1);
-      
-      // Also refresh the StockContext to update badges
-      await refetchProducts();
+      // Refresh products only when needed (e.g., when product browser opens)
+      // This prevents UI pause after every sale
+      // setProductRefreshKey((k: number) => k + 1);
       
       if (showSuccessMessage) {
         showToast(
@@ -143,7 +147,7 @@ const CashierSession = memo(function CashierSession({
       showToast(t("cashier.saleError", "Failed to record sale"), "error");
       return undefined;
     }
-  }, [cart, clientName, clientId, discount, paymentAmount, paymentType, paymentDate, setCart, setClientName, setClientId, setDiscount, setPaymentAmount, setPaymentType, setPaymentDate, setProductRefreshKey, refetchProducts, showToast, t]);
+  }, [cart, clientName, clientId, discount, paymentAmount, paymentType, paymentDate, setCart, setClientName, setClientId, setDiscount, setPaymentAmount, setPaymentType, setPaymentDate, setProductRefreshKey, showToast, t]);
 
   // Clear the cart and reset session state
   const handleClear = () => {

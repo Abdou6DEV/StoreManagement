@@ -7,206 +7,272 @@ export async function seedSales(prisma: PrismaClient, products: Product[]) {
 
   const clients = await prisma.client.findMany();
   const services = await prisma.service.findMany();
-  const sales = [];
-  const twoYearsAgo = new Date();
-  twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
+  const sales: any[] = [];
+  const fiveYearsAgo = new Date();
+  fiveYearsAgo.setFullYear(fiveYearsAgo.getFullYear() - 5);
 
-  for (let i = 0; i < 1200; i++) {
-    const client = faker.helpers.maybe(
-      () => faker.helpers.arrayElement(clients),
-      { probability: 0.7 }
-    );
-    const saleItemsCount = faker.number.int({ min: 1, max: 5 });
-    const saleCreatedAt = faker.date.between({
-      from: twoYearsAgo,
-      to: new Date(),
-    });
+  // Realistic store data for testing: ~5,000 sales (realistic for testing)
+  const totalSales = 5000;
+  const batchSize = 500; // Larger batches for better performance
+  
+  console.log(`   - Creating ${totalSales} sales in batches of ${batchSize}...`);
 
-    // Create sale without discount first - we'll calculate it after adding items
-    const sale = await prisma.sale.create({
-      data: {
+  for (let batchStart = 0; batchStart < totalSales; batchStart += batchSize) {
+    const batchEnd = Math.min(batchStart + batchSize, totalSales);
+    const currentBatchSize = batchEnd - batchStart;
+    
+    console.log(`   - Processing batch ${Math.floor(batchStart / batchSize) + 1}/${Math.ceil(totalSales / batchSize)} (${currentBatchSize} sales)...`);
+
+    // Prepare batch data for bulk operations
+    const salesData: any[] = [];
+    const saleItemsData: any[] = [];
+    const productUpdates = new Map<string, number>();
+
+    for (let i = 0; i < currentBatchSize; i++) {
+      const client = faker.helpers.maybe(
+        () => faker.helpers.arrayElement(clients),
+        { probability: 0.7 }
+      );
+      const saleItemsCount = faker.number.int({ min: 1, max: 5 });
+      const saleCreatedAt = faker.date.between({
+        from: fiveYearsAgo,
+        to: new Date(),
+      });
+
+      // Prepare sale data
+      salesData.push({
         clientId: client?.id,
-        discount: 0, // Start with 0, will update after calculating total
+        discount: 0, // Will calculate later
         createdAt: saleCreatedAt,
-      },
-    });
-    sales.push({ ...sale, clientId: client?.id });
-
-    // Decide if this sale should include manual products (40% chance)
-    const includeManualProducts = faker.datatype.boolean({ probability: 0.4 });
-    // Decide if this sale should include services (30% chance)
-    const includeServices = faker.datatype.boolean({ probability: 0.3 });
-
-    let manualProductsAdded = 0;
-    let servicesAdded = 0;
-    const maxManualProducts = faker.number.int({ min: 1, max: 3 });
-    const maxServices = faker.number.int({ min: 1, max: 2 });
-
-    // Filter products that have stock available
-    const availableProducts = products.filter(
-      (product) => product.quantity > 0
-    );
-
-    // Calculate how many regular products to include
-    let regularProductCount = saleItemsCount;
-    if (includeManualProducts)
-      regularProductCount = Math.max(0, regularProductCount - 2);
-    if (includeServices)
-      regularProductCount = Math.max(0, regularProductCount - 1);
-
-    const saleProducts =
-      availableProducts.length > 0
-        ? faker.helpers.arrayElements(
-            availableProducts,
-            Math.min(regularProductCount, availableProducts.length)
-          )
-        : [];
-
-    // Add regular product items
-    for (const product of saleProducts) {
-      const maxQuantity = Math.min(5, product.quantity); // Don't sell more than available
-      if (maxQuantity <= 0) continue; // Skip if no stock
-
-      const quantity = faker.number.int({ min: 1, max: maxQuantity });
-
-      // Use transaction to create sale item and update product quantity
-      await prisma.$transaction(async (tx) => {
-        await tx.saleItem.create({
-          data: {
-            productId: product.id,
-            saleId: sale.id,
-            quantity,
-            price: product.sellingPrice,
-            boughtPrice: product.boughtPrice,
-          },
-        });
-
-        // Update product quantity by reducing it
-        await tx.product.update({
-          where: { id: product.id },
-          data: {
-            quantity: {
-              decrement: quantity,
-            },
-          },
-        });
-
-        // Update local product object to reflect new quantity
-        product.quantity -= quantity;
       });
     }
 
-    // Add manual products if decided
-    if (includeManualProducts && manualProductsAdded < maxManualProducts) {
-      const manualProductCount = faker.number.int({ min: 1, max: 2 });
-      const usedManualProducts = new Set<string>(); // Track used manual products for this sale
+    // Bulk create sales
+    await prisma.sale.createMany({
+      data: salesData as any,
+    });
 
-      for (let j = 0; j < manualProductCount; j++) {
-        const manualProductName =
-          faker.helpers.arrayElement(manualProductNames);
-        const manualProductType =
-          faker.helpers.arrayElement(manualProductTypes);
-        
-        // Create a unique key for this manual product combination
-        const manualProductKey = `${manualProductName}-${manualProductType}`;
-        
-        // Skip if we already used this manual product in this sale
-        if (usedManualProducts.has(manualProductKey)) {
-          continue;
-        }
-        
-        usedManualProducts.add(manualProductKey);
-        
-        const manualProductPrice = faker.commerce.price({
-          min: 5,
-          max: 200,
-          dec: 0,
+    // Get the created sales for this batch
+    const batchSales = await prisma.sale.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: currentBatchSize,
+    });
+
+    // Process each sale in the batch
+    for (let i = 0; i < currentBatchSize; i++) {
+      const sale = batchSales[i];
+      const saleItemsCount = faker.number.int({ min: 1, max: 5 });
+
+      // Decide if this sale should include manual products (40% chance)
+      const includeManualProducts = faker.datatype.boolean({ probability: 0.4 });
+      // Decide if this sale should include services (30% chance)
+      const includeServices = faker.datatype.boolean({ probability: 0.3 });
+
+      let manualProductsAdded = 0;
+      let servicesAdded = 0;
+      const maxManualProducts = faker.number.int({ min: 1, max: 3 });
+      const maxServices = faker.number.int({ min: 1, max: 2 });
+
+      // Filter products that have stock available
+      const availableProducts = products.filter(
+        (product) => product.quantity > 0
+      );
+
+      // Calculate how many regular products to include
+      let regularProductCount = saleItemsCount;
+      if (includeManualProducts)
+        regularProductCount = Math.max(0, regularProductCount - 2);
+      if (includeServices)
+        regularProductCount = Math.max(0, regularProductCount - 1);
+
+      const saleProducts =
+        availableProducts.length > 0
+          ? faker.helpers.arrayElements(
+              availableProducts,
+              Math.min(regularProductCount, availableProducts.length)
+            )
+          : [];
+
+      // Add regular product items (prepare for bulk insert)
+      for (const product of saleProducts) {
+        const maxQuantity = Math.min(5, product.quantity); // Don't sell more than available
+        if (maxQuantity <= 0) continue; // Skip if no stock
+
+        const quantity = faker.number.int({ min: 1, max: maxQuantity });
+
+        // Prepare sale item data
+        saleItemsData.push({
+          productId: product.id,
+          saleId: sale.id,
+          quantity,
+          price: product.sellingPrice,
+          boughtPrice: product.boughtPrice,
         });
-        const quantity = faker.number.int({ min: 1, max: 3 });
 
-        // Create or find the manual product
-        const manualProduct = await prisma.manualProduct.upsert({
-          where: {
-            name_type: {
-              name: manualProductName,
-              type: manualProductType,
-            },
-          },
-          update: {},
-          create: {
-            name: manualProductName,
-            type: manualProductType,
-          },
-        });
+        // Track quantity changes for bulk update
+        const currentChange = productUpdates.get(product.id) || 0;
+        productUpdates.set(product.id, currentChange - quantity);
+        
+        // Update local product object
+        product.quantity -= quantity;
+      }
 
-        await prisma.saleItem.create({
-          data: {
-            productId: null, // Manual products don't have a productId
-            manualProductId: manualProduct.id,
+      // Add manual products if decided (prepare for bulk insert)
+      if (includeManualProducts && manualProductsAdded < maxManualProducts) {
+        const manualProductCount = faker.number.int({ min: 1, max: 2 });
+        const usedManualProducts = new Set<string>();
+
+        for (let j = 0; j < manualProductCount; j++) {
+          const manualProductName = faker.helpers.arrayElement(manualProductNames);
+          const manualProductType = faker.helpers.arrayElement(manualProductTypes);
+          
+          const manualProductKey = `${manualProductName}-${manualProductType}`;
+          
+          if (usedManualProducts.has(manualProductKey)) {
+            continue;
+          }
+          
+          usedManualProducts.add(manualProductKey);
+          
+          const manualProductPrice = faker.commerce.price({
+            min: 5,
+            max: 200,
+            dec: 0,
+          });
+          const quantity = faker.number.int({ min: 1, max: 3 });
+
+          // Prepare manual product data (will handle upsert later)
+          saleItemsData.push({
+            productId: null,
+            manualProductId: null, // Will be set after upsert
+            serviceId: null,
             saleId: sale.id,
             quantity,
             price: Number(manualProductPrice),
-          },
-        });
+            manualProductName,
+            manualProductType,
+          });
 
-        manualProductsAdded++;
+          manualProductsAdded++;
+        }
       }
-    }
 
-    // Add services if decided
-    if (includeServices && servicesAdded < maxServices && services.length > 0) {
-      const serviceCount = faker.number.int({ min: 1, max: 2 });
-      const selectedServices = faker.helpers.arrayElements(
-        services,
-        Math.min(serviceCount, services.length)
-      );
+      // Add services if decided (prepare for bulk insert)
+      if (includeServices && servicesAdded < maxServices && services.length > 0) {
+        const serviceCount = faker.number.int({ min: 1, max: 2 });
+        const selectedServices = faker.helpers.arrayElements(
+          services,
+          Math.min(serviceCount, services.length)
+        );
 
-      for (const service of selectedServices) {
-        const servicePrice = faker.commerce.price({
-          min: 20,
-          max: 500,
-          dec: 0,
-        });
-        const quantity = 1; // Services typically have quantity of 1
+        for (const service of selectedServices) {
+          const servicePrice = faker.commerce.price({
+            min: 20,
+            max: 500,
+            dec: 0,
+          });
+          const quantity = 1;
 
-        await prisma.saleItem.create({
-          data: {
+          // Prepare service sale item data
+          saleItemsData.push({
             productId: null,
             manualProductId: null,
             serviceId: service.id,
             saleId: sale.id,
             quantity,
             price: Number(servicePrice),
-          },
-        });
+          });
 
-        servicesAdded++;
+          servicesAdded++;
+        }
       }
+
     }
 
-    // Now calculate the total and set an appropriate discount
-    const saleItems = await prisma.saleItem.findMany({
-      where: { saleId: sale.id },
-    });
+    // Handle manual products upsert and update sale items
+    const manualProductItems = saleItemsData.filter(item => item.manualProductName);
+    if (manualProductItems.length > 0) {
+      // Get unique manual product combinations
+      const uniqueManualProducts = new Map<string, { name: string; type: string }>();
+      manualProductItems.forEach(item => {
+        const key = `${item.manualProductName}-${item.manualProductType}`;
+        if (!uniqueManualProducts.has(key)) {
+          uniqueManualProducts.set(key, {
+            name: item.manualProductName,
+            type: item.manualProductType,
+          });
+        }
+      });
 
-    const saleTotal = saleItems.reduce(
-      (sum, item) => sum + item.price * item.quantity,
-      0
-    );
+      // Upsert all unique manual products
+      const manualProductMap = new Map<string, string>();
+      for (const [key, { name, type }] of uniqueManualProducts) {
+        const manualProduct = await prisma.manualProduct.upsert({
+          where: { name_type: { name, type } },
+          update: {},
+          create: { name, type },
+        });
+        manualProductMap.set(key, manualProduct.id);
+      }
 
-    // Calculate discount as a percentage of total (0-20%)
-    const discountPercentage = faker.number.float({
-      min: 0,
-      max: 0.2,
-      fractionDigits: 2,
-    });
-    const calculatedDiscount = Math.floor(saleTotal * discountPercentage);
+      // Update sale items with manual product IDs
+      manualProductItems.forEach(item => {
+        const key = `${item.manualProductName}-${item.manualProductType}`;
+        item.manualProductId = manualProductMap.get(key);
+        delete item.manualProductName;
+        delete item.manualProductType;
+      });
+    }
 
-    // Update the sale with the calculated discount
-    await prisma.sale.update({
-      where: { id: sale.id },
-      data: { discount: calculatedDiscount },
-    });
+    // Bulk insert all sale items
+    if (saleItemsData.length > 0) {
+      await prisma.saleItem.createMany({
+        data: saleItemsData as any,
+      });
+    }
+
+    // Bulk update product quantities
+    for (const [productId, quantityChange] of productUpdates) {
+      await prisma.product.update({
+        where: { id: productId },
+        data: { quantity: { increment: quantityChange } },
+      });
+    }
+
+    // Calculate and update discounts for this batch
+    const salesToUpdate: any[] = [];
+    for (const sale of batchSales) {
+      const saleItems = await prisma.saleItem.findMany({
+        where: { saleId: sale.id },
+      });
+
+      const saleTotal = saleItems.reduce(
+        (sum, item) => sum + item.price * item.quantity,
+        0
+      );
+
+      const discountPercentage = faker.number.float({
+        min: 0,
+        max: 0.2,
+        fractionDigits: 2,
+      });
+      const calculatedDiscount = Math.floor(saleTotal * discountPercentage);
+
+      salesToUpdate.push({
+        id: sale.id,
+        discount: calculatedDiscount,
+      });
+    }
+
+    // Bulk update discounts
+    for (const saleUpdate of salesToUpdate) {
+      await prisma.sale.update({
+        where: { id: saleUpdate.id },
+        data: { discount: saleUpdate.discount },
+      });
+    }
+
+    sales.push(...batchSales);
   }
 
   console.log(`   - ${sales.length} sales created`);

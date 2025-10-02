@@ -281,7 +281,11 @@ export default function CashierPage() {
              productRefreshKey={productRefreshKey}
              setProductRefreshKey={setProductRefreshKey}
              salesRefreshKey={salesRefreshKey}
-             onShowProductBrowser={() => setShowProductBrowser(true)}
+             onShowProductBrowser={() => {
+               // Refresh products when opening product browser to show updated stock
+               setProductRefreshKey((k: number) => k + 1);
+               setShowProductBrowser(true);
+             }}
              onShowManualProductModal={() => setShowManualProductModal(true)}
              onShowServiceModal={() => setShowServiceModal(true)}
              onAddProduct={(product: ProductWithSales) => {

@@ -39,6 +39,7 @@ export const databaseAPI = {
       notes?: string;
     }) => ipcRenderer.invoke("db:clients:create", data),
     getAll: () => ipcRenderer.invoke("db:clients:getAll"),
+    findByName: (name: string) => ipcRenderer.invoke("db:clients:findByName", name),
     getAllWithTotalPurchases: () =>
       ipcRenderer.invoke("db:clients:getAllWithTotalPurchases"),
     delete: (id: string) => ipcRenderer.invoke("db:clients:delete", id),

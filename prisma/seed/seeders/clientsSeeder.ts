@@ -9,16 +9,30 @@ export async function seedClients(prisma: PrismaClient) {
   const twoYearsAgo = new Date();
   twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
 
-  for (let i = 0; i < 300; i++) {
-    let clientName: string;
-    do {
-      clientName = generateUniqueClientName();
-    } while (usedClientNames.has(clientName));
+  // Realistic store data for testing: ~500 clients
+  const totalClients = 500;
+  const batchSize = 200; // Process in batches for better performance
+  
+  console.log(`   - Creating ${totalClients} clients in batches of ${batchSize}...`);
 
-    usedClientNames.add(clientName);
+  for (let batchStart = 0; batchStart < totalClients; batchStart += batchSize) {
+    const batchEnd = Math.min(batchStart + batchSize, totalClients);
+    const currentBatchSize = batchEnd - batchStart;
+    
+    console.log(`   - Processing batch ${Math.floor(batchStart / batchSize) + 1}/${Math.ceil(totalClients / batchSize)} (${currentBatchSize} clients)...`);
 
-    await prisma.client.create({
-      data: {
+    // Prepare batch data
+    const clientsData: any[] = [];
+
+    for (let i = 0; i < currentBatchSize; i++) {
+      let clientName: string;
+      do {
+        clientName = generateUniqueClientName();
+      } while (usedClientNames.has(clientName));
+
+      usedClientNames.add(clientName);
+
+      clientsData.push({
         name: clientName,
         phone: faker.phone.number(),
         address: faker.location.streetAddress({ useFullAddress: true }),
@@ -26,9 +40,14 @@ export async function seedClients(prisma: PrismaClient) {
           probability: 0.3,
         }),
         createdAt: faker.date.between({ from: twoYearsAgo, to: new Date() }),
-      },
+      });
+    }
+
+    // Bulk create clients
+    await prisma.client.createMany({
+      data: clientsData as any,
     });
   }
 
-  console.log(`   - 300 clients created`);
+  console.log(`   - ${totalClients} clients created`);
 }

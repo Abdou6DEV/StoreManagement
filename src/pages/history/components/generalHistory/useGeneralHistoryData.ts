@@ -40,12 +40,12 @@ export function useGeneralHistoryData() {
     
     switch (level) {
       case "day":
-        // Last month for daily view
-        startDate.setMonth(today.getMonth() - 1);
+        // Last 30 days for daily view
+        startDate.setDate(today.getDate() - 30);
         break;
       case "month":
-        // Last 12 months for monthly view
-        startDate.setMonth(today.getMonth() - 12);
+        // This year's months only
+        startDate.setMonth(0, 1); // January 1st of current year
         break;
       case "year":
         // All years - set to a very early date to include all data
@@ -57,40 +57,19 @@ export function useGeneralHistoryData() {
     setEndDate(today.toISOString().split('T')[0]);
   };
 
-  // Fetch the data range to set default dates
-  const fetchDataRange = async () => {
-    try {
-      // Set default range based on current aggregation level
-      setDefaultDateRange(aggregationLevel);
-    } catch (error) {
-      console.error("❌ Error setting default date range:", error);
-      
-      // Fallback to last month on error
-      const fallbackStart = new Date();
-      fallbackStart.setMonth(fallbackStart.getMonth() - 1);
-      const fallbackEnd = new Date();
-      
-      setStartDate(fallbackStart.toISOString().split('T')[0]);
-      setEndDate(fallbackEnd.toISOString().split('T')[0]);
-    }
-  };
 
-  // Fetch data range on component mount
+  // Initialize data on component mount and when aggregation level changes
   useEffect(() => {
-    fetchDataRange();
-  }, []);
-
-  // Update date range when aggregation level changes
-  useEffect(() => {
+    // Set default date range based on current aggregation level
     setDefaultDateRange(aggregationLevel);
   }, [aggregationLevel]);
 
-  // Fetch data when aggregation level or date range changes (only if dates are set)
+  // Fetch data when date range is set
   useEffect(() => {
     if (startDate && endDate) {
       fetchData();
     }
-  }, [aggregationLevel, startDate, endDate]);
+  }, [startDate, endDate]);
 
   // Convert picker format to storage format (YYYY-MM-DD)
   const convertPickerToStorage = (pickerDate: string, level: AggregationLevel): string => {

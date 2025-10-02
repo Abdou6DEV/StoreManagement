@@ -69,37 +69,137 @@ export async function createSale(data: {
   }
 
   // Pre-process items to create/find manual products and services outside the transaction
-  const processedItems = await Promise.all(
-    data.items.map(async (item) => {
-      let manualProductId = null;
-      let serviceId = null;
+  // Batch process manual products and services for better performance
+  const manualProductKeys = new Set<string>();
+  const serviceKeys = new Set<string>();
+  
+  // Collect unique manual products and services
+  data.items.forEach(item => {
+    if (item.manualProductName && item.manualProductType) {
+      manualProductKeys.add(`${item.manualProductName}|${item.manualProductType}`);
+    }
+    if (item.serviceName) {
+      serviceKeys.add(item.serviceName);
+    }
+  });
 
-      if (item.manualProductName && item.manualProductType) {
-        const manualProduct = await findOrCreateManualProduct({
-          name: item.manualProductName,
-          type: item.manualProductType,
-          costPrice: item.manualProductCostPrice,
-        });
-        manualProductId = manualProduct.id;
+  // Only process manual products and services if they exist
+  let manualProductMap = new Map<string, string>();
+  let serviceMap = new Map<string, string>();
+
+  // Process manual products only if needed
+  if (manualProductKeys.size > 0) {
+    // Find existing manual products
+    const existingManualProducts = await prisma.manualProduct.findMany({
+      where: {
+        OR: Array.from(manualProductKeys).map(key => {
+          const [name, type] = key.split('|');
+          return { name, type };
+        })
       }
+    });
+    
+    // Map existing products
+    existingManualProducts.forEach(product => {
+      const key = `${product.name}|${product.type}`;
+      manualProductMap.set(key, product.id);
+    });
+    
+    // Create missing manual products
+    const missingKeys = Array.from(manualProductKeys).filter(key => 
+      !manualProductMap.has(key)
+    );
+    
+    if (missingKeys.length > 0) {
+      await prisma.manualProduct.createMany({
+        data: missingKeys.map(key => {
+          const [name, type] = key.split('|');
+          return { name, type, costPrice: 0 };
+        })
+      });
+      
+      // Fetch the created products to get their IDs
+      const createdProducts = await prisma.manualProduct.findMany({
+        where: {
+          OR: missingKeys.map(key => {
+            const [name, type] = key.split('|');
+            return { name, type };
+          })
+        }
+      });
+      
+      createdProducts.forEach(product => {
+        const key = `${product.name}|${product.type}`;
+        manualProductMap.set(key, product.id);
+      });
+    }
+  }
 
-      if (item.serviceName) {
-        const service = await findOrCreateService({
-          name: item.serviceName,
-          description: item.serviceDescription,
-          costPrice: item.serviceCostPrice,
-          serviceAppointmentId: item.serviceAppointmentId, // Pass the ServiceAppointment ID
-        });
-        serviceId = service.id;
+  // Process services only if needed
+  if (serviceKeys.size > 0) {
+    // Find existing services
+    const existingServices = await prisma.service.findMany({
+      where: {
+        name: { in: Array.from(serviceKeys) }
       }
+    });
+    
+    // Map existing services
+    existingServices.forEach(service => {
+      serviceMap.set(service.name, service.id);
+    });
+    
+    // Create missing services
+    const missingServiceNames = Array.from(serviceKeys).filter(name => 
+      !serviceMap.has(name)
+    );
+    
+    if (missingServiceNames.length > 0) {
+      await prisma.service.createMany({
+        data: missingServiceNames.map(name => {
+          const item = data.items.find(i => i.serviceName === name);
+          return {
+            name,
+            description: item?.serviceDescription || '',
+            costPrice: item?.serviceCostPrice || 0,
+            serviceAppointmentId: item?.serviceAppointmentId || null,
+          };
+        })
+      });
+      
+      // Fetch the created services to get their IDs
+      const createdServices = await prisma.service.findMany({
+        where: {
+          name: { in: missingServiceNames }
+        }
+      });
+      
+      createdServices.forEach(service => {
+        serviceMap.set(service.name, service.id);
+      });
+    }
+  }
 
-      return {
-        ...item,
-        manualProductId,
-        serviceId,
-      };
-    })
-  );
+  // Process items with pre-created IDs
+  const processedItems = data.items.map(item => {
+    let manualProductId = null;
+    let serviceId = null;
+
+    if (item.manualProductName && item.manualProductType) {
+      const key = `${item.manualProductName}|${item.manualProductType}`;
+      manualProductId = manualProductMap.get(key) || null;
+    }
+
+    if (item.serviceName) {
+      serviceId = serviceMap.get(item.serviceName) || null;
+    }
+
+    return {
+      ...item,
+      manualProductId,
+      serviceId,
+    };
+  });
 
   return await prisma.$transaction(async (tx) => {
     // Optimized: Batch fetch all products at once and update quantities
@@ -118,23 +218,27 @@ export async function createSale(data: {
     // Create a map for quick lookup
     const productMap = new Map(products.map(p => [p.id, p]));
     
-    // Update product quantities in batch
+    // Update product quantities only if there are products
     if (products.length > 0) {
-      await Promise.all(
-        processedItems
-          .filter(item => item.productId)
-          .map(item => {
-            const product = productMap.get(item.productId!);
-            if (product) {
-              const newQty = Math.max(0, product.quantity - item.quantity);
-              return tx.product.update({
-                where: { id: item.productId! },
-                data: { quantity: newQty },
-              });
-            }
-            return Promise.resolve();
-          })
-      );
+      // Group quantity changes by product ID
+      const quantityChanges = new Map<string, number>();
+      processedItems
+        .filter(item => item.productId)
+        .forEach(item => {
+          const currentChange = quantityChanges.get(item.productId!) || 0;
+          quantityChanges.set(item.productId!, currentChange - item.quantity);
+        });
+
+      // Execute updates using raw SQL for better performance
+      if (quantityChanges.size > 0) {
+        for (const [productId, quantityChange] of quantityChanges) {
+          await tx.$executeRaw`
+            UPDATE "Product" 
+            SET quantity = MAX(0, quantity - ${Math.abs(quantityChange)})
+            WHERE id = ${productId}
+          `;
+        }
+      }
     }
 
     // Create sale with items - no additional product queries needed

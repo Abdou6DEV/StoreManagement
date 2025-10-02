@@ -30,15 +30,15 @@ async function main() {
     await seedBills(prisma);
 
     console.log("✅ Seed completed successfully!");
-    console.log(`📊 Created:`);
+    console.log(`📊 Created (realistic store data for testing):`);
     console.log(`   - Categories`);
     console.log(`   - 180 sellers`);
-    console.log(`   - 6,000 products with purchases`);
-    console.log(`   - 300 clients`);
+    console.log(`   - 2,000 products with purchases`);
+    console.log(`   - 500 clients`);
     console.log(`   - 48 services`);
     console.log(`   - 40 service appointments (20 incomplete, 20 completed)`);
     console.log(
-      `   - 1,200 sales with items (including manual products and services)`,
+      `   - 5,000 sales with items (including manual products and services)`,
     );
     console.log(`   - Multiple payments`);
     console.log(`   - 20 bills with 200 payments`);
