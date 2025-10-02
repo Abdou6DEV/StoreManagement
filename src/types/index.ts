@@ -59,6 +59,7 @@ export interface CartItem {
   name: string;
   price: number;
   qty: number;
+  boughtPrice?: number; // Store the bought price for products
   isManual?: boolean;
   manualProductType?: string;
   manualProductCostPrice?: number;

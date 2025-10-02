@@ -1341,6 +1341,8 @@
     "enableCashierHistoryDesc": "Allow users to access the history tab in the cashier interface",
     "cashierSalesHistoryDays": "Cashier Sales History Days",
     "cashierSalesHistoryDaysDesc": "Number of previous days the cashier page can fetch sales from (affects performance). Only applies when history is enabled.",
+    "enableCompletedServicesBadge": "Enable Completed Services Badge",
+    "enableCompletedServicesBadgeDesc": "Show notification badge on cashier menu item when there are completed services",
     "dueSoonThreshold": "Due Soon Threshold (Days)",
     "dueSoonThresholdDesc": "Number of days before due date to consider a payment as 'due soon'",
     "enabled": "Enabled",

@@ -10,6 +10,7 @@ import SessionManager from "./components/sessionManager";
 import { ConfirmDialog } from "../../lib/components/confirmDialog";
 import rendererLogger from "../../lib/logger/rendererLogger";
 import { Product } from "@prisma/client";
+import { useCompletedServices } from "../../lib/contexts/completedServicesContext";
 
 const MAX_SESSIONS = 5;
 
@@ -43,6 +44,8 @@ function addProductToCart(
       name: product.name,
       price: product.sellingPrice,
       qty: 1,
+      // Store the bought price for accurate cost tracking
+      boughtPrice: product.boughtPrice,
     });
   }
 
@@ -59,6 +62,7 @@ function addManualProductToCart(
 export default function CashierPage() {
   const { t, i18n } = useTranslation();
   const isRTL = i18n.language === "ar";
+  const { refreshCompletedServicesCount } = useCompletedServices();
   const [productRefreshKey, setProductRefreshKey] = useState(0);
   const [salesRefreshKey, setSalesRefreshKey] = useState(0);
   const [showProductBrowser, setShowProductBrowser] = useState(false);
@@ -166,10 +170,16 @@ export default function CashierPage() {
 
     // Refresh sales history when a sale is completed
     setSalesRefreshKey((prev) => prev + 1);
+    
+    // Refresh completed services count immediately
+    refreshCompletedServicesCount();
   };
 
   const handleSaleCompleted = () => {
     setSalesRefreshKey((prev) => prev + 1);
+    
+    // Refresh completed services count immediately
+    refreshCompletedServicesCount();
   };
 
   // Proceed with sale despite out of stock warning

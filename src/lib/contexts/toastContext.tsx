@@ -8,6 +8,7 @@ import React, {
 } from "react";
 import { ToastType, Toast } from "../../types";
 import { CheckCircle, XCircle, Info, X } from "lucide-react";
+import { playToastSound } from "../utils/soundUtils";
 
 interface ToastContextProps {
   showToast: (message: string, type?: ToastType) => void;
@@ -40,6 +41,10 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({
       const id = ++toastId;
       const startTime = Date.now();
       startTimes.current[id] = startTime;
+      
+      // Play sound for the toast
+      playToastSound(type);
+      
       setToasts((toasts) => [...toasts, { id, message, type }]);
       timeoutRefs.current[id] = setTimeout(() => removeToast(id), 4000);
     },

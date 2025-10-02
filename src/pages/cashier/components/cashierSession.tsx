@@ -91,6 +91,7 @@ const CashierSession = memo(function CashierSession({
           productId: item.isManual || item.isService ? undefined : item.id,
           quantity: item.qty,
           price: item.price,
+          boughtPrice: item.boughtPrice, // Pass the boughtPrice captured when adding to cart
           manualProductName: item.isManual ? item.name : undefined,
           manualProductType: item.isManual ? item.manualProductType : undefined,
           manualProductCostPrice: item.isManual ? item.manualProductCostPrice : undefined,

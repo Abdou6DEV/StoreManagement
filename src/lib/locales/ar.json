@@ -1081,6 +1081,8 @@
     "enableCashierHistoryDesc": "السماح للمستخدمين بالوصول إلى تبويب التاريخ في واجهة الصندوق",
     "cashierSalesHistoryDays": "أيام تاريخ مبيعات الصندوق",
     "cashierSalesHistoryDaysDesc": "عدد الأيام السابقة التي يمكن لصفحة الصندوق جلب المبيعات منها (يؤثر على الأداء). ينطبق فقط عند تفعيل التاريخ.",
+    "enableCompletedServicesBadge": "تفعيل شارة الخدمات المكتملة",
+    "enableCompletedServicesBadgeDesc": "إظهار شارة الإشعار على عنصر قائمة الصندوق عند وجود خدمات مكتملة",
     "dueSoonThreshold": "حد الاستحقاق قريباً (أيام)",
     "dueSoonThresholdDesc": "عدد الأيام قبل تاريخ الاستحقاق لاعتبار الدفعة 'مستحقة قريباً'",
     "enableOverdueBillsBadge": "تفعيل شارة إشعار الفواتير المتأخرة",

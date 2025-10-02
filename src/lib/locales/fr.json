@@ -1198,6 +1198,8 @@
     "enableCashierHistoryDesc": "Permettre aux utilisateurs d'accéder à l'onglet historique dans l'interface de la caisse",
     "cashierSalesHistoryDays": "Jours d'historique des ventes de la caisse",
     "cashierSalesHistoryDaysDesc": "Nombre de jours précédents que la page de caisse peut récupérer les ventes (affecte les performances). Ne s'applique que lorsque l'historique est activé.",
+    "enableCompletedServicesBadge": "Activer le Badge des Services Terminés",
+    "enableCompletedServicesBadgeDesc": "Afficher le badge de notification sur l'élément de menu caisse lorsqu'il y a des services terminés",
     "dueSoonThreshold": "Seuil d'échéance proche (Jours)",
     "dueSoonThresholdDesc": "Nombre de jours avant la date d'échéance pour considérer un paiement comme 'à échéance proche'",
     "days": "jours",

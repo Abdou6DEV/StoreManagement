@@ -145,11 +145,11 @@ export default function PreloadLoading({ onComplete }: PreloadLoadingProps) {
     <div className="h-screen bg-background flex items-center justify-center">
       <div className="text-center">
         {/* Logo */}
-        <div className="w-16 h-16 mx-auto mb-6 bg-primary rounded-lg flex items-center justify-center">
+        <div className="w-16 h-16 mx-auto mb-6 bg-primary rounded-lg flex items-center justify-center shadow-lg">
           {isComplete ? (
-            <CheckCircle className="w-8 h-8 text-white animate-bounce" />
+            <CheckCircle className="w-8 h-8 text-primary-foreground animate-bounce" />
           ) : (
-            <Loader2 className="w-8 h-8 text-white animate-spin" />
+            <Loader2 className="w-8 h-8 text-primary-foreground animate-spin" />
           )}
         </div>
         

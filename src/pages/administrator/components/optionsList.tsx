@@ -4,6 +4,7 @@ import { Button } from "../../../lib/components/button";
 import { Switch } from "../../../lib/components/switch";
 import { useTranslation } from "react-i18next";
 import { useToast } from "../../../lib/contexts/toastContext";
+import { useCompletedServices } from "../../../lib/contexts/completedServicesContext";
 import {
   Shield,
   Loader2,
@@ -21,6 +22,7 @@ import {
 export const OptionsList: React.FC = () => {
   const { t } = useTranslation();
   const { showToast } = useToast();
+  const { refreshCompletedServicesCount } = useCompletedServices();
   const [lowStock, setLowStock] = useState(0);
   const [storeCash, setStoreCash] = useState(0);
   const [enableLowStockBadge, setEnableLowStockBadge] = useState(true);
@@ -35,6 +37,7 @@ export const OptionsList: React.FC = () => {
   const [dueSoonServicesThresholdDays, setDueSoonServicesThresholdDays] = useState(2);
   const [cashierSalesHistoryDays, setCashierSalesHistoryDays] = useState(7);
   const [enableCashierHistory, setEnableCashierHistory] = useState(true);
+  const [enableCompletedServicesBadge, setEnableCompletedServicesBadge] = useState(true);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -55,8 +58,9 @@ export const OptionsList: React.FC = () => {
       window.api.database.options.get("dueSoonServicesThresholdDays"),
       window.api.database.options.get("cashierSalesHistoryDays"),
       window.api.database.options.get("enableCashierHistory"),
+      window.api.database.options.get("enableCompletedServicesBadge"),
     ])
-      .then(([lowStockVal, storeCashVal, enableBadgeVal, enableOverdueVal, enableDueSoonVal, enableOverdueBillsVal, enableDueSoonBillsVal, enableOverdueServicesVal, enableDueSoonServicesVal, dueSoonThresholdVal, dueSoonBillsThresholdVal, dueSoonServicesThresholdVal, cashierSalesHistoryDaysVal, enableCashierHistoryVal]) => {
+      .then(([lowStockVal, storeCashVal, enableBadgeVal, enableOverdueVal, enableDueSoonVal, enableOverdueBillsVal, enableDueSoonBillsVal, enableOverdueServicesVal, enableDueSoonServicesVal, dueSoonThresholdVal, dueSoonBillsThresholdVal, dueSoonServicesThresholdVal, cashierSalesHistoryDaysVal, enableCashierHistoryVal, enableCompletedServicesBadgeVal]) => {
         setLowStock(lowStockVal ? Number(lowStockVal) : 0);
         setStoreCash(storeCashVal ? Number(storeCashVal) : 0);
         setEnableLowStockBadge(enableBadgeVal !== "false"); // Default to true if not set
@@ -71,6 +75,7 @@ export const OptionsList: React.FC = () => {
         setDueSoonServicesThresholdDays(dueSoonServicesThresholdVal ? Number(dueSoonServicesThresholdVal) : 2); // Default to 2 days
         setCashierSalesHistoryDays(cashierSalesHistoryDaysVal ? Number(cashierSalesHistoryDaysVal) : 7); // Default to 7 days
         setEnableCashierHistory(enableCashierHistoryVal !== "false"); // Default to true if not set
+        setEnableCompletedServicesBadge(enableCompletedServicesBadgeVal !== "false"); // Default to true if not set
         setLoading(false);
       })
       .catch(() => {
@@ -98,7 +103,12 @@ export const OptionsList: React.FC = () => {
         window.api.database.options.set("dueSoonServicesThresholdDays", String(dueSoonServicesThresholdDays)),
         window.api.database.options.set("cashierSalesHistoryDays", String(cashierSalesHistoryDays)),
         window.api.database.options.set("enableCashierHistory", String(enableCashierHistory)),
+        window.api.database.options.set("enableCompletedServicesBadge", String(enableCompletedServicesBadge)),
       ]);
+      
+      // Refresh completed services count immediately if the setting changed
+      refreshCompletedServicesCount();
+      
       showToast(t("admin.saved", "Settings saved successfully!"), "success");
     } catch {
       showToast(t("admin.saveError", "Failed to save settings"), "error");
@@ -638,6 +648,43 @@ export const OptionsList: React.FC = () => {
                 aria-label={t("admin.cashierSalesHistoryDays", "Cashier Sales History Days")}
               />
             </div>
+            </div>
+          </div>
+
+          {/* Enable Completed Services Badge Setting */}
+          <div className="flex flex-col md:flex-row items-start md:items-center gap-4 bg-muted/40 border border-border rounded-lg p-6">
+            <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
+              <Bell className="w-6 h-6 text-green-600" />
+            </div>
+            <div className="flex-1 w-full">
+              <label
+                className="block text-base font-semibold mb-2"
+                htmlFor="enableCompletedServicesBadge"
+              >
+                {t("admin.enableCompletedServicesBadge", "Enable Completed Services Badge")}
+              </label>
+              <p className="text-sm text-muted-foreground mb-3">
+                {t("admin.enableCompletedServicesBadgeDesc", "Show notification badge on cashier menu item when there are completed services")}
+              </p>
+              <div className="flex items-center gap-3">
+                <Switch
+                  id="enableCompletedServicesBadge"
+                  checked={enableCompletedServicesBadge}
+                  onCheckedChange={(checked) => {
+                    setEnableCompletedServicesBadge(checked);
+                    // Immediately refresh the context to show/hide badge
+                    setTimeout(() => refreshCompletedServicesCount(), 100);
+                  }}
+                  disabled={loading || saving}
+                  aria-label={t("admin.enableCompletedServicesBadge", "Enable Completed Services Badge")}
+                />
+                <span className="text-sm font-medium">
+                  {enableCompletedServicesBadge 
+                    ? t("admin.enabled", "Enabled") 
+                    : t("admin.disabled", "Disabled")
+                  }
+                </span>
+              </div>
             </div>
           </div>
         </div>

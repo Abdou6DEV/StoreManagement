@@ -34,6 +34,7 @@ export async function createSale(data: {
     productId?: string;
     quantity: number;
     price: number;
+    boughtPrice?: number; // Add boughtPrice for products
     manualProductName?: string;
     manualProductType?: string;
     manualProductCostPrice?: number;
@@ -145,10 +146,16 @@ export async function createSale(data: {
           create: processedItems.map((item) => {
             let boughtPrice = null;
 
-            // Get bought price from our pre-fetched product map
+            // Get bought price from the item data first, then fallback to product map
             if (item.productId) {
-              const product = productMap.get(item.productId);
-              boughtPrice = product?.boughtPrice || null;
+              if (item.boughtPrice !== undefined) {
+                // Use the boughtPrice from the cart item (captured at time of adding to cart)
+                boughtPrice = item.boughtPrice;
+              } else {
+                // Fallback to current product boughtPrice (for backward compatibility)
+                const product = productMap.get(item.productId);
+                boughtPrice = product?.boughtPrice || null;
+              }
             }
             
             // For manual products, use the cost price from the sale data
@@ -186,6 +193,7 @@ export async function updateSale(
       productId?: string;
       quantity: number;
       price: number;
+      boughtPrice?: number; // Add boughtPrice for products
       manualProductName?: string;
       manualProductType?: string;
       manualProductCostPrice?: number;
@@ -348,10 +356,16 @@ export async function updateSale(
             create: processedItems.map((item) => {
               let boughtPrice = null;
 
-              // Get bought price from our pre-fetched product map
+              // Get bought price from the item data first, then fallback to product map
               if (item.productId) {
-                const product = productMap.get(item.productId);
-                boughtPrice = product?.boughtPrice || null;
+                if (item.boughtPrice !== undefined) {
+                  // Use the boughtPrice from the item data (captured at time of adding to cart)
+                  boughtPrice = item.boughtPrice;
+                } else {
+                  // Fallback to current product boughtPrice (for backward compatibility)
+                  const product = productMap.get(item.productId);
+                  boughtPrice = product?.boughtPrice || null;
+                }
               }
               
               // For manual products, use the cost price from the sale data

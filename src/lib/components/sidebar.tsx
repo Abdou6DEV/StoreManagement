@@ -85,7 +85,7 @@ export default function Sidebar() {
   const { unseenDueSoonBillsCount } = useDueSoonBills();
   const { unseenOverdueServicesCount, enableBadge: enableOverdueServicesBadge, badgeLoaded: overdueServicesBadgeLoaded } = useOverdueServices();
   const { unseenDueSoonServicesCount, enableBadge: enableDueSoonServicesBadge, badgeLoaded: dueSoonServicesBadgeLoaded } = useDueSoonServices();
-  const { completedServicesCount } = useCompletedServices();
+  const { completedServicesCount, isBadgeEnabled: enableCompletedServicesBadge } = useCompletedServices();
   const savedCollapsedState = localStorage.getItem("sidebarCollapsed");
   const [collapsed, setCollapsed] = useState(savedCollapsedState === "true");
   const [showText, setShowText] = useState(!collapsed);
@@ -302,7 +302,7 @@ export default function Sidebar() {
               {item.key === "stock" && unseenLowStockCount > 0 && enableBadge && badgeLoaded && (
                 <BadgeNotification count={unseenLowStockCount} />
               )}
-              {item.key === "cashier" && completedServicesCount > 0 && (
+              {item.key === "cashier" && completedServicesCount > 0 && enableCompletedServicesBadge && (
                 <BadgeNotification count={completedServicesCount} variant="green" />
               )}
               {item.key === "clients" && ((unseenOverdueCreditsCount > 0 || unseenOverdueVersementsCount > 0) || (unseenDueSoonCreditsCount > 0 || unseenDueSoonVersementsCount > 0)) && (
