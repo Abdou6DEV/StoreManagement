@@ -91,13 +91,36 @@ export default function AddPaymentForm({
 
     setLoading(true);
     try {
-      // Create payment without a sale
-      await window.api.database.payments.create({
-        clientId: form.clientId,
-        givenAmount: Number(form.givenAmount),
-        dueDate: new Date(form.dueDate),
-        type: form.type,
-      });
+      if (form.type === "CREDIT") {
+        // For CREDIT: Create a minimal sale to make the payment system work
+        // The amount typed is what we owe the client (remaining amount)
+        const sale = await window.api.database.sales.create({
+          clientId: form.clientId,
+          items: [{
+            manualProductName: "Credit Payment",
+            manualProductType: "CREDIT",
+            quantity: 1,
+            price: Number(form.givenAmount),
+            manualProductCostPrice: 0,
+          }],
+          discount: 0,
+        });
+
+        await window.api.database.payments.create({
+          saleId: sale.id,
+          clientId: form.clientId,
+          givenAmount: 0, // Client paid 0, we owe them the full amount
+          dueDate: new Date(form.dueDate),
+          type: "CREDIT",
+        });
+      } else {
+        // For VERSEMENT: This doesn't make sense without a sale, so skip for now
+        showToast(
+          t("clients.versementRequiresSale", "Versement requires a sale"),
+          "error",
+        );
+        return;
+      }
 
       setForm(initialForm);
       onPaymentAdded();
@@ -244,10 +267,19 @@ export default function AddPaymentForm({
 
             {/* Amount */}
             <Legend>
-              <label>{t("clients.amount", "Amount")}</label>
+              <label>
+                {form.type === "CREDIT" 
+                  ? t("clients.creditAmount", "Credit Amount") 
+                  : t("clients.amount", "Amount")
+                }
+              </label>
               <input
                 type="number"
-                placeholder={t("clients.amount", "Amount")}
+                placeholder={
+                  form.type === "CREDIT" 
+                    ? t("clients.creditAmountPlaceholder", "Amount you owe client") 
+                    : t("clients.amount", "Amount")
+                }
                 value={form.givenAmount}
                 onChange={(e) =>
                   handleFormChange("givenAmount", e.target.value)

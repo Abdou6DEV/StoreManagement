@@ -47,6 +47,7 @@ export default function ActionButtons({
   onDiscountChange,
   cartTotal,
   cart,
+  paymentAmount,
   setPaymentAmount,
   paymentType,
   setPaymentType,
@@ -258,23 +259,38 @@ export default function ActionButtons({
             </button>
           </Tooltip>
         )}
-        <input
-          placeholder={t("cashier.discount", "Discount")}
-          className={`flex-1 w-28 rounded-md border px-3 py-2 text-sm bg-background border-border focus:border-primary focus:ring-primary/50 focus:outline-none focus:ring-1 transition-all min-w-0 ${Number(draftDiscount) > cartTotal ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""}`}
-          type="number"
-          value={draftDiscount}
-          onChange={(e) => {
-            const val = e.target.value;
-            if (/^\d*$/.test(val)) {
-              setDraftDiscount(val);
-              if (val === "") {
-                onDiscountChange("");
-              } else if (Number(val) <= cartTotal) {
-                onDiscountChange(val);
+        <div className="flex-1 w-28">
+          <input
+            placeholder={t("cashier.discount", "Discount")}
+            className={`w-full rounded-md border px-3 py-2 text-sm bg-background border-border focus:border-primary focus:ring-primary/50 focus:outline-none focus:ring-1 transition-all min-w-0 ${Number(draftDiscount) > (paymentType === "none" ? cartTotal : cartTotal - paymentAmount) ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""}`}
+            type="number"
+            value={draftDiscount}
+            onChange={(e) => {
+              const val = e.target.value;
+              if (/^\d*$/.test(val)) {
+                setDraftDiscount(val);
+                if (val === "") {
+                  onDiscountChange("");
+                } else {
+                  // For credit/versement, max discount is cartTotal - paymentAmount
+                  // For cash sales, max discount is cartTotal
+                  const maxAllowedDiscount = paymentType === "none" ? cartTotal : cartTotal - paymentAmount;
+                  if (Number(val) <= maxAllowedDiscount) {
+                    onDiscountChange(val);
+                  }
+                }
               }
-            }
-          }}
-        />
+            }}
+          />
+          {Number(draftDiscount) > (paymentType === "none" ? cartTotal : cartTotal - paymentAmount) && (
+            <div className="text-xs text-red-500 mt-1">
+              {paymentType === "none" 
+                ? t("cashier.discountTooHigh", "Discount cannot exceed total")
+                : t("cashier.discountTooHighCredit", "Max discount: {amount} DA", { amount: (cartTotal - paymentAmount).toLocaleString() })
+              }
+            </div>
+          )}
+        </div>
         <Tooltip
           content={
             !clientName.trim()

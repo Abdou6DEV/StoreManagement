@@ -14,7 +14,9 @@ import { useOverduePayments } from "../../../lib/contexts/overduePaymentsContext
 
 import { useDueSoonPayments } from "../../../lib/contexts/dueSoonPaymentsContext";
 
-import type { PaymentWithClient } from "../../../types";
+import type { PaymentWithClient, Sale } from "../../../types";
+
+import SaleDetailsModal from "../../../lib/components/saleDetailsModal";
 
 import PaymentFilters from "./paymentFilters";
 
@@ -362,7 +364,37 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
 
   const [versementsCurrentPage, setVersementsCurrentPage] = useState(1);
 
+  // Sale details modal state
+  const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
+  const [showSaleDetailsModal, setShowSaleDetailsModal] = useState(false);
+  const [loadingSaleDetails, setLoadingSaleDetails] = useState(false);
+
   const versementsItemsPerPage = 10;
+
+  // Handle viewing sale details
+  const handleViewSaleDetails = async (saleId: string) => {
+    setLoadingSaleDetails(true);
+    try {
+      const sale = await window.api.database.sales.getById(saleId);
+      if (sale) {
+        setSelectedSale(sale);
+        setShowSaleDetailsModal(true);
+      } else {
+        showToast(
+          t("clients.saleNotFound", "Sale not found"),
+          "error"
+        );
+      }
+    } catch (error) {
+      console.error("Error fetching sale details:", error);
+      showToast(
+        t("clients.saleDetailsError", "Failed to load sale details"),
+        "error"
+      );
+    } finally {
+      setLoadingSaleDetails(false);
+    }
+  };
 
 
 
@@ -966,6 +998,10 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
 
                   onMarkAsUnpaidConfirm={handleMarkAsUnpaidConfirm}
 
+                  onViewSaleDetails={handleViewSaleDetails}
+
+                  onRefreshPayments={onRefresh}
+
                   isOverdue={isOverdue}
 
                   isDueSoon={(dueDate) => isDueSoon(dueDate, dueSoonThresholdDays)}
@@ -1210,6 +1246,10 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
 
                   onMarkAsUnpaidConfirm={handleMarkAsUnpaidConfirm}
 
+                  onViewSaleDetails={handleViewSaleDetails}
+
+                  onRefreshPayments={onRefresh}
+
                   isOverdue={isOverdue}
 
                   isDueSoon={(dueDate) => isDueSoon(dueDate, dueSoonThresholdDays)}
@@ -1450,6 +1490,16 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
 
         onConfirm={handleConfirmMarkAsUnpaid}
 
+      />
+
+      {/* Sale Details Modal */}
+      <SaleDetailsModal
+        sale={selectedSale}
+        isOpen={showSaleDetailsModal}
+        onClose={() => {
+          setShowSaleDetailsModal(false);
+          setSelectedSale(null);
+        }}
       />
 
     </div>

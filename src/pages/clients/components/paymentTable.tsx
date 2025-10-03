@@ -14,6 +14,8 @@ interface PaymentTableProps {
   handleUpdateAmount: (paymentId: string) => void;
   onMarkAsPaid: (paymentId: string) => void;
   onMarkAsUnpaidConfirm: (paymentId: string) => void;
+  onViewSaleDetails?: (saleId: string) => void;
+  onRefreshPayments?: () => void;
   isOverdue: (dueDate: Date) => boolean;
   isDueSoon: (dueDate: Date) => boolean;
   newlyOverdueIds?: Set<string>; // IDs of newly overdue payments to highlight
@@ -30,6 +32,8 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
   handleUpdateAmount,
   onMarkAsPaid,
   onMarkAsUnpaidConfirm,
+  onViewSaleDetails,
+  onRefreshPayments,
   isOverdue,
   isDueSoon,
   newlyOverdueIds = new Set(),
@@ -75,6 +79,8 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
               handleUpdateAmount={handleUpdateAmount}
               onMarkAsPaid={onMarkAsPaid}
               onMarkAsUnpaidConfirm={onMarkAsUnpaidConfirm}
+              onViewSaleDetails={onViewSaleDetails}
+              onRefreshPayments={onRefreshPayments}
               isOverdue={isOverdue}
               isDueSoon={isDueSoon}
               isNewlyOverdue={newlyOverdueIds.has(payment.id)}
@@ -101,7 +107,12 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
           </span>
           <span className="font-medium">
             {allPayments
-              .reduce((sum, p) => sum + p.givenAmount, 0)
+              .reduce((sum, p) => {
+                if (p.type === "CREDIT" && p.remainingAmount !== undefined) {
+                  return sum + p.remainingAmount;
+                }
+                return sum + p.givenAmount;
+              }, 0)
               .toLocaleString()}{" "}
             {t("cashier.currency", "DA")}
           </span>
@@ -115,7 +126,12 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
           <span className="font-medium text-green-600 dark:text-green-400">
             {allPayments
               .filter(p => p.paidDate)
-              .reduce((sum, p) => sum + p.givenAmount, 0)
+              .reduce((sum, p) => {
+                if (p.type === "CREDIT" && p.remainingAmount !== undefined) {
+                  return sum + p.remainingAmount;
+                }
+                return sum + p.givenAmount;
+              }, 0)
               .toLocaleString()}{" "}
             {t("cashier.currency", "DA")}
           </span>
@@ -129,7 +145,12 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
           <span className="font-medium text-orange-600 dark:text-orange-400">
             {allPayments
               .filter(p => !p.paidDate)
-              .reduce((sum, p) => sum + p.givenAmount, 0)
+              .reduce((sum, p) => {
+                if (p.type === "CREDIT" && p.remainingAmount !== undefined) {
+                  return sum + p.remainingAmount;
+                }
+                return sum + p.givenAmount;
+              }, 0)
               .toLocaleString()}{" "}
             {t("cashier.currency", "DA")}
           </span>
@@ -143,7 +164,12 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
           <span className="font-medium text-red-600 dark:text-red-400">
             {allPayments
               .filter(p => !p.paidDate && isOverdue(new Date(p.dueDate)))
-              .reduce((sum, p) => sum + p.givenAmount, 0)
+              .reduce((sum, p) => {
+                if (p.type === "CREDIT" && p.remainingAmount !== undefined) {
+                  return sum + p.remainingAmount;
+                }
+                return sum + p.givenAmount;
+              }, 0)
               .toLocaleString()}{" "}
             {t("cashier.currency", "DA")}
           </span>

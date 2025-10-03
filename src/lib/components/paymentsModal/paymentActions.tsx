@@ -1,9 +1,10 @@
 import React from "react";
-import { X, Edit, Save } from "lucide-react";
+import { X, Edit, Save, Eye } from "lucide-react";
 import { Button } from "../button";
 import { Input } from "../input";
 import { useTranslation } from "react-i18next";
 import type { Payment } from "@prisma/client";
+import { Tooltip } from "../tooltip";
 
 interface PaymentActionsProps {
   payment: Payment;
@@ -13,6 +14,7 @@ interface PaymentActionsProps {
   onEditCancel: () => void;
   onEditSave: (paymentId: string) => void;
   onEditAmountChange: (amount: number) => void;
+  onViewSaleDetails?: (saleId: string) => void;
 }
 
 const PaymentActions: React.FC<PaymentActionsProps> = ({
@@ -23,6 +25,7 @@ const PaymentActions: React.FC<PaymentActionsProps> = ({
   onEditCancel,
   onEditSave,
   onEditAmountChange,
+  onViewSaleDetails,
 }) => {
   const { t } = useTranslation();
   const isEditing = editingPayment === payment.id;
@@ -33,7 +36,15 @@ const PaymentActions: React.FC<PaymentActionsProps> = ({
         <Input
           type="number"
           value={editAmount}
-          onChange={(e) => onEditAmountChange(Number(e.target.value))}
+          onChange={(e) => {
+            const value = Number(e.target.value);
+            const MAX_INT = 2147483647;
+            if (value >= 0 && value <= MAX_INT) {
+              onEditAmountChange(value);
+            }
+          }}
+          min={0}
+          max={2147483647}
           className="w-20 h-8 text-sm"
           autoFocus
         />
@@ -59,18 +70,41 @@ const PaymentActions: React.FC<PaymentActionsProps> = ({
   return (
     <div className="flex items-center gap-2">
       <span className="font-medium">
-        {payment.givenAmount.toLocaleString()} {t("cashier.currency", "DA")}
+        {payment.type === "CREDIT" && (payment as any).remainingAmount !== undefined
+          ? (payment as any).remainingAmount.toLocaleString()
+          : payment.givenAmount.toLocaleString()}{" "}
+        {t("cashier.currency", "DA")}
       </span>
-      {!payment.paidDate && (
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => onEditStart(payment.id, payment.givenAmount)}
-          className="h-6 px-1"
-        >
-          <Edit className="w-3 h-3" />
-        </Button>
-      )}
+      <div className="flex gap-1">
+        {/* View Sale Details Button - only show if saleId exists */}
+        {payment.saleId && onViewSaleDetails && (
+          <Tooltip
+            content={t(
+              "clients.viewSaleDetailsTooltip",
+              "View sale details for this payment",
+            )}
+          >
+            <Button
+              size="sm"
+              variant="outline"
+              className="text-blue-700 border-blue-500 hover:bg-blue-50 h-6 px-1"
+              onClick={() => onViewSaleDetails(payment.saleId!)}
+            >
+              <Eye className="w-3 h-3 text-blue-500" />
+            </Button>
+          </Tooltip>
+        )}
+        {!payment.paidDate && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => onEditStart(payment.id, payment.givenAmount)}
+            className="h-6 px-1"
+          >
+            <Edit className="w-3 h-3" />
+          </Button>
+        )}
+      </div>
     </div>
   );
 };

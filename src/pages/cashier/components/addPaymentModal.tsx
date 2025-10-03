@@ -3,7 +3,7 @@ import { FormModal } from "../../../lib/components/modal";
 import { DatePicker } from "../../../lib/components/datePicker";
 import type { CartItem } from "../../../types";
 import type { TFunction } from "i18next";
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState } from "react";
 
 interface AddPaymentModalProps {
   open: boolean;
@@ -34,11 +34,13 @@ const AddPaymentModal: React.FC<AddPaymentModalProps> = ({
   t,
   onConfirm,
 }) => {
-  const rest = cartTotal - Number(paymentAmount);
+  const [inputValue, setInputValue] = useState("");
+  const rest = cartTotal - paymentAmount;
 
   const amountInputRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
     if (open && amountInputRef.current) {
+      setInputValue(""); // Reset input when modal opens
       amountInputRef.current.focus();
     }
   }, [open]);
@@ -51,7 +53,7 @@ const AddPaymentModal: React.FC<AddPaymentModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (paymentAmount > 0 && paymentDate && rest > 0) {
+    if (paymentAmount >= 0 && paymentDate) {
       onConfirm();
     }
   };
@@ -75,7 +77,7 @@ const AddPaymentModal: React.FC<AddPaymentModalProps> = ({
       onSubmit={handleSubmit}
       submitText={t("cashier.confirm", "Confirm")}
       cancelText={t("cashier.cancel", "Cancel")}
-      submitDisabled={paymentAmount <= 0 || !paymentDate || rest <= 0}
+      submitDisabled={paymentAmount < 0 || !paymentDate}
     >
       {/* Payment type pill toggle */}
       <div className="flex justify-center mb-6">
@@ -115,11 +117,24 @@ const AddPaymentModal: React.FC<AddPaymentModalProps> = ({
           <input
             ref={amountInputRef}
             type="number"
-            value={paymentAmount === 0 ? "" : paymentAmount}
-            onChange={(e) => setPaymentAmount(Number(e.target.value) || 0)}
+            value={inputValue}
+            onChange={(e) => {
+              const value = e.target.value;
+              const MAX_INT = 2147483647;
+              const numValue = Number(value);
+              
+              if (value === "") {
+                setInputValue("");
+                setPaymentAmount(0);
+              } else if (numValue >= 0 && numValue <= MAX_INT) {
+                setInputValue(value);
+                setPaymentAmount(numValue);
+              }
+            }}
             min={0}
+            max={2147483647}
             placeholder={t("cashier.paymentAmount", "Payment Amount")}
-            className={`w-full rounded-lg border px-4 py-3 h-12 text-base bg-background focus:outline-none transition shadow-sm ${rest < 0 ? "border-red-500 focus:ring-1 focus:ring-red-500" : "border-border"}`}
+            className={`w-full rounded-lg border px-4 py-3 h-12 text-base bg-background focus:outline-none transition shadow-sm ${paymentAmount > cartTotal ? "border-red-500 focus:ring-1 focus:ring-red-500" : "border-border"}`}
           />
         </div>
         <div>
@@ -154,16 +169,14 @@ const AddPaymentModal: React.FC<AddPaymentModalProps> = ({
           <span className="font-semibold text-foreground">
             {t("cashier.given", "Given")}:
           </span>{" "}
-          {paymentAmount ? Number(paymentAmount).toLocaleString() : 0}{" "}
+          {paymentAmount.toLocaleString()}{" "}
           {t("cashier.currency", "DA")}
         </div>
         <div>
           <span className="font-semibold text-foreground">
             {t("cashier.rest", "Rest")}:
           </span>{" "}
-          {paymentAmount
-            ? (cartTotal - Number(paymentAmount)).toLocaleString()
-            : cartTotal.toLocaleString()}{" "}
+          {rest.toLocaleString()}{" "}
           {t("cashier.currency", "DA")}
         </div>
         <div className="col-span-2">

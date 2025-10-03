@@ -111,14 +111,13 @@ const CashierSession = memo(function CashierSession({
       // Add payment if payment info is present and valid
       if (
         paymentType !== "none" &&
-        paymentAmount > 0 &&
         paymentDate &&
         saleClientId
       ) {
         await window.api.database.payments.create({
           saleId: sale.id,
           clientId: saleClientId,
-          givenAmount: paymentAmount,
+          givenAmount: paymentAmount, // Can be 0 for zero-payment credit sales
           dueDate: paymentDate,
           paidDate: undefined, // Do not set paidDate for either credit or versement
           type: paymentType === "credit" ? "CREDIT" : "VERSEMENT",

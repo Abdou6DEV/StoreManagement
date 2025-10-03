@@ -119,6 +119,7 @@ export interface PaymentWithClient extends Payment {
     id: string;
     createdAt: Date;
   };
+  remainingAmount?: number;
 }
 
 export interface StockContextType {

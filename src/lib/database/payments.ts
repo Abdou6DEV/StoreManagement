@@ -27,6 +27,51 @@ export async function getPaymentsByClient(clientId: string) {
   });
 }
 
+export async function getPaymentsByClientWithInfo(clientId: string) {
+  const payments = await prisma.payment.findMany({
+    where: { clientId },
+    include: {
+      sale: {
+        include: {
+          saleItems: {
+            select: {
+              price: true,
+              quantity: true,
+            },
+          },
+        },
+      },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  // Calculate remaining amounts for each payment
+  return payments.map((payment) => {
+    let remainingAmount = 0;
+    
+    if (payment.sale && payment.sale.saleItems) {
+      // Calculate total sale amount
+      const totalAmount = payment.sale.saleItems.reduce(
+        (sum, item) => sum + item.price * item.quantity,
+        0
+      );
+      
+      // For CREDIT payments, remaining amount = total - givenAmount
+      // For VERSEMENT payments, remaining amount = givenAmount (what we owe them)
+      if (payment.type === "CREDIT") {
+        remainingAmount = totalAmount - payment.givenAmount;
+      } else {
+        remainingAmount = payment.givenAmount;
+      }
+    }
+
+    return {
+      ...payment,
+      remainingAmount,
+    };
+  });
+}
+
 export async function getAllPayments() {
   return await prisma.payment.findMany({
     include: {
@@ -38,7 +83,7 @@ export async function getAllPayments() {
 }
 
 export async function getAllPaymentsWithClientInfo() {
-  return await prisma.payment.findMany({
+  const payments = await prisma.payment.findMany({
     include: {
       client: {
         select: {
@@ -48,13 +93,43 @@ export async function getAllPaymentsWithClientInfo() {
         },
       },
       sale: {
-        select: {
-          id: true,
-          createdAt: true,
+        include: {
+          saleItems: {
+            select: {
+              price: true,
+              quantity: true,
+            },
+          },
         },
       },
     },
     orderBy: { createdAt: "desc" },
+  });
+
+  // Calculate remaining amounts for each payment
+  return payments.map((payment) => {
+    let remainingAmount = 0;
+    
+    if (payment.sale && payment.sale.saleItems) {
+      // Calculate total sale amount
+      const totalAmount = payment.sale.saleItems.reduce(
+        (sum, item) => sum + item.price * item.quantity,
+        0
+      );
+      
+      // For CREDIT payments, remaining amount = total - givenAmount
+      // For VERSEMENT payments, remaining amount = givenAmount (what we owe them)
+      if (payment.type === "CREDIT") {
+        remainingAmount = totalAmount - payment.givenAmount;
+      } else {
+        remainingAmount = payment.givenAmount;
+      }
+    }
+
+    return {
+      ...payment,
+      remainingAmount,
+    };
   });
 }
 
@@ -69,6 +144,15 @@ export async function updatePaymentAmount(
   paymentId: string,
   givenAmount: number,
 ) {
+  // Validate amount is within INT range (2,147,483,647)
+  const MAX_INT = 2147483647;
+  if (givenAmount < 0) {
+    throw new Error("Payment amount cannot be negative");
+  }
+  if (givenAmount > MAX_INT) {
+    throw new Error(`Payment amount cannot exceed ${MAX_INT.toLocaleString()} DA`);
+  }
+
   return await prisma.payment.update({
     where: { id: paymentId },
     data: { givenAmount },

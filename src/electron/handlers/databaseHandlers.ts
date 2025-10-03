@@ -33,11 +33,13 @@ import {
   getSalesSummary,
   getSalesBySpecificPeriod,
   getSalesByClient,
+  getSaleById,
 } from "../../lib/database/sales";
 import { getOption, setOption } from "../../lib/database/options";
 import {
   createPayment,
   getPaymentsByClient,
+  getPaymentsByClientWithInfo,
   getAllPayments,
   getAllPaymentsWithClientInfo,
   updatePaymentPaidAt,
@@ -252,6 +254,10 @@ export function setupDatabaseHandlers() {
     return await getSalesByClient(clientId);
   });
 
+  ipcMain.handle("db:sales:getById", async (_event, id: string) => {
+    return await getSaleById(id);
+  });
+
   // Options handlers
   ipcMain.handle("db:options:get", async (_event, key: string) => {
     return await getOption(key);
@@ -271,6 +277,12 @@ export function setupDatabaseHandlers() {
     "db:payments:getByClient",
     async (_event, clientId: string) => {
       return await getPaymentsByClient(clientId);
+    }
+  );
+  ipcMain.handle(
+    "db:payments:getByClientWithInfo",
+    async (_event, clientId: string) => {
+      return await getPaymentsByClientWithInfo(clientId);
     }
   );
 

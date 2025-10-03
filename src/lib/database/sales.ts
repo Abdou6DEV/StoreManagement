@@ -684,6 +684,7 @@ export async function getAllSales() {
     const totalAmountWithDiscount = totalAmount - sale.discount;
 
     // If no payment recorded, it was paid in cash
+    // If payment exists, use the givenAmount (can be 0 for zero-payment credit)
     const paidAmount = sale.payment
       ? sale.payment.givenAmount || 0
       : totalAmountWithDiscount; // Cash payment - full amount paid
@@ -1211,6 +1212,64 @@ export async function getSalesByClient(clientId: string) {
     return sales;
   } catch (error) {
     console.error("Error in getSalesByClient:", error);
+    throw error;
+  }
+}
+
+export async function getSaleById(saleId: string) {
+  try {
+    const sale = await prisma.sale.findUnique({
+      where: { id: saleId },
+      include: {
+        client: true,
+        saleItems: {
+          include: {
+            product: true,
+            manualProduct: true,
+            service: true,
+          },
+        },
+        payment: {
+          select: {
+            id: true,
+            givenAmount: true,
+            type: true,
+            paidDate: true,
+            dueDate: true,
+          },
+        },
+      },
+    });
+
+    if (!sale) {
+      return null;
+    }
+
+    // Calculate totals
+    const totalAmount = sale.saleItems.reduce(
+      (sum, item) => sum + item.price * item.quantity,
+      0
+    );
+    const totalAmountWithDiscount = totalAmount - sale.discount;
+    const paidAmount = sale.payment
+      ? sale.payment.givenAmount || 0
+      : totalAmountWithDiscount;
+    const totalItems = sale.saleItems.reduce(
+      (sum, item) => sum + item.quantity,
+      0
+    );
+
+    return {
+      ...sale,
+      totalAmount,
+      totalAmountWithDiscount,
+      paidAmount,
+      remainingAmount: totalAmountWithDiscount - paidAmount,
+      totalItems,
+      isPaidInCash: !sale.payment,
+    };
+  } catch (error) {
+    console.error("Error in getSaleById:", error);
     throw error;
   }
 }

@@ -1,12 +1,12 @@
-import React from "react";
+import React, { useState } from "react";
 import { Button } from "../../../lib/components/button";
-import { Input } from "../../../lib/components/input";
-import { User, Calendar, Edit, Save, X } from "lucide-react";
+import { User, Calendar, Edit } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { PaymentWithClient } from "../../../types";
 import PaymentStatus from "./paymentStatus";
 import PaymentActions from "./paymentActions";
 import { Tooltip } from "../../../lib/components/tooltip";
+import EditPaymentModal from "./editPaymentModal";
 
 interface PaymentRowProps {
   payment: PaymentWithClient;
@@ -17,6 +17,8 @@ interface PaymentRowProps {
   handleUpdateAmount: (paymentId: string) => void;
   onMarkAsPaid: (paymentId: string) => void;
   onMarkAsUnpaidConfirm: (paymentId: string) => void;
+  onViewSaleDetails?: (saleId: string) => void;
+  onRefreshPayments?: () => void;
   isOverdue: (dueDate: Date) => boolean;
   isDueSoon: (dueDate: Date) => boolean;
   isNewlyOverdue?: boolean; // Whether this payment is newly overdue and should be highlighted
@@ -32,6 +34,8 @@ const PaymentRow: React.FC<PaymentRowProps> = ({
   handleUpdateAmount,
   onMarkAsPaid,
   onMarkAsUnpaidConfirm,
+  onViewSaleDetails,
+  onRefreshPayments,
   isOverdue,
   isDueSoon,
   isNewlyOverdue = false,
@@ -39,6 +43,22 @@ const PaymentRow: React.FC<PaymentRowProps> = ({
 }) => {
   const { t, i18n } = useTranslation();
   const isRTL = i18n.language === "ar";
+  const [showEditModal, setShowEditModal] = useState(false);
+
+  const handleEditPayment = async (newAmount: number) => {
+    try {
+      // Update the payment amount by adding the new amount to the existing amount
+      const updatedAmount = payment.givenAmount + newAmount;
+      await window.api.database.payments.updateAmount(payment.id, updatedAmount);
+      setShowEditModal(false);
+      // Refresh the payments table
+      if (onRefreshPayments) {
+        onRefreshPayments();
+      }
+    } catch (error) {
+      console.error("Failed to update payment:", error);
+    }
+  };
 
   return (
     <tr className={`hover:bg-muted/40 transition ${
@@ -67,7 +87,15 @@ const PaymentRow: React.FC<PaymentRowProps> = ({
             <Input
               type="number"
               value={editAmount}
-              onChange={(e) => setEditAmount(Number(e.target.value))}
+              onChange={(e) => {
+                const value = Number(e.target.value);
+                const MAX_INT = 2147483647;
+                if (value >= 0 && value <= MAX_INT) {
+                  setEditAmount(value);
+                }
+              }}
+              min={0}
+              max={2147483647}
               className="w-20 h-8 text-sm"
               autoFocus
             />
@@ -90,7 +118,9 @@ const PaymentRow: React.FC<PaymentRowProps> = ({
         ) : (
           <div className="flex items-center gap-2">
             <span className="font-medium">
-              {payment.givenAmount.toLocaleString()}{" "}
+              {payment.type === "CREDIT" && payment.remainingAmount !== undefined
+                ? payment.remainingAmount.toLocaleString()
+                : payment.givenAmount.toLocaleString()}{" "}
               {t("cashier.currency", "DA")}
             </span>
             {!payment.paidDate && (
@@ -100,10 +130,7 @@ const PaymentRow: React.FC<PaymentRowProps> = ({
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => {
-                    setEditingPayment(payment.id);
-                    setEditAmount(payment.givenAmount);
-                  }}
+                  onClick={() => setShowEditModal(true)}
                   className="h-6 px-1"
                 >
                   <Edit className="w-3 h-3" />
@@ -148,12 +175,23 @@ const PaymentRow: React.FC<PaymentRowProps> = ({
         <div className="flex gap-2">
           <PaymentActions
             paymentId={payment.id}
+            saleId={payment.saleId}
             isPaid={!!payment.paidDate}
             onMarkAsPaid={onMarkAsPaid}
             onMarkAsUnpaidConfirm={onMarkAsUnpaidConfirm}
+            onViewSaleDetails={onViewSaleDetails}
           />
         </div>
       </td>
+      
+      {/* Edit Payment Modal */}
+      <EditPaymentModal
+        open={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        payment={payment}
+        onConfirm={handleEditPayment}
+        t={t}
+      />
     </tr>
   );
 };

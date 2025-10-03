@@ -93,7 +93,7 @@ export const ClientDetailsModal = ({
           console.error("Error fetching sales for client", client.id, ":", err);
           throw new Error(`Failed to fetch sales: ${err.message}`);
         }),
-        window.api.database.payments.getByClient(client.id).catch((err: any) => {
+        window.api.database.payments.getByClientWithInfo(client.id).catch((err: any) => {
           console.error("Error fetching payments for client", client.id, ":", err);
           throw new Error(`Failed to fetch payments: ${err.message}`);
         }),
@@ -113,9 +113,15 @@ export const ClientDetailsModal = ({
       const credits = paymentsData.filter((p: any) => p.type === "CREDIT");
       const versements = paymentsData.filter((p: any) => p.type === "VERSEMENT");
       
-      const totalCredits = credits.reduce((sum: number, p: any) => sum + p.givenAmount, 0);
+      const totalCredits = credits.reduce((sum: number, p: any) => {
+        // For CREDIT: use remainingAmount if available, otherwise givenAmount
+        return sum + (p.remainingAmount !== undefined ? p.remainingAmount : p.givenAmount);
+      }, 0);
       const totalVersements = versements.reduce((sum: number, p: any) => sum + p.givenAmount, 0);
-      const pendingCredits = credits.filter((p: any) => !p.paidDate).reduce((sum: number, p: any) => sum + p.givenAmount, 0);
+      const pendingCredits = credits.filter((p: any) => !p.paidDate).reduce((sum: number, p: any) => {
+        // For CREDIT: use remainingAmount if available, otherwise givenAmount
+        return sum + (p.remainingAmount !== undefined ? p.remainingAmount : p.givenAmount);
+      }, 0);
       const pendingVersements = versements.filter((p: any) => !p.paidDate).reduce((sum: number, p: any) => sum + p.givenAmount, 0);
       const balance = totalCredits - totalVersements;
 
@@ -508,7 +514,11 @@ export const ClientDetailsModal = ({
                           <td
                             className={`px-4 py-3 text-sm font-medium text-blue-600 ${isRTL ? "text-right" : "text-left"}`}
                           >
-                            {formatCurrency(payment.givenAmount)}
+                            {formatCurrency(
+                              payment.type === "CREDIT" && (payment as any).remainingAmount !== undefined
+                                ? (payment as any).remainingAmount
+                                : payment.givenAmount
+                            )}
                           </td>
                         </tr>
                       ))}

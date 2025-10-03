@@ -26,6 +26,7 @@ interface PaymentTableProps {
   onEditAmountChange: (amount: number) => void;
   onMarkAsPaid: (paymentId: string) => void;
   onMarkAsUnpaid: (paymentId: string) => void;
+  onViewSaleDetails?: (saleId: string) => void;
   onPageChange: (page: number) => void;
 }
 
@@ -42,6 +43,7 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
   onEditAmountChange,
   onMarkAsPaid,
   onMarkAsUnpaid,
+  onViewSaleDetails,
   onPageChange,
 }) => {
   const { t, i18n } = useTranslation();
@@ -92,6 +94,7 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
                     onEditCancel={onEditCancel}
                     onEditSave={onEditSave}
                     onEditAmountChange={onEditAmountChange}
+                    onViewSaleDetails={onViewSaleDetails}
                   />
                 </td>
                 <td

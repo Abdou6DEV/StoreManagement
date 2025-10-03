@@ -94,6 +94,7 @@ export const databaseAPI = {
     ) =>
       ipcRenderer.invoke("db:sales:getBySpecificPeriod", period, periodValue),
     getByClient: (clientId: string) => ipcRenderer.invoke("db:sales:getByClient", clientId),
+    getById: (id: string) => ipcRenderer.invoke("db:sales:getById", id),
     update: (
       id: string,
       data: {
@@ -120,6 +121,8 @@ export const databaseAPI = {
     }) => ipcRenderer.invoke("db:payments:create", data),
     getByClient: (clientId: string) =>
       ipcRenderer.invoke("db:payments:getByClient", clientId),
+    getByClientWithInfo: (clientId: string) =>
+      ipcRenderer.invoke("db:payments:getByClientWithInfo", clientId),
     getAll: () => ipcRenderer.invoke("db:payments:getAll"),
     getAllWithClientInfo: () =>
       ipcRenderer.invoke("db:payments:getAllWithClientInfo"),

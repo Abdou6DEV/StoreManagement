@@ -11,6 +11,29 @@ export async function seedSales(prisma: PrismaClient, products: Product[]) {
   const fiveYearsAgo = new Date();
   fiveYearsAgo.setFullYear(fiveYearsAgo.getFullYear() - 5);
 
+  // Track all existing sale item combinations to prevent duplicates
+  const existingSaleItems = await prisma.saleItem.findMany({
+    select: {
+      productId: true,
+      manualProductId: true,
+      serviceId: true,
+      saleId: true,
+    },
+  });
+  
+  const existingCombinations = new Set<string>();
+  existingSaleItems.forEach(item => {
+    if (item.productId) {
+      existingCombinations.add(`product-${item.productId}-${item.saleId}`);
+    }
+    if (item.manualProductId) {
+      existingCombinations.add(`manual-${item.manualProductId}-${item.saleId}`);
+    }
+    if (item.serviceId) {
+      existingCombinations.add(`service-${item.serviceId}-${item.saleId}`);
+    }
+  });
+
   // Realistic store data for testing: ~5,000 sales (realistic for testing)
   const totalSales = 5000;
   const batchSize = 500; // Larger batches for better performance
@@ -94,7 +117,17 @@ export async function seedSales(prisma: PrismaClient, products: Product[]) {
           : [];
 
       // Add regular product items (prepare for bulk insert)
+      // Use Set to ensure no duplicate products in the same sale
+      const usedProductIds = new Set<string>();
+      
       for (const product of saleProducts) {
+        // Skip if this product is already added to this sale
+        if (usedProductIds.has(product.id)) {
+          continue;
+        }
+        
+        usedProductIds.add(product.id);
+        
         const maxQuantity = Math.min(5, product.quantity); // Don't sell more than available
         if (maxQuantity <= 0) continue; // Skip if no stock
 
@@ -165,7 +198,17 @@ export async function seedSales(prisma: PrismaClient, products: Product[]) {
           Math.min(serviceCount, services.length)
         );
 
+        // Use Set to ensure no duplicate services in the same sale
+        const usedServiceIds = new Set<string>();
+        
         for (const service of selectedServices) {
+          // Skip if this service is already added to this sale
+          if (usedServiceIds.has(service.id)) {
+            continue;
+          }
+          
+          usedServiceIds.add(service.id);
+          
           const servicePrice = faker.commerce.price({
             min: 20,
             max: 500,
@@ -224,10 +267,50 @@ export async function seedSales(prisma: PrismaClient, products: Product[]) {
       });
     }
 
-    // Bulk insert all sale items
-    if (saleItemsData.length > 0) {
+    // Deduplicate sale items before bulk insert to prevent unique constraint violations
+    const uniqueSaleItems = new Map<string, any>();
+    for (const item of saleItemsData) {
+      // Create a unique key based on the type of item and sale ID
+      let key: string;
+      if (item.productId) {
+        key = `product-${item.productId}-${item.saleId}`;
+      } else if (item.manualProductId) {
+        key = `manual-${item.manualProductId}-${item.saleId}`;
+      } else if (item.serviceId) {
+        key = `service-${item.serviceId}-${item.saleId}`;
+      } else {
+        continue; // Skip invalid items
+      }
+      
+      // Skip if this combination already exists in the database or in current batch
+      if (existingCombinations.has(key) || uniqueSaleItems.has(key)) {
+        continue;
+      }
+      
+      // Add to unique items
+      uniqueSaleItems.set(key, item);
+    }
+
+    // Bulk insert all unique sale items
+    const finalSaleItemsData = Array.from(uniqueSaleItems.values());
+    if (finalSaleItemsData.length > 0) {
       await prisma.saleItem.createMany({
-        data: saleItemsData as any,
+        data: finalSaleItemsData as any,
+      });
+      
+      // Add the newly created combinations to the existing set to prevent future conflicts
+      finalSaleItemsData.forEach(item => {
+        let key: string;
+        if (item.productId) {
+          key = `product-${item.productId}-${item.saleId}`;
+        } else if (item.manualProductId) {
+          key = `manual-${item.manualProductId}-${item.saleId}`;
+        } else if (item.serviceId) {
+          key = `service-${item.serviceId}-${item.saleId}`;
+        } else {
+          return;
+        }
+        existingCombinations.add(key);
       });
     }
 

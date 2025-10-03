@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from "react";
-import type { Payment } from "@prisma/client";
+import type { Payment, Sale } from "@prisma/client";
 import { Modal } from "./modal";
 import { Loader2, CreditCard } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -10,6 +10,7 @@ import PaymentTabs from "./paymentsModal/paymentTabs";
 import PaymentSearch from "./paymentsModal/paymentSearch";
 import PaymentTable from "./paymentsModal/paymentTable";
 import PaymentSummaryTab from "./paymentsModal/paymentSummaryTab";
+import SaleDetailsModal from "./saleDetailsModal";
 
 interface PaymentsModalProps {
   client: ClientSuggestion;
@@ -34,7 +35,37 @@ const PaymentsModal: React.FC<PaymentsModalProps> = ({ client, onClose }) => {
     paymentId: string | null;
   }>({ open: false, paymentId: null });
 
+  // Sale details modal state
+  const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
+  const [showSaleDetailsModal, setShowSaleDetailsModal] = useState(false);
+  const [loadingSaleDetails, setLoadingSaleDetails] = useState(false);
+
   const itemsPerPage = 5;
+
+  // Handle viewing sale details
+  const handleViewSaleDetails = async (saleId: string) => {
+    setLoadingSaleDetails(true);
+    try {
+      const sale = await window.api.database.sales.getById(saleId);
+      if (sale) {
+        setSelectedSale(sale);
+        setShowSaleDetailsModal(true);
+      } else {
+        showToast(
+          t("clients.saleNotFound", "Sale not found"),
+          "error"
+        );
+      }
+    } catch (error) {
+      console.error("Error fetching sale details:", error);
+      showToast(
+        t("clients.saleDetailsError", "Failed to load sale details"),
+        "error"
+      );
+    } finally {
+      setLoadingSaleDetails(false);
+    }
+  };
 
   // Filter payments by type and search
   const filteredPayments = useMemo(() => {
@@ -209,7 +240,7 @@ const PaymentsModal: React.FC<PaymentsModalProps> = ({ client, onClose }) => {
     setLoading(true);
     setError(null);
     try {
-      const data = await window.api.database.payments.getByClient(client.id);
+      const data = await window.api.database.payments.getByClientWithInfo(client.id);
       setPayments(data);
     } catch (err) {
       setError(t("clients.paymentsError", "Failed to fetch payments"));
@@ -321,6 +352,7 @@ const PaymentsModal: React.FC<PaymentsModalProps> = ({ client, onClose }) => {
                   onEditAmountChange={handleEditAmountChange}
                   onMarkAsPaid={handleMarkAsPaid}
                   onMarkAsUnpaid={handleMarkAsUnpaidConfirm}
+                  onViewSaleDetails={handleViewSaleDetails}
                   onPageChange={handlePageChange}
                 />
               )}
@@ -338,6 +370,7 @@ const PaymentsModal: React.FC<PaymentsModalProps> = ({ client, onClose }) => {
                   onEditAmountChange={handleEditAmountChange}
                   onMarkAsPaid={handleMarkAsPaid}
                   onMarkAsUnpaid={handleMarkAsUnpaidConfirm}
+                  onViewSaleDetails={handleViewSaleDetails}
                   onPageChange={handlePageChange}
                 />
               )}
@@ -360,6 +393,16 @@ const PaymentsModal: React.FC<PaymentsModalProps> = ({ client, onClose }) => {
         cancelText={t("clients.cancel", "Cancel")}
         variant="warning"
         onConfirm={handleConfirmMarkAsUnpaid}
+      />
+
+      {/* Sale Details Modal */}
+      <SaleDetailsModal
+        sale={selectedSale}
+        isOpen={showSaleDetailsModal}
+        onClose={() => {
+          setShowSaleDetailsModal(false);
+          setSelectedSale(null);
+        }}
       />
     </Modal>
   );

@@ -126,7 +126,7 @@ export function SectionCards() {
         setLoadingStates(prev => ({ ...prev, clientStats: false, numberOfClients: false }));
         
         // Load payments data
-        const payments = await window.api.database.payments.getAll();
+        const payments = await window.api.database.payments.getAllWithClientInfo();
         setLoadingStates(prev => ({ 
           ...prev, 
           totalCreditAmount: false, 
@@ -360,10 +360,16 @@ export function SectionCards() {
       ).length;
       
       // Calculate additional client stats
-      const calculatedTotalCreditAmount = totalCredit.reduce((sum: number, p: { givenAmount: number }) => sum + p.givenAmount, 0);
+      const calculatedTotalCreditAmount = totalCredit.reduce((sum: number, p: { givenAmount: number; remainingAmount?: number }) => {
+        // For CREDIT: use remainingAmount if available, otherwise givenAmount
+        return sum + (p.remainingAmount !== undefined ? p.remainingAmount : p.givenAmount);
+      }, 0);
       const calculatedTotalVersementAmount = totalVersement.reduce((sum: number, p: { givenAmount: number }) => sum + p.givenAmount, 0);
-      const calculatedUnpaidCreditAmount = totalCredit.filter((p: { paidDate?: string | Date; givenAmount: number }) => !p.paidDate)
-        .reduce((sum: number, p: { givenAmount: number }) => sum + p.givenAmount, 0);
+      const calculatedUnpaidCreditAmount = totalCredit.filter((p: { paidDate?: string | Date; givenAmount: number; remainingAmount?: number }) => !p.paidDate)
+        .reduce((sum: number, p: { givenAmount: number; remainingAmount?: number }) => {
+          // For CREDIT: use remainingAmount if available, otherwise givenAmount
+          return sum + (p.remainingAmount !== undefined ? p.remainingAmount : p.givenAmount);
+        }, 0);
       const calculatedUnpaidVersementAmount = totalVersement.filter((p: { paidDate?: string | Date; givenAmount: number }) => !p.paidDate)
         .reduce((sum: number, p: { givenAmount: number }) => sum + p.givenAmount, 0);
       
