@@ -19,6 +19,7 @@ import {
   History,
   FileText,
   Wrench,
+  Info,
 } from "lucide-react";
 import { ThemeToggleButton } from "./themeToggleButton";
 import { FullscreenToggleButton } from "./fullscreenToggleButton";
@@ -143,11 +144,11 @@ export default function Navigation() {
   }
   return (
     <div className="w-full">
-      {/* Header Container with same styling as sidebar - connected to top */}
-      <div className="flex items-center justify-between rounded-xl border border-border px-6 h-20 bg-card shadow-md">
+      {/* Header Container with enhanced styling */}
+      <div className="flex items-center justify-between rounded-2xl border border-border/50 px-6 h-20 bg-gradient-to-r from-card/90 via-card/95 to-card/90 backdrop-blur-md shadow-xl">
         <UserBadge size="md" className="h-16" />
         {/* === Dynamic Page Title === */}
-        <h1 className="text-3xl font-bold flex items-center gap-3">
+        <h1 className="text-3xl font-bold flex items-center gap-3 bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
           {location.pathname === "/" ? (
             <>
               <Home className="w-8 h-8 text-primary" />
@@ -165,6 +166,7 @@ export default function Navigation() {
                 bills: <FileText className="w-8 h-8 text-purple-500" />,
                 services: <Wrench className="w-8 h-8 text-cyan-500" />,
                 administrator: <Settings className="w-8 h-8 text-orange-500" />,
+                about: <Info className="w-8 h-8 text-blue-500" />,
               };
               return (
                 <>
@@ -180,11 +182,11 @@ export default function Navigation() {
         <div className="flex items-center gap-4">
           <DropdownMenu onOpenChange={setDropdownOpen}>
             <DropdownMenuTrigger asChild>
-              <button className="rounded-xl outline-none ring-0 hover:text-red-400 transition-all duration-300 p-1">
+              <button className="rounded-xl outline-none ring-0 hover:text-primary hover:bg-primary/10 transition-all duration-300 p-2 group">
                 <Settings
-                  className={`transition-transform duration-400 ${
-                    dropdownOpen ? "rotate-360 scale-110" : ""
-                  } hover:text-red-400`}
+                  className={`w-5 h-5 transition-all duration-300 group-hover:scale-110 ${
+                    dropdownOpen ? "rotate-180 scale-110" : ""
+                  }`}
                 />
               </button>
             </DropdownMenuTrigger>

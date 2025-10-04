@@ -16,7 +16,8 @@ const config: ForgeConfig = {
     ignore: [
       /^\/prisma\/seed\//,
       /^\/scripts\//
-    ]
+    ],
+    icon: "./public/icon-256.png"
   },
   rebuildConfig: {},
   makers: [

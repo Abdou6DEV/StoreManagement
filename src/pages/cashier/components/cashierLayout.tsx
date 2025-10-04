@@ -1,3 +1,6 @@
+import { useState, useEffect } from "react";
+import { Clock, Calendar } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import type { ProductWithSales, CartItem } from "../../../types";
 import type { Session } from "./sessionManager";
 import TotalHeader from "./totalHeader";
@@ -61,10 +64,49 @@ export default function CashierLayout({
   onProductOutOfStock,
   outOfStockConfirmed,
 }: CashierLayoutProps) {
+  const { t } = useTranslation();
   const currentSession = sessions[activeSession] || sessions[0];
+  const [currentDateTime, setCurrentDateTime] = useState(new Date());
+
+  // Update date/time every second
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentDateTime(new Date());
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
 
   return (
-    <main className="h-screen w-full -mt-13 flex flex-col bg-background text-foreground overflow-hidden">
+    <main className="h-screen w-full -mt-13 flex flex-col bg-background text-foreground overflow-hidden relative">
+      {/* Date and Time Display - Top Left Corner */}
+      <div className={`fixed top-0 ${isRTL ? "right-0" : "left-0"} z-50 p-4`}>
+        <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+          <Calendar className="w-4 h-4 text-primary" />
+          <span>
+            {t(`datePicker.dayNames.${currentDateTime.getDay()}`, currentDateTime.toLocaleDateString('en-GB', {
+              day: '2-digit',
+              month: '2-digit',
+              year: 'numeric'
+            }))} - {currentDateTime.toLocaleDateString('en-GB', {
+              day: '2-digit',
+              month: '2-digit',
+              year: 'numeric'
+            })}
+          </span>
+        </div>
+        <div className="flex items-center gap-2 text-lg font-bold text-foreground mt-1">
+          <Clock className="w-4 h-4 text-primary" />
+          <span className="font-mono">
+            {currentDateTime.toLocaleTimeString('en-US', {
+              hour12: false,
+              hour: '2-digit',
+              minute: '2-digit'
+            })}
+          </span>
+        </div>
+      </div>
+
       {/* Enhanced Total Header */}
       <TotalHeader
         cart={currentSession.cart}

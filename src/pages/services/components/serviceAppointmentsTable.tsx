@@ -127,6 +127,9 @@ export default function ServiceAppointmentsTable({
               {t("services.type", "Type")}
             </th>
             <th className="text-left p-4 font-medium text-muted-foreground">
+              {t("services.description", "Description")}
+            </th>
+            <th className="text-left p-4 font-medium text-muted-foreground">
               {t("services.dueDate", "Due Date")}
             </th>
             <th className="text-left p-4 font-medium text-muted-foreground">
@@ -148,14 +151,7 @@ export default function ServiceAppointmentsTable({
             >
               {/* Service Name */}
               <td className="p-4">
-                <div>
-                  <div className="font-medium text-foreground">{appointment.name}</div>
-                  {appointment.description && (
-                    <div className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                      {appointment.description}
-                    </div>
-                  )}
-                </div>
+                <div className="font-medium text-foreground">{appointment.name}</div>
               </td>
 
               {/* Client */}
@@ -184,6 +180,17 @@ export default function ServiceAppointmentsTable({
                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-muted text-muted-foreground">
                   {appointment.serviceType}
                 </span>
+              </td>
+
+              {/* Description */}
+              <td className="p-4">
+                <div className="text-sm text-foreground whitespace-normal break-words max-w-xs">
+                  {appointment.description || (
+                    <span className="text-muted-foreground italic">
+                      {t("services.noDescription", "No description")}
+                    </span>
+                  )}
+                </div>
               </td>
 
               {/* Due Date */}

@@ -10,6 +10,7 @@ import {
   FileText,
   Wrench,
   LogOut,
+  Info,
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -71,6 +72,12 @@ const menuItems = [
     path: "/administrator",
     icon: AdminIcon,
     color: "text-orange-500",
+  },
+  {
+    key: "about",
+    path: "/about",
+    icon: Info,
+    color: "text-blue-500",
   },
 ];
 

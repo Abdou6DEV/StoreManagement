@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { 
   Home, 
   ChartLine, 
@@ -19,93 +20,94 @@ interface PreloadLoadingProps {
 
 interface LoadingStep {
   id: string;
-  name: string;
+  nameKey: string;
   icon: React.ComponentType<{ className?: string }>;
-  description: string;
+  descriptionKey: string;
   threshold: number;
   color: string;
 }
 
-const loadingSteps: LoadingStep[] = [
-  {
-    id: "main-menu",
-    name: "Main Menu",
-    icon: Home,
-    description: "Loading main navigation",
-    threshold: 10,
-    color: "text-primary"
-  },
-  {
-    id: "dashboard",
-    name: "Dashboard",
-    icon: ChartLine,
-    description: "Preparing analytics dashboard",
-    threshold: 25,
-    color: "text-green-500"
-  },
-  {
-    id: "clients",
-    name: "Clients",
-    icon: Users,
-    description: "Loading client management",
-    threshold: 40,
-    color: "text-red-500"
-  },
-  {
-    id: "cashier",
-    name: "Cashier",
-    icon: ShoppingCart,
-    description: "Preparing point of sale",
-    threshold: 55,
-    color: "text-yellow-500"
-  },
-  {
-    id: "stock",
-    name: "Stock",
-    icon: PackageSearch,
-    description: "Loading inventory management",
-    threshold: 70,
-    color: "text-green-600"
-  },
-  {
-    id: "history",
-    name: "History",
-    icon: History,
-    description: "Preparing transaction history",
-    threshold: 80,
-    color: "text-blue-500"
-  },
-  {
-    id: "bills",
-    name: "Bills",
-    icon: FileText,
-    description: "Loading billing system",
-    threshold: 90,
-    color: "text-purple-500"
-  },
-  {
-    id: "services",
-    name: "Services",
-    icon: Wrench,
-    description: "Preparing service management",
-    threshold: 95,
-    color: "text-cyan-500"
-  },
-  {
-    id: "administrator",
-    name: "Administrator",
-    icon: Settings,
-    description: "Loading admin panel",
-    threshold: 100,
-    color: "text-orange-500"
-  }
-];
-
 export default function PreloadLoading({ onComplete }: PreloadLoadingProps) {
+  const { t } = useTranslation();
   const [progress, setProgress] = useState(0);
   const [isComplete, setIsComplete] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [startTime] = useState(Date.now());
+
+  const loadingSteps: LoadingStep[] = [
+    {
+      id: "main-menu",
+      nameKey: "loading.mainMenu",
+      icon: Home,
+      descriptionKey: "loading.mainMenuDesc",
+      threshold: 10,
+      color: "text-primary"
+    },
+    {
+      id: "dashboard",
+      nameKey: "loading.dashboard",
+      icon: ChartLine,
+      descriptionKey: "loading.dashboardDesc",
+      threshold: 25,
+      color: "text-green-500"
+    },
+    {
+      id: "clients",
+      nameKey: "loading.clients",
+      icon: Users,
+      descriptionKey: "loading.clientsDesc",
+      threshold: 40,
+      color: "text-red-500"
+    },
+    {
+      id: "cashier",
+      nameKey: "loading.cashier",
+      icon: ShoppingCart,
+      descriptionKey: "loading.cashierDesc",
+      threshold: 55,
+      color: "text-yellow-500"
+    },
+    {
+      id: "stock",
+      nameKey: "loading.stock",
+      icon: PackageSearch,
+      descriptionKey: "loading.stockDesc",
+      threshold: 70,
+      color: "text-green-600"
+    },
+    {
+      id: "history",
+      nameKey: "loading.history",
+      icon: History,
+      descriptionKey: "loading.historyDesc",
+      threshold: 80,
+      color: "text-blue-500"
+    },
+    {
+      id: "bills",
+      nameKey: "loading.bills",
+      icon: FileText,
+      descriptionKey: "loading.billsDesc",
+      threshold: 90,
+      color: "text-purple-500"
+    },
+    {
+      id: "services",
+      nameKey: "loading.services",
+      icon: Wrench,
+      descriptionKey: "loading.servicesDesc",
+      threshold: 95,
+      color: "text-cyan-500"
+    },
+    {
+      id: "administrator",
+      nameKey: "loading.administrator",
+      icon: Settings,
+      descriptionKey: "loading.administratorDesc",
+      threshold: 100,
+      color: "text-orange-500"
+    }
+  ];
 
   useEffect(() => {
     // Ensure minimum 3 seconds loading time
@@ -155,7 +157,7 @@ export default function PreloadLoading({ onComplete }: PreloadLoadingProps) {
         
         {/* Title */}
         <h1 className="text-2xl font-semibold text-foreground mb-4">
-          {isComplete ? "Ready!" : "Loading..."}
+          {isComplete ? t("loading.ready", "Ready!") : t("loading.title", "Loading...")}
         </h1>
 
         {/* Progress */}
@@ -179,7 +181,7 @@ export default function PreloadLoading({ onComplete }: PreloadLoadingProps) {
                 className: `w-5 h-5 ${loadingSteps[currentStep].color}`
               })}
               <span className="text-sm text-foreground font-medium">
-                {loadingSteps[currentStep].name}
+                {t(loadingSteps[currentStep].nameKey, loadingSteps[currentStep].nameKey)}
               </span>
             </div>
           </div>
@@ -208,7 +210,7 @@ export default function PreloadLoading({ onComplete }: PreloadLoadingProps) {
                 <span className={`text-sm font-medium transition-colors duration-300 ${
                   isCompleted ? 'text-green-600' : isCurrent ? step.color : 'text-muted-foreground'
                 }`}>
-                  {step.name}
+                  {t(step.nameKey, step.nameKey)}
                 </span>
               </div>
             );

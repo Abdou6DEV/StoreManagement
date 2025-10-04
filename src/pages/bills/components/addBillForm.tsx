@@ -113,9 +113,13 @@ export default function AddBillForm({
   const [selectedTitleIndex, setSelectedTitleIndex] = useState(-1);
   const [selectedTypeIndex, setSelectedTypeIndex] = useState(-1);
   
-  // Refs for dropdown management
+  // Refs for dropdown management and field navigation
   const titleInputRef = useRef<HTMLInputElement>(null);
   const typeInputRef = useRef<HTMLInputElement>(null);
+  const amountInputRef = useRef<HTMLInputElement>(null);
+  const durationSelectRef = useRef<HTMLButtonElement>(null);
+  const descriptionInputRef = useRef<HTMLInputElement>(null);
+  const notesInputRef = useRef<HTMLInputElement>(null);
   
   const durationOptions = getDurationOptions(t);
 
@@ -247,6 +251,9 @@ export default function AddBillForm({
         e.preventDefault();
         if (showTitleDropdown && selectedTitleIndex >= 0 && selectedTitleIndex < filteredTitles.length) {
           selectTitle(filteredTitles[selectedTitleIndex]);
+        } else {
+          // If no dropdown or no selection, navigate to next field
+          handleFieldKeyDown(e, "title");
         }
         break;
       case "Escape":
@@ -275,6 +282,9 @@ export default function AddBillForm({
         e.preventDefault();
         if (showTypeDropdown && selectedTypeIndex >= 0 && selectedTypeIndex < filteredTypes.length) {
           selectType(filteredTypes[selectedTypeIndex]);
+        } else {
+          // If no dropdown or no selection, navigate to next field
+          handleFieldKeyDown(e, "type");
         }
         break;
       case "Escape":
@@ -314,6 +324,42 @@ export default function AddBillForm({
     setForm(prev => ({ ...prev, type }));
     setShowTypeDropdown(false);
     setSelectedTypeIndex(-1);
+  };
+
+  // Keyboard navigation between fields
+  const handleFieldKeyDown = (e: React.KeyboardEvent, currentField: string) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      
+      // Close any open dropdowns first
+      setShowTitleDropdown(false);
+      setShowTypeDropdown(false);
+      setSelectedTitleIndex(-1);
+      setSelectedTypeIndex(-1);
+      
+      // Navigate to next field
+      switch (currentField) {
+        case "title":
+          typeInputRef.current?.focus();
+          break;
+        case "type":
+          amountInputRef.current?.focus();
+          break;
+        case "amount":
+          durationSelectRef.current?.click();
+          break;
+        case "duration":
+          descriptionInputRef.current?.focus();
+          break;
+        case "description":
+          notesInputRef.current?.focus();
+          break;
+        case "notes":
+          // Submit form if on last field
+          handleAddBill(e as any);
+          break;
+      }
+    }
   };
 
 
@@ -503,15 +549,17 @@ export default function AddBillForm({
               </div>
             </Legend>
             <Legend>
-              <label>{t("bills.amountLabel", "Amount")} ({t("bills.currency", "DA")})</label>
+              <label>{t("bills.amount", "Amount")} ({t("bills.currency", "DA")})</label>
               <input
+                ref={amountInputRef}
                 data-field="bill-amount"
                 type="number"
                 step="0.01"
                 min="0"
-                placeholder={t("bills.enterAmount", "Enter amount")}
+                placeholder={t("bills.enterAmount", "0.00")}
                 value={form.amount}
                 onChange={(e) => handleFormChange("amount", e.target.value)}
+                onKeyDown={(e) => handleFieldKeyDown(e, "amount")}
                 className="w-full px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-purple-500/50 focus:border-purple-500 transition-all"
                 required
               />
@@ -522,7 +570,11 @@ export default function AddBillForm({
                 value={form.duration}
                 onValueChange={(value) => handleFormChange("duration", value)}
               >
-                <SelectTrigger className="w-full h-12 px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-purple-500/50 focus:border-purple-500 transition-all">
+                <SelectTrigger 
+                  ref={durationSelectRef}
+                  className="w-full h-12 px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-purple-500/50 focus:border-purple-500 transition-all"
+                  onKeyDown={(e) => handleFieldKeyDown(e, "duration")}
+                >
                   <SelectValue placeholder={t("bills.selectDuration", "Select duration")} />
                 </SelectTrigger>
                 <SelectContent>
@@ -537,20 +589,24 @@ export default function AddBillForm({
             <Legend>
               <label>{t("bills.description", "Description")}</label>
               <input
+                ref={descriptionInputRef}
                 type="text"
                 placeholder={t("bills.enterDescriptionOptional", "Enter description (optional)")}
                 value={form.description}
                 onChange={(e) => handleFormChange("description", e.target.value)}
+                onKeyDown={(e) => handleFieldKeyDown(e, "description")}
                 className="w-full px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-purple-500/50 focus:border-purple-500 transition-all"
               />
             </Legend>
             <Legend>
               <label>{t("bills.notes", "Notes")}</label>
               <input
+                ref={notesInputRef}
                 type="text"
                 placeholder={t("bills.enterNotesOptional", "Enter notes (optional)")}
                 value={form.notes}
                 onChange={(e) => handleFormChange("notes", e.target.value)}
+                onKeyDown={(e) => handleFieldKeyDown(e, "notes")}
                 className="w-full px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-purple-500/50 focus:border-purple-500 transition-all"
               />
             </Legend>

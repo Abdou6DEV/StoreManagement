@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
+import { Clock, Calendar } from "lucide-react";
 import type { CartItem } from "../../../types";
 
 interface TotalHeaderProps {
@@ -15,6 +16,7 @@ export default function TotalHeader({
 }: TotalHeaderProps) {
   const { t } = useTranslation();
   const [isTotalAnimating, setIsTotalAnimating] = useState(false);
+  const [currentDateTime, setCurrentDateTime] = useState(new Date());
 
   // Calculate total with discount applied
   const subtotal = cart.reduce((sum, item) => sum + item.qty * item.price, 0);
@@ -26,6 +28,15 @@ export default function TotalHeader({
     const timer = setTimeout(() => setIsTotalAnimating(false), 300);
     return () => clearTimeout(timer);
   }, [total]);
+
+  // Update date/time every second
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentDateTime(new Date());
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
 
   return (
     <header className="z-20 bg-gradient-to-r from-background via-background/95 to-background/90 backdrop-blur-md flex-shrink-0">
@@ -54,7 +65,7 @@ export default function TotalHeader({
           </div>
 
           <div
-            className={`flex items-center gap-2 text-xs text-muted-foreground ${isRTL ? "justify-start" : "justify-end"}`}
+            className={`flex items-center gap-2 text-xs text-muted-foreground ${isRTL ? "order-1 justify-start" : "order-3 justify-end"}`}
           >
             <div className="bg-muted/50 px-2 py-1 rounded-md border border-border/50">
               {cart.length} {t("cashier.products", "Products")}

@@ -7,6 +7,7 @@ import {
   History,
   FileText,
   Wrench,
+  Info,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
@@ -103,6 +104,12 @@ export default function MainMenu() {
       icon: AdminIcon,
       color: "text-orange-500",
       adminOnly: true,
+    },
+    {
+      key: "about",
+      icon: Info,
+      color: "text-blue-500",
+      adminOnly: false,
     },
   ];
 

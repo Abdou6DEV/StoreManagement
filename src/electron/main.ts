@@ -48,6 +48,7 @@ const createWindow = async () => {
     resizable: true,
     maximizable: true,
     fullscreenable: true,
+    icon: path.join(__dirname, "../public/icon-256.png"),
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,

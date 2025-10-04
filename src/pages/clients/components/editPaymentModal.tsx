@@ -25,10 +25,27 @@ const EditPaymentModal: React.FC<EditPaymentModalProps> = ({
   const amountInputRef = useRef<HTMLInputElement>(null);
 
   // Calculate totals when payment changes
-  const totalSaleAmount = payment?.sale?.saleItems?.reduce(
-    (sum, item) => sum + item.price * item.quantity,
-    0
-  ) || 0;
+  let totalSaleAmount = 0;
+  
+  if (payment?.sale?.saleItems) {
+    // For payments with an associated sale
+    totalSaleAmount = payment.sale.saleItems.reduce(
+      (sum, item) => sum + item.price * item.quantity,
+      0
+    );
+  } else if (payment?.type === "VERSEMENT" && (payment as any).pendingSaleItems) {
+    // For versements with pending sale items (not yet paid)
+    try {
+      const pendingItems = JSON.parse((payment as any).pendingSaleItems);
+      totalSaleAmount = pendingItems.reduce(
+        (sum: number, item: any) => sum + item.price * item.quantity,
+        0
+      );
+    } catch (error) {
+      console.error("Error parsing pending sale items:", error);
+      totalSaleAmount = 0;
+    }
+  }
 
   const currentPaidAmount = payment?.givenAmount || 0;
   const currentRemainingAmount = payment?.remainingAmount || 0;
@@ -36,6 +53,7 @@ const EditPaymentModal: React.FC<EditPaymentModalProps> = ({
   // For standalone credit payments (no sale), the remaining amount is the credit amount
   // For sale-based payments, calculate based on sale total
   const isStandaloneCredit = !payment?.sale && payment?.type === "CREDIT";
+  const isVersement = payment?.type === "VERSEMENT";
   
   let updatedPaidAmount, updatedRemainingAmount, isFullyPaid, isOverpaid;
   
@@ -46,8 +64,15 @@ const EditPaymentModal: React.FC<EditPaymentModalProps> = ({
     updatedRemainingAmount = currentRemainingAmount - newPaymentAmount;
     isFullyPaid = updatedRemainingAmount <= 0;
     isOverpaid = updatedRemainingAmount < 0;
+  } else if (isVersement) {
+    // For VERSEMENT payments: add new payment to givenAmount (what we owe them)
+    // The total versement amount increases, and we check if it exceeds the sale total
+    updatedPaidAmount = currentPaidAmount + newPaymentAmount; // This is the new givenAmount
+    updatedRemainingAmount = updatedPaidAmount; // For versements, remaining = givenAmount
+    isFullyPaid = updatedPaidAmount >= totalSaleAmount;
+    isOverpaid = updatedPaidAmount > totalSaleAmount;
   } else {
-    // For sale-based payments: use the original logic
+    // For sale-based CREDIT payments: use the original logic
     updatedPaidAmount = currentPaidAmount + newPaymentAmount;
     updatedRemainingAmount = totalSaleAmount - updatedPaidAmount;
     isFullyPaid = updatedRemainingAmount <= 0;
@@ -118,6 +143,15 @@ const EditPaymentModal: React.FC<EditPaymentModalProps> = ({
                 {currentRemainingAmount.toLocaleString()} {t("cashier.currency", "DA")}
               </div>
             </div>
+          ) : isVersement ? (
+            <div>
+              <span className="font-semibold text-muted-foreground">
+                {t("clients.totalSaleAmount", "Total Sale Amount")}:
+              </span>
+              <div className="text-lg font-bold text-foreground">
+                {totalSaleAmount.toLocaleString()} {t("cashier.currency", "DA")}
+              </div>
+            </div>
           ) : (
             <div>
               <span className="font-semibold text-muted-foreground">
@@ -160,6 +194,25 @@ const EditPaymentModal: React.FC<EditPaymentModalProps> = ({
                       {currentRemainingAmount.toLocaleString()} {t("cashier.currency", "DA")}
                     </span>
                   </div>
+                ) : isVersement ? (
+                  <>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">
+                        {t("clients.versementAmount", "Versement Amount")}:
+                      </span>
+                      <span className="font-semibold text-blue-600">
+                        {currentPaidAmount.toLocaleString()} {t("cashier.currency", "DA")}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">
+                        {t("clients.saleTotal", "Sale Total")}:
+                      </span>
+                      <span className="font-semibold text-foreground">
+                        {totalSaleAmount.toLocaleString()} {t("cashier.currency", "DA")}
+                      </span>
+                    </div>
+                  </>
                 ) : (
                   <>
                     <div className="flex justify-between">
@@ -204,6 +257,31 @@ const EditPaymentModal: React.FC<EditPaymentModalProps> = ({
                       {updatedRemainingAmount.toLocaleString()} {t("cashier.currency", "DA")}
                     </span>
                   </div>
+                ) : isVersement ? (
+                  <>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">
+                        {t("clients.versementAmount", "Versement Amount")}:
+                      </span>
+                      <span className={`font-semibold ${
+                        isOverpaid 
+                          ? 'text-red-600' 
+                          : updatedPaidAmount >= totalSaleAmount 
+                            ? 'text-green-600' 
+                            : 'text-blue-600'
+                      }`}>
+                        {updatedPaidAmount.toLocaleString()} {t("cashier.currency", "DA")}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">
+                        {t("clients.saleTotal", "Sale Total")}:
+                      </span>
+                      <span className="font-semibold text-foreground">
+                        {totalSaleAmount.toLocaleString()} {t("cashier.currency", "DA")}
+                      </span>
+                    </div>
+                  </>
                 ) : (
                   <>
                     <div className="flex justify-between">

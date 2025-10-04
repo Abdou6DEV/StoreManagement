@@ -1,5 +1,5 @@
 import React from "react";
-import { User, Crown, Shield, UserCheck } from "lucide-react";
+import { Crown, UserCheck } from "lucide-react";
 import { cn } from "../utils";
 import { useAuth } from "../contexts/authContext";
 import { useTranslation } from "react-i18next";
@@ -68,15 +68,6 @@ export function UserBadge({
       };
     }
     
-    if (userRole === "MANAGER") {
-      return {
-        icon: Shield,
-        color: "text-blue-500",
-        bgColor: "bg-gradient-to-br from-blue-400 to-blue-600",
-        text: t("userBadge.manager", "Manager")
-      };
-    }
-    
     return {
       icon: UserCheck,
       color: "text-green-500",
@@ -86,42 +77,47 @@ export function UserBadge({
   };
 
   const roleInfo = getRoleInfo();
-  const initials = getInitials(user.username || user.name || "U");
+  const initials = getInitials(user.username || "U");
 
   return (
     <div className={cn(
-      "flex items-center gap-3 bg-card border border-border rounded-xl shadow-sm hover:shadow-md transition-all duration-200",
+      "group flex items-center gap-3 bg-gradient-to-r from-card/80 via-card/90 to-card/80 backdrop-blur-md border border-border/50 rounded-2xl shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 overflow-hidden relative",
       config.container,
       className
     )}>
-      {/* Avatar */}
+      {/* Animated background gradient */}
+      <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+      
+      {/* Avatar with enhanced styling */}
       <div className={cn(
-        "rounded-full flex items-center justify-center font-bold text-white shadow-md",
+        "relative rounded-full flex items-center justify-center font-bold text-white shadow-lg ring-2 ring-white/20 group-hover:ring-white/30 transition-all duration-300",
         config.avatar,
         roleInfo.bgColor
       )}>
-        {initials}
+        {/* Avatar glow effect */}
+        <div className="absolute inset-0 rounded-full bg-gradient-to-t from-transparent to-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+        <span className="relative z-10">{initials}</span>
       </div>
 
       {/* User Info */}
-      <div className="flex flex-col min-w-0">
+      <div className="flex flex-col min-w-0 relative z-10">
         {/* Username */}
         <div className={cn(
-          "font-semibold text-foreground truncate",
+          "font-bold text-foreground truncate group-hover:text-primary transition-colors duration-300",
           config.text
         )}>
-          {user.username || user.name || t("userBadge.user", "User")}
+          {user.username || t("userBadge.user", "User")}
         </div>
 
-        {/* Role Badge */}
+        {/* Role Badge with enhanced styling */}
         {showRole && (
           <div className={cn(
-            "flex items-center gap-1 font-medium",
+            "flex items-center gap-1.5 font-semibold px-2 py-1 rounded-full bg-gradient-to-r from-muted/50 to-muted/30 border border-border/30 group-hover:border-primary/30 transition-all duration-300",
             config.role,
             roleInfo.color
           )}>
-            <roleInfo.icon className={config.icon} />
-            <span>{roleInfo.text}</span>
+            <roleInfo.icon className={cn(config.icon, "group-hover:scale-110 transition-transform duration-300")} />
+            <span className="group-hover:text-primary transition-colors duration-300">{roleInfo.text}</span>
           </div>
         )}
       </div>

@@ -1,8 +1,8 @@
 {
-  "name": "storemanagementelectron",
-  "productName": "storemanagementelectron",
+  "name": "reda-tech-store-management",
+  "productName": "REDA TECH Store Management",
   "version": "1.0.0",
-  "description": "My Electron application description",
+  "description": "A comprehensive store management solution by REDA TECH",
   "main": ".vite/build/main.js",
   "scripts": {
     "start": "electron-forge start",
@@ -22,8 +22,8 @@
   },
   "keywords": [],
   "author": {
-    "name": "khalil-cheddadi",
-    "email": "khalil3cheddadi@gmail.com"
+    "name": "Abdellah Kahia",
+    "email": "abdoukahia853@gmail.com"
   },
   "license": "MIT",
   "devDependencies": {

@@ -33,6 +33,7 @@ const History = React.lazy(() => import("./history"));
 const Bills = React.lazy(() => import("./bills"));
 const Services = React.lazy(() => import("./services"));
 const Administrator = React.lazy(() => import("./administrator"));
+const About = React.lazy(() => import("./about"));
 
 export default function App() {
   const { i18n } = useTranslation();
@@ -192,6 +193,10 @@ export default function App() {
                                 <Administrator />
                               </PermissionRoute>
                             }
+                          />
+                          <Route
+                            path="/about"
+                            element={<About />}
                           />
                           <Route
                             path="/*"

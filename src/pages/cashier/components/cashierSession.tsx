@@ -163,14 +163,19 @@ const CashierSession = memo(function CashierSession({
       // setProductRefreshKey((k: number) => k + 1);
       
       if (showSuccessMessage) {
-        if (sale) {
+        if (paymentType === "credit") {
           showToast(
-            t("cashier.saleRecorded", "Sale recorded successfully"),
+            t("cashier.creditAdded", "Credit recorded successfully"),
             "success",
           );
-        } else {
+        } else if (paymentType === "versement") {
           showToast(
-            t("cashier.versementRecorded", "Versement recorded successfully"),
+            t("cashier.versementAdded", "Versement recorded successfully"),
+            "success",
+          );
+        } else if (sale) {
+          showToast(
+            t("cashier.saleRecorded", "Sale recorded successfully"),
             "success",
           );
         }
@@ -207,13 +212,8 @@ const CashierSession = memo(function CashierSession({
     // Out-of-stock check is now handled when adding products to cart
     // No need to check here as products are validated before being added
 
-    const saleId = await proceedWithSale(false);
+    const saleId = await proceedWithSale(true);
     if (saleId) {
-      // Show specific success message for regular sales
-      showToast(
-        t("cashier.saleCompleted", "Sale completed successfully!"),
-        "success",
-      );
       onSaleCompleted(saleId, cart);
     }
     setPaymentAmount(0);
@@ -237,7 +237,7 @@ const CashierSession = memo(function CashierSession({
     // Out-of-stock check is now handled when adding products to cart
     // No need to check here as products are validated before being added
 
-    // Proceed with sale and get the sale ID (don't show generic success message)
+    // Proceed with sale and get the sale ID
     const saleId = await proceedWithSale(false);
     
     // Print receipt directly without showing modal
@@ -254,11 +254,23 @@ const CashierSession = memo(function CashierSession({
         (key: string, fallback?: string) => t(key, fallback)
       );
       
-      // Show specific success message for receipt sales
-      showToast(
-        t("cashier.saleWithReceiptSuccess", "Sale completed and receipt printed successfully!"),
-        "success",
-      );
+      // Show specific success message for receipt sales based on payment type
+      if (paymentType === "credit") {
+        showToast(
+          t("cashier.creditAdded", "Credit recorded successfully"),
+          "success",
+        );
+      } else if (paymentType === "versement") {
+        showToast(
+          t("cashier.versementAdded", "Versement recorded successfully"),
+          "success",
+        );
+      } else {
+        showToast(
+          t("cashier.saleWithReceiptSuccess", "Sale completed and receipt printed successfully!"),
+          "success",
+        );
+      }
       
       onSaleComplete(saleId, cart);
     }

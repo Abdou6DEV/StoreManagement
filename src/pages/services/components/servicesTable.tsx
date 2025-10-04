@@ -240,6 +240,9 @@ const ServicesTable: React.FC<ServicesTableProps> = ({
                 {t("services.type", "Type")}
               </th>
               <th className={`px-4 py-3 ${isRTL ? "text-right" : "text-left"}`}>
+                {t("services.description", "Description")}
+              </th>
+              <th className={`px-4 py-3 ${isRTL ? "text-right" : "text-left"}`}>
                 {t("services.status", "Status")}
               </th>
               <th className={`px-4 py-3 ${isRTL ? "text-right" : "text-left"}`}>
@@ -280,6 +283,15 @@ const ServicesTable: React.FC<ServicesTableProps> = ({
                   </td>
                   <td className={`px-4 py-2 ${isRTL ? "text-right" : "text-left"}`}>
                     {service.serviceType}
+                  </td>
+                  <td className={`px-4 py-2 ${isRTL ? "text-right" : "text-left"}`}>
+                    <div className="text-sm text-foreground whitespace-normal break-words max-w-xs">
+                      {service.description || (
+                        <span className="text-muted-foreground italic">
+                          {t("services.noDescription", "No description")}
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td className={`px-4 py-2 ${isRTL ? "text-right" : "text-left"}`}>
                     <span className={`text-xs px-2 py-1 rounded-full ${

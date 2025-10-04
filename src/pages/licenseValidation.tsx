@@ -1,10 +1,21 @@
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Key, Shield, AlertCircle, CheckCircle, Copy, Check } from "lucide-react";
+import { Key, Shield, AlertCircle, CheckCircle, Copy, Check, Settings, User } from "lucide-react";
 import { useLicense } from "../lib/contexts/licenseContext";
+import { ThemeToggleButton } from "../lib/components/themeToggleButton";
+import { FullscreenToggleButton } from "../lib/components/fullscreenToggleButton";
+import { TooltipToggleButton } from "../lib/components/tooltipToggleButton";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "../lib/components/dropdownMenu";
 
 export default function LicenseValidation() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { checkLicense } = useLicense();
   const [machineId, setMachineId] = useState<string>("");
   const [validationKey, setValidationKey] = useState<string>("");
@@ -16,6 +27,9 @@ export default function LicenseValidation() {
   } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [copied, setCopied] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+
+  const isRTL = i18n.language === "ar";
 
   // Get machine ID and generate validation key on component mount
   useEffect(() => {
@@ -87,19 +101,19 @@ export default function LicenseValidation() {
         } else {
           setValidationResult({
             isValid: false,
-            message: "Invalid validation key. Please contact support."
+            message: t("license.invalidKey", "Invalid validation key. Please contact support.")
           });
         }
       } else {
         setValidationResult({
           isValid: false,
-          message: result.error || "Validation failed"
+          message: result.error || t("license.validationFailed", "Validation failed")
         });
       }
     } catch (error) {
       setValidationResult({
         isValid: false,
-        message: "An error occurred during validation"
+        message: t("license.errorOccurred", "An error occurred during validation")
       });
     } finally {
       setIsValidating(false);
@@ -126,8 +140,8 @@ export default function LicenseValidation() {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Initializing license validation...</p>
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary mx-auto mb-6"></div>
+          <p className="text-lg text-muted-foreground">{t("license.initializing", "Initializing license validation...")}</p>
         </div>
       </div>
     );
@@ -135,69 +149,146 @@ export default function LicenseValidation() {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <div className="max-w-md w-full space-y-6">
+      {/* Settings Button - Top Right */}
+      <div className={`fixed top-4 z-50 ${isRTL ? "left-4" : "right-4"}`}>
+        <DropdownMenu onOpenChange={setDropdownOpen}>
+          <DropdownMenuTrigger asChild>
+            <button className="rounded-xl outline-none ring-0 hover:text-red-400 transition-all duration-300 p-1">
+              <Settings
+                className={`transition-transform duration-400 ${
+                  dropdownOpen ? "rotate-360 scale-110" : ""
+                } hover:text-red-400`}
+              />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            className={`mx-4 my-2 w-56 ${isRTL ? "text-right" : ""}`}
+          >
+            {/* User Info */}
+            <DropdownMenuLabel className="font-semibold text-md flex items-center gap-2">
+              <User className="w-4 h-4" />
+              {t("navigation.welcomeToStoreManagement", "Welcome to Store Management")}
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+
+            <DropdownMenuLabel className="font-semibold text-md">
+              {t("navigation.preferences")}
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem asChild>
+              <ThemeToggleButton variant="ghost" showText={true} />
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <TooltipToggleButton variant="ghost" showText={true} />
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <FullscreenToggleButton variant="ghost" showText={true} />
+            </DropdownMenuItem>
+
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel className="font-semibold text-md">
+              {t("navigation.language")}
+            </DropdownMenuLabel>
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.preventDefault();
+                i18n.changeLanguage("en");
+              }}
+              disabled={i18n.language === "en"}
+              className={isRTL ? "flex-row-reverse" : ""}
+            >
+              <span className={isRTL ? "ml-2" : "mr-2"}>🇬🇧</span>{" "}
+              {t("navigation.english")}
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.preventDefault();
+                i18n.changeLanguage("fr");
+              }}
+              disabled={i18n.language === "fr"}
+              className={isRTL ? "flex-row-reverse" : ""}
+            >
+              <span className={isRTL ? "ml-2" : "mr-2"}>🇫🇷</span>{" "}
+              {t("navigation.french")}
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.preventDefault();
+                i18n.changeLanguage("ar");
+              }}
+              disabled={i18n.language === "ar"}
+              className={isRTL ? "flex-row-reverse" : ""}
+            >
+              <span className={isRTL ? "ml-2" : "mr-2"}>🇸🇦</span>{" "}
+              {t("navigation.arabic")}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
+      <div className="max-w-lg w-full space-y-8">
         {/* Header */}
         <div className="text-center">
-          <div className="mx-auto h-12 w-12 bg-primary rounded-lg flex items-center justify-center mb-3">
-            <Shield className="h-6 w-6 text-primary-foreground" />
+          <div className="mx-auto h-16 w-16 bg-primary rounded-xl flex items-center justify-center mb-4">
+            <Shield className="h-8 w-8 text-primary-foreground" />
           </div>
-          <h2 className="text-2xl font-bold text-foreground mb-2">
-            License Activation
+          <h2 className="text-3xl font-bold text-foreground mb-3">
+            {t("license.title", "License Activation")}
           </h2>
-          <p className="text-sm text-muted-foreground">
-            Contact support to get your activation key
+          <p className="text-base text-muted-foreground">
+            {t("license.subtitle", "Contact support to get your activation key")}
           </p>
         </div>
 
         {/* Machine ID Display - Compact */}
-        <div className="bg-card rounded-lg border border-border p-4 shadow-sm">
-          <h3 className="text-base font-semibold text-foreground mb-3 flex items-center">
-            <Key className="h-4 w-4 mr-2" />
-            License Code
+        <div className="bg-card rounded-xl border border-border p-6 shadow-sm">
+          <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center">
+            <Key className="h-5 w-5 mr-2" />
+            {t("license.licenseCode", "License Code")}
           </h3>
-          <div className="space-y-2">
-            <p className="text-xs text-muted-foreground">
-              Send this code to support:
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              {t("license.sendCodeToSupport", "Send this code to support:")}
             </p>
-            <div className="bg-muted/30 rounded-md p-3 border border-border/50 relative group">
-              <code className="text-sm font-mono font-semibold text-foreground tracking-wide">
-                {machineId ? machineId.replace(/-/g, '').toUpperCase() : 'Loading...'}
+            <div className="bg-muted/30 rounded-lg p-4 border border-border/50 relative group">
+              <code className="text-base font-mono font-semibold text-foreground tracking-wide">
+                {machineId ? machineId.replace(/-/g, '').toUpperCase() : t("license.loading", "Loading...")}
               </code>
               <button
                 onClick={handleCopyMachineId}
-                className="absolute top-1 right-1 p-1 rounded bg-muted hover:bg-muted/80 transition-colors opacity-0 group-hover:opacity-100"
+                className="absolute top-2 right-2 p-2 rounded bg-muted hover:bg-muted/80 transition-colors opacity-0 group-hover:opacity-100"
                 title="Copy Machine ID"
               >
                 {copied ? (
-                  <Check className="h-3 w-3 text-green-600" />
+                  <Check className="h-4 w-4 text-green-600" />
                 ) : (
-                  <Copy className="h-3 w-3 text-muted-foreground" />
+                  <Copy className="h-4 w-4 text-muted-foreground" />
                 )}
               </button>
             </div>
-            <p className="text-xs text-muted-foreground">
-              {copied ? "Copied!" : "Hover to copy"}
+            <p className="text-sm text-muted-foreground">
+              {copied ? t("license.copied", "Copied!") : t("license.hoverToCopy", "Hover to copy")}
             </p>
           </div>
         </div>
 
         {/* Activation Key Input */}
-        <div className="bg-card rounded-lg border border-border p-4 shadow-sm">
-          <h3 className="text-base font-semibold text-foreground mb-3">
-            Enter Activation Key
+        <div className="bg-card rounded-xl border border-border p-6 shadow-sm">
+          <h3 className="text-lg font-semibold text-foreground mb-4">
+            {t("license.enterActivationKey", "Enter Activation Key")}
           </h3>
-          <div className="space-y-3">
+          <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1">
-                Activation Key
+              <label className="block text-sm font-medium text-foreground mb-2">
+                {t("license.activationKey", "Activation Key")}
               </label>
               <input
                 type="text"
                 value={enteredKey}
                 onChange={(e) => setEnteredKey(e.target.value.toUpperCase())}
                 onKeyPress={handleKeyPress}
-                placeholder="Enter activation key"
-                className="block w-full px-3 py-2 border border-input rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-all duration-200 font-mono text-center text-sm"
+                placeholder={t("license.enterActivationKeyPlaceholder", "Enter activation key")}
+                className="block w-full px-4 py-3 border border-input rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-all duration-200 font-mono text-center text-base"
                 maxLength={16}
               />
             </div>
@@ -205,15 +296,15 @@ export default function LicenseValidation() {
             <button
               onClick={handleValidate}
               disabled={isValidating || !enteredKey.trim()}
-              className="w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-primary-foreground bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+              className="w-full flex justify-center py-3 px-4 border border-transparent text-base font-medium rounded-lg text-primary-foreground bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
             >
               {isValidating ? (
                 <div className="flex items-center">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-foreground mr-2"></div>
-                  Activating...
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary-foreground mr-2"></div>
+                  {t("license.activating", "Activating...")}
                 </div>
               ) : (
-                "Activate License"
+                t("license.activateLicense", "Activate License")
               )}
             </button>
           </div>
@@ -221,18 +312,18 @@ export default function LicenseValidation() {
 
         {/* Validation Result */}
         {validationResult && (
-          <div className={`rounded-md border p-3 ${
+          <div className={`rounded-lg border p-4 ${
             validationResult.isValid 
               ? "bg-green-50 border-green-200 text-green-800 dark:bg-green-950/20 dark:border-green-800 dark:text-green-400" 
               : "bg-red-50 border-red-200 text-red-800 dark:bg-red-950/20 dark:border-red-800 dark:text-red-400"
           }`}>
             <div className="flex items-center">
               {validationResult.isValid ? (
-                <CheckCircle className="h-4 w-4 mr-2" />
+                <CheckCircle className="h-5 w-5 mr-3" />
               ) : (
-                <AlertCircle className="h-4 w-4 mr-2" />
+                <AlertCircle className="h-5 w-5 mr-3" />
               )}
-              <span className="text-sm font-medium">
+              <span className="text-base font-medium">
                 {validationResult.message}
               </span>
             </div>

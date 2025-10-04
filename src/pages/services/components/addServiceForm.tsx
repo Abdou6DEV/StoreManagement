@@ -84,9 +84,15 @@ export default function AddServiceForm({
   const [clientPopoverOpen, setClientPopoverOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   
-  // Refs for dropdown management
+  // Refs for dropdown management and field navigation
   const typeInputRef = useRef<HTMLInputElement>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
+  const clientButtonRef = useRef<HTMLButtonElement>(null);
+  const dueDateRef = useRef<HTMLInputElement>(null);
+  const costPriceRef = useRef<HTMLInputElement>(null);
+  const servicePriceRef = useRef<HTMLInputElement>(null);
+  const descriptionRef = useRef<HTMLInputElement>(null);
+  const notesRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (editingService) {
@@ -212,6 +218,9 @@ export default function AddServiceForm({
         e.preventDefault();
         if (showTypeDropdown && selectedTypeIndex >= 0 && selectedTypeIndex < filteredTypes.length) {
           selectType(filteredTypes[selectedTypeIndex]);
+        } else {
+          // If no dropdown or no selection, navigate to next field
+          handleFieldKeyDown(e, "type");
         }
         break;
       case "Escape":
@@ -259,6 +268,9 @@ export default function AddServiceForm({
         e.preventDefault();
         if (showNameDropdown && selectedNameIndex >= 0 && selectedNameIndex < filteredNames.length) {
           selectName(filteredNames[selectedNameIndex]);
+        } else {
+          // If no dropdown or no selection, navigate to next field
+          handleFieldKeyDown(e, "name");
         }
         break;
       case "Escape":
@@ -285,6 +297,48 @@ export default function AddServiceForm({
     setForm(prev => ({ ...prev, name: name }));
     setShowNameDropdown(false);
     setSelectedNameIndex(-1);
+  };
+
+  // Keyboard navigation between fields
+  const handleFieldKeyDown = (e: React.KeyboardEvent, currentField: string) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      
+      // Close any open dropdowns first
+      setShowTypeDropdown(false);
+      setShowNameDropdown(false);
+      setSelectedTypeIndex(-1);
+      setSelectedNameIndex(-1);
+      
+      // Navigate to next field
+      switch (currentField) {
+        case "name":
+          typeInputRef.current?.focus();
+          break;
+        case "type":
+          clientButtonRef.current?.click();
+          break;
+        case "client":
+          dueDateRef.current?.focus();
+          break;
+        case "dueDate":
+          costPriceRef.current?.focus();
+          break;
+        case "costPrice":
+          servicePriceRef.current?.focus();
+          break;
+        case "servicePrice":
+          descriptionRef.current?.focus();
+          break;
+        case "description":
+          notesRef.current?.focus();
+          break;
+        case "notes":
+          // Submit form if on last field
+          handleAddService(e as any);
+          break;
+      }
+    }
   };
 
   const handleAddService = async (e: React.FormEvent) => {
@@ -468,9 +522,11 @@ export default function AddServiceForm({
               >
                 <PopoverTrigger asChild>
                   <Button
+                    ref={clientButtonRef}
                     variant="outline"
                     className="w-full justify-start px-4 py-3 h-12 text-sm"
                     aria-label={t("services.client", "Client")}
+                    onKeyDown={(e) => handleFieldKeyDown(e, "client")}
                   >
                     {selectedClient ? selectedClient.name : t("services.searchClient", "Search for client")}
                     <ChevronDown className="ml-auto w-4 h-4" />
@@ -519,16 +575,19 @@ export default function AddServiceForm({
             <Legend>
               <label>{t("services.dueDate", "Due Date")}</label>
               <DatePicker
+                ref={dueDateRef}
                 value={form.dueDate}
                 onChange={(date) => handleFormChange("dueDate", date)}
                 placeholder={t("services.selectDueDate", "Select due date (default: 3 days later)")}
                 className="w-full h-12 px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all"
                 min={new Date().toISOString().split('T')[0]}
+                onKeyDown={(e) => handleFieldKeyDown(e, "dueDate")}
               />
             </Legend>
             <Legend>
               <label>{t("services.costPrice", "Cost Price")} ({t("common.currency", "DA")})</label>
               <input
+                ref={costPriceRef}
                 data-field="service-cost-price"
                 type="number"
                 step="0.01"
@@ -536,12 +595,14 @@ export default function AddServiceForm({
                 placeholder={t("services.enterCostPrice", "Enter cost price")}
                 value={form.costPrice}
                 onChange={(e) => handleFormChange("costPrice", e.target.value)}
+                onKeyDown={(e) => handleFieldKeyDown(e, "costPrice")}
                 className="w-full px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all"
               />
             </Legend>
             <Legend>
               <label>{t("services.servicePrice", "Service Price")} ({t("common.currency", "DA")})</label>
             <input
+                ref={servicePriceRef}
                 data-field="service-price"
                 type="number"
                 step="0.01"
@@ -549,6 +610,7 @@ export default function AddServiceForm({
                 placeholder={t("services.enterServicePrice", "Enter service price")}
                 value={form.servicePrice}
                 onChange={(e) => handleFormChange("servicePrice", e.target.value)}
+                onKeyDown={(e) => handleFieldKeyDown(e, "servicePrice")}
                 className="w-full px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all"
               required
             />
@@ -556,20 +618,24 @@ export default function AddServiceForm({
             <Legend>
               <label>{t("services.description", "Description")}</label>
               <input
+                ref={descriptionRef}
                 type="text"
                 placeholder={t("services.enterDescriptionOptional", "Enter description (optional)")}
                 value={form.description}
                 onChange={(e) => handleFormChange("description", e.target.value)}
+                onKeyDown={(e) => handleFieldKeyDown(e, "description")}
                 className="w-full px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all"
               />
             </Legend>
             <Legend>
               <label>{t("services.notes", "Notes")}</label>
               <input
+                ref={notesRef}
                 type="text"
                 placeholder={t("services.enterNotesOptional", "Enter notes (optional)")}
                 value={form.notes}
                 onChange={(e) => handleFormChange("notes", e.target.value)}
+                onKeyDown={(e) => handleFieldKeyDown(e, "notes")}
                 className="w-full px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all"
               />
             </Legend>
