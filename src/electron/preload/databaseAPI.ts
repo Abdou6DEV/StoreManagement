@@ -115,9 +115,12 @@ export const databaseAPI = {
       saleId?: string;
       clientId: string;
       givenAmount: number;
+      creditAmount?: number;
       dueDate: Date;
       paidDate?: Date;
       type: "CREDIT" | "VERSEMENT";
+      pendingSaleItems?: string;
+      discount?: number;
     }) => ipcRenderer.invoke("db:payments:create", data),
     getByClient: (clientId: string) =>
       ipcRenderer.invoke("db:payments:getByClient", clientId),

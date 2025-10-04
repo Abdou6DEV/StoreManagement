@@ -182,9 +182,12 @@ model Payment {
   saleId      String?     @unique
   clientId    String
   givenAmount Int
+  creditAmount Int?       // For standalone credits: total amount we owe the client
   dueDate     DateTime
   paidDate    DateTime?
   type        PaymentType
+  pendingSaleItems String? // JSON string of cart items for VERSEMENT payments
+  discount    Int?        // Discount amount for VERSEMENT payments
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

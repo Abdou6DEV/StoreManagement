@@ -17,6 +17,7 @@ import { useDueSoonPayments } from "../../../lib/contexts/dueSoonPaymentsContext
 import type { PaymentWithClient, Sale } from "../../../types";
 
 import SaleDetailsModal from "../../../lib/components/saleDetailsModal";
+import VersementDetailsModal from "../../../lib/components/versementDetailsModal";
 
 import PaymentFilters from "./paymentFilters";
 
@@ -369,6 +370,10 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
   const [showSaleDetailsModal, setShowSaleDetailsModal] = useState(false);
   const [loadingSaleDetails, setLoadingSaleDetails] = useState(false);
 
+  // Versement details modal state
+  const [selectedVersement, setSelectedVersement] = useState<PaymentWithClient | null>(null);
+  const [showVersementDetailsModal, setShowVersementDetailsModal] = useState(false);
+
   const versementsItemsPerPage = 10;
 
   // Handle viewing sale details
@@ -393,6 +398,15 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
       );
     } finally {
       setLoadingSaleDetails(false);
+    }
+  };
+
+  // Handle viewing versement details
+  const handleViewVersementDetails = (paymentId: string) => {
+    const payment = payments.find(p => p.id === paymentId);
+    if (payment) {
+      setSelectedVersement(payment);
+      setShowVersementDetailsModal(true);
     }
   };
 
@@ -999,6 +1013,7 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
                   onMarkAsUnpaidConfirm={handleMarkAsUnpaidConfirm}
 
                   onViewSaleDetails={handleViewSaleDetails}
+                  onViewVersementDetails={handleViewVersementDetails}
 
                   onRefreshPayments={onRefresh}
 
@@ -1247,6 +1262,7 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
                   onMarkAsUnpaidConfirm={handleMarkAsUnpaidConfirm}
 
                   onViewSaleDetails={handleViewSaleDetails}
+                  onViewVersementDetails={handleViewVersementDetails}
 
                   onRefreshPayments={onRefresh}
 
@@ -1499,6 +1515,16 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
         onClose={() => {
           setShowSaleDetailsModal(false);
           setSelectedSale(null);
+        }}
+      />
+
+      {/* Versement Details Modal */}
+      <VersementDetailsModal
+        payment={selectedVersement}
+        isOpen={showVersementDetailsModal}
+        onClose={() => {
+          setShowVersementDetailsModal(false);
+          setSelectedVersement(null);
         }}
       />
 

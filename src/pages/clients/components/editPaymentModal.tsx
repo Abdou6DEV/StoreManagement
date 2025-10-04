@@ -32,10 +32,27 @@ const EditPaymentModal: React.FC<EditPaymentModalProps> = ({
 
   const currentPaidAmount = payment?.givenAmount || 0;
   const currentRemainingAmount = payment?.remainingAmount || 0;
-  const updatedPaidAmount = currentPaidAmount + newPaymentAmount;
-  const updatedRemainingAmount = totalSaleAmount - updatedPaidAmount;
-  const isFullyPaid = updatedRemainingAmount <= 0;
-  const isOverpaid = updatedRemainingAmount < 0;
+  
+  // For standalone credit payments (no sale), the remaining amount is the credit amount
+  // For sale-based payments, calculate based on sale total
+  const isStandaloneCredit = !payment?.sale && payment?.type === "CREDIT";
+  
+  let updatedPaidAmount, updatedRemainingAmount, isFullyPaid, isOverpaid;
+  
+  if (isStandaloneCredit) {
+    // For standalone credit: remaining amount decreases as we pay more
+    // currentPaidAmount = amount paid so far, newPaymentAmount = additional payment
+    updatedPaidAmount = currentPaidAmount + newPaymentAmount;
+    updatedRemainingAmount = currentRemainingAmount - newPaymentAmount;
+    isFullyPaid = updatedRemainingAmount <= 0;
+    isOverpaid = updatedRemainingAmount < 0;
+  } else {
+    // For sale-based payments: use the original logic
+    updatedPaidAmount = currentPaidAmount + newPaymentAmount;
+    updatedRemainingAmount = totalSaleAmount - updatedPaidAmount;
+    isFullyPaid = updatedRemainingAmount <= 0;
+    isOverpaid = updatedRemainingAmount < 0;
+  }
 
   useEffect(() => {
     if (open && amountInputRef.current) {
@@ -92,32 +109,25 @@ const EditPaymentModal: React.FC<EditPaymentModalProps> = ({
         </h3>
         
         <div className="grid grid-cols-2 gap-4 text-sm">
-          <div>
-            <span className="font-semibold text-muted-foreground">
-              {t("clients.totalSaleAmount", "Total Sale Amount")}:
-            </span>
-            <div className="text-lg font-bold text-foreground">
-              {totalSaleAmount.toLocaleString()} {t("cashier.currency", "DA")}
+          {isStandaloneCredit ? (
+            <div>
+              <span className="font-semibold text-muted-foreground">
+                {t("clients.creditAmount", "Credit Amount")}:
+              </span>
+              <div className="text-lg font-bold text-foreground">
+                {currentRemainingAmount.toLocaleString()} {t("cashier.currency", "DA")}
+              </div>
             </div>
-          </div>
-          
-          <div>
-            <span className="font-semibold text-muted-foreground">
-              {t("clients.currentlyPaid", "Currently Paid")}:
-            </span>
-            <div className="text-lg font-bold text-green-600">
-              {currentPaidAmount.toLocaleString()} {t("cashier.currency", "DA")}
+          ) : (
+            <div>
+              <span className="font-semibold text-muted-foreground">
+                {t("clients.totalSaleAmount", "Total Sale Amount")}:
+              </span>
+              <div className="text-lg font-bold text-foreground">
+                {totalSaleAmount.toLocaleString()} {t("cashier.currency", "DA")}
+              </div>
             </div>
-          </div>
-          
-          <div>
-            <span className="font-semibold text-muted-foreground">
-              {t("clients.currentRemaining", "Current Remaining")}:
-            </span>
-            <div className="text-lg font-bold text-orange-600">
-              {currentRemainingAmount.toLocaleString()} {t("cashier.currency", "DA")}
-            </div>
-          </div>
+          )}
           
           <div>
             <span className="font-semibold text-muted-foreground">
@@ -128,6 +138,109 @@ const EditPaymentModal: React.FC<EditPaymentModalProps> = ({
                 ? t("cashier.credit", "Credit") 
                 : t("cashier.versement", "Versement")
               }
+            </div>
+          </div>
+        </div>
+
+        {/* Current vs Updated Payment Status */}
+        <div className="mt-6 pt-4 border-t border-border">
+          <div className="grid grid-cols-2 gap-6">
+            {/* Current Status */}
+            <div>
+              <h4 className="font-semibold text-muted-foreground mb-3 text-sm">
+                {t("clients.currentStatus", "Current Status")}
+              </h4>
+              <div className="space-y-2">
+                {isStandaloneCredit ? (
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">
+                      {t("clients.creditAmount", "Credit Amount")}:
+                    </span>
+                    <span className="font-semibold text-orange-600">
+                      {currentRemainingAmount.toLocaleString()} {t("cashier.currency", "DA")}
+                    </span>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">
+                        {t("clients.paid", "Paid")}:
+                      </span>
+                      <span className="font-semibold text-green-600">
+                        {currentPaidAmount.toLocaleString()} {t("cashier.currency", "DA")}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">
+                        {t("clients.remaining", "Remaining")}:
+                      </span>
+                      <span className="font-semibold text-orange-600">
+                        {currentRemainingAmount.toLocaleString()} {t("cashier.currency", "DA")}
+                      </span>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Updated Status */}
+            <div>
+              <h4 className="font-semibold text-muted-foreground mb-3 text-sm">
+                {t("clients.afterPayment", "After Additional Payment")}
+              </h4>
+              <div className="space-y-2">
+                {isStandaloneCredit ? (
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">
+                      {t("clients.remaining", "Remaining")}:
+                    </span>
+                    <span className={`font-semibold ${
+                      isOverpaid 
+                        ? 'text-red-600' 
+                        : updatedRemainingAmount <= 0 
+                          ? 'text-green-600' 
+                          : 'text-orange-600'
+                    }`}>
+                      {updatedRemainingAmount.toLocaleString()} {t("cashier.currency", "DA")}
+                    </span>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">
+                        {t("clients.paid", "Paid")}:
+                      </span>
+                      <span className={`font-semibold ${isOverpaid ? 'text-red-600' : 'text-green-600'}`}>
+                        {updatedPaidAmount.toLocaleString()} {t("cashier.currency", "DA")}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">
+                        {t("clients.remaining", "Remaining")}:
+                      </span>
+                      <span className={`font-semibold ${
+                        isOverpaid 
+                          ? 'text-red-600' 
+                          : updatedRemainingAmount <= 0 
+                            ? 'text-green-600' 
+                            : 'text-orange-600'
+                      }`}>
+                        {updatedRemainingAmount.toLocaleString()} {t("cashier.currency", "DA")}
+                      </span>
+                    </div>
+                  </>
+                )}
+                {isFullyPaid && !isOverpaid && (
+                  <div className="text-xs text-green-600 font-semibold mt-1">
+                    ✓ {t("clients.fullyPaid", "Fully Paid!")}
+                  </div>
+                )}
+                {isOverpaid && (
+                  <div className="text-xs text-red-600 font-semibold mt-1">
+                    {t("clients.overpaid", "Overpaid!")}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>

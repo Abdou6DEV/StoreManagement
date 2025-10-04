@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "../../../lib/components/button";
 import { Loader2, Users, ChevronDown, ChevronUp } from "lucide-react";
@@ -28,9 +28,37 @@ export default function AddClientForm({
   const { showToast } = useToast();
   const [form, setForm] = useState(initialForm);
   const [loading, setLoading] = useState(false);
+  
+  // Refs for keyboard navigation
+  const nameRef = useRef<HTMLInputElement>(null);
+  const phoneRef = useRef<HTMLInputElement>(null);
+  const addressRef = useRef<HTMLInputElement>(null);
+  const notesRef = useRef<HTMLInputElement>(null);
+  const submitButtonRef = useRef<HTMLButtonElement>(null);
 
   const handleFormChange = (key: keyof typeof form, value: string) => {
     setForm((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, currentField: string) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      
+      switch (currentField) {
+        case "name":
+          phoneRef.current?.focus();
+          break;
+        case "phone":
+          addressRef.current?.focus();
+          break;
+        case "address":
+          notesRef.current?.focus();
+          break;
+        case "notes":
+          submitButtonRef.current?.click();
+          break;
+      }
+    }
   };
 
   const handleAddClient = async (e: React.FormEvent) => {
@@ -83,10 +111,12 @@ export default function AddClientForm({
             <Legend>
               <label>{t("clients.name", "Name")}</label>
               <input
+                ref={nameRef}
                 type="text"
                 placeholder={t("clients.name", "Name")}
                 value={form.name}
                 onChange={(e) => handleFormChange("name", e.target.value)}
+                onKeyDown={(e) => handleKeyDown(e, "name")}
                 className="w-full px-4 h-10 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-red-500/50 focus:border-red-500 transition-all"
                 required
               />
@@ -94,30 +124,36 @@ export default function AddClientForm({
             <Legend>
               <label>{t("clients.phone", "Phone")}</label>
               <input
+                ref={phoneRef}
                 type="text"
                 placeholder={t("clients.phone", "Phone")}
                 value={form.phone}
                 onChange={(e) => handleFormChange("phone", e.target.value)}
+                onKeyDown={(e) => handleKeyDown(e, "phone")}
                 className="w-full px-4 h-10 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-red-500/50 focus:border-red-500 transition-all"
               />
             </Legend>
             <Legend>
               <label>{t("clients.address", "Address")}</label>
               <input
+                ref={addressRef}
                 type="text"
                 placeholder={t("clients.address", "Address")}
                 value={form.address}
                 onChange={(e) => handleFormChange("address", e.target.value)}
+                onKeyDown={(e) => handleKeyDown(e, "address")}
                 className="w-full px-4 h-10 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-red-500/50 focus:border-red-500 transition-all"
               />
             </Legend>
             <Legend>
               <label>{t("clients.notes", "Notes")}</label>
               <input
+                ref={notesRef}
                 type="text"
                 placeholder={t("clients.notes", "Notes")}
                 value={form.notes}
                 onChange={(e) => handleFormChange("notes", e.target.value)}
+                onKeyDown={(e) => handleKeyDown(e, "notes")}
                 className="w-full px-4 h-10 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-red-500/50 focus:border-red-500 transition-all"
               />
             </Legend>
@@ -125,6 +161,7 @@ export default function AddClientForm({
           <hr />
           <div>
             <Button
+              ref={submitButtonRef}
               type="submit"
               disabled={loading}
               className="bg-red-600 hover:bg-red-700 text-white h-10"

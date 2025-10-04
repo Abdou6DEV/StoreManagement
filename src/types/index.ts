@@ -118,8 +118,10 @@ export interface PaymentWithClient extends Payment {
   sale: {
     id: string;
     createdAt: Date;
-  };
+  } | null;
   remainingAmount?: number;
+  pendingSaleItems?: string | null;
+  discount?: number | null;
 }
 
 export interface StockContextType {

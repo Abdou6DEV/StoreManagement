@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "../../../lib/components/button";
 import { User, Calendar, Edit } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -18,6 +18,7 @@ interface PaymentRowProps {
   onMarkAsPaid: (paymentId: string) => void;
   onMarkAsUnpaidConfirm: (paymentId: string) => void;
   onViewSaleDetails?: (saleId: string) => void;
+  onViewVersementDetails?: (paymentId: string) => void;
   onRefreshPayments?: () => void;
   isOverdue: (dueDate: Date) => boolean;
   isDueSoon: (dueDate: Date) => boolean;
@@ -35,6 +36,7 @@ const PaymentRow: React.FC<PaymentRowProps> = ({
   onMarkAsPaid,
   onMarkAsUnpaidConfirm,
   onViewSaleDetails,
+  onViewVersementDetails,
   onRefreshPayments,
   isOverdue,
   isDueSoon,
@@ -44,6 +46,20 @@ const PaymentRow: React.FC<PaymentRowProps> = ({
   const { t, i18n } = useTranslation();
   const isRTL = i18n.language === "ar";
   const [showEditModal, setShowEditModal] = useState(false);
+  const [isCreditPaymentSale, setIsCreditPaymentSale] = useState(false);
+
+  // Check if this is a standalone credit payment (no sale associated)
+  useEffect(() => {
+    const checkIfStandaloneCreditPayment = () => {
+      if (!payment.saleId && payment.type === "CREDIT") {
+        setIsCreditPaymentSale(true);
+      } else {
+        setIsCreditPaymentSale(false);
+      }
+    };
+
+    checkIfStandaloneCreditPayment();
+  }, [payment.saleId, payment.type]);
 
   const handleEditPayment = async (newAmount: number) => {
     try {
@@ -180,6 +196,9 @@ const PaymentRow: React.FC<PaymentRowProps> = ({
             onMarkAsPaid={onMarkAsPaid}
             onMarkAsUnpaidConfirm={onMarkAsUnpaidConfirm}
             onViewSaleDetails={onViewSaleDetails}
+            onViewVersementDetails={onViewVersementDetails}
+            isCreditPaymentSale={isCreditPaymentSale}
+            hasPendingSaleItems={!!payment.pendingSaleItems}
           />
         </div>
       </td>

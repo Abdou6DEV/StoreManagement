@@ -90,23 +90,29 @@ const CashierSession = memo(function CashierSession({
         }
       }
 
-      const sale = await window.api.database.sales.create({
-        clientId: saleClientId || undefined,
-        items: cart.map((item) => ({
-          productId: item.isManual || item.isService ? undefined : item.id,
-          quantity: item.qty,
-          price: item.price,
-          boughtPrice: item.boughtPrice, // Pass the boughtPrice captured when adding to cart
-          manualProductName: item.isManual ? item.name : undefined,
-          manualProductType: item.isManual ? item.manualProductType : undefined,
-          manualProductCostPrice: item.isManual ? item.manualProductCostPrice : undefined,
-          serviceName: item.isService ? item.name : undefined,
-          serviceDescription: item.isService ? item.description : undefined,
-          serviceCostPrice: item.isService ? item.serviceCostPrice : undefined,
-          serviceAppointmentId: item.isService ? item.serviceId : undefined, // Pass the ServiceAppointment ID
-        })),
-        discount: Number(discount) || 0,
-      });
+      let sale = null;
+      
+      // For CREDIT: Create sale immediately (client takes products)
+      // For VERSEMENT: Don't create sale yet (you keep products until fully paid)
+      if (paymentType !== "versement") {
+        sale = await window.api.database.sales.create({
+          clientId: saleClientId || undefined,
+          items: cart.map((item) => ({
+            productId: item.isManual || item.isService ? undefined : item.id,
+            quantity: item.qty,
+            price: item.price,
+            boughtPrice: item.boughtPrice, // Pass the boughtPrice captured when adding to cart
+            manualProductName: item.isManual ? item.name : undefined,
+            manualProductType: item.isManual ? item.manualProductType : undefined,
+            manualProductCostPrice: item.isManual ? item.manualProductCostPrice : undefined,
+            serviceName: item.isService ? item.name : undefined,
+            serviceDescription: item.isService ? item.description : undefined,
+            serviceCostPrice: item.isService ? item.serviceCostPrice : undefined,
+            serviceAppointmentId: item.isService ? item.serviceId : undefined, // Pass the ServiceAppointment ID
+          })),
+          discount: Number(discount) || 0,
+        });
+      }
 
       // Add payment if payment info is present and valid
       if (
@@ -114,13 +120,35 @@ const CashierSession = memo(function CashierSession({
         paymentDate &&
         saleClientId
       ) {
+        // Calculate the total amount owed (for credit) or total amount we owe (for versement)
+        const totalSaleAmount = total - (Number(discount) || 0);
+        const creditAmount = paymentType === "credit" ? totalSaleAmount : paymentAmount;
+        
         await window.api.database.payments.create({
-          saleId: sale.id,
+          saleId: sale?.id, // Will be null for VERSEMENT until marked as paid
           clientId: saleClientId,
-          givenAmount: paymentAmount, // Can be 0 for zero-payment credit sales
+          givenAmount: paymentAmount, // What the client paid
+          creditAmount: creditAmount, // Total amount owed (for credit) or amount we owe (for versement)
           dueDate: paymentDate,
           paidDate: undefined, // Do not set paidDate for either credit or versement
           type: paymentType === "credit" ? "CREDIT" : "VERSEMENT",
+          pendingSaleItems: paymentType === "versement" ? JSON.stringify(cart.map((item) => {
+            console.log("Cart item for versement:", item);
+            return {
+              productId: item.isManual || item.isService ? undefined : item.id,
+              quantity: item.qty,
+              price: item.price,
+              boughtPrice: item.boughtPrice,
+              manualProductName: item.isManual ? item.name : undefined,
+              manualProductType: item.isManual ? item.manualProductType : undefined,
+              manualProductCostPrice: item.isManual ? item.manualProductCostPrice : undefined,
+              serviceName: item.isService ? item.name : undefined,
+              serviceDescription: item.isService ? item.description : undefined,
+              serviceCostPrice: item.isService ? item.serviceCostPrice : undefined,
+              serviceAppointmentId: item.isService ? item.serviceId : undefined,
+            };
+          })) : undefined,
+          discount: paymentType === "versement" ? Number(discount) || 0 : undefined,
         });
       }
       setCart([]);
@@ -135,13 +163,20 @@ const CashierSession = memo(function CashierSession({
       // setProductRefreshKey((k: number) => k + 1);
       
       if (showSuccessMessage) {
-        showToast(
-          t("cashier.saleRecorded", "Sale recorded successfully"),
-          "success",
-        );
+        if (sale) {
+          showToast(
+            t("cashier.saleRecorded", "Sale recorded successfully"),
+            "success",
+          );
+        } else {
+          showToast(
+            t("cashier.versementRecorded", "Versement recorded successfully"),
+            "success",
+          );
+        }
       }
       
-      return sale.id;
+      return sale?.id;
     } catch (err) {
       showToast(t("cashier.saleError", "Failed to record sale"), "error");
       return undefined;

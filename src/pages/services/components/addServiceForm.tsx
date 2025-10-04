@@ -72,23 +72,19 @@ export default function AddServiceForm({
   const [isExistingService, setIsExistingService] = useState(false);
   
   // Enhanced dropdown states
-  const [showClientDropdown, setShowClientDropdown] = useState(false);
   const [showTypeDropdown, setShowTypeDropdown] = useState(false);
   const [showNameDropdown, setShowNameDropdown] = useState(false);
-  const [filteredClients, setFilteredClients] = useState<Client[]>([]);
   const [filteredTypes, setFilteredTypes] = useState<string[]>([]);
   const [filteredNames, setFilteredNames] = useState<string[]>([]);
   const [clientSearch, setClientSearch] = useState("");
   const [typeSearch, setTypeSearch] = useState("");
   const [nameSearch, setNameSearch] = useState("");
-  const [selectedClientIndex, setSelectedClientIndex] = useState(-1);
   const [selectedTypeIndex, setSelectedTypeIndex] = useState(-1);
   const [selectedNameIndex, setSelectedNameIndex] = useState(-1);
   const [clientPopoverOpen, setClientPopoverOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   
   // Refs for dropdown management
-  const clientInputRef = useRef<HTMLInputElement>(null);
   const typeInputRef = useRef<HTMLInputElement>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
 
@@ -158,7 +154,6 @@ export default function AddServiceForm({
       setClients(clientsData);
       setServiceTypes(typesData);
       setServiceNames(namesData);
-      setFilteredClients(clientsData); // Initialize filtered clients
       setFilteredNames(namesData); // Initialize filtered names
     } catch (error) {
       console.error("Error loading service data:", error);
@@ -169,20 +164,15 @@ export default function AddServiceForm({
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
-  // Enhanced client search with filtering
-  const handleClientSearch = (value: string) => {
-    setClientSearch(value);
-    
-    if (value.trim()) {
-      const filtered = clients.filter((client) =>
-        client.name.toLowerCase().includes(value.toLowerCase()) ||
-        (client.phone && client.phone.includes(value))
-      );
-      setFilteredClients(filtered);
-    } else {
-      setFilteredClients(clients);
-    }
-  };
+  const filteredClients = clients
+    .filter(
+      (client) =>
+        client.name.toLowerCase().includes(clientSearch.toLowerCase()) ||
+        (client.phone &&
+          client.phone.toLowerCase().includes(clientSearch.toLowerCase())),
+    )
+    .slice(0, 100);
+
 
   // Enhanced type search with filtering
   const handleTypeSearch = (value: string) => {
@@ -510,8 +500,8 @@ export default function AddServiceForm({
                               <div className="font-medium">{client.name}</div>
                               {client.phone && (
                                 <div className="text-sm text-muted-foreground">{client.phone}</div>
-              )}
-            </div>
+                              )}
+                            </div>
                             <Check
                               className={cn(
                                 "ml-auto h-4 w-4",

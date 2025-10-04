@@ -1,22 +1,29 @@
 import { prisma } from "./prismaClient";
+import { createSale } from "./sales";
 
 export async function createPayment(data: {
   saleId?: string;
   clientId: string;
   givenAmount: number;
+  creditAmount?: number;
   dueDate: Date;
   paidDate?: Date;
   type: "CREDIT" | "VERSEMENT";
+  pendingSaleItems?: string;
+  discount?: number;
 }) {
   return await prisma.payment.create({
     data: {
       saleId: data.saleId,
       clientId: data.clientId,
       givenAmount: data.givenAmount,
+      creditAmount: data.creditAmount,
       dueDate: data.dueDate,
       paidDate: data.paidDate,
       type: data.type,
-    },
+      pendingSaleItems: data.pendingSaleItems,
+      discount: data.discount,
+    } as any,
   });
 }
 
@@ -30,7 +37,19 @@ export async function getPaymentsByClient(clientId: string) {
 export async function getPaymentsByClientWithInfo(clientId: string) {
   const payments = await prisma.payment.findMany({
     where: { clientId },
-    include: {
+    select: {
+      id: true,
+      saleId: true,
+      clientId: true,
+      givenAmount: true,
+      creditAmount: true,
+      dueDate: true,
+      paidDate: true,
+      type: true,
+      createdAt: true,
+      updatedAt: true,
+      pendingSaleItems: true,
+      discount: true,
       sale: {
         include: {
           saleItems: {
@@ -41,26 +60,42 @@ export async function getPaymentsByClientWithInfo(clientId: string) {
           },
         },
       },
-    },
+    } as any,
     orderBy: { createdAt: "desc" },
   });
 
   // Calculate remaining amounts for each payment
-  return payments.map((payment) => {
+  return payments.map((payment: any) => {
     let remainingAmount = 0;
     
     if (payment.sale && payment.sale.saleItems) {
       // Calculate total sale amount
       const totalAmount = payment.sale.saleItems.reduce(
-        (sum, item) => sum + item.price * item.quantity,
+        (sum: number, item: any) => sum + item.price * item.quantity,
         0
       );
       
-      // For CREDIT payments, remaining amount = total - givenAmount
+      // For CREDIT payments, use creditAmount if available (includes discount), otherwise calculate from sale items
       // For VERSEMENT payments, remaining amount = givenAmount (what we owe them)
       if (payment.type === "CREDIT") {
-        remainingAmount = totalAmount - payment.givenAmount;
+        const creditAmount = (payment as any).creditAmount;
+        if (creditAmount !== undefined && creditAmount !== null) {
+          remainingAmount = creditAmount - payment.givenAmount;
+        } else {
+          remainingAmount = totalAmount - payment.givenAmount;
+        }
       } else {
+        remainingAmount = payment.givenAmount;
+      }
+    } else {
+      // Standalone payments (no sale associated)
+      if (payment.type === "CREDIT") {
+        // For standalone CREDIT: remaining amount = creditAmount - givenAmount
+        // creditAmount = total amount we owe, givenAmount = amount paid so far
+        const creditAmount = (payment as any).creditAmount || 0;
+        remainingAmount = creditAmount - payment.givenAmount;
+      } else {
+        // For standalone VERSEMENT: remaining amount is what we owe them
         remainingAmount = payment.givenAmount;
       }
     }
@@ -84,7 +119,19 @@ export async function getAllPayments() {
 
 export async function getAllPaymentsWithClientInfo() {
   const payments = await prisma.payment.findMany({
-    include: {
+    select: {
+      id: true,
+      saleId: true,
+      clientId: true,
+      givenAmount: true,
+      creditAmount: true,
+      dueDate: true,
+      paidDate: true,
+      type: true,
+      createdAt: true,
+      updatedAt: true,
+      pendingSaleItems: true,
+      discount: true,
       client: {
         select: {
           id: true,
@@ -102,26 +149,42 @@ export async function getAllPaymentsWithClientInfo() {
           },
         },
       },
-    },
+    } as any,
     orderBy: { createdAt: "desc" },
   });
 
   // Calculate remaining amounts for each payment
-  return payments.map((payment) => {
+  return payments.map((payment: any) => {
     let remainingAmount = 0;
     
     if (payment.sale && payment.sale.saleItems) {
       // Calculate total sale amount
       const totalAmount = payment.sale.saleItems.reduce(
-        (sum, item) => sum + item.price * item.quantity,
+        (sum: number, item: any) => sum + item.price * item.quantity,
         0
       );
       
-      // For CREDIT payments, remaining amount = total - givenAmount
+      // For CREDIT payments, use creditAmount if available (includes discount), otherwise calculate from sale items
       // For VERSEMENT payments, remaining amount = givenAmount (what we owe them)
       if (payment.type === "CREDIT") {
-        remainingAmount = totalAmount - payment.givenAmount;
+        const creditAmount = (payment as any).creditAmount;
+        if (creditAmount !== undefined && creditAmount !== null) {
+          remainingAmount = creditAmount - payment.givenAmount;
+        } else {
+          remainingAmount = totalAmount - payment.givenAmount;
+        }
       } else {
+        remainingAmount = payment.givenAmount;
+      }
+    } else {
+      // Standalone payments (no sale associated)
+      if (payment.type === "CREDIT") {
+        // For standalone CREDIT: remaining amount = creditAmount - givenAmount
+        // creditAmount = total amount we owe, givenAmount = amount paid so far
+        const creditAmount = (payment as any).creditAmount || 0;
+        remainingAmount = creditAmount - payment.givenAmount;
+      } else {
+        // For standalone VERSEMENT: remaining amount is what we owe them
         remainingAmount = payment.givenAmount;
       }
     }
@@ -134,6 +197,38 @@ export async function getAllPaymentsWithClientInfo() {
 }
 
 export async function updatePaymentPaidAt(paymentId: string, paidDate: Date | null) {
+  const payment = await prisma.payment.findUnique({
+    where: { id: paymentId },
+  });
+
+  if (!payment) {
+    throw new Error("Payment not found");
+  }
+
+  // If marking as paid and it's a VERSEMENT with pending sale items, create the sale
+  if (paidDate && payment.type === "VERSEMENT" && (payment as any).pendingSaleItems && !payment.saleId) {
+    const saleItems = JSON.parse((payment as any).pendingSaleItems);
+
+    // Create the sale using the existing createSale function
+    const sale = await createSale({
+      clientId: payment.clientId,
+      items: saleItems,
+      discount: (payment as any).discount || 0,
+    });
+
+    // Update the payment with the sale ID and clear pending items
+    return await prisma.payment.update({
+      where: { id: paymentId },
+      data: {
+        paidDate,
+        saleId: sale.id,
+        pendingSaleItems: null,
+        discount: null,
+      } as any,
+    });
+  }
+
+  // For other cases, just update the paid date
   return await prisma.payment.update({
     where: { id: paymentId },
     data: { paidDate },

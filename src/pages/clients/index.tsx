@@ -388,6 +388,7 @@ export default function Clients() {
             openPanel={openPanel}
             setOpenPanel={setOpenPanel}
             onPaymentAdded={fetchPayments}
+            onClientAdded={fetchClients}
           />
 
           {viewMode === "clients" ? (

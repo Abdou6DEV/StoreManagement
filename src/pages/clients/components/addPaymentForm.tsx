@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "../../../lib/components/button";
 import { Loader2, CreditCard, ChevronDown, ChevronUp } from "lucide-react";
@@ -23,6 +23,7 @@ interface AddPaymentFormProps {
     React.SetStateAction<"add" | "addPayment" | "addSupplier" | null>
   >;
   onPaymentAdded: () => void;
+  onClientAdded?: () => void; // New prop to refresh client list
   selectedClientId?: string;
   selectedClientName?: string;
 }
@@ -39,6 +40,7 @@ export default function AddPaymentForm({
   openPanel,
   setOpenPanel,
   onPaymentAdded,
+  onClientAdded,
   selectedClientId,
   selectedClientName,
 }: AddPaymentFormProps) {
@@ -50,6 +52,13 @@ export default function AddPaymentForm({
     Array<{ id: string; name: string; phone?: string }>
   >([]);
   const [clientSearch, setClientSearch] = useState("");
+  const [clientPopoverOpen, setClientPopoverOpen] = useState(false);
+  const [typePopoverOpen, setTypePopoverOpen] = useState(false);
+  
+  // Refs for keyboard navigation
+  const amountRef = useRef<HTMLInputElement>(null);
+  const dueDateRef = useRef<HTMLInputElement>(null);
+  const submitButtonRef = useRef<HTMLButtonElement>(null);
 
   // Initialize form with selected client if provided
   React.useEffect(() => {
@@ -62,21 +71,84 @@ export default function AddPaymentForm({
     }
   }, [selectedClientId, selectedClientName]);
 
-  // Load clients for dropdown
-  React.useEffect(() => {
-    const loadClients = async () => {
-      try {
-        const data = await window.api.database.clients.getAll();
-        setClients(data);
-      } catch (err) {
-        rendererLogger.error("Failed to load clients", "AddPaymentForm", err);
-      }
-    };
-    loadClients();
+
+  // Function to refresh clients list
+  const refreshClients = React.useCallback(async () => {
+    try {
+      const data = await window.api.database.clients.getAll();
+      setClients(data);
+    } catch (err) {
+      rendererLogger.error("Failed to refresh clients", "AddPaymentForm", err);
+    }
   }, []);
+
+  // Refresh clients when the component mounts or when onClientAdded changes
+  React.useEffect(() => {
+    refreshClients();
+  }, [refreshClients, onClientAdded]);
 
   const handleFormChange = (key: keyof typeof form, value: string | number) => {
     setForm((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    
+    // Allow empty string for clearing
+    if (value === "") {
+      handleFormChange("givenAmount", "");
+      return;
+    }
+    
+    // Only allow numbers, decimal point, and minus sign
+    if (!/^-?[\d.]*$/.test(value)) {
+      return;
+    }
+    
+    // Prevent multiple decimal points
+    if ((value.match(/\./g) || []).length > 1) {
+      return;
+    }
+    
+    // Limit to 2 decimal places
+    const parts = value.split('.');
+    if (parts[1] && parts[1].length > 2) {
+      return;
+    }
+    
+    // Convert to number and check if it's valid
+    const numValue = parseFloat(value);
+    
+    // Check for valid number
+    if (isNaN(numValue)) {
+      return;
+    }
+    
+    // Check for reasonable limits (max 999,999,999.99)
+    if (Math.abs(numValue) > 999999999.99) {
+      showToast(
+        t("clients.amountTooLarge", "Amount is too large. Maximum allowed: 999,999,999.99"),
+        "error"
+      );
+      return;
+    }
+    
+    handleFormChange("givenAmount", value);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement | HTMLDivElement>, currentField: string) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      
+      switch (currentField) {
+        case "amount":
+          dueDateRef.current?.focus();
+          break;
+        case "dueDate":
+          submitButtonRef.current?.click();
+          break;
+      }
+    }
   };
 
   const handleAddPayment = async (e: React.FormEvent) => {
@@ -89,27 +161,33 @@ export default function AddPaymentForm({
       return;
     }
 
+    // Validate amount
+    const amount = parseFloat(form.givenAmount as string);
+    if (isNaN(amount) || amount <= 0) {
+      showToast(
+        t("clients.invalidAmount", "Please enter a valid amount greater than 0"),
+        "error",
+      );
+      return;
+    }
+
+    if (amount > 999999999.99) {
+      showToast(
+        t("clients.amountTooLarge", "Amount is too large. Maximum allowed: 999,999,999.99"),
+        "error",
+      );
+      return;
+    }
+
     setLoading(true);
     try {
       if (form.type === "CREDIT") {
-        // For CREDIT: Create a minimal sale to make the payment system work
+        // For CREDIT: Create a standalone payment without a sale
         // The amount typed is what we owe the client (remaining amount)
-        const sale = await window.api.database.sales.create({
-          clientId: form.clientId,
-          items: [{
-            manualProductName: "Credit Payment",
-            manualProductType: "CREDIT",
-            quantity: 1,
-            price: Number(form.givenAmount),
-            manualProductCostPrice: 0,
-          }],
-          discount: 0,
-        });
-
         await window.api.database.payments.create({
-          saleId: sale.id,
           clientId: form.clientId,
           givenAmount: 0, // Client paid 0, we owe them the full amount
+          creditAmount: Number(form.givenAmount), // Store the credit amount
           dueDate: new Date(form.dueDate),
           type: "CREDIT",
         });
@@ -135,12 +213,15 @@ export default function AddPaymentForm({
     }
   };
 
-  const filteredClients = clients.filter(
-    (client) =>
-      client.name.toLowerCase().includes(clientSearch.toLowerCase()) ||
-      (client.phone &&
-        client.phone.toLowerCase().includes(clientSearch.toLowerCase())),
-  );
+  const filteredClients = clients
+    .filter(
+      (client) =>
+        client.name.toLowerCase().includes(clientSearch.toLowerCase()) ||
+        (client.phone &&
+          client.phone.toLowerCase().includes(clientSearch.toLowerCase())),
+    )
+    .slice(0, 100);
+
 
   return (
     <section className="bg-card border border-border rounded-xl shadow-sm">
@@ -171,7 +252,13 @@ export default function AddPaymentForm({
             {/* Client Selection */}
             <Legend>
               <label>{t("clients.client", "Client")}</label>
-              <Popover>
+              <Popover
+                open={clientPopoverOpen}
+                onOpenChange={(open) => {
+                  setClientPopoverOpen(open);
+                  if (open) setClientSearch(""); // Reset search when opening
+                }}
+              >
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
@@ -204,6 +291,7 @@ export default function AddPaymentForm({
                               handleFormChange("clientId", client.id);
                               handleFormChange("clientName", client.name);
                               setClientSearch("");
+                              setClientPopoverOpen(false);
                             }}
                           >
                             <div className="flex flex-col">
@@ -226,7 +314,10 @@ export default function AddPaymentForm({
             {/* Payment Type */}
             <Legend>
               <label>{t("clients.paymentType", "Payment Type")}</label>
-              <Popover>
+              <Popover
+                open={typePopoverOpen}
+                onOpenChange={setTypePopoverOpen}
+              >
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
@@ -248,13 +339,19 @@ export default function AddPaymentForm({
                       <CommandGroup>
                         <CommandItem
                           value="CREDIT"
-                          onSelect={() => handleFormChange("type", "CREDIT")}
+                          onSelect={() => {
+                            handleFormChange("type", "CREDIT");
+                            setTypePopoverOpen(false);
+                          }}
                         >
                           {t("clients.credits", "Credits")}
                         </CommandItem>
                         <CommandItem
                           value="VERSEMENT"
-                          onSelect={() => handleFormChange("type", "VERSEMENT")}
+                          onSelect={() => {
+                            handleFormChange("type", "VERSEMENT");
+                            setTypePopoverOpen(false);
+                          }}
                         >
                           {t("clients.versements", "Versements")}
                         </CommandItem>
@@ -274,37 +371,44 @@ export default function AddPaymentForm({
                 }
               </label>
               <input
-                type="number"
+                ref={amountRef}
+                type="text"
+                inputMode="decimal"
                 placeholder={
                   form.type === "CREDIT" 
                     ? t("clients.creditAmountPlaceholder", "Amount you owe client") 
                     : t("clients.amount", "Amount")
                 }
                 value={form.givenAmount}
-                onChange={(e) =>
-                  handleFormChange("givenAmount", e.target.value)
-                }
+                onChange={handleAmountChange}
+                onKeyDown={(e) => handleKeyDown(e, "amount")}
                 className="w-full px-4 h-10 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-red-500/50 focus:border-red-500 transition-all"
                 required
-                min="0"
-                step="0.01"
               />
             </Legend>
 
             {/* Due Date */}
             <Legend>
               <label>{t("clients.dueDate", "Due Date")}</label>
-              <DatePicker
-                value={form.dueDate}
-                onChange={(date) => handleFormChange("dueDate", date)}
-                placeholder={t("clients.dueDate", "Due Date")}
-                className="w-full h-10"
-              />
+              <div
+                ref={dueDateRef}
+                onKeyDown={(e) => handleKeyDown(e, "dueDate")}
+                tabIndex={0}
+                className="focus:outline-none"
+              >
+                <DatePicker
+                  value={form.dueDate}
+                  onChange={(date) => handleFormChange("dueDate", date)}
+                  placeholder={t("clients.dueDate", "Due Date")}
+                  className="w-full h-10"
+                />
+              </div>
             </Legend>
           </div>
           <hr />
           <div>
             <Button
+              ref={submitButtonRef}
               type="submit"
               disabled={
                 loading || !form.clientId || !form.givenAmount || !form.dueDate
