@@ -85,11 +85,11 @@ export async function seedServiceAppointments(prisma: PrismaClient) {
   const oneYearAgo = new Date();
   oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
 
-  // Create a smaller, more manageable number of service appointments
-  console.log("   - Creating 20 incomplete service appointments...");
+  // Create a larger number of service appointments
+  console.log("   - Creating 100 incomplete service appointments...");
   const incompleteAppointments = [];
   
-  for (let i = 0; i < 20; i++) {
+  for (let i = 0; i < 100; i++) {
     const serviceName = faker.helpers.arrayElement(serviceTypes);
     const dueDate = faker.date.future({ years: 1 });
     const randomClient = faker.helpers.arrayElement(clients);
@@ -114,10 +114,10 @@ export async function seedServiceAppointments(prisma: PrismaClient) {
     data: incompleteAppointments,
   });
 
-  console.log("   - Creating 20 completed service appointments...");
+  console.log("   - Creating 10 completed service appointments...");
   const completedAppointments = [];
   
-  for (let i = 0; i < 20; i++) {
+  for (let i = 0; i < 10; i++) {
     const serviceName = faker.helpers.arrayElement(serviceTypes);
     const completedDate = faker.date.between({ from: oneYearAgo, to: new Date() });
     const dueDate = faker.date.between({ 
@@ -147,6 +147,6 @@ export async function seedServiceAppointments(prisma: PrismaClient) {
     data: completedAppointments,
   });
 
-  console.log(`   - 40 service appointments created (20 incomplete, 20 completed)`);
+  console.log(`   - 110 service appointments created (100 incomplete, 10 completed)`);
 }
 

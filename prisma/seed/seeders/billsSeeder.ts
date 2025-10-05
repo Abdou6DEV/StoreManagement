@@ -47,8 +47,8 @@ export async function seedBills(prisma: PrismaClient): Promise<Bill[]> {
   const twoYearsAgo = new Date();
   twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
 
-  for (let i = 0; i < 20; i++) {
-    const billType = billTypes[i];
+  for (let i = 0; i < 100; i++) {
+    const billType = faker.helpers.arrayElement(billTypes);
     // Generate clean integer amounts (100, 200, 360, etc.) - no decimals
     const amount = Math.round(faker.number.int({ min: 10000, max: 500000 }) / 100) * 100; // Round to nearest 100
     const duration = faker.helpers.arrayElement(durations);

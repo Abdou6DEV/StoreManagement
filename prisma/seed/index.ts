@@ -33,15 +33,15 @@ async function main() {
     console.log(`📊 Created (realistic store data for testing):`);
     console.log(`   - Categories`);
     console.log(`   - 180 sellers`);
-    console.log(`   - 2,000 products with purchases`);
-    console.log(`   - 500 clients`);
+    console.log(`   - 60,000 products with 200 purchases`);
+    console.log(`   - 2,000 clients`);
     console.log(`   - 48 services`);
-    console.log(`   - 40 service appointments (20 incomplete, 20 completed)`);
+    console.log(`   - 110 service appointments (100 incomplete, 10 completed)`);
     console.log(
-      `   - 5,000 sales with items (including manual products and services)`,
+      `   - 80,000 sales with items (including manual products and services)`,
     );
     console.log(`   - Multiple payments`);
-    console.log(`   - 20 bills with 200 payments`);
+    console.log(`   - 100 bills with payments`);
     console.log(`   - Admin account (admin/admin) is hardcoded in the app`);
   } catch (error) {
     console.error("❌ Seed failed:", error);

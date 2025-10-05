@@ -17,12 +17,15 @@ export async function seedProducts(
   const twoYearsAgo = new Date();
   twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
 
-  // Realistic store data for testing: ~2,000 products
-  const totalProducts = 2000;
+  // Realistic store data for testing: ~60,000 products
+  const totalProducts = 60000;
+  const totalPurchases = 200; // Exactly 200 purchases as requested
   const batchSize = 500; // Process in batches for better performance
   
   console.log(`   - Creating ${totalProducts} products in batches of ${batchSize}...`);
+  console.log(`   - Will create exactly ${totalPurchases} purchases total...`);
 
+  // First, create all products without purchases
   for (let batchStart = 0; batchStart < totalProducts; batchStart += batchSize) {
     const batchEnd = Math.min(batchStart + batchSize, totalProducts);
     const currentBatchSize = batchEnd - batchStart;
@@ -31,8 +34,6 @@ export async function seedProducts(
 
     // Prepare batch data
     const productsData: any[] = [];
-    const purchasesData: any[] = [];
-    const purchaseItemsData: any[] = [];
 
     for (let i = 0; i < currentBatchSize; i++) {
       let productName: string;
@@ -51,55 +52,19 @@ export async function seedProducts(
       const markupPercentage = faker.number.float({ min: 1.1, max: 1.8 });
       const sellingPrice = Math.floor(Number(boughtPrice) * markupPercentage);
 
-      // Calculate total quantity from purchases
-      const numPurchases = faker.number.int({ min: 1, max: 4 });
-      let currentQuantity = 0;
-
-      for (let j = 0; j < numPurchases; j++) {
-        const purchaseQuantity = faker.number.int({ min: 5, max: 50 });
-        currentQuantity += purchaseQuantity;
-      }
+      // Set initial quantity to 0, will be updated after purchases
+      const initialQuantity = faker.number.int({ min: 0, max: 20 });
 
       // Prepare product data for bulk insert
       productsData.push({
         name: productName,
         categoryName: category,
-        quantity: currentQuantity,
+        quantity: initialQuantity,
         boughtPrice: Number(boughtPrice),
         sellingPrice: sellingPrice,
         codebar: faker.string.numeric(12),
         photo: generateProductPhoto(),
       });
-
-      // Prepare purchase data for this product
-      for (let j = 0; j < numPurchases; j++) {
-        const seller = faker.helpers.maybe(
-          () => faker.helpers.arrayElement(sellers),
-          { probability: 0.85 },
-        );
-
-        const purchaseQuantity = faker.number.int({ min: 5, max: 50 });
-        const purchaseDate = faker.date.between({
-          from: twoYearsAgo,
-          to: new Date(),
-        });
-
-        purchasesData.push({
-          sellerId: seller?.id || null,
-          createdAt: purchaseDate,
-          updatedAt: purchaseDate,
-          productIndex: i,
-        });
-
-        purchaseItemsData.push({
-          productIndex: i,
-          purchaseIndex: purchasesData.length - 1,
-          quantity: purchaseQuantity,
-          price: Number(boughtPrice),
-          createdAt: purchaseDate,
-          updatedAt: purchaseDate,
-        });
-      }
     }
 
     // Bulk create products
@@ -116,46 +81,94 @@ export async function seedProducts(
       take: currentBatchSize,
     });
 
-    // Bulk create purchases
-    await prisma.purchase.createMany({
-      data: purchasesData.map(p => ({
-        sellerId: p.sellerId,
-        createdAt: p.createdAt,
-        updatedAt: p.updatedAt,
-      })) as any,
-    });
-
-    // Get the created purchases for this batch
-    const batchPurchases = await prisma.purchase.findMany({
-      where: {
-        createdAt: { gte: twoYearsAgo }
-      },
-      orderBy: { createdAt: 'desc' },
-      take: purchasesData.length,
-    });
-
-    // Bulk create purchase items
-    const purchaseItemsToCreate = purchaseItemsData.map(item => ({
-      productId: batchProducts[item.productIndex].id,
-      purchaseId: batchPurchases[item.purchaseIndex].id,
-      quantity: item.quantity,
-      price: item.price,
-      createdAt: item.createdAt,
-      updatedAt: item.updatedAt,
-    }));
-
-    await prisma.purchaseItem.createMany({
-      data: purchaseItemsToCreate as any,
-    });
-
     products.push(...batchProducts);
+  }
+
+  // Now create exactly 200 purchases distributed across all products
+  console.log(`   - Creating exactly ${totalPurchases} purchases...`);
+  const purchasesData: any[] = [];
+  const purchaseItemsData: any[] = [];
+  const productUpdates = new Map<string, number>();
+
+  for (let i = 0; i < totalPurchases; i++) {
+    // Select a random product from all created products
+    const randomProduct = faker.helpers.arrayElement(products);
+    const seller = faker.helpers.maybe(
+      () => faker.helpers.arrayElement(sellers),
+      { probability: 0.85 },
+    );
+
+    const purchaseQuantity = faker.number.int({ min: 5, max: 50 });
+    const purchaseDate = faker.date.between({
+      from: twoYearsAgo,
+      to: new Date(),
+    });
+
+    purchasesData.push({
+      sellerId: seller?.id || null,
+      createdAt: purchaseDate,
+      updatedAt: purchaseDate,
+    });
+
+    purchaseItemsData.push({
+      productId: randomProduct.id,
+      purchaseIndex: i,
+      quantity: purchaseQuantity,
+      price: randomProduct.boughtPrice,
+      createdAt: purchaseDate,
+      updatedAt: purchaseDate,
+    });
+
+    // Track quantity changes for bulk update
+    const currentChange = productUpdates.get(randomProduct.id) || 0;
+    productUpdates.set(randomProduct.id, currentChange + purchaseQuantity);
+  }
+
+  // Bulk create purchases
+  await prisma.purchase.createMany({
+    data: purchasesData.map(p => ({
+      sellerId: p.sellerId,
+      createdAt: p.createdAt,
+      updatedAt: p.updatedAt,
+    })) as any,
+  });
+
+  // Get the created purchases
+  const createdPurchases = await prisma.purchase.findMany({
+    where: {
+      createdAt: { gte: twoYearsAgo }
+    },
+    orderBy: { createdAt: 'desc' },
+    take: totalPurchases,
+  });
+
+  // Bulk create purchase items
+  const purchaseItemsToCreate = purchaseItemsData.map(item => ({
+    productId: item.productId,
+    purchaseId: createdPurchases[item.purchaseIndex].id,
+    quantity: item.quantity,
+    price: item.price,
+    createdAt: item.createdAt,
+    updatedAt: item.updatedAt,
+  }));
+
+  await prisma.purchaseItem.createMany({
+    data: purchaseItemsToCreate as any,
+  });
+
+  // Update product quantities based on purchases
+  for (const [productId, quantityChange] of productUpdates) {
+    await prisma.product.update({
+      where: { id: productId },
+      data: { quantity: { increment: quantityChange } },
+    });
   }
 
   console.log(`   - ${products.length} products created`);
 
   // Count total purchases created
-  const totalPurchases = await prisma.purchase.count();
-  console.log(`   - ${totalPurchases} purchases created`);
+  const totalPurchasesCreated = await prisma.purchase.count();
+  console.log(`   - ${totalPurchasesCreated} purchases created`);
 
   // Count total purchase items created
   const totalPurchaseItems = await prisma.purchaseItem.count();

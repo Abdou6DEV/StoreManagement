@@ -34,8 +34,8 @@ export async function seedSales(prisma: PrismaClient, products: Product[]) {
     }
   });
 
-  // Realistic store data for testing: ~5,000 sales (realistic for testing)
-  const totalSales = 5000;
+  // Realistic store data for testing: ~80,000 sales (realistic for testing)
+  const totalSales = 80000;
   const batchSize = 500; // Larger batches for better performance
   
   console.log(`   - Creating ${totalSales} sales in batches of ${batchSize}...`);
