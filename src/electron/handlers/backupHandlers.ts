@@ -24,7 +24,7 @@ const getDatabasePath = () => {
   const isDev = process.env.NODE_ENV === "development";
   return isDev
     ? path.join(process.cwd(), "prisma", "dev.db")
-    : path.join(app.getPath("userData"), "database.db");
+    : path.join(app.getPath("userData"), "store_management.db");
 };
 
 // Create automatic backup filename with date and time

@@ -1,5 +1,5 @@
 import { contextBridge } from "electron";
-import { databaseAPI, appAPI, loggerAPI, authAPI, systemAPI, pathAPI } from "./preload/index";
+import { databaseAPI, appAPI, loggerAPI, authAPI, systemAPI } from "./preload/index";
 import { backupAPI } from "./preload/backupAPI";
 
 contextBridge.exposeInMainWorld("api", {
@@ -9,7 +9,6 @@ contextBridge.exposeInMainWorld("api", {
   auth: authAPI,
   system: systemAPI,
   backup: backupAPI,
-  path: pathAPI,
 });
 
 declare global {
@@ -21,7 +20,6 @@ declare global {
       auth: typeof authAPI;
       system: typeof systemAPI;
       backup: typeof backupAPI;
-      path: typeof pathAPI;
     };
   }
 }

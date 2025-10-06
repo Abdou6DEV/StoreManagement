@@ -370,16 +370,6 @@ export type BackupAPI = {
   getInfo: () => Promise<{ backupDir: string; databasePath: string; backupExists: boolean }>;
 };
 
-export type PathAPI = {
-  join: (...paths: string[]) => string;
-  resolve: (...paths: string[]) => string;
-  dirname: (p: string) => string;
-  basename: (p: string, ext?: string) => string;
-  extname: (p: string) => string;
-  sep: string;
-  delimiter: string;
-};
-
 export type API = {
   database: DatabaseAPI;
   app: AppAPI;
@@ -387,5 +377,4 @@ export type API = {
   auth: AuthAPI;
   system: SystemAPI;
   backup: BackupAPI;
-  path: PathAPI;
 };

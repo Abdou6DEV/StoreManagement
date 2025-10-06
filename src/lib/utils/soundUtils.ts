@@ -6,27 +6,11 @@
 export type SoundType = 'success' | 'error' | 'info';
 
 // Sound file paths - you can customize these to point to your own audio files
-const getSoundPath = (filename: string) => {
-  // In development, use the public path
-  if (process.env.NODE_ENV === 'development') {
-    return `/sounds/${filename}`;
-  }
-  
-  // In production (packaged app), use the resources path
-  if (typeof window !== 'undefined' && (window as any).api?.path) {
-    const { path } = (window as any).api;
-    return path.join(process.resourcesPath, 'sounds', filename);
-  }
-  
-  // Fallback to public path
-  return `/sounds/${filename}`;
-};
-
 const SOUND_FILES = {
-  success: getSoundPath('success.mp3'),
-  error: getSoundPath('error.mp3'), 
-  info: getSoundPath('info.mp3')
-};
+  success: '/sounds/success.mp3',
+  error: '/sounds/error.mp3', 
+  info: '/sounds/info.mp3'
+} as const;
 
 // Fallback to generated sounds if custom files are not available
 let useCustomSounds = true;

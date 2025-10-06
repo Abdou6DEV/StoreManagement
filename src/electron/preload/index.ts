@@ -4,7 +4,6 @@ export { loggerAPI } from "./loggerAPI";
 export { authAPI } from "./authAPI";
 export { systemAPI } from "./systemAPI";
 export { backupAPI } from "./backupAPI";
-export { pathAPI } from "./pathAPI";
 export type {
   API,
   DatabaseAPI,
@@ -13,7 +12,6 @@ export type {
   AuthAPI,
   SystemAPI,
   BackupAPI,
-  PathAPI,
   BackupFile,
   BackupResult,
   SaleWithDetails,

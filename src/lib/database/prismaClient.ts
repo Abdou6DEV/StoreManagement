@@ -5,7 +5,7 @@ import logger from "../logger";
 const isDev = process.env.NODE_ENV === "development";
 const dbPath = isDev
   ? path.join(process.cwd(), "prisma", "dev.db")
-  : path.join(app.getPath("userData"), "database.db");
+  : path.join(app.getPath("userData"), "store_management.db");
 
 // Global variables for Prisma
 let PrismaClientClass: typeof import("@prisma/client").PrismaClient | null = null;
@@ -16,6 +16,8 @@ let initializationPromise: Promise<import("@prisma/client").PrismaClient> | null
 // Manual table creation as fallback
 async function createTablesManually(client: any) {
   console.log("🔍 Creating tables manually...");
+  console.log("🔍 Client type:", typeof client);
+  console.log("🔍 Client has $executeRawUnsafe:", typeof client.$executeRawUnsafe);
   
   // Simple table creation without complex constraints
   const tables = [
@@ -97,6 +99,7 @@ async function createTablesManually(client: any) {
       "name" TEXT UNIQUE NOT NULL,
       "description" TEXT,
       "costPrice" INTEGER NOT NULL DEFAULT 0,
+      "serviceAppointmentId" TEXT,
       "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
       "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
     )`,
@@ -119,9 +122,12 @@ async function createTablesManually(client: any) {
       "saleId" TEXT,
       "clientId" TEXT NOT NULL,
       "givenAmount" INTEGER NOT NULL,
+      "creditAmount" INTEGER,
       "dueDate" DATETIME NOT NULL,
       "paidDate" DATETIME,
       "type" TEXT NOT NULL,
+      "pendingSaleItems" TEXT,
+      "discount" INTEGER,
       "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
       "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
     )`,
@@ -181,15 +187,33 @@ async function createTablesManually(client: any) {
       "value" TEXT NOT NULL,
       "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
       "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )`,
+    
+    `CREATE TABLE IF NOT EXISTS "ServiceAppointment" (
+      "id" TEXT PRIMARY KEY,
+      "name" TEXT NOT NULL,
+      "serviceType" TEXT NOT NULL,
+      "description" TEXT,
+      "costPrice" INTEGER NOT NULL DEFAULT 0,
+      "servicePrice" INTEGER NOT NULL DEFAULT 0,
+      "clientId" TEXT,
+      "dueDate" DATETIME NOT NULL,
+      "notes" TEXT,
+      "isCompleted" INTEGER NOT NULL DEFAULT 0,
+      "completedAt" DATETIME,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
     )`
   ];
 
   for (const sql of tables) {
     try {
+      console.log("🔍 Executing SQL:", sql.substring(0, 100) + "...");
       await client.$executeRawUnsafe(sql);
       console.log("✅ Created table");
     } catch (tableError) {
       console.error("❌ Failed to create table:", tableError);
+      console.error("❌ SQL:", sql);
       // Continue with other tables
     }
   }
@@ -209,7 +233,9 @@ async function initializeDatabase() {
     logger.info("Checking database schema...", "Database");
     
     // Try to connect and check if tables exist
+    console.log("🔍 Connecting to database...");
     await prismaClientInstance.$connect();
+    console.log("✅ Database connected successfully");
     
     // Try a simple query to check if the User table exists
     try {
@@ -219,6 +245,7 @@ async function initializeDatabase() {
     } catch (error) {
       // If the query fails, it likely means tables don't exist
       console.log("🔍 Database schema not found, running migrations...");
+      console.log("🔍 Error details:", error);
       logger.info("Database schema not found, running migrations...", "Database");
       
       try {
@@ -244,6 +271,7 @@ async function initializeDatabase() {
           logger.info("Database schema created via Prisma push", "Database");
         } catch (pushError) {
           console.error("❌ Prisma db push failed, trying manual schema creation...");
+          console.error("❌ Push error details:", pushError);
           
           // Fallback to manual table creation with proper error handling
           await createTablesManually(prismaClientInstance);
@@ -271,6 +299,8 @@ async function initializePrismaClient() {
       console.log("🔍 Initializing Prisma client...");
       console.log("🔍 Environment:", isDev ? "development" : "production");
       console.log("🔍 Database path:", dbPath);
+      console.log("🔍 Process CWD:", process.cwd());
+      console.log("🔍 App userData path:", app.getPath("userData"));
 
       // Create a basic client that will work in both dev and production
       // Use dynamic require to avoid bundling issues
@@ -280,12 +310,15 @@ async function initializePrismaClient() {
       PrismaClientClass = prismaModule.PrismaClient;
       
       // Create the instance
+      const databaseUrl = `file:${dbPath}`;
+      console.log("🔍 Database URL:", databaseUrl);
+      
       prismaClientInstance = new PrismaClientClass({
-  datasources: {
-    db: {
-      url: `file:${dbPath}`,
-    },
-  },
+        datasources: {
+          db: {
+            url: databaseUrl,
+          },
+        },
       });
 
       console.log("✅ Prisma client created");
