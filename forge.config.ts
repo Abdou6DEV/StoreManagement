@@ -17,7 +17,13 @@ const config: ForgeConfig = {
       /^\/prisma\/seed\//,
       /^\/scripts\//
     ],
-    icon: "./public/icon-256.png"
+    icon: "./public/icon-256.png",
+    extraResource: [
+      {
+        from: "./public/sounds",
+        to: "sounds"
+      }
+    ]
   },
   rebuildConfig: {},
   makers: [
