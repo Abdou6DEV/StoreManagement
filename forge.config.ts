@@ -19,10 +19,7 @@ const config: ForgeConfig = {
     ],
     icon: "./public/icon-256.png",
     extraResource: [
-      {
-        from: "./public/sounds",
-        to: "sounds"
-      }
+      "./public/sounds"
     ]
   },
   rebuildConfig: {},
