@@ -662,6 +662,7 @@
     "discount": "Remise",
     "discountTooHigh": "La remise ne peut pas dépasser le total",
     "discountTooHighCredit": "Remise max: {{amount}} DA",
+    "discountNotRecommended": "Remise non recommandée - dépasse le profit",
     "confirm": "Confirmer",
     "addCredit": "Ajouter un crédit",
     "addVersement": "Ajouter un versement",

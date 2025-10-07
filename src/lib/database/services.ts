@@ -6,9 +6,15 @@ export async function createService(data: {
   costPrice?: number;
   serviceAppointmentId?: string;
 }) {
+  // For ServiceAppointments, make the name unique by appending the appointment ID
+  // This prevents conflicts when multiple appointments have the same name
+  const uniqueName = data.serviceAppointmentId 
+    ? `${data.name} (${data.serviceAppointmentId.slice(-8)})` 
+    : data.name;
+
   return await prisma.service.create({
     data: {
-      name: data.name,
+      name: uniqueName,
       description: data.description,
       costPrice: data.costPrice || 0,
       serviceAppointmentId: data.serviceAppointmentId,
@@ -35,7 +41,18 @@ export async function findOrCreateService(data: {
     }
   }
 
-  // Try to find existing service by name
+  // For ServiceAppointments, always create a new Service record to ensure proper tracking
+  // This prevents conflicts when multiple appointments have the same name
+  if (data.serviceAppointmentId) {
+    return await createService({
+      name: data.name,
+      description: data.description,
+      costPrice: data.costPrice || 0,
+      serviceAppointmentId: data.serviceAppointmentId,
+    });
+  }
+
+  // For regular services (not from appointments), try to find existing service by name
   const existing = await prisma.service.findUnique({
     where: {
       name: data.name,
@@ -83,6 +100,9 @@ export async function searchServices(query: string) {
 
 export async function getAllServices() {
   return await prisma.service.findMany({
+    where: {
+      serviceAppointmentId: null, // Only return service templates, not services from appointments
+    },
     orderBy: {
       createdAt: "desc",
     },

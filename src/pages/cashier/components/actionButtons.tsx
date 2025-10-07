@@ -76,9 +76,55 @@ export default function ActionButtons({
   const [showCalculatorModal, setShowCalculatorModal] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
 
+  // Debounce the discount input to avoid calculations on every keystroke
+  const debouncedDiscount = useDebounce(draftDiscount, 300);
+
   useEffect(() => {
     setDraftDiscount(discount);
   }, [discount]);
+
+  // Handle debounced discount changes
+  useEffect(() => {
+    if (debouncedDiscount !== discount) {
+      if (debouncedDiscount === "") {
+        onDiscountChange("");
+      } else {
+        const maxAllowedDiscount = paymentType === "none" ? cartTotal : cartTotal - paymentAmount;
+        if (Number(debouncedDiscount) <= maxAllowedDiscount) {
+          onDiscountChange(debouncedDiscount);
+        }
+      }
+    }
+  }, [debouncedDiscount, discount, paymentType, cartTotal, paymentAmount, onDiscountChange]);
+
+  // Calculate total profit
+  const totalProfit = useMemo(() => {
+    return cart.reduce((profit, item) => {
+      if (item.isManual || item.isService) {
+        // For manual products and services, profit is price - costPrice
+        return profit + (item.price - (item.manualProductCostPrice || item.serviceCostPrice || 0)) * item.qty;
+      } else {
+        // For regular products, profit is price - boughtPrice
+        return profit + (item.price - (item.boughtPrice || 0)) * item.qty;
+      }
+    }, 0);
+  }, [cart]);
+
+  // Memoize validation logic to avoid recalculating on every render
+  const validationState = useMemo(() => {
+    const discountValue = Number(debouncedDiscount) || 0;
+    const maxAllowed = paymentType === "none" ? cartTotal : cartTotal - paymentAmount;
+    const exceedsTotal = discountValue > maxAllowed;
+    const exceedsProfit = discountValue > totalProfit && totalProfit > 0;
+    
+    return {
+      exceedsTotal,
+      exceedsProfit,
+      discountValue,
+      maxAllowed
+    };
+  }, [debouncedDiscount, paymentType, cartTotal, paymentAmount, totalProfit]);
+
 
   const refreshClientSuggestions = () => {
     window.api.database.clients.getAll().then(setClientSuggestions);
@@ -262,32 +308,35 @@ export default function ActionButtons({
         <div className="flex-1 w-28">
           <input
             placeholder={t("cashier.discount", "Discount")}
-            className={`w-full rounded-md border px-3 py-2 text-sm bg-background border-border focus:border-primary focus:ring-primary/50 focus:outline-none focus:ring-1 transition-all min-w-0 ${Number(draftDiscount) > (paymentType === "none" ? cartTotal : cartTotal - paymentAmount) ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""}`}
+            className={`w-full rounded-md border px-3 py-2 text-sm bg-background focus:outline-none focus:ring-1 transition-all min-w-0 ${
+              validationState.exceedsTotal
+                ? "border-red-500 focus:border-red-500 focus:ring-red-500" 
+                : validationState.exceedsProfit
+                ? "border-orange-500 focus:border-orange-500 focus:ring-orange-500"
+                : "border-border focus:border-primary focus:ring-primary/50"
+            }`}
             type="number"
             value={draftDiscount}
             onChange={(e) => {
               const val = e.target.value;
-              if (/^\d*$/.test(val)) {
+              // Allow empty string, digits, and single decimal point
+              if (val === "" || /^\d*\.?\d*$/.test(val)) {
                 setDraftDiscount(val);
-                if (val === "") {
-                  onDiscountChange("");
-                } else {
-                  // For credit/versement, max discount is cartTotal - paymentAmount
-                  // For cash sales, max discount is cartTotal
-                  const maxAllowedDiscount = paymentType === "none" ? cartTotal : cartTotal - paymentAmount;
-                  if (Number(val) <= maxAllowedDiscount) {
-                    onDiscountChange(val);
-                  }
-                }
+                // Let the debounced effect handle parent state updates
               }
             }}
           />
-          {Number(draftDiscount) > (paymentType === "none" ? cartTotal : cartTotal - paymentAmount) && (
+          {validationState.exceedsTotal && (
             <div className="text-xs text-red-500 mt-1">
               {paymentType === "none" 
                 ? t("cashier.discountTooHigh", "Discount cannot exceed total")
-                : t("cashier.discountTooHighCredit", "Max discount: {amount} DA", { amount: (cartTotal - paymentAmount).toLocaleString() })
+                : t("cashier.discountTooHighCredit", "Max discount: {amount} DA", { amount: validationState.maxAllowed.toLocaleString() })
               }
+            </div>
+          )}
+          {validationState.exceedsProfit && !validationState.exceedsTotal && (
+            <div className="text-xs text-orange-500 mt-1">
+              {t("cashier.discountNotRecommended", "Discount is not recommended - exceeds profit")}
             </div>
           )}
         </div>

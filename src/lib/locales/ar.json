@@ -466,6 +466,7 @@
     "discount": "خصم",
     "discountTooHigh": "لا يمكن أن يتجاوز الخصم الإجمالي",
     "discountTooHighCredit": "الخصم الأقصى: {{amount}} دج",
+    "discountNotRecommended": "الخصم غير مستحسن - يتجاوز الربح",
     "confirm": "تأكيد",
     "addCredit": "إضافة رصيد",
     "addVersement": "إضافة دفعة",

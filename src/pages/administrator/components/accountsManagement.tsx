@@ -18,6 +18,7 @@ import { Button } from "../../../lib/components/button";
 import { Input } from "../../../lib/components/input";
 import { Switch } from "../../../lib/components/switch";
 import { Modal } from "../../../lib/components/modal";
+import { ConfirmDialog } from "../../../lib/components/confirmDialog";
 import { useToast } from "../../../lib/contexts/toastContext";
 
 interface User {
@@ -73,6 +74,15 @@ export default function AccountsManagement() {
   const [passwordUser, setPasswordUser] = useState<User | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState<{
+    open: boolean;
+    userId: string | null;
+    username: string;
+  }>({
+    open: false,
+    userId: null,
+    username: "",
+  });
 
   const [formData, setFormData] = useState<UserFormData>({
     username: "",
@@ -194,25 +204,39 @@ export default function AccountsManagement() {
     setShowPasswordModal(true);
   };
 
-  const handleDeleteUser = async (userId: string) => {
+  const handleDeleteUser = (userId: string, username: string) => {
     if (userId === "hardcoded-admin") {
       showToast("Cannot delete the admin account", "error");
       return;
     }
 
-    if (window.confirm("Are you sure you want to delete this user?")) {
-      try {
-        const result = await window.api.auth.deleteUser(userId);
-        if (result.success) {
-          showToast(t("admin.accounts.deleteUserSuccess", "User deleted successfully"), "success");
-          loadUsers();
-        } else {
-          showToast(t("admin.accounts.deleteUserError", "Failed to delete user"), "error");
-        }
-      } catch (error) {
-        console.error("Error deleting user:", error);
+    setConfirmDelete({
+      open: true,
+      userId,
+      username,
+    });
+  };
+
+  const confirmDeleteUser = async () => {
+    if (!confirmDelete.userId) return;
+
+    try {
+      const result = await window.api.auth.deleteUser(confirmDelete.userId);
+      if (result.success) {
+        showToast(t("admin.accounts.deleteUserSuccess", "User deleted successfully"), "success");
+        loadUsers();
+      } else {
         showToast(t("admin.accounts.deleteUserError", "Failed to delete user"), "error");
       }
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      showToast(t("admin.accounts.deleteUserError", "Failed to delete user"), "error");
+    } finally {
+      setConfirmDelete({
+        open: false,
+        userId: null,
+        username: "",
+      });
     }
   };
 
@@ -483,7 +507,7 @@ export default function AccountsManagement() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleDeleteUser(user.id)}
+                          onClick={() => handleDeleteUser(user.id, user.username)}
                           className="flex items-center gap-1 text-red-600 hover:text-red-700"
                         >
                           <Trash2 className="h-3 w-3" />
@@ -791,6 +815,22 @@ export default function AccountsManagement() {
           </div>
         </form>
       </Modal>
+
+      {/* Confirm Delete Dialog */}
+      <ConfirmDialog
+        open={confirmDelete.open}
+        onOpenChange={(open) => setConfirmDelete((prev) => ({ ...prev, open }))}
+        title={t("admin.accounts.deleteConfirmTitle", "Delete User")}
+        message={t(
+          "admin.accounts.deleteConfirmMessage",
+          "Are you sure you want to delete user '{{username}}'? This action cannot be undone.",
+          { username: confirmDelete.username }
+        )}
+        confirmText={t("admin.accounts.delete", "Delete")}
+        cancelText={t("admin.accounts.cancel", "Cancel")}
+        variant="danger"
+        onConfirm={confirmDeleteUser}
+      />
     </div>
   );
 }

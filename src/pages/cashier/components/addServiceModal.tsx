@@ -481,11 +481,15 @@ export default function AddServiceModal({
                               {t("cashier.completed", "Completed")}
                             </span>
                           </div>
-                          {srv.client && (
+                          {srv.client ? (
                             <div className="text-green-700 dark:text-green-300 text-xs truncate">
                               {srv.client.name}
                             </div>
-                          )}
+                          ) : srv.description ? (
+                            <div className="text-green-700 dark:text-green-300 text-xs truncate">
+                              {srv.description}
+                            </div>
+                          ) : null}
                           <div className="text-green-600 dark:text-green-400 text-xs">
                             {srv.servicePrice > 0 ? `${srv.servicePrice} DA` : t("cashier.priceNotSet", "Price not set")}
                           </div>

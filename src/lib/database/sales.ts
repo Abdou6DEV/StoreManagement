@@ -135,48 +135,24 @@ export async function createSale(data: {
     }
   }
 
-  // Process services only if needed
+  // Process services using findOrCreateService to ensure proper serviceAppointmentId tracking
   if (serviceKeys.size > 0) {
-    // Find existing services
-    const existingServices = await prisma.service.findMany({
-      where: {
-        name: { in: Array.from(serviceKeys) }
+    // Process each service individually to ensure proper serviceAppointmentId handling
+    for (const serviceName of serviceKeys) {
+      const items = data.items.filter(i => i.serviceName === serviceName);
+      for (const item of items) {
+        const service = await findOrCreateService({
+          name: serviceName,
+          description: item.serviceDescription,
+          costPrice: item.serviceCostPrice,
+          serviceAppointmentId: item.serviceAppointmentId,
+        });
+        // Use a unique key that includes serviceAppointmentId to avoid conflicts
+        const uniqueKey = item.serviceAppointmentId 
+          ? `${serviceName}-${item.serviceAppointmentId}` 
+          : serviceName;
+        serviceMap.set(uniqueKey, service.id);
       }
-    });
-    
-    // Map existing services
-    existingServices.forEach(service => {
-      serviceMap.set(service.name, service.id);
-    });
-    
-    // Create missing services
-    const missingServiceNames = Array.from(serviceKeys).filter(name => 
-      !serviceMap.has(name)
-    );
-    
-    if (missingServiceNames.length > 0) {
-      await prisma.service.createMany({
-        data: missingServiceNames.map(name => {
-          const item = data.items.find(i => i.serviceName === name);
-          return {
-            name,
-            description: item?.serviceDescription || '',
-            costPrice: item?.serviceCostPrice || 0,
-            serviceAppointmentId: item?.serviceAppointmentId || null,
-          };
-        })
-      });
-      
-      // Fetch the created services to get their IDs
-      const createdServices = await prisma.service.findMany({
-        where: {
-          name: { in: missingServiceNames }
-        }
-      });
-      
-      createdServices.forEach(service => {
-        serviceMap.set(service.name, service.id);
-      });
     }
   }
 
@@ -191,7 +167,11 @@ export async function createSale(data: {
     }
 
     if (item.serviceName) {
-      serviceId = serviceMap.get(item.serviceName) || null;
+      // Use the same unique key logic to retrieve the service ID
+      const uniqueKey = item.serviceAppointmentId 
+        ? `${item.serviceName}-${item.serviceAppointmentId}` 
+        : item.serviceName;
+      serviceId = serviceMap.get(uniqueKey) || null;
     }
 
     return {

@@ -794,6 +794,7 @@
     "discount": "Discount",
     "discountTooHigh": "Discount cannot exceed total",
     "discountTooHighCredit": "Max discount: {{amount}} DA",
+    "discountNotRecommended": "Discount is not recommended - exceeds profit",
     "confirm": "Confirm",
     "addCredit": "Add Credit",
     "addVersement": "Add Versement",
