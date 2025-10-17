@@ -27,12 +27,9 @@ const EditPaymentModal: React.FC<EditPaymentModalProps> = ({
   // Calculate totals when payment changes
   let totalSaleAmount = 0;
   
-  if (payment?.sale?.saleItems) {
-    // For payments with an associated sale
-    totalSaleAmount = payment.sale.saleItems.reduce(
-      (sum, item) => sum + item.price * item.quantity,
-      0
-    );
+  if (payment?.sale) {
+    // For payments with an associated sale - use pre-calculated total
+    totalSaleAmount = payment.sale.totalAmount || 0;
   } else if (payment?.type === "VERSEMENT" && (payment as any).pendingSaleItems) {
     // For versements with pending sale items (not yet paid)
     try {

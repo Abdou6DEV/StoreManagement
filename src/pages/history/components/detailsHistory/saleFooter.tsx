@@ -13,7 +13,8 @@ interface SaleFooterProps {
 const SaleFooter: React.FC<SaleFooterProps> = ({ sale, onView, onDelete }) => {
   const { t } = useTranslation();
 
-  const totalItems = sale.saleItems.reduce((sum, item) => sum + item.quantity, 0);
+  // Use pre-calculated totals for performance
+  const totalItems = sale.totalItems || 0;
 
   return (
     <div className="flex items-center justify-between text-sm">

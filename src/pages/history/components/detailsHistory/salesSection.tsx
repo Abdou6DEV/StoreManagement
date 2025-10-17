@@ -40,15 +40,10 @@ export default function SalesSection({
 
   // Transform SaleForHistory to Sale format that the modal expects
   const transformSaleForHistory = (saleForHistory: SaleForHistory): Sale => {
-    const totalAmount = saleForHistory.saleItems.reduce(
-      (sum, item) => sum + item.price * item.quantity,
-      0,
-    );
-    const totalAmountWithDiscount = totalAmount - saleForHistory.discount;
-    const totalItems = saleForHistory.saleItems.reduce(
-      (sum, item) => sum + item.quantity,
-      0,
-    );
+    // Use pre-calculated totals for performance
+    const totalAmount = saleForHistory.totalAmount || 0;
+    const totalAmountWithDiscount = saleForHistory.totalAmountWithDiscount || 0;
+    const totalItems = saleForHistory.totalItems || 0;
 
     // Handle credit sales properly
     const hasPayment = saleForHistory.payment !== null && saleForHistory.payment !== undefined;

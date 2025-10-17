@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { CartesianGrid, Line, LineChart, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
 import { useTheme } from "../../../lib/hooks/useTheme";
 import { Skeleton } from "../../../lib/components/skeleton";
+import { useSales, useDashboardLoading } from "../../../lib/contexts/dashboardContext";
 
 interface ProfitChartProps {
   period: 'today' | 'month' | 'year' | 'overall';
@@ -19,11 +20,19 @@ interface ProfitData {
 export function ProfitChart({ period, className = "" }: ProfitChartProps) {
   const { t, i18n } = useTranslation();
   const { isDark } = useTheme();
+  const sales = useSales();
+  const dashboardLoading = useDashboardLoading();
   const [chartData, setChartData] = useState<ProfitData[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchProfitData() {
+    // Only process data when dashboard data is loaded
+    if (dashboardLoading) {
+      setLoading(true);
+      return;
+    }
+    
+    function processProfitData() {
       setLoading(true);
       try {
         const now = new Date();
@@ -56,8 +65,7 @@ export function ProfitChart({ period, className = "" }: ProfitChartProps) {
         let data: ProfitData[] = [];
 
         if (period === 'today') {
-          // For today, get all sales and aggregate by hour manually
-          const sales = await window.api.database.sales.getAll();
+          // For today, use shared sales data and aggregate by hour manually
           const todaySales = sales.filter((sale: { createdAt: string | Date }) => {
             const saleDate = new Date(sale.createdAt);
             return saleDate.getFullYear() === now.getFullYear() &&
@@ -76,18 +84,14 @@ export function ProfitChart({ period, className = "" }: ProfitChartProps) {
           }
 
           // Process each sale
-          todaySales.forEach((sale: { createdAt: string | Date; totalAmountWithDiscount?: number; saleItems?: Array<{ product?: { boughtPrice?: number }; manualProduct?: { costPrice: number }; service?: { costPrice: number }; boughtPrice?: number; price: number; quantity: number }> }) => {
+          todaySales.forEach((sale) => {
             const saleDate = new Date(sale.createdAt);
             const hour = saleDate.getHours();
             
+            // Use pre-calculated totals for performance
             const revenue = sale.totalAmountWithDiscount || 0;
-            const cost = sale.saleItems?.reduce((itemSum: number, item: { product?: { boughtPrice?: number }; manualProduct?: { costPrice: number }; service?: { costPrice: number }; boughtPrice?: number; price: number; quantity: number }) => {
-              // All items (products, manual products, services) have their cost stored in boughtPrice
-              const boughtPrice = item.boughtPrice || 0;
-              return itemSum + boughtPrice * item.quantity;
-            }, 0) || 0;
-            
-            const profit = revenue - cost;
+            const cost = sale.totalCost || 0;
+            const profit = sale.totalProfit || 0;
             
             const existing = hourlyData.get(hour);
             if (existing) {
@@ -105,22 +109,68 @@ export function ProfitChart({ period, className = "" }: ProfitChartProps) {
             cost: values.cost,
           }));
         } else {
-          // Use the proper database aggregation function for other periods
-          const aggregatedData = await window.api.database.sales.getAggregatedByPeriod(
-            periodType,
-            startDate,
-            endDate
-          );
+          // Process shared sales data for other periods
+          const filteredSales = sales.filter((sale: { createdAt: string | Date }) => {
+            const saleDate = new Date(sale.createdAt);
+            return saleDate >= startDate && saleDate <= endDate;
+          });
+          
+          // Group by period
+          const groupedData = new Map<string, { profit: number; revenue: number; cost: number }>();
+          
+          filteredSales.forEach((sale: { createdAt: string | Date; totalProfit?: number; totalAmountWithDiscount?: number; totalCost?: number }) => {
+            const saleDate = new Date(sale.createdAt);
+            let periodKey: string;
+            
+            if (periodType === "day") {
+              const year = saleDate.getFullYear();
+              const month = String(saleDate.getMonth() + 1).padStart(2, "0");
+              const day = String(saleDate.getDate()).padStart(2, "0");
+              periodKey = `${year}-${month}-${day}`;
+            } else if (periodType === "month") {
+              periodKey = `${saleDate.getFullYear()}-${String(saleDate.getMonth() + 1).padStart(2, "0")}`;
+            } else {
+              periodKey = saleDate.getFullYear().toString();
+            }
+            
+            const existing = groupedData.get(periodKey);
+            if (existing) {
+              existing.profit += sale.totalProfit || 0;
+              existing.revenue += sale.totalAmountWithDiscount || 0;
+              existing.cost += sale.totalCost || 0;
+            } else {
+              groupedData.set(periodKey, {
+                profit: sale.totalProfit || 0,
+                revenue: sale.totalAmountWithDiscount || 0,
+                cost: sale.totalCost || 0,
+              });
+            }
+          });
+          
+          const aggregatedData = Array.from(groupedData.entries())
+            .map(([period, values]) => ({
+              period,
+              profit: values.profit,
+              revenue: values.revenue,
+            }))
+            .sort((a, b) => {
+              // Sort by period (year) in ascending order
+              if (periodType === "year") {
+                return parseInt(a.period) - parseInt(b.period);
+              }
+              // For other periods, maintain original order
+              return 0;
+            });
 
           // Transform the data for the chart
           data = aggregatedData.map((item: { period: string; profit?: number; revenue?: number }) => {
             let periodLabel: string;
             
-            if (period === 'month') {
+            if (periodType === 'day') {
               // For daily data, show just the day number
               const date = new Date(item.period);
               periodLabel = date.getDate().toString();
-            } else if (period === 'year') {
+            } else if (periodType === 'month') {
               // For monthly data, show month abbreviation
               const [year, month] = item.period.split('-');
               const date = new Date(parseInt(year), parseInt(month) - 1, 1);
@@ -183,15 +233,15 @@ export function ProfitChart({ period, className = "" }: ProfitChartProps) {
         
         // Trend calculation removed as it was unused
       } catch (error) {
-        console.error('Error fetching profit data:', error);
+        console.error('Error processing profit data:', error);
         setChartData([]);
       } finally {
         setLoading(false);
       }
     }
     
-    fetchProfitData();
-  }, [period]);
+    processProfitData();
+  }, [dashboardLoading, sales, period, i18n.language]);
 
 
 

@@ -50,61 +50,20 @@ export function useDetailsHistoryData(period: SelectedPeriod) {
     purchasesEndIndex
   );
 
-  // Calculate totals and profit - properly calculate from sale items and purchase items
+  // Use pre-calculated totals for performance
   const salesTotal = sales.reduce((sum, sale) => {
-    const totalAmount = sale.saleItems.reduce(
-      (itemSum, item) => itemSum + item.price * item.quantity,
-      0
-    );
-    return sum + (totalAmount - sale.discount);
+    return sum + (sale.totalAmountWithDiscount || 0);
   }, 0);
 
   const salesProfit = sales.reduce((sum, sale) => {
-    const revenue =
-      sale.saleItems.reduce(
-        (itemSum, item) => itemSum + item.price * item.quantity,
-        0
-      ) - sale.discount;
-
-    const cost = sale.saleItems.reduce((itemSum, item) => {
-      // All items (products, manual products, services) have their cost stored in boughtPrice
-      const boughtPrice = (item as { boughtPrice?: number }).boughtPrice || 0;
-      
-      // Debug logging
-      console.log('🔍 Sale Item Debug:', {
-        itemName: item.product?.name || item.manualProduct?.name || item.service?.name || 'Unknown',
-        price: item.price,
-        quantity: item.quantity,
-        boughtPrice: boughtPrice,
-        itemCost: boughtPrice * item.quantity
-      });
-      
-      return itemSum + boughtPrice * item.quantity;
-    }, 0);
-
-    const profit = revenue - cost;
-    console.log('🔍 Sale Profit Debug:', {
-      saleId: sale.id,
-      revenue: revenue,
-      cost: cost,
-      profit: profit
-    });
-
-    return sum + profit;
+    return sum + (sale.totalProfit || 0);
   }, 0);
   
   // DEBUG: Log the total profit calculation
   console.log('🔍 TOTAL PROFIT DEBUG:', {
     totalProfit: salesProfit,
     salesCount: sales.length,
-    individualProfits: sales.map(sale => {
-      const revenue = sale.saleItems.reduce((sum, item) => sum + item.price * item.quantity, 0) - sale.discount;
-      const cost = sale.saleItems.reduce((sum, item) => {
-        const boughtPrice = (item as { boughtPrice?: number }).boughtPrice || 0;
-        return sum + boughtPrice * item.quantity;
-      }, 0);
-      return revenue - cost;
-    })
+    individualProfits: sales.map(sale => sale.totalProfit || 0)
   });
 
   const purchasesTotal = purchases.reduce((sum, purchase) => {
@@ -248,13 +207,9 @@ export function useDetailsHistoryData(period: SelectedPeriod) {
     fetchPeriodData();
   }, [fetchPeriodData]);
 
-  // Calculate previous period totals
+  // Calculate previous period totals using pre-calculated data
   const previousSalesTotal = previousSalesData.reduce((sum, sale) => {
-    const totalAmount = sale.saleItems.reduce(
-      (itemSum, item) => itemSum + item.price * item.quantity,
-      0
-    );
-    return sum + (totalAmount - sale.discount);
+    return sum + (sale.totalAmountWithDiscount || 0);
   }, 0);
 
   const previousPurchasesTotal = previousPurchasesData.reduce(

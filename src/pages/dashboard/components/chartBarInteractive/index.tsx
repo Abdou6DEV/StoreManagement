@@ -19,17 +19,12 @@ export function ChartBarInteractive() {
   >("profits");
   const [isLoading, setIsLoading] = React.useState(true);
 
-  const chartData = useChartData();
+  const { chartData, loading: dataLoading } = useChartData();
   const { chartTypes } = useChartConfigs();
 
   React.useEffect(() => {
-    // Simulate loading time for chart data
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1000);
-
-    return () => clearTimeout(timer);
-  }, [chartData]);
+    setIsLoading(dataLoading);
+  }, [dataLoading]);
 
   const timePeriods: Record<string, TimePeriodConfig> = {
     "1m": {

@@ -120,12 +120,23 @@ model Sale {
   clientId String?
   discount Int     @default(0)
 
+  // Pre-calculated totals for performance
+  totalAmount             Int @default(0) // Sum of all item prices * quantities
+  totalAmountWithDiscount Int @default(0) // totalAmount - discount
+  totalItems              Int @default(0) // Sum of all quantities
+  totalCost               Int @default(0) // Sum of all boughtPrice * quantities
+  totalProfit             Int @default(0) // totalAmountWithDiscount - totalCost
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   client    Client?    @relation(fields: [clientId], references: [id], onDelete: Cascade)
   payment   Payment?
   saleItems SaleItem[]
+
+  @@index([clientId])
+  @@index([createdAt])
+  @@index([clientId, createdAt])
 }
 
 model SaleItem {
@@ -178,16 +189,16 @@ model Option {
 }
 
 model Payment {
-  id          String      @id @default(uuid())
-  saleId      String?     @unique
-  clientId    String
-  givenAmount Int
-  creditAmount Int?       // For standalone credits: total amount we owe the client
-  dueDate     DateTime
-  paidDate    DateTime?
-  type        PaymentType
+  id               String      @id @default(uuid())
+  saleId           String?     @unique
+  clientId         String
+  givenAmount      Int
+  creditAmount     Int? // For standalone credits: total amount we owe the client
+  dueDate          DateTime
+  paidDate         DateTime?
+  type             PaymentType
   pendingSaleItems String? // JSON string of cart items for VERSEMENT payments
-  discount    Int?        // Discount amount for VERSEMENT payments
+  discount         Int? // Discount amount for VERSEMENT payments
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

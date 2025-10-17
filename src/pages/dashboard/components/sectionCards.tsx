@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import {
   PackageIcon,
@@ -12,9 +12,19 @@ import {
 import { ProfitChart } from "./profitCharts";
 import { StockStatsCard } from "./stockStatsCard";
 import { Skeleton } from "../../../lib/components/skeleton";
+import { useSales, useProducts, useClients, usePayments, useLowStockThreshold, useDashboardLoading } from "../../../lib/contexts/dashboardContext";
 
 export function SectionCards() {
   const { t, i18n } = useTranslation();
+  
+  // Use shared dashboard data
+  const sales = useSales();
+  const products = useProducts();
+  const clients = useClients();
+  const payments = usePayments();
+  const lowStockThreshold = useLowStockThreshold();
+  const dashboardLoading = useDashboardLoading();
+  
   const [loadingStates, setLoadingStates] = useState({
     salesStats: true,
     stockStats: true,
@@ -60,6 +70,33 @@ export function SectionCards() {
   const [unpaidCreditAmount, setUnpaidCreditAmount] = useState(0);
   const [unpaidVersementAmount, setUnpaidVersementAmount] = useState(0);
   const [numberOfClients, setNumberOfClients] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  // Memoize expensive date filtering functions
+  const dateFilters = useMemo(() => {
+    const now = new Date();
+    return {
+      isToday: (date: Date) => {
+        const d = new Date(date);
+        return (
+          d.getFullYear() === now.getFullYear() &&
+          d.getMonth() === now.getMonth() &&
+          d.getDate() === now.getDate()
+        );
+      },
+      isThisMonth: (date: Date) => {
+        const d = new Date(date);
+        return (
+          d.getFullYear() === now.getFullYear() &&
+          d.getMonth() === now.getMonth()
+        );
+      },
+      isThisYear: (date: Date) => {
+        const d = new Date(date);
+        return d.getFullYear() === now.getFullYear();
+      }
+    };
+  }, []);
 
   const formatCurrency = (amount: number) =>
     `${amount.toLocaleString()} ${t("currency")}`;
@@ -68,40 +105,28 @@ export function SectionCards() {
     sales: Array<{
       createdAt: string | Date;
       totalAmountWithDiscount?: number;
-      saleItems?: Array<{
-        product?: { boughtPrice?: number };
-        manualProduct?: { costPrice: number };
-        service?: { costPrice: number };
-        boughtPrice?: number;
-        price: number;
-        quantity: number;
-      }>;
+      totalProfit?: number;
       totalItems?: number;
     }>,
     labelKey: string,
     filterFn: (date: Date) => boolean
   ) => {
     const filtered = sales.filter((s: { createdAt: string | Date }) => filterFn(new Date(s.createdAt)));
+    
+    // Use pre-calculated totals for performance
     const revenue = filtered.reduce(
       (sum: number, s: { totalAmountWithDiscount?: number }) => sum + (s.totalAmountWithDiscount || 0),
       0
     );
-    const profit = filtered.reduce((sum: number, s: { totalAmountWithDiscount?: number; saleItems?: Array<{ product?: { boughtPrice?: number }; manualProduct?: { costPrice: number }; service?: { costPrice: number }; boughtPrice?: number; price: number; quantity: number }> }) => {
-      const revenue = s.totalAmountWithDiscount || 0;
-
-      const cost =
-        s.saleItems?.reduce((itemSum: number, item: { product?: { boughtPrice?: number }; manualProduct?: { costPrice: number }; service?: { costPrice: number }; boughtPrice?: number; price: number; quantity: number }) => {
-          // All items (products, manual products, services) have their cost stored in boughtPrice
-          const boughtPrice = item.boughtPrice || 0;
-          return itemSum + boughtPrice * item.quantity;
-        }, 0) || 0;
-
-      return sum + (revenue - cost);
-    }, 0);
+    const profit = filtered.reduce(
+      (sum: number, s: { totalProfit?: number }) => sum + (s.totalProfit || 0),
+      0
+    );
     const itemsSold = filtered.reduce(
       (sum: number, s: { totalItems?: number }) => sum + (s.totalItems || 0),
       0
     );
+    
     return {
       labelKey: `dashboard.${labelKey}`,
       revenue: formatCurrency(revenue),
@@ -111,32 +136,26 @@ export function SectionCards() {
   };
 
   useEffect(() => {
-    async function fetchStats() {
+    // Only process data when dashboard data is loaded
+    if (dashboardLoading) {
+      setLoading(true);
+      return;
+    }
+    
+    (async function processData() {
       try {
-        // Load sales data first (most important)
-        const sales = await window.api.database.sales.getAll();
-        setLoadingStates(prev => ({ ...prev, salesStats: false }));
-        
-        // Load products data
-        const products = await window.api.database.products.getAll();
-        setLoadingStates(prev => ({ ...prev, stockStats: false }));
-        
-        // Load clients data
-        const clients = await window.api.database.clients.getAll();
-        setLoadingStates(prev => ({ ...prev, clientStats: false, numberOfClients: false }));
-        
-        // Load payments data
-        const payments = await window.api.database.payments.getAllWithClientInfo();
+        // Data is already loaded from context, just process it
         setLoadingStates(prev => ({ 
           ...prev, 
+          salesStats: false,
+          stockStats: false,
+          clientStats: false,
+          numberOfClients: false,
           totalCreditAmount: false, 
           totalVersementAmount: false, 
           unpaidCreditAmount: false, 
           unpaidVersementAmount: false 
         }));
-        
-        // Load options
-        const lowStockThreshold = await window.api.database.options.get("lowStockThreshold");
       const isToday = (date: Date) => {
         const d = new Date(date);
         const now = new Date();
@@ -164,9 +183,9 @@ export function SectionCards() {
 
 
       // Process sales data progressively
-      const todayStats = calcSalesStats(sales, "today", isToday);
-      const monthStats = calcSalesStats(sales, "thisMonth", isThisMonth);
-      const yearStats = calcSalesStats(sales, "thisYear", isThisYear);
+      const todayStats = calcSalesStats(sales, "today", dateFilters.isToday);
+      const monthStats = calcSalesStats(sales, "thisMonth", dateFilters.isThisMonth);
+      const yearStats = calcSalesStats(sales, "thisYear", dateFilters.isThisYear);
       const overallStats = calcSalesStats(sales, "overall", () => true);
       
       // Set sales stats immediately
@@ -183,15 +202,25 @@ export function SectionCards() {
        yesterday.setDate(yesterday.getDate() - 1);
        
        try {
-         const historicalData = await window.api.database.sales.getAggregatedByPeriod(
-           "day",
-           thirtyDaysAgo,
-           yesterday
-         );
+         // Calculate historical data from shared sales data
+         const historicalSales = sales.filter((sale) => {
+           const saleDate = new Date(sale.createdAt);
+           return saleDate >= thirtyDaysAgo && saleDate <= yesterday;
+         });
+
+         // Group by day and calculate daily profits
+         const dailyProfits = new Map<string, number>();
+         historicalSales.forEach((sale) => {
+           const saleDate = new Date(sale.createdAt);
+           const dayKey = `${saleDate.getFullYear()}-${String(saleDate.getMonth() + 1).padStart(2, '0')}-${String(saleDate.getDate()).padStart(2, '0')}`;
+           const existing = dailyProfits.get(dayKey) || 0;
+           dailyProfits.set(dayKey, existing + (sale.totalProfit || 0));
+         });
 
          // Calculate average daily profit from historical data (excluding today)
-         const averageDailyProfit = historicalData.length > 0 
-           ? historicalData.reduce((sum: number, item: { profit?: number }) => sum + (item.profit || 0), 0) / historicalData.length 
+         const dailyProfitValues = Array.from(dailyProfits.values());
+         const averageDailyProfit = dailyProfitValues.length > 0 
+           ? dailyProfitValues.reduce((sum, profit) => sum + profit, 0) / dailyProfitValues.length 
            : 0;
 
          const percentage = averageDailyProfit !== 0 
@@ -213,17 +242,27 @@ export function SectionCards() {
          const twelveMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 12, 1);
          const lastMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
          
-         const historicalMonthData = await window.api.database.sales.getAggregatedByPeriod(
-           "month",
-           twelveMonthsAgo,
-           lastMonth
-         );
+         // Calculate historical data from shared sales data
+         const historicalMonthSales = sales.filter((sale) => {
+           const saleDate = new Date(sale.createdAt);
+           return saleDate >= twelveMonthsAgo && saleDate <= lastMonth;
+         });
+
+         // Group by month and calculate monthly profits
+         const monthlyProfits = new Map<string, number>();
+         historicalMonthSales.forEach((sale) => {
+           const saleDate = new Date(sale.createdAt);
+           const monthKey = `${saleDate.getFullYear()}-${String(saleDate.getMonth() + 1).padStart(2, '0')}`;
+           const existing = monthlyProfits.get(monthKey) || 0;
+           monthlyProfits.set(monthKey, existing + (sale.totalProfit || 0));
+         });
          
          const monthTotalProfit = monthStats.profit ? parseFloat(monthStats.profit.replace(/[^\d.-]/g, '')) : 0;
          
          // Calculate average monthly profit from historical data
-         const averageMonthlyProfit = historicalMonthData.length > 0 
-           ? historicalMonthData.reduce((sum: number, item: { profit?: number }) => sum + (item.profit || 0), 0) / historicalMonthData.length 
+         const monthlyProfitValues = Array.from(monthlyProfits.values());
+         const averageMonthlyProfit = monthlyProfitValues.length > 0 
+           ? monthlyProfitValues.reduce((sum, profit) => sum + profit, 0) / monthlyProfitValues.length 
            : 0;
          
          const monthPercentage = averageMonthlyProfit !== 0 
@@ -245,17 +284,27 @@ export function SectionCards() {
          const fiveYearsAgo = new Date(now.getFullYear() - 5, 0, 1);
          const lastYear = new Date(now.getFullYear() - 1, 11, 31, 23, 59, 59);
          
-         const historicalYearData = await window.api.database.sales.getAggregatedByPeriod(
-           "year",
-           fiveYearsAgo,
-           lastYear
-         );
+         // Calculate historical data from shared sales data
+         const historicalYearSales = sales.filter((sale) => {
+           const saleDate = new Date(sale.createdAt);
+           return saleDate >= fiveYearsAgo && saleDate <= lastYear;
+         });
+
+         // Group by year and calculate yearly profits
+         const yearlyProfits = new Map<string, number>();
+         historicalYearSales.forEach((sale) => {
+           const saleDate = new Date(sale.createdAt);
+           const yearKey = saleDate.getFullYear().toString();
+           const existing = yearlyProfits.get(yearKey) || 0;
+           yearlyProfits.set(yearKey, existing + (sale.totalProfit || 0));
+         });
          
          const yearTotalProfit = yearStats.profit ? parseFloat(yearStats.profit.replace(/[^\d.-]/g, '')) : 0;
          
          // Calculate average yearly profit from historical data
-         const averageYearlyProfit = historicalYearData.length > 0 
-           ? historicalYearData.reduce((sum: number, item: { profit?: number }) => sum + (item.profit || 0), 0) / historicalYearData.length 
+         const yearlyProfitValues = Array.from(yearlyProfits.values());
+         const averageYearlyProfit = yearlyProfitValues.length > 0 
+           ? yearlyProfitValues.reduce((sum, profit) => sum + profit, 0) / yearlyProfitValues.length 
            : 0;
          
          const yearPercentage = averageYearlyProfit !== 0 
@@ -430,14 +479,15 @@ export function SectionCards() {
           icon: WalletIcon,
         },
       ]);
+      
+      // Set loading to false after processing
+      setLoading(false);
       } catch (error) {
-        console.error('Error fetching dashboard stats:', error);
-      } finally {
-        setIsLoading(false);
+        console.error('Error processing dashboard stats:', error);
+        setLoading(false);
       }
-    }
-    fetchStats();
-  }, [i18n.language]);
+    })();
+  }, [dashboardLoading, sales, products, clients, payments, lowStockThreshold, i18n.language]);
 
   const renderSection = (titleKey: string, cards: Array<{
     labelKey: string;
@@ -777,6 +827,54 @@ export function SectionCards() {
   };
 
 
+  if (loading) {
+    return (
+      <div className="space-y-8">
+        {/* Sales Stats Skeleton */}
+        <div className="space-y-4">
+          <h2 className="text-2xl font-bold text-foreground">{t("dashboard.overviewSection")}</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="bg-card rounded-lg p-6 border shadow-sm">
+                <Skeleton className="h-4 w-24 mb-2" />
+                <Skeleton className="h-8 w-32 mb-1" />
+                <Skeleton className="h-3 w-20" />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Stock Stats Skeleton */}
+        <div className="space-y-4">
+          <h2 className="text-2xl font-bold text-foreground">{t("dashboard.stockStatsSection")}</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="bg-card rounded-lg p-6 border shadow-sm">
+                <Skeleton className="h-4 w-24 mb-2" />
+                <Skeleton className="h-8 w-32 mb-1" />
+                <Skeleton className="h-3 w-20" />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Client Stats Skeleton */}
+        <div className="space-y-4">
+          <h2 className="text-2xl font-bold text-foreground">{t("dashboard.clientStatsSection")}</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="bg-card rounded-lg p-6 border shadow-sm">
+                <Skeleton className="h-4 w-24 mb-2" />
+                <Skeleton className="h-8 w-32 mb-1" />
+                <Skeleton className="h-3 w-20" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
       {renderSection("overviewSection", salesStats)}
@@ -785,3 +883,4 @@ export function SectionCards() {
     </div>
   );
 }
+

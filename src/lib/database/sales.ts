@@ -222,11 +222,42 @@ export async function createSale(data: {
       }
     }
 
-    // Create sale with items - no additional product queries needed
+    // Calculate totals for performance
+    const totalAmount = processedItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const totalAmountWithDiscount = totalAmount - (data.discount ?? 0);
+    const totalItems = processedItems.reduce((sum, item) => sum + item.quantity, 0);
+    
+    // Calculate total cost and profit
+    const totalCost = processedItems.reduce((sum, item) => {
+      let boughtPrice = 0;
+      
+      if (item.productId && item.boughtPrice !== undefined) {
+        boughtPrice = item.boughtPrice;
+      } else if (item.manualProductId && item.manualProductCostPrice !== undefined) {
+        boughtPrice = item.manualProductCostPrice;
+      } else if (item.serviceId && item.serviceCostPrice !== undefined) {
+        boughtPrice = item.serviceCostPrice;
+      } else if (item.productId) {
+        // Fallback: get boughtPrice from product map if not provided
+        const product = productMap.get(item.productId);
+        boughtPrice = product?.boughtPrice || 0;
+      }
+      
+      return sum + (boughtPrice * item.quantity);
+    }, 0);
+    
+    const totalProfit = totalAmountWithDiscount - totalCost;
+
+    // Create sale with items and pre-calculated totals
     const sale = await tx.sale.create({
       data: {
         clientId: data.clientId,
         discount: data.discount ?? 0,
+        totalAmount,
+        totalAmountWithDiscount,
+        totalItems,
+        totalCost,
+        totalProfit,
         saleItems: {
           create: processedItems.map((item) => {
             let boughtPrice = null;
@@ -433,12 +464,43 @@ export async function updateSale(
         );
       }
 
-      // Update the sale - no additional product queries needed
+      // Calculate totals for performance
+      const totalAmount = processedItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      const totalAmountWithDiscount = totalAmount - (data.discount ?? 0);
+      const totalItems = processedItems.reduce((sum, item) => sum + item.quantity, 0);
+      
+      // Calculate total cost and profit
+      const totalCost = processedItems.reduce((sum, item) => {
+        let boughtPrice = 0;
+        
+        if (item.productId && item.boughtPrice !== undefined) {
+          boughtPrice = item.boughtPrice;
+        } else if (item.manualProductId && item.manualProductCostPrice !== undefined) {
+          boughtPrice = item.manualProductCostPrice;
+        } else if (item.serviceId && item.serviceCostPrice !== undefined) {
+          boughtPrice = item.serviceCostPrice;
+        } else if (item.productId) {
+          // Fallback: get boughtPrice from product map if not provided
+          const product = productMap.get(item.productId);
+          boughtPrice = product?.boughtPrice || 0;
+        }
+        
+        return sum + (boughtPrice * item.quantity);
+      }, 0);
+      
+      const totalProfit = totalAmountWithDiscount - totalCost;
+
+      // Update the sale with pre-calculated totals
       const updatedSale = await tx.sale.update({
         where: { id: saleId },
         data: {
           clientId: data.clientId,
           discount: data.discount ?? 0,
+          totalAmount,
+          totalAmountWithDiscount,
+          totalItems,
+          totalCost,
+          totalProfit,
           saleItems: {
             create: processedItems.map((item) => {
               let boughtPrice = null;
@@ -496,30 +558,15 @@ export async function updateSale(
         },
       });
 
-      // Calculate totals
-      const totalAmount = updatedSale.saleItems.reduce(
-        (sum, item) => sum + item.price * item.quantity,
-        0
-      );
-
-      const totalAmountWithDiscount = totalAmount - updatedSale.discount;
-
+      // Use stored totals for performance
       const paidAmount = updatedSale.payment
         ? updatedSale.payment.givenAmount || 0
-        : totalAmountWithDiscount;
-
-      const totalItems = updatedSale.saleItems.reduce(
-        (sum, item) => sum + item.quantity,
-        0
-      );
+        : updatedSale.totalAmountWithDiscount;
 
       return {
         ...updatedSale,
-        totalAmount,
-        totalAmountWithDiscount,
         paidAmount,
-        remainingAmount: totalAmountWithDiscount - paidAmount,
-        totalItems,
+        remainingAmount: updatedSale.totalAmountWithDiscount - paidAmount,
         isPaidInCash: !updatedSale.payment,
       };
     },
@@ -657,22 +704,16 @@ export async function getAllSales() {
   });
 
   return filteredSales.map((sale) => {
-    const totalAmount = sale.saleItems.reduce(
-      (sum, item) => sum + item.price * item.quantity,
-      0
-    );
-    const totalAmountWithDiscount = totalAmount - sale.discount;
+    // Use pre-calculated totals from database for performance
+    const totalAmount = sale.totalAmount || 0;
+    const totalAmountWithDiscount = sale.totalAmountWithDiscount || 0;
+    const totalItems = sale.totalItems || 0;
 
     // If no payment recorded, it was paid in cash
     // If payment exists, use the givenAmount (can be 0 for zero-payment credit)
     const paidAmount = sale.payment
       ? sale.payment.givenAmount || 0
       : totalAmountWithDiscount; // Cash payment - full amount paid
-
-    const totalItems = sale.saleItems.reduce(
-      (sum, item) => sum + item.quantity,
-      0
-    );
 
     return {
       ...sale,
@@ -779,20 +820,14 @@ export async function getRecentSales(limit = 50, offset = 0, days = 7) {
   });
 
   const salesWithTotals = filteredSales.map((sale) => {
-    const totalAmount = sale.saleItems.reduce(
-      (sum, item) => sum + item.price * item.quantity,
-      0
-    );
-    const totalAmountWithDiscount = totalAmount - sale.discount;
+    // Use pre-calculated totals from database for performance
+    const totalAmount = sale.totalAmount || 0;
+    const totalAmountWithDiscount = sale.totalAmountWithDiscount || 0;
+    const totalItems = sale.totalItems || 0;
 
     const paidAmount = sale.payment
       ? sale.payment.givenAmount || 0
       : totalAmountWithDiscount;
-
-    const totalItems = sale.saleItems.reduce(
-      (sum, item) => sum + item.quantity,
-      0
-    );
 
     return {
       ...sale,
@@ -909,22 +944,9 @@ export async function getSalesAggregatedByPeriod(
       periodKey = saleDate.getFullYear().toString();
     }
 
-    const totalAmount = sale.saleItems.reduce(
-      (sum, item) => sum + item.price * item.quantity,
-      0
-    );
-    const totalAmountWithDiscount = totalAmount - sale.discount;
-
-    // Calculate profit (revenue - cost)
-    const totalCost = sale.saleItems.reduce((sum, item) => {
-      // All items (products, manual products, services) have their cost stored in boughtPrice
-      const boughtPrice = (item as { boughtPrice?: number }).boughtPrice || 0;
-      
-      
-      return sum + boughtPrice * item.quantity;
-    }, 0);
-
-    const profit = totalAmountWithDiscount - totalCost;
+    // Use pre-calculated totals for performance
+    const totalAmountWithDiscount = sale.totalAmountWithDiscount || 0;
+    const profit = sale.totalProfit || 0;
     
     
 
@@ -1066,25 +1088,13 @@ export async function getSalesSummary(startDate: Date, endDate: Date) {
       return;
     }
 
-    const totalAmount = sale.saleItems.reduce(
-      (sum, item) => sum + item.price * item.quantity,
-      0
-    );
-    const totalAmountWithDiscount = totalAmount - sale.discount;
-
-    // Calculate profit (revenue - cost)
-    const totalCost = sale.saleItems.reduce((sum, item) => {
-      // All items (products, manual products, services) have their cost stored in boughtPrice
-      const boughtPrice = (item as { boughtPrice?: number }).boughtPrice || 0;
-      return sum + boughtPrice * item.quantity;
-    }, 0);
+    // Use pre-calculated totals for performance
+    const totalAmountWithDiscount = sale.totalAmountWithDiscount || 0;
+    const totalItems = sale.totalItems || 0;
 
     totalRevenue += totalAmountWithDiscount;
-    totalProfit += totalAmountWithDiscount - totalCost;
-    totalPurchases += sale.saleItems.reduce(
-      (sum, item) => sum + item.quantity,
-      0
-    );
+    totalProfit += sale.totalProfit || 0;
+    totalPurchases += totalItems;
     totalSales += 1;
   });
 
@@ -1225,19 +1235,13 @@ export async function getSaleById(saleId: string) {
       return null;
     }
 
-    // Calculate totals
-    const totalAmount = sale.saleItems.reduce(
-      (sum, item) => sum + item.price * item.quantity,
-      0
-    );
-    const totalAmountWithDiscount = totalAmount - sale.discount;
+    // Use pre-calculated totals for performance
+    const totalAmount = sale.totalAmount || 0;
+    const totalAmountWithDiscount = sale.totalAmountWithDiscount || 0;
+    const totalItems = sale.totalItems || 0;
     const paidAmount = sale.payment
       ? sale.payment.givenAmount || 0
       : totalAmountWithDiscount;
-    const totalItems = sale.saleItems.reduce(
-      (sum, item) => sum + item.quantity,
-      0
-    );
 
     return {
       ...sale,
@@ -1449,20 +1453,14 @@ export async function searchSales(
   });
 
   const salesWithTotals = filteredSales.map((sale) => {
-    const totalAmount = sale.saleItems.reduce(
-      (sum, item) => sum + item.price * item.quantity,
-      0
-    );
-    const totalAmountWithDiscount = totalAmount - sale.discount;
+    // Use pre-calculated totals for performance
+    const totalAmount = sale.totalAmount || 0;
+    const totalAmountWithDiscount = sale.totalAmountWithDiscount || 0;
+    const totalItems = sale.totalItems || 0;
 
     const paidAmount = sale.payment
       ? sale.payment.givenAmount || 0
       : totalAmountWithDiscount;
-
-    const totalItems = sale.saleItems.reduce(
-      (sum, item) => sum + item.quantity,
-      0
-    );
 
     return {
       ...sale,

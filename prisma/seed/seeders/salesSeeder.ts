@@ -56,7 +56,7 @@ export async function seedSales(prisma: PrismaClient, products: Product[]) {
         () => faker.helpers.arrayElement(clients),
         { probability: 0.7 }
       );
-      const saleItemsCount = faker.number.int({ min: 1, max: 5 });
+      const saleItemsCount = faker.number.int({ min: 2, max: 6 });
       const saleCreatedAt = faker.date.between({
         from: fiveYearsAgo,
         to: new Date(),
@@ -66,6 +66,11 @@ export async function seedSales(prisma: PrismaClient, products: Product[]) {
       salesData.push({
         clientId: client?.id,
         discount: 0, // Will calculate later
+        totalAmount: 0, // Will calculate later
+        totalAmountWithDiscount: 0, // Will calculate later
+        totalItems: 0, // Will calculate later
+        totalCost: 0, // Will calculate later
+        totalProfit: 0, // Will calculate later
         createdAt: saleCreatedAt,
       });
     }
@@ -84,7 +89,7 @@ export async function seedSales(prisma: PrismaClient, products: Product[]) {
     // Process each sale in the batch
     for (let i = 0; i < currentBatchSize; i++) {
       const sale = batchSales[i];
-      const saleItemsCount = faker.number.int({ min: 1, max: 5 });
+      const saleItemsCount = faker.number.int({ min: 2, max: 6 });
 
       // Decide if this sale should include manual products (40% chance)
       const includeManualProducts = faker.datatype.boolean({ probability: 0.4 });
@@ -102,11 +107,16 @@ export async function seedSales(prisma: PrismaClient, products: Product[]) {
       );
 
       // Calculate how many regular products to include
+      // Ensure we always have 2-6 total items
       let regularProductCount = saleItemsCount;
-      if (includeManualProducts)
-        regularProductCount = Math.max(0, regularProductCount - 2);
-      if (includeServices)
-        regularProductCount = Math.max(0, regularProductCount - 1);
+      if (includeManualProducts) {
+        const manualCount = Math.min(2, saleItemsCount - 1); // Max 2 manual products, leave room for at least 1 regular
+        regularProductCount = Math.max(1, saleItemsCount - manualCount);
+      }
+      if (includeServices) {
+        const serviceCount = Math.min(1, saleItemsCount - 1); // Max 1 service, leave room for at least 1 regular
+        regularProductCount = Math.max(1, regularProductCount - serviceCount);
+      }
 
       const saleProducts =
         availableProducts.length > 0
@@ -152,7 +162,8 @@ export async function seedSales(prisma: PrismaClient, products: Product[]) {
 
       // Add manual products if decided (prepare for bulk insert)
       if (includeManualProducts && manualProductsAdded < maxManualProducts) {
-        const manualProductCount = faker.number.int({ min: 1, max: 2 });
+        const remainingSlots = saleItemsCount - usedProductIds.size;
+        const manualProductCount = Math.min(2, Math.max(1, remainingSlots));
         const usedManualProducts = new Set<string>();
 
         for (let j = 0; j < manualProductCount; j++) {
@@ -192,7 +203,8 @@ export async function seedSales(prisma: PrismaClient, products: Product[]) {
 
       // Add services if decided (prepare for bulk insert)
       if (includeServices && servicesAdded < maxServices && services.length > 0) {
-        const serviceCount = faker.number.int({ min: 1, max: 2 });
+        const remainingSlots = saleItemsCount - usedProductIds.size - manualProductsAdded;
+        const serviceCount = Math.min(1, Math.max(1, remainingSlots));
         const selectedServices = faker.helpers.arrayElements(
           services,
           Math.min(serviceCount, services.length)
@@ -322,14 +334,20 @@ export async function seedSales(prisma: PrismaClient, products: Product[]) {
       });
     }
 
-    // Calculate and update discounts for this batch
+    // Calculate and update discounts and pre-calculated totals for this batch
     const salesToUpdate: any[] = [];
     for (const sale of batchSales) {
       const saleItems = await prisma.saleItem.findMany({
         where: { saleId: sale.id },
       });
 
-      const saleTotal = saleItems.reduce(
+      if (saleItems.length === 0) {
+        // Skip sales with no items
+        continue;
+      }
+
+      // Calculate totals
+      const totalAmount = saleItems.reduce(
         (sum, item) => sum + item.price * item.quantity,
         0
       );
@@ -339,19 +357,56 @@ export async function seedSales(prisma: PrismaClient, products: Product[]) {
         max: 0.2,
         fractionDigits: 2,
       });
-      const calculatedDiscount = Math.floor(saleTotal * discountPercentage);
+      const calculatedDiscount = Math.floor(totalAmount * discountPercentage);
+      const totalAmountWithDiscount = totalAmount - calculatedDiscount;
+      
+      const totalItems = saleItems.reduce(
+        (sum, item) => sum + item.quantity,
+        0
+      );
+
+      // Calculate total cost and profit
+      const totalCost = saleItems.reduce((sum, item) => {
+        let boughtPrice = 0;
+        
+        if (item.productId && item.boughtPrice !== undefined && item.boughtPrice !== null) {
+          boughtPrice = item.boughtPrice;
+        } else if (item.manualProductId) {
+          // For manual products, assume 60% margin
+          boughtPrice = Math.floor(item.price * 0.4);
+        } else if (item.serviceId) {
+          // For services, assume 50% margin
+          boughtPrice = Math.floor(item.price * 0.5);
+        }
+        
+        return sum + (boughtPrice * item.quantity);
+      }, 0);
+
+      const totalProfit = totalAmountWithDiscount - totalCost;
 
       salesToUpdate.push({
         id: sale.id,
         discount: calculatedDiscount,
+        totalAmount,
+        totalAmountWithDiscount,
+        totalItems,
+        totalCost,
+        totalProfit,
       });
     }
 
-    // Bulk update discounts
+    // Bulk update discounts and pre-calculated totals
     for (const saleUpdate of salesToUpdate) {
       await prisma.sale.update({
         where: { id: saleUpdate.id },
-        data: { discount: saleUpdate.discount },
+        data: {
+          discount: saleUpdate.discount,
+          totalAmount: saleUpdate.totalAmount,
+          totalAmountWithDiscount: saleUpdate.totalAmountWithDiscount,
+          totalItems: saleUpdate.totalItems,
+          totalCost: saleUpdate.totalCost,
+          totalProfit: saleUpdate.totalProfit,
+        },
       });
     }
 

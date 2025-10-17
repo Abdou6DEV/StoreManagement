@@ -3,8 +3,9 @@ import { SectionCards } from "./components/sectionCards";
 import { ChartBarInteractive } from "./components/chartBarInteractive";
 import { BarChart2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { DashboardProvider } from "../../lib/contexts/dashboardContext";
 
-export default function Dashboard() {
+function DashboardContent() {
   const [showChart, setShowChart] = useState(false);
   const { t } = useTranslation();
 
@@ -31,5 +32,13 @@ export default function Dashboard() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function Dashboard() {
+  return (
+    <DashboardProvider>
+      <DashboardContent />
+    </DashboardProvider>
   );
 }

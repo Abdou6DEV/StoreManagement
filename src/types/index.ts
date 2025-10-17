@@ -26,6 +26,12 @@ export type SaleForHistory = Sale & {
       service?: { name: string } | null;
     }
   >;
+  // Pre-calculated totals for performance
+  totalAmount?: number;
+  totalAmountWithDiscount?: number;
+  totalItems?: number;
+  totalCost?: number;
+  totalProfit?: number;
 };
 
 export type PaymentForHistory = Payment & {
@@ -118,6 +124,8 @@ export interface PaymentWithClient extends Payment {
   sale: {
     id: string;
     createdAt: Date;
+    totalAmount: number;
+    totalAmountWithDiscount: number;
   } | null;
   remainingAmount?: number;
   pendingSaleItems?: string | null;

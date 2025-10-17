@@ -51,6 +51,7 @@ export interface FiltersProps {
 export interface TableHeaderProps {
   viewMode: "product" | "category";
   onViewModeChange: () => void;
+  onCleanUnusedProducts: () => void;
 }
 
 export interface PaginationProps {

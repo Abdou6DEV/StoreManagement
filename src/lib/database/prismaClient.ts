@@ -319,6 +319,8 @@ async function initializePrismaClient() {
             url: databaseUrl,
           },
         },
+        log: ['error', 'warn'],
+        errorFormat: 'pretty',
       });
 
       console.log("✅ Prisma client created");

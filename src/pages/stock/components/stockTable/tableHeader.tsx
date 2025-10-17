@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { Package, ListTree } from "lucide-react";
+import { Package, ListTree, Trash2 } from "lucide-react";
 import { Button } from "../../../../lib/components/button";
 import { Tooltip } from "../../../../lib/components/tooltip";
 import type { TableHeaderProps } from "./types";
@@ -7,6 +7,7 @@ import type { TableHeaderProps } from "./types";
 export const TableHeader = ({
   viewMode,
   onViewModeChange,
+  onCleanUnusedProducts,
 }: TableHeaderProps) => {
   const { t } = useTranslation();
 
@@ -21,6 +22,18 @@ export const TableHeader = ({
         </h1>
       </div>
       <div className="flex items-center gap-3">
+        {viewMode === "product" && (
+          <Tooltip content={t("stock.cleanUnusedProductsTooltip", "Clean unused products that haven't been sold")}>
+            <Button
+              variant="outline"
+              onClick={onCleanUnusedProducts}
+              className="gap-2 text-red-600 border-red-200 hover:bg-red-50 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-950/30"
+            >
+              <Trash2 className="w-4 h-4" />
+              {t("stock.cleanUnusedProducts", "Clean Unused")}
+            </Button>
+          </Tooltip>
+        )}
         <Tooltip
           content={
             viewMode === "product"

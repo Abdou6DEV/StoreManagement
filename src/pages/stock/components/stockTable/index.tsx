@@ -7,6 +7,7 @@ import { useToast } from "../../../../lib/contexts/toastContext";
 import { ConfirmModal } from "../../../../lib/components/modal";
 import { ProductInfoModal } from "../productInfoModal";
 import { EditProductModal } from "../editProductModal";
+import { CleanUnusedProductsModal } from "../../../../lib/components/cleanUnusedProductsModal";
 import { StockRow } from "./stockRow";
 import { TableHeader } from "./tableHeader";
 import { Filters } from "./filters";
@@ -49,6 +50,7 @@ export const StockTable = () => {
     loading: false,
   });
   const [viewMode, setViewMode] = useState<"product" | "category">("product");
+  const [cleanupModalOpen, setCleanupModalOpen] = useState(false);
   const hasMarkedAsSeenRef = useRef(false);
 
   useEffect(() => {
@@ -352,11 +354,21 @@ export const StockTable = () => {
     setCurrentPage(page);
   };
 
+  const handleCleanUnusedProducts = () => {
+    setCleanupModalOpen(true);
+  };
+
+  const handleCleanupSuccess = () => {
+    refetchProducts();
+    showToast(t("stock.toastDeleteSuccess", "Products cleaned up successfully"), "success");
+  };
+
   return (
     <section className="bg-card border border-border rounded-xl shadow-sm p-6 space-y-5">
       <TableHeader
         viewMode={viewMode}
         onViewModeChange={handleViewModeChange}
+        onCleanUnusedProducts={handleCleanUnusedProducts}
       />
 
       <Filters
@@ -536,6 +548,12 @@ export const StockTable = () => {
         }
         productData={productInfo.data}
         loading={productInfo.loading}
+      />
+
+      <CleanUnusedProductsModal
+        open={cleanupModalOpen}
+        onOpenChange={setCleanupModalOpen}
+        onSuccess={handleCleanupSuccess}
       />
     </section>
   );

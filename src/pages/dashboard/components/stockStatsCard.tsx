@@ -3,9 +3,10 @@
 import * as React from "react"
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
-import { TrendingUp, PackageIcon, AlertTriangleIcon, DollarSignIcon, ShoppingCartIcon, BarChart3, PieChart as PieChartIcon } from "lucide-react"
+import { TrendingUp, PackageIcon, BarChart3, PieChart as PieChartIcon } from "lucide-react"
 import { Pie, PieChart, Tooltip, ResponsiveContainer } from "recharts"
 import { Tooltip as UITooltip } from "../../../lib/components/tooltip"
+import { useSales, useProducts, useLowStockThreshold, useDashboardLoading } from "../../../lib/contexts/dashboardContext"
 
 // Using div elements with card styling like other components in the project
 
@@ -92,6 +93,11 @@ const CustomTooltip = ({ active, payload, totalItemsSold, t }: {
 
 export function StockStatsCard() {
   const { t } = useTranslation()
+  const sales = useSales();
+  const products = useProducts();
+  const lowStockThreshold = useLowStockThreshold();
+  const dashboardLoading = useDashboardLoading();
+  
   const [viewMode, setViewMode] = useState<ViewMode>('categories')
   const [stockStats, setStockStats] = useState<StockStats>({
     totalProducts: 0,
@@ -109,15 +115,15 @@ export function StockStatsCard() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    async function fetchStockStats() {
+    // Only process data when dashboard data is loaded
+    if (dashboardLoading) {
+      setLoading(true);
+      return;
+    }
+    
+    function processStockStats() {
       try {
-        const [products, sales, lowStockThreshold] = await Promise.all([
-          window.api.database.products.getAll(),
-          window.api.database.sales.getAll(),
-          window.api.database.options.get("lowStockThreshold")
-        ])
-
-        const threshold = lowStockThreshold ? Number(lowStockThreshold) : 5
+        const threshold = lowStockThreshold
         const lowStockItems = products.filter(
           (p: { quantity: number }) => p.quantity <= threshold && p.quantity > 0
         ).length
@@ -150,17 +156,16 @@ export function StockStatsCard() {
          const productsWithoutCodebar = products.filter((p: { codebar?: string }) => !p.codebar || p.codebar.trim() === '').length
 
         // Calculate top 5 categories by items sold
+        // Note: This requires saleItems data, so it may not work if products are deleted
         const categorySales: { [key: string]: number } = {}
         
-        sales.forEach((sale: { saleItems?: Array<{ product?: { categoryName?: string }; quantity: number }> }) => {
-          if (sale.saleItems) {
-            sale.saleItems.forEach((item: { product?: { categoryName?: string }; quantity: number }) => {
-              if (item.product && item.product.categoryName) {
-                const category = item.product.categoryName
-                categorySales[category] = (categorySales[category] || 0) + item.quantity
-              }
-            })
-          }
+        sales.forEach((sale) => {
+          sale.saleItems.forEach((item) => {
+            if (item.product && item.product.categoryName) {
+              const category = item.product.categoryName
+              categorySales[category] = (categorySales[category] || 0) + item.quantity
+            }
+          })
         })
 
         // Sort categories by items sold and take top 5
@@ -189,10 +194,11 @@ export function StockStatsCard() {
         }
 
         // Calculate top 10 products sold
+        // Note: This requires saleItems data, so it may not work if products are deleted
         const productSales: { [key: string]: { name: string; sold: number; category: string } } = {}
         
-        sales.forEach((sale: { saleItems: Array<{ product?: { id: string; name: string; categoryName?: string }; quantity: number }> }) => {
-          sale.saleItems.forEach((item: { product?: { id: string; name: string; categoryName?: string }; quantity: number }) => {
+        sales.forEach((sale) => {
+          sale.saleItems.forEach((item) => {
             if (item.product) {
               const productId = item.product.id
               if (!productSales[productId]) {
@@ -259,14 +265,14 @@ export function StockStatsCard() {
           topProducts
         })
       } catch (error) {
-        console.error("Error fetching stock stats:", error)
+        console.error("Error processing stock stats:", error)
       } finally {
         setLoading(false)
       }
     }
 
-    fetchStockStats()
-  }, [])
+    processStockStats()
+  }, [dashboardLoading, sales, products, lowStockThreshold])
 
   const formatCurrency = (amount: number) =>
     `${amount.toLocaleString()} ${t("currency")}`

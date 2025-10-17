@@ -68,21 +68,20 @@ export async function getPaymentsByClientWithInfo(clientId: string) {
   return payments.map((payment: any) => {
     let remainingAmount = 0;
     
-    if (payment.sale && payment.sale.saleItems) {
-      // Calculate total sale amount
-      const totalAmount = payment.sale.saleItems.reduce(
-        (sum: number, item: any) => sum + item.price * item.quantity,
-        0
-      );
+    if (payment.sale) {
+      // Use pre-calculated total amount for performance
+      const totalAmount = payment.sale.totalAmount || 0;
+      const totalAmountWithDiscount = payment.sale.totalAmountWithDiscount || 0;
       
-      // For CREDIT payments, use creditAmount if available (includes discount), otherwise calculate from sale items
+      // For CREDIT payments, use creditAmount if available (includes discount), otherwise use totalAmountWithDiscount
       // For VERSEMENT payments, remaining amount = givenAmount (what we owe them)
       if (payment.type === "CREDIT") {
         const creditAmount = (payment as any).creditAmount;
         if (creditAmount !== undefined && creditAmount !== null) {
           remainingAmount = creditAmount - payment.givenAmount;
         } else {
-          remainingAmount = totalAmount - payment.givenAmount;
+          // Use pre-calculated total with discount
+          remainingAmount = totalAmountWithDiscount - payment.givenAmount;
         }
       } else {
         remainingAmount = payment.givenAmount;
@@ -140,7 +139,11 @@ export async function getAllPaymentsWithClientInfo() {
         },
       },
       sale: {
-        include: {
+        select: {
+          id: true,
+          createdAt: true,
+          totalAmount: true,
+          totalAmountWithDiscount: true,
           saleItems: {
             select: {
               price: true,
@@ -157,21 +160,20 @@ export async function getAllPaymentsWithClientInfo() {
   return payments.map((payment: any) => {
     let remainingAmount = 0;
     
-    if (payment.sale && payment.sale.saleItems) {
-      // Calculate total sale amount
-      const totalAmount = payment.sale.saleItems.reduce(
-        (sum: number, item: any) => sum + item.price * item.quantity,
-        0
-      );
+    if (payment.sale) {
+      // Use pre-calculated total amount for performance
+      const totalAmount = payment.sale.totalAmount || 0;
+      const totalAmountWithDiscount = payment.sale.totalAmountWithDiscount || 0;
       
-      // For CREDIT payments, use creditAmount if available (includes discount), otherwise calculate from sale items
+      // For CREDIT payments, use creditAmount if available (includes discount), otherwise use totalAmountWithDiscount
       // For VERSEMENT payments, remaining amount = givenAmount (what we owe them)
       if (payment.type === "CREDIT") {
         const creditAmount = (payment as any).creditAmount;
         if (creditAmount !== undefined && creditAmount !== null) {
           remainingAmount = creditAmount - payment.givenAmount;
         } else {
-          remainingAmount = totalAmount - payment.givenAmount;
+          // Use pre-calculated total with discount
+          remainingAmount = totalAmountWithDiscount - payment.givenAmount;
         }
       } else {
         remainingAmount = payment.givenAmount;

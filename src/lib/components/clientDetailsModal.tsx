@@ -105,9 +105,9 @@ export const ClientDetailsModal = ({
       
       console.log("Fetched data:", { salesData, paymentsData, servicesData });
 
-      // Calculate totals
+      // Use pre-calculated totals for performance
       const totalSpent = salesData.reduce((sum: number, sale: any) => 
-        sum + sale.saleItems.reduce((itemSum: number, item: any) => itemSum + (item.price * item.quantity), 0), 0
+        sum + (sale.totalAmountWithDiscount || 0), 0
       );
 
       const credits = paymentsData.filter((p: any) => p.type === "CREDIT");
@@ -369,7 +369,7 @@ export const ClientDetailsModal = ({
                           <td
                             className={`px-4 py-3 text-sm font-medium text-green-600 ${isRTL ? "text-right" : "text-left"}`}
                           >
-                            {formatCurrency(sale.saleItems.reduce((sum, item) => sum + (item.price * item.quantity), 0))}
+                            {formatCurrency(sale.totalAmountWithDiscount || 0)}
                           </td>
                         </tr>
                       ))}

@@ -12,6 +12,9 @@ import {
   createProductWithPurchase,
   updateProductWithPurchase,
   generateUniqueBarcode,
+  getUnusedProducts,
+  cleanupUnusedProducts,
+  deleteMultipleProducts,
 } from "../../lib/database/products";
 import {
   getAllClients,
@@ -164,6 +167,23 @@ export function setupDatabaseHandlers() {
   ipcMain.handle("db:products:generateUniqueBarcode", async () => {
     return await generateUniqueBarcode();
   });
+
+// Product cleanup handlers
+ipcMain.handle("db:products:getUnused", async () => {
+  return await getUnusedProducts();
+});
+
+ipcMain.handle("db:products:cleanupUnused", async () => {
+  return await cleanupUnusedProducts();
+});
+
+ipcMain.handle("db:products:getUnusedProducts", async (_, periodMonths: number) => {
+  return await getUnusedProducts(periodMonths);
+});
+
+ipcMain.handle("db:products:deleteMultipleProducts", async (_, productIds: string[]) => {
+  return await deleteMultipleProducts(productIds);
+});
 
   // Categories handlers
   ipcMain.handle("db:categories:getAll", async () => {

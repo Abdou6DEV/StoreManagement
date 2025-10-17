@@ -36,24 +36,9 @@ const SaleHeader: React.FC<SaleHeaderProps> = ({ sale }) => {
     return `${amount.toLocaleString()} ${t("currency")}`;
   };
 
-  const totalAmountWithDiscount =
-    sale.saleItems.reduce((sum, item) => sum + item.price * item.quantity, 0) -
-    sale.discount;
-
-  // Calculate profit using the correct method
-  const saleProfit = (() => {
-    const revenue =
-      sale.saleItems.reduce(
-        (itemSum, item) => itemSum + item.price * item.quantity,
-        0
-      ) - sale.discount;
-    const cost = sale.saleItems.reduce((itemSum, item) => {
-      // All items (products, manual products, services) have their cost stored in boughtPrice
-      const boughtPrice = (item as { boughtPrice?: number }).boughtPrice || 0;
-      return itemSum + boughtPrice * item.quantity;
-    }, 0);
-    return revenue - cost;
-  })();
+  // Use pre-calculated totals for performance
+  const totalAmountWithDiscount = sale.totalAmountWithDiscount || 0;
+  const saleProfit = sale.totalProfit || 0;
 
   // Get payment status badge
   const getPaymentStatusBadge = () => {

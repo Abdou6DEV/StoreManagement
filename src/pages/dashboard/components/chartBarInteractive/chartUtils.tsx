@@ -1,8 +1,8 @@
 import * as React from "react";
 import { useTranslation } from "react-i18next";
 import { ChartDataState } from "./types";
-import { Sale } from "../../../../types";
 import { Client } from "@prisma/client";
+import { useSales, useClients, useDashboardLoading } from "../../../../lib/contexts/dashboardContext";
 
 export function getPeriodLabel(
   type: "day" | "month" | "year",
@@ -22,18 +22,25 @@ export function getPeriodLabel(
 
 export function useChartData() {
   const { t, i18n } = useTranslation();
+  const sales = useSales();
+  const clients = useClients();
+  const dashboardLoading = useDashboardLoading();
+  
   const [chartData, setChartData] = React.useState<ChartDataState>({
     "1m": [],
     "12m": [],
     years: [],
   });
+  const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
-    async function fetchData() {
-      const [sales, clients] = await Promise.all([
-        window.api.database.sales.getAll(),
-        window.api.database.clients.getAll(),
-      ]);
+    // Only process data when dashboard data is loaded
+    if (dashboardLoading) {
+      setLoading(true);
+      return;
+    }
+    
+    function processData() {
 
       // --- 1m: Last 30 days ---
       const days = Array.from({ length: 30 }, (_, i) => {
@@ -43,7 +50,7 @@ export function useChartData() {
       });
 
       const daily = days.map((date, idx) => {
-        const daySales = sales.filter((s: Sale) => {
+        const daySales = sales.filter((s) => {
           const d = new Date(s.createdAt);
           return (
             d.getFullYear() === date.getFullYear() &&
@@ -62,21 +69,12 @@ export function useChartData() {
         });
 
         const profits = daySales.reduce(
-          (sum: number, s: Sale) => {
-            const revenue = s.totalAmountWithDiscount || 0;
-            const cost = s.saleItems?.reduce((itemSum: number, item: any) => {
-              // All items (products, manual products, services) have their cost stored in boughtPrice
-              const boughtPrice = item.boughtPrice || 0;
-              return itemSum + boughtPrice * item.quantity;
-            }, 0) || 0;
-            
-            return sum + (revenue - cost);
-          },
+          (sum: number, s) => sum + (s.totalProfit || 0),
           0,
         );
 
         const salesTotal = daySales.reduce(
-          (sum: number, s: Sale) => sum + (s.totalAmountWithDiscount || 0),
+          (sum: number, s) => sum + (s.totalAmountWithDiscount || 0),
           0,
         );
 
@@ -93,7 +91,7 @@ export function useChartData() {
       const months = Array.from({ length: 12 }, (_, i) => i);
 
       const monthly = months.map((monthIdx) => {
-        const monthSales = sales.filter((s: Sale) => {
+        const monthSales = sales.filter((s) => {
           const d = new Date(s.createdAt);
           return (
             d.getFullYear() === now.getFullYear() && d.getMonth() === monthIdx
@@ -108,21 +106,12 @@ export function useChartData() {
         });
 
         const profits = monthSales.reduce(
-          (sum: number, s: Sale) => {
-            const revenue = s.totalAmountWithDiscount || 0;
-            const cost = s.saleItems?.reduce((itemSum: number, item: any) => {
-              // All items (products, manual products, services) have their cost stored in boughtPrice
-              const boughtPrice = item.boughtPrice || 0;
-              return itemSum + boughtPrice * item.quantity;
-            }, 0) || 0;
-            
-            return sum + (revenue - cost);
-          },
+          (sum: number, s) => sum + (s.totalProfit || 0),
           0,
         );
 
         const salesTotal = monthSales.reduce(
-          (sum: number, s: Sale) => sum + (s.totalAmountWithDiscount || 0),
+          (sum: number, s) => sum + (s.totalAmountWithDiscount || 0),
           0,
         );
 
@@ -139,7 +128,7 @@ export function useChartData() {
       const years = Array.from({ length: 6 }, (_, i) => startYear + i);
 
       const yearly = years.map((year) => {
-        const yearSales = sales.filter((s: Sale) => {
+        const yearSales = sales.filter((s) => {
           const d = new Date(s.createdAt);
           return d.getFullYear() === year;
         });
@@ -150,21 +139,12 @@ export function useChartData() {
         });
 
         const profits = yearSales.reduce(
-          (sum: number, s: Sale) => {
-            const revenue = s.totalAmountWithDiscount || 0;
-            const cost = s.saleItems?.reduce((itemSum: number, item: any) => {
-              // All items (products, manual products, services) have their cost stored in boughtPrice
-              const boughtPrice = item.boughtPrice || 0;
-              return itemSum + boughtPrice * item.quantity;
-            }, 0) || 0;
-            
-            return sum + (revenue - cost);
-          },
+          (sum: number, s) => sum + (s.totalProfit || 0),
           0,
         );
 
         const salesTotal = yearSales.reduce(
-          (sum: number, s: Sale) => sum + (s.totalAmountWithDiscount || 0),
+          (sum: number, s) => sum + (s.totalAmountWithDiscount || 0),
           0,
         );
 
@@ -177,12 +157,13 @@ export function useChartData() {
       });
 
       setChartData({ "1m": daily, "12m": monthly, years: yearly });
+      setLoading(false);
     }
 
-    fetchData();
-  }, [i18n.language]);
+    processData();
+  }, [dashboardLoading, sales, clients, i18n.language]);
 
-  return chartData;
+  return { chartData, loading };
 }
 
 export function useChartConfigs() {

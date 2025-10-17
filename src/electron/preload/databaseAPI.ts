@@ -26,6 +26,10 @@ export const databaseAPI = {
       newSellingPrice?: number;
     }) => ipcRenderer.invoke("db:products:updateWithPurchase", data),
     generateUniqueBarcode: () => ipcRenderer.invoke("db:products:generateUniqueBarcode"),
+        getUnused: () => ipcRenderer.invoke("db:products:getUnused"),
+        cleanupUnused: () => ipcRenderer.invoke("db:products:cleanupUnused"),
+        getUnusedProducts: (periodMonths: number) => ipcRenderer.invoke("db:products:getUnusedProducts", periodMonths),
+        deleteMultipleProducts: (productIds: string[]) => ipcRenderer.invoke("db:products:deleteMultipleProducts", productIds),
   },
   categories: {
     getAll: () => ipcRenderer.invoke("db:categories:getAll"),
