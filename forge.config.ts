@@ -17,7 +17,7 @@ const config: ForgeConfig = {
       /^\/prisma\/seed\//,
       /^\/scripts\//
     ],
-    icon: "./public/icon-256.png"
+    icon: "./public/reda_tech_icon.ico"
   },
   rebuildConfig: {},
   makers: [

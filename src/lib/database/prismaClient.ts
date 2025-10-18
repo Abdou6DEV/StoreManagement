@@ -81,6 +81,11 @@ async function createTablesManually(client: any) {
       "id" TEXT PRIMARY KEY,
       "clientId" TEXT,
       "discount" INTEGER NOT NULL DEFAULT 0,
+      "totalAmount" INTEGER NOT NULL DEFAULT 0,
+      "totalAmountWithDiscount" INTEGER NOT NULL DEFAULT 0,
+      "totalItems" INTEGER NOT NULL DEFAULT 0,
+      "totalCost" INTEGER NOT NULL DEFAULT 0,
+      "totalProfit" INTEGER NOT NULL DEFAULT 0,
       "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
       "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
     )`,
@@ -215,6 +220,33 @@ async function createTablesManually(client: any) {
       console.error("❌ Failed to create table:", tableError);
       console.error("❌ SQL:", sql);
       // Continue with other tables
+    }
+  }
+
+  // Create indexes for performance
+  const indexes = [
+    `CREATE INDEX IF NOT EXISTS "idx_sale_clientId" ON "Sale"("clientId")`,
+    `CREATE INDEX IF NOT EXISTS "idx_sale_createdAt" ON "Sale"("createdAt")`,
+    `CREATE INDEX IF NOT EXISTS "idx_sale_clientId_createdAt" ON "Sale"("clientId", "createdAt")`,
+    `CREATE INDEX IF NOT EXISTS "idx_product_categoryName" ON "Product"("categoryName")`,
+    `CREATE INDEX IF NOT EXISTS "idx_product_name" ON "Product"("name")`,
+    `CREATE INDEX IF NOT EXISTS "idx_saleitem_productId" ON "SaleItem"("productId")`,
+    `CREATE INDEX IF NOT EXISTS "idx_saleitem_saleId" ON "SaleItem"("saleId")`,
+    `CREATE INDEX IF NOT EXISTS "idx_saleitem_serviceId" ON "SaleItem"("serviceId")`,
+    `CREATE INDEX IF NOT EXISTS "idx_serviceappointment_isCompleted" ON "ServiceAppointment"("isCompleted")`,
+    `CREATE INDEX IF NOT EXISTS "idx_serviceappointment_completedAt" ON "ServiceAppointment"("completedAt")`,
+    `CREATE INDEX IF NOT EXISTS "idx_serviceappointment_clientId" ON "ServiceAppointment"("clientId")`,
+    `CREATE INDEX IF NOT EXISTS "idx_service_serviceAppointmentId" ON "Service"("serviceAppointmentId")`
+  ];
+
+  for (const sql of indexes) {
+    try {
+      console.log("🔍 Creating index:", sql);
+      await client.$executeRawUnsafe(sql);
+      console.log("✅ Created index");
+    } catch (indexError) {
+      console.error("❌ Failed to create index:", indexError);
+      // Continue with other indexes
     }
   }
   

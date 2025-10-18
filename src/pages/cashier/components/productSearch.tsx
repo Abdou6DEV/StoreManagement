@@ -23,6 +23,7 @@ export default function ProductSearch({ onAdd, refreshKey }: Props) {
     catIdx: number;
     itemIdx: number;
   }>({ catIdx: 0, itemIdx: 0 });
+  const [isFocused, setIsFocused] = useState(false);
   
 
   const inputRef = useRef<HTMLInputElement>(null);
@@ -255,14 +256,30 @@ export default function ProductSearch({ onAdd, refreshKey }: Props) {
 
   return (
     <div className="w-full relative" ref={dropdownRef}>
-      <Input
-        ref={inputRef}
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        onKeyDown={handleKeyDown}
-        placeholder={t("cashier.typeOrScan", "Type name or scan barcode...")}
-        className="text-lg px-5 py-3 rounded-xl border-muted shadow focus:ring-2 focus:ring-primary bg-background"
-      />
+      <div className="relative flex items-center">
+        {/* Status Indicator */}
+        <div className="absolute left-3 z-10 flex items-center">
+          <div 
+            className={`w-2 h-2 rounded-full transition-all duration-200 ${
+              isFocused 
+                ? 'bg-green-400 shadow-sm' 
+                : 'bg-red-500'
+            }`}
+            title={isFocused ? t("cashier.scannerReady", "Scanner ready") : t("cashier.scannerNotReady", "Scanner not ready")}
+          />
+        </div>
+        
+        <Input
+          ref={inputRef}
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          onKeyDown={handleKeyDown}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
+          placeholder={t("cashier.typeOrScan", "Type name or scan barcode...")}
+          className="text-lg pl-10 pr-5 py-3 rounded-xl border-muted shadow focus:ring-2 focus:ring-primary bg-background"
+        />
+      </div>
 
       {showSuggestions && grouped.length > 0 && (
         <div
