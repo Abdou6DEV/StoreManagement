@@ -34,6 +34,95 @@ export const ReceiptConfig: React.FC = () => {
     showVersement: false,
     showClient: true,
   });
+  const [receiptLanguage, setReceiptLanguage] = useState<"fr" | "en" | "ar">("fr");
+
+  // Receipt translations
+  const receiptTranslations = {
+    fr: {
+      address: "Adresse",
+      phone: "Téléphone",
+      date: "Date",
+      time: "Heure",
+      item: "ARTICLE",
+      qty: "QTÉ",
+      price: "PRIX",
+      total: "TOTAL",
+      client: "Client",
+      discount: "Remise",
+      subtotal: "Sous-total",
+      finalTotal: "Total",
+      payment: "Paiement",
+      type: "Type",
+      credit: "Crédit",
+      versement: "Versement",
+      amountPaid: "Montant Payé",
+      dueDate: "Date d'Échéance",
+      remaining: "Restant",
+      currency: "DA",
+      thankYou: "Merci pour votre achat!",
+      comeAgain: "Revenez nous voir",
+      appreciate: "Nous apprécions votre confiance",
+      receiptId: "ID",
+      storeManagement: "Système de Gestion de Magasin",
+      contact: "Contact"
+    },
+    en: {
+      address: "Address",
+      phone: "Phone",
+      date: "Date",
+      time: "Time",
+      item: "ITEM",
+      qty: "QTY",
+      price: "PRICE",
+      total: "TOTAL",
+      client: "Client",
+      discount: "Discount",
+      subtotal: "Subtotal",
+      finalTotal: "Total",
+      payment: "Payment",
+      type: "Type",
+      credit: "Credit",
+      versement: "Installment",
+      amountPaid: "Amount Paid",
+      dueDate: "Due Date",
+      remaining: "Remaining",
+      currency: "DA",
+      thankYou: "Thank you for your purchase!",
+      comeAgain: "Please come again",
+      appreciate: "We appreciate your business",
+      receiptId: "ID",
+      storeManagement: "Store Management System",
+      contact: "Contact"
+    },
+    ar: {
+      address: "العنوان",
+      phone: "الهاتف",
+      date: "التاريخ",
+      time: "الوقت",
+      item: "المادة",
+      qty: "الكمية",
+      price: "السعر",
+      total: "المجموع",
+      client: "العميل",
+      discount: "الخصم",
+      subtotal: "المجموع الفرعي",
+      finalTotal: "المجموع النهائي",
+      payment: "الدفع",
+      type: "النوع",
+      credit: "الائتمان",
+      versement: "التقسيط",
+      amountPaid: "المبلغ المدفوع",
+      dueDate: "تاريخ الاستحقاق",
+      remaining: "المتبقي",
+      currency: "دج",
+      thankYou: "شكراً لشرائك!",
+      comeAgain: "نرجو زيارتنا مرة أخرى",
+      appreciate: "نقدر ثقتكم بنا",
+      receiptId: "الرقم",
+      storeManagement: "نظام إدارة المتجر",
+      contact: "الاتصال"
+    }
+  };
 
   // Generate preview receipt
   const generatePreviewReceipt = () => {
@@ -59,12 +148,12 @@ export const ReceiptConfig: React.FC = () => {
 
     const allPhones = [storePhone, ...phoneNumbers].filter(phone => phone.trim() !== "");
     const phoneDisplay = allPhones.length > 0 
-      ? allPhones.map(phone => `Phone: ${phone}`).join('<br>')
-      : "Phone: +1234567890";
+      ? allPhones.map(phone => `${receiptTranslations[receiptLanguage].phone}: ${phone}`).join('<br>')
+      : `${receiptTranslations[receiptLanguage].phone}: +1234567890`;
 
     const storeInfo = {
       name: storeName || "Store Management",
-      address: storeAddress ? `Address: ${storeAddress}` : "Address: Your Store Address",
+      address: storeAddress ? `${receiptTranslations[receiptLanguage].address}: ${storeAddress}` : `${receiptTranslations[receiptLanguage].address}: Your Store Address`,
       phone: phoneDisplay,
     };
 
@@ -75,48 +164,123 @@ export const ReceiptConfig: React.FC = () => {
           <meta charset="utf-8">
           <title>Receipt Preview</title>
           <style>
-            body {
+            * {
               margin: 0;
-              padding: 20px;
+              padding: 0;
+              box-sizing: border-box;
+            }
+            html, body {
+              margin: 0;
+              padding: 0;
+              width: 100%;
+              height: 100%;
               font-family: 'Courier New', monospace;
               background: #f5f5f5;
             }
+            @page {
+              size: 70mm auto;
+              margin: 0;
+              padding: 0;
+            }
             .receipt {
-              width: 80mm;
-              max-width: 302px;
-              margin: 0 auto;
+              width: 70mm;
+              max-width: 70mm;
+              margin: 0;
               background: white;
-              border: 1px solid #ccc;
-              border-radius: 8px;
-              padding: 16px;
-              box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+              border: none;
+              border-radius: 0;
+              padding: 4px;
+              box-shadow: none;
               font-size: 12px;
+            }
+            /* RTL Support for Arabic */
+            .receipt[dir="rtl"] {
+              direction: rtl;
+            }
+            .receipt[dir="rtl"] .header {
+              text-align: center;
+            }
+            .receipt[dir="rtl"] .store-name {
+              text-align: center;
+            }
+            .receipt[dir="rtl"] .item-name {
+              text-align: right;
+            }
+            .receipt[dir="rtl"] .item-qty {
+              text-align: center;
+            }
+            .receipt[dir="rtl"] .item-price {
+              text-align: right;
+            }
+            .receipt[dir="rtl"] .item-total {
+              text-align: right;
+            }
+            .receipt[dir="rtl"] .header-item-name {
+              text-align: right;
+            }
+            .receipt[dir="rtl"] .header-qty {
+              text-align: center;
+            }
+            .receipt[dir="rtl"] .header-price {
+              text-align: right;
+            }
+            .receipt[dir="rtl"] .header-total {
+              text-align: right;
+            }
+            .receipt[dir="rtl"] .receipt-id {
+              text-align: center;
+            }
+            .receipt[dir="rtl"] .welcome {
+              text-align: center;
+            }
+            .receipt[dir="rtl"] .watermark {
+              text-align: right;
+            }
+            /* Fix table layout for RTL - reverse column order */
+            .receipt[dir="rtl"] .item {
+              direction: rtl;
+            }
+            .receipt[dir="rtl"] .items-header {
+              direction: rtl;
+            }
+            /* Keep text direction LTR for numbers and prices */
+            .receipt[dir="rtl"] .item-qty,
+            .receipt[dir="rtl"] .item-price,
+            .receipt[dir="rtl"] .item-total,
+            .receipt[dir="rtl"] .header-qty,
+            .receipt[dir="rtl"] .header-price,
+            .receipt[dir="rtl"] .header-total {
+              direction: ltr;
             }
             .header {
               text-align: center;
-              margin-bottom: 15px;
+              margin-bottom: 1px;
+              margin-top: 0;
             }
             .store-name {
-              font-size: 20px;
+              font-size: 36px;
               font-weight: 900;
-              margin-bottom: 10px;
+              margin-bottom: 1px;
+              margin-top: 0;
+              padding-top: 0;
               color: #000;
-              letter-spacing: 0.5px;
+              letter-spacing: 1px;
+              text-shadow: 1px 1px 0px #000;
             }
             .store-info {
               font-size: 12px;
-              margin-bottom: 6px;
+              margin-bottom: 2px;
               color: #333;
-              font-weight: 600;
+              font-weight: 900;
             }
             .receipt-info {
-              font-size: 11px;
-              margin-bottom: 10px;
+              font-size: 12px;
+              margin-bottom: 2px;
               color: #000;
             }
             .client-info {
-              margin-bottom: 10px;
-              font-size: 11px;
+              margin-bottom: 2px;
+              font-size: 12px;
               color: #000;
             }
             .divider {
@@ -124,14 +288,14 @@ export const ReceiptConfig: React.FC = () => {
               margin: 10px 0;
             }
             .items {
-              margin-bottom: 10px;
+              margin-bottom: 2px;
             }
             .item {
               display: flex;
               justify-content: space-between;
               align-items: flex-start;
-              margin-bottom: 6px;
-              font-size: 11px;
+              margin-bottom: 2px;
+              font-size: 12px;
               line-height: 1.2;
               min-height: 16px;
             }
@@ -148,7 +312,7 @@ export const ReceiptConfig: React.FC = () => {
               text-align: center;
               width: 20px;
               margin-right: 12px;
-              font-weight: bold;
+              font-weight: 900;
               color: #000;
             }
             .item-price {
@@ -160,15 +324,15 @@ export const ReceiptConfig: React.FC = () => {
             .item-total {
               text-align: right;
               width: 45px;
-              font-weight: bold;
+              font-weight: 900;
               color: #000;
             }
             .items-header {
               display: flex;
               justify-content: space-between;
               margin-bottom: 8px;
-              font-size: 11px;
-              font-weight: bold;
+              font-size: 12px;
+              font-weight: 900;
               border-bottom: 1px solid #000;
               padding-bottom: 4px;
               color: #000;
@@ -189,13 +353,13 @@ export const ReceiptConfig: React.FC = () => {
             }
             .totals {
               font-size: 12px;
-              font-weight: bold;
+              font-weight: 900;
               color: #000;
             }
             .total-row {
               display: flex;
               justify-content: space-between;
-              margin-bottom: 4px;
+              margin-bottom: 2px;
             }
             .receipt-id {
               text-align: center;
@@ -204,7 +368,7 @@ export const ReceiptConfig: React.FC = () => {
               border-top: 1px solid #000;
             }
             .receipt-id-text {
-              font-size: 10px;
+              font-size: 12px;
               margin-top: 3px;
               color: #000;
             }
@@ -212,12 +376,12 @@ export const ReceiptConfig: React.FC = () => {
               text-align: center;
               margin-top: 8px;
               font-size: 12px;
-              font-weight: bold;
+              font-weight: 900;
               color: #000;
             }
             .payment-info {
               margin-top: 10px;
-              font-size: 11px;
+              font-size: 12px;
               color: #000;
             }
             .watermark {
@@ -227,13 +391,13 @@ export const ReceiptConfig: React.FC = () => {
               border-top: 1px dashed #000;
               font-size: 8px;
               color: #000;
-              font-weight: bold;
+              font-weight: 900;
               line-height: 1.2;
             }
           </style>
         </head>
         <body>
-          <div class="receipt">
+          <div class="receipt"${receiptLanguage === "ar" ? ' dir="rtl"' : ''}>
             <!-- Store Header -->
             <div class="header">
               <div class="store-name">${storeInfo.name}</div>
@@ -243,22 +407,22 @@ export const ReceiptConfig: React.FC = () => {
 
             <!-- Receipt Info -->
             <div class="receipt-info">
-              <div>Date: ${new Date().toLocaleDateString()}</div>
-              <div>Time: ${new Date().toLocaleTimeString()}</div>
+              <div>${receiptTranslations[receiptLanguage].date}: ${new Date().toLocaleDateString()}</div>
+              <div>${receiptTranslations[receiptLanguage].time}: ${new Date().toLocaleTimeString()}</div>
             </div>
 
             <!-- Client Info -->
-            ${previewOptions.showClient ? '<div class="client-info">Client: Sample Customer</div>' : ''}
+            ${previewOptions.showClient ? `<div class="client-info">${receiptTranslations[receiptLanguage].client}: Sample Customer</div>` : ''}
 
             <div class="divider"></div>
 
             <!-- Items -->
             <div class="items">
               <div class="items-header">
-                <div class="item-name">ITEM</div>
-                <div class="header-qty">QTY</div>
-                <div class="header-price">PRICE</div>
-                <div class="header-total">TOTAL</div>
+                <div class="item-name">${receiptTranslations[receiptLanguage].item}</div>
+                <div class="header-qty">${receiptTranslations[receiptLanguage].qty}</div>
+                <div class="header-price">${receiptTranslations[receiptLanguage].price}</div>
+                <div class="header-total">${receiptTranslations[receiptLanguage].total}</div>
               </div>
               ${sampleCart.map(item => `
                 <div class="item">
@@ -275,18 +439,18 @@ export const ReceiptConfig: React.FC = () => {
             <!-- Totals -->
             <div class="totals">
               <div class="total-row">
-                <span>Subtotal:</span>
+                <span>${receiptTranslations[receiptLanguage].subtotal}:</span>
                 <span>${total.toLocaleString()} DA</span>
               </div>
               ${discount > 0 ? `
                 <div class="total-row">
-                  <span>Discount:</span>
+                  <span>${receiptTranslations[receiptLanguage].discount}:</span>
                   <span>-${discount.toLocaleString()} DA</span>
                 </div>
               ` : ''}
               ${discount > 0 || previewOptions.showCredit || previewOptions.showVersement ? `
                 <div class="total-row">
-                  <span>New Total:</span>
+                  <span>${receiptTranslations[receiptLanguage].finalTotal}:</span>
                   <span>${finalTotal.toLocaleString()} DA</span>
                 </div>
               ` : ''}
@@ -296,10 +460,10 @@ export const ReceiptConfig: React.FC = () => {
             ${(previewOptions.showCredit || previewOptions.showVersement) ? `
               <div class="payment-info">
                 <div class="divider"></div>
-                <div>Payment Type: ${previewOptions.showCredit ? 'Credit' : 'Versement'}</div>
-                <div>Amount Paid: 30.00 DA</div>
-                <div>Due Date: ${new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString()}</div>
-                <div>Remaining: ${(finalTotal - 30).toLocaleString()} DA</div>
+                <div>${receiptTranslations[receiptLanguage].payment} ${receiptTranslations[receiptLanguage].type}: ${previewOptions.showCredit ? receiptTranslations[receiptLanguage].credit : receiptTranslations[receiptLanguage].versement}</div>
+                <div>${receiptTranslations[receiptLanguage].amountPaid}: 30.00 ${receiptTranslations[receiptLanguage].currency}</div>
+                <div>${receiptTranslations[receiptLanguage].dueDate}: ${new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString()}</div>
+                <div>${receiptTranslations[receiptLanguage].remaining}: ${(finalTotal - 30).toLocaleString()} ${receiptTranslations[receiptLanguage].currency}</div>
               </div>
             ` : ''}
 
@@ -310,18 +474,18 @@ export const ReceiptConfig: React.FC = () => {
                   <img src="${receiptBarcode}" alt="Receipt Barcode" style="max-width: 280px; height: 80px;" />
                 </div>
               ` : ''}
-              <div class="receipt-id-text">ID: ${receiptNumber.substring(0, 8)}</div>
+              <div class="receipt-id-text">${receiptTranslations[receiptLanguage].receiptId}: ${receiptNumber.substring(0, 8)}</div>
             </div>
 
             <!-- Welcome Message -->
             <div class="welcome">
-              ${footerMessage || "Thank you for your business!"}
+              ${footerMessage || receiptTranslations[receiptLanguage].thankYou}
             </div>
             
             <!-- Watermark -->
             <div class="watermark">
-              <div>Store Management System</div>
-              <div>Contact: 0793420745</div>
+              <div>${receiptTranslations[receiptLanguage].storeManagement}</div>
+              <div>${receiptTranslations[receiptLanguage].contact}: 0793420745</div>
             </div>
           </div>
         </body>
@@ -334,7 +498,7 @@ export const ReceiptConfig: React.FC = () => {
     if (!loading) {
       setPreviewReceipt(generatePreviewReceipt());
     }
-  }, [storeName, storeAddress, storePhone, phoneNumbers, footerMessage, loading, previewOptions]);
+  }, [storeName, storeAddress, storePhone, phoneNumbers, footerMessage, loading, previewOptions, receiptLanguage]);
 
   useEffect(() => {
     setLoading(true);
@@ -344,13 +508,15 @@ export const ReceiptConfig: React.FC = () => {
       window.api.database.options.get("storePhone"),
       window.api.database.options.get("storePhoneNumbers"),
       window.api.database.options.get("receiptFooterMessage"),
+      window.api.database.options.get("receiptLanguage"),
     ])
-      .then(([name, address, phone, phones, footer]) => {
+      .then(([name, address, phone, phones, footer, language]) => {
         setStoreName(name || "");
         setStoreAddress(address || "");
         setStorePhone(phone || "");
         setPhoneNumbers(phones ? JSON.parse(phones) : []);
         setFooterMessage(footer || "");
+        setReceiptLanguage((language as "fr" | "en" | "ar") || "fr");
         setLoading(false);
       })
       .catch(() => {
@@ -383,6 +549,7 @@ export const ReceiptConfig: React.FC = () => {
         window.api.database.options.set("storePhone", storePhone),
         window.api.database.options.set("storePhoneNumbers", JSON.stringify(phoneNumbers)),
         window.api.database.options.set("receiptFooterMessage", footerMessage),
+        window.api.database.options.set("receiptLanguage", receiptLanguage),
       ]);
       showToast(t("admin.receiptSaved", "Receipt settings saved successfully!"), "success");
     } catch {
@@ -402,6 +569,58 @@ export const ReceiptConfig: React.FC = () => {
           <h1 className="text-2xl font-bold">
             {t("admin.receiptConfig", "Receipt Configuration")}
           </h1>
+        </div>
+
+        {/* Language Selection */}
+        <div className="flex flex-col gap-4 bg-muted/40 border border-border rounded-lg p-6">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
+              <MessageSquare className="w-6 h-6 text-blue-600" />
+            </div>
+            <div>
+              <label className="block text-base font-semibold">
+                {t("admin.receiptLanguage", "Receipt Language")}
+              </label>
+              <p className="text-sm text-muted-foreground">
+                {t("admin.chooseReceiptLanguage", "Choose the language for receipt printing")}
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={() => setReceiptLanguage("fr")}
+              className={`px-4 py-2 rounded-lg border transition-colors ${
+                receiptLanguage === "fr"
+                  ? "bg-blue-500 text-white border-blue-500"
+                  : "bg-background border-border hover:bg-muted"
+              }`}
+            >
+              {t("admin.french", "Français")}
+            </button>
+            <button
+              type="button"
+              onClick={() => setReceiptLanguage("en")}
+              className={`px-4 py-2 rounded-lg border transition-colors ${
+                receiptLanguage === "en"
+                  ? "bg-blue-500 text-white border-blue-500"
+                  : "bg-background border-border hover:bg-muted"
+              }`}
+            >
+              {t("admin.english", "English")}
+            </button>
+            <button
+              type="button"
+              onClick={() => setReceiptLanguage("ar")}
+              className={`px-4 py-2 rounded-lg border transition-colors ${
+                receiptLanguage === "ar"
+                  ? "bg-blue-500 text-white border-blue-500"
+                  : "bg-background border-border hover:bg-muted"
+              }`}
+            >
+              {t("admin.arabic", "العربية")}
+            </button>
+          </div>
         </div>
 
       {/* Settings Form */}
