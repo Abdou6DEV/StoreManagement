@@ -724,6 +724,7 @@ export default function ReceiptModal({
     phone: "Phone: +1234567890",
   });
   const [footerMessage, setFooterMessage] = useState("");
+  const [language, setLanguage] = useState<"fr" | "en" | "ar">("fr");
 
   // Load store information from database
   React.useEffect(() => {
@@ -738,14 +739,17 @@ export default function ReceiptModal({
           window.api.database.options.get("receiptLanguage"),
         ]);
         
+        const loadedLanguage = (language as "fr" | "en" | "ar") || "fr";
+        setLanguage(loadedLanguage);
+        
         const allPhones = [phone, ...(phones ? JSON.parse(phones) : [])].filter(p => p && p.trim() !== "");
         const phoneDisplay = allPhones.length > 0 
-          ? allPhones.map(p => `${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].phone}: ${p}`).join('<br>')
-          : `${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].phone}: +1234567890`;
+          ? allPhones.map(p => `${receiptTranslations[loadedLanguage].phone}: ${p}`).join('<br>')
+          : `${receiptTranslations[loadedLanguage].phone}: +1234567890`;
         
         setStoreInfo({
           name: name || "Store Management",
-          address: address ? `${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].address}: ${address}` : `${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].address}: Your Store Address`,
+          address: address ? `${receiptTranslations[loadedLanguage].address}: ${address}` : `${receiptTranslations[loadedLanguage].address}: Your Store Address`,
           phone: phoneDisplay,
         });
         setFooterMessage(footer || "");
@@ -1250,7 +1254,7 @@ export default function ReceiptModal({
       ]}
     >
       <div className="overflow-y-auto max-h-[70vh]">
-        <div className="font-mono text-sm bg-muted rounded-lg p-6 border border-border" dir={receiptLanguage === "ar" ? "rtl" : "ltr"}>
+        <div className="font-mono text-sm bg-muted rounded-lg p-6 border border-border" dir={language === "ar" ? "rtl" : "ltr"}>
           {/* Store Header */}
           <div className="text-center mb-4">
             <div className="font-bold text-lg">{storeInfo.name}</div>
@@ -1318,14 +1322,14 @@ export default function ReceiptModal({
             <div className="flex justify-between mb-1">
               <span>{receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].subtotal}:</span>
               <span>
-                {total.toLocaleString()} {receiptTranslations[receiptLanguage].currency}
+                {total.toLocaleString()} {receiptTranslations[language].currency}
               </span>
             </div>
             {discount > 0 && (
               <div className="flex justify-between mb-1">
                 <span>{receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].discount}:</span>
                 <span>
-                  -{discount.toLocaleString()} {receiptTranslations[receiptLanguage].currency}
+                  -{discount.toLocaleString()} {receiptTranslations[language].currency}
                 </span>
               </div>
             )}
@@ -1334,7 +1338,7 @@ export default function ReceiptModal({
               <div className="flex justify-between">
                 <span>{receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].finalTotal}:</span>
                 <span>
-                  {finalTotal.toLocaleString()} {receiptTranslations[receiptLanguage].currency}
+                  {finalTotal.toLocaleString()} {receiptTranslations[language].currency}
                 </span>
               </div>
             )}
@@ -1350,16 +1354,16 @@ export default function ReceiptModal({
                   {paymentType === "credit" ? receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].credit : receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].versement}
                 </div>
                 <div>
-                  {receiptTranslations[receiptLanguage].amountPaid}: {paymentAmount.toLocaleString()}{" "}
-                  {receiptTranslations[receiptLanguage].currency}
+                  {receiptTranslations[language].amountPaid}: {paymentAmount.toLocaleString()}{" "}
+                  {receiptTranslations[language].currency}
                 </div>
                 <div>
-                  {receiptTranslations[receiptLanguage].dueDate}:{" "}
+                  {receiptTranslations[language].dueDate}:{" "}
                   {paymentDate ? paymentDate.toLocaleDateString() : "N/A"}
                 </div>
                 <div>
-                  {receiptTranslations[receiptLanguage].remaining}: {(finalTotal - paymentAmount).toLocaleString()}{" "}
-                  {receiptTranslations[receiptLanguage].currency}
+                  {receiptTranslations[language].remaining}: {(finalTotal - paymentAmount).toLocaleString()}{" "}
+                  {receiptTranslations[language].currency}
                 </div>
               </div>
             </>

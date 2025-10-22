@@ -670,6 +670,8 @@
     "filterProducts": "Filtrer les produits...",
     "stock": "Stock",
     "addToCart": "Ajouter au panier",
+    "costPrice": "Prix d'achat",
+    "soldPrice": "Prix de vente",
     "page": "Page {{number}}",
     "failedAddClient": "Échec de l'ajout du client",
     "saleRecorded": "Vente enregistrée avec succès",

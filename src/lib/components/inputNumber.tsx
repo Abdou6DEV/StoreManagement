@@ -1,3 +1,5 @@
+import React from "react";
+
 interface StyledNumberInputProps {
   value: number | "";
   onChange: (value: number | "") => void;
@@ -6,10 +8,11 @@ interface StyledNumberInputProps {
   placeholder?: string;
   disabled?: boolean;
   onFocus?: () => void;
-  [key: string]: any; // Allow additional props like data-field, onKeyDown, etc.
+  onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
+  [key: string]: any; // Allow additional props like data-field, etc.
 }
 
-export default function StyledNumberInput({
+const StyledNumberInput = React.forwardRef<HTMLInputElement, StyledNumberInputProps>(({
   value,
   onChange,
   min = 0,
@@ -17,11 +20,13 @@ export default function StyledNumberInput({
   placeholder = "",
   disabled = false,
   onFocus,
+  onKeyDown,
   ...restProps
-}: StyledNumberInputProps) {
+}, ref) => {
   return (
     <div className="relative w-full">
       <input
+        ref={ref}
         type="number"
         value={value}
         onChange={(e) => {
@@ -54,6 +59,7 @@ export default function StyledNumberInput({
 
           e.target.addEventListener("blur", handleBlur);
         }}
+        onKeyDown={onKeyDown}
         className="w-full px-4 py-3 pr-10 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-green-500/50 focus:border-green-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-muted/50"
         placeholder={placeholder}
         min={min}
@@ -63,4 +69,8 @@ export default function StyledNumberInput({
       />
     </div>
   );
-}
+});
+
+StyledNumberInput.displayName = "StyledNumberInput";
+
+export default StyledNumberInput;

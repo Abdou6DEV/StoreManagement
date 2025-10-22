@@ -120,6 +120,9 @@ export default function AddManualProductModal({
   const [isLoading, setIsLoading] = useState(false);
   const [justSelectedSuggestion, setJustSelectedSuggestion] = useState(false);
   const nameInputRef = useRef<HTMLInputElement>(null);
+  const typeInputRef = useRef<HTMLInputElement>(null);
+  const costPriceInputRef = useRef<HTMLInputElement>(null);
+  const sellingPriceInputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
 
   // Search for suggestions when name or type changes
@@ -235,12 +238,12 @@ export default function AddManualProductModal({
   };
 
   const handleNameChange = (newValue: string) => {
-    // Sanitize input - remove excessive whitespace and limit length
-    const sanitizedValue = newValue.trim().slice(0, 100);
+    // Allow spaces but limit length and trim excessive whitespace
+    const sanitizedValue = newValue.slice(0, 100);
 
     setManualProduct((p) => {
     // If user is typing something completely different, reset the flag
-      if (sanitizedValue !== p.name.trim()) {
+      if (sanitizedValue !== p.name) {
       setJustSelectedSuggestion(false);
     }
       
@@ -248,7 +251,7 @@ export default function AddManualProductModal({
     });
 
     // Only show suggestions if there's text, suggestions, and haven't just selected one
-    if (sanitizedValue && suggestions.length > 0 && !justSelectedSuggestion) {
+    if (sanitizedValue.trim() && suggestions.length > 0 && !justSelectedSuggestion) {
       setShowSuggestions(true);
     } else {
       setShowSuggestions(false);
@@ -478,6 +481,12 @@ export default function AddManualProductModal({
                 value={manualProduct.name}
                 onChange={(e) => handleNameChange(e.target.value)}
                 onFocus={handleNameFocus}
+                onKeyDown={(e) => {
+                  if (e.key === 'Tab') {
+                    e.preventDefault();
+                    typeInputRef.current?.focus();
+                  }
+                }}
                 placeholder={t(
                   "cashier.enterProductName",
                   "Enter product name",
@@ -529,13 +538,20 @@ export default function AddManualProductModal({
               {t("cashier.type", "Type")} *
             </label>
             <input
+              ref={typeInputRef}
               type="text"
               className="w-full px-3 py-2.5 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
               value={manualProduct.type}
               onChange={(e) => {
-                // Sanitize input - remove excessive whitespace and limit length
-                const sanitizedValue = e.target.value.trim().slice(0, 50);
+                // Allow spaces but limit length
+                const sanitizedValue = e.target.value.slice(0, 50);
                 setManualProduct((p) => ({ ...p, type: sanitizedValue }));
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Tab') {
+                  e.preventDefault();
+                  costPriceInputRef.current?.focus();
+                }
               }}
               placeholder={t("cashier.enterType", "Enter product type")}
               required
@@ -548,6 +564,7 @@ export default function AddManualProductModal({
               </label>
               <div className="w-full">
                 <StyledNumberInput
+                  ref={costPriceInputRef}
                   value={manualProduct.costPrice}
                   onChange={(val) =>
                     setManualProduct((p) => ({
@@ -555,6 +572,12 @@ export default function AddManualProductModal({
                       costPrice: val === "" ? 0 : safePrice(val),
                     }))
                   }
+                  onKeyDown={(e) => {
+                    if (e.key === 'Tab') {
+                      e.preventDefault();
+                      sellingPriceInputRef.current?.focus();
+                    }
+                  }}
                   min={0}
                   placeholder="0"
                 />
@@ -567,6 +590,7 @@ export default function AddManualProductModal({
               </label>
               <div className="w-full">
                 <StyledNumberInput
+                  ref={sellingPriceInputRef}
                   value={manualProduct.sold}
                   onChange={(val) =>
                     setManualProduct((p) => ({
@@ -574,6 +598,14 @@ export default function AddManualProductModal({
                       sold: val === "" ? 0 : safePrice(val),
                     }))
                   }
+                  onKeyDown={(e) => {
+                    if (e.key === 'Tab') {
+                      e.preventDefault();
+                      // Focus the submit button
+                      const submitButton = document.querySelector('[type="submit"]') as HTMLButtonElement;
+                      submitButton?.focus();
+                    }
+                  }}
                   min={0}
                   placeholder="0"
                 />
