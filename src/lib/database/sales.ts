@@ -727,6 +727,82 @@ export async function getAllSales() {
   });
 }
 
+// ULTRA FAST: Lightweight version for dashboard - only pre-calculated totals
+export async function getAllLight() {
+  const sales = await prisma.sale.findMany({
+    select: {
+      id: true,
+      clientId: true,
+      totalAmount: true,
+      totalAmountWithDiscount: true,
+      totalItems: true,
+      totalCost: true,
+      totalProfit: true,
+      discount: true,
+      createdAt: true,
+      updatedAt: true,
+      client: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+      payment: {
+        select: {
+          id: true,
+          givenAmount: true,
+          type: true,
+          paidDate: true,
+        },
+      },
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
+
+  // Filter to exclude unpaid VERSEMENT sales only
+  const filteredSales = sales.filter((sale) => {
+    // Cash sales (no payment record) are always included
+    if (!sale.payment) {
+      return true;
+    }
+
+    // CREDIT sales are always included
+    if (sale.payment.type === "CREDIT") {
+      return true;
+    }
+
+    // VERSEMENT sales are only excluded if not paid
+    return !(
+      sale.payment.type === "VERSEMENT" && sale.payment.paidDate === null
+    );
+  });
+
+  return filteredSales.map((sale) => {
+    // Use pre-calculated totals from database for performance
+    const totalAmount = sale.totalAmount || 0;
+    const totalAmountWithDiscount = sale.totalAmountWithDiscount || 0;
+    const totalItems = sale.totalItems || 0;
+
+    // If no payment recorded, it was paid in cash
+    // If payment exists, use the givenAmount (can be 0 for zero-payment credit)
+    const paidAmount = sale.payment
+      ? sale.payment.givenAmount || 0
+      : totalAmountWithDiscount; // Cash payment - full amount paid
+
+    return {
+      ...sale,
+      totalAmount,
+      totalAmountWithDiscount,
+      paidAmount,
+      remainingAmount: totalAmountWithDiscount - paidAmount,
+      totalItems,
+      isPaidInCash: !sale.payment,
+    };
+  });
+}
+
 export async function getRecentSales(limit = 50, offset = 0, days = 7) {
   // Calculate date filter - configurable number of days
   const endDate = new Date();
@@ -860,7 +936,7 @@ export async function getSalesAggregatedByPeriod(
   // Import bills module to get bills payments data
   const { bills } = await import("./bills");
   
-  // Fetch sales, purchases, and bills payments data
+  // ULTRA FAST: Only fetch pre-calculated totals - NO sale items, products, or services!
   const [sales, purchases, billsPayments] = await Promise.all([
     prisma.sale.findMany({
       where: {
@@ -869,18 +945,14 @@ export async function getSalesAggregatedByPeriod(
           lte: endDate,
         },
       },
-      include: {
-        saleItems: {
-          include: {
-            product: true,
-            manualProduct: true,
-            service: true,
-          },
-        },
+      select: {
+        id: true,
+        totalAmountWithDiscount: true,
+        totalProfit: true,
+        totalItems: true,
+        createdAt: true,
         payment: {
           select: {
-            id: true,
-            givenAmount: true,
             type: true,
             paidDate: true,
           },

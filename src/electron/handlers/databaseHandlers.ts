@@ -28,6 +28,7 @@ import {
   createSale,
   getProductSalesCounts,
   getAllSales,
+  getAllLight,
   updateSale,
   getRecentSales,
   searchSales,
@@ -230,6 +231,10 @@ ipcMain.handle("db:products:deleteMultipleProducts", async (_, productIds: strin
 
   ipcMain.handle("db:sales:getAll", async () => {
     return await getAllSales();
+  });
+
+  ipcMain.handle("db:sales:getAllLight", async () => {
+    return await getAllLight();
   });
 
   ipcMain.handle("db:sales:getRecent", async (_event, { limit, offset, days }) => {

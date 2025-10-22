@@ -75,6 +75,7 @@ export const databaseAPI = {
       discount?: number;
     }) => ipcRenderer.invoke("db:sales:create", data),
     getAll: () => ipcRenderer.invoke("db:sales:getAll"),
+    getAllLight: () => ipcRenderer.invoke("db:sales:getAllLight"),
     getRecent: (options?: { limit?: number; offset?: number; days?: number }) =>
       ipcRenderer.invoke("db:sales:getRecent", options),
     search: (options: { searchTerm: string; limit?: number; offset?: number; days?: number }) =>
