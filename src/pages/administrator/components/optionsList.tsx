@@ -17,6 +17,8 @@ import {
   History,
   FileText,
   Wrench,
+  CheckSquare,
+  Square,
 } from "lucide-react";
 
 export const OptionsList: React.FC = () => {
@@ -38,6 +40,8 @@ export const OptionsList: React.FC = () => {
   const [cashierSalesHistoryDays, setCashierSalesHistoryDays] = useState(7);
   const [enableCashierHistory, setEnableCashierHistory] = useState(true);
   const [enableCompletedServicesBadge, setEnableCompletedServicesBadge] = useState(true);
+  const [categoriesRequiringInfo, setCategoriesRequiringInfo] = useState<string[]>([]);
+  const [allCategories, setAllCategories] = useState<Array<{name: string}>>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -59,8 +63,10 @@ export const OptionsList: React.FC = () => {
       window.api.database.options.get("cashierSalesHistoryDays"),
       window.api.database.options.get("enableCashierHistory"),
       window.api.database.options.get("enableCompletedServicesBadge"),
+      window.api.database.options.get("categoriesRequiringInfo"),
+      window.api.database.categories.getAll(),
     ])
-      .then(([lowStockVal, storeCashVal, enableBadgeVal, enableOverdueVal, enableDueSoonVal, enableOverdueBillsVal, enableDueSoonBillsVal, enableOverdueServicesVal, enableDueSoonServicesVal, dueSoonThresholdVal, dueSoonBillsThresholdVal, dueSoonServicesThresholdVal, cashierSalesHistoryDaysVal, enableCashierHistoryVal, enableCompletedServicesBadgeVal]) => {
+      .then(([lowStockVal, storeCashVal, enableBadgeVal, enableOverdueVal, enableDueSoonVal, enableOverdueBillsVal, enableDueSoonBillsVal, enableOverdueServicesVal, enableDueSoonServicesVal, dueSoonThresholdVal, dueSoonBillsThresholdVal, dueSoonServicesThresholdVal, cashierSalesHistoryDaysVal, enableCashierHistoryVal, enableCompletedServicesBadgeVal, categoriesRequiringInfoVal, categoriesData]) => {
         setLowStock(lowStockVal ? Number(lowStockVal) : 0);
         setStoreCash(storeCashVal ? Number(storeCashVal) : 0);
         setEnableLowStockBadge(enableBadgeVal !== "false"); // Default to true if not set
@@ -76,6 +82,8 @@ export const OptionsList: React.FC = () => {
         setCashierSalesHistoryDays(cashierSalesHistoryDaysVal ? Number(cashierSalesHistoryDaysVal) : 7); // Default to 7 days
         setEnableCashierHistory(enableCashierHistoryVal !== "false"); // Default to true if not set
         setEnableCompletedServicesBadge(enableCompletedServicesBadgeVal !== "false"); // Default to true if not set
+        setCategoriesRequiringInfo(categoriesRequiringInfoVal ? JSON.parse(categoriesRequiringInfoVal) : []);
+        setAllCategories(categoriesData || []);
         setLoading(false);
       })
       .catch(() => {
@@ -104,6 +112,7 @@ export const OptionsList: React.FC = () => {
         window.api.database.options.set("cashierSalesHistoryDays", String(cashierSalesHistoryDays)),
         window.api.database.options.set("enableCashierHistory", String(enableCashierHistory)),
         window.api.database.options.set("enableCompletedServicesBadge", String(enableCompletedServicesBadge)),
+        window.api.database.options.set("categoriesRequiringInfo", JSON.stringify(categoriesRequiringInfo)),
       ]);
       
       // Refresh completed services count immediately if the setting changed
@@ -684,6 +693,119 @@ export const OptionsList: React.FC = () => {
                     : t("admin.disabled", "Disabled")
                   }
                 </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Categories Requiring Additional Information Setting */}
+          <div className="flex flex-col md:flex-row items-start md:items-center gap-4 bg-muted/40 border border-border rounded-lg p-6">
+            <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
+              <Package className="w-6 h-6 text-purple-600" />
+            </div>
+            <div className="flex-1 w-full">
+              <label
+                className="block text-base font-semibold mb-2"
+                htmlFor="categoriesRequiringInfo"
+              >
+                {t("admin.categoriesRequiringInfo", "Categories Requiring Additional Information")}
+              </label>
+              <p className="text-sm text-muted-foreground mb-3">
+                {t("admin.categoriesRequiringInfoDesc", "Select categories that require additional information before recording a sale and printing a receipt")}
+              </p>
+              
+              {/* Category Selection */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">
+                    {t("admin.selectCategories", "Select Categories")}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {categoriesRequiringInfo.length} {t("admin.selected", "selected")}
+                  </span>
+                </div>
+                
+                {allCategories.length === 0 ? (
+                  <div className="text-sm text-muted-foreground py-4 text-center">
+                    {t("admin.noCategoriesAvailable", "No categories available")}
+                  </div>
+                ) : (
+                  <div 
+                    className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-48 overflow-y-auto border border-border rounded-lg p-3"
+                    onWheel={(e) => {
+                      e.currentTarget.scrollTop += e.deltaY;
+                      e.preventDefault();
+                    }}
+                    style={{
+                      scrollBehavior: 'smooth',
+                      scrollbarWidth: 'thin',
+                      scrollbarColor: 'rgba(156, 163, 175, 0.5) transparent'
+                    }}
+                  >
+                      {allCategories.map((category) => {
+                      const isSelected = categoriesRequiringInfo.includes(category.name);
+                      return (
+                        <button
+                          key={category.name}
+                          type="button"
+                          onClick={() => {
+                            if (isSelected) {
+                              setCategoriesRequiringInfo(prev => 
+                                prev.filter(name => name !== category.name)
+                              );
+                            } else {
+                              setCategoriesRequiringInfo(prev => 
+                                [...prev, category.name]
+                              );
+                            }
+                          }}
+                          disabled={loading || saving}
+                          className={`flex items-center gap-2 p-2 rounded-md text-sm transition-colors ${
+                            isSelected
+                              ? 'bg-primary text-primary-foreground'
+                              : 'bg-muted hover:bg-muted/80 text-foreground'
+                          } ${loading || saving ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                        >
+                          {isSelected ? (
+                            <CheckSquare className="w-4 h-4" />
+                          ) : (
+                            <Square className="w-4 h-4" />
+                          )}
+                          <span className="truncate">{category.name}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+                
+                {categoriesRequiringInfo.length > 0 && (
+                  <div className="mt-3">
+                    <div className="text-xs text-muted-foreground mb-1">
+                      {t("admin.selectedCategories", "Selected Categories")}:
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {categoriesRequiringInfo.map((categoryName) => (
+                        <span
+                          key={categoryName}
+                          className="inline-flex items-center gap-1 px-2 py-1 bg-primary/10 text-primary text-xs rounded-md"
+                        >
+                          {categoryName}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setCategoriesRequiringInfo(prev => 
+                                prev.filter(name => name !== categoryName)
+                              );
+                            }}
+                            disabled={loading || saving}
+                            className="hover:bg-primary/20 rounded-full p-0.5 transition-colors"
+                          >
+                            ×
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>

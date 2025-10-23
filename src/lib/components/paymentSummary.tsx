@@ -41,8 +41,8 @@ export default function PaymentSummary({
     [cart],
   );
 
-  // Total is simply the total price of all products
-  const total = subtotal;
+  // Total is the subtotal minus discount
+  const total = subtotal - discount;
   const credit = subtotal - discount - paymentAmount;
   const creditDisplay = credit > 0 ? credit : 0;
   const nbrItems = cart.reduce((sum, item) => sum + item.qty, 0);
@@ -453,6 +453,18 @@ export default function PaymentSummary({
             {nbrItems}
           </span>
         </div>
+        
+        {/* Show subtotal when there's a discount */}
+        {discount > 0 && (
+          <div className="flex justify-between">
+            <span className={isRTL ? "w-3/4 text-right" : "w-3/4 text-left"}>
+              {t("cashier.subtotal", "Subtotal")}
+            </span>
+            <span className={isRTL ? "w-1/4 text-left" : "w-1/4 text-right"}>
+              {subtotal.toLocaleString()} {t("cashier.currency", "DA")}
+            </span>
+          </div>
+        )}
         
         {/* Show payment information (Paid/Versement) */}
         {paymentType === "credit" && (

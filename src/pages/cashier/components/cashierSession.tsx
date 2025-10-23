@@ -3,6 +3,7 @@ import type { ProductWithSales, CartItem } from "../../../types";
 import { useTranslation } from "react-i18next";
 import PaymentSummary from "../../../lib/components/paymentSummary";
 import ActionButtons from "./actionButtons";
+import CategoryInfoModal, { CategoryInfo } from "./categoryInfoModal";
 import { useToast } from "../../../lib/contexts/toastContext";
 // import { useStock } from "../../../lib/contexts/stockContext"; // Removed - was causing performance issues
 import { Client } from "@prisma/client";
@@ -55,6 +56,11 @@ const CashierSession = memo(function CashierSession({
     "none" | "credit" | "versement"
   >("none");
   const [paymentDate, setPaymentDate] = useState<Date | undefined>(undefined);
+  
+  // Category validation state
+  const [categoriesRequiringInfo, setCategoriesRequiringInfo] = useState<string[]>([]);
+  const [showCategoryInfoModal, setShowCategoryInfoModal] = useState(false);
+  const [pendingSaleAction, setPendingSaleAction] = useState<(() => void) | null>(null);
 
   const total = useMemo(
     () => cart.reduce((sum, item) => sum + item.qty * item.price, 0),
@@ -199,6 +205,41 @@ const CashierSession = memo(function CashierSession({
     setPaymentDate(undefined);
   };
 
+  // Check if any products in cart require additional information
+  const checkCategoryInfoRequired = useCallback(() => {
+    if (categoriesRequiringInfo.length === 0) return false;
+    
+    return cart.some((item) => {
+      if (item.isManual || item.isService) return false;
+      const product = allProducts.find((p) => p.id === item.id);
+      return product && categoriesRequiringInfo.includes(product.categoryName || "");
+    });
+  }, [cart, allProducts, categoriesRequiringInfo]);
+
+  // Handle category info modal actions
+  const handleCategoryInfoSubmit = useCallback((info: CategoryInfo) => {
+    setShowCategoryInfoModal(false);
+    setPendingSaleAction(null);
+    // Execute the pending sale action
+    if (pendingSaleAction) {
+      pendingSaleAction();
+    }
+  }, [pendingSaleAction]);
+
+  const handleCategoryInfoSkip = useCallback(() => {
+    setShowCategoryInfoModal(false);
+    setPendingSaleAction(null);
+    // Execute the pending sale action
+    if (pendingSaleAction) {
+      pendingSaleAction();
+    }
+  }, [pendingSaleAction]);
+
+  const handleCategoryInfoCancel = useCallback(() => {
+    setShowCategoryInfoModal(false);
+    setPendingSaleAction(null);
+  }, []);
+
   const handleFinish = useCallback(async () => {
     if (cart.length === 0) return;
     const cartTotal = cart.reduce(
@@ -206,6 +247,21 @@ const CashierSession = memo(function CashierSession({
       0,
     );
     if (Number(discount) > cartTotal) {
+      return;
+    }
+
+    // Check if category information is required
+    if (checkCategoryInfoRequired()) {
+      setPendingSaleAction(() => async () => {
+        const saleId = await proceedWithSale(true);
+        if (saleId) {
+          onSaleCompleted(saleId, cart);
+        }
+        setPaymentAmount(0);
+        setPaymentType("none");
+        setPaymentDate(undefined);
+      });
+      setShowCategoryInfoModal(true);
       return;
     }
 
@@ -219,7 +275,7 @@ const CashierSession = memo(function CashierSession({
     setPaymentAmount(0);
     setPaymentType("none");
     setPaymentDate(undefined);
-  }, [cart, discount, proceedWithSale, showToast, t, onSaleCompleted]);
+  }, [cart, discount, proceedWithSale, showToast, t, onSaleCompleted, checkCategoryInfoRequired]);
 
   const handleFinishWithReceipt = useCallback(async () => {
     if (cart.length === 0) {
@@ -231,6 +287,54 @@ const CashierSession = memo(function CashierSession({
       0,
     );
     if (Number(discount) > cartTotal) {
+      return;
+    }
+
+    // Check if category information is required
+    if (checkCategoryInfoRequired()) {
+      setPendingSaleAction(() => async () => {
+        // Proceed with sale and get the sale ID
+        const saleId = await proceedWithSale(false);
+        
+        // Print receipt directly without showing modal
+        if (saleId) {
+          await printReceiptDirectly(
+            [...cart],
+            clientName,
+            Number(discount) || 0,
+            paymentAmount,
+            paymentType,
+            paymentDate,
+            saleId,
+            showToast
+          );
+          
+          // Show specific success message for receipt sales based on payment type
+          if (paymentType === "credit") {
+            showToast(
+              t("cashier.creditAdded", "Credit recorded successfully"),
+              "success",
+            );
+          } else if (paymentType === "versement") {
+            showToast(
+              t("cashier.versementAdded", "Versement recorded successfully"),
+              "success",
+            );
+          } else {
+            showToast(
+              t("cashier.saleWithReceiptSuccess", "Sale completed and receipt printed successfully!"),
+              "success",
+            );
+          }
+          
+          onSaleComplete(saleId, cart);
+        }
+        
+        setPaymentAmount(0);
+        setPaymentType("none");
+        setPaymentDate(undefined);
+      });
+      setShowCategoryInfoModal(true);
       return;
     }
 
@@ -250,8 +354,7 @@ const CashierSession = memo(function CashierSession({
         paymentType,
         paymentDate,
         saleId,
-        showToast,
-        (key: string, fallback?: string) => t(key, fallback)
+        showToast
       );
       
       // Show specific success message for receipt sales based on payment type
@@ -278,7 +381,7 @@ const CashierSession = memo(function CashierSession({
     setPaymentAmount(0);
     setPaymentType("none");
     setPaymentDate(undefined);
-  }, [cart, discount, proceedWithSale, clientName, paymentAmount, paymentType, paymentDate, showToast, t, onSaleComplete]);
+  }, [cart, discount, proceedWithSale, clientName, paymentAmount, paymentType, paymentDate, showToast, t, onSaleComplete, checkCategoryInfoRequired]);
 
   // Listen for global ENTER key to finish sale
   useEffect(() => {
@@ -303,6 +406,22 @@ const CashierSession = memo(function CashierSession({
       window.removeEventListener('cashier-finish-with-receipt', handleGlobalFinishWithReceipt, { capture: true });
     };
   }, [cart.length, handleFinish, handleFinishWithReceipt]);
+
+  // Load categories requiring additional information
+  useEffect(() => {
+    const loadCategoriesRequiringInfo = async () => {
+      try {
+        const categoriesData = await window.api.database.options.get("categoriesRequiringInfo");
+        if (categoriesData) {
+          setCategoriesRequiringInfo(JSON.parse(categoriesData));
+        }
+      } catch (error) {
+        console.error("Failed to load categories requiring info:", error);
+      }
+    };
+    
+    loadCategoriesRequiringInfo();
+  }, []);
 
   // Listen for arrow keys to navigate between sessions
   useEffect(() => {
@@ -398,6 +517,17 @@ const CashierSession = memo(function CashierSession({
           />
         </div>
       </section>
+      
+      {/* Category Information Modal */}
+      <CategoryInfoModal
+        open={showCategoryInfoModal}
+        onClose={handleCategoryInfoCancel}
+        onSkip={handleCategoryInfoSkip}
+        onSubmit={handleCategoryInfoSubmit}
+        cartItems={cart}
+        categoriesRequiringInfo={categoriesRequiringInfo}
+        allProducts={allProducts}
+      />
     </div>
   );
 });
