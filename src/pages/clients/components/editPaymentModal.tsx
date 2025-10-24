@@ -29,15 +29,18 @@ const EditPaymentModal: React.FC<EditPaymentModalProps> = ({
   
   if (payment?.sale) {
     // For payments with an associated sale - use pre-calculated total
-    totalSaleAmount = payment.sale.totalAmount || 0;
+    totalSaleAmount = payment.sale.totalAmountWithDiscount || 0;
   } else if (payment?.type === "VERSEMENT" && (payment as any).pendingSaleItems) {
     // For versements with pending sale items (not yet paid)
     try {
       const pendingItems = JSON.parse((payment as any).pendingSaleItems);
-      totalSaleAmount = pendingItems.reduce(
+      const grossTotal = pendingItems.reduce(
         (sum: number, item: any) => sum + item.price * item.quantity,
         0
       );
+      // Apply discount to get totalAmountWithDiscount
+      const discount = payment.discount || 0;
+      totalSaleAmount = grossTotal - discount;
     } catch (error) {
       console.error("Error parsing pending sale items:", error);
       totalSaleAmount = 0;
@@ -203,10 +206,10 @@ const EditPaymentModal: React.FC<EditPaymentModalProps> = ({
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-muted-foreground">
-                        {t("clients.saleTotal", "Sale Total")}:
+                        {t("clients.remaining", "Remaining")}:
                       </span>
-                      <span className="font-semibold text-foreground">
-                        {totalSaleAmount.toLocaleString()} {t("cashier.currency", "DA")}
+                      <span className="font-semibold text-orange-600">
+                        {(totalSaleAmount - currentPaidAmount).toLocaleString()} {t("cashier.currency", "DA")}
                       </span>
                     </div>
                   </>
@@ -272,10 +275,16 @@ const EditPaymentModal: React.FC<EditPaymentModalProps> = ({
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-muted-foreground">
-                        {t("clients.saleTotal", "Sale Total")}:
+                        {t("clients.remaining", "Remaining")}:
                       </span>
-                      <span className="font-semibold text-foreground">
-                        {totalSaleAmount.toLocaleString()} {t("cashier.currency", "DA")}
+                      <span className={`font-semibold ${
+                        isOverpaid 
+                          ? 'text-red-600' 
+                          : (totalSaleAmount - updatedPaidAmount) <= 0 
+                            ? 'text-green-600' 
+                            : 'text-orange-600'
+                      }`}>
+                        {(totalSaleAmount - updatedPaidAmount).toLocaleString()} {t("cashier.currency", "DA")}
                       </span>
                     </div>
                   </>
