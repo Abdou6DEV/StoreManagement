@@ -1,4 +1,5 @@
 import { contextBridge } from "electron";
+// Updated systemAPI with event listeners
 import { databaseAPI, appAPI, loggerAPI, authAPI, systemAPI } from "./preload/index";
 import { backupAPI } from "./preload/backupAPI";
 

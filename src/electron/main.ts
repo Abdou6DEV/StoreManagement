@@ -14,6 +14,7 @@ import {
   setupBackupHandlers,
   performDailyBackup,
 } from "./handlers";
+import { setupAppHandlers } from "./handlers/appHandlers";
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {
@@ -35,6 +36,7 @@ const createWindow = async () => {
   setupAuthHandlers();
   setupSystemHandlers();
   setupBackupHandlers();
+  setupAppHandlers();
 
   const { width, height, x, y } = screen.getPrimaryDisplay().workArea;
 

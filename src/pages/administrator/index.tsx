@@ -1,16 +1,17 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { FileText, Receipt, Users, Settings, Database } from "lucide-react";
+import { FileText, Receipt, Users, Settings, Database, Download } from "lucide-react";
 import LoggerAdmin from "./components/loggerAdmin";
 import { OptionsList } from "./components/optionsList";
 import { ReceiptConfig } from "./components/receiptConfig";
 import { BackupManagement } from "./components/backupManagement";
 import AccountsManagement from "./components/accountsManagement";
+import UpdateManagement from "./components/updateManagement";
 
 export default function AdministratorPage() {
   const { t, i18n } = useTranslation();
   const isRTL = i18n.language === "ar";
-  const [activeTab, setActiveTab] = useState<"settings" | "receipt" | "logs" | "accounts" | "backup">("settings");
+  const [activeTab, setActiveTab] = useState<"settings" | "receipt" | "logs" | "accounts" | "backup" | "updates">("settings");
 
   return (
     <main
@@ -84,6 +85,19 @@ export default function AdministratorPage() {
             {t("admin.backup", "Backup")}
           </div>
         </button>
+        <button
+          onClick={() => setActiveTab("updates")}
+          className={`px-4 py-2 font-medium transition-colors ${
+            activeTab === "updates"
+              ? "border-b-2 border-orange-500 text-orange-600"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <Download className="w-4 h-4" />
+            {t("admin.updates", "Updates")}
+          </div>
+        </button>
       </div>
 
       {activeTab === "settings" && <OptionsList />}
@@ -105,6 +119,12 @@ export default function AdministratorPage() {
       {activeTab === "backup" && (
         <section className="bg-card border border-border rounded-xl shadow-sm p-6">
           <BackupManagement />
+        </section>
+      )}
+
+      {activeTab === "updates" && (
+        <section className="bg-card border border-border rounded-xl shadow-sm p-6">
+          <UpdateManagement />
         </section>
       )}
     </main>

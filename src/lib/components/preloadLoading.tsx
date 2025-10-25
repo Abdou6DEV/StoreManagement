@@ -11,8 +11,12 @@ import {
   Wrench, 
   Settings,
   CheckCircle,
-  Loader2
+  Loader2,
+  Download,
+  Wifi,
+  WifiOff
 } from "lucide-react";
+import { useUpdateChecker } from "../hooks/useUpdateChecker";
 
 interface PreloadLoadingProps {
   onComplete?: () => void;
@@ -33,6 +37,9 @@ export default function PreloadLoading({ onComplete }: PreloadLoadingProps) {
   const [isComplete, setIsComplete] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [startTime] = useState(Date.now());
+  const [updateStatus, setUpdateStatus] = useState<string>("");
+  
+  const { checkForUpdates, isChecking, updateInfo, error } = useUpdateChecker();
 
   const loadingSteps: LoadingStep[] = [
     {
@@ -109,9 +116,33 @@ export default function PreloadLoading({ onComplete }: PreloadLoadingProps) {
     }
   ];
 
+  // Check for updates on component mount
   useEffect(() => {
-    // Ensure minimum 3 seconds loading time
-    const minLoadingTime = 3000;
+    const checkUpdates = async () => {
+      setUpdateStatus(t("updates.checking"));
+      const result = await checkForUpdates();
+      
+      if (result.error) {
+        if (result.error.includes("fetch") || result.error.includes("network")) {
+          setUpdateStatus(t("updates.noInternet"));
+        } else {
+          setUpdateStatus(t("updates.checkFailed", { error: result.error }));
+        }
+      } else if (result.available) {
+        setUpdateStatus(t("updates.updateAvailable", { version: result.latestVersion }));
+      } else if (result.currentVersion === result.latestVersion && !result.downloadUrl) {
+        setUpdateStatus(t("updates.noReleases"));
+      } else {
+        setUpdateStatus(t("updates.upToDate"));
+      }
+    };
+    
+    checkUpdates();
+  }, [checkForUpdates, t]);
+
+  useEffect(() => {
+    // Ensure minimum 8 seconds loading time to allow reading update status
+    const minLoadingTime = 8000;
     
     const interval = setInterval(() => {
       setProgress(prev => {
@@ -132,7 +163,7 @@ export default function PreloadLoading({ onComplete }: PreloadLoadingProps) {
           clearInterval(interval);
           setIsComplete(true);
           if (onComplete) {
-            setTimeout(onComplete, 800); // Delay to show completion
+            setTimeout(onComplete, 1500); // Longer delay to show completion and update status
           }
           return 100;
         }
@@ -216,6 +247,30 @@ export default function PreloadLoading({ onComplete }: PreloadLoadingProps) {
             );
           })}
         </div>
+
+        {/* Update Status */}
+        {updateStatus && (
+          <div className="mt-6 p-3 bg-muted/50 rounded-lg border border-border">
+            <div className="flex items-center justify-center space-x-2">
+              {isChecking ? (
+                <Loader2 className="w-4 h-4 text-primary animate-spin" />
+              ) : updateInfo?.available ? (
+                <Download className="w-4 h-4 text-green-600" />
+              ) : error ? (
+                <WifiOff className="w-4 h-4 text-red-500" />
+              ) : (
+                <Wifi className="w-4 h-4 text-green-600" />
+              )}
+              <span className={`text-sm font-medium ${
+                updateInfo?.available ? 'text-green-600' : 
+                error ? 'text-red-500' : 
+                'text-muted-foreground'
+              }`}>
+                {updateStatus}
+              </span>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

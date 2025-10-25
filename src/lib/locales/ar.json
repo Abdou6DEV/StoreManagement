@@ -682,7 +682,7 @@
     "prev": "السابق",
     "next": "التالي",
     "page": "صفحة",
-    "actions": "إجراءات",
+   
     "edit": "تعديل",
     "profit": "الربح",
     "totalBought": "إجمالي الشراء",
@@ -714,9 +714,9 @@
     "cleanupUnused": "تنظيف غير المستخدمة",
     "cleanupUnusedProducts": "تنظيف المنتجات غير المستخدمة",
     "cleanupUnusedDescription": "سيؤدي هذا إلى حذف المنتجات نهائياً التي لديها كمية صفر ولا يوجد لها تاريخ مبيعات. لا يمكن التراجع عن هذا الإجراء.",
-    "loadingUnusedProducts": "جاري تحميل المنتجات غير المستخدمة...",
+    
     "foundUnusedProducts": "تم العثور على {{count}} منتج غير مستخدم يمكن حذفه بأمان:",
-    "noUnusedProducts": "لم يتم العثور على منتجات غير مستخدمة",
+ 
     "noUnusedProductsDescription": "جميع المنتجات إما لديها مخزون أو تاريخ مبيعات.",
     "cleaningUp": "جاري التنظيف...",
     "cleanupNow": "تنظيف الآن",
@@ -725,7 +725,7 @@
     "cleanUnusedProductsDesc": "إزالة المنتجات التي لم يتم بيعها ولديها كمية صفر",
     "selectPeriod": "اختر الفترة",
     "unusedProductsFound": "المنتجات غير المستخدمة الموجودة",
-    "totalProducts": "إجمالي المنتجات",
+
     "warning": "تحذير",
     "deleteWarning": "لا يمكن التراجع عن هذا الإجراء. سيتم حذف المنتجات ذات الكمية الصفر فقط.",
     "loadingUnusedProducts": "جاري تحميل المنتجات غير المستخدمة...",
@@ -937,7 +937,7 @@
     "paymentsDesc": "عرض جميع الديون والدفعيات لهذا العميل",
     "paymentsLoading": "جاري تحميل المدفوعات...",
     "paymentsError": "فشل في جلب المدفوعات",
-    "noPayments": "لا توجد مدفوعات لهذا العميل",
+ 
     "paymentType": "النوع",
     "paymentType_credit": "دين",
     "paymentType_versement": "دفعة",
@@ -952,7 +952,7 @@
     "paymentMarkedAsUnpaid": "تم تحديد المدفوع كغير مدفوع",
     "paymentUnmarkError": "فشل في تحديد المدفوع كغير مدفوع",
     "clientDetails": "تفاصيل العميل",
-    "clientName": "اسم العميل",
+  
     "noPhone": "لا يوجد هاتف",
     "totalSpent": "إجمالي المنفق",
     "totalCredits": "إجمالي الديون",
@@ -964,7 +964,7 @@
     "salesHistory": "تاريخ المبيعات",
     "totalSales": "إجمالي المبيعات",
     "saleId": "معرف البيع",
-    "items": "العناصر",
+  
     "total": "الإجمالي",
     "noSales": "لا توجد مبيعات",
     "noSalesDesc": "هذا العميل لم يقم بأي مشتريات بعد",
@@ -972,13 +972,7 @@
     "showLess": "عرض أقل",
     "more": "أكثر",
     "paymentsHistory": "تاريخ المدفوعات",
-    "totalPayments": "إجمالي المدفوعات",
-    "paymentId": "معرف المدفوع",
-    "type": "النوع",
-    "status": "الحالة",
-    "amount": "المبلغ",
-    "paid": "مدفوع",
-    "pending": "في الانتظار",
+  
     "noPayments": "لا توجد مدفوعات",
     "noPaymentsDesc": "هذا العميل ليس لديه تاريخ مدفوعات بعد",
     "servicesHistory": "تاريخ الخدمات",
@@ -1015,7 +1009,7 @@
     "searchPayments": "البحث باسم العميل أو رقم الهاتف...",
     "status": "الحالة",
     "allStatus": "جميع الحالات",
-    "paid": "مدفوع",
+  
     "unpaid": "غير مدفوع",
     "type": "النوع",
     "allTypes": "جميع الأنواع",
@@ -1272,12 +1266,10 @@
     "enableOverdueBadgeDesc": "إظهار شارة الإشعار على عنصر قائمة العملاء عند وجود ائتمانات ودفعات متأخرة",
     "enableDueSoonPaymentsBadge": "تفعيل شارة إشعار المدفوعات المستحقة قريباً",
     "enableDueSoonBadgeDesc": "إظهار شارة الإشعار على عنصر قائمة العملاء عند وجود ائتمانات ودفعات مستحقة قريباً",
-    "enableOverdueBillsBadge": "تفعيل شارة إشعار الفواتير المتأخرة",
-    "enableOverdueBillsBadgeDesc": "إظهار شارة الإشعار على عنصر قائمة الفواتير عند وجود فواتير متأخرة",
-    "enableDueSoonBillsBadge": "تفعيل شارة إشعار الفواتير المستحقة قريباً",
-    "enableDueSoonBillsBadgeDesc": "إظهار شارة الإشعار على عنصر قائمة الفواتير عند وجود فواتير مستحقة قريباً",
-    "dueSoonBillsThreshold": "حد الفواتير المستحقة قريباً (بالأيام)",
-    "dueSoonBillsThresholdDesc": "عدد الأيام قبل تاريخ الاستحقاق لإظهار إشعار 'مستحق قريباً' للفواتير",
+   
+ 
+    
+   
     "enableOverdueServicesBadge": "تفعيل شارة إشعار الخدمات المتأخرة",
     "enableOverdueServicesBadgeDesc": "إظهار شارة الإشعار على عنصر قائمة الخدمات عند وجود خدمات متأخرة",
     "enableDueSoonServicesBadge": "تفعيل شارة إشعار الخدمات المستحقة قريباً",
@@ -1298,8 +1290,7 @@
     "enableDueSoonBillsBadgeDesc": "إظهار شارة الإشعار على عنصر قائمة الفواتير عند وجود فواتير مستحقة قريباً",
     "dueSoonBillsThreshold": "حد الفواتير المستحقة قريباً (أيام)",
     "dueSoonBillsThresholdDesc": "عدد الأيام قبل تاريخ الاستحقاق لإظهار إشعار 'مستحقة قريباً' للفواتير",
-    "enabled": "مفعل",
-    "disabled": "معطل",
+
     "days": "أيام",
     "save": "حفظ الإعدادات",
     "saving": "جارٍ الحفظ...",
@@ -1379,6 +1370,27 @@
         "history": "التاريخ",
         "dashboard": "لوحة التحكم"
       }
+    },
+    "updates": "التحديثات",
+    "updatesContent": {
+      "title": "تحديثات النظام",
+      "subtitle": "حافظ على تطبيقك محدثاً بأحدث الميزات وتحديثات الأمان",
+      "checkNow": "فحص الآن",
+      "currentVersion": "الإصدار الحالي",
+      "latestVersion": "أحدث إصدار",
+      "complete": "مكتمل",
+      "downloadAndInstall": "تحميل وتثبيت",
+      "hideDetails": "إخفاء التفاصيل",
+      "showDetails": "إظهار التفاصيل",
+      "updateDetails": "تفاصيل التحديث",
+      "releaseNotes": "ملاحظات الإصدار",
+      "errorTitle": "فشل فحص التحديثات",
+      "dismissError": "تجاهل",
+      "infoTitle": "حول التحديثات",
+      "info1": "التحديثات تشمل ميزات جديدة وإصلاحات الأخطاء وتحسينات الأمان",
+      "info2": "سيتم الحفاظ على بياناتك وإعداداتك أثناء التحديثات",
+      "info3": "سيعيد التطبيق التشغيل تلقائياً بعد التثبيت",
+      "info4": "تأكد من عمل نسخة احتياطية من بياناتك قبل التحديثات الكبيرة"
     },
     "logger": {
       "title": "إدارة السجلات",
@@ -1463,7 +1475,7 @@
     "items": "عنصر"
   },
   "bills": {
-    "title": "الفواتير والمصروفات",
+   
     "addBill": "إضافة فاتورة",
     "deleteBill": "حذف الفاتورة",
     "markAsPaid": "تحديد كمدفوعة",
@@ -1483,7 +1495,7 @@
     "active": "نشطة",
     "notActive": "غير نشطة",
     "monthly": "شهرية",
-    "annually": "سنوية",
+ 
     "electricity": "الكهرباء",
     "water": "الماء",
     "internet": "الإنترنت",
@@ -1512,40 +1524,19 @@
     "allPayments": "جميع المدفوعات",
     "allPaymentsView": "عرض جميع المدفوعات",
     "backToBills": "العودة إلى الفواتير",
-    "payBill": "دفع الفاتورة",
+   
     "title": "العنوان",
     "type": "النوع",
-    "amount": "المبلغ",
+  
     "description": "الوصف",
-    "notes": "الملاحظات",
-    "currency": "دج",
-    "enterBillTitle": "أدخل عنوان الفاتورة",
-    "enterBillType": "أدخل نوع الفاتورة",
+ 
+  
     "enterDescriptionOptional": "أدخل الوصف (اختياري)",
-    "enterNotesOptional": "أدخل الملاحظات (اختياري)",
-    "selectDuration": "اختر المدة",
-    "noNextBill": "لا توجد فاتورة قادمة",
-    "oneMonth": "شهر واحد",
-    "twoMonths": "شهران",
-    "threeMonths": "3 أشهر",
-    "fourMonths": "4 أشهر",
-    "fiveMonths": "5 أشهر",
-    "sixMonths": "6 أشهر",
-    "sevenMonths": "7 أشهر",
-    "eightMonths": "8 أشهر",
-    "nineMonths": "9 أشهر",
-    "tenMonths": "10 أشهر",
-    "elevenMonths": "11 شهر",
+ 
     "annually": "سنوياً",
-    "billAddedSuccessfully": "تم إضافة الفاتورة بنجاح",
-    "billUpdatedSuccessfully": "تم تحديث الفاتورة بنجاح",
-    "paymentRecordedSuccessfully": "تم تسجيل الدفع بنجاح",
-    "failedToSaveBill": "فشل في حفظ الفاتورة",
+   
     "updating": "جاري التحديث...",
-    "recordingPayment": "جاري تسجيل الدفع...",
-    "adding": "جاري الإضافة...",
-    "updateBill": "تحديث الفاتورة",
-    "recordPayment": "تسجيل الدفع",
+
     "viewAllPaymentsTooltip": "عرض تاريخ جميع المدفوعات",
     "backToBillsTooltip": "العودة إلى عرض إدارة الفواتير",
     "filterByType": "تصفية حسب النوع",
@@ -1653,32 +1644,14 @@
     "addAppointmentDesc": "إنشاء طلب خدمة جديد",
     "allStatus": "جميع الحالات",
     "allDates": "جميع التواريخ",
-    "filterByStatus": "تصفية حسب الحالة",
-    "filterByDate": "تصفية حسب التاريخ",
+ 
     "selectItemsPerPage": "اختر عدد العناصر في الصفحة",
     "searchServiceNameOrType": "البحث باسم الخدمة أو النوع...",
-    "serviceRequests": "طلبات الخدمات",
-    "serviceTypes": "أنواع الخدمات",
-    "emptyTitle": "لم يتم العثور على خدمات",
-    "emptyDesc": "لم تقم بإضافة أي خدمات بعد. أضف خدمة للبدء.",
+ 
     "name": "اسم الخدمة",
-    "type": "النوع",
-    "status": "الحالة",
-    "client": "العميل",
-    "servicePrice": "سعر الخدمة",
-    "dueDate": "تاريخ الاستحقاق",
-    "actions": "الإجراءات",
-    "noClient": "لم يتم تعيين عميل",
+
     "noDescription": "لا يوجد وصف",
-    "overdue": "متأخر",
-    "dueSoon": "مستحق قريباً",
-    "complete": "مكتمل",
-    "incomplete": "غير مكتمل",
-    "markAsCompleteTooltip": "وضع علامة كمكتمل",
-    "editTooltip": "تعديل الخدمة",
-    "deleteTooltip": "حذف الخدمة",
-    "deleteService": "حذف الخدمة",
-    "deleteServiceConfirm": "هل أنت متأكد من أنك تريد حذف هذه الخدمة؟ لا يمكن التراجع عن هذا الإجراء.",
+ 
     "currency": "دج",
     "itemsPerPage": "العناصر في الصفحة:",
     "clientCannotBeChanged": "لا يمكن تغيير العميل بعد إنشاء الخدمة",
@@ -1700,7 +1673,7 @@
     "actions": "الإجراءات",
     "service": "الخدمة",
     "pending": "في الانتظار",
-    "overdue": "متأخر",
+    
     "upcoming": "قادم",
     "allAppointments": "جميع المواعيد",
     "totalAppointments": "إجمالي المواعيد",
@@ -1764,12 +1737,7 @@
     "emptyDesc": "لم تقم بإضافة أي خدمات بعد. أضف خدمة للبدء.",
     "editTooltip": "تعديل الخدمة",
     "deleteTooltip": "حذف الخدمة",
-    "serviceUpdatedSuccessfully": "تم تحديث الخدمة بنجاح",
-    "serviceAddedSuccessfully": "تم إضافة الخدمة بنجاح",
-    "failedToSaveService": "فشل في حفظ الخدمة",
-    "enterServiceType": "أدخل نوع الخدمة",
-    "enterCostPrice": "أدخل سعر التكلفة",
-    "enterServicePrice": "أدخل سعر الخدمة",
+
     "overdue": "متأخر",
     "dueSoon": "قريب الاستحقاق",
     "deleteConfirm": "هل أنت متأكد من حذف طلب الخدمة هذا؟ لا يمكن التراجع عن هذا الإجراء.",
@@ -1785,6 +1753,7 @@
     "enterServicePrice": "أدخل سعر الخدمة",
     "enterDescriptionOptional": "أدخل الوصف (اختياري)",
     "enterNotesOptional": "أدخل ملاحظات (اختياري)"
+    
   },
   "currency": "دج",
   "datePicker": {
@@ -1820,5 +1789,16 @@
       "5": "جمعة",
       "6": "سبت"
     }
+  },
+  "updates": {
+    "checking": "جاري فحص التحديثات...",
+    "upToDate": "التطبيق محدث",
+    "updateAvailable": "تحديث متاح: v{{version}} - انقر للتحميل",
+    "noReleases": "لا توجد إصدارات متاحة حالياً - تحقق لاحقاً",
+    "noInternet": "لا يوجد اتصال بالإنترنت - ستكون التحديثات متاحة عند العودة للاتصال",
+    "checkFailed": "فشل فحص التحديثات: {{error}}",
+    "downloading": "جاري تحميل التحديث...",
+    "installing": "جاري تثبيت التحديث...",
+    "downloadFailed": "فشل التحميل. يرجى المحاولة مرة أخرى."
   }
 }

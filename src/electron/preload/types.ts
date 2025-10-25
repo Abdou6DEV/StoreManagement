@@ -209,6 +209,23 @@ export type DatabaseAPI = {
 
 export type AppAPI = {
   getVersion: () => Promise<string>;
+  checkForUpdates: () => Promise<{
+    available: boolean;
+    currentVersion: string;
+    latestVersion: string;
+    downloadUrl: string;
+    releaseNotes?: string;
+    error?: string;
+  }>;
+  downloadUpdate: (url: string) => Promise<{
+    success: boolean;
+    path: string;
+    error: string | null;
+  }>;
+  installUpdate: (path: string) => Promise<{
+    success: boolean;
+    error: string | null;
+  }>;
 };
 
 export type LoggerAPI = {
@@ -341,6 +358,8 @@ export type SystemAPI = {
     isValid?: boolean;
     error?: string;
   }>;
+  on: (channel: string, callback: (event: any, ...args: any[]) => void) => void;
+  off: (channel: string, callback: (event: any, ...args: any[]) => void) => void;
 };
 
 export type BackupFile = {
