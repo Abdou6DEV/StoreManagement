@@ -251,7 +251,7 @@ export default function Login() {
                   onChange={(e) => setPassword(e.target.value)}
                   onKeyDown={handleKeyDown}
                   className="block w-full pl-10 pr-12 py-3 border border-input rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-all duration-200"
-                  placeholder={t("login.enterPassword", "Enter your password")}
+                  placeholder={t("login.enterPassword", "UPDATE WORKEED")}
                 />
                 <button
                   type="button"

@@ -17,9 +17,6 @@ import {
 } from "lucide-react";
 import { useUpdateChecker } from "../../../lib/hooks/useUpdateChecker";
 
-// Import ipcRenderer for event listeners
-const { ipcRenderer } = window.require('electron');
-
 interface UpdateManagementProps {}
 
 export default function UpdateManagement({}: UpdateManagementProps) {
@@ -49,18 +46,17 @@ export default function UpdateManagement({}: UpdateManagementProps) {
     setDownloadProgress(0);
     
     try {
-      // Listen for real download progress updates
-      const progressListener = (event: any, data: { progress: number; downloaded: number; total: number }) => {
-        setDownloadProgress(data.progress);
-      };
-
-      // Add progress listener
-      ipcRenderer.on('download-progress', progressListener);
+      // Simulate progress since we can't access ipcRenderer directly
+      const progressInterval = setInterval(() => {
+        setDownloadProgress(prev => {
+          if (prev >= 90) return prev; // Stop at 90% until download completes
+          return prev + Math.random() * 10;
+        });
+      }, 200);
 
       const result = await window.api.app.downloadUpdate(updateInfo.downloadUrl);
       
-      // Remove progress listener
-      ipcRenderer.off('download-progress', progressListener);
+      clearInterval(progressInterval);
       
       if (result.success) {
         setDownloadProgress(100);
