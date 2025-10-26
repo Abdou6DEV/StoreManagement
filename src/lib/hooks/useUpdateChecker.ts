@@ -1,73 +1,27 @@
-import { useState, useCallback } from 'react';
-import { UpdateChecker } from '../utils/updateChecker';
-
-interface UpdateInfo {
-  available: boolean;
-  currentVersion: string;
-  latestVersion: string;
-  downloadUrl: string;
-  releaseNotes?: string;
-  error?: string;
-}
-
-interface UpdateState {
-  isChecking: boolean;
-  updateInfo: UpdateInfo | null;
-  error: string | null;
-}
+import { useUpdateContext } from '../contexts/updateContext';
 
 export const useUpdateChecker = () => {
-  const [state, setState] = useState<UpdateState>({
-    isChecking: false,
-    updateInfo: null,
-    error: null,
-  });
-
-  const checkForUpdates = useCallback(async () => {
-    setState(prev => ({ ...prev, isChecking: true, error: null }));
-    
-    try {
-      const updateInfo = await UpdateChecker.checkForUpdates();
-      setState(prev => ({ 
-        ...prev, 
-        isChecking: false, 
-        updateInfo,
-        error: updateInfo.error || null
-      }));
-      return updateInfo;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      setState(prev => ({ 
-        ...prev, 
-        isChecking: false, 
-        error: errorMessage 
-      }));
-      return {
-        available: false,
-        currentVersion: '',
-        latestVersion: '',
-        downloadUrl: '',
-        error: errorMessage
-      };
-    }
-  }, []);
-
-  const clearError = useCallback(() => {
-    setState(prev => ({ ...prev, error: null }));
-  }, []);
-
-  const reset = useCallback(() => {
-    setState({
-      isChecking: false,
-      updateInfo: null,
-      error: null,
-    });
-  }, []);
-
+  const { state, checkForUpdates, clearError, reset, setDownloadState } = useUpdateContext();
+  
   return {
-    ...state,
+    state,
     checkForUpdates,
     clearError,
     reset,
+    setDownloadState,
+    // Spread state properties for convenience
+    isChecking: state.isChecking,
+    updateInfo: state.updateInfo,
+    error: state.error,
+    isDownloading: state.isDownloading,
+    isPaused: state.isPaused,
+    downloadProgress: state.downloadProgress,
+    downloadSpeed: state.downloadSpeed,
+    downloadedSize: state.downloadedSize,
+    totalSize: state.totalSize,
+    isInstalling: state.isInstalling,
+    isDownloaded: state.isDownloaded,
+    downloadPath: state.downloadPath,
+    lastChecked: state.lastChecked,
   };
 };

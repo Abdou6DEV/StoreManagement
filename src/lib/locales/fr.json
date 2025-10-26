@@ -1472,7 +1472,11 @@
       "currentVersion": "Version actuelle",
       "latestVersion": "Dernière version",
       "complete": "terminé",
-      "downloadAndInstall": "Télécharger et installer",
+        "downloadAndInstall": "Télécharger et installer",
+        "downloadUpdate": "Télécharger la mise à jour",
+        "installUpdate": "Installer la mise à jour",
+        "cancelDownload": "Annuler le téléchargement",
+        "remaining": "restant",
       "hideDetails": "Masquer les détails",
       "showDetails": "Afficher les détails",
       "updateDetails": "Détails de la mise à jour",
@@ -1760,12 +1764,20 @@
   "updates": {
     "checking": "Vérification des mises à jour...",
     "upToDate": "L'application est à jour",
-    "updateAvailable": "Mise à jour disponible : v{{version}} - Cliquez pour télécharger",
-    "noReleases": "Aucune version disponible pour le moment - revenez plus tard",
+    "updateAvailable": "Mise à jour disponible : v{{version}}",
+    "noReleases": "Aucune mise à jour disponible",
     "noInternet": "Pas de connexion internet - les mises à jour seront disponibles quand vous serez en ligne",
     "checkFailed": "Échec de la vérification des mises à jour : {{error}}",
     "downloading": "Téléchargement de la mise à jour...",
+    "downloaded": "Téléchargement terminé ! Prêt à installer.",
     "installing": "Installation de la mise à jour...",
-    "downloadFailed": "Échec du téléchargement. Veuillez réessayer."
+    "downloadFailed": "Échec du téléchargement. Veuillez réessayer.",
+    "downloadSuccess": "Téléchargement terminé avec succès !",
+    "downloadSuccessDesc": "La mise à jour est prête à installer.",
+    "installSuccess": "Installation démarrée",
+    "installSuccessDesc": "L'application va redémarrer pour terminer la mise à jour.",
+    "installFailed": "Échec de l'installation",
+    "installFailedDesc": "Veuillez réessayer ou installer manuellement.",
+    "downloadCancelled": "Téléchargement annulé"
   }
 }

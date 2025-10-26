@@ -130,10 +130,10 @@ export default function PreloadLoading({ onComplete }: PreloadLoadingProps) {
         }
       } else if (result.available) {
         setUpdateStatus(t("updates.updateAvailable", { version: result.latestVersion }));
-      } else if (result.currentVersion === result.latestVersion && !result.downloadUrl) {
-        setUpdateStatus(t("updates.noReleases"));
-      } else {
+      } else if (result.currentVersion === result.latestVersion) {
         setUpdateStatus(t("updates.upToDate"));
+      } else {
+        setUpdateStatus(t("updates.noReleases"));
       }
     };
     

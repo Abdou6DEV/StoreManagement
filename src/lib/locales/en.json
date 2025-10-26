@@ -1624,6 +1624,10 @@
         "latestVersion": "Latest Version",
         "complete": "complete",
         "downloadAndInstall": "Download & Install",
+        "downloadUpdate": "Download Update",
+        "installUpdate": "Install Update",
+        "cancelDownload": "Cancel Download",
+        "remaining": "remaining",
         "hideDetails": "Hide Details",
         "showDetails": "Show Details",
         "updateDetails": "Update Details",
@@ -1820,13 +1824,21 @@
   "updates": {
     "checking": "Checking for updates...",
     "upToDate": "App is up to date",
-    "updateAvailable": "Update available: v{{version}} - Click to download",
-    "noReleases": "No releases available yet - check back later",
+    "updateAvailable": "Update Available: v{{version}}",
+    "noReleases": "No updates available",
     "noInternet": "No internet connection - updates will be available when you're back online",
     "checkFailed": "Update check failed: {{error}}",
     "downloading": "Downloading update...",
+    "downloaded": "Download completed! Ready to install.",
     "installing": "Installing update...",
-    "downloadFailed": "Download failed. Please try again."
+    "downloadFailed": "Download failed. Please try again.",
+    "downloadCancelled": "Download cancelled",
+    "downloadSuccess": "Download completed successfully!",
+    "downloadSuccessDesc": "The update is ready to install.",
+    "installSuccess": "Installation started",
+    "installSuccessDesc": "The app will restart to complete the update.",
+    "installFailed": "Installation failed",
+    "installFailedDesc": "Please try again or install manually."
   }
 }
 

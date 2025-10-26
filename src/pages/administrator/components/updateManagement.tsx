@@ -2,83 +2,192 @@ import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { 
   Download, 
-  Wifi, 
   WifiOff, 
   CheckCircle, 
   AlertCircle, 
   Loader2, 
-  RefreshCw,
   ArrowDown,
   Play,
   Shield,
   Clock,
   Info,
-  X
+  X,
+  XCircle
 } from "lucide-react";
 import { useUpdateChecker } from "../../../lib/hooks/useUpdateChecker";
+import { useToast } from "../../../lib/contexts/toastContext";
 
-interface UpdateManagementProps {}
-
-export default function UpdateManagement({}: UpdateManagementProps) {
+export default function UpdateManagement() {
   const { t } = useTranslation();
+  const { showToast } = useToast();
   const { 
-    isChecking, 
-    updateInfo, 
-    error, 
-    checkForUpdates, 
-    clearError 
+    state,
+    clearError,
+    setDownloadState
   } = useUpdateChecker();
   
-  const [isDownloading, setIsDownloading] = useState(false);
-  const [downloadProgress, setDownloadProgress] = useState(0);
-  const [isInstalling, setIsInstalling] = useState(false);
+  const {
+    isChecking,
+    updateInfo,
+    error,
+    isDownloading,
+    downloadProgress,
+    downloadSpeed,
+    downloadedSize,
+    totalSize,
+    isInstalling,
+    isDownloaded,
+    downloadPath
+  } = state;
+  
   const [showDetails, setShowDetails] = useState(false);
 
-  // Check for updates on component mount
+  // Updates are checked automatically in preload, no need to check again here
+
+  // Listen for download progress updates
   useEffect(() => {
-    checkForUpdates();
-  }, [checkForUpdates]);
+    const handleDownloadProgress = (data: { progress: number; downloaded: number; total: number; speed: number }) => {
+      setDownloadState({
+        downloadProgress: data.progress,
+        downloadedSize: data.downloaded,
+        totalSize: data.total,
+        downloadSpeed: data.speed || 0
+      });
+    };
+
+    // Listen for download progress events using the proper API
+    if (window.api?.app?.onDownloadProgress) {
+      window.api.app.onDownloadProgress(handleDownloadProgress);
+      
+      return () => {
+        if (window.api?.app?.removeDownloadProgressListener) {
+          window.api.app.removeDownloadProgressListener(handleDownloadProgress);
+        }
+      };
+    }
+  }, [setDownloadState]);
+
+  // Helper function to format bytes
+  const formatBytes = (bytes: number): string => {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+  };
 
   const handleDownloadUpdate = async () => {
     if (!updateInfo?.downloadUrl) return;
     
-    setIsDownloading(true);
-    setDownloadProgress(0);
+    setDownloadState({
+      isDownloading: true,
+      downloadProgress: 0,
+      downloadSpeed: 0,
+      downloadedSize: 0,
+      totalSize: 0,
+      isDownloaded: false,
+      isPaused: false
+    });
     
     try {
-      // Simulate progress since we can't access ipcRenderer directly
-      const progressInterval = setInterval(() => {
-        setDownloadProgress(prev => {
-          if (prev >= 90) return prev; // Stop at 90% until download completes
-          return prev + Math.random() * 10;
-        });
-      }, 200);
-
       const result = await window.api.app.downloadUpdate(updateInfo.downloadUrl);
       
-      clearInterval(progressInterval);
-      
       if (result.success) {
-        setDownloadProgress(100);
-        // Start installation
-        setIsInstalling(true);
-        await window.api.app.installUpdate(result.path);
+        setDownloadState({
+          downloadProgress: 100,
+          isDownloaded: true,
+          downloadPath: result.path,
+          isDownloading: false
+        });
+        
+        // Show success toast
+        showToast(t("updates.downloadSuccess", "Download completed successfully!"), "success");
       } else {
         throw new Error(result.error || "Download failed");
       }
     } catch (error) {
-      console.error("Download failed:", error);
-      alert(t("updates.downloadFailed", "Download failed. Please try again."));
-    } finally {
-      setIsDownloading(false);
-      setIsInstalling(false);
-      setDownloadProgress(0);
+      // Don't show error if download was intentionally cancelled
+      const err = error instanceof Error ? error : { message: String(error), type: 'unknown' };
+      if (err.message?.includes('aborted') || (err as { type?: string }).type === 'aborted') {
+        // Just reset the state silently
+        setDownloadState({ 
+          isDownloading: false,
+          isPaused: false,
+          downloadProgress: 0,
+          downloadedSize: 0,
+          totalSize: 0,
+          downloadSpeed: 0,
+          isDownloaded: false,
+          downloadPath: ''
+        });
+        return;
+      }
+      
+      // Show error for actual failures
+      showToast(t("updates.downloadFailed", "Download failed"), "error");
+      
+      // Reset download state
+      setDownloadState({ 
+        isDownloading: false,
+        isPaused: false,
+        downloadProgress: 0,
+        downloadedSize: 0,
+        totalSize: 0,
+        downloadSpeed: 0,
+        isDownloaded: false,
+        downloadPath: ''
+      });
     }
   };
 
-  const handleCheckUpdates = () => {
-    clearError();
-    checkForUpdates();
+  const handleInstallUpdate = async () => {
+    if (!downloadPath) return;
+    
+    setDownloadState({ isInstalling: true });
+    
+    try {
+      const result = await window.api.app.installUpdate(downloadPath);
+      
+      if (result.success) {
+        showToast(t("updates.installSuccess", "Installation started"), "success");
+      } else {
+        throw new Error(result.error || "Installation failed");
+      }
+    } catch (error) {
+      showToast(t("updates.installFailed", "Installation failed"), "error");
+    } finally {
+      setDownloadState({ isInstalling: false });
+    }
+  };
+
+  const handleCancelDownload = async () => {
+    try {
+      // Actually cancel the download in the main process
+      await window.api.app.cancelUpdateDownload();
+      showToast(t("updates.downloadCancelled", "Download cancelled"), "info");
+      
+      // Reset the UI state
+      setDownloadState({
+        isDownloading: false,
+        downloadProgress: 0,
+        downloadedSize: 0,
+        totalSize: 0,
+        downloadSpeed: 0,
+        isDownloaded: false,
+        downloadPath: ''
+      });
+    } catch (error) {
+      showToast(t("updates.downloadCancelled", "Download cancelled"), "info");
+      setDownloadState({
+        isDownloading: false,
+        downloadProgress: 0,
+        downloadedSize: 0,
+        totalSize: 0,
+        downloadSpeed: 0,
+        isDownloaded: false,
+        downloadPath: ''
+      });
+    }
   };
 
   const getStatusIcon = () => {
@@ -94,8 +203,8 @@ export default function UpdateManagement({}: UpdateManagementProps) {
       return <Download className="w-8 h-8 text-green-500" />;
     }
     
-    if (updateInfo?.currentVersion === updateInfo?.latestVersion && !updateInfo?.downloadUrl) {
-      return <Info className="w-8 h-8 text-blue-500" />;
+    if (updateInfo?.currentVersion === updateInfo?.latestVersion) {
+      return <CheckCircle className="w-8 h-8 text-green-500" />;
     }
     
     return <CheckCircle className="w-8 h-8 text-green-500" />;
@@ -108,6 +217,10 @@ export default function UpdateManagement({}: UpdateManagementProps) {
     
     if (isDownloading) {
       return t("updates.downloading", "Downloading update...");
+    }
+    
+    if (isDownloaded) {
+      return t("updates.downloaded", "Download completed! Ready to install.");
     }
     
     if (isInstalling) {
@@ -125,16 +238,24 @@ export default function UpdateManagement({}: UpdateManagementProps) {
       return t("updates.updateAvailable", { version: updateInfo.latestVersion });
     }
     
-    if (updateInfo?.currentVersion === updateInfo?.latestVersion && !updateInfo?.downloadUrl) {
-      return t("updates.noReleases");
+    if (updateInfo?.currentVersion === updateInfo?.latestVersion) {
+      return t("updates.upToDate");
     }
     
-    return t("updates.upToDate");
+    return t("updates.noReleases");
   };
 
   const getStatusColor = () => {
     if (isChecking || isDownloading) {
       return "text-primary";
+    }
+    
+    if (isDownloaded) {
+      return "text-blue-500";
+    }
+    
+    if (isInstalling) {
+      return "text-orange-500";
     }
     
     if (error) {
@@ -145,11 +266,11 @@ export default function UpdateManagement({}: UpdateManagementProps) {
       return "text-green-500";
     }
     
-    if (updateInfo?.currentVersion === updateInfo?.latestVersion && !updateInfo?.downloadUrl) {
-      return "text-blue-500";
+    if (updateInfo?.currentVersion === updateInfo?.latestVersion) {
+      return "text-green-500";
     }
     
-    return "text-green-500";
+    return "text-blue-500";
   };
 
   return (
@@ -165,14 +286,6 @@ export default function UpdateManagement({}: UpdateManagementProps) {
             {t("admin.updatesContent.subtitle", "Keep your application up to date with the latest features and security patches")}
           </p>
         </div>
-        <button
-          onClick={handleCheckUpdates}
-          disabled={isChecking || isDownloading || isInstalling}
-          className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-        >
-          <RefreshCw className={`w-4 h-4 ${isChecking ? 'animate-spin' : ''}`} />
-          {t("admin.updatesContent.checkNow", "Check Now")}
-        </button>
       </div>
 
       {/* Main Status Card */}
@@ -211,27 +324,75 @@ export default function UpdateManagement({}: UpdateManagementProps) {
           {/* Download Progress */}
           {isDownloading && (
             <div className="mb-6">
-              <div className="w-full bg-muted rounded-full h-2 mb-2">
+              <div className="w-full bg-muted rounded-full h-3 mb-3">
                 <div 
-                  className="bg-primary h-2 rounded-full transition-all duration-300"
+                  className="bg-primary h-3 rounded-full transition-all duration-300"
                   style={{ width: `${downloadProgress}%` }}
                 />
               </div>
-              <p className="text-sm text-muted-foreground">
-                {Math.round(downloadProgress)}% {t("admin.updatesContent.complete", "complete")}
-              </p>
+              <div className="flex justify-between items-center text-sm text-muted-foreground mb-2">
+                <span>{Math.round(downloadProgress)}% {t("admin.updatesContent.complete", "complete")}</span>
+                <span>
+                  {downloadSpeed > 0 && `${formatBytes(downloadSpeed)}/s`}
+                </span>
+              </div>
+              <div className="flex justify-between items-center text-xs text-muted-foreground">
+                <span>
+                  {formatBytes(downloadedSize)} / {formatBytes(totalSize)}
+                </span>
+                <span>
+                  {totalSize > 0 && downloadedSize > 0 && downloadSpeed > 0 && 
+                    (() => {
+                      const remainingBytes = totalSize - downloadedSize;
+                      const remainingSeconds = Math.ceil(remainingBytes / downloadSpeed);
+                      
+                      if (remainingSeconds < 60) {
+                        return `${remainingSeconds}s ${t("admin.updatesContent.remaining", "remaining")}`;
+                      } else if (remainingSeconds < 3600) {
+                        const minutes = Math.floor(remainingSeconds / 60);
+                        const seconds = remainingSeconds % 60;
+                        return `${minutes}m ${seconds}s ${t("admin.updatesContent.remaining", "remaining")}`;
+                      } else {
+                        const hours = Math.floor(remainingSeconds / 3600);
+                        const minutes = Math.floor((remainingSeconds % 3600) / 60);
+                        return `${hours}h ${minutes}m ${t("admin.updatesContent.remaining", "remaining")}`;
+                      }
+                    })()
+                  }
+                </span>
+              </div>
             </div>
           )}
 
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            {updateInfo?.available && !isDownloading && !isInstalling && (
+            {updateInfo?.available && !isDownloading && !isInstalling && !isDownloaded && (
               <button
                 onClick={handleDownloadUpdate}
                 className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
               >
                 <Download className="w-4 h-4" />
-                {t("admin.updatesContent.downloadAndInstall", "Download & Install")}
+                {t("admin.updatesContent.downloadUpdate", "Download Update")}
+              </button>
+            )}
+            
+            {isDownloading && (
+              <button
+                onClick={handleCancelDownload}
+                className="flex items-center gap-2 px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+              >
+                <XCircle className="w-4 h-4" />
+                {t("admin.updatesContent.cancelDownload", "Cancel Download")}
+              </button>
+            )}
+            
+            {isDownloaded && !isInstalling && (
+              <button
+                onClick={handleInstallUpdate}
+                className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                <Play className="w-4 h-4" />
+                {t("admin.updatesContent.installUpdate", "Install Update")}
               </button>
             )}
             

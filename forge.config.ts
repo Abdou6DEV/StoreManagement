@@ -23,6 +23,7 @@ const config: ForgeConfig = {
   rebuildConfig: {},
   makers: [
     new MakerSquirrel({}),
+    new MakerZIP({}, ["win32"]), // Create ZIP for Windows updates
     new MakerZIP({}, ["darwin"]),
     new MakerRpm({}),
     new MakerDeb({}),

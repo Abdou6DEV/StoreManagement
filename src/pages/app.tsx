@@ -21,6 +21,7 @@ import PermissionRoute from "../lib/components/permissionRoute";
 import Login from "./login";
 import LicenseValidation from "./licenseValidation";
 import PreloadLoading from "../lib/components/preloadLoading";
+import { UpdateProvider } from "../lib/contexts/updateContext";
 import { useAuth } from "../lib/contexts/authContext";
 import { useLicense } from "../lib/contexts/licenseContext";
 
@@ -79,7 +80,15 @@ export default function App() {
 
   // Show preloading screen after login
   if (isAuthenticated && (isPreloading || !preloadComplete)) {
-    return <PreloadLoading />;
+    return (
+      <div dir={dir} style={{ direction: dir, width: "100%", height: "100%" }}>
+        <ToastProvider>
+          <UpdateProvider>
+            <PreloadLoading />
+          </UpdateProvider>
+        </ToastProvider>
+      </div>
+    );
   }
 
   // Redirect to login if not authenticated and trying to access protected routes
@@ -95,26 +104,27 @@ export default function App() {
   return (
     <div dir={dir} style={{ direction: dir, width: "100%", height: "100%" }}>
       <ToastProvider>
-        <Suspense fallback={<div>Loading...</div>}>
-          <Routes>
-            {/* Public route - Login */}
-            <Route path="/login" element={<Login />} />
+        <UpdateProvider>
+          <Suspense fallback={<div>Loading...</div>}>
+            <Routes>
+              {/* Public route - Login */}
+              <Route path="/login" element={<Login />} />
 
-            {/* Protected routes - Main app */}
-            <Route
-              path="/*"
-              element={
-                <ProtectedRoute>
-                  <StockProvider>
-                    <LowStockProvider>
-                      <OverduePaymentsProvider>
-                        <DueSoonPaymentsProvider>
-                        <OverdueBillsProvider>
-                        <DueSoonBillsProvider>
-                        <OverdueServicesProvider>
-                        <DueSoonServicesProvider>
-                        <CashierHistoryProvider>
-                        <CompletedServicesProvider>
+              {/* Protected routes - Main app */}
+              <Route
+                path="/*"
+                element={
+                  <ProtectedRoute>
+                    <StockProvider>
+                      <LowStockProvider>
+                        <OverduePaymentsProvider>
+                          <DueSoonPaymentsProvider>
+                          <OverdueBillsProvider>
+                          <DueSoonBillsProvider>
+                          <OverdueServicesProvider>
+                          <DueSoonServicesProvider>
+                          <CashierHistoryProvider>
+                          <CompletedServicesProvider>
                         <Layout>
                         <ScrollToTop />
                         <Routes>
@@ -220,6 +230,7 @@ export default function App() {
             />
           </Routes>
         </Suspense>
+        </UpdateProvider>
       </ToastProvider>
     </div>
   );

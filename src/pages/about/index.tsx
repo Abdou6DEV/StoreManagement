@@ -123,7 +123,7 @@ export default function AboutPage() {
               <div className="flex items-center gap-3">
                 <div className="w-2 h-2 bg-primary rounded-full"></div>
                 <span className="text-foreground font-medium">{t("about.version", "Version")}:</span>
-                <span className="text-muted-foreground">1.0.0</span>
+                <span className="text-muted-foreground">v{window.api?.app?.getVersion?.() || "1.0.0"}</span>
               </div>
               <div className="flex items-center gap-3">
                 <div className="w-2 h-2 bg-primary rounded-full"></div>

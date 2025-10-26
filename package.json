@@ -1,7 +1,7 @@
 {
   "name": "reda-tech-store-management",
   "productName": "REDA TECH Store Management",
-  "version": "1.0.1",
+  "version": "1.0.0",
   "description": "A comprehensive store management solution by REDA TECH",
   "main": ".vite/build/main.js",
   "scripts": {
@@ -39,6 +39,7 @@
     "@electron/fuses": "^1.8.0",
     "@faker-js/faker": "^9.9.0",
     "@tailwindcss/vite": "^4.1.11",
+    "@types/adm-zip": "^0.5.7",
     "@types/better-sqlite3": "^7.6.13",
     "@types/electron-squirrel-startup": "^1.0.2",
     "@types/node-fetch": "^2.6.13",
@@ -75,6 +76,7 @@
     "@tanstack/react-table": "^8.21.3",
     "@types/bcryptjs": "^2.4.6",
     "@types/react-router-dom": "^5.3.3",
+    "adm-zip": "^0.5.16",
     "bcryptjs": "^3.0.2",
     "better-sqlite3": "^12.2.0",
     "class-variance-authority": "^0.7.1",

@@ -16,7 +16,12 @@ export class UpdateChecker {
       const currentVersion = await window.api.app.getVersion();
       
       // Fetch latest release from GitHub
-      const response = await fetch(this.GITHUB_API_URL);
+      const response = await fetch(this.GITHUB_API_URL, {
+        headers: {
+          'User-Agent': 'REDA-TECH-Store-Management/1.0.0',
+          'Accept': 'application/vnd.github.v3+json'
+        }
+      });
       
       if (!response.ok) {
         if (response.status === 404) {

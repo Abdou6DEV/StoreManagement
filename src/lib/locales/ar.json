@@ -1379,7 +1379,11 @@
       "currentVersion": "الإصدار الحالي",
       "latestVersion": "أحدث إصدار",
       "complete": "مكتمل",
-      "downloadAndInstall": "تحميل وتثبيت",
+        "downloadAndInstall": "تحميل وتثبيت",
+        "downloadUpdate": "تحميل التحديث",
+        "installUpdate": "تثبيت التحديث",
+        "cancelDownload": "إلغاء التحميل",
+        "remaining": "متبقي",
       "hideDetails": "إخفاء التفاصيل",
       "showDetails": "إظهار التفاصيل",
       "updateDetails": "تفاصيل التحديث",
@@ -1793,12 +1797,20 @@
   "updates": {
     "checking": "جاري فحص التحديثات...",
     "upToDate": "التطبيق محدث",
-    "updateAvailable": "تحديث متاح: v{{version}} - انقر للتحميل",
-    "noReleases": "لا توجد إصدارات متاحة حالياً - تحقق لاحقاً",
+    "updateAvailable": "تحديث متاح: v{{version}}",
+    "noReleases": "لا توجد تحديثات متاحة",
     "noInternet": "لا يوجد اتصال بالإنترنت - ستكون التحديثات متاحة عند العودة للاتصال",
     "checkFailed": "فشل فحص التحديثات: {{error}}",
     "downloading": "جاري تحميل التحديث...",
+    "downloaded": "تم التحميل بنجاح! جاهز للتثبيت.",
     "installing": "جاري تثبيت التحديث...",
-    "downloadFailed": "فشل التحميل. يرجى المحاولة مرة أخرى."
+    "downloadFailed": "فشل التحميل. يرجى المحاولة مرة أخرى.",
+    "downloadSuccess": "تم التحميل بنجاح!",
+    "downloadSuccessDesc": "التحديث جاهز للتثبيت.",
+    "installSuccess": "تم بدء التثبيت",
+    "installSuccessDesc": "سيتم إعادة تشغيل التطبيق لإكمال التحديث.",
+    "installFailed": "فشل التثبيت",
+    "installFailedDesc": "يرجى المحاولة مرة أخرى أو التثبيت يدوياً.",
+    "downloadCancelled": "تم إلغاء التحميل"
   }
 }
