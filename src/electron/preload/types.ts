@@ -270,6 +270,7 @@ export type AuthAPI = {
       canAccessClients: boolean;
       canAccessBills: boolean;
       canAccessHistory: boolean;
+      canAccessServices: boolean;
       canAccessDashboard: boolean;
       canManageUsers: boolean;
       canViewLogs: boolean;

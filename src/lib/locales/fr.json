@@ -148,7 +148,8 @@
     "oneDueSoonService": "1 service bientôt dû",
     "dueSoonServices": "{{count}} services bientôt dus",
     "oneServiceCompleted": "1 service est terminé",
-    "servicesCompleted": "{{count}} services sont terminés"
+    "servicesCompleted": "{{count}} services sont terminés",
+    "newUpdateAvailable": "Nouvelle mise à jour disponible"
   },
   "history": {
     "title": "Historique",
@@ -1462,7 +1463,8 @@
         "clients": "Clients",
         "bills": "Factures",
         "history": "Historique",
-        "dashboard": "Tableau de Bord"
+        "dashboard": "Tableau de Bord",
+        "services": "Services"
       }
     },
     "updates": "Mises à jour",

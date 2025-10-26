@@ -13,6 +13,7 @@ export interface CreateUserData {
     canAccessClients: boolean;
     canAccessBills: boolean;
     canAccessHistory: boolean;
+    canAccessServices: boolean;
     canAccessDashboard: boolean;
     canManageUsers: boolean;
     canViewLogs: boolean;
@@ -49,6 +50,7 @@ export const users = {
             canAccessClients: data.permissions.canAccessClients,
             canAccessBills: data.permissions.canAccessBills,
             canAccessHistory: data.permissions.canAccessHistory,
+            canAccessServices: data.permissions.canAccessServices,
             canAccessDashboard: data.permissions.canAccessDashboard,
             canManageUsers: data.permissions.canManageUsers,
             canViewLogs: data.permissions.canViewLogs,
@@ -120,6 +122,7 @@ export const users = {
                   canAccessClients: true,
                   canAccessBills: true,
                   canAccessHistory: true,
+                  canAccessServices: true,
                   canAccessDashboard: true,
                   canManageUsers: true,
                   canViewLogs: true,
@@ -304,6 +307,7 @@ export const users = {
     canAccessClients: boolean;
     canAccessBills: boolean;
     canAccessHistory: boolean;
+    canAccessServices: boolean;
     canAccessDashboard: boolean;
     canManageUsers: boolean;
     canViewLogs: boolean;
@@ -326,6 +330,7 @@ export const users = {
       canAccessClients: permissions.canAccessClients,
       canAccessBills: permissions.canAccessBills,
       canAccessHistory: permissions.canAccessHistory,
+      canAccessServices: permissions.canAccessServices,
       canAccessDashboard: permissions.canAccessDashboard,
       canManageUsers: permissions.canManageUsers,
       canViewLogs: permissions.canViewLogs,

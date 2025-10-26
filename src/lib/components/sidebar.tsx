@@ -26,6 +26,7 @@ import { useDueSoonBills } from "../contexts/dueSoonBillsContext";
 import { useOverdueServices } from "../contexts/overdueServicesContext";
 import { useDueSoonServices } from "../contexts/dueSoonServicesContext";
 import { useCompletedServices } from "../contexts/completedServicesContext";
+import { useUpdateContext } from "../contexts/updateContext";
 import { BadgeNotification } from "./badgeNotification";
 
 const menuItems = [
@@ -93,6 +94,7 @@ export default function Sidebar() {
   const { unseenOverdueServicesCount, enableBadge: enableOverdueServicesBadge, badgeLoaded: overdueServicesBadgeLoaded } = useOverdueServices();
   const { unseenDueSoonServicesCount, enableBadge: enableDueSoonServicesBadge, badgeLoaded: dueSoonServicesBadgeLoaded } = useDueSoonServices();
   const { completedServicesCount, isBadgeEnabled: enableCompletedServicesBadge } = useCompletedServices();
+  const { state: updateState } = useUpdateContext();
   const savedCollapsedState = localStorage.getItem("sidebarCollapsed");
   const [collapsed, setCollapsed] = useState(savedCollapsedState === "true");
   const [showText, setShowText] = useState(!collapsed);
@@ -371,6 +373,9 @@ export default function Sidebar() {
                     />
                   )}
                 </>
+              )}
+              {item.key === "administrator" && updateState.updateInfo?.available && (
+                <BadgeNotification count={1} variant="orange" />
               )}
             </div>
             {showText && <span>{t(`mainMenu.${item.key}`)}</span>}

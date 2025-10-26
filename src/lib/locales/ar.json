@@ -148,7 +148,8 @@
     "oneDueSoonService": "خدمة واحدة قريبة الاستحقاق",
     "dueSoonServices": "{{count}} خدمات قريبة الاستحقاق",
     "oneServiceCompleted": "خدمة واحدة مكتملة",
-    "servicesCompleted": "{{count}} خدمات مكتملة"
+    "servicesCompleted": "{{count}} خدمات مكتملة",
+    "newUpdateAvailable": "تحديث جديد متاح"
   },
   "history": {
     "title": "التاريخ",
@@ -1368,7 +1369,8 @@
         "clients": "العملاء",
         "bills": "الفواتير",
         "history": "التاريخ",
-        "dashboard": "لوحة التحكم"
+        "dashboard": "لوحة التحكم",
+        "services": "الخدمات"
       }
     },
     "updates": "التحديثات",

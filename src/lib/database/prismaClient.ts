@@ -40,6 +40,7 @@ async function createTablesManually(client: any) {
       "canAccessClients" INTEGER NOT NULL DEFAULT 0,
       "canAccessBills" INTEGER NOT NULL DEFAULT 0,
       "canAccessHistory" INTEGER NOT NULL DEFAULT 0,
+      "canAccessServices" INTEGER NOT NULL DEFAULT 0,
       "canAccessDashboard" INTEGER NOT NULL DEFAULT 0,
       "canManageUsers" INTEGER NOT NULL DEFAULT 0,
       "canViewLogs" INTEGER NOT NULL DEFAULT 0,

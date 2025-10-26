@@ -7,11 +7,13 @@ import { ReceiptConfig } from "./components/receiptConfig";
 import { BackupManagement } from "./components/backupManagement";
 import AccountsManagement from "./components/accountsManagement";
 import UpdateManagement from "./components/updateManagement";
+import { useUpdateContext } from "../../lib/contexts/updateContext";
 
 export default function AdministratorPage() {
   const { t, i18n } = useTranslation();
   const isRTL = i18n.language === "ar";
   const [activeTab, setActiveTab] = useState<"settings" | "receipt" | "logs" | "accounts" | "backup" | "updates">("settings");
+  const { state: updateState } = useUpdateContext();
 
   return (
     <main
@@ -93,9 +95,14 @@ export default function AdministratorPage() {
               : "text-muted-foreground hover:text-foreground"
           }`}
         >
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 relative">
             <Download className="w-4 h-4" />
             {t("admin.updates", "Updates")}
+            {updateState.updateInfo?.available && (
+              <span className="bg-orange-500 text-white text-xs font-bold px-1.5 h-[18px] flex items-center justify-center min-w-[16px] rounded-sm ml-1">
+                1
+              </span>
+            )}
           </div>
         </button>
       </div>

@@ -21,6 +21,7 @@ import { useDueSoonBills } from "../../lib/contexts/dueSoonBillsContext";
 import { useOverdueServices } from "../../lib/contexts/overdueServicesContext";
 import { useDueSoonServices } from "../../lib/contexts/dueSoonServicesContext";
 import { useCompletedServices } from "../../lib/contexts/completedServicesContext";
+import { useUpdateContext } from "../../lib/contexts/updateContext";
 import "../../lib/i18n";
 
 export default function MainMenu() {
@@ -34,6 +35,7 @@ export default function MainMenu() {
   const { unseenOverdueServicesCount, enableBadge: enableOverdueServicesBadge, badgeLoaded: overdueServicesBadgeLoaded } = useOverdueServices();
   const { unseenDueSoonServicesCount, enableBadge: enableDueSoonServicesBadge, badgeLoaded: dueSoonServicesBadgeLoaded } = useDueSoonServices();
   const { completedServicesCount } = useCompletedServices();
+  const { state: updateState } = useUpdateContext();
   const [enableBadge, setEnableBadge] = useState(false); // Start as false to prevent flash
   const [badgeLoaded, setBadgeLoaded] = useState(false);
 
@@ -254,6 +256,14 @@ export default function MainMenu() {
                        }
                      </div>
                    )}
+                </div>
+              )}
+              {/* Update Badge for Administrator */}
+              {item.key === "administrator" && updateState.updateInfo?.available && (
+                <div className="absolute top-0 right-0 rtl:right-auto rtl:left-0">
+                  <div className="bg-orange-500 text-white text-xs font-bold px-3 py-1 border-2 border-orange-500 shadow-lg transition-all duration-300 ease-in-out h-[20px] flex items-center justify-center min-w-[60px] rounded-tr-lg rounded-bl-lg rtl:rounded-tl-lg rtl:rounded-br-lg rtl:rounded-tr-none rtl:rounded-bl-none">
+                    {t("mainMenu.newUpdateAvailable", "New update is available")}
+                  </div>
                 </div>
               )}
             </div>

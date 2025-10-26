@@ -35,6 +35,7 @@ interface User {
     canAccessClients: boolean;
     canAccessBills: boolean;
     canAccessHistory: boolean;
+    canAccessServices: boolean;
     canAccessDashboard: boolean;
     canManageUsers: boolean;
     canViewLogs: boolean;
@@ -53,6 +54,7 @@ interface UserFormData {
     canAccessClients: boolean;
     canAccessBills: boolean;
     canAccessHistory: boolean;
+    canAccessServices: boolean;
     canAccessDashboard: boolean;
     canManageUsers: boolean;
     canViewLogs: boolean;
@@ -95,6 +97,7 @@ export default function AccountsManagement() {
       canAccessClients: false,
       canAccessBills: false,
       canAccessHistory: false,
+      canAccessServices: false,
       canAccessDashboard: false,
       canManageUsers: false,
       canViewLogs: false,
@@ -145,6 +148,7 @@ export default function AccountsManagement() {
         canAccessClients: false,
         canAccessBills: false,
         canAccessHistory: false,
+        canAccessServices: false,
         canAccessDashboard: false,
         canManageUsers: false,
         canViewLogs: false,
@@ -168,6 +172,7 @@ export default function AccountsManagement() {
       canAccessClients: user.permissions.canAccessClients || false,
       canAccessBills: user.permissions.canAccessBills || false,
       canAccessHistory: user.permissions.canAccessHistory || false,
+      canAccessServices: user.permissions.canAccessServices || false,
       canAccessDashboard: user.permissions.canAccessDashboard || false,
       canManageUsers: user.permissions.canManageUsers || false,
       canViewLogs: user.permissions.canViewLogs || false,
@@ -178,6 +183,7 @@ export default function AccountsManagement() {
       canAccessClients: false,
       canAccessBills: false,
       canAccessHistory: false,
+      canAccessServices: false,
       canAccessDashboard: false,
       canManageUsers: false,
       canViewLogs: false,
@@ -380,6 +386,7 @@ export default function AccountsManagement() {
       canAccessClients: t("admin.accounts.permissionLabels.clients", "Clients"),
       canAccessBills: t("admin.accounts.permissionLabels.bills", "Bills"),
       canAccessHistory: t("admin.accounts.permissionLabels.history", "History"),
+      canAccessServices: t("admin.accounts.permissionLabels.services", "Services"),
       canAccessDashboard: t("admin.accounts.permissionLabels.dashboard", "Dashboard"),
       canManageUsers: "Manage Users",
       canViewLogs: "View Logs",
@@ -614,6 +621,7 @@ export default function AccountsManagement() {
                   'canAccessClients',
                   'canAccessBills',
                   'canAccessHistory',
+                  'canAccessServices',
                   'canAccessDashboard'
                 ];
                 
@@ -695,6 +703,7 @@ export default function AccountsManagement() {
                   'canAccessClients',
                   'canAccessBills',
                   'canAccessHistory',
+                  'canAccessServices',
                   'canAccessDashboard',
                   'canManageUsers',
                   'canViewLogs',

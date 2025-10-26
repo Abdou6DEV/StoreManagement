@@ -158,6 +158,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return user.permissions.canAccessHistory || false;
       case "bills":
         return user.permissions.canAccessBills || false;
+      case "services":
+        return user.permissions.canAccessServices || false;
       case "administrator":
         return user.permissions.canManageUsers || false;
       default:
