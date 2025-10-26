@@ -82,7 +82,6 @@ export default function LicenseValidation() {
             timestamp: Date.now()
           };
           localStorage.setItem("storeManagementLicense", JSON.stringify(licenseData));
-          console.log("License stored successfully:", licenseData);
           
           setValidationResult({
             isValid: true,

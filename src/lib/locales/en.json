@@ -1838,7 +1838,18 @@
     "installSuccess": "Installation started",
     "installSuccessDesc": "The app will restart to complete the update.",
     "installFailed": "Installation failed",
-    "installFailedDesc": "Please try again or install manually."
+    "installFailedDesc": "Please try again or install manually.",
+    "downloadWarningTitle": "Important: Before Downloading Update",
+    "downloadWarningDesc": "Please ensure the following before starting the update:",
+    "downloadWarning1": "• Do NOT close the application during download",
+    "downloadWarning2": "• Do NOT turn off or restart your computer",
+    "downloadWarning3": "• Ensure a stable internet connection",
+    "downloadWarning4": "• Make sure you have at least 500MB free disk space",
+    "downloadWarning5": "• Close any other applications that might interfere",
+    "downloadWarning6": "• Ensure the power cable is connected (if laptop)",
+    "downloadWarningNote": "Any interruption during the download process may cause the update to fail.",
+    "downloadWarningConfirm": "I understand, proceed with download",
+    "downloadWarningCancel": "Cancel"
   }
 }
 

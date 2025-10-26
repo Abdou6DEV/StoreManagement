@@ -12,10 +12,20 @@ import {
   Clock,
   Info,
   X,
-  XCircle
+  XCircle,
+  AlertTriangle
 } from "lucide-react";
 import { useUpdateChecker } from "../../../lib/hooks/useUpdateChecker";
 import { useToast } from "../../../lib/contexts/toastContext";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "../../../lib/components/dialog";
+import { Button } from "../../../lib/components/button";
 
 export default function UpdateManagement() {
   const { t } = useTranslation();
@@ -41,6 +51,7 @@ export default function UpdateManagement() {
   } = state;
   
   const [showDetails, setShowDetails] = useState(false);
+  const [showWarningDialog, setShowWarningDialog] = useState(false);
 
   // Updates are checked automatically in preload, no need to check again here
 
@@ -76,7 +87,12 @@ export default function UpdateManagement() {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
   };
 
-  const handleDownloadUpdate = async () => {
+  const handleDownloadClick = () => {
+    setShowWarningDialog(true);
+  };
+
+  const handleConfirmDownload = async () => {
+    setShowWarningDialog(false);
     if (!updateInfo?.downloadUrl) return;
     
     setDownloadState({
@@ -368,7 +384,7 @@ export default function UpdateManagement() {
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             {updateInfo?.available && !isDownloading && !isInstalling && !isDownloaded && (
               <button
-                onClick={handleDownloadUpdate}
+                onClick={handleDownloadClick}
                 className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
               >
                 <Download className="w-4 h-4" />
@@ -490,6 +506,66 @@ export default function UpdateManagement() {
           </div>
         </div>
       </div>
+
+      {/* Warning Dialog */}
+      <Dialog open={showWarningDialog} onOpenChange={setShowWarningDialog}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-orange-600">
+              <AlertTriangle className="w-5 h-5" />
+              {t("updates.downloadWarningTitle", "Important: Before Downloading Update")}
+            </DialogTitle>
+            <DialogDescription className="text-muted-foreground pt-2">
+              {t("updates.downloadWarningDesc", "Please ensure the following before starting the update:")}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-2 py-4">
+            <p className="text-sm font-medium text-foreground">
+              {t("updates.downloadWarning1", "• Do NOT close the application during download")}
+            </p>
+            <p className="text-sm font-medium text-foreground">
+              {t("updates.downloadWarning2", "• Do NOT turn off or restart your computer")}
+            </p>
+            <p className="text-sm font-medium text-foreground">
+              {t("updates.downloadWarning3", "• Ensure a stable internet connection")}
+            </p>
+            <p className="text-sm font-medium text-foreground">
+              {t("updates.downloadWarning4", "• Make sure you have at least 500MB free disk space")}
+            </p>
+            <p className="text-sm font-medium text-foreground">
+              {t("updates.downloadWarning5", "• Close any other applications that might interfere")}
+            </p>
+            <p className="text-sm font-medium text-foreground">
+              {t("updates.downloadWarning6", "• Ensure the power cable is connected (if laptop)")}
+            </p>
+          </div>
+
+          <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-3 mt-2">
+            <p className="text-sm text-orange-800 dark:text-orange-200">
+              <AlertTriangle className="w-4 h-4 inline mr-1" />
+              {t("updates.downloadWarningNote", "Any interruption during the download process may cause the update to fail.")}
+            </p>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => setShowWarningDialog(false)}
+              className="flex-1 sm:flex-none"
+            >
+              {t("updates.downloadWarningCancel", "Cancel")}
+            </Button>
+            <Button
+              variant="default"
+              onClick={handleConfirmDownload}
+              className="flex-1 sm:flex-none bg-primary hover:bg-primary/90"
+            >
+              {t("updates.downloadWarningConfirm", "I understand, proceed with download")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

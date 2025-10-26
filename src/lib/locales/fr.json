@@ -1389,6 +1389,7 @@
     "disabled": "Désactivé",
     "saving": "Enregistrement...",
     "loading": "Chargement des paramètres...",
+    "settings": "Paramètres",
     "receipt": "Reçu",
     "receiptConfig": "Configuration du reçu",
     "storeName": "Nom du magasin",
@@ -1778,6 +1779,17 @@
     "installSuccessDesc": "L'application va redémarrer pour terminer la mise à jour.",
     "installFailed": "Échec de l'installation",
     "installFailedDesc": "Veuillez réessayer ou installer manuellement.",
-    "downloadCancelled": "Téléchargement annulé"
+    "downloadCancelled": "Téléchargement annulé",
+    "downloadWarningTitle": "Important : Avant de télécharger la mise à jour",
+    "downloadWarningDesc": "Veuillez vous assurer des points suivants avant de commencer la mise à jour :",
+    "downloadWarning1": "• NE PAS fermer l'application pendant le téléchargement",
+    "downloadWarning2": "• NE PAS éteindre ou redémarrer votre ordinateur",
+    "downloadWarning3": "• Assurez-vous d'avoir une connexion internet stable",
+    "downloadWarning4": "• Assurez-vous d'avoir au moins 500 Mo d'espace disque libre",
+    "downloadWarning5": "• Fermez toute autre application susceptible d'interférer",
+    "downloadWarning6": "• Assurez-vous que le câble d'alimentation est connecté (si ordinateur portable)",
+    "downloadWarningNote": "Toute interruption pendant le processus de téléchargement peut faire échouer la mise à jour.",
+    "downloadWarningConfirm": "J'ai compris, procéder au téléchargement",
+    "downloadWarningCancel": "Annuler"
   }
 }

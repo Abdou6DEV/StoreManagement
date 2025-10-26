@@ -1811,6 +1811,17 @@
     "installSuccessDesc": "سيتم إعادة تشغيل التطبيق لإكمال التحديث.",
     "installFailed": "فشل التثبيت",
     "installFailedDesc": "يرجى المحاولة مرة أخرى أو التثبيت يدوياً.",
-    "downloadCancelled": "تم إلغاء التحميل"
+    "downloadCancelled": "تم إلغاء التحميل",
+    "downloadWarningTitle": "مهم: قبل تحميل التحديث",
+    "downloadWarningDesc": "يرجى التأكد من النقاط التالية قبل بدء التحديث:",
+    "downloadWarning1": "• لا تغلق التطبيق أثناء التحميل",
+    "downloadWarning2": "• لا تقم بإيقاف تشغيل أو إعادة تشغيل الكمبيوتر",
+    "downloadWarning3": "• تأكد من وجود اتصال إنترنت مستقر",
+    "downloadWarning4": "• تأكد من وجود 500 ميجابايت على الأقل من مساحة القرص المتاحة",
+    "downloadWarning5": "• أغلق أي تطبيقات أخرى قد تتداخل",
+    "downloadWarning6": "• تأكد من توصيل كابل الطاقة (في حالة الكمبيوتر المحمول)",
+    "downloadWarningNote": "أي انقطاع أثناء عملية التحميل قد يتسبب في فشل التحديث.",
+    "downloadWarningConfirm": "أفهم، المتابعة مع التحميل",
+    "downloadWarningCancel": "إلغاء"
   }
 }
