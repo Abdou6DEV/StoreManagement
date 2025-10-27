@@ -122,9 +122,12 @@ export default function UpdateManagement() {
         throw new Error(result.error || "Download failed");
       }
     } catch (error) {
-      // Don't show error if download was intentionally cancelled
+      // Don't show error if download was intentionally cancelled or aborted
       const err = error instanceof Error ? error : { message: String(error), type: 'unknown' };
-      if (err.message?.includes('aborted') || (err as { type?: string }).type === 'aborted') {
+      if (err.message?.includes('aborted') || 
+          err.message?.includes('cancelled') || 
+          err.message?.includes('interrupted') ||
+          (err as { type?: string }).type === 'aborted') {
         // Just reset the state silently
         setDownloadState({ 
           isDownloading: false,

@@ -106,6 +106,27 @@ export function setupAppHandlers() {
         throw new Error("No download URL provided");
       }
       
+      // Clean up any existing download first
+      if (currentDownloadAbortController) {
+        try {
+          currentDownloadAbortController.abort();
+        } catch (err) {
+          // Ignore cleanup errors
+        }
+        currentDownloadAbortController = null;
+      }
+      
+      if (currentWriteStream) {
+        try {
+          if (!currentWriteStream.destroyed) {
+            currentWriteStream.destroy();
+          }
+        } catch (err) {
+          // Ignore cleanup errors
+        }
+        currentWriteStream = null;
+      }
+      
       const { default: fetch } = await import("node-fetch");
       
       // Create abort controller for this download
@@ -126,6 +147,11 @@ export function setupAppHandlers() {
       
       if (!response.ok) {
         throw new Error(`Failed to download update: ${response.statusText}`);
+      }
+      
+      // Check if response body exists
+      if (!response.body) {
+        throw new Error("No response body received from server");
       }
 
       const downloadsPath = path.join(app.getPath("downloads"), "REDA TECH Store Management Setup.exe");
@@ -149,11 +175,14 @@ export function setupAppHandlers() {
       
       // Track if download was aborted
       let downloadAborted = false;
+      let downloadRejected = false;
       
       // Listen for window close
       const handleBeforeQuit = () => {
         downloadAborted = true;
-        writeStream.destroy();
+        if (currentWriteStream && !currentWriteStream.destroyed) {
+          currentWriteStream.destroy();
+        }
         if (fs.existsSync(downloadsPath)) {
           try {
             fs.unlinkSync(downloadsPath);
@@ -166,48 +195,81 @@ export function setupAppHandlers() {
       app.on('before-quit', handleBeforeQuit);
       
       return new Promise((resolve, reject) => {
-        response.body?.on('data', (chunk) => {
-          downloadedSize += chunk.length;
+        // Handle write stream errors
+        writeStream.on('error', (error) => {
+          if (downloadRejected) return;
+          downloadRejected = true;
           
-          const now = Date.now();
-          const timeDiff = now - lastTime;
+          app.removeListener('before-quit', handleBeforeQuit);
+          writeStream.destroy();
           
-          // Only send progress update once per second
-          if (timeDiff >= 1000) {
-            const progress = totalSize > 0 ? (downloadedSize / totalSize) * 100 : 0;
-            const sizeDiff = downloadedSize - lastDownloadedSize;
-            const speed = (sizeDiff / timeDiff) * 1000; // bytes per second
-            
-            // Send progress update to renderer
-            event.sender.send('download-progress', {
-              progress: Math.round(progress),
-              downloaded: downloadedSize,
-              total: totalSize,
-              speed: speed
-            });
-            
-            // Reset for next calculation
-            lastTime = now;
-            lastDownloadedSize = downloadedSize;
+          try {
+            if (fs.existsSync(downloadsPath)) {
+              fs.unlinkSync(downloadsPath);
+            }
+          } catch (unlinkError) {
+            // Ignore cleanup errors
           }
+          
+          reject(new Error(`Write stream error: ${error.message}`));
         });
 
-        response.body?.on('end', () => {
-          // Remove the before-quit listener
+        writeStream.on('finish', () => {
           app.removeListener('before-quit', handleBeforeQuit);
           
-          // Check if download was aborted
-          if (downloadAborted) {
-            writeStream.destroy();
-            reject(new Error("Download was interrupted by app close"));
+          if (downloadAborted || downloadRejected) {
             return;
           }
           
-          writeStream.end();
-          
           // Verify file size
           if (totalSize > 0 && downloadedSize !== totalSize) {
+            try {
+              fs.unlinkSync(downloadsPath);
+            } catch (unlinkError) {
+              // Ignore cleanup errors
+            }
             reject(new Error(`Download incomplete. Expected ${totalSize} bytes, got ${downloadedSize} bytes`));
+            return;
+          }
+          
+          // Verify downloaded file integrity
+          try {
+            if (!fs.existsSync(downloadsPath)) {
+              reject(new Error("Downloaded file not found after download completed"));
+              return;
+            }
+            
+            const stats = fs.statSync(downloadsPath);
+            
+            // If we know the expected size, verify it matches
+            if (totalSize > 0 && stats.size !== totalSize) {
+              fs.unlinkSync(downloadsPath);
+              reject(new Error(`Downloaded file size mismatch. Expected ${totalSize} bytes, got ${stats.size} bytes`));
+              return;
+            }
+            
+            // Check if file is suspiciously small (likely corrupted)
+            if (stats.size < 100000) { // Less than 100KB is suspicious
+              fs.unlinkSync(downloadsPath);
+              reject(new Error("Downloaded file appears to be corrupted (too small). Please try downloading again."));
+              return;
+            }
+            
+            // Verify it's a valid executable by checking magic bytes
+            const fd = fs.openSync(downloadsPath, 'r');
+            const buffer = Buffer.alloc(2);
+            fs.readSync(fd, buffer, 0, 2, 0);
+            fs.closeSync(fd);
+            
+            const magicBytes = buffer.toString('ascii');
+            if (magicBytes !== 'MZ' && magicBytes !== 'PK') { // MZ for EXE, PK for ZIP
+              fs.unlinkSync(downloadsPath);
+              reject(new Error("Downloaded file is not a valid executable or archive. The download may have been corrupted."));
+              return;
+            }
+          } catch (verifyError) {
+            fs.unlinkSync(downloadsPath);
+            reject(new Error(`File verification failed: ${verifyError instanceof Error ? verifyError.message : 'Unknown error'}`));
             return;
           }
           
@@ -218,20 +280,119 @@ export function setupAppHandlers() {
           });
         });
 
-        response.body?.on('error', (error) => {
-          // Remove the before-quit listener
+        response.body?.on('data', (chunk) => {
+          // Check if download was aborted or stream is destroyed
+          if (downloadAborted || downloadRejected) {
+            return;
+          }
+          
+          if (!writeStream.writable || writeStream.destroyed) {
+            return;
+          }
+          
+          try {
+            writeStream.write(chunk, () => {
+              // Data written successfully
+            });
+            
+            downloadedSize += chunk.length;
+            
+            const now = Date.now();
+            const timeDiff = now - lastTime;
+            
+            // Only send progress update once per second
+            if (timeDiff >= 1000) {
+              const progress = totalSize > 0 ? (downloadedSize / totalSize) * 100 : 0;
+              const sizeDiff = downloadedSize - lastDownloadedSize;
+              const speed = (sizeDiff / timeDiff) * 1000; // bytes per second
+              
+              // Send progress update to renderer
+              event.sender.send('download-progress', {
+                progress: Math.round(progress),
+                downloaded: downloadedSize,
+                total: totalSize,
+                speed: speed
+              });
+              
+              // Reset for next calculation
+              lastTime = now;
+              lastDownloadedSize = downloadedSize;
+            }
+          } catch (writeError) {
+            if (downloadRejected) return;
+            downloadRejected = true;
+            
+            app.removeListener('before-quit', handleBeforeQuit);
+            writeStream.destroy();
+            
+            try {
+              if (fs.existsSync(downloadsPath)) {
+                fs.unlinkSync(downloadsPath);
+              }
+            } catch (unlinkError) {
+              // Ignore cleanup errors
+            }
+            
+            reject(new Error(`Failed to write data: ${writeError instanceof Error ? writeError.message : 'Unknown error'}`));
+          }
+        });
+
+        response.body?.on('end', () => {
+          if (downloadRejected) {
+            return;
+          }
+          
           app.removeListener('before-quit', handleBeforeQuit);
           
-          writeStream.destroy();
+          // Check if download was aborted
+          if (downloadAborted) {
+            writeStream.destroy();
+            if (fs.existsSync(downloadsPath)) {
+              try {
+                fs.unlinkSync(downloadsPath);
+              } catch (err) {
+                // Ignore cleanup errors
+              }
+            }
+            reject(new Error("Download was interrupted by app close"));
+            return;
+          }
+          
+          // End the write stream - this will trigger the 'finish' event
+          writeStream.end();
+        });
+
+        response.body?.on('error', (error: any) => {
+          if (downloadRejected) return;
+          downloadRejected = true;
+          
+          app.removeListener('before-quit', handleBeforeQuit);
+          
+          if (!writeStream.destroyed) {
+            writeStream.destroy();
+          }
+          
           try {
-            fs.unlinkSync(downloadsPath); // Clean up partial file
+            if (fs.existsSync(downloadsPath)) {
+              fs.unlinkSync(downloadsPath);
+            }
           } catch (unlinkError) {
             // Ignore cleanup errors
           }
-          reject(error);
+          
+          // Handle aborted signal gracefully
+          const errorMessage = error?.message || error?.toString() || 'Unknown error';
+          if (errorMessage.includes('aborted') || errorMessage.includes('The operation was aborted')) {
+            // This is expected when user cancels or network issues
+            resolve({
+              success: false,
+              path: "",
+              error: "Download was cancelled or interrupted"
+            });
+          } else {
+            reject(new Error(`Download failed: ${errorMessage}`));
+          }
         });
-
-        response.body?.pipe(writeStream);
       });
     } catch (error) {
       return {
@@ -269,6 +430,46 @@ export function setupAppHandlers() {
     }
   });
 
+  // Validate installer file integrity
+  function validateInstallerFile(filePath: string): { valid: boolean; error?: string } {
+    try {
+      if (!fs.existsSync(filePath)) {
+        return { valid: false, error: "File does not exist" };
+      }
+
+      const stats = fs.statSync(filePath);
+      
+      // Check if file is too small (likely corrupted)
+      if (stats.size < 1000000) { // Less than 1MB is suspicious for an installer
+        return { valid: false, error: "File appears to be corrupted or incomplete (too small)" };
+      }
+
+      // Check if file is zero bytes (definitely corrupted)
+      if (stats.size === 0) {
+        return { valid: false, error: "File is empty (download incomplete)" };
+      }
+
+      // Try to read the first few bytes to check if it's a valid PE (Portable Executable) file
+      // Valid Windows executables start with "MZ" signature
+      const fd = fs.openSync(filePath, 'r');
+      const buffer = Buffer.alloc(2);
+      fs.readSync(fd, buffer, 0, 2, 0);
+      fs.closeSync(fd);
+      
+      const magicBytes = buffer.toString('ascii');
+      if (magicBytes !== 'MZ') {
+        return { valid: false, error: "File is not a valid Windows executable (missing MZ signature)" };
+      }
+
+      return { valid: true };
+    } catch (error) {
+      return { 
+        valid: false, 
+        error: `Failed to validate file: ${error instanceof Error ? error.message : 'Unknown error'}` 
+      };
+    }
+  }
+
   // Install update - ZIP handler
   ipcMain.handle("app:installUpdate", async (event, updatePath: string) => {
     try {
@@ -283,6 +484,24 @@ export function setupAppHandlers() {
         // Handle ZIP update (portable version)
         return await handleZipUpdate(updatePath);
       } else if (isExe) {
+        // Validate file integrity before installation
+        const validation = validateInstallerFile(updatePath);
+        if (!validation.valid) {
+          // Delete corrupted file
+          try {
+            if (fs.existsSync(updatePath)) {
+              fs.unlinkSync(updatePath);
+            }
+          } catch (unlinkError) {
+            // Ignore cleanup errors
+          }
+          
+          return {
+            success: false,
+            error: `Corrupted download file detected and removed. ${validation.error} Please download again.`
+          };
+        }
+
         // Handle EXE update (installer) - try silent install first
         return await handleExeUpdate(updatePath);
       } else {
