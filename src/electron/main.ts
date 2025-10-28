@@ -1,7 +1,31 @@
 import { app, BrowserWindow, screen } from "electron";
 import path from "node:path";
-import started from "electron-squirrel-startup";
 import { prismaPromise } from "../lib/database/prismaClient";
+
+// Check if this is a Squirrel event
+const isSquirrelEvent = (): boolean => {
+  if (process.platform !== 'win32') return false;
+  
+  const squirrelCommand = process.argv[1];
+  
+  switch (squirrelCommand) {
+    case '--squirrel-install':
+    case '--squirrel-updated':
+    case '--squirrel-uninstall':
+    case '--squirrel-obsolete':
+      return true;
+    default:
+      return false;
+  }
+};
+
+// Handle Squirrel events on Windows for install/update/uninstall
+if (isSquirrelEvent()) {
+  app.whenReady().then(() => {
+    setTimeout(() => app.quit(), 100);
+  });
+  // Don't proceed with normal app initialization
+}
 
 // Declare Vite environment variables
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string | undefined;
@@ -15,11 +39,6 @@ import {
   performDailyBackup,
 } from "./handlers";
 import { setupAppHandlers } from "./handlers/appHandlers";
-
-// Handle creating/removing shortcuts on Windows when installing/uninstalling.
-if (started) {
-  app.quit();
-}
 
 const createWindow = async () => {
   // Initialize Prisma client first
@@ -70,7 +89,12 @@ const createWindow = async () => {
   // mainWindow.webContents.openDevTools();
 };
 
-app.on("ready", createWindow);
+app.on("ready", () => {
+  // Only create window if not a Squirrel event
+  if (!isSquirrelEvent()) {
+    createWindow();
+  }
+});
 
 // Set up automatic daily backup
 let backupInterval: NodeJS.Timeout | null = null;
@@ -92,8 +116,11 @@ const scheduleDailyBackup = () => {
 
 // Start backup scheduling when app is ready
 app.on("ready", () => {
-  // Small delay to ensure database is initialized
-  setTimeout(scheduleDailyBackup, 5000);
+  // Only schedule backup if not a Squirrel event
+  if (!isSquirrelEvent()) {
+    // Small delay to ensure database is initialized
+    setTimeout(scheduleDailyBackup, 5000);
+  }
 });
 
 // Clean up on app quit

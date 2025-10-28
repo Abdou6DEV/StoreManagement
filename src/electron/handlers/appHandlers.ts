@@ -1,7 +1,7 @@
 import { ipcMain, app } from "electron";
 import path from "path";
 import fs from "fs";
-import { exec } from "child_process";
+import { exec, spawn } from "child_process";
 import { promisify } from "util";
 
 const execAsync = promisify(exec);
@@ -64,12 +64,12 @@ export function setupAppHandlers() {
       // Compare versions
       const isUpdateAvailable = compareVersions(currentVersion, latestVersion) < 0;
       
-      // Find Windows asset - prefer portable/zip over installer
+      // Find Windows asset - prefer Setup.exe over zip (for Squirrel updates)
       const windowsAsset = release.assets.find((asset: { name: string }) => 
-        asset.name.toLowerCase().includes('.zip') || // Prefer portable zip
-        asset.name.toLowerCase().includes('portable') ||
-        asset.name.toLowerCase().includes('setup.exe') || 
+        asset.name.toLowerCase().includes('setup.exe') || // Prefer Squirrel installer
         asset.name.toLowerCase().includes('.exe') ||
+        asset.name.toLowerCase().includes('.zip') || // Fallback to portable zip
+        asset.name.toLowerCase().includes('portable') ||
         asset.name.includes('REDA.TECH.Store.Management')
       );
       
@@ -154,12 +154,30 @@ export function setupAppHandlers() {
         throw new Error("No response body received from server");
       }
 
-      const downloadsPath = path.join(app.getPath("downloads"), "REDA TECH Store Management Setup.exe");
+      const downloadsDir = app.getPath("downloads");
+
+      // Ensure Downloads directory exists
+      if (!fs.existsSync(downloadsDir)) {
+        try {
+          fs.mkdirSync(downloadsDir, { recursive: true });
+          console.log('[Download] Created Downloads directory:', downloadsDir);
+        } catch (err) {
+          console.error('[Download] Failed to create Downloads directory:', err);
+          throw new Error('Downloads folder does not exist and could not be created');
+        }
+      }
+
+      const downloadsPath = path.join(downloadsDir, "REDA TECH Store Management Setup.exe");
       currentDownloadPath = downloadsPath;
       
       // Clean up any existing partial file
       if (fs.existsSync(downloadsPath)) {
-        fs.unlinkSync(downloadsPath);
+        try {
+          fs.unlinkSync(downloadsPath);
+        } catch (err) {
+          console.log('[Download] Could not delete existing file (may be locked):', err);
+          // Continue anyway, file will be overwritten
+        }
       }
       
       // Get file size from response headers
@@ -477,11 +495,28 @@ export function setupAppHandlers() {
         throw new Error("Update file not found");
       }
 
-      const isZip = updatePath.toLowerCase().endsWith('.zip');
-      const isExe = updatePath.toLowerCase().endsWith('.exe');
+      // Determine file type from actual content (magic bytes), not filename
+      // because we always save with .exe extension
+      let isZip = false;
+      let isExe = false;
+
+      try {
+        const fileHandle = fs.openSync(updatePath, 'r');
+        const buffer = Buffer.alloc(4);
+        fs.readSync(fileHandle, buffer, 0, 4, 0);
+        fs.closeSync(fileHandle);
+        
+        isExe = buffer[0] === 0x4D && buffer[1] === 0x5A; // MZ for .exe
+        isZip = buffer[0] === 0x50 && buffer[1] === 0x4B; // PK for .zip/.exe
+        
+        console.log('[Install] File type detected - isZip:', isZip, 'isExe:', isExe);
+      } catch (err) {
+        console.error('[Install] Error reading magic bytes:', err);
+        throw new Error('Could not determine installer file type');
+      }
       
       if (isZip) {
-        // Handle ZIP update (portable version)
+        // Handle ZIP file (Windows update)
         return await handleZipUpdate(updatePath);
       } else if (isExe) {
         // Validate file integrity before installation
@@ -502,10 +537,22 @@ export function setupAppHandlers() {
           };
         }
 
-        // Handle EXE update (installer) - try silent install first
-        return await handleExeUpdate(updatePath);
+        // Handle EXE update (installer)
+        await handleExeUpdate(updatePath);
+        
+        // Give installer time to initialize and start the Squirrel update process
+        // Squirrel will kill this process itself when ready, but we quit after a reasonable delay as fallback
+        setTimeout(() => {
+          console.log('[Install] App quitting to allow installer to complete');
+          app.quit();
+        }, 15000); // 15 seconds - enough time for installer to extract and initialize
+        
+        return {
+          success: true,
+          error: null as string | null
+        };
       } else {
-        throw new Error("Unsupported update file format");
+        throw new Error("Unsupported installer format - file is neither .exe nor .zip");
       }
     } catch (error) {
       return {
@@ -552,46 +599,22 @@ export function setupAppHandlers() {
 
   // Handle EXE update (installer)
   async function handleExeUpdate(exePath: string) {
+    // Run the installer - Squirrel installers don't support silent flags like NSIS/Inno Setup
+    // Just run it and let the user interact with it
     try {
-      // Try silent installer flags first
-      // Preserve user data directory to avoid re-validation
-      const userDataPath = app.getPath("userData");
-      const installerFlags = [
-        `"${exePath}" /S /D="${path.dirname(userDataPath)}" /ALLUSERS=0`, // Silent install, preserve user data
-        `"${exePath}" /S /ALLUSERS=0`, // Silent install
-        `"${exePath}" /VERYSILENT /SUPPRESSMSGBOXES /ALLUSERS=0`, // Very silent install
-        `"${exePath}" /S`, // Silent install (fallback)
-        `"${exePath}"` // Fallback to normal install
-      ];
-
-      let installSuccess = false;
-      let lastError: Error | null = null;
-
-      for (const command of installerFlags) {
-        try {
-          await execAsync(command);
-          installSuccess = true;
-          break;
-        } catch (error) {
-          lastError = error instanceof Error ? error : new Error(String(error));
-        }
-      }
-
-      if (!installSuccess) {
-        throw lastError || new Error("All installer commands failed");
-      }
+      const installer = spawn(exePath, [], {
+        detached: true,
+        stdio: 'ignore'
+      });
       
-      // Quit the app after installation starts
-      setTimeout(() => {
-        app.quit();
-      }, 3000);
-
-      return {
-        success: true,
-        error: null as string | null
-      };
+      installer.unref();
+      
+      // Give it a moment to start
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      return; // Success
     } catch (error) {
-      throw new Error(`Failed to run installer: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(`Failed to launch installer: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 }
