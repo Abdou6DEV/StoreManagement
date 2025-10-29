@@ -86,8 +86,14 @@ const ProductCard = memo(function ProductCard({
       : product.quantity;
   }, [isInCart, product.id, product.quantity, getCartQuantity]);
 
+  const isOutOfStock = useMemo(() => {
+    return currentQuantity === 0;
+  }, [currentQuantity]);
+
+  // Low stock warning: only show if threshold > 0 and quantity is within threshold
+  // If threshold is 0, user has disabled low stock warnings, so no orange badge
   const isLowStock = useMemo(() => {
-    return currentQuantity <= lowStockThreshold;
+    return lowStockThreshold > 0 && currentQuantity > 0 && currentQuantity <= lowStockThreshold;
   }, [currentQuantity, lowStockThreshold]);
 
   const isInCartValue = useMemo(() => {
@@ -121,11 +127,15 @@ const ProductCard = memo(function ProductCard({
         <div
           className={`text-xs font-semibold px-2 py-1 rounded-full shadow-sm ${
             isInCartValue
-              ? isLowStock
+              ? isOutOfStock
                 ? "bg-red-500 text-white"
+                : isLowStock
+                ? "bg-orange-600 text-white"
                 : "bg-primary text-primary-foreground"
-              : isLowStock
+              : isOutOfStock
               ? "bg-red-500 text-white"
+              : isLowStock
+              ? "bg-orange-600 text-white"
               : "bg-gray-600 text-white"
           }`}
         >

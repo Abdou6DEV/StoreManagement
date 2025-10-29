@@ -1,5 +1,6 @@
 import { app, BrowserWindow, screen } from "electron";
 import path from "node:path";
+import fs from "node:fs";
 import { prismaPromise } from "../lib/database/prismaClient";
 
 // Check if this is a Squirrel event
@@ -59,6 +60,26 @@ const createWindow = async () => {
 
   const { width, height, x, y } = screen.getPrimaryDisplay().workArea;
 
+  // Get icon path (works in both dev and production)
+  // Try multiple possible locations for the icon file
+  let iconPath: string | undefined;
+  const possiblePaths = [
+    path.join(__dirname, "../public/myapp.ico"), // Dev mode and some production setups
+    path.join(app.getAppPath(), "public", "myapp.ico"), // Production (app.asar)
+    path.join(process.resourcesPath || app.getAppPath(), "public", "myapp.ico"), // Resources folder
+    path.join(process.resourcesPath || app.getAppPath(), "app", "public", "myapp.ico"), // Alternative resource path
+  ];
+
+  // Find the first existing path
+  for (const possiblePath of possiblePaths) {
+    if (fs.existsSync(possiblePath)) {
+      iconPath = possiblePath;
+      break;
+    }
+  }
+
+  // If no icon found, undefined will make Electron use default icon (no error thrown)
+
   // Create the browser window.
   const mainWindow = new BrowserWindow({
     x,
@@ -69,7 +90,7 @@ const createWindow = async () => {
     resizable: true,
     maximizable: true,
     fullscreenable: true,
-    icon: path.join(__dirname, "../public/icon-256.png"),
+    icon: iconPath,
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,

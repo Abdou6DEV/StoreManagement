@@ -18,11 +18,13 @@ const config: ForgeConfig = {
       /^\/prisma\/seed\//,
       /^\/scripts\//
     ],
-    icon: "./public/reda_tech.ico"
+    icon: "./public/myapp.ico"
   },
   rebuildConfig: {},
   makers: [
-    new MakerSquirrel({}),
+    new MakerSquirrel({
+      setupIcon: "./public/myapp.ico"
+    }),
     new MakerZIP({}, ["win32"]), // Create ZIP for Windows updates
     new MakerZIP({}, ["darwin"]),
     new MakerRpm({}),

@@ -656,17 +656,17 @@ export function BackupManagement() {
            <DialogHeader>
              <DialogTitle className="flex items-center gap-2 text-lg">
                <FolderOpen className="w-5 h-5 text-primary" />
-               Backup to Custom Path
+               {t("admin.backup.backupToCustomPathTitle", "Backup to Custom Path")}
              </DialogTitle>
              <DialogDescription>
-               Choose where to save your backup file (e.g., USB drive, external storage)
+               {t("admin.backup.backupToCustomPathDesc", "Choose where to save your backup file (e.g., USB drive, external storage)")}
              </DialogDescription>
            </DialogHeader>
            
            <div className="space-y-4">
              <div className="space-y-2">
                <label htmlFor="custom-path" className="text-sm font-medium">
-                 Backup Path:
+                 {t("admin.backup.backupPath", "Backup Path:")}
                </label>
                <div className="flex gap-2">
                  <input
@@ -674,7 +674,7 @@ export function BackupManagement() {
                    type="text"
                    value={customPath}
                    onChange={(e) => setCustomPath(e.target.value)}
-                   placeholder="C:\MyBackups\backup_2025-09-24.db"
+                   placeholder={t("admin.backup.backupPathPlaceholder", "C:\\MyBackups\\backup_2025-09-24.db")}
                    className="flex-1 px-3 py-2 border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                  />
                  <Button
@@ -686,28 +686,27 @@ export function BackupManagement() {
                        if (result.success && result.filePath) {
                          setCustomPath(result.filePath);
                        } else if (!result.canceled) {
-                         showToast("Failed to select path", "error");
+                         showToast(t("admin.backup.failedToSelectPath", "Failed to select path"), "error");
                        }
                      } catch (error) {
-                       showToast("Error opening file dialog", "error");
+                       showToast(t("admin.backup.errorOpeningFileDialog", "Error opening file dialog"), "error");
                        console.error("File dialog error:", error);
                      }
                    }}
                    className="px-3"
                  >
-                   Browse
+                   {t("admin.backup.browse", "Browse")}
                  </Button>
                </div>
                <p className="text-xs text-muted-foreground">
-                 Example: D:\MyBackups\backup_2025-09-24.db or /media/usb/backup.db
+                 {t("admin.backup.pathExample", "Example: D:\\MyBackups\\backup_2025-09-24.db or /media/usb/backup.db")}
                </p>
              </div>
              
              <Alert>
                <AlertTriangle className="h-4 w-4" />
                <AlertDescription>
-                 <strong>Note:</strong> Make sure the target directory exists and you have write permissions.
-                 The backup will be created with a timestamp in the filename.
+                 <strong>{t("admin.backup.note", "Note:")}</strong> {t("admin.backup.noteDesc", "Make sure the target directory exists and you have write permissions. The backup will be created with a timestamp in the filename.")}
                </AlertDescription>
              </Alert>
            </div>
@@ -721,7 +720,7 @@ export function BackupManagement() {
                }}
                disabled={creatingBackup}
              >
-               Cancel
+               {t("admin.backup.cancel", "Cancel")}
              </Button>
              <Button
                onClick={createBackupToCustomPath}
@@ -733,7 +732,7 @@ export function BackupManagement() {
                ) : (
                  <Download className="w-4 h-4" />
                )}
-               {creatingBackup ? "Creating..." : "Create Backup"}
+               {creatingBackup ? t("admin.backup.creating", "Creating...") : t("admin.backup.createBackup", "Create Backup")}
              </Button>
            </DialogFooter>
          </DialogContent>
