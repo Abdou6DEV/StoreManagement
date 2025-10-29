@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useRef } from "react";
-import { ChevronDown, ChevronUp, Wrench, Loader2, Check, Search, User } from "lucide-react";
+import { ChevronDown, ChevronUp, Wrench, Loader2, Check, User, Plus, Users } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "../../../lib/components/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../lib/components/select";
 import { DatePicker } from "../../../lib/components/datePicker";
 import { Popover, PopoverContent, PopoverTrigger } from "../../../lib/components/popover";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "../../../lib/components/command";
+import { Command, CommandGroup, CommandInput, CommandItem, CommandList } from "../../../lib/components/command";
 import { useToast } from "../../../lib/contexts/toastContext";
 import { cn } from "../../../lib/utils";
+import AddClientModal from "../../../pages/cashier/components/addClientModal";
 
 interface Client {
   id: string;
@@ -69,6 +69,7 @@ export default function AddServiceForm({
   const [clients, setClients] = useState<Client[]>([]);
   const [serviceTypes, setServiceTypes] = useState<string[]>([]);
   const [serviceNames, setServiceNames] = useState<string[]>([]);
+  const [serviceNameToTypeMap, setServiceNameToTypeMap] = useState<Map<string, string>>(new Map());
   const [isExistingService, setIsExistingService] = useState(false);
   
   // Enhanced dropdown states
@@ -77,18 +78,22 @@ export default function AddServiceForm({
   const [filteredTypes, setFilteredTypes] = useState<string[]>([]);
   const [filteredNames, setFilteredNames] = useState<string[]>([]);
   const [clientSearch, setClientSearch] = useState("");
-  const [typeSearch, setTypeSearch] = useState("");
-  const [nameSearch, setNameSearch] = useState("");
   const [selectedTypeIndex, setSelectedTypeIndex] = useState(-1);
   const [selectedNameIndex, setSelectedNameIndex] = useState(-1);
   const [clientPopoverOpen, setClientPopoverOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   
+  // Add client modal state
+  const [showAddClientModal, setShowAddClientModal] = useState(false);
+  const [clientName, setClientName] = useState("");
+  const [clientPhone, setClientPhone] = useState("");
+  const [clientAddress, setClientAddress] = useState("");
+  const [clientNotes, setClientNotes] = useState("");
+  
   // Refs for dropdown management and field navigation
   const typeInputRef = useRef<HTMLInputElement>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
   const clientButtonRef = useRef<HTMLButtonElement>(null);
-  const dueDateRef = useRef<HTMLInputElement>(null);
   const costPriceRef = useRef<HTMLInputElement>(null);
   const servicePriceRef = useRef<HTMLInputElement>(null);
   const descriptionRef = useRef<HTMLInputElement>(null);
@@ -152,17 +157,63 @@ export default function AddServiceForm({
 
   const loadServiceData = async () => {
     try {
-      const [clientsData, typesData, namesData] = await Promise.all([
+      const [clientsData, typesData, namesData, allAppointments] = await Promise.all([
         window.api.database.clients.getAll(),
         window.api.database.serviceAppointments.getServiceTypes(),
-        window.api.database.serviceAppointments.getServiceNames()
+        window.api.database.serviceAppointments.getServiceNames(),
+        window.api.database.serviceAppointments.getAll()
       ]);
       setClients(clientsData);
       setServiceTypes(typesData);
       setServiceNames(namesData);
       setFilteredNames(namesData); // Initialize filtered names
+      
+      // Create a map from service name to service type
+      // Use the most recent occurrence of each service name
+      const nameToTypeMap = new Map<string, string>();
+      allAppointments.forEach((appointment: { name: string; serviceType: string }) => {
+        // Only update if not already in map (keeps the first/most recent occurrence)
+        if (!nameToTypeMap.has(appointment.name)) {
+          nameToTypeMap.set(appointment.name, appointment.serviceType);
+        }
+      });
+      setServiceNameToTypeMap(nameToTypeMap);
     } catch (error) {
       console.error("Error loading service data:", error);
+    }
+  };
+
+  const handleAddClient = async () => {
+    try {
+      const newClient = await window.api.database.clients.create({
+        name: clientName.trim(),
+        phone: clientPhone.trim() || undefined,
+        address: clientAddress.trim() || undefined,
+        notes: clientNotes.trim() || undefined,
+      });
+      
+      // Refresh clients list
+      await loadServiceData();
+      
+      // Select the newly created client
+      const updatedClients = await window.api.database.clients.getAll();
+      const createdClient = updatedClients.find((c: Client) => c.id === newClient.id);
+      if (createdClient) {
+        selectClient(createdClient);
+        setClientPopoverOpen(false);
+      }
+      
+      // Reset form and close modal
+      setClientName("");
+      setClientPhone("");
+      setClientAddress("");
+      setClientNotes("");
+      setShowAddClientModal(false);
+      
+      showToast(t("clients.addSuccess", "Client added successfully"), "success");
+    } catch (error) {
+      console.error("Error adding client:", error);
+      showToast(t("clients.addError", "Failed to add client"), "error");
     }
   };
 
@@ -183,7 +234,6 @@ export default function AddServiceForm({
   // Enhanced type search with filtering
   const handleTypeSearch = (value: string) => {
     setForm((prev) => ({ ...prev, serviceType: value }));
-    setTypeSearch(value);
     
     if (value.trim()) {
       const filtered = serviceTypes.filter((type) =>
@@ -233,7 +283,6 @@ export default function AddServiceForm({
   // Service name search handler
   const handleNameSearch = (value: string) => {
     setForm((prev) => ({ ...prev, name: value }));
-    setNameSearch(value);
     
     if (value.trim()) {
       const filtered = serviceNames.filter((name) =>
@@ -294,7 +343,13 @@ export default function AddServiceForm({
   };
 
   const selectName = (name: string) => {
-    setForm(prev => ({ ...prev, name: name }));
+    // Automatically set the service type when a service name is selected
+    const correspondingType = serviceNameToTypeMap.get(name);
+    if (correspondingType) {
+      setForm(prev => ({ ...prev, name: name, serviceType: correspondingType }));
+    } else {
+      setForm(prev => ({ ...prev, name: name }));
+    }
     setShowNameDropdown(false);
     setSelectedNameIndex(-1);
   };
@@ -319,7 +374,7 @@ export default function AddServiceForm({
           clientButtonRef.current?.click();
           break;
         case "client":
-          dueDateRef.current?.focus();
+          costPriceRef.current?.focus();
           break;
         case "dueDate":
           costPriceRef.current?.focus();
@@ -335,7 +390,7 @@ export default function AddServiceForm({
           break;
         case "notes":
           // Submit form if on last field
-          handleAddService(e as any);
+          handleAddService(e as React.FormEvent);
           break;
       }
     }
@@ -513,75 +568,101 @@ export default function AddServiceForm({
             </Legend>
             <Legend>
               <label>{t("services.client", "Client")} <span className="text-muted-foreground text-xs">({t("common.optional", "Optional")})</span></label>
-              <Popover
-                open={clientPopoverOpen}
-                onOpenChange={(open) => {
-                  setClientPopoverOpen(open);
-                  if (open) setClientSearch(""); // Reset search when opening
-                }}
-              >
-                <PopoverTrigger asChild>
-                  <Button
-                    ref={clientButtonRef}
-                    variant="outline"
-                    className="w-full justify-start px-4 py-3 h-12 text-sm"
-                    aria-label={t("services.client", "Client")}
-                    onKeyDown={(e) => handleFieldKeyDown(e, "client")}
-                  >
-                    {selectedClient ? selectedClient.name : t("services.searchClient", "Search for client")}
-                    <ChevronDown className="ml-auto w-4 h-4" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 z-50">
-                  <Command shouldFilter={false}>
-                    <CommandInput
-                      placeholder={t("services.searchClient", "Search for client")}
-                      className="h-9"
-                      value={clientSearch}
-                      onValueChange={setClientSearch}
-                    />
-                    <CommandList>
-                      <CommandGroup>
-                        {filteredClients.map((client) => (
-                          <CommandItem
-                            key={client.id}
-                            value={client.name}
-                            onSelect={() => {
-                              selectClient(client);
-                              setClientPopoverOpen(false);
-                            }}
-                          >
-                            <User className="w-4 h-4 mr-2" />
-                            <div className="flex-1">
-                              <div className="font-medium">{client.name}</div>
-                              {client.phone && (
-                                <div className="text-sm text-muted-foreground">{client.phone}</div>
-                              )}
-                            </div>
-                            <Check
-                              className={cn(
-                                "ml-auto h-4 w-4",
-                                selectedClient?.id === client.id ? "opacity-100" : "opacity-0",
-                              )}
-                            />
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
+              <div className="flex gap-2">
+                <Popover
+                  open={clientPopoverOpen}
+                  onOpenChange={(open) => {
+                    setClientPopoverOpen(open);
+                    if (open) setClientSearch(""); // Reset search when opening
+                  }}
+                >
+                  <PopoverTrigger asChild>
+                    <Button
+                      ref={clientButtonRef}
+                      variant="outline"
+                      className="flex-1 justify-start px-4 py-3 h-12 text-sm"
+                      aria-label={t("services.client", "Client")}
+                      onKeyDown={(e) => handleFieldKeyDown(e, "client")}
+                    >
+                      {selectedClient ? selectedClient.name : t("services.searchClient", "Search for client")}
+                      <ChevronDown className="ml-auto w-4 h-4" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 z-50">
+                    <Command shouldFilter={false}>
+                      <div className="flex items-center border-b">
+                        <CommandInput
+                          placeholder={t("services.searchClient", "Search for client")}
+                          className="h-9 flex-1 border-0"
+                          value={clientSearch}
+                          onValueChange={setClientSearch}
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-9 w-9 p-0 mr-1"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setClientPopoverOpen(false);
+                            setShowAddClientModal(true);
+                          }}
+                          title={t("cashier.addNewClient", "Add New Client")}
+                        >
+                          <Plus className="w-4 h-4" />
+                        </Button>
+                      </div>
+                      <CommandList>
+                        <CommandGroup>
+                          {filteredClients.map((client) => (
+                            <CommandItem
+                              key={client.id}
+                              value={client.name}
+                              onSelect={() => {
+                                selectClient(client);
+                                setClientPopoverOpen(false);
+                              }}
+                            >
+                              <User className="w-4 h-4 mr-2" />
+                              <div className="flex-1">
+                                <div className="font-medium">{client.name}</div>
+                                {client.phone && (
+                                  <div className="text-sm text-muted-foreground">{client.phone}</div>
+                                )}
+                              </div>
+                              <Check
+                                className={cn(
+                                  "ml-auto h-4 w-4",
+                                  selectedClient?.id === client.id ? "opacity-100" : "opacity-0",
+                                )}
+                              />
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-12 px-3 flex items-center justify-center gap-1"
+                  onClick={() => setShowAddClientModal(true)}
+                  title={t("cashier.addNewClient", "Add New Client")}
+                >
+                  <Users className="w-4 h-4" />
+                  <Plus className="w-4 h-4" />
+                </Button>
+              </div>
             </Legend>
             <Legend>
               <label>{t("services.dueDate", "Due Date")}</label>
               <DatePicker
-                ref={dueDateRef}
                 value={form.dueDate}
                 onChange={(date) => handleFormChange("dueDate", date)}
                 placeholder={t("services.selectDueDate", "Select due date (default: 3 days later)")}
                 className="w-full h-12 px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all"
                 min={new Date().toISOString().split('T')[0]}
-                onKeyDown={(e) => handleFieldKeyDown(e, "dueDate")}
               />
             </Legend>
             <Legend>
@@ -662,6 +743,27 @@ export default function AddServiceForm({
         </div>
       </form>
       )}
+      
+      <AddClientModal
+        open={showAddClientModal}
+        onClose={() => {
+          setShowAddClientModal(false);
+          setClientName("");
+          setClientPhone("");
+          setClientAddress("");
+          setClientNotes("");
+        }}
+        clientName={clientName}
+        setClientName={setClientName}
+        clientPhone={clientPhone}
+        setClientPhone={setClientPhone}
+        clientAddress={clientAddress}
+        setClientAddress={setClientAddress}
+        clientNotes={clientNotes}
+        setClientNotes={setClientNotes}
+        t={t}
+        onConfirm={handleAddClient}
+      />
     </section>
   );
 }

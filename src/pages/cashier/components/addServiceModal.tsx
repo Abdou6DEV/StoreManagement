@@ -312,8 +312,8 @@ export default function AddServiceModal({
       title={t("cashier.addService", "Add Service")}
         subtitle={t("cashier.selectServiceDesc", "Click completed services to add directly to cart, or select templates to customize")}
       icon={<Plus className="w-5 h-5 text-blue-500" />}
-      size="lg"
-      className="max-w-5xl"
+      size="xl"
+      className="max-w-7xl"
       onSubmit={handleSubmit}
       submitText={t("cashier.addToCart", "Add to Cart")}
       cancelText={t("cashier.cancel", "Cancel")}
@@ -407,7 +407,7 @@ export default function AddServiceModal({
             <div className="w-full">
               <StyledNumberInput
                 value={service.costPrice}
-                onChange={(val) =>
+                onChange={(val: number | "") =>
                   setService((p) => ({
                     ...p,
                     costPrice: val === "" ? 0 : val,
@@ -425,7 +425,7 @@ export default function AddServiceModal({
             <div className="w-full">
               <StyledNumberInput
                 value={service.price}
-                onChange={(val) =>
+                onChange={(val: number | "") =>
                   setService((p) => ({
                     ...p,
                     price: val === "" ? 0 : val,

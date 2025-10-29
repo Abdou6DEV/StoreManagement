@@ -38,12 +38,14 @@ export default function ServicesPage() {
   const [openPanel, setOpenPanel] = useState<"add" | null>(null);
   const [showServiceTypes, setShowServiceTypes] = useState(false);
   const [services, setServices] = useState<ServiceAppointment[]>([]);
-  const [loading, setLoading] = useState(true);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [_loading, setLoading] = useState(true);
   const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
-  const [serviceTypes, setServiceTypes] = useState<string[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [_serviceTypes, setServiceTypes] = useState<string[]>([]);
   const [filters, setFilters] = useState({
     search: "",
     status: "all",
@@ -117,12 +119,12 @@ export default function ServicesPage() {
         
         // Only calculate highlighting if we weren't already viewing the overdue table
         if (!isViewingOverdueTable) {
-          const overdueServices = filteredServices.filter(service => {
+          const overdueServices = filteredServices.filter((service: ServiceAppointment) => {
             const today = new Date();
             const dueDate = new Date(service.dueDate);
             return dueDate < today && !service.isCompleted && !seenOverdueServices.has(service.id);
           });
-          currentNewlyOverdueServicesIds = new Set(overdueServices.map(service => service.id));
+          currentNewlyOverdueServicesIds = new Set(overdueServices.map((service: ServiceAppointment) => service.id));
           setNewlyOverdueServicesIds(currentNewlyOverdueServicesIds);
           setNewlyDueSoonServicesIds(new Set());
         } else {
@@ -135,14 +137,14 @@ export default function ServicesPage() {
         
         // Only calculate highlighting if we weren't already viewing the due soon table
         if (!isViewingDueSoonTable) {
-          const dueSoonServices = filteredServices.filter(service => {
+          const dueSoonServices = filteredServices.filter((service: ServiceAppointment) => {
             const today = new Date();
             const dueDate = new Date(service.dueDate);
             const diffTime = dueDate.getTime() - today.getTime();
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
             return diffDays <= dueSoonThresholdDays && diffDays >= 0 && !service.isCompleted && !seenDueSoonServices.has(service.id);
           });
-          currentNewlyDueSoonServicesIds = new Set(dueSoonServices.map(service => service.id));
+          currentNewlyDueSoonServicesIds = new Set(dueSoonServices.map((service: ServiceAppointment) => service.id));
           setNewlyOverdueServicesIds(new Set());
           setNewlyDueSoonServicesIds(currentNewlyDueSoonServicesIds);
         } else {
@@ -156,7 +158,7 @@ export default function ServicesPage() {
         setNewlyDueSoonServicesIds(new Set());
       }
       
-      // Sort services: highlighted first, then incomplete, then by due date
+      // Sort services: highlighted first, then incomplete, then by creation date (latest first)
       filteredServices.sort((a: ServiceAppointment, b: ServiceAppointment) => {
         // First prioritize highlighted services (newly overdue and due soon)
         const aIsHighlighted = currentNewlyOverdueServicesIds.has(a.id) || currentNewlyDueSoonServicesIds.has(a.id);
@@ -169,8 +171,8 @@ export default function ServicesPage() {
         if (a.isCompleted !== b.isCompleted) {
           return a.isCompleted ? 1 : -1;
         }
-        // Then sort by due date (earliest first)
-        return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+        // Then sort by creation date (latest first)
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
       });
       
       // Calculate pagination
@@ -223,12 +225,12 @@ export default function ServicesPage() {
     if (filters.dateFilter === "overdue" && isViewingOverdueTable) {
       // Mark all overdue services as seen
       const overdueServiceIds = services
-        .filter(service => {
+        .filter((service: ServiceAppointment) => {
           const today = new Date();
           const dueDate = new Date(service.dueDate);
           return dueDate < today && !service.isCompleted;
         })
-        .map(service => service.id);
+        .map((service: ServiceAppointment) => service.id);
       
       if (overdueServiceIds.length > 0) {
         setSeenOverdueServices(prev => new Set([...prev, ...overdueServiceIds]));
@@ -237,14 +239,14 @@ export default function ServicesPage() {
     } else if (filters.dateFilter === "dueSoon" && isViewingDueSoonTable) {
       // Mark all due soon services as seen
       const dueSoonServiceIds = services
-        .filter(service => {
+        .filter((service: ServiceAppointment) => {
           const today = new Date();
           const dueDate = new Date(service.dueDate);
           const diffTime = dueDate.getTime() - today.getTime();
           const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
           return diffDays <= dueSoonThresholdDays && diffDays >= 0 && !service.isCompleted;
         })
-        .map(service => service.id);
+        .map((service: ServiceAppointment) => service.id);
       
       if (dueSoonServiceIds.length > 0) {
         setSeenDueSoonServices(prev => new Set([...prev, ...dueSoonServiceIds]));
@@ -274,7 +276,7 @@ export default function ServicesPage() {
     }
   };
 
-  const handleFilterChange = (key: string, value: any) => {
+  const handleFilterChange = (key: string, value: string) => {
     setFilters(prev => ({ ...prev, [key]: value }));
     setCurrentPage(1); // Reset to first page when filtering
   };

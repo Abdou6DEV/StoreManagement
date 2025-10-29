@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Button } from "../../../lib/components/button";
 import { Modal } from "../../../lib/components/modal";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../lib/components/select";
+import { DatePicker } from "../../../lib/components/datePicker";
 import { useToast } from "../../../lib/contexts/toastContext";
 
 interface ServiceAppointment {
@@ -48,18 +49,25 @@ export default function EditServiceModal({
     description: "",
     costPrice: "",
     servicePrice: "",
+    dueDate: "",
     notes: "",
   });
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (service) {
+      // Format dueDate to YYYY-MM-DD format for DatePicker
+      const dueDateString = service.dueDate 
+        ? new Date(service.dueDate).toISOString().split('T')[0]
+        : "";
+      
       setForm({
         name: service.name || "",
         serviceType: service.serviceType || "",
         description: service.description || "",
         costPrice: service.costPrice.toString() || "",
         servicePrice: service.servicePrice.toString() || "",
+        dueDate: dueDateString,
         notes: service.notes || "",
       });
     }
@@ -85,6 +93,7 @@ export default function EditServiceModal({
         description: form.description.trim() || undefined,
         costPrice: parseFloat(form.costPrice) || 0,
         servicePrice: parseFloat(form.servicePrice) || 0,
+        dueDate: form.dueDate ? new Date(form.dueDate) : new Date(service.dueDate),
         notes: form.notes.trim() || undefined,
       };
 
@@ -226,17 +235,17 @@ export default function EditServiceModal({
             </p>
           </div>
 
-          {/* Due Date Info (Read-only) */}
+          {/* Due Date */}
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground">
-              {t("services.dueDate", "Due Date")}
+              {t("services.dueDate", "Due Date")} *
             </label>
-            <div className="w-full px-4 py-3 rounded-lg border border-border bg-muted text-sm text-muted-foreground">
-              {new Date(service.dueDate).toLocaleDateString()}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {t("services.dueDateCannotBeChanged", "Due date cannot be changed after service creation")}
-            </p>
+            <DatePicker
+              value={form.dueDate}
+              onChange={(date) => handleFormChange("dueDate", date)}
+              placeholder={t("services.selectDueDate", "Select due date")}
+              className="w-full h-12 px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all"
+            />
           </div>
 
           {/* Action Buttons */}

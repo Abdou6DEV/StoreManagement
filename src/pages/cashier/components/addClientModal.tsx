@@ -31,6 +31,9 @@ export default function AddClientModal({
   onConfirm: () => void;
 }) {
   const nameInputRef = useRef<HTMLInputElement>(null);
+  const phoneInputRef = useRef<HTMLInputElement>(null);
+  const addressInputRef = useRef<HTMLInputElement>(null);
+  const notesInputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     if (open && nameInputRef.current) {
@@ -39,6 +42,32 @@ export default function AddClientModal({
       }, 100);
     }
   }, [open]);
+
+  // Keyboard navigation between fields
+  const handleFieldKeyDown = (e: React.KeyboardEvent, currentField: string) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      
+      // Navigate to next field or submit
+      switch (currentField) {
+        case "name":
+          phoneInputRef.current?.focus();
+          break;
+        case "phone":
+          addressInputRef.current?.focus();
+          break;
+        case "address":
+          notesInputRef.current?.focus();
+          break;
+        case "notes":
+          // Submit form if on last field
+          if (clientName.trim()) {
+            handleSubmit(e as React.FormEvent);
+          }
+          break;
+      }
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,7 +93,7 @@ export default function AddClientModal({
       cancelText={t("cashier.cancel", "Cancel")}
       submitDisabled={!clientName.trim()}
     >
-      <div className="space-y-4">
+      <div className="space-y-4 -mx-1 px-6">
         <div>
           <label className="block text-sm font-medium mb-2 text-foreground">
             {t("cashier.clientName", "Client Name")} *
@@ -75,6 +104,7 @@ export default function AddClientModal({
             value={clientName}
             onChange={(e) => setClientName(e.target.value)}
             placeholder={t("cashier.enterClientName", "Enter client name")}
+            onKeyDown={(e) => handleFieldKeyDown(e, "name")}
             className="w-full rounded-lg border border-border bg-card px-4 py-3 text-sm text-foreground focus:border-primary/30 transition-all"
             required
           />
@@ -85,10 +115,12 @@ export default function AddClientModal({
             {t("cashier.phoneNumber", "Phone Number")}
           </label>
           <input
+            ref={phoneInputRef}
             type="tel"
             value={clientPhone}
             onChange={(e) => setClientPhone(e.target.value)}
             placeholder={t("cashier.phoneOptional", "Phone Number (optional)")}
+            onKeyDown={(e) => handleFieldKeyDown(e, "phone")}
             className="w-full rounded-lg border border-border bg-card px-4 py-3 text-sm text-foreground focus:border-primary/30 transition-all"
           />
         </div>
@@ -98,10 +130,12 @@ export default function AddClientModal({
             {t("cashier.address", "Address")}
           </label>
           <input
+            ref={addressInputRef}
             type="text"
             value={clientAddress}
             onChange={(e) => setClientAddress(e.target.value)}
             placeholder={t("cashier.addressOptional", "Address (optional)")}
+            onKeyDown={(e) => handleFieldKeyDown(e, "address")}
             className="w-full rounded-lg border border-border bg-card px-4 py-3 text-sm text-foreground focus:border-primary/30 transition-all"
           />
         </div>
@@ -111,9 +145,20 @@ export default function AddClientModal({
             {t("cashier.notes", "Notes")}
           </label>
           <textarea
+            ref={notesInputRef}
             value={clientNotes}
             onChange={(e) => setClientNotes(e.target.value)}
             placeholder={t("cashier.notesOptional", "Notes (optional)")}
+            onKeyDown={(e) => {
+              // Enter submits (Shift+Enter for new line)
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                if (clientName.trim()) {
+                  handleSubmit(e as React.FormEvent);
+                }
+              }
+              // Shift+Enter creates a new line (default behavior)
+            }}
             className="w-full rounded-lg border border-border bg-card px-4 py-3 text-sm text-foreground resize-none focus:border-primary/30 transition-all"
             rows={3}
           />
