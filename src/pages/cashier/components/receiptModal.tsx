@@ -169,11 +169,11 @@ export const printReceiptDirectly = async (
       // Use the new 8-character receipt barcode function
       return generateReceiptBarcode(receiptNumber, {
         format: 'CODE128',
-        width: 2.5,
+        width: 3,
         height: 80,
         displayValue: false,
         fontSize: 12,
-        margin: 15,
+        margin: 10,
       });
     } catch (error) {
       console.error('Failed to generate receipt barcode:', error);
@@ -196,6 +196,9 @@ export const printReceiptDirectly = async (
               margin: 0;
               padding: 0;
               box-sizing: border-box;
+              print-color-adjust: exact;
+              -webkit-print-color-adjust: exact;
+              color-adjust: exact;
             }
             html, body {
               margin: 0;
@@ -204,6 +207,9 @@ export const printReceiptDirectly = async (
               height: 100%;
               font-family: 'Courier New', monospace;
               background: #f5f5f5;
+              print-color-adjust: exact;
+              -webkit-print-color-adjust: exact;
+              color-adjust: exact;
             }
             body {
               margin-top: 0 !important;
@@ -220,6 +226,20 @@ export const printReceiptDirectly = async (
               box-shadow: none;
               font-size: 12px;
               overflow: visible;
+              print-color-adjust: exact;
+              -webkit-print-color-adjust: exact;
+              color-adjust: exact;
+              text-rendering: optimizeLegibility;
+            }
+            .receipt * {
+              print-color-adjust: exact;
+              -webkit-print-color-adjust: exact;
+              color-adjust: exact;
+            }
+            img, svg {
+              image-rendering: auto;
+              max-width: 100%;
+              height: auto;
             }
             /* RTL Support for Arabic */
             .receipt[dir="rtl"] {
@@ -264,21 +284,20 @@ export const printReceiptDirectly = async (
             .receipt[dir="rtl"] .watermark {
               text-align: right;
             }
-            /* Fix table layout for RTL - reverse column order */
-            .receipt[dir="rtl"] .item {
+            /* RTL support for table */
+            .receipt[dir="rtl"] .receipt-table {
               direction: rtl;
             }
-            .receipt[dir="rtl"] .items-header {
-              direction: rtl;
+            .receipt[dir="rtl"] .receipt-table .col-item {
+              text-align: right;
             }
-            /* Keep text direction LTR for numbers and prices */
-            .receipt[dir="rtl"] .item-qty,
-            .receipt[dir="rtl"] .item-price,
-            .receipt[dir="rtl"] .item-total,
-            .receipt[dir="rtl"] .header-qty,
-            .receipt[dir="rtl"] .header-price,
-            .receipt[dir="rtl"] .header-total {
+            /* Keep numbers and prices LTR */
+            .receipt[dir="rtl"] .receipt-table .col-qty,
+            .receipt[dir="rtl"] .receipt-table .col-price,
+            .receipt[dir="rtl"] .receipt-table .col-total,
+            .receipt[dir="rtl"] .receipt-table .total-value {
               direction: ltr;
+              text-align: right;
             }
             .header {
               text-align: center;
@@ -291,155 +310,173 @@ export const printReceiptDirectly = async (
               margin-bottom: 1px;
               margin-top: 0;
               padding-top: 0;
-              color: #000;
+              color: #000000;
               letter-spacing: 1px;
-              text-shadow: 1px 1px 0px #000;
+            }
+            @media print {
+              .store-name {
+                text-shadow: none;
+                -webkit-font-smoothing: none;
+                font-smooth: never;
+              }
             }
             .store-info {
-              font-size: 12px;
-              margin-bottom: 2px;
+              font-size: 11px;
+              margin-bottom: 3px;
               color: #000;
               font-weight: 900;
+              line-height: 1.3;
             }
             .receipt-info {
-              font-size: 12px;
-              margin-bottom: 2px;
+              font-size: 11px;
+              margin-bottom: 10px;
               color: #000;
               font-weight: 900;
+              line-height: 1.4;
             }
             .divider {
-              border-top: 1px solid #000;
+              border-top: 1px solid #000000;
               margin: 2px 0;
             }
-            .items {
-              margin-bottom: 2px;
-            }
-            .item {
-              display: flex;
+            .receipt-table {
               width: 100%;
-              margin-bottom: 1px;
+              border-collapse: collapse;
+              margin: 4px 0;
               font-size: 12px;
-              line-height: 1.1;
-              min-height: 14px;
-              font-weight: 900;
-              padding-bottom: 1px;
             }
-            .item-name {
-              flex: 1;
-              padding-right: 4px;
+            .receipt-table th,
+            .receipt-table td {
+              border: 1px solid #000000;
+              padding: 2px 3px;
+              text-align: left;
+              vertical-align: top;
+              font-weight: 900;
+              color: #000000;
+              print-color-adjust: exact;
+              -webkit-print-color-adjust: exact;
+              color-adjust: exact;
+            }
+            .receipt-table th {
+              text-align: center;
+              font-size: 12px;
+              font-weight: 900;
+              background-color: #ffffff;
+              padding: 3px 3px;
+            }
+            .receipt-table td {
+              font-size: 11px;
+              line-height: 1.2;
+              padding: 2px 3px;
+            }
+            .receipt-table .col-item {
+              width: auto;
+              min-width: 0;
               word-wrap: break-word;
               word-break: break-word;
-              white-space: normal;
-              line-height: 1.1;
-              color: #000;
               overflow-wrap: break-word;
-              min-width: 0;
-              max-width: calc(100% - 140px);
+              font-size: 14px;
             }
-            .item-qty {
+            .receipt-table .col-qty {
               width: 28px;
               text-align: center;
-              font-weight: 800;
-              color: #000;
-              font-size: 13px;
-              flex-shrink: 0;
-              margin-right: 2px;
+              font-weight: 900;
+              font-size: 14px;
             }
-            .item-price {
-              width: 50px;
+            .receipt-table .col-price {
+              width: 52px;
               text-align: right;
-              color: #000;
-              font-size: 13px;
-              flex-shrink: 0;
-              margin-right: 4px;
+              font-weight: 900;
+              font-size: 14px;
+              white-space: nowrap;
             }
-            .item-total {
-              width: 50px;
+            .receipt-table .col-total {
+              width: 52px;
               text-align: right;
-              font-weight: 800;
-              color: #000;
+              font-weight: 900;
+              font-size: 14px;
+              white-space: nowrap;
+            }
+            .receipt-table tbody tr {
+              min-height: 16px;
+            }
+            .receipt-table tbody tr td {
+              vertical-align: middle;
+            }
+            .receipt-table tfoot td {
+              font-weight: 900;
               font-size: 13px;
-              flex-shrink: 0;
+              padding: 3px 3px;
+              border-top: 2px solid #000000;
+              white-space: nowrap;
             }
-            .items-header {
-              display: flex;
-              width: 100%;
-              margin-bottom: 2px;
-              font-size: 12px;
-              font-weight: 800;
-              border-bottom: 1px solid #000;
-              padding-bottom: 1px;
-              color: #000;
-            }
-            .header-qty {
-              width: 28px;
-              text-align: center;
-              margin-right: 2px;
-            }
-            .header-price {
-              width: 50px;
+            .receipt-table tfoot .total-label {
               text-align: right;
-              margin-right: 4px;
-            }
-            .header-total {
-              width: 50px;
-              text-align: right;
-            }
-            .header-item-name {
-              flex: 1;
-              padding-right: 4px;
-              max-width: calc(100% - 140px);
-            }
-            .totals {
+              font-weight: 900;
               font-size: 13px;
-              font-weight: 800;
-              color: #000;
+              white-space: nowrap;
             }
-            .total-row {
-              display: flex;
-              justify-content: space-between;
-              margin-bottom: 2px;
+            .receipt-table tfoot .total-value {
+              text-align: right;
+              font-weight: 900;
+              font-size: 14px;
+              white-space: nowrap;
+            }
+            .receipt-table tfoot .final-total {
+              border-top: 2px solid #000000;
+              font-size: 15px;
+              font-weight: 900;
+            }
+            .receipt-table tfoot .final-total.total-value {
+              font-size: 16px;
+              font-weight: 900;
             }
             .payment-info {
-              margin-top: 2px;
+              margin-top: 4px;
               font-size: 13px;
               color: #000;
               font-weight: 900;
+              line-height: 1.2;
+            }
+            .payment-info > div {
+              margin-bottom: 0px;
+              line-height: 1.2;
             }
             .client-info {
-              margin-bottom: 2px;
-              font-size: 12px;
+              margin-bottom: 4px;
+              font-size: 11px;
               color: #000;
               font-weight: 900;
+              line-height: 1.3;
             }
             .receipt-id {
               text-align: center;
-              margin: 2px 0;
+              margin: 10px 0 2px 0;
               padding: 2px 0;
-              border-top: 1px solid #000;
+              border-top: 1px solid #000000;
             }
             .receipt-id-text {
-              font-size: 12px;
-              margin-top: 1px;
+              font-size: 11px;
+              margin-top: 2px;
               color: #000;
               font-weight: 900;
             }
             .welcome {
               text-align: center;
-              margin-top: 1px;
-              font-size: 12px;
-              font-weight: 800;
+              margin-top: 4px;
+              font-size: 11px;
+              font-weight: 900;
               color: #000;
+              line-height: 1.4;
             }
             .watermark {
               text-align: left;
-              margin-top: 3px;
-              padding-top: 2px;
-              border-top: 1px solid #000;
+              margin-top: 4px;
+              padding-top: 3px;
+              border-top: 1px solid #000000;
               font-size: 9px;
               color: #000;
-              font-weight: 800;
-              line-height: 1.2;
+              font-weight: 900;
+              line-height: 1.3;
             }
             @page {
               size: 70mm auto;
@@ -447,20 +484,43 @@ export const printReceiptDirectly = async (
               padding: 0;
             }
             @media print {
+              * {
+                print-color-adjust: exact !important;
+                -webkit-print-color-adjust: exact !important;
+                color-adjust: exact !important;
+              }
               body {
                 margin: 0;
                 padding: 0px;
-                background: white;
-                width: 80mm;
+                background: white !important;
+                width: 77mm;
+                print-color-adjust: exact !important;
+                -webkit-print-color-adjust: exact !important;
+                color-adjust: exact !important;
+                -webkit-font-smoothing: none;
+                font-smooth: never;
+                text-rendering: optimizeLegibility;
               }
               .receipt {
-                width: 80mm;
+                width: 77mm;
                 margin: 0;
-                max-width: 80mm;
+                max-width: 77mm;
                 border: none;
                 border-radius: 0;
-                padding: 0px;
+                padding: 2px 3px 0px 0px;
                 box-shadow: none;
+                print-color-adjust: exact !important;
+                -webkit-print-color-adjust: exact !important;
+                color-adjust: exact !important;
+                -webkit-font-smoothing: none;
+                font-smooth: never;
+                text-rendering: optimizeLegibility;
+              }
+              img, svg {
+                image-rendering: auto;
+                image-rendering: -webkit-optimize-contrast;
+                max-width: 100%;
+                height: auto;
               }
             }
           </style>
@@ -477,7 +537,7 @@ export const printReceiptDirectly = async (
             <!-- Date and Time -->
             <div class="receipt-info">
               <div>${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].date}: ${currentDate.toLocaleDateString()}</div>
-              <div>${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].time}: ${currentDate.toLocaleTimeString()}</div>
+              <div>${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].time}: ${currentDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
             </div>
 
             <!-- Client Info -->
@@ -485,57 +545,56 @@ export const printReceiptDirectly = async (
 
             <div class="divider"></div>
 
-            <!-- Items -->
-            <div class="items">
-              <div class="items-header">
-                <div class="header-item-name">${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].item}</div>
-                <div class="header-qty">${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].qty}</div>
-                <div class="header-price">${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].price}</div>
-                <div class="header-total">${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].total}</div>
-              </div>
-              ${cart
-                .map(
-                  (item) => `
-                <div class="item">
-                  <div class="item-name">${item.name.replace(/\n/g, " ")}</div>
-                  <div class="item-qty">${item.qty}</div>
-                  <div class="item-price">${item.price.toLocaleString()}</div>
-                  <div class="item-total">${(item.qty * item.price).toLocaleString()}</div>
-                </div>
-              `,
-                )
-                .join("")}
-            </div>
-
-            <div class="divider"></div>
-
-            <!-- Totals -->
-            <div class="totals">
-              <div class="total-row">
-                <span>${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].subtotal}:</span>
-                <span>${total.toLocaleString()} ${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].currency}</span>
-              </div>
-              ${
-                discount > 0
-                  ? `
-                <div class="total-row">
-                  <span>${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].discount}:</span>
-                  <span>-${discount.toLocaleString()} ${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].currency}</span>
-                </div>
-              `
-                  : ""
-              }
-              ${
-                discount > 0 || (paymentType !== "none" && paymentAmount > 0)
-                  ? `
-                <div class="total-row">
-                  <span>${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].finalTotal}:</span>
-                  <span>${finalTotal.toLocaleString()} ${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].currency}</span>
-                </div>
-              `
-                  : ""
-              }
-            </div>
+            <!-- Items Table -->
+            <table class="receipt-table">
+              <thead>
+                <tr>
+                  <th class="col-item">${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].item}</th>
+                  <th class="col-qty">${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].qty}</th>
+                  <th class="col-price">${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].price}</th>
+                  <th class="col-total">${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].total}</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${cart
+                  .map(
+                    (item) => `
+                  <tr>
+                    <td class="col-item">${item.name.replace(/\n/g, " ")}</td>
+                    <td class="col-qty">${item.qty}</td>
+                    <td class="col-price">${item.price.toLocaleString()}</td>
+                    <td class="col-total">${(item.qty * item.price).toLocaleString()}</td>
+                  </tr>
+                `,
+                  )
+                  .join("")}
+              </tbody>
+              <tfoot>
+                ${
+                  discount > 0
+                    ? `
+                  <tr>
+                    <td colspan="3" class="total-label">${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].subtotal}:</td>
+                    <td class="total-value">${total.toLocaleString()} ${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].currency}</td>
+                  </tr>
+                  <tr>
+                    <td colspan="3" class="total-label">${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].discount}:</td>
+                    <td class="total-value">-${discount.toLocaleString()} ${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].currency}</td>
+                  </tr>
+                  <tr>
+                    <td colspan="3" class="total-label final-total">${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].finalTotal}:</td>
+                    <td class="total-value final-total">${finalTotal.toLocaleString()} ${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].currency}</td>
+                  </tr>
+                `
+                    : `
+                  <tr>
+                    <td colspan="3" class="total-label final-total">${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].finalTotal}:</td>
+                    <td class="total-value final-total">${finalTotal.toLocaleString()} ${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].currency}</td>
+                  </tr>
+                `
+                }
+              </tfoot>
+            </table>
 
             <!-- Payment Info -->
             ${
@@ -556,7 +615,7 @@ export const printReceiptDirectly = async (
             <div class="receipt-id">
               ${receiptBarcode ? `
                 <div style="text-align: center; margin-bottom: 2px;">
-                  <img src="${receiptBarcode}" alt="Receipt Barcode" style="max-width: 100%; height: 80px;" />
+                  <img src="${receiptBarcode}" alt="Receipt Barcode" style="max-width: 100%; height: 80px; image-rendering: auto; print-color-adjust: exact; -webkit-print-color-adjust: exact; color-adjust: exact;" />
                 </div>
               ` : ''}
               <div class="receipt-id-text">${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].receiptId}: ${receiptNumber.substring(0, 8)}</div>
@@ -564,7 +623,7 @@ export const printReceiptDirectly = async (
 
             <!-- Welcome Message -->
             <div class="welcome">
-              ${footerMessage ? footerMessage : `
+              ${footerMessage ? footerMessage.split('\n').map(line => `<div>${line}</div>`).join('') : `
                 <div>${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].thankYou}</div>
                 <div>${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].comeAgain}</div>
                 <div style="margin-top: 1px;">${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].appreciate}</div>
@@ -773,11 +832,11 @@ export default function ReceiptModal({
       // Use the new 8-character receipt barcode function
       return generateReceiptBarcode(receiptNumber, {
         format: 'CODE128',
-        width: 2.5,
+        width: 3,
         height: 80,
         displayValue: false,
         fontSize: 12,
-        margin: 15,
+        margin: 10,
       });
     } catch (error) {
       console.error('Failed to generate receipt barcode:', error);
@@ -840,6 +899,9 @@ export default function ReceiptModal({
               margin: 0;
               padding: 0;
               box-sizing: border-box;
+              print-color-adjust: exact;
+              -webkit-print-color-adjust: exact;
+              color-adjust: exact;
             }
             html, body {
               margin: 0;
@@ -848,6 +910,9 @@ export default function ReceiptModal({
               height: 100%;
               font-family: 'Courier New', monospace;
               background: #f5f5f5;
+              print-color-adjust: exact;
+              -webkit-print-color-adjust: exact;
+              color-adjust: exact;
             }
             body {
               margin-top: 0 !important;
@@ -864,6 +929,20 @@ export default function ReceiptModal({
               box-shadow: none;
               font-size: 12px;
               overflow: visible;
+              print-color-adjust: exact;
+              -webkit-print-color-adjust: exact;
+              color-adjust: exact;
+              text-rendering: optimizeLegibility;
+            }
+            .receipt * {
+              print-color-adjust: exact;
+              -webkit-print-color-adjust: exact;
+              color-adjust: exact;
+            }
+            img, svg {
+              image-rendering: auto;
+              max-width: 100%;
+              height: auto;
             }
             /* RTL Support for Arabic */
             .receipt[dir="rtl"] {
@@ -908,21 +987,20 @@ export default function ReceiptModal({
             .receipt[dir="rtl"] .watermark {
               text-align: right;
             }
-            /* Fix table layout for RTL - reverse column order */
-            .receipt[dir="rtl"] .item {
+            /* RTL support for table */
+            .receipt[dir="rtl"] .receipt-table {
               direction: rtl;
             }
-            .receipt[dir="rtl"] .items-header {
-              direction: rtl;
+            .receipt[dir="rtl"] .receipt-table .col-item {
+              text-align: right;
             }
-            /* Keep text direction LTR for numbers and prices */
-            .receipt[dir="rtl"] .item-qty,
-            .receipt[dir="rtl"] .item-price,
-            .receipt[dir="rtl"] .item-total,
-            .receipt[dir="rtl"] .header-qty,
-            .receipt[dir="rtl"] .header-price,
-            .receipt[dir="rtl"] .header-total {
+            /* Keep numbers and prices LTR */
+            .receipt[dir="rtl"] .receipt-table .col-qty,
+            .receipt[dir="rtl"] .receipt-table .col-price,
+            .receipt[dir="rtl"] .receipt-table .col-total,
+            .receipt[dir="rtl"] .receipt-table .total-value {
               direction: ltr;
+              text-align: right;
             }
             .header {
               text-align: center;
@@ -935,155 +1013,171 @@ export default function ReceiptModal({
               margin-bottom: 1px;
               margin-top: 0;
               padding-top: 0;
-              color: #000;
+              color: #000000;
               letter-spacing: 1px;
-              text-shadow: 1px 1px 0px #000;
+            }
+            @media print {
+              .store-name {
+                text-shadow: none;
+                -webkit-font-smoothing: none;
+                font-smooth: never;
+              }
             }
             .store-info {
-              font-size: 12px;
-              margin-bottom: 2px;
+              font-size: 11px;
+              margin-bottom: 3px;
               color: #000;
               font-weight: 900;
+              line-height: 1.3;
             }
             .receipt-info {
               font-size: 12px;
-              margin-bottom: 2px;
+              margin-bottom: 6px;
               color: #000;
               font-weight: 900;
             }
             .divider {
-              border-top: 1px solid #000;
+              border-top: 1px solid #000000;
               margin: 2px 0;
             }
-            .items {
-              margin-bottom: 2px;
-            }
-            .item {
-              display: flex;
+            .receipt-table {
               width: 100%;
-              margin-bottom: 1px;
+              border-collapse: collapse;
+              margin: 4px 0;
               font-size: 12px;
-              line-height: 1.1;
-              min-height: 14px;
-              font-weight: 900;
-              padding-bottom: 1px;
             }
-            .item-name {
-              flex: 1;
-              padding-right: 4px;
+            .receipt-table th,
+            .receipt-table td {
+              border: 1px solid #000000;
+              padding: 2px 3px;
+              text-align: left;
+              vertical-align: top;
+              font-weight: 900;
+              color: #000000;
+              print-color-adjust: exact;
+              -webkit-print-color-adjust: exact;
+              color-adjust: exact;
+            }
+            .receipt-table th {
+              text-align: center;
+              font-size: 12px;
+              font-weight: 900;
+              background-color: #ffffff;
+              padding: 3px 3px;
+            }
+            .receipt-table td {
+              font-size: 11px;
+              line-height: 1.2;
+              padding: 2px 3px;
+            }
+            .receipt-table .col-item {
+              width: auto;
+              min-width: 0;
               word-wrap: break-word;
               word-break: break-word;
-              white-space: normal;
-              line-height: 1.1;
-              color: #000;
               overflow-wrap: break-word;
-              min-width: 0;
-              max-width: calc(100% - 140px);
-            }
-            .item-qty {
-              width: 28px;
-              text-align: center;
-              font-weight: 800;
-              color: #000;
-              font-size: 13px;
-              flex-shrink: 0;
-              margin-right: 2px;
-            }
-            .item-price {
-              width: 50px;
-              text-align: right;
-              color: #000;
-              font-size: 13px;
-              flex-shrink: 0;
-              margin-right: 4px;
-            }
-            .item-total {
-              width: 50px;
-              text-align: right;
-              font-weight: 800;
-              color: #000;
-              font-size: 13px;
-              flex-shrink: 0;
-            }
-            .items-header {
-              display: flex;
-              width: 100%;
-              margin-bottom: 2px;
               font-size: 12px;
-              font-weight: 800;
-              border-bottom: 1px solid #000;
-              padding-bottom: 1px;
-              color: #000;
             }
-            .header-qty {
+            .receipt-table .col-qty {
               width: 28px;
               text-align: center;
-              margin-right: 2px;
+              font-weight: 900;
+              font-size: 14px;
             }
-            .header-price {
-              width: 50px;
+            .receipt-table .col-price {
+              width: 52px;
               text-align: right;
-              margin-right: 4px;
+              font-weight: 900;
+              font-size: 14px;
+              white-space: nowrap;
             }
-            .header-total {
-              width: 50px;
+            .receipt-table .col-total {
+              width: 52px;
               text-align: right;
+              font-weight: 900;
+              font-size: 14px;
+              white-space: nowrap;
             }
-            .header-item-name {
-              flex: 1;
-              padding-right: 4px;
-              max-width: calc(100% - 140px);
+            .receipt-table tbody tr {
+              min-height: 16px;
             }
-            .totals {
+            .receipt-table tbody tr td {
+              vertical-align: middle;
+            }
+            .receipt-table tfoot td {
+              font-weight: 900;
               font-size: 13px;
-              font-weight: 800;
-              color: #000;
+              padding: 3px 3px;
+              border-top: 2px solid #000000;
+              white-space: nowrap;
             }
-            .total-row {
-              display: flex;
-              justify-content: space-between;
-              margin-bottom: 2px;
+            .receipt-table tfoot .total-label {
+              text-align: right;
+              font-weight: 900;
+              font-size: 13px;
+              white-space: nowrap;
+            }
+            .receipt-table tfoot .total-value {
+              text-align: right;
+              font-weight: 900;
+              font-size: 14px;
+              white-space: nowrap;
+            }
+            .receipt-table tfoot .final-total {
+              border-top: 2px solid #000000;
+              font-size: 15px;
+              font-weight: 900;
+            }
+            .receipt-table tfoot .final-total.total-value {
+              font-size: 16px;
+              font-weight: 900;
             }
             .payment-info {
-              margin-top: 2px;
+              margin-top: 4px;
               font-size: 13px;
               color: #000;
               font-weight: 900;
+              line-height: 1.4;
+            }
+            .payment-info > div {
+              margin-bottom: 2px;
             }
             .client-info {
-              margin-bottom: 2px;
-              font-size: 12px;
+              margin-bottom: 4px;
+              font-size: 11px;
               color: #000;
               font-weight: 900;
+              line-height: 1.3;
             }
             .receipt-id {
               text-align: center;
-              margin: 2px 0;
+              margin: 6px 0 2px 0;
               padding: 2px 0;
-              border-top: 1px solid #000;
+              border-top: 1px solid #000000;
             }
             .receipt-id-text {
-              font-size: 12px;
-              margin-top: 1px;
+              font-size: 11px;
+              margin-top: 2px;
               color: #000;
               font-weight: 900;
             }
             .welcome {
               text-align: center;
-              margin-top: 1px;
-              font-size: 12px;
-              font-weight: 800;
+              margin-top: 4px;
+              font-size: 11px;
+              font-weight: 900;
               color: #000;
+              line-height: 1.4;
             }
             .watermark {
               text-align: left;
-              margin-top: 3px;
-              padding-top: 2px;
-              border-top: 1px solid #000;
+              margin-top: 4px;
+              padding-top: 3px;
+              border-top: 1px solid #000000;
               font-size: 9px;
               color: #000;
-              font-weight: 800;
-              line-height: 1.2;
+              font-weight: 900;
+              line-height: 1.3;
             }
             @page {
               size: 70mm auto;
@@ -1095,15 +1189,15 @@ export default function ReceiptModal({
                 margin: 0;
                 padding: 0px;
                 background: white;
-                width: 80mm;
+                width: 79mm;
               }
               .receipt {
-                width: 80mm;
+                width: 79mm;
                 margin: 0;
-                max-width: 80mm;
+                max-width: 79mm;
                 border: none;
                 border-radius: 0;
-                padding: 0px;
+                padding: 2px 3px 0px 0px;
                 box-shadow: none;
               }
             }
@@ -1121,7 +1215,7 @@ export default function ReceiptModal({
             <!-- Date and Time -->
             <div class="receipt-info">
               <div>${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].date}: ${currentDate.toLocaleDateString()}</div>
-              <div>${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].time}: ${currentDate.toLocaleTimeString()}</div>
+              <div>${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].time}: ${currentDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
             </div>
 
             <!-- Client Info -->
@@ -1129,57 +1223,56 @@ export default function ReceiptModal({
 
             <div class="divider"></div>
 
-            <!-- Items -->
-            <div class="items">
-              <div class="items-header">
-                <div class="header-item-name">${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].item}</div>
-                <div class="header-qty">${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].qty}</div>
-                <div class="header-price">${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].price}</div>
-                <div class="header-total">${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].total}</div>
-              </div>
-              ${cart
-                .map(
-                  (item) => `
-                <div class="item">
-                  <div class="item-name">${item.name.replace(/\n/g, " ")}</div>
-                  <div class="item-qty">${item.qty}</div>
-                  <div class="item-price">${item.price.toLocaleString()}</div>
-                  <div class="item-total">${(item.qty * item.price).toLocaleString()}</div>
-                </div>
-              `,
-                )
-                .join("")}
-            </div>
-
-            <div class="divider"></div>
-
-            <!-- Totals -->
-            <div class="totals">
-              <div class="total-row">
-                <span>${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].subtotal}:</span>
-                <span>${total.toLocaleString()} ${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].currency}</span>
-              </div>
-              ${
-                discount > 0
-                  ? `
-                <div class="total-row">
-                  <span>${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].discount}:</span>
-                  <span>-${discount.toLocaleString()} ${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].currency}</span>
-                </div>
-              `
-                  : ""
-              }
-              ${
-                discount > 0 || (paymentType !== "none" && paymentAmount > 0)
-                  ? `
-                <div class="total-row">
-                  <span>${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].finalTotal}:</span>
-                  <span>${finalTotal.toLocaleString()} ${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].currency}</span>
-                </div>
-              `
-                  : ""
-              }
-            </div>
+            <!-- Items Table -->
+            <table class="receipt-table">
+              <thead>
+                <tr>
+                  <th class="col-item">${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].item}</th>
+                  <th class="col-qty">${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].qty}</th>
+                  <th class="col-price">${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].price}</th>
+                  <th class="col-total">${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].total}</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${cart
+                  .map(
+                    (item) => `
+                  <tr>
+                    <td class="col-item">${item.name.replace(/\n/g, " ")}</td>
+                    <td class="col-qty">${item.qty}</td>
+                    <td class="col-price">${item.price.toLocaleString()}</td>
+                    <td class="col-total">${(item.qty * item.price).toLocaleString()}</td>
+                  </tr>
+                `,
+                  )
+                  .join("")}
+              </tbody>
+              <tfoot>
+                ${
+                  discount > 0
+                    ? `
+                  <tr>
+                    <td colspan="3" class="total-label">${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].subtotal}:</td>
+                    <td class="total-value">${total.toLocaleString()} ${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].currency}</td>
+                  </tr>
+                  <tr>
+                    <td colspan="3" class="total-label">${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].discount}:</td>
+                    <td class="total-value">-${discount.toLocaleString()} ${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].currency}</td>
+                  </tr>
+                  <tr>
+                    <td colspan="3" class="total-label final-total">${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].finalTotal}:</td>
+                    <td class="total-value final-total">${finalTotal.toLocaleString()} ${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].currency}</td>
+                  </tr>
+                `
+                    : `
+                  <tr>
+                    <td colspan="3" class="total-label final-total">${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].finalTotal}:</td>
+                    <td class="total-value final-total">${finalTotal.toLocaleString()} ${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].currency}</td>
+                  </tr>
+                `
+                }
+              </tfoot>
+            </table>
 
             <!-- Payment Info -->
             ${
@@ -1200,7 +1293,7 @@ export default function ReceiptModal({
             <div class="receipt-id">
               ${receiptBarcode ? `
                 <div style="text-align: center; margin-bottom: 2px;">
-                  <img src="${receiptBarcode}" alt="Receipt Barcode" style="max-width: 100%; height: 80px;" />
+                  <img src="${receiptBarcode}" alt="Receipt Barcode" style="max-width: 100%; height: 80px; image-rendering: auto; print-color-adjust: exact; -webkit-print-color-adjust: exact; color-adjust: exact;" />
                 </div>
               ` : ''}
               <div class="receipt-id-text">ID: ${shortReceiptId}</div>
@@ -1208,7 +1301,7 @@ export default function ReceiptModal({
 
             <!-- Welcome Message -->
             <div class="welcome">
-              ${footerMessage ? footerMessage : `
+              ${footerMessage ? footerMessage.split('\n').map(line => `<div>${line}</div>`).join('') : `
                 <div>${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].thankYou}</div>
                 <div>${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].comeAgain}</div>
                 <div style="margin-top: 1px;">${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].appreciate}</div>
@@ -1269,7 +1362,7 @@ export default function ReceiptModal({
           {/* Date and Time */}
           <div className="mb-4">
             <div>{receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].date}: {currentDate.toLocaleDateString()}</div>
-            <div>{receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].time}: {currentDate.toLocaleTimeString()}</div>
+            <div>{receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].time}: {currentDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
           </div>
 
           {/* Client Info */}
@@ -1319,22 +1412,28 @@ export default function ReceiptModal({
 
           {/* Totals */}
           <div className="font-bold mb-2">
-            <div className="flex justify-between mb-1">
-              <span>{receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].subtotal}:</span>
-              <span>
-                {total.toLocaleString()} {receiptTranslations[language].currency}
-              </span>
-            </div>
-            {discount > 0 && (
-              <div className="flex justify-between mb-1">
-                <span>{receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].discount}:</span>
-                <span>
-                  -{discount.toLocaleString()} {receiptTranslations[language].currency}
-                </span>
-              </div>
-            )}
-            {(discount > 0 ||
-              (paymentType !== "none" && paymentAmount > 0)) && (
+            {discount > 0 ? (
+              <>
+                <div className="flex justify-between mb-1">
+                  <span>{receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].subtotal}:</span>
+                  <span>
+                    {total.toLocaleString()} {receiptTranslations[language].currency}
+                  </span>
+                </div>
+                <div className="flex justify-between mb-1">
+                  <span>{receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].discount}:</span>
+                  <span>
+                    -{discount.toLocaleString()} {receiptTranslations[language].currency}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span>{receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].finalTotal}:</span>
+                  <span>
+                    {finalTotal.toLocaleString()} {receiptTranslations[language].currency}
+                  </span>
+                </div>
+              </>
+            ) : (
               <div className="flex justify-between">
                 <span>{receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].finalTotal}:</span>
                 <span>
@@ -1390,7 +1489,7 @@ export default function ReceiptModal({
           <div className="border-t border-black dark:border-white my-1" />
           <div className="text-center text-sm font-bold mt-1">
             {footerMessage ? (
-              <div>{footerMessage}</div>
+              <div className="whitespace-pre-line">{footerMessage}</div>
             ) : (
               <>
                 <div>Thank you for your purchase!</div>
