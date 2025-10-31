@@ -39,6 +39,121 @@ export const printReceiptDirectly = async (
   };
   let footerMessage = "";
 
+  // Helper function to calculate warranty period in days
+  const calculateWarrantyPeriod = (warrantyDateStr: string, lang: string, receiptTranslations: any): string => {
+    try {
+      const warrantyDate = new Date(warrantyDateStr);
+      const today = new Date();
+      const diffTime = warrantyDate.getTime() - today.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      
+      const langKey = lang as "fr" | "en" | "ar";
+      const translations = receiptTranslations[langKey] as any;
+      
+      if (!translations) {
+        // Fallback if translations not found
+        if (diffDays < 0) return "Expired";
+        if (diffDays === 0) return "Today";
+        // Calculate years, months, and days
+        const years = Math.floor(diffDays / 365);
+        const months = Math.floor((diffDays % 365) / 30);
+        const days = diffDays % 30;
+        
+        const parts: string[] = [];
+        if (years > 0) parts.push(`${years} ${years === 1 ? "year" : "years"}`);
+        if (months > 0) parts.push(`${months} ${months === 1 ? "month" : "months"}`);
+        if (days > 0) parts.push(`${days} ${days === 1 ? "day" : "days"}`);
+        
+        return parts.length > 0 ? parts.join(" and ") : "0 days";
+      }
+      
+      if (diffDays < 0) return translations["expired"] || "Expired";
+      if (diffDays === 0) return translations["today"] || "Today";
+      
+      // Calculate years, months, and days
+      const years = Math.floor(diffDays / 365);
+      const months = Math.floor((diffDays % 365) / 30);
+      const days = diffDays % 30;
+      
+      const parts: string[] = [];
+      if (years > 0) {
+        parts.push(`${years} ${years === 1 ? (translations["year"] || "year") : (translations["years"] || "years")}`);
+      }
+      if (months > 0) {
+        parts.push(`${months} ${months === 1 ? (translations["month"] || "month") : (translations["months"] || "months")}`);
+      }
+      if (days > 0) {
+        parts.push(`${days} ${days === 1 ? (translations["day"] || "day") : (translations["days"] || "days")}`);
+      }
+      
+      // Get "and" translation or use default
+      const andWord = translations["and"] || "and";
+      return parts.length > 0 ? parts.join(` ${andWord} `) : `0 ${translations["days"] || "days"}`;
+    } catch {
+      return "";
+    }
+  };
+
+  // Helper function to generate category info sections HTML
+  const generateCategoryInfoSections = (cart: any[], lang: string, receiptTranslations: any): string => {
+    const sections: string[] = [];
+    
+    cart.forEach((item) => {
+      if (item.categoryInfo && item.categoryInfo.length > 0) {
+        item.categoryInfo.forEach((unitInfo: any, unitIndex: number) => {
+          // Skip if no meaningful info
+          if (!unitInfo.imeiSerialNumber && !unitInfo.warranty && !unitInfo.usedNew && !unitInfo.problemsReplacedParts) {
+            return;
+          }
+          
+          const productName = item.qty > 1 ? `${item.name.replace(/\n/g, " ")} #${unitIndex + 1}` : item.name.replace(/\n/g, " ");
+          const lines: string[] = [];
+          
+          if (unitInfo.imeiSerialNumber) {
+            lines.push(`<div>${receiptTranslations[lang as "fr" | "en" | "ar"].imei}: ${unitInfo.imeiSerialNumber}</div>`);
+          }
+          
+          if (unitInfo.warranty) {
+            try {
+              const warrantyDate = new Date(unitInfo.warranty);
+              const warrantyPeriod = calculateWarrantyPeriod(unitInfo.warranty, lang, receiptTranslations);
+              if (warrantyPeriod) {
+                lines.push(`<div>${receiptTranslations[lang as "fr" | "en" | "ar"].warrantyPeriod}: ${warrantyPeriod}</div>`);
+              }
+              lines.push(`<div>${receiptTranslations[lang as "fr" | "en" | "ar"].warrantyExpiration}: ${warrantyDate.toLocaleDateString()}</div>`);
+            } catch {
+              // Invalid date, skip
+            }
+          }
+          
+          if (unitInfo.usedNew) {
+            const conditionText = unitInfo.usedNew === "new" 
+              ? (lang === "fr" ? "Neuf" : lang === "ar" ? "جديد" : "New")
+              : (lang === "fr" ? "Usagé" : lang === "ar" ? "مستعمل" : "Used");
+            lines.push(`<div>${receiptTranslations[lang as "fr" | "en" | "ar"].condition}: ${conditionText}</div>`);
+          }
+          
+          if (unitInfo.problemsReplacedParts) {
+            const problemsText = unitInfo.problemsReplacedParts.split('\n').map((line: string) => line.trim()).filter((line: string) => line.length > 0).join('<br>');
+            lines.push(`<div>${receiptTranslations[lang as "fr" | "en" | "ar"].problemsReplacedParts}: ${problemsText}</div>`);
+          }
+          
+          if (lines.length > 0) {
+            sections.push(`
+              <div class="category-info-section">
+                <div class="divider"></div>
+                <div class="category-info-product-name">${productName}</div>
+                ${lines.join("")}
+              </div>
+            `);
+          }
+        });
+      }
+    });
+    
+    return sections.join("");
+  };
+
   // Receipt translations
   const receiptTranslations = {
     fr: {
@@ -67,7 +182,21 @@ export const printReceiptDirectly = async (
       appreciate: "Nous apprécions votre confiance",
       receiptId: "ID",
       storeManagement: "Système de Gestion de Magasin",
-      contact: "Contact"
+      contact: "Contact",
+      imei: "IMEI",
+      warrantyPeriod: "Période de garantie",
+      warrantyExpiration: "Date d'expiration de garantie",
+      condition: "État",
+      problemsReplacedParts: "Problèmes/Pièces remplacées",
+      expired: "Expiré",
+      today: "Aujourd'hui",
+      day: "jour",
+      days: "jours",
+      month: "mois",
+      months: "mois",
+      year: "année",
+      years: "années",
+      and: "et"
     },
     en: {
       address: "Address",
@@ -95,7 +224,21 @@ export const printReceiptDirectly = async (
       appreciate: "We appreciate your business",
       receiptId: "ID",
       storeManagement: "Store Management System",
-      contact: "Contact"
+      contact: "Contact",
+      imei: "IMEI",
+      warrantyPeriod: "Warranty Period",
+      warrantyExpiration: "Warranty Expiration Date",
+      condition: "Condition",
+      problemsReplacedParts: "Problems/Replaced Parts",
+      expired: "Expired",
+      today: "Today",
+      day: "day",
+      days: "days",
+      month: "month",
+      months: "months",
+      year: "year",
+      years: "years",
+      and: "and"
     },
     ar: {
       address: "العنوان",
@@ -123,7 +266,21 @@ export const printReceiptDirectly = async (
       appreciate: "نقدر ثقتكم بنا",
       receiptId: "الرقم",
       storeManagement: "نظام إدارة المتجر",
-      contact: "الاتصال"
+      contact: "الاتصال",
+      imei: "IMEI",
+      warrantyPeriod: "فترة الضمان",
+      warrantyExpiration: "تاريخ انتهاء الضمان",
+      condition: "الحالة",
+      problemsReplacedParts: "المشاكل/الأجزاء المستبدلة",
+      expired: "منتهي",
+      today: "اليوم",
+      day: "يوم",
+      days: "أيام",
+      month: "شهر",
+      months: "أشهر",
+      year: "سنة",
+      years: "سنوات",
+      and: "و"
     }
   };
 
@@ -402,6 +559,41 @@ export const printReceiptDirectly = async (
             .receipt-table tbody tr td {
               vertical-align: middle;
             }
+            .category-info {
+              font-size: 9px;
+              line-height: 1.3;
+              color: #000;
+              margin-top: 2px;
+              padding-left: 2px;
+            }
+            .category-info-item {
+              margin-bottom: 1px;
+            }
+            .category-info-label {
+              font-weight: 700;
+            }
+            .category-info-section {
+              margin-top: 4px;
+              font-size: 13px;
+              color: #000;
+              font-weight: 900;
+              line-height: 1.2;
+            }
+            .category-info-section .divider {
+              border-top: 1px solid #000000;
+              margin: 2px 0;
+            }
+            .category-info-product-name {
+              font-weight: 900;
+              font-size: 13px;
+              margin-bottom: 2px;
+              margin-top: 2px;
+            }
+            .category-info-section > div:not(.divider):not(.category-info-product-name) {
+              font-size: 13px;
+              margin-bottom: 0px;
+              line-height: 1.2;
+            }
             .receipt-table tfoot td {
               font-weight: 900;
               font-size: 13px;
@@ -557,16 +749,32 @@ export const printReceiptDirectly = async (
               </thead>
               <tbody>
                 ${cart
-                  .map(
-                    (item) => `
-                  <tr>
-                    <td class="col-item">${item.name.replace(/\n/g, " ")}</td>
-                    <td class="col-qty">${item.qty}</td>
-                    <td class="col-price">${item.price.toLocaleString()}</td>
-                    <td class="col-total">${(item.qty * item.price).toLocaleString()}</td>
-                  </tr>
-                `,
-                  )
+                  .flatMap((item) => {
+                    // If item has categoryInfo, expand by quantity
+                    if (item.categoryInfo && item.categoryInfo.length > 0) {
+                      return Array.from({ length: item.qty }, (_, unitIndex) => {
+                        return `
+                          <tr>
+                            <td class="col-item">
+                              ${item.qty > 1 ? `${item.name.replace(/\n/g, " ")} #${unitIndex + 1}` : item.name.replace(/\n/g, " ")}
+                            </td>
+                            <td class="col-qty">1</td>
+                            <td class="col-price">${item.price.toLocaleString()}</td>
+                            <td class="col-total">${item.price.toLocaleString()}</td>
+                          </tr>
+                        `;
+                      });
+                    }
+                    // No categoryInfo, show as single row
+                    return `
+                      <tr>
+                        <td class="col-item">${item.name.replace(/\n/g, " ")}</td>
+                        <td class="col-qty">${item.qty}</td>
+                        <td class="col-price">${item.price.toLocaleString()}</td>
+                        <td class="col-total">${(item.qty * item.price).toLocaleString()}</td>
+                      </tr>
+                    `;
+                  })
                   .join("")}
               </tbody>
               <tfoot>
@@ -595,6 +803,9 @@ export const printReceiptDirectly = async (
                 }
               </tfoot>
             </table>
+
+            <!-- Category Information Sections -->
+            ${generateCategoryInfoSections(cart, (language as "fr" | "en" | "ar") || "fr", receiptTranslations)}
 
             <!-- Payment Info -->
             ${
@@ -716,7 +927,21 @@ export default function ReceiptModal({
       appreciate: "Nous apprécions votre confiance",
       receiptId: "ID",
       storeManagement: "Système de Gestion de Magasin",
-      contact: "Contact"
+      contact: "Contact",
+      imei: "IMEI",
+      warrantyPeriod: "Période de garantie",
+      warrantyExpiration: "Date d'expiration de garantie",
+      condition: "État",
+      problemsReplacedParts: "Problèmes/Pièces remplacées",
+      expired: "Expiré",
+      today: "Aujourd'hui",
+      day: "jour",
+      days: "jours",
+      month: "mois",
+      months: "mois",
+      year: "année",
+      years: "années",
+      and: "et"
     },
     en: {
       address: "Address",
@@ -744,7 +969,21 @@ export default function ReceiptModal({
       appreciate: "We appreciate your business",
       receiptId: "ID",
       storeManagement: "Store Management System",
-      contact: "Contact"
+      contact: "Contact",
+      imei: "IMEI",
+      warrantyPeriod: "Warranty Period",
+      warrantyExpiration: "Warranty Expiration Date",
+      condition: "Condition",
+      problemsReplacedParts: "Problems/Replaced Parts",
+      expired: "Expired",
+      today: "Today",
+      day: "day",
+      days: "days",
+      month: "month",
+      months: "months",
+      year: "year",
+      years: "years",
+      and: "and"
     },
     ar: {
       address: "العنوان",
@@ -772,7 +1011,21 @@ export default function ReceiptModal({
       appreciate: "نقدر ثقتكم بنا",
       receiptId: "الرقم",
       storeManagement: "نظام إدارة المتجر",
-      contact: "الاتصال"
+      contact: "الاتصال",
+      imei: "IMEI",
+      warrantyPeriod: "فترة الضمان",
+      warrantyExpiration: "تاريخ انتهاء الضمان",
+      condition: "الحالة",
+      problemsReplacedParts: "المشاكل/الأجزاء المستبدلة",
+      expired: "منتهي",
+      today: "اليوم",
+      day: "يوم",
+      days: "أيام",
+      month: "شهر",
+      months: "أشهر",
+      year: "سنة",
+      years: "سنوات",
+      and: "و"
     }
   };
 
@@ -820,11 +1073,11 @@ export default function ReceiptModal({
     loadStoreInfo();
   }, []);
 
-  // Calculate totals
-  const total = cart.reduce((sum, item) => sum + item.qty * item.price, 0);
-  const finalTotal = total - discount;
-  const currentDate = new Date();
-  const receiptNumber = saleId || `TEMP-${Date.now()}`;
+  // Calculate totals - memoized to prevent infinite loops
+  const total = React.useMemo(() => cart.reduce((sum, item) => sum + item.qty * item.price, 0), [cart]);
+  const finalTotal = React.useMemo(() => total - discount, [total, discount]);
+  const currentDate = React.useMemo(() => new Date(), []);
+  const receiptNumber = React.useMemo(() => saleId || `TEMP-${Date.now()}`, [saleId]);
 
   // Generate barcode from receipt ID (8 characters max)
   const generateReceiptBarcodeData = () => {
@@ -885,6 +1138,121 @@ export default function ReceiptModal({
     previewWindow.document.write(receiptHTML);
     previewWindow.document.close();
     previewWindow.focus();
+  };
+
+  // Helper function to calculate warranty period in days (for component)
+  const calculateWarrantyPeriodLocal = (warrantyDateStr: string): string => {
+    try {
+      const warrantyDate = new Date(warrantyDateStr);
+      const today = new Date();
+      const diffTime = warrantyDate.getTime() - today.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      
+      const langKey = (language as "fr" | "en" | "ar") || "fr";
+      const translations = receiptTranslations[langKey] as any;
+      
+      if (!translations) {
+        // Fallback if translations not found
+        if (diffDays < 0) return "Expired";
+        if (diffDays === 0) return "Today";
+        // Calculate years, months, and days
+        const years = Math.floor(diffDays / 365);
+        const months = Math.floor((diffDays % 365) / 30);
+        const days = diffDays % 30;
+        
+        const parts: string[] = [];
+        if (years > 0) parts.push(`${years} ${years === 1 ? "year" : "years"}`);
+        if (months > 0) parts.push(`${months} ${months === 1 ? "month" : "months"}`);
+        if (days > 0) parts.push(`${days} ${days === 1 ? "day" : "days"}`);
+        
+        return parts.length > 0 ? parts.join(" and ") : "0 days";
+      }
+      
+      if (diffDays < 0) return translations["expired"] || "Expired";
+      if (diffDays === 0) return translations["today"] || "Today";
+      
+      // Calculate years, months, and days
+      const years = Math.floor(diffDays / 365);
+      const months = Math.floor((diffDays % 365) / 30);
+      const days = diffDays % 30;
+      
+      const parts: string[] = [];
+      if (years > 0) {
+        parts.push(`${years} ${years === 1 ? (translations["year"] || "year") : (translations["years"] || "years")}`);
+      }
+      if (months > 0) {
+        parts.push(`${months} ${months === 1 ? (translations["month"] || "month") : (translations["months"] || "months")}`);
+      }
+      if (days > 0) {
+        parts.push(`${days} ${days === 1 ? (translations["day"] || "day") : (translations["days"] || "days")}`);
+      }
+      
+      // Get "and" translation or use default
+      const andWord = translations["and"] || "and";
+      return parts.length > 0 ? parts.join(` ${andWord} `) : `0 ${translations["days"] || "days"}`;
+    } catch {
+      return "";
+    }
+  };
+
+  // Helper function to generate category info sections HTML (for component)
+  const generateCategoryInfoSectionsLocal = (cart: CartItem[], lang: string): string => {
+    const sections: string[] = [];
+    
+    cart.forEach((item) => {
+      if (item.categoryInfo && item.categoryInfo.length > 0) {
+        item.categoryInfo.forEach((unitInfo, unitIndex: number) => {
+          // Skip if no meaningful info
+          if (!unitInfo.imeiSerialNumber && !unitInfo.warranty && !unitInfo.usedNew && !unitInfo.problemsReplacedParts) {
+            return;
+          }
+          
+          const productName = item.qty > 1 ? `${item.name.replace(/\n/g, " ")} #${unitIndex + 1}` : item.name.replace(/\n/g, " ");
+          const lines: string[] = [];
+          
+          if (unitInfo.imeiSerialNumber) {
+            lines.push(`<div>${receiptTranslations[lang as "fr" | "en" | "ar"].imei}: ${unitInfo.imeiSerialNumber}</div>`);
+          }
+          
+          if (unitInfo.warranty) {
+            try {
+              const warrantyDate = new Date(unitInfo.warranty);
+              const warrantyPeriod = calculateWarrantyPeriodLocal(unitInfo.warranty);
+              if (warrantyPeriod) {
+                lines.push(`<div>${receiptTranslations[lang as "fr" | "en" | "ar"].warrantyPeriod}: ${warrantyPeriod}</div>`);
+              }
+              lines.push(`<div>${receiptTranslations[lang as "fr" | "en" | "ar"].warrantyExpiration}: ${warrantyDate.toLocaleDateString()}</div>`);
+            } catch {
+              // Invalid date, skip
+            }
+          }
+          
+          if (unitInfo.usedNew) {
+            const conditionText = unitInfo.usedNew === "new" 
+              ? (lang === "fr" ? "Neuf" : lang === "ar" ? "جديد" : "New")
+              : (lang === "fr" ? "Usagé" : lang === "ar" ? "مستعمل" : "Used");
+            lines.push(`<div>${receiptTranslations[lang as "fr" | "en" | "ar"].condition}: ${conditionText}</div>`);
+          }
+          
+          if (unitInfo.problemsReplacedParts) {
+            const problemsText = unitInfo.problemsReplacedParts.split('\n').map((line: string) => line.trim()).filter((line: string) => line.length > 0).join('<br>');
+            lines.push(`<div>${receiptTranslations[lang as "fr" | "en" | "ar"].problemsReplacedParts}: ${problemsText}</div>`);
+          }
+          
+          if (lines.length > 0) {
+            sections.push(`
+              <div class="category-info-section">
+                <div class="divider"></div>
+                <div class="category-info-product-name">${productName}</div>
+                ${lines.join("")}
+              </div>
+            `);
+          }
+        });
+      }
+    });
+    
+    return sections.join("");
   };
 
   const generateReceiptHTML = () => {
@@ -1104,6 +1472,41 @@ export default function ReceiptModal({
             .receipt-table tbody tr td {
               vertical-align: middle;
             }
+            .category-info {
+              font-size: 9px;
+              line-height: 1.3;
+              color: #000;
+              margin-top: 2px;
+              padding-left: 2px;
+            }
+            .category-info-item {
+              margin-bottom: 1px;
+            }
+            .category-info-label {
+              font-weight: 700;
+            }
+            .category-info-section {
+              margin-top: 4px;
+              font-size: 13px;
+              color: #000;
+              font-weight: 900;
+              line-height: 1.2;
+            }
+            .category-info-section .divider {
+              border-top: 1px solid #000000;
+              margin: 2px 0;
+            }
+            .category-info-product-name {
+              font-weight: 900;
+              font-size: 13px;
+              margin-bottom: 2px;
+              margin-top: 2px;
+            }
+            .category-info-section > div:not(.divider):not(.category-info-product-name) {
+              font-size: 13px;
+              margin-bottom: 0px;
+              line-height: 1.2;
+            }
             .receipt-table tfoot td {
               font-weight: 900;
               font-size: 13px;
@@ -1235,16 +1638,32 @@ export default function ReceiptModal({
               </thead>
               <tbody>
                 ${cart
-                  .map(
-                    (item) => `
-                  <tr>
-                    <td class="col-item">${item.name.replace(/\n/g, " ")}</td>
-                    <td class="col-qty">${item.qty}</td>
-                    <td class="col-price">${item.price.toLocaleString()}</td>
-                    <td class="col-total">${(item.qty * item.price).toLocaleString()}</td>
-                  </tr>
-                `,
-                  )
+                  .flatMap((item) => {
+                    // If item has categoryInfo, expand by quantity
+                    if (item.categoryInfo && item.categoryInfo.length > 0) {
+                      return Array.from({ length: item.qty }, (_, unitIndex) => {
+                        return `
+                          <tr>
+                            <td class="col-item">
+                              ${item.qty > 1 ? `${item.name.replace(/\n/g, " ")} #${unitIndex + 1}` : item.name.replace(/\n/g, " ")}
+                            </td>
+                            <td class="col-qty">1</td>
+                            <td class="col-price">${item.price.toLocaleString()}</td>
+                            <td class="col-total">${item.price.toLocaleString()}</td>
+                          </tr>
+                        `;
+                      });
+                    }
+                    // No categoryInfo, show as single row
+                    return `
+                      <tr>
+                        <td class="col-item">${item.name.replace(/\n/g, " ")}</td>
+                        <td class="col-qty">${item.qty}</td>
+                        <td class="col-price">${item.price.toLocaleString()}</td>
+                        <td class="col-total">${(item.qty * item.price).toLocaleString()}</td>
+                      </tr>
+                    `;
+                  })
                   .join("")}
               </tbody>
               <tfoot>
@@ -1273,6 +1692,9 @@ export default function ReceiptModal({
                 }
               </tfoot>
             </table>
+
+            <!-- Category Information Sections -->
+            ${generateCategoryInfoSectionsLocal(cart, (language as "fr" | "en" | "ar") || "fr")}
 
             <!-- Payment Info -->
             ${
@@ -1387,25 +1809,52 @@ export default function ReceiptModal({
               </span>
               <span className="w-12 text-right text-xs font-bold">{receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].total}</span>
             </div>
-            {cart.map((item) => (
-              <div
-                key={item.id}
-                className="flex justify-between items-start mb-1 min-h-[14px]"
-              >
-                <span className="flex-1 mr-2 text-xs break-words leading-tight">
-                  {item.name}
-                </span>
-                <span className="w-5 text-center font-bold text-xs mr-3 flex-shrink-0">
-                  {item.qty}
-                </span>
-                <span className="w-9 text-right text-xs mr-2 flex-shrink-0">
-                  {item.price.toLocaleString()}
-                </span>
-                <span className="w-12 text-right font-bold text-xs flex-shrink-0">
-                  {(item.qty * item.price).toLocaleString()}
-                </span>
-              </div>
-            ))}
+            {React.useMemo(() => cart.flatMap((item) => {
+              // If item has categoryInfo, expand by quantity but don't show category info inline
+              if (item.categoryInfo && item.categoryInfo.length > 0) {
+                return Array.from({ length: item.qty }, (_, unitIndex) => {
+                  return (
+                    <div
+                      key={`${item.id}-${unitIndex}`}
+                      className="flex justify-between items-start mb-1 min-h-[14px]"
+                    >
+                      <span className="flex-1 mr-2 text-xs break-words leading-tight">
+                        {item.qty > 1 ? `${item.name} #${unitIndex + 1}` : item.name}
+                      </span>
+                      <span className="w-5 text-center font-bold text-xs mr-3 flex-shrink-0">
+                        1
+                      </span>
+                      <span className="w-9 text-right text-xs mr-2 flex-shrink-0">
+                        {item.price.toLocaleString()}
+                      </span>
+                      <span className="w-12 text-right font-bold text-xs flex-shrink-0">
+                        {item.price.toLocaleString()}
+                      </span>
+                    </div>
+                  );
+                });
+              }
+              // No categoryInfo, show as single row
+              return (
+                <div
+                  key={item.id}
+                  className="flex justify-between items-start mb-1 min-h-[14px]"
+                >
+                  <span className="flex-1 mr-2 text-xs break-words leading-tight">
+                    {item.name}
+                  </span>
+                  <span className="w-5 text-center font-bold text-xs mr-3 flex-shrink-0">
+                    {item.qty}
+                  </span>
+                  <span className="w-9 text-right text-xs mr-2 flex-shrink-0">
+                    {item.price.toLocaleString()}
+                  </span>
+                  <span className="w-12 text-right font-bold text-xs flex-shrink-0">
+                    {(item.qty * item.price).toLocaleString()}
+                  </span>
+                </div>
+              );
+            }), [cart])}
           </div>
 
           <div className="border-t border-black dark:border-white my-2" />
@@ -1442,6 +1891,89 @@ export default function ReceiptModal({
               </div>
             )}
           </div>
+
+          {/* Category Information Sections */}
+          {React.useMemo(() => {
+            const sections: React.ReactElement[] = [];
+            cart.forEach((item) => {
+              if (item.categoryInfo && item.categoryInfo.length > 0) {
+                item.categoryInfo.forEach((unitInfo, unitIndex: number) => {
+                  // Skip if no meaningful info
+                  if (!unitInfo.imeiSerialNumber && !unitInfo.warranty && !unitInfo.usedNew && !unitInfo.problemsReplacedParts) {
+                    return;
+                  }
+                  
+                  const productName = item.qty > 1 ? `${item.name} #${unitIndex + 1}` : item.name;
+                  const lines: React.ReactElement[] = [];
+                  
+                  if (unitInfo.imeiSerialNumber) {
+                    lines.push(
+                      <div key="imei" className="text-xs">
+                        {receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].imei}: {unitInfo.imeiSerialNumber}
+                      </div>
+                    );
+                  }
+                  
+                  if (unitInfo.warranty) {
+                    try {
+                      const warrantyDate = new Date(unitInfo.warranty);
+                      const warrantyPeriod = calculateWarrantyPeriodLocal(unitInfo.warranty);
+                      if (warrantyPeriod) {
+                        lines.push(
+                          <div key="warranty-period" className="text-xs">
+                            {receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].warrantyPeriod}: {warrantyPeriod}
+                          </div>
+                        );
+                      }
+                      lines.push(
+                        <div key="warranty-exp" className="text-xs">
+                          {receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].warrantyExpiration}: {warrantyDate.toLocaleDateString()}
+                        </div>
+                      );
+                    } catch {
+                      // Invalid date, skip
+                    }
+                  }
+                  
+                  if (unitInfo.usedNew) {
+                    const conditionText = unitInfo.usedNew === "new" 
+                      ? ((language as "fr" | "en" | "ar") === "fr" ? "Neuf" : (language as "fr" | "en" | "ar") === "ar" ? "جديد" : "New")
+                      : ((language as "fr" | "en" | "ar") === "fr" ? "Usagé" : (language as "fr" | "en" | "ar") === "ar" ? "مستعمل" : "Used");
+                    lines.push(
+                      <div key="condition" className="text-xs">
+                        {receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].condition}: {conditionText}
+                      </div>
+                    );
+                  }
+                  
+                  if (unitInfo.problemsReplacedParts) {
+                    const problemsLines = unitInfo.problemsReplacedParts.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+                    lines.push(
+                      <div key="problems" className="text-xs">
+                        {receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].problemsReplacedParts}: {problemsLines.map((line, idx) => (
+                          <React.Fragment key={idx}>
+                            {line}
+                            {idx < problemsLines.length - 1 && <br />}
+                          </React.Fragment>
+                        ))}
+                      </div>
+                    );
+                  }
+                  
+                  if (lines.length > 0) {
+                    sections.push(
+                      <div key={`${item.id}-${unitIndex}`} className="mt-2 space-y-1">
+                        <div className="border-t border-black dark:border-white pt-2" />
+                        <div className="font-bold text-xs">{productName}</div>
+                        <div className="space-y-1">{lines}</div>
+                      </div>
+                    );
+                  }
+                });
+              }
+            });
+            return sections.length > 0 ? <>{sections}</> : null;
+          }, [cart, language])}
 
           {/* Payment Info */}
           {paymentType !== "none" && paymentAmount > 0 && (

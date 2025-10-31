@@ -1,12 +1,11 @@
-import { useState, useMemo, useEffect, useCallback, memo } from "react";
-import type { ProductWithSales, CartItem } from "../../../types";
+import { useState, useMemo, useEffect, useCallback, memo, useRef } from "react";
+import type { ProductWithSales, CartItem, CategoryInfo } from "../../../types";
 import { useTranslation } from "react-i18next";
 import PaymentSummary from "../../../lib/components/paymentSummary";
 import ActionButtons from "./actionButtons";
-import CategoryInfoModal, { CategoryInfo } from "./categoryInfoModal";
+import CategoryInfoModal from "./categoryInfoModal";
 import { useToast } from "../../../lib/contexts/toastContext";
 // import { useStock } from "../../../lib/contexts/stockContext"; // Removed - was causing performance issues
-import { Client } from "@prisma/client";
 import { printReceiptDirectly } from "./receiptModal";
 
 interface CashierSessionProps {
@@ -61,6 +60,39 @@ const CashierSession = memo(function CashierSession({
   const [categoriesRequiringInfo, setCategoriesRequiringInfo] = useState<string[]>([]);
   const [showCategoryInfoModal, setShowCategoryInfoModal] = useState(false);
   const [pendingSaleAction, setPendingSaleAction] = useState<(() => void) | null>(null);
+  
+  // Use refs to track cart and other values so they can be accessed in closures without stale closures
+  const cartRef = useRef<CartItem[]>(cart);
+  const clientNameRef = useRef<string>(clientName);
+  const discountRef = useRef<string>(discount);
+  const paymentAmountRef = useRef<number>(paymentAmount);
+  const paymentTypeRef = useRef<"none" | "credit" | "versement">(paymentType);
+  const paymentDateRef = useRef<Date | undefined>(paymentDate);
+  
+  // Keep refs in sync with state
+  useEffect(() => {
+    cartRef.current = cart;
+  }, [cart]);
+  
+  useEffect(() => {
+    clientNameRef.current = clientName;
+  }, [clientName]);
+  
+  useEffect(() => {
+    discountRef.current = discount;
+  }, [discount]);
+  
+  useEffect(() => {
+    paymentAmountRef.current = paymentAmount;
+  }, [paymentAmount]);
+  
+  useEffect(() => {
+    paymentTypeRef.current = paymentType;
+  }, [paymentType]);
+  
+  useEffect(() => {
+    paymentDateRef.current = paymentDate;
+  }, [paymentDate]);
 
   const total = useMemo(
     () => cart.reduce((sum, item) => sum + item.qty * item.price, 0),
@@ -217,14 +249,35 @@ const CashierSession = memo(function CashierSession({
   }, [cart, allProducts, categoriesRequiringInfo]);
 
   // Handle category info modal actions
-  const handleCategoryInfoSubmit = useCallback((info: CategoryInfo) => {
+  const handleCategoryInfoSubmit = useCallback((infoMap: Record<string, CategoryInfo[]>) => {
+    // Close modal first to prevent re-renders
     setShowCategoryInfoModal(false);
+    
+    // Attach categoryInfo to cart items
+    setCart((prevCart) => {
+      return prevCart.map((item) => {
+        const categoryInfo = infoMap[item.id];
+        if (categoryInfo && categoryInfo.length > 0) {
+          return { ...item, categoryInfo };
+        }
+        return item;
+      });
+    });
+    
+    // Execute the pending sale action after state update completes
+    // Use requestAnimationFrame to ensure React has finished updating state
+    const action = pendingSaleAction;
     setPendingSaleAction(null);
-    // Execute the pending sale action
-    if (pendingSaleAction) {
-      pendingSaleAction();
+    
+    if (action) {
+      requestAnimationFrame(() => {
+        // Use setTimeout to ensure cart state update is complete
+        setTimeout(() => {
+          action();
+        }, 0);
+      });
     }
-  }, [pendingSaleAction]);
+  }, [pendingSaleAction, setCart]);
 
   const handleCategoryInfoSkip = useCallback(() => {
     setShowCategoryInfoModal(false);
@@ -293,29 +346,29 @@ const CashierSession = memo(function CashierSession({
     // Check if category information is required
     if (checkCategoryInfoRequired()) {
       setPendingSaleAction(() => async () => {
-        // Proceed with sale and get the sale ID
+        // Proceed with sale and get the sale ID (will use current cart from state via proceedWithSale)
         const saleId = await proceedWithSale(false);
         
-        // Print receipt directly without showing modal
+        // Print receipt directly without showing modal - use refs to get latest values
         if (saleId) {
           await printReceiptDirectly(
-            [...cart],
-            clientName,
-            Number(discount) || 0,
-            paymentAmount,
-            paymentType,
-            paymentDate,
+            [...cartRef.current],
+            clientNameRef.current,
+            Number(discountRef.current) || 0,
+            paymentAmountRef.current,
+            paymentTypeRef.current,
+            paymentDateRef.current,
             saleId,
             showToast
           );
           
           // Show specific success message for receipt sales based on payment type
-          if (paymentType === "credit") {
+          if (paymentTypeRef.current === "credit") {
             showToast(
               t("cashier.creditAdded", "Credit recorded successfully"),
               "success",
             );
-          } else if (paymentType === "versement") {
+          } else if (paymentTypeRef.current === "versement") {
             showToast(
               t("cashier.versementAdded", "Versement recorded successfully"),
               "success",
@@ -327,7 +380,7 @@ const CashierSession = memo(function CashierSession({
             );
           }
           
-          onSaleComplete(saleId, cart);
+          onSaleComplete(saleId, cartRef.current);
         }
         
         setPaymentAmount(0);

@@ -74,6 +74,14 @@ export interface CartItem {
   description?: string;
   serviceCostPrice?: number;
   serviceAppointmentId?: string; // Link to ServiceAppointment when service is from a completed appointment
+  categoryInfo?: CategoryInfo[]; // Array of category info, one per unit (for receipt display only)
+}
+
+export interface CategoryInfo {
+  imeiSerialNumber?: string;
+  warranty?: string;
+  usedNew?: "used" | "new";
+  problemsReplacedParts?: string;
 }
 
 export interface ClientSuggestion {
