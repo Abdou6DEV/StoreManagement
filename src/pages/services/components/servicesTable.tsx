@@ -276,10 +276,10 @@ const ServicesTable: React.FC<ServicesTableProps> = ({
                 {t("services.name", "Service Name")}
               </th>
               <th className={`px-4 py-3 ${isRTL ? "text-right" : "text-left"}`}>
-                {t("services.type", "Type")}
+                {t("services.description", "Description")}
               </th>
               <th className={`px-4 py-3 ${isRTL ? "text-right" : "text-left"}`}>
-                {t("services.description", "Description")}
+                {t("services.notes", "Problems/Breakdown")}
               </th>
               <th className={`px-4 py-3 ${isRTL ? "text-right" : "text-left"}`}>
                 {t("services.status", "Status")}
@@ -318,16 +318,27 @@ const ServicesTable: React.FC<ServicesTableProps> = ({
                   <td
                     className={`px-4 py-2 font-medium ${isRTL ? "text-right" : "text-left"}`}
                   >
-                    {service.name}
-                  </td>
-                  <td className={`px-4 py-2 ${isRTL ? "text-right" : "text-left"}`}>
-                    {service.serviceType}
+                    <div className="flex flex-col gap-1">
+                      <span>{service.name}</span>
+                      <span className="text-xs text-muted-foreground font-normal">
+                        {service.serviceType}
+                      </span>
+                    </div>
                   </td>
                   <td className={`px-4 py-2 ${isRTL ? "text-right" : "text-left"}`}>
                     <div className="text-sm text-foreground whitespace-normal break-words max-w-xs">
                       {service.description || (
                         <span className="text-muted-foreground italic">
                           {t("services.noDescription", "No description")}
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                  <td className={`px-4 py-2 ${isRTL ? "text-right" : "text-left"}`}>
+                    <div className="text-sm text-foreground whitespace-normal break-words max-w-xs">
+                      {service.notes || (
+                        <span className="text-muted-foreground italic">
+                          {t("services.noNotes", "No problems")}
                         </span>
                       )}
                     </div>

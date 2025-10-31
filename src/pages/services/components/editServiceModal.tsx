@@ -191,7 +191,7 @@ export default function EditServiceModal({
               </label>
               <input
                 type="text"
-                placeholder={t("services.enterDescriptionOptional", "Enter description (optional)")}
+                placeholder={t("services.enterDescriptionOptional", "Enter device name (optional)")}
                 value={form.description}
                 onChange={(e) => handleFormChange("description", e.target.value)}
                 className="w-full px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all"

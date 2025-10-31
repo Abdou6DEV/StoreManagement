@@ -1656,8 +1656,10 @@
  
     "name": "اسم الخدمة",
 
-    "noDescription": "لا يوجد وصف",
- 
+    "noDescription": "لا يوجد اسم جهاز",
+    "noNotes": "لا توجد مشاكل",
+    "enterDescriptionOptional": "أدخل اسم الجهاز (اختياري)",
+    "enterNotesOptional": "أدخل المشاكل/الأعطال (اختياري)",
     "currency": "دج",
     "itemsPerPage": "العناصر في الصفحة:",
     "clientCannotBeChanged": "لا يمكن تغيير العميل بعد إنشاء الخدمة",
@@ -1667,12 +1669,12 @@
     "editAppointmentDesc": "تحديث تفاصيل طلب الخدمة",
     "serviceName": "اسم الخدمة",
     "serviceType": "نوع الخدمة",
-    "description": "الوصف",
+    "description": "اسم الجهاز",
     "costPrice": "سعر التكلفة",
     "servicePrice": "سعر الخدمة",
     "client": "العميل",
     "dueDate": "تاريخ الاستحقاق",
-    "notes": "ملاحظات",
+    "notes": "المشاكل/الأعطال",
     "status": "الحالة",
     "pricing": "التسعير",
     "type": "النوع",
@@ -1689,8 +1691,8 @@
     "filter": "تصفية",
     "enterServiceName": "أدخل اسم الخدمة",
     "selectServiceType": "اختر نوع الخدمة",
-    "enterDescription": "أدخل وصف الخدمة (اختياري)",
-    "enterNotes": "أدخل ملاحظات إضافية (اختياري)",
+    "enterDescription": "أدخل اسم الجهاز (اختياري)",
+    "enterNotes": "أدخل المشاكل/الأعطال (اختياري)",
     "searchClient": "البحث عن عميل",
     "selectDueDate": "اختر تاريخ الاستحقاق",
     "complete": "مكتمل",
@@ -1757,10 +1759,7 @@
     "failedToSaveService": "فشل في حفظ الخدمة",
     "enterServiceType": "أدخل نوع الخدمة",
     "enterCostPrice": "أدخل سعر التكلفة",
-    "enterServicePrice": "أدخل سعر الخدمة",
-    "enterDescriptionOptional": "أدخل الوصف (اختياري)",
-    "enterNotesOptional": "أدخل ملاحظات (اختياري)"
-    
+    "enterServicePrice": "أدخل سعر الخدمة"
   },
   "currency": "دج",
   "datePicker": {

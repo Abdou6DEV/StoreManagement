@@ -283,15 +283,17 @@ export default function ServicesPage() {
 
   const handleViewServiceTypes = () => {
     setShowServiceTypes(true);
+    setCurrentPage(1); // Reset to first page when switching views
   };
 
   const handleBackToServices = () => {
     setShowServiceTypes(false);
+    setCurrentPage(1); // Reset to first page when switching views
   };
 
 
   return (
-    <main className="px-6 md:px-12 flex-1 space-y-4">
+    <main className="px-2 md:px-4 flex-1 space-y-4">
       <AddServiceForm 
         openPanel={openPanel} 
         setOpenPanel={setOpenPanel}
@@ -368,7 +370,6 @@ export default function ServicesPage() {
             /* Service Types Table */
             <ServiceTypesTable
               currentPage={currentPage}
-              totalPages={totalPages}
               itemsPerPage={itemsPerPage}
               onPageChange={setCurrentPage}
               onItemsPerPageChange={setItemsPerPage}

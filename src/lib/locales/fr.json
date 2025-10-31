@@ -1128,8 +1128,10 @@
 
     "name": "Nom du Service",
  
-    "noDescription": "Aucune description",
- 
+    "noDescription": "Aucun nom d'appareil",
+    "noNotes": "Aucun problème",
+    "enterDescriptionOptional": "Entrer le nom de l'appareil (optionnel)",
+    "enterNotesOptional": "Entrer les problèmes/pannes (optionnel)",
     "currency": "DA",
     "itemsPerPage": "Éléments par page :",
     "clientCannotBeChanged": "Le client ne peut pas être modifié après la création du service",
@@ -1139,12 +1141,12 @@
     "editAppointmentDesc": "Mettre à jour les détails de la demande de service",
     "serviceName": "Nom du service",
     "serviceType": "Type de service",
-    "description": "Description",
+    "description": "Nom de l'appareil",
     "costPrice": "Prix de revient",
     "servicePrice": "Prix du service",
     "client": "Client",
     "dueDate": "Date d'échéance",
-    "notes": "Notes",
+    "notes": "Problèmes/Pannes",
     "status": "Statut",
     "pricing": "Tarification",
     "type": "Type",
@@ -1162,8 +1164,8 @@
     "filter": "Filtrer",
     "enterServiceName": "Entrer le nom du service",
     "selectServiceType": "Sélectionner le type de service",
-    "enterDescription": "Entrer la description du service (optionnel)",
-    "enterNotes": "Entrer des notes supplémentaires (optionnel)",
+    "enterDescription": "Entrer le nom de l'appareil (optionnel)",
+    "enterNotes": "Entrer les problèmes/pannes (optionnel)",
     "searchClient": "Rechercher un client",
     "selectDueDate": "Sélectionner la date d'échéance",
     "complete": "Terminé",
@@ -1230,9 +1232,7 @@
     "failedToSaveService": "Échec de la sauvegarde du service",
     "enterServiceType": "Entrer le type de service",
     "enterCostPrice": "Entrer le prix de revient",
-    "enterServicePrice": "Entrer le prix du service",
-    "enterDescriptionOptional": "Entrer la description (optionnel)",
-    "enterNotesOptional": "Entrer des notes (optionnel)"
+    "enterServicePrice": "Entrer le prix du service"
   },
   "admin": {
     "backup": "Sauvegarde",

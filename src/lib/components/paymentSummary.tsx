@@ -242,10 +242,10 @@ export default function PaymentSummary({
           {item.isService ? `🔧 ${item.name}` : item.name}
         </td>
         <td
-          className={`py-2 px-2 text-right cursor-pointer select-none hover:bg-primary/20 rounded ${interactive ? "w-[15%]" : "w-1/6"}`}
-          onDoubleClick={handleDoubleClick}
+          className={`py-2 px-2 text-right ${item.isService ? "select-none" : "cursor-pointer select-none hover:bg-primary/20 rounded"} ${interactive ? "w-[15%]" : "w-1/6"}`}
+          onDoubleClick={!item.isService ? handleDoubleClick : undefined}
         >
-          {isEditing ? (
+          {isEditing && !item.isService ? (
             <input
               ref={inputRef}
               type="text"
@@ -267,18 +267,22 @@ export default function PaymentSummary({
           <div
             className={`flex gap-1 ${isRTL ? "justify-start" : "justify-end"}`}
           >
-            <button
-              onClick={() => updateQty(index, item.qty + 1)}
-              className="w-6 h-6 rounded bg-muted hover:bg-primary hover:text-primary-foreground transition text-sm font-bold flex items-center justify-center"
-            >
-              +
-            </button>
-            <button
-              onClick={() => updateQty(index, item.qty - 1)}
-              className="w-6 h-6 rounded bg-muted hover:bg-primary hover:text-primary-foreground transition text-sm font-bold flex items-center justify-center"
-            >
-              −
-            </button>
+            {!item.isService && (
+              <>
+                <button
+                  onClick={() => updateQty(index, item.qty + 1)}
+                  className="w-6 h-6 rounded bg-muted hover:bg-primary hover:text-primary-foreground transition text-sm font-bold flex items-center justify-center"
+                >
+                  +
+                </button>
+                <button
+                  onClick={() => updateQty(index, item.qty - 1)}
+                  className="w-6 h-6 rounded bg-muted hover:bg-primary hover:text-primary-foreground transition text-sm font-bold flex items-center justify-center"
+                >
+                  −
+                </button>
+              </>
+            )}
             <button
               onClick={() => removeItem(index)}
               className="w-6 h-6 rounded text-red-500 hover:text-red-700 hover:bg-red-100 transition flex items-center justify-center"

@@ -28,7 +28,6 @@ interface ServiceTypeStats {
 
 interface ServiceTypesTableProps {
   currentPage: number;
-  totalPages: number;
   itemsPerPage: number;
   onPageChange: (page: number) => void;
   onItemsPerPageChange: (size: number) => void;
@@ -36,14 +35,13 @@ interface ServiceTypesTableProps {
 
 const ServiceTypesTable: React.FC<ServiceTypesTableProps> = ({
   currentPage,
-  totalPages,
   itemsPerPage,
   onPageChange,
   onItemsPerPageChange,
 }) => {
   const { t, i18n } = useTranslation();
   const isRTL = i18n.language === "ar";
-  const [serviceTypesStats, setServiceTypesStats] = useState<ServiceTypeStats[]>([]);
+  const [allServiceTypesStats, setAllServiceTypesStats] = useState<ServiceTypeStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [overallStats, setOverallStats] = useState({
     totalServices: 0,
@@ -102,7 +100,7 @@ const ServiceTypesTable: React.FC<ServiceTypesTableProps> = ({
 
       // Sort by total revenue (highest first)
       stats.sort((a, b) => b.totalRevenue - a.totalRevenue);
-      setServiceTypesStats(stats);
+      setAllServiceTypesStats(stats);
 
       // Calculate overall stats
       const overall = {
@@ -143,12 +141,12 @@ const ServiceTypesTable: React.FC<ServiceTypesTableProps> = ({
   const renderPageNumbers = () => {
     const items = [];
     let start = Math.max(1, currentPage - 2);
-    let end = Math.min(totalPages, currentPage + 2);
+    let end = Math.min(serviceTypesTotalPages, currentPage + 2);
 
     if (currentPage <= 3) {
-      end = Math.min(5, totalPages);
-    } else if (currentPage >= totalPages - 2) {
-      start = Math.max(1, totalPages - 4);
+      end = Math.min(5, serviceTypesTotalPages);
+    } else if (currentPage >= serviceTypesTotalPages - 2) {
+      start = Math.max(1, serviceTypesTotalPages - 4);
     }
 
     if (start > 1) {
@@ -176,7 +174,7 @@ const ServiceTypesTable: React.FC<ServiceTypesTableProps> = ({
       );
     }
 
-    if (end < totalPages) {
+    if (end < serviceTypesTotalPages) {
       items.push(
         <PaginationItem key="end-ellipsis">
           <PaginationEllipsis />
@@ -187,9 +185,15 @@ const ServiceTypesTable: React.FC<ServiceTypesTableProps> = ({
     return items;
   };
 
+  // Calculate pagination for service types
+  const serviceTypesTotalPages = Math.ceil(allServiceTypesStats.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedServiceTypesStats = allServiceTypesStats.slice(startIndex, endIndex);
+
   const isFirstPage = currentPage === 1;
-  const isLastPage = currentPage === totalPages;
-  const hasNoData = serviceTypesStats.length === 0;
+  const isLastPage = currentPage === serviceTypesTotalPages;
+  const hasNoData = allServiceTypesStats.length === 0;
 
   if (loading) {
     return (
@@ -309,7 +313,7 @@ const ServiceTypesTable: React.FC<ServiceTypesTableProps> = ({
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {serviceTypesStats.map((stat, index) => (
+            {paginatedServiceTypesStats.map((stat, index) => (
               <tr key={stat.serviceType} className="h-[48px] hover:bg-muted/40">
                 <td className={`px-4 py-2 font-medium ${isRTL ? "text-right" : "text-left"}`}>
                   {stat.serviceType}
@@ -371,7 +375,7 @@ const ServiceTypesTable: React.FC<ServiceTypesTableProps> = ({
       </div>
 
       {/* Pagination Controls */}
-      {serviceTypesStats.length > 0 && (
+      {allServiceTypesStats.length > 0 && (
         <div className="flex justify-center mt-6">
           <Pagination>
             <PaginationContent>

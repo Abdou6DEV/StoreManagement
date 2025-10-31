@@ -701,7 +701,7 @@ export default function AddServiceForm({
               <input
                 ref={descriptionRef}
                 type="text"
-                placeholder={t("services.enterDescriptionOptional", "Enter description (optional)")}
+                placeholder={t("services.enterDescriptionOptional", "Enter device name (optional)")}
                 value={form.description}
                 onChange={(e) => handleFormChange("description", e.target.value)}
                 onKeyDown={(e) => handleFieldKeyDown(e, "description")}

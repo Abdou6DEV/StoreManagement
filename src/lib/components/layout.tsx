@@ -38,7 +38,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       {/* === Main Content === */}
       <main
-        className="transition-[margin-left] duration-500 ease-in-out px-4 md:px-12 py-8 md:py-12 min-h-screen overflow-y-auto"
+        className="transition-[margin-left] duration-500 ease-in-out px-2 md:px-4 py-8 md:py-12 min-h-screen overflow-y-auto"
         style={{
           marginLeft:
             location.pathname === "/" ? 0 : collapsed ? "50px" : "190px",
