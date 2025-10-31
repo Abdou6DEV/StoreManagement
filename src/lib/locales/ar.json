@@ -1700,6 +1700,7 @@
     "completeTooltip": "إظهار الخدمات المكتملة",
     "incompleteTooltip": "إظهار الخدمات غير المكتملة",
     "markAsCompleteTooltip": "وضع علامة كمكتمل",
+    "cancelCompletionTooltip": "إلغاء الإكمال",
     "viewAllTypes": "عرض جميع الأنواع",
     "services": "الخدمات",
     "serviceTypes": "أنواع الخدمات",

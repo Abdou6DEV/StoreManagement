@@ -340,6 +340,7 @@
     "complete": "Complete",
     "incomplete": "Incomplete",
     "markAsCompleteTooltip": "Mark as complete",
+    "cancelCompletionTooltip": "Cancel completion",
     "editTooltip": "Edit service",
     "deleteTooltip": "Delete service",
     "deleteService": "Delete Service",

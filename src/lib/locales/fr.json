@@ -1173,6 +1173,7 @@
     "completeTooltip": "Afficher les services terminés",
     "incompleteTooltip": "Afficher les services incomplets",
     "markAsCompleteTooltip": "Marquer comme terminé",
+    "cancelCompletionTooltip": "Annuler la complétion",
     "viewAllTypes": "Voir Tous les Types",
     "services": "Services",
     "serviceTypes": "Types de Services",

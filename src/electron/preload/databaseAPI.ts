@@ -357,5 +357,6 @@ export const databaseAPI = {
     getServiceTypes: () => ipcRenderer.invoke("db:serviceAppointments:getServiceTypes"),
     getServiceNames: () => ipcRenderer.invoke("db:serviceAppointments:getServiceNames"),
     getCompletedForCashier: () => ipcRenderer.invoke("db:serviceAppointments:getCompletedForCashier"),
+    isSold: (id: string) => ipcRenderer.invoke("db:serviceAppointments:isSold", id),
   },
 };

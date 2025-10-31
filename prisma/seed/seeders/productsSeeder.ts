@@ -17,10 +17,10 @@ export async function seedProducts(
   const twoYearsAgo = new Date();
   twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
 
-  // Realistic store data for testing: ~60,000 products
-  const totalProducts = 60000;
+  // Realistic store data for testing: 100 products
+  const totalProducts = 100;
   const totalPurchases = 200; // Exactly 200 purchases as requested
-  const batchSize = 500; // Process in batches for better performance
+  const batchSize = 100; // Process in batches for better performance
   
   console.log(`   - Creating ${totalProducts} products in batches of ${batchSize}...`);
   console.log(`   - Will create exactly ${totalPurchases} purchases total...`);

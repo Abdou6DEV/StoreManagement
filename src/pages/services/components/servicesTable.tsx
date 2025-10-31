@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "../../../lib/components/button";
-import { Edit, Loader2, Trash2, CheckCircle, Wrench } from "lucide-react";
+import { Edit, Loader2, Trash2, CheckCircle, Wrench, XCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import {
   Pagination,
@@ -80,6 +80,8 @@ const ServicesTable: React.FC<ServicesTableProps> = ({
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingService, setEditingService] = useState<ServiceAppointment | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [soldServiceIds, setSoldServiceIds] = useState<Set<string>>(new Set());
+  const [cancelingServiceId, setCancelingServiceId] = useState<string | null>(null);
   const { refreshCompletedServicesCount } = useCompletedServices();
 
   const formatCurrency = (amount: number) => {
@@ -121,10 +123,7 @@ const ServicesTable: React.FC<ServicesTableProps> = ({
     try {
       // Mark the service as completed instead of deleting it
       // This allows us to track completed services and show them in history if not sold
-      await window.api.database.serviceAppointments.update(serviceId, {
-        isCompleted: true,
-        completedAt: new Date().toISOString(),
-      });
+      await window.api.database.serviceAppointments.markCompleted(serviceId);
       // Refresh the completed services count
       await refreshCompletedServicesCount();
       // Refresh the service data by calling the parent's refresh function
@@ -133,6 +132,46 @@ const ServicesTable: React.FC<ServicesTableProps> = ({
       console.error("Error completing service:", error);
     }
   };
+
+  const cancelCompletion = async (serviceId: string) => {
+    try {
+      setCancelingServiceId(serviceId);
+      await window.api.database.serviceAppointments.markIncomplete(serviceId);
+      // Refresh the completed services count
+      await refreshCompletedServicesCount();
+      // Refresh the service data by calling the parent's refresh function
+      onEdit({} as ServiceAppointment); // This will trigger a refresh
+    } catch (error) {
+      console.error("Error canceling service completion:", error);
+    } finally {
+      setCancelingServiceId(null);
+    }
+  };
+
+  // Check which completed services have been sold
+  useEffect(() => {
+    const checkSoldServices = async () => {
+      const completedServices = services.filter(s => s.isCompleted);
+      if (completedServices.length === 0) {
+        setSoldServiceIds(new Set());
+        return;
+      }
+
+      const soldChecks = await Promise.all(
+        completedServices.map(async (service) => {
+          const isSold = await window.api.database.serviceAppointments.isSold(service.id);
+          return { id: service.id, isSold };
+        })
+      );
+
+      const soldIds = new Set(
+        soldChecks.filter(check => check.isSold).map(check => check.id)
+      );
+      setSoldServiceIds(soldIds);
+    };
+
+    checkSoldServices();
+  }, [services]);
 
   const handleEditService = (service: ServiceAppointment) => {
     setEditingService(service);
@@ -359,34 +398,61 @@ const ServicesTable: React.FC<ServicesTableProps> = ({
                         </Tooltip>
                       )}
 
-                      <Tooltip content={t("services.editTooltip", "Edit service")}>
-                        <Button
-                          onClick={() => handleEditService(service)}
-                          size="sm"
-                          variant="outline"
-                          className="text-green-600 border-green-200 hover:bg-green-50 dark:text-green-400 dark:border-green-800 dark:hover:bg-green-950/30"
-                        >
-                          <Edit className="w-3 h-3" />
-                        </Button>
-                      </Tooltip>
-
-                      <Tooltip
-                        content={t("services.deleteTooltip", "Delete service")}
-                      >
-                        <Button
-                          onClick={() => setDeleteConfirmId(service.id)}
-                          size="sm"
-                          variant="outline"
-                          className="text-red-600 border-red-200 hover:bg-red-50 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-950/30"
-                          disabled={deleteLoading === service.id}
-                        >
-                          {deleteLoading === service.id ? (
-                            <Loader2 className="w-3 h-3 animate-spin" />
-                          ) : (
-                            <Trash2 className="w-3 h-3" />
+                      {service.isCompleted && !soldServiceIds.has(service.id) && (
+                        <Tooltip
+                          content={t(
+                            "services.cancelCompletionTooltip",
+                            "Cancel completion",
                           )}
-                        </Button>
-                      </Tooltip>
+                        >
+                          <Button
+                            onClick={() => cancelCompletion(service.id)}
+                            size="sm"
+                            variant="outline"
+                            className="text-orange-600 border-orange-200 hover:bg-orange-50 dark:text-orange-400 dark:border-orange-800 dark:hover:bg-orange-950/30"
+                            disabled={cancelingServiceId === service.id}
+                          >
+                            {cancelingServiceId === service.id ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <XCircle className="w-3 h-3" />
+                            )}
+                          </Button>
+                        </Tooltip>
+                      )}
+
+                      {!soldServiceIds.has(service.id) && (
+                        <Tooltip content={t("services.editTooltip", "Edit service")}>
+                          <Button
+                            onClick={() => handleEditService(service)}
+                            size="sm"
+                            variant="outline"
+                            className="text-green-600 border-green-200 hover:bg-green-50 dark:text-green-400 dark:border-green-800 dark:hover:bg-green-950/30"
+                          >
+                            <Edit className="w-3 h-3" />
+                          </Button>
+                        </Tooltip>
+                      )}
+
+                      {!soldServiceIds.has(service.id) && (
+                        <Tooltip
+                          content={t("services.deleteTooltip", "Delete service")}
+                        >
+                          <Button
+                            onClick={() => setDeleteConfirmId(service.id)}
+                            size="sm"
+                            variant="outline"
+                            className="text-red-600 border-red-200 hover:bg-red-50 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-950/30"
+                            disabled={deleteLoading === service.id}
+                          >
+                            {deleteLoading === service.id ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <Trash2 className="w-3 h-3" />
+                            )}
+                          </Button>
+                        </Tooltip>
+                      )}
                     </div>
                   </td>
                 </tr>

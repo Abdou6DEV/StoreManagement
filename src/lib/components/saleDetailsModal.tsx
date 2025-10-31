@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import PaymentSummary from "./paymentSummary";
 import { useToast } from "../contexts/toastContext";
-import { Sale } from "../../types";
+import { Sale, CartItem } from "../../types";
 import rendererLogger from "../logger/rendererLogger";
 
 interface SaleDetailsModalProps {
@@ -41,7 +41,7 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
   const { t } = useTranslation();
   const { showToast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
-  const [editedCart, setEditedCart] = useState<any[]>([]);
+  const [editedCart, setEditedCart] = useState<CartItem[]>([]);
   const [editedDiscount, setEditedDiscount] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -76,6 +76,9 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
           isService: !!item.service,
           manualProductType: item.manualProduct?.type,
           description: item.service?.description,
+          serviceAppointmentId: item.service?.serviceAppointmentId,
+          serviceCostPrice: item.service ? (item.boughtPrice || item.service?.costPrice) : undefined,
+          boughtPrice: item.product ? item.boughtPrice : undefined,
         })),
       );
       setEditedDiscount(sale.discount);
@@ -166,10 +169,13 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
           productId: item.isManual || item.isService ? undefined : item.id,
           quantity: item.qty,
           price: item.price,
+          boughtPrice: !item.isManual && !item.isService ? item.boughtPrice : undefined,
           manualProductName: item.isManual ? item.name : undefined,
           manualProductType: item.isManual ? item.manualProductType : undefined,
           serviceName: item.isService ? item.name : undefined,
           serviceDescription: item.isService ? item.description : undefined,
+          serviceCostPrice: item.isService ? item.serviceCostPrice : undefined,
+          serviceAppointmentId: item.isService ? item.serviceAppointmentId : undefined,
         })),
         discount: editedDiscount,
       });

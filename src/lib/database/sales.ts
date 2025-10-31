@@ -441,9 +441,6 @@ export async function updateSale(
         where: { saleId },
       });
 
-      // Clean up orphaned services
-      await cleanupOrphanedServices(tx, originalSale.saleItems, saleId);
-
       // Update quantities for new items in batch
       if (newProductIds.length > 0) {
         await Promise.all(
@@ -489,6 +486,13 @@ export async function updateSale(
       }, 0);
       
       const totalProfit = totalAmountWithDiscount - totalCost;
+
+      // Get serviceIds that will be used in new items
+      const newServiceIds = new Set(
+        processedItems
+          .filter(item => item.serviceId)
+          .map(item => item.serviceId as string)
+      );
 
       // Update the sale with pre-calculated totals
       const updatedSale = await tx.sale.update({
@@ -557,6 +561,18 @@ export async function updateSale(
           },
         },
       });
+
+      // Clean up orphaned services AFTER creating new items
+      // Only clean up services from old items that are NOT being reused in new items
+      const servicesToCleanup = originalSale.saleItems.filter(item => 
+        item.service && 
+        item.service.serviceAppointmentId && 
+        !newServiceIds.has(item.service.id)
+      );
+      
+      if (servicesToCleanup.length > 0) {
+        await cleanupOrphanedServices(tx, servicesToCleanup, saleId);
+      }
 
       // Use stored totals for performance
       const paidAmount = updatedSale.payment

@@ -394,6 +394,23 @@ export async function getServiceHistory() {
   return await getCompletedServicesForCashier();
 }
 
+export async function isServiceAppointmentSold(serviceAppointmentId: string): Promise<boolean> {
+  // Check if a service appointment has been sold by checking if there's a Service
+  // with this serviceAppointmentId that's linked to a SaleItem
+  const soldService = await prisma.service.findFirst({
+    where: {
+      serviceAppointmentId: serviceAppointmentId,
+    },
+    include: {
+      saleItems: {
+        take: 1, // We only need to know if at least one exists
+      },
+    },
+  });
+
+  return soldService !== null && soldService.saleItems.length > 0;
+}
+
 // Alias methods for compatibility with the services table
 export const markCompleted = markServiceAppointmentCompleted;
 export const markIncomplete = markServiceAppointmentIncomplete;

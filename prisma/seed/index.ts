@@ -33,12 +33,12 @@ async function main() {
     console.log(`📊 Created (realistic store data for testing):`);
     console.log(`   - Categories`);
     console.log(`   - 180 sellers`);
-    console.log(`   - 60,000 products with 200 purchases`);
+    console.log(`   - 100 products with 200 purchases`);
     console.log(`   - 2,000 clients`);
     console.log(`   - 48 services`);
-    console.log(`   - 110 service appointments (100 incomplete, 10 completed)`);
+    console.log(`   - 100 service appointments (5 incomplete, 95 completed)`);
     console.log(
-      `   - 80,000 sales with items (including manual products and services)`,
+      `   - 100 sales with items (including manual products and services)`,
     );
     console.log(`   - Multiple payments`);
     console.log(`   - 100 bills with payments`);

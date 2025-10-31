@@ -73,6 +73,7 @@ export interface CartItem {
   serviceId?: string; // Add serviceId for proper ID-based tracking
   description?: string;
   serviceCostPrice?: number;
+  serviceAppointmentId?: string; // Link to ServiceAppointment when service is from a completed appointment
 }
 
 export interface ClientSuggestion {
@@ -155,6 +156,7 @@ export interface SaleItem {
   id: string;
   quantity: number;
   price: number;
+  boughtPrice?: number | null;
   product?: {
     id: string;
     name: string;
@@ -168,6 +170,8 @@ export interface SaleItem {
     id: string;
     name: string;
     description?: string;
+    serviceAppointmentId?: string | null;
+    costPrice?: number;
   } | null;
 }
 

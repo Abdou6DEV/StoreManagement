@@ -84,8 +84,16 @@ export default function SalesSection({
     // This is handled in the modal
   };
 
-  const handleSaleUpdated = (updatedSale: Sale) => {
-    // Handle sale updates if needed
+  const handleSaleUpdated = async (updatedSale: Sale) => {
+    // Update the selected sale if it's the same one
+    if (selectedSale?.id === updatedSale.id) {
+      setSelectedSale(updatedSale);
+    }
+
+    // Refresh the sales data to reflect the update
+    if (onRefresh) {
+      await onRefresh();
+    }
   };
 
   const handleSaleDeleted = (saleId: string) => {
