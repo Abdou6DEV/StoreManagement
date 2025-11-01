@@ -9,7 +9,6 @@ import {
   Shield,
   Loader2,
   AlertCircle,
-  DollarSign,
   Package,
   Bell,
   Users,
@@ -26,7 +25,6 @@ export const OptionsList: React.FC = () => {
   const { showToast } = useToast();
   const { refreshCompletedServicesCount } = useCompletedServices();
   const [lowStock, setLowStock] = useState(0);
-  const [storeCash, setStoreCash] = useState(0);
   const [enableLowStockBadge, setEnableLowStockBadge] = useState(true);
   const [enableOverduePaymentsBadge, setEnableOverduePaymentsBadge] = useState(true);
   const [enableDueSoonPaymentsBadge, setEnableDueSoonPaymentsBadge] = useState(true);
@@ -49,7 +47,6 @@ export const OptionsList: React.FC = () => {
     setLoading(true);
     Promise.all([
       window.api.database.options.get("lowStockThreshold"),
-      window.api.database.options.get("storeCash"),
       window.api.database.options.get("enableLowStockBadge"),
       window.api.database.options.get("enableOverduePaymentsBadge"),
       window.api.database.options.get("enableDueSoonPaymentsBadge"),
@@ -66,9 +63,8 @@ export const OptionsList: React.FC = () => {
       window.api.database.options.get("categoriesRequiringInfo"),
       window.api.database.categories.getAll(),
     ])
-      .then(([lowStockVal, storeCashVal, enableBadgeVal, enableOverdueVal, enableDueSoonVal, enableOverdueBillsVal, enableDueSoonBillsVal, enableOverdueServicesVal, enableDueSoonServicesVal, dueSoonThresholdVal, dueSoonBillsThresholdVal, dueSoonServicesThresholdVal, cashierSalesHistoryDaysVal, enableCashierHistoryVal, enableCompletedServicesBadgeVal, categoriesRequiringInfoVal, categoriesData]) => {
+      .then(([lowStockVal, enableBadgeVal, enableOverdueVal, enableDueSoonVal, enableOverdueBillsVal, enableDueSoonBillsVal, enableOverdueServicesVal, enableDueSoonServicesVal, dueSoonThresholdVal, dueSoonBillsThresholdVal, dueSoonServicesThresholdVal, cashierSalesHistoryDaysVal, enableCashierHistoryVal, enableCompletedServicesBadgeVal, categoriesRequiringInfoVal, categoriesData]) => {
         setLowStock(lowStockVal ? Number(lowStockVal) : 0);
-        setStoreCash(storeCashVal ? Number(storeCashVal) : 0);
         setEnableLowStockBadge(enableBadgeVal !== "false"); // Default to true if not set
         setEnableOverduePaymentsBadge(enableOverdueVal !== "false"); // Default to true if not set
         setEnableDueSoonPaymentsBadge(enableDueSoonVal !== "false"); // Default to true if not set
@@ -98,7 +94,6 @@ export const OptionsList: React.FC = () => {
     try {
       await Promise.all([
         window.api.database.options.set("lowStockThreshold", String(lowStock)),
-        window.api.database.options.set("storeCash", String(storeCash)),
         window.api.database.options.set("enableLowStockBadge", String(enableLowStockBadge)),
         window.api.database.options.set("enableOverduePaymentsBadge", String(enableOverduePaymentsBadge)),
         window.api.database.options.set("enableDueSoonPaymentsBadge", String(enableDueSoonPaymentsBadge)),
@@ -138,44 +133,6 @@ export const OptionsList: React.FC = () => {
 
       {/* Settings Form */}
       <form onSubmit={handleSave} className="space-y-8">
-        {/* Store Settings Section */}
-        <div className="space-y-4">
-          <div className="flex items-center gap-3 mb-4">
-            <DollarSign className="w-6 h-6 text-muted-foreground" />
-            <h3 className="text-lg font-semibold text-muted-foreground">
-              {t("admin.storeSettings", "Store Settings")}
-            </h3>
-          </div>
-
-        {/* Store Cash Setting */}
-        <div className="flex flex-col md:flex-row items-start md:items-center gap-4 bg-muted/40 border border-border rounded-lg p-6">
-          <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
-            <DollarSign className="w-6 h-6 text-blue-600" />
-          </div>
-          <div className="flex-1 w-full">
-            <label
-              className="block text-base font-semibold mb-2"
-              htmlFor="storeCash"
-            >
-              {t("admin.storeCash", "Store Cash")}
-            </label>
-            <p className="text-sm text-muted-foreground mb-3">
-              {t("admin.storeCashDesc", "Default cash amount in store")}
-            </p>
-            <Input
-              id="storeCash"
-              type="number"
-              min={0}
-              value={storeCash}
-              onChange={(e) => setStoreCash(Number(e.target.value))}
-              className="w-40 text-lg"
-              disabled={loading || saving}
-              aria-label={t("admin.storeCash", "Store Cash")}
-            />
-          </div>
-        </div>
-        </div>
-
         {/* Stock Management Section */}
         <div className="space-y-4">
           <div className="flex items-center gap-3 mb-4">
