@@ -100,8 +100,11 @@ const CashierSession = memo(function CashierSession({
   );
 
   // Common sale logic that both regular and receipt sales can use
-  const proceedWithSale = useCallback(async (showSuccessMessage = true): Promise<string | undefined> => {
+  const proceedWithSale = useCallback(async (showSuccessMessage = true): Promise<{ saleId?: string; soldItems: CartItem[] }> => {
     let saleClientId = clientId;
+    // Save cart before clearing it, so we can pass it to callbacks for quantity updates
+    const soldItems = [...cart];
+    
     try {
       if (clientName.trim() && !clientId) {
         // Search for existing client by name directly (much faster than getAll)
@@ -219,10 +222,10 @@ const CashierSession = memo(function CashierSession({
         }
       }
       
-      return sale?.id;
+      return { saleId: sale?.id, soldItems };
     } catch (err) {
       showToast(t("cashier.saleError", "Failed to record sale"), "error");
-      return undefined;
+      return { soldItems };
     }
   }, [cart, clientName, clientId, discount, paymentAmount, paymentType, paymentDate, setCart, setClientName, setClientId, setDiscount, setPaymentAmount, setPaymentType, setPaymentDate, setProductRefreshKey, showToast, t]);
 
@@ -303,32 +306,17 @@ const CashierSession = memo(function CashierSession({
       return;
     }
 
-    // Check if category information is required
-    if (checkCategoryInfoRequired()) {
-      setPendingSaleAction(() => async () => {
-        const saleId = await proceedWithSale(true);
-        if (saleId) {
-          onSaleCompleted(saleId, cart);
-        }
-        setPaymentAmount(0);
-        setPaymentType("none");
-        setPaymentDate(undefined);
-      });
-      setShowCategoryInfoModal(true);
-      return;
-    }
-
     // Out-of-stock check is now handled when adding products to cart
     // No need to check here as products are validated before being added
 
-    const saleId = await proceedWithSale(true);
-    if (saleId) {
-      onSaleCompleted(saleId, cart);
+    const result = await proceedWithSale(true);
+    if (result.saleId) {
+      onSaleCompleted(result.saleId, result.soldItems);
     }
     setPaymentAmount(0);
     setPaymentType("none");
     setPaymentDate(undefined);
-  }, [cart, discount, proceedWithSale, showToast, t, onSaleCompleted, checkCategoryInfoRequired]);
+  }, [cart, discount, proceedWithSale, showToast, t, onSaleCompleted]);
 
   const handleFinishWithReceipt = useCallback(async () => {
     if (cart.length === 0) {
@@ -347,10 +335,10 @@ const CashierSession = memo(function CashierSession({
     if (checkCategoryInfoRequired()) {
       setPendingSaleAction(() => async () => {
         // Proceed with sale and get the sale ID (will use current cart from state via proceedWithSale)
-        const saleId = await proceedWithSale(false);
+        const result = await proceedWithSale(false);
         
         // Print receipt directly without showing modal - use refs to get latest values
-        if (saleId) {
+        if (result.saleId) {
           await printReceiptDirectly(
             [...cartRef.current],
             clientNameRef.current,
@@ -358,7 +346,7 @@ const CashierSession = memo(function CashierSession({
             paymentAmountRef.current,
             paymentTypeRef.current,
             paymentDateRef.current,
-            saleId,
+            result.saleId,
             showToast
           );
           
@@ -380,7 +368,7 @@ const CashierSession = memo(function CashierSession({
             );
           }
           
-          onSaleComplete(saleId, cartRef.current);
+          onSaleComplete(result.saleId, result.soldItems);
         }
         
         setPaymentAmount(0);
@@ -395,10 +383,10 @@ const CashierSession = memo(function CashierSession({
     // No need to check here as products are validated before being added
 
     // Proceed with sale and get the sale ID
-    const saleId = await proceedWithSale(false);
+    const result = await proceedWithSale(false);
     
     // Print receipt directly without showing modal
-    if (saleId) {
+    if (result.saleId) {
       await printReceiptDirectly(
         [...cart],
         clientName,
@@ -406,7 +394,7 @@ const CashierSession = memo(function CashierSession({
         paymentAmount,
         paymentType,
         paymentDate,
-        saleId,
+        result.saleId,
         showToast
       );
       
@@ -428,7 +416,7 @@ const CashierSession = memo(function CashierSession({
         );
       }
       
-      onSaleComplete(saleId, cart);
+      onSaleComplete(result.saleId, result.soldItems);
     }
     
     setPaymentAmount(0);

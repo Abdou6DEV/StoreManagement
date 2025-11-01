@@ -550,6 +550,8 @@
     "used": "مستعمل",
     "problemsReplacedParts": "المشاكل/الأجزاء المستبدلة",
     "problemsReplacedPartsPlaceholder": "صف أي مشاكل أو أجزاء مستبدلة",
+    "specifications": "المواصفات",
+    "specificationsPlaceholder": "ذاكرة الوصول العشوائي/الذاكرة الداخلية\nالمعالج\nسعة البطارية\nحجم الشاشة\nنظام التشغيل",
     "skip": "تخطي",
     "submit": "إرسال",
     "tooltipBrowseProducts": "تصفح المنتجات (F1)",

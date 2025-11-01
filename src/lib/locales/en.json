@@ -832,6 +832,8 @@
     "used": "Used",
     "problemsReplacedParts": "Problems/Replaced Parts",
     "problemsReplacedPartsPlaceholder": "Describe any problems or replaced parts",
+    "specifications": "Specifications",
+    "specificationsPlaceholder": "ROM/RAM\nProcessor\nBattery Capacity\nScreen Size\nOperating System",
     "skip": "Skip",
     "submit": "Submit",
     "tooltipBrowseProducts": "Browse Products (F1)",

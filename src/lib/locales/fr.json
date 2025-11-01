@@ -776,6 +776,8 @@
     "used": "Occasion",
     "problemsReplacedParts": "Problèmes/Pièces Remplacées",
     "problemsReplacedPartsPlaceholder": "Décrivez les problèmes ou pièces remplacées",
+    "specifications": "Spécifications",
+    "specificationsPlaceholder": "ROM/RAM\nProcesseur\nCapacité de la batterie\nTaille de l'écran\nSystème d'exploitation",
     "skip": "Ignorer",
     "submit": "Soumettre",
     "tooltipBrowseProducts": "Parcourir les produits (F1)",

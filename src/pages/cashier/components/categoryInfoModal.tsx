@@ -78,6 +78,7 @@ export default function CategoryInfoModal({
             warranty: "",
             usedNew: "new" as const,
             problemsReplacedParts: "",
+            specifications: "",
           }));
         });
         setCategoryInfoMap(initialMap);
@@ -129,7 +130,7 @@ export default function CategoryInfoModal({
       icon={<Package className="w-6 h-6 text-blue-600" />}
       showFooter={false}
     >
-      <div className="space-y-6 px-2 pb-4 max-h-[80vh] overflow-y-auto">
+      <div className="space-y-6 px-2 pb-4 max-h-[90vh] overflow-y-auto">
         {/* Products requiring info */}
         <div className="bg-muted/50 rounded-lg p-4">
           <h4 className="font-medium text-sm mb-2">
@@ -315,6 +316,24 @@ export default function CategoryInfoModal({
                     className="w-full min-h-[80px] px-3 py-2 text-sm border border-border rounded-md bg-background focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary disabled:opacity-50 disabled:cursor-not-allowed"
                     rows={3}
                     disabled={unitInfo.usedNew === "new"}
+                  />
+                </div>
+
+                {/* Specifications */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">
+                    {t("cashier.specifications", "Specifications")}
+                  </label>
+                  <textarea
+                    value={unitInfo.specifications || ""}
+                    onChange={(e) =>
+                      updateCategoryInfo(expandedItem.itemId, expandedItem.unitIndex - 1, {
+                        specifications: e.target.value,
+                      })
+                    }
+                    placeholder={t("cashier.specificationsPlaceholder", "ROM/RAM\nProcessor\nBattery Capacity\nScreen Size\nOperating System")}
+                    className="w-full min-h-[150px] px-3 py-2 text-sm border border-border rounded-md bg-background focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+                    rows={6}
                   />
                 </div>
 

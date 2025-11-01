@@ -82,6 +82,7 @@ export interface CategoryInfo {
   warranty?: string;
   usedNew?: "used" | "new";
   problemsReplacedParts?: string;
+  specifications?: string;
 }
 
 export interface ClientSuggestion {
@@ -124,7 +125,7 @@ export interface PaymentWithDetails extends Payment {
   sale: { id: string };
 }
 
-export interface PaymentWithClient extends Payment {
+export interface PaymentWithClient extends Omit<Payment, 'pendingSaleItems' | 'discount'> {
   client: {
     id: string;
     name: string;
