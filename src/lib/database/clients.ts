@@ -1,4 +1,5 @@
 import { prisma } from "./prismaClient";
+import { getPaymentsByClientWithInfo } from "./payments";
 
 export async function getAllClients() {
   return await prisma.client.findMany();
@@ -15,6 +16,7 @@ export async function getAllClientsWithTotalPurchases() {
 
   const results = await Promise.all(
     clients.map(async (client) => {
+      // Calculate total purchases from sales
       const sales = await prisma.sale.findMany({
         where: { clientId: client.id },
         include: { saleItems: true },
@@ -30,7 +32,33 @@ export async function getAllClientsWithTotalPurchases() {
         totalPurchases += saleTotal;
       }
 
-      return { ...client, totalPurchases };
+      // Calculate total credits and versements - EXACTLY as shown in the payment table
+      const paymentsData = await getPaymentsByClientWithInfo(client.id);
+
+      // Filter unpaid payments
+      const unpaidCredits = paymentsData.filter((p: any) => p.type === "CREDIT" && !p.paidDate);
+      const unpaidVersements = paymentsData.filter((p: any) => p.type === "VERSEMENT" && !p.paidDate);
+      
+      // For CREDIT: Sum what's displayed in the table (line 137-139 paymentRow.tsx)
+      // Shows: remainingAmount if available, else givenAmount
+      // Ensure non-negative values to prevent formatting issues
+      const totalCredit = Math.max(0, unpaidCredits.reduce((sum: number, p: any) => {
+        if (p.type === "CREDIT" && p.remainingAmount !== undefined && p.remainingAmount > 0) {
+          return sum + p.remainingAmount;
+        }
+        if (p.givenAmount && p.givenAmount > 0) {
+          return sum + p.givenAmount;
+        }
+        return sum;
+      }, 0));
+      
+      // For VERSEMENT: Sum EXACTLY what's shown in paymentRow.tsx line 139
+      // For versements, paymentRow shows: payment.givenAmount (because condition is only for CREDIT)
+      const totalVersement = unpaidVersements.reduce((sum: number, p: any) => {
+        return sum + (p.givenAmount || 0);
+      }, 0);
+
+      return { ...client, totalPurchases, totalCredit, totalVersement };
     }),
   );
 

@@ -62,6 +62,12 @@ const ClientsTable: React.FC<ClientsTableProps> = ({
             <th className={`px-4 py-3 ${isRTL ? "text-right" : "text-left"}`}>
               {t("clients.totalPurchases", "Total Purchases")}
             </th>
+            <th className={`px-4 py-3 ${isRTL ? "text-right" : "text-left"} whitespace-nowrap`}>
+              {t("clients.credit", "Credit")}
+            </th>
+            <th className={`px-4 py-3 ${isRTL ? "text-right" : "text-left"} whitespace-nowrap`}>
+              {t("clients.versement", "Versement")}
+            </th>
             <th className={`px-4 py-3 ${isRTL ? "text-right" : "text-left"}`}>
               {t("clients.actions", "Actions")}
             </th>
@@ -90,6 +96,14 @@ const ClientsTable: React.FC<ClientsTableProps> = ({
               <td className={`px-4 py-2 ${isRTL ? "text-right" : "text-left"}`}>
                 {client.totalPurchases?.toLocaleString() || 0}{" "}
                 {t("cashier.currency", "DA")}
+              </td>
+              <td className={`px-4 py-2 ${isRTL ? "text-right" : "text-left"} font-medium whitespace-nowrap ${(client.totalCredit || 0) > 0 ? "text-orange-600 dark:text-orange-400" : ""}`}>
+                <span>{(Math.max(0, client.totalCredit || 0)).toLocaleString("en-US", { maximumFractionDigits: 0 })}</span>{" "}
+                <span>{t("cashier.currency", "DA")}</span>
+              </td>
+              <td className={`px-4 py-2 ${isRTL ? "text-right" : "text-left"} font-medium whitespace-nowrap ${(client.totalVersement || 0) > 0 ? "text-blue-600 dark:text-blue-400" : ""}`}>
+                <span>{(Math.max(0, client.totalVersement || 0)).toLocaleString("en-US", { maximumFractionDigits: 0 })}</span>{" "}
+                <span>{t("cashier.currency", "DA")}</span>
               </td>
               <td className={`px-4 py-2 ${isRTL ? "text-right" : "text-left"}`}>
                 <div

@@ -27,6 +27,8 @@ interface CashierLayoutProps {
   onRemoveSession: (sessionIndex: number) => void;
   onUpdateSessionCart: (sessionIndex: number, newCart: CartItem[]) => void;
   onUpdateSessionDiscount: (sessionIndex: number, newDiscount: string) => void;
+  onUpdateSessionClient: (sessionIndex: number, clientName: string, clientId: string | null) => void;
+  onUpdateSessionPayment: (sessionIndex: number, paymentAmount: number, paymentType: "none" | "credit" | "versement", paymentDate: Date | undefined) => void;
   onOutOfStock: (items: CartItem[]) => void;
   onReceiptData: (data: any) => void;
   onSaleComplete: (saleId?: string, soldItems?: CartItem[]) => void;
@@ -55,6 +57,8 @@ export default function CashierLayout({
   onRemoveSession,
   onUpdateSessionCart,
   onUpdateSessionDiscount,
+  onUpdateSessionClient,
+  onUpdateSessionPayment,
   onOutOfStock,
   onReceiptData,
   onSaleComplete,
@@ -184,6 +188,8 @@ export default function CashierLayout({
                 sessions={sessions}
                 activeSession={activeSession}
                 onSessionChange={onSessionChange}
+                onUpdateSessionClient={onUpdateSessionClient}
+                onUpdateSessionPayment={onUpdateSessionPayment}
               />
             );
           })}

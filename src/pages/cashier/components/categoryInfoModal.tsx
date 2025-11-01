@@ -130,22 +130,23 @@ export default function CategoryInfoModal({
       icon={<Package className="w-6 h-6 text-blue-600" />}
       showFooter={false}
     >
-      <div className="space-y-6 px-2 pb-4 max-h-[90vh] overflow-y-auto">
-        {/* Products requiring info */}
-        <div className="bg-muted/50 rounded-lg p-4">
-          <h4 className="font-medium text-sm mb-2">
-            {t("cashier.productsRequiringInfo", "Products requiring additional information")}:
-          </h4>
-          <div className="space-y-1">
-            {productsRequiringInfo.map((item) => (
-              <div key={item.id} className="text-sm text-muted-foreground">
-                • {item.name} (x{item.qty} {t("cashier.units", "units")})
-              </div>
-            ))}
+      <div className="flex flex-col max-h-[80vh]">
+        <div className="flex-1 overflow-y-auto space-y-6 px-2">
+          {/* Products requiring info */}
+          <div className="bg-muted/50 rounded-lg p-4">
+            <h4 className="font-medium text-sm mb-2">
+              {t("cashier.productsRequiringInfo", "Products requiring additional information")}:
+            </h4>
+            <div className="space-y-1">
+              {productsRequiringInfo.map((item) => (
+                <div key={item.id} className="text-sm text-muted-foreground">
+                  • {item.name} (x{item.qty} {t("cashier.units", "units")})
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6" id="category-info-form">
           {/* Form for each unit */}
           {expandedItems.map((expandedItem, idx) => {
             const unitInfo = categoryInfoMap[expandedItem.itemId]?.[expandedItem.unitIndex - 1] || {
@@ -345,33 +346,36 @@ export default function CategoryInfoModal({
             );
           })}
 
-          {/* Action Buttons */}
-          <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-4 border-t sticky bottom-0 bg-background pb-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleCancel}
-              className="w-full sm:w-auto"
-            >
-              <X className="w-4 h-4 mr-2" />
-              {t("cashier.cancel", "Cancel")}
-            </Button>
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={handleSkip}
-              className="w-full sm:w-auto"
-            >
-              {t("cashier.skip", "Skip")}
-            </Button>
-            <Button
-              type="submit"
-              className="w-full sm:w-auto"
-            >
-              {t("cashier.submit", "Submit")} ({totalUnits} {t("cashier.units", "units")})
-            </Button>
-          </div>
-        </form>
+          </form>
+        </div>
+        
+        {/* Action Buttons - Fixed footer */}
+        <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-4 mt-4 border-t bg-background -mx-6 -mb-6 px-6 pb-6">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleCancel}
+            className="w-full sm:w-auto"
+          >
+            <X className="w-4 h-4 mr-2" />
+            {t("cashier.cancel", "Cancel")}
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={handleSkip}
+            className="w-full sm:w-auto"
+          >
+            {t("cashier.skip", "Skip")}
+          </Button>
+          <Button
+            type="submit"
+            form="category-info-form"
+            className="w-full sm:w-auto"
+          >
+            {t("cashier.submit", "Submit")} ({totalUnits} {t("cashier.units", "units")})
+          </Button>
+        </div>
       </div>
     </Modal>
   );

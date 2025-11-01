@@ -5,6 +5,11 @@ export interface Session {
   id: number;
   cart: CartItem[];
   discount: string;
+  clientName: string;
+  clientId: string | null;
+  paymentAmount: number;
+  paymentType: "none" | "credit" | "versement";
+  paymentDate: Date | undefined;
 }
 
 interface SessionManagerProps {
@@ -22,6 +27,8 @@ export interface SessionActions {
   setActiveSession: (sessionIndex: number) => void;
   updateSessionCart: (sessionIndex: number, newCart: CartItem[]) => void;
   updateSessionDiscount: (sessionIndex: number, newDiscount: string) => void;
+  updateSessionClient: (sessionIndex: number, clientName: string, clientId: string | null) => void;
+  updateSessionPayment: (sessionIndex: number, paymentAmount: number, paymentType: "none" | "credit" | "versement", paymentDate: Date | undefined) => void;
   getCurrentSession: () => Session;
 }
 
@@ -30,7 +37,7 @@ export default function SessionManager({
   children,
 }: SessionManagerProps) {
   const [sessions, setSessions] = useState<Session[]>([
-    { id: 0, cart: [], discount: "" },
+    { id: 0, cart: [], discount: "", clientName: "", clientId: null, paymentAmount: 0, paymentType: "none", paymentDate: undefined },
   ]);
   const [activeSession, setActiveSession] = useState(0);
 
@@ -39,7 +46,7 @@ export default function SessionManager({
       const newSessionId = sessions.length;
       setSessions((prev) => [
         ...prev,
-        { id: newSessionId, cart: [], discount: "" },
+        { id: newSessionId, cart: [], discount: "", clientName: "", clientId: null, paymentAmount: 0, paymentType: "none", paymentDate: undefined },
       ]);
       setActiveSession(newSessionId);
     }
@@ -86,6 +93,37 @@ export default function SessionManager({
     [],
   );
 
+  const updateSessionClient = useCallback(
+    (sessionIndex: number, clientName: string, clientId: string | null) => {
+      setSessions((prev) => {
+        const updated = [...prev];
+        updated[sessionIndex] = {
+          ...updated[sessionIndex],
+          clientName,
+          clientId,
+        };
+        return updated;
+      });
+    },
+    [],
+  );
+
+  const updateSessionPayment = useCallback(
+    (sessionIndex: number, paymentAmount: number, paymentType: "none" | "credit" | "versement", paymentDate: Date | undefined) => {
+      setSessions((prev) => {
+        const updated = [...prev];
+        updated[sessionIndex] = {
+          ...updated[sessionIndex],
+          paymentAmount,
+          paymentType,
+          paymentDate,
+        };
+        return updated;
+      });
+    },
+    [],
+  );
+
   const getCurrentSession = useCallback(() => {
     return sessions[activeSession] || sessions[0];
   }, [sessions, activeSession]);
@@ -96,6 +134,8 @@ export default function SessionManager({
     setActiveSession,
     updateSessionCart,
     updateSessionDiscount,
+    updateSessionClient,
+    updateSessionPayment,
     getCurrentSession,
   };
 

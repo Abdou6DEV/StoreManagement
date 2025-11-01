@@ -303,12 +303,19 @@ export default function Clients() {
         client.address.toLowerCase().includes(search.toLowerCase())),
   );
 
+  // Sort by credit (descending - highest first)
+  const sortedClients = [...filteredClients].sort((a, b) => {
+    const creditA = a.totalCredit || 0;
+    const creditB = b.totalCredit || 0;
+    return creditB - creditA; // Descending order
+  });
+
   // Pagination logic
   const totalPages = Math.max(
     1,
-    Math.ceil(filteredClients.length / itemsPerPage),
+    Math.ceil(sortedClients.length / itemsPerPage),
   );
-  const paginatedClients = filteredClients.slice(
+  const paginatedClients = sortedClients.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage,
   );
@@ -502,7 +509,7 @@ export default function Clients() {
                     <Pagination className="mt-6">
                       <PaginationContent>
                         <PaginationItem>
-                          {currentPage === 1 || filteredClients.length === 0 ? (
+                          {currentPage === 1 || sortedClients.length === 0 ? (
                             <span className="opacity-50 pointer-events-none select-none">
                               <PaginationPrevious href="#" />
                             </span>
@@ -560,7 +567,7 @@ export default function Clients() {
                         })()}
                         <PaginationItem>
                           {currentPage === totalPages ||
-                          filteredClients.length === 0 ? (
+                          sortedClients.length === 0 ? (
                             <span className="opacity-50 pointer-events-none select-none">
                               <PaginationNext href="#" />
                             </span>
@@ -586,7 +593,7 @@ export default function Clients() {
                   <span className="text-muted-foreground">
                     {t("clients.totalClients", "Total Clients")}:
                   </span>
-                  <span className="font-medium">{filteredClients.length}</span>
+                  <span className="font-medium">{sortedClients.length}</span>
                 </div>
 
                 {/* Total Purchases */}
@@ -596,7 +603,7 @@ export default function Clients() {
                     {t("clients.totalPurchases", "Total Purchases")}:
                   </span>
                   <span className="font-medium">
-                    {filteredClients
+                    {sortedClients
                       .reduce(
                         (sum, client) => sum + (client.totalPurchases || 0),
                         0,

@@ -10,7 +10,11 @@ export type ToastType = "success" | "error" | "info";
 export type Theme = "light" | "dark";
 export type ModalSize = "sm" | "md" | "lg" | "xl" | "full" | "auto";
 export type ModalType = "dialog" | "overlay";
-export type ClientWithTotalPurchases = Client & { totalPurchases: number };
+export type ClientWithTotalPurchases = Client & { 
+  totalPurchases: number;
+  totalCredit: number;
+  totalVersement: number;
+};
 export type TabType = "summary" | "credits" | "versements";
 export type AggregationLevel = "day" | "month" | "year";
 

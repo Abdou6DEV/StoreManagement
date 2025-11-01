@@ -22,9 +22,11 @@ interface CashierSessionProps {
   setDiscount: (discount: string) => void;
   outOfStockConfirmed: boolean;
   // Session navigation props
-  sessions: Array<{ id: number; cart: CartItem[]; discount: string }>;
+  sessions: Array<{ id: number; cart: CartItem[]; discount: string; clientName: string; clientId: string | null; paymentAmount: number; paymentType: "none" | "credit" | "versement"; paymentDate: Date | undefined }>;
   activeSession: number;
   onSessionChange: (sessionIndex: number) => void;
+  onUpdateSessionClient: (sessionIndex: number, clientName: string, clientId: string | null) => void;
+  onUpdateSessionPayment: (sessionIndex: number, paymentAmount: number, paymentType: "none" | "credit" | "versement", paymentDate: Date | undefined) => void;
 }
 
 const CashierSession = memo(function CashierSession({
@@ -42,19 +44,36 @@ const CashierSession = memo(function CashierSession({
   sessions,
   activeSession,
   onSessionChange,
+  onUpdateSessionClient,
+  onUpdateSessionPayment,
 }: CashierSessionProps) {
   const { t } = useTranslation();
   const { showToast } = useToast();
   // const { refetchProducts } = useStock(); // Removed - was causing performance issues
 
-  // Session-specific state
-  const [clientName, setClientName] = useState("");
-  const [clientId, setClientId] = useState<string | null>(null);
-  const [paymentAmount, setPaymentAmount] = useState(0);
+  // Get current session data
+  const currentSession = sessions[activeSession] || sessions[0];
+  
+  // Session-specific state - initialize from session
+  const [clientName, setClientName] = useState(currentSession?.clientName || "");
+  const [clientId, setClientId] = useState<string | null>(currentSession?.clientId || null);
+  const [paymentAmount, setPaymentAmount] = useState(currentSession?.paymentAmount || 0);
   const [paymentType, setPaymentType] = useState<
     "none" | "credit" | "versement"
-  >("none");
-  const [paymentDate, setPaymentDate] = useState<Date | undefined>(undefined);
+  >(currentSession?.paymentType || "none");
+  const [paymentDate, setPaymentDate] = useState<Date | undefined>(currentSession?.paymentDate || undefined);
+
+  // Sync state with session data when activeSession changes
+  useEffect(() => {
+    const session = sessions[activeSession];
+    if (session) {
+      setClientName(session.clientName || "");
+      setClientId(session.clientId || null);
+      setPaymentAmount(session.paymentAmount || 0);
+      setPaymentType(session.paymentType || "none");
+      setPaymentDate(session.paymentDate || undefined);
+    }
+  }, [activeSession, sessions]);
   
   // Category validation state
   const [categoriesRequiringInfo, setCategoriesRequiringInfo] = useState<string[]>([]);
@@ -76,7 +95,14 @@ const CashierSession = memo(function CashierSession({
   
   useEffect(() => {
     clientNameRef.current = clientName;
-  }, [clientName]);
+    // Update session when clientName or clientId changes (only if different from session)
+    if (sessions[activeSession]) {
+      const session = sessions[activeSession];
+      if (session.clientName !== clientName || session.clientId !== clientId) {
+        onUpdateSessionClient(activeSession, clientName, clientId);
+      }
+    }
+  }, [clientName, clientId, activeSession, sessions, onUpdateSessionClient]);
   
   useEffect(() => {
     discountRef.current = discount;
@@ -85,14 +111,28 @@ const CashierSession = memo(function CashierSession({
   useEffect(() => {
     paymentAmountRef.current = paymentAmount;
   }, [paymentAmount]);
-  
+
   useEffect(() => {
     paymentTypeRef.current = paymentType;
   }, [paymentType]);
-  
+
   useEffect(() => {
     paymentDateRef.current = paymentDate;
   }, [paymentDate]);
+
+  // Update session when payment info changes (only if different from session)
+  useEffect(() => {
+    if (sessions[activeSession]) {
+      const session = sessions[activeSession];
+      if (
+        session.paymentAmount !== paymentAmount ||
+        session.paymentType !== paymentType ||
+        session.paymentDate !== paymentDate
+      ) {
+        onUpdateSessionPayment(activeSession, paymentAmount, paymentType, paymentDate);
+      }
+    }
+  }, [paymentAmount, paymentType, paymentDate, activeSession, sessions, onUpdateSessionPayment]);
 
   const total = useMemo(
     () => cart.reduce((sum, item) => sum + item.qty * item.price, 0),
@@ -113,6 +153,10 @@ const CashierSession = memo(function CashierSession({
           if (existingClient) {
             saleClientId = existingClient.id;
             setClientId(existingClient.id);
+            // Update session with client info
+            if (sessions[activeSession]) {
+              onUpdateSessionClient(activeSession, clientName.trim(), existingClient.id);
+            }
           } else {
             // Create a new client if not found
             const client = await window.api.database.clients.create({
@@ -120,6 +164,10 @@ const CashierSession = memo(function CashierSession({
             });
             saleClientId = client.id;
             setClientId(client.id);
+            // Update session with client info
+            if (sessions[activeSession]) {
+              onUpdateSessionClient(activeSession, clientName.trim(), client.id);
+            }
           }
         } catch (error) {
           // If findByName doesn't exist, create directly (fallback)
@@ -128,6 +176,10 @@ const CashierSession = memo(function CashierSession({
           });
           saleClientId = client.id;
           setClientId(client.id);
+          // Update session with client info
+          if (sessions[activeSession]) {
+            onUpdateSessionClient(activeSession, clientName.trim(), client.id);
+          }
         }
       }
 
@@ -193,12 +245,23 @@ const CashierSession = memo(function CashierSession({
         });
       }
       setCart([]);
-      setClientName("");
-      setClientId(null);
+      const emptyClientName = "";
+      const emptyClientId: string | null = null;
+      setClientName(emptyClientName);
+      setClientId(emptyClientId);
       setDiscount("");
-      setPaymentAmount(0);
-      setPaymentType("none");
-      setPaymentDate(undefined);
+      const emptyPaymentAmount = 0;
+      const emptyPaymentType: "none" | "credit" | "versement" = "none";
+      const emptyPaymentDate: Date | undefined = undefined;
+      setPaymentAmount(emptyPaymentAmount);
+      setPaymentType(emptyPaymentType);
+      setPaymentDate(emptyPaymentDate);
+      
+      // Update session data
+      if (sessions[activeSession]) {
+        onUpdateSessionClient(activeSession, emptyClientName, emptyClientId);
+        onUpdateSessionPayment(activeSession, emptyPaymentAmount, emptyPaymentType, emptyPaymentDate);
+      }
       // Refresh products only when needed (e.g., when product browser opens)
       // This prevents UI pause after every sale
       // setProductRefreshKey((k: number) => k + 1);
@@ -227,17 +290,28 @@ const CashierSession = memo(function CashierSession({
       showToast(t("cashier.saleError", "Failed to record sale"), "error");
       return { soldItems };
     }
-  }, [cart, clientName, clientId, discount, paymentAmount, paymentType, paymentDate, setCart, setClientName, setClientId, setDiscount, setPaymentAmount, setPaymentType, setPaymentDate, setProductRefreshKey, showToast, t]);
+  }, [cart, clientName, clientId, discount, paymentAmount, paymentType, paymentDate, setCart, setClientName, setClientId, setDiscount, setPaymentAmount, setPaymentType, setPaymentDate, setProductRefreshKey, showToast, t, activeSession, sessions, onUpdateSessionClient, onUpdateSessionPayment]);
 
   // Clear the cart and reset session state
   const handleClear = () => {
     setCart([]);
     setDiscount("");
-    setClientName("");
-    setClientId(null);
-    setPaymentAmount(0);
-    setPaymentType("none");
-    setPaymentDate(undefined);
+    const emptyClientName = "";
+    const emptyClientId: string | null = null;
+    setClientName(emptyClientName);
+    setClientId(emptyClientId);
+    const emptyPaymentAmount = 0;
+    const emptyPaymentType: "none" | "credit" | "versement" = "none";
+    const emptyPaymentDate: Date | undefined = undefined;
+    setPaymentAmount(emptyPaymentAmount);
+    setPaymentType(emptyPaymentType);
+    setPaymentDate(emptyPaymentDate);
+    
+    // Update session data
+    if (sessions[activeSession]) {
+      onUpdateSessionClient(activeSession, emptyClientName, emptyClientId);
+      onUpdateSessionPayment(activeSession, emptyPaymentAmount, emptyPaymentType, emptyPaymentDate);
+    }
   };
 
   // Check if any products in cart require additional information

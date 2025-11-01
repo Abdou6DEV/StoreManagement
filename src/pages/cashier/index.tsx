@@ -344,6 +344,8 @@ export default function CashierPage() {
              onRemoveSession={sessionActions.removeSession}
              onUpdateSessionCart={sessionActions.updateSessionCart}
              onUpdateSessionDiscount={sessionActions.updateSessionDiscount}
+             onUpdateSessionClient={sessionActions.updateSessionClient}
+             onUpdateSessionPayment={sessionActions.updateSessionPayment}
              onOutOfStock={handleOutOfStock}
              onReceiptData={handleReceiptData}
              onSaleComplete={handleSaleComplete}
