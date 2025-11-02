@@ -1,16 +1,17 @@
 import React, { useEffect, useState, useMemo } from "react";
-import type { Payment, Sale } from "@prisma/client";
+import type { Payment } from "@prisma/client";
 import { Modal } from "./modal";
 import { Loader2, CreditCard } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useToast } from "../contexts/toastContext";
-import { ClientSuggestion } from "../../types";
+import { ClientSuggestion, Sale, CartItem } from "../../types";
 import { ConfirmDialog } from "./confirmDialog";
 import PaymentTabs from "./paymentsModal/paymentTabs";
 import PaymentSearch from "./paymentsModal/paymentSearch";
 import PaymentTable from "./paymentsModal/paymentTable";
 import PaymentSummaryTab from "./paymentsModal/paymentSummaryTab";
 import SaleDetailsModal from "./saleDetailsModal";
+import { printReceiptDirectly } from "../../pages/cashier/components/receiptModal";
 
 interface PaymentsModalProps {
   client: ClientSuggestion;
@@ -38,13 +39,11 @@ const PaymentsModal: React.FC<PaymentsModalProps> = ({ client, onClose }) => {
   // Sale details modal state
   const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
   const [showSaleDetailsModal, setShowSaleDetailsModal] = useState(false);
-  const [loadingSaleDetails, setLoadingSaleDetails] = useState(false);
 
   const itemsPerPage = 5;
 
   // Handle viewing sale details
   const handleViewSaleDetails = async (saleId: string) => {
-    setLoadingSaleDetails(true);
     try {
       const sale = await window.api.database.sales.getById(saleId);
       if (sale) {
@@ -62,8 +61,60 @@ const PaymentsModal: React.FC<PaymentsModalProps> = ({ client, onClose }) => {
         t("clients.saleDetailsError", "Failed to load sale details"),
         "error"
       );
-    } finally {
-      setLoadingSaleDetails(false);
+    }
+  };
+
+  // Handle printing receipt
+  const handlePrintReceipt = async (sale: Sale) => {
+    try {
+      // Convert saleItems to CartItem format
+      const cartItems: CartItem[] = sale.saleItems.map((item: Sale["saleItems"][0]) => ({
+        id: item.product?.id || item.service?.id || `manual-${item.id}`,
+        name:
+          item.product?.name ||
+          item.manualProduct?.name ||
+          item.service?.name ||
+          "",
+        price: item.price,
+        qty: item.quantity,
+        boughtPrice: item.boughtPrice || undefined,
+        isManual: !item.product && !item.service,
+        isService: !!item.service,
+        manualProductType: item.manualProduct?.type,
+        description: item.service?.description,
+        serviceCostPrice: item.service ? (item.boughtPrice || item.service?.costPrice) : undefined,
+        serviceAppointmentId: item.service?.serviceAppointmentId || undefined,
+      }));
+
+      // Determine payment type
+      const paymentType: "none" | "credit" | "versement" = sale.isPaidInCash
+        ? "none"
+        : sale.payment?.type === "VERSEMENT"
+          ? "versement"
+          : "credit";
+
+      // Get payment date
+      const paymentDate = sale.payment?.paidDate
+        ? new Date(sale.payment.paidDate)
+        : undefined;
+
+      // Call print function
+      await printReceiptDirectly(
+        cartItems,
+        sale.client?.name || "",
+        sale.discount,
+        sale.paidAmount,
+        paymentType,
+        paymentDate,
+        sale.id,
+        (message, type) => showToast(message, type || "info")
+      );
+    } catch (error) {
+      console.error("Failed to print receipt:", error);
+      showToast(
+        t("cashier.printError", "Failed to print receipt"),
+        "error"
+      );
     }
   };
 
@@ -403,6 +454,7 @@ const PaymentsModal: React.FC<PaymentsModalProps> = ({ client, onClose }) => {
           setShowSaleDetailsModal(false);
           setSelectedSale(null);
         }}
+        onPrint={handlePrintReceipt}
       />
     </Modal>
   );

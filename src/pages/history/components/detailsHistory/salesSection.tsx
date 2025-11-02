@@ -2,13 +2,14 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { ShoppingCart } from "lucide-react";
-import type { SaleForHistory, Sale } from "../../../../types";
+import type { SaleForHistory, Sale, CartItem } from "../../../../types";
 import SaleCard from "./saleCard";
 import SharedPagination from "../sharedPagination";
 import SaleDetailsModal from "../../../../lib/components/saleDetailsModal";
 import SectionControls from "./sectionControls";
 import { ConfirmDialog } from "../../../../lib/components/confirmDialog";
 import { useToast } from "../../../../lib/contexts/toastContext";
+import { printReceiptDirectly } from "../../../cashier/components/receiptModal";
 
 interface SalesSectionProps {
   sales: SaleForHistory[];
@@ -76,8 +77,57 @@ export default function SalesSection({
     setSelectedSale(null);
   };
 
-  const handlePrintReceipt = (sale: Sale) => {
-    // TODO: Implement print functionality
+  const handlePrintReceipt = async (sale: Sale) => {
+    try {
+      // Convert saleItems to CartItem format
+      const cartItems: CartItem[] = sale.saleItems.map((item) => ({
+        id: item.product?.id || item.service?.id || `manual-${item.id}`,
+        name:
+          item.product?.name ||
+          item.manualProduct?.name ||
+          item.service?.name ||
+          "",
+        price: item.price,
+        qty: item.quantity,
+        boughtPrice: item.boughtPrice || undefined,
+        isManual: !item.product && !item.service,
+        isService: !!item.service,
+        manualProductType: item.manualProduct?.type,
+        description: item.service?.description,
+        serviceCostPrice: item.service ? (item.boughtPrice || item.service?.costPrice) : undefined,
+        serviceAppointmentId: item.service?.serviceAppointmentId || undefined,
+      }));
+
+      // Determine payment type
+      const paymentType: "none" | "credit" | "versement" = sale.isPaidInCash
+        ? "none"
+        : sale.payment?.type === "VERSEMENT"
+          ? "versement"
+          : "credit";
+
+      // Get payment date
+      const paymentDate = sale.payment?.paidDate
+        ? new Date(sale.payment.paidDate)
+        : undefined;
+
+      // Call print function
+      await printReceiptDirectly(
+        cartItems,
+        sale.client?.name || "",
+        sale.discount,
+        sale.paidAmount,
+        paymentType,
+        paymentDate,
+        sale.id,
+        (message, type) => showToast(message, type || "info")
+      );
+    } catch (error) {
+      console.error("Failed to print receipt:", error);
+      showToast(
+        t("cashier.printError", "Failed to print receipt"),
+        "error"
+      );
+    }
   };
 
   const handleModifySale = (sale: Sale) => {

@@ -25,6 +25,7 @@ export const ReceiptConfig: React.FC = () => {
   const [storePhone, setStorePhone] = useState("");
   const [phoneNumbers, setPhoneNumbers] = useState<string[]>([]);
   const [footerMessage, setFooterMessage] = useState("");
+  const [serviceTicketFooterMessage, setServiceTicketFooterMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [previewReceipt, setPreviewReceipt] = useState<string>("");
@@ -508,14 +509,16 @@ export const ReceiptConfig: React.FC = () => {
       window.api.database.options.get("storePhone"),
       window.api.database.options.get("storePhoneNumbers"),
       window.api.database.options.get("receiptFooterMessage"),
+      window.api.database.options.get("serviceTicketFooterMessage"),
       window.api.database.options.get("receiptLanguage"),
     ])
-      .then(([name, address, phone, phones, footer, language]) => {
+      .then(([name, address, phone, phones, footer, serviceFooter, language]) => {
         setStoreName(name || "");
         setStoreAddress(address || "");
         setStorePhone(phone || "");
         setPhoneNumbers(phones ? JSON.parse(phones) : []);
         setFooterMessage(footer || "");
+        setServiceTicketFooterMessage(serviceFooter || "");
         setReceiptLanguage((language as "fr" | "en" | "ar") || "fr");
         setLoading(false);
       })
@@ -549,6 +552,7 @@ export const ReceiptConfig: React.FC = () => {
         window.api.database.options.set("storePhone", storePhone),
         window.api.database.options.set("storePhoneNumbers", JSON.stringify(phoneNumbers)),
         window.api.database.options.set("receiptFooterMessage", footerMessage),
+        window.api.database.options.set("serviceTicketFooterMessage", serviceTicketFooterMessage),
         window.api.database.options.set("receiptLanguage", receiptLanguage),
       ]);
       showToast(t("admin.receiptSaved", "Receipt settings saved successfully!"), "success");
@@ -796,6 +800,39 @@ export const ReceiptConfig: React.FC = () => {
             disabled={loading || saving}
             rows={3}
             aria-label={t("admin.footerMessage", "Footer Message")}
+          />
+        </div>
+
+        {/* Service Ticket Footer Message */}
+        <div className="flex flex-col gap-4 bg-muted/40 border border-border rounded-lg p-6">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
+              <MessageSquare className="w-6 h-6 text-green-600" />
+            </div>
+            <div>
+              <label
+                className="block text-base font-semibold"
+                htmlFor="serviceTicketFooterMessage"
+              >
+                {t("admin.serviceTicketFooterMessage", "Service Ticket Footer Message")}
+              </label>
+              <p className="text-sm text-muted-foreground">
+                {t(
+                  "admin.serviceTicketFooterMessageDesc",
+                  "Custom message that appears at the bottom of service tickets"
+                )}
+              </p>
+            </div>
+          </div>
+          <textarea
+            id="serviceTicketFooterMessage"
+            value={serviceTicketFooterMessage}
+            onChange={(e) => setServiceTicketFooterMessage(e.target.value)}
+            className="w-full text-lg p-3 border border-input rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+            placeholder={t("admin.serviceTicketFooterMessagePlaceholder", "Enter service ticket footer message")}
+            disabled={loading || saving}
+            rows={3}
+            aria-label={t("admin.serviceTicketFooterMessage", "Service Ticket Footer Message")}
           />
         </div>
 

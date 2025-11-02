@@ -1,7 +1,7 @@
 {
   "name": "reda-tech-store-management",
   "productName": "REDA TECH Store Management",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "A comprehensive store management solution by REDA TECH",
   "main": ".vite/build/main.js",
   "scripts": {

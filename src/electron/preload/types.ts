@@ -217,6 +217,7 @@ export type AppAPI = {
     releaseNotes?: string;
     error?: string;
   }>;
+  printSilently: (html: string) => Promise<boolean>;
   downloadUpdate: (url: string) => Promise<{
     success: boolean;
     path: string;

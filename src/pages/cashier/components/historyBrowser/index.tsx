@@ -11,6 +11,8 @@ import SearchBar from "./searchBar";
 import SalesList from "./salesList";
 import { ConfirmDialog } from "../../../../lib/components/confirmDialog";
 import { Lock } from "lucide-react";
+import { printReceiptDirectly } from "../receiptModal";
+import type { CartItem } from "../../../../types";
 
 const HistoryBrowser: React.FC<HistoryBrowserProps> = ({
   onSaleSelect,
@@ -89,11 +91,58 @@ const HistoryBrowser: React.FC<HistoryBrowserProps> = ({
     onSaleSelect?.(sale);
   };
 
-  const handlePrintReceipt = (sale: Sale) => {
-    // TODO: Implement print functionality
-    rendererLogger.debug("Printing receipt for sale", "HistoryBrowser", {
-      saleId: sale.id,
-    });
+  const handlePrintReceipt = async (sale: Sale) => {
+    try {
+      rendererLogger.debug("Printing receipt for sale", "HistoryBrowser", {
+        saleId: sale.id,
+      });
+
+      // Convert saleItems to CartItem format
+      const cartItems: CartItem[] = sale.saleItems.map((item) => ({
+        id: item.product?.id || item.service?.id || `manual-${item.id}`,
+        name:
+          item.product?.name ||
+          item.manualProduct?.name ||
+          item.service?.name ||
+          "",
+        price: item.price,
+        qty: item.quantity,
+        boughtPrice: item.boughtPrice || undefined,
+        isManual: !item.product && !item.service,
+        isService: !!item.service,
+        manualProductType: item.manualProduct?.type,
+        description: item.service?.description,
+        serviceCostPrice: item.service ? (item.boughtPrice || item.service?.costPrice) : undefined,
+        serviceAppointmentId: item.service?.serviceAppointmentId || undefined,
+      }));
+
+      // Determine payment type
+      const paymentType: "none" | "credit" | "versement" = sale.isPaidInCash
+        ? "none"
+        : sale.payment?.type === "VERSEMENT"
+          ? "versement"
+          : "credit";
+
+      // Get payment date
+      const paymentDate = sale.payment?.paidDate
+        ? new Date(sale.payment.paidDate)
+        : undefined;
+
+      // Call print function
+      await printReceiptDirectly(
+        cartItems,
+        sale.client?.name || "",
+        sale.discount,
+        sale.paidAmount,
+        paymentType,
+        paymentDate,
+        sale.id,
+        (message, type) => showToast(message, type || "info")
+      );
+    } catch (error) {
+      rendererLogger.error("Failed to print receipt", "HistoryBrowser", error);
+      showToast(t("cashier.printError", "Failed to print receipt"), "error");
+    }
   };
 
   const handleModifySale = (sale: Sale) => {

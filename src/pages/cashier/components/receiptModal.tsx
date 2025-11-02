@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Printer, Eye, FileText } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { t as i18nT } from "i18next";
 import { Modal } from "../../../lib/components/modal";
 import type { CartItem } from "../../../types";
 import rendererLogger from "../../../lib/logger/rendererLogger";
@@ -234,6 +235,7 @@ export const printReceiptDirectly = async (
       appreciate: "Nous apprécions votre confiance",
       receiptId: "ID",
       storeManagement: "Système de Gestion de Magasin",
+      systemDevelopedBy: "Ce système est développé par REDA TECH",
       contact: "Contact",
       imei: "IMEI",
       warrantyPeriod: "Période de garantie",
@@ -277,6 +279,7 @@ export const printReceiptDirectly = async (
       appreciate: "We appreciate your business",
       receiptId: "ID",
       storeManagement: "Store Management System",
+      systemDevelopedBy: "This System is developed by REDA TECH",
       contact: "Contact",
       imei: "IMEI",
       warrantyPeriod: "Warranty Period",
@@ -320,6 +323,7 @@ export const printReceiptDirectly = async (
       appreciate: "نقدر ثقتكم بنا",
       receiptId: "الرقم",
       storeManagement: "نظام إدارة المتجر",
+      systemDevelopedBy: "تم تطوير هذا النظام بواسطة REDA TECH",
       contact: "الاتصال",
       imei: "IMEI",
       warrantyPeriod: "فترة الضمان",
@@ -661,11 +665,14 @@ export const printReceiptDirectly = async (
             }
             .category-info-label {
               font-weight: 700;
+              font-size: 13px;
               display: inline-block;
               margin-right: 8px;
             }
             .category-info-value {
-              font-weight: 400;
+              font-weight: 900;
+              font-size: 13px;
+              color: #000000;
               display: inline-block;
               word-break: break-word;
               text-align: right;
@@ -677,6 +684,7 @@ export const printReceiptDirectly = async (
               margin-bottom: 3px;
               margin-right: 0;
               width: 100%;
+              font-size: 13px;
             }
             .category-info-field-multiline .category-info-value {
               display: block;
@@ -684,6 +692,9 @@ export const printReceiptDirectly = async (
               text-align: left;
               margin-left: 0 !important;
               width: 100%;
+              font-size: 13px;
+              font-weight: 900;
+              color: #000000;
             }
             .category-info-warranty {
               margin-bottom: 8px;
@@ -953,7 +964,7 @@ export const printReceiptDirectly = async (
             
             <!-- Watermark -->
             <div class="watermark">
-              <div>${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].storeManagement}</div>
+              <div>${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].systemDevelopedBy}</div>
               <div>${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].contact}: 0793420745</div>
             </div>
           </div>
@@ -963,34 +974,77 @@ export const printReceiptDirectly = async (
   };
 
   try {
-    const printWindow = window.open("", "_blank");
-    if (!printWindow) {
-      showToast?.("Failed to open print window", "error");
+    const receiptHTML = generateReceiptHTML();
+    
+    // Use iframe method that respects CSS @page rule (like the original implementation)
+    // This ensures the 70mm width is properly respected
+    const iframe = document.createElement("iframe");
+    iframe.style.position = "fixed";
+    iframe.style.right = "0";
+    iframe.style.bottom = "0";
+    iframe.style.width = "0";
+    iframe.style.height = "0";
+    iframe.style.border = "0";
+    iframe.style.opacity = "0";
+    iframe.style.pointerEvents = "none";
+    document.body.appendChild(iframe);
+
+    const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+    if (!iframeDoc) {
+      showToast?.("Failed to initialize print", "error");
+      document.body.removeChild(iframe);
       return;
     }
 
-    const receiptHTML = generateReceiptHTML();
-    
-    
-    printWindow.document.write(receiptHTML);
-    printWindow.document.close();
+    iframeDoc.open();
+    iframeDoc.write(receiptHTML);
+    iframeDoc.close();
 
-    // Wait for the content to fully load, then show both preview and print dialog
-    printWindow.onload = () => {
-      // Focus the window to make sure content is visible
-      printWindow.focus();
-      
-      
-      // Wait a bit more to ensure content is fully rendered, then print
+    iframe.onload = () => {
       setTimeout(() => {
-        printWindow.print();
-        // Don't close immediately, let user see the preview
-        // printWindow.close();
-      }, 200);
+        try {
+          // Use Electron's silent print if available, otherwise regular print
+          if (window.api?.app?.printSilently) {
+            // Get the iframe's HTML content and print it silently
+            const iframeHTML = iframeDoc.documentElement.outerHTML;
+            window.api.app.printSilently(`<!DOCTYPE html>${iframeHTML}`)
+              .then(() => {
+                showToast?.(i18nT("cashier.printSuccess", "Receipt sent to printer"), "success");
+                if (iframe.parentNode) {
+                  document.body.removeChild(iframe);
+                }
+              })
+              .catch((error: Error) => {
+                console.error("Silent print failed, falling back to regular print:", error);
+                // Fallback to regular print
+                iframe.contentWindow?.print();
+                setTimeout(() => {
+                  if (iframe.parentNode) {
+                    document.body.removeChild(iframe);
+                  }
+                }, 100);
+              });
+          } else {
+            // Fallback to browser print
+            iframe.contentWindow?.print();
+            setTimeout(() => {
+              if (iframe.parentNode) {
+                document.body.removeChild(iframe);
+              }
+            }, 100);
+          }
+        } catch (error) {
+          console.error("Print error:", error);
+          showToast?.("Failed to print receipt", "error");
+          if (iframe.parentNode) {
+            document.body.removeChild(iframe);
+          }
+        }
+      }, 200); // Delay to ensure CSS is loaded
     };
   } catch (error) {
     console.error("Print error:", error);
-    showToast?.("Failed to print receipt", "error");
+    showToast?.(i18nT("cashier.printError", "Failed to print receipt"), "error");
   }
 };
 
@@ -1037,6 +1091,7 @@ export default function ReceiptModal({
       appreciate: "Nous apprécions votre confiance",
       receiptId: "ID",
       storeManagement: "Système de Gestion de Magasin",
+      systemDevelopedBy: "Ce système est développé par REDA TECH",
       contact: "Contact",
       imei: "IMEI",
       warrantyPeriod: "Période de garantie",
@@ -1080,6 +1135,7 @@ export default function ReceiptModal({
       appreciate: "We appreciate your business",
       receiptId: "ID",
       storeManagement: "Store Management System",
+      systemDevelopedBy: "This System is developed by REDA TECH",
       contact: "Contact",
       imei: "IMEI",
       warrantyPeriod: "Warranty Period",
@@ -1123,6 +1179,7 @@ export default function ReceiptModal({
       appreciate: "نقدر ثقتكم بنا",
       receiptId: "الرقم",
       storeManagement: "نظام إدارة المتجر",
+      systemDevelopedBy: "تم تطوير هذا النظام بواسطة REDA TECH",
       contact: "الاتصال",
       imei: "IMEI",
       warrantyPeriod: "فترة الضمان",
@@ -1216,25 +1273,81 @@ export default function ReceiptModal({
   const handlePrint = async () => {
     setIsPrinting(true);
     try {
-      const printWindow = window.open("", "_blank");
-      if (!printWindow) {
-        toast.showToast(t("cashier.printError", "Failed to open print window"), "error");
+      const receiptHTML = generateReceiptHTML();
+      
+      // Use iframe method that respects CSS @page rule (like the original implementation)
+      const iframe = document.createElement("iframe");
+      iframe.style.position = "fixed";
+      iframe.style.right = "0";
+      iframe.style.bottom = "0";
+      iframe.style.width = "0";
+      iframe.style.height = "0";
+      iframe.style.border = "0";
+      iframe.style.opacity = "0";
+      iframe.style.pointerEvents = "none";
+      document.body.appendChild(iframe);
+
+      const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+      if (!iframeDoc) {
+        toast.showToast(t("cashier.printError", "Failed to initialize print"), "error");
+        document.body.removeChild(iframe);
+        setIsPrinting(false);
         return;
       }
 
-      const receiptHTML = generateReceiptHTML();
-      printWindow.document.write(receiptHTML);
-      printWindow.document.close();
+      iframeDoc.open();
+      iframeDoc.write(receiptHTML);
+      iframeDoc.close();
 
-      printWindow.onload = () => {
-        printWindow.print();
-        printWindow.close();
-        toast.showToast(t("cashier.printSuccess", "Receipt sent to printer"), "success");
+      iframe.onload = () => {
+        setTimeout(() => {
+          try {
+            // Try silent print first, fallback to regular print
+            if (window.api?.app?.printSilently) {
+              const iframeHTML = iframeDoc.documentElement.outerHTML;
+              window.api.app.printSilently(`<!DOCTYPE html>${iframeHTML}`)
+                .then(() => {
+                  toast.showToast(t("cashier.printSuccess", "Receipt sent to printer"), "success");
+                  if (iframe.parentNode) {
+                    document.body.removeChild(iframe);
+                  }
+                  setIsPrinting(false);
+                })
+                .catch((error: Error) => {
+                  rendererLogger.error("Silent print failed, using regular print", "ReceiptModal", error);
+                  // Fallback to regular print - this will show dialog but respects CSS correctly
+                  iframe.contentWindow?.print();
+                  setTimeout(() => {
+                    if (iframe.parentNode) {
+                      document.body.removeChild(iframe);
+                    }
+                    setIsPrinting(false);
+                  }, 100);
+                });
+            } else {
+              // Fallback to browser print
+              iframe.contentWindow?.print();
+              toast.showToast(t("cashier.printSuccess", "Receipt sent to printer"), "success");
+              setTimeout(() => {
+                if (iframe.parentNode) {
+                  document.body.removeChild(iframe);
+                }
+                setIsPrinting(false);
+              }, 100);
+            }
+          } catch (printError) {
+            rendererLogger.error("Print error", "ReceiptModal", printError);
+            toast.showToast(t("cashier.printError", "Failed to print receipt"), "error");
+            if (iframe.parentNode) {
+              document.body.removeChild(iframe);
+            }
+            setIsPrinting(false);
+          }
+        }, 200); // Delay to ensure CSS is loaded
       };
     } catch (error) {
       rendererLogger.error("Print error", "ReceiptModal", error);
       toast.showToast(t("cashier.printError", "Failed to print receipt"), "error");
-    } finally {
       setIsPrinting(false);
     }
   };
@@ -1684,11 +1797,14 @@ export default function ReceiptModal({
             }
             .category-info-label {
               font-weight: 700;
+              font-size: 13px;
               display: inline-block;
               margin-right: 8px;
             }
             .category-info-value {
-              font-weight: 400;
+              font-weight: 900;
+              font-size: 13px;
+              color: #000000;
               display: inline-block;
               word-break: break-word;
               text-align: right;
@@ -1700,6 +1816,7 @@ export default function ReceiptModal({
               margin-bottom: 3px;
               margin-right: 0;
               width: 100%;
+              font-size: 13px;
             }
             .category-info-field-multiline .category-info-value {
               display: block;
@@ -1707,6 +1824,9 @@ export default function ReceiptModal({
               text-align: left;
               margin-left: 0 !important;
               width: 100%;
+              font-size: 13px;
+              font-weight: 900;
+              color: #000000;
             }
             .category-info-warranty {
               margin-bottom: 8px;
@@ -1952,7 +2072,7 @@ export default function ReceiptModal({
             
             <!-- Watermark -->
             <div class="watermark">
-              <div>${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].storeManagement}</div>
+              <div>${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].systemDevelopedBy}</div>
               <div>${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].contact}: 0793420745</div>
             </div>
           </div>
@@ -2298,7 +2418,7 @@ export default function ReceiptModal({
           {/* Watermark */}
           <div className="border-t border-dashed border-black my-1" />
           <div className="text-center text-[8px] text-black mt-1 font-bold leading-tight">
-            <div>{receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].storeManagement}</div>
+            <div>{receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].systemDevelopedBy}</div>
             <div>{receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].contact}: 0793420745</div>
           </div>
         </div>

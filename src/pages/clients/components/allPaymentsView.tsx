@@ -18,6 +18,8 @@ import type { PaymentWithClient, Sale } from "../../../types";
 
 import SaleDetailsModal from "../../../lib/components/saleDetailsModal";
 import VersementDetailsModal from "../../../lib/components/versementDetailsModal";
+import { printReceiptDirectly } from "../../cashier/components/receiptModal";
+import type { CartItem } from "../../../types";
 
 import PaymentFilters from "./paymentFilters";
 
@@ -398,6 +400,60 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
       );
     } finally {
       setLoadingSaleDetails(false);
+    }
+  };
+
+  // Handle printing receipt
+  const handlePrintReceipt = async (sale: Sale) => {
+    try {
+      // Convert saleItems to CartItem format
+      const cartItems: CartItem[] = sale.saleItems.map((item) => ({
+        id: item.product?.id || item.service?.id || `manual-${item.id}`,
+        name:
+          item.product?.name ||
+          item.manualProduct?.name ||
+          item.service?.name ||
+          "",
+        price: item.price,
+        qty: item.quantity,
+        boughtPrice: item.boughtPrice || undefined,
+        isManual: !item.product && !item.service,
+        isService: !!item.service,
+        manualProductType: item.manualProduct?.type,
+        description: item.service?.description,
+        serviceCostPrice: item.service ? (item.boughtPrice || item.service?.costPrice) : undefined,
+        serviceAppointmentId: item.service?.serviceAppointmentId || undefined,
+      }));
+
+      // Determine payment type
+      const paymentType: "none" | "credit" | "versement" = sale.isPaidInCash
+        ? "none"
+        : sale.payment?.type === "VERSEMENT"
+          ? "versement"
+          : "credit";
+
+      // Get payment date
+      const paymentDate = sale.payment?.paidDate
+        ? new Date(sale.payment.paidDate)
+        : undefined;
+
+      // Call print function
+      await printReceiptDirectly(
+        cartItems,
+        sale.client?.name || "",
+        sale.discount,
+        sale.paidAmount,
+        paymentType,
+        paymentDate,
+        sale.id,
+        (message, type) => showToast(message, type || "info")
+      );
+    } catch (error) {
+      console.error("Failed to print receipt:", error);
+      showToast(
+        t("cashier.printError", "Failed to print receipt"),
+        "error"
+      );
     }
   };
 
@@ -1516,6 +1572,7 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
           setShowSaleDetailsModal(false);
           setSelectedSale(null);
         }}
+        onPrint={handlePrintReceipt}
       />
 
       {/* Versement Details Modal */}

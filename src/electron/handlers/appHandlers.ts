@@ -1,4 +1,4 @@
-import { ipcMain, app } from "electron";
+import { ipcMain, app, BrowserWindow } from "electron";
 import path from "path";
 import fs from "fs";
 import { exec, spawn } from "child_process";
@@ -617,4 +617,70 @@ export function setupAppHandlers() {
       throw new Error(`Failed to launch installer: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
+
+  // Silent print handler - prints HTML directly without showing print dialog
+  ipcMain.handle("app:printSilently", async (_event, html: string) => {
+    return new Promise((resolve, reject) => {
+      try {
+        // Create a hidden BrowserWindow for printing
+        // Size doesn't matter much since print media query will control the actual print size
+        const printWindow = new BrowserWindow({
+          show: false,
+          width: 800,
+          height: 2000,
+          webPreferences: {
+            nodeIntegration: false,
+            contextIsolation: true,
+          },
+        });
+
+        // Load the HTML content
+        printWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`);
+
+        // Wait for content to load, then print silently
+        printWindow.webContents.once("did-finish-load", () => {
+          // Inject JavaScript to ensure print media query is active before printing
+          printWindow.webContents.executeJavaScript(`
+            // Force browser to apply print styles
+            const style = document.createElement('style');
+            style.textContent = '@media print { body { width: 70mm !important; } .receipt { width: 70mm !important; max-width: 70mm !important; } }';
+            document.head.appendChild(style);
+          `).then(() => {
+            setTimeout(() => {
+              // Print silently - CSS @page rule should control size
+              // Using minimal options to let CSS handle everything
+              printWindow.webContents.print(
+                {
+                  silent: true,
+                  printBackground: true,
+                  deviceName: "", // Empty string uses default printer
+                },
+                (success: boolean, failureReason?: string) => {
+                  // Close the window
+                  printWindow.close();
+                  
+                  if (success) {
+                    resolve(true);
+                  } else {
+                    reject(new Error(failureReason || "Print failed"));
+                  }
+                }
+              );
+            }, 300); // Longer delay to ensure all styles are applied
+          }).catch((error) => {
+            printWindow.close();
+            reject(new Error(`Failed to apply print styles: ${error}`));
+          });
+        });
+
+        // Handle errors
+        printWindow.webContents.once("did-fail-load", () => {
+          printWindow.close();
+          reject(new Error("Failed to load print content"));
+        });
+      } catch (error) {
+        reject(error);
+      }
+    });
+  });
 }

@@ -423,12 +423,15 @@ export default function AddServiceForm({
           dueDate: "Date d'échéance",
           servicePrice: "Prix du service",
           storeManagement: "Gestion de Magasin",
+          systemDevelopedBy: "Ce système est développé par REDA TECH",
           contact: "Contact",
           thankYou: "Merci pour votre confiance",
           comeAgain: "À bientôt",
           appreciate: "Nous apprécions votre visite",
+          serviceTicketThankYou: "Merci de nous avoir choisis",
+          serviceTicketComeAgain: "Revenez nous voir",
           ticketId: "ID du ticket",
-          ticketTitle: "BON DE RÉPARATION",
+          ticketTitle: "BON DU SERVICE",
         },
         en: {
           address: "Address",
@@ -443,12 +446,15 @@ export default function AddServiceForm({
           dueDate: "Due Date",
           servicePrice: "Service Price",
           storeManagement: "Store Management",
+          systemDevelopedBy: "This System is developed by REDA TECH",
           contact: "Contact",
           thankYou: "Thank you for your trust",
           comeAgain: "See you soon",
           appreciate: "We appreciate your visit",
+          serviceTicketThankYou: "Thank you for choosing us",
+          serviceTicketComeAgain: "See you soon",
           ticketId: "Ticket ID",
-          ticketTitle: "REPAIR TICKET",
+          ticketTitle: "SERVICE TICKET",
         },
         ar: {
           address: "العنوان",
@@ -463,12 +469,15 @@ export default function AddServiceForm({
           dueDate: "تاريخ الاستحقاق",
           servicePrice: "سعر الخدمة",
           storeManagement: "إدارة المتجر",
+          systemDevelopedBy: "تم تطوير هذا النظام بواسطة REDA TECH",
           contact: "اتصل",
           thankYou: "شكرًا لثقتك",
           comeAgain: "نراك قريبًا",
           appreciate: "نقدر زيارتك",
+          serviceTicketThankYou: "شكراً لاختيارك لنا",
+          serviceTicketComeAgain: "نراك قريباً",
           ticketId: "معرف التذكرة",
-          ticketTitle: "تذكرة الإصلاح",
+          ticketTitle: "تذكرة الخدمة",
         },
       };
 
@@ -487,7 +496,7 @@ export default function AddServiceForm({
         window.api.database.options.get("storeAddress"),
         window.api.database.options.get("storePhone"),
         window.api.database.options.get("storePhoneNumbers"),
-        window.api.database.options.get("receiptFooterMessage"),
+        window.api.database.options.get("serviceTicketFooterMessage"),
         window.api.database.options.get("receiptLanguage"),
       ]);
 
@@ -911,15 +920,14 @@ export default function AddServiceForm({
               <!-- Welcome Message -->
               <div class="welcome">
                 ${footerMessage ? footerMessage.split('\n').map(line => `<div>${line}</div>`).join('') : `
-                  <div>${receiptTranslations[language].thankYou}</div>
-                  <div>${receiptTranslations[language].comeAgain}</div>
-                  <div style="margin-top: 1px;">${receiptTranslations[language].appreciate}</div>
+                  <div>${receiptTranslations[language].serviceTicketThankYou}</div>
+                  <div>${receiptTranslations[language].serviceTicketComeAgain}</div>
                 `}
               </div>
               
               <!-- Watermark -->
               <div class="watermark">
-                <div>${receiptTranslations[language].storeManagement}</div>
+                <div>${receiptTranslations[language].systemDevelopedBy}</div>
                 <div>${receiptTranslations[language].contact}: 0793420745</div>
               </div>
             </div>
@@ -929,25 +937,75 @@ export default function AddServiceForm({
     };
 
     try {
-      const printWindow = window.open("", "_blank");
-      if (!printWindow) {
-        showToast("Failed to open print window", "error");
+      const ticketHTML = generateTicketHTML();
+      
+      // Use iframe method that respects CSS @page rule (like the receipt printing)
+      const iframe = document.createElement("iframe");
+      iframe.style.position = "fixed";
+      iframe.style.right = "0";
+      iframe.style.bottom = "0";
+      iframe.style.width = "0";
+      iframe.style.height = "0";
+      iframe.style.border = "0";
+      iframe.style.opacity = "0";
+      iframe.style.pointerEvents = "none";
+      document.body.appendChild(iframe);
+
+      const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+      if (!iframeDoc) {
+        showToast("Failed to initialize print", "error");
+        document.body.removeChild(iframe);
         return;
       }
 
-      const ticketHTML = generateTicketHTML();
-      printWindow.document.write(ticketHTML);
-      printWindow.document.close();
+      iframeDoc.open();
+      iframeDoc.write(ticketHTML);
+      iframeDoc.close();
 
-      printWindow.onload = () => {
-        printWindow.focus();
+      iframe.onload = () => {
         setTimeout(() => {
-          printWindow.print();
-        }, 200);
+          try {
+            // Try silent print first, fallback to regular print
+            if (window.api?.app?.printSilently) {
+              const iframeHTML = iframeDoc.documentElement.outerHTML;
+              window.api.app.printSilently(`<!DOCTYPE html>${iframeHTML}`)
+                .then(() => {
+                  showToast(t("services.printSuccess", "Service ticket sent to printer"), "success");
+                  if (iframe.parentNode) {
+                    document.body.removeChild(iframe);
+                  }
+                })
+                .catch((error: Error) => {
+                  console.error("Silent print failed, falling back to regular print:", error);
+                  // Fallback to regular print
+                  iframe.contentWindow?.print();
+                  setTimeout(() => {
+                    if (iframe.parentNode) {
+                      document.body.removeChild(iframe);
+                    }
+                  }, 100);
+                });
+            } else {
+              // Fallback to browser print
+              iframe.contentWindow?.print();
+              setTimeout(() => {
+                if (iframe.parentNode) {
+                  document.body.removeChild(iframe);
+                }
+              }, 100);
+            }
+          } catch (error) {
+            console.error("Print error:", error);
+            showToast(t("services.printTicketError", "Failed to print service ticket"), "error");
+            if (iframe.parentNode) {
+              document.body.removeChild(iframe);
+            }
+          }
+        }, 200); // Delay to ensure CSS is loaded
       };
     } catch (error) {
       console.error("Print error:", error);
-      showToast("Failed to print service ticket", "error");
+      showToast(t("services.printTicketError", "Failed to print service ticket"), "error");
     }
   };
 
