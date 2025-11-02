@@ -57,6 +57,7 @@ export default function ServicesPage() {
   const [newlyDueSoonServicesIds, setNewlyDueSoonServicesIds] = useState<Set<string>>(new Set());
   const [isViewingOverdueTable, setIsViewingOverdueTable] = useState(false);
   const [isViewingDueSoonTable, setIsViewingDueSoonTable] = useState(false);
+  const [soldServiceIds, setSoldServiceIds] = useState<Set<string>>(new Set());
 
   // Load services and service types
   useEffect(() => {
@@ -158,7 +159,27 @@ export default function ServicesPage() {
         setNewlyDueSoonServicesIds(new Set());
       }
       
-      // Sort services: highlighted first, then incomplete, then by creation date (latest first)
+      // Check sold status for completed services before sorting
+      const completedServices = filteredServices.filter((s: ServiceAppointment) => s.isCompleted);
+      const currentSoldServiceIds = new Set<string>();
+      
+      if (completedServices.length > 0) {
+        const soldChecks = await Promise.all(
+          completedServices.map(async (service: ServiceAppointment) => {
+            const isSold = await window.api.database.serviceAppointments.isSold(service.id);
+            return { id: service.id, isSold };
+          })
+        );
+        
+        soldChecks
+          .filter(check => check.isSold)
+          .forEach(check => currentSoldServiceIds.add(check.id));
+      }
+      
+      // Store sold service IDs for the table component to use
+      setSoldServiceIds(currentSoldServiceIds);
+      
+      // Sort services: highlighted first, then incomplete, completed but not sold, completed (sold), all by creation date (latest first)
       filteredServices.sort((a: ServiceAppointment, b: ServiceAppointment) => {
         // First prioritize highlighted services (newly overdue and due soon)
         const aIsHighlighted = currentNewlyOverdueServicesIds.has(a.id) || currentNewlyDueSoonServicesIds.has(a.id);
@@ -167,11 +188,30 @@ export default function ServicesPage() {
         if (aIsHighlighted && !bIsHighlighted) return -1;
         if (!aIsHighlighted && bIsHighlighted) return 1;
         
-        // If both or neither are highlighted, sort by completion status (incomplete first)
-        if (a.isCompleted !== b.isCompleted) {
-          return a.isCompleted ? 1 : -1;
+        // If both or neither are highlighted, sort by status priority:
+        // 1. Incomplete first
+        // 2. Completed but not sold second
+        // 3. Completed (sold) third
+        
+        const aIsCompleted = a.isCompleted;
+        const bIsCompleted = b.isCompleted;
+        const aIsSold = aIsCompleted && currentSoldServiceIds.has(a.id);
+        const bIsSold = bIsCompleted && currentSoldServiceIds.has(b.id);
+        
+        // If one is incomplete and the other is completed
+        if (aIsCompleted !== bIsCompleted) {
+          return aIsCompleted ? 1 : -1; // Incomplete first
         }
-        // Then sort by creation date (latest first)
+        
+        // Both are completed, check sold status
+        if (aIsCompleted && bIsCompleted) {
+          // If one is sold and the other is not, prioritize completed but not sold
+          if (aIsSold !== bIsSold) {
+            return aIsSold ? 1 : -1; // Completed but not sold comes first
+          }
+        }
+        
+        // Same status priority, sort by creation date (latest first)
         return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
       });
       
@@ -365,6 +405,7 @@ export default function ServicesPage() {
               newlyDueSoonServicesIds={newlyDueSoonServicesIds}
               onMarkOverdueAsSeen={markOverdueServicesAsSeen}
               onMarkDueSoonAsSeen={markDueSoonServicesAsSeen}
+              soldServiceIds={soldServiceIds}
             />
           ) : (
             /* Service Types Table */

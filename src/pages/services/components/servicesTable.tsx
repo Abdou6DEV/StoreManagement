@@ -55,6 +55,7 @@ interface ServicesTableProps {
   newlyDueSoonServicesIds?: Set<string>;
   onMarkOverdueAsSeen?: () => void;
   onMarkDueSoonAsSeen?: () => void;
+  soldServiceIds?: Set<string>;
 }
 
 const ServicesTable: React.FC<ServicesTableProps> = ({
@@ -74,13 +75,13 @@ const ServicesTable: React.FC<ServicesTableProps> = ({
   newlyDueSoonServicesIds = new Set(),
   onMarkOverdueAsSeen,
   onMarkDueSoonAsSeen,
+  soldServiceIds = new Set(),
 }) => {
   const { t, i18n } = useTranslation();
   const isRTL = i18n.language === "ar";
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingService, setEditingService] = useState<ServiceAppointment | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
-  const [soldServiceIds, setSoldServiceIds] = useState<Set<string>>(new Set());
   const [cancelingServiceId, setCancelingServiceId] = useState<string | null>(null);
   const { refreshCompletedServicesCount } = useCompletedServices();
 
@@ -148,30 +149,6 @@ const ServicesTable: React.FC<ServicesTableProps> = ({
     }
   };
 
-  // Check which completed services have been sold
-  useEffect(() => {
-    const checkSoldServices = async () => {
-      const completedServices = services.filter(s => s.isCompleted);
-      if (completedServices.length === 0) {
-        setSoldServiceIds(new Set());
-        return;
-      }
-
-      const soldChecks = await Promise.all(
-        completedServices.map(async (service) => {
-          const isSold = await window.api.database.serviceAppointments.isSold(service.id);
-          return { id: service.id, isSold };
-        })
-      );
-
-      const soldIds = new Set(
-        soldChecks.filter(check => check.isSold).map(check => check.id)
-      );
-      setSoldServiceIds(soldIds);
-    };
-
-    checkSoldServices();
-  }, [services]);
 
   const handleEditService = (service: ServiceAppointment) => {
     setEditingService(service);

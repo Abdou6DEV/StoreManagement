@@ -98,11 +98,11 @@ const ClientsTable: React.FC<ClientsTableProps> = ({
                 {t("cashier.currency", "DA")}
               </td>
               <td className={`px-4 py-2 ${isRTL ? "text-right" : "text-left"} font-medium whitespace-nowrap ${(client.totalCredit || 0) > 0 ? "text-orange-600 dark:text-orange-400" : ""}`}>
-                <span>{(Math.max(0, client.totalCredit || 0)).toLocaleString("en-US", { maximumFractionDigits: 0 })}</span>{" "}
+                <span>{(Math.max(0, client.totalCredit || 0)).toLocaleString("en-US", { maximumFractionDigits: 0 }).replace(/,/g, " ")}</span>{" "}
                 <span>{t("cashier.currency", "DA")}</span>
               </td>
               <td className={`px-4 py-2 ${isRTL ? "text-right" : "text-left"} font-medium whitespace-nowrap ${(client.totalVersement || 0) > 0 ? "text-blue-600 dark:text-blue-400" : ""}`}>
-                <span>{(Math.max(0, client.totalVersement || 0)).toLocaleString("en-US", { maximumFractionDigits: 0 })}</span>{" "}
+                <span>{(Math.max(0, client.totalVersement || 0)).toLocaleString("en-US", { maximumFractionDigits: 0 }).replace(/,/g, " ")}</span>{" "}
                 <span>{t("cashier.currency", "DA")}</span>
               </td>
               <td className={`px-4 py-2 ${isRTL ? "text-right" : "text-left"}`}>

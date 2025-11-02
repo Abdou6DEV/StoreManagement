@@ -612,6 +612,42 @@ export default function Clients() {
                     {t("cashier.currency", "DA")}
                   </span>
                 </div>
+
+                {/* Total Credits */}
+                <div className="flex items-center gap-2">
+                  <CreditCard className="w-4 h-4 text-orange-600 dark:text-orange-400" />
+                  <span className="text-muted-foreground">
+                    {t("clients.totalCredits", "Total Credits")}:
+                  </span>
+                  <span className="font-medium text-orange-600 dark:text-orange-400">
+                    {sortedClients
+                      .reduce(
+                        (sum, client) => sum + Math.max(0, client.totalCredit || 0),
+                        0,
+                      )
+                      .toLocaleString("en-US", { maximumFractionDigits: 0 })
+                      .replace(/,/g, " ")}{" "}
+                    {t("cashier.currency", "DA")}
+                  </span>
+                </div>
+
+                {/* Total Versements */}
+                <div className="flex items-center gap-2">
+                  <CreditCard className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                  <span className="text-muted-foreground">
+                    {t("clients.totalVersements", "Total Versements")}:
+                  </span>
+                  <span className="font-medium text-blue-600 dark:text-blue-400">
+                    {sortedClients
+                      .reduce(
+                        (sum, client) => sum + Math.max(0, client.totalVersement || 0),
+                        0,
+                      )
+                      .toLocaleString("en-US", { maximumFractionDigits: 0 })
+                      .replace(/,/g, " ")}{" "}
+                    {t("cashier.currency", "DA")}
+                  </span>
+                </div>
               </div>
             </div>
           ) : (
