@@ -1,7 +1,42 @@
 import { prisma } from "./prismaClient";
+import { getOption, setOption } from "./options";
 
 // Maximum value for INT column in SQLite (2^31 - 1)
 const MAX_PRICE = 2147483647;
+
+// Payment status management using Option table
+const SERVICE_PAYMENT_STATUS_KEY = "servicePaymentStatus";
+
+async function getServicePaymentStatuses(): Promise<Record<string, boolean>> {
+  try {
+    const statusJson = await getOption(SERVICE_PAYMENT_STATUS_KEY);
+    if (!statusJson) return {};
+    return JSON.parse(statusJson);
+  } catch (error) {
+    console.error("Failed to get service payment statuses:", error);
+    return {};
+  }
+}
+
+async function setServicePaymentStatus(serviceId: string, isPaid: boolean): Promise<void> {
+  try {
+    const statuses = await getServicePaymentStatuses();
+    statuses[serviceId] = isPaid;
+    await setOption(SERVICE_PAYMENT_STATUS_KEY, JSON.stringify(statuses));
+  } catch (error) {
+    console.error("Failed to set service payment status:", error);
+    throw error;
+  }
+}
+
+export async function getServicePaymentStatus(serviceId: string): Promise<boolean> {
+  const statuses = await getServicePaymentStatuses();
+  return statuses[serviceId] || false;
+}
+
+export async function updateServicePaymentStatus(serviceId: string, isPaid: boolean): Promise<void> {
+  await setServicePaymentStatus(serviceId, isPaid);
+}
 
 export async function createServiceAppointment(data: {
   name: string;

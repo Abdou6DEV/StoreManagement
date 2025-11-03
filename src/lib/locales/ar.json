@@ -1759,6 +1759,7 @@
     "printSuccess": "تم إرسال بطاقة الخدمة إلى الطابعة",
     "printError": "فشل في طباعة بطاقة الخدمة",
     "printTicketError": "فشل في طباعة بطاقة الخدمة",
+    "printTicket": "طباعة البطاقة",
     "emptyTitle": "لم يتم العثور على خدمات",
     "emptyDesc": "لم تقم بإضافة أي خدمات بعد. أضف خدمة للبدء.",
     "editTooltip": "تعديل الخدمة",
@@ -1776,7 +1777,10 @@
     "failedToSaveService": "فشل في حفظ الخدمة",
     "enterServiceType": "أدخل نوع الخدمة",
     "enterCostPrice": "أدخل سعر التكلفة",
-    "enterServicePrice": "أدخل سعر الخدمة"
+    "enterServicePrice": "أدخل سعر الخدمة",
+    "payed": "مدفوع",
+    "notPayed": "غير مدفوع",
+    "addServiceAndPrintTicket": "إضافة الخدمة وطباعة البطاقة"
   },
   "currency": "دج",
   "datePicker": {

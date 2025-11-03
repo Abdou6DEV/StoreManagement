@@ -90,6 +90,7 @@ export default function AddServiceForm({
   const [clientPhone, setClientPhone] = useState("");
   const [clientAddress, setClientAddress] = useState("");
   const [clientNotes, setClientNotes] = useState("");
+  const [isPaid, setIsPaid] = useState(false);
   
   // Refs for dropdown management and field navigation
   const typeInputRef = useRef<HTMLInputElement>(null);
@@ -113,6 +114,10 @@ export default function AddServiceForm({
         notes: editingService.notes || "",
       });
       setIsExistingService(true);
+      // Load payment status
+      window.api.database.serviceAppointments.getPaymentStatus(editingService.id)
+        .then(setIsPaid)
+        .catch(() => setIsPaid(false));
     } else {
       // Set default due date to 3 days later for new services
       const defaultDate = new Date();
@@ -124,6 +129,7 @@ export default function AddServiceForm({
         dueDate: defaultDateString,
       });
       setIsExistingService(false);
+      setIsPaid(false);
     }
   }, [editingService, openPanel]);
 
@@ -406,7 +412,8 @@ export default function AddServiceForm({
     notes: string,
     dueDate: string,
     servicePrice: number,
-    clientName?: string
+    clientName?: string,
+    isPaid: boolean = false
   ) => {
     // Receipt translations
     const receiptTranslations = {
@@ -422,6 +429,8 @@ export default function AddServiceForm({
           problems: "Problèmes/Pannes",
           dueDate: "Date d'échéance",
           servicePrice: "Prix du service",
+          payed: "Payé",
+          notPayed: "Non Payé",
           storeManagement: "Gestion de Magasin",
           systemDevelopedBy: "Ce système est développé par REDA TECH",
           contact: "Contact",
@@ -445,6 +454,8 @@ export default function AddServiceForm({
           problems: "Problems/Breakdowns",
           dueDate: "Due Date",
           servicePrice: "Service Price",
+          payed: "Payed",
+          notPayed: "Not Payed",
           storeManagement: "Store Management",
           systemDevelopedBy: "This System is developed by REDA TECH",
           contact: "Contact",
@@ -468,6 +479,8 @@ export default function AddServiceForm({
           problems: "المشاكل/الأعطال",
           dueDate: "تاريخ الاستحقاق",
           servicePrice: "سعر الخدمة",
+          payed: "مدفوع",
+          notPayed: "غير مدفوع",
           storeManagement: "إدارة المتجر",
           systemDevelopedBy: "تم تطوير هذا النظام بواسطة REDA TECH",
           contact: "اتصل",
@@ -901,7 +914,7 @@ export default function AddServiceForm({
                 </div>
                 <div class="service-field">
                   <span class="service-field-label">${receiptTranslations[language].servicePrice}:</span>
-                  <span class="service-field-value">${servicePrice.toLocaleString()} DA</span>
+                  <span class="service-field-value">${servicePrice.toLocaleString()} DA ${isPaid ? `(${receiptTranslations[language].payed})` : `(${receiptTranslations[language].notPayed})`}</span>
                 </div>
               </div>
 
@@ -1035,6 +1048,8 @@ export default function AddServiceForm({
         };
 
         await window.api.database.serviceAppointments.update(editingService.id, serviceData);
+        // Update payment status
+        await window.api.database.serviceAppointments.updatePaymentStatus(editingService.id, isPaid);
         onServiceUpdated?.();
         showToast(t("services.serviceUpdatedSuccessfully", "Service updated successfully"), "success");
       } else {
@@ -1051,6 +1066,10 @@ export default function AddServiceForm({
         };
 
         const newService = await window.api.database.serviceAppointments.create(serviceData);
+        // Save payment status
+        if (newService?.id && isPaid) {
+          await window.api.database.serviceAppointments.updatePaymentStatus(newService.id, isPaid);
+        }
         onServiceAdded?.();
         showToast(t("services.serviceAddedSuccessfully", "Service added successfully"), "success");
 
@@ -1064,7 +1083,8 @@ export default function AddServiceForm({
             serviceData.notes || "",
             dueDate,
             serviceData.servicePrice,
-            selectedClient?.name
+            selectedClient?.name,
+            isPaid
           );
         }
       }
@@ -1346,6 +1366,46 @@ export default function AddServiceForm({
                 onKeyDown={(e) => handleFieldKeyDown(e, "notes")}
                 className="w-full px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all"
               />
+            </Legend>
+            <Legend>
+              <div className="flex gap-4">
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <button
+                    type="button"
+                    onClick={() => setIsPaid(true)}
+                    className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
+                      isPaid
+                        ? 'bg-cyan-600 border-cyan-600 text-white'
+                        : 'border-gray-300 hover:border-cyan-400 dark:border-gray-600 dark:hover:border-cyan-500'
+                    }`}
+                  >
+                    {isPaid && (
+                      <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    )}
+                  </button>
+                  <span className="text-sm">{t("services.payed", "Payed")}</span>
+                </label>
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <button
+                    type="button"
+                    onClick={() => setIsPaid(false)}
+                    className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
+                      !isPaid
+                        ? 'bg-cyan-600 border-cyan-600 text-white'
+                        : 'border-gray-300 hover:border-cyan-400 dark:border-gray-600 dark:hover:border-cyan-500'
+                    }`}
+                  >
+                    {!isPaid && (
+                      <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    )}
+                  </button>
+                  <span className="text-sm">{t("services.notPayed", "Not Payed")}</span>
+                </label>
+              </div>
             </Legend>
           </div>
           <hr />

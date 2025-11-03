@@ -53,6 +53,7 @@ export default function EditServiceModal({
     notes: "",
   });
   const [loading, setLoading] = useState(false);
+  const [isPaid, setIsPaid] = useState(false);
 
   useEffect(() => {
     if (service) {
@@ -70,6 +71,10 @@ export default function EditServiceModal({
         dueDate: dueDateString,
         notes: service.notes || "",
       });
+      // Load payment status
+      window.api.database.serviceAppointments.getPaymentStatus(service.id)
+        .then(setIsPaid)
+        .catch(() => setIsPaid(false));
     }
   }, [service]);
 
@@ -98,6 +103,8 @@ export default function EditServiceModal({
       };
 
       await window.api.database.serviceAppointments.update(service.id, serviceData);
+      // Update payment status
+      await window.api.database.serviceAppointments.updatePaymentStatus(service.id, isPaid);
       onServiceUpdated();
       showToast(t("services.serviceUpdatedSuccessfully", "Service updated successfully"), "success");
       onClose();
@@ -111,6 +118,9 @@ export default function EditServiceModal({
   // Print Service Ticket function (same as in addServiceForm)
   const printServiceTicket = async () => {
     if (!service) return;
+    
+    // Get current payment status
+    const currentIsPaid = isPaid;
 
     // Receipt translations
     const receiptTranslations = {
@@ -124,9 +134,11 @@ export default function EditServiceModal({
         serviceType: "Type",
         deviceName: "Nom de l'appareil",
         problems: "Problèmes/Pannes",
-        dueDate: "Date d'échéance",
-        servicePrice: "Prix du service",
-        storeManagement: "Gestion de Magasin",
+          dueDate: "Date d'échéance",
+          servicePrice: "Prix du service",
+          payed: "Payé",
+          notPayed: "Non Payé",
+          storeManagement: "Gestion de Magasin",
         systemDevelopedBy: "Ce système est développé par REDA TECH",
         contact: "Contact",
         thankYou: "Merci pour votre confiance",
@@ -148,18 +160,20 @@ export default function EditServiceModal({
         deviceName: "Device Name",
         problems: "Problems/Breakdowns",
         dueDate: "Due Date",
-        servicePrice: "Service Price",
-        storeManagement: "Store Management",
-        systemDevelopedBy: "This System is developed by REDA TECH",
-        contact: "Contact",
-        thankYou: "Thank you for your trust",
-        comeAgain: "See you soon",
-        appreciate: "We appreciate your visit",
-        serviceTicketThankYou: "Thank you for choosing us",
-        serviceTicketComeAgain: "See you soon",
-        ticketId: "Ticket ID",
-        ticketTitle: "SERVICE TICKET",
-      },
+          servicePrice: "Service Price",
+          payed: "Payed",
+          notPayed: "Not Payed",
+          storeManagement: "Store Management",
+          systemDevelopedBy: "This System is developed by REDA TECH",
+          contact: "Contact",
+          thankYou: "Thank you for your trust",
+          comeAgain: "See you soon",
+          appreciate: "We appreciate your visit",
+          serviceTicketThankYou: "Thank you for choosing us",
+          serviceTicketComeAgain: "See you soon",
+          ticketId: "Ticket ID",
+          ticketTitle: "SERVICE TICKET",
+        },
       ar: {
         address: "العنوان",
         phone: "الهاتف",
@@ -171,18 +185,20 @@ export default function EditServiceModal({
         deviceName: "اسم الجهاز",
         problems: "المشاكل/الأعطال",
         dueDate: "تاريخ الاستحقاق",
-        servicePrice: "سعر الخدمة",
-        storeManagement: "إدارة المتجر",
-        systemDevelopedBy: "تم تطوير هذا النظام بواسطة REDA TECH",
-        contact: "اتصل",
-        thankYou: "شكرًا لثقتك",
-        comeAgain: "نراك قريبًا",
-        appreciate: "نقدر زيارتك",
-        serviceTicketThankYou: "شكراً لاختيارك لنا",
-        serviceTicketComeAgain: "نراك قريباً",
-        ticketId: "معرف التذكرة",
-        ticketTitle: "تذكرة الخدمة",
-      },
+          servicePrice: "سعر الخدمة",
+          payed: "مدفوع",
+          notPayed: "غير مدفوع",
+          storeManagement: "إدارة المتجر",
+          systemDevelopedBy: "تم تطوير هذا النظام بواسطة REDA TECH",
+          contact: "اتصل",
+          thankYou: "شكرًا لثقتك",
+          comeAgain: "نراك قريبًا",
+          appreciate: "نقدر زيارتك",
+          serviceTicketThankYou: "شكراً لاختيارك لنا",
+          serviceTicketComeAgain: "نراك قريباً",
+          ticketId: "معرف التذكرة",
+          ticketTitle: "تذكرة الخدمة",
+        },
     };
 
     // Load admin receipt settings
@@ -338,7 +354,7 @@ export default function EditServiceModal({
                 </div>
                 <div class="service-field">
                   <span class="service-field-label">${receiptTranslations[language].servicePrice}:</span>
-                  <span class="service-field-value">${(parseFloat(form.servicePrice) || service.servicePrice).toLocaleString()} DA</span>
+                  <span class="service-field-value">${(parseFloat(form.servicePrice) || service.servicePrice).toLocaleString()} DA ${currentIsPaid ? `(${receiptTranslations[language].payed})` : `(${receiptTranslations[language].notPayed})`}</span>
                 </div>
               </div>
               <div class="divider"></div>
@@ -541,6 +557,48 @@ export default function EditServiceModal({
                 onChange={(e) => handleFormChange("notes", e.target.value)}
                 className="w-full px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all"
               />
+            </div>
+
+            {/* Payment Status */}
+            <div className="space-y-2">
+              <div className="flex gap-4">
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <button
+                    type="button"
+                    onClick={() => setIsPaid(true)}
+                    className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
+                      isPaid
+                        ? 'bg-cyan-600 border-cyan-600 text-white'
+                        : 'border-gray-300 hover:border-cyan-400 dark:border-gray-600 dark:hover:border-cyan-500'
+                    }`}
+                  >
+                    {isPaid && (
+                      <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    )}
+                  </button>
+                  <span className="text-sm">{t("services.payed", "Payed")}</span>
+                </label>
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <button
+                    type="button"
+                    onClick={() => setIsPaid(false)}
+                    className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
+                      !isPaid
+                        ? 'bg-cyan-600 border-cyan-600 text-white'
+                        : 'border-gray-300 hover:border-cyan-400 dark:border-gray-600 dark:hover:border-cyan-500'
+                    }`}
+                  >
+                    {!isPaid && (
+                      <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    )}
+                  </button>
+                  <span className="text-sm">{t("services.notPayed", "Not Payed")}</span>
+                </label>
+              </div>
             </div>
           </div>
 

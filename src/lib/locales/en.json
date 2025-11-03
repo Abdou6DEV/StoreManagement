@@ -348,6 +348,7 @@
     "printSuccess": "Service ticket sent to printer",
     "printError": "Failed to print service ticket",
     "printTicketError": "Failed to print service ticket",
+    "printTicket": "Print Ticket",
     "currency": "DA",
     "itemsPerPage": "Items per page:",
     "clientCannotBeChanged": "Client cannot be changed after service creation",
@@ -445,7 +446,10 @@
     "activeFilters": "Active filters",
     "showing": "Showing",
     "of": "of",
-    "items": "items"
+    "items": "items",
+    "payed": "Payed",
+    "notPayed": "Not Payed",
+    "addServiceAndPrintTicket": "Add Service and Print Service Ticket"
   },
   "history": {
     "title": "History",

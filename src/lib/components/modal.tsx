@@ -510,6 +510,8 @@ export function FormModal({
   submitDisabled = false,
   ...props
 }: FormModalProps) {
+  const formRef = React.useRef<HTMLFormElement>(null);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSubmit?.(e);
@@ -518,6 +520,22 @@ export function FormModal({
   const handleCancel = () => {
     onCancel?.();
     onClose?.();
+  };
+
+  const handleButtonSubmit = (e?: React.MouseEvent) => {
+    // Create a synthetic form event and call handleSubmit directly
+    // This ensures we're submitting the modal form, not any parent form
+    e?.preventDefault();
+    e?.stopPropagation();
+    if (formRef.current && onSubmit) {
+      const syntheticEvent = {
+        preventDefault: () => {},
+        stopPropagation: () => {},
+        currentTarget: formRef.current,
+        target: formRef.current,
+      } as unknown as React.FormEvent<HTMLFormElement>;
+      handleSubmit(syntheticEvent);
+    }
   };
 
   const actions: ModalAction[] = [
@@ -529,14 +547,7 @@ export function FormModal({
     },
     {
       label: submitText,
-      onClick: () => {
-        const form = document.querySelector("form");
-        if (form) {
-          form.dispatchEvent(
-            new Event("submit", { cancelable: true, bubbles: true }),
-          );
-        }
-      },
+      onClick: handleButtonSubmit,
       variant: "default",
       loading,
       disabled: loading || submitDisabled,
@@ -550,7 +561,7 @@ export function FormModal({
       actions={actions}
       preventClose={loading}
     >
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
         {children}
       </form>
     </Modal>

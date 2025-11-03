@@ -1229,6 +1229,7 @@
     "printSuccess": "Bon de service envoyé à l'imprimante",
     "printError": "Échec de l'impression du bon de service",
     "printTicketError": "Échec de l'impression du bon de service",
+    "printTicket": "Imprimer le bon",
     "emptyTitle": "Aucun service trouvé",
     "emptyDesc": "Vous n'avez pas encore ajouté de services. Ajoutez un service pour commencer.",
     "editTooltip": "Modifier le service",
@@ -1246,7 +1247,10 @@
     "failedToSaveService": "Échec de la sauvegarde du service",
     "enterServiceType": "Entrer le type de service",
     "enterCostPrice": "Entrer le prix de revient",
-    "enterServicePrice": "Entrer le prix du service"
+    "enterServicePrice": "Entrer le prix du service",
+    "payed": "Payé",
+    "notPayed": "Non Payé",
+    "addServiceAndPrintTicket": "Ajouter le service et imprimer le bon"
   },
   "admin": {
     "backup": "Sauvegarde",
