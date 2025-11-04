@@ -91,6 +91,7 @@ export default function AddServiceForm({
   const [clientAddress, setClientAddress] = useState("");
   const [clientNotes, setClientNotes] = useState("");
   const [isPaid, setIsPaid] = useState(false);
+  const [hideCostPrice, setHideCostPrice] = useState(true);
   
   // Refs for dropdown management and field navigation
   const typeInputRef = useRef<HTMLInputElement>(null);
@@ -1314,18 +1315,55 @@ export default function AddServiceForm({
             </Legend>
             <Legend>
               <label>{t("services.costPrice", "Cost Price")} ({t("common.currency", "DA")})</label>
-              <input
-                ref={costPriceRef}
-                data-field="service-cost-price"
-                type="number"
-                step="0.01"
-                min="0"
-                placeholder={t("services.enterCostPrice", "Enter cost price")}
-                value={form.costPrice}
-                onChange={(e) => handleFormChange("costPrice", e.target.value)}
-                onKeyDown={(e) => handleFieldKeyDown(e, "costPrice")}
-                className="w-full px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all"
-              />
+              <div className="flex items-center gap-2">
+                <input
+                  ref={costPriceRef}
+                  data-field="service-cost-price"
+                  type={hideCostPrice ? "password" : "number"}
+                  step="0.01"
+                  min="0"
+                  placeholder={t("services.enterCostPrice", "Enter cost price")}
+                  value={form.costPrice}
+                  onChange={(e) => handleFormChange("costPrice", e.target.value)}
+                  onKeyDown={(e) => handleFieldKeyDown(e, "costPrice")}
+                  className="flex-1 px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all"
+                />
+                <label className="flex items-center space-x-2 cursor-pointer text-sm text-muted-foreground whitespace-nowrap">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setHideCostPrice(!hideCostPrice);
+                    }}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }}
+                    className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
+                      hideCostPrice
+                        ? 'bg-cyan-600 border-cyan-600 text-white'
+                        : 'border-gray-300 hover:border-cyan-400 dark:border-gray-600 dark:hover:border-cyan-500'
+                    }`}
+                  >
+                    {hideCostPrice && (
+                      <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    )}
+                  </button>
+                  <span 
+                    className="text-xs select-none"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setHideCostPrice(!hideCostPrice);
+                    }}
+                  >
+                    {t("services.hideCostPrice", "Hide")}
+                  </span>
+                </label>
+              </div>
             </Legend>
             <Legend>
               <label>{t("services.servicePrice", "Service Price")} ({t("common.currency", "DA")})</label>

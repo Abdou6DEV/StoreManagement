@@ -61,6 +61,7 @@ export default function AddServiceModal({
   });
   const [allServices, setAllServices] = useState<Service[]>([]);
   const [completedServices, setCompletedServices] = useState<CompletedServiceAppointment[]>([]);
+  const [hideCostPrice, setHideCostPrice] = useState(true);
   
   // Fetch all services and completed service appointments when modal opens
   // Filter cart items on render instead of in useEffect for better performance
@@ -94,9 +95,13 @@ export default function AddServiceModal({
     setService({
       name: selectedService.name,
       description: selectedService.description || "",
-      price: selectedService.costPrice || 1000,
-      costPrice: selectedService.costPrice || 1000,
+      price: 0, // Selling price - user enters it fresh each time
+      costPrice: selectedService.costPrice || 0, // Use stored cost price from service
     });
+    // Focus on selling price field after selection
+    setTimeout(() => {
+      servicePriceInputRef.current?.focus();
+    }, 100);
   };
 
   const handleSelectCompletedService = (completedService: CompletedServiceAppointment) => {
@@ -134,6 +139,7 @@ export default function AddServiceModal({
   const [justSelectedSuggestion, setJustSelectedSuggestion] = useState(false);
   const nameInputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
+  const servicePriceInputRef = useRef<HTMLInputElement>(null);
 
   // Search for suggestions when name or description changes
   useEffect(() => {
@@ -221,6 +227,8 @@ export default function AddServiceModal({
       ...prev,
       name: suggestion.name,
       description: suggestion.description || "",
+      price: 0, // Selling price - user enters it fresh each time
+      costPrice: suggestion.costPrice || 0, // Use stored cost price from service
     }));
     // Close dropdown and reset selection
     setShowSuggestions(false);
@@ -229,6 +237,10 @@ export default function AddServiceModal({
     setJustSelectedSuggestion(true);
     // Clear suggestions to prevent them from showing again
     setSuggestions([]);
+    // Focus on selling price field after selection
+    setTimeout(() => {
+      servicePriceInputRef.current?.focus();
+    }, 100);
   };
 
   const handleNameChange = (newValue: string) => {
@@ -404,8 +416,9 @@ export default function AddServiceModal({
             <label className="text-sm font-medium text-foreground">
               {t("cashier.costPrice", "Cost Price")} *
             </label>
-            <div className="w-full">
+            <div className="flex items-center gap-2">
               <StyledNumberInput
+                type={hideCostPrice ? "password" : "number"}
                 value={service.costPrice}
                 onChange={(val: number | "") =>
                   setService((p) => ({
@@ -416,6 +429,41 @@ export default function AddServiceModal({
                 min={0}
                 placeholder="0"
               />
+              <label className="flex items-center space-x-2 cursor-pointer text-sm text-muted-foreground whitespace-nowrap">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setHideCostPrice(!hideCostPrice);
+                  }}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }}
+                  className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
+                    hideCostPrice
+                      ? 'bg-green-600 border-green-600 text-white'
+                      : 'border-gray-300 hover:border-green-400 dark:border-gray-600 dark:hover:border-green-500'
+                  }`}
+                >
+                  {hideCostPrice && (
+                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  )}
+                </button>
+                <span 
+                  className="text-xs select-none"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setHideCostPrice(!hideCostPrice);
+                  }}
+                >
+                  {t("services.hideCostPrice", "Hide")}
+                </span>
+              </label>
             </div>
           </Legend>
           <Legend>
@@ -424,6 +472,7 @@ export default function AddServiceModal({
             </label>
             <div className="w-full">
               <StyledNumberInput
+                ref={servicePriceInputRef}
                 value={service.price}
                 onChange={(val: number | "") =>
                   setService((p) => ({

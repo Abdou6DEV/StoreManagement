@@ -29,42 +29,42 @@ export default function AboutPage() {
     {
       icon: ShoppingCart,
       title: t("about.features.cashier", "Advanced Cashier System"),
-      description: t("about.features.cashierDesc", "Multi-session cashier with real-time inventory tracking, receipt printing, and payment processing")
+      description: t("about.features.cashierDesc", "Multi-session cashier with real-time inventory tracking, receipt printing with barcode support, manual products, services integration, credit/versement payments, discount application, and sales history browser")
     },
     {
       icon: BarChart3,
       title: t("about.features.dashboard", "Analytics Dashboard"),
-      description: t("about.features.dashboardDesc", "Comprehensive analytics with revenue tracking, profit analysis, and business insights")
+      description: t("about.features.dashboardDesc", "Comprehensive analytics with revenue/profit tracking, interactive charts, today/month/year comparisons, stock statistics, client metrics, and business performance insights")
     },
     {
       icon: PackageSearch,
       title: t("about.features.inventory", "Inventory Management"),
-      description: t("about.features.inventoryDesc", "Complete stock management with low stock alerts, product categorization, and automated tracking")
+      description: t("about.features.inventoryDesc", "Complete stock management with low stock alerts, barcode printing, best/worst selling products, category summary, product info with warranty tracking, purchase management, and supplier tracking")
     },
     {
       icon: Users,
       title: t("about.features.clients", "Client Management"),
-      description: t("about.features.clientsDesc", "Customer database with credit/versement tracking, payment history, and relationship management")
+      description: t("about.features.clientsDesc", "Customer database with credit/versement tracking, overdue/due soon payment alerts, payment history, supplier management with purchase tracking, and comprehensive client relationship management")
     },
     {
       icon: History,
       title: t("about.features.history", "Sales History"),
-      description: t("about.features.historyDesc", "Detailed transaction history with search, filtering, and comprehensive reporting")
+      description: t("about.features.historyDesc", "Detailed transaction history with general and detailed views, advanced search, filtering by period, comprehensive reporting, and sale modification capabilities")
     },
     {
       icon: FileText,
       title: t("about.features.bills", "Bills & Expenses"),
-      description: t("about.features.billsDesc", "Bill management system with recurring payments, expense tracking, and financial oversight")
+      description: t("about.features.billsDesc", "Bill management system with recurring payments, expense tracking, overdue/due soon alerts, payment history, and financial oversight")
     },
     {
       icon: Wrench,
       title: t("about.features.services", "Service Management"),
-      description: t("about.features.servicesDesc", "Service appointment scheduling with client tracking, completion status, and service history")
+      description: t("about.features.servicesDesc", "Service appointment scheduling with service types management, due date tracking, overdue/due soon alerts, completion status, service ticket printing with barcode, and service history")
     },
     {
       icon: Settings,
       title: t("about.features.admin", "Administration"),
-      description: t("about.features.adminDesc", "System administration with user management, backup tools, and configuration options")
+      description: t("about.features.adminDesc", "System administration with user management, backup/restore tools, receipt configuration (multilingual, barcode, store info), update management, logger system, and comprehensive settings")
     }
   ];
 
@@ -124,11 +124,6 @@ export default function AboutPage() {
                 <div className="w-2 h-2 bg-primary rounded-full"></div>
                 <span className="text-foreground font-medium">{t("about.version", "Version")}:</span>
                 <span className="text-muted-foreground">v{window.api?.app?.getVersion?.() || "1.0.0"}</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-2 h-2 bg-primary rounded-full"></div>
-                <span className="text-foreground font-medium">{t("about.build", "Build Date")}:</span>
-                <span className="text-muted-foreground">{new Date().toLocaleDateString()}</span>
               </div>
             </div>
             <div className="space-y-4">

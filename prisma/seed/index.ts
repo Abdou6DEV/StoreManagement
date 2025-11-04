@@ -30,18 +30,16 @@ async function main() {
     await seedBills(prisma);
 
     console.log("✅ Seed completed successfully!");
-    console.log(`📊 Created (realistic store data for testing):`);
-    console.log(`   - Categories`);
-    console.log(`   - 180 sellers`);
-    console.log(`   - 100 products with 200 purchases`);
-    console.log(`   - 2,000 clients`);
-    console.log(`   - 48 services`);
-    console.log(`   - 100 service appointments (5 incomplete, 95 completed)`);
-    console.log(
-      `   - 100 sales with items (including manual products and services)`,
-    );
-    console.log(`   - Multiple payments`);
-    console.log(`   - 100 bills with payments`);
+    console.log(`📊 Created (mobile phone shop data):`);
+    console.log(`   - Mobile phone shop categories`);
+    console.log(`   - Sellers`);
+    console.log(`   - 7,000 mobile phone products`);
+    console.log(`   - 100 clients`);
+    console.log(`   - 2 services (réparation & flash)`);
+    console.log(`   - 100 service appointments (only réparation & flash)`);
+    console.log(`   - 10,000 sales (1% with clients = 100 sales with clients)`);
+    console.log(`   - 10 credit/versement payments`);
+    console.log(`   - 5 bills with 100 payments total (20 per bill)`);
     console.log(`   - Admin account (admin/admin) is hardcoded in the app`);
   } catch (error) {
     console.error("❌ Seed failed:", error);

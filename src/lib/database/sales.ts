@@ -111,10 +111,21 @@ export async function createSale(data: {
     );
     
     if (missingKeys.length > 0) {
+      // Find the cost price for each missing key from the sale items
+      const costPriceMap = new Map<string, number>();
+      for (const item of data.items) {
+        if (item.manualProductName && item.manualProductType && item.manualProductCostPrice !== undefined) {
+          const key = `${item.manualProductName}|${item.manualProductType}`;
+          if (missingKeys.includes(key)) {
+            costPriceMap.set(key, item.manualProductCostPrice);
+          }
+        }
+      }
+      
       await prisma.manualProduct.createMany({
         data: missingKeys.map(key => {
           const [name, type] = key.split('|');
-          return { name, type, costPrice: 0 };
+          return { name, type, costPrice: costPriceMap.get(key) || 0 };
         })
       });
       
@@ -132,6 +143,21 @@ export async function createSale(data: {
         const key = `${product.name}|${product.type}`;
         manualProductMap.set(key, product.id);
       });
+    }
+    
+    // Update existing manual products with latest cost prices from this sale
+    for (const item of data.items) {
+      if (item.manualProductName && item.manualProductType && item.manualProductCostPrice !== undefined) {
+        const key = `${item.manualProductName}|${item.manualProductType}`;
+        const manualProductId = manualProductMap.get(key);
+        if (manualProductId) {
+          // Update the costPrice to the latest one used in this sale
+          await prisma.manualProduct.update({
+            where: { id: manualProductId },
+            data: { costPrice: item.manualProductCostPrice },
+          });
+        }
+      }
     }
   }
 
@@ -152,6 +178,15 @@ export async function createSale(data: {
           ? `${serviceName}-${item.serviceAppointmentId}` 
           : serviceName;
         serviceMap.set(uniqueKey, service.id);
+        
+        // Update service costPrice for regular services (not from appointments)
+        // This ensures the template remembers the latest cost price used
+        if (!item.serviceAppointmentId && item.serviceCostPrice !== undefined && item.serviceCostPrice > 0) {
+          await prisma.service.update({
+            where: { id: service.id },
+            data: { costPrice: item.serviceCostPrice },
+          });
+        }
       }
     }
   }
@@ -367,6 +402,15 @@ export async function updateSale(
           serviceAppointmentId: item.serviceAppointmentId, // Pass the ServiceAppointment ID
         });
         serviceId = service.id;
+        
+        // Update service costPrice for regular services (not from appointments)
+        // This ensures the template remembers the latest cost price used
+        if (!item.serviceAppointmentId && item.serviceCostPrice !== undefined && item.serviceCostPrice > 0) {
+          await prisma.service.update({
+            where: { id: service.id },
+            data: { costPrice: item.serviceCostPrice },
+          });
+        }
       }
 
       return {
@@ -693,6 +737,7 @@ export async function getAllSales() {
           givenAmount: true,
           type: true,
           paidDate: true,
+          dueDate: true,
         },
       },
     },
@@ -883,6 +928,7 @@ export async function getRecentSales(limit = 50, offset = 0, days = 7) {
           givenAmount: true,
           type: true,
           paidDate: true,
+          dueDate: true,
         },
       },
     },
@@ -1219,6 +1265,7 @@ export async function getSalesByDateRange(startDate: Date, endDate: Date) {
           givenAmount: true,
           type: true,
           paidDate: true,
+          dueDate: true,
         },
       },
     },
@@ -1278,6 +1325,7 @@ export async function getSalesByClient(clientId: string) {
             givenAmount: true,
             type: true,
             paidDate: true,
+            dueDate: true,
           },
         },
       },

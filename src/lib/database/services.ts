@@ -60,7 +60,13 @@ export async function findOrCreateService(data: {
   });
 
   if (existing) {
-    // Just return existing - each sale stores its own cost price
+    // Update costPrice if provided (to remember the latest cost price used)
+    if (data.costPrice !== undefined && data.costPrice > 0) {
+      return await prisma.service.update({
+        where: { id: existing.id },
+        data: { costPrice: data.costPrice },
+      });
+    }
     return existing;
   }
 

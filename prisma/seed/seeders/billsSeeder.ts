@@ -4,20 +4,21 @@ import { faker } from "@faker-js/faker";
 export async function seedBills(prisma: PrismaClient): Promise<Bill[]> {
   console.log("📋 Creating sample bills...");
 
+  // Mobile phone shop bills
   const billTypes = [
-    "Rent",
+    "Shop Rent",
     "Electricity",
     "Water",
     "Internet",
-    "Phone",
+    "Phone Service",
     "Insurance",
-    "Maintenance",
+    "Equipment Maintenance",
     "Security",
     "Cleaning",
     "Marketing",
     "Software License",
-    "Equipment Lease",
-    "Professional Services",
+    "Point of Sale System",
+    "Repair Tools",
     "Bank Fees",
     "Tax Preparation",
     "Legal Services",
@@ -47,7 +48,11 @@ export async function seedBills(prisma: PrismaClient): Promise<Bill[]> {
   const twoYearsAgo = new Date();
   twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
 
-  for (let i = 0; i < 100; i++) {
+  // Create only 5 bills with 100 payments total (20 payments per bill)
+  const totalBills = 5;
+  const paymentsPerBill = 20;
+
+  for (let i = 0; i < totalBills; i++) {
     const billType = faker.helpers.arrayElement(billTypes);
     // Generate clean integer amounts (100, 200, 360, etc.) - no decimals
     const amount = Math.round(faker.number.int({ min: 10000, max: 500000 }) / 100) * 100; // Round to nearest 100
@@ -116,20 +121,20 @@ export async function seedBills(prisma: PrismaClient): Promise<Bill[]> {
 
     bills.push(bill);
 
-    // Create 10 payments for this bill
-    await createBillPayments(prisma, bill, twoYearsAgo);
+    // Create paymentsPerBill (20) payments for this bill
+    await createBillPayments(prisma, bill, twoYearsAgo, paymentsPerBill);
   }
 
   console.log(`   - ${bills.length} bills created`);
   
   // Count total payments created
   const totalPayments = await prisma.billPayment.count();
-  console.log(`   - ${totalPayments} bill payments created`);
+  console.log(`   - ${totalPayments} bill payments created (${paymentsPerBill} per bill)`);
 
   return bills;
 }
 
-async function createBillPayments(prisma: PrismaClient, bill: Bill, startDate: Date) {
+async function createBillPayments(prisma: PrismaClient, bill: Bill, startDate: Date, paymentsPerBill: number) {
   const payments = [];
   const billAmount = bill.amount;
   // Generate clean integer total paid amount
@@ -138,18 +143,18 @@ async function createBillPayments(prisma: PrismaClient, bill: Bill, startDate: D
     max: billAmount * 2 // Up to 200% paid (overpaid)
   }) / 100) * 100; // Round to nearest 100
 
-  // Distribute the total paid amount across 10 payments
+  // Distribute the total paid amount across paymentsPerBill payments
   let remainingAmount = totalPaidAmount;
   
-  for (let i = 0; i < 10; i++) {
+  for (let i = 0; i < paymentsPerBill; i++) {
     let paymentAmount: number;
     
-    if (i === 9) {
+    if (i === paymentsPerBill - 1) {
       // Last payment gets the remaining amount
       paymentAmount = remainingAmount;
     } else {
       // Random amount, but ensure we don't exceed remaining
-      const maxPayment = Math.floor(remainingAmount / (10 - i));
+      const maxPayment = Math.floor(remainingAmount / (paymentsPerBill - i));
       paymentAmount = Math.round(faker.number.int({ 
         min: Math.floor(maxPayment * 0.1), // At least 10% of max
         max: maxPayment 

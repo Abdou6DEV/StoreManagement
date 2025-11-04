@@ -63,6 +63,8 @@ export default function AddClientModal({
         setNameExists(existingClient !== null);
       } catch (error) {
         console.error("Error checking client name:", error);
+        // On error, don't block submission but show warning
+        // User can still proceed if they want
         setNameExists(false);
       } finally {
         setCheckingName(false);
@@ -89,8 +91,8 @@ export default function AddClientModal({
           notesInputRef.current?.focus();
           break;
         case "notes":
-          // Submit form if on last field
-          if (clientName.trim()) {
+          // Submit form if on last field (only if no duplicate and not checking)
+          if (clientName.trim() && !nameExists && !checkingName) {
             handleSubmit(e as React.FormEvent);
           }
           break;
@@ -100,9 +102,11 @@ export default function AddClientModal({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (clientName.trim()) {
-      onConfirm();
+    // Prevent submission if name is empty, duplicate exists, or check is in progress
+    if (!clientName.trim() || nameExists || checkingName) {
+      return;
     }
+    onConfirm();
   };
 
   return (
@@ -120,30 +124,46 @@ export default function AddClientModal({
       onSubmit={handleSubmit}
       submitText={t("cashier.addClient", "Add Client")}
       cancelText={t("cashier.cancel", "Cancel")}
-      submitDisabled={!clientName.trim()}
+      submitDisabled={!clientName.trim() || nameExists || checkingName}
     >
       <div className="space-y-4 -mx-1 px-6">
         <div>
           <label className="block text-sm font-medium mb-2 text-foreground">
             {t("cashier.clientName", "Client Name")} *
           </label>
-          <input
-            ref={nameInputRef}
-            type="text"
-            value={clientName}
-            onChange={(e) => setClientName(e.target.value)}
-            placeholder={t("cashier.enterClientName", "Enter client name")}
-            onKeyDown={(e) => handleFieldKeyDown(e, "name")}
-            className={`w-full rounded-lg border bg-card px-4 py-3 text-sm text-foreground focus:border-primary/30 transition-all ${
-              nameExists ? "border-red-500 focus:border-red-500" : "border-border"
-            }`}
-            required
-          />
-          {nameExists && (
-            <p className="mt-1 text-xs text-red-600 dark:text-red-400">
-              {t("cashier.clientNameExists", "A client with this name already exists")}
-            </p>
-          )}
+          <div className="relative">
+            <input
+              ref={nameInputRef}
+              type="text"
+              value={clientName}
+              onChange={(e) => setClientName(e.target.value)}
+              placeholder={t("cashier.enterClientName", "Enter client name")}
+              onKeyDown={(e) => handleFieldKeyDown(e, "name")}
+              className={`w-full rounded-lg border bg-card px-4 py-3 text-sm text-foreground focus:border-primary/30 transition-all pr-10 ${
+                nameExists ? "border-red-500 focus:border-red-500" : "border-border"
+              }`}
+              required
+              aria-invalid={nameExists}
+              aria-describedby={nameExists || checkingName ? "name-status" : undefined}
+            />
+            {checkingName && (
+              <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+              </div>
+            )}
+          </div>
+          <div id="name-status" className="mt-1 min-h-[16px]">
+            {checkingName && (
+              <p className="text-xs text-muted-foreground">
+                {t("cashier.checkingName", "Checking name...")}
+              </p>
+            )}
+            {nameExists && !checkingName && (
+              <p className="text-xs text-red-600 dark:text-red-400">
+                {t("cashier.clientNameExists", "A client with this name already exists")}
+              </p>
+            )}
+          </div>
         </div>
 
         <div>
@@ -186,14 +206,11 @@ export default function AddClientModal({
             onChange={(e) => setClientNotes(e.target.value)}
             placeholder={t("cashier.notesOptional", "Notes (optional)")}
             onKeyDown={(e) => {
-              // Enter submits (Shift+Enter for new line)
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                if (clientName.trim()) {
-                  handleSubmit(e as React.FormEvent);
-                }
-              }
               // Shift+Enter creates a new line (default behavior)
+              // Enter submits (handled by handleFieldKeyDown)
+              if (e.key === "Enter" && !e.shiftKey) {
+                handleFieldKeyDown(e, "notes");
+              }
             }}
             className="w-full rounded-lg border border-border bg-card px-4 py-3 text-sm text-foreground resize-none focus:border-primary/30 transition-all"
             rows={3}

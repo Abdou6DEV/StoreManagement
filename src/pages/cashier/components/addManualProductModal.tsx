@@ -54,6 +54,7 @@ export default function AddManualProductModal({
   const [allManualProducts, setAllManualProducts] = useState<ManualProductWithCost[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [existingProductWarning, setExistingProductWarning] = useState<string | null>(null);
+  const [hideCostPrice, setHideCostPrice] = useState(true);
   
   // Helper function for safe price calculations with proper rounding
   const safePrice = (value: number | string | undefined): number => {
@@ -109,10 +110,14 @@ export default function AddManualProductModal({
       ...prev,
       name: selectedProduct.name || "",
       type: selectedProduct.type || "",
-      // Don't set costPrice - let user enter it fresh each time
-      costPrice: prev.costPrice, // Keep current value or 0
+      costPrice: selectedProduct.costPrice || 0,
+      // sold price stays at current value (user enters it fresh each time)
       barcode: selectedProduct.codebar || "",
     }));
+    // Focus on selling price field after selection
+    setTimeout(() => {
+      sellingPriceInputRef.current?.focus();
+    }, 100);
   };
   const [suggestions, setSuggestions] = useState<ManualProductWithCost[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -224,8 +229,8 @@ export default function AddManualProductModal({
       ...prev,
       name: suggestion.name,
       type: suggestion.type,
-      // Don't set costPrice - let user enter it fresh each time
-      costPrice: prev.costPrice, // Keep current value or 0
+      costPrice: suggestion.costPrice || 0,
+      // sold price stays at current value (user enters it fresh each time)
       barcode: suggestion.codebar || "",
     }));
     // Close dropdown and reset selection
@@ -235,6 +240,10 @@ export default function AddManualProductModal({
     setJustSelectedSuggestion(true);
     // Clear suggestions to prevent them from showing again
     setSuggestions([]);
+    // Focus on selling price field after selection
+    setTimeout(() => {
+      sellingPriceInputRef.current?.focus();
+    }, 100);
   };
 
   const handleNameChange = (newValue: string) => {
@@ -562,17 +571,18 @@ export default function AddManualProductModal({
               <label className="text-sm font-medium text-foreground">
                 {t("cashier.costPrice", "Cost Price")} *
               </label>
-              <div className="w-full">
+              <div className="flex items-center gap-2">
                 <StyledNumberInput
                   ref={costPriceInputRef}
+                  type={hideCostPrice ? "password" : "number"}
                   value={manualProduct.costPrice}
-                  onChange={(val) =>
+                  onChange={(val: number | "") =>
                     setManualProduct((p) => ({
                       ...p,
                       costPrice: val === "" ? 0 : safePrice(val),
                     }))
                   }
-                  onKeyDown={(e) => {
+                  onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
                     if (e.key === 'Tab') {
                       e.preventDefault();
                       sellingPriceInputRef.current?.focus();
@@ -581,6 +591,41 @@ export default function AddManualProductModal({
                   min={0}
                   placeholder="0"
                 />
+                <label className="flex items-center space-x-2 cursor-pointer text-sm text-muted-foreground whitespace-nowrap">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setHideCostPrice(!hideCostPrice);
+                    }}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }}
+                    className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
+                      hideCostPrice
+                        ? 'bg-green-600 border-green-600 text-white'
+                        : 'border-gray-300 hover:border-green-400 dark:border-gray-600 dark:hover:border-green-500'
+                    }`}
+                  >
+                    {hideCostPrice && (
+                      <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    )}
+                  </button>
+                  <span 
+                    className="text-xs select-none"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setHideCostPrice(!hideCostPrice);
+                    }}
+                  >
+                    {t("services.hideCostPrice", "Hide")}
+                  </span>
+                </label>
               </div>
             </Legend>
 
@@ -592,13 +637,13 @@ export default function AddManualProductModal({
                 <StyledNumberInput
                   ref={sellingPriceInputRef}
                   value={manualProduct.sold}
-                  onChange={(val) =>
+                  onChange={(val: number | "") =>
                     setManualProduct((p) => ({
                       ...p,
                       sold: val === "" ? 0 : safePrice(val),
                     }))
                   }
-                  onKeyDown={(e) => {
+                  onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
                     if (e.key === 'Tab') {
                       e.preventDefault();
                       // Focus the submit button
@@ -651,7 +696,7 @@ export default function AddManualProductModal({
                   <div className="w-full">
                     <StyledNumberInput
                       value={stockQuantity}
-                      onChange={(val) =>
+                      onChange={(val: number | "") =>
                         setStockQuantity(val)
                       }
                       min={1}

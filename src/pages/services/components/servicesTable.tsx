@@ -377,9 +377,9 @@ const ServicesTable: React.FC<ServicesTableProps> = ({
                       {/* Only show payment status for incomplete services or completed but not sold services */}
                       {(!service.isCompleted || (service.isCompleted && !soldServiceIds.has(service.id))) && 
                        paymentStatuses[service.id] && (
-                        <span className="text-xs text-green-600 dark:text-green-400">
+                        <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 text-xs hover:bg-green-100 dark:hover:bg-green-900/30 w-fit">
                           {t("services.payed", "Payed")}
-                        </span>
+                        </Badge>
                       )}
                     </div>
                   </td>

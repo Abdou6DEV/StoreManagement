@@ -157,6 +157,11 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
         ? new Date(displaySale.payment.paidDate)
         : undefined;
 
+      // Get due date from the actual sale payment information (for credit/versement sales)
+      const dueDate = displaySale.payment?.dueDate
+        ? new Date(displaySale.payment.dueDate)
+        : undefined;
+
       // Get payment amount from the actual sale
       const paymentAmount = displaySale.paidAmount || 0;
 
@@ -169,11 +174,9 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
         paymentType,
         paymentDate,
         displaySale.id,
-        (message, type) => showToast(message, type || "info")
+        (message, type) => showToast(message, type || "info"),
+        dueDate
       );
-
-      // Also call the onPrint callback if provided (for backward compatibility)
-      onPrint?.(displaySale);
     } catch (error) {
       console.error("Failed to print receipt:", error);
       showToast(

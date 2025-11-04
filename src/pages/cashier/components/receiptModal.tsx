@@ -18,6 +18,7 @@ interface Props {
   paymentType: "none" | "credit" | "versement";
   paymentDate?: Date;
   saleId?: string;
+  dueDate?: Date;
 }
 
 // Export the print function for direct use
@@ -29,7 +30,8 @@ export const printReceiptDirectly = async (
   paymentType: "none" | "credit" | "versement",
   paymentDate?: Date,
   saleId?: string,
-  showToast?: (message: string, type?: "success" | "error" | "info") => void
+  showToast?: (message: string, type?: "success" | "error" | "info") => void,
+  dueDate?: Date
 ) => {
   
   // Store information - will be loaded from database
@@ -936,7 +938,7 @@ export const printReceiptDirectly = async (
                 <div class="divider"></div>
                 <div>${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].payment} ${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].type}: ${paymentType === "credit" ? receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].credit : receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].versement}</div>
                 <div>${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].amountPaid}: ${paymentAmount.toLocaleString()}${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].currency}</div>
-                <div>${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].dueDate}: ${paymentDate ? paymentDate.toLocaleDateString() : "N/A"}</div>
+                <div>${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].dueDate}: ${dueDate ? dueDate.toLocaleDateString() : (paymentDate ? paymentDate.toLocaleDateString() : "N/A")}</div>
                 <div>${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].remaining}: ${(finalTotal - paymentAmount).toLocaleString()}${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].currency}</div>
               </div>
             `
@@ -1058,6 +1060,7 @@ export default function ReceiptModal({
   paymentType,
   paymentDate,
   saleId,
+  dueDate,
 }: Props) {
   const { t } = useTranslation();
   const toast = useToast();
@@ -2044,7 +2047,7 @@ export default function ReceiptModal({
                 <div class="divider"></div>
                 <div>${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].payment} ${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].type}: ${paymentType === "credit" ? receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].credit : receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].versement}</div>
                 <div>${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].amountPaid}: ${paymentAmount.toLocaleString()}${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].currency}</div>
-                <div>${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].dueDate}: ${paymentDate ? paymentDate.toLocaleDateString() : "N/A"}</div>
+                <div>${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].dueDate}: ${dueDate ? dueDate.toLocaleDateString() : (paymentDate ? paymentDate.toLocaleDateString() : "N/A")}</div>
                 <div>${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].remaining}: ${(finalTotal - paymentAmount).toLocaleString()}${receiptTranslations[(language as "fr" | "en" | "ar") || "fr"].currency}</div>
               </div>
             `
@@ -2374,7 +2377,7 @@ export default function ReceiptModal({
                 </div>
                 <div>
                   {receiptTranslations[language].dueDate}:{" "}
-                  {paymentDate ? paymentDate.toLocaleDateString() : "N/A"}
+                  {dueDate ? dueDate.toLocaleDateString() : (paymentDate ? paymentDate.toLocaleDateString() : "N/A")}
                 </div>
                 <div>
                   {receiptTranslations[language].remaining}: {(finalTotal - paymentAmount).toLocaleString()}{" "}

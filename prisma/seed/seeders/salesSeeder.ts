@@ -34,11 +34,15 @@ export async function seedSales(prisma: PrismaClient, products: Product[]) {
     }
   });
 
-  // Realistic store data for testing: 100 sales
-  const totalSales = 100;
-  const batchSize = 100; // Larger batches for better performance
+  // Mobile phone shop: 10000 sales, only 1% with clients (100 sales with clients, 9900 without)
+  const totalSales = 10000;
+  const salesWithClients = 100; // 1% of 10000
+  const batchSize = 500; // Larger batches for better performance
   
   console.log(`   - Creating ${totalSales} sales in batches of ${batchSize}...`);
+  console.log(`   - ${salesWithClients} sales will have clients (1%), ${totalSales - salesWithClients} will be without clients...`);
+
+  let salesWithClientsCount = 0;
 
   for (let batchStart = 0; batchStart < totalSales; batchStart += batchSize) {
     const batchEnd = Math.min(batchStart + batchSize, totalSales);
@@ -52,11 +56,17 @@ export async function seedSales(prisma: PrismaClient, products: Product[]) {
     const productUpdates = new Map<string, number>();
 
     for (let i = 0; i < currentBatchSize; i++) {
-      const client = faker.helpers.maybe(
-        () => faker.helpers.arrayElement(clients),
-        { probability: 0.7 }
-      );
-      const saleItemsCount = faker.number.int({ min: 2, max: 6 });
+      // Only 1% of sales should have clients
+      const shouldHaveClient = salesWithClientsCount < salesWithClients && 
+        faker.number.float({ min: 0, max: 1 }) < (salesWithClients - salesWithClientsCount) / (totalSales - batchStart);
+      
+      const client = shouldHaveClient && clients.length > 0
+        ? faker.helpers.arrayElement(clients)
+        : null;
+      
+      if (client) salesWithClientsCount++;
+
+      const saleItemsCount = faker.number.int({ min: 1, max: 5 }); // 1-5 items per sale
       const saleCreatedAt = faker.date.between({
         from: fiveYearsAgo,
         to: new Date(),
@@ -64,7 +74,7 @@ export async function seedSales(prisma: PrismaClient, products: Product[]) {
 
       // Prepare sale data
       salesData.push({
-        clientId: client?.id,
+        clientId: client?.id || null,
         discount: 0, // Will calculate later
         totalAmount: 0, // Will calculate later
         totalAmountWithDiscount: 0, // Will calculate later
@@ -89,17 +99,17 @@ export async function seedSales(prisma: PrismaClient, products: Product[]) {
     // Process each sale in the batch
     for (let i = 0; i < currentBatchSize; i++) {
       const sale = batchSales[i];
-      const saleItemsCount = faker.number.int({ min: 2, max: 6 });
+      const saleItemsCount = faker.number.int({ min: 1, max: 5 });
 
-      // Decide if this sale should include manual products (40% chance)
-      const includeManualProducts = faker.datatype.boolean({ probability: 0.4 });
-      // Decide if this sale should include services (30% chance)
-      const includeServices = faker.datatype.boolean({ probability: 0.3 });
+      // Decide if this sale should include manual products (30% chance)
+      const includeManualProducts = faker.datatype.boolean({ probability: 0.3 });
+      // Decide if this sale should include services (20% chance)
+      const includeServices = faker.datatype.boolean({ probability: 0.2 });
 
       let manualProductsAdded = 0;
       let servicesAdded = 0;
-      const maxManualProducts = faker.number.int({ min: 1, max: 3 });
-      const maxServices = faker.number.int({ min: 1, max: 2 });
+      const maxManualProducts = faker.number.int({ min: 1, max: 2 });
+      const maxServices = 1;
 
       // Filter products that have stock available
       const availableProducts = products.filter(
@@ -107,14 +117,13 @@ export async function seedSales(prisma: PrismaClient, products: Product[]) {
       );
 
       // Calculate how many regular products to include
-      // Ensure we always have 2-6 total items
       let regularProductCount = saleItemsCount;
       if (includeManualProducts) {
-        const manualCount = Math.min(2, saleItemsCount - 1); // Max 2 manual products, leave room for at least 1 regular
+        const manualCount = Math.min(1, saleItemsCount - 1);
         regularProductCount = Math.max(1, saleItemsCount - manualCount);
       }
       if (includeServices) {
-        const serviceCount = Math.min(1, saleItemsCount - 1); // Max 1 service, leave room for at least 1 regular
+        const serviceCount = Math.min(1, saleItemsCount - 1);
         regularProductCount = Math.max(1, regularProductCount - serviceCount);
       }
 
@@ -127,23 +136,20 @@ export async function seedSales(prisma: PrismaClient, products: Product[]) {
           : [];
 
       // Add regular product items (prepare for bulk insert)
-      // Use Set to ensure no duplicate products in the same sale
       const usedProductIds = new Set<string>();
       
       for (const product of saleProducts) {
-        // Skip if this product is already added to this sale
         if (usedProductIds.has(product.id)) {
           continue;
         }
         
         usedProductIds.add(product.id);
         
-        const maxQuantity = Math.min(5, product.quantity); // Don't sell more than available
-        if (maxQuantity <= 0) continue; // Skip if no stock
+        const maxQuantity = Math.min(3, product.quantity);
+        if (maxQuantity <= 0) continue;
 
         const quantity = faker.number.int({ min: 1, max: maxQuantity });
 
-        // Prepare sale item data
         saleItemsData.push({
           productId: product.id,
           saleId: sale.id,
@@ -152,18 +158,16 @@ export async function seedSales(prisma: PrismaClient, products: Product[]) {
           boughtPrice: product.boughtPrice,
         });
 
-        // Track quantity changes for bulk update
         const currentChange = productUpdates.get(product.id) || 0;
         productUpdates.set(product.id, currentChange - quantity);
         
-        // Update local product object
         product.quantity -= quantity;
       }
 
-      // Add manual products if decided (prepare for bulk insert)
+      // Add manual products if decided
       if (includeManualProducts && manualProductsAdded < maxManualProducts) {
         const remainingSlots = saleItemsCount - usedProductIds.size;
-        const manualProductCount = Math.min(2, Math.max(1, remainingSlots));
+        const manualProductCount = Math.min(1, Math.max(1, remainingSlots));
         const usedManualProducts = new Set<string>();
 
         for (let j = 0; j < manualProductCount; j++) {
@@ -179,16 +183,15 @@ export async function seedSales(prisma: PrismaClient, products: Product[]) {
           usedManualProducts.add(manualProductKey);
           
           const manualProductPrice = faker.commerce.price({
-            min: 5,
-            max: 200,
+            min: 500,
+            max: 5000,
             dec: 0,
           });
-          const quantity = faker.number.int({ min: 1, max: 3 });
+          const quantity = faker.number.int({ min: 1, max: 2 });
 
-          // Prepare manual product data (will handle upsert later)
           saleItemsData.push({
             productId: null,
-            manualProductId: null, // Will be set after upsert
+            manualProductId: null,
             serviceId: null,
             saleId: sale.id,
             quantity,
@@ -201,7 +204,7 @@ export async function seedSales(prisma: PrismaClient, products: Product[]) {
         }
       }
 
-      // Add services if decided (prepare for bulk insert)
+      // Add services if decided
       if (includeServices && servicesAdded < maxServices && services.length > 0) {
         const remainingSlots = saleItemsCount - usedProductIds.size - manualProductsAdded;
         const serviceCount = Math.min(1, Math.max(1, remainingSlots));
@@ -210,11 +213,9 @@ export async function seedSales(prisma: PrismaClient, products: Product[]) {
           Math.min(serviceCount, services.length)
         );
 
-        // Use Set to ensure no duplicate services in the same sale
         const usedServiceIds = new Set<string>();
         
         for (const service of selectedServices) {
-          // Skip if this service is already added to this sale
           if (usedServiceIds.has(service.id)) {
             continue;
           }
@@ -222,13 +223,12 @@ export async function seedSales(prisma: PrismaClient, products: Product[]) {
           usedServiceIds.add(service.id);
           
           const servicePrice = faker.commerce.price({
-            min: 20,
-            max: 500,
+            min: 2000,
+            max: 10000,
             dec: 0,
           });
           const quantity = 1;
 
-          // Prepare service sale item data
           saleItemsData.push({
             productId: null,
             manualProductId: null,
@@ -247,7 +247,6 @@ export async function seedSales(prisma: PrismaClient, products: Product[]) {
     // Handle manual products upsert and update sale items
     const manualProductItems = saleItemsData.filter(item => item.manualProductName);
     if (manualProductItems.length > 0) {
-      // Get unique manual product combinations
       const uniqueManualProducts = new Map<string, { name: string; type: string }>();
       manualProductItems.forEach(item => {
         const key = `${item.manualProductName}-${item.manualProductType}`;
@@ -259,7 +258,6 @@ export async function seedSales(prisma: PrismaClient, products: Product[]) {
         }
       });
 
-      // Upsert all unique manual products
       const manualProductMap = new Map<string, string>();
       for (const [key, { name, type }] of uniqueManualProducts) {
         const manualProduct = await prisma.manualProduct.upsert({
@@ -270,7 +268,6 @@ export async function seedSales(prisma: PrismaClient, products: Product[]) {
         manualProductMap.set(key, manualProduct.id);
       }
 
-      // Update sale items with manual product IDs
       manualProductItems.forEach(item => {
         const key = `${item.manualProductName}-${item.manualProductType}`;
         item.manualProductId = manualProductMap.get(key);
@@ -279,10 +276,9 @@ export async function seedSales(prisma: PrismaClient, products: Product[]) {
       });
     }
 
-    // Deduplicate sale items before bulk insert to prevent unique constraint violations
+    // Deduplicate sale items before bulk insert
     const uniqueSaleItems = new Map<string, any>();
     for (const item of saleItemsData) {
-      // Create a unique key based on the type of item and sale ID
       let key: string;
       if (item.productId) {
         key = `product-${item.productId}-${item.saleId}`;
@@ -291,15 +287,13 @@ export async function seedSales(prisma: PrismaClient, products: Product[]) {
       } else if (item.serviceId) {
         key = `service-${item.serviceId}-${item.saleId}`;
       } else {
-        continue; // Skip invalid items
+        continue;
       }
       
-      // Skip if this combination already exists in the database or in current batch
       if (existingCombinations.has(key) || uniqueSaleItems.has(key)) {
         continue;
       }
       
-      // Add to unique items
       uniqueSaleItems.set(key, item);
     }
 
@@ -310,7 +304,6 @@ export async function seedSales(prisma: PrismaClient, products: Product[]) {
         data: finalSaleItemsData as any,
       });
       
-      // Add the newly created combinations to the existing set to prevent future conflicts
       finalSaleItemsData.forEach(item => {
         let key: string;
         if (item.productId) {
@@ -342,11 +335,9 @@ export async function seedSales(prisma: PrismaClient, products: Product[]) {
       });
 
       if (saleItems.length === 0) {
-        // Skip sales with no items
         continue;
       }
 
-      // Calculate totals
       const totalAmount = saleItems.reduce(
         (sum, item) => sum + item.price * item.quantity,
         0
@@ -354,7 +345,7 @@ export async function seedSales(prisma: PrismaClient, products: Product[]) {
 
       const discountPercentage = faker.number.float({
         min: 0,
-        max: 0.2,
+        max: 0.15,
         fractionDigits: 2,
       });
       const calculatedDiscount = Math.floor(totalAmount * discountPercentage);
@@ -365,17 +356,14 @@ export async function seedSales(prisma: PrismaClient, products: Product[]) {
         0
       );
 
-      // Calculate total cost and profit
       const totalCost = saleItems.reduce((sum, item) => {
         let boughtPrice = 0;
         
         if (item.productId && item.boughtPrice !== undefined && item.boughtPrice !== null) {
           boughtPrice = item.boughtPrice;
         } else if (item.manualProductId) {
-          // For manual products, assume 60% margin
           boughtPrice = Math.floor(item.price * 0.4);
         } else if (item.serviceId) {
-          // For services, assume 50% margin
           boughtPrice = Math.floor(item.price * 0.5);
         }
         
@@ -414,6 +402,7 @@ export async function seedSales(prisma: PrismaClient, products: Product[]) {
   }
 
   console.log(`   - ${sales.length} sales created`);
+  console.log(`   - ${salesWithClientsCount} sales with clients (${((salesWithClientsCount / sales.length) * 100).toFixed(2)}%)`);
 
   // Count total sale items created
   const totalSaleItems = await prisma.saleItem.count();

@@ -207,6 +207,7 @@ export interface Sale {
     givenAmount: number;
     type: "CREDIT" | "VERSEMENT";
     paidDate?: Date | null;
+    dueDate?: Date | null;
   };
 }
 

@@ -2,7 +2,7 @@ import { PrismaClient, Sale } from "@prisma/client";
 import { faker } from "@faker-js/faker";
 
 export async function seedPayments(prisma: PrismaClient, sales: Sale[]) {
-  console.log("💳 Creating random payments...");
+  console.log("💳 Creating payments...");
 
   // Get all existing payments to avoid duplicates
   const existingPayments = await prisma.payment.findMany({
@@ -10,14 +10,26 @@ export async function seedPayments(prisma: PrismaClient, sales: Sale[]) {
   });
   const existingSaleIds = new Set(existingPayments.map(p => p.saleId).filter(Boolean));
 
+  // Only create 10 credit or versement payments total
+  const totalPaymentsToCreate = 10;
+  const salesWithClients = sales.filter(sale => sale.clientId && !existingSaleIds.has(sale.id));
+  
+  if (salesWithClients.length === 0) {
+    console.log("   ⚠️  No sales with clients found. Skipping payments.");
+    return;
+  }
+
+  // Select random sales with clients (up to 10)
+  const selectedSales = faker.helpers.arrayElements(
+    salesWithClients,
+    Math.min(totalPaymentsToCreate, salesWithClients.length)
+  );
+
   let paymentCount = 0;
-  for (const sale of sales) {
+  for (const sale of selectedSales) {
     if (!sale.clientId) continue;
-    
-    // Skip if this sale already has a payment
     if (existingSaleIds.has(sale.id)) continue;
     
-    if (faker.datatype.boolean() && faker.datatype.boolean()) continue;
     const saleItems = await prisma.saleItem.findMany({
       where: { saleId: sale.id },
     });
@@ -44,9 +56,8 @@ export async function seedPayments(prisma: PrismaClient, sales: Sale[]) {
     });
     paymentCount++;
     
-    // Add this sale to the existing set to prevent duplicates in the same run
     existingSaleIds.add(sale.id);
   }
 
-  console.log(`   - ${paymentCount} payments created`);
+  console.log(`   - ${paymentCount} payments created (${totalPaymentsToCreate} requested)`);
 }

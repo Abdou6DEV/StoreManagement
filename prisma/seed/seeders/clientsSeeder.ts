@@ -9,9 +9,9 @@ export async function seedClients(prisma: PrismaClient) {
   const twoYearsAgo = new Date();
   twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
 
-  // Realistic store data for testing: ~2,000 clients
-  const totalClients = 2000;
-  const batchSize = 200; // Process in batches for better performance
+  // Mobile phone shop: 100 clients
+  const totalClients = 100;
+  const batchSize = 100; // Process in batches for better performance
   
   console.log(`   - Creating ${totalClients} clients in batches of ${batchSize}...`);
 

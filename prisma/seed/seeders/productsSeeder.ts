@@ -17,13 +17,13 @@ export async function seedProducts(
   const twoYearsAgo = new Date();
   twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
 
-  // Realistic store data for testing: 100 products
-  const totalProducts = 100;
-  const totalPurchases = 200; // Exactly 200 purchases as requested
-  const batchSize = 100; // Process in batches for better performance
+  // Mobile phone shop: 7000 products
+  const totalProducts = 7000;
+  const totalPurchases = 14000; // 2 purchases per product on average
+  const batchSize = 500; // Process in batches for better performance
   
-  console.log(`   - Creating ${totalProducts} products in batches of ${batchSize}...`);
-  console.log(`   - Will create exactly ${totalPurchases} purchases total...`);
+  console.log(`   - Creating ${totalProducts} mobile phone shop products in batches of ${batchSize}...`);
+  console.log(`   - Will create approximately ${totalPurchases} purchases total...`);
 
   // First, create all products without purchases
   for (let batchStart = 0; batchStart < totalProducts; batchStart += batchSize) {
@@ -44,23 +44,26 @@ export async function seedProducts(
       usedProductNames.add(productName);
 
       const category = faker.helpers.arrayElement(predefinedCategories);
-      const boughtPrice = faker.commerce.price({
-        min: 50,
-        max: 2000,
-        dec: 0,
-      });
-      const markupPercentage = faker.number.float({ min: 1.1, max: 1.8 });
-      const sellingPrice = Math.floor(Number(boughtPrice) * markupPercentage);
+      // Mobile phone shop prices: phones 5000-200000, accessories 100-5000
+      const isPhone = category === "Smartphones" || category === "Feature Phones";
+      const boughtPrice = isPhone
+        ? faker.number.int({ min: 500000, max: 20000000 }) // 5000-200000 DA in centimes
+        : faker.number.int({ min: 10000, max: 500000 }); // 100-5000 DA in centimes
+      
+      const markupPercentage = faker.number.float({ min: 1.15, max: 1.5 }); // 15-50% markup
+      const sellingPrice = Math.floor(boughtPrice * markupPercentage);
 
       // Set initial quantity to 0, will be updated after purchases
-      const initialQuantity = faker.number.int({ min: 0, max: 20 });
+      const initialQuantity = isPhone 
+        ? faker.number.int({ min: 0, max: 10 }) // Phones: 0-10
+        : faker.number.int({ min: 0, max: 50 }); // Accessories: 0-50
 
       // Prepare product data for bulk insert
       productsData.push({
         name: productName,
         categoryName: category,
         quantity: initialQuantity,
-        boughtPrice: Number(boughtPrice),
+        boughtPrice: boughtPrice,
         sellingPrice: sellingPrice,
         codebar: faker.string.numeric(12),
         photo: generateProductPhoto(),
@@ -84,8 +87,8 @@ export async function seedProducts(
     products.push(...batchProducts);
   }
 
-  // Now create exactly 200 purchases distributed across all products
-  console.log(`   - Creating exactly ${totalPurchases} purchases...`);
+  // Now create purchases distributed across products
+  console.log(`   - Creating approximately ${totalPurchases} purchases...`);
   const purchasesData: any[] = [];
   const purchaseItemsData: any[] = [];
   const productUpdates = new Map<string, number>();
@@ -98,7 +101,11 @@ export async function seedProducts(
       { probability: 0.85 },
     );
 
-    const purchaseQuantity = faker.number.int({ min: 5, max: 50 });
+    const isPhone = randomProduct.categoryName === "Smartphones" || randomProduct.categoryName === "Feature Phones";
+    const purchaseQuantity = isPhone
+      ? faker.number.int({ min: 1, max: 5 }) // Phones: 1-5
+      : faker.number.int({ min: 5, max: 100 }); // Accessories: 5-100
+    
     const purchaseDate = faker.date.between({
       from: twoYearsAgo,
       to: new Date(),

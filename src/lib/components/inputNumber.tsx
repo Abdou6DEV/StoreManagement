@@ -9,6 +9,7 @@ interface StyledNumberInputProps {
   disabled?: boolean;
   onFocus?: () => void;
   onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
+  type?: "number" | "password" | "text";
   [key: string]: any; // Allow additional props like data-field, etc.
 }
 
@@ -21,13 +22,14 @@ const StyledNumberInput = React.forwardRef<HTMLInputElement, StyledNumberInputPr
   disabled = false,
   onFocus,
   onKeyDown,
+  type = "number",
   ...restProps
 }, ref) => {
   return (
     <div className="relative w-full">
       <input
         ref={ref}
-        type="number"
+        type={type}
         value={value}
         onChange={(e) => {
           const val = e.target.value;
