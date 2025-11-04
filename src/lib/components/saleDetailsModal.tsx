@@ -19,6 +19,7 @@ import PaymentSummary from "./paymentSummary";
 import { useToast } from "../contexts/toastContext";
 import { Sale, CartItem } from "../../types";
 import rendererLogger from "../logger/rendererLogger";
+import { printReceiptDirectly } from "../../pages/cashier/components/receiptModal";
 
 interface SaleDetailsModalProps {
   sale: Sale | null;
@@ -47,21 +48,44 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Reset edit state when modal opens/closes
+  const [currentSale, setCurrentSale] = useState<Sale | null>(null);
+
+  // Reset edit state when modal opens/closes and refresh sale data
   useEffect(() => {
     if (isOpen && sale) {
       // Reset edit mode when modal opens
       setIsEditing(false);
       setEditedCart([]);
       setEditedDiscount(0);
+      
+      // Refresh sale data to get latest payment information
+      const refreshSaleData = async () => {
+        try {
+          const refreshedSale = await window.api.database.sales.getById(sale.id);
+          if (refreshedSale) {
+            setCurrentSale(refreshedSale);
+          } else {
+            setCurrentSale(sale);
+          }
+        } catch (error) {
+          console.error("Error refreshing sale data:", error);
+          // Fallback to original sale data if refresh fails
+          setCurrentSale(sale);
+        }
+      };
+      
+      refreshSaleData();
+    } else {
+      setCurrentSale(null);
     }
   }, [isOpen, sale]);
 
   // Initialize edit state when sale changes and editing starts
   useEffect(() => {
-    if (sale && isEditing) {
+    const saleToUse = currentSale || sale;
+    if (saleToUse && isEditing) {
       setEditedCart(
-        sale.saleItems.map((item) => ({
+        saleToUse.saleItems.map((item) => ({
           id: item.product?.id || item.service?.id || `manual-${item.id}`,
           name:
             item.product?.name ||
@@ -81,11 +105,14 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
           boughtPrice: item.product ? item.boughtPrice : undefined,
         })),
       );
-      setEditedDiscount(sale.discount);
+      setEditedDiscount(saleToUse.discount);
     }
-  }, [sale, isEditing]);
+  }, [currentSale, sale, isEditing]);
 
-  if (!isOpen || !sale) return null;
+  // Use currentSale if available, otherwise fallback to sale prop
+  const displaySale = currentSale || sale;
+  
+  if (!isOpen || !displaySale) return null;
 
   const formatCurrency = (amount: number) => {
     return `${amount.toLocaleString()} ${t("currency")}`;
@@ -95,8 +122,65 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
     return new Date(date).toLocaleString();
   };
 
-  const handlePrint = () => {
-    onPrint?.(sale);
+  const handlePrint = async () => {
+    if (!displaySale) return;
+
+    try {
+      // Convert saleItems to CartItem format
+      const cartItems: CartItem[] = displaySale.saleItems.map((item) => ({
+        id: item.product?.id || item.service?.id || `manual-${item.id}`,
+        name:
+          item.product?.name ||
+          item.manualProduct?.name ||
+          item.service?.name ||
+          "",
+        price: item.price,
+        qty: item.quantity,
+        boughtPrice: item.boughtPrice || undefined,
+        isManual: !item.product && !item.service,
+        isService: !!item.service,
+        manualProductType: item.manualProduct?.type,
+        description: item.service?.description,
+        serviceCostPrice: item.service ? (item.boughtPrice || item.service?.costPrice) : undefined,
+        serviceAppointmentId: item.service?.serviceAppointmentId || undefined,
+      }));
+
+      // Determine payment type from the actual sale payment information
+      const paymentType: "none" | "credit" | "versement" = displaySale.isPaidInCash
+        ? "none"
+        : displaySale.payment?.type === "VERSEMENT"
+          ? "versement"
+          : "credit";
+
+      // Get payment date from the actual sale payment information
+      const paymentDate = displaySale.payment?.paidDate
+        ? new Date(displaySale.payment.paidDate)
+        : undefined;
+
+      // Get payment amount from the actual sale
+      const paymentAmount = displaySale.paidAmount || 0;
+
+      // Call print function directly with the actual payment information
+      await printReceiptDirectly(
+        cartItems,
+        displaySale.client?.name || "",
+        displaySale.discount,
+        paymentAmount,
+        paymentType,
+        paymentDate,
+        displaySale.id,
+        (message, type) => showToast(message, type || "info")
+      );
+
+      // Also call the onPrint callback if provided (for backward compatibility)
+      onPrint?.(displaySale);
+    } catch (error) {
+      console.error("Failed to print receipt:", error);
+      showToast(
+        t("cashier.printError", "Failed to print receipt"),
+        "error"
+      );
+    }
   };
 
   const handleModify = () => {
@@ -112,7 +196,7 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
   };
 
   const handleSave = async () => {
-    if (!sale) return;
+    if (!displaySale) return;
 
     // Validate that the cart is not empty
     if (editedCart.length === 0) {
@@ -145,10 +229,10 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
       0,
     );
 
-    const isCashSale = sale.isPaidInCash;
+    const isCashSale = displaySale.isPaidInCash;
     const maxAllowedDiscount = isCashSale
       ? subtotal
-      : subtotal - sale.paidAmount;
+      : subtotal - displaySale.paidAmount;
 
     if (editedDiscount > maxAllowedDiscount) {
       showToast(
@@ -163,8 +247,8 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
 
     setIsSaving(true);
     try {
-      const updatedSale = await window.api.database.sales.update(sale.id, {
-        clientId: sale.client?.name ? undefined : undefined, // Keep existing client
+      const updatedSale = await window.api.database.sales.update(displaySale.id, {
+        clientId: displaySale.client?.name ? undefined : undefined, // Keep existing client
         items: editedCart.map((item) => ({
           productId: item.isManual || item.isService ? undefined : item.id,
           quantity: item.qty,
@@ -185,6 +269,7 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
         "success",
       );
       setIsEditing(false);
+      setCurrentSale(updatedSale);
       onSaleUpdated?.(updatedSale);
     } catch (error) {
       rendererLogger.error("Error updating sale", "SaleDetailsModal", error);
@@ -195,16 +280,16 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
   };
 
   const handleDelete = async () => {
-    if (!sale) return;
+    if (!displaySale) return;
 
     setIsDeleting(true);
     try {
-      await window.api.database.sales.delete(sale.id);
+      await window.api.database.sales.delete(displaySale.id);
       showToast(
         t("cashier.saleDeleted", "Sale deleted successfully"),
         "success",
       );
-      onSaleDeleted?.(sale.id);
+      onSaleDeleted?.(displaySale.id);
       onClose();
     } catch (error) {
       rendererLogger.error("Error deleting sale", "SaleDetailsModal", error);
@@ -217,7 +302,7 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
 
   const currentCart = isEditing
     ? editedCart
-    : sale.saleItems.map((item) => ({
+    : displaySale.saleItems.map((item) => ({
         id: item.product?.id || item.service?.id || `manual-${item.id}`,
         name:
           item.product?.name ||
@@ -232,7 +317,7 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
         description: item.service?.description,
       }));
 
-  const currentDiscount = isEditing ? editedDiscount : sale.discount;
+  const currentDiscount = isEditing ? editedDiscount : displaySale.discount;
 
   return (
     <div
@@ -255,7 +340,7 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
                   ? t("cashier.editSale", "Edit Sale")
                   : t("cashier.saleDetails", "Sale Details")}
               </h2>
-              <p className="text-sm text-muted-foreground mt-0.5">{sale.id}</p>
+              <p className="text-sm text-muted-foreground mt-0.5">{displaySale.id}</p>
             </div>
           </div>
 
@@ -345,17 +430,17 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
                       {t("cashier.date", "Date")}
                     </div>
                     <div className="text-sm font-medium">
-                      {formatFullDate(sale.createdAt)}
+                      {formatFullDate(displaySale.createdAt)}
                     </div>
                   </div>
-                  {sale.client && (
+                  {displaySale.client && (
                     <div className="p-3 bg-muted/20 rounded-lg">
                       <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
                         <User className="w-3 h-3" />
                         {t("cashier.client", "Client")}
                       </div>
                       <div className="text-sm font-medium">
-                        {sale.client.name}
+                        {displaySale.client.name}
                       </div>
                     </div>
                   )}
@@ -374,15 +459,15 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
                       {t("cashier.paymentMethod", "Payment Method")}
                     </div>
                     <div className="flex items-center gap-2">
-                      {sale.isPaidInCash ? (
+                      {displaySale.isPaidInCash ? (
                         <Banknote className="w-3 h-3 text-green-600" />
                       ) : (
                         <CreditCard className="w-3 h-3 text-blue-600" />
                       )}
                       <span className="text-sm font-medium">
-                        {sale.isPaidInCash
+                        {displaySale.isPaidInCash
                           ? t("cashier.cash", "Cash")
-                          : sale.payment?.type === "VERSEMENT"
+                          : displaySale.payment?.type === "VERSEMENT"
                             ? t("cashier.versement", "Versement")
                             : t("cashier.credit", "Credit")}
                       </span>
@@ -393,7 +478,7 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
                       {t("cashier.paidAmount", "Paid Amount")}
                     </div>
                     <div className="text-lg font-bold text-primary">
-                      {formatCurrency(sale.paidAmount)}
+                      {formatCurrency(displaySale.paidAmount)}
                     </div>
                   </div>
                 </div>
@@ -430,13 +515,13 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
               <div className="flex-1 border border-border/30 rounded-lg overflow-hidden">
                 <PaymentSummary
                   cart={currentCart}
-                  clientName={sale.client?.name}
-                  paymentAmount={sale.paidAmount}
+                  clientName={displaySale.client?.name}
+                  paymentAmount={displaySale.paidAmount}
                   discount={currentDiscount}
                   paymentType={
-                    sale.isPaidInCash
+                    displaySale.isPaidInCash
                       ? "none"
-                      : sale.payment?.type === "VERSEMENT"
+                      : displaySale.payment?.type === "VERSEMENT"
                         ? "versement"
                         : "credit"
                   }

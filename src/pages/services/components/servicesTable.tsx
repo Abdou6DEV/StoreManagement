@@ -83,6 +83,7 @@ const ServicesTable: React.FC<ServicesTableProps> = ({
   const [editingService, setEditingService] = useState<ServiceAppointment | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [cancelingServiceId, setCancelingServiceId] = useState<string | null>(null);
+  const [paymentStatuses, setPaymentStatuses] = useState<Record<string, boolean>>({});
   const { refreshCompletedServicesCount } = useCompletedServices();
 
   const formatCurrency = (amount: number) => {
@@ -163,6 +164,29 @@ const ServicesTable: React.FC<ServicesTableProps> = ({
   const handleServiceUpdated = () => {
     onEdit(editingService!); // This will trigger a refresh in the parent component
   };
+
+  // Fetch payment statuses for all services
+  useEffect(() => {
+    const fetchPaymentStatuses = async () => {
+      const statuses: Record<string, boolean> = {};
+      await Promise.all(
+        services.map(async (service) => {
+          try {
+            const isPaid = await window.api.database.serviceAppointments.getPaymentStatus(service.id);
+            statuses[service.id] = isPaid;
+          } catch (error) {
+            console.error(`Error fetching payment status for service ${service.id}:`, error);
+            statuses[service.id] = false;
+          }
+        })
+      );
+      setPaymentStatuses(statuses);
+    };
+
+    if (services.length > 0) {
+      fetchPaymentStatuses();
+    }
+  }, [services]);
 
   // Mark services as seen when viewing filtered tables
   useEffect(() => {
@@ -346,9 +370,18 @@ const ServicesTable: React.FC<ServicesTableProps> = ({
                     </div>
                   </td>
                   <td className={`px-4 py-2 ${isRTL ? "text-right" : "text-left"}`}>
-                    <span className="font-bold text-cyan-600 dark:text-cyan-400">
-                      {formatCurrency(service.servicePrice)}
-                    </span>
+                    <div className="flex flex-col gap-1">
+                      <span className="font-bold text-cyan-600 dark:text-cyan-400">
+                        {formatCurrency(service.servicePrice)}
+                      </span>
+                      {/* Only show payment status for incomplete services or completed but not sold services */}
+                      {(!service.isCompleted || (service.isCompleted && !soldServiceIds.has(service.id))) && 
+                       paymentStatuses[service.id] && (
+                        <span className="text-xs text-green-600 dark:text-green-400">
+                          {t("services.payed", "Payed")}
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td className={`px-4 py-2 ${isRTL ? "text-right" : "text-left"}`}>
                     <div className="flex items-center gap-2">

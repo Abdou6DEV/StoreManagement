@@ -48,13 +48,13 @@ const SaleHeader: React.FC<SaleHeaderProps> = ({ sale }) => {
       if (sale.payment.paidDate) {
         return (
           <span className="text-xs px-2 py-1 rounded-full font-medium text-green-700 bg-green-100 border border-green-200">
-            Credit (Paid)
+            {t("history.creditPaid", "Credit (Paid)")}
           </span>
         );
       } else {
         return (
           <span className="text-xs px-2 py-1 rounded-full font-medium text-orange-700 bg-orange-100 border border-orange-200">
-            Credit (Unpaid)
+            {t("history.creditUnpaid", "Credit (Unpaid)")}
           </span>
         );
       }
@@ -64,13 +64,13 @@ const SaleHeader: React.FC<SaleHeaderProps> = ({ sale }) => {
       if (sale.payment.paidDate) {
         return (
           <span className="text-xs px-2 py-1 rounded-full font-medium text-green-700 bg-green-100 border border-green-200">
-            Versement (Paid)
+            {t("history.versementPaid", "Versement (Paid)")}
           </span>
         );
       } else {
         return (
           <span className="text-xs px-2 py-1 rounded-full font-medium text-orange-700 bg-orange-100 border border-orange-200">
-            Versement (Unpaid)
+            {t("history.versementUnpaid", "Versement (Unpaid)")}
           </span>
         );
       }

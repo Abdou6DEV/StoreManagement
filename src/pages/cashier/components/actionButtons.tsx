@@ -126,16 +126,33 @@ export default function ActionButtons({
   }, [debouncedDiscount, paymentType, cartTotal, paymentAmount, totalProfit]);
 
 
-  const refreshClientSuggestions = () => {
-    window.api.database.clients.getAll().then(setClientSuggestions);
-  };
-
-  // Lazy load clients only when user starts typing
+  // Lazy load clients only when user starts typing (with error handling and cleanup)
   useEffect(() => {
+    let isMounted = true;
+    let timeoutId: NodeJS.Timeout | null = null;
+
     if (clientName.length > 0 && clientSuggestions.length === 0) {
-      refreshClientSuggestions();
+      // Small delay to prevent multiple calls if user types quickly
+      timeoutId = setTimeout(() => {
+        window.api.database.clients
+          .getAll()
+          .then((clients) => {
+            if (isMounted) {
+              setClientSuggestions(clients);
+            }
+          })
+          .catch((error) => {
+            console.error("Error loading client suggestions:", error);
+            // Don't crash - just log the error
+          });
+      }, 100);
     }
-  }, [clientName]);
+
+    return () => {
+      isMounted = false;
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [clientName, clientSuggestions.length]);
 
   const [showSuggestions, setShowSuggestions] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -166,17 +183,27 @@ export default function ActionButtons({
     setTimeout(() => setShowSuggestions(false), 100);
   };
 
+  // Use debounced client name for matching to avoid checking on every keystroke
   useEffect(() => {
-    const match = clientSuggestions.find((c) => c.name === clientName);
-    if (!match) {
+    if (debouncedClientName.trim() && clientSuggestions.length > 0) {
+      const match = clientSuggestions.find((c) => c.name === debouncedClientName.trim());
+      if (match) {
+        setClientId(match.id);
+        setSelectedClientId(match.id);
+      } else {
+        setClientId(null);
+        setSelectedClientId(null);
+      }
+    } else if (debouncedClientName.trim() === "") {
       setClientId(null);
       setSelectedClientId(null);
     }
-  }, [clientName, clientSuggestions, setClientId]);
+  }, [debouncedClientName, clientSuggestions, setClientId]);
 
+  // Use debounced client name for phone lookup to avoid checking on every keystroke
   useEffect(() => {
-    if (clientName && clientSuggestions.length > 0) {
-      const match = clientSuggestions.find((c) => c.name === clientName);
+    if (debouncedClientName.trim() && clientSuggestions.length > 0) {
+      const match = clientSuggestions.find((c) => c.name === debouncedClientName.trim());
       if (match) {
         setPaymentClientPhone(match.phone || "");
       } else {
@@ -185,7 +212,7 @@ export default function ActionButtons({
     } else {
       setPaymentClientPhone("");
     }
-  }, [clientName, clientSuggestions, showPaymentModal]);
+  }, [debouncedClientName, clientSuggestions, showPaymentModal]);
 
   useEffect(() => {
     setPaymentDateLocal(paymentDate);
@@ -220,7 +247,13 @@ export default function ActionButtons({
       });
       setClientName(client.name);
       setClientId(client.id);
-      refreshClientSuggestions();
+      // Safely refresh client suggestions with error handling
+      window.api.database.clients
+        .getAll()
+        .then(setClientSuggestions)
+        .catch((error) => {
+          console.error("Error refreshing client suggestions:", error);
+        });
       setShowAddClientModal(false);
       showToast(
         t("cashier.clientAdded", "Client added successfully"),

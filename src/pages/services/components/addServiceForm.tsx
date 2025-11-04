@@ -413,7 +413,7 @@ export default function AddServiceForm({
     dueDate: string,
     servicePrice: number,
     clientName?: string,
-    isPaid: boolean = false
+    isPaid = false
   ) => {
     // Receipt translations
     const receiptTranslations = {

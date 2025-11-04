@@ -528,9 +528,13 @@ export function FormModal({
     e?.preventDefault();
     e?.stopPropagation();
     if (formRef.current && onSubmit) {
+      // Synthetic event handlers - no-op functions for form submission
+      const noOp = () => {
+        // Intentionally empty - synthetic event handlers
+      };
       const syntheticEvent = {
-        preventDefault: () => {},
-        stopPropagation: () => {},
+        preventDefault: noOp,
+        stopPropagation: noOp,
         currentTarget: formRef.current,
         target: formRef.current,
       } as unknown as React.FormEvent<HTMLFormElement>;

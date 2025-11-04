@@ -74,7 +74,7 @@ export async function getPaymentsByClientWithInfo(clientId: string) {
       const totalAmountWithDiscount = payment.sale.totalAmountWithDiscount || 0;
       
       // For CREDIT payments, use creditAmount if available (includes discount), otherwise use totalAmountWithDiscount
-      // For VERSEMENT payments, remaining amount = givenAmount (what we owe them)
+      // For VERSEMENT payments, remaining amount = givenAmount (what we owe them), unless paidDate is set
       if (payment.type === "CREDIT") {
         const creditAmount = (payment as any).creditAmount;
         if (creditAmount !== undefined && creditAmount !== null) {
@@ -84,7 +84,9 @@ export async function getPaymentsByClientWithInfo(clientId: string) {
           remainingAmount = totalAmountWithDiscount - payment.givenAmount;
         }
       } else {
-        remainingAmount = payment.givenAmount;
+        // For VERSEMENT: if paidDate is set, remaining = 0 (we've paid them back)
+        // Otherwise, remaining = givenAmount (what we owe them)
+        remainingAmount = payment.paidDate ? 0 : payment.givenAmount;
       }
     } else {
       // Standalone payments (no sale associated)
@@ -94,8 +96,8 @@ export async function getPaymentsByClientWithInfo(clientId: string) {
         const creditAmount = (payment as any).creditAmount || 0;
         remainingAmount = creditAmount - payment.givenAmount;
       } else {
-        // For standalone VERSEMENT: remaining amount is what we owe them
-        remainingAmount = payment.givenAmount;
+        // For standalone VERSEMENT: remaining amount is what we owe them, unless paidDate is set
+        remainingAmount = payment.paidDate ? 0 : payment.givenAmount;
       }
     }
 
@@ -166,7 +168,7 @@ export async function getAllPaymentsWithClientInfo() {
       const totalAmountWithDiscount = payment.sale.totalAmountWithDiscount || 0;
       
       // For CREDIT payments, use creditAmount if available (includes discount), otherwise use totalAmountWithDiscount
-      // For VERSEMENT payments, remaining amount = givenAmount (what we owe them)
+      // For VERSEMENT payments, remaining amount = givenAmount (what we owe them), unless paidDate is set
       if (payment.type === "CREDIT") {
         const creditAmount = (payment as any).creditAmount;
         if (creditAmount !== undefined && creditAmount !== null) {
@@ -176,7 +178,9 @@ export async function getAllPaymentsWithClientInfo() {
           remainingAmount = totalAmountWithDiscount - payment.givenAmount;
         }
       } else {
-        remainingAmount = payment.givenAmount;
+        // For VERSEMENT: if paidDate is set, remaining = 0 (we've paid them back)
+        // Otherwise, remaining = givenAmount (what we owe them)
+        remainingAmount = payment.paidDate ? 0 : payment.givenAmount;
       }
     } else {
       // Standalone payments (no sale associated)
@@ -186,8 +190,8 @@ export async function getAllPaymentsWithClientInfo() {
         const creditAmount = (payment as any).creditAmount || 0;
         remainingAmount = creditAmount - payment.givenAmount;
       } else {
-        // For standalone VERSEMENT: remaining amount is what we owe them
-        remainingAmount = payment.givenAmount;
+        // For standalone VERSEMENT: remaining amount is what we owe them, unless paidDate is set
+        remainingAmount = payment.paidDate ? 0 : payment.givenAmount;
       }
     }
 
@@ -201,6 +205,13 @@ export async function getAllPaymentsWithClientInfo() {
 export async function updatePaymentPaidAt(paymentId: string, paidDate: Date | null) {
   const payment = await prisma.payment.findUnique({
     where: { id: paymentId },
+    include: {
+      sale: {
+        select: {
+          totalAmountWithDiscount: true,
+        },
+      },
+    },
   });
 
   if (!payment) {
@@ -218,7 +229,7 @@ export async function updatePaymentPaidAt(paymentId: string, paidDate: Date | nu
       discount: (payment as any).discount || 0,
     });
 
-    // Update the payment with the sale ID and clear pending items
+    // Update the payment with the sale ID, clear pending items, and set givenAmount to total
     return await prisma.payment.update({
       where: { id: paymentId },
       data: {
@@ -226,11 +237,53 @@ export async function updatePaymentPaidAt(paymentId: string, paidDate: Date | nu
         saleId: sale.id,
         pendingSaleItems: null,
         discount: null,
+        givenAmount: sale.totalAmountWithDiscount || 0, // Set to total discounted amount
       } as any,
     });
   }
 
-  // For other cases, just update the paid date
+  // If marking as paid (paidDate is not null), update givenAmount to total discounted amount
+  if (paidDate !== null) {
+    let totalAmountToPay = 0;
+    
+    if (payment.type === "CREDIT") {
+      // For CREDIT payments: set givenAmount to total discounted amount so remaining = 0
+      if (payment.sale) {
+        // For payments with a sale, use the sale's totalAmountWithDiscount
+        totalAmountToPay = payment.sale.totalAmountWithDiscount || 0;
+      } else if ((payment as any).creditAmount) {
+        // For standalone credit payments, use creditAmount
+        totalAmountToPay = (payment as any).creditAmount || 0;
+      } else {
+        // Fallback: keep current givenAmount if we can't determine total
+        totalAmountToPay = payment.givenAmount;
+      }
+    } else if (payment.type === "VERSEMENT") {
+      // For VERSEMENT payments: when marked as paid, we've paid them back the full amount
+      // Set givenAmount to total discounted amount (what we originally owed them)
+      // The remaining calculation will show 0 when paidDate is set
+      if (payment.sale) {
+        // For versements with sale, set givenAmount to total discounted amount
+        totalAmountToPay = payment.sale.totalAmountWithDiscount || 0;
+      } else {
+        // For standalone versements, keep current givenAmount (we can't determine total)
+        totalAmountToPay = payment.givenAmount;
+      }
+    } else {
+      // Fallback: keep current givenAmount
+      totalAmountToPay = payment.givenAmount;
+    }
+
+    return await prisma.payment.update({
+      where: { id: paymentId },
+      data: {
+        paidDate,
+        givenAmount: totalAmountToPay, // Set to total discounted amount (for credit) or 0 (for versement)
+      } as any,
+    });
+  }
+
+  // If marking as unpaid (paidDate is null), just update the paid date
   return await prisma.payment.update({
     where: { id: paymentId },
     data: { paidDate },

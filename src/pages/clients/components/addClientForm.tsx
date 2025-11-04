@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "../../../lib/components/button";
 import { Loader2, Users, ChevronDown, ChevronUp } from "lucide-react";
@@ -28,6 +28,8 @@ export default function AddClientForm({
   const { showToast } = useToast();
   const [form, setForm] = useState(initialForm);
   const [loading, setLoading] = useState(false);
+  const [nameExists, setNameExists] = useState(false);
+  const [checkingName, setCheckingName] = useState(false);
   
   // Refs for keyboard navigation
   const nameRef = useRef<HTMLInputElement>(null);
@@ -39,6 +41,36 @@ export default function AddClientForm({
   const handleFormChange = (key: keyof typeof form, value: string) => {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
+
+  // Check for duplicate name with debounce
+  useEffect(() => {
+    if (!form.name.trim()) {
+      setNameExists(false);
+      return;
+    }
+
+    const timeoutId = setTimeout(async () => {
+      setCheckingName(true);
+      try {
+        const existingClient = await window.api.database.clients.findByName(form.name.trim());
+        setNameExists(existingClient !== null);
+      } catch (error) {
+        console.error("Error checking client name:", error);
+        setNameExists(false);
+      } finally {
+        setCheckingName(false);
+      }
+    }, 500); // 500ms debounce
+
+    return () => clearTimeout(timeoutId);
+  }, [form.name]);
+
+  // Reset warning when panel closes
+  useEffect(() => {
+    if (openPanel !== "add") {
+      setNameExists(false);
+    }
+  }, [openPanel]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, currentField: string) => {
     if (e.key === "Enter") {
@@ -117,9 +149,18 @@ export default function AddClientForm({
                 value={form.name}
                 onChange={(e) => handleFormChange("name", e.target.value)}
                 onKeyDown={(e) => handleKeyDown(e, "name")}
-                className="w-full px-4 h-10 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-red-500/50 focus:border-red-500 transition-all"
+                className={`w-full px-4 h-10 rounded-lg border bg-card text-sm focus:outline-none focus:ring-1 transition-all ${
+                  nameExists 
+                    ? "border-red-500 focus:ring-red-500/50 focus:border-red-500" 
+                    : "border-border focus:ring-red-500/50 focus:border-red-500"
+                }`}
                 required
               />
+              {nameExists && (
+                <p className="mt-1 text-xs text-red-600 dark:text-red-400">
+                  {t("clients.clientNameExists", "A client with this name already exists")}
+                </p>
+              )}
             </Legend>
             <Legend>
               <label>{t("clients.phone", "Phone")}</label>

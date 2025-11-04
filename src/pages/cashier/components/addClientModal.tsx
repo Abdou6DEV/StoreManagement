@@ -1,4 +1,4 @@
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import { Users } from "lucide-react";
 import { FormModal } from "../../../lib/components/modal";
 import type { TFunction } from "i18next";
@@ -34,6 +34,8 @@ export default function AddClientModal({
   const phoneInputRef = useRef<HTMLInputElement>(null);
   const addressInputRef = useRef<HTMLInputElement>(null);
   const notesInputRef = useRef<HTMLTextAreaElement>(null);
+  const [nameExists, setNameExists] = useState(false);
+  const [checkingName, setCheckingName] = useState(false);
 
   useEffect(() => {
     if (open && nameInputRef.current) {
@@ -41,7 +43,34 @@ export default function AddClientModal({
         nameInputRef.current?.focus();
       }, 100);
     }
+    // Reset warning when modal closes
+    if (!open) {
+      setNameExists(false);
+    }
   }, [open]);
+
+  // Check for duplicate name with debounce
+  useEffect(() => {
+    if (!clientName.trim()) {
+      setNameExists(false);
+      return;
+    }
+
+    const timeoutId = setTimeout(async () => {
+      setCheckingName(true);
+      try {
+        const existingClient = await window.api.database.clients.findByName(clientName.trim());
+        setNameExists(existingClient !== null);
+      } catch (error) {
+        console.error("Error checking client name:", error);
+        setNameExists(false);
+      } finally {
+        setCheckingName(false);
+      }
+    }, 500); // 500ms debounce
+
+    return () => clearTimeout(timeoutId);
+  }, [clientName]);
 
   // Keyboard navigation between fields
   const handleFieldKeyDown = (e: React.KeyboardEvent, currentField: string) => {
@@ -105,9 +134,16 @@ export default function AddClientModal({
             onChange={(e) => setClientName(e.target.value)}
             placeholder={t("cashier.enterClientName", "Enter client name")}
             onKeyDown={(e) => handleFieldKeyDown(e, "name")}
-            className="w-full rounded-lg border border-border bg-card px-4 py-3 text-sm text-foreground focus:border-primary/30 transition-all"
+            className={`w-full rounded-lg border bg-card px-4 py-3 text-sm text-foreground focus:border-primary/30 transition-all ${
+              nameExists ? "border-red-500 focus:border-red-500" : "border-border"
+            }`}
             required
           />
+          {nameExists && (
+            <p className="mt-1 text-xs text-red-600 dark:text-red-400">
+              {t("cashier.clientNameExists", "A client with this name already exists")}
+            </p>
+          )}
         </div>
 
         <div>
