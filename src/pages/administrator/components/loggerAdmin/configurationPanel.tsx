@@ -1,6 +1,7 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { Input } from "../../../../lib/components/input";
+import { Checkbox } from "../../../../lib/components/checkbox";
 import {
   Select,
   SelectContent,
@@ -79,29 +80,19 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
           />
         </div>
 
-        <div className="flex items-center space-x-2">
-          <input
-            type="checkbox"
-            id="logToFile"
-            checked={config.logToFile}
-            onChange={(e) => onConfigUpdate({ logToFile: e.target.checked })}
-          />
-          <label htmlFor="logToFile" className="text-sm">
-            {t("admin.logger.logToFile")}
-          </label>
-        </div>
+        <Checkbox
+          checked={config.logToFile}
+          onChange={(checked) => onConfigUpdate({ logToFile: checked })}
+          label={t("admin.logger.logToFile")}
+          color="orange"
+        />
 
-        <div className="flex items-center space-x-2">
-          <input
-            type="checkbox"
-            id="logToConsole"
-            checked={config.logToConsole}
-            onChange={(e) => onConfigUpdate({ logToConsole: e.target.checked })}
-          />
-          <label htmlFor="logToConsole" className="text-sm">
-            {t("admin.logger.logToConsole")}
-          </label>
-        </div>
+        <Checkbox
+          checked={config.logToConsole}
+          onChange={(checked) => onConfigUpdate({ logToConsole: checked })}
+          label={t("admin.logger.logToConsole")}
+          color="orange"
+        />
       </div>
     </div>
   );
