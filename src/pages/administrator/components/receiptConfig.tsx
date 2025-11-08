@@ -17,8 +17,10 @@ import {
   X,
   FileText,
   Receipt,
+  Image as ImageIcon,
 } from "lucide-react";
 import { generateReceiptBarcode } from "../../../lib/utils/barcodeVisual";
+import { processLogoForReceipt } from "../../../lib/utils/logoProcessor";
 
 export const ReceiptConfig: React.FC = () => {
   const { t } = useTranslation();
@@ -29,6 +31,10 @@ export const ReceiptConfig: React.FC = () => {
   const [phoneNumbers, setPhoneNumbers] = useState<string[]>([]);
   const [footerMessage, setFooterMessage] = useState("");
   const [serviceTicketFooterMessage, setServiceTicketFooterMessage] = useState("");
+  const [storeLogo, setStoreLogo] = useState<string | null>(null);
+  const [logoNeedsInversion, setLogoNeedsInversion] = useState(false);
+  const [logoSize, setLogoSize] = useState<number>(100); // Logo size percentage (50-150%)
+  const [processingLogo, setProcessingLogo] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [previewReceipt, setPreviewReceipt] = useState<string>("");
@@ -452,11 +458,34 @@ export const ReceiptConfig: React.FC = () => {
               color: #000000;
               letter-spacing: 1px;
             }
+            .store-logo {
+              max-width: ${Math.round(300 * (logoSize / 100))}px;
+              max-height: ${Math.round(120 * (logoSize / 100))}px;
+              width: auto;
+              height: auto;
+              margin: 0 auto 8px auto;
+              display: block;
+              filter: grayscale(100%) contrast(300%) brightness(0.3);
+              image-rendering: auto;
+              image-rendering: -webkit-optimize-contrast;
+              print-color-adjust: exact;
+              -webkit-print-color-adjust: exact;
+              color-adjust: exact;
+            }
+            .store-logo.inverted {
+              filter: grayscale(100%) contrast(300%) brightness(0.3) invert(1);
+            }
             @media print {
               .store-name {
                 text-shadow: none;
                 -webkit-font-smoothing: none;
                 font-smooth: never;
+              }
+              .store-logo {
+                max-width: ${Math.round(250 * (logoSize / 100))}px;
+                max-height: ${Math.round(100 * (logoSize / 100))}px;
+                image-rendering: -webkit-optimize-contrast;
+                image-rendering: crisp-edges;
               }
             }
             .store-info {
@@ -831,7 +860,11 @@ export const ReceiptConfig: React.FC = () => {
           <div class="receipt"${receiptLanguage === "ar" ? ' dir="rtl"' : ''}>
             <!-- Store Header -->
             <div class="header">
-              <div class="store-name">${storeInfo.name}</div>
+              ${storeLogo ? `
+                <img src="${storeLogo}" alt="Store Logo" class="store-logo${logoNeedsInversion ? ' inverted' : ''}" />
+              ` : `
+                <div class="store-name">${storeInfo.name}</div>
+              `}
               <div class="store-info">${storeInfo.address}</div>
               <div class="store-info">${storeInfo.phone}</div>
             </div>
@@ -1098,11 +1131,34 @@ export const ReceiptConfig: React.FC = () => {
               color: #000000;
               letter-spacing: 1px;
             }
+            .store-logo {
+              max-width: ${Math.round(300 * (logoSize / 100))}px;
+              max-height: ${Math.round(120 * (logoSize / 100))}px;
+              width: auto;
+              height: auto;
+              margin: 0 auto 8px auto;
+              display: block;
+              filter: grayscale(100%) contrast(300%) brightness(0.3);
+              image-rendering: auto;
+              image-rendering: -webkit-optimize-contrast;
+              print-color-adjust: exact;
+              -webkit-print-color-adjust: exact;
+              color-adjust: exact;
+            }
+            .store-logo.inverted {
+              filter: grayscale(100%) contrast(300%) brightness(0.3) invert(1);
+            }
             @media print {
               .store-name {
                 text-shadow: none;
                 -webkit-font-smoothing: none;
                 font-smooth: never;
+              }
+              .store-logo {
+                max-width: ${Math.round(250 * (logoSize / 100))}px;
+                max-height: ${Math.round(100 * (logoSize / 100))}px;
+                image-rendering: -webkit-optimize-contrast;
+                image-rendering: crisp-edges;
               }
             }
             .store-info {
@@ -1327,7 +1383,11 @@ export const ReceiptConfig: React.FC = () => {
           <div class="receipt"${receiptLanguage === "ar" ? ' dir="rtl"' : ''}>
             <!-- Store Header -->
             <div class="header">
-              <div class="store-name">${storeInfo.name}</div>
+              ${storeLogo ? `
+                <img src="${storeLogo}" alt="Store Logo" class="store-logo${logoNeedsInversion ? ' inverted' : ''}" />
+              ` : `
+                <div class="store-name">${storeInfo.name}</div>
+              `}
               <div class="store-info">${storeInfo.address}</div>
               <div class="store-info">${storeInfo.phone}</div>
             </div>
@@ -1416,7 +1476,7 @@ export const ReceiptConfig: React.FC = () => {
         setPreviewReceipt(generateServiceTicketPreview());
       }
     }
-  }, [storeName, storeAddress, storePhone, phoneNumbers, footerMessage, serviceTicketFooterMessage, loading, previewOptions, receiptLanguage, previewMode]);
+  }, [storeName, storeAddress, storePhone, phoneNumbers, footerMessage, serviceTicketFooterMessage, storeLogo, logoNeedsInversion, logoSize, loading, previewOptions, receiptLanguage, previewMode]);
 
   useEffect(() => {
     setLoading(true);
@@ -1428,8 +1488,11 @@ export const ReceiptConfig: React.FC = () => {
       window.api.database.options.get("receiptFooterMessage"),
       window.api.database.options.get("serviceTicketFooterMessage"),
       window.api.database.options.get("receiptLanguage"),
+      window.api.database.options.get("storeLogo"),
+      window.api.database.options.get("logoNeedsInversion"),
+      window.api.database.options.get("logoSize"),
     ])
-      .then(([name, address, phone, phones, footer, serviceFooter, language]) => {
+      .then(([name, address, phone, phones, footer, serviceFooter, language, logo, needsInversion, size]) => {
         setStoreName(name || "");
         setStoreAddress(address || "");
         setStorePhone(phone || "");
@@ -1437,6 +1500,9 @@ export const ReceiptConfig: React.FC = () => {
         setFooterMessage(footer || "");
         setServiceTicketFooterMessage(serviceFooter || "");
         setReceiptLanguage((language as "fr" | "en" | "ar") || "fr");
+        setStoreLogo(logo || null);
+        setLogoNeedsInversion(needsInversion === "true");
+        setLogoSize(size ? parseInt(size) : 100);
         setLoading(false);
       })
       .catch(() => {
@@ -1459,6 +1525,48 @@ export const ReceiptConfig: React.FC = () => {
     setPhoneNumbers(updated);
   };
 
+  const handleLogoUpload = async (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      showToast(t("admin.invalidImageFile", "Please select a valid image file"), "error");
+      return;
+    }
+
+    setProcessingLogo(true);
+    try {
+      // Read file as data URL
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          const originalDataUrl = e.target?.result as string;
+          console.log("Starting logo processing...");
+          // Process logo for receipt (ultra-high quality processing)
+          const result = await processLogoForReceipt(originalDataUrl);
+          console.log("Logo processing complete. Saving to database...");
+          setStoreLogo(result.dataUrl);
+          setLogoNeedsInversion(result.needsInversion);
+          showToast(t("admin.logoProcessed", "Logo processed and ready for printing"), "success");
+        } catch (error) {
+          showToast(t("admin.logoProcessError", "Failed to process logo"), "error");
+        } finally {
+          setProcessingLogo(false);
+        }
+      };
+      reader.onerror = () => {
+        showToast(t("admin.logoReadError", "Failed to read logo file"), "error");
+        setProcessingLogo(false);
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      showToast(t("admin.logoUploadError", "Failed to upload logo"), "error");
+      setProcessingLogo(false);
+    }
+  };
+
+  const handleRemoveLogo = () => {
+    setStoreLogo(null);
+    setLogoNeedsInversion(false);
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
@@ -1471,6 +1579,9 @@ export const ReceiptConfig: React.FC = () => {
         window.api.database.options.set("receiptFooterMessage", footerMessage),
         window.api.database.options.set("serviceTicketFooterMessage", serviceTicketFooterMessage),
         window.api.database.options.set("receiptLanguage", receiptLanguage),
+        window.api.database.options.set("storeLogo", storeLogo || ""),
+        window.api.database.options.set("logoNeedsInversion", logoNeedsInversion ? "true" : "false"),
+        window.api.database.options.set("logoSize", logoSize.toString()),
       ]);
       showToast(t("admin.receiptSaved", "Receipt settings saved successfully!"), "success");
     } catch {
@@ -1564,7 +1675,7 @@ export const ReceiptConfig: React.FC = () => {
                 <p className="text-sm text-muted-foreground">
                   {t(
                     "admin.storeNameDesc",
-                    "The name that appears at the top of receipts"
+                    "The name that appears at the top of receipts (if no logo is uploaded)"
                   )}
                 </p>
               </div>
@@ -1579,6 +1690,125 @@ export const ReceiptConfig: React.FC = () => {
               disabled={loading || saving}
               aria-label={t("admin.storeName", "Store Name")}
             />
+          </div>
+
+          {/* Store Logo Setting */}
+          <div className="flex flex-col gap-4 bg-muted/40 border border-border rounded-lg p-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
+                <ImageIcon className="w-6 h-6 text-purple-600" />
+              </div>
+              <div className="flex-1">
+                <label className="block text-base font-semibold">
+                  {t("admin.storeLogo", "Store Logo")}
+                </label>
+                <p className="text-sm text-muted-foreground">
+                  {t(
+                    "admin.storeLogoDesc",
+                    "Upload logo to display on receipts (will be converted to black/white)"
+                  )}
+                </p>
+              </div>
+            </div>
+            
+            {storeLogo ? (
+              <div className="space-y-3">
+                <div className="relative border border-border rounded-lg p-4 bg-background">
+                  <img 
+                    src={storeLogo} 
+                    alt="Store Logo Preview" 
+                    className="max-w-full max-h-32 mx-auto block"
+                  />
+                </div>
+                
+                {/* Logo Size Slider */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium">
+                      {t("admin.logoSize", "Logo Size")}
+                    </label>
+                    <span className="text-sm text-muted-foreground font-mono">
+                      {logoSize}%
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min="50"
+                    max="150"
+                    step="5"
+                    value={logoSize}
+                    onChange={(e) => setLogoSize(parseInt(e.target.value))}
+                    disabled={loading || saving || processingLogo}
+                    className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
+                  />
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>50%</span>
+                    <span>100%</span>
+                    <span>150%</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {t("admin.logoSizeDesc", "Adjust the logo size on printed receipts and tickets")}
+                  </p>
+                </div>
+                
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleRemoveLogo}
+                  disabled={loading || saving || processingLogo}
+                  className="w-full text-red-600 hover:text-red-700 hover:bg-red-50"
+                >
+                  <X className="w-4 h-4 mr-2" />
+                  {t("admin.removeLogo", "Remove Logo")}
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      handleLogoUpload(file);
+                    }
+                  }}
+                  disabled={loading || saving || processingLogo}
+                  className="hidden"
+                  id="logo-upload"
+                />
+                <label
+                  htmlFor="logo-upload"
+                  className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
+                    processingLogo || loading || saving
+                      ? "border-muted bg-muted cursor-not-allowed"
+                      : "border-border hover:bg-muted/50"
+                  }`}
+                >
+                  {processingLogo ? (
+                    <>
+                      <Loader2 className="w-8 h-8 animate-spin text-muted-foreground mb-2" />
+                      <p className="text-sm text-muted-foreground">
+                        {t("admin.processingLogo", "Processing logo...")}
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <ImageIcon className="w-8 h-8 text-muted-foreground mb-2" />
+                      <p className="text-sm text-muted-foreground text-center px-4">
+                        <span className="font-semibold text-foreground">
+                          {t("admin.clickToUpload", "Click to upload")}
+                        </span>{" "}
+                        {t("admin.orDragDrop", "or drag and drop")}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {t("admin.logoFormatHint", "PNG, JPG, GIF (will be converted to black/white)")}
+                      </p>
+                    </>
+                  )}
+                </label>
+              </div>
+            )}
           </div>
 
           {/* Store Address Setting */}

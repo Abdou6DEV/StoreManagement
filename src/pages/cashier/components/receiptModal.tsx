@@ -40,6 +40,7 @@ export const printReceiptDirectly = async (
     address: "Your Store Address",
     phone: "Phone: +1234567890",
   };
+  let storeLogo: string | null = null;
   let footerMessage = "";
 
   // Helper function to calculate warranty period in days
@@ -347,15 +348,23 @@ export const printReceiptDirectly = async (
 
   // Load store information from database
   let language: "fr" | "en" | "ar" = "fr"; // Default to French
+  let logoInverted = false;
+  let logoSize = 100; // Default logo size
   try {
-    const [name, address, phone, phones, footer, loadedLanguage] = await Promise.all([
-      window.api.database.options.get("storeName"),
-      window.api.database.options.get("storeAddress"),
-      window.api.database.options.get("storePhone"),
-      window.api.database.options.get("storePhoneNumbers"),
-      window.api.database.options.get("receiptFooterMessage"),
-      window.api.database.options.get("receiptLanguage"),
-    ]);
+      const [name, address, phone, phones, footer, loadedLanguage, logo, needsInversion, logoSizeStr] = await Promise.all([
+        window.api.database.options.get("storeName"),
+        window.api.database.options.get("storeAddress"),
+        window.api.database.options.get("storePhone"),
+        window.api.database.options.get("storePhoneNumbers"),
+        window.api.database.options.get("receiptFooterMessage"),
+        window.api.database.options.get("receiptLanguage"),
+        window.api.database.options.get("storeLogo"),
+        window.api.database.options.get("logoNeedsInversion"),
+        window.api.database.options.get("logoSize"),
+      ]);
+    storeLogo = logo || null;
+    logoInverted = needsInversion === "true";
+    logoSize = logoSizeStr ? parseInt(logoSizeStr) : 100;
 
     language = (loadedLanguage as "fr" | "en" | "ar") || "fr";
 
@@ -531,11 +540,34 @@ export const printReceiptDirectly = async (
               color: #000000;
               letter-spacing: 1px;
             }
+            .store-logo {
+              max-width: ${Math.round(300 * (logoSize / 100))}px;
+              max-height: ${Math.round(120 * (logoSize / 100))}px;
+              width: auto;
+              height: auto;
+              margin: 0 auto 6px auto;
+              display: block;
+              filter: grayscale(100%) contrast(300%) brightness(0.3);
+              image-rendering: auto;
+              image-rendering: -webkit-optimize-contrast;
+              print-color-adjust: exact;
+              -webkit-print-color-adjust: exact;
+              color-adjust: exact;
+            }
+            .store-logo.inverted {
+              filter: grayscale(100%) contrast(300%) brightness(0.3) invert(1);
+            }
             @media print {
               .store-name {
                 text-shadow: none;
                 -webkit-font-smoothing: none;
                 font-smooth: never;
+              }
+              .store-logo {
+                max-width: ${Math.round(250 * (logoSize / 100))}px;
+                max-height: ${Math.round(100 * (logoSize / 100))}px;
+                image-rendering: auto;
+                image-rendering: -webkit-optimize-contrast;
               }
             }
             .store-info {
@@ -844,7 +876,11 @@ export const printReceiptDirectly = async (
           <div class="receipt"${(language as "fr" | "en" | "ar") === "ar" ? ' dir="rtl"' : ''}>
             <!-- Store Header -->
             <div class="header">
-              <div class="store-name">${storeInfo.name}</div>
+              ${storeLogo ? `
+                <img src="${storeLogo}" alt="Store Logo" class="store-logo${logoInverted ? ' inverted' : ''}" />
+              ` : `
+                <div class="store-name">${storeInfo.name}</div>
+              `}
               <div class="store-info">${storeInfo.address}</div>
               <div class="store-info">${storeInfo.phone}</div>
             </div>
@@ -1208,6 +1244,9 @@ export default function ReceiptModal({
     address: "Address: Your Store Address",
     phone: "Phone: +1234567890",
   });
+  const [storeLogo, setStoreLogo] = useState<string | null>(null);
+  const [logoNeedsInversion, setLogoNeedsInversion] = useState(false);
+  const [logoSize, setLogoSize] = useState<number>(100);
   const [footerMessage, setFooterMessage] = useState("");
   const [language, setLanguage] = useState<"fr" | "en" | "ar">("fr");
 
@@ -1215,14 +1254,20 @@ export default function ReceiptModal({
   React.useEffect(() => {
     const loadStoreInfo = async () => {
       try {
-        const [name, address, phone, phones, footer, language] = await Promise.all([
+        const [name, address, phone, phones, footer, language, logo, needsInversion, logoSizeStr] = await Promise.all([
           window.api.database.options.get("storeName"),
           window.api.database.options.get("storeAddress"),
           window.api.database.options.get("storePhone"),
           window.api.database.options.get("storePhoneNumbers"),
           window.api.database.options.get("receiptFooterMessage"),
           window.api.database.options.get("receiptLanguage"),
+          window.api.database.options.get("storeLogo"),
+          window.api.database.options.get("logoNeedsInversion"),
+          window.api.database.options.get("logoSize"),
         ]);
+        setStoreLogo(logo || null);
+        setLogoNeedsInversion(needsInversion === "true");
+        setLogoSize(logoSizeStr ? parseInt(logoSizeStr) : 100);
         
         const loadedLanguage = (language as "fr" | "en" | "ar") || "fr";
         setLanguage(loadedLanguage);
@@ -1665,11 +1710,34 @@ export default function ReceiptModal({
               color: #000000;
               letter-spacing: 1px;
             }
+            .store-logo {
+              max-width: ${Math.round(300 * (logoSize / 100))}px;
+              max-height: ${Math.round(120 * (logoSize / 100))}px;
+              width: auto;
+              height: auto;
+              margin: 0 auto 6px auto;
+              display: block;
+              filter: grayscale(100%) contrast(300%) brightness(0.3);
+              image-rendering: auto;
+              image-rendering: -webkit-optimize-contrast;
+              print-color-adjust: exact;
+              -webkit-print-color-adjust: exact;
+              color-adjust: exact;
+            }
+            .store-logo.inverted {
+              filter: grayscale(100%) contrast(300%) brightness(0.3) invert(1);
+            }
             @media print {
               .store-name {
                 text-shadow: none;
                 -webkit-font-smoothing: none;
                 font-smooth: never;
+              }
+              .store-logo {
+                max-width: ${Math.round(250 * (logoSize / 100))}px;
+                max-height: ${Math.round(100 * (logoSize / 100))}px;
+                image-rendering: auto;
+                image-rendering: -webkit-optimize-contrast;
               }
             }
             .store-info {
@@ -1953,7 +2021,11 @@ export default function ReceiptModal({
           <div class="receipt"${(language as "fr" | "en" | "ar") === "ar" ? ' dir="rtl"' : ''}>
             <!-- Store Header -->
             <div class="header">
-              <div class="store-name">${storeInfo.name}</div>
+              ${storeLogo ? `
+                <img src="${storeLogo}" alt="Store Logo" class="store-logo${logoNeedsInversion ? ' inverted' : ''}" />
+              ` : `
+                <div class="store-name">${storeInfo.name}</div>
+              `}
               <div class="store-info">${storeInfo.address}</div>
               <div class="store-info">${storeInfo.phone}</div>
             </div>
@@ -2115,7 +2187,20 @@ export default function ReceiptModal({
         <div className="font-mono text-sm bg-muted rounded-lg p-6 border border-border" dir={language === "ar" ? "rtl" : "ltr"}>
           {/* Store Header */}
           <div className="text-center mb-4">
-            <div className="font-bold text-lg">{storeInfo.name}</div>
+            {storeLogo ? (
+              <img 
+                src={storeLogo} 
+                alt="Store Logo" 
+                className={`mx-auto mb-2 ${logoNeedsInversion ? 'inverted' : ''}`}
+                style={{ 
+                  maxWidth: `${Math.round(180 * (logoSize / 100))}px`,
+                  maxHeight: `${Math.round(70 * (logoSize / 100))}px`,
+                  filter: logoNeedsInversion ? 'grayscale(100%) contrast(300%) brightness(0.3) invert(1)' : 'grayscale(100%) contrast(300%) brightness(0.3)'
+                }}
+              />
+            ) : (
+              <div className="font-bold text-lg">{storeInfo.name}</div>
+            )}
             <div className="text-xs text-muted-foreground">
               {storeInfo.address}
             </div>

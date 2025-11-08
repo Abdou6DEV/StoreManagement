@@ -207,18 +207,27 @@ export default function EditServiceModal({
       address: "Your Store Address",
       phone: "Phone: +1234567890",
     };
+    let storeLogo: string | null = null;
     let footerMessage = "";
     let language: "fr" | "en" | "ar" = "fr";
+    let logoInverted = false;
+    let logoSize = 100; // Default logo size
 
     try {
-      const [name, address, phone, phones, footer, loadedLanguage] = await Promise.all([
+      const [name, address, phone, phones, footer, loadedLanguage, logo, needsInversion, logoSizeStr] = await Promise.all([
         window.api.database.options.get("storeName"),
         window.api.database.options.get("storeAddress"),
         window.api.database.options.get("storePhone"),
         window.api.database.options.get("storePhoneNumbers"),
         window.api.database.options.get("serviceTicketFooterMessage"),
         window.api.database.options.get("receiptLanguage"),
+        window.api.database.options.get("storeLogo"),
+        window.api.database.options.get("logoNeedsInversion"),
+        window.api.database.options.get("logoSize"),
       ]);
+      storeLogo = logo || null;
+      logoInverted = needsInversion === "true";
+      logoSize = logoSizeStr ? parseInt(logoSizeStr) : 100;
 
       language = (loadedLanguage as "fr" | "en" | "ar") || "fr";
 
@@ -286,7 +295,9 @@ export default function EditServiceModal({
               .receipt[dir="rtl"] .watermark { text-align: right; }
               .header { text-align: center; margin-bottom: 1px; margin-top: 0; }
               .store-name { font-size: 36px; font-weight: 900; margin-bottom: 1px; margin-top: 0; padding-top: 0; color: #000000; letter-spacing: 1px; }
-              @media print { .store-name { text-shadow: none; -webkit-font-smoothing: none; font-smooth: never; } }
+              .store-logo { max-width: ${Math.round(300 * (logoSize / 100))}px; max-height: ${Math.round(120 * (logoSize / 100))}px; width: auto; height: auto; margin: 0 auto 6px auto; display: block; filter: grayscale(100%) contrast(300%) brightness(0.3); image-rendering: auto; image-rendering: -webkit-optimize-contrast; print-color-adjust: exact; -webkit-print-color-adjust: exact; color-adjust: exact; }
+              .store-logo.inverted { filter: grayscale(100%) contrast(300%) brightness(0.3) invert(1); }
+              @media print { .store-name { text-shadow: none; -webkit-font-smoothing: none; font-smooth: never; } .store-logo { max-width: ${Math.round(250 * (logoSize / 100))}px; max-height: ${Math.round(100 * (logoSize / 100))}px; image-rendering: -webkit-optimize-contrast; image-rendering: crisp-edges; } }
               .store-info { font-size: 11px; margin-bottom: 3px; color: #000; font-weight: 900; line-height: 1.3; }
               .receipt-info { font-size: 11px; margin-bottom: 10px; color: #000; font-weight: 900; line-height: 1.4; }
               .divider { border-top: 1px solid #000000; margin: 2px 0; }
@@ -315,7 +326,11 @@ export default function EditServiceModal({
           <body>
             <div class="receipt"${language === "ar" ? ' dir="rtl"' : ''}>
               <div class="header">
-                <div class="store-name">${storeInfo.name}</div>
+                ${storeLogo ? `
+                  <img src="${storeLogo}" alt="Store Logo" class="store-logo${logoInverted ? ' inverted' : ''}" />
+                ` : `
+                  <div class="store-name">${storeInfo.name}</div>
+                `}
                 <div class="store-info">${storeInfo.address}</div>
                 <div class="store-info">${storeInfo.phone}</div>
               </div>
