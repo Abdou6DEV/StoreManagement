@@ -1787,6 +1787,7 @@
     "export": "Export",
     "clear": "Clear",
     "cancel": "Cancel",
+    "save": "Save",
     "confirm": "Confirm",
   
     "cancelTooltip": "Cancel and close preview",

@@ -357,11 +357,18 @@ export default function Clients() {
         supplier.address.toLowerCase().includes(suppliersSearch.toLowerCase())),
   );
 
+  // Sort by credit (descending - highest first)
+  const sortedSuppliers = [...filteredSuppliers].sort((a, b) => {
+    const creditA = parseFloat(a.email || "0") || 0;
+    const creditB = parseFloat(b.email || "0") || 0;
+    return creditB - creditA; // Descending order
+  });
+
   const suppliersTotalPages = Math.max(
     1,
-    Math.ceil(filteredSuppliers.length / suppliersItemsPerPage),
+    Math.ceil(sortedSuppliers.length / suppliersItemsPerPage),
   );
-  const paginatedSuppliers = filteredSuppliers.slice(
+  const paginatedSuppliers = sortedSuppliers.slice(
     (suppliersCurrentPage - 1) * suppliersItemsPerPage,
     suppliersCurrentPage * suppliersItemsPerPage,
   );

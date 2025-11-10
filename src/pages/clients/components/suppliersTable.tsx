@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Edit, Trash2, Package, Loader2, ShoppingCart, Save, X } from "lucide-react";
+import { Edit, Trash2, Package, Loader2, ShoppingCart, Save, X, CheckCircle } from "lucide-react";
 import { Button } from "../../../lib/components/button";
 import { Input } from "../../../lib/components/input";
 import type { Seller } from "@prisma/client";
@@ -44,7 +44,8 @@ export default function SuppliersTable({
   const handleSaveCredit = async (supplierId: string) => {
     if (!onUpdateCredit) return;
     
-    const creditNum = parseFloat(creditValue);
+    // Treat empty string as 0
+    const creditNum = creditValue === "" ? 0 : parseFloat(creditValue);
     if (isNaN(creditNum) || creditNum < 0) {
       return;
     }
@@ -56,6 +57,21 @@ export default function SuppliersTable({
       setCreditValue("");
     } catch (error) {
       console.error("Failed to update credit:", error);
+    } finally {
+      setUpdatingCredit(null);
+    }
+  };
+
+  const handleMarkAsPaid = async (supplierId: string) => {
+    if (!onUpdateCredit) return;
+    
+    setUpdatingCredit(supplierId);
+    try {
+      await onUpdateCredit(supplierId, 0);
+      setEditingCreditId(null);
+      setCreditValue("");
+    } catch (error) {
+      console.error("Failed to mark as paid:", error);
     } finally {
       setUpdatingCredit(null);
     }
@@ -99,13 +115,13 @@ export default function SuppliersTable({
               {t("suppliers.phone", "Phone")}
             </th>
             <th className={`px-4 py-3 ${isRTL ? "text-right" : "text-left"}`}>
-              {t("suppliers.credit", "Credit")}
-            </th>
-            <th className={`px-4 py-3 ${isRTL ? "text-right" : "text-left"}`}>
               {t("suppliers.address", "Address")}
             </th>
             <th className={`px-4 py-3 ${isRTL ? "text-right" : "text-left"}`}>
               {t("suppliers.notes", "Notes")}
+            </th>
+            <th className={`px-4 py-3 ${isRTL ? "text-right" : "text-left"} whitespace-nowrap`}>
+              {t("suppliers.credit", "Credit")}
             </th>
             <th className={`px-4 py-3 ${isRTL ? "text-right" : "text-left"}`}>
               {t("suppliers.actions", "Actions")}
@@ -127,6 +143,12 @@ export default function SuppliersTable({
                 {supplier.phone || "-"}
               </td>
               <td className={`px-4 py-2 ${isRTL ? "text-right" : "text-left"}`}>
+                {supplier.address || "-"}
+              </td>
+              <td className={`px-4 py-2 ${isRTL ? "text-right" : "text-left"}`}>
+                {supplier.notes || "-"}
+              </td>
+              <td className={`px-4 py-2 ${isRTL ? "text-right" : "text-left"} font-medium whitespace-nowrap ${(parseFloat(supplier.email || "0") || 0) > 0 ? "text-orange-600 dark:text-orange-400" : ""}`}>
                 {editingCreditId === supplier.id ? (
                   <div className="flex items-center gap-2">
                     <Input
@@ -144,31 +166,53 @@ export default function SuppliersTable({
                       autoFocus
                       disabled={updatingCredit === supplier.id}
                     />
-                    <Button
-                      size="sm"
-                      onClick={() => handleSaveCredit(supplier.id)}
-                      className="h-8 px-2"
-                      disabled={updatingCredit === supplier.id}
-                    >
-                      {updatingCredit === supplier.id ? (
-                        <Loader2 className="w-3 h-3 animate-spin" />
-                      ) : (
-                        <Save className="w-3 h-3" />
-                      )}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={handleCancelEditCredit}
-                      className="h-8 px-2"
-                      disabled={updatingCredit === supplier.id}
-                    >
-                      <X className="w-3 h-3" />
-                    </Button>
+                    <Tooltip content={t("common.save", "Save")}>
+                      <Button
+                        size="sm"
+                        onClick={() => handleSaveCredit(supplier.id)}
+                        className="h-8 px-2"
+                        disabled={updatingCredit === supplier.id}
+                      >
+                        {updatingCredit === supplier.id ? (
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                        ) : (
+                          <Save className="w-3 h-3" />
+                        )}
+                      </Button>
+                    </Tooltip>
+                    {(parseFloat(supplier.email || "0") || 0) > 0 && (
+                      <Tooltip content={t("clients.markAsPaid", "Mark as Paid")}>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleMarkAsPaid(supplier.id)}
+                          className="h-8 px-2 text-green-700 border-green-500 hover:bg-green-50 dark:text-green-400 dark:border-green-600 dark:hover:bg-green-950/30"
+                          disabled={updatingCredit === supplier.id}
+                        >
+                          {updatingCredit === supplier.id ? (
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                          ) : (
+                            <CheckCircle className="w-3 h-3" />
+                          )}
+                        </Button>
+                      </Tooltip>
+                    )}
+                    <Tooltip content={t("common.cancel", "Cancel")}>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleCancelEditCredit}
+                        className="h-8 px-2"
+                        disabled={updatingCredit === supplier.id}
+                      >
+                        <X className="w-3 h-3" />
+                      </Button>
+                    </Tooltip>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-2">
-                    <span>{formatCredit(supplier.email)} {t("cashier.currency", "DA")}</span>
+                  <div className="flex items-center gap-2 whitespace-nowrap">
+                    <span>{(Math.max(0, parseFloat(supplier.email || "0") || 0)).toLocaleString("en-US", { maximumFractionDigits: 0 }).replace(/,/g, " ")}</span>
+                    <span>{t("cashier.currency", "DA")}</span>
                     {onUpdateCredit && (
                       <Tooltip content={t("suppliers.editCreditTooltip", "Edit credit amount")}>
                         <Button
@@ -183,12 +227,6 @@ export default function SuppliersTable({
                     )}
                   </div>
                 )}
-              </td>
-              <td className={`px-4 py-2 ${isRTL ? "text-right" : "text-left"}`}>
-                {supplier.address || "-"}
-              </td>
-              <td className={`px-4 py-2 ${isRTL ? "text-right" : "text-left"}`}>
-                {supplier.notes || "-"}
               </td>
               <td className={`px-4 py-2 ${isRTL ? "text-right" : "text-left"}`}>
                 <div

@@ -1612,6 +1612,7 @@
     "export": "Exporter",
     "clear": "Effacer",
     "cancel": "Annuler",
+    "save": "Enregistrer",
     "confirm": "Confirmer",
     "loading": "Chargement...",
     "cancelTooltip": "Annuler et fermer l'aperçu",
