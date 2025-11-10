@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Edit, Trash2, Package, Loader2, ShoppingCart } from "lucide-react";
+import { Edit, Trash2, Package, Loader2, ShoppingCart, Save, X } from "lucide-react";
 import { Button } from "../../../lib/components/button";
+import { Input } from "../../../lib/components/input";
 import type { Seller } from "@prisma/client";
 import { Tooltip } from "../../../lib/components/tooltip";
 
@@ -11,6 +12,7 @@ interface SuppliersTableProps {
   onDelete: (id: string) => void;
   onViewPurchases: (supplier: Seller) => void;
   deleteLoading: string | null;
+  onUpdateCredit?: (supplierId: string, credit: number) => Promise<void>;
 }
 
 export default function SuppliersTable({
@@ -19,9 +21,52 @@ export default function SuppliersTable({
   onDelete,
   onViewPurchases,
   deleteLoading,
+  onUpdateCredit,
 }: SuppliersTableProps) {
   const { t, i18n } = useTranslation();
   const isRTL = i18n.language === "ar";
+  const [editingCreditId, setEditingCreditId] = useState<string | null>(null);
+  const [creditValue, setCreditValue] = useState<string>("");
+  const [updatingCredit, setUpdatingCredit] = useState<string | null>(null);
+
+  const handleStartEditCredit = (supplier: Seller) => {
+    setEditingCreditId(supplier.id);
+    // Parse email field as credit amount (stored as string, convert to number for display)
+    const creditAmount = supplier.email ? parseFloat(supplier.email) : 0;
+    setCreditValue(isNaN(creditAmount) ? "0" : creditAmount.toString());
+  };
+
+  const handleCancelEditCredit = () => {
+    setEditingCreditId(null);
+    setCreditValue("");
+  };
+
+  const handleSaveCredit = async (supplierId: string) => {
+    if (!onUpdateCredit) return;
+    
+    const creditNum = parseFloat(creditValue);
+    if (isNaN(creditNum) || creditNum < 0) {
+      return;
+    }
+
+    setUpdatingCredit(supplierId);
+    try {
+      await onUpdateCredit(supplierId, creditNum);
+      setEditingCreditId(null);
+      setCreditValue("");
+    } catch (error) {
+      console.error("Failed to update credit:", error);
+    } finally {
+      setUpdatingCredit(null);
+    }
+  };
+
+  const formatCredit = (email: string | null | undefined): string => {
+    if (!email) return "0";
+    const credit = parseFloat(email);
+    if (isNaN(credit)) return "0";
+    return credit.toLocaleString();
+  };
 
   if (suppliers.length === 0) {
     return (
@@ -54,7 +99,7 @@ export default function SuppliersTable({
               {t("suppliers.phone", "Phone")}
             </th>
             <th className={`px-4 py-3 ${isRTL ? "text-right" : "text-left"}`}>
-              {t("suppliers.email", "Email")}
+              {t("suppliers.credit", "Credit")}
             </th>
             <th className={`px-4 py-3 ${isRTL ? "text-right" : "text-left"}`}>
               {t("suppliers.address", "Address")}
@@ -82,7 +127,62 @@ export default function SuppliersTable({
                 {supplier.phone || "-"}
               </td>
               <td className={`px-4 py-2 ${isRTL ? "text-right" : "text-left"}`}>
-                {supplier.email || "-"}
+                {editingCreditId === supplier.id ? (
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="number"
+                      value={creditValue}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value === "" || (!isNaN(parseFloat(value)) && parseFloat(value) >= 0)) {
+                          setCreditValue(value);
+                        }
+                      }}
+                      min={0}
+                      step="0.01"
+                      className="w-24 h-8 text-sm"
+                      autoFocus
+                      disabled={updatingCredit === supplier.id}
+                    />
+                    <Button
+                      size="sm"
+                      onClick={() => handleSaveCredit(supplier.id)}
+                      className="h-8 px-2"
+                      disabled={updatingCredit === supplier.id}
+                    >
+                      {updatingCredit === supplier.id ? (
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                      ) : (
+                        <Save className="w-3 h-3" />
+                      )}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleCancelEditCredit}
+                      className="h-8 px-2"
+                      disabled={updatingCredit === supplier.id}
+                    >
+                      <X className="w-3 h-3" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <span>{formatCredit(supplier.email)} {t("cashier.currency", "DA")}</span>
+                    {onUpdateCredit && (
+                      <Tooltip content={t("suppliers.editCreditTooltip", "Edit credit amount")}>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleStartEditCredit(supplier)}
+                          className="h-6 px-1"
+                        >
+                          <Edit className="w-3 h-3" />
+                        </Button>
+                      </Tooltip>
+                    )}
+                  </div>
+                )}
               </td>
               <td className={`px-4 py-2 ${isRTL ? "text-right" : "text-left"}`}>
                 {supplier.address || "-"}

@@ -294,6 +294,26 @@ export default function Clients() {
     }
   };
 
+  const handleUpdateCredit = async (supplierId: string, credit: number) => {
+    try {
+      // Store credit amount in the email field (as string)
+      await window.api.database.sellers.update(supplierId, {
+        email: credit.toString(),
+      });
+      await fetchSuppliers();
+      showToast(
+        t("suppliers.creditUpdateSuccess", "Credit updated successfully"),
+        "success",
+      );
+    } catch (err) {
+      showToast(
+        t("suppliers.creditUpdateError", "Failed to update credit"),
+        "error",
+      );
+      throw err;
+    }
+  };
+
   const filteredClients = clients.filter(
     (client) =>
       client.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -751,6 +771,7 @@ export default function Clients() {
                   onDelete={handleDeleteSupplier}
                   onViewPurchases={handleViewPurchases}
                   deleteLoading={deleteSupplierLoading}
+                  onUpdateCredit={handleUpdateCredit}
                 />
                 {/* Pagination Navigation for suppliers */}
                 {suppliersTotalPages > 1 && (
