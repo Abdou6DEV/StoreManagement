@@ -968,7 +968,7 @@ export const printReceiptDirectly = async (
 
             <!-- Payment Info -->
             ${
-              paymentType !== "none" && paymentAmount > 0
+              paymentType !== "none"
                 ? `
               <div class="payment-info">
                 <div class="divider"></div>
@@ -2113,7 +2113,7 @@ export default function ReceiptModal({
 
             <!-- Payment Info -->
             ${
-              paymentType !== "none" && paymentAmount > 0
+              paymentType !== "none"
                 ? `
               <div class="payment-info">
                 <div class="divider"></div>

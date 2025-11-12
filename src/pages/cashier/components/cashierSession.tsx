@@ -412,7 +412,8 @@ const CashierSession = memo(function CashierSession({
         const result = await proceedWithSale(false);
         
         // Print receipt directly without showing modal - use refs to get latest values
-        if (result.saleId) {
+        // For versements, saleId will be undefined, but we still want to print
+        if (result.saleId || paymentTypeRef.current === "versement" || paymentTypeRef.current === "credit") {
           await printReceiptDirectly(
             [...cartRef.current],
             clientNameRef.current,
@@ -442,7 +443,9 @@ const CashierSession = memo(function CashierSession({
             );
           }
           
-          onSaleComplete(result.saleId, result.soldItems);
+          if (result.saleId) {
+            onSaleComplete(result.saleId, result.soldItems);
+          }
         }
         
         setPaymentAmount(0);
@@ -460,7 +463,8 @@ const CashierSession = memo(function CashierSession({
     const result = await proceedWithSale(false);
     
     // Print receipt directly without showing modal
-    if (result.saleId) {
+    // For versements, saleId will be undefined, but we still want to print
+    if (result.saleId || paymentType === "versement" || paymentType === "credit") {
       await printReceiptDirectly(
         [...cart],
         clientName,
@@ -490,7 +494,9 @@ const CashierSession = memo(function CashierSession({
         );
       }
       
-      onSaleComplete(result.saleId, result.soldItems);
+      if (result.saleId) {
+        onSaleComplete(result.saleId, result.soldItems);
+      }
     }
     
     setPaymentAmount(0);
