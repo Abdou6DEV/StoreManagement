@@ -1718,7 +1718,7 @@
     "allPaymentsView": "Vue de Tous les Paiements",
     "backToBills": "Retour aux Factures",
    
-    "title": "Titre",
+    "title": "Titre de la Facture",
     "type": "Type",
     "amount": "Montant",
     "description": "Description",
