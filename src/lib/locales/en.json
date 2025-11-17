@@ -449,7 +449,9 @@
     "items": "items",
     "payed": "Payed",
     "notPayed": "Not Payed",
-    "addServiceAndPrintTicket": "Add Service and Print Service Ticket"
+    "addServiceAndPrintTicket": "Add Service and Print Service Ticket",
+    "fillRequiredFields": "Please fill all required fields (Name, Type, Service Price)",
+    "costPriceHigherThanServicePrice": "Warning: Cost price is higher than service price. This will result in a loss."
   },
   "history": {
     "title": "History",
@@ -787,6 +789,11 @@
     "unit": "Unit",
     "nbrItems": "Nbr Items",
     "paymentAmount": "Payment Amount",
+    "amountPaid": "Amount Paid",
+    "enterPaidAmount": "Enter The Paid Amount",
+    "leaveEmptyIfNoAmount": "Leave empty if no amount was paid",
+    "amountTooHigh": "Amount cannot equal or exceed the sale total. For full payment, use cash sale instead.",
+    "versementAmountRequired": "Amount is required for versement payment",
     "addProducts": "Add Products",
     "typeOrScan": "Type name or scan barcode...",
     "inStock": "in stock",
@@ -804,6 +811,7 @@
     "versement": "Versement",
     "rest": "Remaining",
     "paid": "Paid",
+    "currency": "DA",
     "showHistory": "Show History",
     "all": "All",
     "addPayment": "Add Payment",

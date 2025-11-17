@@ -1061,6 +1061,22 @@ export default function AddServiceForm({
 
   const handleAddService = async (e: React.FormEvent, shouldPrint = false) => {
     e.preventDefault();
+    
+    // Validate required fields
+    if (!form.name.trim() || !form.serviceType.trim() || !form.servicePrice.trim()) {
+      showToast(t("services.fillRequiredFields", "Please fill all required fields (Name, Type, Service Price)"), "error");
+      return;
+    }
+    
+    // Set costPrice to 0 if empty
+    const costPrice = form.costPrice.trim() === "" ? 0 : parseFloat(form.costPrice) || 0;
+    const servicePrice = parseFloat(form.servicePrice) || 0;
+    
+    // Warn if cost price is higher than service price
+    if (costPrice > servicePrice) {
+      showToast(t("services.costPriceHigherThanServicePrice", "Warning: Cost price is higher than service price. This will result in a loss."), "error");
+    }
+    
     setLoading(true);
     try {
       // Set default due date to 3 days later if not provided
@@ -1077,8 +1093,8 @@ export default function AddServiceForm({
           name: form.name.trim(),
           serviceType: form.serviceType.trim(),
           description: form.description.trim() || undefined,
-          costPrice: parseFloat(form.costPrice) || 0,
-          servicePrice: parseFloat(form.servicePrice) || 0,
+          costPrice: costPrice,
+          servicePrice: servicePrice,
           clientId: form.clientId.trim() || undefined,
           dueDate: new Date(dueDate),
           notes: form.notes.trim() || undefined,
@@ -1095,8 +1111,8 @@ export default function AddServiceForm({
           name: form.name.trim(),
           serviceType: form.serviceType.trim(),
           description: form.description.trim() || undefined,
-          costPrice: parseFloat(form.costPrice) || 0,
-          servicePrice: parseFloat(form.servicePrice) || 0,
+          costPrice: costPrice,
+          servicePrice: servicePrice,
           clientId: form.clientId.trim() || undefined,
           dueDate: new Date(dueDate),
           notes: form.notes.trim() || undefined,
@@ -1362,7 +1378,11 @@ export default function AddServiceForm({
                   value={form.costPrice}
                   onChange={(e) => handleFormChange("costPrice", e.target.value)}
                   onKeyDown={(e) => handleFieldKeyDown(e, "costPrice")}
-                  className="flex-1 px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all"
+                  className={`flex-1 px-4 py-3 rounded-lg border bg-card text-sm focus:outline-none focus:ring-1 transition-all ${
+                    form.servicePrice && form.costPrice && parseFloat(form.costPrice) > parseFloat(form.servicePrice)
+                      ? "border-red-500 focus:ring-red-500/50 focus:border-red-500"
+                      : "border-border focus:ring-cyan-500/50 focus:border-cyan-500"
+                  }`}
                 />
                 <label className="flex items-center space-x-2 cursor-pointer text-sm text-muted-foreground whitespace-nowrap">
                   <button
@@ -1400,6 +1420,11 @@ export default function AddServiceForm({
                   </span>
                 </label>
               </div>
+              {form.servicePrice && form.costPrice && parseFloat(form.costPrice) > parseFloat(form.servicePrice) && (
+                <p className="text-xs text-red-500 mt-1">
+                  {t("services.costPriceHigherThanServicePrice", "Warning: Cost price is higher than service price. This will result in a loss.")}
+                </p>
+              )}
             </Legend>
             <Legend>
               <label>{t("services.servicePrice", "Service Price")} ({t("common.currency", "DA")})</label>
@@ -1486,8 +1511,8 @@ export default function AddServiceForm({
           <div className="flex gap-3">
           <Button
             type="submit"
-            disabled={loading}
-              className="bg-cyan-600 hover:bg-cyan-700 text-white h-10"
+            disabled={loading || !form.name.trim() || !form.serviceType.trim() || !form.servicePrice.trim()}
+              className="bg-cyan-600 hover:bg-cyan-700 text-white h-10 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? (
                 <>
@@ -1503,8 +1528,8 @@ export default function AddServiceForm({
           </Button>
           <Button
             type="button"
-            disabled={loading}
-            className="bg-cyan-600 hover:bg-cyan-700 text-white h-10"
+            disabled={loading || !form.name.trim() || !form.serviceType.trim() || !form.servicePrice.trim()}
+            className="bg-cyan-600 hover:bg-cyan-700 text-white h-10 disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={(e) => handleAddService(e, true)}
           >
             {loading ? (

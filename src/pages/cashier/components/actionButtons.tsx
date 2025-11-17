@@ -455,6 +455,7 @@ export default function ActionButtons({
         setPaymentDate={setPaymentDateLocal}
         cart={cart}
         cartTotal={cartTotal}
+        discount={Number(discount) || 0}
         t={t as typeof t}
         onConfirm={() => {
           setPaymentType(paymentTypeLocal);

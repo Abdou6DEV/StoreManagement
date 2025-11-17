@@ -1,7 +1,10 @@
-import React, { useMemo, useRef, useEffect, useState } from "react";
+import React, { useMemo, useRef, useEffect, useState, Suspense, lazy, useCallback } from "react";
 import type { CartItem } from "../../types";
 import { useTranslation } from "react-i18next";
-import { Trash2 } from "lucide-react";
+import { Trash2, Info } from "lucide-react";
+
+// Lazy load the ProductInfoModal to improve initial bundle size
+const ProductInfoModal = lazy(() => import("../../pages/stock/components/productInfoModal").then(module => ({ default: module.ProductInfoModal })));
 
 interface Props {
   cart: CartItem[];
@@ -47,105 +50,7 @@ export default function PaymentSummary({
   const creditDisplay = credit > 0 ? credit : 0;
   const nbrItems = cart.reduce((sum, item) => sum + item.qty, 0);
 
-  // === Auto-scroll logic (only for non-interactive mode) ===
   const scrollRef = React.useRef<HTMLDivElement>(null);
-  const animationRef = React.useRef<number | null>(null);
-  const userScrollTimeout = React.useRef<number | null>(null);
-  const transitionTimeouts = React.useRef<NodeJS.Timeout[]>([]);
-  const isPaused = React.useRef(false);
-  const [isFading, setIsFading] = React.useState(false);
-
-  // Helper to clear all timers/animations and reset fade
-  function clearAllScrollTimers() {
-    if (animationRef.current) {
-      cancelAnimationFrame(animationRef.current);
-      animationRef.current = null;
-    }
-    transitionTimeouts.current.forEach((timeout) => clearTimeout(timeout));
-    transitionTimeouts.current = [];
-    if (userScrollTimeout.current) {
-      clearTimeout(userScrollTimeout.current);
-      userScrollTimeout.current = null;
-    }
-    setIsFading(false); // Always reset fade
-  }
-
-  // The main auto-scroll function with fade, bottom wait, and top wait
-  function startAutoScroll() {
-    const el = scrollRef.current;
-    if (!el) return;
-    if (isPaused.current) return;
-
-    function scrollStep() {
-      if (!el || isPaused.current) return;
-      // If at bottom, wait, then fade out, reset to top, fade in, wait at top, and continue
-      if (el.scrollTop >= el.scrollHeight - el.clientHeight) {
-        // Wait at bottom so user can see all items
-        const waitAtBottom = setTimeout(() => {
-          setIsFading(true);
-          // Fade out, then reset to top and fade in
-          const fadeOut = setTimeout(() => {
-            el.scrollTop = 0;
-            setIsFading(false);
-            // Wait at top before resuming scrolling
-            const waitAtTop = setTimeout(() => {
-              animationRef.current = requestAnimationFrame(scrollStep);
-            }, 6000); // Wait at top
-            transitionTimeouts.current.push(waitAtTop);
-          }, 500); // Fade duration
-          transitionTimeouts.current.push(fadeOut);
-        }, 6000); // Wait at bottom
-        transitionTimeouts.current.push(waitAtBottom);
-        return;
-      }
-      el.scrollTop += 0.5;
-      animationRef.current = requestAnimationFrame(scrollStep);
-    }
-    animationRef.current = requestAnimationFrame(scrollStep);
-  }
-
-  // On cart change: reset scroll, clear timers, and start fresh after a short delay
-  React.useEffect(() => {
-    const el = scrollRef.current;
-    clearAllScrollTimers();
-    if (!el) return;
-    el.scrollTop = 0;
-    isPaused.current = false;
-    // Only start auto-scroll if content is taller than container
-    if (el.scrollHeight > el.clientHeight) {
-      const timeout = setTimeout(() => {
-        startAutoScroll();
-      }, 1000);
-      transitionTimeouts.current.push(timeout);
-    }
-    // eslint-disable-next-line
-  }, [cart]);
-
-  // User interaction: pause scroll, resume after delay, always reset fade
-  React.useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    function pauseScroll() {
-      isPaused.current = true;
-      clearAllScrollTimers();
-      setIsFading(false);
-      userScrollTimeout.current = window.setTimeout(() => {
-        isPaused.current = false;
-        // Only resume auto-scroll if content is actually scrollable
-        if (el.scrollHeight > el.clientHeight) {
-          startAutoScroll();
-        }
-      }, 4000); // Resume after 4s
-    }
-    el.addEventListener("mousedown", pauseScroll);
-    el.addEventListener("touchstart", pauseScroll);
-    el.addEventListener("wheel", pauseScroll);
-    return () => {
-      el.removeEventListener("mousedown", pauseScroll);
-      el.removeEventListener("touchstart", pauseScroll);
-      el.removeEventListener("wheel", pauseScroll);
-    };
-  }, []);
 
   // Interactive mode functions
   const updateQty = (index: number, newQty: number) => {
@@ -180,21 +85,58 @@ export default function PaymentSummary({
     setCart((prev) => prev.filter((_, i) => i !== index));
   };
 
+  // Product Info Modal state (outside InteractiveRow to avoid rendering issues)
+  const [showProductInfo, setShowProductInfo] = useState(false);
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
+  const [productInfoData, setProductInfoData] = useState<any | null>(null);
+  const [productInfoLoading, setProductInfoLoading] = useState(false);
+
+  const handleShowProductInfo = useCallback(async (productId: string) => {
+    setSelectedProductId(productId);
+    setShowProductInfo(true);
+    
+    // Fetch full product data with purchase and sales history
+    setProductInfoLoading(true);
+    try {
+      const fullProductData = await window.api.database.products.getWithPurchaseHistory(productId);
+      setProductInfoData(fullProductData);
+    } catch (error) {
+      console.error("Failed to fetch product info:", error);
+      // Fallback to basic product data from allProducts if fetch fails
+      const product = allProducts.find(p => p.id === productId);
+      if (product) {
+        setProductInfoData(product);
+      }
+    } finally {
+      setProductInfoLoading(false);
+    }
+  }, [allProducts]);
+
   // Interactive Row Component
   const InteractiveRow = React.memo(function InteractiveRow({
     item,
     index,
     updateQty,
     removeItem,
+    onShowInfo,
   }: {
     item: CartItem;
     index: number;
     updateQty: (index: number, newQty: number) => void;
     removeItem: (index: number) => void;
+    onShowInfo: (productId: string) => void;
   }) {
     const [isEditing, setIsEditing] = useState(false);
     const [editValue, setEditValue] = useState(item.qty.toString());
     const inputRef = useRef<HTMLInputElement>(null);
+    const { t } = useTranslation();
+
+    const handleShowInfo = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      // Only show info for products (not services or manual items)
+      if (item.isService || item.isManual || !item.id) return;
+      onShowInfo(item.id);
+    };
 
     const handleDoubleClick = () => {
       setIsEditing(true);
@@ -271,13 +213,13 @@ export default function PaymentSummary({
               <>
                 <button
                   onClick={() => updateQty(index, item.qty + 1)}
-                  className="w-6 h-6 rounded bg-muted hover:bg-primary hover:text-primary-foreground transition text-sm font-bold flex items-center justify-center"
+                  className="w-6 h-6 rounded bg-muted hover:bg-primary hover:text-primary-foreground text-sm font-bold flex items-center justify-center"
                 >
                   +
                 </button>
                 <button
                   onClick={() => updateQty(index, item.qty - 1)}
-                  className="w-6 h-6 rounded bg-muted hover:bg-primary hover:text-primary-foreground transition text-sm font-bold flex items-center justify-center"
+                  className="w-6 h-6 rounded bg-muted hover:bg-primary hover:text-primary-foreground text-sm font-bold flex items-center justify-center"
                 >
                   −
                 </button>
@@ -285,10 +227,19 @@ export default function PaymentSummary({
             )}
             <button
               onClick={() => removeItem(index)}
-              className="w-6 h-6 rounded text-red-500 hover:text-red-700 hover:bg-red-100 transition flex items-center justify-center"
+              className="w-6 h-6 rounded text-red-500 hover:text-red-700 hover:bg-red-100 flex items-center justify-center"
             >
               <Trash2 className="w-4 h-4" />
             </button>
+            {!item.isService && !item.isManual && item.id && (
+              <button
+                onClick={handleShowInfo}
+                className="w-6 h-6 rounded text-blue-500 hover:text-blue-700 hover:bg-blue-100 flex items-center justify-center"
+                title={t("stock.productInfo", "Product Information")}
+              >
+                <Info className="w-4 h-4" />
+              </button>
+            )}
           </div>
         </td>
       </tr>
@@ -336,6 +287,7 @@ export default function PaymentSummary({
   const getMaxDiscount = () => {
     return paymentType === "none" ? subtotal : subtotal - paymentAmount;
   };
+
 
   return (
     <div
@@ -389,11 +341,7 @@ export default function PaymentSummary({
 
       {/* === Scrollable Table Body === */}
       <div
-        className={`flex-1 overflow-y-auto overflow-x-hidden min-h-0 ${
-          interactive
-            ? "opacity-100"
-            : `transition-opacity duration-500 ${isFading ? "opacity-0" : "opacity-100"}`
-        }`}
+        className="flex-1 overflow-y-auto overflow-x-hidden min-h-0"
         ref={scrollRef}
       >
         <table className="w-full text-sm table-fixed">
@@ -407,6 +355,7 @@ export default function PaymentSummary({
                       index={index}
                       updateQty={updateQty}
                       removeItem={removeItem}
+                      onShowInfo={handleShowProductInfo}
                     />
                   ) : (
                     <tr
@@ -554,6 +503,24 @@ export default function PaymentSummary({
            </span>
          </div>
       </div>
+      
+      {/* Product Info Modal */}
+      {showProductInfo && selectedProductId && (
+        <Suspense fallback={
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+            <div className="bg-card border border-border rounded-lg p-4">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          </div>
+        }>
+          <ProductInfoModal
+            open={showProductInfo}
+            onOpenChange={setShowProductInfo}
+            productData={productInfoData}
+            loading={productInfoLoading}
+          />
+        </Suspense>
+      )}
     </div>
   );
 }

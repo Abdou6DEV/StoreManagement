@@ -371,6 +371,7 @@ export async function getServiceNames(): Promise<string[]> {
 export async function getCompletedServicesForCashier() {
   // Optimized query: Use a single raw SQL query with subquery to filter out sold services
   // This is much faster than loading all completed services and filtering in JavaScript
+  // Exclude services with servicePrice = 0 (free services should not be passed to cashier)
   const availableServices = await prisma.$queryRaw<any[]>`
     SELECT 
       sa.id,
@@ -392,6 +393,7 @@ export async function getCompletedServicesForCashier() {
     FROM ServiceAppointment sa
     LEFT JOIN Client c ON sa.clientId = c.id
     WHERE sa.isCompleted = 1
+    AND sa.servicePrice > 0
     AND sa.id NOT IN (
       SELECT DISTINCT s.serviceAppointmentId
       FROM Service s

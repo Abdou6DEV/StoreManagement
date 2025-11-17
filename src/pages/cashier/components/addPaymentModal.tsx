@@ -16,6 +16,7 @@ interface AddPaymentModalProps {
   setPaymentDate: (val: Date | undefined) => void;
   cart: CartItem[];
   cartTotal: number;
+  discount: number;
   t: TFunction;
   onConfirm: () => void;
 }
@@ -31,11 +32,23 @@ const AddPaymentModal: React.FC<AddPaymentModalProps> = ({
   setPaymentDate,
   cart,
   cartTotal,
+  discount = 0,
   t,
   onConfirm,
 }) => {
   const [inputValue, setInputValue] = useState("");
-  const rest = cartTotal - paymentAmount;
+  const totalAfterDiscount = cartTotal - discount;
+  const rest = totalAfterDiscount - paymentAmount;
+  
+  // Validation: For credit, payment amount should be less than total after discount
+  // (if they pay the full amount or more, it's not a credit)
+  // For versement, amount must be greater than 0 and less than total after discount
+  const isValidAmount = paymentType === "credit" 
+    ? (paymentAmount === 0 || (paymentAmount > 0 && paymentAmount < totalAfterDiscount))
+    : (paymentAmount > 0 && paymentAmount < totalAfterDiscount);
+  
+  const isAmountTooHigh = paymentAmount >= totalAfterDiscount;
+  const isVersementAmountInvalid = paymentType === "versement" && paymentAmount <= 0;
 
   const amountInputRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
@@ -72,12 +85,12 @@ const AddPaymentModal: React.FC<AddPaymentModalProps> = ({
         "Configure payment details for this transaction",
       )}
       icon={<Wallet className="w-5 h-5 text-blue-500" />}
-      size="lg"
-      className="max-w-lg"
+      size="xl"
+      className="max-w-2xl"
       onSubmit={handleSubmit}
       submitText={t("cashier.confirm", "Confirm")}
       cancelText={t("cashier.cancel", "Cancel")}
-      submitDisabled={paymentAmount < 0 || !paymentDate}
+      submitDisabled={!isValidAmount || !paymentDate || isAmountTooHigh || isVersementAmountInvalid}
     >
       {/* Payment type pill toggle */}
       <div className="flex justify-center mb-6">
@@ -109,10 +122,10 @@ const AddPaymentModal: React.FC<AddPaymentModalProps> = ({
       </div>
 
       {/* Inputs */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 -mx-1 px-6">
         <div>
           <label className="block text-xs font-semibold mb-1 text-muted-foreground tracking-wide">
-            {t("cashier.paymentAmount", "Payment Amount")}
+            {t("cashier.amountPaid", "Amount Paid")}
           </label>
           <input
             ref={amountInputRef}
@@ -133,9 +146,28 @@ const AddPaymentModal: React.FC<AddPaymentModalProps> = ({
             }}
             min={0}
             max={2147483647}
-            placeholder={t("cashier.paymentAmount", "Payment Amount")}
-            className={`w-full rounded-lg border px-4 py-3 h-12 text-base bg-background focus:outline-none transition shadow-sm ${paymentAmount > cartTotal ? "border-red-500 focus:ring-1 focus:ring-red-500" : "border-border"}`}
+            placeholder={t("cashier.enterPaidAmount", "Enter The Paid Amount")}
+            className={`w-full rounded-lg border px-4 py-3 h-12 text-base bg-background focus:outline-none transition shadow-sm ${
+              isAmountTooHigh || isVersementAmountInvalid
+                ? "border-red-500 focus:ring-1 focus:ring-red-500" 
+                : "border-border"
+            }`}
           />
+          {paymentType === "credit" && !isAmountTooHigh && !isVersementAmountInvalid && (
+            <p className="text-xs text-muted-foreground mt-1">
+              {t("cashier.leaveEmptyIfNoAmount", "Leave empty if no amount was paid")}
+            </p>
+          )}
+          {isAmountTooHigh && (
+            <p className="text-xs text-red-500 mt-1">
+              {t("cashier.amountTooHigh", "Amount cannot equal or exceed the sale total. For full payment, use cash sale instead.")}
+            </p>
+          )}
+          {isVersementAmountInvalid && (
+            <p className="text-xs text-red-500 mt-1">
+              {t("cashier.versementAmountRequired", "Amount is required for versement payment")}
+            </p>
+          )}
         </div>
         <div>
           <label className="block text-xs font-semibold mb-1 text-muted-foreground tracking-wide">
@@ -152,38 +184,26 @@ const AddPaymentModal: React.FC<AddPaymentModalProps> = ({
       </div>
 
       {/* Info summary */}
-      <div className="rounded-xl bg-muted/60 border border-border px-5 py-4 grid grid-cols-2 gap-4 text-sm text-muted-foreground mt-2">
+      <div className="rounded-xl bg-muted/60 border border-border px-5 py-4 grid grid-cols-2 gap-4 text-sm text-muted-foreground mt-2 -mx-1">
         <div>
           <span className="font-semibold text-foreground">
-            {t("cashier.itemsCount", "Number of items")}:
+            {t("cashier.total", "Total")}:
           </span>{" "}
-          {cart.length}
+          {totalAfterDiscount.toLocaleString()} {t("cashier.currency", "DA")}
         </div>
         <div>
           <span className="font-semibold text-foreground">
-            {t("cashier.totalQty", "Total quantity")}:
-          </span>{" "}
-          {cart.reduce((sum: number, item) => sum + (item.qty || 0), 0)}
-        </div>
-        <div>
-          <span className="font-semibold text-foreground">
-            {t("cashier.given", "Given")}:
+            {t("cashier.amountPaid", "Amount Paid")}:
           </span>{" "}
           {paymentAmount.toLocaleString()}{" "}
           {t("cashier.currency", "DA")}
         </div>
-        <div>
+        <div className="col-span-2">
           <span className="font-semibold text-foreground">
             {t("cashier.rest", "Rest")}:
           </span>{" "}
           {rest.toLocaleString()}{" "}
           {t("cashier.currency", "DA")}
-        </div>
-        <div className="col-span-2">
-          <span className="font-semibold text-foreground">
-            {t("cashier.total", "Total")}:
-          </span>{" "}
-          {cartTotal.toLocaleString()} {t("cashier.currency", "DA")}
         </div>
       </div>
     </FormModal>

@@ -176,6 +176,11 @@ export default function ServicesPage() {
           .forEach(check => currentSoldServiceIds.add(check.id));
       }
       
+      // Also treat services with price 0 as "sold" (finalized) since they're not passed to cashier
+      completedServices
+        .filter((s: ServiceAppointment) => s.servicePrice === 0)
+        .forEach((s: ServiceAppointment) => currentSoldServiceIds.add(s.id));
+      
       // Store sold service IDs for the table component to use
       setSoldServiceIds(currentSoldServiceIds);
       

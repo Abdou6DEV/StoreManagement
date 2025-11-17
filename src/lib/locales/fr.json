@@ -722,6 +722,11 @@
     "unit": "Unité",
     "nbrItems": "Nb d'articles",
     "paymentAmount": "Montant à payer",
+    "amountPaid": "Montant payé",
+    "enterPaidAmount": "Entrer Le Montant Payé",
+    "leaveEmptyIfNoAmount": "Laisser vide si aucun montant n'a été payé",
+    "amountTooHigh": "Le montant ne peut pas être égal ou supérieur au total de la vente. Pour un paiement complet, utilisez une vente au comptant à la place.",
+    "versementAmountRequired": "Le montant est requis pour un paiement versement",
     "addProducts": "Ajouter des produits",
     "typeOrScan": "Tapez le nom ou scannez le code-barres...",
     "inStock": "en stock",
@@ -739,6 +744,7 @@
     "versement": "Versement",
     "rest": "Reste à payer",
     "paid": "Payé",
+    "currency": "DA",
     "showHistory": "Afficher l'historique",
     "all": "Tout",
     "addPayment": "Ajouter un paiement",
@@ -1261,7 +1267,9 @@
     "enterServicePrice": "Entrer le prix du service",
     "payed": "Payé",
     "notPayed": "Non Payé",
-    "addServiceAndPrintTicket": "Ajouter le service et imprimer le bon"
+    "addServiceAndPrintTicket": "Ajouter le service et imprimer le bon",
+    "fillRequiredFields": "Veuillez remplir tous les champs requis (Nom, Type, Prix du service)",
+    "costPriceHigherThanServicePrice": "Avertissement : Le prix de revient est supérieur au prix du service. Cela entraînera une perte."
   },
   "admin": {
     "backup": "Sauvegarde",

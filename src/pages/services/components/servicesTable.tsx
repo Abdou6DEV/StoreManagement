@@ -419,7 +419,7 @@ const ServicesTable: React.FC<ServicesTableProps> = ({
                         </Tooltip>
                       )}
 
-                      {service.isCompleted && !soldServiceIds.has(service.id) && (
+                      {service.isCompleted && !soldServiceIds.has(service.id) && service.servicePrice > 0 && (
                         <Tooltip
                           content={t(
                             "services.cancelCompletionTooltip",

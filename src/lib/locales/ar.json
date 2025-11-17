@@ -496,6 +496,11 @@
     "unit": "الوحدة",
     "nbrItems": "عدد العناصر",
     "paymentAmount": "مبلغ الدفع",
+    "amountPaid": "المبلغ المدفوع",
+    "enterPaidAmount": "أدخل المبلغ المدفوع",
+    "leaveEmptyIfNoAmount": "اتركه فارغاً إذا لم يتم دفع أي مبلغ",
+    "amountTooHigh": "لا يمكن أن يكون المبلغ مساوياً أو يتجاوز إجمالي البيع. للدفع الكامل، استخدم بيع نقدي بدلاً من ذلك.",
+    "versementAmountRequired": "المبلغ مطلوب لدفعة",
     "addProducts": "إضافة منتجات",
     "typeOrScan": "اكتب الاسم أو امسح الباركود...",
     "inStock": "متوفر",
@@ -513,6 +518,7 @@
     "versement": "دفعة",
     "rest": "المتبقي",
     "paid": "مدفوع",
+    "currency": "دج",
     "showHistory": "عرض السجل",
     "all": "الكل",
     "addPayment": "إضافة دفعة",
@@ -1814,7 +1820,9 @@
     "enterServicePrice": "أدخل سعر الخدمة",
     "payed": "مدفوع",
     "notPayed": "غير مدفوع",
-    "addServiceAndPrintTicket": "إضافة الخدمة وطباعة البطاقة"
+    "addServiceAndPrintTicket": "إضافة الخدمة وطباعة البطاقة",
+    "fillRequiredFields": "يرجى ملء جميع الحقول المطلوبة (الاسم، النوع، سعر الخدمة)",
+    "costPriceHigherThanServicePrice": "تحذير: سعر التكلفة أعلى من سعر الخدمة. سيؤدي هذا إلى خسارة."
   },
   "currency": "دج",
   "datePicker": {
