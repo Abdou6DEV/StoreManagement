@@ -29,6 +29,7 @@ export default function GeneralHistory({
     setEndDate,
   } = useGeneralHistoryData();
   const [highlightEnabled, setHighlightEnabled] = useState(false);
+  const [netProfitEnabled, setNetProfitEnabled] = useState(false);
 
   const handleRowDoubleClick = (period: string) => {
     if (onPeriodSelect) {
@@ -43,6 +44,8 @@ export default function GeneralHistory({
         onAggregationLevelChange={setAggregationLevel}
         highlightEnabled={highlightEnabled}
         onHighlightChange={setHighlightEnabled}
+        netProfitEnabled={netProfitEnabled}
+        onNetProfitChange={setNetProfitEnabled}
         startDate={startDate}
         endDate={endDate}
         onStartDateChange={setStartDate}
@@ -61,6 +64,7 @@ export default function GeneralHistory({
             aggregationLevel={aggregationLevel}
             onRowDoubleClick={handleRowDoubleClick}
             highlightEnabled={highlightEnabled}
+            netProfitEnabled={netProfitEnabled}
             currentPage={currentPage}
             itemsPerPage={10}
           />

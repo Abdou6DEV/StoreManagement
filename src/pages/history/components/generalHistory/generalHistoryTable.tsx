@@ -15,6 +15,7 @@ interface GeneralHistoryTableProps {
   aggregationLevel: AggregationLevel;
   onRowDoubleClick: (period: string) => void;
   highlightEnabled: boolean;
+  netProfitEnabled: boolean;
   currentPage: number;
   itemsPerPage: number;
 }
@@ -25,15 +26,25 @@ export default function GeneralHistoryTable({
   aggregationLevel,
   onRowDoubleClick,
   highlightEnabled,
+  netProfitEnabled,
   currentPage,
   itemsPerPage,
 }: GeneralHistoryTableProps) {
   const { t } = useTranslation();
 
+  const getBillsPaymentsValue = (item: AggregatedData) => {
+    const amount = typeof item.billsPayments === "number" ? item.billsPayments : 0;
+    return amount / 100;
+  };
+
+  const getProfitValue = (item: AggregatedData) => {
+    const baseProfit = item.profit || 0;
+    return netProfitEnabled ? baseProfit - getBillsPaymentsValue(item) : baseProfit;
+  };
 
   // Calculate simple average profit from all filtered periods
-  const averageProfit = allData.length > 0 
-    ? allData.reduce((sum, item) => sum + item.profit, 0) / allData.length 
+  const averageProfit = allData.length > 0
+    ? allData.reduce((sum, item) => sum + getProfitValue(item), 0) / allData.length
     : 0;
 
   const getRowHighlightClass = (profit: number) => {
@@ -69,7 +80,7 @@ export default function GeneralHistoryTable({
 
   const getGrowthRateForRow = (item: AggregatedData, currentPageIndex: number) => {
     // Simple: Compare this period's profit with the average of all other periods
-    return calculateGrowthRate(item.profit, averageProfit);
+    return calculateGrowthRate(getProfitValue(item), averageProfit);
   };
 
   const getGrowthRateTextClass = (growthRate: number) => {
@@ -97,7 +108,7 @@ export default function GeneralHistoryTable({
                 {t("history.revenue")}
               </th>
               <th className="text-right rtl:text-left p-4 font-semibold text-foreground text-sm uppercase tracking-wide">
-                {t("history.profit")}
+                {t(netProfitEnabled ? "history.netProfit" : "history.profit")}
               </th>
               <th className="text-right rtl:text-left p-4 font-semibold text-foreground text-sm uppercase tracking-wide">
                 {t("history.purchases")}
@@ -115,7 +126,7 @@ export default function GeneralHistoryTable({
               return (
                 <tr
                   key={item.period}
-                  className={`group transition-all duration-200 hover:border-l-primary hover:border-r-primary border-l-4 border-r-4 border-l-transparent border-r-transparent cursor-pointer ${getRowHighlightClass(item.profit)}`}
+                  className={`group transition-all duration-200 hover:border-l-primary hover:border-r-primary border-l-4 border-r-4 border-l-transparent border-r-transparent cursor-pointer ${getRowHighlightClass(getProfitValue(item))}`}
                   onDoubleClick={() => onRowDoubleClick(item.period)}
                 >
                 <td className="px-4 py-3 font-medium text-foreground">
@@ -143,9 +154,9 @@ export default function GeneralHistoryTable({
                 <td className="px-4 text-right">
                   <div className="flex flex-col items-end">
                     <span
-                      className={`font-semibold text-base ${getProfitTextClass(item.profit)}`}
+                      className={`font-semibold text-base ${getProfitTextClass(getProfitValue(item))}`}
                     >
-                      {formatCurrency(item.profit)}
+                      {formatCurrency(getProfitValue(item))}
                     </span>
                   </div>
                 </td>
@@ -159,7 +170,7 @@ export default function GeneralHistoryTable({
                 <td className="px-4 text-right">
                   <div className="flex flex-col items-end">
                     <span className="font-semibold text-foreground text-base">
-                      {formatCurrency(item.billsPayments / 100)}
+                      {formatCurrency(getBillsPaymentsValue(item))}
                     </span>
                   </div>
                 </td>

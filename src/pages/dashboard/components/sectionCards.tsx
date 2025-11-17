@@ -12,7 +12,11 @@ import {
 import { ProfitChart } from "./profitCharts";
 import { StockStatsCard } from "./stockStatsCard";
 import { Skeleton } from "../../../lib/components/skeleton";
+import { Switch } from "../../../lib/components/switch";
+import { Tooltip } from "../../../lib/components/tooltip";
 import { useSales, useProducts, useClients, usePayments, useLowStockThreshold, useDashboardLoading } from "../../../lib/contexts/dashboardContext";
+
+type OverviewPeriod = "today" | "thisMonth" | "thisYear" | "overall";
 
 export function SectionCards() {
   const { t, i18n } = useTranslation();
@@ -47,6 +51,8 @@ export function SectionCards() {
     itemsSold?: string;
     revenueProgress?: number;
     profitProgress?: number;
+    rawRevenue?: number;
+    rawProfit?: number;
   }>>([]);
   const [stockStats, setStockStats] = useState<Array<{
     labelKey: string;
@@ -71,6 +77,13 @@ export function SectionCards() {
   const [unpaidVersementAmount, setUnpaidVersementAmount] = useState(0);
   const [numberOfClients, setNumberOfClients] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [overviewNetProfitEnabled, setOverviewNetProfitEnabled] = useState(false);
+  const [billPaymentsTotals, setBillPaymentsTotals] = useState<Record<OverviewPeriod, number>>({
+    today: 0,
+    thisMonth: 0,
+    thisYear: 0,
+    overall: 0,
+  });
 
   // Memoize expensive date filtering functions
   const dateFilters = useMemo(() => {
@@ -132,7 +145,24 @@ export function SectionCards() {
       revenue: formatCurrency(revenue),
       profit: formatCurrency(profit),
       itemsSold: itemsSold.toLocaleString(),
+      rawRevenue: revenue,
+      rawProfit: profit,
     };
+  };
+
+  const getOverviewPeriodKey = (labelKey: string): OverviewPeriod | null => {
+    switch (labelKey) {
+      case "dashboard.today":
+        return "today";
+      case "dashboard.thisMonth":
+        return "thisMonth";
+      case "dashboard.thisYear":
+        return "thisYear";
+      case "dashboard.overall":
+        return "overall";
+      default:
+        return null;
+    }
   };
 
   useEffect(() => {
@@ -156,31 +186,51 @@ export function SectionCards() {
           unpaidCreditAmount: false, 
           unpaidVersementAmount: false 
         }));
-      const isToday = (date: Date) => {
-        const d = new Date(date);
-        const now = new Date();
-        return (
-          d.getFullYear() === now.getFullYear() &&
-          d.getMonth() === now.getMonth() &&
-          d.getDate() === now.getDate()
-        );
-      };
-      const isThisMonth = (date: Date) => {
-        const d = new Date(date);
-        const now = new Date();
-        return (
-          d.getFullYear() === now.getFullYear() &&
-          d.getMonth() === now.getMonth()
-        );
-      };
-      const isThisYear = (date: Date) => {
-        const d = new Date(date);
-        const now = new Date();
-        return d.getFullYear() === now.getFullYear();
+      let billPaymentsData: Array<{ amount: number; paidDate?: string | Date }> = [];
+      if (window?.api?.database?.bills?.getAllPayments) {
+        try {
+          billPaymentsData = await window.api.database.bills.getAllPayments();
+        } catch (error) {
+          console.error("Failed to fetch bill payments for dashboard overview:", error);
+        }
+      }
+
+      const convertPaymentAmount = (amount: number) =>
+        typeof amount === "number" ? amount / 100 : 0;
+
+      const calculateBillsTotal = (filterFn: (date: Date) => boolean) => {
+        if (!Array.isArray(billPaymentsData) || billPaymentsData.length === 0) {
+          return 0;
+        }
+
+        return billPaymentsData.reduce((sum, payment) => {
+          if (!payment?.paidDate) {
+            return sum;
+          }
+          const paymentDate = new Date(payment.paidDate);
+          if (!filterFn(paymentDate)) {
+            return sum;
+          }
+          return sum + convertPaymentAmount(payment.amount ?? 0);
+        }, 0);
       };
 
+      const todayBillsTotal = calculateBillsTotal(dateFilters.isToday);
+      const monthBillsTotal = calculateBillsTotal(dateFilters.isThisMonth);
+      const yearBillsTotal = calculateBillsTotal(dateFilters.isThisYear);
+      const overallBillsTotal = Array.isArray(billPaymentsData)
+        ? billPaymentsData.reduce(
+            (sum, payment) => sum + convertPaymentAmount(payment?.amount ?? 0),
+            0,
+          )
+        : 0;
 
-
+      setBillPaymentsTotals({
+        today: todayBillsTotal,
+        thisMonth: monthBillsTotal,
+        thisYear: yearBillsTotal,
+        overall: overallBillsTotal,
+      });
 
       // Process sales data progressively
       const todayStats = calcSalesStats(sales, "today", dateFilters.isToday);
@@ -192,7 +242,7 @@ export function SectionCards() {
       setSalesStats([todayStats, monthStats, yearStats, overallStats]);
 
        // Calculate today vs average for the Today card
-       const todayTotalProfit = todayStats.profit ? parseFloat(todayStats.profit.replace(/[^\d.-]/g, '')) : 0;
+       const todayTotalProfit = todayStats.rawProfit || 0;
        
        // Get historical data for average calculation (last 30 days excluding today)
        const now = new Date();
@@ -257,7 +307,7 @@ export function SectionCards() {
            monthlyProfits.set(monthKey, existing + (sale.totalProfit || 0));
          });
          
-         const monthTotalProfit = monthStats.profit ? parseFloat(monthStats.profit.replace(/[^\d.-]/g, '')) : 0;
+         const monthTotalProfit = monthStats.rawProfit || 0;
          
          // Calculate average monthly profit from historical data
          const monthlyProfitValues = Array.from(monthlyProfits.values());
@@ -299,7 +349,7 @@ export function SectionCards() {
            yearlyProfits.set(yearKey, existing + (sale.totalProfit || 0));
          });
          
-         const yearTotalProfit = yearStats.profit ? parseFloat(yearStats.profit.replace(/[^\d.-]/g, '')) : 0;
+         const yearTotalProfit = yearStats.rawProfit || 0;
          
          // Calculate average yearly profit from historical data
          const yearlyProfitValues = Array.from(yearlyProfits.values());
@@ -325,8 +375,8 @@ export function SectionCards() {
 
 
       // Calculate max values for progress bars
-      const allRevenues = [todayStats, monthStats, yearStats, overallStats].map(s => parseFloat(s.revenue.replace(/[^\d.-]/g, '')));
-      const allProfits = [todayStats, monthStats, yearStats, overallStats].map(s => parseFloat(s.profit.replace(/[^\d.-]/g, '')));
+      const allRevenues = [todayStats, monthStats, yearStats, overallStats].map((s) => s.rawRevenue ?? 0);
+      const allProfits = [todayStats, monthStats, yearStats, overallStats].map((s) => s.rawProfit ?? 0);
 
       const maxRevenue = Math.max(...allRevenues);
       const maxProfit = Math.max(...allProfits);
@@ -335,18 +385,18 @@ export function SectionCards() {
       const combinedStats = [
         {
           ...todayStats,
-          revenueProgress: maxRevenue > 0 ? (parseFloat(todayStats.revenue.replace(/[^\d.-]/g, '')) / maxRevenue) * 100 : 0,
-          profitProgress: maxProfit > 0 ? (parseFloat(todayStats.profit.replace(/[^\d.-]/g, '')) / maxProfit) * 100 : 0,
+          revenueProgress: maxRevenue > 0 ? ((todayStats.rawRevenue ?? 0) / maxRevenue) * 100 : 0,
+          profitProgress: maxProfit > 0 ? ((todayStats.rawProfit ?? 0) / maxProfit) * 100 : 0,
         },
         {
           ...monthStats,
-          revenueProgress: maxRevenue > 0 ? (parseFloat(monthStats.revenue.replace(/[^\d.-]/g, '')) / maxRevenue) * 100 : 0,
-          profitProgress: maxProfit > 0 ? (parseFloat(monthStats.profit.replace(/[^\d.-]/g, '')) / maxProfit) * 100 : 0,
+          revenueProgress: maxRevenue > 0 ? ((monthStats.rawRevenue ?? 0) / maxRevenue) * 100 : 0,
+          profitProgress: maxProfit > 0 ? ((monthStats.rawProfit ?? 0) / maxProfit) * 100 : 0,
         },
         {
           ...yearStats,
-          revenueProgress: maxRevenue > 0 ? (parseFloat(yearStats.revenue.replace(/[^\d.-]/g, '')) / maxRevenue) * 100 : 0,
-          profitProgress: maxProfit > 0 ? (parseFloat(yearStats.profit.replace(/[^\d.-]/g, '')) / maxProfit) * 100 : 0,
+          revenueProgress: maxRevenue > 0 ? ((yearStats.rawRevenue ?? 0) / maxRevenue) * 100 : 0,
+          profitProgress: maxProfit > 0 ? ((yearStats.rawProfit ?? 0) / maxProfit) * 100 : 0,
         },
         {
           ...overallStats,
@@ -487,7 +537,25 @@ export function SectionCards() {
         setLoading(false);
       }
     })();
-  }, [dashboardLoading, sales, products, clients, payments, lowStockThreshold, i18n.language]);
+  }, [dashboardLoading, sales, products, clients, payments, lowStockThreshold, i18n.language, dateFilters]);
+
+  const renderNetProfitToggle = () => (
+    <Tooltip content={t("dashboard.calculateNetProfitTooltip")}>
+      <div className="flex items-center gap-2 text-sm rtl:flex-row-reverse">
+        <Switch
+          checked={overviewNetProfitEnabled}
+          onCheckedChange={setOverviewNetProfitEnabled}
+          id="dashboard-net-profit-toggle"
+        />
+        <label
+          htmlFor="dashboard-net-profit-toggle"
+          className="font-medium text-foreground cursor-pointer select-none"
+        >
+          {t("dashboard.calculateNetProfit")}
+        </label>
+      </div>
+    </Tooltip>
+  );
 
   const renderSection = (titleKey: string, cards: Array<{
     labelKey: string;
@@ -642,13 +710,25 @@ export function SectionCards() {
 
     return (
       <div className="space-y-6">
-        <h2 className="text-xl font-semibold text-foreground mb-4">
-          {t(`dashboard.${titleKey}`)}
-        </h2>
+        <div className="flex items-center justify-between gap-4 mb-4">
+          <h2 className="text-xl font-semibold text-foreground">
+            {t(`dashboard.${titleKey}`)}
+          </h2>
+          {titleKey === "overviewSection" && renderNetProfitToggle()}
+        </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {cards.map((stat) => {
           const IconComponent = stat.icon;
           const isLoading = loadingStates.salesStats && titleKey === "overviewSection";
+          const periodKey = getOverviewPeriodKey(stat.labelKey);
+          const shouldUseNetProfit = overviewNetProfitEnabled && periodKey !== null;
+          const fallbackProfitValue = stat.profit ? parseFloat(stat.profit.replace(/[^\d.-]/g, '')) : 0;
+          const rawProfitValue = stat.rawProfit ?? fallbackProfitValue;
+          const billsToSubtract = periodKey ? billPaymentsTotals[periodKey] ?? 0 : 0;
+          const adjustedProfitValue = shouldUseNetProfit ? rawProfitValue - billsToSubtract : rawProfitValue;
+          const displayedProfitValue = shouldUseNetProfit ? formatCurrency(adjustedProfitValue) : stat.profit;
+          const profitLabel = shouldUseNetProfit ? t("dashboard.netProfit") : t("dashboard.profit");
+
           return (
             <div
               key={stat.labelKey}
@@ -760,10 +840,10 @@ export function SectionCards() {
               {stat.profit && (
                      <div className="flex flex-col items-center gap-1">
                        <span className="text-3xl font-bold text-green-600">
-                         {stat.profit}
+                        {displayedProfitValue}
                        </span>
                        <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-                    {t("dashboard.profit")}
+                    {profitLabel}
                   </span>
                 </div>
               )}
@@ -832,7 +912,10 @@ export function SectionCards() {
       <div className="space-y-8">
         {/* Sales Stats Skeleton */}
         <div className="space-y-4">
-          <h2 className="text-2xl font-bold text-foreground">{t("dashboard.overviewSection")}</h2>
+          <div className="flex items-center justify-between gap-4">
+            <h2 className="text-2xl font-bold text-foreground">{t("dashboard.overviewSection")}</h2>
+            {renderNetProfitToggle()}
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {Array.from({ length: 4 }).map((_, i) => (
               <div key={i} className="bg-card rounded-lg p-6 border shadow-sm">

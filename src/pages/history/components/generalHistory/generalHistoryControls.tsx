@@ -12,6 +12,8 @@ interface GeneralHistoryControlsProps {
   onAggregationLevelChange: (level: AggregationLevel) => void;
   highlightEnabled: boolean;
   onHighlightChange: (enabled: boolean) => void;
+  netProfitEnabled: boolean;
+  onNetProfitChange: (enabled: boolean) => void;
   startDate: string;
   endDate: string;
   onStartDateChange: (date: string) => void;
@@ -23,6 +25,8 @@ export default function GeneralHistoryControls({
   onAggregationLevelChange,
   highlightEnabled,
   onHighlightChange,
+  netProfitEnabled,
+  onNetProfitChange,
   startDate,
   endDate,
   onStartDateChange,
@@ -202,22 +206,41 @@ export default function GeneralHistoryControls({
             </div>
           </Tooltip>
 
-          {/* Highlight Toggle */}
-          <Tooltip content={t("history.tooltips.highlightProfits")}>
-            <div className="flex items-center gap-2 text-sm rtl:flex-row-reverse">
-              <Switch
-                checked={highlightEnabled}
-                onCheckedChange={onHighlightChange}
-                id="highlight-toggle"
-              />
-              <label
-                htmlFor="highlight-toggle"
-                className="font-medium text-foreground cursor-pointer select-none"
-              >
-                {t("history.highlightProfits")}
-              </label>
-            </div>
-          </Tooltip>
+          <div className="flex items-center gap-4 flex-wrap">
+            {/* Highlight Toggle */}
+            <Tooltip content={t("history.tooltips.highlightProfits")}>
+              <div className="flex items-center gap-2 text-sm rtl:flex-row-reverse">
+                <Switch
+                  checked={highlightEnabled}
+                  onCheckedChange={onHighlightChange}
+                  id="highlight-toggle"
+                />
+                <label
+                  htmlFor="highlight-toggle"
+                  className="font-medium text-foreground cursor-pointer select-none"
+                >
+                  {t("history.highlightProfits")}
+                </label>
+              </div>
+            </Tooltip>
+
+            {/* Net Profit Toggle */}
+            <Tooltip content={t("history.tooltips.calculateNetProfit")}>
+              <div className="flex items-center gap-2 text-sm rtl:flex-row-reverse">
+                <Switch
+                  checked={netProfitEnabled}
+                  onCheckedChange={onNetProfitChange}
+                  id="net-profit-toggle"
+                />
+                <label
+                  htmlFor="net-profit-toggle"
+                  className="font-medium text-foreground cursor-pointer select-none"
+                >
+                  {t("history.calculateNetProfit")}
+                </label>
+              </div>
+            </Tooltip>
+          </div>
         </div>
       </div>
     </div>
