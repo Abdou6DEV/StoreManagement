@@ -54,32 +54,13 @@ const CashierSession = memo(function CashierSession({
   // Get current session data
   const currentSession = sessions[activeSession] || sessions[0];
   
-  // Session-specific state - initialize from session
-  const [clientName, setClientName] = useState(currentSession?.clientName || "");
-  const [clientId, setClientId] = useState<string | null>(currentSession?.clientId || null);
-  const [paymentAmount, setPaymentAmount] = useState(currentSession?.paymentAmount || 0);
-  const [paymentType, setPaymentType] = useState<
-    "none" | "credit" | "versement"
-  >(currentSession?.paymentType || "none");
-  const [paymentDate, setPaymentDate] = useState<Date | undefined>(currentSession?.paymentDate || undefined);
+  const clientName = currentSession?.clientName || "";
+  const clientId = currentSession?.clientId || null;
+  const paymentAmount = currentSession?.paymentAmount || 0;
+  const paymentType: "none" | "credit" | "versement" =
+    currentSession?.paymentType || "none";
+  const paymentDate = currentSession?.paymentDate || undefined;
 
-  // Sync state with session data when activeSession changes
-  useEffect(() => {
-    const session = sessions[activeSession];
-    if (session) {
-      setClientName(session.clientName || "");
-      setClientId(session.clientId || null);
-      setPaymentAmount(session.paymentAmount || 0);
-      setPaymentType(session.paymentType || "none");
-      setPaymentDate(session.paymentDate || undefined);
-    }
-  }, [activeSession, sessions]);
-  
-  // Category validation state
-  const [categoriesRequiringInfo, setCategoriesRequiringInfo] = useState<string[]>([]);
-  const [showCategoryInfoModal, setShowCategoryInfoModal] = useState(false);
-  const [pendingSaleAction, setPendingSaleAction] = useState<(() => void) | null>(null);
-  
   // Use refs to track cart and other values so they can be accessed in closures without stale closures
   const cartRef = useRef<CartItem[]>(cart);
   const clientNameRef = useRef<string>(clientName);
@@ -87,52 +68,117 @@ const CashierSession = memo(function CashierSession({
   const paymentAmountRef = useRef<number>(paymentAmount);
   const paymentTypeRef = useRef<"none" | "credit" | "versement">(paymentType);
   const paymentDateRef = useRef<Date | undefined>(paymentDate);
+  const clientNameDraftRef = useRef<string>(clientName);
+  const clientIdDraftRef = useRef<string | null>(clientId);
+  const paymentAmountDraftRef = useRef<number>(paymentAmount);
+  const paymentTypeDraftRef = useRef<"none" | "credit" | "versement">(paymentType);
+  const paymentDateDraftRef = useRef<Date | undefined>(paymentDate);
+  
+  // Category validation state
+  const [categoriesRequiringInfo, setCategoriesRequiringInfo] = useState<string[]>([]);
+  const [showCategoryInfoModal, setShowCategoryInfoModal] = useState(false);
+  const [pendingSaleAction, setPendingSaleAction] = useState<(() => void) | null>(null);
   
   // Keep refs in sync with state
   useEffect(() => {
     cartRef.current = cart;
   }, [cart]);
-  
+
   useEffect(() => {
     clientNameRef.current = clientName;
-    // Update session when clientName or clientId changes (only if different from session)
-    if (sessions[activeSession]) {
-      const session = sessions[activeSession];
-      if (session.clientName !== clientName || session.clientId !== clientId) {
-        onUpdateSessionClient(activeSession, clientName, clientId);
-      }
-    }
-  }, [clientName, clientId, activeSession, sessions, onUpdateSessionClient]);
-  
+    clientNameDraftRef.current = clientName;
+  }, [clientName]);
+
+  useEffect(() => {
+    clientIdDraftRef.current = clientId;
+  }, [clientId]);
+
   useEffect(() => {
     discountRef.current = discount;
   }, [discount]);
-  
+
   useEffect(() => {
     paymentAmountRef.current = paymentAmount;
+    paymentAmountDraftRef.current = paymentAmount;
   }, [paymentAmount]);
 
   useEffect(() => {
     paymentTypeRef.current = paymentType;
+    paymentTypeDraftRef.current = paymentType;
   }, [paymentType]);
 
   useEffect(() => {
     paymentDateRef.current = paymentDate;
+    paymentDateDraftRef.current = paymentDate;
   }, [paymentDate]);
 
-  // Update session when payment info changes (only if different from session)
-  useEffect(() => {
-    if (sessions[activeSession]) {
-      const session = sessions[activeSession];
-      if (
-        session.paymentAmount !== paymentAmount ||
-        session.paymentType !== paymentType ||
-        session.paymentDate !== paymentDate
-      ) {
-        onUpdateSessionPayment(activeSession, paymentAmount, paymentType, paymentDate);
-      }
-    }
-  }, [paymentAmount, paymentType, paymentDate, activeSession, sessions, onUpdateSessionPayment]);
+  const handleSetClientName = useCallback(
+    (name: string) => {
+      clientNameDraftRef.current = name;
+      onUpdateSessionClient(activeSession, name, clientIdDraftRef.current);
+    },
+    [activeSession, onUpdateSessionClient],
+  );
+
+  const handleSetClientId = useCallback(
+    (id: string | null) => {
+      clientIdDraftRef.current = id;
+      onUpdateSessionClient(activeSession, clientNameDraftRef.current, id);
+    },
+    [activeSession, onUpdateSessionClient],
+  );
+
+  const handleSetPaymentAmount = useCallback(
+    (amount: number) => {
+      paymentAmountDraftRef.current = amount;
+      onUpdateSessionPayment(
+        activeSession,
+        amount,
+        paymentTypeDraftRef.current,
+        paymentDateDraftRef.current,
+      );
+    },
+    [activeSession, onUpdateSessionPayment],
+  );
+
+  const handleSetPaymentType = useCallback(
+    (type: "none" | "credit" | "versement") => {
+      paymentTypeDraftRef.current = type;
+      onUpdateSessionPayment(
+        activeSession,
+        paymentAmountDraftRef.current,
+        type,
+        paymentDateDraftRef.current,
+      );
+    },
+    [activeSession, onUpdateSessionPayment],
+  );
+
+  const handleSetPaymentDate = useCallback(
+    (date: Date | undefined) => {
+      paymentDateDraftRef.current = date;
+      onUpdateSessionPayment(
+        activeSession,
+        paymentAmountDraftRef.current,
+        paymentTypeDraftRef.current,
+        date,
+      );
+    },
+    [activeSession, onUpdateSessionPayment],
+  );
+
+  const resetClientSession = useCallback(() => {
+    clientNameDraftRef.current = "";
+    clientIdDraftRef.current = null;
+    onUpdateSessionClient(activeSession, "", null);
+  }, [activeSession, onUpdateSessionClient]);
+
+  const resetPaymentSession = useCallback(() => {
+    paymentAmountDraftRef.current = 0;
+    paymentTypeDraftRef.current = "none";
+    paymentDateDraftRef.current = undefined;
+    onUpdateSessionPayment(activeSession, 0, "none", undefined);
+  }, [activeSession, onUpdateSessionPayment]);
 
   const total = useMemo(
     () => cart.reduce((sum, item) => sum + item.qty * item.price, 0),
@@ -152,22 +198,14 @@ const CashierSession = memo(function CashierSession({
           const existingClient = await window.api.database.clients.findByName(clientName.trim());
           if (existingClient) {
             saleClientId = existingClient.id;
-            setClientId(existingClient.id);
-            // Update session with client info
-            if (sessions[activeSession]) {
-              onUpdateSessionClient(activeSession, clientName.trim(), existingClient.id);
-            }
+            onUpdateSessionClient(activeSession, clientName.trim(), existingClient.id);
           } else {
             // Create a new client if not found
             const client = await window.api.database.clients.create({
               name: clientName.trim(),
             });
             saleClientId = client.id;
-            setClientId(client.id);
-            // Update session with client info
-            if (sessions[activeSession]) {
-              onUpdateSessionClient(activeSession, clientName.trim(), client.id);
-            }
+            onUpdateSessionClient(activeSession, clientName.trim(), client.id);
           }
         } catch (error) {
           // If findByName doesn't exist, create directly (fallback)
@@ -175,11 +213,7 @@ const CashierSession = memo(function CashierSession({
             name: clientName.trim(),
           });
           saleClientId = client.id;
-          setClientId(client.id);
-          // Update session with client info
-          if (sessions[activeSession]) {
-            onUpdateSessionClient(activeSession, clientName.trim(), client.id);
-          }
+          onUpdateSessionClient(activeSession, clientName.trim(), client.id);
         }
       }
 
@@ -245,23 +279,9 @@ const CashierSession = memo(function CashierSession({
         });
       }
       setCart([]);
-      const emptyClientName = "";
-      const emptyClientId: string | null = null;
-      setClientName(emptyClientName);
-      setClientId(emptyClientId);
       setDiscount("");
-      const emptyPaymentAmount = 0;
-      const emptyPaymentType: "none" | "credit" | "versement" = "none";
-      const emptyPaymentDate: Date | undefined = undefined;
-      setPaymentAmount(emptyPaymentAmount);
-      setPaymentType(emptyPaymentType);
-      setPaymentDate(emptyPaymentDate);
-      
-      // Update session data
-      if (sessions[activeSession]) {
-        onUpdateSessionClient(activeSession, emptyClientName, emptyClientId);
-        onUpdateSessionPayment(activeSession, emptyPaymentAmount, emptyPaymentType, emptyPaymentDate);
-      }
+      resetClientSession();
+      resetPaymentSession();
       // Refresh products only when needed (e.g., when product browser opens)
       // This prevents UI pause after every sale
       // setProductRefreshKey((k: number) => k + 1);
@@ -290,28 +310,31 @@ const CashierSession = memo(function CashierSession({
       showToast(t("cashier.saleError", "Failed to record sale"), "error");
       return { soldItems };
     }
-  }, [cart, clientName, clientId, discount, paymentAmount, paymentType, paymentDate, setCart, setClientName, setClientId, setDiscount, setPaymentAmount, setPaymentType, setPaymentDate, setProductRefreshKey, showToast, t, activeSession, sessions, onUpdateSessionClient, onUpdateSessionPayment]);
+  }, [
+    cart,
+    clientName,
+    clientId,
+    discount,
+    paymentAmount,
+    paymentType,
+    paymentDate,
+    total,
+    setCart,
+    setDiscount,
+    resetClientSession,
+    resetPaymentSession,
+    showToast,
+    t,
+    activeSession,
+    onUpdateSessionClient,
+  ]);
 
   // Clear the cart and reset session state
   const handleClear = () => {
     setCart([]);
     setDiscount("");
-    const emptyClientName = "";
-    const emptyClientId: string | null = null;
-    setClientName(emptyClientName);
-    setClientId(emptyClientId);
-    const emptyPaymentAmount = 0;
-    const emptyPaymentType: "none" | "credit" | "versement" = "none";
-    const emptyPaymentDate: Date | undefined = undefined;
-    setPaymentAmount(emptyPaymentAmount);
-    setPaymentType(emptyPaymentType);
-    setPaymentDate(emptyPaymentDate);
-    
-    // Update session data
-    if (sessions[activeSession]) {
-      onUpdateSessionClient(activeSession, emptyClientName, emptyClientId);
-      onUpdateSessionPayment(activeSession, emptyPaymentAmount, emptyPaymentType, emptyPaymentDate);
-    }
+    resetClientSession();
+    resetPaymentSession();
   };
 
   // Check if any products in cart require additional information
@@ -387,10 +410,8 @@ const CashierSession = memo(function CashierSession({
     if (result.saleId) {
       onSaleCompleted(result.saleId, result.soldItems);
     }
-    setPaymentAmount(0);
-    setPaymentType("none");
-    setPaymentDate(undefined);
-  }, [cart, discount, proceedWithSale, showToast, t, onSaleCompleted]);
+    resetPaymentSession();
+  }, [cart, discount, proceedWithSale, onSaleCompleted, resetPaymentSession]);
 
   const handleFinishWithReceipt = useCallback(async () => {
     if (cart.length === 0) {
@@ -448,9 +469,7 @@ const CashierSession = memo(function CashierSession({
           }
         }
         
-        setPaymentAmount(0);
-        setPaymentType("none");
-        setPaymentDate(undefined);
+        resetPaymentSession();
       });
       setShowCategoryInfoModal(true);
       return;
@@ -499,10 +518,8 @@ const CashierSession = memo(function CashierSession({
       }
     }
     
-    setPaymentAmount(0);
-    setPaymentType("none");
-    setPaymentDate(undefined);
-  }, [cart, discount, proceedWithSale, clientName, paymentAmount, paymentType, paymentDate, showToast, t, onSaleComplete, checkCategoryInfoRequired]);
+    resetPaymentSession();
+  }, [cart, discount, proceedWithSale, clientName, paymentAmount, paymentType, paymentDate, showToast, t, onSaleComplete, checkCategoryInfoRequired, resetPaymentSession]);
 
   // Listen for global ENTER key to finish sale
   useEffect(() => {
@@ -620,21 +637,21 @@ const CashierSession = memo(function CashierSession({
         <div className="flex-shrink-0 bg-card border border-border rounded-xl p-3 shadow-sm">
           <ActionButtons
             clientName={clientName}
-            setClientName={setClientName}
+            setClientName={handleSetClientName}
             onClear={handleClear}
             onFinish={handleFinish}
             onConfirmWithReceipt={handleFinishWithReceipt}
-            setClientId={setClientId}
+            setClientId={handleSetClientId}
             discount={discount}
             onDiscountChange={setDiscount}
             cartTotal={total}
             cart={cart}
             paymentAmount={paymentAmount}
-            setPaymentAmount={setPaymentAmount}
+            setPaymentAmount={handleSetPaymentAmount}
             paymentType={paymentType}
-            setPaymentType={setPaymentType}
+            setPaymentType={handleSetPaymentType}
             paymentDate={paymentDate}
-            setPaymentDate={setPaymentDate}
+            setPaymentDate={handleSetPaymentDate}
           />
         </div>
       </section>

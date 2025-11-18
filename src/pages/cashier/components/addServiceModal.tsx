@@ -34,6 +34,7 @@ interface AddServiceModalProps {
   onClose: () => void;
   onAdd: (service: CartItem) => void;
   cart: CartItem[];
+  onClientSelect?: (clientId: string, clientName: string) => void;
 }
 
 // Maximum value for INT column in SQLite (2^31 - 1)
@@ -44,6 +45,7 @@ export default function AddServiceModal({
   onClose,
   onAdd,
   cart,
+  onClientSelect,
 }: AddServiceModalProps) {
   const { t } = useTranslation();
   const { showToast } = useToast();
@@ -126,6 +128,11 @@ export default function AddServiceModal({
       description: completedService.description || undefined,
       serviceCostPrice: completedService.costPrice || 0,
     });
+    
+    // If service has a client, automatically select it in the cashier session
+    if (completedService.client?.id && completedService.client?.name && onClientSelect) {
+      onClientSelect(completedService.client.id, completedService.client.name);
+    }
     
     // Refresh completed services count since this service is now being sold
     refreshCompletedServicesCount();

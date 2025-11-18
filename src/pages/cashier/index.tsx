@@ -447,6 +447,9 @@ export default function CashierPage() {
               );
               sessionActions.updateSessionCart(activeSession, updatedCart);
             }}
+            onClientSelect={(clientId: string, clientName: string) => {
+              sessionActions.updateSessionClient(activeSession, clientName, clientId);
+            }}
           />
 
           <ReceiptModal
