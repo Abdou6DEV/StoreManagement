@@ -27,6 +27,9 @@ export default function GeneralHistory({
     setStartDate,
     endDate,
     setEndDate,
+    itemsPerPage,
+    setItemsPerPage,
+    availableDates,
   } = useGeneralHistoryData();
   const [highlightEnabled, setHighlightEnabled] = useState(false);
   const [netProfitEnabled, setNetProfitEnabled] = useState(false);
@@ -50,6 +53,9 @@ export default function GeneralHistory({
         endDate={endDate}
         onStartDateChange={setStartDate}
         onEndDateChange={setEndDate}
+        itemsPerPage={itemsPerPage}
+        onItemsPerPageChange={setItemsPerPage}
+        availableDates={availableDates}
       />
 
       {loading ? (
@@ -66,7 +72,7 @@ export default function GeneralHistory({
             highlightEnabled={highlightEnabled}
             netProfitEnabled={netProfitEnabled}
             currentPage={currentPage}
-            itemsPerPage={10}
+            itemsPerPage={itemsPerPage}
           />
           <SharedPagination
             currentPage={currentPage}

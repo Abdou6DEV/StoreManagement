@@ -1,10 +1,23 @@
 import { useTranslation } from "react-i18next";
-import { Calendar, BarChart3, TrendingUp } from "lucide-react";
+import { Calendar, BarChart3, TrendingUp, Check, ChevronDown } from "lucide-react";
 import { Switch } from "../../../../lib/components/switch";
 import { DatePicker } from "../../../../lib/components/datePicker";
 import { MonthPicker } from "../../../../lib/components/monthPicker";
 import { YearPicker } from "../../../../lib/components/yearPicker";
 import { Tooltip } from "../../../../lib/components/tooltip";
+import {
+  Command,
+  CommandGroup,
+  CommandItem,
+  CommandList,
+} from "../../../../lib/components/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "../../../../lib/components/popover";
+import { Button } from "../../../../lib/components/button";
+import { cn } from "../../../../lib/utils";
 import type { AggregationLevel } from "../../../../types";
 
 interface GeneralHistoryControlsProps {
@@ -18,6 +31,9 @@ interface GeneralHistoryControlsProps {
   endDate: string;
   onStartDateChange: (date: string) => void;
   onEndDateChange: (date: string) => void;
+  itemsPerPage: number;
+  onItemsPerPageChange: (size: number) => void;
+  availableDates: string[];
 }
 
 export default function GeneralHistoryControls({
@@ -31,6 +47,9 @@ export default function GeneralHistoryControls({
   endDate,
   onStartDateChange,
   onEndDateChange,
+  itemsPerPage,
+  onItemsPerPageChange,
+  availableDates,
 }: GeneralHistoryControlsProps) {
   const { t } = useTranslation();
 
@@ -135,6 +154,7 @@ export default function GeneralHistoryControls({
             onChange={onChange}
             placeholder={placeholder}
             className={className}
+            availableDates={availableDates}
           />
         );
       case "month":
@@ -144,6 +164,7 @@ export default function GeneralHistoryControls({
             onChange={onChange}
             placeholder={placeholder}
             className={className}
+            availableDates={availableDates}
           />
         );
       case "year":
@@ -153,6 +174,7 @@ export default function GeneralHistoryControls({
             onChange={onChange}
             placeholder={placeholder}
             className={className}
+            availableDates={availableDates}
           />
         );
       default:
@@ -164,7 +186,54 @@ export default function GeneralHistoryControls({
     <div className="bg-background border border-border rounded-lg p-4 shadow-sm">
       <div className="flex items-center justify-between gap-6">
         <div className="flex items-center gap-6">
-                    {/* Time Period Filter */}
+          {/* Items per page selector */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">
+              {t("stock.itemsPerPage", "Items per page:")}
+            </span>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="px-3 py-1.5 min-w-[70px]"
+                  aria-label={t(
+                    "stock.selectItemsPerPage",
+                    "Select items per page",
+                  )}
+                >
+                  {itemsPerPage}
+                  <ChevronDown className="ml-2 w-4 h-4" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[120px] p-0 z-50">
+                <Command shouldFilter={false}>
+                  <CommandList>
+                    <CommandGroup>
+                      {[5, 10, 25, 50, 100].map((size) => (
+                        <CommandItem
+                          key={size}
+                          value={size.toString()}
+                          onSelect={() => {
+                            onItemsPerPageChange(size);
+                          }}
+                        >
+                          {size}
+                          <Check
+                            className={cn(
+                              "ml-auto h-4 w-4",
+                              itemsPerPage === size ? "opacity-100" : "opacity-0",
+                            )}
+                          />
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          {/* Time Period Filter */}
           <Tooltip content={t("history.tooltips.aggregationLevel")}>
             <div className="flex items-center gap-1 bg-muted/30 rounded-xl p-1.5 border border-border/50">
               {options.map((option) => {
@@ -210,34 +279,36 @@ export default function GeneralHistoryControls({
             {/* Highlight Toggle */}
             <Tooltip content={t("history.tooltips.highlightProfits")}>
               <div className="flex items-center gap-2 text-sm rtl:flex-row-reverse">
-                <Switch
-                  checked={highlightEnabled}
-                  onCheckedChange={onHighlightChange}
-                  id="highlight-toggle"
-                />
-                <label
+              <label
                   htmlFor="highlight-toggle"
                   className="font-medium text-foreground cursor-pointer select-none"
                 >
                   {t("history.highlightProfits")}
                 </label>
+                <Switch
+                  checked={highlightEnabled}
+                  onCheckedChange={onHighlightChange}
+                  id="highlight-toggle"
+                />
+                
               </div>
             </Tooltip>
 
             {/* Net Profit Toggle */}
             <Tooltip content={t("history.tooltips.calculateNetProfit")}>
               <div className="flex items-center gap-2 text-sm rtl:flex-row-reverse">
-                <Switch
-                  checked={netProfitEnabled}
-                  onCheckedChange={onNetProfitChange}
-                  id="net-profit-toggle"
-                />
-                <label
+              <label
                   htmlFor="net-profit-toggle"
                   className="font-medium text-foreground cursor-pointer select-none"
                 >
                   {t("history.calculateNetProfit")}
                 </label>
+                <Switch
+                  checked={netProfitEnabled}
+                  onCheckedChange={onNetProfitChange}
+                  id="net-profit-toggle"
+                />
+                
               </div>
             </Tooltip>
           </div>

@@ -13,6 +13,7 @@ interface DatePickerProps {
   disabled?: boolean;
   min?: string;
   max?: string;
+  availableDates?: string[]; // Array of dates in YYYY-MM-DD format that have data
 }
 
 export function DatePicker({
@@ -23,6 +24,7 @@ export function DatePicker({
   disabled = false,
   min,
   max,
+  availableDates,
 }: DatePickerProps) {
   const { t, i18n } = useTranslation();
   const defaultPlaceholder = t("datePicker.selectDate");
@@ -171,6 +173,11 @@ export function DatePicker({
       // Only apply min/max constraints if they are provided and valid
       if (min && dateStr < min) return true;
       if (max && dateStr > max) return true;
+
+      // If availableDates is provided, only enable dates in that list
+      if (availableDates && availableDates.length > 0) {
+        return !availableDates.includes(dateStr);
+      }
 
       return false;
     } catch (error) {

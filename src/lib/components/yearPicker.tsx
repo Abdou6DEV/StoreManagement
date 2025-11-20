@@ -13,6 +13,7 @@ interface YearPickerProps {
   disabled?: boolean;
   min?: string; // Format: "YYYY"
   max?: string; // Format: "YYYY"
+  availableDates?: string[]; // Array of years in YYYY format that have data
 }
 
 export function YearPicker({
@@ -23,6 +24,7 @@ export function YearPicker({
   disabled = false,
   min,
   max,
+  availableDates,
 }: YearPickerProps) {
   const { t } = useTranslation();
   const defaultPlaceholder = t("datePicker.selectYear");
@@ -69,6 +71,11 @@ export function YearPicker({
     // Only apply min/max constraints if they are provided and valid
     if (min && yearStr < min) return true;
     if (max && yearStr > max) return true;
+    
+    // If availableDates is provided, only enable years in that list
+    if (availableDates && availableDates.length > 0) {
+      return !availableDates.includes(yearStr);
+    }
     
     return false;
   };

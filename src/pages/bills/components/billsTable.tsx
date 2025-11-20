@@ -304,7 +304,7 @@ const BillsTable: React.FC<BillsTableProps> = ({
                   </span>
                 </td>
                 <td className={`px-4 py-2 ${isRTL ? "text-right" : "text-left"}`}>
-                  <span className="font-bold text-blue-600 dark:text-blue-400">
+                  <span className="text-base font-bold text-blue-600 dark:text-blue-400">
                     {formatCurrency(getTotalPaidAmount(bill.payments || []))}
                   </span>
                 </td>

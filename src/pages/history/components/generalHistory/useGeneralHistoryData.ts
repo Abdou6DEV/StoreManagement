@@ -6,9 +6,10 @@ export function useGeneralHistoryData() {
   const [aggregationLevel, setAggregationLevel] =
     useState<AggregationLevel>("day");
   const [aggregatedData, setAggregatedData] = useState<AggregatedData[]>([]);
+  const [allAvailablePeriods, setAllAvailablePeriods] = useState<AggregatedData[]>([]); // All periods with data
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(10);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   
   // Date range state - will be set after fetching data range
   const [startDate, setStartDate] = useState<string>("");
@@ -21,10 +22,10 @@ export function useGeneralHistoryData() {
   const currentData = aggregatedData.slice(startIndex, endIndex);
 
 
-  // Reset to first page when aggregation level or date range changes
+  // Reset to first page when aggregation level, date range, or items per page changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [aggregationLevel, startDate, endDate]);
+  }, [aggregationLevel, startDate, endDate, itemsPerPage]);
 
   // Simple date validation
   const isValidDate = (dateString: string): boolean => {
@@ -58,8 +59,43 @@ export function useGeneralHistoryData() {
   };
 
 
+  // Fetch all available periods (for enabling/disabling dates in picker)
+  const fetchAllAvailablePeriods = async (level: AggregationLevel) => {
+    try {
+      // Fetch data from a very wide date range to get all available periods
+      const veryOldDate = new Date('2000-01-01T00:00:00');
+      const futureDate = new Date('2100-12-31T23:59:59.999');
+      
+      const allData = await window.api.database.sales.getAggregatedByPeriod(
+        level,
+        veryOldDate,
+        futureDate,
+      );
+      
+      setAllAvailablePeriods(Array.isArray(allData) ? allData : []);
+      
+      rendererLogger.debug(
+        "All available periods fetched",
+        "GeneralHistory",
+        {
+          level,
+          periodsCount: allData.length,
+        },
+      );
+    } catch (error) {
+      rendererLogger.error(
+        "Error fetching all available periods",
+        "GeneralHistory",
+        error,
+      );
+      setAllAvailablePeriods([]);
+    }
+  };
+
   // Initialize data on component mount and when aggregation level changes
   useEffect(() => {
+    // Fetch all available periods for the picker
+    fetchAllAvailablePeriods(aggregationLevel);
     // Set default date range based on current aggregation level
     setDefaultDateRange(aggregationLevel);
   }, [aggregationLevel]);
@@ -266,6 +302,13 @@ export function useGeneralHistoryData() {
     }
   };
 
+  // Get available dates based on aggregation level
+  const getAvailableDates = (): string[] => {
+    // Use allAvailablePeriods instead of aggregatedData
+    // This ensures we show all periods with data, not just filtered ones
+    return allAvailablePeriods.map(data => data.period);
+  };
+
   return {
     aggregationLevel,
     setAggregationLevel,
@@ -279,5 +322,8 @@ export function useGeneralHistoryData() {
     setStartDate: setFormattedStartDate,
     endDate: getFormattedEndDate(),
     setEndDate: setFormattedEndDate,
+    itemsPerPage,
+    setItemsPerPage,
+    availableDates: getAvailableDates(),
   };
 }

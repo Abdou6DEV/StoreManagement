@@ -13,6 +13,7 @@ interface MonthPickerProps {
   disabled?: boolean;
   min?: string; // Format: "YYYY-MM"
   max?: string; // Format: "YYYY-MM"
+  availableDates?: string[]; // Array of months in YYYY-MM format that have data
 }
 
 export function MonthPicker({
@@ -23,6 +24,7 @@ export function MonthPicker({
   disabled = false,
   min,
   max,
+  availableDates,
 }: MonthPickerProps) {
   const { t, i18n } = useTranslation();
   const defaultPlaceholder = t("datePicker.selectMonth");
@@ -77,6 +79,11 @@ export function MonthPicker({
     // Only apply min/max constraints if they are provided and valid
     if (min && monthStr < min) return true;
     if (max && monthStr > max) return true;
+    
+    // If availableDates is provided, only enable months in that list
+    if (availableDates && availableDates.length > 0) {
+      return !availableDates.includes(monthStr);
+    }
     
     return false;
   };

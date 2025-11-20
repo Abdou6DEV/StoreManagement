@@ -194,7 +194,7 @@ const AllPaymentsTable: React.FC<AllPaymentsTableProps> = ({
                     <span>{formatDate(payment.paidDate)}</span>
                   </div>
                 </td>
-                <td
+                <td                                           
                   className={`px-4 py-2 font-medium ${isRTL ? "text-right" : "text-left"}`}
                 >
                   {payment.bill.title}
@@ -204,8 +204,8 @@ const AllPaymentsTable: React.FC<AllPaymentsTableProps> = ({
                 </td>
                 <td className={`px-4 py-2 ${isRTL ? "text-right" : "text-left"}`}>
                   <div className="flex items-center gap-2">
-                    <CreditCard className="w-4 h-4 text-blue-600" />
-                    <span className="font-medium text-blue-700">
+                    <CreditCard className="w-4 h-4 text-blue-400" />
+                    <span className="text-base font-bold text-blue-400">
                       {formatCurrency(payment.amount)}
                     </span>
                   </div>
