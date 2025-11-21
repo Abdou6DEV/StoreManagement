@@ -100,7 +100,7 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
           <span className="text-muted-foreground">
             {t("clients.totalPayments", "Total Payments")}:
           </span>
-          <span className="font-medium">{allPayments.length}</span>
+          <span className="font-medium text-[0.9375rem]">{allPayments.length}</span>
         </div>
 
         {/* Total Amount */}
@@ -108,7 +108,7 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
           <span className="text-muted-foreground">
             {t("clients.totalAmount", "Total Amount")}:
           </span>
-          <span className="font-medium">
+          <span className="font-medium text-[0.9375rem]">
             {allPayments
               .reduce((sum, p) => {
                 if (p.type === "CREDIT" && p.remainingAmount !== undefined) {
@@ -116,7 +116,7 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
                 }
                 return sum + p.givenAmount;
               }, 0)
-              .toLocaleString()}{" "}
+              .toLocaleString('fr-FR')}{" "}
             {t("cashier.currency", "DA")}
           </span>
         </div>
@@ -126,7 +126,7 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
           <span className="text-muted-foreground">
             {t("clients.paidAmount", "Paid Amount")}:
           </span>
-          <span className="font-medium text-green-600 dark:text-green-400">
+          <span className="font-medium text-[0.9375rem] text-green-600 dark:text-green-400">
             {allPayments
               .filter(p => p.paidDate)
               .reduce((sum, p) => {
@@ -135,7 +135,7 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
                 }
                 return sum + p.givenAmount;
               }, 0)
-              .toLocaleString()}{" "}
+              .toLocaleString('fr-FR')}{" "}
             {t("cashier.currency", "DA")}
           </span>
         </div>
@@ -145,7 +145,7 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
           <span className="text-muted-foreground">
             {t("clients.outstandingAmount", "Outstanding")}:
           </span>
-          <span className="font-medium text-orange-600 dark:text-orange-400">
+          <span className="font-medium text-[0.9375rem] text-orange-600 dark:text-orange-400">
             {allPayments
               .filter(p => !p.paidDate)
               .reduce((sum, p) => {
@@ -154,7 +154,7 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
                 }
                 return sum + p.givenAmount;
               }, 0)
-              .toLocaleString()}{" "}
+              .toLocaleString('fr-FR')}{" "}
             {t("cashier.currency", "DA")}
           </span>
         </div>
@@ -164,7 +164,7 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
           <span className="text-muted-foreground">
             {t("clients.overdueAmount", "Overdue")}:
           </span>
-          <span className="font-medium text-red-600 dark:text-red-400">
+          <span className="font-medium text-[0.9375rem] text-red-600 dark:text-red-400">
             {allPayments
               .filter(p => !p.paidDate && isOverdue(new Date(p.dueDate)))
               .reduce((sum, p) => {
@@ -173,7 +173,7 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
                 }
                 return sum + p.givenAmount;
               }, 0)
-              .toLocaleString()}{" "}
+              .toLocaleString('fr-FR')}{" "}
             {t("cashier.currency", "DA")}
           </span>
         </div>

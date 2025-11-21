@@ -4,6 +4,7 @@ import ProductSearch from "./productSearch";
 import { Tooltip } from "../../../lib/components/tooltip";
 import { BadgeNotification } from "../../../lib/components/badgeNotification";
 import { useCompletedServices } from "../../../lib/contexts/completedServicesContext";
+import type { CartItem } from "../../../types";
 
 interface ProductControlsProps {
   onShowProductBrowser: () => void;
@@ -11,6 +12,8 @@ interface ProductControlsProps {
   onShowServiceModal: () => void;
   onAddProduct: (product: any) => void;
   productRefreshKey: number;
+  cart: CartItem[];
+  onClientSelect?: (clientId: string, clientName: string) => void;
 }
 
 export default function ProductControls({
@@ -19,6 +22,8 @@ export default function ProductControls({
   onShowServiceModal,
   onAddProduct,
   productRefreshKey,
+  cart,
+  onClientSelect,
 }: ProductControlsProps) {
   const { t } = useTranslation();
   const { completedServicesCount } = useCompletedServices();
@@ -26,7 +31,12 @@ export default function ProductControls({
   return (
     <div className="bg-card border border-border rounded-xl p-3 shadow-sm flex-shrink-0">
       <div className="flex items-center justify-center gap-2">
-        <ProductSearch onAdd={onAddProduct} refreshKey={productRefreshKey} />
+        <ProductSearch 
+          onAdd={onAddProduct} 
+          refreshKey={productRefreshKey} 
+          cart={cart}
+          onClientSelect={onClientSelect}
+        />
         <Tooltip
           content={t("cashier.tooltipBrowseProducts", "Browse Products (F1)")}
           position="top"

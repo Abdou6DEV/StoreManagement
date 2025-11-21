@@ -323,11 +323,20 @@ export default function Clients() {
         client.address.toLowerCase().includes(search.toLowerCase())),
   );
 
-  // Sort by credit (descending - highest first)
+  // Sort by credit (descending - highest first), then by versement
   const sortedClients = [...filteredClients].sort((a, b) => {
     const creditA = a.totalCredit || 0;
     const creditB = b.totalCredit || 0;
-    return creditB - creditA; // Descending order
+    
+    // First sort by credit (descending)
+    if (creditB !== creditA) {
+      return creditB - creditA;
+    }
+    
+    // If credits are equal, sort by versement (descending)
+    const versementA = a.totalVersement || 0;
+    const versementB = b.totalVersement || 0;
+    return versementB - versementA;
   });
 
   // Pagination logic
@@ -620,7 +629,7 @@ export default function Clients() {
                   <span className="text-muted-foreground">
                     {t("clients.totalClients", "Total Clients")}:
                   </span>
-                  <span className="font-medium">{sortedClients.length}</span>
+                  <span className="font-medium text-[0.9375rem]">{sortedClients.length}</span>
                 </div>
 
                 {/* Total Purchases */}
@@ -629,13 +638,13 @@ export default function Clients() {
                   <span className="text-muted-foreground">
                     {t("clients.totalPurchases", "Total Purchases")}:
                   </span>
-                  <span className="font-medium">
+                  <span className="font-medium text-[0.9375rem]">
                     {sortedClients
                       .reduce(
                         (sum, client) => sum + (client.totalPurchases || 0),
                         0,
                       )
-                      .toLocaleString()}{" "}
+                      .toLocaleString('fr-FR')}{" "}
                     {t("cashier.currency", "DA")}
                   </span>
                 </div>
@@ -646,14 +655,13 @@ export default function Clients() {
                   <span className="text-muted-foreground">
                     {t("clients.totalCredits", "Total Credits")}:
                   </span>
-                  <span className="font-medium text-orange-600 dark:text-orange-400">
+                  <span className="font-medium text-[0.9375rem] text-orange-600 dark:text-orange-400">
                     {sortedClients
                       .reduce(
                         (sum, client) => sum + Math.max(0, client.totalCredit || 0),
                         0,
                       )
-                      .toLocaleString("en-US", { maximumFractionDigits: 0 })
-                      .replace(/,/g, " ")}{" "}
+                      .toLocaleString('fr-FR')}{" "}
                     {t("cashier.currency", "DA")}
                   </span>
                 </div>
@@ -664,14 +672,13 @@ export default function Clients() {
                   <span className="text-muted-foreground">
                     {t("clients.totalVersements", "Total Versements")}:
                   </span>
-                  <span className="font-medium text-blue-600 dark:text-blue-400">
+                  <span className="font-medium text-[0.9375rem] text-blue-600 dark:text-blue-400">
                     {sortedClients
                       .reduce(
                         (sum, client) => sum + Math.max(0, client.totalVersement || 0),
                         0,
                       )
-                      .toLocaleString("en-US", { maximumFractionDigits: 0 })
-                      .replace(/,/g, " ")}{" "}
+                      .toLocaleString('fr-FR')}{" "}
                     {t("cashier.currency", "DA")}
                   </span>
                 </div>

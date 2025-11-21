@@ -74,22 +74,22 @@ export const StockRow = React.memo(function StockRow({
     >
       <td className="px-4">{product.name}</td>
       <td className="px-4">{product.categoryName}</td>
-      <td className="px-4">{product.quantity}</td>
+      <td className="px-4"><span className="text-[0.9375rem]">{product.quantity.toLocaleString('fr-FR')}</span></td>
       <td className="px-4 whitespace-nowrap">
-        {product.boughtPrice} {t("cashier.currency", "DA")}
+        <span className="text-[0.9375rem]">{product.boughtPrice.toLocaleString('fr-FR')} {t("cashier.currency", "DA")}</span>
       </td>
       <td className="px-4 whitespace-nowrap">
-        {product.sellingPrice} {t("cashier.currency", "DA")}
+        <span className="text-[0.9375rem]">{product.sellingPrice.toLocaleString('fr-FR')} {t("cashier.currency", "DA")}</span>
       </td>
       <td className="px-4 text-green-700 font-medium whitespace-nowrap">
-        {profit} {t("cashier.currency", "DA")}
+        <span className="text-[0.9375rem]">{profit.toLocaleString('fr-FR')} {t("cashier.currency", "DA")}</span>
       </td>
-      <td className="px-4">{product.totalSold ?? 0}</td>
+      <td className="px-4"><span className="text-[0.9375rem]">{(product.totalSold ?? 0).toLocaleString('fr-FR')}</span></td>
       <td className="px-4 text-green-700 font-medium whitespace-nowrap">
         {loading ? (
           <span className="text-xs text-muted-foreground">Loading...</span>
         ) : (
-          `${actualProfit} ${t("cashier.currency", "DA")}`
+          <span className="text-[0.9375rem]">{actualProfit.toLocaleString('fr-FR')} {t("cashier.currency", "DA")}</span>
         )}
       </td>
       <td className="px-4">

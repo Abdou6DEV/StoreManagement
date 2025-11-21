@@ -473,19 +473,16 @@ export const StockTable = () => {
                         className="h-[48px] hover:bg-muted/40 transition"
                       >
                         <td className="px-4">{row.category}</td>
-                        <td className="px-4">{categoryProducts.length}</td>
-                        <td className="px-4">{row.totalQuantity}</td>
-                        <td className="px-4">
-                          {row.totalBought.toLocaleString()}{" "}
-                          {t("cashier.currency")}
+                        <td className="px-4"><span className="text-[0.9375rem]">{categoryProducts.length}</span></td>
+                        <td className="px-4"><span className="text-[0.9375rem]">{row.totalQuantity.toLocaleString('fr-FR')}</span></td>
+                        <td className="px-4 whitespace-nowrap">
+                          <span className="text-[0.9375rem]">{row.totalBought.toLocaleString('fr-FR')} {t("cashier.currency")}</span>
                         </td>
-                        <td className="px-4">
-                          {row.totalSelling.toLocaleString()}{" "}
-                          {t("cashier.currency")}
+                        <td className="px-4 whitespace-nowrap">
+                          <span className="text-[0.9375rem]">{row.totalSelling.toLocaleString('fr-FR')} {t("cashier.currency")}</span>
                         </td>
-                        <td className="px-4 text-green-700 font-medium">
-                          {row.totalProfit.toLocaleString()}{" "}
-                          {t("cashier.currency")}
+                        <td className="px-4 text-green-700 font-medium whitespace-nowrap">
+                          <span className="text-[0.9375rem]">{row.totalProfit.toLocaleString('fr-FR')} {t("cashier.currency")}</span>
                         </td>
                       </tr>
                     );

@@ -1,6 +1,6 @@
 import React from "react";
 import { Button } from "../../../lib/components/button";
-import { Edit, Loader2, Trash2, CreditCard } from "lucide-react";
+import { Edit, Loader2, Trash2, Info } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { ClientWithTotalPurchases } from "../../../types";
 import { Tooltip } from "../../../lib/components/tooltip";
@@ -26,7 +26,7 @@ const ClientsTable: React.FC<ClientsTableProps> = ({
   if (clients.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 gap-3 text-center">
-        <CreditCard className="w-12 h-12 text-red-500 mb-1" />
+        <Info className="w-12 h-12 text-red-500 mb-1" />
         <h3 className="text-xl font-semibold text-foreground">
           {t("clients.emptyTitle", "No clients found")}
         </h3>
@@ -93,17 +93,14 @@ const ClientsTable: React.FC<ClientsTableProps> = ({
               <td className={`px-4 py-2 ${isRTL ? "text-right" : "text-left"}`}>
                 {client.notes || "-"}
               </td>
-              <td className={`px-4 py-2 ${isRTL ? "text-right" : "text-left"}`}>
-                {client.totalPurchases?.toLocaleString() || 0}{" "}
-                {t("cashier.currency", "DA")}
+              <td className={`px-4 py-2 ${isRTL ? "text-right" : "text-left"} whitespace-nowrap`}>
+                <span className="text-[0.9375rem]">{client.totalPurchases?.toLocaleString() || 0} {t("cashier.currency", "DA")}</span>
               </td>
               <td className={`px-4 py-2 ${isRTL ? "text-right" : "text-left"} font-medium whitespace-nowrap ${(client.totalCredit || 0) > 0 ? "text-orange-600 dark:text-orange-400" : ""}`}>
-                <span>{(Math.max(0, client.totalCredit || 0)).toLocaleString("en-US", { maximumFractionDigits: 0 }).replace(/,/g, " ")}</span>{" "}
-                <span>{t("cashier.currency", "DA")}</span>
+                <span className="text-[0.9375rem]">{(Math.max(0, client.totalCredit || 0)).toLocaleString("en-US", { maximumFractionDigits: 0 }).replace(/,/g, " ")} {t("cashier.currency", "DA")}</span>
               </td>
               <td className={`px-4 py-2 ${isRTL ? "text-right" : "text-left"} font-medium whitespace-nowrap ${(client.totalVersement || 0) > 0 ? "text-blue-600 dark:text-blue-400" : ""}`}>
-                <span>{(Math.max(0, client.totalVersement || 0)).toLocaleString("en-US", { maximumFractionDigits: 0 }).replace(/,/g, " ")}</span>{" "}
-                <span>{t("cashier.currency", "DA")}</span>
+                <span className="text-[0.9375rem]">{(Math.max(0, client.totalVersement || 0)).toLocaleString("en-US", { maximumFractionDigits: 0 }).replace(/,/g, " ")} {t("cashier.currency", "DA")}</span>
               </td>
               <td className={`px-4 py-2 ${isRTL ? "text-right" : "text-left"}`}>
                 <div
@@ -111,8 +108,8 @@ const ClientsTable: React.FC<ClientsTableProps> = ({
                 >
                   <Tooltip
                     content={t(
-                      "clients.viewPaymentsTooltip",
-                      "View payments history",
+                      "clients.viewClientInfoTooltip",
+                      "View Client's Informations",
                     )}
                   >
                     <Button
@@ -121,7 +118,7 @@ const ClientsTable: React.FC<ClientsTableProps> = ({
                       variant="outline"
                       className="text-blue-600 border-blue-200 hover:bg-blue-50 dark:text-blue-400 dark:border-blue-800 dark:hover:bg-blue-950/30"
                     >
-                      <CreditCard className="w-3 h-3" />
+                      <Info className="w-3 h-3" />
                     </Button>
                   </Tooltip>
 

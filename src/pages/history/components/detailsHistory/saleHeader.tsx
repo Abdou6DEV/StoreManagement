@@ -97,10 +97,10 @@ const SaleHeader: React.FC<SaleHeaderProps> = ({ sale }) => {
         {paymentStatusBadge}
       </div>
       <div className="flex flex-col items-end gap-1">
-        <div className="text-lg font-bold text-foreground">
+        <div className="text-[0.9375rem] font-bold text-foreground">
           {formatCurrency(totalAmountWithDiscount)}
         </div>
-        <div className="text-sm font-bold text-green-600">
+        <div className="text-[0.9375rem] font-bold text-green-600">
           {formatCurrency(saleProfit)}
         </div>
       </div>

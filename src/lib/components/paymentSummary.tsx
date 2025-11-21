@@ -198,12 +198,12 @@ export default function PaymentSummary({
               className="w-full text-right bg-transparent border border-primary rounded px-1 py-0 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
             />
           ) : (
-            item.qty
+            <span className="text-[0.9375rem]">{item.qty}</span>
           )}
         </td>
-        <td className={`py-1 px-2 text-right ${interactive ? "w-[15%]" : "w-1/6"}`}>{item.price.toLocaleString()}</td>
+        <td className={`py-1 px-2 text-right ${interactive ? "w-[15%]" : "w-1/6"}`}><span className="text-[0.9375rem]">{item.price.toLocaleString()}</span></td>
         <td className={`py-1 px-2 text-right ${interactive ? "w-[15%]" : "w-1/6"}`}>
-          {(item.qty * item.price).toLocaleString()}
+          <span className="text-[0.9375rem]">{(item.qty * item.price).toLocaleString()}</span>
         </td>
         <td className="py-1 px-2 text-right w-[20%]">
           <div
@@ -367,12 +367,12 @@ export default function PaymentSummary({
                       >
                         {item.isService ? `🔧 ${item.name}` : item.name}
                       </td>
-                      <td className={`py-2 px-2 text-right ${interactive ? "w-[15%]" : "w-1/6"}`}>{item.qty}</td>
+                      <td className={`py-2 px-2 text-right ${interactive ? "w-[15%]" : "w-1/6"}`}><span className="text-[0.9375rem]">{item.qty}</span></td>
                       <td className={`py-2 px-2 text-right ${interactive ? "w-[15%]" : "w-1/6"}`}>
-                        {item.price.toLocaleString()}
+                        <span className="text-[0.9375rem]">{item.price.toLocaleString()}</span>
                       </td>
                       <td className={`py-2 px-2 text-right ${interactive ? "w-[15%]" : "w-1/6"}`}>
-                        {(item.qty * item.price).toLocaleString()}
+                        <span className="text-[0.9375rem]">{(item.qty * item.price).toLocaleString()}</span>
                       </td>
                     </tr>
                   ),
@@ -403,7 +403,7 @@ export default function PaymentSummary({
             {t("cashier.nbrItems", "Nbr Items")}
           </span>
           <span className={isRTL ? "w-1/4 text-left" : "w-1/4 text-right"}>
-            {nbrItems}
+            <span className="text-[0.9375rem]">{nbrItems}</span>
           </span>
         </div>
         
@@ -414,7 +414,7 @@ export default function PaymentSummary({
               {t("cashier.subtotal", "Subtotal")}
             </span>
             <span className={isRTL ? "w-1/4 text-left" : "w-1/4 text-right"}>
-              {subtotal.toLocaleString()} {t("cashier.currency", "DA")}
+              <span className="text-[0.9375rem]">{subtotal.toLocaleString()} {t("cashier.currency", "DA")}</span>
             </span>
           </div>
         )}
@@ -426,7 +426,7 @@ export default function PaymentSummary({
               {t("cashier.paid", "Paid")}
             </span>
             <span className={isRTL ? "w-1/4 text-left" : "w-1/4 text-right"}>
-              {paymentAmount.toLocaleString()} {t("cashier.currency", "DA")}
+              <span className="text-[0.9375rem]">{paymentAmount.toLocaleString()} {t("cashier.currency", "DA")}</span>
             </span>
           </div>
         )}
@@ -436,7 +436,7 @@ export default function PaymentSummary({
               {t("cashier.versement", "Versement")}
             </span>
             <span className={isRTL ? "w-1/4 text-left" : "w-1/4 text-right"}>
-              {paymentAmount.toLocaleString()} {t("cashier.currency", "DA")}
+              <span className="text-[0.9375rem]">{paymentAmount.toLocaleString()} {t("cashier.currency", "DA")}</span>
             </span>
           </div>
         )}
@@ -447,7 +447,7 @@ export default function PaymentSummary({
               {t("cashier.discount", "Discount")}
             </span>
             <span className={isRTL ? "w-1/4 text-left" : "w-1/4 text-right"}>
-              -{discount.toLocaleString()} {t("cashier.currency", "DA")}
+              <span className="text-[0.9375rem]">-{discount.toLocaleString()} {t("cashier.currency", "DA")}</span>
             </span>
           </div>
         )}
@@ -489,7 +489,7 @@ export default function PaymentSummary({
                 : t("cashier.rest", "Rest")}
             </span>
             <span className={isRTL ? "w-1/4 text-left" : "w-1/4 text-right"}>
-              {creditDisplay.toLocaleString()} {t("cashier.currency", "DA")}
+              <span className="text-[0.9375rem]">{creditDisplay.toLocaleString()} {t("cashier.currency", "DA")}</span>
             </span>
           </div>
         )}
@@ -499,7 +499,7 @@ export default function PaymentSummary({
              {t("cashier.total", "Total")}
            </span>
            <span className={isRTL ? "w-1/4 text-left" : "w-1/4 text-right"}>
-             {total.toLocaleString()} {t("cashier.currency", "DA")}
+             <span className="text-[0.9375rem]">{total.toLocaleString()} {t("cashier.currency", "DA")}</span>
            </span>
          </div>
       </div>

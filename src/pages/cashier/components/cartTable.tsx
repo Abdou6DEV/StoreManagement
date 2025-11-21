@@ -106,15 +106,14 @@ export default function CartTable({ cart, setCart }: Props) {
               className="w-full text-right bg-transparent border border-primary rounded px-1 py-0 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
             />
           ) : (
-            item.qty
+            <span className="text-[0.9375rem]">{item.qty}</span>
           )}
         </td>
         <td className="p-2 text-right w-[20%]">
-          {item.price.toLocaleString()} {t("cashier.currency", "DA")}
+          <span className="text-[0.9375rem]">{item.price.toLocaleString()} {t("cashier.currency", "DA")}</span>
         </td>
         <td className="p-2 text-right w-[20%]">
-          {(item.price * item.qty).toLocaleString()}{" "}
-          {t("cashier.currency", "DA")}
+          <span className="text-[0.9375rem]">{(item.price * item.qty).toLocaleString()} {t("cashier.currency", "DA")}</span>
         </td>
         <td className="p-2 text-right w-[20%]">
           <div className="flex justify-end gap-1">

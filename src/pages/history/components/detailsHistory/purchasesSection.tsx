@@ -49,7 +49,7 @@ export default function PurchasesSection({
                   </span>
                 )}
               </div>
-              <span className="text-xl font-bold text-green-600">
+              <span className="text-[0.9375rem] font-bold text-green-600">
                 {formatCurrency(
                   purchase.PurchaseItems.reduce(
                     (sum, item) => sum + item.price * item.quantity,
@@ -66,9 +66,9 @@ export default function PurchasesSection({
                 >
                   <span className="font-medium text-foreground">
                     {item.product.name} ({item.product.categoryName}) x{" "}
-                    <span className="font-bold text-primary">{item.quantity}</span>
+                    <span className="font-bold text-[0.9375rem] text-primary">{item.quantity}</span>
                   </span>
-                  <span className="text-lg font-bold text-foreground">
+                  <span className="text-[0.9375rem] font-bold text-foreground">
                     {formatCurrency(item.price * item.quantity)}
                   </span>
                 </div>

@@ -51,7 +51,6 @@ interface ClientData {
   totalVersements: number;
   pendingCredits: number;
   pendingVersements: number;
-  balance: number;
 }
 
 export const ClientDetailsModal = ({
@@ -123,7 +122,6 @@ export const ClientDetailsModal = ({
         return sum + (p.remainingAmount !== undefined ? p.remainingAmount : p.givenAmount);
       }, 0);
       const pendingVersements = versements.filter((p: any) => !p.paidDate).reduce((sum: number, p: any) => sum + p.givenAmount, 0);
-      const balance = totalCredits - totalVersements;
 
       setClientData({
         sales: salesData,
@@ -133,8 +131,7 @@ export const ClientDetailsModal = ({
         totalCredits,
         totalVersements,
         pendingCredits,
-        pendingVersements,
-        balance
+        pendingVersements
       });
     } catch (err) {
       setError(t("clients.fetchError", "Failed to fetch client data"));
@@ -236,15 +233,6 @@ export const ClientDetailsModal = ({
                   {formatCurrency(clientData.totalVersements)}
                 </p>
               </div>
-              <div className={isRTL ? "text-right" : "text-left"}>
-                <label className="text-sm font-medium text-muted-foreground">
-                  {t("clients.balance", "Balance")}
-                </label>
-                <p className="text-foreground font-medium text-blue-600">
-                  {formatCurrency(Math.abs(clientData.balance))}
-                  {clientData.balance < 0 && " -"}
-                </p>
-              </div>
             </div>
 
             {/* Client Avatar */}
@@ -260,9 +248,9 @@ export const ClientDetailsModal = ({
           {/* Tabs */}
           <div className="flex space-x-1 bg-muted/30 p-1 rounded-lg">
             {[
-              { id: "sales", label: t("clients.sales", "Sales"), icon: ShoppingCart },
-              { id: "payments", label: t("clients.payments", "Payments"), icon: CreditCard },
-              { id: "services", label: t("clients.services", "Services"), icon: Wrench }
+              { id: "sales", label: t("clients.sales", "Sales"), icon: ShoppingCart, count: clientData.sales.length },
+              { id: "payments", label: t("clients.payments", "Payments"), icon: CreditCard, count: clientData.payments.length },
+              { id: "services", label: t("clients.services", "Services"), icon: Wrench, count: clientData.services.length }
             ].map((tab) => {
               const Icon = tab.icon;
               return (
@@ -277,6 +265,15 @@ export const ClientDetailsModal = ({
                 >
                   <Icon className="w-4 h-4" />
                   {tab.label}
+                  {tab.count > 0 && (
+                    <span className={`ml-1 px-2 py-0.5 text-xs font-semibold rounded-full ${
+                      activeTab === tab.id
+                        ? "bg-primary/10 text-primary"
+                        : "bg-muted text-muted-foreground"
+                    }`}>
+                      {tab.count}
+                    </span>
+                  )}
                 </button>
               );
             })}

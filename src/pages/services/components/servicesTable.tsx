@@ -87,7 +87,8 @@ const ServicesTable: React.FC<ServicesTableProps> = ({
   const { refreshCompletedServicesCount } = useCompletedServices();
 
   const formatCurrency = (amount: number) => {
-    return `${amount % 1 === 0 ? amount.toFixed(0) : amount.toFixed(2)} ${t("services.currency", "DA")}`;
+    const formatted = amount % 1 === 0 ? amount.toFixed(0) : amount.toFixed(2);
+    return `${parseFloat(formatted).toLocaleString('fr-FR')} ${t("services.currency", "DA")}`;
   };
 
   const formatDate = (date: string) => {
@@ -371,7 +372,7 @@ const ServicesTable: React.FC<ServicesTableProps> = ({
                   </td>
                   <td className={`px-4 py-2 ${isRTL ? "text-right" : "text-left"}`}>
                     <div className="flex flex-col gap-1">
-                      <span className="font-bold text-cyan-600 dark:text-cyan-400">
+                      <span className="font-medium text-[0.9375rem] text-cyan-600 dark:text-cyan-400">
                         {formatCurrency(service.servicePrice)}
                       </span>
                       {/* Only show payment status for incomplete services or completed but not sold services */}

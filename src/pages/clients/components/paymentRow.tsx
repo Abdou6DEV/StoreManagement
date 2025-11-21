@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "../../../lib/components/button";
-import { User, Calendar, Edit } from "lucide-react";
+import { Input } from "../../../lib/components/input";
+import { User, Calendar, Edit, Save, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { PaymentWithClient } from "../../../types";
 import PaymentStatus from "./paymentStatus";
@@ -88,9 +89,9 @@ const PaymentRow: React.FC<PaymentRowProps> = ({
         <div className="flex items-center gap-2">
           <User className="w-4 h-4 text-muted-foreground" />
           <div>
-            <div className="font-medium">{payment.client.name}</div>
+            <div className="font-medium text-[0.9375rem]">{payment.client.name}</div>
             {payment.client.phone && (
-              <div className="text-xs text-muted-foreground">
+              <div className="text-[0.8125rem] text-muted-foreground">
                 {payment.client.phone}
               </div>
             )}
@@ -103,7 +104,7 @@ const PaymentRow: React.FC<PaymentRowProps> = ({
             <Input
               type="number"
               value={editAmount}
-              onChange={(e) => {
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                 const value = Number(e.target.value);
                 const MAX_INT = 2147483647;
                 if (value >= 0 && value <= MAX_INT) {
@@ -133,10 +134,10 @@ const PaymentRow: React.FC<PaymentRowProps> = ({
           </div>
         ) : (
           <div className="flex items-center gap-2">
-            <span className="font-medium">
+            <span className="font-medium text-[0.9375rem]">
               {payment.type === "CREDIT" && payment.remainingAmount !== undefined
-                ? payment.remainingAmount.toLocaleString()
-                : payment.givenAmount.toLocaleString()}{" "}
+                ? payment.remainingAmount.toLocaleString('fr-FR')
+                : payment.givenAmount.toLocaleString('fr-FR')}{" "}
               {t("cashier.currency", "DA")}
             </span>
             {!payment.paidDate && (

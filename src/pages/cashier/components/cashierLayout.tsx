@@ -20,7 +20,7 @@ interface CashierLayoutProps {
   onShowProductBrowser: () => void;
   onShowManualProductModal: () => void;
   onShowServiceModal: () => void;
-  onAddProduct: (product: ProductWithSales) => void;
+  onAddProduct: (product: ProductWithSales | CartItem) => void;
   onAddManualProduct: (product: CartItem) => void;
   onSessionChange: (sessionIndex: number) => void;
   onAddSession: () => void;
@@ -129,6 +129,10 @@ export default function CashierLayout({
             onShowServiceModal={onShowServiceModal}
             onAddProduct={onAddProduct}
             productRefreshKey={productRefreshKey}
+            cart={currentSession.cart}
+            onClientSelect={(clientId, clientName) => 
+              onUpdateSessionClient(activeSession, clientName, clientId)
+            }
           />
 
           {/* Tabbed Browser */}

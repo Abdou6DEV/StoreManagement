@@ -211,8 +211,7 @@ export default function SuppliersTable({
                   </div>
                 ) : (
                   <div className="flex items-center gap-2 whitespace-nowrap">
-                    <span>{(Math.max(0, parseFloat(supplier.email || "0") || 0)).toLocaleString("en-US", { maximumFractionDigits: 0 }).replace(/,/g, " ")}</span>
-                    <span>{t("cashier.currency", "DA")}</span>
+                    <span className="text-[0.9375rem]">{(Math.max(0, parseFloat(supplier.email || "0") || 0)).toLocaleString("en-US", { maximumFractionDigits: 0 }).replace(/,/g, " ")} {t("cashier.currency", "DA")}</span>
                     {onUpdateCredit && (
                       <Tooltip content={t("suppliers.editCreditTooltip", "Edit credit amount")}>
                         <Button

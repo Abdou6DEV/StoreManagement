@@ -2,10 +2,36 @@ import React, { useEffect, useRef, useState } from "react";
 import { Product } from "@prisma/client";
 import { Input } from "../../../lib/components/input";
 import { useTranslation } from "react-i18next";
+import type { CartItem } from "../../../types";
+import { useToast } from "../../../lib/contexts/toastContext";
+import { useCompletedServices } from "../../../lib/contexts/completedServicesContext";
+
+interface CompletedServiceAppointment {
+  id: string;
+  name: string;
+  serviceType: string;
+  description?: string;
+  costPrice: number;
+  servicePrice: number;
+  clientId?: string;
+  dueDate: string;
+  notes?: string;
+  isCompleted: boolean;
+  completedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+  client?: {
+    id: string;
+    name: string;
+    phone?: string;
+  };
+}
 
 interface Props {
-  onAdd: (product: Product) => void;
+  onAdd: (product: Product | CartItem) => void;
   refreshKey: number;
+  cart: CartItem[];
+  onClientSelect?: (clientId: string, clientName: string) => void;
 }
 
 type GroupedSuggestions = {
@@ -13,11 +39,14 @@ type GroupedSuggestions = {
   items: Product[];
 }[];
 
-export default function ProductSearch({ onAdd, refreshKey }: Props) {
+export default function ProductSearch({ onAdd, refreshKey, cart, onClientSelect }: Props) {
   const { t } = useTranslation();
+  const { showToast } = useToast();
+  const { refreshCompletedServicesCount } = useCompletedServices();
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [completedServices, setCompletedServices] = useState<CompletedServiceAppointment[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [highlight, setHighlight] = useState<{
     catIdx: number;
@@ -30,8 +59,12 @@ export default function ProductSearch({ onAdd, refreshKey }: Props) {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    window.api.database.products.getAll().then((products) => {
+    Promise.all([
+      window.api.database.products.getAll(),
+      window.api.database.serviceAppointments.getCompletedForCashier()
+    ]).then(([products, services]) => {
       setAllProducts(products);
+      setCompletedServices(services);
     });
     
     // Auto-focus on mount and after refresh
@@ -210,9 +243,58 @@ export default function ProductSearch({ onAdd, refreshKey }: Props) {
     if (e.key === "Enter") {
       e.preventDefault();
       
-      // First, try to find exact barcode match
+      const searchTerm = search.trim();
+      
+      // First, try to find service ID match (8-char prefix from barcode)
+      const serviceMatch = completedServices.find(s => s.id.startsWith(searchTerm));
+      
+      if (serviceMatch) {
+        // Check if service is already in cart
+        const isAlreadyInCart = cart.some(item => 
+          item.isService && item.serviceId === serviceMatch.id
+        );
+        
+        if (isAlreadyInCart) {
+          showToast(t("cashier.serviceAlreadyInCart", "This service is already in your cart"), "error");
+          setSearch("");
+          return;
+        }
+        
+        // Add service to cart
+        onAdd({
+          id: `service-${Date.now()}`,
+          serviceId: serviceMatch.id,
+          name: serviceMatch.name,
+          price: serviceMatch.servicePrice || 0,
+          qty: 1,
+          isService: true,
+          description: serviceMatch.description || undefined,
+          serviceCostPrice: serviceMatch.costPrice || 0,
+        });
+        
+        // If service has a client, automatically select it
+        if (serviceMatch.client?.id && serviceMatch.client?.name && onClientSelect) {
+          onClientSelect(serviceMatch.client.id, serviceMatch.client.name);
+        }
+        
+        // Refresh completed services count
+        refreshCompletedServicesCount();
+        
+        setSearch("");
+        setShowSuggestions(false);
+        
+        // Refocus for next scan
+        requestAnimationFrame(() => {
+          if (inputRef.current) {
+            inputRef.current.focus();
+          }
+        });
+        return;
+      }
+      
+      // Next, try to find exact barcode match
       const exactBarcodeMatch = allProducts.find(p => 
-        p.codebar && p.codebar === search.trim()
+        p.codebar && p.codebar === searchTerm
       );
       
       if (exactBarcodeMatch) {
@@ -224,7 +306,23 @@ export default function ProductSearch({ onAdd, refreshKey }: Props) {
       // If no exact barcode match, show suggestions for text search
       if (showSuggestions) {
         const prod = grouped[highlight.catIdx]?.items[highlight.itemIdx];
-        if (prod) handleSelect(prod);
+        if (prod) {
+          handleSelect(prod);
+          return;
+        }
+      }
+      
+      // If nothing was found and search term is not empty, show error
+      if (searchTerm.length > 0) {
+        showToast(t("cashier.nothingFound", "Nothing found related to what you typed or scanned"), "error");
+        setSearch("");
+        
+        // Refocus for next attempt
+        requestAnimationFrame(() => {
+          if (inputRef.current) {
+            inputRef.current.focus();
+          }
+        });
       }
       return;
     }

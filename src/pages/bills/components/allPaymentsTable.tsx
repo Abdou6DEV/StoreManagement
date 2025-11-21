@@ -77,7 +77,7 @@ const AllPaymentsTable: React.FC<AllPaymentsTableProps> = ({
     const value = amount / 100;
     // Remove trailing .00 if it's a whole number
     const cleanValue = value % 1 === 0 ? value.toFixed(0) : value.toFixed(2);
-    return `${cleanValue} ${t("bills.currency", "DA")}`;
+    return `${parseFloat(cleanValue).toLocaleString('fr-FR')} ${t("bills.currency", "DA")}`;
   };
 
   const formatDate = (date: Date) => {
@@ -204,8 +204,8 @@ const AllPaymentsTable: React.FC<AllPaymentsTableProps> = ({
                 </td>
                 <td className={`px-4 py-2 ${isRTL ? "text-right" : "text-left"}`}>
                   <div className="flex items-center gap-2">
-                    <CreditCard className="w-4 h-4 text-blue-400" />
-                    <span className="text-base font-bold text-blue-400">
+                    <CreditCard className="w-4 h-4 text-purple-400" />
+                    <span className="text-[0.9375rem] font-medium text-purple-600 dark:text-purple-400">
                       {formatCurrency(payment.amount)}
                     </span>
                   </div>

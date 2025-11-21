@@ -352,20 +352,20 @@ export const ProductInfoModal = ({
                                 t("stock.noSeller", "No Seller")}
                             </td>
                             <td className="px-4 py-3">
-                              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-sm font-medium">
+                              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-[0.9375rem] font-medium">
                                 <span className="text-xs">+</span>
                                 {purchaseItem.quantity}
                               </span>
                             </td>
                             <td
-                              className={`px-4 py-3 text-sm text-foreground ${isRTL ? "text-right" : "text-left"}`}
+                              className={`px-4 py-3 text-[0.9375rem] text-foreground ${isRTL ? "text-right" : "text-left"}`}
                             >
                               {purchaseItem.price
                                 ? `${purchaseItem.price} ${t("cashier.currency", "DA")}`
                                 : "N/A"}
                             </td>
                             <td
-                              className={`px-4 py-3 text-sm font-medium text-blue-600 ${isRTL ? "text-right" : "text-left"}`}
+                              className={`px-4 py-3 text-[0.9375rem] font-medium text-blue-600 ${isRTL ? "text-right" : "text-left"}`}
                             >
                               {purchaseItem.quantity *
                                 (purchaseItem.price || 0)}{" "}
@@ -540,18 +540,18 @@ export const ProductInfoModal = ({
                                 t("stock.noClient", "No Client")}
                             </td>
                             <td className="px-4 py-3">
-                              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-sm font-medium">
+                              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-[0.9375rem] font-medium">
                                 <span className="text-xs">-</span>
                                 {saleItem.quantity}
                               </span>
                             </td>
                             <td
-                              className={`px-4 py-3 text-sm text-foreground ${isRTL ? "text-right" : "text-left"}`}
+                              className={`px-4 py-3 text-[0.9375rem] text-foreground ${isRTL ? "text-right" : "text-left"}`}
                             >
                               {saleItem.price} {t("cashier.currency", "DA")}
                             </td>
                             <td
-                              className={`px-4 py-3 text-sm font-medium text-green-600 ${isRTL ? "text-right" : "text-left"}`}
+                              className={`px-4 py-3 text-[0.9375rem] font-medium text-green-600 ${isRTL ? "text-right" : "text-left"}`}
                             >
                               {saleItem.quantity * saleItem.price}{" "}
                               {t("cashier.currency", "DA")}

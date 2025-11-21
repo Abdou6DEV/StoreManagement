@@ -317,20 +317,32 @@ export default function CashierPage() {
              }}
              onShowManualProductModal={() => setShowManualProductModal(true)}
              onShowServiceModal={() => setShowServiceModal(true)}
-             onAddProduct={(product: ProductWithSales) => {
-               const currentSession = sessionActions.getCurrentSession();
-               const updatedCart = addProductToCart(
-                 currentSession.cart,
-                 product,
-                 allProducts,
-                 handleProductOutOfStock,
-                 outOfStockConfirmed
-               );
-               
-               if (updatedCart) {
-                 sessionActions.updateSessionCart(activeSession, updatedCart);
-               }
-             }}
+            onAddProduct={(product: ProductWithSales | CartItem) => {
+              const currentSession = sessionActions.getCurrentSession();
+              
+              // Check if it's a service/manual product (CartItem with isService or isManual)
+              if ('isService' in product || 'isManual' in product) {
+                // Add directly to cart like manual products
+                const updatedCart = addManualProductToCart(
+                  currentSession.cart,
+                  product as CartItem
+                );
+                sessionActions.updateSessionCart(activeSession, updatedCart);
+              } else {
+                // Regular product - use addProductToCart
+                const updatedCart = addProductToCart(
+                  currentSession.cart,
+                  product as ProductWithSales,
+                  allProducts,
+                  handleProductOutOfStock,
+                  outOfStockConfirmed
+                );
+                
+                if (updatedCart) {
+                  sessionActions.updateSessionCart(activeSession, updatedCart);
+                }
+              }
+            }}
              onAddManualProduct={(product: CartItem) => {
                const currentSession = sessionActions.getCurrentSession();
                const updatedCart = addManualProductToCart(

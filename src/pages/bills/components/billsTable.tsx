@@ -83,7 +83,8 @@ const BillsTable: React.FC<BillsTableProps> = ({
   const formatCurrency = (amount: number) => {
     // Bills are stored in centimes, so always divide by 100
     const value = amount / 100;
-    return `${value % 1 === 0 ? value.toFixed(0) : value.toFixed(2)} ${t("bills.currency", "DA")}`;
+    const formatted = value % 1 === 0 ? value.toFixed(0) : value.toFixed(2);
+    return `${parseFloat(formatted).toLocaleString('fr-FR')} ${t("bills.currency", "DA")}`;
   };
 
   const formatDate = (date: Date) => {
@@ -304,7 +305,7 @@ const BillsTable: React.FC<BillsTableProps> = ({
                   </span>
                 </td>
                 <td className={`px-4 py-2 ${isRTL ? "text-right" : "text-left"}`}>
-                  <span className="text-base font-bold text-blue-600 dark:text-blue-400">
+                  <span className="text-[0.9375rem] font-medium text-purple-600 dark:text-purple-400">
                     {formatCurrency(getTotalPaidAmount(bill.payments || []))}
                   </span>
                 </td>

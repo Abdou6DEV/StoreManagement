@@ -139,14 +139,14 @@ export default function GeneralHistoryTable({
                 </td>
                 <td className="px-4 text-right">
                   <div className="flex flex-col items-end">
-                    <span className="font-semibold text-foreground text-base">
+                    <span className="font-semibold text-foreground text-[0.9375rem]">
                       {formatNumber(item.count)}
                     </span>
                   </div>
                 </td>
                 <td className="px-4 text-right">
                   <div className="flex flex-col items-end">
-                    <span className="font-semibold text-foreground text-base">
+                    <span className="font-semibold text-foreground text-[0.9375rem]">
                       {formatCurrency(item.revenue)}
                     </span>
                   </div>
@@ -154,7 +154,7 @@ export default function GeneralHistoryTable({
                 <td className="px-4 text-right">
                   <div className="flex flex-col items-end">
                     <span
-                      className={`font-semibold text-base ${getProfitTextClass(getProfitValue(item))}`}
+                      className={`font-semibold text-[0.9375rem] ${getProfitTextClass(getProfitValue(item))}`}
                     >
                       {formatCurrency(getProfitValue(item))}
                     </span>
@@ -162,14 +162,14 @@ export default function GeneralHistoryTable({
                 </td>
                 <td className="px-4 text-right">
                   <div className="flex flex-col items-end">
-                    <span className="font-semibold text-foreground text-base">
+                    <span className="font-semibold text-foreground text-[0.9375rem]">
                       {formatCurrency(item.purchases)}
                     </span>
                   </div>
                 </td>
                 <td className="px-4 text-right">
                   <div className="flex flex-col items-end">
-                    <span className="font-semibold text-foreground text-base">
+                    <span className="font-semibold text-foreground text-[0.9375rem]">
                       {formatCurrency(getBillsPaymentsValue(item))}
                     </span>
                   </div>
@@ -177,7 +177,7 @@ export default function GeneralHistoryTable({
                 <td className="px-4 text-right">
                   <div className="flex flex-col items-end">
                     <span
-                      className={`font-semibold text-base ${getGrowthRateTextClass(getGrowthRateForRow(item, index))}`}
+                      className={`font-semibold text-[0.9375rem] ${getGrowthRateTextClass(getGrowthRateForRow(item, index))}`}
                     >
                       {formatGrowthRate(getGrowthRateForRow(item, index))}
                     </span>

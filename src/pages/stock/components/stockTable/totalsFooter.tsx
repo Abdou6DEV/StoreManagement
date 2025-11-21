@@ -13,7 +13,7 @@ export const TotalsFooter = ({ filteredList }: TotalsFooterProps) => {
         <span className="text-muted-foreground">
           {t("stock.totalProducts")}:
         </span>
-        <span className="font-medium">{filteredList.length}</span>
+        <span className="font-medium text-[0.9375rem]">{filteredList.length}</span>
       </div>
 
       {/* Total Quantity */}
@@ -22,8 +22,8 @@ export const TotalsFooter = ({ filteredList }: TotalsFooterProps) => {
         <span className="text-muted-foreground">
           {t("stock.totalQuantity")}:
         </span>
-        <span className="font-medium">
-          {filteredList.reduce((sum, p) => sum + p.quantity, 0)}
+        <span className="font-medium text-[0.9375rem]">
+          {filteredList.reduce((sum, p) => sum + p.quantity, 0).toLocaleString('fr-FR')}
         </span>
       </div>
 
@@ -33,10 +33,10 @@ export const TotalsFooter = ({ filteredList }: TotalsFooterProps) => {
         <span className="text-muted-foreground">
           {t("stock.inventoryValue")}:
         </span>
-        <span className="font-medium">
+        <span className="font-medium text-[0.9375rem]">
           {filteredList
             .reduce((sum, p) => sum + p.boughtPrice * p.quantity, 0)
-            .toLocaleString()}{" "}
+            .toLocaleString('fr-FR')}{" "}
           {t("cashier.currency")}
         </span>
       </div>
@@ -47,13 +47,13 @@ export const TotalsFooter = ({ filteredList }: TotalsFooterProps) => {
         <span className="text-muted-foreground">
           {t("stock.profitPotential")}:
         </span>
-        <span className="font-medium text-green-600 dark:text-green-400">
+        <span className="font-medium text-[0.9375rem] text-green-600 dark:text-green-400">
           {filteredList
             .reduce(
               (sum, p) => sum + (p.sellingPrice - p.boughtPrice) * p.quantity,
               0,
             )
-            .toLocaleString()}{" "}
+            .toLocaleString('fr-FR')}{" "}
           {t("cashier.currency")}
         </span>
       </div>
