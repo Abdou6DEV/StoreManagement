@@ -390,19 +390,22 @@ export default function ProductSearch({ onAdd, refreshKey, cart, onClientSelect 
                 {g.category}
               </div>
               {g.items.map((product, ii) => {
+                const isOutOfStock = product.quantity === 0;
                 return (
                   <button
                     key={product.id}
                     id={`group-${gi}-item-${ii}`}
                     onClick={() => handleSelect(product)}
                     className={
-                      "w-full px-4 py-2 text-left hover:bg-muted/80 transition-all text-sm border-b border-muted last:border-none focus:outline-none"
+                      `w-full px-4 py-2 text-left hover:bg-muted/80 transition-all text-sm border-b border-muted last:border-none focus:outline-none ${
+                        isOutOfStock ? "bg-red-100 dark:bg-red-950/50 hover:bg-red-200/80 border-l-2 border-l-red-500" : ""
+                      }`
                     }
                   >
                     <div className="font-semibold text-foreground truncate">
                       {product.name}
                     </div>
-                    <div className="text-xs text-muted-foreground flex justify-between mt-1">
+                    <div className="text-sm text-muted-foreground flex justify-between mt-1">
                       <span>
                         {product.categoryName} • {t("cashier.price", "price")}:{" "}
                         {product.sellingPrice.toLocaleString()}{" "}
