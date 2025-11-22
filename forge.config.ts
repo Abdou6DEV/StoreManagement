@@ -23,7 +23,14 @@ const config: ForgeConfig = {
   rebuildConfig: {},
   makers: [
     new MakerSquirrel({
-      setupIcon: "./public/myapp.ico"
+      setupIcon: "./public/myapp.ico",
+      iconUrl: "https://raw.githubusercontent.com/Abdou6DEV/StoreManagement/main/public/myapp.ico",
+      name: "REDATECHStoreManagement",
+      authors: "REDA TECH",
+      description: "A comprehensive store management solution by REDA TECH",
+      noMsi: true,
+      // Squirrel.Windows creates desktop shortcuts by default
+      // But we can ensure it via the setup events in main.ts
     }),
     new MakerZIP({}, ["win32"]), // Create ZIP for Windows updates
     new MakerZIP({}, ["darwin"]),

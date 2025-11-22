@@ -397,8 +397,8 @@ export default function ProductSearch({ onAdd, refreshKey, cart, onClientSelect 
                     id={`group-${gi}-item-${ii}`}
                     onClick={() => handleSelect(product)}
                     className={
-                      `w-full px-4 py-2 text-left hover:bg-muted/80 transition-all text-sm border-b border-muted last:border-none focus:outline-none ${
-                        isOutOfStock ? "bg-red-100 dark:bg-red-950/50 hover:bg-red-200/80 border-l-2 border-l-red-500" : ""
+                      `w-full px-4 py-2 text-left hover:bg-muted/80 transition-all text-sm border-b border-muted last:border-b-0 focus:outline-none ${
+                        isOutOfStock ? "bg-red-100 dark:bg-red-950/50 hover:bg-red-200/80 border-l-3 border-l-red-500" : ""
                       }`
                     }
                   >

@@ -11,6 +11,7 @@ import { ConfirmDialog } from "../../lib/components/confirmDialog";
 import rendererLogger from "../../lib/logger/rendererLogger";
 import { Product } from "@prisma/client";
 import { useCompletedServices } from "../../lib/contexts/completedServicesContext";
+import { useStock } from "../../lib/contexts/stockContext";
 
 const MAX_SESSIONS = 5;
 
@@ -63,6 +64,7 @@ export default function CashierPage() {
   const { t, i18n } = useTranslation();
   const isRTL = i18n.language === "ar";
   const { refreshCompletedServicesCount } = useCompletedServices();
+  const { updateProductQuantities } = useStock();
   const [productRefreshKey, setProductRefreshKey] = useState(0);
   const [salesRefreshKey, setSalesRefreshKey] = useState(0);
   const [showProductBrowser, setShowProductBrowser] = useState(false);
@@ -189,6 +191,18 @@ export default function CashierPage() {
     // Update product quantities locally for immediate UI feedback
     if (soldItems) {
       updateProductQuantitiesLocally(soldItems);
+      
+      // Update stock context efficiently - only update sold products
+      const updates = soldItems
+        .filter(item => !item.isManual && !item.isService) // Only real products
+        .map(item => ({
+          productId: item.id,
+          quantityChange: -item.qty // Negative because we're selling (reducing stock)
+        }));
+      
+      if (updates.length > 0) {
+        updateProductQuantities(updates);
+      }
     }
 
     // Refresh sales history when a sale is completed
@@ -203,6 +217,18 @@ export default function CashierPage() {
     // Update product quantities locally for immediate UI feedback
     if (soldItems) {
       updateProductQuantitiesLocally(soldItems);
+      
+      // Update stock context efficiently - only update sold products
+      const updates = soldItems
+        .filter(item => !item.isManual && !item.isService) // Only real products
+        .map(item => ({
+          productId: item.id,
+          quantityChange: -item.qty // Negative because we're selling (reducing stock)
+        }));
+      
+      if (updates.length > 0) {
+        updateProductQuantities(updates);
+      }
     }
 
     setSalesRefreshKey((prev) => prev + 1);

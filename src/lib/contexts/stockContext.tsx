@@ -65,6 +65,22 @@ export function StockProvider({ children }: { children: ReactNode }) {
     await fetchProducts();
   };
 
+  // Lightweight update: only update specific products without refetching all
+  const updateProductQuantities = (updates: Array<{ productId: string; quantityChange: number }>) => {
+    setProducts(prevProducts =>
+      prevProducts.map(product => {
+        const update = updates.find(u => u.productId === product.id);
+        if (update) {
+          return {
+            ...product,
+            quantity: Math.max(0, product.quantity + update.quantityChange)
+          };
+        }
+        return product;
+      })
+    );
+  };
+
   useEffect(() => {
     const initializeData = async () => {
       setLoading(true);
@@ -89,6 +105,7 @@ export function StockProvider({ children }: { children: ReactNode }) {
     error,
     refetchCategories,
     refetchProducts,
+    updateProductQuantities,
   };
 
   return (

@@ -153,6 +153,7 @@ export interface StockContextType {
   error: string | null;
   refetchCategories: () => Promise<void>;
   refetchProducts: () => Promise<void>;
+  updateProductQuantities: (updates: Array<{ productId: string; quantityChange: number }>) => void;
 }
 
 export interface ThemeContextType {

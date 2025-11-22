@@ -1,31 +1,63 @@
 import { app, BrowserWindow, screen } from "electron";
 import path from "node:path";
 import fs from "node:fs";
+import { spawn } from "child_process";
 import { prismaPromise } from "../lib/database/prismaClient";
 
-// Check if this is a Squirrel event
-const isSquirrelEvent = (): boolean => {
+// Handle Squirrel events on Windows
+const handleSquirrelEvent = (): boolean => {
   if (process.platform !== 'win32') return false;
-  
+
+  const appFolder = path.resolve(process.execPath, '..');
+  const rootFolder = path.resolve(appFolder, '..');
+  const updateExe = path.resolve(rootFolder, 'Update.exe');
+  const exeName = path.basename(process.execPath);
+
   const squirrelCommand = process.argv[1];
-  
+
+  const spawnUpdate = (args: string[]) => {
+    return new Promise<void>((resolve) => {
+      try {
+        const child = spawn(updateExe, args, { detached: true });
+        child.on('close', () => resolve());
+        child.on('error', () => resolve()); // Don't block on error
+      } catch (error) {
+        resolve(); // Don't block on error
+      }
+    });
+  };
+
   switch (squirrelCommand) {
     case '--squirrel-install':
     case '--squirrel-updated':
-    case '--squirrel-uninstall':
-    case '--squirrel-obsolete':
+      // Create desktop and start menu shortcuts
+      spawnUpdate(['--createShortcut', exeName]).then(() => {
+        setTimeout(() => app.quit(), 1000);
+      });
       return true;
+
+    case '--squirrel-uninstall':
+      // Remove desktop and start menu shortcuts
+      spawnUpdate(['--removeShortcut', exeName]).then(() => {
+        setTimeout(() => app.quit(), 1000);
+      });
+      return true;
+
+    case '--squirrel-obsolete':
+      // This is called on the old version when a new version is installed
+      app.quit();
+      return true;
+
     default:
       return false;
   }
 };
 
 // Handle Squirrel events on Windows for install/update/uninstall
-if (isSquirrelEvent()) {
-  app.whenReady().then(() => {
-    setTimeout(() => app.quit(), 100);
-  });
+if (handleSquirrelEvent()) {
   // Don't proceed with normal app initialization
+} else {
+  // Normal app startup continues below
 }
 
 // Declare Vite environment variables
@@ -111,10 +143,8 @@ const createWindow = async () => {
 };
 
 app.on("ready", () => {
-  // Only create window if not a Squirrel event
-  if (!isSquirrelEvent()) {
-    createWindow();
-  }
+  // createWindow is now called directly since Squirrel events exit early
+  createWindow();
 });
 
 // Set up automatic daily backup
@@ -137,11 +167,8 @@ const scheduleDailyBackup = () => {
 
 // Start backup scheduling when app is ready
 app.on("ready", () => {
-  // Only schedule backup if not a Squirrel event
-  if (!isSquirrelEvent()) {
-    // Small delay to ensure database is initialized
-    setTimeout(scheduleDailyBackup, 5000);
-  }
+  // Small delay to ensure database is initialized
+  setTimeout(scheduleDailyBackup, 5000);
 });
 
 // Clean up on app quit

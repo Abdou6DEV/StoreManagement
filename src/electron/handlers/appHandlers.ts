@@ -540,12 +540,26 @@ export function setupAppHandlers() {
         // Handle EXE update (installer)
         await handleExeUpdate(updatePath);
         
-        // Give installer time to initialize and start the Squirrel update process
-        // Squirrel will kill this process itself when ready, but we quit after a reasonable delay as fallback
+        // Quit the app immediately after launching installer
+        // The installer needs the app to be closed to replace files
+        console.log('[Install] Installer launched, quitting app now...');
+        
+        // Close all windows first to release any file locks
+        const allWindows = BrowserWindow.getAllWindows();
+        allWindows.forEach(window => {
+          if (window && !window.isDestroyed()) {
+            window.close();
+          }
+        });
+        
+        // Very short delay to ensure:
+        // 1. Response is sent back to renderer
+        // 2. Windows are closed and file locks released
+        // 3. Installer has fully launched
         setTimeout(() => {
-          console.log('[Install] App quitting to allow installer to complete');
-          app.quit();
-        }, 15000); // 15 seconds - enough time for installer to extract and initialize
+          console.log('[Install] Forcing app quit for installer');
+          app.exit(0); // Force quit - more reliable than app.quit()
+        }, 1000);
         
         return {
           success: true,
@@ -599,21 +613,41 @@ export function setupAppHandlers() {
 
   // Handle EXE update (installer)
   async function handleExeUpdate(exePath: string) {
-    // Run the installer - Squirrel installers don't support silent flags like NSIS/Inno Setup
-    // Just run it and let the user interact with it
     try {
-      const installer = spawn(exePath, [], {
-        detached: true,
-        stdio: 'ignore'
-      });
+      const { shell } = await import('electron');
       
-      installer.unref();
+      console.log('[Install] Launching installer:', exePath);
       
-      // Give it a moment to start
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Verify the file exists and is accessible before trying to launch
+      if (!fs.existsSync(exePath)) {
+        throw new Error('Installer file not found');
+      }
+      
+      // Check file permissions - ensure it's readable and executable
+      try {
+        fs.accessSync(exePath, fs.constants.R_OK);
+      } catch (err) {
+        throw new Error('Installer file is not accessible - check permissions');
+      }
+      
+      // Use shell.openPath which behaves exactly like double-clicking the file
+      // This properly handles UAC elevation and Windows UI context
+      const result = await shell.openPath(exePath);
+      
+      // openPath returns empty string on success, error message on failure
+      if (result) {
+        console.error('[Install] Failed to open installer:', result);
+        throw new Error(`Failed to launch installer: ${result}`);
+      }
+      
+      console.log('[Install] Installer launched successfully');
+      
+      // Give installer a moment to start before app quits
+      await new Promise(resolve => setTimeout(resolve, 1500));
       
       return; // Success
     } catch (error) {
+      console.error('[Install] Error launching installer:', error);
       throw new Error(`Failed to launch installer: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
