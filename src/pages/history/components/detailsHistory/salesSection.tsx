@@ -105,9 +105,12 @@ export default function SalesSection({
           ? "versement"
           : "credit";
 
-      // Get payment date
+      // Get payment & due dates
       const paymentDate = sale.payment?.paidDate
         ? new Date(sale.payment.paidDate)
+        : undefined;
+      const dueDate = sale.payment?.dueDate
+        ? new Date(sale.payment.dueDate)
         : undefined;
 
       // Call print function
@@ -119,7 +122,8 @@ export default function SalesSection({
         paymentType,
         paymentDate,
         sale.id,
-        (message, type) => showToast(message, type || "info")
+        (message, type) => showToast(message, type || "info"),
+        dueDate
       );
     } catch (error) {
       console.error("Failed to print receipt:", error);

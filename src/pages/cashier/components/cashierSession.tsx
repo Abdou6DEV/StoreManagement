@@ -435,6 +435,10 @@ const CashierSession = memo(function CashierSession({
         // Print receipt directly without showing modal - use refs to get latest values
         // For versements, saleId will be undefined, but we still want to print
         if (result.saleId || paymentTypeRef.current === "versement" || paymentTypeRef.current === "credit") {
+          const receiptDueDate =
+            paymentTypeRef.current === "versement" || paymentTypeRef.current === "credit"
+              ? paymentDateRef.current
+              : undefined;
           await printReceiptDirectly(
             [...cartRef.current],
             clientNameRef.current,
@@ -443,7 +447,8 @@ const CashierSession = memo(function CashierSession({
             paymentTypeRef.current,
             paymentDateRef.current,
             result.saleId,
-            showToast
+            showToast,
+            receiptDueDate
           );
           
           // Show specific success message for receipt sales based on payment type
@@ -484,6 +489,8 @@ const CashierSession = memo(function CashierSession({
     // Print receipt directly without showing modal
     // For versements, saleId will be undefined, but we still want to print
     if (result.saleId || paymentType === "versement" || paymentType === "credit") {
+      const receiptDueDate =
+        paymentType === "versement" || paymentType === "credit" ? paymentDate : undefined;
       await printReceiptDirectly(
         [...cart],
         clientName,
@@ -492,7 +499,8 @@ const CashierSession = memo(function CashierSession({
         paymentType,
         paymentDate,
         result.saleId,
-        showToast
+        showToast,
+        receiptDueDate
       );
       
       // Show specific success message for receipt sales based on payment type

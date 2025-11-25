@@ -17,6 +17,7 @@ interface PaymentTableProps {
   onViewSaleDetails?: (saleId: string) => void;
   onViewVersementDetails?: (paymentId: string) => void;
   onRefreshPayments?: () => void;
+  onCancelVersement?: (paymentId: string) => void;
   isOverdue: (dueDate: Date) => boolean;
   isDueSoon: (dueDate: Date) => boolean;
   newlyOverdueIds?: Set<string>; // IDs of newly overdue payments to highlight
@@ -36,6 +37,7 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
   onViewSaleDetails,
   onViewVersementDetails,
   onRefreshPayments,
+  onCancelVersement,
   isOverdue,
   isDueSoon,
   newlyOverdueIds = new Set(),
@@ -84,6 +86,7 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
               onViewSaleDetails={onViewSaleDetails}
               onViewVersementDetails={onViewVersementDetails}
               onRefreshPayments={onRefreshPayments}
+              onCancelVersement={onCancelVersement}
               isOverdue={isOverdue}
               isDueSoon={isDueSoon}
               isNewlyOverdue={newlyOverdueIds.has(payment.id)}

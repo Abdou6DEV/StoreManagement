@@ -49,6 +49,7 @@ import {
   updatePaymentPaidAt,
   updatePaymentAmount,
   getPaymentsBySpecificPeriod,
+  cancelVersementPayment,
 } from "../../lib/database/payments";
 import {
   getAllSellers,
@@ -342,6 +343,10 @@ ipcMain.handle("db:products:deleteMultipleProducts", async (_, productIds: strin
       return await getPaymentsBySpecificPeriod(period, periodValue);
     }
   );
+
+  ipcMain.handle("db:payments:cancelVersement", async (_event, paymentId: string) => {
+    return await cancelVersementPayment(paymentId);
+  });
 
   // Sellers handlers
   ipcMain.handle("db:sellers:getAll", async () => {

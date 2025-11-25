@@ -88,21 +88,30 @@ export default function CashierPage() {
   } | null>(null);
   const [outOfStockConfirmed, setOutOfStockConfirmed] = useState(false);
 
-  // Fetch all products - optimized without sales counts
+  // Fetch all products along with sales counts for accurate "frequently used" ordering
   useEffect(() => {
     let isMounted = true;
     
     const fetchProducts = async () => {
       try {
-        const products = await window.api.database.products.getAll();
+        const [products, salesCounts] = await Promise.all([
+          window.api.database.products.getAll(),
+          window.api.database.products.getSalesCounts(),
+        ]);
 
         if (!isMounted) return;
 
-        // Set products with totalSold as 0 (we'll fetch sales counts only when needed in product browser)
+        const salesMap = new Map(
+          salesCounts.map((s: { productId: string; totalSold: number }) => [
+            s.productId,
+            s.totalSold,
+          ]),
+        );
+
         setAllProducts(
           products.map((p: Product) => ({
             ...p,
-            totalSold: 0,
+            totalSold: salesMap.get(p.id) || 0,
           })) as ProductWithSales[]
         );
       } catch (error) {

@@ -1,6 +1,6 @@
 import React from "react";
 import { Button } from "../../../lib/components/button";
-import { CheckCircle, X, Eye } from "lucide-react";
+import { CheckCircle, X, Eye, Ban } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Tooltip } from "../../../lib/components/tooltip";
 
@@ -14,6 +14,8 @@ interface PaymentActionsProps {
   onViewVersementDetails?: (paymentId: string) => void;
   isCreditPaymentSale?: boolean; // New prop to indicate if this is a dummy credit payment sale
   hasPendingSaleItems?: boolean; // New prop to indicate if this VERSEMENT has pending sale items
+  canCancelVersement?: boolean;
+  onCancelVersement?: (paymentId: string) => void;
 }
 
 const PaymentActions: React.FC<PaymentActionsProps> = ({
@@ -26,6 +28,8 @@ const PaymentActions: React.FC<PaymentActionsProps> = ({
   onViewVersementDetails,
   isCreditPaymentSale = false,
   hasPendingSaleItems = false,
+  canCancelVersement = false,
+  onCancelVersement,
 }) => {
   const { t } = useTranslation();
 
@@ -100,6 +104,24 @@ const PaymentActions: React.FC<PaymentActionsProps> = ({
             onClick={() => onMarkAsUnpaidConfirm(paymentId)}
           >
             <X className="w-4 h-4 text-orange-500" />
+          </Button>
+        </Tooltip>
+      )}
+
+      {canCancelVersement && onCancelVersement && (
+        <Tooltip
+          content={t(
+            "clients.cancelVersementTooltip",
+            "Cancel this versement and restore product quantities",
+          )}
+        >
+          <Button
+            size="sm"
+            variant="outline"
+            className="text-red-700 border-red-500 hover:bg-red-50 h-8 w-8 p-0"
+            onClick={() => onCancelVersement(paymentId)}
+          >
+            <Ban className="w-4 h-4 text-red-500" />
           </Button>
         </Tooltip>
       )}

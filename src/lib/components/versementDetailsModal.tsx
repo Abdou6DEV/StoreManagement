@@ -9,25 +9,33 @@ import {
   Receipt,
   CreditCard,
   Banknote,
+  Printer,
+  Trash2,
 } from "lucide-react";
 import PaymentSummary from "./paymentSummary";
 import { useToast } from "../contexts/toastContext";
-import type { PaymentWithClient } from "../types";
+import type { PaymentWithClient, CartItem } from "../../types";
+import { printReceiptDirectly } from "../../pages/cashier/components/receiptModal";
 
 interface VersementDetailsModalProps {
   payment: PaymentWithClient | null;
   isOpen: boolean;
   onClose: () => void;
+  onDeleted?: () => void;
 }
 
 const VersementDetailsModal: React.FC<VersementDetailsModalProps> = ({
   payment,
   isOpen,
   onClose,
+  onDeleted,
 }) => {
   const { t } = useTranslation();
+  const { showToast } = useToast();
   const [cart, setCart] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Build cart from pending sale items
   useEffect(() => {
@@ -84,10 +92,14 @@ const VersementDetailsModal: React.FC<VersementDetailsModalProps> = ({
               name,
               price: item.price,
               qty: item.quantity,
+              boughtPrice: item.boughtPrice,
               isManual: !item.productId && !item.serviceAppointmentId,
               isService: !!item.serviceAppointmentId,
               manualProductType: item.manualProductType,
+              manualProductCostPrice: item.manualProductCostPrice,
               description: item.serviceDescription,
+              serviceCostPrice: item.serviceCostPrice,
+              serviceAppointmentId: item.serviceAppointmentId,
             };
           })
         );
@@ -119,6 +131,66 @@ const VersementDetailsModal: React.FC<VersementDetailsModalProps> = ({
   const total = subtotal - discount;
   const paidAmount = payment.givenAmount;
   const remainingAmount = total - paidAmount;
+  const canCancelVersement = !!payment.pendingSaleItems && !payment.paidDate;
+
+  const handlePrint = async () => {
+    if (!payment) return;
+
+    try {
+      const cartItems: CartItem[] = cart.map((item) => ({
+        id: item.id,
+        name: item.name,
+        price: item.price,
+        qty: item.qty,
+        boughtPrice: item.boughtPrice,
+        isManual: item.isManual,
+        manualProductType: item.manualProductType,
+        manualProductCostPrice: item.manualProductCostPrice,
+        isService: item.isService,
+        description: item.description,
+        serviceCostPrice: item.serviceCostPrice,
+        serviceAppointmentId: item.serviceAppointmentId,
+      }));
+
+      await printReceiptDirectly(
+        cartItems,
+        payment.client.name,
+        discount,
+        paidAmount,
+        "versement",
+        payment.paidDate ? new Date(payment.paidDate) : undefined,
+        payment.saleId || payment.id,
+        (message, type) => showToast(message, type || "info"),
+        payment.dueDate ? new Date(payment.dueDate) : undefined,
+      );
+    } catch (error) {
+      console.error("Failed to print versement receipt:", error);
+      showToast(t("cashier.printError", "Failed to print receipt"), "error");
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!payment) return;
+    setIsDeleting(true);
+    try {
+      await window.api.database.payments.cancelVersement(payment.id);
+      showToast(
+        t("clients.versementCancelled", "Versement cancelled and products restored"),
+        "success",
+      );
+      setShowDeleteConfirm(false);
+      onDeleted?.();
+      onClose();
+    } catch (error) {
+      console.error("Failed to delete versement:", error);
+      showToast(
+        t("clients.versementCancelError", "Failed to cancel versement"),
+        "error",
+      );
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   return (
     <div
@@ -146,6 +218,23 @@ const VersementDetailsModal: React.FC<VersementDetailsModalProps> = ({
           </div>
 
           <div className="flex items-center gap-1">
+            {canCancelVersement && (
+              <button
+                onClick={() => setShowDeleteConfirm(true)}
+                className="p-2.5 hover:bg-muted/50 rounded-lg transition-colors"
+                title={t("clients.cancelVersement", "Cancel Versement")}
+              >
+                <Trash2 className="w-4 h-4 text-red-600" />
+              </button>
+            )}
+            <button
+              onClick={handlePrint}
+              className="p-2.5 hover:bg-muted/50 rounded-lg transition-colors"
+              title={t("cashier.printReceipt", "Print Receipt")}
+              disabled={loading || cart.length === 0}
+            >
+              <Printer className="w-4 h-4 text-muted-foreground" />
+            </button>
             <button
               onClick={onClose}
               className="p-2.5 hover:bg-muted/50 rounded-lg transition-colors"
@@ -281,6 +370,56 @@ const VersementDetailsModal: React.FC<VersementDetailsModalProps> = ({
           </div>
         </div>
       </div>
+
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
+          <div className="bg-background border border-border/50 rounded-xl shadow-xl max-w-md w-full p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-red-500/10 rounded-lg">
+                <Trash2 className="w-5 h-5 text-red-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-foreground">
+                  {t("clients.confirmVersementCancelTitle", "Cancel Versement?")}
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  {t(
+                    "clients.confirmVersementCancelMessage",
+                    "This will delete the versement for {{name}} and restore the products to stock. This action cannot be undone.",
+                    { name: payment.client.name },
+                  )}
+                </p>
+              </div>
+            </div>
+
+            <p className="text-sm text-muted-foreground mb-6">
+              {t(
+                "clients.deleteVersementWarning",
+                "The pending products will be returned to inventory.",
+              )}
+            </p>
+
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                disabled={isDeleting}
+                className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {t("clients.cancel", "Cancel")}
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="px-4 py-2 text-sm font-medium bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isDeleting
+                  ? t("cashier.deleting", "Deleting...")
+                  : t("clients.cancelVersement", "Cancel Versement")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

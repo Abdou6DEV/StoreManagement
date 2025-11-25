@@ -128,18 +128,18 @@ const ProductCard = memo(function ProductCard({
           className={`text-xs font-semibold px-2 py-1 rounded-full shadow-sm ${
             isInCartValue
               ? isOutOfStock
-                ? "bg-red-500 text-white"
+                ? "bg-red-600 text-white"
                 : isLowStock
-                ? "bg-orange-600 text-white"
+                ? "bg-orange-500 text-white"
                 : "bg-primary text-primary-foreground"
               : isOutOfStock
-              ? "bg-red-500 text-white"
+              ? "bg-red-600 text-white"
               : isLowStock
-              ? "bg-orange-600 text-white"
+              ? "bg-orange-500 text-white"
               : "bg-gray-600 text-white"
           }`}
         >
-          {currentQuantity}
+          {isOutOfStock ? t("cashier.outOfStockShort", "Out") : currentQuantity}
         </div>
       </div>
 

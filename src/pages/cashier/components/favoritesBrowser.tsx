@@ -84,6 +84,8 @@ const FavoritesBrowser: React.FC<FavoritesBrowserProps> = ({
     return allProducts.filter((product) => favorites.includes(product.id));
   }, [allProducts, favorites]);
 
+  const hasAnyProducts = allProducts.length > 0;
+
   // Get frequently used products (top 10 by highest sold quantity)
   const frequentlyUsedProducts = useMemo(() => {
     return allProducts
@@ -155,26 +157,41 @@ const FavoritesBrowser: React.FC<FavoritesBrowserProps> = ({
     <div className="h-full overflow-hidden flex flex-col p-3">
       <div className="flex-1 overflow-y-auto space-y-6">
         {/* Favorites Section */}
-        {favoriteProducts.length > 0 && (
+        {hasAnyProducts && (
           <div>
             <div className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1">
               <Star className="w-4 h-4 text-yellow-500" />
-              {favoriteProducts.length} {t("cashier.favorites", "favorites")}
+              {t("cashier.favorites", "Favorites")}
             </div>
-            <div className="grid grid-cols-3 gap-3">
-              {favoriteProducts.map((product) => (
-                <ProductCard
-                  key={product.id}
-                  product={product}
-                  favorites={favorites}
-                  isInCart={isInCart}
-                  getCartQuantity={getCartQuantity}
-                  handleAddToCart={handleAddToCart}
-                  handleQuantityChange={handleQuantityChange}
-                  toggleFavorite={toggleFavorite}
-                />
-              ))}
-            </div>
+            {favoriteProducts.length > 0 ? (
+              <div className="grid grid-cols-3 gap-3">
+                {favoriteProducts.map((product) => (
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    favorites={favorites}
+                    isInCart={isInCart}
+                    getCartQuantity={getCartQuantity}
+                    handleAddToCart={handleAddToCart}
+                    handleQuantityChange={handleQuantityChange}
+                    toggleFavorite={toggleFavorite}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-4 text-muted-foreground border border-dashed rounded-lg">
+                <Star className="w-8 h-8 mx-auto mb-2 text-muted-foreground/50" />
+                <div className="text-sm">
+                  {t("cashier.noFavorites", "No favorites yet")}
+                </div>
+                <div className="text-xs">
+                  {t(
+                    "cashier.addFavoritesHint",
+                    "Click the star icon on products to add them to favorites",
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -201,22 +218,20 @@ const FavoritesBrowser: React.FC<FavoritesBrowserProps> = ({
           </div>
         )}
 
-        {/* Empty State */}
-        {favoriteProducts.length === 0 &&
-          frequentlyUsedProducts.length === 0 && (
-            <div className="text-center py-4 text-muted-foreground">
-              <Star className="w-10 h-10 mx-auto mb-2 text-muted-foreground/50" />
-              <div className="text-sm">
-                {t("cashier.noFavorites", "No favorites yet")}
-              </div>
-              <div className="text-xs">
-                {t(
-                  "cashier.addFavoritesHint",
-                  "Click the star icon on products to add them to favorites",
-                )}
-              </div>
+        {/* Empty State - Only when no products exist at all */}
+        {!hasAnyProducts && (
+          <div className="text-center py-6 text-muted-foreground">
+            <div className="text-sm">
+              {t("cashier.noProductsAvailable", "No products available yet")}
             </div>
-          )}
+            <div className="text-xs">
+              {t(
+                "cashier.addProductsHint",
+                "Add products from the stock screen to see them here",
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

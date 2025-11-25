@@ -128,6 +128,7 @@ export type DatabaseAPI = {
     >;
     markAsPaid: (paymentId: string, paidDate: Date) => Promise<void>;
     updateAmount: (paymentId: string, givenAmount: number) => Promise<void>;
+    cancelVersement: (paymentId: string) => Promise<{ success: boolean }>;
   };
   sellers: {
     getAll: () => Promise<Seller[]>;

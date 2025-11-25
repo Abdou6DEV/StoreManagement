@@ -139,6 +139,16 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
 
   }>({ open: false, paymentId: null });
 
+  const [cancelVersementDialog, setCancelVersementDialog] = useState<{
+
+    open: boolean;
+
+    paymentId: string | null;
+
+    clientName?: string;
+
+  }>({ open: false, paymentId: null });
+
 
 
   // State to track newly overdue payment IDs for highlighting
@@ -432,9 +442,14 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
           ? "versement"
           : "credit";
 
-      // Get payment date
+      // Get payment date (when fully paid)
       const paymentDate = sale.payment?.paidDate
         ? new Date(sale.payment.paidDate)
+        : undefined;
+
+      // Get due date (for unpaid credit/versement)
+      const dueDate = sale.payment?.dueDate
+        ? new Date(sale.payment.dueDate)
         : undefined;
 
       // Call print function
@@ -446,7 +461,8 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
         paymentType,
         paymentDate,
         sale.id,
-        (message, type) => showToast(message, type || "info")
+        (message, type) => showToast(message, type || "info"),
+        dueDate
       );
     } catch (error) {
       console.error("Failed to print receipt:", error);
@@ -561,6 +577,92 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
       await handleMarkAsUnpaid(confirmUnpaidDialog.paymentId);
 
       setConfirmUnpaidDialog({ open: false, paymentId: null });
+
+    }
+
+  };
+
+
+
+  const handleCancelVersementRequest = (paymentId: string) => {
+
+    const payment = payments.find((p) => p.id === paymentId);
+
+    setCancelVersementDialog({
+
+      open: true,
+
+      paymentId,
+
+      clientName: payment?.client.name,
+
+    });
+
+  };
+
+
+
+  const handleCancelVersement = async (paymentId: string) => {
+
+    try {
+
+      await window.api.database.payments.cancelVersement(paymentId);
+
+      onRefresh();
+
+
+
+      showToast(
+
+        t(
+
+          "clients.versementCancelled",
+
+          "Versement cancelled and products restored",
+
+        ),
+
+        "success",
+
+      );
+
+    } catch (error) {
+
+      console.error("Failed to cancel versement:", error);
+
+      showToast(
+
+        t("clients.versementCancelError", "Failed to cancel versement"),
+
+        "error",
+
+      );
+
+      throw error;
+
+    }
+
+  };
+
+
+
+  const handleConfirmCancelVersement = async () => {
+
+    if (!cancelVersementDialog.paymentId) {
+
+      return;
+
+    }
+
+
+
+    try {
+
+      await handleCancelVersement(cancelVersementDialog.paymentId);
+
+    } finally {
+
+      setCancelVersementDialog({ open: false, paymentId: null });
 
     }
 
@@ -1321,6 +1423,7 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
                   onViewVersementDetails={handleViewVersementDetails}
 
                   onRefreshPayments={onRefresh}
+                  onCancelVersement={handleCancelVersementRequest}
 
                   isOverdue={isOverdue}
 
@@ -1564,6 +1667,44 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
 
       />
 
+      <ConfirmDialog
+
+        open={cancelVersementDialog.open}
+
+        onOpenChange={(open) =>
+
+          setCancelVersementDialog({ open, paymentId: null })
+
+        }
+
+        title={t("clients.confirmVersementCancelTitle", "Cancel Versement?")}
+
+        message={t(
+
+          "clients.confirmVersementCancelMessage",
+
+          "This will delete the versement for {{name}} and restore the products to stock. This action cannot be undone.",
+
+          {
+
+            name: cancelVersementDialog.clientName ||
+
+              t("clients.thisClient", "this client"),
+
+          },
+
+        )}
+
+        confirmText={t("clients.cancelVersement", "Cancel Versement")}
+
+        cancelText={t("clients.keepVersement", "Keep Versement")}
+
+        variant="danger"
+
+        onConfirm={handleConfirmCancelVersement}
+
+      />
+
       {/* Sale Details Modal */}
       <SaleDetailsModal
         sale={selectedSale}
@@ -1580,6 +1721,11 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
         payment={selectedVersement}
         isOpen={showVersementDetailsModal}
         onClose={() => {
+          setShowVersementDetailsModal(false);
+          setSelectedVersement(null);
+        }}
+        onDeleted={() => {
+          onRefresh();
           setShowVersementDetailsModal(false);
           setSelectedVersement(null);
         }}

@@ -21,6 +21,7 @@ interface PaymentRowProps {
   onViewSaleDetails?: (saleId: string) => void;
   onViewVersementDetails?: (paymentId: string) => void;
   onRefreshPayments?: () => void;
+  onCancelVersement?: (paymentId: string) => void;
   isOverdue: (dueDate: Date) => boolean;
   isDueSoon: (dueDate: Date) => boolean;
   isNewlyOverdue?: boolean; // Whether this payment is newly overdue and should be highlighted
@@ -39,6 +40,7 @@ const PaymentRow: React.FC<PaymentRowProps> = ({
   onViewSaleDetails,
   onViewVersementDetails,
   onRefreshPayments,
+  onCancelVersement,
   isOverdue,
   isDueSoon,
   isNewlyOverdue = false,
@@ -48,6 +50,8 @@ const PaymentRow: React.FC<PaymentRowProps> = ({
   const isRTL = i18n.language === "ar";
   const [showEditModal, setShowEditModal] = useState(false);
   const [isCreditPaymentSale, setIsCreditPaymentSale] = useState(false);
+
+  const canCancelVersement = payment.type === "VERSEMENT" && !!payment.pendingSaleItems && !payment.paidDate;
 
   // Check if this is a standalone credit payment (no sale associated)
   useEffect(() => {
@@ -200,6 +204,8 @@ const PaymentRow: React.FC<PaymentRowProps> = ({
             onViewVersementDetails={onViewVersementDetails}
             isCreditPaymentSale={isCreditPaymentSale}
             hasPendingSaleItems={!!payment.pendingSaleItems}
+            canCancelVersement={canCancelVersement}
+            onCancelVersement={onCancelVersement}
           />
         </div>
       </td>

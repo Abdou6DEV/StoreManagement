@@ -358,3 +358,73 @@ export async function getPaymentsBySpecificPeriod(
 
   return await getPaymentsByDateRange(startDate, endDate);
 }
+
+export async function cancelVersementPayment(paymentId: string) {
+  return await prisma.$transaction(async (tx) => {
+    const payment = await tx.payment.findUnique({
+      where: { id: paymentId },
+    });
+
+    if (!payment) {
+      throw new Error("Payment not found");
+    }
+
+    if (payment.type !== "VERSEMENT") {
+      throw new Error("Only versement payments can be cancelled");
+    }
+
+    if (payment.saleId) {
+      throw new Error("Cannot cancel a versement that already generated a sale");
+    }
+
+    let pendingItems: Array<{ productId?: string; quantity?: number }> = [];
+    if (payment.pendingSaleItems) {
+      try {
+        pendingItems = JSON.parse(payment.pendingSaleItems);
+      } catch (error) {
+        console.error("Failed to parse pendingSaleItems for versement cancellation:", error);
+        throw new Error("Cannot cancel versement due to corrupted pending sale items");
+      }
+    }
+
+    const productAdjustments = pendingItems.reduce<Map<string, number>>((map, item) => {
+      if (!item?.productId) {
+        return map;
+      }
+      const qty = Number(item.quantity) || 0;
+      if (qty <= 0) {
+        return map;
+      }
+      map.set(item.productId, (map.get(item.productId) || 0) + qty);
+      return map;
+    }, new Map());
+
+    if (productAdjustments.size > 0) {
+      const productIds = Array.from(productAdjustments.keys());
+      const products = await tx.product.findMany({
+        where: { id: { in: productIds } },
+        select: { id: true, quantity: true },
+      });
+      const productMap = new Map(products.map((product) => [product.id, product.quantity]));
+
+      await Promise.all(
+        productIds.map((productId) => {
+          const currentQty = productMap.get(productId) ?? 0;
+          const increment = productAdjustments.get(productId) ?? 0;
+          return tx.product.update({
+            where: { id: productId },
+            data: {
+              quantity: currentQty + increment,
+            },
+          });
+        })
+      );
+    }
+
+    await tx.payment.delete({
+      where: { id: paymentId },
+    });
+
+    return { success: true };
+  });
+}

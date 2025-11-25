@@ -153,6 +153,8 @@ export const databaseAPI = {
         paymentId,
         givenAmount,
       }),
+    cancelVersement: (paymentId: string) =>
+      ipcRenderer.invoke("db:payments:cancelVersement", paymentId),
   },
   sellers: {
     getAll: () => ipcRenderer.invoke("db:sellers:getAll"),

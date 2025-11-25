@@ -93,9 +93,11 @@ const PaymentsModal: React.FC<PaymentsModalProps> = ({ client, onClose }) => {
           ? "versement"
           : "credit";
 
-      // Get payment date
       const paymentDate = sale.payment?.paidDate
         ? new Date(sale.payment.paidDate)
+        : undefined;
+      const dueDate = sale.payment?.dueDate
+        ? new Date(sale.payment.dueDate)
         : undefined;
 
       // Call print function
@@ -107,7 +109,8 @@ const PaymentsModal: React.FC<PaymentsModalProps> = ({ client, onClose }) => {
         paymentType,
         paymentDate,
         sale.id,
-        (message, type) => showToast(message, type || "info")
+        (message, type) => showToast(message, type || "info"),
+        dueDate
       );
     } catch (error) {
       console.error("Failed to print receipt:", error);
