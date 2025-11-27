@@ -1,6 +1,5 @@
 import React from "react";
-import { Input } from "../../../lib/components/input";
-import { Filter, Search, ChevronDown, Check } from "lucide-react";
+import { Filter, ChevronDown, Check } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "../../../lib/components/button";
 import { BadgeNotification } from "../../../lib/components/badgeNotification";
@@ -18,6 +17,7 @@ import {
   PopoverTrigger,
 } from "../../../lib/components/popover";
 import { cn } from "../../../lib/utils";
+import ClientSearchInput from "./clientSearchInput";
 
 interface PaymentFiltersProps {
   search: string;
@@ -28,6 +28,10 @@ interface PaymentFiltersProps {
   setTypeFilter: (value: "all" | "CREDIT" | "VERSEMENT") => void;
   dateFilter: "all" | "overdue" | "dueSoon";
   setDateFilter: (value: "all" | "overdue" | "dueSoon") => void;
+  clients: Array<{ id: string; name: string; phone?: string | null }>;
+  selectedClientId: string | null;
+  onSelectClient: (client: { id: string; name: string }) => void;
+  onClearSelectedClient: () => void;
 }
 
 const PaymentFilters: React.FC<PaymentFiltersProps> = ({
@@ -39,6 +43,10 @@ const PaymentFilters: React.FC<PaymentFiltersProps> = ({
   setTypeFilter,
   dateFilter,
   setDateFilter,
+  clients,
+  selectedClientId,
+  onSelectClient,
+  onClearSelectedClient,
 }) => {
   const { t } = useTranslation();
   const { unseenOverdueCreditsCount, unseenOverdueVersementsCount } = useOverduePayments();
@@ -57,18 +65,18 @@ const PaymentFilters: React.FC<PaymentFiltersProps> = ({
           <label className="text-sm font-medium">
             {t("clients.search", "Search")}
           </label>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-primary" />
-            <Input
-              placeholder={t(
-                "clients.searchPayments",
-                "Search by client name or phone...",
-              )}
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-10 border-2 border-primary/20 focus:border-primary focus:ring-2 focus:ring-primary/20"
-            />
-          </div>
+          <ClientSearchInput
+            value={search}
+            onChange={(value) => setSearch(value)}
+            clients={clients}
+            selectedClientId={selectedClientId}
+            onSelectClient={(client) => onSelectClient(client)}
+            onClearSelection={onClearSelectedClient}
+            placeholder={t(
+              "clients.searchPayments",
+              "Search by client name or phone...",
+            )}
+          />
         </div>
 
         {/* Status Filter */}

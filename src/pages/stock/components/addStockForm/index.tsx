@@ -2148,7 +2148,9 @@ export default function AddStockForm({
                 <StyledNumberInput
                   data-field="quantity"
                   value={form.quantity === "" ? "" : Number(form.quantity)}
-                  onChange={(val) => handleFormChange("quantity", val)}
+                  onChange={(val: number | string) =>
+                    handleFormChange("quantity", val)
+                  }
                   placeholder={t("stock.quantity")}
                   onKeyDown={(e: React.KeyboardEvent) => {
                     if (e.key === "Enter") {
@@ -2167,7 +2169,9 @@ export default function AddStockForm({
                   value={
                     form.boughtPrice === "" ? "" : Number(form.boughtPrice)
                   }
-                  onChange={(val) => handleFormChange("boughtPrice", val)}
+                  onChange={(val: number | string) =>
+                    handleFormChange("boughtPrice", val)
+                  }
                   placeholder={t("stock.boughtPrice")}
                   onKeyDown={(e: React.KeyboardEvent) => {
                     if (e.key === "Enter") {
@@ -2186,7 +2190,9 @@ export default function AddStockForm({
                   value={
                     form.sellingPrice === "" ? "" : Number(form.sellingPrice)
                   }
-                  onChange={(val) => handleFormChange("sellingPrice", val)}
+                  onChange={(val: number | string) =>
+                    handleFormChange("sellingPrice", val)
+                  }
                   placeholder={t("stock.sellingPrice")}
                   onKeyDown={(e: React.KeyboardEvent) => {
                     if (e.key === "Enter") {
@@ -2380,6 +2386,12 @@ export default function AddStockForm({
         newSellingPrice={priceConfirmationData?.newSellingPrice || 0}
         previousSellingPrice={priceConfirmationData?.previousSellingPrice || 0}
         sellerName={priceConfirmationData?.sellerName || null}
+        currentQuantity={
+          priceConfirmationData?.productId
+            ? products.find((p) => p.id === priceConfirmationData.productId)?.quantity || 0
+            : 0
+        }
+        newQuantity={priceConfirmationData?.quantity || 0}
         purchaseHistory={priceConfirmationData?.purchaseHistory || []}
         onCalculateWeightedAverage={handleCalculateWeightedAverage}
         onKeepNewPrice={handleKeepNewPrice}

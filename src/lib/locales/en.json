@@ -1364,6 +1364,7 @@
     "confirmVersementCancelMessage": "This will delete the versement for {{name}} and restore the products to stock. This action cannot be undone.",
     "deleteVersementWarning": "The pending products will be returned to inventory.",
     "versementDetails": "Versement Details",
+    "viewInPayments": "View in payments",
    
     "paymentInformation": "Payment Information",
     "paymentStatus": "Payment Status",

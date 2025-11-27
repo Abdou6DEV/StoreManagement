@@ -1105,6 +1105,7 @@
     "confirmVersementCancelMessage": "سيتم حذف القسط الخاص بـ {{name}} وإرجاع المنتجات إلى المخزون. هذا الإجراء لا يمكن التراجع عنه.",
     "deleteVersementWarning": "سيتم إعادة المنتجات المعلقة إلى المخزون.",
     "versementDetails": "تفاصيل القسط",
+    "viewInPayments": "عرض في الدفعات",
     "paymentId": "معرف الدفع",
     "paymentInformation": "معلومات الدفع",
     "paymentStatus": "حالة الدفع",

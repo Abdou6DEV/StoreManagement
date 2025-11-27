@@ -1,6 +1,6 @@
 import React from "react";
 import { Button } from "../../../lib/components/button";
-import { Edit, Loader2, Trash2, Info } from "lucide-react";
+import { Edit, Loader2, Trash2, Info, ExternalLink } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { ClientWithTotalPurchases } from "../../../types";
 import { Tooltip } from "../../../lib/components/tooltip";
@@ -11,6 +11,7 @@ interface ClientsTableProps {
   onDelete: (id: string) => void;
   deleteLoading: string | null;
   onViewPayments: (client: ClientWithTotalPurchases) => void;
+  onQuickFilterPayments?: (client: ClientWithTotalPurchases) => void;
 }
 
 const ClientsTable: React.FC<ClientsTableProps> = ({
@@ -19,6 +20,7 @@ const ClientsTable: React.FC<ClientsTableProps> = ({
   onDelete,
   deleteLoading,
   onViewPayments,
+  onQuickFilterPayments,
 }) => {
   const { t, i18n } = useTranslation();
   const isRTL = i18n.language === "ar";
@@ -97,10 +99,50 @@ const ClientsTable: React.FC<ClientsTableProps> = ({
                 <span className="text-[0.9375rem]">{client.totalPurchases?.toLocaleString() || 0} {t("cashier.currency", "DA")}</span>
               </td>
               <td className={`px-4 py-2 ${isRTL ? "text-right" : "text-left"} font-medium whitespace-nowrap ${(client.totalCredit || 0) > 0 ? "text-orange-600 dark:text-orange-400" : ""}`}>
-                <span className="text-[0.9375rem]">{(Math.max(0, client.totalCredit || 0)).toLocaleString("en-US", { maximumFractionDigits: 0 }).replace(/,/g, " ")} {t("cashier.currency", "DA")}</span>
+                <div className={`flex items-center gap-2 ${isRTL ? "justify-end" : ""}`}>
+                  <span className="text-[0.9375rem]">
+                    {(Math.max(0, client.totalCredit || 0))
+                      .toLocaleString("en-US", { maximumFractionDigits: 0 })
+                      .replace(/,/g, " ")}{" "}
+                    {t("cashier.currency", "DA")}
+                  </span>
+                  {(client.totalCredit || 0) > 0 && onQuickFilterPayments && (
+                    <Tooltip content={t("clients.viewInPayments", "View in payments")}>
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="outline"
+                        className="h-7 w-7 border-orange-200 text-orange-600 hover:bg-orange-50 dark:border-orange-900/60 dark:text-orange-300 dark:hover:bg-orange-950/40"
+                        onClick={() => onQuickFilterPayments(client)}
+                      >
+                        <ExternalLink className="h-3.5 w-3.5" />
+                      </Button>
+                    </Tooltip>
+                  )}
+                </div>
               </td>
               <td className={`px-4 py-2 ${isRTL ? "text-right" : "text-left"} font-medium whitespace-nowrap ${(client.totalVersement || 0) > 0 ? "text-blue-600 dark:text-blue-400" : ""}`}>
-                <span className="text-[0.9375rem]">{(Math.max(0, client.totalVersement || 0)).toLocaleString("en-US", { maximumFractionDigits: 0 }).replace(/,/g, " ")} {t("cashier.currency", "DA")}</span>
+                <div className={`flex items-center gap-2 ${isRTL ? "justify-end" : ""}`}>
+                  <span className="text-[0.9375rem]">
+                    {(Math.max(0, client.totalVersement || 0))
+                      .toLocaleString("en-US", { maximumFractionDigits: 0 })
+                      .replace(/,/g, " ")}{" "}
+                    {t("cashier.currency", "DA")}
+                  </span>
+                  {(client.totalVersement || 0) > 0 && onQuickFilterPayments && (
+                    <Tooltip content={t("clients.viewInPayments", "View in payments")}>
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="outline"
+                        className="h-7 w-7 border-blue-200 text-blue-600 hover:bg-blue-50 dark:border-blue-900/60 dark:text-blue-300 dark:hover:bg-blue-950/40"
+                        onClick={() => onQuickFilterPayments(client)}
+                      >
+                        <ExternalLink className="h-3.5 w-3.5" />
+                      </Button>
+                    </Tooltip>
+                  )}
+                </div>
               </td>
               <td className={`px-4 py-2 ${isRTL ? "text-right" : "text-left"}`}>
                 <div

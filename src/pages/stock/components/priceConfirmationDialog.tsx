@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AlertTriangle, TrendingUp, TrendingDown, Package, User } from "lucide-react";
 import { Button } from "../../../lib/components/button";
@@ -26,6 +26,8 @@ interface PriceConfirmationDialogProps {
   newSellingPrice: number;
   previousSellingPrice: number;
   sellerName: string | null;
+  currentQuantity: number;
+  newQuantity: number;
   purchaseHistory?: PurchaseHistoryItem[];
   onCalculateWeightedAverage: () => void;
   onKeepNewPrice: () => void;
@@ -39,6 +41,8 @@ export const PriceConfirmationDialog: React.FC<PriceConfirmationDialogProps> = (
   newSellingPrice,
   previousSellingPrice,
   sellerName,
+  currentQuantity,
+  newQuantity,
   purchaseHistory,
   onCalculateWeightedAverage,
   onKeepNewPrice,
@@ -58,13 +62,22 @@ export const PriceConfirmationDialog: React.FC<PriceConfirmationDialogProps> = (
     ? purchaseHistory.find(item => item.price === bestPrice)?.purchase.seller?.name || t("stock.noSeller", "No Seller")
     : null;
 
-  // Calculate weighted average price
-  const weightedAveragePrice = purchaseHistory && purchaseHistory.length > 0
-    ? Math.round(
-        (purchaseHistory.reduce((acc, item) => acc + item.price * item.quantity, 0) + newPrice) / 
-        (purchaseHistory.reduce((acc, item) => acc + item.quantity, 0) + 1)
-      )
-    : newPrice;
+const weightedAveragePrice = useMemo(() => {
+  const totalNewQuantity = newQuantity > 0 ? newQuantity : 0;
+  const totalCurrentQuantity = currentQuantity > 0 ? currentQuantity : 0;
+  const totalQuantity = totalCurrentQuantity + totalNewQuantity;
+
+  if (totalQuantity <= 0) {
+    return newPrice;
+  }
+
+  const totalValue =
+    totalCurrentQuantity * previousPrice + totalNewQuantity * newPrice;
+
+  return Math.round(totalValue / totalQuantity);
+}, [currentQuantity, previousPrice, newPrice, newQuantity]);
+
+const disableWeightedButton = currentQuantity <= 0;
 
   // Check if new price is higher than previous
   const isPriceIncrease = newPrice > previousPrice;
@@ -266,7 +279,8 @@ export const PriceConfirmationDialog: React.FC<PriceConfirmationDialogProps> = (
             <div className={`flex gap-2 ${isRTL ? "flex-row-reverse" : ""}`}>
               <Button
                 onClick={() => handleAction('weighted')}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 text-sm py-2"
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-sm py-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={disableWeightedButton}
               >
                 {t("stock.calculateWeightedAverage", "Calculate Weighted Average")} ({weightedAveragePrice.toLocaleString()} {t("cashier.currency", "DA")})
               </Button>

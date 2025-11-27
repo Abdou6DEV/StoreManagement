@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 
 import { Button } from "../../../lib/components/button";
 
@@ -69,6 +69,9 @@ interface AllPaymentsViewProps {
 
   onRefresh: () => void;
 
+  initialClientFilter?: { id: string; name: string } | null;
+  onConsumeInitialClientFilter?: () => void;
+
 }
 
 
@@ -84,6 +87,9 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
   error,
 
   onRefresh,
+
+  initialClientFilter,
+  onConsumeInitialClientFilter,
 
 }) => {
 
@@ -176,6 +182,10 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
   // Track if we're currently viewing the due soon table
 
   const [isViewingDueSoonTable, setIsViewingDueSoonTable] = useState(false);
+  const [selectedPaymentsClient, setSelectedPaymentsClient] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
 
 
 
@@ -482,12 +492,76 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
     }
   };
 
+  const paymentClients = useMemo(() => {
+    const map = new Map<
+      string,
+      { id: string; name: string; phone?: string | null }
+    >();
+    payments.forEach((payment) => {
+      if (payment.client?.id && !map.has(payment.client.id)) {
+        map.set(payment.client.id, {
+          id: payment.client.id,
+          name: payment.client.name,
+          phone: payment.client.phone,
+        });
+      }
+    });
+    return Array.from(map.values()).sort((a, b) =>
+      a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
+    );
+  }, [payments]);
 
+  useEffect(() => {
+    if (
+      selectedPaymentsClient &&
+      !payments.some((payment) => payment.client?.id === selectedPaymentsClient.id)
+    ) {
+      setSelectedPaymentsClient(null);
+      setSearch("");
+    }
+  }, [payments, selectedPaymentsClient]);
 
-  const credits = payments.filter((p) => p.type === "CREDIT");
+  useEffect(() => {
+    if (initialClientFilter) {
+      setSelectedPaymentsClient(initialClientFilter);
+      setSearch(initialClientFilter.name);
+      onConsumeInitialClientFilter?.();
+    }
+  }, [initialClientFilter, onConsumeInitialClientFilter]);
 
-  const versements = payments.filter((p) => p.type === "VERSEMENT");
+  const handlePaymentsSearchChange = (value: string) => {
+    if (selectedPaymentsClient) {
+      setSelectedPaymentsClient(null);
+    }
+    setSearch(value);
+  };
 
+  const handleSelectPaymentsClient = (client: { id: string; name: string }) => {
+    setSelectedPaymentsClient(client);
+    setSearch(client.name);
+  };
+
+  const handleClearPaymentsClient = () => {
+    setSelectedPaymentsClient(null);
+    setSearch("");
+  };
+
+  const filterBySelectedClient = (list: PaymentWithClient[]) => {
+    if (!selectedPaymentsClient) {
+      return list;
+    }
+    return list.filter(
+      (payment) => payment.client?.id === selectedPaymentsClient.id,
+    );
+  };
+
+  const credits = filterBySelectedClient(
+    payments.filter((p) => p.type === "CREDIT"),
+  );
+
+  const versements = filterBySelectedClient(
+    payments.filter((p) => p.type === "VERSEMENT"),
+  );
 
 
   const handleMarkAsPaid = async (paymentId: string) => {
@@ -1082,7 +1156,7 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
 
         search={search}
 
-        setSearch={setSearch}
+        setSearch={handlePaymentsSearchChange}
 
         statusFilter={statusFilter}
 
@@ -1095,6 +1169,14 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
         dateFilter={dateFilter}
 
         setDateFilter={setDateFilter}
+
+        clients={paymentClients}
+
+        selectedClientId={selectedPaymentsClient?.id ?? null}
+
+        onSelectClient={handleSelectPaymentsClient}
+
+        onClearSelectedClient={handleClearPaymentsClient}
 
       />
 

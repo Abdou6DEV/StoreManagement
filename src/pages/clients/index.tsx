@@ -11,7 +11,6 @@ import {
 import { useTranslation } from "react-i18next";
 import ClientsTable from "./components/clientsTable";
 import EditClientDialog from "./components/editClientModal";
-import SearchBar from "./components/searchBar";
 import AddClientForm from "./components/addClientForm";
 import AddPaymentForm from "./components/addPaymentForm";
 import AddSupplierForm from "./components/addSupplierForm";
@@ -51,6 +50,7 @@ import { ConfirmDialog } from "../../lib/components/confirmDialog";
 import { Button } from "../../lib/components/button";
 import { cn } from "../../lib/utils";
 import { Tooltip } from "../../lib/components/tooltip";
+import ClientSearchInput from "./components/clientSearchInput";
 
 export default function Clients() {
   const { t } = useTranslation();
@@ -74,6 +74,14 @@ export default function Clients() {
   const [activeTab, setActiveTab] = useState<"clients" | "suppliers">(
     "clients",
   );
+  const [selectedClientFilter, setSelectedClientFilter] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
+  const [pendingPaymentsFilter, setPendingPaymentsFilter] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
 
   // Payments state
   const [payments, setPayments] = useState<PaymentWithClient[]>([]);
@@ -153,6 +161,16 @@ export default function Clients() {
     fetchSuppliers();
     fetchPayments();
   }, []);
+
+  useEffect(() => {
+    if (
+      selectedClientFilter &&
+      !clients.some((client) => client.id === selectedClientFilter.id)
+    ) {
+      setSelectedClientFilter(null);
+      setSearch("");
+    }
+  }, [clients, selectedClientFilter]);
 
   // Note: Overdue payments are now marked as seen only when the overdue filter is applied
   // This allows users to see which payments are newly overdue before they are marked as seen
@@ -294,6 +312,11 @@ export default function Clients() {
     }
   };
 
+  const handleQuickFilterPayments = (client: ClientWithTotalPurchases) => {
+    setPendingPaymentsFilter({ id: client.id, name: client.name });
+    setViewMode("payments");
+  };
+
   const handleUpdateCredit = async (supplierId: string, credit: number) => {
     try {
       // Store credit amount in the email field (as string)
@@ -314,14 +337,16 @@ export default function Clients() {
     }
   };
 
-  const filteredClients = clients.filter(
-    (client) =>
-      client.name.toLowerCase().includes(search.toLowerCase()) ||
-      (client.phone &&
-        client.phone.toLowerCase().includes(search.toLowerCase())) ||
-      (client.address &&
-        client.address.toLowerCase().includes(search.toLowerCase())),
-  );
+  const filteredClients = selectedClientFilter
+    ? clients.filter((client) => client.id === selectedClientFilter.id)
+    : clients.filter(
+        (client) =>
+          client.name.toLowerCase().includes(search.toLowerCase()) ||
+          (client.phone &&
+            client.phone.toLowerCase().includes(search.toLowerCase())) ||
+          (client.address &&
+            client.address.toLowerCase().includes(search.toLowerCase())),
+      );
 
   // Sort by credit (descending - highest first), then by versement
   const sortedClients = [...filteredClients].sort((a, b) => {
@@ -522,7 +547,25 @@ export default function Clients() {
                   </Popover>
                 </div>
                 {/* Search bar inline */}
-                <SearchBar search={search} setSearch={setSearch} />
+                <ClientSearchInput
+                  value={search}
+                  onChange={(value) => {
+                    if (selectedClientFilter) {
+                      setSelectedClientFilter(null);
+                    }
+                    setSearch(value);
+                  }}
+                  clients={clients}
+                  selectedClientId={selectedClientFilter?.id ?? null}
+                  onSelectClient={(client) => {
+                    setSelectedClientFilter({ id: client.id, name: client.name });
+                    setSearch(client.name);
+                  }}
+                  onClearSelection={() => {
+                    setSelectedClientFilter(null);
+                    setSearch("");
+                  }}
+                />
               </div>
               {loading ? (
                 <div className="flex items-center gap-2 text-muted-foreground">
@@ -539,6 +582,7 @@ export default function Clients() {
                     onDelete={handleDelete}
                     deleteLoading={deleteLoading}
                     onViewPayments={setPaymentsClient}
+                    onQuickFilterPayments={handleQuickFilterPayments}
                   />
                   {/* Pagination Navigation (bottom, shadcn style) */}
                   {totalPages > 1 && (
@@ -691,6 +735,8 @@ export default function Clients() {
               loading={paymentsLoading}
               error={paymentsError}
               onRefresh={fetchPayments}
+              initialClientFilter={pendingPaymentsFilter}
+              onConsumeInitialClientFilter={() => setPendingPaymentsFilter(null)}
             />
           )}
         </div>

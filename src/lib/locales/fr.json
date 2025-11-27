@@ -1084,6 +1084,7 @@
     "confirmVersementCancelMessage": "Cela supprimera le versement de {{name}} et remettra les produits en stock. Cette action est irréversible.",
     "deleteVersementWarning": "Les produits en attente seront retournés au stock.",
     "versementDetails": "Détails du Versement",
+    "viewInPayments": "Voir dans les paiements",
     "paymentId": "ID de Paiement",
     "paymentInformation": "Informations de Paiement",
     "paymentStatus": "Statut de Paiement",
