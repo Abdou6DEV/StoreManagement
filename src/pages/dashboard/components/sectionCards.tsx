@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 import {
   PackageIcon,
   DollarSignIcon,
@@ -8,18 +9,21 @@ import {
   WalletIcon,
   TrendingUp,
   TrendingDown,
+  ChartLine,
+  ExternalLink,
 } from "lucide-react";
 import { ProfitChart } from "./profitCharts";
 import { StockStatsCard } from "./stockStatsCard";
-import { Skeleton } from "../../../lib/components/skeleton";
 import { Switch } from "../../../lib/components/switch";
 import { Tooltip } from "../../../lib/components/tooltip";
+import { Button } from "../../../lib/components/button";
 import { useSales, useProducts, useClients, usePayments, useLowStockThreshold, useDashboardLoading } from "../../../lib/contexts/dashboardContext";
 
 type OverviewPeriod = "today" | "thisMonth" | "thisYear" | "overall";
 
 export function SectionCards() {
   const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
   
   // Use shared dashboard data
   const sales = useSales();
@@ -557,6 +561,28 @@ export function SectionCards() {
     </Tooltip>
   );
 
+  const handleJumpToHistory = (cardType: 'today' | 'month' | 'year') => {
+    const today = new Date();
+    let selectedPeriod;
+
+    if (cardType === 'today') {
+      // Format: YYYY-MM-DD
+      const dateStr = today.toISOString().split('T')[0];
+      selectedPeriod = { period: 'day' as const, periodValue: dateStr };
+    } else if (cardType === 'month') {
+      // Format: YYYY-MM
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      selectedPeriod = { period: 'month' as const, periodValue: `${year}-${month}` };
+    } else {
+      // Format: YYYY
+      const year = String(today.getFullYear());
+      selectedPeriod = { period: 'year' as const, periodValue: year };
+    }
+
+    navigate('/history', { state: { selectedPeriod, activeTab: 'details' } });
+  };
+
   const renderSection = (titleKey: string, cards: Array<{
     labelKey: string;
     value?: string;
@@ -567,18 +593,14 @@ export function SectionCards() {
     itemsSold?: string;
     revenueProgress?: number;
     profitProgress?: number;
+    rawRevenue?: number;
+    rawProfit?: number;
   }>) => {
     // Special handling for stock stats section
     if (titleKey === "stockStatsSection") {
       return (
         <div className="space-y-6">
-          {loadingStates.stockStats ? (
-            <div className="p-8 bg-card rounded-xl shadow-md border flex items-center justify-center min-h-[200px]">
-              <Skeleton className="h-8 w-32" />
-            </div>
-          ) : (
-            <StockStatsCard />
-          )}
+          <StockStatsCard />
         </div>
       );
     }
@@ -591,13 +613,8 @@ export function SectionCards() {
             {t("dashboard.clientStatsSection")}
           </h2>
           
-          {loadingStates.clientStats ? (
-            <div className="p-6 bg-card rounded-xl shadow-md border flex items-center justify-center min-h-[200px]">
-              <Skeleton className="h-8 w-32" />
-            </div>
-          ) : (
-            /* Simple Client Stats Grid */
-            <div className="p-6 bg-card rounded-xl shadow-md border">
+          {/* Simple Client Stats Grid */}
+          <div className="p-6 bg-card rounded-xl shadow-md border">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
               <div className="flex flex-col items-center gap-1">
                 <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
@@ -703,7 +720,6 @@ export function SectionCards() {
               </div>
             </div>
           </div>
-          )}
         </div>
       );
     }
@@ -734,12 +750,7 @@ export function SectionCards() {
               key={stat.labelKey}
               className={`p-8 bg-card rounded-xl shadow-md border flex flex-col items-start space-y-3 hover:shadow-lg transition-shadow duration-300 relative min-h-[280px]`}
             >
-              {isLoading && (
-                <div className="absolute inset-0 bg-background/80 backdrop-blur-sm rounded-xl flex items-center justify-center">
-                  <Skeleton className="h-8 w-32" />
-                </div>
-              )}
-                  {stat.revenue && stat.profit ? (
+              {stat.revenue && stat.profit ? (
                     // Unified layout for all sales cards
                     <div className="w-full space-y-2">
               <div className="flex items-center justify-between w-full">
@@ -770,62 +781,101 @@ export function SectionCards() {
                         </div>
                         {/* Average percentage indicators for Today, Month, Year cards */}
                         {stat.labelKey === 'dashboard.today' && todayVsAverage.percentage > 0 && (
-                          <div className={`flex items-center gap-1 text-sm ${
-                            todayVsAverage.direction === 'up' 
-                              ? "text-green-600 dark:text-green-400" 
-                              : "text-red-600 dark:text-red-400"
-                          }`}>
-                            {todayVsAverage.direction === 'up' ? (
-                              <TrendingUp className="h-4 w-4" />
-                            ) : (
-                              <TrendingDown className="h-4 w-4" />
-                            )}
-                            <span className="font-semibold">
-                              {todayVsAverage.percentage.toFixed(1)}%
-                            </span>
-                            <span className="text-xs text-muted-foreground">
-                              {todayVsAverage.direction === 'up' ? t("dashboard.above") : t("dashboard.below")} {t("dashboard.average")}
-                            </span>
+                          <div className="flex items-center gap-2">
+                            <div className={`flex items-center gap-1 text-sm ${
+                              todayVsAverage.direction === 'up' 
+                                ? "text-green-600 dark:text-green-400" 
+                                : "text-red-600 dark:text-red-400"
+                            }`}>
+                              {todayVsAverage.direction === 'up' ? (
+                                <TrendingUp className="h-4 w-4" />
+                              ) : (
+                                <TrendingDown className="h-4 w-4" />
+                              )}
+                              <span className="font-semibold">
+                                {todayVsAverage.percentage.toFixed(1)}%
+                              </span>
+                              <span className="text-xs text-muted-foreground">
+                                {todayVsAverage.direction === 'up' ? t("dashboard.above") : t("dashboard.below")} {t("dashboard.average")}
+                              </span>
+                            </div>
+                            <Tooltip content={t("dashboard.viewInHistory", "View in History")}>
+                              <Button
+                                type="button"
+                                size="icon"
+                                variant="outline"
+                                className="h-7 w-7 border-blue-200 text-blue-600 hover:bg-blue-50 dark:border-blue-900/60 dark:text-blue-300 dark:hover:bg-blue-950/40"
+                                onClick={() => handleJumpToHistory('today')}
+                              >
+                                <ExternalLink className="h-3.5 w-3.5" />
+                              </Button>
+                            </Tooltip>
                           </div>
                         )}
                         {stat.labelKey === 'dashboard.thisMonth' && monthVsAverage.percentage > 0 && (
-                          <div className={`flex items-center gap-1 text-sm ${
-                            monthVsAverage.direction === 'up' 
-                              ? "text-green-600 dark:text-green-400" 
-                              : "text-red-600 dark:text-red-400"
-                          }`}>
-                            {monthVsAverage.direction === 'up' ? (
-                              <TrendingUp className="h-4 w-4" />
-                            ) : (
-                              <TrendingDown className="h-4 w-4" />
-                            )}
-                            <span className="font-semibold">
-                              {monthVsAverage.percentage.toFixed(1)}%
-                            </span>
-                            <span className="text-xs text-muted-foreground">
-                              {monthVsAverage.direction === 'up' ? t("dashboard.above") : t("dashboard.below")} {t("dashboard.average")}
-                            </span>
+                          <div className="flex items-center gap-2">
+                            <div className={`flex items-center gap-1 text-sm ${
+                              monthVsAverage.direction === 'up' 
+                                ? "text-green-600 dark:text-green-400" 
+                                : "text-red-600 dark:text-red-400"
+                            }`}>
+                              {monthVsAverage.direction === 'up' ? (
+                                <TrendingUp className="h-4 w-4" />
+                              ) : (
+                                <TrendingDown className="h-4 w-4" />
+                              )}
+                              <span className="font-semibold">
+                                {monthVsAverage.percentage.toFixed(1)}%
+                              </span>
+                              <span className="text-xs text-muted-foreground">
+                                {monthVsAverage.direction === 'up' ? t("dashboard.above") : t("dashboard.below")} {t("dashboard.average")}
+                              </span>
+                            </div>
+                            <Tooltip content={t("dashboard.viewInHistory", "View in History")}>
+                              <Button
+                                type="button"
+                                size="icon"
+                                variant="outline"
+                                className="h-7 w-7 border-blue-200 text-blue-600 hover:bg-blue-50 dark:border-blue-900/60 dark:text-blue-300 dark:hover:bg-blue-950/40"
+                                onClick={() => handleJumpToHistory('month')}
+                              >
+                                <ExternalLink className="h-3.5 w-3.5" />
+                              </Button>
+                            </Tooltip>
                           </div>
                         )}
                         {stat.labelKey === 'dashboard.thisYear' && yearVsAverage.percentage > 0 && (
-                          <div className={`flex items-center gap-1 text-sm ${
-                            yearVsAverage.direction === 'up' 
-                              ? "text-green-600 dark:text-green-400" 
-                              : "text-red-600 dark:text-red-400"
-                          }`}>
-                            {yearVsAverage.direction === 'up' ? (
-                              <TrendingUp className="h-4 w-4" />
-                            ) : (
-                              <TrendingDown className="h-4 w-4" />
-                            )}
-                            <span className="font-semibold">
-                              {yearVsAverage.percentage.toFixed(1)}%
-                            </span>
-                            <span className="text-xs text-muted-foreground">
-                              {yearVsAverage.direction === 'up' ? t("dashboard.above") : t("dashboard.below")} {t("dashboard.average")}
-                            </span>
-                </div>
-                )}
+                          <div className="flex items-center gap-2">
+                            <div className={`flex items-center gap-1 text-sm ${
+                              yearVsAverage.direction === 'up' 
+                                ? "text-green-600 dark:text-green-400" 
+                                : "text-red-600 dark:text-red-400"
+                            }`}>
+                              {yearVsAverage.direction === 'up' ? (
+                                <TrendingUp className="h-4 w-4" />
+                              ) : (
+                                <TrendingDown className="h-4 w-4" />
+                              )}
+                              <span className="font-semibold">
+                                {yearVsAverage.percentage.toFixed(1)}%
+                              </span>
+                              <span className="text-xs text-muted-foreground">
+                                {yearVsAverage.direction === 'up' ? t("dashboard.above") : t("dashboard.below")} {t("dashboard.average")}
+                              </span>
+                            </div>
+                            <Tooltip content={t("dashboard.viewInHistory", "View in History")}>
+                              <Button
+                                type="button"
+                                size="icon"
+                                variant="outline"
+                                className="h-7 w-7 border-blue-200 text-blue-600 hover:bg-blue-50 dark:border-blue-900/60 dark:text-blue-300 dark:hover:bg-blue-950/40"
+                                onClick={() => handleJumpToHistory('year')}
+                              >
+                                <ExternalLink className="h-3.5 w-3.5" />
+                              </Button>
+                            </Tooltip>
+                          </div>
+                        )}
               </div>
               {stat.revenue && (
                      <div className="flex flex-col items-center gap-1">
@@ -909,51 +959,56 @@ export function SectionCards() {
 
   if (loading) {
     return (
-      <div className="space-y-8">
-        {/* Sales Stats Skeleton */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between gap-4">
-            <h2 className="text-2xl font-bold text-foreground">{t("dashboard.overviewSection")}</h2>
-            {renderNetProfitToggle()}
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="bg-card rounded-lg p-6 border shadow-sm">
-                <Skeleton className="h-4 w-24 mb-2" />
-                <Skeleton className="h-8 w-32 mb-1" />
-                <Skeleton className="h-3 w-20" />
-              </div>
-            ))}
-          </div>
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6">
+        {/* Animated Dashboard Icon */}
+        <ChartLine className="w-20 h-20 text-green-500 animate-pulse" />
+        
+        {/* Loading Text */}
+        <div className="text-center space-y-2">
+          <h3 className="text-xl font-semibold text-foreground">
+            {t("dashboard.loading", "Loading Dashboard")}
+          </h3>
+          <p className="text-sm text-muted-foreground">
+            {t("dashboard.loadingDesc", "Preparing your data...")}
+          </p>
         </div>
-
-        {/* Stock Stats Skeleton */}
-        <div className="space-y-4">
-          <h2 className="text-2xl font-bold text-foreground">{t("dashboard.stockStatsSection")}</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="bg-card rounded-lg p-6 border shadow-sm">
-                <Skeleton className="h-4 w-24 mb-2" />
-                <Skeleton className="h-8 w-32 mb-1" />
-                <Skeleton className="h-3 w-20" />
-              </div>
-            ))}
-          </div>
+        
+        {/* Loading Dots Animation - Jump Further */}
+        <div className="flex gap-2">
+          <div 
+            className="w-2 h-2 bg-green-500 rounded-full" 
+            style={{ 
+              animation: 'higherBounce 0.9s infinite',
+              animationDelay: '0ms',
+            }}
+          ></div>
+          <div 
+            className="w-2 h-2 bg-green-500 rounded-full" 
+            style={{ 
+              animation: 'higherBounce 0.9s infinite',
+              animationDelay: '150ms',
+            }}
+          ></div>
+          <div 
+            className="w-2 h-2 bg-green-500 rounded-full" 
+            style={{ 
+              animation: 'higherBounce 0.9s infinite',
+              animationDelay: '300ms',
+            }}
+          ></div>
         </div>
-
-        {/* Client Stats Skeleton */}
-        <div className="space-y-4">
-          <h2 className="text-2xl font-bold text-foreground">{t("dashboard.clientStatsSection")}</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="bg-card rounded-lg p-6 border shadow-sm">
-                <Skeleton className="h-4 w-24 mb-2" />
-                <Skeleton className="h-8 w-32 mb-1" />
-                <Skeleton className="h-3 w-20" />
-              </div>
-            ))}
-          </div>
-        </div>
+        <style>{`
+          @keyframes higherBounce {
+            0%, 100% {
+              transform: translateY(0);
+              animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+            }
+            50% {
+              transform: translateY(-100%);
+              animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+            }
+          }
+        `}</style>
       </div>
     );
   }

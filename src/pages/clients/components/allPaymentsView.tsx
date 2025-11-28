@@ -137,6 +137,14 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
 
   );
 
+  const [confirmPaidDialog, setConfirmPaidDialog] = useState<{
+
+    open: boolean;
+
+    paymentId: string | null;
+
+  }>({ open: false, paymentId: null });
+
   const [confirmUnpaidDialog, setConfirmUnpaidDialog] = useState<{
 
     open: boolean;
@@ -593,6 +601,28 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
         "error",
 
       );
+
+    }
+
+  };
+
+  
+
+  const handleMarkAsPaidConfirm = (paymentId: string) => {
+
+    setConfirmPaidDialog({ open: true, paymentId });
+
+  };
+
+
+
+  const handleConfirmMarkAsPaid = async () => {
+
+    if (confirmPaidDialog.paymentId) {
+
+      await handleMarkAsPaid(confirmPaidDialog.paymentId);
+
+      setConfirmPaidDialog({ open: false, paymentId: null });
 
     }
 
@@ -1248,7 +1278,7 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
 
                   handleUpdateAmount={handleUpdateAmount}
 
-                  onMarkAsPaid={handleMarkAsPaid}
+                  onMarkAsPaid={handleMarkAsPaidConfirm}
 
                   onMarkAsUnpaidConfirm={handleMarkAsUnpaidConfirm}
 
@@ -1497,7 +1527,7 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
 
                   handleUpdateAmount={handleUpdateAmount}
 
-                  onMarkAsPaid={handleMarkAsPaid}
+                  onMarkAsPaid={handleMarkAsPaidConfirm}
 
                   onMarkAsUnpaidConfirm={handleMarkAsUnpaidConfirm}
 
@@ -1718,6 +1748,36 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
       )}
 
 
+
+      <ConfirmDialog
+
+        open={confirmPaidDialog.open}
+
+        onOpenChange={(open) =>
+
+          setConfirmPaidDialog({ open, paymentId: null })
+
+        }
+
+        title={t("clients.confirmMarkAsPaid", "Confirm Mark as Paid")}
+
+        message={t(
+
+          "clients.confirmMarkAsPaidMessage",
+
+          "Are you sure you want to mark this payment as paid? This will update the payment status immediately.",
+
+        )}
+
+        confirmText={t("clients.markAsPaid", "Mark as Paid")}
+
+        cancelText={t("clients.cancel", "Cancel")}
+
+        variant="success"
+
+        onConfirm={handleConfirmMarkAsPaid}
+
+      />
 
       <ConfirmDialog
 

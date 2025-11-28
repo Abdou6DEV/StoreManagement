@@ -229,6 +229,7 @@ export interface ModalAction {
     | "ghost"
     | "link";
   disabled?: boolean;
+  className?: string;
   loading?: boolean;
   icon?: React.ReactNode;
 }

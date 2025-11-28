@@ -1,5 +1,6 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
+import { useLocation } from "react-router-dom";
 import { FileText, TrendingUp } from "lucide-react";
 import { createPortal } from "react-dom";
 import GeneralHistory from "./components/generalHistory";
@@ -10,10 +11,25 @@ import type { AggregationLevel, SelectedPeriod } from "../../types";
 export default function History() {
   const { t } = useTranslation();
   const { showTooltips } = useTooltip();
-  const [activeTab, setActiveTab] = useState<"general" | "details">("general");
-  const [selectedPeriod, setSelectedPeriod] = useState<SelectedPeriod | null>(
-    null,
+  const location = useLocation();
+  const locationState = location.state as { selectedPeriod?: SelectedPeriod; activeTab?: "general" | "details" } | null;
+  
+  const [activeTab, setActiveTab] = useState<"general" | "details">(
+    locationState?.activeTab || "general"
   );
+  const [selectedPeriod, setSelectedPeriod] = useState<SelectedPeriod | null>(
+    locationState?.selectedPeriod || null
+  );
+
+  // Handle navigation state changes
+  useEffect(() => {
+    if (locationState?.selectedPeriod) {
+      setSelectedPeriod(locationState.selectedPeriod);
+      if (locationState.activeTab) {
+        setActiveTab(locationState.activeTab);
+      }
+    }
+  }, [locationState]);
   const [visible, setVisible] = useState(false);
   const [tooltipCoords, setTooltipCoords] = useState({ x: -1000, y: -1000 });
   const [hoveredTab, setHoveredTab] = useState<string | null>(null);

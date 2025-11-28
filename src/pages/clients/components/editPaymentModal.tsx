@@ -10,6 +10,7 @@ interface EditPaymentModalProps {
   onClose: () => void;
   payment: PaymentWithClient | null;
   onConfirm: (newAmount: number) => void;
+  onMarkAsPaid?: (paymentId: string) => void;
   t: TFunction;
 }
 
@@ -18,6 +19,7 @@ const EditPaymentModal: React.FC<EditPaymentModalProps> = ({
   onClose,
   payment,
   onConfirm,
+  onMarkAsPaid,
   t,
 }) => {
   const [newPaymentAmount, setNewPaymentAmount] = useState(0);
@@ -87,10 +89,20 @@ const EditPaymentModal: React.FC<EditPaymentModalProps> = ({
     }
   }, [open]);
 
+  // Check if payment amount exactly equals the remaining amount (will fully pay)
+  const willMarkAsPaid = isFullyPaid && !isOverpaid && onMarkAsPaid;
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (newPaymentAmount > 0) {
-      onConfirm(newPaymentAmount);
+      if (willMarkAsPaid && payment) {
+        // User entered exact remaining amount - mark as paid directly
+        onMarkAsPaid(payment.id);
+        onClose();
+      } else {
+        // Normal update
+        onConfirm(newPaymentAmount);
+      }
     }
   };
 
@@ -123,9 +135,10 @@ const EditPaymentModal: React.FC<EditPaymentModalProps> = ({
       size="lg"
       className="max-w-2xl"
       onSubmit={handleSubmit}
-      submitText={t("clients.updatePayment", "Update Payment")}
+      submitText={willMarkAsPaid ? t("clients.markAsPaid", "Mark as Paid") : t("clients.updatePayment", "Update Payment")}
       cancelText={t("cashier.cancel", "Cancel")}
       submitDisabled={newPaymentAmount <= 0 || isOverpaid}
+      submitButtonClassName={willMarkAsPaid ? "bg-green-600 hover:bg-green-700" : undefined}
     >
       {/* Payment Information Summary */}
       <div className="bg-muted/60 border border-border rounded-xl p-6 mb-6">
@@ -314,11 +327,6 @@ const EditPaymentModal: React.FC<EditPaymentModalProps> = ({
                     </div>
                   </>
                 )}
-                {isFullyPaid && !isOverpaid && (
-                  <div className="text-xs text-green-600 font-semibold mt-1">
-                    ✓ {t("clients.fullyPaid", "Fully Paid!")}
-                  </div>
-                )}
                 {isOverpaid && (
                   <div className="text-xs text-red-600 font-semibold mt-1">
                     {t("clients.overpaid", "Overpaid!")}
@@ -344,9 +352,9 @@ const EditPaymentModal: React.FC<EditPaymentModalProps> = ({
             min={0}
             max={2147483647}
             placeholder={t("clients.enterAmount", "Enter amount client is paying now")}
-            className="w-full h-12 text-lg pr-12"
+            className="w-full h-12 text-lg px-4 pr-16"
           />
-          <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">
+          <div className="absolute right-4 top-1/2 transform -translate-y-1/2 text-muted-foreground">
             {t("cashier.currency", "DA")}
           </div>
         </div>

@@ -509,12 +509,20 @@ export const ClientDetailsModal = ({
                             </span>
                           </td>
                           <td
-                            className={`px-4 py-3 text-sm font-medium text-blue-600 ${isRTL ? "text-right" : "text-left"}`}
+                            className={`px-4 py-3 text-sm font-medium ${isRTL ? "text-right" : "text-left"}`}
                           >
-                            {formatCurrency(
-                              payment.type === "CREDIT" && (payment as any).remainingAmount !== undefined
-                                ? (payment as any).remainingAmount
-                                : payment.givenAmount
+                            {payment.paidDate ? (
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">
+                                {t("clients.paid", "Paid")}
+                              </span>
+                            ) : (
+                              <span className="text-blue-600">
+                                {formatCurrency(
+                                  payment.type === "CREDIT" && (payment as any).remainingAmount !== undefined
+                                    ? (payment as any).remainingAmount
+                                    : payment.givenAmount
+                                )}
+                              </span>
                             )}
                           </td>
                         </tr>

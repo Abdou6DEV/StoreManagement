@@ -62,6 +62,9 @@ export function DashboardProvider({ children }: DashboardProviderProps) {
 
   const fetchDashboardData = async () => {
     try {
+      const startTime = Date.now();
+      const minLoadingTime = 3000; // 3 seconds minimum loading time
+
       setData(prev => ({ ...prev, loading: true, error: null }));
 
       // Fetch all data in parallel
@@ -72,6 +75,14 @@ export function DashboardProvider({ children }: DashboardProviderProps) {
         window.api.database.payments.getAllWithClientInfo(),
         window.api.database.options.get("lowStockThreshold"),
       ]);
+
+      // Calculate elapsed time and wait if needed
+      const elapsedTime = Date.now() - startTime;
+      const remainingTime = minLoadingTime - elapsedTime;
+
+      if (remainingTime > 0) {
+        await new Promise(resolve => setTimeout(resolve, remainingTime));
+      }
 
       setData({
         sales,

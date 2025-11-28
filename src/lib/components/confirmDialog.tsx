@@ -1,7 +1,7 @@
 import React from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "./dialog";
 import { Button } from "./button";
-import { AlertTriangle, Info, XCircle } from "lucide-react";
+import { AlertTriangle, Info, XCircle, CheckCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 export interface ConfirmDialogProps {
@@ -11,7 +11,7 @@ export interface ConfirmDialogProps {
   message: string;
   confirmText?: string;
   cancelText?: string;
-  variant?: "danger" | "warning" | "info";
+  variant?: "danger" | "warning" | "info" | "success";
   onConfirm: () => void | Promise<void>;
   onCancel?: () => void;
   loading?: boolean;
@@ -59,6 +59,13 @@ export function ConfirmDialog({
           iconColor: "text-yellow-600",
           bgColor: "bg-yellow-100 dark:bg-yellow-900/30",
           buttonColor: "bg-yellow-600 hover:bg-yellow-700",
+        };
+      case "success":
+        return {
+          icon: CheckCircle,
+          iconColor: "text-green-600",
+          bgColor: "bg-green-100 dark:bg-green-900/30",
+          buttonColor: "bg-green-600 hover:bg-green-700",
         };
       default:
         return {

@@ -240,7 +240,7 @@ function DialogModal({
                   variant={action.variant || "default"}
                   onClick={action.onClick}
                   disabled={action.disabled || action.loading}
-                  className="w-full sm:w-auto"
+                  className={cn("w-full sm:w-auto", action.className)}
                 >
                   {action.loading && (
                     <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-background border-t-transparent" />
@@ -497,6 +497,7 @@ export interface FormModalProps extends Omit<ModalProps, "actions"> {
   onCancel?: () => void;
   loading?: boolean;
   submitDisabled?: boolean;
+  submitButtonClassName?: string;
 }
 
 export function FormModal({
@@ -508,6 +509,7 @@ export function FormModal({
   onClose,
   loading = false,
   submitDisabled = false,
+  submitButtonClassName,
   ...props
 }: FormModalProps) {
   const formRef = React.useRef<HTMLFormElement>(null);
@@ -555,6 +557,7 @@ export function FormModal({
       variant: "default",
       loading,
       disabled: loading || submitDisabled,
+      className: submitButtonClassName,
     },
   ];
 

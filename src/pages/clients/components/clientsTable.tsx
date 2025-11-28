@@ -65,10 +65,10 @@ const ClientsTable: React.FC<ClientsTableProps> = ({
               {t("clients.totalPurchases", "Total Purchases")}
             </th>
             <th className={`px-4 py-3 ${isRTL ? "text-right" : "text-left"} whitespace-nowrap`}>
-              {t("clients.credit", "Credit")}
+              {t("clients.totalCredit", "Total Credit")}
             </th>
             <th className={`px-4 py-3 ${isRTL ? "text-right" : "text-left"} whitespace-nowrap`}>
-              {t("clients.versement", "Versement")}
+              {t("clients.totalVersement", "Total Versement")}
             </th>
             <th className={`px-4 py-3 ${isRTL ? "text-right" : "text-left"}`}>
               {t("clients.actions", "Actions")}

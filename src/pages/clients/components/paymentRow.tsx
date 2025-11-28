@@ -136,6 +136,10 @@ const PaymentRow: React.FC<PaymentRowProps> = ({
               <X className="w-3 h-3" />
             </Button>
           </div>
+        ) : payment.paidDate ? (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">
+            {t("clients.paid", "Paid")}
+          </span>
         ) : (
           <div className="flex items-center gap-2">
             <span className="font-medium text-[0.9375rem]">
@@ -144,20 +148,18 @@ const PaymentRow: React.FC<PaymentRowProps> = ({
                 : payment.givenAmount.toLocaleString('fr-FR')}{" "}
               {t("cashier.currency", "DA")}
             </span>
-            {!payment.paidDate && (
-              <Tooltip
-                content={t("clients.editAmountTooltip", "Edit payment amount")}
+            <Tooltip
+              content={t("clients.editAmountTooltip", "Edit payment amount")}
+            >
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setShowEditModal(true)}
+                className="h-6 px-1"
               >
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setShowEditModal(true)}
-                  className="h-6 px-1"
-                >
-                  <Edit className="w-3 h-3" />
-                </Button>
-              </Tooltip>
-            )}
+                <Edit className="w-3 h-3" />
+              </Button>
+            </Tooltip>
           </div>
         )}
       </td>
@@ -216,6 +218,7 @@ const PaymentRow: React.FC<PaymentRowProps> = ({
         onClose={() => setShowEditModal(false)}
         payment={payment}
         onConfirm={handleEditPayment}
+        onMarkAsPaid={onMarkAsPaid}
         t={t}
       />
     </tr>
