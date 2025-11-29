@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "../../../lib/components/button";
-import { Edit, Loader2, Trash2, CheckCircle, Wrench, XCircle } from "lucide-react";
+import { Edit, Loader2, Trash2, CheckCircle, Wrench, XCircle, Eye } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import {
   Pagination,
@@ -16,6 +16,9 @@ import { ConfirmDialog } from "../../../lib/components/confirmDialog";
 import { Badge } from "../../../lib/components/badge";
 import EditServiceModal from "./editServiceModal";
 import { useCompletedServices } from "../../../lib/contexts/completedServicesContext";
+import SaleDetailsModal from "../../../lib/components/saleDetailsModal";
+import { Sale } from "../../../types";
+import { useToast } from "../../../lib/contexts/toastContext";
 
 interface ServiceAppointment {
   id: string;
@@ -85,6 +88,9 @@ const ServicesTable: React.FC<ServicesTableProps> = ({
   const [cancelingServiceId, setCancelingServiceId] = useState<string | null>(null);
   const [paymentStatuses, setPaymentStatuses] = useState<Record<string, boolean>>({});
   const { refreshCompletedServicesCount } = useCompletedServices();
+  const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
+  const [showSaleDetailsModal, setShowSaleDetailsModal] = useState(false);
+  const { showToast } = useToast();
 
   const formatCurrency = (amount: number) => {
     const formatted = amount % 1 === 0 ? amount.toFixed(0) : amount.toFixed(2);
@@ -164,6 +170,45 @@ const ServicesTable: React.FC<ServicesTableProps> = ({
 
   const handleServiceUpdated = () => {
     onEdit(editingService!); // This will trigger a refresh in the parent component
+  };
+
+  const handleViewSale = async (serviceId: string) => {
+    try {
+      // Get the sale ID from the service appointment
+      const saleId = await window.api.database.serviceAppointments.getSaleId(serviceId);
+      
+      if (!saleId) {
+        showToast(
+          t("services.saleNotFound", "Sale not found for this service"),
+          "error"
+        );
+        return;
+      }
+
+      // Fetch the full sale details
+      const sale = await window.api.database.sales.getById(saleId);
+      
+      if (sale) {
+        setSelectedSale(sale);
+        setShowSaleDetailsModal(true);
+      } else {
+        showToast(
+          t("services.saleNotFound", "Sale not found for this service"),
+          "error"
+        );
+      }
+    } catch (error) {
+      console.error("Error fetching sale details:", error);
+      showToast(
+        t("services.saleDetailsError", "Failed to load sale details"),
+        "error"
+      );
+    }
+  };
+
+  const handleCloseSaleDetailsModal = () => {
+    setShowSaleDetailsModal(false);
+    setSelectedSale(null);
   };
 
   // Fetch payment statuses for all services
@@ -402,6 +447,25 @@ const ServicesTable: React.FC<ServicesTableProps> = ({
                     <div
                       className={`flex gap-2 ${isRTL ? "flex-row-reverse" : ""}`}
                     >
+                      {/* View Sale button for completed & sold services */}
+                      {service.isCompleted && soldServiceIds.has(service.id) && (
+                        <Tooltip
+                          content={t(
+                            "services.viewSaleTooltip",
+                            "View sale",
+                          )}
+                        >
+                          <Button
+                            onClick={() => handleViewSale(service.id)}
+                            size="sm"
+                            variant="outline"
+                            className="text-blue-600 border-blue-200 hover:bg-blue-50 dark:text-blue-400 dark:border-blue-800 dark:hover:bg-blue-950/30"
+                          >
+                            <Eye className="w-3 h-3" />
+                          </Button>
+                        </Tooltip>
+                      )}
+
                       {!service.isCompleted && (
                         <Tooltip
                           content={t(
@@ -547,6 +611,16 @@ const ServicesTable: React.FC<ServicesTableProps> = ({
           }
         }}
         variant="danger"
+      />
+
+      <SaleDetailsModal
+        sale={selectedSale}
+        isOpen={showSaleDetailsModal}
+        onClose={handleCloseSaleDetailsModal}
+        onSaleUpdated={() => {
+          // Refresh services after sale is updated
+          onEdit({} as ServiceAppointment);
+        }}
       />
     </>
   );

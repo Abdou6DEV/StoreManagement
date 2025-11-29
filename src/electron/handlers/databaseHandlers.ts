@@ -111,6 +111,7 @@ import {
   getServiceNames,
   getCompletedServicesForCashier,
   isServiceAppointmentSold,
+  getSaleIdFromServiceAppointment,
   getServicePaymentStatus,
   updateServicePaymentStatus,
 } from "../../lib/database/serviceAppointments";
@@ -637,6 +638,10 @@ ipcMain.handle("db:products:deleteMultipleProducts", async (_, productIds: strin
 
   ipcMain.handle("db:serviceAppointments:isSold", async (_event, id: string) => {
     return await isServiceAppointmentSold(id);
+  });
+
+  ipcMain.handle("db:serviceAppointments:getSaleId", async (_event, id: string) => {
+    return await getSaleIdFromServiceAppointment(id);
   });
 
   ipcMain.handle("db:serviceAppointments:getPaymentStatus", async (_event, id: string) => {

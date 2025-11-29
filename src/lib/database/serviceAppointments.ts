@@ -448,8 +448,32 @@ export async function isServiceAppointmentSold(serviceAppointmentId: string): Pr
   return soldService !== null && soldService.saleItems.length > 0;
 }
 
+export async function getSaleIdFromServiceAppointment(serviceAppointmentId: string): Promise<string | null> {
+  // Get the sale ID for a sold service appointment
+  const soldService = await prisma.service.findFirst({
+    where: {
+      serviceAppointmentId: serviceAppointmentId,
+    },
+    include: {
+      saleItems: {
+        take: 1,
+        include: {
+          sale: true,
+        },
+      },
+    },
+  });
+
+  if (soldService && soldService.saleItems.length > 0) {
+    return soldService.saleItems[0].saleId;
+  }
+
+  return null;
+}
+
 // Alias methods for compatibility with the services table
 export const markCompleted = markServiceAppointmentCompleted;
 export const markIncomplete = markServiceAppointmentIncomplete;
+export const getSaleId = getSaleIdFromServiceAppointment;
 
 

@@ -4,6 +4,7 @@ import { CartesianGrid, Line, LineChart, XAxis, YAxis, ResponsiveContainer, Tool
 import { useTheme } from "../../../lib/hooks/useTheme";
 import { Skeleton } from "../../../lib/components/skeleton";
 import { useSales, useDashboardLoading } from "../../../lib/contexts/dashboardContext";
+import { ChartLine } from "lucide-react";
 
 interface ProfitChartProps {
   period: 'today' | 'month' | 'year' | 'overall';
@@ -229,7 +230,18 @@ export function ProfitChart({ period, className = "" }: ProfitChartProps) {
           filledData = data;
         }
         
-        setChartData(filledData);
+        // Check if there's any actual data (not all zeros)
+        const dataPointsWithValue = filledData.filter(item => item.profit !== 0 || item.revenue !== 0);
+        const hasData = dataPointsWithValue.length > 0;
+        
+        // Only set data if there's actual meaningful data
+        // For "today" period, allow single data point (it's okay to show)
+        // For other periods, require at least 2 data points (1 point would show as a dot)
+        if (hasData && (period === 'today' || dataPointsWithValue.length > 1)) {
+          setChartData(filledData);
+        } else {
+          setChartData([]);
+        }
         
         // Trend calculation removed as it was unused
       } catch (error) {
@@ -261,6 +273,18 @@ export function ProfitChart({ period, className = "" }: ProfitChartProps) {
           <Skeleton className="h-4 w-1/4" />
           <Skeleton className="h-32 w-full rounded" />
         </div>
+      </div>
+    );
+  }
+
+  // Show empty state if no data
+  if (chartData.length === 0) {
+    return (
+      <div className={`${className} flex flex-col items-center justify-center py-8`}>
+        <ChartLine className="w-10 h-10 text-muted-foreground mb-3" />
+        <p className="text-sm text-muted-foreground text-center">
+          {t("dashboard.noProfitData", "No profit data available for this period")}
+        </p>
       </div>
     );
   }

@@ -11,9 +11,11 @@ import {
   TrendingDown,
   ChartLine,
   ExternalLink,
+  Users,
 } from "lucide-react";
 import { ProfitChart } from "./profitCharts";
 import { StockStatsCard } from "./stockStatsCard";
+import { ServiceStatsCard } from "./serviceStatsCard";
 import { Switch } from "../../../lib/components/switch";
 import { Tooltip } from "../../../lib/components/tooltip";
 import { Button } from "../../../lib/components/button";
@@ -608,13 +610,16 @@ export function SectionCards() {
     // Special handling for client stats section
     if (titleKey === "clientStatsSection") {
       return (
-        <div className="space-y-6">
-          <h2 className="text-xl font-semibold text-foreground mb-4">
-            {t("dashboard.clientStatsSection")}
-          </h2>
+        <div className="w-full p-8 bg-card rounded-xl shadow-md border flex flex-col space-y-3">
+          <div className="flex items-center gap-2 mb-4">
+            <Users className="h-6 w-6 text-primary" />
+            <h2 className="text-xl font-semibold text-foreground">
+              {t("dashboard.clientStatsSection")}
+            </h2>
+          </div>
           
           {/* Simple Client Stats Grid */}
-          <div className="p-6 bg-card rounded-xl shadow-md border">
+          <div>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
               <div className="flex flex-col items-center gap-1">
                 <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
@@ -1017,6 +1022,7 @@ export function SectionCards() {
     <div className="space-y-8">
       {renderSection("overviewSection", salesStats)}
       {renderSection("stockStatsSection", stockStats)}
+      <ServiceStatsCard />
       {renderSection("clientStatsSection", clientStats)}
     </div>
   );

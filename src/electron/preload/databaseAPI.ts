@@ -360,6 +360,7 @@ export const databaseAPI = {
     getServiceNames: () => ipcRenderer.invoke("db:serviceAppointments:getServiceNames"),
     getCompletedForCashier: () => ipcRenderer.invoke("db:serviceAppointments:getCompletedForCashier"),
     isSold: (id: string) => ipcRenderer.invoke("db:serviceAppointments:isSold", id),
+    getSaleId: (id: string) => ipcRenderer.invoke("db:serviceAppointments:getSaleId", id),
     getPaymentStatus: (id: string) => ipcRenderer.invoke("db:serviceAppointments:getPaymentStatus", id),
     updatePaymentStatus: (id: string, isPaid: boolean) => ipcRenderer.invoke("db:serviceAppointments:updatePaymentStatus", { id, isPaid }),
   },

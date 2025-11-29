@@ -48,14 +48,15 @@ export function ChartContainer({
 
   const formatValue = (value: number) => {
     if (chartType === "clients") return `${value}`;
-    return `${value.toLocaleString()} DA`;
+    // Show full values with no space before currency to prevent wrapping
+    return `${value.toLocaleString()}${t("currency")}`;
   };
 
   const formatTooltipValue = (value: number) => {
     if (chartType === "clients") {
       return `${value} ${t("dashboard.clients")}`;
     }
-    return `${value.toLocaleString()} DA`;
+    return `${value.toLocaleString()} ${t("currency")}`;
   };
 
   return (
@@ -65,7 +66,7 @@ export function ChartContainer({
           data={currentPeriod.data}
           margin={{
             top: 20,
-            right: 30,
+            right: 60,
             left: 20,
             bottom: 20,
           }}
@@ -108,12 +109,14 @@ export function ChartContainer({
             axisLine={false}
             tickMargin={8}
             fontSize={14}
-            fill={isDark ? "#ffffff" : "#000000"}
             fontWeight={600}
+            fill={isDark ? "#ffffff" : "#000000"}
             stroke={isDark ? "#ffffff" : "#000000"}
             strokeWidth={0.3}
             tickFormatter={formatValue}
             textAnchor={i18n.language === "ar" ? "start" : "end"}
+            style={{ whiteSpace: 'nowrap' }}
+            width={60}
           />
 
           <Tooltip
