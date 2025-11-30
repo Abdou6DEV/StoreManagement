@@ -20,6 +20,7 @@ import {
   FileText,
   Wrench,
   Info,
+  Calculator,
 } from "lucide-react";
 import { ThemeToggleButton } from "./themeToggleButton";
 import { FullscreenToggleButton } from "./fullscreenToggleButton";
@@ -165,6 +166,7 @@ export default function Navigation() {
                 history: <History className="w-8 h-8 text-blue-500" />,
                 bills: <FileText className="w-8 h-8 text-purple-500" />,
                 services: <Wrench className="w-8 h-8 text-cyan-500" />,
+                zakat: <Calculator className="w-8 h-8 text-emerald-500" />,
                 administrator: <Settings className="w-8 h-8 text-orange-500" />,
                 about: <Info className="w-8 h-8 text-blue-500" />,
               };

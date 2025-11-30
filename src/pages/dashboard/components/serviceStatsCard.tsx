@@ -287,9 +287,25 @@ export function ServiceStatsCard() {
             fill: chartColors[index % chartColors.length]
           }));
         
-        // Calculate monthly trends for the last 6 months
+        // Calculate monthly trends - only include months that have data or are within the last 6 months
         const monthlyTrends = [];
-        for (let i = 5; i >= 0; i--) {
+        
+        // Find the earliest service date to determine how far back to go
+        const serviceDates = allServices
+          .map((s: any) => s.completedAt ? new Date(s.completedAt) : new Date(s.createdAt))
+          .filter((date: Date) => !isNaN(date.getTime()));
+        
+        const earliestDate = serviceDates.length > 0 
+          ? new Date(Math.min(...serviceDates.map((d: Date) => d.getTime())))
+          : now;
+        
+        // Calculate how many months to show (max 6, but only show months with data or recent months)
+        const monthsToShow = Math.min(6, Math.max(1, 
+          (now.getFullYear() - earliestDate.getFullYear()) * 12 + 
+          (now.getMonth() - earliestDate.getMonth()) + 1
+        ));
+        
+        for (let i = monthsToShow - 1; i >= 0; i--) {
           const date = new Date();
           date.setMonth(date.getMonth() - i);
           const monthKey = date.toLocaleString('en-US', { month: 'short' });
@@ -766,7 +782,9 @@ export function ServiceStatsCard() {
                         {t("dashboard.serviceCompletionTrends", "Service Completion Trends")}
                       </h3>
                       <p className="text-sm text-muted-foreground">
-                        {t("dashboard.last6MonthsTrends", "Completed services, revenue, and profit over the last 6 months")}
+                        {serviceStats.monthlyTrends.length === 1
+                          ? t("dashboard.currentMonthTrends", "Completed services, revenue, and profit for the current month")
+                          : t("dashboard.last6MonthsTrends", "Completed services, revenue, and profit over the last 6 months")}
                       </p>
                     </div>
                     

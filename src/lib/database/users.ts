@@ -15,6 +15,7 @@ export interface CreateUserData {
     canAccessHistory: boolean;
     canAccessServices: boolean;
     canAccessDashboard: boolean;
+    canAccessZakat?: boolean;
     canManageUsers: boolean;
     canViewLogs: boolean;
     canManageSettings: boolean;
@@ -52,6 +53,7 @@ export const users = {
             canAccessHistory: data.permissions.canAccessHistory,
             canAccessServices: data.permissions.canAccessServices,
             canAccessDashboard: data.permissions.canAccessDashboard,
+            canAccessZakat: data.permissions.canAccessZakat || false,
             canManageUsers: data.permissions.canManageUsers,
             canViewLogs: data.permissions.canViewLogs,
             canManageSettings: data.permissions.canManageSettings,
@@ -124,6 +126,7 @@ export const users = {
                   canAccessHistory: true,
                   canAccessServices: true,
                   canAccessDashboard: true,
+                  canAccessZakat: true,
                   canManageUsers: true,
                   canViewLogs: true,
                   canManageSettings: true,
@@ -198,6 +201,7 @@ export const users = {
           canAccessBills: true,
           canAccessHistory: true,
           canAccessDashboard: true,
+          canAccessZakat: true,
           canManageUsers: true,
           canViewLogs: true,
           canManageSettings: true,
@@ -309,6 +313,7 @@ export const users = {
     canAccessHistory: boolean;
     canAccessServices: boolean;
     canAccessDashboard: boolean;
+    canAccessZakat?: boolean;
     canManageUsers: boolean;
     canViewLogs: boolean;
     canManageSettings: boolean;
@@ -324,7 +329,8 @@ export const users = {
     }
 
     // Filter out metadata fields and only keep the actual permission fields
-    const permissionFields = {
+    // Only include canAccessZakat if it exists (for backward compatibility)
+    const permissionFields: any = {
       canAccessCashier: permissions.canAccessCashier,
       canAccessStock: permissions.canAccessStock,
       canAccessClients: permissions.canAccessClients,
@@ -336,6 +342,11 @@ export const users = {
       canViewLogs: permissions.canViewLogs,
       canManageSettings: permissions.canManageSettings,
     };
+    
+    // Only add canAccessZakat if it's provided (for backward compatibility with old databases)
+    if (permissions.canAccessZakat !== undefined) {
+      permissionFields.canAccessZakat = permissions.canAccessZakat;
+    }
 
     // Update or create permissions
     return prisma.user.update({

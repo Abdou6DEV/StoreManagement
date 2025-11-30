@@ -56,6 +56,7 @@ interface UserFormData {
     canAccessHistory: boolean;
     canAccessServices: boolean;
     canAccessDashboard: boolean;
+    canAccessZakat?: boolean;
     canManageUsers: boolean;
     canViewLogs: boolean;
     canManageSettings: boolean;
@@ -99,6 +100,7 @@ export default function AccountsManagement() {
       canAccessHistory: false,
       canAccessServices: false,
       canAccessDashboard: false,
+      canAccessZakat: false,
       canManageUsers: false,
       canViewLogs: false,
       canManageSettings: false,
@@ -150,6 +152,7 @@ export default function AccountsManagement() {
         canAccessHistory: false,
         canAccessServices: false,
         canAccessDashboard: false,
+        canAccessZakat: false,
         canManageUsers: false,
         canViewLogs: false,
         canManageSettings: false,
@@ -174,6 +177,7 @@ export default function AccountsManagement() {
       canAccessHistory: user.permissions.canAccessHistory || false,
       canAccessServices: user.permissions.canAccessServices || false,
       canAccessDashboard: user.permissions.canAccessDashboard || false,
+      canAccessZakat: (user.permissions as any)?.canAccessZakat || false,
       canManageUsers: user.permissions.canManageUsers || false,
       canViewLogs: user.permissions.canViewLogs || false,
       canManageSettings: user.permissions.canManageSettings || false,
@@ -185,6 +189,7 @@ export default function AccountsManagement() {
       canAccessHistory: false,
       canAccessServices: false,
       canAccessDashboard: false,
+      canAccessZakat: false,
       canManageUsers: false,
       canViewLogs: false,
       canManageSettings: false,
@@ -388,6 +393,7 @@ export default function AccountsManagement() {
       canAccessHistory: t("admin.accounts.permissionLabels.history", "History"),
       canAccessServices: t("admin.accounts.permissionLabels.services", "Services"),
       canAccessDashboard: t("admin.accounts.permissionLabels.dashboard", "Dashboard"),
+      canAccessZakat: t("admin.accounts.permissionLabels.zakat", "Zakat Al Mal"),
       canManageUsers: "Manage Users",
       canViewLogs: "View Logs",
       canManageSettings: "Manage Settings",
@@ -622,7 +628,8 @@ export default function AccountsManagement() {
                   'canAccessBills',
                   'canAccessHistory',
                   'canAccessServices',
-                  'canAccessDashboard'
+                  'canAccessDashboard',
+                  'canAccessZakat'
                 ];
                 
                 return permissionFields.map((key) => (
@@ -705,6 +712,7 @@ export default function AccountsManagement() {
                   'canAccessHistory',
                   'canAccessServices',
                   'canAccessDashboard',
+                  'canAccessZakat',
                   'canManageUsers',
                   'canViewLogs',
                   'canManageSettings'

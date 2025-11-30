@@ -40,7 +40,9 @@ export function useChartData() {
       return;
     }
     
-    function processData() {
+    async function processData() {
+      const startTime = Date.now();
+      const minProcessingTime = 100; // Minimum 100ms to match other components
 
       // --- 1m: Last 30 days ---
       const days = Array.from({ length: 30 }, (_, i) => {
@@ -156,15 +158,23 @@ export function useChartData() {
         };
       });
 
+      // Ensure minimum processing time to sync with other components
+      const elapsedTime = Date.now() - startTime;
+      const remainingTime = minProcessingTime - elapsedTime;
+      if (remainingTime > 0) {
+        await new Promise(resolve => setTimeout(resolve, remainingTime));
+      }
+
       setChartData({ "1m": daily, "12m": monthly, years: yearly });
       setLoading(false);
     }
 
     processData();
-  }, [dashboardLoading, sales, clients, i18n.language]);
+  }, [dashboardLoading, sales, clients, i18n.language, t]);
 
   return { chartData, loading };
 }
+
 
 export function useChartConfigs() {
   const { t } = useTranslation();

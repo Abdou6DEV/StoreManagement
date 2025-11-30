@@ -34,6 +34,7 @@ const History = React.lazy(() => import("./history"));
 const Bills = React.lazy(() => import("./bills"));
 const Services = React.lazy(() => import("./services"));
 const Administrator = React.lazy(() => import("./administrator"));
+const ZakatAlMal = React.lazy(() => import("./zakat"));
 const About = React.lazy(() => import("./about"));
 
 export default function App() {
@@ -201,6 +202,14 @@ export default function App() {
                             element={
                               <PermissionRoute requiredPermission="administrator">
                                 <Administrator />
+                              </PermissionRoute>
+                            }
+                          />
+                          <Route
+                            path="/zakat"
+                            element={
+                              <PermissionRoute requiredPermission="zakat">
+                                <ZakatAlMal />
                               </PermissionRoute>
                             }
                           />

@@ -8,6 +8,7 @@ import {
   FileText,
   Wrench,
   Info,
+  Calculator,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
@@ -99,6 +100,12 @@ export default function MainMenu() {
       key: "services",
       icon: Wrench,
       color: "text-cyan-500",
+      adminOnly: true,
+    },
+    {
+      key: "zakat",
+      icon: Calculator,
+      color: "text-emerald-500",
       adminOnly: true,
     },
     {

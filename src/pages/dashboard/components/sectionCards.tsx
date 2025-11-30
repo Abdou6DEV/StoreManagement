@@ -9,7 +9,6 @@ import {
   WalletIcon,
   TrendingUp,
   TrendingDown,
-  ChartLine,
   ExternalLink,
   Users,
 } from "lucide-react";
@@ -19,6 +18,7 @@ import { ServiceStatsCard } from "./serviceStatsCard";
 import { Switch } from "../../../lib/components/switch";
 import { Tooltip } from "../../../lib/components/tooltip";
 import { Button } from "../../../lib/components/button";
+import { LoadingState } from "../../../lib/components/loadingState";
 import { useSales, useProducts, useClients, usePayments, useLowStockThreshold, useDashboardLoading } from "../../../lib/contexts/dashboardContext";
 
 type OverviewPeriod = "today" | "thisMonth" | "thisYear" | "overall";
@@ -964,57 +964,10 @@ export function SectionCards() {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6">
-        {/* Animated Dashboard Icon */}
-        <ChartLine className="w-20 h-20 text-green-500 animate-pulse" />
-        
-        {/* Loading Text */}
-        <div className="text-center space-y-2">
-          <h3 className="text-xl font-semibold text-foreground">
-            {t("dashboard.loading", "Loading Dashboard")}
-          </h3>
-          <p className="text-sm text-muted-foreground">
-            {t("dashboard.loadingDesc", "Preparing your data...")}
-          </p>
-        </div>
-        
-        {/* Loading Dots Animation - Jump Further */}
-        <div className="flex gap-2">
-          <div 
-            className="w-2 h-2 bg-green-500 rounded-full" 
-            style={{ 
-              animation: 'higherBounce 0.9s infinite',
-              animationDelay: '0ms',
-            }}
-          ></div>
-          <div 
-            className="w-2 h-2 bg-green-500 rounded-full" 
-            style={{ 
-              animation: 'higherBounce 0.9s infinite',
-              animationDelay: '150ms',
-            }}
-          ></div>
-          <div 
-            className="w-2 h-2 bg-green-500 rounded-full" 
-            style={{ 
-              animation: 'higherBounce 0.9s infinite',
-              animationDelay: '300ms',
-            }}
-          ></div>
-        </div>
-        <style>{`
-          @keyframes higherBounce {
-            0%, 100% {
-              transform: translateY(0);
-              animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
-            }
-            50% {
-              transform: translateY(-100%);
-              animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
-            }
-          }
-        `}</style>
-      </div>
+      <LoadingState 
+        title={t("dashboard.loading", "Loading Dashboard")}
+        description={t("dashboard.loadingDesc", "Preparing your data...")}
+      />
     );
   }
 

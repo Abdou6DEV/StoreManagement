@@ -11,6 +11,7 @@ import {
   Wrench,
   LogOut,
   Info,
+  Calculator,
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -67,6 +68,12 @@ const menuItems = [
     path: "/services",
     icon: Wrench,
     color: "text-cyan-500",
+  },
+  {
+    key: "zakat",
+    path: "/zakat",
+    icon: Calculator,
+    color: "text-emerald-500",
   },
   {
     key: "administrator",
