@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Printer, X } from 'lucide-react';
 import { Modal } from '../../../../lib/components/modal';
 import { Button } from '../../../../lib/components/button';
 import StyledNumberInput from '../../../../lib/components/inputNumber';
+import { Checkbox } from '../../../../lib/components/checkbox';
 import { generateRealBarcode, getRecommendedFormat } from '../../../../lib/utils/barcodeVisual';
 import { Tooltip } from '../../../../lib/components/tooltip';
 
@@ -13,8 +14,10 @@ interface BarcodePreviewModalProps {
   productName: string;
   price: number | string;
   barcode: string;
-  onPrint: (quantity?: number) => void;
+  onPrint: (quantity?: number, showBarcode?: boolean) => void;
 }
+
+const SHOW_BARCODE_CACHE_KEY = 'barcodePreview_showBarcode';
 
 export const BarcodePreviewModal: React.FC<BarcodePreviewModalProps> = ({
   open,
@@ -26,6 +29,16 @@ export const BarcodePreviewModal: React.FC<BarcodePreviewModalProps> = ({
 }) => {
   const { t } = useTranslation();
   const [quantity, setQuantity] = useState<number | "">(1);
+  const [showBarcode, setShowBarcode] = useState<boolean>(() => {
+    // Load from cache, default to true
+    const cached = localStorage.getItem(SHOW_BARCODE_CACHE_KEY);
+    return cached !== null ? cached === 'true' : true;
+  });
+
+  // Save to cache when showBarcode changes
+  useEffect(() => {
+    localStorage.setItem(SHOW_BARCODE_CACHE_KEY, showBarcode.toString());
+  }, [showBarcode]);
 
   const formatPrice = (price: number | string): string => {
     if (!price || price === '') return t('stock.noPrice', 'No price');
@@ -71,7 +84,7 @@ export const BarcodePreviewModal: React.FC<BarcodePreviewModalProps> = ({
   try {
     barcodeImage = generateRealBarcode(barcode, {
       format: barcodeFormat,
-      width: 2,
+      width: 4,
       height: 80,
       displayValue: false, // Don't show barcode number in the barcode itself
       fontSize: 14,
@@ -111,66 +124,119 @@ export const BarcodePreviewModal: React.FC<BarcodePreviewModalProps> = ({
       title={t('stock.barcodePreview', 'Barcode Label Preview')}
       size="lg"
     >
-      <div className="space-y-6">
+      <div className="space-y-2">
         {/* Preview Label */}
         <div className="flex justify-center">
           <div 
-            className="bg-white border-2 border-gray-300 rounded-lg p-6 shadow-lg"
+            className={`bg-white border-2 border-gray-300 rounded-lg shadow-lg ${!showBarcode ? 'flex items-center justify-center' : ''}`}
             style={{ 
-              width: '320px', 
-              height: '240px',
-              minHeight: '240px'
+              width: '310px', 
+              height: '160px',
+              minHeight: '160px',
+              textAlign: 'center',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              paddingTop: '2.85px', // 0.5mm scaled 1.5x
+              paddingBottom: '0',
+              boxSizing: 'border-box',
+              gap: showBarcode ? '0' : '12px'
             }}
           >
-            <div className="flex flex-col items-center justify-center h-full text-center">
-              {/* Product Name */}
-              <div className="text-2xl font-black mb-1 text-black max-w-full">
-                <div className="break-words">
-                  {productName}
-                </div>
-              </div>
-              
-              {/* Price */}
-              <div className="text-2xl font-bold text-black mb-1">
-                {formatPrice(price)}
-              </div>
-              
-              {/* Barcode */}
-              <div className="mb-0">
+            {/* Product Name */}
+            <div 
+              style={{
+                fontSize: showBarcode ? '18px' : '27px', // 12px/18px scaled 1.5x
+                fontWeight: 600,
+                color: '#000000',
+                wordWrap: 'break-word',
+                overflowWrap: 'break-word',
+                marginTop: 30,
+                marginBottom: 0,
+                paddingTop: 0,
+                paddingBottom: '3px', // 2px scaled 1.5x
+                overflow: 'visible',
+                lineHeight: 1.1,
+                maxWidth: '100%'
+              }}
+            >
+              {productName}
+            </div>
+            
+            {/* Price */}
+            <div 
+              style={{
+                fontSize: showBarcode ? '22.5px' : '33px', // 15px/22px scaled 1.5x
+                fontWeight: 600,
+                color: '#000000',
+                padding: 0,
+                margin: 0,
+                marginTop: showBarcode ? '-6px' : '0', // -4px scaled 1.5x
+              }}
+            >
+              {formatPrice(price)}
+            </div>
+            
+            {/* Barcode */}
+            {showBarcode && (
+              <div 
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: '0px',
+                  marginTop: '-4px', // -6px scaled 1.5x
+                  marginBottom: 0,
+                  paddingBottom: 0
+                }}
+              >
                 <img 
                   src={barcodeImage} 
                   alt={`Barcode: ${barcode}`}
-                  className="max-w-full h-auto"
-                  style={{ maxWidth: '280px', height: '80px' }}
+                  style={{
+                    width: '100%',
+                    height: '48px', // 32px scaled 1.5x
+                    border: 'none',
+                    padding: 0,
+                    background: 'white'
+                  }}
                 />
-                {/* Barcode Number - directly below barcode */}
-                <div className="text-lg font-mono text-black tracking-wider font-bold mt-0">
-                  {barcode}
-                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
 
         {/* Barcode Info */}
-        <div className="text-center text-sm text-gray-600">
-          <p>
-            {t('stock.barcodeFormat', 'Format')}: {barcodeFormat} | 
-            {t('stock.barcodeLength', 'Length')}: {barcode.length}
-          </p>
+        {showBarcode && (
+          <div className="text-center text-sm text-gray-600">
+            <p>
+              {t('stock.barcodeFormat', 'Format')}: {barcodeFormat} | 
+              {t('stock.barcodeLength', 'Length')}: {barcode.length}
+            </p>
+          </div>
+        )}
+
+        {/* Show Barcode Checkbox */}
+        <div className="flex items-center justify-center">
+          <Checkbox
+            checked={showBarcode}
+            onChange={setShowBarcode}
+            label={t('stock.showBarcode', 'Show Barcode')}
+            color="green"
+          />
         </div>
 
         {/* Quantity Input */}
-        <div className="flex items-center justify-center gap-3">
-          <label className="text-sm font-medium text-gray-700">
-            {t('stock.quantity', 'Quantity')}:
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-foreground">
+            {t('stock.quantity', 'Quantity')}
           </label>
           <StyledNumberInput
             value={quantity}
-            onChange={(value) => setQuantity(value)}
+            onChange={(value: number | "") => setQuantity(value)}
             min={1}
             max={100}
-            className="w-20"
+            placeholder={t('stock.quantity', 'Quantity')}
           />
         </div>
 
@@ -193,7 +259,11 @@ export const BarcodePreviewModal: React.FC<BarcodePreviewModalProps> = ({
             position="top"
           >
             <Button
-              onClick={() => onPrint(quantity || 1)}
+              onClick={() => {
+                const qty = quantity || 1;
+                const shouldShowBarcode = showBarcode === true;
+                onPrint(qty, shouldShowBarcode);
+              }}
               className="bg-green-600 hover:bg-green-700 text-white"
             >
               <Printer className="w-4 h-4 mr-2" />

@@ -57,15 +57,16 @@ export default function EditStockForm({
     }
   };
 
-  const handlePrintBarcode = async (quantity: number) => {
+  const handlePrintBarcode = async (quantity: number = 1, showBarcode: boolean = true) => {
     if (!form) return;
     
     try {
+      const shouldShowBarcode = showBarcode === true;
       await printBarcodeLabel({
         productName: form.name,
         price: form.sellingPrice,
         barcode: form.codebar || "",
-      }, quantity);
+      }, quantity, shouldShowBarcode);
       showToast(t("stock.barcodePrinted", "Barcode printed successfully"), "success");
     } catch (error) {
       showToast(t("stock.barcodePrintError", "Failed to print barcode"), "error");
@@ -171,7 +172,7 @@ export default function EditStockForm({
             </label>
             <StyledNumberInput
               value={form.quantity}
-              onChange={(val) => handleEditFormChange("quantity", val)}
+              onChange={(val: number | "") => handleEditFormChange("quantity", val)}
               placeholder={t("stock.quantity")}
             />
           </div>
@@ -182,7 +183,7 @@ export default function EditStockForm({
             </label>
             <StyledNumberInput
               value={form.boughtPrice}
-              onChange={(val) => handleEditFormChange("boughtPrice", val)}
+              onChange={(val: number | "") => handleEditFormChange("boughtPrice", val)}
               placeholder={t("stock.boughtPrice")}
             />
           </div>
@@ -193,7 +194,7 @@ export default function EditStockForm({
             </label>
             <StyledNumberInput
               value={form.sellingPrice}
-              onChange={(val) => handleEditFormChange("sellingPrice", val)}
+              onChange={(val: number | "") => handleEditFormChange("sellingPrice", val)}
               placeholder={t("stock.sellingPrice")}
             />
           </div>

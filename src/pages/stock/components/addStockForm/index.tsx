@@ -143,13 +143,15 @@ export default function AddStockForm({
   };
 
   // Function to handle barcode printing
-  const handlePrintBarcode = async (quantity = 1) => {
+  const handlePrintBarcode = async (quantity = 1, showBarcode = true) => {
     try {
+      // Explicitly ensure showBarcode is a boolean
+      const shouldShowBarcode = showBarcode === true;
       await printBarcodeLabel({
         productName: form.name,
         price: form.sellingPrice,
         barcode: form.codebar,
-      }, quantity);
+      }, quantity, shouldShowBarcode);
       setShowBarcodePreview(false);
       showToast(t("stock.barcodePrint", "Printing barcode..."), "info");
     } catch (error) {
