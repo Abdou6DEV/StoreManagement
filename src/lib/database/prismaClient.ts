@@ -281,13 +281,13 @@ async function initializeDatabase() {
       // First check if UserPermissions table exists
       try {
         // Check if table exists by querying it
-        await prismaClientInstance.$executeRawUnsafe(`
+        await prismaClientInstance.$queryRawUnsafe(`
           SELECT COUNT(*) FROM "UserPermissions"
         `);
         
         // Table exists, now check if column exists
         try {
-          await prismaClientInstance.$executeRawUnsafe(`
+          await prismaClientInstance.$queryRawUnsafe(`
             SELECT "canAccessZakat" FROM "UserPermissions" LIMIT 1
           `);
           console.log("✅ canAccessZakat column already exists");

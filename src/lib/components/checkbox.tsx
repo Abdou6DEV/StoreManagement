@@ -58,13 +58,20 @@ export const Checkbox: React.FC<CheckboxProps> = ({
 }) => {
   const colors = colorClasses[color];
 
+  const handleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!disabled) {
+      onChange(!checked);
+    }
+  };
+
   return (
-    <label className={`flex items-center space-x-2 cursor-pointer ${disabled ? "opacity-50 cursor-not-allowed" : ""} ${className}`}>
-      <button
-        type="button"
-        onClick={() => !disabled && onChange(!checked)}
-        disabled={disabled}
-        className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
+    <label 
+      className={`flex items-center space-x-2 cursor-pointer ${disabled ? "opacity-50 cursor-not-allowed" : ""} ${className}`}
+      onClick={handleClick}
+    >
+      <div
+        className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors pointer-events-none ${
           checked
             ? `${colors.checked} text-white`
             : `border-gray-300 ${colors.hover} dark:border-gray-600`
@@ -75,7 +82,7 @@ export const Checkbox: React.FC<CheckboxProps> = ({
             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
           </svg>
         )}
-      </button>
+      </div>
       {label && (
         <span className={`text-sm ${labelClassName}`}>{label}</span>
       )}

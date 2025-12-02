@@ -361,7 +361,7 @@ export const ReceiptConfig: React.FC = () => {
               padding-top: 0 !important;
             }
             .receipt {
-              width: 150mm;
+              width: 120mm;
               max-width: 150mm;
               margin: 0 auto;
               background: white;
@@ -450,7 +450,7 @@ export const ReceiptConfig: React.FC = () => {
               margin-top: 0;
             }
             .store-name {
-              font-size: 42px;
+              font-size: 36px;
               font-weight: 900;
               margin-bottom: 3px;
               margin-top: 0;
@@ -490,31 +490,31 @@ export const ReceiptConfig: React.FC = () => {
             }
             .store-info {
               font-size: 14px;
-              margin-bottom: 4px;
+              margin-bottom: 2px;
               color: #000;
               font-weight: 900;
-              line-height: 1.3;
+              line-height: 1.2;
             }
             .receipt-info {
               font-size: 15px;
-              margin-bottom: 8px;
+              margin-bottom: 4px;
               color: #000;
               font-weight: 900;
             }
             .divider {
               border-top: 2px solid #000000;
-              margin: 6px 0;
+              margin: 4px 0;
             }
             .receipt-table {
               width: 100%;
               border-collapse: collapse;
-              margin: 6px 0;
+              margin: 4px 0;
               font-size: 15px;
             }
             .receipt-table th,
             .receipt-table td {
               border: 1.5px solid #000000;
-              padding: 5px 8px;
+              padding: 3px 5px;
               text-align: left;
               vertical-align: top;
               font-weight: 900;
@@ -525,15 +525,15 @@ export const ReceiptConfig: React.FC = () => {
             }
             .receipt-table th {
               text-align: center;
-              font-size: 16px;
+              font-size: 15px;
               font-weight: 900;
               background-color: #ffffff;
-              padding: 6px 8px;
+              padding: 4px 5px;
             }
             .receipt-table td {
-              font-size: 15px;
-              line-height: 1.3;
-              padding: 5px 8px;
+              font-size: 14px;
+              line-height: 1.2;
+              padding: 3px 5px;
             }
             .receipt-table .col-item {
               width: auto;
@@ -541,26 +541,26 @@ export const ReceiptConfig: React.FC = () => {
               word-wrap: break-word;
               word-break: break-word;
               overflow-wrap: break-word;
-              font-size: 15px;
+              font-size: 14px;
             }
             .receipt-table .col-qty {
               width: 50px;
               text-align: center;
               font-weight: 900;
-              font-size: 16px;
+              font-size: 15px;
             }
             .receipt-table .col-price {
               width: 80px;
               text-align: right;
               font-weight: 900;
-              font-size: 16px;
+              font-size: 15px;
               white-space: nowrap;
             }
             .receipt-table .col-total {
               width: 80px;
               text-align: right;
               font-weight: 900;
-              font-size: 16px;
+              font-size: 15px;
               white-space: nowrap;
             }
             .receipt-table tbody tr {
@@ -570,59 +570,59 @@ export const ReceiptConfig: React.FC = () => {
               vertical-align: middle;
             }
             .category-info {
-              font-size: 12px;
-              line-height: 1.3;
+              font-size: 13px;
+              line-height: 1.2;
               color: #000;
-              margin-top: 3px;
-              padding-left: 4px;
+              margin-top: 2px;
+              padding-left: 3px;
             }
             .category-info-item {
               margin-bottom: 1px;
             }
             .category-info-section {
-              margin-top: 8px;
-              margin-bottom: 8px;
-              padding: 4px 0;
+              margin-top: 4px;
+              margin-bottom: 4px;
+              padding: 2px 0;
             }
             .category-info-section .divider {
               border-top: 2px solid #000000;
-              margin: 6px 0 8px 0;
+              margin: 4px 0 4px 0;
             }
             .category-info-product-name {
               font-weight: 900;
-              font-size: 18px;
-              margin-bottom: 8px;
-              margin-top: 4px;
+              font-size: 13px;
+              margin-bottom: 4px;
+              margin-top: 2px;
               text-transform: uppercase;
               letter-spacing: 0.5px;
               text-align: center;
             }
             .category-info-fields-container {
               display: block;
-              padding-left: 4px;
+              padding-left: 3px;
             }
             .category-info-field {
               display: flex;
               justify-content: space-between;
               align-items: flex-start;
-              margin-bottom: 6px;
-              font-size: 15px;
-              line-height: 1.5;
+              margin-bottom: 3px;
+              font-size: 14px;
+              line-height: 1.3;
             }
             .category-info-field-multiline {
-              margin-bottom: 8px;
+              margin-bottom: 4px;
               flex-direction: column;
               align-items: flex-start !important;
             }
             .category-info-label {
               font-weight: 700;
-              font-size: 16px;
+              font-size: 14px;
               display: inline-block;
-              margin-right: 10px;
+              margin-right: 8px;
             }
             .category-info-value {
               font-weight: 900;
-              font-size: 16px;
+              font-size: 14px;
               color: #000000;
               display: inline-block;
               word-break: break-word;
@@ -632,18 +632,18 @@ export const ReceiptConfig: React.FC = () => {
             }
             .category-info-field-multiline .category-info-label {
               display: block;
-              margin-bottom: 4px;
+              margin-bottom: 2px;
               margin-right: 0;
               width: 100%;
-              font-size: 16px;
+              font-size: 14px;
             }
             .category-info-field-multiline .category-info-value {
               display: block;
-              padding-left: 8px;
+              padding-left: 6px;
               text-align: left;
               margin-left: 0 !important;
               width: 100%;
-              font-size: 16px;
+              font-size: 14px;
               font-weight: 900;
               color: #000000;
             }
@@ -652,94 +652,94 @@ export const ReceiptConfig: React.FC = () => {
             }
             .category-info-warranty-title {
               font-weight: 700;
-              font-size: 12px;
-              margin-bottom: 4px;
+              font-size: 13px;
+              margin-bottom: 2px;
               text-transform: uppercase;
               letter-spacing: 0.3px;
             }
             .category-info-section-title {
               font-weight: 700;
-              font-size: 16px;
-              margin-top: 8px;
-              margin-bottom: 6px;
+              font-size: 14px;
+              margin-top: 4px;
+              margin-bottom: 3px;
               text-align: center;
               text-transform: uppercase;
               letter-spacing: 0.3px;
             }
             .receipt-table tfoot td {
               font-weight: 900;
-              font-size: 16px;
-              padding: 6px 8px;
+              font-size: 15px;
+              padding: 3px 5px;
               border-top: 2px solid #000000;
               white-space: nowrap;
             }
             .receipt-table tfoot .total-label {
               text-align: right;
               font-weight: 900;
-              font-size: 16px;
+              font-size: 15px;
               white-space: nowrap;
             }
             .receipt-table tfoot .total-value {
               text-align: right;
               font-weight: 900;
-              font-size: 18px;
+              font-size: 16px;
               white-space: nowrap;
             }
             .receipt-table tfoot .final-total {
               border-top: 2px solid #000000;
-              font-size: 19px;
+              font-size: 17px;
               font-weight: 900;
             }
             .receipt-table tfoot .final-total.total-value {
-              font-size: 20px;
+              font-size: 18px;
               font-weight: 900;
             }
             .payment-info {
-              margin-top: 8px;
-              font-size: 16px;
-              color: #000;
-              font-weight: 900;
-              line-height: 1.5;
-            }
-            .payment-info > div {
-              margin-bottom: 4px;
-            }
-            .client-info {
-              margin-bottom: 6px;
+              margin-top: 4px;
               font-size: 15px;
               color: #000;
               font-weight: 900;
               line-height: 1.3;
             }
+            .payment-info > div {
+              margin-bottom: 2px;
+            }
+            .client-info {
+              margin-bottom: 3px;
+              font-size: 14px;
+              color: #000;
+              font-weight: 900;
+              line-height: 1.2;
+            }
             .receipt-id {
               text-align: center;
-              margin: 8px 0 6px 0;
-              padding: 6px 0;
+              margin: 4px 0 3px 0;
+              padding: 3px 0;
               border-top: 2px solid #000000;
             }
             .receipt-id-text {
-              font-size: 15px;
-              margin-top: 4px;
+              font-size: 14px;
+              margin-top: 2px;
               color: #000;
               font-weight: 900;
             }
             .welcome {
               text-align: center;
-              margin-top: 8px;
-              font-size: 16px;
+              margin-top: 4px;
+              font-size: 15px;
               font-weight: 900;
               color: #000;
-              line-height: 1.5;
+              line-height: 1.3;
             }
             .watermark {
               text-align: left;
-              margin-top: 8px;
-              padding-top: 6px;
+              margin-top: 4px;
+              padding-top: 3px;
               border-top: 2px solid #000000;
               font-size: 13px;
               color: #000;
               font-weight: 900;
-              line-height: 1.3;
+              line-height: 1.2;
             }
             @page {
               size: 70mm auto;
@@ -787,15 +787,15 @@ export const ReceiptConfig: React.FC = () => {
                 font-size: 12px;
               }
               .receipt-table .col-qty {
-                font-size: 14px;
+                font-size: 11px;
                 width: 28px;
               }
               .receipt-table .col-price {
-                font-size: 14px;
+                font-size: 11px;
                 width: 52px;
               }
               .receipt-table .col-total {
-                font-size: 14px;
+                font-size: 11px;
                 width: 52px;
               }
               .receipt-table tfoot td {
@@ -1064,7 +1064,7 @@ export const ReceiptConfig: React.FC = () => {
               padding-top: 0 !important;
             }
             .receipt {
-              width: 150mm;
+              width: 120mm;
               max-width: 150mm;
               margin: 0 auto;
               background: white;
@@ -1123,7 +1123,7 @@ export const ReceiptConfig: React.FC = () => {
               margin-top: 0;
             }
             .store-name {
-              font-size: 42px;
+              font-size: 36px;
               font-weight: 900;
               margin-bottom: 3px;
               margin-top: 0;
@@ -2054,11 +2054,13 @@ export const ReceiptConfig: React.FC = () => {
               <div className="w-full">
                 <iframe
                   srcDoc={previewReceipt}
-                  className="border border-border rounded-lg w-full"
+                  className="border border-border rounded-lg w-full h-full"
                   title={previewMode === "receipt" ? "Receipt Preview" : "Service Ticket Preview"}
                   style={{ 
-                    width: '100%', 
-                    minHeight: '1000px',
+                    width: '500px', 
+                    maxWidth: '100%',
+                    minHeight: '800px',
+                    height: 'auto',
                     border: 'none'
                   }}
                 />
@@ -2075,7 +2077,7 @@ export const ReceiptConfig: React.FC = () => {
           
           {/* Preview Options - Only show for receipt preview */}
           {previewMode === "receipt" && (
-          <div className="p-3 bg-muted/40 rounded-lg border border-border">
+          <div className="p-3 bg-muted/40 rounded-lg border border-border mt-6">
             <h3 className="text-sm font-semibold mb-3 text-muted-foreground">{t("admin.previewOptions", "Preview Options")}</h3>
             <div className="grid grid-cols-2 gap-3">
               <Checkbox

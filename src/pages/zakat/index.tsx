@@ -59,13 +59,16 @@ export default function ZakatAlMal() {
   // Only calculate Zakat if Nisab is entered (must be > 0)
   const hasNisab = nisab > 0;
   
-  // Zakat Calculation (2.5% of wealth above Nisab)
-  // Eligible Wealth = Total Wealth - Nisab (minimum 0)
-  // If Total Wealth < Nisab, no Zakat is due (eligibleWealth = 0)
-  const eligibleWealth = hasNisab ? Math.max(0, totalWealth - nisab) : 0;
+  // Zakat Calculation (2.5% of total wealth if above Nisab threshold)
+  // Nisab is a threshold: if wealth >= Nisab, Zakat is due on the entire wealth
+  // If Total Wealth < Nisab, no Zakat is due
+  const isAboveNisab = hasNisab && totalWealth >= nisab;
   
-  // Zakat = 2.5% of eligible wealth (not the full amount!)
-  const zakatAmount = hasNisab ? eligibleWealth * 0.025 : 0;
+  // Zakat = 2.5% of total wealth (if above Nisab threshold)
+  const zakatAmount = isAboveNisab ? totalWealth * 0.025 : 0;
+  
+  // Eligible Wealth (for display purposes - shows wealth above Nisab)
+  const eligibleWealth = hasNisab ? Math.max(0, totalWealth - nisab) : 0;
 
   const formatCurrency = (amount: number) => {
     return `${Math.round(amount).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })} ${t("currency")}`;
@@ -273,7 +276,7 @@ export default function ZakatAlMal() {
       </div>
 
       {/* Islamic Commerce Guidelines Section */}
-      <div className="flex flex-col items-center justify-center gap-4 text-center">
+      <div className="flex flex-col items-center justify-center gap-4 text-center mt-30">
         <BookOpen className="h-16 w-16 text-primary" />
         <div>
           <h2 className="text-3xl font-bold text-foreground">
@@ -289,8 +292,8 @@ export default function ZakatAlMal() {
         <div className="space-y-10">
           {/* Principle 1: Honesty and Transparency */}
           <div className="space-y-5">
-            <h3 className="text-2xl font-bold text-foreground flex items-center gap-3">
-              <Info className="h-6 w-6 text-primary" />
+            <h3 className="text-2xl font-bold text-emerald-500 dark:text-emerald-400 flex items-center gap-3">
+              <Info className="h-6 w-6 text-emerald-500 dark:text-emerald-400" />
               {t("zakat.commerceGuidelines.honesty.title", "1. Honesty and Transparency")}
             </h3>
             
@@ -301,7 +304,7 @@ export default function ZakatAlMal() {
                 </p>
                 <div className="p-4 bg-muted/50 rounded-lg border border-border">
                   <p className="text-2xl font-bold text-foreground mb-3 text-right leading-relaxed" dir="rtl" style={{ fontFamily: 'Arial, sans-serif' }}>
-                    {t("zakat.commerceGuidelines.honesty.quranArabic", "يَا أَيُّهَا الَّذِينَ آمَنُوا لَا تَأْكُلُوا أَمْوَالَكُم بَيْنَكُم بِالْبَاطِلِ إِلَّا أَن تَكُونَ تِجَارَةً عَن تَرَاضٍ مِّنكُمْ")}
+                    {'{'} {t("zakat.commerceGuidelines.honesty.quranArabic", "يَا أَيُّهَا الَّذِينَ آمَنُوا لَا تَأْكُلُوا أَمْوَالَكُم بَيْنَكُم بِالْبَاطِلِ إِلَّا أَن تَكُونَ تِجَارَةً عَن تَرَاضٍ مِّنكُمْ")} {'}'}
                   </p>
                   {i18n.language !== "ar" && (
                     <p className="text-base text-muted-foreground italic leading-relaxed">
@@ -340,8 +343,8 @@ export default function ZakatAlMal() {
 
           {/* Principle 2: Prohibition of Riba */}
           <div className="space-y-5">
-            <h3 className="text-2xl font-bold text-foreground flex items-center gap-3">
-              <Info className="h-6 w-6 text-primary" />
+            <h3 className="text-2xl font-bold text-emerald-500 dark:text-emerald-400 flex items-center gap-3">
+              <Info className="h-6 w-6 text-emerald-500 dark:text-emerald-400" />
               {t("zakat.commerceGuidelines.riba.title", "2. Prohibition of Riba (Interest/Usury)")}
             </h3>
             
@@ -351,7 +354,7 @@ export default function ZakatAlMal() {
                 </p>
               <div className="p-4 bg-muted/50 rounded-lg border border-border">
                 <p className="text-2xl font-bold text-foreground mb-3 text-right leading-relaxed" dir="rtl" style={{ fontFamily: 'Arial, sans-serif' }}>
-                  {t("zakat.commerceGuidelines.riba.quranArabic", "وَأَحَلَّ اللَّهُ الْبَيْعَ وَحَرَّمَ الرِّبَا")}
+                  {'{'} {t("zakat.commerceGuidelines.riba.quranArabic", "وَأَحَلَّ اللَّهُ الْبَيْعَ وَحَرَّمَ الرِّبَا")} {'}'}
                 </p>
                 {i18n.language !== "ar" && (
                   <p className="text-base text-muted-foreground italic leading-relaxed">
@@ -373,8 +376,8 @@ export default function ZakatAlMal() {
 
           {/* Principle 3: Avoid Gharar */}
           <div className="space-y-5">
-            <h3 className="text-2xl font-bold text-foreground flex items-center gap-3">
-              <Info className="h-6 w-6 text-primary" />
+            <h3 className="text-2xl font-bold text-emerald-500 dark:text-emerald-400 flex items-center gap-3">
+              <Info className="h-6 w-6 text-emerald-500 dark:text-emerald-400" />
               {t("zakat.commerceGuidelines.gharar.title", "3. Avoid Gharar (Excessive Uncertainty)")}
             </h3>
             
@@ -406,8 +409,8 @@ export default function ZakatAlMal() {
 
           {/* Principle 4: Fair Pricing and Justice */}
           <div className="space-y-5">
-            <h3 className="text-2xl font-bold text-foreground flex items-center gap-3">
-              <Info className="h-6 w-6 text-primary" />
+            <h3 className="text-2xl font-bold text-emerald-500 dark:text-emerald-400 flex items-center gap-3">
+              <Info className="h-6 w-6 text-emerald-500 dark:text-emerald-400" />
               {t("zakat.commerceGuidelines.fairness.title", "4. Fair Pricing and Justice")}
             </h3>
             
@@ -417,7 +420,7 @@ export default function ZakatAlMal() {
                 </p>
               <div className="p-4 bg-muted/50 rounded-lg border border-border">
                 <p className="text-2xl font-bold text-foreground mb-3 text-right leading-relaxed" dir="rtl" style={{ fontFamily: 'Arial, sans-serif' }}>
-                  {t("zakat.commerceGuidelines.fairness.quranArabic", "وَأَقِيمُوا الْوَزْنَ بِالْقِسْطِ وَلَا تُخْسِرُوا الْمِيزَانَ")}
+                  {'{'} {t("zakat.commerceGuidelines.fairness.quranArabic", "وَأَقِيمُوا الْوَزْنَ بِالْقِسْطِ وَلَا تُخْسِرُوا الْمِيزَانَ")} {'}'}
                 </p>
                 {i18n.language !== "ar" && (
                   <p className="text-base text-muted-foreground italic leading-relaxed">
@@ -439,8 +442,8 @@ export default function ZakatAlMal() {
 
           {/* Principle 5: Prohibition of Deception */}
           <div className="space-y-5">
-            <h3 className="text-2xl font-bold text-foreground flex items-center gap-3">
-              <Info className="h-6 w-6 text-primary" />
+            <h3 className="text-2xl font-bold text-emerald-500 dark:text-emerald-400 flex items-center gap-3">
+              <Info className="h-6 w-6 text-emerald-500 dark:text-emerald-400" />
               {t("zakat.commerceGuidelines.deception.title", "5. Prohibition of Deception")}
             </h3>
             
@@ -472,8 +475,8 @@ export default function ZakatAlMal() {
 
           {/* Principle 6: Avoid Haram Goods */}
           <div className="space-y-5">
-            <h3 className="text-2xl font-bold text-foreground flex items-center gap-3">
-              <Info className="h-6 w-6 text-primary" />
+            <h3 className="text-2xl font-bold text-emerald-500 dark:text-emerald-400 flex items-center gap-3">
+              <Info className="h-6 w-6 text-emerald-500 dark:text-emerald-400" />
               {t("zakat.commerceGuidelines.haram.title", "6. Avoid Haram Goods and Services")}
             </h3>
             
@@ -489,8 +492,8 @@ export default function ZakatAlMal() {
 
           {/* Principle 7: Prohibition of Bribery */}
           <div className="space-y-5">
-            <h3 className="text-2xl font-bold text-foreground flex items-center gap-3">
-              <Info className="h-6 w-6 text-primary" />
+            <h3 className="text-2xl font-bold text-emerald-500 dark:text-emerald-400 flex items-center gap-3">
+              <Info className="h-6 w-6 text-emerald-500 dark:text-emerald-400" />
               {t("zakat.commerceGuidelines.bribery.title", "7. Prohibition of Bribery")}
             </h3>
             
@@ -500,7 +503,7 @@ export default function ZakatAlMal() {
                 </p>
               <div className="p-4 bg-muted/50 rounded-lg border border-border">
                 <p className="text-2xl font-bold text-foreground mb-3 text-right leading-relaxed" dir="rtl" style={{ fontFamily: 'Arial, sans-serif' }}>
-                  {t("zakat.commerceGuidelines.bribery.quranArabic", "وَلَا تَأْكُلُوا أَمْوَالَكُم بَيْنَكُم بِالْبَاطِلِ وَتُدْلُوا بِهَا إِلَى الْحُكَّامِ")}
+                  {'{'} {t("zakat.commerceGuidelines.bribery.quranArabic", "وَلَا تَأْكُلُوا أَمْوَالَكُم بَيْنَكُم بِالْبَاطِلِ وَتُدْلُوا بِهَا إِلَى الْحُكَّامِ")} {'}'}
                 </p>
                 {i18n.language !== "ar" && (
                   <p className="text-base text-muted-foreground italic leading-relaxed">

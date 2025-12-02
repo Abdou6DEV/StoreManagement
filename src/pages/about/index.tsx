@@ -19,7 +19,8 @@ import {
   BarChart3,
   Clock,
   CheckCircle,
-  Star
+  Star,
+  Calculator
 } from "lucide-react";
 
 export default function AboutPage() {
@@ -29,7 +30,7 @@ export default function AboutPage() {
     {
       icon: ShoppingCart,
       title: t("about.features.cashier", "Advanced Cashier System"),
-      description: t("about.features.cashierDesc", "Multi-session cashier with real-time inventory tracking, receipt printing with barcode support, manual products, services integration, credit/versement payments, discount application, and sales history browser")
+      description: t("about.features.cashierDesc", "Multi-session cashier with real-time inventory tracking, receipt printing with barcode support, manual products, services integration, credit/versement payments, discount application, category information collection, and sales history browser")
     },
     {
       icon: BarChart3,
@@ -39,7 +40,7 @@ export default function AboutPage() {
     {
       icon: PackageSearch,
       title: t("about.features.inventory", "Inventory Management"),
-      description: t("about.features.inventoryDesc", "Complete stock management with low stock alerts, barcode printing, best/worst selling products, category summary, product info with warranty tracking, purchase management, and supplier tracking")
+      description: t("about.features.inventoryDesc", "Complete stock management with low stock alerts, barcode printing, best/worst selling products, category summary, product info with warranty tracking, purchase management, supplier tracking, and category-specific information fields (IMEI, warranty, specifications)")
     },
     {
       icon: Users,
@@ -64,7 +65,12 @@ export default function AboutPage() {
     {
       icon: Settings,
       title: t("about.features.admin", "Administration"),
-      description: t("about.features.adminDesc", "System administration with user management, backup/restore tools, receipt configuration (multilingual, barcode, store info), update management, logger system, and comprehensive settings")
+      description: t("about.features.adminDesc", "System administration with user management, backup/restore tools, receipt configuration (multilingual, barcode, store info, category information), update management, logger system, and comprehensive settings")
+    },
+    {
+      icon: Calculator,
+      title: t("about.features.zakat", "Zakat Calculator"),
+      description: t("about.features.zakatDesc", "Islamic wealth calculation tool with automatic stock value calculation, Nisab threshold support, 2.5% Zakat calculation, and comprehensive Islamic commerce guidelines with Quran quotes and Hadith references")
     }
   ];
 

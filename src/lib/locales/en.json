@@ -818,11 +818,11 @@
     "features": {
       "title": "Key Features",
       "cashier": "Advanced Cashier System",
-      "cashierDesc": "Multi-session cashier with real-time inventory tracking, receipt printing with barcode support, manual products, services integration, credit/versement payments, discount application, and sales history browser",
+      "cashierDesc": "Multi-session cashier with real-time inventory tracking, receipt printing with barcode support, manual products, services integration, credit/versement payments, discount application, category information collection, and sales history browser",
       "dashboard": "Analytics Dashboard",
       "dashboardDesc": "Comprehensive analytics with revenue/profit tracking, interactive charts, today/month/year comparisons, stock statistics, client metrics, and business performance insights",
       "inventory": "Inventory Management",
-      "inventoryDesc": "Complete stock management with low stock alerts, barcode printing, best/worst selling products, category summary, product info with warranty tracking, purchase management, and supplier tracking",
+      "inventoryDesc": "Complete stock management with low stock alerts, barcode printing, best/worst selling products, category summary, product info with warranty tracking, purchase management, supplier tracking, and category-specific information fields (IMEI, warranty, specifications)",
       "clients": "Client Management",
       "clientsDesc": "Customer database with credit/versement tracking, overdue/due soon payment alerts, payment history, supplier management with purchase tracking, and comprehensive client relationship management",
       "history": "Sales History",
@@ -832,7 +832,9 @@
       "services": "Service Management",
       "servicesDesc": "Service appointment scheduling with service types management, due date tracking, overdue/due soon alerts, completion status, service ticket printing with barcode, and service history",
       "admin": "Administration",
-      "adminDesc": "System administration with user management, backup/restore tools, receipt configuration (multilingual, barcode, store info), update management, logger system, and comprehensive settings"
+      "adminDesc": "System administration with user management, backup/restore tools, receipt configuration (multilingual, barcode, store info, category information), update management, logger system, and comprehensive settings",
+      "zakat": "Zakat Calculator",
+      "zakatDesc": "Islamic wealth calculation tool with automatic stock value calculation, Nisab threshold support, 2.5% Zakat calculation, and comprehensive Islamic commerce guidelines with Quran quotes and Hadith references"
     },
     "technical": {
       "title": "Technical Features",
@@ -1334,7 +1336,8 @@
     "barcodePreviewError": "Product name and barcode are required for preview",
     "noPrice": "No price",
     "barcodeFormat": "Format",
-    "barcodeLength": "Length"
+    "barcodeLength": "Length",
+    "showBarcode": "Show Barcode"
   },
   "clients": {
     "itemsPerPage": "Items per page:",
@@ -1926,6 +1929,7 @@
     "showDiscount": "Show Discount",
     "showCredit": "Show Credit",
     "showVersement": "Show Versement",
+    "showInformation": "Show Information",
     "receiptPreview": "Live Preview",
     "enabled": "Enabled",
     "disabled": "Disabled",

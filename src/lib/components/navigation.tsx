@@ -149,7 +149,7 @@ export default function Navigation() {
       <div className="flex items-center justify-between rounded-2xl border border-border/50 px-6 h-20 bg-gradient-to-r from-card/90 via-card/95 to-card/90 backdrop-blur-md shadow-xl">
         <UserBadge size="md" className="h-16" />
         {/* === Dynamic Page Title === */}
-        <h1 className="text-3xl font-bold flex items-center gap-3 bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
+        <h1 className="text-3xl font-bold flex items-center gap-3 py-6 bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
           {location.pathname === "/" ? (
             <>
               <Home className="w-8 h-8 text-primary" />
@@ -184,7 +184,7 @@ export default function Navigation() {
         <div className="flex items-center gap-4">
           <DropdownMenu onOpenChange={setDropdownOpen}>
             <DropdownMenuTrigger asChild>
-              <button className="rounded-xl outline-none ring-0 hover:text-primary hover:bg-primary/10 transition-all duration-300 p-2 group">
+              <button className="rounded-xl outline-none ring-0 hover:bg-primary/10 transition-all duration-300 p-2 group">
                 <Settings
                   className={`w-5 h-5 transition-all duration-300 group-hover:scale-110 ${
                     dropdownOpen ? "rotate-180 scale-110" : ""

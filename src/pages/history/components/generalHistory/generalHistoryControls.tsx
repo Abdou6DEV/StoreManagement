@@ -209,7 +209,7 @@ export default function GeneralHistoryControls({
                 <Command shouldFilter={false}>
                   <CommandList>
                     <CommandGroup>
-                      {[5, 10, 25, 50, 100].map((size) => (
+                      {[5, 10, 30, 50, 100].map((size) => (
                         <CommandItem
                           key={size}
                           value={size.toString()}

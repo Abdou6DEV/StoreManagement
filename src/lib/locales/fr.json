@@ -517,11 +517,11 @@
     "features": {
       "title": "Fonctionnalités Clés",
       "cashier": "Système de Caisse Avancé",
-      "cashierDesc": "Caisse multi-sessions avec suivi d'inventaire en temps réel, impression de reçus avec support de code-barres, produits manuels, intégration de services, paiements crédit/versement, application de remises et navigateur d'historique des ventes",
+      "cashierDesc": "Caisse multi-sessions avec suivi d'inventaire en temps réel, impression de reçus avec support de code-barres, produits manuels, intégration de services, paiements crédit/versement, application de remises, collecte d'informations par catégorie et navigateur d'historique des ventes",
       "dashboard": "Tableau de Bord Analytique",
       "dashboardDesc": "Analyses complètes avec suivi des revenus/profits, graphiques interactifs, comparaisons jour/mois/année, statistiques de stock, métriques clients et insights de performance commerciale",
       "inventory": "Gestion des Stocks",
-      "inventoryDesc": "Gestion complète des stocks avec alertes de stock bas, impression de codes-barres, produits les plus/moins vendus, résumé par catégorie, informations produit avec suivi de garantie, gestion des achats et suivi des fournisseurs",
+      "inventoryDesc": "Gestion complète des stocks avec alertes de stock bas, impression de codes-barres, produits les plus/moins vendus, résumé par catégorie, informations produit avec suivi de garantie, gestion des achats, suivi des fournisseurs et champs d'information spécifiques par catégorie (IMEI, garantie, spécifications)",
       "clients": "Gestion des Clients",
       "clientsDesc": "Base de données clients avec suivi des crédits/versements, alertes de paiements échus/à venir, historique des paiements, gestion des fournisseurs avec suivi des achats et gestion complète des relations clients",
       "history": "Historique des Ventes",
@@ -531,7 +531,9 @@
       "services": "Gestion des Services",
       "servicesDesc": "Planification des rendez-vous de service avec gestion des types de services, suivi des dates d'échéance, alertes échues/à venir, statut de completion, impression de tickets de service avec code-barres et historique des services",
       "admin": "Administration",
-      "adminDesc": "Administration système avec gestion des utilisateurs, outils de sauvegarde/restauration, configuration de reçus (multilingue, code-barres, infos magasin), gestion des mises à jour, système de logs et paramètres complets"
+      "adminDesc": "Administration système avec gestion des utilisateurs, outils de sauvegarde/restauration, configuration de reçus (multilingue, code-barres, infos magasin, informations catégories), gestion des mises à jour, système de logs et paramètres complets",
+      "zakat": "Calculateur de Zakat",
+      "zakatDesc": "Outil de calcul de richesse islamique avec calcul automatique de la valeur des stocks, support du seuil Nisab, calcul de Zakat à 2,5%, et directives complètes du commerce islamique avec citations du Coran et références Hadith"
     },
     "technical": {
       "title": "Fonctionnalités Techniques",
@@ -700,6 +702,9 @@
     "barcodeGenerationError": "Échec de la génération du code-barres",
     "barcodePrinted": "Code-barres imprimé avec succès",
     "barcodePrintError": "Échec de l'impression du code-barres",
+    "barcodeFormat": "Format",
+    "barcodeLength": "Longueur",
+    "showBarcode": "Afficher le code-barres",
     "purchaseHistory": "Historique des achats",
     "seller": "Vendeur",
     "noPurchaseHistory": "Aucun historique d'achat disponible",
@@ -1755,6 +1760,7 @@
     "showDiscount": "Afficher la remise",
     "showCredit": "Afficher le crédit",
     "showVersement": "Afficher le versement",
+    "showInformation": "Afficher les informations",
     "receiptPreview": "Aperçu en direct",
     "serviceOptions": {
       "haircut": "Coupe de cheveux",
