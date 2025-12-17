@@ -496,7 +496,12 @@
     "notPayed": "Not Payed",
     "addServiceAndPrintTicket": "Add Service and Print Service Ticket",
     "fillRequiredFields": "Please fill all required fields (Name, Type, Service Price)",
-    "costPriceHigherThanServicePrice": "Warning: Cost price is higher than service price. This will result in a loss."
+    "costPriceHigherThanServicePrice": "Warning: Cost price is higher than service price. This will result in a loss.",
+    "hideProfit": "Hide Profit",
+    "totalServices": "Total Services",
+    "totalCost": "Total Cost",
+    "totalValue": "Total Value",
+    "totalProfit": "Total Profit"
   },
   "history": {
     "title": "History",
@@ -1267,6 +1272,8 @@
     "totalProducts": "Total Products",
     "totalQuantity": "Total Quantity",
     "inventoryValue": "Stock Value",
+    "stockCost": "Stock Cost",
+    "stockValue": "Stock Value",
     "profitPotential": "Total Profit",
     "showMore": "Show More",
     "showLess": "Show Less",

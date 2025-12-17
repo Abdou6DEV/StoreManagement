@@ -27,15 +27,29 @@ export const TotalsFooter = ({ filteredList }: TotalsFooterProps) => {
         </span>
       </div>
 
-      {/* Inventory Value */}
+      {/* Stock Cost */}
       <div className="flex items-center gap-2">
         <CreditCard className="w-4 h-4 text-muted-foreground" />
         <span className="text-muted-foreground">
-          {t("stock.inventoryValue")}:
+          {t("stock.stockCost")}:
         </span>
         <span className="font-medium text-[0.9375rem]">
           {filteredList
             .reduce((sum, p) => sum + p.boughtPrice * p.quantity, 0)
+            .toLocaleString('fr-FR')}{" "}
+          {t("cashier.currency")}
+        </span>
+      </div>
+
+      {/* Stock Value */}
+      <div className="flex items-center gap-2">
+        <CreditCard className="w-4 h-4 text-muted-foreground" />
+        <span className="text-muted-foreground">
+          {t("stock.stockValue")}:
+        </span>
+        <span className="font-medium text-[0.9375rem]">
+          {filteredList
+            .reduce((sum, p) => sum + p.sellingPrice * p.quantity, 0)
             .toLocaleString('fr-FR')}{" "}
           {t("cashier.currency")}
         </span>

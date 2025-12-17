@@ -983,6 +983,8 @@
     "totalProducts": "إجمالي المنتجات",
     "totalQuantity": "إجمالي الكمية",
     "inventoryValue": "قيمة المخزون",
+    "stockCost": "تكلفة المخزون",
+    "stockValue": "قيمة المخزون",
     "profitPotential": "إجمالي الربح",
     "showMore": "عرض المزيد",
     "showLess": "عرض أقل",
@@ -1992,7 +1994,12 @@
     "notPayed": "غير مدفوع",
     "addServiceAndPrintTicket": "إضافة الخدمة وطباعة البطاقة",
     "fillRequiredFields": "يرجى ملء جميع الحقول المطلوبة (الاسم، النوع، سعر الخدمة)",
-    "costPriceHigherThanServicePrice": "تحذير: سعر التكلفة أعلى من سعر الخدمة. سيؤدي هذا إلى خسارة."
+    "costPriceHigherThanServicePrice": "تحذير: سعر التكلفة أعلى من سعر الخدمة. سيؤدي هذا إلى خسارة.",
+    "hideProfit": "إخفاء الربح",
+    "totalServices": "إجمالي الخدمات",
+    "totalCost": "إجمالي التكلفة",
+    "totalValue": "القيمة الإجمالية",
+    "totalProfit": "إجمالي الربح"
   },
   "currency": "دج",
   "datePicker": {

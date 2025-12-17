@@ -38,6 +38,7 @@ export default function ServicesPage() {
   const [openPanel, setOpenPanel] = useState<"add" | null>(null);
   const [showServiceTypes, setShowServiceTypes] = useState(false);
   const [services, setServices] = useState<ServiceAppointment[]>([]);
+  const [filteredServicesList, setFilteredServicesList] = useState<ServiceAppointment[]>([]);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [_loading, setLoading] = useState(true);
   const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
@@ -50,6 +51,9 @@ export default function ServicesPage() {
     search: "",
     status: "all",
     dateFilter: "all",
+    startDate: "",
+    endDate: "",
+    hideProfit: true,
   });
   const [seenOverdueServices, setSeenOverdueServices] = useState<Set<string>>(new Set());
   const [seenDueSoonServices, setSeenDueSoonServices] = useState<Set<string>>(new Set());
@@ -58,6 +62,52 @@ export default function ServicesPage() {
   const [isViewingOverdueTable, setIsViewingOverdueTable] = useState(false);
   const [isViewingDueSoonTable, setIsViewingDueSoonTable] = useState(false);
   const [soldServiceIds, setSoldServiceIds] = useState<Set<string>>(new Set());
+
+  // Initialize default date range on first load (from first service date to last service date)
+  useEffect(() => {
+    const initializeDefaultDates = async () => {
+      try {
+        const allServices = await window.api.database.serviceAppointments.getAll();
+        
+        if (allServices.length > 0) {
+          const dueDates = allServices
+            .map((service: ServiceAppointment) => new Date(service.dueDate))
+            .filter((date: Date) => !isNaN(date.getTime()))
+            .sort((a: Date, b: Date) => a.getTime() - b.getTime());
+          
+          if (dueDates.length > 0) {
+            const firstDate = dueDates[0];
+            const lastDate = dueDates[dueDates.length - 1];
+            
+            // Format dates as YYYY-MM-DD
+            const formatDate = (date: Date) => {
+              const year = date.getFullYear();
+              const month = String(date.getMonth() + 1).padStart(2, '0');
+              const day = String(date.getDate()).padStart(2, '0');
+              return `${year}-${month}-${day}`;
+            };
+            
+            setFilters((prev) => {
+              // Only set defaults if dates are not already set
+              if (!prev.startDate && !prev.endDate) {
+                return {
+                  ...prev,
+                  startDate: formatDate(firstDate),
+                  endDate: formatDate(lastDate),
+                };
+              }
+              return prev;
+            });
+          }
+        }
+      } catch (error) {
+        console.error("Error initializing default dates:", error);
+      }
+    };
+    
+    initializeDefaultDates();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run once on mount
 
   // Load services and service types
   useEffect(() => {
@@ -93,20 +143,47 @@ export default function ServicesPage() {
         // No filtering needed - show all services
       }
       
-      // Date filter
-      if (filters.dateFilter === "overdue") {
-        const today = new Date();
+      // Date range filter (from/to dates)
+      if (filters.startDate || filters.endDate) {
         filteredServices = filteredServices.filter((service: ServiceAppointment) => {
           const dueDate = new Date(service.dueDate);
-          return dueDate < today && !service.isCompleted;
+          dueDate.setHours(0, 0, 0, 0);
+          
+          if (filters.startDate && filters.endDate) {
+            const startDate = new Date(filters.startDate);
+            startDate.setHours(0, 0, 0, 0);
+            const endDate = new Date(filters.endDate);
+            endDate.setHours(23, 59, 59, 999);
+            return dueDate >= startDate && dueDate <= endDate;
+          } else if (filters.startDate) {
+            const startDate = new Date(filters.startDate);
+            startDate.setHours(0, 0, 0, 0);
+            return dueDate >= startDate;
+          } else if (filters.endDate) {
+            const endDate = new Date(filters.endDate);
+            endDate.setHours(23, 59, 59, 999);
+            return dueDate <= endDate;
+          }
+          return true;
         });
-      } else if (filters.dateFilter === "dueSoon") {
-        const today = new Date();
-        const dueSoonDate = new Date(today.getTime() + dueSoonThresholdDays * 24 * 60 * 60 * 1000);
-        filteredServices = filteredServices.filter((service: ServiceAppointment) => {
-          const dueDate = new Date(service.dueDate);
-          return dueDate >= today && dueDate <= dueSoonDate && !service.isCompleted;
-        });
+      }
+      
+      // Date filter (overdue/dueSoon) - only applies if date range is not set
+      if (!filters.startDate && !filters.endDate) {
+        if (filters.dateFilter === "overdue") {
+          const today = new Date();
+          filteredServices = filteredServices.filter((service: ServiceAppointment) => {
+            const dueDate = new Date(service.dueDate);
+            return dueDate < today && !service.isCompleted;
+          });
+        } else if (filters.dateFilter === "dueSoon") {
+          const today = new Date();
+          const dueSoonDate = new Date(today.getTime() + dueSoonThresholdDays * 24 * 60 * 60 * 1000);
+          filteredServices = filteredServices.filter((service: ServiceAppointment) => {
+            const dueDate = new Date(service.dueDate);
+            return dueDate >= today && dueDate <= dueSoonDate && !service.isCompleted;
+          });
+        }
       }
       
       // Calculate newly overdue/due soon services for highlighting
@@ -220,6 +297,9 @@ export default function ServicesPage() {
         return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
       });
       
+      // Store filtered services for footer
+      setFilteredServicesList(filteredServices);
+      
       // Calculate pagination
       const startIndex = (currentPage - 1) * itemsPerPage;
       const endIndex = startIndex + itemsPerPage;
@@ -321,7 +401,7 @@ export default function ServicesPage() {
     }
   };
 
-  const handleFilterChange = (key: string, value: string) => {
+  const handleFilterChange = (key: string, value: string | boolean) => {
     setFilters(prev => ({ ...prev, [key]: value }));
     setCurrentPage(1); // Reset to first page when filtering
   };
@@ -394,6 +474,7 @@ export default function ServicesPage() {
             /* Services Table */
             <ServicesTable
               services={services}
+              filteredServices={filteredServicesList}
               onEdit={handleServiceUpdated}
               onDelete={handleDeleteService}
               deleteLoading={deleteLoading}
@@ -411,6 +492,7 @@ export default function ServicesPage() {
               onMarkOverdueAsSeen={markOverdueServicesAsSeen}
               onMarkDueSoonAsSeen={markDueSoonServicesAsSeen}
               soldServiceIds={soldServiceIds}
+              hideProfit={filters.hideProfit}
             />
           ) : (
             /* Service Types Table */

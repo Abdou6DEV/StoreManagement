@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import {
   Check,
   ChevronDown,
+  Calendar,
 } from "lucide-react";
 import {
   Command,
@@ -18,6 +19,8 @@ import {
 } from "../../../lib/components/popover";
 import { Button } from "../../../lib/components/button";
 import { BadgeNotification } from "../../../lib/components/badgeNotification";
+import { DatePicker } from "../../../lib/components/datePicker";
+import { Checkbox } from "../../../lib/components/checkbox";
 import { cn } from "../../../lib/utils";
 
 interface ServicesFiltersProps {
@@ -25,6 +28,9 @@ interface ServicesFiltersProps {
     search: string;
     status: string;
     dateFilter: string;
+    startDate: string;
+    endDate: string;
+    hideProfit: boolean;
   };
   itemsPerPage: number;
   onFilterChange: (key: string, value: any) => void;
@@ -204,6 +210,11 @@ export default function ServicesFilters({
                       value={option.value}
                       onSelect={() => {
                         onFilterChange("dateFilter", option.value);
+                        // Clear date range when selecting predefined filters
+                        if (option.value !== "all") {
+                          onFilterChange("startDate", "");
+                          onFilterChange("endDate", "");
+                        }
                         setDateFilterDropdownOpen(false);
                       }}
                     >
@@ -237,8 +248,55 @@ export default function ServicesFilters({
             </Command>
           </PopoverContent>
         </Popover>
+
+        {/* Date Range Selectors */}
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2">
+            <Calendar className="w-4 h-4 text-muted-foreground" />
+            <span className="text-sm text-muted-foreground">
+              {t("history.from", "From")}:
+            </span>
+            <DatePicker
+              value={filters.startDate}
+              onChange={(date) => {
+                onFilterChange("startDate", date);
+                // Clear predefined date filter when using custom range
+                if (filters.dateFilter !== "all") {
+                  onFilterChange("dateFilter", "all");
+                }
+              }}
+              placeholder={t("history.from", "From")}
+              className="w-40 h-8 text-sm"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">
+              {t("history.to", "To")}:
+            </span>
+            <DatePicker
+              value={filters.endDate}
+              onChange={(date) => {
+                onFilterChange("endDate", date);
+                // Clear predefined date filter when using custom range
+                if (filters.dateFilter !== "all") {
+                  onFilterChange("dateFilter", "all");
+                }
+              }}
+              placeholder={t("history.to", "To")}
+              className="w-40 h-8 text-sm"
+              min={filters.startDate || undefined}
+            />
+          </div>
+        </div>
       </div>
 
+      {/* Hide Profit Checkbox */}
+      <Checkbox
+        checked={filters.hideProfit}
+        onChange={(checked) => onFilterChange("hideProfit", checked)}
+        label={t("services.hideProfit", "Hide Profit")}
+        color="cyan"
+      />
     </div>
   );
 }

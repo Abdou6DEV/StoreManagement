@@ -741,6 +741,8 @@
     "totalProducts": "Total des produits",
     "totalQuantity": "Quantité totale",
     "inventoryValue": "Valeur du stock",
+    "stockCost": "Coût du stock",
+    "stockValue": "Valeur du stock",
     "profitPotential": "Bénéfice total",
     "showMore": "Afficher plus",
     "showLess": "Afficher moins",
@@ -1444,7 +1446,12 @@
     "notPayed": "Non Payé",
     "addServiceAndPrintTicket": "Ajouter le service et imprimer le bon",
     "fillRequiredFields": "Veuillez remplir tous les champs requis (Nom, Type, Prix du service)",
-    "costPriceHigherThanServicePrice": "Avertissement : Le prix de revient est supérieur au prix du service. Cela entraînera une perte."
+    "costPriceHigherThanServicePrice": "Avertissement : Le prix de revient est supérieur au prix du service. Cela entraînera une perte.",
+    "hideProfit": "Masquer le bénéfice",
+    "totalServices": "Total des services",
+    "totalCost": "Coût total",
+    "totalValue": "Valeur totale",
+    "totalProfit": "Bénéfice total"
   },
   "admin": {
     "backup": "Sauvegarde",

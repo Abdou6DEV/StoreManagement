@@ -19,6 +19,7 @@ import { useCompletedServices } from "../../../lib/contexts/completedServicesCon
 import SaleDetailsModal from "../../../lib/components/saleDetailsModal";
 import { Sale } from "../../../types";
 import { useToast } from "../../../lib/contexts/toastContext";
+import { ServicesTotalsFooter } from "./servicesTotalsFooter";
 
 interface ServiceAppointment {
   id: string;
@@ -43,6 +44,7 @@ interface ServiceAppointment {
 
 interface ServicesTableProps {
   services: ServiceAppointment[];
+  filteredServices?: ServiceAppointment[];
   onEdit: (service: ServiceAppointment) => void;
   onDelete: (id: string) => void;
   deleteLoading: string | null;
@@ -59,10 +61,12 @@ interface ServicesTableProps {
   onMarkOverdueAsSeen?: () => void;
   onMarkDueSoonAsSeen?: () => void;
   soldServiceIds?: Set<string>;
+  hideProfit?: boolean;
 }
 
 const ServicesTable: React.FC<ServicesTableProps> = ({
   services,
+  filteredServices,
   onEdit,
   onDelete,
   deleteLoading,
@@ -79,6 +83,7 @@ const ServicesTable: React.FC<ServicesTableProps> = ({
   onMarkOverdueAsSeen,
   onMarkDueSoonAsSeen,
   soldServiceIds = new Set(),
+  hideProfit = true,
 }) => {
   const { t, i18n } = useTranslation();
   const isRTL = i18n.language === "ar";
@@ -417,9 +422,16 @@ const ServicesTable: React.FC<ServicesTableProps> = ({
                   </td>
                   <td className={`px-4 py-2 ${isRTL ? "text-right" : "text-left"}`}>
                     <div className="flex flex-col gap-1">
-                      <span className="font-medium text-[0.9375rem] text-cyan-600 dark:text-cyan-400">
-                        {formatCurrency(service.servicePrice)}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-[0.9375rem] text-cyan-600 dark:text-cyan-400">
+                          {formatCurrency(service.servicePrice)}
+                        </span>
+                        {!hideProfit && (
+                          <span className="text-sm font-medium text-green-600 dark:text-green-400">
+                            (+{formatCurrency(service.servicePrice - service.costPrice)})
+                          </span>
+                        )}
+                      </div>
                       {/* Only show payment status for incomplete services or completed but not sold services */}
                       {(!service.isCompleted || (service.isCompleted && !soldServiceIds.has(service.id))) && 
                        paymentStatuses[service.id] && (
@@ -622,6 +634,11 @@ const ServicesTable: React.FC<ServicesTableProps> = ({
           onEdit({} as ServiceAppointment);
         }}
       />
+
+      {/* Totals Footer */}
+      {filteredServices && filteredServices.length > 0 && (
+        <ServicesTotalsFooter filteredList={filteredServices} />
+      )}
     </>
   );
 };
