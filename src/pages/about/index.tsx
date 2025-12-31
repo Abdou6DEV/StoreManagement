@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { 
   Info, 
@@ -20,11 +20,41 @@ import {
   Clock,
   CheckCircle,
   Star,
-  Calculator
+  AlertTriangle,
+  Bell,
+  Calendar,
+  CreditCard,
+  DollarSign,
+  FileCheck,
+  HardDrive,
+  Monitor,
+  TrendingUp,
+  UserCheck,
+  Wifi,
+  Zap,
+  Download,
+  Calculator,
+  RefreshCw
 } from "lucide-react";
 
 export default function AboutPage() {
   const { t } = useTranslation();
+  const [version, setVersion] = useState<string>("1.0.0");
+
+  useEffect(() => {
+    const getVersion = async () => {
+      try {
+        const appVersion = await window.api?.app?.getVersion();
+        if (appVersion) {
+          setVersion(appVersion);
+        }
+      } catch (error) {
+        console.error("Failed to get version:", error);
+      }
+    };
+    
+    getVersion();
+  }, []);
 
   const features = [
     {
@@ -63,9 +93,49 @@ export default function AboutPage() {
       description: t("about.features.servicesDesc", "Service appointment scheduling with service types management, due date tracking, overdue/due soon alerts, completion status, service ticket printing with barcode, and service history")
     },
     {
+      icon: Bell,
+      title: t("about.features.notifications", "Smart Notifications"),
+      description: t("about.features.notificationsDesc", "Real-time alerts for low stock, overdue payments, due soon payments, overdue bills, due soon bills, and overdue services with configurable notification badges")
+    },
+    {
+      icon: TrendingUp,
+      title: t("about.features.reporting", "Advanced Reporting"),
+      description: t("about.features.reportingDesc", "Comprehensive reports with profit analysis, sales trends, best/worst selling products, and business insights")
+    },
+    {
+      icon: Zap,
+      title: t("about.features.sessions", "Multi-Session Cashier"),
+      description: t("about.features.sessionsDesc", "Support for multiple concurrent cashier sessions with individual tracking and management")
+    },
+    {
+      icon: FileCheck,
+      title: t("about.features.receipts", "Receipt Management"),
+      description: t("about.features.receiptsDesc", "Customizable receipt printing with multilingual support, barcode, store info, and detailed transaction data with category information")
+    },
+    {
+      icon: UserCheck,
+      title: t("about.features.suppliers", "Supplier Management"),
+      description: t("about.features.suppliersDesc", "Complete supplier database with purchase tracking, payment history, and relationship management")
+    },
+    {
+      icon: HardDrive,
+      title: t("about.features.backup", "Backup & Recovery"),
+      description: t("about.features.backupDesc", "Automated backup system with data export/import and disaster recovery capabilities")
+    },
+    {
+      icon: Monitor,
+      title: t("about.features.logger", "System Logger"),
+      description: t("about.features.loggerDesc", "Comprehensive logging system for debugging, monitoring, and system maintenance")
+    },
+    {
       icon: Settings,
       title: t("about.features.admin", "Administration"),
-      description: t("about.features.adminDesc", "System administration with user management, backup/restore tools, receipt configuration (multilingual, barcode, store info, category information), update management, logger system, and comprehensive settings")
+      description: t("about.features.adminDesc", "System administration with user management, backup/restore tools, receipt configuration, update management, logger system, and comprehensive settings")
+    },
+    {
+      icon: CreditCard,
+      title: t("about.features.accounts", "Account Management"),
+      description: t("about.features.accountsDesc", "User account management with role-based permissions and access control")
     },
     {
       icon: Calculator,
@@ -94,6 +164,36 @@ export default function AboutPage() {
       icon: Clock,
       title: t("about.technical.realtime", "Real-time Updates"),
       description: t("about.technical.realtimeDesc", "Live inventory updates, instant notifications, and synchronized data")
+    },
+    {
+      icon: Wifi,
+      title: t("about.technical.offline", "Offline Capability"),
+      description: t("about.technical.offlineDesc", "Full functionality without internet connection, with automatic sync when online")
+    },
+    {
+      icon: Zap,
+      title: t("about.technical.performance", "High Performance"),
+      description: t("about.technical.performanceDesc", "Optimized for speed with efficient data processing and minimal resource usage")
+    },
+    {
+      icon: BarChart3,
+      title: t("about.technical.scalability", "Scalable Architecture"),
+      description: t("about.technical.scalabilityDesc", "Designed to handle growing business needs with modular and extensible codebase")
+    },
+    {
+      icon: Monitor,
+      title: t("about.technical.ui", "Modern UI/UX"),
+      description: t("about.technical.uiDesc", "Intuitive interface with dark mode, responsive design, and accessibility features")
+    },
+    {
+      icon: Code,
+      title: t("about.technical.api", "Robust API"),
+      description: t("about.technical.apiDesc", "Comprehensive API layer with error handling, validation, and type safety")
+    },
+    {
+      icon: RefreshCw,
+      title: t("about.technical.autoMigration", "Auto Database Migration"),
+      description: t("about.technical.autoMigrationDesc", "Automatic database schema updates on application startup, ensuring seamless upgrades without manual intervention")
     }
   ];
 
@@ -129,7 +229,7 @@ export default function AboutPage() {
               <div className="flex items-center gap-3">
                 <div className="w-2 h-2 bg-primary rounded-full"></div>
                 <span className="text-foreground font-medium">{t("about.version", "Version")}:</span>
-                <span className="text-muted-foreground">v{window.api?.app?.getVersion?.() || "1.0.0"}</span>
+                <span className="text-muted-foreground">v{version}</span>
               </div>
             </div>
             <div className="space-y-4">

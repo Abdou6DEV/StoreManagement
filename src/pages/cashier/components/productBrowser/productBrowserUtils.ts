@@ -26,11 +26,6 @@ export const filterProducts = (
   productFilter: string,
   selectedCategory: string,
 ): ProductWithSales[] => {
-  // Early return if no filters applied
-  if (!productFilter && selectedCategory === "All") {
-    return allProducts;
-  }
-
   let products = allProducts;
 
   // Apply name filter with optimized string operations
@@ -53,13 +48,9 @@ export const filterProducts = (
     return products;
   }
 
+  // Always sort by quantity from highest to lowest
   return products.sort((a, b) => {
-    const aHasBarcode = Boolean(a.codebar?.trim());
-    const bHasBarcode = Boolean(b.codebar?.trim());
-
-    if (aHasBarcode && !bHasBarcode) return 1;
-    if (!aHasBarcode && bHasBarcode) return -1;
-    return 0;
+    return (b.quantity || 0) - (a.quantity || 0);
   });
 };
 

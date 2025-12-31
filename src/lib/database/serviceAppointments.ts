@@ -369,6 +369,37 @@ export async function getServiceNames(): Promise<string[]> {
 }
 
 export async function getCompletedServicesForCashier() {
+  // First, get all service appointment IDs that are in pending VERSEMENT payments
+  const pendingVersements = await prisma.payment.findMany({
+    where: {
+      type: "VERSEMENT",
+      saleId: null, // Only pending versements (not yet paid)
+      pendingSaleItems: { not: null },
+    },
+    select: {
+      pendingSaleItems: true,
+    },
+  });
+
+  // Extract serviceAppointmentId values from pending versements
+  const serviceIdsInVersements = new Set<string>();
+  for (const versement of pendingVersements) {
+    if (versement.pendingSaleItems) {
+      try {
+        const items = JSON.parse(versement.pendingSaleItems);
+        if (Array.isArray(items)) {
+          for (const item of items) {
+            if (item.serviceAppointmentId) {
+              serviceIdsInVersements.add(item.serviceAppointmentId);
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Error parsing pendingSaleItems:", error);
+      }
+    }
+  }
+
   // Optimized query: Use a single raw SQL query with subquery to filter out sold services
   // This is much faster than loading all completed services and filtering in JavaScript
   // Exclude services with servicePrice = 0 (free services should not be passed to cashier)
@@ -403,8 +434,13 @@ export async function getCompletedServicesForCashier() {
     ORDER BY sa.completedAt DESC
   `;
 
+  // Filter out services that are in pending VERSEMENT payments
+  const filteredServices = availableServices.filter(
+    (service: any) => !serviceIdsInVersements.has(service.id)
+  );
+
   // Transform the flat result into the expected structure with nested client
-  return availableServices.map(service => ({
+  return filteredServices.map(service => ({
     id: service.id,
     name: service.name,
     serviceType: service.serviceType,
