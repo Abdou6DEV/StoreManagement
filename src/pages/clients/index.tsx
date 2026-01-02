@@ -461,7 +461,7 @@ export default function Clients() {
 
           {viewMode === "clients" ? (
             <div className="bg-card border border-border rounded-xl shadow-sm p-6 space-y-4">
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center justify-between border-b border-border pb-3">
                 <div className="flex items-center gap-3">
                   <Users className="w-7 h-7 text-red-500" />
                   <h1 className="text-2xl font-bold">
