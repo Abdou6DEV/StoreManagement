@@ -140,7 +140,8 @@ const HistoryBrowser: React.FC<HistoryBrowserProps> = ({
         paymentDate,
         sale.id,
         (message, type) => showToast(message, type || "info"),
-        dueDate
+        dueDate,
+        new Date(sale.createdAt) // Pass the sale date
       );
     } catch (error) {
       rendererLogger.error("Failed to print receipt", "HistoryBrowser", error);

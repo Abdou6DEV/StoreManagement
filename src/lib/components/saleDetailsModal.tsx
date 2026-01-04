@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import {
   X,
@@ -17,9 +17,11 @@ import {
 } from "lucide-react";
 import PaymentSummary from "./paymentSummary";
 import { useToast } from "../contexts/toastContext";
-import { Sale, CartItem } from "../../types";
+import { Sale, CartItem, CategoryInfo } from "../../types";
 import rendererLogger from "../logger/rendererLogger";
 import { printReceiptDirectly } from "../../pages/cashier/components/receiptModal";
+import CategoryInfoModal from "../../pages/cashier/components/categoryInfoModal";
+import { useStock } from "../contexts/stockContext";
 
 interface SaleDetailsModalProps {
   sale: Sale | null;
@@ -41,14 +43,37 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
 }) => {
   const { t } = useTranslation();
   const { showToast } = useToast();
+  const { products: allProducts } = useStock();
   const [isEditing, setIsEditing] = useState(false);
   const [editedCart, setEditedCart] = useState<CartItem[]>([]);
   const [editedDiscount, setEditedDiscount] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showCategoryInfoModal, setShowCategoryInfoModal] = useState(false);
+  const [categoriesRequiringInfo, setCategoriesRequiringInfo] = useState<string[]>([]);
+  const [pendingPrintAction, setPendingPrintAction] = useState<(() => Promise<void>) | null>(null);
+  const [cartItemsForPrint, setCartItemsForPrint] = useState<CartItem[]>([]);
 
   const [currentSale, setCurrentSale] = useState<Sale | null>(null);
+
+  // Load categories requiring additional information
+  useEffect(() => {
+    const loadCategoriesRequiringInfo = async () => {
+      try {
+        const categoriesData = await window.api.database.options.get("categoriesRequiringInfo");
+        if (categoriesData) {
+          setCategoriesRequiringInfo(JSON.parse(categoriesData));
+        }
+      } catch (error) {
+        console.error("Failed to load categories requiring info:", error);
+      }
+    };
+    
+    if (isOpen) {
+      loadCategoriesRequiringInfo();
+    }
+  }, [isOpen]);
 
   // Reset edit state when modal opens/closes and refresh sale data
   useEffect(() => {
@@ -57,6 +82,9 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
       setIsEditing(false);
       setEditedCart([]);
       setEditedDiscount(0);
+      setShowCategoryInfoModal(false);
+      setPendingPrintAction(null);
+      setCartItemsForPrint([]);
       
       // Refresh sale data to get latest payment information
       const refreshSaleData = async () => {
@@ -107,75 +135,60 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
       );
       setEditedDiscount(saleToUse.discount);
     }
-  }, [currentSale, sale, isEditing]);
+  }, [currentSale, sale, isEditing, t]);
 
   // Use currentSale if available, otherwise fallback to sale prop
   const displaySale = currentSale || sale;
-  
-  if (!isOpen || !displaySale) return null;
 
-  const formatCurrency = (amount: number) => {
-    return `${amount.toLocaleString()} ${t("currency")}`;
-  };
+  // Check if any products in cart require additional information
+  const checkCategoryInfoRequired = useCallback((cartItems: CartItem[]) => {
+    if (categoriesRequiringInfo.length === 0) return false;
+    
+    return cartItems.some((item) => {
+      if (item.isManual || item.isService) return false;
+      const product = allProducts.find((p) => p.id === item.id);
+      return product && categoriesRequiringInfo.includes(product.categoryName || "");
+    });
+  }, [allProducts, categoriesRequiringInfo]);
 
-  const formatFullDate = (date: Date) => {
-    return new Date(date).toLocaleString();
-  };
-
-  const handlePrint = async () => {
-    if (!displaySale) return;
+  // Actual print function
+  const executePrint = useCallback(async (cartItems: CartItem[]) => {
+    const saleToUse = currentSale || sale;
+    if (!saleToUse) return;
 
     try {
-      // Convert saleItems to CartItem format
-      const cartItems: CartItem[] = displaySale.saleItems.map((item) => ({
-        id: item.product?.id || item.service?.id || `manual-${item.id}`,
-        name:
-          item.product?.name ||
-          item.manualProduct?.name ||
-          item.service?.name ||
-          "",
-        price: item.price,
-        qty: item.quantity,
-        boughtPrice: item.boughtPrice || undefined,
-        isManual: !item.product && !item.service,
-        isService: !!item.service,
-        manualProductType: item.manualProduct?.type,
-        description: item.service?.description,
-        serviceCostPrice: item.service ? (item.boughtPrice || item.service?.costPrice) : undefined,
-        serviceAppointmentId: item.service?.serviceAppointmentId || undefined,
-      }));
-
       // Determine payment type from the actual sale payment information
-      const paymentType: "none" | "credit" | "versement" = displaySale.isPaidInCash
+      const paymentType: "none" | "credit" | "versement" = saleToUse.isPaidInCash
         ? "none"
-        : displaySale.payment?.type === "VERSEMENT"
+        : saleToUse.payment?.type === "VERSEMENT"
           ? "versement"
           : "credit";
 
       // Get payment date from the actual sale payment information
-      const paymentDate = displaySale.payment?.paidDate
-        ? new Date(displaySale.payment.paidDate)
+      const paymentDate = saleToUse.payment?.paidDate
+        ? new Date(saleToUse.payment.paidDate)
         : undefined;
 
       // Get due date from the actual sale payment information (for credit/versement sales)
-      const dueDate = displaySale.payment?.dueDate
-        ? new Date(displaySale.payment.dueDate)
+      const dueDate = saleToUse.payment?.dueDate
+        ? new Date(saleToUse.payment.dueDate)
         : undefined;
 
       // Get payment amount from the actual sale
-      const paymentAmount = displaySale.paidAmount || 0;
+      const paymentAmount = saleToUse.paidAmount || 0;
 
       // Call print function directly with the actual payment information
       await printReceiptDirectly(
         cartItems,
-        displaySale.client?.name || "",
-        displaySale.discount,
+        saleToUse.client?.name || "",
+        saleToUse.discount,
         paymentAmount,
         paymentType,
         paymentDate,
-        displaySale.id,
+        saleToUse.id,
         (message, type) => showToast(message, type || "info"),
-        dueDate
+        dueDate,
+        new Date(saleToUse.createdAt) // Pass the sale date
       );
     } catch (error) {
       console.error("Failed to print receipt:", error);
@@ -184,6 +197,109 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
         "error"
       );
     }
+  }, [currentSale, sale, showToast, t]);
+
+  const handlePrint = async () => {
+    const saleToUse = currentSale || sale;
+    if (!saleToUse) return;
+
+    // Convert saleItems to CartItem format
+    const cartItems: CartItem[] = saleToUse.saleItems.map((item) => ({
+      id: item.product?.id || item.service?.id || `manual-${item.id}`,
+      name:
+        item.product?.name ||
+        item.manualProduct?.name ||
+        item.service?.name ||
+        "",
+      price: item.price,
+      qty: item.quantity,
+      boughtPrice: item.boughtPrice || undefined,
+      isManual: !item.product && !item.service,
+      isService: !!item.service,
+      manualProductType: item.manualProduct?.type,
+      description: item.service?.description,
+      serviceCostPrice: item.service ? (item.boughtPrice || item.service?.costPrice) : undefined,
+      serviceAppointmentId: item.service?.serviceAppointmentId || undefined,
+    }));
+
+    // Check if category information is required
+    if (checkCategoryInfoRequired(cartItems)) {
+      // Check if categoryInfo is already present for all required items
+      const productsRequiringInfo = cartItems.filter((item) => {
+        if (item.isManual || item.isService) return false;
+        const product = allProducts.find((p) => p.id === item.id);
+        return product && categoriesRequiringInfo.includes(product.categoryName || "");
+      });
+
+      // Check if all required items have complete categoryInfo (one per unit)
+      const allHaveCategoryInfo = productsRequiringInfo.every((item) => {
+        return item.categoryInfo && Array.isArray(item.categoryInfo) && item.categoryInfo.length === item.qty;
+      });
+
+      if (!allHaveCategoryInfo) {
+        // Show category info modal
+        setCartItemsForPrint(cartItems);
+        setPendingPrintAction(() => async () => {
+          await executePrint(cartItems);
+        });
+        setShowCategoryInfoModal(true);
+        return;
+      }
+    }
+
+    // If no category info required or all items already have categoryInfo, print directly
+    await executePrint(cartItems);
+  };
+
+  // Handle category info modal actions
+  const handleCategoryInfoSubmit = useCallback((infoMap: Record<string, CategoryInfo[]>) => {
+    // Close modal first
+    setShowCategoryInfoModal(false);
+    
+    // Attach categoryInfo to cart items
+    const updatedCartItems = cartItemsForPrint.map((item) => {
+      const categoryInfo = infoMap[item.id];
+      if (categoryInfo && categoryInfo.length > 0) {
+        return { ...item, categoryInfo };
+      }
+      return item;
+    });
+    
+    // Execute print with updated cart items
+    setPendingPrintAction(null);
+    setCartItemsForPrint([]);
+    
+    // Print with updated cart items
+    executePrint(updatedCartItems);
+  }, [cartItemsForPrint, executePrint]);
+
+  const handleCategoryInfoSkip = useCallback(() => {
+    setShowCategoryInfoModal(false);
+    const action = pendingPrintAction;
+    setPendingPrintAction(null);
+    setCartItemsForPrint([]);
+    
+    // Execute print without category info
+    if (action) {
+      action();
+    }
+  }, [pendingPrintAction]);
+
+  const handleCategoryInfoCancel = useCallback(() => {
+    setShowCategoryInfoModal(false);
+    setPendingPrintAction(null);
+    setCartItemsForPrint([]);
+  }, []);
+
+  // Early return after all hooks
+  if (!isOpen || !displaySale) return null;
+
+  const formatCurrency = (amount: number) => {
+    return `${amount.toLocaleString()} ${t("currency")}`;
+  };
+
+  const formatFullDate = (date: Date) => {
+    return new Date(date).toLocaleString();
   };
 
   const handleModify = () => {
@@ -325,7 +441,11 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
   return (
     <div
       className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-      onClick={onClose}
+      onClick={(e) => {
+        if (!showCategoryInfoModal && e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
     >
       <div
         className="bg-background border border-border/50 rounded-2xl shadow-xl max-w-5xl w-full max-h-[95vh] overflow-hidden"
@@ -587,6 +707,19 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Category Info Modal - Rendered outside to prevent click propagation */}
+      {showCategoryInfoModal && (
+        <CategoryInfoModal
+          open={showCategoryInfoModal}
+          onClose={handleCategoryInfoCancel}
+          onSkip={handleCategoryInfoSkip}
+          onSubmit={handleCategoryInfoSubmit}
+          cartItems={cartItemsForPrint}
+          categoriesRequiringInfo={categoriesRequiringInfo}
+          allProducts={allProducts}
+        />
       )}
     </div>
   );

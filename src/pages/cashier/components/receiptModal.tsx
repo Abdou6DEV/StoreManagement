@@ -31,7 +31,8 @@ export const printReceiptDirectly = async (
   paymentDate?: Date,
   saleId?: string,
   showToast?: (message: string, type?: "success" | "error" | "info") => void,
-  dueDate?: Date
+  dueDate?: Date,
+  saleDate?: Date
 ) => {
   
   // Store information - will be loaded from database
@@ -386,7 +387,8 @@ export const printReceiptDirectly = async (
   // Calculate totals
   const total = cart.reduce((sum, item) => sum + item.qty * item.price, 0);
   const finalTotal = total - discount;
-  const currentDate = new Date();
+  // Use sale date if provided, otherwise use current date
+  const currentDate = saleDate || new Date();
   const receiptNumber = saleId || `TEMP-${Date.now()}`;
   
 

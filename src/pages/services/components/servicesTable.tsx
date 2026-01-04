@@ -637,7 +637,7 @@ const ServicesTable: React.FC<ServicesTableProps> = ({
 
       {/* Totals Footer */}
       {filteredServices && filteredServices.length > 0 && (
-        <ServicesTotalsFooter filteredList={filteredServices} />
+        <ServicesTotalsFooter filteredList={filteredServices} hideProfit={hideProfit} />
       )}
     </>
   );

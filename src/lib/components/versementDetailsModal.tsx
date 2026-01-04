@@ -152,6 +152,13 @@ const VersementDetailsModal: React.FC<VersementDetailsModalProps> = ({
         serviceAppointmentId: item.serviceAppointmentId,
       }));
 
+      // Use sale date if available, otherwise use payment creation date
+      const saleDate = payment.sale?.createdAt 
+        ? new Date(payment.sale.createdAt)
+        : payment.createdAt 
+          ? new Date(payment.createdAt)
+          : undefined;
+
       await printReceiptDirectly(
         cartItems,
         payment.client.name,
@@ -162,6 +169,7 @@ const VersementDetailsModal: React.FC<VersementDetailsModalProps> = ({
         payment.saleId || payment.id,
         (message, type) => showToast(message, type || "info"),
         payment.dueDate ? new Date(payment.dueDate) : undefined,
+        saleDate // Pass the sale date
       );
     } catch (error) {
       console.error("Failed to print versement receipt:", error);

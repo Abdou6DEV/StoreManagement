@@ -480,7 +480,8 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
         paymentDate,
         sale.id,
         (message, type) => showToast(message, type || "info"),
-        dueDate
+        dueDate,
+        new Date(sale.createdAt) // Pass the sale date
       );
     } catch (error) {
       console.error("Failed to print receipt:", error);

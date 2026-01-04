@@ -19,9 +19,10 @@ interface ServiceAppointment {
 
 interface ServicesTotalsFooterProps {
   filteredList: ServiceAppointment[];
+  hideProfit?: boolean;
 }
 
-export const ServicesTotalsFooter = ({ filteredList }: ServicesTotalsFooterProps) => {
+export const ServicesTotalsFooter = ({ filteredList, hideProfit = false }: ServicesTotalsFooterProps) => {
   const { t } = useTranslation();
 
   const totalServices = filteredList.length;
@@ -65,16 +66,18 @@ export const ServicesTotalsFooter = ({ filteredList }: ServicesTotalsFooterProps
       </div>
 
       {/* Total Profit */}
-      <div className="flex items-center gap-2">
-        <BarChart2 className="w-4 h-4 text-green-600 dark:text-green-400" />
-        <span className="text-muted-foreground">
-          {t("services.totalProfit")}:
-        </span>
-        <span className="font-medium text-[0.9375rem] text-green-600 dark:text-green-400">
-          {totalProfit.toLocaleString('fr-FR')}{" "}
-          {t("cashier.currency")}
-        </span>
-      </div>
+      {!hideProfit && (
+        <div className="flex items-center gap-2">
+          <BarChart2 className="w-4 h-4 text-green-600 dark:text-green-400" />
+          <span className="text-muted-foreground">
+            {t("services.totalProfit")}:
+          </span>
+          <span className="font-medium text-[0.9375rem] text-green-600 dark:text-green-400">
+            {totalProfit.toLocaleString('fr-FR')}{" "}
+            {t("cashier.currency")}
+          </span>
+        </div>
+      )}
     </div>
   );
 };
