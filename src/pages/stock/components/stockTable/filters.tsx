@@ -9,6 +9,7 @@ import {
   QrCode,
   Filter,
   X,
+  Search,
 } from "lucide-react";
 import {
   Command,
@@ -122,18 +123,21 @@ export const Filters = ({
         </div>
 
         {/* Search input - shown in both views */}
-        <input
-          type="text"
-          placeholder={
-            viewMode === "product"
-              ? t("stock.searchProductNameOrBarcode", "Search by product name or barcode...")
-              : t("stock.searchCategory", "Search categories...")
-          }
-          value={filters.search}
-          onChange={(e) => onFilterChange("search", e.target.value)}
-          className="px-3 py-1.5 rounded-md border-2 border-primary/20 bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition max-w-[220px]"
-          aria-label={t("stock.searchProductNameOrBarcode", "Search by product name or barcode")}
-        />
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+          <input
+            type="text"
+            placeholder={
+              viewMode === "product"
+                ? t("stock.searchProductNameOrBarcode", "Search by product name or barcode...")
+                : t("stock.searchCategory", "Search categories...")
+            }
+            value={filters.search}
+            onChange={(e) => onFilterChange("search", e.target.value)}
+            className="pl-9 pr-3 py-1.5 rounded-md border-2 border-primary/20 bg-card text-sm focus:outline-none focus:ring-1 focus:ring-primary/50 transition w-[350px]"
+            aria-label={t("stock.searchProductNameOrBarcode", "Search by product name or barcode")}
+          />
+        </div>
 
         {/* Category Filter Dropdown - only in product view */}
         {viewMode === "product" && (

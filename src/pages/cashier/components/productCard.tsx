@@ -38,10 +38,8 @@ const ProductCard = memo(function ProductCard({
   const checkTextTruncation = useCallback(() => {
     if (nameRef.current) {
       const element = nameRef.current;
-      // Check if text exceeds 2 lines (approximately 2.5rem height)
-      const lineHeight = parseFloat(getComputedStyle(element).lineHeight);
-      const maxHeight = lineHeight * 2; // Exactly 2 lines
-      setIsTextTruncated(element.scrollHeight > maxHeight);
+      // Check if text is truncated (single line with ellipsis)
+      setIsTextTruncated(element.scrollWidth > element.clientWidth);
     }
   }, []);
 
@@ -172,33 +170,18 @@ const ProductCard = memo(function ProductCard({
       {/* Product Info */}
       <div className="flex items-start justify-between w-full flex-1 gap-2">
         <div className="flex flex-col gap-2 flex-1 min-w-0">
-          {isTextTruncated ? (
-            <Tooltip content={product.name} position="top" className="max-w-xs">
-              <div
-                ref={nameRef}
-                className="font-medium text-sm break-words leading-tight min-h-[2.5rem] max-h-[2.5rem] flex-1 overflow-hidden cursor-pointer"
-                style={{
-                  display: "-webkit-box",
-                  WebkitLineClamp: 2,
-                  WebkitBoxOrient: "vertical",
-                  lineHeight: "1.25rem",
-                }}
-              >
-                {product.name}
-              </div>
-            </Tooltip>
-          ) : (
+          <Tooltip content={product.name} position="top" className="max-w-xs">
             <div
               ref={nameRef}
-              className="font-medium text-sm break-words leading-tight min-h-[2.5rem] max-h-[2.5rem] flex-1 overflow-hidden"
-              style={{
-                display: "-webkit-box",
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: "vertical",
-                lineHeight: "1.25rem",
-              }}
+              className="font-medium text-sm truncate"
             >
               {product.name}
+            </div>
+          </Tooltip>
+          {product.categoryName && (
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <div className="w-2 h-2 rounded-full bg-muted-foreground/50 flex-shrink-0"></div>
+              <span className="truncate">{product.categoryName}</span>
             </div>
           )}
           <div className="flex items-center gap-2 flex-shrink-0">

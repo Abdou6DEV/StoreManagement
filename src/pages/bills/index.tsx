@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "../../lib/components/button";
-import { FileText, ChevronDown, Check, CreditCard, DollarSign } from "lucide-react";
+import { FileText, ChevronDown, Check, CreditCard, DollarSign, Search } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useToast } from "../../lib/contexts/toastContext";
 import { useOverdueBills } from "../../lib/contexts/overdueBillsContext";
@@ -447,14 +447,17 @@ export default function BillsPage() {
                 </div>
 
                 {/* Search input - shown in both views */}
-                <input
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                  <input
                     type="text"
                     placeholder={t("bills.searchBills", "Search bills...")}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                  className="px-3 py-1.5 rounded-md border-2 border-primary/20 bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition max-w-[220px]"
-                  aria-label={t("bills.searchBills", "Search bills")}
-                />
+                    className="pl-9 pr-3 py-1.5 rounded-md border-2 border-primary/20 bg-card text-sm focus:outline-none focus:ring-1 focus:ring-primary/50 transition w-[350px]"
+                    aria-label={t("bills.searchBills", "Search bills")}
+                  />
+                </div>
 
                 {/* Type Filter Dropdown */}
                 <Popover>
@@ -721,14 +724,17 @@ export default function BillsPage() {
                 </div>
 
                 {/* Search input - shown in both views */}
-                <input
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                  <input
                     type="text"
                     placeholder={t("bills.searchPayments", "Search payments...")}
                     value={paymentsSearchTerm}
                     onChange={(e) => setPaymentsSearchTerm(e.target.value)}
-                  className="px-3 py-1.5 rounded-md border-2 border-primary/20 bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition max-w-[220px]"
-                  aria-label={t("bills.searchPayments", "Search payments")}
-                />
+                    className="pl-9 pr-3 py-1.5 rounded-md border-2 border-primary/20 bg-card text-sm focus:outline-none focus:ring-1 focus:ring-primary/50 transition w-[350px]"
+                    aria-label={t("bills.searchPayments", "Search payments")}
+                  />
+                </div>
 
                 {/* Type Filter Dropdown */}
                 <Popover>
