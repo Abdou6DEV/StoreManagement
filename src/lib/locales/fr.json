@@ -191,7 +191,21 @@
     "dueSoonServices": "{{count}} services bientôt dus",
     "oneServiceCompleted": "1 service est terminé",
     "servicesCompleted": "{{count}} services sont terminés",
-    "newUpdateAvailable": "Nouvelle mise à jour disponible"
+    "newUpdateAvailable": "Nouvelle mise à jour disponible",
+    "updateModal": {
+      "title": "Nouvelle mise à jour disponible !",
+      "subtitle": "Une nouvelle version de l'application est prête à être téléchargée",
+      "currentVersion": "Version actuelle",
+      "latestVersion": "Dernière version",
+      "whatsNew": "Quoi de neuf",
+      "benefitsTitle": "Pourquoi mettre à jour ?",
+      "benefit1": "Nouvelles fonctionnalités et améliorations",
+      "benefit2": "Corrections de bugs et améliorations de stabilité",
+      "benefit3": "Mises à jour de sécurité et correctifs",
+      "actionNote": "Cliquez sur 'Mettre à jour maintenant' pour accéder à la page de mise à jour et commencer le téléchargement",
+      "updateNow": "Mettre à jour maintenant",
+      "later": "Plus tard"
+    }
   },
   "history": {
     "title": "Historique",

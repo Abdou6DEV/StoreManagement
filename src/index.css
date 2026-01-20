@@ -160,6 +160,29 @@
   display: none;
 }
 
+/* Custom scrollbar for release notes */
+.release-notes-scrollable::-webkit-scrollbar {
+  width: 8px !important;
+  height: 8px !important;
+  display: block !important;
+}
+
+.release-notes-scrollable::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 4px;
+}
+
+.release-notes-scrollable::-webkit-scrollbar-thumb {
+  background-color: rgba(156, 163, 175, 0.5);
+  border-radius: 4px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.release-notes-scrollable::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(156, 163, 175, 0.7);
+}
+
 #sidebar,
 .sidebar,
 [data-sidebar],

@@ -23,6 +23,7 @@ import { useOverdueServices } from "../../lib/contexts/overdueServicesContext";
 import { useDueSoonServices } from "../../lib/contexts/dueSoonServicesContext";
 import { useCompletedServices } from "../../lib/contexts/completedServicesContext";
 import { useUpdateContext } from "../../lib/contexts/updateContext";
+import { UpdateModal } from "./components/updateModal";
 import "../../lib/i18n";
 
 export default function MainMenu() {
@@ -39,6 +40,8 @@ export default function MainMenu() {
   const { state: updateState } = useUpdateContext();
   const [enableBadge, setEnableBadge] = useState(false); // Start as false to prevent flash
   const [badgeLoaded, setBadgeLoaded] = useState(false);
+  const [shouldAnimate, setShouldAnimate] = useState(false);
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
 
   useEffect(() => {
     const loadBadgeSetting = () => {
@@ -58,6 +61,35 @@ export default function MainMenu() {
 
     return () => clearInterval(interval);
   }, []);
+
+  // Trigger animation after 1 second
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShouldAnimate(true);
+    }, 700);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Show update modal once per login session when entering main menu and update is available
+  useEffect(() => {
+    if (updateState.updateInfo?.available && updateState.updateInfo?.latestVersion) {
+      // Check if we've already shown the modal in this session
+      const shownVersionKey = `updateModalShown_${updateState.updateInfo.latestVersion}`;
+      const hasBeenShown = sessionStorage.getItem(shownVersionKey);
+      
+      if (!hasBeenShown) {
+        // Small delay to let the page load first
+        const timer = setTimeout(() => {
+          setShowUpdateModal(true);
+          // Mark this version as shown for this session
+          sessionStorage.setItem(shownVersionKey, "true");
+        }, 500);
+
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [updateState.updateInfo?.available, updateState.updateInfo?.latestVersion]);
 
   const allMenuItems = [
     {
@@ -135,13 +167,18 @@ export default function MainMenu() {
   });
 
   return (
-    <main className="py-4 px-4 md:px-12 ml-20 flex-1 rounded-xl">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
+    <>
+      <UpdateModal 
+        open={showUpdateModal} 
+        onOpenChange={setShowUpdateModal} 
+      />
+      <main className="py-4 px-4 md:px-12 ml-20 flex-1 rounded-xl">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
         {menuItems.map((item) => (
           <Link
             to={`/${item.key}`}
             className="group p-6 border rounded-xl bg-card transition-all duration-300 flex flex-col h-full
-                      hover:border-red-400 hover:-translate-y-1 hover:shadow-md relative"
+                      hover:border-red-400 hover:-translate-y-1 hover:shadow-md relative overflow-hidden"
             key={item.key}
           >
             <div className="flex items-center gap-4 mb-3">
@@ -153,7 +190,7 @@ export default function MainMenu() {
                 {t(`mainMenu.${item.key}`)}
               </h2>
               {item.key === "stock" && unseenLowStockCount > 0 && enableBadge && badgeLoaded && (
-                <div className="absolute top-0 right-0 rtl:right-auto rtl:left-0">
+                <div className={`absolute top-0 right-0 rtl:right-auto rtl:left-0 transition-transform duration-500 ease-out ${shouldAnimate ? 'translate-y-0' : '-translate-y-[150%]'}`}>
                   <div className="bg-red-600 text-white text-xs font-bold px-3 py-1 border-2 border-red-600 shadow-lg transition-all duration-300 ease-in-out h-[20px] flex items-center justify-center min-w-[60px] rounded-tr-lg rounded-bl-lg rtl:rounded-tl-lg rtl:rounded-br-lg rtl:rounded-tr-none rtl:rounded-bl-none">
                     {unseenLowStockCount === 1 
                       ? t("mainMenu.oneProductOutOfStock", "1 product is out of stock")
@@ -163,7 +200,7 @@ export default function MainMenu() {
                 </div>
               )}
               {item.key === "cashier" && completedServicesCount > 0 && (
-                <div className="absolute top-0 right-0 rtl:right-auto rtl:left-0">
+                <div className={`absolute top-0 right-0 rtl:right-auto rtl:left-0 transition-transform duration-500 ease-out ${shouldAnimate ? 'translate-y-0' : '-translate-y-[150%]'}`}>
                   <div className="bg-green-600 text-white text-xs font-bold px-3 py-1 border-2 border-green-600 shadow-lg transition-all duration-300 ease-in-out h-[20px] flex items-center justify-center min-w-[60px] rounded-tr-lg rounded-bl-lg rtl:rounded-tl-lg rtl:rounded-br-lg rtl:rounded-tr-none rtl:rounded-bl-none">
                     {completedServicesCount === 1 
                       ? t("mainMenu.oneServiceCompleted", "1 service is completed")
@@ -174,7 +211,7 @@ export default function MainMenu() {
               )}
               {/* Payment Badges - Positioned inside container with border sharing */}
               {item.key === "clients" && ((unseenOverdueCreditsCount > 0 || unseenOverdueVersementsCount > 0) || (unseenDueSoonCreditsCount > 0 || unseenDueSoonVersementsCount > 0)) && (
-                <div className="absolute top-0 right-0 rtl:right-auto rtl:left-0 flex flex-col">
+                <div className={`absolute top-0 right-0 rtl:right-auto rtl:left-0 flex flex-col transition-transform duration-500 ease-out ${shouldAnimate ? 'translate-y-0' : '-translate-y-[150%]'}`}>
                    {/* Overdue Badge */}
                    {(unseenOverdueCreditsCount > 0 || unseenOverdueVersementsCount > 0) && (
                      <div className={`bg-red-600 text-white text-xs font-bold px-3 py-1 border-2 border-red-600 shadow-lg transition-all duration-300 ease-in-out h-[20px] flex items-center justify-center min-w-[60px] ${
@@ -205,7 +242,7 @@ export default function MainMenu() {
               )}
               {/* Bills Badges - Positioned inside container with border sharing */}
               {item.key === "bills" && (unseenOverdueBillsCount > 0 || unseenDueSoonBillsCount > 0) && (
-                <div className="absolute top-0 right-0 rtl:right-auto rtl:left-0 flex flex-col">
+                <div className={`absolute top-0 right-0 rtl:right-auto rtl:left-0 flex flex-col transition-transform duration-500 ease-out ${shouldAnimate ? 'translate-y-0' : '-translate-y-[150%]'}`}>
                    {/* Overdue Badge */}
                    {unseenOverdueBillsCount > 0 && (
                      <div className={`bg-red-600 text-white text-xs font-bold px-3 py-1 border-2 border-red-600 shadow-lg transition-all duration-300 ease-in-out h-[20px] flex items-center justify-center min-w-[60px] ${
@@ -236,7 +273,7 @@ export default function MainMenu() {
               )}
               {/* Services Badges - Positioned inside container with border sharing */}
               {item.key === "services" && ((unseenOverdueServicesCount > 0 && enableOverdueServicesBadge && overdueServicesBadgeLoaded) || (unseenDueSoonServicesCount > 0 && enableDueSoonServicesBadge && dueSoonServicesBadgeLoaded)) && (
-                <div className="absolute top-0 right-0 rtl:right-auto rtl:left-0 flex flex-col">
+                <div className={`absolute top-0 right-0 rtl:right-auto rtl:left-0 flex flex-col transition-transform duration-500 ease-out ${shouldAnimate ? 'translate-y-0' : '-translate-y-[150%]'}`}>
                    {/* Overdue Services Badge */}
                    {unseenOverdueServicesCount > 0 && enableOverdueServicesBadge && overdueServicesBadgeLoaded && (
                      <div className={`bg-red-600 text-white text-xs font-bold px-3 py-1 border-2 border-red-600 shadow-lg transition-all duration-300 ease-in-out h-[20px] flex items-center justify-center min-w-[60px] ${
@@ -267,7 +304,7 @@ export default function MainMenu() {
               )}
               {/* Update Badge for Administrator */}
               {item.key === "administrator" && updateState.updateInfo?.available && (
-                <div className="absolute top-0 right-0 rtl:right-auto rtl:left-0">
+                <div className={`absolute top-0 right-0 rtl:right-auto rtl:left-0 transition-transform duration-500 ease-out ${shouldAnimate ? 'translate-y-0' : '-translate-y-[150%]'}`}>
                   <div className="bg-orange-500 text-white text-xs font-bold px-3 py-1 border-2 border-orange-500 shadow-lg transition-all duration-300 ease-in-out h-[20px] flex items-center justify-center min-w-[60px] rounded-tr-lg rounded-bl-lg rtl:rounded-tl-lg rtl:rounded-br-lg rtl:rounded-tr-none rtl:rounded-bl-none">
                     {t("mainMenu.newUpdateAvailable", "New update is available")}
                   </div>
@@ -281,5 +318,6 @@ export default function MainMenu() {
         ))}
       </div>
     </main>
+    </>
   );
 }

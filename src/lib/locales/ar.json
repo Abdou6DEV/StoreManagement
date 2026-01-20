@@ -191,7 +191,21 @@
     "dueSoonServices": "{{count}} خدمات قريبة الاستحقاق",
     "oneServiceCompleted": "خدمة واحدة مكتملة",
     "servicesCompleted": "{{count}} خدمات مكتملة",
-    "newUpdateAvailable": "تحديث جديد متاح"
+    "newUpdateAvailable": "تحديث جديد متاح",
+    "updateModal": {
+      "title": "تحديث جديد متاح!",
+      "subtitle": "إصدار جديد من التطبيق جاهز للتنزيل",
+      "currentVersion": "الإصدار الحالي",
+      "latestVersion": "أحدث إصدار",
+      "whatsNew": "ما الجديد",
+      "benefitsTitle": "لماذا التحديث؟",
+      "benefit1": "ميزات وتحسينات جديدة",
+      "benefit2": "إصلاحات الأخطاء وتحسينات الاستقرار",
+      "benefit3": "تحديثات الأمان والتصحيحات",
+      "actionNote": "انقر على 'تحديث الآن' للانتقال إلى صفحة التحديث وبدء التنزيل",
+      "updateNow": "تحديث الآن",
+      "later": "لاحقاً"
+    }
   },
   "history": {
     "title": "التاريخ",

@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
+import { useSearchParams } from "react-router-dom";
 import { FileText, Receipt, Users, Settings, Database, Download } from "lucide-react";
 import LoggerAdmin from "./components/loggerAdmin";
 import { OptionsList } from "./components/optionsList";
@@ -12,8 +13,28 @@ import { useUpdateContext } from "../../lib/contexts/updateContext";
 export default function AdministratorPage() {
   const { t, i18n } = useTranslation();
   const isRTL = i18n.language === "ar";
-  const [activeTab, setActiveTab] = useState<"settings" | "receipt" | "logs" | "accounts" | "backup" | "updates">("settings");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabFromUrl = searchParams.get("tab") as "settings" | "receipt" | "logs" | "accounts" | "backup" | "updates" | null;
+  const [activeTab, setActiveTab] = useState<"settings" | "receipt" | "logs" | "accounts" | "backup" | "updates">(
+    tabFromUrl && ["settings", "receipt", "logs", "accounts", "backup", "updates"].includes(tabFromUrl) 
+      ? tabFromUrl 
+      : "settings"
+  );
   const { state: updateState } = useUpdateContext();
+
+  // Update URL when tab changes
+  useEffect(() => {
+    if (activeTab !== tabFromUrl) {
+      setSearchParams({ tab: activeTab });
+    }
+  }, [activeTab, tabFromUrl, setSearchParams]);
+
+  // Update tab when URL changes
+  useEffect(() => {
+    if (tabFromUrl && ["settings", "receipt", "logs", "accounts", "backup", "updates"].includes(tabFromUrl)) {
+      setActiveTab(tabFromUrl);
+    }
+  }, [tabFromUrl]);
 
   return (
     <main

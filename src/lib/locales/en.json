@@ -202,7 +202,21 @@
     "dueSoonServices": "{{count}} due soon services",
     "oneServiceCompleted": "1 service is completed",
     "servicesCompleted": "{{count}} services are completed",
-    "newUpdateAvailable": "New update is available"
+    "newUpdateAvailable": "New update is available",
+    "updateModal": {
+      "title": "New Update Available!",
+      "subtitle": "A new version of the application is ready to download",
+      "currentVersion": "Current Version",
+      "latestVersion": "Latest Version",
+      "whatsNew": "What's New",
+      "benefitsTitle": "Why update?",
+      "benefit1": "New features and improvements",
+      "benefit2": "Bug fixes and stability enhancements",
+      "benefit3": "Security updates and patches",
+      "actionNote": "Click 'Update Now' to go to the update page and start downloading",
+      "updateNow": "Update Now",
+      "later": "Later"
+    }
   },
   "bills": {
     "addBill": "Add Bill",
