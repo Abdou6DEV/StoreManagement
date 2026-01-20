@@ -735,6 +735,7 @@ export default function Clients() {
               loading={paymentsLoading}
               error={paymentsError}
               onRefresh={fetchPayments}
+              onClientsRefresh={fetchClients}
               initialClientFilter={pendingPaymentsFilter}
               onConsumeInitialClientFilter={() => setPendingPaymentsFilter(null)}
             />

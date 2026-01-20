@@ -69,6 +69,8 @@ interface AllPaymentsViewProps {
 
   onRefresh: () => void;
 
+  onClientsRefresh?: () => void;
+
   initialClientFilter?: { id: string; name: string } | null;
   onConsumeInitialClientFilter?: () => void;
 
@@ -87,6 +89,8 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
   error,
 
   onRefresh,
+
+  onClientsRefresh,
 
   initialClientFilter,
   onConsumeInitialClientFilter,
@@ -582,6 +586,7 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
 
 
       onRefresh(); // Refresh payments after marking as paid
+      onClientsRefresh?.(); // Refresh clients list to update totals
 
 
 
@@ -640,6 +645,7 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
 
 
       onRefresh(); // Refresh payments after marking as unpaid
+      onClientsRefresh?.(); // Refresh clients list to update totals
 
 
 
@@ -714,6 +720,7 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
       await window.api.database.payments.cancelVersement(paymentId);
 
       onRefresh();
+      onClientsRefresh?.(); // Refresh clients list to update totals
 
 
 
@@ -786,6 +793,7 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
 
 
       onRefresh(); // Refresh payments after updating amount
+      onClientsRefresh?.(); // Refresh clients list to update totals
 
 
 
@@ -1288,6 +1296,8 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
 
                   onRefreshPayments={onRefresh}
 
+                  onClientsRefresh={onClientsRefresh}
+
                   isOverdue={isOverdue}
 
                   isDueSoon={(dueDate) => isDueSoon(dueDate, dueSoonThresholdDays)}
@@ -1536,6 +1546,8 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
                   onViewVersementDetails={handleViewVersementDetails}
 
                   onRefreshPayments={onRefresh}
+
+                  onClientsRefresh={onClientsRefresh}
                   onCancelVersement={handleCancelVersementRequest}
 
                   isOverdue={isOverdue}
@@ -1869,6 +1881,7 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
         }}
         onDeleted={() => {
           onRefresh();
+          onClientsRefresh?.(); // Refresh clients list to update totals
           setShowVersementDetailsModal(false);
           setSelectedVersement(null);
         }}

@@ -17,6 +17,7 @@ interface PaymentTableProps {
   onViewSaleDetails?: (saleId: string) => void;
   onViewVersementDetails?: (paymentId: string) => void;
   onRefreshPayments?: () => void;
+  onClientsRefresh?: () => void;
   onCancelVersement?: (paymentId: string) => void;
   isOverdue: (dueDate: Date) => boolean;
   isDueSoon: (dueDate: Date) => boolean;
@@ -37,6 +38,7 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
   onViewSaleDetails,
   onViewVersementDetails,
   onRefreshPayments,
+  onClientsRefresh,
   onCancelVersement,
   isOverdue,
   isDueSoon,
@@ -86,6 +88,7 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
               onViewSaleDetails={onViewSaleDetails}
               onViewVersementDetails={onViewVersementDetails}
               onRefreshPayments={onRefreshPayments}
+              onClientsRefresh={onClientsRefresh}
               onCancelVersement={onCancelVersement}
               isOverdue={isOverdue}
               isDueSoon={isDueSoon}

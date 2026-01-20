@@ -202,6 +202,7 @@ export default function AddPaymentForm({
 
       setForm(initialForm);
       onPaymentAdded();
+      onClientAdded?.(); // Refresh clients list to update totals
       showToast(
         t("clients.paymentAddSuccess", "Payment added successfully"),
         "success",

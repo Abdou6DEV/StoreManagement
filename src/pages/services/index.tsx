@@ -380,8 +380,53 @@ export default function ServicesPage() {
     }
   }, [filters.dateFilter, isViewingOverdueTable, isViewingDueSoonTable, services, markOverdueServicesAsSeen, markDueSoonServicesAsSeen, dueSoonThresholdDays]);
 
-  const handleServiceAdded = () => {
+  // Helper function to reset date filters to include today
+  const resetDateFiltersToIncludeToday = async () => {
+    try {
+      const allServices = await window.api.database.serviceAppointments.getAll();
+      
+      if (allServices.length > 0) {
+        const dueDates = allServices
+          .map((service: ServiceAppointment) => new Date(service.dueDate))
+          .filter((date: Date) => !isNaN(date.getTime()))
+          .sort((a: Date, b: Date) => a.getTime() - b.getTime());
+        
+        if (dueDates.length > 0) {
+          const firstDate = dueDates[0];
+          const lastDate = dueDates[dueDates.length - 1];
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          
+          // Ensure today is always included in the date range
+          // startDate: earliest of first service date or today
+          // endDate: latest of last service date or today
+          const startDate = firstDate < today ? firstDate : today;
+          const endDate = lastDate > today ? lastDate : today;
+          
+          // Format dates as YYYY-MM-DD
+          const formatDate = (date: Date) => {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+          };
+          
+          setFilters((prev) => ({
+            ...prev,
+            startDate: formatDate(startDate),
+            endDate: formatDate(endDate),
+          }));
+        }
+      }
+    } catch (error) {
+      console.error("Error resetting date filters:", error);
+    }
+  };
+
+  const handleServiceAdded = async () => {
     setOpenPanel(null);
+    // Reset date filters to include today before loading services
+    await resetDateFiltersToIncludeToday();
     loadServices();
   };
 

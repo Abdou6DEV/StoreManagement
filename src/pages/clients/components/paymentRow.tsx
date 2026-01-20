@@ -21,6 +21,7 @@ interface PaymentRowProps {
   onViewSaleDetails?: (saleId: string) => void;
   onViewVersementDetails?: (paymentId: string) => void;
   onRefreshPayments?: () => void;
+  onClientsRefresh?: () => void;
   onCancelVersement?: (paymentId: string) => void;
   isOverdue: (dueDate: Date) => boolean;
   isDueSoon: (dueDate: Date) => boolean;
@@ -40,6 +41,7 @@ const PaymentRow: React.FC<PaymentRowProps> = ({
   onViewSaleDetails,
   onViewVersementDetails,
   onRefreshPayments,
+  onClientsRefresh,
   onCancelVersement,
   isOverdue,
   isDueSoon,
@@ -75,6 +77,10 @@ const PaymentRow: React.FC<PaymentRowProps> = ({
       // Refresh the payments table
       if (onRefreshPayments) {
         onRefreshPayments();
+      }
+      // Refresh clients list to update totals
+      if (onClientsRefresh) {
+        onClientsRefresh();
       }
     } catch (error) {
       console.error("Failed to update payment:", error);
