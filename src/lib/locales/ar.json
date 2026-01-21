@@ -376,7 +376,32 @@
     "logout": "تسجيل الخروج",
     "welcome": "مرحباً",
     "user": "المستخدم",
-    "welcomeToStoreManagement": "مرحباً بك في إدارة المتجر"
+    "welcomeToStoreManagement": "مرحباً بك في إدارة المتجر",
+    "notifications": "الإشعارات",
+    "noNotifications": "لا توجد إشعارات",
+    "clickToView": "انقر للعرض"
+  },
+  "notifications": {
+    "oneProductOutOfStock": "منتج واحد غير متوفر",
+    "productsOutOfStock": "{{count}} منتجات غير متوفرة",
+    "oneProductLowStock": "منتج واحد منخفض المخزون",
+    "productsLowStock": "{{count}} منتجات منخفضة المخزون",
+    "oneOverdueCredit": "دفعة رصيد واحدة متأخرة",
+    "overdueCredits": "{{count}} دفعات رصيد متأخرة",
+    "oneOverdueVersement": "دفعة واحدة متأخرة",
+    "overdueVersements": "{{count}} دفعات متأخرة",
+    "oneCreditDueSoon": "دفعة رصيد واحدة قريبة الاستحقاق",
+    "creditsDueSoon": "{{count}} دفعات رصيد قريبة الاستحقاق",
+    "oneVersementDueSoon": "دفعة واحدة قريبة الاستحقاق",
+    "versementsDueSoon": "{{count}} دفعات قريبة الاستحقاق",
+    "oneOverdueBill": "فاتورة واحدة متأخرة",
+    "overdueBills": "{{count}} فواتير متأخرة",
+    "oneBillDueSoon": "فاتورة واحدة قريبة الاستحقاق",
+    "billsDueSoon": "{{count}} فواتير قريبة الاستحقاق",
+    "oneOverdueService": "خدمة واحدة متأخرة",
+    "overdueServices": "{{count}} خدمات متأخرة",
+    "oneServiceDueSoon": "خدمة واحدة قريبة الاستحقاق",
+    "servicesDueSoon": "{{count}} خدمات قريبة الاستحقاق"
   },
   "userBadge": {
     "admin": "مدير",

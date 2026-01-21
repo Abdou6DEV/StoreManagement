@@ -10,6 +10,7 @@ import {
   Filter,
   X,
   Search,
+  PackageX,
 } from "lucide-react";
 import {
   Command,
@@ -304,6 +305,32 @@ export const Filters = ({
                       <Check className="w-4 h-4 text-yellow-600" />
                     )}
                   </div>
+                </div>
+              </Tooltip>
+              <Tooltip
+                content={t(
+                  "stock.outOfStockTooltip",
+                  "Show products that are out of stock (quantity = 0)",
+                )}
+                position="left"
+              >
+                <div
+                  className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-accent"
+                  style={{ width: "100%", minWidth: "198px" }}
+                  onClick={() => onToggleFilter("outOfStock")}
+                >
+                  <PackageX
+                    className={cn(
+                      "w-4 h-4",
+                      filters.outOfStock
+                        ? "text-red-600"
+                        : "text-muted-foreground",
+                    )}
+                  />
+                  <span className="flex-1">{t("stock.outOfStock", "Out of Stock")}</span>
+                  {filters.outOfStock && (
+                    <Check className="w-4 h-4 text-red-600" />
+                  )}
                 </div>
               </Tooltip>
               <Tooltip

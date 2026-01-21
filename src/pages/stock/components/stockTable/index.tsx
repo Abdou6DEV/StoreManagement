@@ -20,7 +20,7 @@ import type {
   CategorySummary,
 } from "./types";
 
-export const StockTable = () => {
+export const StockTable = ({ notificationAction }: { notificationAction?: string }) => {
   const { t } = useTranslation();
   const { categories, products, refetchProducts } = useStock();
   const { unseenLowStockCount, lowStockThreshold: contextThreshold, markLowStockAsSeen } = useLowStock();
@@ -28,6 +28,7 @@ export const StockTable = () => {
 
   const [filters, setFilters] = useState<StockTableFilters>({
     lowStock: false,
+    outOfStock: false,
     bestSelling: false,
     worstSelling: false,
     noBarcode: false,
@@ -64,6 +65,15 @@ export const StockTable = () => {
     setCurrentPage(1);
   }, [viewMode]);
 
+  // Handle notification actions
+  useEffect(() => {
+    if (notificationAction === 'outOfStock') {
+      setFilters((prev) => ({ ...prev, outOfStock: true }));
+    } else if (notificationAction === 'lowStock') {
+      setFilters((prev) => ({ ...prev, lowStock: true }));
+    }
+  }, [notificationAction]);
+
   const handleChange = (
     key: keyof StockTableFilters,
     value: boolean | string,
@@ -82,6 +92,9 @@ export const StockTable = () => {
 
     if (filters.lowStock) {
       activeFilters.push(t("stock.lowStock"));
+    }
+    if (filters.outOfStock) {
+      activeFilters.push(t("stock.outOfStock", "Out of Stock"));
     }
     if (filters.bestSelling) {
       activeFilters.push(t("stock.bestSelling"));
@@ -107,6 +120,7 @@ export const StockTable = () => {
   const getActiveFilterCount = () => {
     let count = 0;
     if (filters.lowStock) count++;
+    if (filters.outOfStock) count++;
     if (filters.bestSelling) count++;
     if (filters.worstSelling) count++;
     if (filters.noBarcode) count++;
@@ -116,7 +130,7 @@ export const StockTable = () => {
 
   // Helper function to toggle a filter
   const toggleFilter = (
-    filterKey: "lowStock" | "bestSelling" | "worstSelling" | "noBarcode",
+    filterKey: "lowStock" | "outOfStock" | "bestSelling" | "worstSelling" | "noBarcode",
   ) => {
     const newFilters = {
       ...filters,
@@ -142,6 +156,8 @@ export const StockTable = () => {
 
     if (filterName === t("stock.lowStock")) {
       newFilters.lowStock = false;
+    } else if (filterName === t("stock.outOfStock", "Out of Stock")) {
+      newFilters.outOfStock = false;
     } else if (filterName === t("stock.bestSelling")) {
       newFilters.bestSelling = false;
     } else if (filterName === t("stock.worstSelling")) {
@@ -211,7 +227,7 @@ export const StockTable = () => {
     }
   };
 
-  // Filter products based on search input, category, low stock, and barcode
+  // Filter products based on search input, category, low stock, out of stock, and barcode
   const filteredList = products.filter((product) => {
     const search = filters.search.toLowerCase();
     const matchesSearch =
@@ -220,11 +236,12 @@ export const StockTable = () => {
     const matchesCategory =
       !filters.category || product.categoryName === filters.category;
     const threshold = lowStockThreshold;
-    const matchesLowStock = !filters.lowStock || product.quantity <= threshold;
+    const matchesLowStock = !filters.lowStock || (product.quantity > 0 && product.quantity <= threshold);
+    const matchesOutOfStock = !filters.outOfStock || product.quantity === 0;
     const matchesNoBarcode =
       !filters.noBarcode || !product.codebar || product.codebar.trim() === "";
     return (
-      matchesSearch && matchesCategory && matchesLowStock && matchesNoBarcode
+      matchesSearch && matchesCategory && matchesLowStock && matchesOutOfStock && matchesNoBarcode
     );
   });
 

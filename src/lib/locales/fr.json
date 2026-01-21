@@ -374,7 +374,32 @@
     "logout": "Déconnexion",
     "welcome": "Bienvenue",
     "user": "Utilisateur",
-    "welcomeToStoreManagement": "Bienvenue dans la Gestion de Magasin"
+    "welcomeToStoreManagement": "Bienvenue dans la Gestion de Magasin",
+    "notifications": "Notifications",
+    "noNotifications": "Aucune notification",
+    "clickToView": "Cliquez pour voir"
+  },
+  "notifications": {
+    "oneProductOutOfStock": "1 produit en rupture de stock",
+    "productsOutOfStock": "{{count}} produits en rupture de stock",
+    "oneProductLowStock": "1 produit en stock faible",
+    "productsLowStock": "{{count}} produits en stock faible",
+    "oneOverdueCredit": "1 paiement crédit en retard",
+    "overdueCredits": "{{count}} paiements crédit en retard",
+    "oneOverdueVersement": "1 paiement versement en retard",
+    "overdueVersements": "{{count}} paiements versement en retard",
+    "oneCreditDueSoon": "1 paiement crédit à échéance proche",
+    "creditsDueSoon": "{{count}} paiements crédit à échéance proche",
+    "oneVersementDueSoon": "1 paiement versement à échéance proche",
+    "versementsDueSoon": "{{count}} paiements versement à échéance proche",
+    "oneOverdueBill": "1 facture en retard",
+    "overdueBills": "{{count}} factures en retard",
+    "oneBillDueSoon": "1 facture à échéance proche",
+    "billsDueSoon": "{{count}} factures à échéance proche",
+    "oneOverdueService": "1 service en retard",
+    "overdueServices": "{{count}} services en retard",
+    "oneServiceDueSoon": "1 service à échéance proche",
+    "servicesDueSoon": "{{count}} services à échéance proche"
   },
   "userBadge": {
     "admin": "Admin",

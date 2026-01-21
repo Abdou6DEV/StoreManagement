@@ -21,6 +21,7 @@ import {
   Wrench,
   Info,
   Calculator,
+  Bell,
 } from "lucide-react";
 import { ThemeToggleButton } from "./themeToggleButton";
 import { FullscreenToggleButton } from "./fullscreenToggleButton";
@@ -29,12 +30,17 @@ import { UserBadge } from "./userBadge";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../contexts/authContext";
+import { useNotifications } from "../hooks/useNotifications";
+import { useNavigate } from "react-router-dom";
 
 export default function Navigation() {
   const location = useLocation();
+  const navigate = useNavigate();
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const { t, i18n } = useTranslation();
   const { user, logout, loading } = useAuth();
+  const { notifications, totalCount } = useNotifications();
 
   const isCashierPage = location.pathname.startsWith("/cashier");
   const isRTL = i18n.language === "ar";
@@ -144,12 +150,12 @@ export default function Navigation() {
     );
   }
   return (
-    <div className="w-full">
-      {/* Header Container with enhanced styling */}
-      <div className="flex items-center justify-between rounded-2xl border border-border/50 px-6 h-20 bg-gradient-to-r from-card/90 via-card/95 to-card/90 backdrop-blur-md shadow-xl">
+    <div className="w-full px-4 pt-4">
+      {/* Header Container - Floating Card Style */}
+      <div className="flex items-center justify-between rounded-xl border border-border bg-card shadow-md px-8 h-20 hover:shadow-lg transition-shadow duration-300">
         <UserBadge size="md" className="h-16" />
         {/* === Dynamic Page Title === */}
-        <h1 className="text-3xl font-bold flex items-center gap-3 py-6 bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
+        <h1 className="text-3xl font-bold flex items-center gap-3 py-6">
           {location.pathname === "/" ? (
             <>
               <Home className="w-8 h-8 text-primary" />
@@ -180,8 +186,79 @@ export default function Navigation() {
           )}
         </h1>
 
-        {/* === Settings Dropdown === */}
+        {/* === Notifications and Settings === */}
         <div className="flex items-center gap-4">
+          {/* Notifications Dropdown */}
+          <DropdownMenu onOpenChange={setNotificationsOpen}>
+            <DropdownMenuTrigger asChild>
+              <button className="relative rounded-xl outline-none ring-0 hover:bg-primary/10 transition-all duration-300 p-2 group">
+                <Bell
+                  className={`w-5 h-5 transition-all duration-300 group-hover:scale-110 ${
+                    notificationsOpen ? "scale-110" : ""
+                  }`}
+                />
+                {totalCount > 0 && (
+                  <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
+                    {totalCount > 99 ? "99+" : totalCount}
+                  </span>
+                )}
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              className={`mx-4 my-0 min-w-80 w-max max-w-md max-h-96 overflow-y-auto p-0 ${isRTL ? "text-right" : ""}`}
+            >
+              <DropdownMenuLabel className="font-semibold text-md px-4 pt-3 pb-2">
+                {t("navigation.notifications", "Notifications")}
+                {totalCount > 0 && (
+                  <span className="ml-2 text-xs text-muted-foreground">
+                    ({totalCount})
+                  </span>
+                )}
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator className="mx-0" />
+              {notifications.length === 0 ? (
+                <DropdownMenuItem disabled className="text-muted-foreground">
+                  {t("navigation.noNotifications", "No notifications")}
+                </DropdownMenuItem>
+              ) : (
+                notifications.map((notification) => {
+                  const Icon = notification.icon;
+                  const countColor = notification.importance === 'high'
+                    ? 'text-red-600 dark:text-red-400'
+                    : 'text-orange-600 dark:text-orange-400';
+                  
+                  return (
+                    <DropdownMenuItem
+                      key={notification.id}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setNotificationsOpen(false);
+                        // Navigate with state to trigger filters
+                        navigate(notification.path, {
+                          state: { notificationAction: notification.action },
+                        });
+                      }}
+                      className={`cursor-pointer py-3 px-4 hover:bg-muted/50 focus:bg-muted/50 transition-colors ${isRTL ? "flex-row-reverse" : ""}`}
+                    >
+                      <div className="flex items-center gap-3 w-full">
+                        <Icon className={`w-10 h-10 flex-shrink-0 ${notification.iconColor}`} />
+                        <span className="text-sm font-medium text-foreground flex-1">
+                          {notification.message.split(/(\d+)/).map((part, i) => {
+                            if (/^\d+$/.test(part)) {
+                              return <span key={i} className={`${countColor} font-semibold`}>{part}</span>;
+                            }
+                            return <span key={i}>{part}</span>;
+                          })}
+                        </span>
+                      </div>
+                    </DropdownMenuItem>
+                  );
+                })
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Settings Dropdown */}
           <DropdownMenu onOpenChange={setDropdownOpen}>
             <DropdownMenuTrigger asChild>
               <button className="rounded-xl outline-none ring-0 hover:bg-primary/10 transition-all duration-300 p-2 group">

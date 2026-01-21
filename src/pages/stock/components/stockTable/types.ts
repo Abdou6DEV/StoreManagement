@@ -2,6 +2,7 @@ import type { ProductWithSales } from "../../../../types";
 
 export interface StockTableFilters {
   lowStock: boolean;
+  outOfStock: boolean;
   bestSelling: boolean;
   worstSelling: boolean;
   noBarcode: boolean;
@@ -41,7 +42,7 @@ export interface FiltersProps {
   ) => void;
   onItemsPerPageChange: (size: number) => void;
   onToggleFilter: (
-    filterKey: "lowStock" | "bestSelling" | "worstSelling" | "noBarcode",
+    filterKey: "lowStock" | "outOfStock" | "bestSelling" | "worstSelling" | "noBarcode",
   ) => void;
   onRemoveFilter: (filterName: string) => void;
   getActiveFilterCount: () => number;

@@ -681,7 +681,32 @@
     "logout": "Logout",
     "welcome": "Welcome",
     "user": "User",
-    "welcomeToStoreManagement": "Welcome to Store Management"
+    "welcomeToStoreManagement": "Welcome to Store Management",
+    "notifications": "Notifications",
+    "noNotifications": "No notifications",
+    "clickToView": "Click to view"
+  },
+  "notifications": {
+    "oneProductOutOfStock": "1 product is out of stock",
+    "productsOutOfStock": "{{count}} products are out of stock",
+    "oneProductLowStock": "1 product is low on stock",
+    "productsLowStock": "{{count}} products are low on stock",
+    "oneOverdueCredit": "1 overdue credit payment",
+    "overdueCredits": "{{count}} overdue credit payments",
+    "oneOverdueVersement": "1 overdue versement payment",
+    "overdueVersements": "{{count}} overdue versement payments",
+    "oneCreditDueSoon": "1 credit payment due soon",
+    "creditsDueSoon": "{{count}} credit payments due soon",
+    "oneVersementDueSoon": "1 versement payment due soon",
+    "versementsDueSoon": "{{count}} versement payments due soon",
+    "oneOverdueBill": "1 overdue bill",
+    "overdueBills": "{{count}} overdue bills",
+    "oneBillDueSoon": "1 bill due soon",
+    "billsDueSoon": "{{count}} bills due soon",
+    "oneOverdueService": "1 overdue service",
+    "overdueServices": "{{count}} overdue services",
+    "oneServiceDueSoon": "1 service due soon",
+    "servicesDueSoon": "{{count}} services due soon"
   },
   "userBadge": {
     "admin": "Admin",
