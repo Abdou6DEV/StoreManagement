@@ -20,6 +20,7 @@ import { useState, useRef, useEffect } from "react";
 import { cn } from "../utils";
 import { useAuth } from "../contexts/authContext";
 import { useLowStock } from "../contexts/lowStockContext";
+import { useOutOfStock } from "../contexts/outOfStockContext";
 import { useOverduePayments } from "../contexts/overduePaymentsContext";
 import { useDueSoonPayments } from "../contexts/dueSoonPaymentsContext";
 import { useOverdueBills } from "../contexts/overdueBillsContext";
@@ -94,6 +95,7 @@ export default function Sidebar() {
   const { t } = useTranslation();
   const { logout, isAdmin, canAccessPage } = useAuth();
   const { unseenLowStockCount } = useLowStock();
+  const { unseenOutOfStockCount } = useOutOfStock();
   const { unseenOverdueCreditsCount, unseenOverdueVersementsCount } = useOverduePayments();
   const { unseenDueSoonCreditsCount, unseenDueSoonVersementsCount } = useDueSoonPayments();
   const { unseenOverdueBillsCount } = useOverdueBills();
@@ -108,24 +110,31 @@ export default function Sidebar() {
   const [isDisabled, setIsDisabled] = useState(false);
   const [enableBadge, setEnableBadge] = useState(false); // Start as false to prevent flash
   const [badgeLoaded, setBadgeLoaded] = useState(false);
+  const [enableOutOfStockBadge, setEnableOutOfStockBadge] = useState(false); // Start as false to prevent flash
+  const [outOfStockBadgeLoaded, setOutOfStockBadgeLoaded] = useState(false);
   const [showOverdueBadge, setShowOverdueBadge] = useState(true); // Start with overdue badge
   const [showOverdueBillsBadge, setShowOverdueBillsBadge] = useState(true); // Start with overdue bills badge
   const [showOverdueServicesBadge, setShowOverdueServicesBadge] = useState(true); // Start with overdue services badge
+  const [showOutOfStockBadge, setShowOutOfStockBadge] = useState(true); // Start with out of stock badge
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const textTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const badgeCycleRef = useRef<NodeJS.Timeout | null>(null);
   const billsBadgeCycleRef = useRef<NodeJS.Timeout | null>(null);
   const servicesBadgeCycleRef = useRef<NodeJS.Timeout | null>(null);
+  const stockBadgeCycleRef = useRef<NodeJS.Timeout | null>(null);
 
   // Load badge setting and listen for changes
   useEffect(() => {
     const loadBadgeSetting = () => {
-      window.api.database.options
-        .get("enableLowStockBadge")
-        .then((val) => {
-          setEnableBadge(val !== "false"); // Default to true if not set
-          setBadgeLoaded(true); // Mark as loaded
-        });
+      Promise.all([
+        window.api.database.options.get("enableLowStockBadge"),
+        window.api.database.options.get("enableOutOfStockBadge"),
+      ]).then(([lowStockVal, outOfStockVal]) => {
+        setEnableBadge(lowStockVal !== "false"); // Default to true if not set
+        setBadgeLoaded(true); // Mark as loaded
+        setEnableOutOfStockBadge(outOfStockVal !== "false"); // Default to true if not set
+        setOutOfStockBadgeLoaded(true); // Mark as loaded
+      });
     };
 
     // Load initial setting
@@ -230,6 +239,37 @@ export default function Sidebar() {
     }
   }, [unseenOverdueServicesCount, unseenDueSoonServicesCount]);
 
+  // Cycling badge logic for stock - alternate between out of stock and low stock every 10 seconds
+  useEffect(() => {
+    const hasOutOfStock = (unseenOutOfStockCount > 0 && enableOutOfStockBadge && outOfStockBadgeLoaded);
+    const hasLowStock = (unseenLowStockCount > 0 && enableBadge && badgeLoaded);
+    
+    // Only cycle if both badges exist
+    if (hasOutOfStock && hasLowStock) {
+      // Clear any existing cycle
+      if (stockBadgeCycleRef.current) {
+        clearInterval(stockBadgeCycleRef.current);
+      }
+      
+      // Start cycling every 10 seconds
+      stockBadgeCycleRef.current = setInterval(() => {
+        setShowOutOfStockBadge(prev => !prev);
+      }, 10000);
+      
+      return () => {
+        if (stockBadgeCycleRef.current) {
+          clearInterval(stockBadgeCycleRef.current);
+        }
+      };
+    } else {
+      // If only one type exists, show that one and stop cycling
+      setShowOutOfStockBadge(hasOutOfStock);
+      if (stockBadgeCycleRef.current) {
+        clearInterval(stockBadgeCycleRef.current);
+      }
+    }
+  }, [unseenOutOfStockCount, unseenLowStockCount, enableBadge, badgeLoaded, enableOutOfStockBadge, outOfStockBadgeLoaded]);
+
   // Filter menu items based on user permissions
   const filteredMenuItems = menuItems.filter((item) => {
     if (item.key === "title") {
@@ -315,8 +355,25 @@ export default function Sidebar() {
           >
             <div className="relative">
               <item.icon className={`${item.color}`} />
-              {item.key === "stock" && unseenLowStockCount > 0 && enableBadge && badgeLoaded && (
-                <BadgeNotification count={unseenLowStockCount} />
+              {item.key === "stock" && ((unseenLowStockCount > 0 && enableBadge && badgeLoaded) || (unseenOutOfStockCount > 0 && enableOutOfStockBadge && outOfStockBadgeLoaded)) && (
+                <>
+                  {/* Out of Stock Badge (Red) - Show when cycling to out of stock or when only out of stock exists */}
+                  {showOutOfStockBadge && unseenOutOfStockCount > 0 && enableOutOfStockBadge && outOfStockBadgeLoaded && (
+                    <BadgeNotification 
+                      count={unseenOutOfStockCount} 
+                      variant="red"
+                      className="transition-all duration-500 ease-in-out"
+                    />
+                  )}
+                  {/* Low Stock Badge (Orange) - Show when cycling to low stock or when only low stock exists */}
+                  {!showOutOfStockBadge && unseenLowStockCount > 0 && enableBadge && badgeLoaded && (
+                    <BadgeNotification 
+                      count={unseenLowStockCount} 
+                      variant="orange"
+                      className="transition-all duration-500 ease-in-out"
+                    />
+                  )}
+                </>
               )}
               {item.key === "cashier" && completedServicesCount > 0 && enableCompletedServicesBadge && (
                 <BadgeNotification count={completedServicesCount} variant="green" />

@@ -54,6 +54,7 @@ export async function getOption(key: string): Promise<string | null> {
       'language': 'en',
       'enableOverdueServicesBadge': 'true',
       'enableLowStockBadge': 'true',
+      'enableOutOfStockBadge': 'true',
       'enableDueSoonServicesBadge': 'true'
     };
     return defaults[key] || null;

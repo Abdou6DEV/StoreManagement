@@ -15,6 +15,7 @@ import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../lib/contexts/authContext";
 import { useLowStock } from "../../lib/contexts/lowStockContext";
+import { useOutOfStock } from "../../lib/contexts/outOfStockContext";
 import { useOverduePayments } from "../../lib/contexts/overduePaymentsContext";
 import { useDueSoonPayments } from "../../lib/contexts/dueSoonPaymentsContext";
 import { useOverdueBills } from "../../lib/contexts/overdueBillsContext";
@@ -30,6 +31,7 @@ export default function MainMenu() {
   const { t } = useTranslation();
   const { isAdmin, canAccessPage } = useAuth();
   const { unseenLowStockCount } = useLowStock();
+  const { unseenOutOfStockCount } = useOutOfStock();
   const { unseenOverdueCreditsCount, unseenOverdueVersementsCount } = useOverduePayments();
   const { unseenDueSoonCreditsCount, unseenDueSoonVersementsCount } = useDueSoonPayments();
   const { unseenOverdueBillsCount } = useOverdueBills();
@@ -40,6 +42,8 @@ export default function MainMenu() {
   const { state: updateState } = useUpdateContext();
   const [enableBadge, setEnableBadge] = useState(false); // Start as false to prevent flash
   const [badgeLoaded, setBadgeLoaded] = useState(false);
+  const [enableOutOfStockBadge, setEnableOutOfStockBadge] = useState(false); // Start as false to prevent flash
+  const [outOfStockBadgeLoaded, setOutOfStockBadgeLoaded] = useState(false);
   const [shouldAnimate, setShouldAnimate] = useState(false);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
 
@@ -189,14 +193,35 @@ export default function MainMenu() {
               <h2 className="font-bold capitalize text-lg transition-colors duration-300 group-hover:text-primary">
                 {t(`mainMenu.${item.key}`)}
               </h2>
-              {item.key === "stock" && unseenLowStockCount > 0 && enableBadge && badgeLoaded && (
-                <div className={`absolute top-0 right-0 rtl:right-auto rtl:left-0 transition-transform duration-500 ease-out ${shouldAnimate ? 'translate-y-0' : '-translate-y-[150%]'}`}>
-                  <div className="bg-red-600 text-white text-xs font-bold px-3 py-1 border-2 border-red-600 shadow-lg transition-all duration-300 ease-in-out h-[20px] flex items-center justify-center min-w-[60px] rounded-tr-lg rounded-bl-lg rtl:rounded-tl-lg rtl:rounded-br-lg rtl:rounded-tr-none rtl:rounded-bl-none">
-                    {unseenLowStockCount === 1 
-                      ? t("mainMenu.oneProductOutOfStock", "1 product is out of stock")
-                      : t("mainMenu.productsOutOfStock", "{{count}} products are out of stock", { count: unseenLowStockCount })
-                    }
-                  </div>
+              {/* Stock Badges - Positioned inside container with border sharing */}
+              {item.key === "stock" && ((unseenLowStockCount > 0 && enableBadge && badgeLoaded) || (unseenOutOfStockCount > 0 && enableOutOfStockBadge && outOfStockBadgeLoaded)) && (
+                <div className={`absolute top-0 right-0 rtl:right-auto rtl:left-0 flex flex-col transition-transform duration-500 ease-out ${shouldAnimate ? 'translate-y-0' : '-translate-y-[150%]'}`}>
+                   {/* Out of Stock Badge (Red) */}
+                   {unseenOutOfStockCount > 0 && enableOutOfStockBadge && outOfStockBadgeLoaded && (
+                     <div className={`bg-red-600 text-white text-xs font-bold px-3 py-1 border-2 border-red-600 shadow-lg transition-all duration-300 ease-in-out h-[20px] flex items-center justify-center min-w-[60px] ${
+                       (unseenLowStockCount > 0 && enableBadge && badgeLoaded) 
+                         ? 'rounded-tr-lg rtl:rounded-tl-lg rtl:rounded-tr-none' // Only top-right rounded when low stock exists below
+                         : 'rounded-tr-lg rounded-bl-lg rtl:rounded-tl-lg rtl:rounded-br-lg rtl:rounded-tr-none rtl:rounded-bl-none' // Top-right rounded, bottom-left rounded when only out of stock exists
+                     }`}>
+                       {unseenOutOfStockCount === 1 
+                         ? t("mainMenu.oneProductOutOfStock", "1 product is out of stock")
+                         : t("mainMenu.productsOutOfStock", "{{count}} products are out of stock", { count: unseenOutOfStockCount })
+                       }
+                     </div>
+                   )}
+                   {/* Low Stock Badge (Orange) */}
+                   {unseenLowStockCount > 0 && enableBadge && badgeLoaded && (
+                     <div className={`bg-orange-500 text-white text-xs font-bold px-3 py-1 border-2 border-orange-500 shadow-lg transition-all duration-300 ease-in-out h-[20px] flex items-center justify-center min-w-[60px] ${
+                       (unseenOutOfStockCount > 0 && enableOutOfStockBadge && outOfStockBadgeLoaded)
+                         ? 'rounded-bl-lg rtl:rounded-br-lg rtl:rounded-bl-none' // Only bottom-left rounded when out of stock exists above
+                         : 'rounded-tr-lg rounded-bl-lg rtl:rounded-tl-lg rtl:rounded-br-lg rtl:rounded-tr-none rtl:rounded-bl-none' // Top-right rounded, bottom-left rounded when only low stock exists
+                     }`}>
+                       {unseenLowStockCount === 1 
+                         ? t("mainMenu.oneProductLowStock", "1 product is low on stock")
+                         : t("mainMenu.productsLowStock", "{{count}} products are low on stock", { count: unseenLowStockCount })
+                       }
+                     </div>
+                   )}
                 </div>
               )}
               {item.key === "cashier" && completedServicesCount > 0 && (

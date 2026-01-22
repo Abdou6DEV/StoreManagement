@@ -12,6 +12,7 @@ export const StockRow = React.memo(function StockRow({
   handleDeleteProduct,
   handleViewProductInfo,
   isNewlyLowStock = false,
+  isNewlyOutOfStock = false,
 }: StockRowProps) {
   const { t } = useTranslation();
   const [actualProfit, setActualProfit] = useState<number>(0);
@@ -67,8 +68,10 @@ export const StockRow = React.memo(function StockRow({
     <tr 
       key={product.id} 
       className={`h-[48px] hover:bg-muted/40 transition ${
-        isNewlyLowStock 
-          ? "bg-red-50 dark:bg-red-950/20 border-l-4 border-l-red-500" 
+        isNewlyOutOfStock
+          ? "bg-red-50 dark:bg-red-950/20 border-l-4 border-l-red-500"
+          : isNewlyLowStock 
+          ? "bg-orange-50 dark:bg-orange-950/20 border-l-4 border-l-orange-500" 
           : ""
       }`}
     >

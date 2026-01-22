@@ -65,10 +65,11 @@ export const LowStockProvider: React.FC<LowStockProviderProps> = ({ children }) 
   }, []);
 
   // Calculate unseen low stock count - SIMPLE AND INSTANT
+  // Exclude products with quantity = 0 (those are out of stock, not low stock)
   const unseenLowStockCount = React.useMemo(() => {
     if (!products.length || lowStockThreshold === 0) return 0;
     
-    const lowStockProducts = products.filter(product => product.quantity <= lowStockThreshold);
+    const lowStockProducts = products.filter(product => product.quantity > 0 && product.quantity <= lowStockThreshold);
     const unseenProducts = lowStockProducts.filter(product => !seenLowStockProducts.has(product.id));
     
     return unseenProducts.length;
@@ -78,7 +79,7 @@ export const LowStockProvider: React.FC<LowStockProviderProps> = ({ children }) 
   const markLowStockAsSeen = () => {
     if (!products.length || lowStockThreshold === 0) return;
 
-    const lowStockProducts = products.filter(product => product.quantity <= lowStockThreshold);
+    const lowStockProducts = products.filter(product => product.quantity > 0 && product.quantity <= lowStockThreshold);
     const newSeenProducts = new Set(seenLowStockProducts);
     
     lowStockProducts.forEach(product => {

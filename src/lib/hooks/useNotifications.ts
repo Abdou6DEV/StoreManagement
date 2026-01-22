@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useLowStock } from '../contexts/lowStockContext';
+import { useOutOfStock } from '../contexts/outOfStockContext';
 import { useStock } from '../contexts/stockContext';
 import { useOverduePayments } from '../contexts/overduePaymentsContext';
 import { useOverdueBills } from '../contexts/overdueBillsContext';
@@ -30,8 +31,8 @@ export interface Notification {
 
 export function useNotifications() {
   const { t } = useTranslation();
-  const { products } = useStock();
   const { unseenLowStockCount } = useLowStock();
+  const { unseenOutOfStockCount } = useOutOfStock();
   const { unseenOverdueCreditsCount, unseenOverdueVersementsCount } = useOverduePayments();
   const { unseenOverdueBillsCount } = useOverdueBills();
   const { unseenDueSoonCreditsCount, unseenDueSoonVersementsCount } = useDueSoonPayments();
@@ -39,33 +40,28 @@ export function useNotifications() {
   const { unseenOverdueServicesCount } = useOverdueServices();
   const { unseenDueSoonServicesCount } = useDueSoonServices();
 
-  // Calculate out of stock count
-  const outOfStockCount = useMemo(() => {
-    return products.filter((p: { quantity: number }) => p.quantity === 0).length;
-  }, [products]);
-
   // Aggregate all notifications
   const notifications = useMemo<Notification[]>(() => {
     const notifs: Notification[] = [];
 
-    // Out of stock products
-    if (outOfStockCount > 0) {
+    // Out of stock products (Red - High priority) - only show unseen products
+    if (unseenOutOfStockCount > 0) {
       notifs.push({
         id: 'outOfStock',
         type: 'outOfStock',
-        count: outOfStockCount,
-        message: outOfStockCount === 1 
+        count: unseenOutOfStockCount,
+        message: unseenOutOfStockCount === 1 
           ? t('notifications.oneProductOutOfStock', '1 product is out of stock')
-          : t('notifications.productsOutOfStock', '{{count}} products are out of stock', { count: outOfStockCount }),
+          : t('notifications.productsOutOfStock', '{{count}} products are out of stock', { count: unseenOutOfStockCount }),
         path: '/stock',
         action: 'outOfStock',
         icon: PackageSearch,
-        iconColor: 'text-green-600',
+        iconColor: 'text-red-600',
         importance: 'high', // Red background
       });
     }
 
-    // Low stock products
+    // Low stock products (Orange - Medium priority)
     if (unseenLowStockCount > 0) {
       notifs.push({
         id: 'lowStock',
@@ -77,7 +73,7 @@ export function useNotifications() {
         path: '/stock',
         action: 'lowStock',
         icon: PackageSearch,
-        iconColor: 'text-green-600',
+        iconColor: 'text-orange-600',
         importance: 'medium', // Orange background
       });
     }
@@ -221,7 +217,7 @@ export function useNotifications() {
     return notifs;
   }, [
     t,
-    outOfStockCount,
+    unseenOutOfStockCount,
     unseenLowStockCount,
     unseenOverdueCreditsCount,
     unseenOverdueVersementsCount,

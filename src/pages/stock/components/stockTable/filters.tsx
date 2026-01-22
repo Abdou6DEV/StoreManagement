@@ -32,6 +32,7 @@ import {
   handleTooltipLeave,
 } from "../../../../lib/utils/tooltipUtils";
 import { useLowStock } from "../../../../lib/contexts/lowStockContext";
+import { useOutOfStock } from "../../../../lib/contexts/outOfStockContext";
 import { BadgeNotification } from "../../../../lib/components/badgeNotification";
 import type { FiltersProps } from "./types";
 
@@ -49,19 +50,25 @@ export const Filters = ({
 }: FiltersProps) => {
   const { t } = useTranslation();
   const { unseenLowStockCount } = useLowStock();
+  const { unseenOutOfStockCount } = useOutOfStock();
   const [categorySearch, setCategorySearch] = useState("");
   const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
   const [enableBadge, setEnableBadge] = useState(false); // Start as false to prevent flash
   const [badgeLoaded, setBadgeLoaded] = useState(false);
+  const [enableOutOfStockBadge, setEnableOutOfStockBadge] = useState(false); // Start as false to prevent flash
+  const [outOfStockBadgeLoaded, setOutOfStockBadgeLoaded] = useState(false);
 
   useEffect(() => {
     const loadBadgeSetting = () => {
-      window.api.database.options
-        .get("enableLowStockBadge")
-        .then((val) => {
-          setEnableBadge(val !== "false"); // Default to true if not set
-          setBadgeLoaded(true); // Mark as loaded
-        });
+      Promise.all([
+        window.api.database.options.get("enableLowStockBadge"),
+        window.api.database.options.get("enableOutOfStockBadge"),
+      ]).then(([lowStockVal, outOfStockVal]) => {
+        setEnableBadge(lowStockVal !== "false"); // Default to true if not set
+        setBadgeLoaded(true); // Mark as loaded
+        setEnableOutOfStockBadge(outOfStockVal !== "false"); // Default to true if not set
+        setOutOfStockBadgeLoaded(true); // Mark as loaded
+      });
     };
 
     // Load initial setting
@@ -259,8 +266,15 @@ export const Filters = ({
                   t("stock.filters", "Filters")
                 )}
                 <ChevronDown className="ml-auto w-4 h-4" />
-                {unseenLowStockCount > 0 && enableBadge && badgeLoaded && (
-                  <BadgeNotification count={unseenLowStockCount} />
+                {((unseenLowStockCount > 0 && enableBadge && badgeLoaded) || (unseenOutOfStockCount > 0 && enableOutOfStockBadge && outOfStockBadgeLoaded)) && (
+                  <div className="absolute -top-1 -right-1 flex gap-1">
+                    {unseenOutOfStockCount > 0 && enableOutOfStockBadge && outOfStockBadgeLoaded && (
+                      <BadgeNotification count={unseenOutOfStockCount} variant="red" />
+                    )}
+                    {unseenLowStockCount > 0 && enableBadge && badgeLoaded && (
+                      <BadgeNotification count={unseenLowStockCount} variant="orange" />
+                    )}
+                  </div>
                 )}
               </Button>
               <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-full z-[9999] whitespace-nowrap px-2 py-1 rounded bg-black text-white dark:bg-white dark:text-black text-xs opacity-0 scale-95 transition-all duration-200">
@@ -292,17 +306,17 @@ export const Filters = ({
                     className={cn(
                       "w-4 h-4",
                       filters.lowStock
-                        ? "text-yellow-600"
+                        ? "text-orange-600"
                         : "text-muted-foreground",
                     )}
                   />
                   <span className="flex-1">{t("stock.lowStock")}</span>
                   <div className="flex items-center gap-2">
                     {unseenLowStockCount > 0 && enableBadge && badgeLoaded && (
-                      <BadgeNotification count={unseenLowStockCount} />
+                      <BadgeNotification count={unseenLowStockCount} variant="orange" />
                     )}
                     {filters.lowStock && (
-                      <Check className="w-4 h-4 text-yellow-600" />
+                      <Check className="w-4 h-4 text-orange-600" />
                     )}
                   </div>
                 </div>
@@ -310,7 +324,7 @@ export const Filters = ({
               <Tooltip
                 content={t(
                   "stock.outOfStockTooltip",
-                  "Show products that are out of stock (quantity = 0)",
+                  "Show only products that are out of stock",
                 )}
                 position="left"
               >
@@ -328,9 +342,14 @@ export const Filters = ({
                     )}
                   />
                   <span className="flex-1">{t("stock.outOfStock", "Out of Stock")}</span>
-                  {filters.outOfStock && (
-                    <Check className="w-4 h-4 text-red-600" />
-                  )}
+                  <div className="flex items-center gap-2">
+                    {unseenOutOfStockCount > 0 && enableOutOfStockBadge && outOfStockBadgeLoaded && (
+                      <BadgeNotification count={unseenOutOfStockCount} variant="red" />
+                    )}
+                    {filters.outOfStock && (
+                      <Check className="w-4 h-4 text-red-600" />
+                    )}
+                  </div>
                 </div>
               </Tooltip>
               <Tooltip

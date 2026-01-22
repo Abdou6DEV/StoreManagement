@@ -198,62 +198,74 @@ export default function Navigation() {
                   }`}
                 />
                 {totalCount > 0 && (
-                  <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
+                  <span className={`absolute -top-1 -right-1 flex h-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white ${
+                    totalCount > 99 ? "px-1.5 min-w-[28px]" : "w-5"
+                  }`}>
                     {totalCount > 99 ? "99+" : totalCount}
                   </span>
                 )}
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent
-              className={`mx-4 my-0 min-w-80 w-max max-w-md max-h-96 overflow-y-auto p-0 ${isRTL ? "text-right" : ""}`}
+              className={`ml-0 mr-20 my-0 min-w-80 w-max max-w-md max-h-96 overflow-y-auto p-1 ${isRTL ? "text-right" : ""}`}
             >
-              <DropdownMenuLabel className="font-semibold text-md px-4 pt-3 pb-2">
+              <DropdownMenuLabel className="font-semibold text-sm px-3 py-2.5">
                 {t("navigation.notifications", "Notifications")}
                 {totalCount > 0 && (
-                  <span className="ml-2 text-xs text-muted-foreground">
+                  <span className="ml-2 text-xs text-muted-foreground font-normal">
                     ({totalCount})
                   </span>
                 )}
               </DropdownMenuLabel>
-              <DropdownMenuSeparator className="mx-0" />
+              <DropdownMenuSeparator />
               {notifications.length === 0 ? (
-                <DropdownMenuItem disabled className="text-muted-foreground">
-                  {t("navigation.noNotifications", "No notifications")}
-                </DropdownMenuItem>
+                <div className="px-3 py-8 text-center">
+                  <p className="text-sm text-muted-foreground">
+                    {t("navigation.noNotifications", "No notifications")}
+                  </p>
+                </div>
               ) : (
-                notifications.map((notification) => {
-                  const Icon = notification.icon;
-                  const countColor = notification.importance === 'high'
-                    ? 'text-red-600 dark:text-red-400'
-                    : 'text-orange-600 dark:text-orange-400';
-                  
-                  return (
-                    <DropdownMenuItem
-                      key={notification.id}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        setNotificationsOpen(false);
-                        // Navigate with state to trigger filters
-                        navigate(notification.path, {
-                          state: { notificationAction: notification.action },
-                        });
-                      }}
-                      className={`cursor-pointer py-3 px-4 hover:bg-muted/50 focus:bg-muted/50 transition-colors ${isRTL ? "flex-row-reverse" : ""}`}
-                    >
-                      <div className="flex items-center gap-3 w-full">
-                        <Icon className={`w-10 h-10 flex-shrink-0 ${notification.iconColor}`} />
-                        <span className="text-sm font-medium text-foreground flex-1">
-                          {notification.message.split(/(\d+)/).map((part, i) => {
-                            if (/^\d+$/.test(part)) {
-                              return <span key={i} className={`${countColor} font-semibold`}>{part}</span>;
-                            }
-                            return <span key={i}>{part}</span>;
-                          })}
-                        </span>
-                      </div>
-                    </DropdownMenuItem>
-                  );
-                })
+                <div className="py-1">
+                  {notifications.map((notification, index) => {
+                    const Icon = notification.icon;
+                    const isHighPriority = notification.importance === 'high';
+                    const countColor = isHighPriority
+                      ? 'text-red-600 dark:text-red-400'
+                      : 'text-orange-600 dark:text-orange-400';
+                    const iconBgColor = isHighPriority
+                      ? 'bg-red-100 dark:bg-red-900/20'
+                      : 'bg-orange-100 dark:bg-orange-900/20';
+                    
+                    return (
+                      <DropdownMenuItem
+                        key={notification.id}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setNotificationsOpen(false);
+                          // Navigate with state to trigger filters
+                          navigate(notification.path, {
+                            state: { notificationAction: notification.action },
+                          });
+                        }}
+                        className={`cursor-pointer px-3 py-2.5 my-0.5 rounded-sm ${isRTL ? "flex-row-reverse" : ""}`}
+                      >
+                        <div className={`flex items-center gap-3 w-full ${isRTL ? "flex-row-reverse" : ""}`}>
+                          <div className={`p-1.5 rounded-md ${iconBgColor} flex-shrink-0`}>
+                            <Icon className={`w-4 h-4 ${notification.iconColor}`} />
+                          </div>
+                          <span className="text-sm flex-1 leading-relaxed">
+                            {notification.message.split(/(\d+)/).map((part, i) => {
+                              if (/^\d+$/.test(part)) {
+                                return <span key={i} className={`${countColor} font-semibold`}>{part}</span>;
+                              }
+                              return <span key={i}>{part}</span>;
+                            })}
+                          </span>
+                        </div>
+                      </DropdownMenuItem>
+                    );
+                  })}
+                </div>
               )}
             </DropdownMenuContent>
           </DropdownMenu>

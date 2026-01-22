@@ -5,6 +5,7 @@ import ScrollToTop from "../lib/components/scrollToTop";
 import Sidebar from "../lib/components/sidebar";
 import { StockProvider } from "../lib/contexts/stockContext";
 import { LowStockProvider } from "../lib/contexts/lowStockContext";
+import { OutOfStockProvider } from "../lib/contexts/outOfStockContext";
 import { OverduePaymentsProvider } from "../lib/contexts/overduePaymentsContext";
 import { DueSoonPaymentsProvider } from "../lib/contexts/dueSoonPaymentsContext";
 import { OverdueBillsProvider } from "../lib/contexts/overdueBillsContext";
@@ -118,6 +119,7 @@ export default function App() {
                   <ProtectedRoute>
                     <StockProvider>
                       <LowStockProvider>
+                        <OutOfStockProvider>
                         <OverduePaymentsProvider>
                           <DueSoonPaymentsProvider>
                           <OverdueBillsProvider>
@@ -232,6 +234,7 @@ export default function App() {
                         </OverdueBillsProvider>
                         </DueSoonPaymentsProvider>
                       </OverduePaymentsProvider>
+                      </OutOfStockProvider>
                     </LowStockProvider>
                   </StockProvider>
                 </ProtectedRoute>

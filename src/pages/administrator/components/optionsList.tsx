@@ -26,6 +26,7 @@ export const OptionsList: React.FC = () => {
   const { refreshCompletedServicesCount } = useCompletedServices();
   const [lowStock, setLowStock] = useState(0);
   const [enableLowStockBadge, setEnableLowStockBadge] = useState(true);
+  const [enableOutOfStockBadge, setEnableOutOfStockBadge] = useState(true);
   const [enableOverduePaymentsBadge, setEnableOverduePaymentsBadge] = useState(true);
   const [enableDueSoonPaymentsBadge, setEnableDueSoonPaymentsBadge] = useState(true);
   const [enableOverdueBillsBadge, setEnableOverdueBillsBadge] = useState(true);
@@ -48,6 +49,7 @@ export const OptionsList: React.FC = () => {
     Promise.all([
       window.api.database.options.get("lowStockThreshold"),
       window.api.database.options.get("enableLowStockBadge"),
+      window.api.database.options.get("enableOutOfStockBadge"),
       window.api.database.options.get("enableOverduePaymentsBadge"),
       window.api.database.options.get("enableDueSoonPaymentsBadge"),
       window.api.database.options.get("enableOverdueBillsBadge"),
@@ -63,9 +65,10 @@ export const OptionsList: React.FC = () => {
       window.api.database.options.get("categoriesRequiringInfo"),
       window.api.database.categories.getAll(),
     ])
-      .then(([lowStockVal, enableBadgeVal, enableOverdueVal, enableDueSoonVal, enableOverdueBillsVal, enableDueSoonBillsVal, enableOverdueServicesVal, enableDueSoonServicesVal, dueSoonThresholdVal, dueSoonBillsThresholdVal, dueSoonServicesThresholdVal, cashierSalesHistoryDaysVal, enableCashierHistoryVal, enableCompletedServicesBadgeVal, categoriesRequiringInfoVal, categoriesData]) => {
+      .then(([lowStockVal, enableBadgeVal, enableOutOfStockBadgeVal, enableOverdueVal, enableDueSoonVal, enableOverdueBillsVal, enableDueSoonBillsVal, enableOverdueServicesVal, enableDueSoonServicesVal, dueSoonThresholdVal, dueSoonBillsThresholdVal, dueSoonServicesThresholdVal, cashierSalesHistoryDaysVal, enableCashierHistoryVal, enableCompletedServicesBadgeVal, categoriesRequiringInfoVal, categoriesData]) => {
         setLowStock(lowStockVal ? Number(lowStockVal) : 0);
         setEnableLowStockBadge(enableBadgeVal !== "false"); // Default to true if not set
+        setEnableOutOfStockBadge(enableOutOfStockBadgeVal !== "false"); // Default to true if not set
         setEnableOverduePaymentsBadge(enableOverdueVal !== "false"); // Default to true if not set
         setEnableDueSoonPaymentsBadge(enableDueSoonVal !== "false"); // Default to true if not set
         setEnableOverdueBillsBadge(enableOverdueBillsVal !== "false"); // Default to true if not set
@@ -95,6 +98,7 @@ export const OptionsList: React.FC = () => {
       await Promise.all([
         window.api.database.options.set("lowStockThreshold", String(lowStock)),
         window.api.database.options.set("enableLowStockBadge", String(enableLowStockBadge)),
+        window.api.database.options.set("enableOutOfStockBadge", String(enableOutOfStockBadge)),
         window.api.database.options.set("enableOverduePaymentsBadge", String(enableOverduePaymentsBadge)),
         window.api.database.options.set("enableDueSoonPaymentsBadge", String(enableDueSoonPaymentsBadge)),
         window.api.database.options.set("enableOverdueBillsBadge", String(enableOverdueBillsBadge)),
@@ -176,8 +180,8 @@ export const OptionsList: React.FC = () => {
 
           {/* Low Stock Notification Badge Setting */}
           <div className="flex flex-col md:flex-row items-start md:items-center gap-4 bg-muted/40 border border-border rounded-lg p-6">
-              <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center">
-                <Bell className="w-6 h-6 text-red-600" />
+              <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg flex items-center justify-center">
+                <Bell className="w-6 h-6 text-orange-600" />
             </div>
             <div className="flex-1 w-full">
               <label
@@ -199,6 +203,39 @@ export const OptionsList: React.FC = () => {
                 />
                 <span className="text-sm font-medium">
                   {enableLowStockBadge 
+                    ? t("admin.enabled", "Enabled") 
+                    : t("admin.disabled", "Disabled")
+                  }
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Out of Stock Notification Badge Setting */}
+          <div className="flex flex-col md:flex-row items-start md:items-center gap-4 bg-muted/40 border border-border rounded-lg p-6">
+              <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center">
+                <Bell className="w-6 h-6 text-red-600" />
+            </div>
+            <div className="flex-1 w-full">
+              <label
+                className="block text-base font-semibold mb-2"
+                htmlFor="enableOutOfStockBadge"
+              >
+                {t("admin.enableOutOfStockBadge", "Enable Out of Stock Notification Badge")}
+              </label>
+              <p className="text-sm text-muted-foreground mb-3">
+                {t("admin.enableOutOfStockBadgeDesc", "Show notification badge on stock menu item when products are out of stock")}
+              </p>
+              <div className="flex items-center gap-3">
+                <Switch
+                  id="enableOutOfStockBadge"
+                  checked={enableOutOfStockBadge}
+                  onCheckedChange={setEnableOutOfStockBadge}
+                  disabled={loading || saving}
+                  aria-label={t("admin.enableOutOfStockBadge", "Enable Out of Stock Notification Badge")}
+                />
+                <span className="text-sm font-medium">
+                  {enableOutOfStockBadge 
                     ? t("admin.enabled", "Enabled") 
                     : t("admin.disabled", "Disabled")
                   }

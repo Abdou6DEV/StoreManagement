@@ -29,6 +29,7 @@ export interface StockRowProps {
   handleDeleteProduct: (id: string) => void;
   handleViewProductInfo: (id: string) => void;
   isNewlyLowStock?: boolean;
+  isNewlyOutOfStock?: boolean;
 }
 
 export interface FiltersProps {

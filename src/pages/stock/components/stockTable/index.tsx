@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import { Package, Folder } from "lucide-react";
 import { useStock } from "../../../../lib/contexts/stockContext";
 import { useLowStock } from "../../../../lib/contexts/lowStockContext";
+import { useOutOfStock } from "../../../../lib/contexts/outOfStockContext";
 import { useToast } from "../../../../lib/contexts/toastContext";
 import { ConfirmModal } from "../../../../lib/components/modal";
 import { ProductInfoModal } from "../productInfoModal";
@@ -24,6 +25,7 @@ export const StockTable = ({ notificationAction }: { notificationAction?: string
   const { t } = useTranslation();
   const { categories, products, refetchProducts } = useStock();
   const { unseenLowStockCount, lowStockThreshold: contextThreshold, markLowStockAsSeen } = useLowStock();
+  const { markOutOfStockAsSeen } = useOutOfStock();
   const { showToast } = useToast();
 
   const [filters, setFilters] = useState<StockTableFilters>({
@@ -53,6 +55,7 @@ export const StockTable = ({ notificationAction }: { notificationAction?: string
   const [viewMode, setViewMode] = useState<"product" | "category">("product");
   const [cleanupModalOpen, setCleanupModalOpen] = useState(false);
   const hasMarkedAsSeenRef = useRef(false);
+  const hasMarkedOutOfStockAsSeenRef = useRef(false);
 
   useEffect(() => {
     window.api.database.options
@@ -247,10 +250,11 @@ export const StockTable = ({ notificationAction }: { notificationAction?: string
 
   // Identify newly low stock products (products that are low stock but haven't been seen)
   // We need to capture this BEFORE the filter is applied to avoid timing issues
+  // Exclude products with quantity = 0 (those are out of stock, not low stock)
   const getNewlyLowStockProductIds = () => {
     if (!products.length || lowStockThreshold === 0) return new Set();
     
-    const lowStockProducts = products.filter(product => product.quantity <= lowStockThreshold);
+    const lowStockProducts = products.filter(product => product.quantity > 0 && product.quantity <= lowStockThreshold);
     const seenProducts = JSON.parse(localStorage.getItem('seenLowStockProducts') || '[]');
     const seenSet = new Set(seenProducts);
     
@@ -261,8 +265,24 @@ export const StockTable = ({ notificationAction }: { notificationAction?: string
     return new Set(newlyLowStockIds);
   };
 
-  // Capture newly low stock products BEFORE any filtering/sorting happens
+  // Identify newly out of stock products (products that are out of stock but haven't been seen)
+  const getNewlyOutOfStockProductIds = () => {
+    if (!products.length) return new Set();
+    
+    const outOfStockProducts = products.filter(product => product.quantity === 0);
+    const seenProducts = JSON.parse(localStorage.getItem('seenOutOfStockProducts') || '[]');
+    const seenSet = new Set(seenProducts);
+    
+    const newlyOutOfStockIds = outOfStockProducts
+      .filter(product => !seenSet.has(product.id))
+      .map(product => product.id);
+    
+    return new Set(newlyOutOfStockIds);
+  };
+
+  // Capture newly low stock and out of stock products BEFORE any filtering/sorting happens
   const newlyLowStockProductIds = getNewlyLowStockProductIds();
+  const newlyOutOfStockProductIds = getNewlyOutOfStockProductIds();
 
   // Mark low stock products as seen when the low stock filter is deactivated
   useEffect(() => {
@@ -290,6 +310,32 @@ export const StockTable = ({ notificationAction }: { notificationAction?: string
     }
   }, [filters.lowStock, newlyLowStockProductIds.size]);
 
+  // Mark out of stock products as seen when the out of stock filter is deactivated
+  useEffect(() => {
+    // When out of stock filter is turned OFF, mark all current out of stock products as seen
+    if (!filters.outOfStock && hasMarkedOutOfStockAsSeenRef.current) {
+      markOutOfStockAsSeen();
+      hasMarkedOutOfStockAsSeenRef.current = false;
+    }
+  }, [filters.outOfStock, markOutOfStockAsSeen]);
+
+  // Mark out of stock products as seen when component unmounts (user navigates away)
+  useEffect(() => {
+    return () => {
+      // When component unmounts, mark all current out of stock products as seen
+      if (filters.outOfStock && hasMarkedOutOfStockAsSeenRef.current) {
+        markOutOfStockAsSeen();
+      }
+    };
+  }, [filters.outOfStock, markOutOfStockAsSeen]);
+
+  // Track when we start viewing out of stock products
+  useEffect(() => {
+    if (filters.outOfStock && newlyOutOfStockProductIds.size > 0) {
+      hasMarkedOutOfStockAsSeenRef.current = true;
+    }
+  }, [filters.outOfStock, newlyOutOfStockProductIds.size]);
+
   // Sort the filtered list
   const sortedList = [...filteredList];
   
@@ -304,6 +350,19 @@ export const StockTable = ({ notificationAction }: { notificationAction?: string
       const soldA = a.totalSold ?? 0;
       const soldB = b.totalSold ?? 0;
       return soldA - soldB;
+    });
+  } else if (filters.outOfStock) {
+    // When out of stock filter is active, prioritize newly out of stock products first
+    sortedList.sort((a, b) => {
+      const aIsNewlyOutOfStock = newlyOutOfStockProductIds.has(a.id);
+      const bIsNewlyOutOfStock = newlyOutOfStockProductIds.has(b.id);
+      
+      // Newly out of stock products come first
+      if (aIsNewlyOutOfStock && !bIsNewlyOutOfStock) return -1;
+      if (!aIsNewlyOutOfStock && bIsNewlyOutOfStock) return 1;
+      
+      // Within each group, sort by name alphabetically
+      return a.name.localeCompare(b.name);
     });
   } else if (filters.lowStock) {
     // When low stock filter is active, prioritize newly low stock products first
@@ -442,6 +501,7 @@ export const StockTable = ({ notificationAction }: { notificationAction?: string
                     handleDeleteProduct={handleDeleteProduct}
                     handleViewProductInfo={handleViewProductInfo}
                     isNewlyLowStock={newlyLowStockProductIds.has(product.id)}
+                    isNewlyOutOfStock={newlyOutOfStockProductIds.has(product.id)}
                   />
                 ))}
               </tbody>
