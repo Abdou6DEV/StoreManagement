@@ -64,14 +64,16 @@ export function UserBadge({
         icon: Crown,
         color: "text-amber-500",
         bgColor: "bg-gradient-to-br from-amber-400 to-orange-500",
+        borderColor: "border-amber-300/50 hover:border-amber-400/70",
         text: t("userBadge.admin", "Admin")
       };
     }
-    
+
     return {
       icon: UserCheck,
       color: "text-green-500",
       bgColor: "bg-gradient-to-br from-green-400 to-green-600",
+      borderColor: "border-green-300/50 hover:border-green-400/70",
       text: t("userBadge.user", "User")
     };
   };
@@ -81,46 +83,62 @@ export function UserBadge({
 
   return (
     <div className={cn(
-      "group flex items-center gap-3 bg-gradient-to-r from-card/80 via-card/90 to-card/80 backdrop-blur-md border border-border/50 rounded-2xl shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 overflow-hidden relative",
-      config.container,
+      "group relative overflow-hidden rounded-full bg-gradient-to-r from-card via-card/95 to-card border transition-all duration-500 hover:shadow-lg",
+      roleInfo.borderColor,
       className
     )}>
-      {/* Animated background gradient */}
-      <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-      
-      {/* Avatar with enhanced styling */}
-      <div className={cn(
-        "relative rounded-full flex items-center justify-center font-bold text-white shadow-lg ring-2 ring-white/20 group-hover:ring-white/30 transition-all duration-300",
-        config.avatar,
-        roleInfo.bgColor
-      )}>
-        {/* Avatar glow effect */}
-        <div className="absolute inset-0 rounded-full bg-gradient-to-t from-transparent to-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-        <span className="relative z-10">{initials}</span>
+
+      {/* Background Pattern */}
+      <div className="absolute inset-0 opacity-5 group-hover:opacity-10 transition-opacity duration-500">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-transparent to-primary/20"></div>
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(0,0,0,0.1),transparent_50%)]"></div>
       </div>
 
-      {/* User Info */}
-      <div className="flex flex-col min-w-0 relative z-10">
-        {/* Username */}
+      <div className={cn(
+        "relative flex items-center gap-3 backdrop-blur-sm",
+        config.container
+      )}>
+
+        {/* Role Icon */}
         <div className={cn(
-          "font-bold text-foreground truncate group-hover:text-primary transition-colors duration-300",
-          config.text
+          "flex items-center justify-center rounded-full transition-all duration-300 group-hover:scale-110",
+          roleInfo.bgColor,
+          roleInfo.borderColor
         )}>
-          {user.username || t("userBadge.user", "User")}
+          <roleInfo.icon className={cn("transition-all duration-300", config.icon, roleInfo.color)} />
         </div>
 
-        {/* Role Badge with enhanced styling */}
-        {showRole && (
+        {/* User Info */}
+        <div className="flex flex-col min-w-0 flex-1">
           <div className={cn(
-            "flex items-center gap-1.5 font-semibold px-2 py-1 rounded-full bg-gradient-to-r from-muted/50 to-muted/30 border border-border/30 group-hover:border-primary/30 transition-all duration-300",
-            config.role,
-            roleInfo.color
+            "font-semibold text-foreground truncate leading-tight",
+            config.text
           )}>
-            <roleInfo.icon className={cn(config.icon, "group-hover:scale-110 transition-transform duration-300")} />
-            <span className="group-hover:text-primary transition-colors duration-300">{roleInfo.text}</span>
+            {user.username || t("userBadge.user", "User")}
           </div>
-        )}
+          {showRole && (
+            <div className={cn(
+              "text-xs font-medium uppercase tracking-wider opacity-75",
+              roleInfo.color
+            )}>
+              {roleInfo.text}
+            </div>
+          )}
+        </div>
+
+        {/* Avatar Initials */}
+        <div className={cn(
+          "flex items-center justify-center rounded-full font-bold text-foreground border-2 transition-all duration-300 group-hover:scale-110",
+          "w-8 h-8 text-sm",
+          roleInfo.bgColor,
+          roleInfo.borderColor
+        )}>
+          <span>{initials}</span>
+        </div>
       </div>
+
+      {/* Animated Border */}
+      <div className="absolute inset-0 rounded-full border-2 border-transparent bg-gradient-to-r from-primary/20 via-transparent to-primary/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-pulse"></div>
     </div>
   );
 }

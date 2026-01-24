@@ -243,6 +243,13 @@ export default function Navigation() {
                         onClick={(e) => {
                           e.preventDefault();
                           setNotificationsOpen(false);
+
+                          // If we're already on the target page, don't navigate
+                          if (location.pathname === notification.path) {
+                            // Page is already active, just close the dropdown
+                            return;
+                          }
+
                           // Navigate with state to trigger filters
                           navigate(notification.path, {
                             state: { notificationAction: notification.action },
