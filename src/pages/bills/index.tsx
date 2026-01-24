@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { Button } from "../../lib/components/button";
 import { FileText, ChevronDown, Check, CreditCard, DollarSign, Search } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -44,10 +45,12 @@ interface Bill {
 }
 
 export default function BillsPage() {
+  const location = useLocation();
   const { t } = useTranslation();
   const { showToast } = useToast();
   const { unseenOverdueBillsCount, markOverdueBillsAsSeen } = useOverdueBills();
   const { unseenDueSoonBillsCount, markDueSoonBillsAsSeen, dueSoonThresholdDays } = useDueSoonBills();
+  const notificationAction = (location.state as { notificationAction?: string } | null)?.notificationAction;
   const [openPanel, setOpenPanel] = useState<"add" | null>(null);
   const [showAllPayments, setShowAllPayments] = useState(false);
   const [allPayments, setAllPayments] = useState<{
@@ -156,42 +159,39 @@ export default function BillsPage() {
       return new Date(a.nextBillDate).getTime() - new Date(b.nextBillDate).getTime();
     });
 
-  // Calculate newly overdue/due soon bills for highlighting
+  // Calculate newly overdue/due soon bills for highlighting (always, not just when filtered)
+  useEffect(() => {
+    // Always calculate highlighting for all bills
+    const overdueBills = allBills.filter(bill => {
+      if (bill.duration === "NO_NEXT") return false;
+      const today = new Date();
+      const dueDate = new Date(bill.nextBillDate);
+      return dueDate < today && !seenOverdueBills.has(bill.id);
+    });
+    
+    const dueSoonBills = allBills.filter(bill => {
+      if (bill.duration === "NO_NEXT") return false;
+      const today = new Date();
+      const dueDate = new Date(bill.nextBillDate);
+      const diffTime = dueDate.getTime() - today.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      return diffDays <= dueSoonThresholdDays && diffDays >= 0 && !seenDueSoonBills.has(bill.id);
+    });
+    
+    setNewlyOverdueBillsIds(new Set(overdueBills.map(bill => bill.id)));
+    setNewlyDueSoonBillsIds(new Set(dueSoonBills.map(bill => bill.id)));
+  }, [allBills, seenOverdueBills, seenDueSoonBills, dueSoonThresholdDays]);
+
+  // Handle marking as seen when viewing filtered tables
   useEffect(() => {
     if (dueFilter === "overdue") {
       // Mark that we're viewing the overdue table
       setIsViewingOverdueTable(true);
       setIsViewingDueSoonTable(false);
-      
-      // Only calculate highlighting if we weren't already viewing the overdue table
-      if (!isViewingOverdueTable) {
-        const overdueBills = allBills.filter(bill => {
-          if (bill.duration === "NO_NEXT") return false;
-          const today = new Date();
-          const dueDate = new Date(bill.nextBillDate);
-          return dueDate < today && !seenOverdueBills.has(bill.id);
-        });
-        setNewlyOverdueBillsIds(new Set(overdueBills.map(bill => bill.id)));
-        setNewlyDueSoonBillsIds(new Set());
-      }
     } else if (dueFilter === "dueSoon") {
       // Mark that we're viewing the due soon table
       setIsViewingDueSoonTable(true);
       setIsViewingOverdueTable(false);
-      
-      // Only calculate highlighting if we weren't already viewing the due soon table
-      if (!isViewingDueSoonTable) {
-        const dueSoonBills = allBills.filter(bill => {
-          if (bill.duration === "NO_NEXT") return false;
-          const today = new Date();
-          const dueDate = new Date(bill.nextBillDate);
-          const diffTime = dueDate.getTime() - today.getTime();
-          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-          return diffDays <= dueSoonThresholdDays && diffDays >= 0 && !seenDueSoonBills.has(bill.id);
-        });
-        setNewlyDueSoonBillsIds(new Set(dueSoonBills.map(bill => bill.id)));
-        setNewlyOverdueBillsIds(new Set());
-      }
     } else {
       // Mark as seen when filter is changed away from overdue or due soon
       if (isViewingOverdueTable) {
@@ -202,12 +202,8 @@ export default function BillsPage() {
         markDueSoonBillsAsSeen();
         setIsViewingDueSoonTable(false);
       }
-      
-      // Clear highlighting when filter is not overdue or due soon
-      setNewlyOverdueBillsIds(new Set());
-      setNewlyDueSoonBillsIds(new Set());
     }
-  }, [dueFilter, allBills, seenOverdueBills, seenDueSoonBills, dueSoonThresholdDays, isViewingOverdueTable, isViewingDueSoonTable]);
+  }, [dueFilter, isViewingOverdueTable, isViewingDueSoonTable, markOverdueBillsAsSeen, markDueSoonBillsAsSeen]);
 
 
   // Reset pagination when filters change
@@ -301,6 +297,15 @@ export default function BillsPage() {
     loadBills();
     loadBillTypes();
   }, []);
+
+  // Handle notification actions
+  useEffect(() => {
+    if (notificationAction === 'overdue') {
+      setDueFilter('overdue');
+    } else if (notificationAction === 'dueSoon') {
+      setDueFilter('dueSoon');
+    }
+  }, [notificationAction]);
 
   const handleEdit = () => {
     // This will be handled by the EditBillModal in the BillsTable component

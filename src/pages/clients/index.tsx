@@ -9,6 +9,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { useLocation } from "react-router-dom";
 import ClientsTable from "./components/clientsTable";
 import EditClientDialog from "./components/editClientModal";
 import AddClientForm from "./components/addClientForm";
@@ -53,10 +54,12 @@ import { Tooltip } from "../../lib/components/tooltip";
 import ClientSearchInput from "./components/clientSearchInput";
 
 export default function Clients() {
+  const location = useLocation();
   const { t } = useTranslation();
   const { showToast } = useToast();
   const { unseenOverdueCreditsCount, unseenOverdueVersementsCount, markOverdueCreditsAsSeen, markOverdueVersementsAsSeen } = useOverduePayments();
   const { unseenDueSoonCreditsCount, unseenDueSoonVersementsCount, markDueSoonCreditsAsSeen, markDueSoonVersementsAsSeen } = useDueSoonPayments();
+  const notificationAction = (location.state as { notificationAction?: string } | null)?.notificationAction;
   const [clients, setClients] = useState<ClientWithTotalPurchases[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -161,6 +164,18 @@ export default function Clients() {
     fetchSuppliers();
     fetchPayments();
   }, []);
+
+  // Handle notification actions - switch to payments view
+  useEffect(() => {
+    if (notificationAction && (
+      notificationAction === 'overdueCredits' ||
+      notificationAction === 'overdueVersements' ||
+      notificationAction === 'dueSoonCredits' ||
+      notificationAction === 'dueSoonVersements'
+    )) {
+      setViewMode("payments");
+    }
+  }, [notificationAction]);
 
   useEffect(() => {
     if (
@@ -738,6 +753,7 @@ export default function Clients() {
               onClientsRefresh={fetchClients}
               initialClientFilter={pendingPaymentsFilter}
               onConsumeInitialClientFilter={() => setPendingPaymentsFilter(null)}
+              notificationAction={notificationAction}
             />
           )}
         </div>

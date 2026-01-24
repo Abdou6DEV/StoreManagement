@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { Wrench, BarChart3, FileText } from "lucide-react";
 import { Button } from "../../lib/components/button";
 import { Tooltip } from "../../lib/components/tooltip";
@@ -32,9 +33,11 @@ interface ServiceAppointment {
 }
 
 export default function ServicesPage() {
+  const location = useLocation();
   const { t } = useTranslation();
   const { unseenOverdueServicesCount, markOverdueServicesAsSeen } = useOverdueServices();
   const { unseenDueSoonServicesCount, markDueSoonServicesAsSeen, dueSoonThresholdDays } = useDueSoonServices();
+  const notificationAction = (location.state as { notificationAction?: string } | null)?.notificationAction;
   const [openPanel, setOpenPanel] = useState<"add" | null>(null);
   const [showServiceTypes, setShowServiceTypes] = useState(false);
   const [services, setServices] = useState<ServiceAppointment[]>([]);
@@ -108,6 +111,15 @@ export default function ServicesPage() {
     initializeDefaultDates();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Only run once on mount
+
+  // Handle notification actions
+  useEffect(() => {
+    if (notificationAction === 'overdue') {
+      setFilters((prev) => ({ ...prev, dateFilter: 'overdue' }));
+    } else if (notificationAction === 'dueSoon') {
+      setFilters((prev) => ({ ...prev, dateFilter: 'dueSoon' }));
+    }
+  }, [notificationAction]);
 
   // Load services and service types
   useEffect(() => {

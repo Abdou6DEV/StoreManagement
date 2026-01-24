@@ -73,6 +73,7 @@ interface AllPaymentsViewProps {
 
   initialClientFilter?: { id: string; name: string } | null;
   onConsumeInitialClientFilter?: () => void;
+  notificationAction?: string;
 
 }
 
@@ -94,6 +95,7 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
 
   initialClientFilter,
   onConsumeInitialClientFilter,
+  notificationAction,
 
 }) => {
 
@@ -385,7 +387,24 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
 
   }, []);
 
-
+  // Handle notification actions
+  useEffect(() => {
+    if (notificationAction === 'overdueCredits' || notificationAction === 'overdueVersements') {
+      setDateFilter('overdue');
+      if (notificationAction === 'overdueCredits') {
+        setTypeFilter('CREDIT');
+      } else if (notificationAction === 'overdueVersements') {
+        setTypeFilter('VERSEMENT');
+      }
+    } else if (notificationAction === 'dueSoonCredits' || notificationAction === 'dueSoonVersements') {
+      setDateFilter('dueSoon');
+      if (notificationAction === 'dueSoonCredits') {
+        setTypeFilter('CREDIT');
+      } else if (notificationAction === 'dueSoonVersements') {
+        setTypeFilter('VERSEMENT');
+      }
+    }
+  }, [notificationAction]);
 
   // Pagination state for credits
 

@@ -22,6 +22,7 @@ import {
   Info,
   Calculator,
   Bell,
+  ExternalLink,
 } from "lucide-react";
 import { ThemeToggleButton } from "./themeToggleButton";
 import { FullscreenToggleButton } from "./fullscreenToggleButton";
@@ -209,10 +210,10 @@ export default function Navigation() {
             <DropdownMenuContent
               className={`ml-0 mr-20 my-0 min-w-80 w-max max-w-md max-h-96 overflow-y-auto p-1 ${isRTL ? "text-right" : ""}`}
             >
-              <DropdownMenuLabel className="font-semibold text-sm px-3 py-2.5">
+              <DropdownMenuLabel className="font-semibold text-base px-3 py-2.5">
                 {t("navigation.notifications", "Notifications")}
                 {totalCount > 0 && (
-                  <span className="ml-2 text-xs text-muted-foreground font-normal">
+                  <span className="ml-2 text-sm text-muted-foreground font-normal">
                     ({totalCount})
                   </span>
                 )}
@@ -220,7 +221,7 @@ export default function Navigation() {
               <DropdownMenuSeparator />
               {notifications.length === 0 ? (
                 <div className="px-3 py-8 text-center">
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-base text-muted-foreground">
                     {t("navigation.noNotifications", "No notifications")}
                   </p>
                 </div>
@@ -247,13 +248,13 @@ export default function Navigation() {
                             state: { notificationAction: notification.action },
                           });
                         }}
-                        className={`cursor-pointer px-3 py-2.5 my-0.5 rounded-sm ${isRTL ? "flex-row-reverse" : ""}`}
+                        className={`cursor-pointer px-3 py-2.5 my-0.5 rounded-sm group ${isRTL ? "flex-row-reverse" : ""}`}
                       >
                         <div className={`flex items-center gap-3 w-full ${isRTL ? "flex-row-reverse" : ""}`}>
                           <div className={`p-1.5 rounded-md ${iconBgColor} flex-shrink-0`}>
                             <Icon className={`w-4 h-4 ${notification.iconColor}`} />
                           </div>
-                          <span className="text-sm flex-1 leading-relaxed">
+                          <span className="text-base flex-1 leading-relaxed">
                             {notification.message.split(/(\d+)/).map((part, i) => {
                               if (/^\d+$/.test(part)) {
                                 return <span key={i} className={`${countColor} font-semibold`}>{part}</span>;
@@ -261,6 +262,7 @@ export default function Navigation() {
                               return <span key={i}>{part}</span>;
                             })}
                           </span>
+                          <ExternalLink className={`w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex-shrink-0 ${isRTL ? "mr-auto" : "ml-auto"}`} />
                         </div>
                       </DropdownMenuItem>
                     );

@@ -49,12 +49,15 @@ export default function MainMenu() {
 
   useEffect(() => {
     const loadBadgeSetting = () => {
-      window.api.database.options
-        .get("enableLowStockBadge")
-        .then((val) => {
-          setEnableBadge(val !== "false"); // Default to true if not set
-          setBadgeLoaded(true); // Mark as loaded
-        });
+      Promise.all([
+        window.api.database.options.get("enableLowStockBadge"),
+        window.api.database.options.get("enableOutOfStockBadge"),
+      ]).then(([lowStockVal, outOfStockVal]) => {
+        setEnableBadge(lowStockVal !== "false"); // Default to true if not set
+        setBadgeLoaded(true); // Mark as loaded
+        setEnableOutOfStockBadge(outOfStockVal !== "false"); // Default to true if not set
+        setOutOfStockBadgeLoaded(true); // Mark as loaded
+      });
     };
 
     // Load initial setting
