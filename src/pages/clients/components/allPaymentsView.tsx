@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 
 import { Button } from "../../../lib/components/button";
 
@@ -934,190 +934,130 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
 
 
 
-  // Calculate newly overdue payment IDs when overdue filter is applied
+  // Calculate unseen payment IDs for highlighting when filters are active
 
   useEffect(() => {
 
     if (dateFilter === "overdue") {
 
       // Mark that we're viewing the overdue table
-
       setIsViewingOverdueTable(true);
 
-      
+      // Capture the current seen state to prevent external changes from affecting highlighting
+      initialSeenOverdueCreditsRef.current = new Set(seenOverdueCredits);
+      initialSeenOverdueVersementsRef.current = new Set(seenOverdueVersements);
 
-      // Only set highlighting if we weren't already viewing the overdue table
+      // Get ALL overdue credits that are truly unseen at this moment
+      const overdueCredits = payments.filter(payment =>
+        payment.type === "CREDIT" &&
+        !payment.paidDate &&
+        isOverdue(payment.dueDate) &&
+        !initialSeenOverdueCreditsRef.current.has(payment.id)
+      );
 
-      // This prevents the highlighting from disappearing when the effect re-runs
+      // Get ALL overdue versements that are truly unseen at this moment
+      const overdueVersements = payments.filter(payment =>
+        payment.type === "VERSEMENT" &&
+        !payment.paidDate &&
+        isOverdue(payment.dueDate) &&
+        !initialSeenOverdueVersementsRef.current.has(payment.id)
+      );
 
-      if (!isViewingOverdueTable) {
+      // Highlight ALL truly unseen overdue payments
+      setNewlyOverdueCreditsIds(new Set(overdueCredits.map(p => p.id)));
+      setNewlyOverdueVersementsIds(new Set(overdueVersements.map(p => p.id)));
 
-        // Get current overdue credits that are truly unseen
-
-        const overdueCredits = payments.filter(payment => 
-
-          payment.type === "CREDIT" && 
-
-          !payment.paidDate && 
-
-          isOverdue(payment.dueDate) &&
-
-          !seenOverdueCredits.has(payment.id)
-
-        );
-
-        
-
-        // Get current overdue versements that are truly unseen
-
-        const overdueVersements = payments.filter(payment => 
-
-          payment.type === "VERSEMENT" && 
-
-          !payment.paidDate && 
-
-          isOverdue(payment.dueDate) &&
-
-          !seenOverdueVersements.has(payment.id)
-
-        );
-
-
-
-        // Only highlight truly unseen overdue payments
-
-        setNewlyOverdueCreditsIds(new Set(overdueCredits.map(p => p.id)));
-
-        setNewlyOverdueVersementsIds(new Set(overdueVersements.map(p => p.id)));
-
-      }
-
-      // Don't mark as seen automatically - let user see the highlighting
+      // Clear due soon highlighting
+      setNewlyDueSoonCreditsIds(new Set());
+      setNewlyDueSoonVersementsIds(new Set());
 
     } else if (dateFilter === "dueSoon") {
 
       // Mark that we're viewing the due soon table
-
       setIsViewingDueSoonTable(true);
 
-      
+      // Capture the current seen state to prevent external changes from affecting highlighting
+      initialSeenDueSoonCreditsRef.current = new Set(seenDueSoonCredits);
+      initialSeenDueSoonVersementsRef.current = new Set(seenDueSoonVersements);
 
-      // Only set highlighting if we weren't already viewing the due soon table
+      // Get ALL due soon credits that are truly unseen at this moment
+      const dueSoonCredits = payments.filter(payment =>
+        payment.type === "CREDIT" &&
+        !payment.paidDate &&
+        isDueSoon(payment.dueDate, dueSoonThresholdDays) &&
+        !initialSeenDueSoonCreditsRef.current.has(payment.id)
+      );
 
-      // This prevents the highlighting from disappearing when the effect re-runs
+      // Get ALL due soon versements that are truly unseen at this moment
+      const dueSoonVersements = payments.filter(payment =>
+        payment.type === "VERSEMENT" &&
+        !payment.paidDate &&
+        isDueSoon(payment.dueDate, dueSoonThresholdDays) &&
+        !initialSeenDueSoonVersementsRef.current.has(payment.id)
+      );
 
-      if (!isViewingDueSoonTable) {
+      // Highlight ALL truly unseen due soon payments
+      setNewlyDueSoonCreditsIds(new Set(dueSoonCredits.map(p => p.id)));
+      setNewlyDueSoonVersementsIds(new Set(dueSoonVersements.map(p => p.id)));
 
-        // Get current due soon credits that are truly unseen
-
-        const dueSoonCredits = payments.filter(payment => 
-
-          payment.type === "CREDIT" && 
-
-          !payment.paidDate && 
-
-          isDueSoon(payment.dueDate, dueSoonThresholdDays) &&
-
-          !seenDueSoonCredits.has(payment.id)
-
-        );
-
-        
-
-        // Get current due soon versements that are truly unseen
-
-        const dueSoonVersements = payments.filter(payment => 
-
-          payment.type === "VERSEMENT" && 
-
-          !payment.paidDate && 
-
-          isDueSoon(payment.dueDate, dueSoonThresholdDays) &&
-
-          !seenDueSoonVersements.has(payment.id)
-
-        );
-
-
-
-        // Only highlight truly unseen due soon payments
-
-        setNewlyDueSoonCreditsIds(new Set(dueSoonCredits.map(p => p.id)));
-
-        setNewlyDueSoonVersementsIds(new Set(dueSoonVersements.map(p => p.id)));
-
-      }
-
-      // Don't mark as seen automatically - let user see the highlighting
+      // Clear overdue highlighting
+      setNewlyOverdueCreditsIds(new Set());
+      setNewlyOverdueVersementsIds(new Set());
 
     } else {
 
-      // Mark as seen when filter is changed away from overdue (only if we were viewing the table)
-
-      if (isViewingOverdueTable && (dateFilter === "all" || dateFilter === "dueSoon")) {
-
-        markOverdueCreditsAsSeen();
-
-        markOverdueVersementsAsSeen();
-
-        setIsViewingOverdueTable(false);
-
-      }
-
-      
-
-      // Mark as seen when filter is changed away from due soon (only if we were viewing the table)
-
-      if (isViewingDueSoonTable && (dateFilter === "all" || dateFilter === "overdue")) {
-
-        markDueSoonCreditsAsSeen();
-
-        markDueSoonVersementsAsSeen();
-
-        setIsViewingDueSoonTable(false);
-
-      }
-
-      
-
-      // Clear highlighting when filter is not overdue or due soon
-
+      // Clear highlighting when filter is "all" - don't mark as seen automatically
       setNewlyOverdueCreditsIds(new Set());
-
       setNewlyOverdueVersementsIds(new Set());
-
       setNewlyDueSoonCreditsIds(new Set());
-
       setNewlyDueSoonVersementsIds(new Set());
 
+      // Reset viewing states
+      setIsViewingOverdueTable(false);
+      setIsViewingDueSoonTable(false);
+
     }
 
-  }, [dateFilter, payments, seenOverdueCredits, seenOverdueVersements, seenDueSoonCredits, seenDueSoonVersements, isViewingOverdueTable, isViewingDueSoonTable]);
+  }, [dateFilter, payments, dueSoonThresholdDays]); // Removed seen* dependencies to prevent highlighting from disappearing
 
+  // Mark payments as seen when filter changes away from overdue/dueSoon
+  const prevDateFilterRef = useRef<string>('all');
 
+  // Store the initial seen state when filter is applied to prevent external changes from affecting highlighting
+  const initialSeenOverdueCreditsRef = useRef<Set<string>>(new Set());
+  const initialSeenOverdueVersementsRef = useRef<Set<string>>(new Set());
+  const initialSeenDueSoonCreditsRef = useRef<Set<string>>(new Set());
+  const initialSeenDueSoonVersementsRef = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    const prevFilter = prevDateFilterRef.current;
+
+    if (prevFilter === 'overdue' && dateFilter !== 'overdue') {
+      markOverdueCreditsAsSeen();
+      markOverdueVersementsAsSeen();
+      setIsViewingOverdueTable(false);
+    } else if (prevFilter === 'dueSoon' && dateFilter !== 'dueSoon') {
+      markDueSoonCreditsAsSeen();
+      markDueSoonVersementsAsSeen();
+      setIsViewingDueSoonTable(false);
+    }
+
+    // Update ref for next comparison
+    prevDateFilterRef.current = dateFilter;
+  }, [dateFilter, markOverdueCreditsAsSeen, markOverdueVersementsAsSeen, markDueSoonCreditsAsSeen, markDueSoonVersementsAsSeen]);
 
   // Handle back button click - mark as seen if viewing overdue or due soon table
-
   const handleBackClick = () => {
-
-    if (isViewingOverdueTable) {
-
+    // Mark currently viewed payments as seen when exiting
+    if (dateFilter === "overdue") {
       markOverdueCreditsAsSeen();
-
       markOverdueVersementsAsSeen();
-
-    }
-
-    if (isViewingDueSoonTable) {
-
+    } else if (dateFilter === "dueSoon") {
       markDueSoonCreditsAsSeen();
-
       markDueSoonVersementsAsSeen();
-
     }
 
     onBack();
-
   };
 
 
@@ -1128,19 +1068,15 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
 
     return () => {
 
-      // Only mark as seen if we were viewing the overdue table
+      // Mark currently viewed payments as seen when leaving the page
 
-      if (isViewingOverdueTable) {
+      if (dateFilter === "overdue") {
 
         markOverdueCreditsAsSeen();
 
         markOverdueVersementsAsSeen();
 
-      }
-
-      // Only mark as seen if we were viewing the due soon table
-
-      if (isViewingDueSoonTable) {
+      } else if (dateFilter === "dueSoon") {
 
         markDueSoonCreditsAsSeen();
 
@@ -1150,7 +1086,7 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
 
     };
 
-  }, [isViewingOverdueTable, isViewingDueSoonTable, markOverdueCreditsAsSeen, markOverdueVersementsAsSeen, markDueSoonCreditsAsSeen, markDueSoonVersementsAsSeen]);
+  }, [dateFilter, markOverdueCreditsAsSeen, markOverdueVersementsAsSeen, markDueSoonCreditsAsSeen, markDueSoonVersementsAsSeen]);
 
 
 

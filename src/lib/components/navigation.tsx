@@ -196,7 +196,7 @@ export default function Navigation() {
                 <Bell
                   className={`w-5 h-5 transition-all duration-300 group-hover:scale-110 ${
                     notificationsOpen ? "scale-110" : ""
-                  }`}
+                  } ${totalCount > 0 ? "bell-ring" : ""}`}
                 />
                 {totalCount > 0 && (
                   <span className={`absolute -top-1 -right-1 flex h-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white ${
