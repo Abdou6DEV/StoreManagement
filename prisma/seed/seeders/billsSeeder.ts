@@ -1,5 +1,6 @@
 import { PrismaClient, Bill } from "@prisma/client";
 import { faker } from "@faker-js/faker";
+import { generateDAPrice } from "../utils/generators";
 
 export async function seedBills(prisma: PrismaClient): Promise<Bill[]> {
   console.log("📋 Creating sample bills...");
@@ -48,58 +49,74 @@ export async function seedBills(prisma: PrismaClient): Promise<Bill[]> {
   const twoYearsAgo = new Date();
   twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
 
-  // Create only 5 bills with 100 payments total (20 payments per bill)
-  const totalBills = 5;
-  const paymentsPerBill = 20;
+  // Create 7 bills with 100 payments total
+  // 1 overdue, 1 due soon
+  const totalBills = 7;
+  const totalPayments = 100;
+  const paymentsPerBill = Math.floor(totalPayments / totalBills); // ~14 per bill
+  const remainingPayments = totalPayments - (paymentsPerBill * totalBills); // Distribute remainder
 
   for (let i = 0; i < totalBills; i++) {
     const billType = faker.helpers.arrayElement(billTypes);
-    // Generate clean integer amounts (100, 200, 360, etc.) - no decimals
-    const amount = Math.round(faker.number.int({ min: 10000, max: 500000 }) / 100) * 100; // Round to nearest 100
+    // Generate DA prices (last digit 0)
+    const amount = generateDAPrice(100, 5000); // 100-5000 DA in centimes
     const duration = faker.helpers.arrayElement(durations);
     
     // Calculate next bill date based on duration
     let nextBillDate = new Date();
-    switch (duration) {
-      case "1_MONTH":
-        nextBillDate.setMonth(nextBillDate.getMonth() + 1);
-        break;
-      case "2_MONTHS":
-        nextBillDate.setMonth(nextBillDate.getMonth() + 2);
-        break;
-      case "3_MONTHS":
-        nextBillDate.setMonth(nextBillDate.getMonth() + 3);
-        break;
-      case "4_MONTHS":
-        nextBillDate.setMonth(nextBillDate.getMonth() + 4);
-        break;
-      case "5_MONTHS":
-        nextBillDate.setMonth(nextBillDate.getMonth() + 5);
-        break;
-      case "6_MONTHS":
-        nextBillDate.setMonth(nextBillDate.getMonth() + 6);
-        break;
-      case "7_MONTHS":
-        nextBillDate.setMonth(nextBillDate.getMonth() + 7);
-        break;
-      case "8_MONTHS":
-        nextBillDate.setMonth(nextBillDate.getMonth() + 8);
-        break;
-      case "9_MONTHS":
-        nextBillDate.setMonth(nextBillDate.getMonth() + 9);
-        break;
-      case "10_MONTHS":
-        nextBillDate.setMonth(nextBillDate.getMonth() + 10);
-        break;
-      case "11_MONTHS":
-        nextBillDate.setMonth(nextBillDate.getMonth() + 11);
-        break;
-      case "ANNUALLY":
-        nextBillDate.setFullYear(nextBillDate.getFullYear() + 1);
-        break;
-      case "NO_NEXT":
-        nextBillDate = faker.date.future({ years: 1 });
-        break;
+    
+    // Set specific dates for overdue and due soon bills
+    if (i === 0) {
+      // First bill: overdue (past date)
+      nextBillDate = new Date();
+      nextBillDate.setDate(nextBillDate.getDate() - 5); // 5 days ago
+    } else if (i === 1) {
+      // Second bill: due soon (within 2 days)
+      nextBillDate = new Date();
+      nextBillDate.setDate(nextBillDate.getDate() + faker.number.int({ min: 1, max: 2 }));
+    } else {
+      // Other bills: normal dates
+      switch (duration) {
+        case "1_MONTH":
+          nextBillDate.setMonth(nextBillDate.getMonth() + 1);
+          break;
+        case "2_MONTHS":
+          nextBillDate.setMonth(nextBillDate.getMonth() + 2);
+          break;
+        case "3_MONTHS":
+          nextBillDate.setMonth(nextBillDate.getMonth() + 3);
+          break;
+        case "4_MONTHS":
+          nextBillDate.setMonth(nextBillDate.getMonth() + 4);
+          break;
+        case "5_MONTHS":
+          nextBillDate.setMonth(nextBillDate.getMonth() + 5);
+          break;
+        case "6_MONTHS":
+          nextBillDate.setMonth(nextBillDate.getMonth() + 6);
+          break;
+        case "7_MONTHS":
+          nextBillDate.setMonth(nextBillDate.getMonth() + 7);
+          break;
+        case "8_MONTHS":
+          nextBillDate.setMonth(nextBillDate.getMonth() + 8);
+          break;
+        case "9_MONTHS":
+          nextBillDate.setMonth(nextBillDate.getMonth() + 9);
+          break;
+        case "10_MONTHS":
+          nextBillDate.setMonth(nextBillDate.getMonth() + 10);
+          break;
+        case "11_MONTHS":
+          nextBillDate.setMonth(nextBillDate.getMonth() + 11);
+          break;
+        case "ANNUALLY":
+          nextBillDate.setFullYear(nextBillDate.getFullYear() + 1);
+          break;
+        case "NO_NEXT":
+          nextBillDate = faker.date.future({ years: 1 });
+          break;
+      }
     }
 
     const createdAt = faker.date.between({ from: twoYearsAgo, to: new Date() });
@@ -121,15 +138,17 @@ export async function seedBills(prisma: PrismaClient): Promise<Bill[]> {
 
     bills.push(bill);
 
-    // Create paymentsPerBill (20) payments for this bill
-    await createBillPayments(prisma, bill, twoYearsAgo, paymentsPerBill);
+    // Create payments for this bill (distribute remaining payments to first bills)
+    const currentPayments = paymentsPerBill + (i < remainingPayments ? 1 : 0);
+    await createBillPayments(prisma, bill, twoYearsAgo, currentPayments);
   }
 
   console.log(`   - ${bills.length} bills created`);
+  console.log(`   - 1 overdue bill, 1 due soon bill`);
   
   // Count total payments created
-  const totalPayments = await prisma.billPayment.count();
-  console.log(`   - ${totalPayments} bill payments created (${paymentsPerBill} per bill)`);
+  const totalPaymentsCreated = await prisma.billPayment.count();
+  console.log(`   - ${totalPaymentsCreated} bill payments created (distributed across ${totalBills} bills)`);
 
   return bills;
 }
@@ -137,11 +156,11 @@ export async function seedBills(prisma: PrismaClient): Promise<Bill[]> {
 async function createBillPayments(prisma: PrismaClient, bill: Bill, startDate: Date, paymentsPerBill: number) {
   const payments = [];
   const billAmount = bill.amount;
-  // Generate clean integer total paid amount
-  const totalPaidAmount = Math.round(faker.number.int({ 
-    min: Math.floor(billAmount * 0.3), // At least 30% paid
-    max: billAmount * 2 // Up to 200% paid (overpaid)
-  }) / 100) * 100; // Round to nearest 100
+  // Generate DA price total paid amount (last digit 0)
+  const totalPaidAmount = generateDAPrice(
+    Math.floor(billAmount / 100 * 0.3), // At least 30% paid (convert from centimes to DA)
+    Math.floor(billAmount / 100 * 2) // Up to 200% paid (convert from centimes to DA)
+  ); // Returns in centimes with last digit 0
 
   // Distribute the total paid amount across paymentsPerBill payments
   let remainingAmount = totalPaidAmount;
@@ -155,14 +174,15 @@ async function createBillPayments(prisma: PrismaClient, bill: Bill, startDate: D
     } else {
       // Random amount, but ensure we don't exceed remaining
       const maxPayment = Math.floor(remainingAmount / (paymentsPerBill - i));
-      paymentAmount = Math.round(faker.number.int({ 
-        min: Math.floor(maxPayment * 0.1), // At least 10% of max
-        max: maxPayment 
-      }) / 100) * 100; // Round to nearest 100
+      const minPayment = Math.floor(maxPayment * 0.1);
+      paymentAmount = generateDAPrice(
+        Math.max(1, Math.floor(minPayment / 100)), // Convert to DA, min 1 DA
+        Math.floor(maxPayment / 100) // Convert to DA
+      ); // Returns in centimes with last digit 0
     }
 
-    // Ensure payment amount is positive and rounded to nearest 100
-    paymentAmount = Math.max(100, Math.round(paymentAmount / 100) * 100);
+    // Ensure payment amount is positive and in DA format (last digit 0)
+    paymentAmount = Math.max(100, paymentAmount); // Min 1 DA (100 centimes)
     remainingAmount -= paymentAmount;
 
     // Generate payment date (spread over time since bill creation)

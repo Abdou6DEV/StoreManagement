@@ -1,6 +1,7 @@
 import { PrismaClient, Product } from "@prisma/client";
 import { faker } from "@faker-js/faker";
 import { manualProductTypes, manualProductNames } from "../data/index";
+import { generateDAPrice } from "../utils/generators";
 
 export async function seedSales(prisma: PrismaClient, products: Product[]) {
   console.log("🛒 Creating sample sales...");
@@ -8,8 +9,8 @@ export async function seedSales(prisma: PrismaClient, products: Product[]) {
   const clients = await prisma.client.findMany();
   const services = await prisma.service.findMany();
   const sales: any[] = [];
-  const fiveYearsAgo = new Date();
-  fiveYearsAgo.setFullYear(fiveYearsAgo.getFullYear() - 5);
+  const threeYearsAgo = new Date();
+  threeYearsAgo.setFullYear(threeYearsAgo.getFullYear() - 3);
 
   // Track all existing sale item combinations to prevent duplicates
   const existingSaleItems = await prisma.saleItem.findMany({
@@ -34,13 +35,16 @@ export async function seedSales(prisma: PrismaClient, products: Product[]) {
     }
   });
 
-  // Mobile phone shop: 10000 sales, only 1% with clients (100 sales with clients, 9900 without)
-  const totalSales = 10000;
-  const salesWithClients = 100; // 1% of 10000
+  // Mobile phone shop: 3 years of sales, 3-4 sales per day, 30% with clients
+  // 3 years = 1095 days, average 3.5 sales/day = ~3832 sales
+  const daysInThreeYears = 1095;
+  const salesPerDay = 3.5; // Average between 3-4
+  const totalSales = Math.floor(daysInThreeYears * salesPerDay); // ~3832 sales
+  const salesWithClients = Math.floor(totalSales * 0.3); // 30% with clients
   const batchSize = 500; // Larger batches for better performance
   
-  console.log(`   - Creating ${totalSales} sales in batches of ${batchSize}...`);
-  console.log(`   - ${salesWithClients} sales will have clients (1%), ${totalSales - salesWithClients} will be without clients...`);
+  console.log(`   - Creating ${totalSales} sales over 3 years (3-4 sales/day, 5-6 items/sale) in batches of ${batchSize}...`);
+  console.log(`   - ${salesWithClients} sales will have clients (30%), ${totalSales - salesWithClients} will be without clients...`);
 
   let salesWithClientsCount = 0;
 
@@ -56,7 +60,7 @@ export async function seedSales(prisma: PrismaClient, products: Product[]) {
     const productUpdates = new Map<string, number>();
 
     for (let i = 0; i < currentBatchSize; i++) {
-      // Only 1% of sales should have clients
+      // 30% of sales should have clients
       const shouldHaveClient = salesWithClientsCount < salesWithClients && 
         faker.number.float({ min: 0, max: 1 }) < (salesWithClients - salesWithClientsCount) / (totalSales - batchStart);
       
@@ -66,9 +70,9 @@ export async function seedSales(prisma: PrismaClient, products: Product[]) {
       
       if (client) salesWithClientsCount++;
 
-      const saleItemsCount = faker.number.int({ min: 1, max: 5 }); // 1-5 items per sale
+      const saleItemsCount = faker.number.int({ min: 5, max: 6 }); // 5-6 items per sale
       const saleCreatedAt = faker.date.between({
-        from: fiveYearsAgo,
+        from: threeYearsAgo,
         to: new Date(),
       });
 
@@ -99,7 +103,7 @@ export async function seedSales(prisma: PrismaClient, products: Product[]) {
     // Process each sale in the batch
     for (let i = 0; i < currentBatchSize; i++) {
       const sale = batchSales[i];
-      const saleItemsCount = faker.number.int({ min: 1, max: 5 });
+      const saleItemsCount = faker.number.int({ min: 5, max: 6 }); // 5-6 items per sale
 
       // Decide if this sale should include manual products (30% chance)
       const includeManualProducts = faker.datatype.boolean({ probability: 0.3 });
@@ -222,11 +226,7 @@ export async function seedSales(prisma: PrismaClient, products: Product[]) {
           
           usedServiceIds.add(service.id);
           
-          const servicePrice = faker.commerce.price({
-            min: 2000,
-            max: 10000,
-            dec: 0,
-          });
+          const servicePrice = generateDAPrice(2000, 10000); // DA format (last digit 0)
           const quantity = 1;
 
           saleItemsData.push({
@@ -348,8 +348,8 @@ export async function seedSales(prisma: PrismaClient, products: Product[]) {
         max: 0.15,
         fractionDigits: 2,
       });
-      const calculatedDiscount = Math.floor(totalAmount * discountPercentage);
-      const totalAmountWithDiscount = totalAmount - calculatedDiscount;
+      const calculatedDiscount = Math.round(Math.floor(totalAmount * discountPercentage) / 10) * 10; // DA format
+      const totalAmountWithDiscount = Math.round((totalAmount - calculatedDiscount) / 10) * 10; // DA format
       
       const totalItems = saleItems.reduce(
         (sum, item) => sum + item.quantity,
@@ -370,7 +370,7 @@ export async function seedSales(prisma: PrismaClient, products: Product[]) {
         return sum + (boughtPrice * item.quantity);
       }, 0);
 
-      const totalProfit = totalAmountWithDiscount - totalCost;
+      const totalProfit = Math.round((totalAmountWithDiscount - totalCost) / 10) * 10; // DA format
 
       salesToUpdate.push({
         id: sale.id,

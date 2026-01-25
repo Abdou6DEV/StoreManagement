@@ -38,20 +38,47 @@ export function generateProductPhoto(): string | null {
 }
 
 export function generateUniqueClientName(): string {
-  const firstName = faker.person.firstName();
-  const lastName = faker.person.lastName();
-  const suffix = faker.helpers.maybe(
-    () => faker.helpers.arrayElement(["Jr.", "Sr.", "II", "III", "IV"]),
-    { probability: 0.2 },
-  );
+  // Algerian names in Latin alphabet
+  const algerianFirstNames = [
+    "Mohamed", "Ahmed", "Ali", "Youssef", "Khalid", "Omar", "Hassam", "Bachir", "Tarek", "Said",
+    "Fatima", "Khadija", "Aicha", "Mariem", "Sarah", "Layla", "Nour", "Salma", "Zineb", "Amina",
+    "Abdellah", "Abderrahmane", "Abdelaziz", "Abdelkrim", "Abdelhamid", "Abdelkader",
+    "Mustapha", "Noureddine", "Salah", "Rami", "Karim", "Yacine", "Ibrahim", "Ismail",
+    "Halima", "Roukia", "Hanan", "Rim", "Nadia", "Farida", "Samira", "Najat", "Naïma", "Djamila",
+    "Mehdi", "Bilal", "Nassim", "Walid", "Sofiane", "Amine", "Reda", "Anis", "Fares", "Yanis",
+    "Nour El Houda", "Meriem", "Ines", "Siham", "Nabila", "Soraya", "Nawel", "Dounia"
+  ];
+
+  const algerianLastNames = [
+    "Benali", "Benahmed", "Benomar", "Benyoucef", "Benkhalid", "Bentaleb", "Bensaid", "Benslimane",
+    "Zahrani", "Maliki", "Cherif", "Arabi", "Algerien", "Tounsi", "Marocain", "Libyen",
+    "Tahar", "Salih", "Karim", "Hakim", "Rachid", "Hadi", "Mansour", "Nour",
+    "Belkacem", "Bouazza", "Boumediene", "Bouteflika", "Boumaza", "Bouali", "Bouazza", "Boumaza",
+    "Meziane", "Meziani", "Mazari", "Mazari", "Bouhafs", "Boukhalfa", "Boukhelifa", "Boukhalfa",
+    "Boubekeur", "Bouabdallah", "Bouabdelli", "Bouabid", "Bouaziz", "Bouazza", "Bouazza", "Bouazza",
+    "Hamdi", "Hamdani", "Hamidou", "Hamza", "Haddad", "Haddadi", "Hafsi", "Hafid"
+  ];
+
+  const firstName = faker.helpers.arrayElement(algerianFirstNames);
+  const lastName = faker.helpers.arrayElement(algerianLastNames);
 
   let name = `${firstName} ${lastName}`;
-  if (suffix) name += ` ${suffix}`;
 
   // Add unique identifier to prevent conflicts
   name += ` ${faker.string.alphanumeric(4).toUpperCase()}`;
 
   return name;
+}
+
+/**
+ * Generate an Algerian phone number
+ * Format: 0XX XXX XXXX or +213 XX XXX XXXX
+ */
+export function generateAlgerianPhoneNumber(): string {
+  const prefixes = ["05", "06", "07"]; // Mobile prefixes
+  const prefix = faker.helpers.arrayElement(prefixes);
+  const number = faker.string.numeric(8); // 8 digits
+  return `${prefix}${number.substring(0, 2)} ${number.substring(2, 5)} ${number.substring(5)}`;
 }
 
 export function generateUniqueSellerName(): string {
@@ -124,4 +151,18 @@ export function generateUniqueSellerName(): string {
   name += ` ${faker.string.alphanumeric(3).toUpperCase()}`;
 
   return name;
+}
+
+/**
+ * Generate a price in DA (Algerian Dinar) format where the last digit is always 0
+ * Prices are stored in centimes (multiply by 100)
+ * @param min Minimum price in DA
+ * @param max Maximum price in DA
+ * @returns Price in centimes with last digit 0
+ */
+export function generateDAPrice(min: number, max: number): number {
+  // Generate a random price and round to nearest 10, then multiply by 10 to ensure last digit is 0
+  const priceInDA = Math.round(faker.number.int({ min, max }) / 10) * 10;
+  // Convert to centimes (multiply by 100)
+  return priceInDA * 100;
 }

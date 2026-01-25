@@ -1,6 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import { faker } from "@faker-js/faker";
-import { generateUniqueClientName } from "../utils/generators";
+import { generateUniqueClientName, generateAlgerianPhoneNumber } from "../utils/generators";
 
 export async function seedClients(prisma: PrismaClient) {
   console.log("👥 Creating sample clients...");
@@ -34,7 +34,7 @@ export async function seedClients(prisma: PrismaClient) {
 
       clientsData.push({
         name: clientName,
-        phone: faker.phone.number(),
+        phone: generateAlgerianPhoneNumber(),
         address: faker.location.streetAddress({ useFullAddress: true }),
         notes: faker.helpers.maybe(() => faker.lorem.sentence(), {
           probability: 0.3,
@@ -49,5 +49,5 @@ export async function seedClients(prisma: PrismaClient) {
     });
   }
 
-  console.log(`   - ${totalClients} clients created`);
+  console.log(`   - ${totalClients} clients created (Algerian names and phone numbers)`);
 }
