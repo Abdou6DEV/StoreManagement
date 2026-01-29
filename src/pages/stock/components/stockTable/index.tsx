@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { Package, Folder } from "lucide-react";
 import { useStock } from "../../../../lib/contexts/stockContext";
 import { useLowStock } from "../../../../lib/contexts/lowStockContext";
@@ -56,6 +56,7 @@ export const StockTable = ({ notificationAction }: { notificationAction?: string
   const [cleanupModalOpen, setCleanupModalOpen] = useState(false);
   const hasMarkedAsSeenRef = useRef(false);
   const hasMarkedOutOfStockAsSeenRef = useRef(false);
+  const hasProcessedNotificationRef = useRef(false);
 
   useEffect(() => {
     window.api.database.options
@@ -68,14 +69,17 @@ export const StockTable = ({ notificationAction }: { notificationAction?: string
     setCurrentPage(1);
   }, [viewMode]);
 
-  // Handle notification actions
+  // Handle notification actions - apply filter when notification action is present (only once)
   useEffect(() => {
-    if (notificationAction === 'outOfStock') {
-      setFilters((prev) => ({ ...prev, outOfStock: true }));
-    } else if (notificationAction === 'lowStock') {
-      setFilters((prev) => ({ ...prev, lowStock: true }));
+    if (notificationAction && !hasProcessedNotificationRef.current) {
+      hasProcessedNotificationRef.current = true;
+      setFilters((prev) => ({
+        ...prev,
+        outOfStock: notificationAction === 'outOfStock' ? true : prev.outOfStock,
+        lowStock: notificationAction === 'lowStock' ? true : prev.lowStock,
+      }));
     }
-  }, [notificationAction]);
+  }, [notificationAction]); // Remove filters from dependencies to prevent loops
 
   const handleChange = (
     key: keyof StockTableFilters,
@@ -248,41 +252,35 @@ export const StockTable = ({ notificationAction }: { notificationAction?: string
     );
   });
 
-  // Identify newly low stock products (products that are low stock but haven't been seen)
-  // We need to capture this BEFORE the filter is applied to avoid timing issues
-  // Exclude products with quantity = 0 (those are out of stock, not low stock)
-  const getNewlyLowStockProductIds = () => {
-    if (!products.length || lowStockThreshold === 0) return new Set();
-    
-    const lowStockProducts = products.filter(product => product.quantity > 0 && product.quantity <= lowStockThreshold);
-    const seenProducts = JSON.parse(localStorage.getItem('seenLowStockProducts') || '[]');
-    const seenSet = new Set(seenProducts);
-    
-    const newlyLowStockIds = lowStockProducts
-      .filter(product => !seenSet.has(product.id))
-      .map(product => product.id);
-    
-    return new Set(newlyLowStockIds);
-  };
-
-  // Identify newly out of stock products (products that are out of stock but haven't been seen)
-  const getNewlyOutOfStockProductIds = () => {
-    if (!products.length) return new Set();
-    
-    const outOfStockProducts = products.filter(product => product.quantity === 0);
-    const seenProducts = JSON.parse(localStorage.getItem('seenOutOfStockProducts') || '[]');
-    const seenSet = new Set(seenProducts);
-    
-    const newlyOutOfStockIds = outOfStockProducts
-      .filter(product => !seenSet.has(product.id))
-      .map(product => product.id);
-    
-    return new Set(newlyOutOfStockIds);
-  };
-
   // Capture newly low stock and out of stock products BEFORE any filtering/sorting happens
-  const newlyLowStockProductIds = getNewlyLowStockProductIds();
-  const newlyOutOfStockProductIds = getNewlyOutOfStockProductIds();
+  const [newlyLowStockProductIds, newlyOutOfStockProductIds] = useMemo(() => {
+    const lowStockIds = new Set<string>();
+    const outOfStockIds = new Set<string>();
+
+    if (products.length > 0) {
+      // Low stock products
+      if (lowStockThreshold > 0) {
+        const lowStockProducts = products.filter(product => product.quantity > 0 && product.quantity <= lowStockThreshold);
+        const seenLowStock = JSON.parse(localStorage.getItem('seenLowStockProducts') || '[]');
+        const seenLowStockSet = new Set(seenLowStock);
+
+        lowStockProducts
+          .filter(product => !seenLowStockSet.has(product.id))
+          .forEach(product => lowStockIds.add(product.id));
+      }
+
+      // Out of stock products
+      const outOfStockProducts = products.filter(product => product.quantity === 0);
+      const seenOutOfStock = JSON.parse(localStorage.getItem('seenOutOfStockProducts') || '[]');
+      const seenOutOfStockSet = new Set(seenOutOfStock);
+
+      outOfStockProducts
+        .filter(product => !seenOutOfStockSet.has(product.id))
+        .forEach(product => outOfStockIds.add(product.id));
+    }
+
+    return [lowStockIds, outOfStockIds];
+  }, [products, lowStockThreshold]);
 
   // Mark low stock products as seen when the low stock filter is deactivated
   useEffect(() => {

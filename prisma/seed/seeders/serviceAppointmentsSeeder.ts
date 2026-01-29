@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import { faker } from "@faker-js/faker";
+import { generateDAPrice } from "../utils/generators";
 
 const phoneNames = [
   "iPhone 15 Pro Max",
@@ -137,15 +138,19 @@ export async function seedServiceAppointments(prisma: PrismaClient) {
     return;
   }
 
+  const threeYearsAgo = new Date();
+  threeYearsAgo.setFullYear(threeYearsAgo.getFullYear() - 3);
   const twoYearsAgo = new Date();
   twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
-  const oneYearAgo = new Date();
-  oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
 
-  // Create 100 service appointments with only 2 service types: réparation and flash
-  const totalAppointments = 100;
-  const incompleteCount = Math.floor(totalAppointments * 0.1); // 10% incomplete
-  const completedCount = totalAppointments - incompleteCount;
+  // Create service appointments:
+  // - 100 completed services that WILL be sold (through 3 years of sales)
+  // - 5 incomplete services
+  // - 2 completed but NOT sold services
+  const completedAndSoldCount = 100;
+  const incompleteCount = 5;
+  const completedNotSoldCount = 2;
+  const totalAppointments = completedAndSoldCount + incompleteCount + completedNotSoldCount;
 
   console.log(`   - Creating ${incompleteCount} incomplete service appointments...`);
   const incompleteAppointments = [];
@@ -159,15 +164,15 @@ export async function seedServiceAppointments(prisma: PrismaClient) {
       name: `${service.name} #${i + 1}`,
       serviceType: service.name,
       description: faker.helpers.arrayElement(phoneNames),
-      costPrice: faker.number.int({ min: 2000, max: 20000 }), // 20-200 DA in centimes
-      servicePrice: faker.number.int({ min: 3000, max: 30000 }), // 30-300 DA in centimes
+      costPrice: generateDAPrice(20, 200), // 20-200 DA in centimes (last digit 0)
+      servicePrice: generateDAPrice(30, 300), // 30-300 DA in centimes (last digit 0)
       clientId: randomClient.id,
       dueDate: dueDate,
       notes: faker.helpers.maybe(() => faker.helpers.arrayElement(phoneProblems), {
         probability: 0.8,
       }),
       isCompleted: false,
-      createdAt: faker.date.between({ from: twoYearsAgo, to: new Date() }),
+      createdAt: faker.date.between({ from: threeYearsAgo, to: new Date() }),
     });
   }
 
@@ -175,24 +180,25 @@ export async function seedServiceAppointments(prisma: PrismaClient) {
     data: incompleteAppointments,
   });
 
-  console.log(`   - Creating ${completedCount} completed service appointments...`);
-  const completedAppointments = [];
+  // Create 2 completed but NOT sold services FIRST (so they're not picked up when we associate)
+  console.log(`   - Creating ${completedNotSoldCount} completed but NOT sold service appointments...`);
+  const completedNotSoldAppointments = [];
   
-  for (let i = 0; i < completedCount; i++) {
+  for (let i = 0; i < completedNotSoldCount; i++) {
     const service = faker.helpers.arrayElement(services);
-    const completedDate = faker.date.between({ from: oneYearAgo, to: new Date() });
+    const completedDate = faker.date.between({ from: threeYearsAgo, to: new Date() });
     const dueDate = faker.date.between({ 
       from: new Date(completedDate.getTime() - 7 * 24 * 60 * 60 * 1000),
       to: completedDate 
     });
     const randomClient = faker.helpers.arrayElement(clients);
 
-    completedAppointments.push({
-      name: `${service.name} #${i + 1}`,
+    completedNotSoldAppointments.push({
+      name: `${service.name} NOT SOLD #${i + 1}`,
       serviceType: service.name,
       description: faker.helpers.arrayElement(phoneNames),
-      costPrice: faker.number.int({ min: 2000, max: 20000 }),
-      servicePrice: faker.number.int({ min: 3000, max: 30000 }),
+      costPrice: generateDAPrice(20, 200),
+      servicePrice: generateDAPrice(30, 300),
       clientId: randomClient.id,
       dueDate: dueDate,
       notes: faker.helpers.maybe(() => faker.helpers.arrayElement(phoneProblems), {
@@ -200,14 +206,195 @@ export async function seedServiceAppointments(prisma: PrismaClient) {
       }),
       isCompleted: true,
       completedAt: completedDate,
-      createdAt: faker.date.between({ from: twoYearsAgo, to: completedDate }),
+      createdAt: faker.date.between({ from: threeYearsAgo, to: completedDate }),
     });
   }
 
   await prisma.serviceAppointment.createMany({
-    data: completedAppointments,
+    data: completedNotSoldAppointments,
   });
 
-  console.log(`   - ${totalAppointments} service appointments created (${incompleteCount} incomplete, ${completedCount} completed)`);
+  // Create 100 completed services that WILL be sold (distributed across 3 years)
+  console.log(`   - Creating ${completedAndSoldCount} completed service appointments (will be sold through 3 years of sales)...`);
+  const completedAndSoldAppointments = [];
+  
+  for (let i = 0; i < completedAndSoldCount; i++) {
+    const service = faker.helpers.arrayElement(services);
+    // Distribute completion dates across 3 years
+    const completedDate = faker.date.between({ from: threeYearsAgo, to: new Date() });
+    const dueDate = faker.date.between({ 
+      from: new Date(completedDate.getTime() - 7 * 24 * 60 * 60 * 1000),
+      to: completedDate 
+    });
+    const randomClient = faker.helpers.arrayElement(clients);
+
+    completedAndSoldAppointments.push({
+      name: `${service.name} TO SELL #${i + 1}`,
+      serviceType: service.name,
+      description: faker.helpers.arrayElement(phoneNames),
+      costPrice: generateDAPrice(20, 200),
+      servicePrice: generateDAPrice(30, 300),
+      clientId: randomClient.id,
+      dueDate: dueDate,
+      notes: faker.helpers.maybe(() => faker.helpers.arrayElement(phoneProblems), {
+        probability: 0.8,
+      }),
+      isCompleted: true,
+      completedAt: completedDate,
+      createdAt: faker.date.between({ from: threeYearsAgo, to: completedDate }),
+    });
+  }
+
+  await prisma.serviceAppointment.createMany({
+    data: completedAndSoldAppointments,
+  });
+
+  console.log(`   - ${totalAppointments} service appointments created`);
+  console.log(`   - ${completedAndSoldCount} completed and sold`);
+  console.log(`   - ${incompleteCount} incomplete`);
+  console.log(`   - ${completedNotSoldCount} completed but not sold`);
   console.log(`   - All appointments use only 'réparation' and 'flash' service types`);
+}
+
+/**
+ * Associate completed service appointments with sales by creating saleItems
+ * This should be called after sales are created
+ */
+export async function associateCompletedServicesWithSales(prisma: PrismaClient) {
+  console.log("🔗 Associating completed services with sales...");
+
+  // Get only the 100 completed services that should be sold (the ones with "TO SELL" in name)
+  const completedServices = await prisma.serviceAppointment.findMany({
+    where: {
+      isCompleted: true,
+      name: { contains: "TO SELL" }
+    },
+    orderBy: { completedAt: 'desc' },
+  });
+
+  if (completedServices.length === 0) {
+    console.log("   - No completed services found");
+    return;
+  }
+
+  // Get all sales to associate with
+  const allSales = await prisma.sale.findMany({
+    select: { id: true },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  if (allSales.length === 0) {
+    console.log("   - No sales found, skipping service-sale associations");
+    return;
+  }
+
+  // Get existing saleItems with services to avoid duplicates
+  const existingServiceSaleItems = await prisma.saleItem.findMany({
+    where: {
+      serviceId: { not: null }
+    },
+    select: {
+      serviceId: true,
+      saleId: true,
+    }
+  });
+
+  // Create a Set of existing combinations for quick lookup
+  const existingCombinations = new Set<string>();
+  existingServiceSaleItems.forEach(item => {
+    if (item.serviceId) {
+      existingCombinations.add(`${item.serviceId}-${item.saleId}`);
+    }
+  });
+
+  // Only process the services that should be sold (marked with "TO SELL")
+  const servicesToSell = completedServices.filter(s => s.name.includes("TO SELL"));
+  
+  // Create Service records for each appointment that should be sold
+  // Each Service must have serviceAppointmentId set to link back to the appointment
+  const serviceRecords = new Map<string, { id: string; appointmentId: string }>();
+  
+  for (const appointment of servicesToSell) {
+    // Check if a Service already exists for this appointment
+    const existingService = await prisma.service.findFirst({
+      where: { serviceAppointmentId: appointment.id }
+    });
+    
+    if (existingService) {
+      serviceRecords.set(appointment.id, { id: existingService.id, appointmentId: appointment.id });
+    } else {
+      // Create a new Service record linked to this appointment
+      // The name must be unique, so we append the appointment ID (like the app does)
+      const uniqueServiceName = `${appointment.serviceType} (${appointment.id.slice(-8)})`;
+      
+      const newService = await prisma.service.create({
+        data: {
+          name: uniqueServiceName,
+          description: appointment.description || undefined,
+          costPrice: appointment.costPrice,
+          serviceAppointmentId: appointment.id,
+        }
+      });
+      
+      serviceRecords.set(appointment.id, { id: newService.id, appointmentId: appointment.id });
+    }
+  }
+
+  const saleItemsToCreate: any[] = [];
+  const usedCombinations = new Set<string>(); // Track combinations we're creating in this batch
+  let saleIndex = 0;
+  
+  for (let i = 0; i < servicesToSell.length; i++) {
+    const appointment = servicesToSell[i];
+    const serviceRecord = serviceRecords.get(appointment.id);
+    
+    if (!serviceRecord) continue;
+
+    // Find a sale that doesn't already have this service
+    let attempts = 0;
+    let sale = null;
+    let combinationKey = '';
+    
+    while (attempts < allSales.length * 2) { // Try multiple times to find a unique combination
+      sale = allSales[saleIndex % allSales.length];
+      combinationKey = `${serviceRecord.id}-${sale.id}`;
+      
+      // Check both existing combinations and ones we're about to create
+      if (!existingCombinations.has(combinationKey) && !usedCombinations.has(combinationKey)) {
+        // Found a unique combination
+        usedCombinations.add(combinationKey);
+        break;
+      }
+      
+      saleIndex++;
+      attempts++;
+    }
+
+    if (!sale || existingCombinations.has(combinationKey) || usedCombinations.has(combinationKey)) {
+      // Skip if we couldn't find a unique combination
+      continue;
+    }
+    
+    saleItemsToCreate.push({
+      serviceId: serviceRecord.id,
+      saleId: sale.id,
+      quantity: 1,
+      price: appointment.servicePrice,
+      boughtPrice: appointment.costPrice,
+      createdAt: appointment.completedAt || appointment.createdAt,
+    });
+
+    saleIndex++;
+  }
+
+  if (saleItemsToCreate.length > 0) {
+    await prisma.saleItem.createMany({
+      data: saleItemsToCreate as any,
+      skipDuplicates: true, // Extra safety
+    });
+    console.log(`   - Created ${serviceRecords.size} Service records linked to appointments`);
+    console.log(`   - Created ${saleItemsToCreate.length} saleItems for completed services`);
+  } else {
+    console.log("   - No saleItems created (all combinations already exist)");
+  }
 }

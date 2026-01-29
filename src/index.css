@@ -533,18 +533,18 @@ input[type="date"].success {
 
 /* Bell ringing animation for notifications */
 @keyframes bellRing {
-  0%, 50%, 100% {
-    transform: rotate(0deg);
+  0%, 43%, 100% {
+    transform: rotate(0deg) scale(1);
   }
-  10%, 30% {
-    transform: rotate(-15deg);
+  3%, 15% {
+    transform: rotate(-15deg) scale(1.2);
   }
-  20%, 40% {
-    transform: rotate(15deg);
+  9%, 21% {
+    transform: rotate(15deg) scale(1.2);
   }
 }
 
 .bell-ring {
-  animation: bellRing 1.5s ease-in-out infinite;
-  animation-delay: 1s;
+  animation: bellRing 3.5s ease-in-out infinite;
+  animation-delay: 2s;
 }

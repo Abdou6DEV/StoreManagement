@@ -7,7 +7,7 @@ import { seedSales } from "./seeders/salesSeeder";
 import { seedSellers } from "./seeders/sellersSeeder";
 import { seedBills } from "./seeders/billsSeeder";
 import { seedServices } from "./data/services";
-import { seedServiceAppointments } from "./seeders/serviceAppointmentsSeeder";
+import { seedServiceAppointments, associateCompletedServicesWithSales } from "./seeders/serviceAppointmentsSeeder";
 
 const prisma = new PrismaClient();
 
@@ -26,20 +26,21 @@ async function main() {
     await seedServices(prisma);
     await seedServiceAppointments(prisma);
     const sales = await seedSales(prisma, products);
+    await associateCompletedServicesWithSales(prisma); // Associate completed services with sales
     await seedPayments(prisma, sales);
     await seedBills(prisma);
 
     console.log("✅ Seed completed successfully!");
     console.log(`📊 Created (mobile phone shop data):`);
-    console.log(`   - Mobile phone shop categories`);
+    console.log(`   - 17 mobile phone shop categories`);
     console.log(`   - Sellers`);
-    console.log(`   - 7,000 mobile phone products`);
-    console.log(`   - 100 clients`);
+    console.log(`   - 2,000 mobile phone products`);
+    console.log(`   - 100 clients (Algerian names)`);
     console.log(`   - 2 services (réparation & flash)`);
-    console.log(`   - 100 service appointments (only réparation & flash)`);
-    console.log(`   - 10,000 sales (1% with clients = 100 sales with clients)`);
+    console.log(`   - 107 service appointments (100 completed+sold, 5 incomplete, 2 completed+not sold)`);
+    console.log(`   - 3 years of sales (3-4 sales/day, 5-6 items/sale, 30% with clients)`);
     console.log(`   - 10 credit/versement payments`);
-    console.log(`   - 5 bills with 100 payments total (20 per bill)`);
+    console.log(`   - 7 bills with 100 payments total (1 overdue, 1 due soon)`);
     console.log(`   - Admin account (admin/admin) is hardcoded in the app`);
   } catch (error) {
     console.error("❌ Seed failed:", error);
