@@ -183,7 +183,7 @@ const VersementDetailsModal: React.FC<VersementDetailsModalProps> = ({
     try {
       await window.api.database.payments.cancelVersement(payment.id);
       showToast(
-        t("clients.versementCancelled", "Versement cancelled and products restored"),
+        t("clients.versementCancelled", "Versement cancelled"),
         "success",
       );
       setShowDeleteConfirm(false);
@@ -393,7 +393,7 @@ const VersementDetailsModal: React.FC<VersementDetailsModalProps> = ({
                 <p className="text-sm text-muted-foreground">
                   {t(
                     "clients.confirmVersementCancelMessage",
-                    "This will delete the versement for {{name}} and restore the products to stock. This action cannot be undone.",
+                    "This will delete the versement for {{name}}. Product quantities are unchanged (they were not reserved). This action cannot be undone.",
                     { name: payment.client.name },
                   )}
                 </p>

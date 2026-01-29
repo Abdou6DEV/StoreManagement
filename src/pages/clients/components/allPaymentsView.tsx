@@ -749,7 +749,7 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
 
           "clients.versementCancelled",
 
-          "Versement cancelled and products restored",
+          "Versement cancelled",
 
         ),
 
@@ -1793,7 +1793,7 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
 
           "clients.confirmVersementCancelMessage",
 
-          "This will delete the versement for {{name}} and restore the products to stock. This action cannot be undone.",
+          "This will delete the versement for {{name}}. Product quantities are unchanged (they were not reserved). This action cannot be undone.",
 
           {
 

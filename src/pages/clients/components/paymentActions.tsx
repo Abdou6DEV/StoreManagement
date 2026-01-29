@@ -112,7 +112,7 @@ const PaymentActions: React.FC<PaymentActionsProps> = ({
         <Tooltip
           content={t(
             "clients.cancelVersementTooltip",
-            "Cancel this versement and restore product quantities",
+            "Cancel this versement",
           )}
         >
           <Button
