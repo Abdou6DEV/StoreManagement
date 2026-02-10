@@ -79,9 +79,12 @@ const FavoritesBrowser: React.FC<FavoritesBrowserProps> = ({
     return () => clearTimeout(timeoutId);
   }, [favorites]);
 
-  // Get favorite products
+  // Get favorite products in the same order as favorites (no sorting)
   const favoriteProducts = useMemo(() => {
-    return allProducts.filter((product) => favorites.includes(product.id));
+    const byId = new Map(allProducts.map((p) => [p.id, p]));
+    return favorites
+      .map((id) => byId.get(id))
+      .filter((p): p is ProductWithSales => p != null);
   }, [allProducts, favorites]);
 
   const hasAnyProducts = allProducts.length > 0;

@@ -1,22 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { 
-  Home, 
-  ChartLine, 
-  Users, 
-  ShoppingCart, 
-  PackageSearch, 
-  History, 
-  FileText, 
-  Wrench, 
-  Settings,
-  CheckCircle,
-  Loader2,
-  Download,
-  Wifi,
-  WifiOff
-} from "lucide-react";
+import { Loader2, Download, Wifi, WifiOff } from "lucide-react";
 import { useUpdateChecker } from "../hooks/useUpdateChecker";
+import { useTheme } from "../hooks/useTheme";
 
 interface PreloadLoadingProps {
   onComplete?: () => void;
@@ -25,96 +11,42 @@ interface PreloadLoadingProps {
 interface LoadingStep {
   id: string;
   nameKey: string;
-  icon: React.ComponentType<{ className?: string }>;
-  descriptionKey: string;
   threshold: number;
-  color: string;
 }
+
+const LOADING_STEPS: LoadingStep[] = [
+  { id: "main-menu", nameKey: "loading.mainMenu", threshold: 10 },
+  { id: "dashboard", nameKey: "loading.dashboard", threshold: 25 },
+  { id: "clients", nameKey: "loading.clients", threshold: 40 },
+  { id: "cashier", nameKey: "loading.cashier", threshold: 55 },
+  { id: "stock", nameKey: "loading.stock", threshold: 70 },
+  { id: "history", nameKey: "loading.history", threshold: 80 },
+  { id: "bills", nameKey: "loading.bills", threshold: 90 },
+  { id: "services", nameKey: "loading.services", threshold: 95 },
+  { id: "administrator", nameKey: "loading.administrator", threshold: 100 },
+];
 
 export default function PreloadLoading({ onComplete }: PreloadLoadingProps) {
   const { t } = useTranslation();
   const [progress, setProgress] = useState(0);
   const [isComplete, setIsComplete] = useState(false);
-  const [currentStep, setCurrentStep] = useState(0);
   const [startTime] = useState(Date.now());
   const [updateStatus, setUpdateStatus] = useState<string>("");
-  
-  const { checkForUpdates, isChecking, updateInfo, error } = useUpdateChecker();
 
-  const loadingSteps: LoadingStep[] = [
-    {
-      id: "main-menu",
-      nameKey: "loading.mainMenu",
-      icon: Home,
-      descriptionKey: "loading.mainMenuDesc",
-      threshold: 10,
-      color: "text-primary"
-    },
-    {
-      id: "dashboard",
-      nameKey: "loading.dashboard",
-      icon: ChartLine,
-      descriptionKey: "loading.dashboardDesc",
-      threshold: 25,
-      color: "text-green-500"
-    },
-    {
-      id: "clients",
-      nameKey: "loading.clients",
-      icon: Users,
-      descriptionKey: "loading.clientsDesc",
-      threshold: 40,
-      color: "text-red-500"
-    },
-    {
-      id: "cashier",
-      nameKey: "loading.cashier",
-      icon: ShoppingCart,
-      descriptionKey: "loading.cashierDesc",
-      threshold: 55,
-      color: "text-yellow-500"
-    },
-    {
-      id: "stock",
-      nameKey: "loading.stock",
-      icon: PackageSearch,
-      descriptionKey: "loading.stockDesc",
-      threshold: 70,
-      color: "text-green-600"
-    },
-    {
-      id: "history",
-      nameKey: "loading.history",
-      icon: History,
-      descriptionKey: "loading.historyDesc",
-      threshold: 80,
-      color: "text-blue-500"
-    },
-    {
-      id: "bills",
-      nameKey: "loading.bills",
-      icon: FileText,
-      descriptionKey: "loading.billsDesc",
-      threshold: 90,
-      color: "text-purple-500"
-    },
-    {
-      id: "services",
-      nameKey: "loading.services",
-      icon: Wrench,
-      descriptionKey: "loading.servicesDesc",
-      threshold: 95,
-      color: "text-cyan-500"
-    },
-    {
-      id: "administrator",
-      nameKey: "loading.administrator",
-      icon: Settings,
-      descriptionKey: "loading.administratorDesc",
-      threshold: 100,
-      color: "text-orange-500"
+  const { checkForUpdates, isChecking, updateInfo, error } = useUpdateChecker();
+  const { isDark } = useTheme();
+
+  // Use the *last* step whose threshold we've reached (so label advances: Main Menu → Dashboard → … → Administrator)
+  const currentStepIndex = useMemo(() => {
+    let idx = -1;
+    for (let i = 0; i < LOADING_STEPS.length; i++) {
+      if (progress >= LOADING_STEPS[i].threshold) idx = i;
     }
-  ];
+    return idx >= 0 ? idx : 0;
+  }, [progress]);
+  const currentStepLabel = LOADING_STEPS[currentStepIndex]
+    ? t(LOADING_STEPS[currentStepIndex].nameKey, LOADING_STEPS[currentStepIndex].nameKey)
+    : "";
 
   // Check for updates on component mount
   useEffect(() => {
@@ -141,131 +73,142 @@ export default function PreloadLoading({ onComplete }: PreloadLoadingProps) {
   }, [checkForUpdates, t]);
 
   useEffect(() => {
-    // Ensure minimum 8 seconds loading time to allow reading update status
-    const minLoadingTime = 8000;
-    
+    const minLoadingTime = 12000; // 12s so bar and steps stay in sync
+    const tickMs = 80; // smooth bar, in sync with step changes
+
     const interval = setInterval(() => {
-      setProgress(prev => {
-        const elapsed = Date.now() - startTime;
-        const timeProgress = Math.min((elapsed / minLoadingTime) * 100, 100);
-        
-        // Use the higher of time-based or random progress
-        const randomProgress = prev + Math.random() * 8 + 2;
-        const newProgress = Math.max(timeProgress, randomProgress);
-        
-        // Update current step based on progress
-        const step = loadingSteps.findIndex(s => newProgress >= s.threshold);
-        if (step !== -1 && step !== currentStep) {
-          setCurrentStep(step);
+      const elapsed = Date.now() - startTime;
+      const linear = Math.min(elapsed / minLoadingTime, 1);
+      const eased = 1 - Math.pow(1 - linear, 1.15); // smooth ease-out
+      const newProgress = Math.min(100, eased * 100);
+
+      setProgress(newProgress);
+
+      if (newProgress >= 100) {
+        clearInterval(interval);
+        setIsComplete(true);
+        if (onComplete) {
+          setTimeout(onComplete, 1500);
         }
-        
-        if (newProgress >= 100) {
-          clearInterval(interval);
-          setIsComplete(true);
-          if (onComplete) {
-            setTimeout(onComplete, 1500); // Longer delay to show completion and update status
-          }
-          return 100;
-        }
-        return newProgress;
-      });
-    }, 150);
+      }
+    }, tickMs);
 
     return () => clearInterval(interval);
-  }, [onComplete, startTime, currentStep]);
+  }, [onComplete, startTime]);
 
   return (
-    <div className="h-screen bg-background flex items-center justify-center">
-      <div className="text-center">
-        {/* Logo */}
-        <div className="w-16 h-16 mx-auto mb-6 bg-primary rounded-lg flex items-center justify-center shadow-lg">
-          {isComplete ? (
-            <CheckCircle className="w-8 h-8 text-primary-foreground animate-bounce" />
-          ) : (
-            <Loader2 className="w-8 h-8 text-primary-foreground animate-spin" />
-          )}
+    <div className="h-screen bg-background flex flex-col items-center justify-center">
+      <div className="flex flex-col items-center w-full max-w-md px-4">
+        {/* App logo – theme-based; pulse animation like dashboard loading icon */}
+        <div className="mb-4 flex items-center justify-center">
+          <img
+            src={isDark ? "/myapp.ico" : "/myapp_black.ico"}
+            alt=""
+            className={`w-50 h-50 object-contain select-none ${!isComplete ? "animate-pulse" : ""}`}
+          />
         </div>
-        
-        {/* Title */}
-        <h1 className="text-2xl font-semibold text-foreground mb-4">
-          {isComplete ? t("loading.ready", "Ready!") : t("loading.title", "Loading...")}
-        </h1>
 
-        {/* Progress */}
-        <div className="w-64 mx-auto mb-6">
-          <div className="w-full bg-muted rounded-full h-1">
+        {/* Title + description between logo and dots – always visible */}
+        <div className="text-center space-y-2 mb-4">
+          <h2 className="text-xl font-semibold text-foreground">
+            {isComplete
+              ? t("loading.ready", "Ready!")
+              : t("loading.preparingSystem", "Preparing system")}
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            {isComplete
+              ? t("loading.readyDesc", "You're all set.")
+              : t("loading.preparingSystemDesc", "Please wait...")}
+          </p>
+        </div>
+
+        {/* Red jumping dots */}
+        {!isComplete && (
+          <>
+            <div className="flex gap-2 mb-6">
+              <div
+                className="w-2 h-2 rounded-full bg-red-500"
+                style={{
+                  animation: "preloadBounce 0.9s infinite",
+                  animationDelay: "0ms",
+                }}
+              />
+              <div
+                className="w-2 h-2 rounded-full bg-red-500"
+                style={{
+                  animation: "preloadBounce 0.9s infinite",
+                  animationDelay: "150ms",
+                }}
+              />
+              <div
+                className="w-2 h-2 rounded-full bg-red-500"
+                style={{
+                  animation: "preloadBounce 0.9s infinite",
+                  animationDelay: "300ms",
+                }}
+              />
+            </div>
+            <style>{`
+              @keyframes preloadBounce {
+                0%, 100% {
+                  transform: translateY(0);
+                  animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+                }
+                50% {
+                  transform: translateY(-100%);
+                  animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+                }
+              }
+            `}</style>
+          </>
+        )}
+
+        {/* Progress bar + percentage – green when complete */}
+        <div className="w-full mb-2">
+          <div className="w-full bg-muted rounded-full h-2.5 overflow-hidden">
             <div
-              className="h-full bg-primary rounded-full transition-all duration-300"
+              className={`h-full rounded-full transition-[width] duration-500 ease-out ${isComplete ? "bg-green-500" : "bg-primary"}`}
               style={{ width: `${Math.min(progress, 100)}%` }}
             />
           </div>
-          <div className="text-sm text-muted-foreground mt-2">
+          <div className={`text-sm mt-1.5 text-center ${isComplete ? "text-green-600 font-medium" : "text-muted-foreground"}`}>
             {Math.round(Math.min(progress, 100))}%
           </div>
         </div>
 
-        {/* Current Step */}
-        {!isComplete && currentStep < loadingSteps.length && (
-          <div className="mb-6">
-            <div className="flex items-center justify-center space-x-2">
-              {React.createElement(loadingSteps[currentStep].icon, {
-                className: `w-5 h-5 ${loadingSteps[currentStep].color}`
-              })}
-              <span className="text-sm text-foreground font-medium">
-                {t(loadingSteps[currentStep].nameKey, loadingSteps[currentStep].nameKey)}
-              </span>
-            </div>
-          </div>
-        )}
-
-        {/* Steps */}
-        <div className="space-y-2">
-          {loadingSteps.map((step, index) => {
-            const isCompleted = progress >= step.threshold;
-            const isCurrent = currentStep === index && !isComplete;
-            const Icon = step.icon;
-            
-            return (
-              <div key={step.id} className={`flex items-center justify-center space-x-3 transition-all duration-300 ${
-                isCurrent ? 'scale-105' : ''
-              }`}>
-                <div className="w-5 h-5 flex items-center justify-center">
-                  {isCompleted ? (
-                    <CheckCircle className="w-5 h-5 text-green-600 animate-pulse" />
-                  ) : (
-                    <Icon className={`w-5 h-5 ${isCurrent ? step.color : 'text-muted-foreground'} ${
-                      isCurrent ? 'animate-pulse' : ''
-                    }`} />
-                  )}
-                </div>
-                <span className={`text-sm font-medium transition-colors duration-300 ${
-                  isCompleted ? 'text-green-600' : isCurrent ? step.color : 'text-muted-foreground'
-                }`}>
-                  {t(step.nameKey, step.nameKey)}
-                </span>
-              </div>
-            );
-          })}
+        {/* Current step label – "Loading Main Menu...", "Loading Stock...", or "Loading complete" in green at 100% */}
+        <div className="w-full text-start">
+          <p className={`text-sm min-h-[1.25rem] ${isComplete ? "text-green-600 font-medium" : "text-muted-foreground"}`}>
+            {isComplete
+              ? t("loading.loadingComplete", "Loading complete")
+              : currentStepLabel
+                ? `${t("loading.loadingPrefix", "Loading")} ${currentStepLabel}...`
+                : ""}
+          </p>
         </div>
 
-        {/* Update Status */}
+        {/* Update status */}
         {updateStatus && (
-          <div className="mt-6 p-3 bg-muted/50 rounded-lg border border-border">
-            <div className="flex items-center justify-center space-x-2">
+          <div className="mt-6 w-full p-3 bg-muted/50 rounded-lg border border-border">
+            <div className="flex items-center justify-center gap-2">
               {isChecking ? (
-                <Loader2 className="w-4 h-4 text-primary animate-spin" />
+                <Loader2 className="w-4 h-4 text-primary animate-spin flex-shrink-0" />
               ) : updateInfo?.available ? (
-                <Download className="w-4 h-4 text-green-600" />
+                <Download className="w-4 h-4 text-green-600 flex-shrink-0" />
               ) : error ? (
-                <WifiOff className="w-4 h-4 text-red-500" />
+                <WifiOff className="w-4 h-4 text-red-500 flex-shrink-0" />
               ) : (
-                <Wifi className="w-4 h-4 text-green-600" />
+                <Wifi className="w-4 h-4 text-green-600 flex-shrink-0" />
               )}
-              <span className={`text-sm font-medium ${
-                updateInfo?.available ? 'text-green-600' : 
-                error ? 'text-red-500' : 
-                'text-muted-foreground'
-              }`}>
+              <span
+                className={`text-sm font-medium ${
+                  updateInfo?.available
+                    ? "text-green-600"
+                    : error
+                      ? "text-red-500"
+                      : "text-muted-foreground"
+                }`}
+              >
                 {updateStatus}
               </span>
             </div>

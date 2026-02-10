@@ -421,7 +421,12 @@
   },
   "loading": {
     "title": "Chargement...",
+    "preparingSystem": "Préparation du système",
+    "preparingSystemDesc": "Veuillez patienter...",
+    "loadingPrefix": "Chargement",
+    "loadingComplete": "Chargement terminé",
     "ready": "Prêt !",
+    "readyDesc": "Vous pouvez commencer.",
     "mainMenu": "Menu Principal",
     "mainMenuDesc": "Chargement de la navigation principale",
     "dashboard": "Tableau de Bord",

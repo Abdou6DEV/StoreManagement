@@ -423,7 +423,12 @@
   },
   "loading": {
     "title": "جاري التحميل...",
+    "preparingSystem": "جاري تحضير النظام",
+    "preparingSystemDesc": "يرجى الانتظار...",
+    "loadingPrefix": "جاري التحميل",
+    "loadingComplete": "اكتمل التحميل",
     "ready": "جاهز!",
+    "readyDesc": "يمكنك البدء الآن.",
     "mainMenu": "القائمة الرئيسية",
     "mainMenuDesc": "تحميل التنقل الرئيسي",
     "dashboard": "لوحة التحكم",

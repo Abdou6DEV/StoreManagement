@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useAuth } from "../lib/contexts/authContext";
-import { Eye, EyeOff, Store, User, Lock, AlertCircle, Settings } from "lucide-react";
+import { Eye, EyeOff, User, Lock, AlertCircle, Settings } from "lucide-react";
+import { useTheme } from "../lib/hooks/useTheme";
 import { ThemeToggleButton } from "../lib/components/themeToggleButton";
 import { FullscreenToggleButton } from "../lib/components/fullscreenToggleButton";
 import { TooltipToggleButton } from "../lib/components/tooltipToggleButton";
@@ -23,6 +24,7 @@ export default function Login() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const { login } = useAuth();
   const { t, i18n } = useTranslation();
+  const { isDark } = useTheme();
   
   // Refs for focus management
   const usernameRef = useRef<HTMLInputElement>(null);
@@ -180,9 +182,11 @@ export default function Login() {
       <div className="max-w-md w-full space-y-8">
         {/* Header */}
         <div className="text-center">
-          <div className="mx-auto h-16 w-16 bg-primary rounded-xl flex items-center justify-center mb-4">
-            <Store className="h-8 w-8 text-primary-foreground" />
-          </div>
+          <img
+            src={isDark ? "/myapp.ico" : "/myapp_black.ico"}
+            alt=""
+            className="mx-auto h-50 w-50 object-contain select-none mb-4"
+          />
           <h2 className="text-3xl font-bold text-foreground mb-2">
             {t("login.welcomeBack", "Welcome Back")}
           </h2>
