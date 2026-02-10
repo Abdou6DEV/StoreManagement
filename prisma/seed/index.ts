@@ -25,7 +25,17 @@ async function main() {
     await seedClients(prisma);
     await seedServices(prisma);
     await seedServiceAppointments(prisma);
-    const sales = await seedSales(prisma, products);
+
+    // Clear existing sales so seed always creates sales WITH items (no stale 0-item sales)
+    await prisma.saleItem.deleteMany({});
+    await prisma.payment.deleteMany({});
+    await prisma.sale.deleteMany({});
+
+    // Use products with current quantities from DB (productsSeeder may have updated qty after creation)
+    const productsWithStock = await prisma.product.findMany({
+      where: { quantity: { gt: 0 } },
+    });
+    const sales = await seedSales(prisma, productsWithStock);
     await associateCompletedServicesWithSales(prisma); // Associate completed services with sales
     await seedPayments(prisma, sales);
     await seedBills(prisma);
@@ -37,7 +47,7 @@ async function main() {
     console.log(`   - 2,000 mobile phone products`);
     console.log(`   - 100 clients (Algerian names)`);
     console.log(`   - 2 services (réparation & flash)`);
-    console.log(`   - 107 service appointments (100 completed+sold, 5 incomplete, 2 completed+not sold)`);
+    console.log(`   - 20 service appointments (10 completed+sold, 5 incomplete, 5 completed+not sold)`);
     console.log(`   - 3 years of sales (3-4 sales/day, 5-6 items/sale, 30% with clients)`);
     console.log(`   - 10 credit/versement payments`);
     console.log(`   - 7 bills with 100 payments total (1 overdue, 1 due soon)`);

@@ -143,13 +143,13 @@ export async function seedServiceAppointments(prisma: PrismaClient) {
   const twoYearsAgo = new Date();
   twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
 
-  // Create service appointments:
-  // - 100 completed services that WILL be sold (through 3 years of sales)
-  // - 5 incomplete services
-  // - 2 completed but NOT sold services
-  const completedAndSoldCount = 100;
+  // Create service appointments (20 total):
+  // - 10 completed and sold (TO SELL)
+  // - 5 incomplete
+  // - 5 completed but NOT sold
+  const completedAndSoldCount = 10;
   const incompleteCount = 5;
-  const completedNotSoldCount = 2;
+  const completedNotSoldCount = 5;
   const totalAppointments = completedAndSoldCount + incompleteCount + completedNotSoldCount;
 
   console.log(`   - Creating ${incompleteCount} incomplete service appointments...`);
@@ -164,8 +164,8 @@ export async function seedServiceAppointments(prisma: PrismaClient) {
       name: `${service.name} #${i + 1}`,
       serviceType: service.name,
       description: faker.helpers.arrayElement(phoneNames),
-      costPrice: generateDAPrice(20, 200), // 20-200 DA in centimes (last digit 0)
-      servicePrice: generateDAPrice(30, 300), // 30-300 DA in centimes (last digit 0)
+      costPrice: generateDAPrice(100, 5000), // 100-5000 DA (last digit 0)
+      servicePrice: generateDAPrice(500, 27000), // 500-27000 DA max (last digit 0)
       clientId: randomClient.id,
       dueDate: dueDate,
       notes: faker.helpers.maybe(() => faker.helpers.arrayElement(phoneProblems), {
@@ -180,7 +180,7 @@ export async function seedServiceAppointments(prisma: PrismaClient) {
     data: incompleteAppointments,
   });
 
-  // Create 2 completed but NOT sold services FIRST (so they're not picked up when we associate)
+  // Create completed but NOT sold services FIRST (so they're not picked up when we associate)
   console.log(`   - Creating ${completedNotSoldCount} completed but NOT sold service appointments...`);
   const completedNotSoldAppointments = [];
   
@@ -197,8 +197,8 @@ export async function seedServiceAppointments(prisma: PrismaClient) {
       name: `${service.name} NOT SOLD #${i + 1}`,
       serviceType: service.name,
       description: faker.helpers.arrayElement(phoneNames),
-      costPrice: generateDAPrice(20, 200),
-      servicePrice: generateDAPrice(30, 300),
+      costPrice: generateDAPrice(100, 5000),
+      servicePrice: generateDAPrice(500, 27000),
       clientId: randomClient.id,
       dueDate: dueDate,
       notes: faker.helpers.maybe(() => faker.helpers.arrayElement(phoneProblems), {
@@ -214,8 +214,8 @@ export async function seedServiceAppointments(prisma: PrismaClient) {
     data: completedNotSoldAppointments,
   });
 
-  // Create 100 completed services that WILL be sold (distributed across 3 years)
-  console.log(`   - Creating ${completedAndSoldCount} completed service appointments (will be sold through 3 years of sales)...`);
+  // Create completed services that WILL be sold (distributed across 3 years)
+  console.log(`   - Creating ${completedAndSoldCount} completed service appointments (will be sold through sales)...`);
   const completedAndSoldAppointments = [];
   
   for (let i = 0; i < completedAndSoldCount; i++) {
@@ -232,8 +232,8 @@ export async function seedServiceAppointments(prisma: PrismaClient) {
       name: `${service.name} TO SELL #${i + 1}`,
       serviceType: service.name,
       description: faker.helpers.arrayElement(phoneNames),
-      costPrice: generateDAPrice(20, 200),
-      servicePrice: generateDAPrice(30, 300),
+      costPrice: generateDAPrice(100, 5000),
+      servicePrice: generateDAPrice(500, 27000),
       clientId: randomClient.id,
       dueDate: dueDate,
       notes: faker.helpers.maybe(() => faker.helpers.arrayElement(phoneProblems), {
@@ -263,7 +263,7 @@ export async function seedServiceAppointments(prisma: PrismaClient) {
 export async function associateCompletedServicesWithSales(prisma: PrismaClient) {
   console.log("🔗 Associating completed services with sales...");
 
-  // Get only the 100 completed services that should be sold (the ones with "TO SELL" in name)
+  // Get only the completed services that should be sold (the ones with "TO SELL" in name)
   const completedServices = await prisma.serviceAppointment.findMany({
     where: {
       isCompleted: true,

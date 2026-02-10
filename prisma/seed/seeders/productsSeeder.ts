@@ -47,11 +47,11 @@ export async function seedProducts(
       usedProductNames.add(productName);
 
       const category = faker.helpers.arrayElement(predefinedCategories);
-      // Mobile phone shop prices: phones 5000-200000, accessories 100-5000
+      // Phones: 5-6 digits (10,000 - 999,999 DA). Others: 3-4 digits only (100 - 9,999 DA)
       const isPhone = category === "Phone";
       const boughtPrice = isPhone
-        ? generateDAPrice(5000, 200000) // 5000-200000 DA in centimes (last digit 0)
-        : generateDAPrice(100, 5000); // 100-5000 DA in centimes (last digit 0)
+        ? generateDAPrice(10_000, 999_999) // 5-6 digits DA
+        : generateDAPrice(100, 9_999); // 3-4 digits DA
       
       const markupPercentage = faker.number.float({ min: 1.15, max: 1.5 }); // 15-50% markup
       const sellingPrice = Math.round(Math.floor(boughtPrice * markupPercentage) / 10) * 10; // Ensure last digit is 0
