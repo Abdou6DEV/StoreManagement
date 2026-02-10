@@ -14,6 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "../lib/components/dropdownMenu";
 import { useTranslation } from "react-i18next";
+import { LOGO_ICON, LOGO_ICON_DARK } from "../lib/assets";
 
 export default function Login() {
   const [username, setUsername] = useState("");
@@ -22,7 +23,8 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const { login } = useAuth();
+  const [successPhase, setSuccessPhase] = useState<'idle' | 'green_hold' | 'fade_out'>('idle');
+  const { login, confirmLoginTransition } = useAuth();
   const { t, i18n } = useTranslation();
   const { isDark } = useTheme();
   
@@ -38,12 +40,32 @@ export default function Login() {
     }
   }, []);
 
-  // Focus username input when error occurs
+  // Focus username input when error occurs (preventScroll to avoid layout flicker)
   useEffect(() => {
     if (error && usernameRef.current) {
-      usernameRef.current.focus();
+      usernameRef.current.focus({ preventScroll: true });
     }
   }, [error]);
+
+  // Clear error (and revert button) after 2 seconds
+  useEffect(() => {
+    if (!error) return;
+    const t = setTimeout(() => setError(null), 2000);
+    return () => clearTimeout(t);
+  }, [error]);
+
+  // Success flow: green button 1s → fade out → confirm transition
+  useEffect(() => {
+    if (successPhase !== 'green_hold') return;
+    const t = setTimeout(() => setSuccessPhase('fade_out'), 1000);
+    return () => clearTimeout(t);
+  }, [successPhase]);
+
+  useEffect(() => {
+    if (successPhase !== 'fade_out') return;
+    const t = setTimeout(() => confirmLoginTransition(), 500);
+    return () => clearTimeout(t);
+  }, [successPhase, confirmLoginTransition]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,20 +84,22 @@ export default function Login() {
 
     try {
       const result = await login(username, password);
-      if (!result.success) {
+      if (result.success) {
+        // Single update: green button (no separate loading=false to avoid extra re-render flicker)
+        setSuccessPhase('green_hold');
+        setIsLoading(false);
+      } else {
         setError(result.error || "Login failed");
-        // Focus username input on error
         if (usernameRef.current) {
           usernameRef.current.focus();
         }
+        setIsLoading(false);
       }
     } catch (err) {
       setError("An unexpected error occurred");
-      // Focus username input on error
       if (usernameRef.current) {
         usernameRef.current.focus();
       }
-    } finally {
       setIsLoading(false);
     }
   };
@@ -102,6 +126,33 @@ export default function Login() {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <style>{`
+        @keyframes loginFadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes loginFadeInFromLeft {
+          from {
+            opacity: 0;
+            transform: translateX(-24px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+        @keyframes loginFadeInFromLeftRtl {
+          from {
+            opacity: 0;
+            transform: translateX(24px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+      `}</style>
+
       {/* Settings Button - Top Right */}
       <div className={`fixed top-4 z-50 ${isRTL ? "left-4" : "right-4"}`}>
         <DropdownMenu onOpenChange={setDropdownOpen}>
@@ -180,32 +231,48 @@ export default function Login() {
       </div>
 
       <div className="max-w-md w-full space-y-8">
-        {/* Header */}
+        {/* Header: logo always visible; welcome text fades in then fades out on success */}
         <div className="text-center">
           <img
-            src={isDark ? "/myapp.ico" : "/myapp_black.ico"}
+            src={isDark ? LOGO_ICON : LOGO_ICON_DARK}
             alt=""
-            className="mx-auto h-50 w-50 object-contain select-none mb-4"
+            className="mx-auto h-50 w-50 object-contain select-none mb-4 -mt-2 opacity-0"
+            style={{
+              animation: isRTL
+                ? "loginFadeInFromLeftRtl 0.5s ease-out forwards"
+                : "loginFadeInFromLeft 0.5s ease-out forwards",
+            }}
           />
-          <h2 className="text-3xl font-bold text-foreground mb-2">
-            {t("login.welcomeBack", "Welcome Back")}
-          </h2>
-          <p className="text-muted-foreground">
-            {t("login.signInToAccount", "Sign in to your Store Management account")}
-          </p>
+          <div
+            className="opacity-0 transition-opacity duration-500 ease-out"
+            style={{
+              ...(successPhase === 'fade_out' ? { opacity: 0 } : successPhase === 'green_hold' ? { opacity: 1 } : {}),
+              animation: successPhase === 'idle'
+                ? (isRTL
+                  ? "loginFadeInFromLeftRtl 0.5s ease-out 0.35s forwards"
+                  : "loginFadeInFromLeft 0.5s ease-out 0.35s forwards")
+                : undefined,
+            }}
+          >
+            <h2 className="text-3xl font-bold text-foreground mb-2">
+              {t("login.welcomeBack", "Welcome Back")}
+            </h2>
+            <p className="text-muted-foreground">
+              {t("login.signInToAccount", "Sign in to your Store Management account")}
+            </p>
+          </div>
         </div>
 
-        {/* Login Form */}
+        {/* Login Form + Footer: fade in after welcome, fade out on success */}
+        <div
+          className="opacity-0 transition-opacity duration-500 ease-out"
+          style={{
+            ...(successPhase === 'fade_out' ? { opacity: 0 } : successPhase === 'green_hold' ? { opacity: 1 } : {}),
+            animation: successPhase === 'idle' ? "loginFadeIn 0.4s ease-out 0.7s forwards" : undefined,
+          }}
+        >
         <div className="bg-card rounded-xl border border-border p-8 shadow-sm">
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Error Message */}
-            {error && (
-              <div className="flex items-center p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
-                <AlertCircle className="h-5 w-5 text-destructive mr-2" />
-                <span className="text-sm text-destructive">{error}</span>
-              </div>
-            )}
-
             {/* Username Field */}
             <div>
               <label
@@ -271,14 +338,30 @@ export default function Login() {
               </div>
             </div>
 
-            {/* Submit Button */}
+            {/* Submit Button – green "Signing in..." on success hold, then form fades out */}
             <button
               ref={submitButtonRef}
               type="submit"
-              disabled={isLoading || !username.trim() || !password.trim()}
-              className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-primary-foreground bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+              disabled={isLoading || !!error || !username.trim() || !password.trim() || successPhase !== 'idle'}
+              className={`group relative w-full flex justify-center items-center min-h-[3rem] py-3 px-4 border border-transparent text-sm font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed transition-all duration-200 ${
+                successPhase === 'green_hold'
+                  ? "bg-green-600 text-white hover:bg-green-600"
+                  : error
+                    ? "bg-destructive text-white hover:bg-destructive/90"
+                    : "text-primary-foreground bg-primary hover:bg-primary/90"
+              } ${!error && successPhase === 'idle' && (isLoading || !username.trim() || !password.trim()) ? "disabled:opacity-50" : ""}`}
             >
-              {isLoading ? (
+              {error ? (
+                <span className="flex items-center gap-2 text-white">
+                  <AlertCircle className="h-5 w-5 flex-shrink-0" aria-hidden />
+                  {error}
+                </span>
+              ) : successPhase === 'green_hold' ? (
+                <div className="flex items-center">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                  {t("login.signingIn", "Signing in...")}
+                </div>
+              ) : isLoading ? (
                 <div className="flex items-center">
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary-foreground mr-2"></div>
                   {t("login.signingIn", "Signing in...")}
@@ -292,10 +375,11 @@ export default function Login() {
         </div>
 
         {/* Footer */}
-        <div className="text-center">
+        <div className="text-center mt-4">
           <p className="text-sm text-muted-foreground">
             {t("login.copyright", "© 2025 Store Management System. All rights reserved.")}
           </p>
+        </div>
         </div>
       </div>
     </div>

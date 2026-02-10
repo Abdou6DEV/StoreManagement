@@ -21,7 +21,7 @@ import ProtectedRoute from "../lib/components/protectedRoute";
 import PermissionRoute from "../lib/components/permissionRoute";
 import Login from "./login";
 import LicenseValidation from "./licenseValidation";
-import PreloadLoading from "../lib/components/preloadLoading";
+import LoginToPreloadTransition from "../lib/components/loginToPreloadTransition";
 import { UpdateProvider } from "../lib/contexts/updateContext";
 import { useAuth } from "../lib/contexts/authContext";
 import { useLicense } from "../lib/contexts/licenseContext";
@@ -80,13 +80,14 @@ export default function App() {
     );
   }
 
-  // Show preloading screen after login – only exit when PreloadLoading calls onComplete (bar reaches 100%)
+  // Show login→preload transition (logo down) then preloading – exit when preload bar reaches 100%
+  // Wrapper has bg-background + min-h-screen so no flash when swapping Login → Transition
   if (isAuthenticated && !preloadComplete) {
     return (
-      <div dir={dir} style={{ direction: dir, width: "100%", height: "100%" }}>
+      <div dir={dir} className="min-h-screen w-full h-full bg-background" style={{ direction: dir }}>
         <ToastProvider>
           <UpdateProvider>
-            <PreloadLoading onComplete={markPreloadComplete} />
+            <LoginToPreloadTransition onPreloadComplete={markPreloadComplete} />
           </UpdateProvider>
         </ToastProvider>
       </div>

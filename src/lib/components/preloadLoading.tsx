@@ -3,9 +3,12 @@ import { useTranslation } from "react-i18next";
 import { Loader2, Download, Wifi, WifiOff } from "lucide-react";
 import { useUpdateChecker } from "../hooks/useUpdateChecker";
 import { useTheme } from "../hooks/useTheme";
+import { LOGO_ICON, LOGO_ICON_DARK } from "../assets";
 
 interface PreloadLoadingProps {
   onComplete?: () => void;
+  /** When true, do not render the logo (e.g. when parent provides a shared logo after login transition). */
+  hideLogo?: boolean;
 }
 
 interface LoadingStep {
@@ -26,7 +29,7 @@ const LOADING_STEPS: LoadingStep[] = [
   { id: "administrator", nameKey: "loading.administrator", threshold: 100 },
 ];
 
-export default function PreloadLoading({ onComplete }: PreloadLoadingProps) {
+export default function PreloadLoading({ onComplete, hideLogo }: PreloadLoadingProps) {
   const { t } = useTranslation();
   const [progress, setProgress] = useState(0);
   const [isComplete, setIsComplete] = useState(false);
@@ -73,7 +76,7 @@ export default function PreloadLoading({ onComplete }: PreloadLoadingProps) {
   }, [checkForUpdates, t]);
 
   useEffect(() => {
-    const minLoadingTime = 12000; // 12s so bar and steps stay in sync
+    const minLoadingTime = 6000; // 4s – bar and steps stay in sync
     const tickMs = 80; // smooth bar, in sync with step changes
 
     const interval = setInterval(() => {
@@ -88,7 +91,7 @@ export default function PreloadLoading({ onComplete }: PreloadLoadingProps) {
         clearInterval(interval);
         setIsComplete(true);
         if (onComplete) {
-          setTimeout(onComplete, 1500);
+          setTimeout(onComplete, 600);
         }
       }
     }, tickMs);
@@ -96,17 +99,18 @@ export default function PreloadLoading({ onComplete }: PreloadLoadingProps) {
     return () => clearInterval(interval);
   }, [onComplete, startTime]);
 
-  return (
-    <div className="h-screen bg-background flex flex-col items-center justify-center">
-      <div className="flex flex-col items-center w-full max-w-md px-4">
-        {/* App logo – theme-based; pulse animation like dashboard loading icon */}
-        <div className="mb-4 flex items-center justify-center">
-          <img
-            src={isDark ? "/myapp.ico" : "/myapp_black.ico"}
-            alt=""
-            className={`w-50 h-50 object-contain select-none ${!isComplete ? "animate-pulse" : ""}`}
-          />
-        </div>
+  const content = (
+    <div className="flex flex-col items-center w-full max-w-md px-4">
+        {/* App logo – theme-based; pulse animation like dashboard loading icon (optional when hideLogo) */}
+        {!hideLogo && (
+          <div className="mb-4 flex items-center justify-center">
+            <img
+              src={isDark ? LOGO_ICON : LOGO_ICON_DARK}
+              alt=""
+              className={`w-50 h-50 object-contain select-none ${!isComplete ? "animate-pulse" : ""}`}
+            />
+          </div>
+        )}
 
         {/* Title + description between logo and dots – always visible */}
         <div className="text-center space-y-2 mb-4">
@@ -214,7 +218,15 @@ export default function PreloadLoading({ onComplete }: PreloadLoadingProps) {
             </div>
           </div>
         )}
-      </div>
+    </div>
+  );
+
+  if (hideLogo) {
+    return content;
+  }
+  return (
+    <div className="h-screen bg-background flex flex-col items-center justify-center">
+      {content}
     </div>
   );
 }

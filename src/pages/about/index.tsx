@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "../../lib/hooks/useTheme";
+import { LOGO_ICON, LOGO_ICON_DARK } from "../../lib/assets";
 import {
   Mail, 
   Phone, 
@@ -204,7 +205,7 @@ export default function AboutPage() {
         {/* Header Section */}
         <div className="text-center mb-12">
           <img
-            src={isDark ? "/myapp.ico" : "/myapp_black.ico"}
+            src={isDark ? LOGO_ICON : LOGO_ICON_DARK}
             alt=""
             className="mx-auto w-50 h-50 object-contain select-none mb-6"
           />

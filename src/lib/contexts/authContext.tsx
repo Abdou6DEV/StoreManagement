@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import type { User, UserRole } from "@prisma/client";
 
 interface AuthContextType {
@@ -10,12 +10,18 @@ interface AuthContextType {
     username: string,
     password: string,
   ) => Promise<{ success: boolean; error?: string }>;
+  /** Call after login success UI sequence (green button, fade out) to show preload transition. */
+  confirmLoginTransition: () => void;
   logout: () => void;
   loading: boolean;
   isPreloading: boolean;
   preloadComplete: boolean;
   /** Call this when the preload UI has finished (e.g. progress bar reached 100%). Only this should set preloadComplete. */
   markPreloadComplete: () => void;
+  /** True right after successful login until the login→preload logo animation has finished. */
+  justLoggedIn: boolean;
+  /** Call when the logo-down transition (login → preload) animation has finished. */
+  markLoginTransitionDone: () => void;
   // Permission checking functions
   canAccessPage: (page: string) => boolean;
   hasPermission: (permission: string) => boolean;
@@ -42,6 +48,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [isPreloading, setIsPreloading] = useState(false);
   const [preloadComplete, setPreloadComplete] = useState(false);
+  const [justLoggedIn, setJustLoggedIn] = useState(false);
 
   // Always show login page on app start (no session persistence)
   useEffect(() => {
@@ -59,9 +66,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (result.success && result.user) {
         setUser(result.user);
         setUserRole(result.user.role);
-        setIsAuthenticated(true);
+        // Don't set isAuthenticated yet – Login runs green button → fade out, then calls confirmLoginTransition()
 
-        // Start preloading after successful login
+        // Start preloading in the background
         setIsPreloading(true);
         setPreloadComplete(false);
 
@@ -116,12 +123,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setPreloadComplete(true);
   };
 
+  const markLoginTransitionDone = () => {
+    setJustLoggedIn(false);
+  };
+
+  const confirmLoginTransition = useCallback(() => {
+    setIsAuthenticated(true);
+    setJustLoggedIn(true);
+  }, []);
+
   const logout = () => {
     setIsAuthenticated(false);
     setUser(null);
     setUserRole(null);
     setIsPreloading(false);
     setPreloadComplete(false);
+    setJustLoggedIn(false);
     // No localStorage to clear - no session persistence
   };
 
@@ -178,6 +195,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isPreloading,
     preloadComplete,
     markPreloadComplete,
+    justLoggedIn,
+    markLoginTransitionDone,
+    confirmLoginTransition,
     canAccessPage,
     hasPermission,
   };
