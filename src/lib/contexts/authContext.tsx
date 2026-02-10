@@ -14,6 +14,8 @@ interface AuthContextType {
   loading: boolean;
   isPreloading: boolean;
   preloadComplete: boolean;
+  /** Call this when the preload UI has finished (e.g. progress bar reached 100%). Only this should set preloadComplete. */
+  markPreloadComplete: () => void;
   // Permission checking functions
   canAccessPage: (page: string) => boolean;
   hasPermission: (permission: string) => boolean;
@@ -65,9 +67,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
         // Preload all pages
         const preloadPages = async () => {
-          const startTime = Date.now();
-          const minLoadingTime = 3000; // Minimum 3 seconds
-          
           try {
             const pageComponents = [
               () => import("../../pages/mainMenu"),
@@ -92,25 +91,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               }
             }
             
-            // Ensure minimum loading time has passed
-            const elapsed = Date.now() - startTime;
-            const remainingTime = Math.max(0, minLoadingTime - elapsed);
-            if (remainingTime > 0) {
-              await new Promise(resolve => setTimeout(resolve, remainingTime));
-            }
-            
-            // Mark preloading as complete
-            setPreloadComplete(true);
+            // Don't set preloadComplete here – only the preload UI does when the bar reaches 100%
             setIsPreloading(false);
           } catch (error) {
             console.error("Preloading failed:", error);
-            // Even if preloading fails, ensure minimum time has passed
-            const elapsed = Date.now() - startTime;
-            const remainingTime = Math.max(0, minLoadingTime - elapsed);
-            if (remainingTime > 0) {
-              await new Promise(resolve => setTimeout(resolve, remainingTime));
-            }
-            setPreloadComplete(true);
             setIsPreloading(false);
           }
         };
@@ -126,6 +110,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.error("Login error:", error);
       return { success: false, error: "Login failed" };
     }
+  };
+
+  const markPreloadComplete = () => {
+    setPreloadComplete(true);
   };
 
   const logout = () => {
@@ -189,6 +177,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     loading,
     isPreloading,
     preloadComplete,
+    markPreloadComplete,
     canAccessPage,
     hasPermission,
   };

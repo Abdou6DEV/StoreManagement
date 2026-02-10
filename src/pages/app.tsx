@@ -40,7 +40,7 @@ const About = React.lazy(() => import("./about"));
 
 export default function App() {
   const { i18n } = useTranslation();
-  const { isAuthenticated, loading, isPreloading, preloadComplete } = useAuth();
+  const { isAuthenticated, loading, preloadComplete, markPreloadComplete } = useAuth();
   const { isLicenseValid, isLoading: licenseLoading } = useLicense();
   const location = useLocation();
   const dir = i18n.language === "ar" ? "rtl" : "ltr";
@@ -80,13 +80,13 @@ export default function App() {
     );
   }
 
-  // Show preloading screen after login
-  if (isAuthenticated && (isPreloading || !preloadComplete)) {
+  // Show preloading screen after login – only exit when PreloadLoading calls onComplete (bar reaches 100%)
+  if (isAuthenticated && !preloadComplete) {
     return (
       <div dir={dir} style={{ direction: dir, width: "100%", height: "100%" }}>
         <ToastProvider>
           <UpdateProvider>
-            <PreloadLoading />
+            <PreloadLoading onComplete={markPreloadComplete} />
           </UpdateProvider>
         </ToastProvider>
       </div>

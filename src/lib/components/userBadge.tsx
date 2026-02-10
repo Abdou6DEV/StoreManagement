@@ -1,5 +1,5 @@
 import React from "react";
-import { Crown, UserCheck } from "lucide-react";
+import { User } from "lucide-react";
 import { cn } from "../utils";
 import { useAuth } from "../contexts/authContext";
 import { useTranslation } from "react-i18next";
@@ -27,21 +27,24 @@ export function UserBadge({
       avatar: "w-8 h-8 text-sm",
       text: "text-sm",
       role: "text-xs",
-      icon: "w-3 h-3"
+      icon: "w-3 h-3",
+      userIcon: "w-5 h-5"
     },
     md: {
       container: "px-4 py-3",
       avatar: "w-10 h-10 text-base",
       text: "text-base",
       role: "text-sm",
-      icon: "w-4 h-4"
+      icon: "w-4 h-4",
+      userIcon: "w-6 h-6"
     },
     lg: {
       container: "px-5 py-4",
       avatar: "w-12 h-12 text-lg",
       text: "text-lg",
       role: "text-base",
-      icon: "w-5 h-5"
+      icon: "w-5 h-5",
+      userIcon: "w-7 h-7"
     }
   };
 
@@ -57,11 +60,10 @@ export function UserBadge({
       .slice(0, 2);
   };
 
-  // Get role icon and color
+  // Get role color and label
   const getRoleInfo = () => {
     if (isAdmin || userRole === "ADMIN") {
       return {
-        icon: Crown,
         color: "text-amber-500",
         bgColor: "bg-gradient-to-br from-amber-400 to-orange-500",
         borderColor: "border-amber-300/50 hover:border-amber-400/70",
@@ -70,7 +72,6 @@ export function UserBadge({
     }
 
     return {
-      icon: UserCheck,
       color: "text-green-500",
       bgColor: "bg-gradient-to-br from-green-400 to-green-600",
       borderColor: "border-green-300/50 hover:border-green-400/70",
@@ -99,14 +100,8 @@ export function UserBadge({
         config.container
       )}>
 
-        {/* Role Icon */}
-        <div className={cn(
-          "flex items-center justify-center rounded-full transition-all duration-300 group-hover:scale-110",
-          roleInfo.bgColor,
-          roleInfo.borderColor
-        )}>
-          <roleInfo.icon className={cn("transition-all duration-300", config.icon, roleInfo.color)} />
-        </div>
+        {/* User Icon */}
+        <User className={cn("transition-all duration-300 group-hover:scale-110", config.userIcon, roleInfo.color)} />
 
         {/* User Info */}
         <div className="flex flex-col min-w-0 flex-1">

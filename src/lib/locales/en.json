@@ -728,7 +728,12 @@
   },
   "loading": {
     "title": "Loading...",
+    "preparingSystem": "Preparing system",
+    "preparingSystemDesc": "Please wait...",
+    "loadingPrefix": "Loading",
+    "loadingComplete": "Loading complete",
     "ready": "Ready!",
+    "readyDesc": "You're all set.",
     "mainMenu": "Main Menu",
     "mainMenuDesc": "Loading main navigation",
     "dashboard": "Dashboard",

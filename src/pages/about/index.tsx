@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { 
-  Info, 
+import { useTheme } from "../../lib/hooks/useTheme";
+import {
   Mail, 
   Phone, 
   MapPin, 
@@ -39,6 +39,7 @@ import {
 
 export default function AboutPage() {
   const { t } = useTranslation();
+  const { isDark } = useTheme();
   const [version, setVersion] = useState<string>("1.0.0");
 
   useEffect(() => {
@@ -202,9 +203,11 @@ export default function AboutPage() {
       <div className="max-w-6xl mx-auto px-6 py-8">
         {/* Header Section */}
         <div className="text-center mb-12">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-primary to-primary/80 rounded-2xl mb-6 shadow-lg">
-            <Info className="w-10 h-10 text-white dark:text-black" />
-          </div>
+          <img
+            src={isDark ? "/myapp.ico" : "/myapp_black.ico"}
+            alt=""
+            className="mx-auto w-50 h-50 object-contain select-none mb-6"
+          />
           <h1 className="text-4xl font-bold text-foreground mb-4">
             {t("about.title", "About REDA TECH Store Management")}
           </h1>

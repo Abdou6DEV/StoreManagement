@@ -199,10 +199,8 @@ export default function Navigation() {
                   } ${totalCount > 0 ? "bell-ring" : ""}`}
                 />
                 {totalCount > 0 && (
-                  <span className={`absolute -top-1 -right-1 flex h-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white ${
-                    totalCount > 99 ? "px-1.5 min-w-[28px]" : "w-5"
-                  }`}>
-                    {totalCount > 99 ? "99+" : totalCount}
+                  <span className={`absolute grid h-5 place-items-center rounded-full bg-red-500 font-bold text-white leading-none ${totalCount > 99 ? "-top-1 -right-2 w-7 text-xs" : "-top-1 -right-0.5 w-5.5 text-xs"}`}>
+                    <span className="tabular-nums">{totalCount > 99 ? "99+" : totalCount}</span>
                   </span>
                 )}
               </button>
