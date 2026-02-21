@@ -271,7 +271,7 @@ export const Filters = ({
                     {unseenOutOfStockCount > 0 && enableOutOfStockBadge && outOfStockBadgeLoaded && (
                       <BadgeNotification count={unseenOutOfStockCount} variant="red" />
                     )}
-                    {unseenLowStockCount > 0 && enableBadge && badgeLoaded && (
+                    {unseenLowStockCount > 0 && unseenOutOfStockCount == 0 && enableBadge && badgeLoaded && (
                       <BadgeNotification count={unseenLowStockCount} variant="orange" />
                     )}
                   </div>

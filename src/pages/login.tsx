@@ -236,7 +236,7 @@ export default function Login() {
           <img
             src={isDark ? LOGO_ICON : LOGO_ICON_DARK}
             alt=""
-            className="mx-auto h-50 w-50 object-contain select-none mb-4 -mt-2 opacity-0"
+            className="mx-auto h-50 w-50 object-contain select-none mb-4 -mt-14 opacity-0"
             style={{
               animation: isRTL
                 ? "loginFadeInFromLeftRtl 0.5s ease-out forwards"
