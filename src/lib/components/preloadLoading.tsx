@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { Loader2, Download, Wifi, WifiOff } from "lucide-react";
+import { Loader2, Download, Wifi, WifiOff, CheckCircle } from "lucide-react";
 import { useUpdateChecker } from "../hooks/useUpdateChecker";
 import { useTheme } from "../hooks/useTheme";
 import { LOGO_ICON, LOGO_ICON_DARK } from "../assets";
@@ -180,15 +180,23 @@ export default function PreloadLoading({ onComplete, hideLogo }: PreloadLoadingP
           </div>
         </div>
 
-        {/* Current step label – "Loading Main Menu...", "Loading Stock...", or "Loading complete" in green at 100% */}
-        <div className="w-full text-start">
-          <p className={`text-sm min-h-[1.25rem] ${isComplete ? "text-green-600 font-medium" : "text-muted-foreground"}`}>
-            {isComplete
-              ? t("loading.loadingComplete", "Loading complete")
-              : currentStepLabel
-                ? `${t("loading.loadingPrefix", "Loading")} ${currentStepLabel}...`
-                : ""}
-          </p>
+        {/* Current step label – spinner + "Loading Main Menu...", or verified icon + "Loading complete" at 100% */}
+        <div className="w-full flex items-center gap-2 min-h-[1.25rem]">
+          {isComplete ? (
+            <>
+              <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" aria-hidden />
+              <p className="text-sm text-green-600 font-medium">
+                {t("loading.loadingComplete", "Loading complete")}
+              </p>
+            </>
+          ) : currentStepLabel ? (
+            <>
+              <Loader2 className="w-4 h-4 text-primary animate-spin flex-shrink-0" aria-hidden />
+              <p className="text-sm text-muted-foreground">
+                {t("loading.loadingPrefix", "Loading")} {currentStepLabel}...
+              </p>
+            </>
+          ) : null}
         </div>
 
         {/* Update status */}

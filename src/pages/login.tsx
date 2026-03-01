@@ -63,7 +63,8 @@ export default function Login() {
 
   useEffect(() => {
     if (successPhase !== 'fade_out') return;
-    const t = setTimeout(() => confirmLoginTransition(), 500);
+    // Message + form fade together (0.35s delay), then logo (1s delay + 0.5s) → switch after 1.6s
+    const t = setTimeout(() => confirmLoginTransition(), 1500);
     return () => clearTimeout(t);
   }, [successPhase, confirmLoginTransition]);
 
@@ -151,6 +152,14 @@ export default function Login() {
             transform: translateX(0);
           }
         }
+        @keyframes loginFadeOut {
+          from { opacity: 1; }
+          to { opacity: 0; }
+        }
+        @keyframes loginFadeOutDown {
+          from { opacity: 1; transform: translateY(0); }
+          to { opacity: 0; transform: translateY(30px); }
+        }
       `}</style>
 
       {/* Settings Button - Top Right */}
@@ -231,30 +240,48 @@ export default function Login() {
       </div>
 
       <div className="max-w-md w-full space-y-8">
-        {/* Header: logo always visible; welcome text fades in then fades out on success */}
+        {/* Header: message and form fade out normally; then logo fades out up-to-down */}
         <div className="text-center">
-          <img
-            src={isDark ? LOGO_ICON : LOGO_ICON_DARK}
-            alt=""
-            className="mx-auto h-50 w-50 object-contain select-none mb-4 -mt-14 opacity-0"
-            style={{
-              animation: isRTL
-                ? "loginFadeInFromLeftRtl 0.5s ease-out forwards"
-                : "loginFadeInFromLeft 0.5s ease-out forwards",
-            }}
-          />
+          {/* Logo: fades out up-to-down after message + form (1s delay, 0.5s duration) */}
+          <div
+            className="mb-4"
+            style={
+              successPhase === "fade_out"
+                ? { animation: "loginFadeOutDown 0.5s ease-out 1s forwards" }
+                : undefined
+            }
+          >
+            <img
+              src={isDark ? LOGO_ICON : LOGO_ICON_DARK}
+              alt=""
+              className="mx-auto h-50 w-50 object-contain select-none -mt-10 opacity-0"
+              style={{
+                opacity: successPhase === "green_hold" || successPhase === "fade_out" ? 1 : undefined,
+                animation:
+                  successPhase === "idle"
+                    ? isRTL
+                      ? "loginFadeInFromLeftRtl 0.5s ease-out forwards"
+                      : "loginFadeInFromLeft 0.5s ease-out forwards"
+                    : undefined,
+              }}
+            />
+          </div>
+          {/* Message: normal fade out — 0.5s, 0.35s delay */}
           <div
             className="opacity-0 transition-opacity duration-500 ease-out"
             style={{
-              ...(successPhase === 'fade_out' ? { opacity: 0 } : successPhase === 'green_hold' ? { opacity: 1 } : {}),
-              animation: successPhase === 'idle'
-                ? (isRTL
-                  ? "loginFadeInFromLeftRtl 0.5s ease-out 0.35s forwards"
-                  : "loginFadeInFromLeft 0.5s ease-out 0.35s forwards")
-                : undefined,
+              opacity: successPhase === "green_hold" || successPhase === "fade_out" ? 1 : undefined,
+              animation:
+                successPhase === "idle"
+                  ? isRTL
+                    ? "loginFadeInFromLeftRtl 0.5s ease-out 0.35s forwards"
+                    : "loginFadeInFromLeft 0.5s ease-out 0.35s forwards"
+                  : successPhase === "fade_out"
+                    ? "loginFadeOut 0.5s ease-out 0.35s forwards"
+                    : undefined,
             }}
           >
-            <h2 className="text-3xl font-bold text-foreground mb-2">
+            <h2 className="text-3xl font-bold text-foreground mb-2 mt-15">
               {t("login.welcomeBack", "Welcome Back")}
             </h2>
             <p className="text-muted-foreground">
@@ -263,12 +290,17 @@ export default function Login() {
           </div>
         </div>
 
-        {/* Login Form + Footer: fade in after welcome, fade out on success */}
+        {/* Form: normal fade out — same time as message (0.35s delay, 0.5s duration) */}
         <div
           className="opacity-0 transition-opacity duration-500 ease-out"
           style={{
-            ...(successPhase === 'fade_out' ? { opacity: 0 } : successPhase === 'green_hold' ? { opacity: 1 } : {}),
-            animation: successPhase === 'idle' ? "loginFadeIn 0.4s ease-out 0.7s forwards" : undefined,
+            opacity: successPhase === "green_hold" || successPhase === "fade_out" ? 1 : undefined,
+            animation:
+              successPhase === "idle"
+                ? "loginFadeIn 0.4s ease-out 0.7s forwards"
+                : successPhase === "fade_out"
+                  ? "loginFadeOut 0.5s ease-out 0.35s forwards"
+                  : undefined,
           }}
         >
         <div className="bg-card rounded-xl border border-border p-8 shadow-sm">
