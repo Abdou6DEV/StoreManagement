@@ -424,12 +424,12 @@ export default function EditServiceModal({
       iframeDoc.close();
 
       iframe.onload = () => {
-        setTimeout(() => {
+        setTimeout(async () => {
           try {
-            // Try silent print first, fallback to regular print
             if (window.api?.app?.printSilently) {
               const iframeHTML = iframeDoc.documentElement.outerHTML;
-              window.api.app.printSilently(`<!DOCTYPE html>${iframeHTML}`)
+              const deviceName = (await window.api.database.options.get("receiptPrinterName")) || "";
+              window.api.app.printSilently(`<!DOCTYPE html>${iframeHTML}`, deviceName)
                 .then(() => {
                   showToast(t("services.printSuccess", "Service ticket sent to printer"), "success");
                   if (iframe.parentNode) {

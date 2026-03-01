@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router-dom";
-import { FileText, Receipt, Users, Settings, Database, Download } from "lucide-react";
+import { FileText, Printer, Users, Settings, Database, Download } from "lucide-react";
 import LoggerAdmin from "./components/loggerAdmin";
 import { OptionsList } from "./components/optionsList";
 import { ReceiptConfig } from "./components/receiptConfig";
@@ -65,8 +65,8 @@ export default function AdministratorPage() {
           }`}
         >
           <div className="flex items-center gap-2">
-            <Receipt className="w-4 h-4" />
-            {t("admin.receipt")}
+            <Printer className="w-4 h-4" />
+            {t("admin.configurePrinting", "Configure Printing")}
           </div>
         </button>
         <button

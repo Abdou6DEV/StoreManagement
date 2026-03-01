@@ -5,26 +5,30 @@ import { Checkbox } from "../../../lib/components/checkbox";
 import { useTranslation } from "react-i18next";
 import { useToast } from "../../../lib/contexts/toastContext";
 import {
-  Shield,
+  Printer,
   Loader2,
   AlertCircle,
   Store,
   MapPin,
   Phone,
   MessageSquare,
-  Eye,
   Plus,
   X,
   FileText,
   Receipt,
   Image as ImageIcon,
+  Settings2,
 } from "lucide-react";
 import { generateReceiptBarcode } from "../../../lib/utils/barcodeVisual";
 import { processLogoForReceipt } from "../../../lib/utils/logoProcessor";
+import { ConfigurePrinters } from "./configurePrinters";
+
+type PrintingSubTab = "receiptAndService" | "configurePrinters";
 
 export const ReceiptConfig: React.FC = () => {
   const { t } = useTranslation();
   const { showToast } = useToast();
+  const [printingSubTab, setPrintingSubTab] = useState<PrintingSubTab>("receiptAndService");
   const [storeName, setStoreName] = useState("");
   const [storeAddress, setStoreAddress] = useState("");
   const [storePhone, setStorePhone] = useState("");
@@ -1593,72 +1597,104 @@ export const ReceiptConfig: React.FC = () => {
 
   return (
     <div className="flex gap-6 h-full">
-      {/* Left Side - Configuration Form */}
-      <section className="w-3/5 bg-card border border-border rounded-xl shadow-sm p-6 space-y-5">
+      {/* Left Side - Configuration Form or Configure Printers */}
+      <section className={`${printingSubTab === "configurePrinters" ? "w-full" : "w-3/5"} bg-card border border-border rounded-xl shadow-sm p-6 space-y-5`}>
         {/* Header */}
         <div className="flex items-center gap-3">
-          <Shield className="w-7 h-7 text-orange-500" />
+          <Printer className="w-7 h-7 text-orange-500" />
           <h1 className="text-2xl font-bold">
-            {t("admin.receiptConfig", "Receipt Configuration")}
+            {t("admin.configurePrinting", "Configure Printing")}
           </h1>
         </div>
 
-        {/* Language Selection */}
-        <div className="flex flex-col gap-4 bg-muted/40 border border-border rounded-lg p-6">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
-              <MessageSquare className="w-6 h-6 text-blue-600" />
-            </div>
-            <div>
-              <label className="block text-base font-semibold">
-                {t("admin.receiptLanguage", "Receipt Language")}
-              </label>
-              <p className="text-sm text-muted-foreground">
-                {t("admin.chooseReceiptLanguage", "Choose the language for receipt printing")}
-              </p>
-            </div>
-          </div>
-          <div className="flex gap-3">
-            <button
-              type="button"
-              onClick={() => setReceiptLanguage("fr")}
-              className={`px-4 py-2 rounded-lg border transition-colors ${
-                receiptLanguage === "fr"
-                  ? "bg-blue-500 text-white border-blue-500"
-                  : "bg-background border-border hover:bg-muted"
-              }`}
-            >
-              {t("admin.french", "Français")}
-            </button>
-            <button
-              type="button"
-              onClick={() => setReceiptLanguage("en")}
-              className={`px-4 py-2 rounded-lg border transition-colors ${
-                receiptLanguage === "en"
-                  ? "bg-blue-500 text-white border-blue-500"
-                  : "bg-background border-border hover:bg-muted"
-              }`}
-            >
-              {t("admin.english", "English")}
-            </button>
-            <button
-              type="button"
-              onClick={() => setReceiptLanguage("ar")}
-              className={`px-4 py-2 rounded-lg border transition-colors ${
-                receiptLanguage === "ar"
-                  ? "bg-blue-500 text-white border-blue-500"
-                  : "bg-background border-border hover:bg-muted"
-              }`}
-            >
-              {t("admin.arabic", "العربية")}
-            </button>
-          </div>
+        {/* Sub-tabs: Receipt & Service Ticket | Configure Printers */}
+        <div className="flex border-b border-border gap-1">
+          <button
+            type="button"
+            onClick={() => setPrintingSubTab("receiptAndService")}
+            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px ${
+              printingSubTab === "receiptAndService"
+                ? "border-orange-500 text-orange-600"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Receipt className="w-4 h-4" />
+            {t("admin.receiptAndServiceTicket", "Receipt & Service Ticket")}
+          </button>
+          <button
+            type="button"
+            onClick={() => setPrintingSubTab("configurePrinters")}
+            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px ${
+              printingSubTab === "configurePrinters"
+                ? "border-orange-500 text-orange-600"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Settings2 className="w-4 h-4" />
+            {t("admin.configurePrinters", "Configure Printers")}
+          </button>
         </div>
 
-      {/* Settings Form */}
+        {printingSubTab === "configurePrinters" ? (
+          <ConfigurePrinters />
+        ) : (
+          <>
+      {/* Settings Form - 2 per row: Language & Store Name | Address & Phones | Logo & Footer */}
       <form onSubmit={handleSave} className="space-y-6">
-        {/* Grid Layout for Store Info */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Row 1: Language | Store Name */}
+          {/* Language Selection */}
+          <div className="flex flex-col gap-4 bg-muted/40 border border-border rounded-lg p-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
+                <MessageSquare className="w-6 h-6 text-blue-600" />
+              </div>
+              <div>
+                <label className="block text-base font-semibold">
+                  {t("admin.receiptLanguage", "Receipt Language")}
+                </label>
+                <p className="text-sm text-muted-foreground">
+                  {t("admin.chooseReceiptLanguage", "Choose the language for receipt printing")}
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setReceiptLanguage("fr")}
+                className={`px-4 py-2 rounded-lg border transition-colors ${
+                  receiptLanguage === "fr"
+                    ? "bg-blue-500 text-white border-blue-500"
+                    : "bg-background border-border hover:bg-muted"
+                }`}
+              >
+                {t("admin.french", "Français")}
+              </button>
+              <button
+                type="button"
+                onClick={() => setReceiptLanguage("en")}
+                className={`px-4 py-2 rounded-lg border transition-colors ${
+                  receiptLanguage === "en"
+                    ? "bg-blue-500 text-white border-blue-500"
+                    : "bg-background border-border hover:bg-muted"
+                }`}
+              >
+                {t("admin.english", "English")}
+              </button>
+              <button
+                type="button"
+                onClick={() => setReceiptLanguage("ar")}
+                className={`px-4 py-2 rounded-lg border transition-colors ${
+                  receiptLanguage === "ar"
+                    ? "bg-blue-500 text-white border-blue-500"
+                    : "bg-background border-border hover:bg-muted"
+                }`}
+              >
+                {t("admin.arabic", "العربية")}
+              </button>
+            </div>
+          </div>
+
           {/* Store Name Setting */}
           <div className="flex flex-col gap-4 bg-muted/40 border border-border rounded-lg p-6">
             <div className="flex items-center gap-3">
@@ -1692,6 +1728,113 @@ export const ReceiptConfig: React.FC = () => {
             />
           </div>
 
+          {/* Row 2: Address | Phone Numbers */}
+          {/* Store Address Setting */}
+          <div className="flex flex-col gap-4 bg-muted/40 border border-border rounded-lg p-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
+                <MapPin className="w-6 h-6 text-blue-600" />
+              </div>
+              <div>
+                <label
+                  className="block text-base font-semibold"
+                  htmlFor="storeAddress"
+                >
+                  {t("admin.storeAddress", "Store Address")}
+                </label>
+                <p className="text-sm text-muted-foreground">
+                  {t(
+                    "admin.storeAddressDesc",
+                    "The address that appears on receipts"
+                  )}
+                </p>
+              </div>
+            </div>
+            <Input
+              id="storeAddress"
+              type="text"
+              value={storeAddress}
+              onChange={(e) => setStoreAddress(e.target.value)}
+              className="w-full text-lg"
+              placeholder={t("admin.storeAddressPlaceholder", "Enter store address")}
+              disabled={loading || saving}
+              aria-label={t("admin.storeAddress", "Store Address")}
+            />
+          </div>
+
+          {/* Store Phone Numbers Setting */}
+          <div className="flex flex-col gap-4 bg-muted/40 border border-border rounded-lg p-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
+                <Phone className="w-6 h-6 text-green-600" />
+              </div>
+              <div className="flex-1">
+                <label className="block text-base font-semibold">
+                  {t("admin.storePhones", "Phone Numbers")}
+                </label>
+                <p className="text-sm text-muted-foreground">
+                  {t(
+                    "admin.storePhonesDesc",
+                    "Phone numbers that appear on receipts"
+                  )}
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={addPhoneNumber}
+                disabled={loading || saving}
+                className="flex items-center gap-2"
+              >
+                <Plus className="w-4 h-4" />
+{t("admin.addPhone", "Add Phone")}
+              </Button>
+            </div>
+            
+            {/* Primary Phone */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-muted-foreground">
+                {t("admin.primaryPhone", "Primary Phone")}
+              </label>
+              <Input
+                type="text"
+                value={storePhone}
+                onChange={(e) => setStorePhone(e.target.value)}
+                className="w-full text-lg"
+                placeholder={t("admin.primaryPhonePlaceholder", "Enter primary phone number")}
+                disabled={loading || saving}
+                aria-label="Primary Phone Number"
+              />
+            </div>
+
+            {/* Additional Phone Numbers */}
+            {phoneNumbers.map((phone, index) => (
+              <div key={index} className="flex items-center gap-2">
+                <Input
+                  type="text"
+                  value={phone}
+                  onChange={(e) => updatePhoneNumber(index, e.target.value)}
+                  className="flex-1 text-lg"
+                  placeholder={t("admin.additionalPhonePlaceholder", "Additional phone") + ` ${index + 1}`}
+                  disabled={loading || saving}
+                  aria-label={`Additional phone number ${index + 1}`}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => removePhoneNumber(index)}
+                  disabled={loading || saving}
+                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+            ))}
+          </div>
+
+          {/* Row 3: Logo | Footer */}
           {/* Store Logo Setting */}
           <div className="flex flex-col gap-4 bg-muted/40 border border-border rounded-lg p-6">
             <div className="flex items-center gap-3">
@@ -1721,7 +1864,6 @@ export const ReceiptConfig: React.FC = () => {
                   />
                 </div>
                 
-                {/* Logo Size Slider */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <label className="text-sm font-medium">
@@ -1811,176 +1953,75 @@ export const ReceiptConfig: React.FC = () => {
             )}
           </div>
 
-          {/* Store Address Setting */}
-          <div className="flex flex-col gap-4 bg-muted/40 border border-border rounded-lg p-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
-                <MapPin className="w-6 h-6 text-blue-600" />
-              </div>
-              <div>
-                <label
-                  className="block text-base font-semibold"
-                  htmlFor="storeAddress"
-                >
-                  {t("admin.storeAddress", "Store Address")}
-                </label>
-                <p className="text-sm text-muted-foreground">
-                  {t(
-                    "admin.storeAddressDesc",
-                    "The address that appears on receipts"
-                  )}
-                </p>
-              </div>
-            </div>
-            <Input
-              id="storeAddress"
-              type="text"
-              value={storeAddress}
-              onChange={(e) => setStoreAddress(e.target.value)}
-              className="w-full text-lg"
-              placeholder={t("admin.storeAddressPlaceholder", "Enter store address")}
-              disabled={loading || saving}
-              aria-label={t("admin.storeAddress", "Store Address")}
-            />
-          </div>
-
-          {/* Store Phone Numbers Setting */}
-          <div className="flex flex-col gap-4 bg-muted/40 border border-border rounded-lg p-6 lg:col-span-2">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
-                <Phone className="w-6 h-6 text-green-600" />
-              </div>
-              <div className="flex-1">
-                <label className="block text-base font-semibold">
-                  {t("admin.storePhones", "Phone Numbers")}
-                </label>
-                <p className="text-sm text-muted-foreground">
-                  {t(
-                    "admin.storePhonesDesc",
-                    "Phone numbers that appear on receipts"
-                  )}
-                </p>
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={addPhoneNumber}
-                disabled={loading || saving}
-                className="flex items-center gap-2"
-              >
-                <Plus className="w-4 h-4" />
-{t("admin.addPhone", "Add Phone")}
-              </Button>
-            </div>
-            
-            {/* Primary Phone */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-muted-foreground">
-                {t("admin.primaryPhone", "Primary Phone")}
-              </label>
-              <Input
-                type="text"
-                value={storePhone}
-                onChange={(e) => setStorePhone(e.target.value)}
-                className="w-full text-lg"
-                placeholder={t("admin.primaryPhonePlaceholder", "Enter primary phone number")}
-                disabled={loading || saving}
-                aria-label="Primary Phone Number"
-              />
-            </div>
-
-            {/* Additional Phone Numbers */}
-            {phoneNumbers.map((phone, index) => (
-              <div key={index} className="flex items-center gap-2">
-                <Input
-                  type="text"
-                  value={phone}
-                  onChange={(e) => updatePhoneNumber(index, e.target.value)}
-                  className="flex-1 text-lg"
-                  placeholder={t("admin.additionalPhonePlaceholder", "Additional phone") + ` ${index + 1}`}
+          {/* Footer message – show only the one matching current preview */}
+          <div className="flex flex-col gap-4">
+            {previewMode === "receipt" && (
+              <div className="flex flex-col gap-4 bg-muted/40 border border-border rounded-lg p-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
+                    <MessageSquare className="w-6 h-6 text-purple-600" />
+                  </div>
+                  <div>
+                    <label
+                      className="block text-base font-semibold"
+                      htmlFor="footerMessage"
+                    >
+                      {t("admin.footerMessage", "Footer Message")}
+                    </label>
+                    <p className="text-sm text-muted-foreground">
+                      {t(
+                        "admin.footerMessageDesc",
+                        "Custom message that appears at the bottom of receipts"
+                      )}
+                    </p>
+                  </div>
+                </div>
+                <textarea
+                  id="footerMessage"
+                  value={footerMessage}
+                  onChange={(e) => setFooterMessage(e.target.value)}
+                  className="w-full text-lg p-3 border border-input rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+                  placeholder={t("admin.footerMessagePlaceholder", "Enter footer message")}
                   disabled={loading || saving}
-                  aria-label={`Additional phone number ${index + 1}`}
+                  rows={3}
+                  aria-label={t("admin.footerMessage", "Footer Message")}
                 />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => removePhoneNumber(index)}
-                  disabled={loading || saving}
-                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                >
-                  <X className="w-4 h-4" />
-                </Button>
               </div>
-            ))}
+            )}
+            {previewMode === "serviceTicket" && (
+              <div className="flex flex-col gap-4 bg-muted/40 border border-border rounded-lg p-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
+                    <MessageSquare className="w-6 h-6 text-green-600" />
+                  </div>
+                  <div>
+                    <label
+                      className="block text-base font-semibold"
+                      htmlFor="serviceTicketFooterMessage"
+                    >
+                      {t("admin.serviceTicketFooterMessage", "Service Ticket Footer Message")}
+                    </label>
+                    <p className="text-sm text-muted-foreground">
+                      {t(
+                        "admin.serviceTicketFooterMessageDesc",
+                        "Custom message that appears at the bottom of service tickets"
+                      )}
+                    </p>
+                  </div>
+                </div>
+                <textarea
+                  id="serviceTicketFooterMessage"
+                  value={serviceTicketFooterMessage}
+                  onChange={(e) => setServiceTicketFooterMessage(e.target.value)}
+                  className="w-full text-lg p-3 border border-input rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+                  placeholder={t("admin.serviceTicketFooterMessagePlaceholder", "Enter service ticket footer message")}
+                  disabled={loading || saving}
+                  rows={3}
+                  aria-label={t("admin.serviceTicketFooterMessage", "Service Ticket Footer Message")}
+                />
+              </div>
+            )}
           </div>
-        </div>
-
-        {/* Footer Message Setting - Full Width */}
-        <div className="flex flex-col gap-4 bg-muted/40 border border-border rounded-lg p-6">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
-              <MessageSquare className="w-6 h-6 text-purple-600" />
-            </div>
-            <div>
-              <label
-                className="block text-base font-semibold"
-                htmlFor="footerMessage"
-              >
-                {t("admin.footerMessage", "Footer Message")}
-              </label>
-              <p className="text-sm text-muted-foreground">
-                {t(
-                  "admin.footerMessageDesc",
-                  "Custom message that appears at the bottom of receipts"
-                )}
-              </p>
-            </div>
-          </div>
-          <textarea
-            id="footerMessage"
-            value={footerMessage}
-            onChange={(e) => setFooterMessage(e.target.value)}
-            className="w-full text-lg p-3 border border-input rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
-            placeholder={t("admin.footerMessagePlaceholder", "Enter footer message")}
-            disabled={loading || saving}
-            rows={3}
-            aria-label={t("admin.footerMessage", "Footer Message")}
-          />
-        </div>
-
-        {/* Service Ticket Footer Message */}
-        <div className="flex flex-col gap-4 bg-muted/40 border border-border rounded-lg p-6">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
-              <MessageSquare className="w-6 h-6 text-green-600" />
-            </div>
-            <div>
-              <label
-                className="block text-base font-semibold"
-                htmlFor="serviceTicketFooterMessage"
-              >
-                {t("admin.serviceTicketFooterMessage", "Service Ticket Footer Message")}
-              </label>
-              <p className="text-sm text-muted-foreground">
-                {t(
-                  "admin.serviceTicketFooterMessageDesc",
-                  "Custom message that appears at the bottom of service tickets"
-                )}
-              </p>
-            </div>
-          </div>
-          <textarea
-            id="serviceTicketFooterMessage"
-            value={serviceTicketFooterMessage}
-            onChange={(e) => setServiceTicketFooterMessage(e.target.value)}
-            className="w-full text-lg p-3 border border-input rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
-            placeholder={t("admin.serviceTicketFooterMessagePlaceholder", "Enter service ticket footer message")}
-            disabled={loading || saving}
-            rows={3}
-            aria-label={t("admin.serviceTicketFooterMessage", "Service Ticket Footer Message")}
-          />
         </div>
 
         {/* Save Button and Feedback */}
@@ -2009,13 +2050,16 @@ export const ReceiptConfig: React.FC = () => {
           )}
         </div>
       </form>
+          </>
+        )}
       </section>
 
-      {/* Right Side - Live Preview */}
+      {/* Right Side - Live Preview (only when Receipt & Service Ticket tab) */}
+      {printingSubTab === "receiptAndService" && (
       <section className="w-2/5 bg-card border border-border rounded-xl shadow-sm p-6">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <Eye className="w-6 h-6 text-blue-500" />
+            <Printer className="w-6 h-6 text-blue-500" />
             <h2 className="text-xl font-bold">
               {t("admin.receiptPreview", "Live Preview")}
             </h2>
@@ -2043,7 +2087,7 @@ export const ReceiptConfig: React.FC = () => {
               }`}
             >
               <FileText className="w-4 h-4" />
-              {t("admin.serviceTicket", "Service Ticket")}
+              {t("admin.serviceTicketPreview", "Service Ticket")}
             </button>
           </div>
         </div>
@@ -2131,6 +2175,7 @@ export const ReceiptConfig: React.FC = () => {
           )}
         </div>
       </section>
+      )}
     </div>
   );
 };

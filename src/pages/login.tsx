@@ -376,7 +376,7 @@ export default function Login() {
               type="submit"
               disabled={isLoading || !!error || !username.trim() || !password.trim() || successPhase !== 'idle'}
               className={`group relative w-full flex justify-center items-center min-h-[3rem] py-3 px-4 border border-transparent text-sm font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed transition-all duration-200 ${
-                successPhase === 'green_hold'
+                successPhase === 'green_hold' || successPhase === 'fade_out'
                   ? "bg-green-600 text-white hover:bg-green-600"
                   : error
                     ? "bg-destructive text-white hover:bg-destructive/90"
@@ -388,7 +388,7 @@ export default function Login() {
                   <AlertCircle className="h-5 w-5 flex-shrink-0" aria-hidden />
                   {error}
                 </span>
-              ) : successPhase === 'green_hold' ? (
+              ) : successPhase === 'green_hold' || successPhase === 'fade_out' ? (
                 <div className="flex items-center">
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
                   {t("login.signingIn", "Signing in...")}

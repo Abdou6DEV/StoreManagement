@@ -3,8 +3,57 @@ import path from "path";
 import fs from "fs";
 import { exec, spawn } from "child_process";
 import { promisify } from "util";
+import { platform } from "process";
 
 const execAsync = promisify(exec);
+
+const PRINTER_STATUS_OFFLINE = 0x80;
+// Win32_Printer.PrinterStatus: 1=Other, 2=Unknown, 3=Idle, 4=Printing, 5=Warmup, 6=Stopped, 7=Offline
+
+function parseWmiPrinterOutput(stdout: string): { name: string; displayName: string; status: number }[] {
+  const list: { name: string; displayName: string; status: number }[] = [];
+  for (const line of (stdout || "").split(/\r?\n/)) {
+    const sep = line.trim().indexOf("|");
+    if (sep > 0) {
+      const name = line.slice(0, sep).trim();
+      const num = parseInt(line.slice(sep + 1).trim(), 10);
+      if (name && !Number.isNaN(num)) {
+        list.push({
+          name,
+          displayName: name,
+          status: num === 7 || num === 2 ? PRINTER_STATUS_OFFLINE : 0,
+        });
+      }
+    }
+  }
+  return list;
+}
+
+/** On Windows, get full printer list with real status from WMI so UI shows Connected/Offline correctly. */
+async function getWindowsPrinterList(): Promise<{ name: string; displayName: string; status: number }[]> {
+  if (platform !== "win32") return [];
+  try {
+    let stdout = "";
+    try {
+      const r = await execAsync(
+        'powershell -NoProfile -ExecutionPolicy Bypass -Command "Get-CimInstance -Class Win32_Printer -ErrorAction SilentlyContinue | ForEach-Object { $_.Name + \'|\' + $_.PrinterStatus }"',
+        { timeout: 15000, encoding: "utf8", windowsHide: true }
+      );
+      stdout = r.stdout ?? "";
+    } catch {
+      const r = await execAsync(
+        'powershell -NoProfile -ExecutionPolicy Bypass -Command "Get-WmiObject -Class Win32_Printer -ErrorAction SilentlyContinue | ForEach-Object { $_.Name + \'|\' + $_.PrinterStatus }"',
+        { timeout: 15000, encoding: "utf8", windowsHide: true }
+      );
+      stdout = r.stdout ?? "";
+    }
+    const list = parseWmiPrinterOutput(stdout);
+    return list;
+  } catch (e) {
+    console.warn("[getWindowsPrinterList]", e);
+    return [];
+  }
+}
 
 // Version comparison function
 function compareVersions(version1: string, version2: string): number {
@@ -652,12 +701,56 @@ export function setupAppHandlers() {
     }
   }
 
-  // Silent print handler - prints HTML directly without showing print dialog
-  ipcMain.handle("app:printSilently", async (_event, html: string) => {
+  // Get list of system printers (name, displayName, status)
+  // On Windows use WMI so status (Connected/Offline) is correct; otherwise use Electron getPrinters
+  ipcMain.handle("app:getPrinters", async () => {
+    if (platform === "win32") {
+      const wmiList = await getWindowsPrinterList();
+      if (wmiList.length > 0) return wmiList;
+    }
+    let list: { name: string; displayName: string; status: number }[] = [];
+    try {
+      const win = BrowserWindow.getFocusedWindow() || BrowserWindow.getAllWindows()[0];
+      if (win && !win.isDestroyed()) {
+        const wc = win.webContents;
+        const getPrinters = (wc as unknown as { getPrinters?: () => { name: string; displayName?: string; status?: number }[] }).getPrinters;
+        const getPrintersAsync = (wc as unknown as { getPrintersAsync?: () => Promise<{ name: string; displayName?: string; status?: number }[]> }).getPrintersAsync;
+        if (typeof getPrintersAsync === "function") {
+          const printers = await getPrintersAsync.call(wc);
+          list = (printers || []).map((p) => ({ name: p.name, displayName: p.displayName || p.name, status: p.status ?? 0 }));
+        } else if (typeof getPrinters === "function") {
+          const printers = getPrinters.call(wc);
+          list = (printers || []).map((p) => ({ name: p.name, displayName: p.displayName || p.name, status: p.status ?? 0 }));
+        }
+      }
+      if (list.length === 0) {
+        const tempWin = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: false, contextIsolation: true } });
+        await tempWin.loadURL("about:blank");
+        const twc = tempWin.webContents;
+        const getPrintersAsync = (twc as unknown as { getPrintersAsync?: () => Promise<{ name: string; displayName?: string; status?: number }[]> }).getPrintersAsync;
+        const getPrinters = (twc as unknown as { getPrinters?: () => { name: string; displayName?: string; status?: number }[] }).getPrinters;
+        if (typeof getPrintersAsync === "function") {
+          const printers = await getPrintersAsync.call(twc);
+          list = (printers || []).map((p) => ({ name: p.name, displayName: p.displayName || p.name, status: p.status ?? 0 }));
+        } else if (typeof getPrinters === "function") {
+          const printers = getPrinters.call(twc);
+          list = (printers || []).map((p) => ({ name: p.name, displayName: p.displayName || p.name, status: p.status ?? 0 }));
+        }
+        tempWin.destroy();
+      }
+      return list;
+    } catch (error) {
+      console.error("[getPrinters]", error);
+      return [];
+    }
+  });
+
+  // Silent print handler - prints HTML to optional device (printer name). Empty deviceName = default printer.
+  ipcMain.handle("app:printSilently", async (_event, html: string, deviceName?: string) => {
+    const targetDevice = typeof deviceName === "string" ? deviceName : "";
     return new Promise((resolve, reject) => {
       try {
         // Create a hidden BrowserWindow for printing
-        // Size doesn't matter much since print media query will control the actual print size
         const printWindow = new BrowserWindow({
           show: false,
           width: 800,
@@ -668,31 +761,23 @@ export function setupAppHandlers() {
           },
         });
 
-        // Load the HTML content
         printWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`);
 
-        // Wait for content to load, then print silently
         printWindow.webContents.once("did-finish-load", () => {
-          // Inject JavaScript to ensure print media query is active before printing
           printWindow.webContents.executeJavaScript(`
-            // Force browser to apply print styles
             const style = document.createElement('style');
             style.textContent = '@media print { body { width: 70mm !important; } .receipt { width: 70mm !important; max-width: 70mm !important; } }';
             document.head.appendChild(style);
           `).then(() => {
             setTimeout(() => {
-              // Print silently - CSS @page rule should control size
-              // Using minimal options to let CSS handle everything
               printWindow.webContents.print(
                 {
                   silent: true,
                   printBackground: true,
-                  deviceName: "", // Empty string uses default printer
+                  deviceName: targetDevice,
                 },
                 (success: boolean, failureReason?: string) => {
-                  // Close the window
                   printWindow.close();
-                  
                   if (success) {
                     resolve(true);
                   } else {
@@ -700,14 +785,13 @@ export function setupAppHandlers() {
                   }
                 }
               );
-            }, 300); // Longer delay to ensure all styles are applied
+            }, 300);
           }).catch((error) => {
             printWindow.close();
             reject(new Error(`Failed to apply print styles: ${error}`));
           });
         });
 
-        // Handle errors
         printWindow.webContents.once("did-fail-load", () => {
           printWindow.close();
           reject(new Error("Failed to load print content"));

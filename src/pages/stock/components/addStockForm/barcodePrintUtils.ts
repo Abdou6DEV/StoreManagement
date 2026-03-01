@@ -353,27 +353,21 @@ export const printBarcodeLabel = async (data: BarcodeLabelData, quantity = 1, sh
   iframeDoc.write(printContent);
   iframeDoc.close();
 
-  // Use iframe method exactly like receipt printing - wait for content to load, then get HTML and print
   iframe.onload = () => {
-    setTimeout(() => {
+    setTimeout(async () => {
       try {
-        // Verify iframe has content
         const bodyContent = iframeDoc.body?.innerHTML || '';
         if (!bodyContent || bodyContent.trim().length === 0) {
           throw new Error('Iframe body is empty - cannot print');
         }
 
-        // Use Electron's silent print if available, otherwise regular print
         if (window.api?.app?.printSilently) {
-          // Get the iframe's HTML content and print it silently
           const iframeHTML = iframeDoc.documentElement.outerHTML;
-          
-          // Verify we have valid HTML
           if (!iframeHTML || iframeHTML.length < 100) {
             throw new Error('Iframe HTML is invalid or too short');
           }
-          
-          window.api.app.printSilently(`<!DOCTYPE html>${iframeHTML}`)
+          const deviceName = (await window.api.database.options.get("labelPrinterName")) || "";
+          window.api.app.printSilently(`<!DOCTYPE html>${iframeHTML}`, deviceName)
             .then(() => {
               if (iframe.parentNode) {
                 document.body.removeChild(iframe);

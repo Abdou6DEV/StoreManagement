@@ -1041,13 +1041,12 @@ export const printReceiptDirectly = async (
     iframeDoc.close();
 
     iframe.onload = () => {
-      setTimeout(() => {
+      setTimeout(async () => {
         try {
-          // Use Electron's silent print if available, otherwise regular print
           if (window.api?.app?.printSilently) {
-            // Get the iframe's HTML content and print it silently
             const iframeHTML = iframeDoc.documentElement.outerHTML;
-            window.api.app.printSilently(`<!DOCTYPE html>${iframeHTML}`)
+            const deviceName = (await window.api.database.options.get("receiptPrinterName")) || "";
+            window.api.app.printSilently(`<!DOCTYPE html>${iframeHTML}`, deviceName)
               .then(() => {
                 showToast?.(i18nT("cashier.printSuccess", "Receipt sent to printer"), "success");
                 if (iframe.parentNode) {
@@ -1056,7 +1055,6 @@ export const printReceiptDirectly = async (
               })
               .catch((error: Error) => {
                 console.error("Silent print failed, falling back to regular print:", error);
-                // Fallback to regular print
                 iframe.contentWindow?.print();
                 setTimeout(() => {
                   if (iframe.parentNode) {
@@ -1350,12 +1348,12 @@ export default function ReceiptModal({
       iframeDoc.close();
 
       iframe.onload = () => {
-        setTimeout(() => {
+        setTimeout(async () => {
           try {
-            // Try silent print first, fallback to regular print
             if (window.api?.app?.printSilently) {
               const iframeHTML = iframeDoc.documentElement.outerHTML;
-              window.api.app.printSilently(`<!DOCTYPE html>${iframeHTML}`)
+              const deviceName = (await window.api.database.options.get("receiptPrinterName")) || "";
+              window.api.app.printSilently(`<!DOCTYPE html>${iframeHTML}`, deviceName)
                 .then(() => {
                   toast.showToast(t("cashier.printSuccess", "Receipt sent to printer"), "success");
                   if (iframe.parentNode) {
@@ -1365,7 +1363,6 @@ export default function ReceiptModal({
                 })
                 .catch((error: Error) => {
                   rendererLogger.error("Silent print failed, using regular print", "ReceiptModal", error);
-                  // Fallback to regular print - this will show dialog but respects CSS correctly
                   iframe.contentWindow?.print();
                   setTimeout(() => {
                     if (iframe.parentNode) {

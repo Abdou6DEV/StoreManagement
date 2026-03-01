@@ -218,7 +218,8 @@ export type AppAPI = {
     releaseNotes?: string;
     error?: string;
   }>;
-  printSilently: (html: string) => Promise<boolean>;
+  getPrinters: () => Promise<{ name: string; displayName: string; status: number }[]>;
+  printSilently: (html: string, deviceName?: string) => Promise<boolean>;
   downloadUpdate: (url: string) => Promise<{
     success: boolean;
     path: string;
