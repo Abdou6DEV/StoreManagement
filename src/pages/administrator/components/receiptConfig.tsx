@@ -1596,49 +1596,49 @@ export const ReceiptConfig: React.FC = () => {
   };
 
   return (
-    <div className="flex gap-6 h-full">
-      {/* Left Side - Configuration Form or Configure Printers */}
-      <section className={`${printingSubTab === "configurePrinters" ? "w-full" : "w-3/5"} bg-card border border-border rounded-xl shadow-sm p-6 space-y-5`}>
-        {/* Header */}
-        <div className="flex items-center gap-3">
-          <Printer className="w-7 h-7 text-orange-500" />
-          <h1 className="text-2xl font-bold">
-            {t("admin.configurePrinting", "Configure Printing")}
-          </h1>
-        </div>
+    <section className="w-full bg-card border border-border rounded-xl shadow-sm p-6 space-y-5">
+      {/* Header */}
+      <div className="flex items-center gap-3">
+        <Printer className="w-7 h-7 text-orange-500" />
+        <h1 className="text-2xl font-bold">
+          {t("admin.configurePrinting", "Configure Printing")}
+        </h1>
+      </div>
 
-        {/* Sub-tabs: Receipt & Service Ticket | Configure Printers */}
-        <div className="flex border-b border-border gap-1">
-          <button
-            type="button"
-            onClick={() => setPrintingSubTab("receiptAndService")}
-            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px ${
-              printingSubTab === "receiptAndService"
-                ? "border-orange-500 text-orange-600"
-                : "border-transparent text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <Receipt className="w-4 h-4" />
-            {t("admin.receiptAndServiceTicket", "Receipt & Service Ticket")}
-          </button>
-          <button
-            type="button"
-            onClick={() => setPrintingSubTab("configurePrinters")}
-            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px ${
-              printingSubTab === "configurePrinters"
-                ? "border-orange-500 text-orange-600"
-                : "border-transparent text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <Settings2 className="w-4 h-4" />
-            {t("admin.configurePrinters", "Configure Printers")}
-          </button>
-        </div>
+      {/* Sub-tabs: Receipt & Service Ticket | Configure Printers */}
+      <div className="flex border-b border-border gap-1">
+        <button
+          type="button"
+          onClick={() => setPrintingSubTab("receiptAndService")}
+          className={`flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px ${
+            printingSubTab === "receiptAndService"
+              ? "border-orange-500 text-orange-600"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Receipt className="w-4 h-4" />
+          {t("admin.receiptAndServiceTicket", "Receipt & Service Ticket")}
+        </button>
+        <button
+          type="button"
+          onClick={() => setPrintingSubTab("configurePrinters")}
+          className={`flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px ${
+            printingSubTab === "configurePrinters"
+              ? "border-orange-500 text-orange-600"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Settings2 className="w-4 h-4" />
+          {t("admin.configurePrinters", "Configure Printers")}
+        </button>
+      </div>
 
-        {printingSubTab === "configurePrinters" ? (
-          <ConfigurePrinters />
-        ) : (
-          <>
+      {printingSubTab === "configurePrinters" ? (
+        <ConfigurePrinters />
+      ) : (
+        <div className="flex gap-6 h-full min-h-0">
+          {/* Left: Configuration Form */}
+          <div className="w-3/5 min-w-0 space-y-5">
       {/* Settings Form - 2 per row: Language & Store Name | Address & Phones | Logo & Footer */}
       <form onSubmit={handleSave} className="space-y-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -2050,132 +2050,130 @@ export const ReceiptConfig: React.FC = () => {
           )}
         </div>
       </form>
-          </>
-        )}
-      </section>
+          </div>
 
-      {/* Right Side - Live Preview (only when Receipt & Service Ticket tab) */}
-      {printingSubTab === "receiptAndService" && (
-      <section className="w-2/5 bg-card border border-border rounded-xl shadow-sm p-6">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <Printer className="w-6 h-6 text-blue-500" />
-            <h2 className="text-xl font-bold">
-              {t("admin.receiptPreview", "Live Preview")}
-            </h2>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setPreviewMode("receipt")}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-colors text-sm ${
-                previewMode === "receipt"
-                  ? "bg-blue-500 text-white border-blue-500"
-                  : "bg-background border-border hover:bg-muted"
-              }`}
-            >
-              <Receipt className="w-4 h-4" />
-              {t("admin.receipt", "Receipt")}
-            </button>
-            <button
-              type="button"
-              onClick={() => setPreviewMode("serviceTicket")}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-colors text-sm ${
-                previewMode === "serviceTicket"
-                  ? "bg-blue-500 text-white border-blue-500"
-                  : "bg-background border-border hover:bg-muted"
-              }`}
-            >
-              <FileText className="w-4 h-4" />
-              {t("admin.serviceTicketPreview", "Service Ticket")}
-            </button>
-          </div>
-        </div>
-        
-        <div className="h-full rounded-lg overflow-auto flex flex-col">
-          <div className="flex justify-center w-full">
-            {previewReceipt ? (
-              <div className="w-full">
-                <iframe
-                  srcDoc={previewReceipt}
-                  className="border border-border rounded-lg w-full h-full"
-                  title={previewMode === "receipt" ? "Receipt Preview" : "Service Ticket Preview"}
-                  style={{ 
-                    width: '500px', 
-                    maxWidth: '100%',
-                    minHeight: '800px',
-                    height: 'auto',
-                    border: 'none'
-                  }}
-                />
+          {/* Right: Live Preview */}
+          <div className="w-2/5 min-w-0 flex flex-col border-l border-border pl-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <Printer className="w-6 h-6 text-blue-500" />
+                <h2 className="text-xl font-bold">
+                  {t("admin.receiptPreview", "Live Preview")}
+                </h2>
               </div>
-            ) : (
-              <div className="flex items-center justify-center h-64 text-muted-foreground">
-                <div className="text-center">
-                  <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2" />
-                  <p>Loading preview...</p>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setPreviewMode("receipt")}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-colors text-sm ${
+                    previewMode === "receipt"
+                      ? "bg-blue-500 text-white border-blue-500"
+                      : "bg-background border-border hover:bg-muted"
+                  }`}
+                >
+                  <Receipt className="w-4 h-4" />
+                  {t("admin.receipt", "Receipt")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPreviewMode("serviceTicket")}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-colors text-sm ${
+                    previewMode === "serviceTicket"
+                      ? "bg-blue-500 text-white border-blue-500"
+                      : "bg-background border-border hover:bg-muted"
+                  }`}
+                >
+                  <FileText className="w-4 h-4" />
+                  {t("admin.serviceTicketPreview", "Service Ticket")}
+                </button>
+              </div>
+            </div>
+
+            <div className="h-full rounded-lg overflow-auto flex flex-col items-center">
+              <div className="flex justify-center w-full">
+                {previewReceipt ? (
+                  <div className="flex justify-center w-full">
+                    <iframe
+                      srcDoc={previewReceipt}
+                      className="border border-border rounded-lg w-full h-full"
+                      title={previewMode === "receipt" ? "Receipt Preview" : "Service Ticket Preview"}
+                      style={{
+                        width: '500px',
+                        maxWidth: '100%',
+                        minHeight: '800px',
+                        height: 'auto',
+                        border: 'none'
+                      }}
+                    />
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center h-64 text-muted-foreground">
+                    <div className="text-center">
+                      <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2" />
+                      <p>Loading preview...</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Preview Options - Only show for receipt preview */}
+              {previewMode === "receipt" && (
+                <div className="p-3 bg-muted/40 rounded-lg border border-border mt-6">
+                  <h3 className="text-sm font-semibold mb-3 text-muted-foreground">{t("admin.previewOptions", "Preview Options")}</h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Checkbox
+                      checked={previewOptions.showClient}
+                      onChange={(checked) => setPreviewOptions(prev => ({ ...prev, showClient: checked }))}
+                      label={t("admin.showClient", "Show Client")}
+                      color="orange"
+                    />
+
+                    <Checkbox
+                      checked={previewOptions.showDiscount}
+                      onChange={(checked) => setPreviewOptions(prev => ({ ...prev, showDiscount: checked }))}
+                      label={t("admin.showDiscount", "Show Discount")}
+                      color="orange"
+                    />
+
+                    <Checkbox
+                      checked={previewOptions.showCredit}
+                      onChange={(checked) => {
+                        setPreviewOptions(prev => ({
+                          ...prev,
+                          showCredit: checked,
+                          showVersement: checked ? false : prev.showVersement
+                        }));
+                      }}
+                      label={t("admin.showCredit", "Show Credit")}
+                      color="orange"
+                    />
+
+                    <Checkbox
+                      checked={previewOptions.showVersement}
+                      onChange={(checked) => {
+                        setPreviewOptions(prev => ({
+                          ...prev,
+                          showVersement: checked,
+                          showCredit: checked ? false : prev.showCredit
+                        }));
+                      }}
+                      label={t("admin.showVersement", "Show Versement")}
+                      color="orange"
+                    />
+
+                    <Checkbox
+                      checked={previewOptions.showInformation}
+                      onChange={(checked) => setPreviewOptions(prev => ({ ...prev, showInformation: checked }))}
+                      label={t("admin.showInformation", "Show Information")}
+                      color="orange"
+                    />
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
-          
-          {/* Preview Options - Only show for receipt preview */}
-          {previewMode === "receipt" && (
-          <div className="p-3 bg-muted/40 rounded-lg border border-border mt-6">
-            <h3 className="text-sm font-semibold mb-3 text-muted-foreground">{t("admin.previewOptions", "Preview Options")}</h3>
-            <div className="grid grid-cols-2 gap-3">
-              <Checkbox
-                checked={previewOptions.showClient}
-                onChange={(checked) => setPreviewOptions(prev => ({ ...prev, showClient: checked }))}
-                label={t("admin.showClient", "Show Client")}
-                color="orange"
-              />
-              
-              <Checkbox
-                checked={previewOptions.showDiscount}
-                onChange={(checked) => setPreviewOptions(prev => ({ ...prev, showDiscount: checked }))}
-                label={t("admin.showDiscount", "Show Discount")}
-                color="orange"
-              />
-              
-              <Checkbox
-                checked={previewOptions.showCredit}
-                onChange={(checked) => {
-                  setPreviewOptions(prev => ({ 
-                    ...prev, 
-                    showCredit: checked,
-                    showVersement: checked ? false : prev.showVersement
-                  }));
-                }}
-                label={t("admin.showCredit", "Show Credit")}
-                color="orange"
-              />
-              
-              <Checkbox
-                checked={previewOptions.showVersement}
-                onChange={(checked) => {
-                  setPreviewOptions(prev => ({ 
-                    ...prev, 
-                    showVersement: checked,
-                    showCredit: checked ? false : prev.showCredit
-                  }));
-                }}
-                label={t("admin.showVersement", "Show Versement")}
-                color="orange"
-              />
-              
-              <Checkbox
-                checked={previewOptions.showInformation}
-                onChange={(checked) => setPreviewOptions(prev => ({ ...prev, showInformation: checked }))}
-                label={t("admin.showInformation", "Show Information")}
-                color="orange"
-              />
+              )}
             </div>
           </div>
-          )}
         </div>
-      </section>
       )}
-    </div>
+    </section>
   );
 };
