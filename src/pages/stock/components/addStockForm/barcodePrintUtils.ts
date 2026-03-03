@@ -24,6 +24,8 @@ export const printBarcodeLabel = async (data: BarcodeLabelData, quantity = 1, sh
     throw new Error('Barcode is required when showing barcode');
   }
 
+  const storeName = (await window.api.database.options.get("storeName")) || "";
+
   // Use iframe method for direct printing (like receipt printing)
   const iframe = document.createElement("iframe");
   iframe.style.position = "fixed";
@@ -73,11 +75,13 @@ export const printBarcodeLabel = async (data: BarcodeLabelData, quantity = 1, sh
         </div>
   ` : '';
   
-  // Use explicit boolean check for class
   const noBarcodeClass = (!shouldShowBarcode) ? 'label-no-barcode' : '';
-  
+  const hasBarcode = shouldShowBarcode && barcodeImage && barcodeImage.length > 0;
+  const storeNameLine = (hasBarcode && storeName) ? `<div class="label-store-name">${storeName}</div>` : '';
+
   const labelHTML = `
       <div class="label ${noBarcodeClass}">
+        ${storeNameLine}
         <div class="product-name">${productName}</div>
         <div class="price">${formatPrice(price)}</div>
         ${barcodeHTML}
@@ -93,6 +97,9 @@ export const printBarcodeLabel = async (data: BarcodeLabelData, quantity = 1, sh
     <head>
       <meta charset="utf-8">
       <title>Barcode Label</title>
+      <link rel="preconnect" href="https://fonts.googleapis.com">
+      <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+      <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
       <style>
         @page {
           size: 40mm auto; /* 4cm width, auto height - fixed height causes blank prints */
@@ -125,7 +132,7 @@ export const printBarcodeLabel = async (data: BarcodeLabelData, quantity = 1, sh
           }
         }
         body {
-          font-family: Arial, sans-serif;
+          font-family: 'Instrument Serif', serif;
           margin: 0;
           padding: 0;
           background: white;
@@ -139,10 +146,7 @@ export const printBarcodeLabel = async (data: BarcodeLabelData, quantity = 1, sh
           flex-direction: column;
           align-items: center;
           justify-content: space-between;
-          padding-top: 0.5mm;
-          padding-bottom: 0;
-          padding-left: 0;
-          padding-right: 0;
+          padding: 0;
           margin: 0;
           page-break-after: always;
           page-break-inside: avoid;
@@ -158,40 +162,62 @@ export const printBarcodeLabel = async (data: BarcodeLabelData, quantity = 1, sh
         .label:last-child {
           page-break-after: auto;
         }
-        .product-name {
+        .label-store-name {
+          align-self: center;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.5mm;
+          text-align: center;
+          width: fit-content;
+          max-width: 100%;
           font-size: 12px;
+          font-weight: 600;
+          color: #333;
+          margin: 1mm 0 0.5mm 0;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+        .label-store-name::before,
+        .label-store-name::after {
+          content: "";
+          width: 0.7mm;
+          height: 0.7mm;
+          border-radius: 50%;
+          background: #333;
+          flex-shrink: 0;
+        }
+        .product-name {
+          font-size: 14px;
           font-weight: 600;
           color: #000000;
           word-wrap: break-word;
           overflow-wrap: break-word;
-          margin-top: 0;
-          margin-bottom: 0;
-          padding-top: 0;
-          padding-bottom: 2px;
+          margin: -0.5mm 0 1mm 0;
           overflow: visible;
           line-height: 1.1;
         }
         .label-no-barcode .product-name {
-          font-size: 18px;
+          font-size: 22px;
         }
         .price {
-          font-size: 15px;
+          font-size: 18px;
           font-weight: 600;
           padding: 0;
-          margin: 0;
-          margin-top: -4px;
+          margin: -0.5mm 0 -2mm 0;
           color: #000000;
         }
         .label-no-barcode .price {
-          font-size: 22px;
+          font-size: 26px;
         }
         .barcode-container {
           display: flex;
           flex-direction: column;
           align-items: center;
-          gap: 0px;
-          margin-top: -6px;
-          margin-bottom: 0;
+          gap: 0;
+          margin-bottom: -5px;
+          padding-top: 0;
           padding-bottom: 0;
         }
         .barcode-image {
@@ -235,9 +261,9 @@ export const printBarcodeLabel = async (data: BarcodeLabelData, quantity = 1, sh
             
             const getOneLineHeight = (fs) => fs * 1.1 + 2;
             
-            const baseFontSize = hasBarcode ? 12 : 18;
-            const maxFontSize = hasBarcode ? 20 : 28;
-            const minFontSize = hasBarcode ? 8 : 12;
+            const baseFontSize = hasBarcode ? 14 : 18;
+            const maxFontSize = hasBarcode ? 22 : 28;
+            const minFontSize = hasBarcode ? 9 : 12;
             
             const twoLinesHeight = baseFontSize * 1.1 * 2 + 2;
             
