@@ -57,16 +57,17 @@ export default function EditStockForm({
     }
   };
 
-  const handlePrintBarcode = async (quantity: number = 1, showBarcode: boolean = true) => {
+  const handlePrintBarcode = async (quantity: number = 1, showBarcode: boolean = true, showStoreName: boolean = true) => {
     if (!form) return;
     
     try {
       const shouldShowBarcode = showBarcode === true;
+      const shouldShowStoreName = showStoreName === true;
       await printBarcodeLabel({
         productName: form.name,
         price: form.sellingPrice,
         barcode: form.codebar || "",
-      }, quantity, shouldShowBarcode);
+      }, quantity, shouldShowBarcode, shouldShowStoreName);
       showToast(t("stock.barcodePrinted", "Barcode printed successfully"), "success");
     } catch (error) {
       showToast(t("stock.barcodePrintError", "Failed to print barcode"), "error");

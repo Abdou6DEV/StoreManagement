@@ -1420,7 +1420,8 @@
     "noPrice": "No price",
     "barcodeFormat": "Format",
     "barcodeLength": "Length",
-    "showBarcode": "Show Barcode"
+    "showBarcode": "Show Barcode",
+    "showStoreNameOnLabel": "Show store name"
   },
   "clients": {
     "itemsPerPage": "Items per page:",

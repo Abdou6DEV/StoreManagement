@@ -14,10 +14,11 @@ interface BarcodePreviewModalProps {
   productName: string;
   price: number | string;
   barcode: string;
-  onPrint: (quantity?: number, showBarcode?: boolean) => void;
+  onPrint: (quantity?: number, showBarcode?: boolean, showStoreName?: boolean) => void;
 }
 
 const SHOW_BARCODE_CACHE_KEY = 'barcodePreview_showBarcode';
+const SHOW_STORE_NAME_CACHE_KEY = 'barcodePreview_showStoreName';
 
 export const BarcodePreviewModal: React.FC<BarcodePreviewModalProps> = ({
   open,
@@ -30,15 +31,20 @@ export const BarcodePreviewModal: React.FC<BarcodePreviewModalProps> = ({
   const { t } = useTranslation();
   const [quantity, setQuantity] = useState<number | "">(1);
   const [showBarcode, setShowBarcode] = useState<boolean>(() => {
-    // Load from cache, default to true
     const cached = localStorage.getItem(SHOW_BARCODE_CACHE_KEY);
     return cached !== null ? cached === 'true' : true;
   });
+  const [showStoreName, setShowStoreName] = useState<boolean>(() => {
+    const cached = localStorage.getItem(SHOW_STORE_NAME_CACHE_KEY);
+    return cached !== null ? cached === 'true' : true;
+  });
 
-  // Save to cache when showBarcode changes
   useEffect(() => {
     localStorage.setItem(SHOW_BARCODE_CACHE_KEY, showBarcode.toString());
   }, [showBarcode]);
+  useEffect(() => {
+    localStorage.setItem(SHOW_STORE_NAME_CACHE_KEY, showStoreName.toString());
+  }, [showStoreName]);
 
   const formatPrice = (price: number | string): string => {
     if (!price || price === '') return t('stock.noPrice', 'No price');
@@ -216,12 +222,18 @@ export const BarcodePreviewModal: React.FC<BarcodePreviewModalProps> = ({
           </div>
         )}
 
-        {/* Show Barcode Checkbox */}
-        <div className="flex items-center justify-center">
+        {/* Show Barcode & Show Store Name Checkboxes */}
+        <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-2">
           <Checkbox
             checked={showBarcode}
             onChange={setShowBarcode}
             label={t('stock.showBarcode', 'Show Barcode')}
+            color="green"
+          />
+          <Checkbox
+            checked={showStoreName}
+            onChange={setShowStoreName}
+            label={t('stock.showStoreNameOnLabel', 'Show store name on label')}
             color="green"
           />
         </div>
@@ -262,7 +274,8 @@ export const BarcodePreviewModal: React.FC<BarcodePreviewModalProps> = ({
               onClick={() => {
                 const qty = quantity || 1;
                 const shouldShowBarcode = showBarcode === true;
-                onPrint(qty, shouldShowBarcode);
+                const shouldShowStoreName = showStoreName === true;
+                onPrint(qty, shouldShowBarcode, shouldShowStoreName);
               }}
               className="bg-green-600 hover:bg-green-700 text-white"
             >

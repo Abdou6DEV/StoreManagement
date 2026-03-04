@@ -1131,6 +1131,7 @@
     "barcodeFormat": "التنسيق",
     "barcodeLength": "الطول",
     "showBarcode": "إظهار الباركود",
+    "showStoreNameOnLabel": "إظهار اسم المتجر ",
     "currency": "دج",
     "addToStock": "إضافة إلى المخزون",
     "barcode": "الباركود",

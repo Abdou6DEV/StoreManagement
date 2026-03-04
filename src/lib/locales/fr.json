@@ -781,6 +781,7 @@
     "barcodeFormat": "Format",
     "barcodeLength": "Longueur",
     "showBarcode": "Afficher le code-barres",
+    "showStoreNameOnLabel": "Afficher le nom du magasin",
     "purchaseHistory": "Historique des achats",
     "seller": "Vendeur",
     "noPurchaseHistory": "Aucun historique d'achat disponible",
