@@ -22,6 +22,7 @@ import PermissionRoute from "../lib/components/permissionRoute";
 import Login from "./login";
 import LicenseValidation from "./licenseValidation";
 import LoginToPreloadTransition from "../lib/components/loginToPreloadTransition";
+import PageTransition from "../lib/components/pageTransition";
 import { UpdateProvider } from "../lib/contexts/updateContext";
 import { useAuth } from "../lib/contexts/authContext";
 import { useLicense } from "../lib/contexts/licenseContext";
@@ -108,7 +109,16 @@ export default function App() {
     <div dir={dir} style={{ direction: dir, width: "100%", height: "100%" }}>
       <ToastProvider>
         <UpdateProvider>
-          <Suspense fallback={<div>Loading...</div>}>
+          <Suspense
+            fallback={
+              <div className="flex min-h-[50vh] items-center justify-center">
+                <div className="flex flex-col items-center gap-3">
+                  <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                  <p className="text-sm text-muted-foreground">Loading...</p>
+                </div>
+              </div>
+            }
+          >
             <Routes>
               {/* Public route - Login */}
               <Route path="/login" element={<Login />} />
@@ -137,8 +147,10 @@ export default function App() {
                           element={
                             <main className="flex flex-1">
                               <Sidebar />
-                              <div className="flex-1 pt-4">
-                                <Outlet />
+                              <div className="flex-1 pt-4 min-w-0">
+                                <PageTransition effect="fadeUp">
+                                  <Outlet />
+                                </PageTransition>
                               </div>
                             </main>
                           }

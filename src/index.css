@@ -229,6 +229,41 @@ input[type="number"] {
   animation: fade-in 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Snappy page transition when navigating (smooth but quick) */
+.page-transition-enter {
+  animation: fade-in 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Alternative page transition effects (use via effect prop) */
+@keyframes page-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes page-slide-right {
+  from { opacity: 0; transform: translateX(12px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes page-slide-left {
+  from { opacity: 0; transform: translateX(-12px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes page-scale {
+  from { opacity: 0; transform: scale(0.98); }
+  to { opacity: 1; transform: scale(1); }
+}
+.page-transition-fade {
+  animation: page-fade 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.page-transition-slide-right {
+  animation: page-slide-right 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.page-transition-slide-left {
+  animation: page-slide-left 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.page-transition-scale {
+  animation: page-scale 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 /* Global button cursor pointer */
 button,
 [role="button"],
