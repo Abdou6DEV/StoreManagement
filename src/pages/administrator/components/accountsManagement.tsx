@@ -196,8 +196,8 @@ export default function AccountsManagement() {
     };
     
     setFormData({
-      username: user.username,
-      email: user.email || "",
+      username: user.username ?? "",
+      email: user.email ?? "",
       password: "",
       confirmPassword: "",
       permissions: cleanPermissions,
@@ -550,7 +550,7 @@ export default function AccountsManagement() {
                 {t("admin.accounts.username", "Username")} *
               </label>
               <Input
-                value={formData.username}
+                value={formData.username ?? ""}
                 onChange={(e) => setFormData(prev => ({ ...prev, username: e.target.value }))}
                 placeholder="Enter username"
                 required
@@ -562,7 +562,7 @@ export default function AccountsManagement() {
               </label>
               <Input
                 type="email"
-                value={formData.email}
+                value={formData.email ?? ""}
                 onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
                 placeholder="Enter email (optional)"
               />
@@ -577,7 +577,7 @@ export default function AccountsManagement() {
               <div className="relative">
                 <Input
                   type={showPassword ? "text" : "password"}
-                  value={formData.password}
+                  value={formData.password ?? ""}
                   onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
                   placeholder="Enter password"
                   required
@@ -598,7 +598,7 @@ export default function AccountsManagement() {
               <div className="relative">
                 <Input
                   type={showConfirmPassword ? "text" : "password"}
-                  value={formData.confirmPassword}
+                  value={formData.confirmPassword ?? ""}
                   onChange={(e) => setFormData(prev => ({ ...prev, confirmPassword: e.target.value }))}
                   placeholder="Confirm password"
                   required
@@ -677,7 +677,7 @@ export default function AccountsManagement() {
                 {t("admin.accounts.username", "Username")}
               </label>
               <Input
-                value={formData.username}
+                value={formData.username ?? ""}
                 onChange={(e) => setFormData(prev => ({ ...prev, username: e.target.value }))}
                 placeholder="Enter username"
                 disabled
@@ -689,7 +689,7 @@ export default function AccountsManagement() {
               </label>
               <Input
                 type="email"
-                value={formData.email}
+                value={formData.email ?? ""}
                 onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
                 placeholder="Enter email"
                 disabled
@@ -767,7 +767,7 @@ export default function AccountsManagement() {
               {t("admin.accounts.user", "User")}
             </label>
             <Input
-              value={passwordUser?.username || ""}
+              value={passwordUser?.username ?? ""}
               disabled
               className="bg-muted"
             />
@@ -802,7 +802,7 @@ export default function AccountsManagement() {
             <div className="relative">
               <Input
                 type={showConfirmPassword ? "text" : "password"}
-                value={passwordData.confirmPassword}
+                value={passwordData.confirmPassword ?? ""}
                 onChange={(e) => setPasswordData(prev => ({ ...prev, confirmPassword: e.target.value }))}
                 placeholder="Confirm new password"
                 required

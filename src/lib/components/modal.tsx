@@ -78,6 +78,7 @@ function DialogModal({
   ...props
 }: Omit<ModalProps, "type">) {
   const modalContentRef = React.useRef<HTMLDivElement>(null);
+  const descriptionId = React.useId();
 
   const handleOpenChange = (newOpen: boolean) => {
     if (!newOpen && preventClose) return;
@@ -180,8 +181,14 @@ function DialogModal({
           onEscapeKeyDown={
             closeOnEscape ? undefined : (e) => e.preventDefault()
           }
+          aria-describedby={descriptionId}
           {...props}
         >
+          {!subtitle && (
+            <DialogPrimitive.Description id={descriptionId} className="sr-only">
+              {title ?? "Dialog"}
+            </DialogPrimitive.Description>
+          )}
           {/* Header */}
           {(title || subtitle || showCloseButton) && (
             <div className={cn("flex flex-col space-y-2", headerClassName)}>
@@ -199,7 +206,7 @@ function DialogModal({
                       </DialogPrimitive.Title>
                     )}
                     {subtitle && (
-                      <DialogPrimitive.Description className="text-sm text-muted-foreground mt-1">
+                      <DialogPrimitive.Description id={descriptionId} className="text-sm text-muted-foreground mt-1">
                         {subtitle}
                       </DialogPrimitive.Description>
                     )}

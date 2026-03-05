@@ -256,6 +256,32 @@ async function createTablesManually(client: any) {
   logger.info("Database schema created manually", "Database");
 }
 
+// Ensure canAccessZakat column exists in UserPermissions (run first after connect)
+async function ensureCanAccessZakatColumn(client: import("@prisma/client").PrismaClient) {
+  try {
+    const tableInfo = await client.$queryRawUnsafe<Array<Record<string, unknown>>>(
+      'PRAGMA table_info("UserPermissions")'
+    );
+    if (!Array.isArray(tableInfo) || tableInfo.length === 0) return; // Table doesn't exist yet
+    const hasColumn = tableInfo.some(
+      (row) => String(row.name ?? row.NAME ?? "").toLowerCase() === "canaccesszakat"
+    );
+    if (hasColumn) {
+      console.log("✅ canAccessZakat column already exists");
+      return;
+    }
+    console.log("🔍 Adding canAccessZakat column to UserPermissions...");
+    await client.$executeRawUnsafe(`
+      ALTER TABLE "UserPermissions" ADD COLUMN "canAccessZakat" INTEGER NOT NULL DEFAULT 0
+    `);
+    console.log("✅ Successfully added canAccessZakat column");
+    logger.info("Added canAccessZakat column to UserPermissions", "Database");
+  } catch (err) {
+    console.error("❌ ensureCanAccessZakatColumn:", err);
+    logger.error("Failed to add canAccessZakat column", "Database", err);
+  }
+}
+
 // Function to initialize database schema
 async function initializeDatabase() {
   if (!prismaClientInstance) {
@@ -270,47 +296,15 @@ async function initializeDatabase() {
     console.log("🔍 Connecting to database...");
     await prismaClientInstance.$connect();
     console.log("✅ Database connected successfully");
+
+    // Run canAccessZakat migration first so user.create never fails
+    await ensureCanAccessZakatColumn(prismaClientInstance);
     
     // Try a simple query to check if the User table exists
     try {
       await prismaClientInstance.user.findFirst();
       console.log("✅ Database schema already exists");
       logger.info("Database schema already exists", "Database");
-      
-      // Safe auto-migration: Check if canAccessZakat column exists, if not add it
-      // First check if UserPermissions table exists
-      try {
-        // Check if table exists by querying it
-        await prismaClientInstance.$queryRawUnsafe(`
-          SELECT COUNT(*) FROM "UserPermissions"
-        `);
-        
-        // Table exists, now check if column exists
-        try {
-          await prismaClientInstance.$queryRawUnsafe(`
-            SELECT "canAccessZakat" FROM "UserPermissions" LIMIT 1
-          `);
-          console.log("✅ canAccessZakat column already exists");
-        } catch (columnError) {
-          // Column doesn't exist, add it safely using ALTER TABLE
-          console.log("🔍 Adding canAccessZakat column to UserPermissions table...");
-          try {
-            await prismaClientInstance.$executeRawUnsafe(`
-              ALTER TABLE "UserPermissions" 
-              ADD COLUMN "canAccessZakat" INTEGER NOT NULL DEFAULT 0
-            `);
-            console.log("✅ Successfully added canAccessZakat column");
-            logger.info("Added canAccessZakat column to UserPermissions", "Database");
-          } catch (alterError) {
-            console.error("❌ Failed to add canAccessZakat column:", alterError);
-            logger.error("Failed to add canAccessZakat column", "Database", alterError);
-            // Don't throw - app can still work without this column (backward compatible)
-          }
-        }
-      } catch (tableError) {
-        // UserPermissions table doesn't exist yet - this is fine, it will be created when needed
-        console.log("ℹ️ UserPermissions table doesn't exist yet (will be created when needed)");
-      }
     } catch (error) {
       // If the query fails, it likely means tables don't exist
       console.log("🔍 Database schema not found, running migrations...");

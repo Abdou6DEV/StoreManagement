@@ -1421,7 +1421,11 @@
     "barcodeFormat": "Format",
     "barcodeLength": "Length",
     "showBarcode": "Show Barcode",
-    "showStoreNameOnLabel": "Show store name"
+    "showStoreNameOnLabel": "Show store name",
+    "labelPrinterNotSetTitle": "Label printer not set",
+    "labelPrinterNotSetMessage": "You need to set up the label printer in the Admin page to print barcode labels. Go to Admin → Configure Printing → Configure Printers and choose your label printer.",
+    "setupPrinter": "Setup Printer",
+    "noAccessToAdminTooltip": "You do not have access to the Admin page."
   },
   "clients": {
     "itemsPerPage": "Items per page:",

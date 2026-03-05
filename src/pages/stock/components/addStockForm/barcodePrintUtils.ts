@@ -60,10 +60,10 @@ export const printBarcodeLabel = async (
   // Use iframe method for direct printing (like receipt printing)
   const iframe = document.createElement("iframe");
   iframe.style.position = "fixed";
-  iframe.style.right = "0";
-  iframe.style.bottom = "0";
-  iframe.style.width = "0";
-  iframe.style.height = "0";
+  iframe.style.left = "-9999px";
+  iframe.style.top = "0";
+  iframe.style.width = "180px";
+  iframe.style.height = "400px";
   iframe.style.border = "0";
   iframe.style.opacity = "0";
   iframe.style.pointerEvents = "none";
@@ -91,11 +91,12 @@ export const printBarcodeLabel = async (
   const formatPrice = (price: number | string): string => {
     if (!price || price === '') return 'No price';
     const numPrice = Number(price);
+    const spaceThousands = (s: string) => s.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
     if (numPrice % 1 === 0) {
-      return `${Math.round(numPrice).toLocaleString('fr-FR')}<span class="price-currency">DA</span>`;
-    } else {
-      return `${numPrice.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')}<span class="price-currency">DA</span>`;
+      return `${spaceThousands(String(Math.round(numPrice)))}<span class="price-currency">DA</span>`;
     }
+    const [intPart, decPart] = numPrice.toFixed(2).split('.');
+    return `${spaceThousands(intPart)}.${decPart}<span class="price-currency">DA</span>`;
   };
 
   // Generate label HTML (repeated for quantity)
@@ -192,6 +193,9 @@ export const printBarcodeLabel = async (
           justify-content: space-between;
           gap: 0;
         }
+        .label-no-barcode.label-no-store-name {
+          padding-top: 3mm;
+        }
         .label-no-barcode-big-price {
           flex: 1;
           display: flex;
@@ -257,9 +261,17 @@ export const printBarcodeLabel = async (
         }
         .label-no-store-name .product-name {
           margin-top: 2mm;
+          padding-bottom: 0;
+          box-sizing: content-box;
         }
         .label-no-barcode .product-name {
           margin-top: 1mm;
+        }
+        .label-no-barcode .product-name.product-name-two-lines {
+          margin-top: -1mm !important;
+        }
+        .label-no-barcode:not(.label-no-store-name) .product-name {
+          font-size: 16px;
         }
         .label-no-barcode.label-no-store-name .product-name {
           font-size: 20px;
@@ -325,6 +337,7 @@ export const printBarcodeLabel = async (
             const hasBarcode = barcodeContainer && barcodeContainer.querySelector('.barcode-image');
             if (!hasBarcode) return;
             
+            const hasStoreName = !!label.querySelector('.label-store-name');
             const labelHeight = labelRect.height;
             const paddingTop = 0.5;
             const priceHeight = priceRect ? (priceRect.bottom - priceRect.top) : 15;
@@ -390,7 +403,8 @@ export const printBarcodeLabel = async (
               }
             }
             
-            productName.style.maxHeight = (maxProductNameHeight + productNamePaddingBottom) + 'px';
+            const extraBottom = (hasBarcode && !hasStoreName) ? 5 : 0;
+            productName.style.maxHeight = (maxProductNameHeight + productNamePaddingBottom + extraBottom) + 'px';
             if (hasBarcode) {
               const labelWidthPx = labelRect.width - 4;
               while (productName.offsetWidth > labelWidthPx && fontSize > minFontSize) {
@@ -406,6 +420,24 @@ export const printBarcodeLabel = async (
               productName.style.marginBottom = '0';
             }
           });
+          noBarcodeTwoLineNameUp();
+        }
+        
+        function noBarcodeTwoLineNameUp() {
+          document.querySelectorAll('.label-no-barcode .product-name').forEach(function(productName) {
+            var style = window.getComputedStyle(productName);
+            var fs = parseFloat(style.fontSize) || 16;
+            var lh = style.lineHeight;
+            var oneLineH = (lh && lh !== 'normal') ? parseFloat(lh) : fs * 1.1;
+            var h = productName.offsetHeight;
+            var rects = productName.getClientRects();
+            var twoLines = (rects.length >= 2) || (h > oneLineH * 1.5);
+            if (twoLines) {
+              productName.classList.add('product-name-two-lines');
+            } else {
+              productName.classList.remove('product-name-two-lines');
+            }
+          });
         }
         
         function waitForImagesAndAdjust() {
@@ -415,6 +447,7 @@ export const printBarcodeLabel = async (
           
           if (totalImages === 0) {
             adjustProductNameSizes();
+            setTimeout(noBarcodeTwoLineNameUp, 0);
             return;
           }
           
@@ -441,13 +474,21 @@ export const printBarcodeLabel = async (
           });
         }
         
-        if (document.readyState === 'loading') {
-          document.addEventListener('DOMContentLoaded', waitForImagesAndAdjust);
-        } else {
-          setTimeout(waitForImagesAndAdjust, 100);
+        function runAdjustments() {
+          waitForImagesAndAdjust();
+          [50, 150].forEach(function(ms) {
+            setTimeout(noBarcodeTwoLineNameUp, ms);
+          });
         }
-        
-        window.onload = waitForImagesAndAdjust;
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', runAdjustments);
+        } else {
+          setTimeout(runAdjustments, 100);
+        }
+        window.onload = runAdjustments;
+        window.addEventListener('message', function(e) {
+          if (e.data === 'runNoBarcodeTwoLineUp') noBarcodeTwoLineNameUp();
+        });
       })();
     </script>
     </html>
@@ -466,6 +507,8 @@ export const printBarcodeLabel = async (
   iframe.onload = () => {
     setTimeout(async () => {
       try {
+        iframe.contentWindow?.postMessage('runNoBarcodeTwoLineUp', '*');
+        await new Promise((r) => setTimeout(r, 80));
         const bodyContent = iframeDoc.body?.innerHTML || '';
         if (!bodyContent || bodyContent.trim().length === 0) {
           throw new Error('Iframe body is empty - cannot print');

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import type { SetURLSearchParams } from "react-router-dom";
 import { Input } from "../../../lib/components/input";
 import { Button } from "../../../lib/components/button";
 import { Checkbox } from "../../../lib/components/checkbox";
@@ -25,10 +26,21 @@ import { ConfigurePrinters } from "./configurePrinters";
 
 type PrintingSubTab = "receiptAndService" | "configurePrinters";
 
-export const ReceiptConfig: React.FC = () => {
+interface ReceiptConfigProps {
+  subTabFromUrl?: string | null;
+  setSearchParams?: SetURLSearchParams;
+}
+
+export const ReceiptConfig: React.FC<ReceiptConfigProps> = ({ subTabFromUrl, setSearchParams }) => {
   const { t } = useTranslation();
   const { showToast } = useToast();
-  const [printingSubTab, setPrintingSubTab] = useState<PrintingSubTab>("receiptAndService");
+  const [printingSubTab, setPrintingSubTab] = useState<PrintingSubTab>(
+    subTabFromUrl === "configurePrinters" ? "configurePrinters" : "receiptAndService"
+  );
+
+  useEffect(() => {
+    if (subTabFromUrl === "configurePrinters") setPrintingSubTab("configurePrinters");
+  }, [subTabFromUrl]);
   const [storeName, setStoreName] = useState("");
   const [storeAddress, setStoreAddress] = useState("");
   const [storePhone, setStorePhone] = useState("");

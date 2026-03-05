@@ -15,6 +15,7 @@ export default function AdministratorPage() {
   const isRTL = i18n.language === "ar";
   const [searchParams, setSearchParams] = useSearchParams();
   const tabFromUrl = searchParams.get("tab") as "settings" | "receipt" | "logs" | "accounts" | "backup" | "updates" | null;
+  const subTabFromUrl = searchParams.get("subTab") as string | null;
   const [activeTab, setActiveTab] = useState<"settings" | "receipt" | "logs" | "accounts" | "backup" | "updates">(
     tabFromUrl && ["settings", "receipt", "logs", "accounts", "backup", "updates"].includes(tabFromUrl) 
       ? tabFromUrl 
@@ -22,12 +23,14 @@ export default function AdministratorPage() {
   );
   const { state: updateState } = useUpdateContext();
 
-  // Update URL when tab changes
+  // Update URL when tab changes (preserve subTab for receipt tab)
   useEffect(() => {
     if (activeTab !== tabFromUrl) {
-      setSearchParams({ tab: activeTab });
+      const next: Record<string, string> = { tab: activeTab };
+      if (activeTab === "receipt" && subTabFromUrl === "configurePrinters") next.subTab = "configurePrinters";
+      setSearchParams(next);
     }
-  }, [activeTab, tabFromUrl, setSearchParams]);
+  }, [activeTab, tabFromUrl, subTabFromUrl, setSearchParams]);
 
   // Update tab when URL changes
   useEffect(() => {
@@ -130,7 +133,7 @@ export default function AdministratorPage() {
 
       {activeTab === "settings" && <OptionsList />}
 
-      {activeTab === "receipt" && <ReceiptConfig />}
+      {activeTab === "receipt" && <ReceiptConfig subTabFromUrl={subTabFromUrl} setSearchParams={setSearchParams} />}
 
       {activeTab === "accounts" && (
         <section className="bg-card border border-border rounded-xl shadow-sm p-6">

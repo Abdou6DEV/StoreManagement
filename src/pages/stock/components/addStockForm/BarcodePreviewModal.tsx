@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Printer, X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Printer, X, Settings } from 'lucide-react';
 import { Modal } from '../../../../lib/components/modal';
 import { Button } from '../../../../lib/components/button';
 import StyledNumberInput from '../../../../lib/components/inputNumber';
 import { Checkbox } from '../../../../lib/components/checkbox';
 import { generateRealBarcode, getRecommendedFormat } from '../../../../lib/utils/barcodeVisual';
 import { Tooltip } from '../../../../lib/components/tooltip';
+import { useAuth } from '../../../../lib/contexts/authContext';
+import '@fontsource/instrument-serif';
 
 interface BarcodePreviewModalProps {
   open: boolean;
@@ -29,6 +32,8 @@ export const BarcodePreviewModal: React.FC<BarcodePreviewModalProps> = ({
   onPrint,
 }) => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
+  const { canAccessPage } = useAuth();
   const [quantity, setQuantity] = useState<number | "">(1);
   const [showBarcode, setShowBarcode] = useState<boolean>(() => {
     const cached = localStorage.getItem(SHOW_BARCODE_CACHE_KEY);
@@ -38,6 +43,29 @@ export const BarcodePreviewModal: React.FC<BarcodePreviewModalProps> = ({
     const cached = localStorage.getItem(SHOW_STORE_NAME_CACHE_KEY);
     return cached !== null ? cached === 'true' : true;
   });
+  const [storeName, setStoreName] = useState<string>('');
+  const [labelPrinterName, setLabelPrinterName] = useState<string | null>(null);
+  const [showNoPrinterDialog, setShowNoPrinterDialog] = useState<boolean>(true);
+
+  useEffect(() => {
+    if (!open) return;
+    setShowNoPrinterDialog(true);
+    void window.api?.database?.options?.get?.('storeName').then((name: string | undefined) => {
+      setStoreName(name ?? '');
+    });
+    void window.api?.database?.options?.get?.('labelPrinterName').then((name: string | undefined) => {
+      setLabelPrinterName(name ?? '');
+    });
+  }, [open]);
+
+  const hasLabelPrinter = labelPrinterName != null && labelPrinterName.trim() !== '';
+  const canAccessAdmin = canAccessPage('administrator');
+
+  const handleSetupPrinter = () => {
+    if (!canAccessAdmin) return;
+    onOpenChange(false);
+    navigate('/administrator?tab=receipt&subTab=configurePrinters');
+  };
 
   useEffect(() => {
     localStorage.setItem(SHOW_BARCODE_CACHE_KEY, showBarcode.toString());
@@ -131,6 +159,36 @@ export const BarcodePreviewModal: React.FC<BarcodePreviewModalProps> = ({
       size="lg"
     >
       <div className="space-y-2">
+        {/* No label printer set: show dialog and disable Print (only after load: labelPrinterName !== null) */}
+        {labelPrinterName !== null && !hasLabelPrinter && showNoPrinterDialog && (
+          <div className="rounded-lg border border-amber-500/50 bg-amber-500/10 p-4 space-y-3">
+            <h3 className="font-semibold text-foreground flex items-center gap-2">
+              <Settings className="w-4 h-4 text-amber-600" />
+              {t('stock.labelPrinterNotSetTitle', 'Label printer not set')}
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              {t('stock.labelPrinterNotSetMessage', 'You need to set up the label printer in the Admin page to print barcode labels. Go to Admin → Configure Printing → Configure Printers and choose your label printer.')}
+            </p>
+            <div className="flex gap-2 justify-end">
+              
+              {canAccessAdmin ? (
+                <Button size="sm" onClick={handleSetupPrinter} className="bg-amber-600 hover:bg-amber-700 text-white">
+                  <Settings className="w-4 h-4 mr-2" />
+                  {t('stock.setupPrinter', 'Setup Printer')}
+                </Button>
+              ) : (
+                <Tooltip content={t('stock.noAccessToAdminTooltip', 'You do not have access to the Admin page.')} position="top">
+                  <span className="inline-block">
+                    <Button size="sm" disabled className="bg-amber-600/50 text-white cursor-not-allowed">
+                      <Settings className="w-4 h-4 mr-2" />
+                      {t('stock.setupPrinter', 'Setup Printer')}
+                    </Button>
+                  </span>
+                </Tooltip>
+              )}
+            </div>
+          </div>
+        )}
         {/* Preview Label */}
         <div className="flex justify-center">
           <div 
@@ -146,9 +204,34 @@ export const BarcodePreviewModal: React.FC<BarcodePreviewModalProps> = ({
               paddingTop: '2.85px', // 0.5mm scaled 1.5x
               paddingBottom: '0',
               boxSizing: 'border-box',
-              gap: showBarcode ? '0' : '12px'
+              gap: showBarcode ? '0' : '10px',
+              fontFamily: "'Instrument Serif', Georgia, serif",
             }}
           >
+            {/* Store Name (matches printed label when "Show store name" is on) */}
+            {showStoreName && storeName ? (
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '2px',
+                  width: 'fit-content',
+                  maxWidth: '100%',
+                  fontSize: showBarcode ? '14px' : '18px',
+                  fontWeight: 600,
+                  color: '#000000',
+                  margin: '3.78px 0 1.89px 0', // ~1mm 0 0.5mm 0
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                <span style={{ width: '2.65px', height: '2.65px', borderRadius: '50%', background: '#333', flexShrink: 0 }} aria-hidden />
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{storeName}</span>
+                <span style={{ width: '2.65px', height: '2.65px', borderRadius: '50%', background: '#333', flexShrink: 0 }} aria-hidden />
+              </div>
+            ) : null}
             {/* Product Name */}
             <div 
               style={{
@@ -157,7 +240,7 @@ export const BarcodePreviewModal: React.FC<BarcodePreviewModalProps> = ({
                 color: '#000000',
                 wordWrap: 'break-word',
                 overflowWrap: 'break-word',
-                marginTop: 30,
+                marginTop: showStoreName && storeName ? 0 : 30,
                 marginBottom: 0,
                 paddingTop: 0,
                 paddingBottom: '3px', // 2px scaled 1.5x
@@ -172,7 +255,7 @@ export const BarcodePreviewModal: React.FC<BarcodePreviewModalProps> = ({
             {/* Price */}
             <div 
               style={{
-                fontSize: showBarcode ? '22.5px' : '33px', // 15px/22px scaled 1.5x
+                fontSize: showBarcode ? '22.5px' : '40px', // 15px/22px scaled 1.5x
                 fontWeight: 600,
                 color: '#000000',
                 padding: 0,
@@ -267,21 +350,25 @@ export const BarcodePreviewModal: React.FC<BarcodePreviewModalProps> = ({
             </Button>
           </Tooltip>
           <Tooltip
-            content={t('stock.printBarcodeTooltip', 'Print barcode label(s)')}
+            content={!hasLabelPrinter ? t('stock.labelPrinterNotSetTitle', 'Label printer not set') : t('stock.printBarcodeTooltip', 'Print barcode label(s)')}
             position="top"
           >
-            <Button
-              onClick={() => {
-                const qty = quantity || 1;
-                const shouldShowBarcode = showBarcode === true;
-                const shouldShowStoreName = showStoreName === true;
-                onPrint(qty, shouldShowBarcode, shouldShowStoreName);
-              }}
-              className="bg-green-600 hover:bg-green-700 text-white"
-            >
-              <Printer className="w-4 h-4 mr-2" />
-              {t('stock.printBarcode', 'Print')} {(quantity || 1) > 1 ? `(${quantity || 1})` : ''}
-            </Button>
+            <span className="inline-block">
+              <Button
+                onClick={() => {
+                  if (!hasLabelPrinter) return;
+                  const qty = quantity || 1;
+                  const shouldShowBarcode = showBarcode === true;
+                  const shouldShowStoreName = showStoreName === true;
+                  onPrint(qty, shouldShowBarcode, shouldShowStoreName);
+                }}
+                disabled={!hasLabelPrinter}
+                className="bg-green-600 hover:bg-green-700 text-white disabled:opacity-50 disabled:pointer-events-none"
+              >
+                <Printer className="w-4 h-4 mr-2" />
+                {t('stock.printBarcode', 'Print')} {(quantity || 1) > 1 ? `(${quantity || 1})` : ''}
+              </Button>
+            </span>
           </Tooltip>
         </div>
       </div>
