@@ -5,7 +5,10 @@ import { Button } from "../../../lib/components/button";
 import { Modal } from "../../../lib/components/modal";
 import { DatePicker } from "../../../lib/components/datePicker";
 import { useToast } from "../../../lib/contexts/toastContext";
+import { Tooltip } from "../../../lib/components/tooltip";
 import { generateReceiptBarcode } from "../../../lib/utils/barcodeVisual";
+import { ServiceLabelPreviewModal } from "./ServiceLabelPreviewModal";
+import { printServiceLabel } from "../utils/serviceLabelPrintUtils";
 
 interface ServiceAppointment {
   id: string;
@@ -54,6 +57,7 @@ export default function EditServiceModal({
   });
   const [loading, setLoading] = useState(false);
   const [isPaid, setIsPaid] = useState(false);
+  const [showServiceLabelPreview, setShowServiceLabelPreview] = useState(false);
 
   useEffect(() => {
     if (service) {
@@ -112,6 +116,31 @@ export default function EditServiceModal({
       showToast(t("services.failedToSaveService", "Failed to save service"), "error");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handlePrintServiceLabel = async (quantity: number) => {
+    if (!service) return;
+    try {
+      await printServiceLabel(
+        {
+          serviceName: form.name.trim(),
+          clientName: service.client?.name ?? "",
+          deviceName: (form.description || form.serviceType || "").trim(),
+          price: form.servicePrice || 0,
+        },
+        quantity,
+        {
+          service: t('services.serviceLabelService', 'Service:'),
+          client: t('services.serviceLabelClient', 'Client:'),
+          device: t('services.serviceLabelDevice', 'Device:'),
+          price: t('services.serviceLabelPrice', 'Price:'),
+        }
+      );
+      showToast(t("services.serviceLabelPrinted", "Service label printed successfully"), "success");
+      setShowServiceLabelPreview(false);
+    } catch (err) {
+      showToast(t("services.serviceLabelPrintError", "Failed to print service label"), "error");
     }
   };
 
@@ -293,6 +322,7 @@ export default function EditServiceModal({
               .receipt[dir="rtl"] .receipt-id { text-align: center; }
               .receipt[dir="rtl"] .welcome { text-align: center; }
               .receipt[dir="rtl"] .watermark { text-align: right; }
+              .receipt[dir="rtl"] .service-field-value.service-price-value { direction: ltr; text-align: right; unicode-bidi: embed; }
               .header { text-align: center; margin-bottom: 1px; margin-top: 0; }
               .store-name { font-size: 36px; font-weight: 900; margin-bottom: 1px; margin-top: 0; padding-top: 0; color: #000000; letter-spacing: 1px; }
               .store-logo { max-width: ${Math.round(300 * (logoSize / 100))}px; max-height: ${Math.round(120 * (logoSize / 100))}px; width: auto; height: auto; margin: 0 auto 6px auto; display: block; filter: grayscale(100%) contrast(300%) brightness(0.3); image-rendering: auto; image-rendering: -webkit-optimize-contrast; print-color-adjust: exact; -webkit-print-color-adjust: exact; color-adjust: exact; }
@@ -369,7 +399,7 @@ export default function EditServiceModal({
                 </div>
                 <div class="service-field">
                   <span class="service-field-label">${receiptTranslations[language].servicePrice}:</span>
-                  <span class="service-field-value">${(parseFloat(form.servicePrice) || service.servicePrice).toLocaleString()} DA ${currentIsPaid ? `(${receiptTranslations[language].payed})` : `(${receiptTranslations[language].notPayed})`}</span>
+                  <span class="service-field-value service-price-value" dir="ltr">\u200E${(parseFloat(form.servicePrice) || service.servicePrice).toLocaleString('en-US')} DA ${currentIsPaid ? `(${receiptTranslations[language].payed})` : `(${receiptTranslations[language].notPayed})`}</span>
                 </div>
               </div>
               <div class="divider"></div>
@@ -671,6 +701,20 @@ export default function EditServiceModal({
               <Printer className="w-4 h-4 mr-2" />
               {t("services.printTicket", "Print Ticket")}
             </Button>
+            <Tooltip
+              content={form.name?.trim() ? t("services.printServiceLabelTooltip", "Print service label(s)") : t("services.serviceNameRequiredForLabel", "Service name is required to print a label")}
+              position="top"
+            >
+              <Button
+                type="button"
+                disabled={!form.name?.trim()}
+                onClick={() => setShowServiceLabelPreview(true)}
+                className="bg-cyan-600 hover:bg-cyan-700 text-white"
+              >
+                <Printer className="w-4 h-4 mr-2" />
+                {t("services.printServiceLabel", "Print Service Label")}
+              </Button>
+            </Tooltip>
             <Button
               type="submit"
               disabled={loading}
@@ -691,6 +735,17 @@ export default function EditServiceModal({
           </div>
         </form>
       </div>
+      <ServiceLabelPreviewModal
+        open={showServiceLabelPreview}
+        onOpenChange={setShowServiceLabelPreview}
+        data={{
+          serviceName: form.name.trim(),
+          clientName: service?.client?.name ?? "",
+          deviceName: (form.description || form.serviceType || "").trim(),
+          price: form.servicePrice || 0,
+        }}
+        onPrint={handlePrintServiceLabel}
+      />
     </Modal>
   );
 }

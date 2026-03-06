@@ -59,7 +59,18 @@ export const BarcodePreviewModal: React.FC<BarcodePreviewModalProps> = ({
   }, [open]);
 
   const hasLabelPrinter = labelPrinterName != null && labelPrinterName.trim() !== '';
+  const hasStoreName = storeName != null && storeName.trim() !== '';
   const canAccessAdmin = canAccessPage('administrator');
+
+  // When store name is not set, force "show store name" off (checkbox will be disabled)
+  useEffect(() => {
+    if (!hasStoreName && showStoreName) setShowStoreName(false);
+  }, [hasStoreName, showStoreName]);
+
+  // When product has no barcode, force "show barcode" off (label will be name + price only)
+  useEffect(() => {
+    if (open && (!barcode || barcode.trim() === '') && showBarcode) setShowBarcode(false);
+  }, [open, barcode, showBarcode]);
 
   const handleSetupPrinter = () => {
     if (!canAccessAdmin) return;
@@ -85,8 +96,8 @@ export const BarcodePreviewModal: React.FC<BarcodePreviewModalProps> = ({
     }
   };
 
-  // Handle empty or invalid barcode
-  if (!barcode || barcode.trim() === '') {
+  // Require only product name; barcode is optional (labels can show name + price only)
+  if (!productName || !productName.trim()) {
     return (
       <Modal
         open={open}
@@ -96,7 +107,7 @@ export const BarcodePreviewModal: React.FC<BarcodePreviewModalProps> = ({
       >
         <div className="space-y-6">
           <div className="text-center text-red-600">
-            <p>{t('stock.barcodePreviewError', 'Product name and barcode are required for preview')}</p>
+            <p>{t('stock.productNameRequiredForLabel', 'Product name is required for label preview')}</p>
           </div>
           <div className="flex justify-end">
             <Button
@@ -112,44 +123,29 @@ export const BarcodePreviewModal: React.FC<BarcodePreviewModalProps> = ({
     );
   }
 
-  const barcodeFormat = getRecommendedFormat(barcode);
-  let barcodeImage: string;
-  
-  try {
-    barcodeImage = generateRealBarcode(barcode, {
-      format: barcodeFormat,
-      width: 4,
-      height: 80,
-      displayValue: false, // Don't show barcode number in the barcode itself
-      fontSize: 14,
-      margin: 5,
-    });
-  } catch (error) {
-    console.error('Failed to generate barcode image:', error);
-    return (
-      <Modal
-        open={open}
-        onOpenChange={onOpenChange}
-        title={t('stock.barcodePreview', 'Barcode Label Preview')}
-        size="lg"
-      >
-        <div className="space-y-6">
-          <div className="text-center text-red-600">
-            <p>{t('stock.barcodeGenerationError', 'Failed to generate barcode')}</p>
-          </div>
-          <div className="flex justify-end">
-            <Button
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-            >
-              <X className="w-4 h-4 mr-2" />
-              {t('common.cancel', 'Cancel')}
-            </Button>
-          </div>
-        </div>
-      </Modal>
-    );
+  const hasBarcodeValue = barcode != null && barcode.trim() !== '';
+  let barcodeFormat: 'EAN13' | 'CODE128' | 'UPC' = 'EAN13';
+  let barcodeImage: string = '';
+
+  if (hasBarcodeValue) {
+    barcodeFormat = getRecommendedFormat(barcode);
+    try {
+      barcodeImage = generateRealBarcode(barcode, {
+        format: barcodeFormat,
+        width: 4,
+        height: 80,
+        displayValue: false,
+        fontSize: 14,
+        margin: 5,
+      });
+    } catch (error) {
+      console.error('Failed to generate barcode image:', error);
+      barcodeImage = '';
+    }
   }
+
+  // When no barcode, force "show barcode" off and treat as label without barcode
+  const canShowBarcode = hasBarcodeValue && barcodeImage.length > 0;
 
   return (
     <Modal
@@ -266,15 +262,15 @@ export const BarcodePreviewModal: React.FC<BarcodePreviewModalProps> = ({
               {formatPrice(price)}
             </div>
             
-            {/* Barcode */}
-            {showBarcode && (
+            {/* Barcode (only when barcode exists and "Show Barcode" is on) */}
+            {canShowBarcode && showBarcode && barcodeImage && (
               <div 
                 style={{
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
                   gap: '0px',
-                  marginTop: '-4px', // -6px scaled 1.5x
+                  marginTop: '-4px',
                   marginBottom: 0,
                   paddingBottom: 0
                 }}
@@ -284,7 +280,7 @@ export const BarcodePreviewModal: React.FC<BarcodePreviewModalProps> = ({
                   alt={`Barcode: ${barcode}`}
                   style={{
                     width: '100%',
-                    height: '48px', // 32px scaled 1.5x
+                    height: '48px',
                     border: 'none',
                     padding: 0,
                     background: 'white'
@@ -295,8 +291,8 @@ export const BarcodePreviewModal: React.FC<BarcodePreviewModalProps> = ({
           </div>
         </div>
 
-        {/* Barcode Info */}
-        {showBarcode && (
+        {/* Barcode Info (only when barcode is shown) */}
+        {canShowBarcode && showBarcode && (
           <div className="text-center text-sm text-gray-600">
             <p>
               {t('stock.barcodeFormat', 'Format')}: {barcodeFormat} | 
@@ -307,18 +303,52 @@ export const BarcodePreviewModal: React.FC<BarcodePreviewModalProps> = ({
 
         {/* Show Barcode & Show Store Name Checkboxes */}
         <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-2">
-          <Checkbox
-            checked={showBarcode}
-            onChange={setShowBarcode}
-            label={t('stock.showBarcode', 'Show Barcode')}
-            color="green"
-          />
-          <Checkbox
-            checked={showStoreName}
-            onChange={setShowStoreName}
-            label={t('stock.showStoreNameOnLabel', 'Show store name on label')}
-            color="green"
-          />
+          {canShowBarcode ? (
+            <Checkbox
+              checked={showBarcode}
+              onChange={setShowBarcode}
+              label={t('stock.showBarcode', 'Show Barcode')}
+              color="green"
+            />
+          ) : (
+            <Tooltip
+              content={t('stock.noBarcodeForLabelTooltip', 'No barcode on this product – label will show name and price only')}
+              position="top"
+            >
+              <span className="inline-flex items-center self-center">
+                <Checkbox
+                  checked={false}
+                  onChange={() => {}}
+                  label={t('stock.showBarcode', 'Show Barcode')}
+                  color="green"
+                  disabled
+                />
+              </span>
+            </Tooltip>
+          )}
+          {hasStoreName ? (
+            <Checkbox
+              checked={showStoreName}
+              onChange={setShowStoreName}
+              label={t('stock.showStoreNameOnLabel', 'Show store name on label')}
+              color="green"
+            />
+          ) : (
+            <Tooltip
+              content={t('stock.storeNameRequiredForLabelTooltip', 'Enter the store name in Admin → Receipt & Service Ticket to show it on labels.')}
+              position="top"
+            >
+              <span className="inline-flex items-center self-center">
+                <Checkbox
+                  checked={false}
+                  onChange={() => {}}
+                  label={t('stock.showStoreNameOnLabel', 'Show store name on label')}
+                  color="green"
+                  disabled
+                />
+              </span>
+            </Tooltip>
+          )}
         </div>
 
         {/* Quantity Input */}
@@ -358,8 +388,8 @@ export const BarcodePreviewModal: React.FC<BarcodePreviewModalProps> = ({
                 onClick={() => {
                   if (!hasLabelPrinter) return;
                   const qty = quantity || 1;
-                  const shouldShowBarcode = showBarcode === true;
-                  const shouldShowStoreName = showStoreName === true;
+                  const shouldShowBarcode = canShowBarcode && showBarcode === true;
+                  const shouldShowStoreName = hasStoreName && showStoreName === true;
                   onPrint(qty, shouldShowBarcode, shouldShowStoreName);
                 }}
                 disabled={!hasLabelPrinter}

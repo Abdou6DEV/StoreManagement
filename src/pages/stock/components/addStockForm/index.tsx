@@ -4,7 +4,7 @@ import { useStock } from "../../../../lib/contexts/stockContext";
 import { Product } from "@prisma/client";
 import StyledNumberInput from "../../../../lib/components/inputNumber";
 import { Button } from "../../../../lib/components/button";
-import { AlertTriangle, Loader2, Package, ChevronUp, QrCode, Eye } from "lucide-react";
+import { AlertTriangle, Loader2, Package, ChevronUp, QrCode, Eye, Printer } from "lucide-react";
 import { ImageUpload } from "../../../../lib/components/imageUpload";
 // Barcode generation is now handled by the database layer
 import type { AddStockFormState } from "../../../../types";
@@ -133,10 +133,10 @@ export default function AddStockForm({
   const [loading, setLoading] = useState(false);
   const [finishingPurchase, setFinishingPurchase] = useState(false);
 
-  // Function to show barcode preview
+  // Function to show label preview (barcode optional – labels can be name + price only)
   const showBarcodePreviewModal = () => {
-    if (!form.codebar || !form.name || form.codebar.trim() === '') {
-      showToast(t("stock.barcodePreviewError", "Product name and barcode are required for preview"), "error");
+    if (!form.name || form.name.trim() === '') {
+      showToast(t("stock.productNameRequiredForLabel", "Product name is required to print a label"), "error");
       return;
     }
     setShowBarcodePreview(true);
@@ -2242,7 +2242,7 @@ export default function AddStockForm({
                   <Tooltip
                     content={
                       form.codebar && form.codebar.trim()
-                        ? t("stock.previewBarcodeTooltip", "Preview and print barcode label")
+                        ? t("stock.previewBarcodeLabelTooltip", "Preview barcode label")
                         : t("stock.generateBarcodeTooltip", "Generate a new unique barcode")
                     }
                     position="top"
@@ -2343,6 +2343,27 @@ export default function AddStockForm({
                   </>
                 )}
               </Button>
+
+              <Tooltip
+                content={
+                  form.name?.trim()
+                    ? t("stock.printBarcodeTooltip", "Print barcode label(s)")
+                    : t("stock.productNameRequiredForLabel", "Product name is required to print a label")
+                }
+                position="top"
+              >
+                <span className="inline-flex">
+                  <Button
+                    type="button"
+                    disabled={!form.name?.trim()}
+                    onClick={() => showBarcodePreviewModal()}
+                    className="bg-green-600 hover:bg-green-700 text-white disabled:opacity-50 disabled:pointer-events-none"
+                  >
+                    <Printer className="w-4 h-4 mr-2" />
+                    {t("stock.printLabel", "Print Label")}
+                  </Button>
+                </span>
+              </Tooltip>
 
               <Button
                 type="button"

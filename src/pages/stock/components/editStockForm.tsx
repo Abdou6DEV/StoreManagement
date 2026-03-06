@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import StyledNumberInput from "../../../lib/components/inputNumber";
 import { Button } from "../../../lib/components/button";
-import { Save, X, Loader2, Package, QrCode, Eye } from "lucide-react";
+import { Save, X, Loader2, Package, QrCode, Eye, Printer } from "lucide-react";
 import { useStock } from "../../../lib/contexts/stockContext";
 import { ImageUpload } from "../../../lib/components/imageUpload";
 import { useToast } from "../../../lib/contexts/toastContext";
@@ -217,7 +217,7 @@ export default function EditStockForm({
               <Tooltip
                 content={
                   form.codebar && form.codebar.trim()
-                    ? t("stock.previewBarcodeTooltip", "Preview and print barcode label")
+                    ? t("stock.previewBarcodeLabelTooltip", "Preview barcode label")
                     : t("stock.generateBarcodeTooltip", "Generate a new unique barcode")
                 }
                 position="top"
@@ -260,11 +260,11 @@ export default function EditStockForm({
           </div>
         </div>
 
-        <div className="flex gap-3 pt-6 border-t border-border mt-6">
+        <div className="grid grid-cols-3 gap-3 pt-6 border-t border-border mt-6">
           <Button
             type="submit"
             disabled={loading}
-            className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+            className="w-full bg-green-600 hover:bg-green-700 text-white"
           >
             {loading ? (
               <>
@@ -278,11 +278,29 @@ export default function EditStockForm({
               </>
             )}
           </Button>
+          <Tooltip
+            content={
+              form.name?.trim()
+                ? t("stock.printBarcodeTooltip", "Print barcode label(s)")
+                : t("stock.productNameRequiredForLabel", "Product name is required to print a label")
+            }
+            position="top"
+          >
+            <Button
+              type="button"
+              disabled={!form.name?.trim()}
+              onClick={() => setShowBarcodePreviewModal(true)}
+              className="w-full bg-green-600 hover:bg-green-700 text-white disabled:opacity-50 disabled:pointer-events-none"
+            >
+              <Printer className="w-4 h-4 mr-2" />
+              {t("stock.printLabel", "Print Label")}
+            </Button>
+          </Tooltip>
           <Button
             type="button"
             variant="outline"
             onClick={() => setProductID(null)}
-            className="flex-1"
+            className="w-full"
           >
             <X className="w-4 h-4" />
             {t("stock.cancelButton", "Cancel")}

@@ -9,6 +9,9 @@ import { useToast } from "../../../lib/contexts/toastContext";
 import { cn } from "../../../lib/utils";
 import AddClientModal from "../../../pages/cashier/components/addClientModal";
 import { generateReceiptBarcode } from "../../../lib/utils/barcodeVisual";
+import { ServiceLabelPreviewModal } from "./ServiceLabelPreviewModal";
+import { printServiceLabel } from "../utils/serviceLabelPrintUtils";
+import { Tooltip } from "../../../lib/components/tooltip";
 
 interface Client {
   id: string;
@@ -92,6 +95,7 @@ export default function AddServiceForm({
   const [clientNotes, setClientNotes] = useState("");
   const [isPaid, setIsPaid] = useState(false);
   const [hideCostPrice, setHideCostPrice] = useState(true);
+  const [showServiceLabelPreview, setShowServiceLabelPreview] = useState(false);
   
   // Refs for dropdown management and field navigation
   const typeInputRef = useRef<HTMLInputElement>(null);
@@ -648,6 +652,11 @@ export default function AddServiceForm({
               .receipt[dir="rtl"] .watermark {
                 text-align: right;
               }
+              .receipt[dir="rtl"] .service-field-value.service-price-value {
+                direction: ltr;
+                text-align: right;
+                unicode-bidi: embed;
+              }
               .header {
                 text-align: center;
                 margin-bottom: 1px;
@@ -951,7 +960,7 @@ export default function AddServiceForm({
                 </div>
                 <div class="service-field">
                   <span class="service-field-label">${receiptTranslations[language].servicePrice}:</span>
-                  <span class="service-field-value">${servicePrice.toLocaleString()} DA ${isPaid ? `(${receiptTranslations[language].payed})` : `(${receiptTranslations[language].notPayed})`}</span>
+                  <span class="service-field-value service-price-value" dir="ltr">\u200E${servicePrice.toLocaleString('en-US')} DA ${isPaid ? `(${receiptTranslations[language].payed})` : `(${receiptTranslations[language].notPayed})`}</span>
                 </div>
               </div>
 
@@ -1151,6 +1160,30 @@ export default function AddServiceForm({
     }
   };
 
+  const handlePrintServiceLabel = async (quantity: number) => {
+    try {
+      const clientName = selectedClient?.name ?? clients.find((c) => c.id === form.clientId)?.name ?? "";
+      await printServiceLabel(
+        {
+          serviceName: form.name.trim(),
+          clientName,
+          deviceName: (form.description || form.serviceType || "").trim(),
+          price: form.servicePrice || 0,
+        },
+        quantity,
+        {
+          service: t('services.serviceLabelService', 'Service:'),
+          client: t('services.serviceLabelClient', 'Client:'),
+          device: t('services.serviceLabelDevice', 'Device:'),
+          price: t('services.serviceLabelPrice', 'Price:'),
+        }
+      );
+      showToast(t("services.serviceLabelPrinted", "Service label printed successfully"), "success");
+      setShowServiceLabelPreview(false);
+    } catch (err) {
+      showToast(t("services.serviceLabelPrintError", "Failed to print service label"), "error");
+    }
+  };
 
   return (
     <section className="bg-card border border-border rounded-xl shadow-sm">
@@ -1544,10 +1577,35 @@ export default function AddServiceForm({
               </>
             )}
           </Button>
+          <Tooltip
+            content={form.name?.trim() ? t("services.printServiceLabelTooltip", "Print service label(s)") : t("services.serviceNameRequiredForLabel", "Service name is required to print a label")}
+            position="top"
+          >
+            <Button
+              type="button"
+              disabled={!form.name?.trim()}
+              onClick={() => setShowServiceLabelPreview(true)}
+              className="bg-cyan-600 hover:bg-cyan-700 text-white h-10 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Printer className="w-4 h-4" />
+              {t("services.printServiceLabel", "Print Service Label")}
+            </Button>
+          </Tooltip>
         </div>
       </form>
       )}
       
+      <ServiceLabelPreviewModal
+        open={showServiceLabelPreview}
+        onOpenChange={setShowServiceLabelPreview}
+        data={{
+          serviceName: form.name.trim(),
+          clientName: selectedClient?.name ?? clients.find((c) => c.id === form.clientId)?.name ?? "",
+          deviceName: (form.description || form.serviceType || "").trim(),
+          price: form.servicePrice || 0,
+        }}
+        onPrint={handlePrintServiceLabel}
+      />
       <AddClientModal
         open={showAddClientModal}
         onClose={() => {
