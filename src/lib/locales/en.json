@@ -1061,6 +1061,8 @@
     "printing": "Printing...",
     "printSuccess": "Receipt sent to printer",
     "printError": "Failed to print receipt",
+    "receiptPrinterNotSetTitle": "Receipt printer not set",
+    "receiptPrinterNotSetMessage": "You need to set up the receipt printer in the Admin page to print receipts. Go to Admin → Configure Printing → Configure Printers and choose your receipt printer.",
     "preview": "Preview",
     "previewError": "Failed to open preview window",
     "close": "Close",

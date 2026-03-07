@@ -9,8 +9,8 @@ import { useToast } from "../../../lib/contexts/toastContext";
 import { cn } from "../../../lib/utils";
 import AddClientModal from "../../../pages/cashier/components/addClientModal";
 import { generateReceiptBarcode } from "../../../lib/utils/barcodeVisual";
-import { ServiceLabelPreviewModal } from "./ServiceLabelPreviewModal";
 import { printServiceLabel } from "../utils/serviceLabelPrintUtils";
+import { NoPrinterModal } from "../../../lib/components/noPrinterModal";
 import { Tooltip } from "../../../lib/components/tooltip";
 
 interface Client {
@@ -94,8 +94,9 @@ export default function AddServiceForm({
   const [clientAddress, setClientAddress] = useState("");
   const [clientNotes, setClientNotes] = useState("");
   const [isPaid, setIsPaid] = useState(false);
+  const [showNoReceiptPrinterModal, setShowNoReceiptPrinterModal] = useState(false);
+  const [showNoLabelPrinterModal, setShowNoLabelPrinterModal] = useState(false);
   const [hideCostPrice, setHideCostPrice] = useState(true);
-  const [showServiceLabelPreview, setShowServiceLabelPreview] = useState(false);
   
   // Refs for dropdown management and field navigation
   const typeInputRef = useRef<HTMLInputElement>(null);
@@ -420,6 +421,11 @@ export default function AddServiceForm({
     clientName?: string,
     isPaid = false
   ) => {
+    const receiptPrinterName = (await window.api.database.options.get("receiptPrinterName")) ?? "";
+    if (!receiptPrinterName.trim()) {
+      setShowNoReceiptPrinterModal(true);
+      return;
+    }
     // Receipt translations
     const receiptTranslations = {
         fr: {
@@ -1077,6 +1083,15 @@ export default function AddServiceForm({
       return;
     }
     
+    // If user wants to print receipt, check receipt printer first; if not set, show modal and do not add service
+    if (shouldPrint) {
+      const receiptPrinterName = (await window.api.database.options.get("receiptPrinterName")) ?? "";
+      if (!receiptPrinterName.trim()) {
+        setShowNoReceiptPrinterModal(true);
+        return;
+      }
+    }
+    
     // Set costPrice to 0 if empty
     const costPrice = form.costPrice.trim() === "" ? 0 : parseFloat(form.costPrice) || 0;
     const servicePrice = parseFloat(form.servicePrice) || 0;
@@ -1160,7 +1175,12 @@ export default function AddServiceForm({
     }
   };
 
-  const handlePrintServiceLabel = async (quantity: number) => {
+  const handlePrintServiceLabel = async () => {
+    const labelPrinterName = (await window.api.database.options.get("labelPrinterName")) ?? "";
+    if (!labelPrinterName.trim()) {
+      setShowNoLabelPrinterModal(true);
+      return;
+    }
     try {
       const clientName = selectedClient?.name ?? clients.find((c) => c.id === form.clientId)?.name ?? "";
       await printServiceLabel(
@@ -1169,23 +1189,26 @@ export default function AddServiceForm({
           clientName,
           deviceName: (form.description || form.serviceType || "").trim(),
           price: form.servicePrice || 0,
+          isPaid,
         },
-        quantity,
+        1,
         {
           service: t('services.serviceLabelService', 'Service:'),
           client: t('services.serviceLabelClient', 'Client:'),
           device: t('services.serviceLabelDevice', 'Device:'),
           price: t('services.serviceLabelPrice', 'Price:'),
+          payed: t('services.payed', 'Payed'),
+          notPayed: t('services.notPayed', 'Not payed'),
         }
       );
       showToast(t("services.serviceLabelPrinted", "Service label printed successfully"), "success");
-      setShowServiceLabelPreview(false);
     } catch (err) {
       showToast(t("services.serviceLabelPrintError", "Failed to print service label"), "error");
     }
   };
 
   return (
+    <>
     <section className="bg-card border border-border rounded-xl shadow-sm">
       <header
         className="flex items-center justify-between p-6 cursor-pointer select-none"
@@ -1584,7 +1607,7 @@ export default function AddServiceForm({
             <Button
               type="button"
               disabled={!form.name?.trim()}
-              onClick={() => setShowServiceLabelPreview(true)}
+              onClick={() => handlePrintServiceLabel()}
               className="bg-cyan-600 hover:bg-cyan-700 text-white h-10 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Printer className="w-4 h-4" />
@@ -1595,17 +1618,6 @@ export default function AddServiceForm({
       </form>
       )}
       
-      <ServiceLabelPreviewModal
-        open={showServiceLabelPreview}
-        onOpenChange={setShowServiceLabelPreview}
-        data={{
-          serviceName: form.name.trim(),
-          clientName: selectedClient?.name ?? clients.find((c) => c.id === form.clientId)?.name ?? "",
-          deviceName: (form.description || form.serviceType || "").trim(),
-          price: form.servicePrice || 0,
-        }}
-        onPrint={handlePrintServiceLabel}
-      />
       <AddClientModal
         open={showAddClientModal}
         onClose={() => {
@@ -1627,6 +1639,17 @@ export default function AddServiceForm({
         onConfirm={handleAddClient}
       />
     </section>
+    <NoPrinterModal
+      open={showNoReceiptPrinterModal}
+      onOpenChange={setShowNoReceiptPrinterModal}
+      printerType="receipt"
+    />
+    <NoPrinterModal
+      open={showNoLabelPrinterModal}
+      onOpenChange={setShowNoLabelPrinterModal}
+      printerType="label"
+    />
+    </>
   );
 }
 

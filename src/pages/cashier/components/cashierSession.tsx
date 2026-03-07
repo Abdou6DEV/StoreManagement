@@ -7,6 +7,7 @@ import CategoryInfoModal from "./categoryInfoModal";
 import { useToast } from "../../../lib/contexts/toastContext";
 // import { useStock } from "../../../lib/contexts/stockContext"; // Removed - was causing performance issues
 import { printReceiptDirectly } from "./receiptModal";
+import { NoPrinterModal } from "../../../lib/components/noPrinterModal";
 
 interface CashierSessionProps {
   allProducts: ProductWithSales[];
@@ -78,6 +79,7 @@ const CashierSession = memo(function CashierSession({
   const [categoriesRequiringInfo, setCategoriesRequiringInfo] = useState<string[]>([]);
   const [showCategoryInfoModal, setShowCategoryInfoModal] = useState(false);
   const [pendingSaleAction, setPendingSaleAction] = useState<(() => void) | null>(null);
+  const [showNoReceiptPrinterModal, setShowNoReceiptPrinterModal] = useState(false);
   
   // Keep refs in sync with state
   useEffect(() => {
@@ -426,9 +428,22 @@ const CashierSession = memo(function CashierSession({
       return;
     }
 
+    // Check if receipt printer is set before proceeding
+    const receiptPrinterName = (await window.api.database.options.get("receiptPrinterName")) ?? "";
+    if (!receiptPrinterName.trim()) {
+      setShowNoReceiptPrinterModal(true);
+      return;
+    }
+
     // Check if category information is required
     if (checkCategoryInfoRequired()) {
       setPendingSaleAction(() => async () => {
+        // Check receipt printer again before printing (in case it was unset)
+        const receiptPrinterNameAgain = (await window.api.database.options.get("receiptPrinterName")) ?? "";
+        if (!receiptPrinterNameAgain.trim()) {
+          setShowNoReceiptPrinterModal(true);
+          return;
+        }
         // Proceed with sale and get the sale ID (will use current cart from state via proceedWithSale)
         const result = await proceedWithSale(false);
         
@@ -673,6 +688,13 @@ const CashierSession = memo(function CashierSession({
         cartItems={cart}
         categoriesRequiringInfo={categoriesRequiringInfo}
         allProducts={allProducts}
+      />
+
+      {/* Receipt printer not set modal */}
+      <NoPrinterModal
+        open={showNoReceiptPrinterModal}
+        onOpenChange={setShowNoReceiptPrinterModal}
+        printerType="receipt"
       />
     </div>
   );

@@ -993,6 +993,8 @@
     "printing": "Impression...",
     "printSuccess": "Reçu envoyé à l'imprimante",
     "printError": "Échec de l'impression du reçu",
+    "receiptPrinterNotSetTitle": "Imprimante de reçus non configurée",
+    "receiptPrinterNotSetMessage": "Vous devez configurer l'imprimante de reçus dans la page Admin pour imprimer les reçus. Allez dans Admin → Configurer l'impression → Configurer les imprimantes et choisissez votre imprimante de reçus.",
     "preview": "Aperçu",
     "previewError": "Échec de l'ouverture de la fenêtre d'aperçu",
 

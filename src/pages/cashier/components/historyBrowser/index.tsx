@@ -12,6 +12,7 @@ import SalesList from "./salesList";
 import { ConfirmDialog } from "../../../../lib/components/confirmDialog";
 import { Lock } from "lucide-react";
 import { printReceiptDirectly } from "../receiptModal";
+import { NoPrinterModal } from "../../../../lib/components/noPrinterModal";
 import type { CartItem } from "../../../../types";
 
 const HistoryBrowser: React.FC<HistoryBrowserProps> = ({
@@ -31,6 +32,7 @@ const HistoryBrowser: React.FC<HistoryBrowserProps> = ({
   const [saleToDelete, setSaleToDelete] = useState<Sale | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showNoReceiptPrinterModal, setShowNoReceiptPrinterModal] = useState(false);
 
   const fetchSales = async (searchTerm?: string) => {
     try {
@@ -93,6 +95,12 @@ const HistoryBrowser: React.FC<HistoryBrowserProps> = ({
 
   const handlePrintReceipt = async (sale: Sale) => {
     try {
+      const receiptPrinterName = (await window.api.database.options.get("receiptPrinterName")) ?? "";
+      if (!receiptPrinterName.trim()) {
+        setShowNoReceiptPrinterModal(true);
+        return;
+      }
+
       rendererLogger.debug("Printing receipt for sale", "HistoryBrowser", {
         saleId: sale.id,
       });
@@ -306,6 +314,12 @@ const HistoryBrowser: React.FC<HistoryBrowserProps> = ({
         variant="danger"
         onConfirm={confirmDeleteSale}
         loading={isDeleting}
+      />
+
+      <NoPrinterModal
+        open={showNoReceiptPrinterModal}
+        onOpenChange={setShowNoReceiptPrinterModal}
+        printerType="receipt"
       />
     </div>
   );

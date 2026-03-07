@@ -5,6 +5,7 @@ export interface ServiceLabelData {
   clientName: string;
   deviceName: string;
   price: number | string;
+  isPaid?: boolean;
 }
 
 export interface ServiceLabelLabels {
@@ -12,6 +13,8 @@ export interface ServiceLabelLabels {
   client: string;
   device: string;
   price: string;
+  payed: string;
+  notPayed: string;
 }
 
 /**
@@ -26,9 +29,11 @@ export const printServiceLabel = async (
     client: 'Client:',
     device: 'Device:',
     price: 'Price:',
+    payed: 'Payed',
+    notPayed: 'Not payed',
   }
 ): Promise<void> => {
-  const { serviceName, clientName, deviceName, price } = data;
+  const { serviceName, clientName, deviceName, price, isPaid = false } = data;
 
   if (!serviceName || !serviceName.trim()) {
     throw new Error('Service name is required for printing');
@@ -73,10 +78,11 @@ export const printServiceLabel = async (
   };
 
   const escape = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  const paymentSuffix = ` (${isPaid ? labels.payed : labels.notPayed})`;
   const serviceLine = escape(labels.service) + ' ' + escape(serviceName.trim() || '—');
   const clientLine = escape(labels.client) + ' ' + escape(clientName.trim() || '—');
   const deviceLine = escape(labels.device) + ' ' + escape(deviceName.trim() || '—');
-  const priceLine = escape(labels.price) + ' ' + formatPrice(price);
+  const priceLine = escape(labels.price) + ' ' + formatPrice(price) + escape(paymentSuffix);
 
   const labelHTML = `
     <div class="service-label">

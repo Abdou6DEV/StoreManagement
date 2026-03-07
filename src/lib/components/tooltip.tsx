@@ -27,17 +27,25 @@ export const Tooltip: React.FC<TooltipProps> = ({
   const show = () => {
     if (!showTooltips) return;
 
+    // Cancel any pending hide-from-leave so a quick re-enter doesn't glitch
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+
     // Calculate position immediately
     updatePosition();
 
     // Start animation after the configured delay
-    timeoutRef.current = window.setTimeout(() => {
+    const id = window.setTimeout(() => {
       setVisible(true);
+      timeoutRef.current = null;
     }, delay);
+    timeoutRef.current = id;
   };
 
   const hide = () => {
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
     setVisible(false);
   };
 
@@ -83,6 +91,9 @@ export const Tooltip: React.FC<TooltipProps> = ({
       className="relative inline-block"
       onMouseEnter={show}
       onMouseLeave={hide}
+      onPointerEnter={show}
+      onPointerLeave={hide}
+      onPointerDown={hide}
       onFocus={show}
       onBlur={hide}
     >
