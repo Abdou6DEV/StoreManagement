@@ -1,8 +1,14 @@
-import React from "react";
-import { User } from "lucide-react";
+import React, { useState, useEffect, useRef } from "react";
+import { useLocation } from "react-router-dom";
+import { User, Crown, Sparkles, CheckCircle, Info } from "lucide-react";
 import { cn } from "../utils";
 import { useAuth } from "../contexts/authContext";
+import { useBadgeMessage } from "../contexts/badgeMessageContext";
 import { useTranslation } from "react-i18next";
+
+const SHOW_TEXT_AFTER_NAV_MS = 4000;
+const WELCOME_SHOW_MS = 6500;
+const SLIDE_OUT_DURATION_MS = 700;
 
 interface UserBadgeProps {
   className?: string;
@@ -10,130 +16,216 @@ interface UserBadgeProps {
   size?: "sm" | "md" | "lg";
 }
 
-export function UserBadge({ 
-  className = "", 
-  showRole = true, 
-  size = "md" 
+export function UserBadge({
+  className = "",
+  showRole = true,
+  size = "md",
 }: UserBadgeProps) {
   const { user, userRole, isAdmin } = useAuth();
   const { t } = useTranslation();
+  const location = useLocation();
+  const { queue, shiftQueue, showMessage } = useBadgeMessage();
+  const [showText, setShowText] = useState(true);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const swapContentRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const showAgainRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pathnameRef = useRef(location.pathname);
+  pathnameRef.current = location.pathname;
+  const hasEnteredMainMenuBeforeRef = useRef(false);
+
+  const currentMessage = queue[0] ?? null;
+  const isMessageMode = queue.length > 0;
+  /** Keep line visible while cycling queue messages; only shrink when queue is empty and text hidden */
+  const showLine = showText || queue.length > 0;
+
+  useEffect(() => {
+    if (location.pathname === "/login") {
+      hasEnteredMainMenuBeforeRef.current = false;
+    }
+  }, [location.pathname]);
+
+  // Message queue: show current message for its duration; pathname does NOT reset this (no pathname in deps)
+  useEffect(() => {
+    if (!isMessageMode || !currentMessage) return;
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    if (swapContentRef.current) clearTimeout(swapContentRef.current);
+    if (showAgainRef.current) clearTimeout(showAgainRef.current);
+    setShowText(false);
+    showAgainRef.current = setTimeout(() => {
+      setShowText(true);
+      showAgainRef.current = null;
+    }, 50);
+    timeoutRef.current = setTimeout(() => {
+      setShowText(false);
+      timeoutRef.current = null;
+      swapContentRef.current = setTimeout(() => {
+        shiftQueue();
+        swapContentRef.current = null;
+      }, SLIDE_OUT_DURATION_MS);
+    }, currentMessage.durationMs);
+    return () => {
+      if (showAgainRef.current) clearTimeout(showAgainRef.current);
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      if (swapContentRef.current) clearTimeout(swapContentRef.current);
+    };
+  }, [isMessageMode, currentMessage?.content, currentMessage?.durationMs, shiftQueue]);
+
+  // Normal badge (username/role): only when queue empty; re-show on every pathname change
+  useEffect(() => {
+    if (queue.length > 0) return;
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    if (swapContentRef.current) clearTimeout(swapContentRef.current);
+    if (showAgainRef.current) clearTimeout(showAgainRef.current);
+    const isMainMenu = location.pathname === "/";
+    if (isMainMenu && !hasEnteredMainMenuBeforeRef.current) {
+      setShowText(false);
+      return;
+    }
+    setShowText(true);
+    timeoutRef.current = setTimeout(() => {
+      setShowText(false);
+      timeoutRef.current = null;
+    }, SHOW_TEXT_AFTER_NAV_MS);
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      if (swapContentRef.current) clearTimeout(swapContentRef.current);
+    };
+  }, [queue.length, location.pathname]);
+
+  useEffect(() => {
+    if (!user || queue.length > 0) return;
+    const isMainMenu = location.pathname === "/";
+    if (isMainMenu && !hasEnteredMainMenuBeforeRef.current) {
+      hasEnteredMainMenuBeforeRef.current = true;
+      showMessage({
+        content: t("userBadge.welcomeUser", "Welcome, {{name}}!", {
+          name: user.username || t("userBadge.user", "User"),
+        }),
+        durationMs: WELCOME_SHOW_MS,
+        style: "welcome",
+      });
+    }
+  }, [location.pathname, user, queue.length, t, showMessage]);
 
   if (!user) return null;
 
-  // Size configurations
   const sizeConfig = {
-    sm: {
-      container: "px-3 py-2",
-      avatar: "w-8 h-8 text-sm",
-      text: "text-sm",
-      role: "text-xs",
-      icon: "w-3 h-3",
-      userIcon: "w-5 h-5"
-    },
-    md: {
-      container: "px-4 py-3",
-      avatar: "w-10 h-10 text-base",
-      text: "text-base",
-      role: "text-sm",
-      icon: "w-4 h-4",
-      userIcon: "w-6 h-6"
-    },
-    lg: {
-      container: "px-5 py-4",
-      avatar: "w-12 h-12 text-lg",
-      text: "text-lg",
-      role: "text-base",
-      icon: "w-5 h-5",
-      userIcon: "w-7 h-7"
-    }
+    sm: { avatar: "w-9 h-19", icon: "w-6 h-6", name: "text-sm", gap: "gap-2", px: "px-2.5 py-1.5" },
+    md: { avatar: "w-11 h-11", icon: "w-8 h-8", name: "text-sm", gap: "gap-3", px: "px-3 py-2" },
+    lg: { avatar: "w-12 h-12", icon: "w-8 h-8", name: "text-base", gap: "gap-3", px: "px-4 py-2.5" },
   };
 
   const config = sizeConfig[size];
 
-  // Get user initials
-  const getInitials = (name: string) => {
-    return name
-      .split(" ")
-      .map(word => word.charAt(0))
-      .join("")
-      .toUpperCase()
-      .slice(0, 2);
-  };
+  const isAdminRole = isAdmin || userRole === "ADMIN";
+  const roleLabel = isAdminRole
+    ? t("userBadge.admin", "Admin")
+    : t("userBadge.user", "User");
 
-  // Get role color and label
-  const getRoleInfo = () => {
-    if (isAdmin || userRole === "ADMIN") {
-      return {
-        color: "text-amber-500",
-        bgColor: "bg-gradient-to-br from-amber-400 to-orange-500",
-        borderColor: "border-amber-300/50 hover:border-amber-400/70",
-        text: t("userBadge.admin", "Admin")
-      };
+  const avatarColors = isAdminRole
+    ? "bg-orange-500/20 text-orange-600 dark:bg-orange-500/25 dark:text-orange-400"
+    : "bg-primary/15 text-primary";
+
+  const roleColors = isAdminRole
+    ? "text-orange-600 dark:text-orange-400"
+    : "text-muted-foreground";
+
+  const renderMessageContent = () => {
+    if (!currentMessage) return null;
+    const { content, style = "default" } = currentMessage;
+    const messageWrapClass =
+      "flex items-start gap-1.5 w-[180px] min-w-[180px] font-semibold text-base text-left whitespace-normal break-words leading-tight";
+    const textClass = "min-w-0 flex-1 line-clamp-2";
+    if (style === "welcome") {
+      return (
+        <span className={cn(messageWrapClass, "text-primary dark:text-primary", size === "lg" && "text-lg")}>
+          <Sparkles className="w-4 h-4 shrink-0 mt-0.5 text-amber-500 dark:text-amber-400" strokeWidth={2} aria-hidden />
+          <span className={textClass}>{content}</span>
+        </span>
+      );
     }
-
-    return {
-      color: "text-green-500",
-      bgColor: "bg-gradient-to-br from-green-400 to-green-600",
-      borderColor: "border-green-300/50 hover:border-green-400/70",
-      text: t("userBadge.user", "User")
-    };
+    if (style === "success") {
+      return (
+        <span className={cn(messageWrapClass, "text-green-600 dark:text-green-400", size === "lg" && "text-lg")}>
+          <CheckCircle className="w-4 h-4 shrink-0 mt-0.5" strokeWidth={2} aria-hidden />
+          <span className={textClass}>{content}</span>
+        </span>
+      );
+    }
+    if (style === "info") {
+      return (
+        <span className={cn(messageWrapClass, "text-blue-600 dark:text-blue-400", size === "lg" && "text-lg")}>
+          <Info className="w-4 h-4 shrink-0 mt-0.5" strokeWidth={2} aria-hidden />
+          <span className={textClass}>{content}</span>
+        </span>
+      );
+    }
+    return (
+      <span className={cn(messageWrapClass, size === "lg" && "text-lg")}>
+        <span className={textClass}>{content}</span>
+      </span>
+    );
   };
-
-  const roleInfo = getRoleInfo();
-  const initials = getInitials(user.username || "U");
 
   return (
-    <div className={cn(
-      "group relative overflow-hidden rounded-full bg-gradient-to-r from-card via-card/95 to-card border transition-all duration-500 hover:shadow-lg",
-      roleInfo.borderColor,
-      className
-    )}>
-
-      {/* Background Pattern */}
-      <div className="absolute inset-0 opacity-5 group-hover:opacity-10 transition-opacity duration-500">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-transparent to-primary/20"></div>
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(0,0,0,0.1),transparent_50%)]"></div>
+    <div
+      className={cn(
+        "group/badge flex items-center rounded-xl text-foreground",
+        config.px,
+        config.gap,
+        className
+      )}
+    >
+      <div
+        className={cn(
+          "flex shrink-0 items-center justify-center rounded-full",
+          avatarColors,
+          config.avatar
+        )}
+      >
+        <User className={cn("shrink-0", config.icon)} strokeWidth={2} />
       </div>
-
-      <div className={cn(
-        "relative flex items-center gap-3 backdrop-blur-sm",
-        config.container
-      )}>
-
-        {/* User Icon */}
-        <User className={cn("transition-all duration-300 group-hover:scale-110", config.userIcon, roleInfo.color)} />
-
-        {/* User Info */}
-        <div className="flex flex-col min-w-0 flex-1">
-          <div className={cn(
-            "font-semibold text-foreground truncate leading-tight",
-            config.text
-          )}>
-            {user.username || t("userBadge.user", "User")}
-          </div>
-          {showRole && (
-            <div className={cn(
-              "text-xs font-medium uppercase tracking-wider opacity-75",
-              roleInfo.color
-            )}>
-              {roleInfo.text}
-            </div>
+      <div className="flex w-[181px] shrink-0 items-center overflow-hidden">
+        <div
+          className={cn(
+            "w-px shrink-0 bg-border origin-center transition-transform duration-700 ease-in-out",
+            size === "sm" && "h-8",
+            size === "md" && "h-10",
+            size === "lg" && "h-12",
+            showLine
+              ? "scale-y-100 delay-0"
+              : "scale-y-0 delay-[400ms] group-hover/badge:scale-y-100 group-hover/badge:delay-0"
           )}
-        </div>
-
-        {/* Avatar Initials */}
-        <div className={cn(
-          "flex items-center justify-center rounded-full font-bold text-foreground border-2 transition-all duration-300 group-hover:scale-110",
-          "w-8 h-8 text-sm",
-          roleInfo.bgColor,
-          roleInfo.borderColor
-        )}>
-          <span>{initials}</span>
+          aria-hidden
+        />
+        <div className="w-[180px] shrink-0 overflow-hidden min-h-[2.5rem] flex items-center">
+          <div
+            className={cn(
+              "w-[180px] flex flex-col items-start justify-center gap-0.5 pl-3 flex-shrink-0",
+              "transition-transform duration-700 ease-in-out",
+              showText
+                ? "translate-x-0 delay-[400ms]"
+                : "translate-x-[-100%] delay-0 group-hover/badge:translate-x-0 group-hover/badge:delay-[400ms]"
+            )}
+          >
+            {isMessageMode && currentMessage ? (
+              renderMessageContent()
+            ) : (
+              <>
+                <span className={cn("font-medium truncate max-w-[140px]", config.name)}>
+                  {user.username || t("userBadge.user", "User")}
+                </span>
+                {showRole && (
+                  <span className={cn("flex items-center gap-1.5 text-sm font-medium antialiased", roleColors)}>
+                    {isAdminRole && <Crown className="w-3.5 h-3.5 shrink-0" strokeWidth={2} />}
+                    {roleLabel}
+                  </span>
+                )}
+              </>
+            )}
+          </div>
         </div>
       </div>
-
-      {/* Animated Border */}
-      <div className="absolute inset-0 rounded-full border-2 border-transparent bg-gradient-to-r from-primary/20 via-transparent to-primary/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-pulse"></div>
     </div>
   );
 }

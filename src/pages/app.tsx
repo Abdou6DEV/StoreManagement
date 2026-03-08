@@ -26,18 +26,33 @@ import PageTransition from "../lib/components/pageTransition";
 import { UpdateProvider } from "../lib/contexts/updateContext";
 import { useAuth } from "../lib/contexts/authContext";
 import { useLicense } from "../lib/contexts/licenseContext";
+import { BadgeMessageProvider } from "../lib/contexts/badgeMessageContext";
 
-const MainMenu = React.lazy(() => import("./mainMenu"));
-const Dashboard = React.lazy(() => import("./dashboard"));
-const Clients = React.lazy(() => import("./clients"));
-const Cashier = React.lazy(() => import("./cashier"));
-const Stock = React.lazy(() => import("./stock"));
-const History = React.lazy(() => import("./history"));
-const Bills = React.lazy(() => import("./bills"));
-const Services = React.lazy(() => import("./services"));
-const Administrator = React.lazy(() => import("./administrator"));
-const ZakatAlMal = React.lazy(() => import("./zakat"));
-const About = React.lazy(() => import("./about"));
+import {
+  getLazyMainMenu,
+  getLazyDashboard,
+  getLazyClients,
+  getLazyCashier,
+  getLazyStock,
+  getLazyHistory,
+  getLazyBills,
+  getLazyServices,
+  getLazyAdministrator,
+  getLazyZakatAlMal,
+  getLazyAbout,
+} from "./lazyRoutes";
+
+const MainMenu = React.lazy(getLazyMainMenu);
+const Dashboard = React.lazy(getLazyDashboard);
+const Clients = React.lazy(getLazyClients);
+const Cashier = React.lazy(getLazyCashier);
+const Stock = React.lazy(getLazyStock);
+const History = React.lazy(getLazyHistory);
+const Bills = React.lazy(getLazyBills);
+const Services = React.lazy(getLazyServices);
+const Administrator = React.lazy(getLazyAdministrator);
+const ZakatAlMal = React.lazy(getLazyZakatAlMal);
+const About = React.lazy(getLazyAbout);
 
 export default function App() {
   const { i18n } = useTranslation();
@@ -128,6 +143,7 @@ export default function App() {
                 path="/*"
                 element={
                   <ProtectedRoute>
+                    <BadgeMessageProvider>
                     <StockProvider>
                       <LowStockProvider>
                         <OutOfStockProvider>
@@ -250,6 +266,7 @@ export default function App() {
                       </OutOfStockProvider>
                     </LowStockProvider>
                   </StockProvider>
+                    </BadgeMessageProvider>
                 </ProtectedRoute>
               }
             />

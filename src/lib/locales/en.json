@@ -139,6 +139,7 @@
     "below": "below",
     "average": "average",
     "viewInHistory": "View in History",
+    "noAccessToHistoryTooltip": "You do not have access to the History page.",
     "1M": "1 Month",
     "12M": "12 Months",
     "years": "Years",
@@ -723,7 +724,8 @@
   "userBadge": {
     "admin": "Admin",
     "manager": "Manager",
-    "user": "User"
+    "user": "User",
+    "welcomeUser": "Welcome, {{name}}!"
   },
   "login": {
     "welcomeBack": "Welcome",

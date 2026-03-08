@@ -3,6 +3,7 @@ import { useAuth } from "../contexts/authContext";
 import { useTheme } from "../hooks/useTheme";
 import { LOGO_ICON, LOGO_ICON_DARK } from "../assets";
 import PreloadLoading from "./preloadLoading";
+import { routeLoaders } from "../../pages/lazyRoutes";
 
 const LOGO_FADE_DURATION_MS = 500;   // logo fades in up-to-down
 const CONTENT_DELAY_MS = 200;       // delay before other preload content fades in (after logo)
@@ -17,10 +18,34 @@ interface LoginToPreloadTransitionProps {
  * Shown after successful login: logo fades in up-to-down, then other preload content fades in. Stays visible until loading completes.
  */
 export default function LoginToPreloadTransition({ onPreloadComplete }: LoginToPreloadTransitionProps) {
-  const { justLoggedIn, markLoginTransitionDone } = useAuth();
+  const { justLoggedIn, markLoginTransitionDone, isPreloading, preloadProgress, setPreloadProgress, setIsPreloading } = useAuth();
   const { isDark } = useTheme();
   const transitionDoneRef = useRef(false);
   const [entranceDone, setEntranceDone] = useState(false);
+
+  // Run route preload from HERE (same tree as App) so we use the same lazyRoutes module → same chunks as React.lazy → no Suspense after
+  useEffect(() => {
+    if (!isPreloading) return;
+    let cancelled = false;
+    const run = async () => {
+      const total = routeLoaders.length;
+      try {
+        for (let i = 0; i < total; i++) {
+          if (cancelled) break;
+          try {
+            await routeLoaders[i]();
+          } catch (error) {
+            console.error(`Failed to preload route ${i}:`, error);
+          }
+          if (!cancelled) setPreloadProgress(Math.round(((i + 1) / total) * 100));
+        }
+      } finally {
+        if (!cancelled) setIsPreloading(false);
+      }
+    };
+    run();
+    return () => { cancelled = true; };
+  }, [isPreloading, setPreloadProgress, setIsPreloading]);
 
   useEffect(() => {
     if (!justLoggedIn || transitionDoneRef.current) return;
@@ -77,7 +102,12 @@ export default function LoginToPreloadTransition({ onPreloadComplete }: LoginToP
                 }
           }
         >
-          <PreloadLoading onComplete={onPreloadComplete} hideLogo />
+          <PreloadLoading
+            onComplete={onPreloadComplete}
+            hideLogo
+            isPreloading={isPreloading}
+            preloadProgress={preloadProgress}
+          />
         </div>
       </div>
     </div>

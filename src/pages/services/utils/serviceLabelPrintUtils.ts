@@ -84,7 +84,21 @@ export const printServiceLabel = async (
   const deviceLine = escape(labels.device) + ' ' + escape(deviceName.trim() || '—');
   const priceLine = escape(labels.price) + ' ' + formatPrice(price) + escape(paymentSuffix);
 
-  const labelHTML = `
+  // If service name is too long, allow it to wrap to 2 lines and omit price to make space
+  const SERVICE_NAME_LONG_THRESHOLD = 20;
+  const isLongServiceName = serviceName.trim().length > SERVICE_NAME_LONG_THRESHOLD;
+  const serviceNameClass = isLongServiceName ? 'service-name service-name-long' : 'service-name';
+
+  const labelHTML = isLongServiceName
+    ? `
+    <div class="service-label service-label-no-price">
+      <div class="service-label-line ${serviceNameClass}">${serviceLine}</div>
+      <div class="service-label-line client-name">${clientLine}</div>
+      <div class="service-label-line device-name">${deviceLine}</div>
+      <div class="service-label-line price" dir="ltr">${priceLine}</div>
+    </div>
+  `
+    : `
     <div class="service-label">
       <div class="service-label-line service-name">${serviceLine}</div>
       <div class="service-label-line client-name">${clientLine}</div>
@@ -112,6 +126,10 @@ export const printServiceLabel = async (
             margin: 0 !important;
             padding: 0 !important;
           }
+          .service-label.service-label-no-price {
+            padding: 0 !important;
+            padding-top: 1.5mm !important;
+          }
         }
         body {
           font-family: ${fontFamily};
@@ -127,27 +145,37 @@ export const printServiceLabel = async (
           flex-direction: column;
           align-items: center;
           justify-content: center;
-          padding: 1.5mm 2mm;
+          padding: 1mm 1mm;
+          padding-top: 0.5mm;
           margin: 0;
           page-break-after: always;
           page-break-inside: avoid;
           box-sizing: border-box;
-          gap: 0.5mm;
         }
         .service-label:last-child { page-break-after: auto; }
+        .service-label.service-label-no-price {
+          padding-top: 1.5mm;
+        }
         .service-label-line {
           text-align: center;
           overflow: hidden;
           text-overflow: ellipsis;
           white-space: nowrap;
-          max-width: 100%;
-          line-height: 1.2;
+          max-width: 96%;
+          line-height: 1.1;
           color: #000;
           font-weight: 700;
         }
         .service-name { font-size: 14px; }
-        .client-name { font-size: 13px; }
-        .device-name { font-size: 12px; }
+        .service-name-long {
+          white-space: normal;
+          word-wrap: break-word;
+          word-break: break-word;
+          line-height: 1.15;
+          font-size: 13px;
+        }
+        .client-name { font-size: 14px; }
+        .device-name { font-size: 13px; }
         .price { font-size: 15px; direction: ltr; unicode-bidi: embed; }
         .price-currency { font-size: 0.8em; font-weight: 700; }
       </style>

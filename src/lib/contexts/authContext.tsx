@@ -15,6 +15,11 @@ interface AuthContextType {
   logout: () => void;
   loading: boolean;
   isPreloading: boolean;
+  /** 0–100, updated as each route chunk finishes loading. */
+  preloadProgress: number;
+  /** Called by preload screen to update progress (same module as App so same chunks load). */
+  setPreloadProgress: (n: number) => void;
+  setIsPreloading: (v: boolean) => void;
   preloadComplete: boolean;
   /** Call this when the preload UI has finished (e.g. progress bar reached 100%). Only this should set preloadComplete. */
   markPreloadComplete: () => void;
@@ -47,6 +52,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [userRole, setUserRole] = useState<UserRole | null>(null);
   const [loading, setLoading] = useState(true);
   const [isPreloading, setIsPreloading] = useState(false);
+  const [preloadProgress, setPreloadProgress] = useState(0);
   const [preloadComplete, setPreloadComplete] = useState(false);
   const [justLoggedIn, setJustLoggedIn] = useState(false);
 
@@ -68,46 +74,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setUserRole(result.user.role);
         // Don't set isAuthenticated yet – Login runs green button → fade out, then calls confirmLoginTransition()
 
-        // Start preloading in the background
+        // Preload is run by the preload screen (same React tree as App) so same chunks as React.lazy
         setIsPreloading(true);
+        setPreloadProgress(0);
         setPreloadComplete(false);
-
-        // Preload all pages
-        const preloadPages = async () => {
-          try {
-            const pageComponents = [
-              () => import("../../pages/mainMenu"),
-              () => import("../../pages/dashboard"),
-              () => import("../../pages/clients"),
-              () => import("../../pages/cashier"),
-              () => import("../../pages/stock"),
-              () => import("../../pages/history"),
-              () => import("../../pages/bills"),
-              () => import("../../pages/services"),
-              () => import("../../pages/administrator"),
-            ];
-
-            // Preload all pages with delays to show progress
-            for (let i = 0; i < pageComponents.length; i++) {
-              try {
-                await pageComponents[i]();
-                // Add delay between each page load for better UX (300ms per page)
-                await new Promise(resolve => setTimeout(resolve, 300));
-              } catch (error) {
-                console.error(`Failed to preload page ${i}:`, error);
-              }
-            }
-            
-            // Don't set preloadComplete here – only the preload UI does when the bar reaches 100%
-            setIsPreloading(false);
-          } catch (error) {
-            console.error("Preloading failed:", error);
-            setIsPreloading(false);
-          }
-        };
-
-        // Start preloading in the background
-        preloadPages();
 
         return { success: true };
       } else {
@@ -193,6 +163,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     logout,
     loading,
     isPreloading,
+    preloadProgress,
+    setPreloadProgress,
+    setIsPreloading,
     preloadComplete,
     markPreloadComplete,
     justLoggedIn,

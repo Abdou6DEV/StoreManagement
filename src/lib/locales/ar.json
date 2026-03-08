@@ -127,6 +127,7 @@
     "below": "أقل من",
     "average": "المتوسط",
     "viewInHistory": "عرض في السجل",
+    "noAccessToHistoryTooltip": "ليس لديك صلاحية الوصول إلى صفحة السجل.",
     "1M": "شهر واحد",
     "12M": "12 شهرًا",
     "years": "سنوات",
@@ -408,7 +409,8 @@
   "userBadge": {
     "admin": "مدير",
     "manager": "مشرف",
-    "user": "مستخدم"
+    "user": "مستخدم",
+    "welcomeUser": "مرحباً، {{name}}!"
   },
   "login": {
     "welcomeBack": "مرحباً",

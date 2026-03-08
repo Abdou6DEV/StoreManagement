@@ -20,12 +20,15 @@ import { Tooltip } from "../../../lib/components/tooltip";
 import { Button } from "../../../lib/components/button";
 import { LoadingState } from "../../../lib/components/loadingState";
 import { useSales, useProducts, useClients, usePayments, useLowStockThreshold, useDashboardLoading } from "../../../lib/contexts/dashboardContext";
+import { useAuth } from "../../../lib/contexts/authContext";
 
 type OverviewPeriod = "today" | "thisMonth" | "thisYear" | "overall";
 
 export function SectionCards() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const { canAccessPage } = useAuth();
+  const canAccessHistory = canAccessPage("history");
   
   // Use shared dashboard data
   const sales = useSales();
@@ -804,16 +807,19 @@ export function SectionCards() {
                                 {todayVsAverage.direction === 'up' ? t("dashboard.above") : t("dashboard.below")} {t("dashboard.average")}
                               </span>
                             </div>
-                            <Tooltip content={t("dashboard.viewInHistory", "View in History")}>
-                              <Button
-                                type="button"
-                                size="icon"
-                                variant="outline"
-                                className="h-7 w-7 border-blue-200 text-blue-600 hover:bg-blue-50 dark:border-blue-900/60 dark:text-blue-300 dark:hover:bg-blue-950/40"
-                                onClick={() => handleJumpToHistory('today')}
-                              >
-                                <ExternalLink className="h-3.5 w-3.5" />
-                              </Button>
+                            <Tooltip content={canAccessHistory ? t("dashboard.viewInHistory", "View in History") : t("dashboard.noAccessToHistoryTooltip", "You do not have access to the History page.")} position="top">
+                              <span className="inline-block">
+                                <Button
+                                  type="button"
+                                  size="icon"
+                                  variant="outline"
+                                  className="h-7 w-7 border-blue-200 text-blue-600 hover:bg-blue-50 dark:border-blue-900/60 dark:text-blue-300 dark:hover:bg-blue-950/40 disabled:opacity-50 disabled:pointer-events-none"
+                                  onClick={() => handleJumpToHistory('today')}
+                                  disabled={!canAccessHistory}
+                                >
+                                  <ExternalLink className="h-3.5 w-3.5" />
+                                </Button>
+                              </span>
                             </Tooltip>
                           </div>
                         )}
@@ -836,16 +842,19 @@ export function SectionCards() {
                                 {monthVsAverage.direction === 'up' ? t("dashboard.above") : t("dashboard.below")} {t("dashboard.average")}
                               </span>
                             </div>
-                            <Tooltip content={t("dashboard.viewInHistory", "View in History")}>
-                              <Button
-                                type="button"
-                                size="icon"
-                                variant="outline"
-                                className="h-7 w-7 border-blue-200 text-blue-600 hover:bg-blue-50 dark:border-blue-900/60 dark:text-blue-300 dark:hover:bg-blue-950/40"
-                                onClick={() => handleJumpToHistory('month')}
-                              >
-                                <ExternalLink className="h-3.5 w-3.5" />
-                              </Button>
+                            <Tooltip content={canAccessHistory ? t("dashboard.viewInHistory", "View in History") : t("dashboard.noAccessToHistoryTooltip", "You do not have access to the History page.")} position="top">
+                              <span className="inline-block">
+                                <Button
+                                  type="button"
+                                  size="icon"
+                                  variant="outline"
+                                  className="h-7 w-7 border-blue-200 text-blue-600 hover:bg-blue-50 dark:border-blue-900/60 dark:text-blue-300 dark:hover:bg-blue-950/40 disabled:opacity-50 disabled:pointer-events-none"
+                                  onClick={() => handleJumpToHistory('month')}
+                                  disabled={!canAccessHistory}
+                                >
+                                  <ExternalLink className="h-3.5 w-3.5" />
+                                </Button>
+                              </span>
                             </Tooltip>
                           </div>
                         )}
@@ -868,16 +877,19 @@ export function SectionCards() {
                                 {yearVsAverage.direction === 'up' ? t("dashboard.above") : t("dashboard.below")} {t("dashboard.average")}
                               </span>
                             </div>
-                            <Tooltip content={t("dashboard.viewInHistory", "View in History")}>
-                              <Button
-                                type="button"
-                                size="icon"
-                                variant="outline"
-                                className="h-7 w-7 border-blue-200 text-blue-600 hover:bg-blue-50 dark:border-blue-900/60 dark:text-blue-300 dark:hover:bg-blue-950/40"
-                                onClick={() => handleJumpToHistory('year')}
-                              >
-                                <ExternalLink className="h-3.5 w-3.5" />
-                              </Button>
+                            <Tooltip content={canAccessHistory ? t("dashboard.viewInHistory", "View in History") : t("dashboard.noAccessToHistoryTooltip", "You do not have access to the History page.")} position="top">
+                              <span className="inline-block">
+                                <Button
+                                  type="button"
+                                  size="icon"
+                                  variant="outline"
+                                  className="h-7 w-7 border-blue-200 text-blue-600 hover:bg-blue-50 dark:border-blue-900/60 dark:text-blue-300 dark:hover:bg-blue-950/40 disabled:opacity-50 disabled:pointer-events-none"
+                                  onClick={() => handleJumpToHistory('year')}
+                                  disabled={!canAccessHistory}
+                                >
+                                  <ExternalLink className="h-3.5 w-3.5" />
+                                </Button>
+                              </span>
                             </Tooltip>
                           </div>
                         )}

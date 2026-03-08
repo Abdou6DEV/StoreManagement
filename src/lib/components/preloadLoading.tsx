@@ -9,6 +9,9 @@ interface PreloadLoadingProps {
   onComplete?: () => void;
   /** When true, do not render the logo (e.g. when parent provides a shared logo after login transition). */
   hideLogo?: boolean;
+  /** When provided, progress bar reflects real preload. Completion only after !isPreloading. */
+  isPreloading?: boolean;
+  preloadProgress?: number;
 }
 
 interface LoadingStep {
@@ -29,17 +32,71 @@ const LOADING_STEPS: LoadingStep[] = [
   { id: "administrator", nameKey: "loading.administrator", threshold: 100 },
 ];
 
-export default function PreloadLoading({ onComplete, hideLogo }: PreloadLoadingProps) {
+const MIN_PRELOAD_DISPLAY_MS = 1500;
+const READY_DELAY_MS = 600;
+const SMOOTH_TICK_MS = 60;
+/** Minimum time for the bar to visually go 0→100 so 2nd login (cached) doesn't jump to 100% */
+const MIN_PROGRESS_ANIMATION_MS = 2200;
+
+export default function PreloadLoading({ onComplete, hideLogo, isPreloading, preloadProgress }: PreloadLoadingProps) {
   const { t } = useTranslation();
-  const [progress, setProgress] = useState(0);
+  const [timerProgress, setTimerProgress] = useState(0);
+  const [smoothedProgress, setSmoothedProgress] = useState(0);
   const [isComplete, setIsComplete] = useState(false);
   const [startTime] = useState(Date.now());
   const [updateStatus, setUpdateStatus] = useState<string>("");
+  const [elapsedForMinProgress, setElapsedForMinProgress] = useState(0);
+  const completionHandledRef = React.useRef(false);
+  const prevPreloadingRef = React.useRef<boolean | undefined>(undefined);
+  const onCompleteRef = React.useRef(onComplete);
+  onCompleteRef.current = onComplete;
 
   const { checkForUpdates, isChecking, updateInfo, error } = useUpdateChecker();
   const { isDark } = useTheme();
 
-  // Use the *last* step whose threshold we've reached (so label advances: Main Menu → Dashboard → … → Administrator)
+  const useRealProgress = preloadProgress !== undefined && isPreloading !== undefined;
+  const realProgress = useRealProgress ? preloadProgress : timerProgress;
+  const minProgressFromTime = Math.min(100, (elapsedForMinProgress / MIN_PROGRESS_ANIMATION_MS) * 100);
+  const progress = useRealProgress ? Math.min(smoothedProgress, minProgressFromTime) : timerProgress;
+  // Only show green/Ready when the bar the user sees has reached 100% (not when realProgress is 100% instantly)
+  const displayComplete = useRealProgress ? realProgress >= 100 && !isPreloading && progress >= 100 : isComplete;
+
+  // Reset completion ref and smoothed bar when a new preload starts (e.g. second login)
+  useEffect(() => {
+    if (isPreloading === true && prevPreloadingRef.current === false) {
+      completionHandledRef.current = false;
+      setSmoothedProgress(0);
+      setElapsedForMinProgress(0);
+    }
+    prevPreloadingRef.current = isPreloading;
+  }, [isPreloading]);
+
+  // Time-based cap: bar never shows more than (elapsed / MIN_PROGRESS_ANIMATION_MS) * 100 so 2nd login animates
+  useEffect(() => {
+    if (!useRealProgress) return;
+    const id = setInterval(() => {
+      setElapsedForMinProgress((e) => Math.min(e + SMOOTH_TICK_MS, MIN_PROGRESS_ANIMATION_MS));
+    }, SMOOTH_TICK_MS);
+    return () => clearInterval(id);
+  }, [useRealProgress]);
+
+  // Smooth progress bar toward real value so it doesn't jump in big steps
+  useEffect(() => {
+    if (!useRealProgress) return;
+    if (realProgress <= 0) {
+      setSmoothedProgress(0);
+      return;
+    }
+    const id = setInterval(() => {
+      setSmoothedProgress((prev) => {
+        if (prev >= realProgress) return prev;
+        const next = Math.min(prev + (realProgress - prev) * 0.35, realProgress);
+        return Math.round(next * 10) / 10;
+      });
+    }, SMOOTH_TICK_MS);
+    return () => clearInterval(id);
+  }, [useRealProgress, realProgress]);
+
   const currentStepIndex = useMemo(() => {
     let idx = -1;
     for (let i = 0; i < LOADING_STEPS.length; i++) {
@@ -51,7 +108,6 @@ export default function PreloadLoading({ onComplete, hideLogo }: PreloadLoadingP
     ? t(LOADING_STEPS[currentStepIndex].nameKey, LOADING_STEPS[currentStepIndex].nameKey)
     : "";
 
-  // Check for updates on component mount
   useEffect(() => {
     const checkUpdates = async () => {
       setUpdateStatus(t("updates.checking"));
@@ -75,29 +131,40 @@ export default function PreloadLoading({ onComplete, hideLogo }: PreloadLoadingP
     checkUpdates();
   }, [checkForUpdates, t]);
 
+  // When using real preload: schedule onComplete after min display + Ready. Use ref so callback identity doesn't clear timeout.
   useEffect(() => {
-    const minLoadingTime = 6000; // 4s – bar and steps stay in sync
-    const tickMs = 80; // smooth bar, in sync with step changes
+    if (!useRealProgress || completionHandledRef.current) return;
+    if (isPreloading || realProgress < 100) return;
+    const elapsed = Date.now() - startTime;
+    const minWait = Math.max(MIN_PRELOAD_DISPLAY_MS, MIN_PROGRESS_ANIMATION_MS);
+    const remaining = minWait - elapsed;
+    const delay = (remaining > 0 ? remaining : 0) + READY_DELAY_MS;
+    completionHandledRef.current = true;
+    const timeoutId = setTimeout(() => {
+      onCompleteRef.current?.();
+    }, delay);
+    return () => clearTimeout(timeoutId);
+  }, [useRealProgress, isPreloading, realProgress, startTime]);
 
+  // When not using real preload: original timer-based behavior
+  useEffect(() => {
+    if (useRealProgress) return;
+    const minLoadingTime = 6000;
+    const tickMs = 80;
     const interval = setInterval(() => {
       const elapsed = Date.now() - startTime;
       const linear = Math.min(elapsed / minLoadingTime, 1);
-      const eased = 1 - Math.pow(1 - linear, 1.15); // smooth ease-out
+      const eased = 1 - Math.pow(1 - linear, 1.15);
       const newProgress = Math.min(100, eased * 100);
-
-      setProgress(newProgress);
-
+      setTimerProgress(newProgress);
       if (newProgress >= 100) {
         clearInterval(interval);
         setIsComplete(true);
-        if (onComplete) {
-          setTimeout(onComplete, 600);
-        }
+        if (onComplete) setTimeout(onComplete, READY_DELAY_MS);
       }
     }, tickMs);
-
     return () => clearInterval(interval);
-  }, [onComplete, startTime]);
+  }, [useRealProgress, onComplete, startTime]);
 
   const content = (
     <div className="flex flex-col items-center w-full max-w-md px-4">
@@ -107,7 +174,7 @@ export default function PreloadLoading({ onComplete, hideLogo }: PreloadLoadingP
             <img
               src={isDark ? LOGO_ICON : LOGO_ICON_DARK}
               alt=""
-              className={`w-50 h-50 object-contain select-none ${!isComplete ? "animate-pulse" : ""}`}
+              className={`w-50 h-50 object-contain select-none ${!displayComplete ? "animate-pulse" : ""}`}
             />
           </div>
         )}
@@ -115,19 +182,19 @@ export default function PreloadLoading({ onComplete, hideLogo }: PreloadLoadingP
         {/* Title + description between logo and dots – always visible */}
         <div className="text-center space-y-2 mb-4">
           <h2 className="text-xl font-semibold text-foreground">
-            {isComplete
+            {displayComplete
               ? t("loading.ready", "Ready!")
               : t("loading.preparingSystem", "Preparing system")}
           </h2>
           <p className="text-sm text-muted-foreground">
-            {isComplete
+            {displayComplete
               ? t("loading.readyDesc", "You're all set.")
               : t("loading.preparingSystemDesc", "Please wait...")}
           </p>
         </div>
 
         {/* Red jumping dots */}
-        {!isComplete && (
+        {!displayComplete && (
           <>
             <div className="flex gap-2 mb-6">
               <div
@@ -171,18 +238,18 @@ export default function PreloadLoading({ onComplete, hideLogo }: PreloadLoadingP
         <div className="w-full mb-2">
           <div className="w-full bg-muted rounded-full h-2.5 overflow-hidden">
             <div
-              className={`h-full rounded-full transition-[width] duration-500 ease-out ${isComplete ? "bg-green-500" : "bg-primary"}`}
+              className={`h-full rounded-full transition-[width] duration-500 ease-out ${displayComplete ? "bg-green-500" : "bg-primary"}`}
               style={{ width: `${Math.min(progress, 100)}%` }}
             />
           </div>
-          <div className={`text-sm mt-1.5 text-center ${isComplete ? "text-green-600 font-medium" : "text-muted-foreground"}`}>
+          <div className={`text-sm mt-1.5 text-center ${displayComplete ? "text-green-600 font-medium" : "text-muted-foreground"}`}>
             {Math.round(Math.min(progress, 100))}%
           </div>
         </div>
 
         {/* Current step label – spinner + "Loading Main Menu...", or verified icon + "Loading complete" at 100% */}
         <div className="w-full flex items-center gap-2 min-h-[1.25rem]">
-          {isComplete ? (
+          {displayComplete ? (
             <>
               <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" aria-hidden />
               <p className="text-sm text-green-600 font-medium">

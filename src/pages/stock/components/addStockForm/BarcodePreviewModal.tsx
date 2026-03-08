@@ -44,14 +44,17 @@ export const BarcodePreviewModal: React.FC<BarcodePreviewModalProps> = ({
     return cached !== null ? cached === 'true' : true;
   });
   const [storeName, setStoreName] = useState<string>('');
+  const [storeNameFetched, setStoreNameFetched] = useState(false);
   const [labelPrinterName, setLabelPrinterName] = useState<string | null>(null);
   const [showNoPrinterDialog, setShowNoPrinterDialog] = useState<boolean>(true);
 
   useEffect(() => {
     if (!open) return;
     setShowNoPrinterDialog(true);
+    setStoreNameFetched(false);
     void window.api?.database?.options?.get?.('storeName').then((name: string | undefined) => {
       setStoreName(name ?? '');
+      setStoreNameFetched(true);
     });
     void window.api?.database?.options?.get?.('labelPrinterName').then((name: string | undefined) => {
       setLabelPrinterName(name ?? '');
@@ -62,10 +65,10 @@ export const BarcodePreviewModal: React.FC<BarcodePreviewModalProps> = ({
   const hasStoreName = storeName != null && storeName.trim() !== '';
   const canAccessAdmin = canAccessPage('administrator');
 
-  // When store name is not set, force "show store name" off (checkbox will be disabled)
+  // When store name is not set (and we've finished loading), force "show store name" off so we don't persist a useless preference
   useEffect(() => {
-    if (!hasStoreName && showStoreName) setShowStoreName(false);
-  }, [hasStoreName, showStoreName]);
+    if (storeNameFetched && !hasStoreName && showStoreName) setShowStoreName(false);
+  }, [storeNameFetched, hasStoreName, showStoreName]);
 
   // When product has no barcode, force "show barcode" off (label will be name + price only)
   useEffect(() => {
@@ -78,12 +81,15 @@ export const BarcodePreviewModal: React.FC<BarcodePreviewModalProps> = ({
     navigate('/administrator?tab=receipt&subTab=configurePrinters');
   };
 
-  useEffect(() => {
-    localStorage.setItem(SHOW_BARCODE_CACHE_KEY, showBarcode.toString());
-  }, [showBarcode]);
-  useEffect(() => {
-    localStorage.setItem(SHOW_STORE_NAME_CACHE_KEY, showStoreName.toString());
-  }, [showStoreName]);
+  // Persist only when user toggles (not when we force off due to disabled state)
+  const handleShowBarcodeChange = (checked: boolean) => {
+    setShowBarcode(checked);
+    localStorage.setItem(SHOW_BARCODE_CACHE_KEY, String(checked));
+  };
+  const handleShowStoreNameChange = (checked: boolean) => {
+    setShowStoreName(checked);
+    localStorage.setItem(SHOW_STORE_NAME_CACHE_KEY, String(checked));
+  };
 
   const formatPrice = (price: number | string): string => {
     if (!price || price === '') return t('stock.noPrice', 'No price');
@@ -329,7 +335,7 @@ export const BarcodePreviewModal: React.FC<BarcodePreviewModalProps> = ({
           {hasStoreName ? (
             <Checkbox
               checked={showStoreName}
-              onChange={setShowStoreName}
+              onChange={handleShowStoreNameChange}
               label={t('stock.showStoreNameOnLabel', 'Show store name on label')}
               color="green"
             />

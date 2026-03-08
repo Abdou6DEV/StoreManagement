@@ -233,7 +233,6 @@
     "apply": "Appliquer",
     "clear": "Effacer",
     "activeFilter": "Filtre actif",
-
     "metrics": "Métriques",
     "totalRevenue": "Revenu total",
     "totalProfit": "Profit total",
@@ -245,7 +244,6 @@
     "profitInPeriod": "Profit dans la période sélectionnée",
     "purchasesInPeriod": "Achats dans la période sélectionnée",
     "salesInPeriod": "Ventes dans la période sélectionnée",
-
     "chart": "Graphique",
     "revenueChart": "Graphique des revenus",
     "profitChart": "Graphique des profits",
@@ -276,7 +274,6 @@
     "payments": "Paiements",
     "today": "Aujourd'hui",
     "yesterday": "Hier",
-
     "allTransactions": "Toutes les transactions traitées",
     "totalPayments": "Total des paiements",
     "paymentsInPeriod": "Paiements dans la période sélectionnée",
@@ -285,7 +282,6 @@
     "perPayment": "Par paiement",
     "totalPaidAmount": "Montant total payé",
     "paidAmountInPeriod": "Montant payé dans la période sélectionnée",
-
     "allPayments": "Tous les paiements traités",
     "paid": "Payé",
     "overdue": "En retard",
@@ -322,7 +318,6 @@
     "noSalesFoundForPeriod": "Aucune vente trouvée pour cette période",
     "noPaymentsFoundForPeriod": "Aucun paiement trouvé pour cette période",
     "noPurchasesFoundForPeriod": "Aucun achat trouvé pour cette période",
-
     "loadingPeriodData": "Chargement des données de la période...",
     "selectPeriodHint": "Double-cliquez sur une ligne dans l'onglet Historique Général pour voir les informations détaillées de cette période",
     "relatedToSale": "Lié à la vente",
@@ -406,7 +401,8 @@
   "userBadge": {
     "admin": "Admin",
     "manager": "Gestionnaire",
-    "user": "Utilisateur"
+    "user": "Utilisateur",
+    "welcomeUser": "Bienvenue, {{name}} !"
   },
   "login": {
     "welcomeBack": "Bienvenue",
@@ -689,7 +685,6 @@
     "prev": "Précédent",
     "next": "Suivant",
     "page": "Page",
-
     "edit": "Modifier",
     "profit": "Profit",
     "totalBought": "Total Achat",
@@ -722,9 +717,7 @@
     "cleanupUnused": "Nettoyer les inutilisés",
     "cleanupUnusedProducts": "Nettoyer les produits inutilisés",
     "cleanupUnusedDescription": "Cela supprimera définitivement les produits avec une quantité zéro et aucun historique de vente. Cette action ne peut pas être annulée.",
-   
     "foundUnusedProducts": "Trouvé {{count}} produits inutilisés qui peuvent être supprimés en toute sécurité :",
-  
     "noUnusedProductsDescription": "Tous les produits ont soit du stock soit un historique de vente.",
     "cleaningUp": "Nettoyage en cours...",
     "cleanupNow": "Nettoyer maintenant",
@@ -733,7 +726,6 @@
     "cleanUnusedProductsDesc": "Supprimer les produits qui n'ont pas été vendus et ont une quantité zéro",
     "selectPeriod": "Sélectionner la Période",
     "unusedProductsFound": "Produits Inutilisés Trouvés",
-
     "warning": "Avertissement",
     "deleteWarning": "Cette action ne peut pas être annulée. Seuls les produits avec une quantité zéro seront supprimés.",
     "loadingUnusedProducts": "Chargement des produits inutilisés...",
@@ -915,7 +907,6 @@
     "stock": "Stock",
     "addToCart": "Ajouter au panier",
     "costPrice": "Prix d'achat",
-  
     "page": "Page {{number}}",
     "failedAddClient": "Échec de l'ajout du client",
     "saleRecorded": "Vente enregistrée avec succès",
@@ -997,7 +988,6 @@
     "receiptPrinterNotSetMessage": "Vous devez configurer l'imprimante de reçus dans la page Admin pour imprimer les reçus. Allez dans Admin → Configurer l'impression → Configurer les imprimantes et choisissez votre imprimante de reçus.",
     "preview": "Aperçu",
     "previewError": "Échec de l'ouverture de la fenêtre d'aperçu",
-
     "close": "Fermer",
     "calculator": "Calculatrice",
     "clientAdded": "Client ajouté avec succès",
@@ -1188,7 +1178,6 @@
     "paymentsDesc": "Voir tous les crédits et versements pour ce client",
     "paymentsLoading": "Chargement des paiements...",
     "paymentsError": "Échec de la récupération des paiements",
-  
     "paymentType": "Type",
     "paymentType_credit": "Crédit",
     "paymentType_versement": "Versement",
@@ -1203,7 +1192,6 @@
     "paymentMarkedAsUnpaid": "Paiement marqué comme non payé",
     "paymentUnmarkError": "Échec du marquage du paiement comme non payé",
     "clientDetails": "Détails du client",
-    
     "noPhone": "Aucun téléphone",
     "totalSpent": "Total dépensé",
     "totalCredits": "Total des crédits",
@@ -1215,7 +1203,6 @@
     "salesHistory": "Historique des ventes",
     "totalSales": "Total des ventes",
     "saleId": "ID de vente",
-   
     "total": "Total",
     "noSales": "Aucune vente trouvée",
     "noSalesDesc": "Ce client n'a effectué aucun achat pour le moment",
@@ -1223,7 +1210,6 @@
     "showLess": "Afficher moins",
     "more": "plus",
     "paymentsHistory": "Historique des paiements",
-  
     "noPayments": "Aucun paiement trouvé",
     "noPaymentsDesc": "Ce client n'a aucun historique de paiement pour le moment",
     "servicesHistory": "Historique des services",
@@ -1248,7 +1234,6 @@
     "confirmDeleteMessage": "Êtes-vous sûr de vouloir supprimer '{{name}}' ?\n\nAttention : La suppression de ce client supprimera également tous les paiements et ventes associés. Cette action ne peut pas être annulée.",
     "confirmMarkAsPaid": "Confirmer le marquage comme payé",
     "confirmMarkAsPaidMessage": "Êtes-vous sûr de vouloir marquer ce paiement comme payé ? Cela mettra à jour le statut du paiement immédiatement.",
-    "markAsPaid": "Marquer comme payé",
     "confirmMarkAsUnpaid": "Confirmer le marquage comme non payé",
     "confirmMarkAsUnpaidMessage": "Êtes-vous sûr de vouloir marquer ce paiement comme non payé ?",
     "viewAllPayments": "Voir tous les paiements",
@@ -1260,7 +1245,6 @@
     "searchPayments": "Rechercher par nom ou téléphone du client...",
     "status": "Statut",
     "allStatus": "Tous les statuts",
-    
     "unpaid": "Non payé",
     "type": "Type",
     "allTypes": "Tous les types",
@@ -1410,12 +1394,9 @@
     "addAppointmentDesc": "Créer une nouvelle demande de service",
     "allStatus": "Tous les Statuts",
     "allDates": "Toutes les Dates",
-   
     "selectItemsPerPage": "Sélectionner les éléments par page",
     "searchServiceNameOrType": "Rechercher par nom de service ou type...",
-
     "name": "Nom du Service",
- 
     "noDescription": "Aucun nom d'appareil",
     "noNotes": "Aucun problème",
     "enterDescriptionOptional": "Entrer le nom de l'appareil (optionnel)",
@@ -1443,7 +1424,6 @@
     "service": "Service",
     "completed": "Terminé",
     "pending": "En attente",
-  
     "upcoming": "À venir",
     "allAppointments": "Tous les rendez-vous",
     "totalAppointments": "Total des rendez-vous",
@@ -1475,10 +1455,10 @@
     "viewServiceTypesTooltip": "Voir tous les types de services",
     "noClient": "Aucun client assigné",
     "serviceTypesStats": "Statistiques des Types de Services",
-    "totalServices": "Total des Services",
+    "totalServices": "Total des services",
     "completedServices": "Terminés",
     "totalRevenue": "Revenus Totaux",
-    "totalProfit": "Profit Total",
+    "totalProfit": "Bénéfice total",
     "byServiceType": "Par Type de Service",
     "total": "Total",
     "revenue": "Revenus",
@@ -1525,7 +1505,6 @@
     "editTooltip": "Modifier le service",
     "deleteTooltip": "Supprimer le service",
     "viewSaleTooltip": "Voir la vente",
-  
     "overdue": "En retard",
     "dueSoon": "Échéance proche",
     "deleteConfirm": "Êtes-vous sûr de vouloir supprimer cette demande de service ? Cette action ne peut pas être annulée.",
@@ -1545,45 +1524,42 @@
     "fillRequiredFields": "Veuillez remplir tous les champs requis (Nom, Type, Prix du service)",
     "costPriceHigherThanServicePrice": "Avertissement : Le prix de revient est supérieur au prix du service. Cela entraînera une perte.",
     "hideProfit": "Masquer le bénéfice",
-    "totalServices": "Total des services",
     "totalCost": "Coût total",
-    "totalValue": "Valeur totale",
-    "totalProfit": "Bénéfice total"
+    "totalValue": "Valeur totale"
   },
   "admin": {
     "backup": "Sauvegarde",
     "loadError": "Échec du chargement des paramètres",
     "saved": "Paramètres enregistrés avec succès !",
     "saveError": "Échec de l'enregistrement des paramètres",
-      "receiptSaved": "Paramètres de reçu enregistrés avec succès !",
-      "receiptSaveError": "Échec de l'enregistrement des paramètres de reçu",
-      "receiptLanguage": "Langue du Reçu",
-      "chooseReceiptLanguage": "Choisissez la langue pour l'impression des reçus",
-      "french": "Français",
-      "english": "English",
-      "arabic": "العربية",
-      "categoriesRequiringInfo": "Catégories Nécessitant des Informations Supplémentaires",
-      "categoriesRequiringInfoDesc": "Sélectionnez les catégories qui nécessitent des informations supplémentaires avant d'enregistrer une vente et d'imprimer un reçu",
-      "selectCategories": "Sélectionner les Catégories",
-      "selectedCategories": "Catégories Sélectionnées",
-      "categoryInfoRequired": "Informations supplémentaires requises pour cette catégorie",
-      "selected": "sélectionnées",
-      "noCategoriesAvailable": "Aucune catégorie disponible",
-      "storeLogo": "Logo du Magasin",
-      "storeLogoDesc": "Téléchargez un logo à afficher sur les reçus (sera converti en noir et blanc)",
-      "logoSize": "Taille du Logo",
-      "logoSizeDesc": "Ajustez la taille du logo sur les reçus et tickets imprimés",
-      "removeLogo": "Supprimer le Logo",
-      "logoProcessed": "Logo traité et prêt pour l'impression",
-      "logoProcessError": "Échec du traitement du logo",
-      "logoReadError": "Échec de la lecture du fichier logo",
-      "logoUploadError": "Échec du téléchargement du logo",
-      "processingLogo": "Traitement du logo...",
-      "clickToUpload": "Cliquez pour télécharger",
-      "orDragDrop": "ou glissez-déposez",
-      "logoFormatHint": "PNG, JPG, GIF (sera converti en noir et blanc)",
-      "invalidImageFile": "Veuillez sélectionner un fichier image valide",
-
+    "receiptSaved": "Paramètres de reçu enregistrés avec succès !",
+    "receiptSaveError": "Échec de l'enregistrement des paramètres de reçu",
+    "receiptLanguage": "Langue du Reçu",
+    "chooseReceiptLanguage": "Choisissez la langue pour l'impression des reçus",
+    "french": "Français",
+    "english": "English",
+    "arabic": "العربية",
+    "categoriesRequiringInfo": "Catégories Nécessitant des Informations Supplémentaires",
+    "categoriesRequiringInfoDesc": "Sélectionnez les catégories qui nécessitent des informations supplémentaires avant d'enregistrer une vente et d'imprimer un reçu",
+    "selectCategories": "Sélectionner les Catégories",
+    "selectedCategories": "Catégories Sélectionnées",
+    "categoryInfoRequired": "Informations supplémentaires requises pour cette catégorie",
+    "selected": "sélectionnées",
+    "noCategoriesAvailable": "Aucune catégorie disponible",
+    "storeLogo": "Logo du Magasin",
+    "storeLogoDesc": "Téléchargez un logo à afficher sur les reçus (sera converti en noir et blanc)",
+    "logoSize": "Taille du Logo",
+    "logoSizeDesc": "Ajustez la taille du logo sur les reçus et tickets imprimés",
+    "removeLogo": "Supprimer le Logo",
+    "logoProcessed": "Logo traité et prêt pour l'impression",
+    "logoProcessError": "Échec du traitement du logo",
+    "logoReadError": "Échec de la lecture du fichier logo",
+    "logoUploadError": "Échec du téléchargement du logo",
+    "processingLogo": "Traitement du logo...",
+    "clickToUpload": "Cliquez pour télécharger",
+    "orDragDrop": "ou glissez-déposez",
+    "logoFormatHint": "PNG, JPG, GIF (sera converti en noir et blanc)",
+    "invalidImageFile": "Veuillez sélectionner un fichier image valide",
     "backup.title": "Gestion des Sauvegardes de Base de Données",
     "backup.description": "Gérez vos sauvegardes de base de données. Le système crée automatiquement des sauvegardes quotidiennes et garde les 2 plus récentes.",
     "backup.availableBackups": "Sauvegardes Disponibles",
@@ -1815,11 +1791,11 @@
       "currentVersion": "Version actuelle",
       "latestVersion": "Dernière version",
       "complete": "terminé",
-        "downloadAndInstall": "Télécharger et installer",
-        "downloadUpdate": "Télécharger la mise à jour",
-        "installUpdate": "Installer la mise à jour",
-        "cancelDownload": "Annuler le téléchargement",
-        "remaining": "restant",
+      "downloadAndInstall": "Télécharger et installer",
+      "downloadUpdate": "Télécharger la mise à jour",
+      "installUpdate": "Installer la mise à jour",
+      "cancelDownload": "Annuler le téléchargement",
+      "remaining": "restant",
       "hideDetails": "Masquer les détails",
       "showDetails": "Afficher les détails",
       "updateDetails": "Détails de la mise à jour",
@@ -1969,9 +1945,7 @@
       "6": "Sam"
     }
   },
-
   "bills": {
-    
     "addBill": "Ajouter une Facture",
     "editBill": "Modifier la Facture",
     "deleteBill": "Supprimer la Facture",
@@ -1992,7 +1966,6 @@
     "active": "Active",
     "notActive": "Inactive",
     "monthly": "Mensuelle",
-
     "rent": "Loyer",
     "electricity": "Électricité",
     "water": "Eau",
@@ -2020,16 +1993,13 @@
     "allPayments": "Tous les Paiements",
     "allPaymentsView": "Vue de Tous les Paiements",
     "backToBills": "Retour aux Factures",
-   
     "title": "Titre de la Facture",
     "type": "Type",
     "amount": "Montant",
     "description": "Description",
     "notes": "Notes",
     "currency": "DA",
-
     "annually": "Annuellement",
-
     "viewAllPaymentsTooltip": "Voir l'historique de tous les paiements",
     "backToBillsTooltip": "Retourner à la vue de gestion des factures",
     "filterByType": "Filtrer par type",
@@ -2046,7 +2016,6 @@
     "billName": "Nom de la Facture",
     "billType": "Type de Facture",
     "noNext": "Pas de Suivant",
- 
     "day": "jour",
     "days": "jours",
     "month": "mois",
