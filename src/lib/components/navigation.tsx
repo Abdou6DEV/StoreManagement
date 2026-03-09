@@ -61,7 +61,8 @@ export default function Navigation() {
 
   if (isCashierPage) {
     return (
-      <div className={`fixed top-4 z-50 ${isRTL ? "left-4" : "right-4"}`}>
+      <div className="fixed top-4 -left-0 right-4 z-50 flex items-center justify-between pl-2 pr-4">
+        <UserBadge size="md" className="h-14" showRole={true} />
         <DropdownMenu onOpenChange={setDropdownOpen}>
           <DropdownMenuTrigger asChild>
             <button className="rounded-xl outline-none ring-0 hover:text-red-400 transition-all duration-300 p-1">
@@ -75,13 +76,11 @@ export default function Navigation() {
           <DropdownMenuContent
             className={`mx-4 my-2 w-56 ${isRTL ? "text-right" : ""}`}
           >
-            {/* User Info */}
             <DropdownMenuLabel className="font-semibold text-md flex items-center gap-2">
               <User className="w-4 h-4" />
               {t("navigation.welcome", "Welcome")}, {user?.username || t("navigation.user", "User")}
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-
             <DropdownMenuLabel className="font-semibold text-md">
               {t("navigation.preferences")}
             </DropdownMenuLabel>
@@ -95,7 +94,6 @@ export default function Navigation() {
             <DropdownMenuItem asChild>
               <TooltipToggleButton variant="ghost" showText={true} />
             </DropdownMenuItem>
-
             <DropdownMenuSeparator />
             <DropdownMenuLabel className="font-semibold text-md">
               {t("navigation.language")}
@@ -133,7 +131,6 @@ export default function Navigation() {
               <span className={isRTL ? "ml-2" : "mr-2"}>🇸🇦</span>{" "}
               {t("navigation.arabic")}
             </DropdownMenuItem>
-
             <DropdownMenuSeparator />
             <DropdownMenuItem
               onClick={(e) => {
@@ -150,9 +147,9 @@ export default function Navigation() {
       </div>
     );
   }
+
   return (
     <div className="w-full px-4 pt-4">
-      {/* Header Container - Floating Card Style */}
       <div className="flex items-center justify-between rounded-xl border border-border bg-card shadow-md px-8 h-20 hover:shadow-lg transition-shadow duration-300">
         <UserBadge size="md" className="h-16" />
         {/* === Dynamic Page Title === */}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
-import { User, Crown, Sparkles, CheckCircle, Info } from "lucide-react";
+import { User, Crown, Sparkles, CheckCircle, Info, Calendar, Clock } from "lucide-react";
 import { cn } from "../utils";
 import { useAuth } from "../contexts/authContext";
 import { useBadgeMessage } from "../contexts/badgeMessageContext";
@@ -8,7 +8,11 @@ import { useTranslation } from "react-i18next";
 
 const SHOW_TEXT_AFTER_NAV_MS = 4000;
 const WELCOME_SHOW_MS = 6500;
-const SLIDE_OUT_DURATION_MS = 700;
+const SLIDE_OUT_DURATION_MS = 400;
+/** How long to show date/time on cashier before cycling back to role (ms) */
+const CASHIER_DATETIME_SHOW_MS = 60000;
+/** How long the role stays visible on cashier only (ms) */
+const CASHIER_ROLE_SHOW_MS = 6000;
 
 interface UserBadgeProps {
   className?: string;
@@ -24,25 +28,44 @@ export function UserBadge({
   const { user, userRole, isAdmin } = useAuth();
   const { t } = useTranslation();
   const location = useLocation();
-  const { queue, shiftQueue, showMessage } = useBadgeMessage();
-  const [showText, setShowText] = useState(true);
+  const { queue, shiftQueue, showMessage, hasEnteredMainMenuBefore, setHasEnteredMainMenuBefore } = useBadgeMessage();
+  const [showText, setShowText] = useState(false);
+  const [currentDateTime, setCurrentDateTime] = useState(() => new Date());
+  const [cashierPhase, setCashierPhase] = useState<"role" | "datetime">("role");
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isCashierPage = location.pathname.startsWith("/cashier");
   const swapContentRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const showAgainRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const pathnameRef = useRef(location.pathname);
-  pathnameRef.current = location.pathname;
-  const hasEnteredMainMenuBeforeRef = useRef(false);
+  const hasShownRoleOnCashierRef = useRef(false);
+  const cashierDateTimeHideRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const currentMessage = queue[0] ?? null;
   const isMessageMode = queue.length > 0;
-  /** Keep line visible while cycling queue messages; only shrink when queue is empty and text hidden */
-  const showLine = showText || queue.length > 0;
+  /** Bar extends first (delay 0), then text slides in (delay 400ms). On cashier don't shrink bar during role→datetime. */
+  const showLine =
+    showText ||
+    queue.length > 0 ||
+    (isCashierPage && (cashierPhase === "datetime" || hasShownRoleOnCashierRef.current));
 
   useEffect(() => {
     if (location.pathname === "/login") {
-      hasEnteredMainMenuBeforeRef.current = false;
+      setHasEnteredMainMenuBefore(false);
     }
-  }, [location.pathname]);
+  }, [location.pathname, setHasEnteredMainMenuBefore]);
+
+  useEffect(() => {
+    if (!isCashierPage) {
+      setCashierPhase("role");
+      hasShownRoleOnCashierRef.current = false;
+      if (cashierDateTimeHideRef.current) {
+        clearTimeout(cashierDateTimeHideRef.current);
+        cashierDateTimeHideRef.current = null;
+      }
+      return;
+    }
+    const timer = setInterval(() => setCurrentDateTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, [isCashierPage]);
 
   // Message queue: show current message for its duration; pathname does NOT reset this (no pathname in deps)
   useEffect(() => {
@@ -70,6 +93,29 @@ export function UserBadge({
     };
   }, [isMessageMode, currentMessage?.content, currentMessage?.durationMs, shiftQueue]);
 
+  const scheduleCashierDateTimeHide = () => {
+    if (cashierDateTimeHideRef.current) clearTimeout(cashierDateTimeHideRef.current);
+    cashierDateTimeHideRef.current = setTimeout(() => {
+      setShowText(false);
+      cashierDateTimeHideRef.current = null;
+      swapContentRef.current = setTimeout(() => {
+        setCashierPhase("role");
+        setShowText(true);
+        swapContentRef.current = null;
+        timeoutRef.current = setTimeout(() => {
+          setShowText(false);
+          timeoutRef.current = null;
+          swapContentRef.current = setTimeout(() => {
+            setCashierPhase("datetime");
+            setShowText(true);
+            swapContentRef.current = null;
+            scheduleCashierDateTimeHide();
+          }, SLIDE_OUT_DURATION_MS);
+        }, CASHIER_ROLE_SHOW_MS);
+      }, SLIDE_OUT_DURATION_MS);
+    }, CASHIER_DATETIME_SHOW_MS);
+  };
+
   // Normal badge (username/role): only when queue empty; re-show on every pathname change
   useEffect(() => {
     if (queue.length > 0) return;
@@ -77,26 +123,49 @@ export function UserBadge({
     if (swapContentRef.current) clearTimeout(swapContentRef.current);
     if (showAgainRef.current) clearTimeout(showAgainRef.current);
     const isMainMenu = location.pathname === "/";
-    if (isMainMenu && !hasEnteredMainMenuBeforeRef.current) {
+    if (isMainMenu && !hasEnteredMainMenuBefore) {
       setShowText(false);
       return;
     }
-    setShowText(true);
-    timeoutRef.current = setTimeout(() => {
-      setShowText(false);
-      timeoutRef.current = null;
-    }, SHOW_TEXT_AFTER_NAV_MS);
+    setShowText(false);
+    showAgainRef.current = setTimeout(() => {
+      setShowText(true);
+      showAgainRef.current = null;
+      if (location.pathname.startsWith("/cashier")) {
+        hasShownRoleOnCashierRef.current = true;
+        timeoutRef.current = setTimeout(() => {
+          setShowText(false);
+          timeoutRef.current = null;
+          swapContentRef.current = setTimeout(() => {
+            setCashierPhase("datetime");
+            setShowText(true);
+            swapContentRef.current = null;
+            scheduleCashierDateTimeHide();
+          }, SLIDE_OUT_DURATION_MS);
+        }, CASHIER_ROLE_SHOW_MS);
+      } else {
+        timeoutRef.current = setTimeout(() => {
+          setShowText(false);
+          timeoutRef.current = null;
+        }, SHOW_TEXT_AFTER_NAV_MS);
+      }
+    }, 50);
     return () => {
+      if (showAgainRef.current) clearTimeout(showAgainRef.current);
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
       if (swapContentRef.current) clearTimeout(swapContentRef.current);
+      if (cashierDateTimeHideRef.current) {
+        clearTimeout(cashierDateTimeHideRef.current);
+        cashierDateTimeHideRef.current = null;
+      }
     };
-  }, [queue.length, location.pathname]);
+  }, [queue.length, location.pathname, hasEnteredMainMenuBefore]);
 
   useEffect(() => {
     if (!user || queue.length > 0) return;
     const isMainMenu = location.pathname === "/";
-    if (isMainMenu && !hasEnteredMainMenuBeforeRef.current) {
-      hasEnteredMainMenuBeforeRef.current = true;
+    if (isMainMenu && !hasEnteredMainMenuBefore) {
+      setHasEnteredMainMenuBefore(true);
       showMessage({
         content: t("userBadge.welcomeUser", "Welcome, {{name}}!", {
           name: user.username || t("userBadge.user", "User"),
@@ -105,7 +174,7 @@ export function UserBadge({
         style: "welcome",
       });
     }
-  }, [location.pathname, user, queue.length, t, showMessage]);
+  }, [location.pathname, user, queue.length, t, showMessage, hasEnteredMainMenuBefore, setHasEnteredMainMenuBefore]);
 
   if (!user) return null;
 
@@ -210,6 +279,29 @@ export function UserBadge({
           >
             {isMessageMode && currentMessage ? (
               renderMessageContent()
+            ) : isCashierPage && cashierPhase === "datetime" ? (
+              <span className="flex flex-col w-[180px] min-w-[180px] text-foreground [line-height:1.15]">
+                <div className="flex items-center gap-2 text-sm font-medium [line-height:1.15]">
+                  <Calendar className="w-4 h-4 text-primary shrink-0" />
+                  <span>{currentDateTime.toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "numeric" })}</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm font-medium [line-height:1.15] -mt-px mt-0.5">
+                  <Clock className="w-4 h-4 text-primary shrink-0" />
+                  <span>{currentDateTime.toLocaleTimeString("en-GB", { hour12: false, hour: "2-digit", minute: "2-digit" })}</span>
+                </div>
+              </span>
+            ) : isCashierPage && cashierPhase === "role" ? (
+              <>
+                <span className={cn("font-medium truncate max-w-[140px]", config.name)}>
+                  {user.username || t("userBadge.user", "User")}
+                </span>
+                {showRole && (
+                  <span className={cn("flex items-center gap-1.5 text-sm font-medium antialiased", roleColors)}>
+                    {isAdminRole && <Crown className="w-3.5 h-3.5 shrink-0" strokeWidth={2} />}
+                    {roleLabel}
+                  </span>
+                )}
+              </>
             ) : (
               <>
                 <span className={cn("font-medium truncate max-w-[140px]", config.name)}>

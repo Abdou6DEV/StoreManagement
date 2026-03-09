@@ -19,6 +19,9 @@ interface BadgeMessageContextType {
   pushPageMessages: (pageId: string, messages: BadgeMessage[]) => void;
   /** Clear pushed-page tracking (e.g. when user goes to login) */
   clearPushedPages: () => void;
+  /** Shared across all UserBadge instances: has the welcome message been shown this session (main menu) */
+  hasEnteredMainMenuBefore: boolean;
+  setHasEnteredMainMenuBefore: (value: boolean) => void;
 }
 
 const BadgeMessageContext = createContext<BadgeMessageContextType | undefined>(undefined);
@@ -37,6 +40,7 @@ interface BadgeMessageProviderProps {
 
 export function BadgeMessageProvider({ children }: BadgeMessageProviderProps) {
   const [queue, setQueue] = useState<BadgeMessage[]>([]);
+  const [hasEnteredMainMenuBefore, setHasEnteredMainMenuBefore] = useState(false);
   const pushedPagesRef = useRef<Set<string>>(new Set());
 
   const showMessage = useCallback((message: BadgeMessage) => {
@@ -63,6 +67,8 @@ export function BadgeMessageProvider({ children }: BadgeMessageProviderProps) {
     shiftQueue,
     pushPageMessages,
     clearPushedPages,
+    hasEnteredMainMenuBefore,
+    setHasEnteredMainMenuBefore,
   };
 
   return (
