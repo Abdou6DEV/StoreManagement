@@ -15,11 +15,13 @@ export const printBarcodeLabel = async (
   data: BarcodeLabelData,
   quantity = 1,
   showBarcode = true,
-  showStoreName = true
+  showStoreName = true,
+  previousPrice?: number | string
 ): Promise<void> => {
   const { productName, price, barcode } = data;
 
   const shouldShowBarcode = showBarcode === true;
+  const showPreviousPrice = previousPrice != null && previousPrice !== '' && String(previousPrice) !== String(price);
 
   if (!productName) {
     throw new Error('Product name is required for printing');
@@ -111,15 +113,20 @@ export const printBarcodeLabel = async (
   const hasBarcode = shouldShowBarcode && barcodeImage && barcodeImage.length > 0;
   const noStoreNameClass = !storeName ? 'label-no-store-name' : '';
   const storeNameLine = storeName ? `<div class="label-store-name">${storeName}</div>` : '';
+  const showPrev = showPreviousPrice && previousPrice != null && previousPrice !== '';
+  const priceContent = showPrev
+    ? `<span class="price-previous">${formatPrice(previousPrice)}</span><span class="price-current">${formatPrice(price)}</span>`
+    : formatPrice(price);
+  const priceWrapperClass = showPrev ? ' price-with-previous' : '';
   const noBarcodeBigPriceHTML = !shouldShowBarcode
-    ? `<div class="label-no-barcode-big-price"><span class="big-price">${formatPrice(price)}</span></div>`
+    ? `<div class="label-no-barcode-big-price"><span class="big-price${priceWrapperClass}">${priceContent}</span></div>`
     : '';
 
   const labelHTML = `
       <div class="label ${noBarcodeClass} ${noStoreNameClass}">
         ${storeNameLine}
         <div class="product-name">${productName}</div>
-        ${hasBarcode ? `<div class="price">${formatPrice(price)}</div>` : ''}
+        ${hasBarcode ? `<div class="price${priceWrapperClass}">${priceContent}</div>` : ''}
         ${hasBarcode ? barcodeHTML : noBarcodeBigPriceHTML}
       </div>
   `;
@@ -287,6 +294,45 @@ export const printBarcodeLabel = async (
         .price-currency {
           font-size: 0.75em;
           font-weight: 600;
+        }
+        .price-with-previous {
+          display: flex !important;
+          align-items: baseline;
+          justify-content: center;
+          flex-wrap: wrap;
+          gap: 2.5px;
+        }
+        .price-previous {
+          position: relative;
+          display: inline-block;
+          font-size: 0.7em;
+          font-weight: 600;
+          color: #000000;
+          align-self: flex-end;
+          gap: 1.5px;
+          margin-bottom: 3px;
+        }
+        .price-previous::after {
+          content: "";
+          position: absolute;
+          left: 50%;
+          top: 50%;
+          width: 100%;
+          height: 0.5px;
+          min-height: 0.5px;
+          background: #000;
+          transform: translate(-50%, -50%) rotate(9deg);
+          transform-origin: center;
+          pointer-events: none;
+        }
+        .price-current {
+          font-size: 1em;
+          font-weight: 600;
+          color: #000000;
+        }
+        .label-no-barcode .price-previous {
+          font-size: 0.70em;
+          margin-bottom: 2px;
         }
         .label-no-barcode .price {
           font-size: 26px;

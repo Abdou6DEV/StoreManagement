@@ -1138,6 +1138,7 @@
     "barcodeFormat": "التنسيق",
     "barcodeLength": "الطول",
     "showBarcode": "إظهار الباركود",
+    "showPreviousPrice": "إظهار السعر السابق",
     "showStoreNameOnLabel": "إظهار اسم المتجر ",
     "storeNameRequiredForLabelTooltip": "أدخل اسم المتجر في الإدارة → الإيصال وتذكرة الخدمة لعرضه على الملصقات.",
     "labelPrinterNotSetTitle": "طابعة الملصقات غير معينة",

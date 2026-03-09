@@ -17,7 +17,9 @@ interface BarcodePreviewModalProps {
   productName: string;
   price: number | string;
   barcode: string;
-  onPrint: (quantity?: number, showBarcode?: boolean, showStoreName?: boolean) => void;
+  /** When set (e.g. user changed price in edit form), can show previous price with strikethrough next to current price */
+  previousPrice?: number | string;
+  onPrint: (quantity?: number, showBarcode?: boolean, showStoreName?: boolean, showPreviousPrice?: boolean) => void;
 }
 
 const SHOW_BARCODE_CACHE_KEY = 'barcodePreview_showBarcode';
@@ -29,12 +31,14 @@ export const BarcodePreviewModal: React.FC<BarcodePreviewModalProps> = ({
   productName,
   price,
   barcode,
+  previousPrice,
   onPrint,
 }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { canAccessPage } = useAuth();
   const [quantity, setQuantity] = useState<number | "">(1);
+  const [showPreviousPrice, setShowPreviousPrice] = useState<boolean>(false);
   const [showBarcode, setShowBarcode] = useState<boolean>(() => {
     const cached = localStorage.getItem(SHOW_BARCODE_CACHE_KEY);
     return cached !== null ? cached === 'true' : true;
@@ -254,18 +258,43 @@ export const BarcodePreviewModal: React.FC<BarcodePreviewModalProps> = ({
               {productName}
             </div>
             
-            {/* Price */}
+            {/* Price: optional previous (one diagonal line top-right to bottom-left, bigger, up) + current price */}
             <div 
               style={{
-                fontSize: showBarcode ? '22.5px' : '40px', // 15px/22px scaled 1.5x
-                fontWeight: 600,
-                color: '#000000',
+                display: 'flex',
+                alignItems: 'baseline',
+                justifyContent: 'center',
+                gap: '6px',
                 padding: 0,
                 margin: 0,
-                marginTop: showBarcode ? '-6px' : '0', // -4px scaled 1.5x
+                marginTop: showBarcode ? '-6px' : '0',
+                flexWrap: 'wrap',
               }}
             >
-              {formatPrice(price)}
+              {showPreviousPrice && previousPrice != null && previousPrice !== '' ? (
+                <span
+                  className="barcode-preview-previous-price"
+                  style={{
+                    fontSize: showBarcode ? '17px' : '26px',
+                    fontWeight: 600,
+                    color: '#000000',
+                    alignSelf: 'flex-end',
+                    marginBottom: showBarcode ? '8px' : '5px',
+                    marginRight: '3px',
+                  }}
+                >
+                  {formatPrice(previousPrice)}
+                </span>
+              ) : null}
+              <span
+                style={{
+                  fontSize: showBarcode ? '22.5px' : '40px',
+                  fontWeight: 600,
+                  color: '#000000',
+                }}
+              >
+                {formatPrice(price)}
+              </span>
             </div>
             
             {/* Barcode (only when barcode exists and "Show Barcode" is on) */}
@@ -332,6 +361,14 @@ export const BarcodePreviewModal: React.FC<BarcodePreviewModalProps> = ({
               </span>
             </Tooltip>
           )}
+          {previousPrice != null && previousPrice !== '' ? (
+            <Checkbox
+              checked={showPreviousPrice}
+              onChange={(checked) => setShowPreviousPrice(checked)}
+              label={t('stock.showPreviousPrice', 'Show previous price')}
+              color="green"
+            />
+          ) : null}
           {hasStoreName ? (
             <Checkbox
               checked={showStoreName}
@@ -396,7 +433,8 @@ export const BarcodePreviewModal: React.FC<BarcodePreviewModalProps> = ({
                   const qty = quantity || 1;
                   const shouldShowBarcode = canShowBarcode && showBarcode === true;
                   const shouldShowStoreName = hasStoreName && showStoreName === true;
-                  onPrint(qty, shouldShowBarcode, shouldShowStoreName);
+                  const shouldShowPreviousPrice = showPreviousPrice && previousPrice != null && previousPrice !== '';
+                  onPrint(qty, shouldShowBarcode, shouldShowStoreName, shouldShowPreviousPrice);
                 }}
                 disabled={!hasLabelPrinter}
                 className="bg-green-600 hover:bg-green-700 text-white disabled:opacity-50 disabled:pointer-events-none"

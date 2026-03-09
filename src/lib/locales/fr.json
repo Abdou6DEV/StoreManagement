@@ -774,6 +774,7 @@
     "barcodeFormat": "Format",
     "barcodeLength": "Longueur",
     "showBarcode": "Afficher le code-barres",
+    "showPreviousPrice": "Afficher l'ancien prix",
     "showStoreNameOnLabel": "Afficher le nom du magasin",
     "storeNameRequiredForLabelTooltip": "Saisissez le nom du magasin dans Admin → Reçu et ticket de service pour l'afficher sur les étiquettes.",
     "labelPrinterNotSetTitle": "Imprimante d'étiquettes non configurée",

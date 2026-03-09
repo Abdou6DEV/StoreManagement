@@ -593,3 +593,22 @@ input[type="date"].success {
 .badge-datetime-alive {
   animation: badge-datetime-alive 5.5s ease-in-out infinite;
 }
+
+/* Previous price on barcode label preview: one thin diagonal line (top-right to bottom-left) through value + DA */
+.barcode-preview-previous-price {
+  position: relative;
+  display: inline-block;
+}
+
+.barcode-preview-previous-price::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 110%;
+  height: 0.5px;
+  background: #000;
+  transform: translate(-50%, -50%) rotate(10deg);
+  transform-origin: center;
+  pointer-events: none;
+}

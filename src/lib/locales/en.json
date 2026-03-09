@@ -1438,6 +1438,7 @@
     "barcodeFormat": "Format",
     "barcodeLength": "Length",
     "showBarcode": "Show Barcode",
+    "showPreviousPrice": "Show previous price",
     "showStoreNameOnLabel": "Show store name",
     "storeNameRequiredForLabelTooltip": "Enter the store name in Admin → Receipt & Service Ticket to show it on labels.",
     "labelPrinterNotSetTitle": "Label printer not set",

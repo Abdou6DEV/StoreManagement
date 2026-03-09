@@ -233,7 +233,7 @@ export function UserBadge({
   return (
     <div
       className={cn(
-        "group/badge flex items-center rounded-xl text-foreground",
+        "flex items-center rounded-xl text-foreground",
         config.px,
         config.gap,
         className
@@ -257,7 +257,7 @@ export function UserBadge({
             size === "lg" && "h-12",
             showLine
               ? "scale-y-100 delay-0"
-              : "scale-y-0 delay-[400ms] group-hover/badge:scale-y-100 group-hover/badge:delay-0"
+              : "scale-y-0 delay-[400ms]"
           )}
           aria-hidden
         />
@@ -278,11 +278,11 @@ export function UserBadge({
               "transition-transform duration-700 ease-in-out",
               showText
                 ? isRTL
-                  ? "-translate-x-3 delay-[400ms] group-hover/badge:translate-x-0"
+                  ? "-translate-x-3 delay-[400ms]"
                   : "translate-x-0 delay-[400ms]"
                 : isRTL
-                  ? "translate-x-[100%] delay-0 group-hover/badge:-translate-x-3 group-hover/badge:delay-[400ms]"
-                  : "translate-x-[-100%] delay-0 group-hover/badge:translate-x-0 group-hover/badge:delay-[400ms]"
+                  ? "translate-x-[100%] delay-0"
+                  : "translate-x-[-100%] delay-0"
             )}
           >
             {isMessageMode && currentMessage ? (

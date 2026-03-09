@@ -57,17 +57,30 @@ export default function EditStockForm({
     }
   };
 
-  const handlePrintBarcode = async (quantity: number = 1, showBarcode: boolean = true, showStoreName: boolean = true) => {
-    if (!form) return;
-    
+  const handlePrintBarcode = async (
+    quantity: number = 1,
+    showBarcode: boolean = true,
+    showStoreName: boolean = true,
+    showPreviousPrice: boolean = false
+  ) => {
+    if (!form || !product) return;
+
     try {
       const shouldShowBarcode = showBarcode === true;
       const shouldShowStoreName = showStoreName === true;
-      await printBarcodeLabel({
-        productName: form.name,
-        price: form.sellingPrice,
-        barcode: form.codebar || "",
-      }, quantity, shouldShowBarcode, shouldShowStoreName);
+      const previousPrice =
+        showPreviousPrice && form.sellingPrice !== product.sellingPrice ? product.sellingPrice : undefined;
+      await printBarcodeLabel(
+        {
+          productName: form.name,
+          price: form.sellingPrice,
+          barcode: form.codebar || "",
+        },
+        quantity,
+        shouldShowBarcode,
+        shouldShowStoreName,
+        showPreviousPrice ? previousPrice : undefined
+      );
       showToast(t("stock.barcodePrinted", "Barcode printed successfully"), "success");
     } catch (error) {
       showToast(t("stock.barcodePrintError", "Failed to print barcode"), "error");
@@ -314,6 +327,7 @@ export default function EditStockForm({
         onOpenChange={setShowBarcodePreviewModal}
         productName={form.name}
         price={form.sellingPrice}
+        previousPrice={form.sellingPrice !== product.sellingPrice ? product.sellingPrice : undefined}
         barcode={form.codebar || ""}
         onPrint={handlePrintBarcode}
       />
