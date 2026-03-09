@@ -33,6 +33,7 @@ import { useTranslation } from "react-i18next";
 import { useAuth } from "../contexts/authContext";
 import { useNotifications } from "../hooks/useNotifications";
 import { useNavigate } from "react-router-dom";
+import { cn } from "../utils";
 
 export default function Navigation() {
   const location = useLocation();
@@ -150,29 +151,29 @@ export default function Navigation() {
 
   return (
     <div className="w-full px-4 pt-4">
-      <div className="flex items-center justify-between rounded-xl border border-border bg-card shadow-md px-8 h-20 hover:shadow-lg transition-shadow duration-300">
-        <UserBadge size="md" className="h-16" />
-        {/* === Dynamic Page Title === */}
-        <h1 className="text-3xl font-bold flex items-center gap-3 py-6">
+      <div className="relative flex items-center justify-between rounded-xl border border-border bg-card shadow-md px-8 h-20 hover:shadow-lg transition-shadow duration-300">
+        <UserBadge size="md" className="h-16 shrink-0" />
+        {/* === Dynamic Page Title (centered in header) === */}
+        <h1 className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-3xl font-bold flex items-center justify-center gap-3 pointer-events-none">
           {location.pathname === "/" ? (
             <>
-              <Home className="w-8 h-8 text-primary" />
+              <Home className="w-8 h-8 text-primary shrink-0" />
               {t("mainMenu.title")}
             </>
           ) : (
             (() => {
               const path = location.pathname.slice(1).split("/")[0];
               const iconMap: Record<string, React.ReactNode> = {
-                dashboard: <ChartLine className="w-8 h-8 text-green-500" />,
-                clients: <Users className="w-8 h-8 text-red-500" />,
-                cashier: <ShoppingCart className="w-8 h-8 text-yellow-500" />,
-                stock: <PackageSearch className="w-8 h-8 text-green-600" />,
-                history: <History className="w-8 h-8 text-blue-500" />,
-                bills: <FileText className="w-8 h-8 text-purple-500" />,
-                services: <Wrench className="w-8 h-8 text-cyan-500" />,
-                zakat: <Calculator className="w-8 h-8 text-emerald-500" />,
-                administrator: <Settings className="w-8 h-8 text-orange-500" />,
-                about: <Info className="w-8 h-8 text-blue-500" />,
+                dashboard: <ChartLine className="w-8 h-8 text-green-500 shrink-0" />,
+                clients: <Users className="w-8 h-8 text-red-500 shrink-0" />,
+                cashier: <ShoppingCart className="w-8 h-8 text-yellow-500 shrink-0" />,
+                stock: <PackageSearch className="w-8 h-8 text-green-600 shrink-0" />,
+                history: <History className="w-8 h-8 text-blue-500 shrink-0" />,
+                bills: <FileText className="w-8 h-8 text-purple-500 shrink-0" />,
+                services: <Wrench className="w-8 h-8 text-cyan-500 shrink-0" />,
+                zakat: <Calculator className="w-8 h-8 text-emerald-500 shrink-0" />,
+                administrator: <Settings className="w-8 h-8 text-orange-500 shrink-0" />,
+                about: <Info className="w-8 h-8 text-blue-500 shrink-0" />,
               };
               return (
                 <>
@@ -185,7 +186,7 @@ export default function Navigation() {
         </h1>
 
         {/* === Notifications and Settings === */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 shrink-0">
           {/* Notifications Dropdown */}
           <DropdownMenu onOpenChange={setNotificationsOpen}>
             <DropdownMenuTrigger asChild>

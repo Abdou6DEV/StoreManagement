@@ -583,3 +583,13 @@ input[type="date"].success {
   animation: bellRing 3.5s ease-in-out infinite;
   animation-delay: 2s;
 }
+
+@keyframes badge-datetime-alive {
+  0%, 25% { opacity: 1; }
+  40% { opacity: 0.6; }
+  55%, 100% { opacity: 1; }
+}
+
+.badge-datetime-alive {
+  animation: badge-datetime-alive 5.5s ease-in-out infinite;
+}

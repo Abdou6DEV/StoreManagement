@@ -399,7 +399,7 @@
     "servicesDueSoon": "{{count}} services à échéance proche"
   },
   "userBadge": {
-    "admin": "Admin",
+    "admin": "Administrateur",
     "manager": "Gestionnaire",
     "user": "Utilisateur",
     "welcomeUser": "Bienvenue, {{name}} !"

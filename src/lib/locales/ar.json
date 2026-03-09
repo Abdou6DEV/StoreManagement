@@ -410,7 +410,7 @@
     "admin": "مدير",
     "manager": "مشرف",
     "user": "مستخدم",
-    "welcomeUser": "مرحباً، {{name}}!"
+    "welcomeUser": "مرحباً ، {{name}}!"
   },
   "login": {
     "welcomeBack": "مرحباً",
