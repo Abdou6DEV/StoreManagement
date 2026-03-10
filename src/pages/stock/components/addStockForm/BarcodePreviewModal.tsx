@@ -337,7 +337,7 @@ export const BarcodePreviewModal: React.FC<BarcodePreviewModalProps> = ({
         )}
 
         {/* Show Barcode & Show Store Name Checkboxes */}
-        <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-2">
+        <div className="flex flex-col items-center justify-center gap-y-3">
           {canShowBarcode ? (
             <Checkbox
               checked={showBarcode}

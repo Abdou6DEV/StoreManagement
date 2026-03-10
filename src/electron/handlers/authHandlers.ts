@@ -4,7 +4,6 @@ import {
   CreateUserData,
   LoginCredentials,
 } from "../../lib/database/users";
-import { prisma } from "../../lib/database/prismaClient";
 
 export const setupAuthHandlers = () => {
   // Login handler
@@ -72,20 +71,13 @@ export const setupAuthHandlers = () => {
   // Update user password handler
   ipcMain.handle("auth:updatePassword", async (_, userId: string, newPassword: string) => {
     try {
-      // Check if it's the hardcoded admin user - create admin user in database if it doesn't exist
       if (userId === "hardcoded-admin") {
-        // Check if admin user exists in database by querying directly
-        const adminUser = await prisma.user.findUnique({
-          where: { username: "admin" },
-          include: { permissions: true }
-        });
-        
-        if (!adminUser) {
-          // Create admin user in database with new password (not default)
+        const primaryAdmin = await users.getPrimaryAdmin();
+        if (!primaryAdmin) {
           await users.create({
             username: "admin",
             email: "admin@store.com",
-            password: newPassword, // Use the new password directly
+            password: newPassword,
             role: "ADMIN",
             permissions: {
               canAccessCashier: true,
@@ -102,13 +94,10 @@ export const setupAuthHandlers = () => {
             },
           });
           return { success: true };
-        } else {
-          // Admin user exists, update password using REAL database ID
-          await users.updatePassword(adminUser.id, newPassword);
-          return { success: true };
         }
+        await users.updatePassword(primaryAdmin.id, newPassword);
+        return { success: true };
       }
-      
       await users.updatePassword(userId, newPassword);
       return { success: true };
     } catch (error) {
@@ -123,21 +112,15 @@ export const setupAuthHandlers = () => {
   // Update user permissions handler (admin only)
   ipcMain.handle("auth:updatePermissions", async (_, userId: string, permissions: any) => {
     try {
-      // Check if it's the hardcoded admin user
       if (userId === "hardcoded-admin") {
-        // For hardcoded admin, we need to find the actual admin user in database
-        const adminUser = await prisma.user.findUnique({
-          where: { username: "admin" },
-          include: { permissions: true }
-        });
-        if (adminUser) {
-          await users.updatePermissions(adminUser.id, permissions);
+        const primaryAdmin = await users.getPrimaryAdmin();
+        if (primaryAdmin) {
+          await users.updatePermissions(primaryAdmin.id, permissions);
         } else {
-          // Admin user doesn't exist in database, create it with the permissions
           await users.create({
             username: "admin",
             email: "admin@store.com",
-            password: "admin", // Default password
+            password: "admin",
             role: "ADMIN",
             permissions: permissions,
           });
@@ -145,7 +128,6 @@ export const setupAuthHandlers = () => {
       } else {
         await users.updatePermissions(userId, permissions);
       }
-      
       return { success: true };
     } catch (error) {
       console.error("Error updating permissions:", error);
@@ -159,61 +141,67 @@ export const setupAuthHandlers = () => {
   // Get all users with permissions handler (admin only)
   ipcMain.handle("auth:getAllUsersWithPermissions", async () => {
     try {
+      const primaryAdmin = await users.getPrimaryAdmin();
       const usersList = await users.getAllWithPermissions();
-      
-      // Check if admin user exists in database
-      const adminUser = await prisma.user.findUnique({
-        where: { username: "admin" },
-        include: { permissions: true }
-      });
-      
-      if (adminUser) {
-        // Admin user exists in database, use it but with hardcoded-admin ID for consistency
-        const filteredUsers = usersList.filter(user => user.username !== "admin");
-        const adminWithHardcodedId = {
-          ...adminUser,
-          id: "hardcoded-admin", // Use hardcoded ID for consistency
-        };
-        
+
+      if (primaryAdmin) {
+        const { password, ...adminWithoutPassword } = primaryAdmin;
+        const filteredUsers = usersList.filter((u) => u.id !== primaryAdmin.id);
         return {
           success: true,
-          users: [adminWithHardcodedId, ...filteredUsers],
-        };
-      } else {
-        // Admin user doesn't exist in database, add hardcoded admin
-        const hardcodedAdmin = {
-          id: "hardcoded-admin",
-          username: "admin",
-          email: "admin@store.com",
-          role: "ADMIN" as const,
-          isActive: true,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          permissions: {
-            canAccessCashier: true,
-            canAccessStock: true,
-            canAccessClients: true,
-            canAccessBills: true,
-            canAccessHistory: true,
-            canAccessServices: true,
-            canAccessDashboard: true,
-            canAccessZakat: true,
-            canManageUsers: true,
-            canViewLogs: true,
-            canManageSettings: true,
-          },
-        };
-        
-        return {
-          success: true,
-          users: [hardcodedAdmin, ...usersList],
+          users: [{ ...adminWithoutPassword, id: "hardcoded-admin" }, ...filteredUsers],
         };
       }
+      const hardcodedAdmin = {
+        id: "hardcoded-admin",
+        username: "admin",
+        email: "admin@store.com",
+        role: "ADMIN" as const,
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        permissions: {
+          canAccessCashier: true,
+          canAccessStock: true,
+          canAccessClients: true,
+          canAccessBills: true,
+          canAccessHistory: true,
+          canAccessServices: true,
+          canAccessDashboard: true,
+          canAccessZakat: true,
+          canManageUsers: true,
+          canViewLogs: true,
+          canManageSettings: true,
+        },
+      };
+      return {
+        success: true,
+        users: [hardcodedAdmin, ...usersList],
+      };
     } catch (error) {
       return {
         success: false,
         error: "Failed to get users",
       };
+    }
+  });
+
+  // Update username handler (admin can change own username; primary admin resolved from hardcoded-admin)
+  ipcMain.handle("auth:updateUsername", async (_, userId: string, newUsername: string) => {
+    try {
+      let targetId = userId;
+      if (userId === "hardcoded-admin") {
+        const primaryAdmin = await users.getPrimaryAdmin();
+        if (!primaryAdmin) {
+          return { success: false, error: "Admin user not found. Change password first to create the account." };
+        }
+        targetId = primaryAdmin.id;
+      }
+      await users.updateUsername(targetId, newUsername.trim());
+      return { success: true };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to update username";
+      return { success: false, error: message };
     }
   });
 

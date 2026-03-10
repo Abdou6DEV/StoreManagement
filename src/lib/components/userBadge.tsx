@@ -14,6 +14,28 @@ const DATETIME_SHOW_MS = 60000;
 /** How long role/username stays visible in the cycle after datetime (ms) */
 const ROLE_CYCLE_SHOW_MS = 6000;
 
+function capitalizeFirst(str: string): string {
+  if (!str || str.length === 0) return str;
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+/** Locale for date/time in badge: EN, FR, AR */
+const BADGE_DATE_LOCALES: Record<string, string> = {
+  en: "en-GB",
+  fr: "fr-FR",
+  ar: "ar",
+};
+
+function formatBadgeDate(date: Date, locale: string): string {
+  const intlLocale = BADGE_DATE_LOCALES[locale] || "en-GB";
+  return date.toLocaleDateString(intlLocale, {
+    weekday: "short",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}
+
 interface UserBadgeProps {
   className?: string;
   showRole?: boolean;
@@ -159,7 +181,7 @@ export function UserBadge({
       setHasEnteredMainMenuBefore(true);
       showMessage({
         content: t("userBadge.welcomeUser", "Welcome, {{name}}!", {
-          name: user.username || t("userBadge.user", "User"),
+          name: capitalizeFirst(user.username || t("userBadge.user", "User")),
         }),
         durationMs: WELCOME_SHOW_MS,
         style: "welcome",
@@ -291,17 +313,17 @@ export function UserBadge({
               <span className="flex flex-col w-[180px] min-w-[180px] text-foreground [line-height:1.15] badge-datetime-alive">
                 <div className="flex items-center gap-2 text-sm font-medium [line-height:1.15]">
                   <Calendar className="w-4 h-4 text-primary shrink-0" />
-                  <span>{currentDateTime.toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "numeric" })}</span>
+                  <span>{formatBadgeDate(currentDateTime, i18n.language)}</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm font-medium [line-height:1.15] -mt-px mt-0.5">
                   <Clock className="w-4 h-4 text-primary shrink-0" />
-                  <span>{currentDateTime.toLocaleTimeString("en-GB", { hour12: false, hour: "2-digit", minute: "2-digit" })}</span>
+                  <span>{currentDateTime.toLocaleTimeString(BADGE_DATE_LOCALES[i18n.language] || "en-GB", { hour12: false, hour: "2-digit", minute: "2-digit" })}</span>
                 </div>
               </span>
             ) : (
               <>
                 <span className={cn("font-medium truncate max-w-[140px]", config.name)}>
-                  {user.username || t("userBadge.user", "User")}
+                  {capitalizeFirst(user.username || t("userBadge.user", "User"))}
                 </span>
                 {showRole && (
                   <span

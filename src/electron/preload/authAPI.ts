@@ -11,6 +11,8 @@ const authAPI: AuthAPI = {
     ipcRenderer.invoke("auth:updateUserRole", userId, role),
   updatePassword: (userId, newPassword) =>
     ipcRenderer.invoke("auth:updatePassword", userId, newPassword),
+  updateUsername: (userId, newUsername) =>
+    ipcRenderer.invoke("auth:updateUsername", userId, newUsername),
   updatePermissions: (userId, permissions) =>
     ipcRenderer.invoke("auth:updatePermissions", userId, permissions),
   getAllUsersWithPermissions: () =>

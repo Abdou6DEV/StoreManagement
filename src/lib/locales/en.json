@@ -1933,6 +1933,7 @@
       "role": "Role",
       "status": "Status",
       "permissions": "Permissions",
+      "adminFullAccess": "Admin has full access to all pages. Permissions cannot be changed.",
       "actions": "Actions",
       "username": "Username",
       "password": "Password",

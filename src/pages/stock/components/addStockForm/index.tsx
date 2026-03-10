@@ -133,6 +133,15 @@ export default function AddStockForm({
   const [loading, setLoading] = useState(false);
   const [finishingPurchase, setFinishingPurchase] = useState(false);
 
+  // Existing product matching current form (name + category) – for "previous price" on label when user changed selling price
+  const existingProductForLabel = form.name?.trim() && form.categoryName?.trim()
+    ? products.find(
+        (p) =>
+          p.name.toLowerCase().trim() === form.name.toLowerCase().trim() &&
+          p.categoryName.toLowerCase().trim() === form.categoryName.toLowerCase().trim()
+      )
+    : undefined;
+
   // Function to show label preview (barcode optional – labels can be name + price only)
   const showBarcodePreviewModal = () => {
     if (!form.name || form.name.trim() === '') {
@@ -142,15 +151,33 @@ export default function AddStockForm({
     setShowBarcodePreview(true);
   };
 
-  const handlePrintBarcode = async (quantity = 1, showBarcode = true, showStoreName = true) => {
+  const handlePrintBarcode = async (
+    quantity = 1,
+    showBarcode = true,
+    showStoreName = true,
+    showPreviousPrice = false
+  ) => {
     try {
       const shouldShowBarcode = showBarcode === true;
       const shouldShowStoreName = showStoreName === true;
-      await printBarcodeLabel({
-        productName: form.name,
-        price: form.sellingPrice,
-        barcode: form.codebar,
-      }, quantity, shouldShowBarcode, shouldShowStoreName);
+      const previousPrice =
+        showPreviousPrice &&
+        existingProductForLabel &&
+        form.sellingPrice !== "" &&
+        Number(form.sellingPrice) !== existingProductForLabel.sellingPrice
+          ? existingProductForLabel.sellingPrice
+          : undefined;
+      await printBarcodeLabel(
+        {
+          productName: form.name,
+          price: form.sellingPrice,
+          barcode: form.codebar,
+        },
+        quantity,
+        shouldShowBarcode,
+        shouldShowStoreName,
+        previousPrice
+      );
       setShowBarcodePreview(false);
       showToast(t("stock.barcodePrint", "Printing barcode..."), "info");
     } catch (error) {
@@ -2437,6 +2464,13 @@ export default function AddStockForm({
         onOpenChange={setShowBarcodePreview}
         productName={form.name}
         price={form.sellingPrice}
+        previousPrice={
+          existingProductForLabel &&
+          form.sellingPrice !== "" &&
+          Number(form.sellingPrice) !== existingProductForLabel.sellingPrice
+            ? existingProductForLabel.sellingPrice
+            : undefined
+        }
         barcode={form.codebar}
         onPrint={handlePrintBarcode}
       />

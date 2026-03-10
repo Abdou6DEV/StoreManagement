@@ -306,6 +306,10 @@ export type AuthAPI = {
     success: boolean;
     error?: string;
   }>;
+  updateUsername: (userId: string, newUsername: string) => Promise<{
+    success: boolean;
+    error?: string;
+  }>;
   updatePermissions: (userId: string, permissions: {
     canAccessCashier: boolean;
     canAccessStock: boolean;

@@ -310,13 +310,30 @@ export default function AccountsManagement() {
     }
 
     try {
+      const usernameChanged = formData.username.trim() !== (editingUser.username ?? "");
+      if (usernameChanged) {
+        const resultUsername = await window.api.auth.updateUsername(
+          editingUser.id,
+          formData.username.trim()
+        );
+        if (!resultUsername.success) {
+          showToast(resultUsername.error || "Failed to update username", "error");
+          return;
+        }
+      }
+
       const result = await window.api.auth.updatePermissions(
         editingUser.id,
         formData.permissions
       );
 
       if (result.success) {
-        showToast("User permissions updated successfully", "success");
+        showToast(
+          usernameChanged
+            ? t("admin.accounts.userUpdatedSuccess", "User updated successfully")
+            : t("admin.accounts.permissionsUpdatedSuccess", "Permissions updated successfully"),
+          "success"
+        );
         setShowEditModal(false);
         setEditingUser(null);
         loadUsers();
@@ -509,9 +526,7 @@ export default function AccountsManagement() {
                         variant="outline"
                         size="sm"
                         onClick={() => handleEditUser(user)}
-                        disabled={user.id === "hardcoded-admin"}
                         className="flex items-center gap-1"
-                        title={user.id === "hardcoded-admin" ? "Admin account cannot be edited" : ""}
                       >
                         <Edit className="h-3 w-3" />
                         {t("admin.accounts.edit", "Edit")}
@@ -679,8 +694,7 @@ export default function AccountsManagement() {
               <Input
                 value={formData.username ?? ""}
                 onChange={(e) => setFormData(prev => ({ ...prev, username: e.target.value }))}
-                placeholder="Enter username"
-                disabled
+                placeholder={t("admin.accounts.enterUsername", "Enter username")}
               />
             </div>
             <div>
@@ -701,6 +715,11 @@ export default function AccountsManagement() {
             <label className="block text-sm font-medium text-foreground mb-4">
               {t("admin.accounts.permissions", "Permissions")}
             </label>
+            {editingUser?.role === "ADMIN" && (
+              <p className="text-sm text-muted-foreground mb-3">
+                {t("admin.accounts.adminFullAccess", "Admin has full access to all pages. Permissions cannot be changed.")}
+              </p>
+            )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {(() => {
                 // Define the actual permission fields we want to show
@@ -722,7 +741,8 @@ export default function AccountsManagement() {
                 const fieldsToShow = editingUser?.role === "USER" 
                   ? permissionFields.filter(field => !['canManageUsers', 'canViewLogs', 'canManageSettings'].includes(field))
                   : permissionFields;
-                
+                const isAdminRole = editingUser?.role === "ADMIN";
+
                 return fieldsToShow.map((key) => (
                   <div key={key} className="flex items-center justify-between">
                     <label className="text-sm text-foreground">
@@ -730,7 +750,8 @@ export default function AccountsManagement() {
                     </label>
                     <Switch
                       checked={formData.permissions[key as keyof UserFormData["permissions"]] || false}
-                      onCheckedChange={() => togglePermission(key as keyof UserFormData["permissions"])}
+                      onCheckedChange={() => !isAdminRole && togglePermission(key as keyof UserFormData["permissions"])}
+                      disabled={isAdminRole}
                     />
                   </div>
                 ));

@@ -1741,6 +1741,7 @@
       "role": "Rôle",
       "status": "Statut",
       "permissions": "Permissions",
+      "adminFullAccess": "L'administrateur a accès à toutes les pages. Les permissions ne peuvent pas être modifiées.",
       "actions": "Actions",
       "username": "Nom d'utilisateur",
       "password": "Mot de passe",

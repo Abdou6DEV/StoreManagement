@@ -104,10 +104,10 @@ export const users = {
             };
           }
         } else {
-          console.log("🔍 Admin user not found, checking hardcoded credentials...");
-          // Admin user doesn't exist in database, check hardcoded credentials
-          if (credentials.password === "admin") {
-            console.log("🔍 Hardcoded admin credentials match!");
+          // No user "admin" in DB (e.g. admin changed username). Allow default admin/admin only if no ADMIN user exists yet (first-time).
+          const primary = await this.getPrimaryAdmin();
+          if (!primary && credentials.password === "admin") {
+            console.log("🔍 Default admin/admin (first-time)");
             return {
               success: true,
               user: {
@@ -182,10 +182,25 @@ export const users = {
     }
   },
 
+  /** Primary admin = first ADMIN user by createdAt (used for "hardcoded-admin" resolution). */
+  async getPrimaryAdmin(): Promise<(User & { permissions?: any }) | null> {
+    await prismaPromise;
+    return prisma.user.findFirst({
+      where: { role: "ADMIN" },
+      orderBy: { createdAt: "asc" },
+      include: { permissions: true },
+    });
+  },
+
   async getById(id: string): Promise<(Omit<User, "password"> & { permissions?: any }) | null> {
     await prismaPromise; // Ensure Prisma is ready
-    // Handle hardcoded admin account
+    // Handle hardcoded admin account (primary admin in UI)
     if (id === "hardcoded-admin") {
+      const primary = await this.getPrimaryAdmin();
+      if (primary) {
+        const { password, ...rest } = primary;
+        return { ...rest, id: "hardcoded-admin" };
+      }
       return {
         id: "hardcoded-admin",
         username: "admin",
@@ -303,6 +318,21 @@ export const users = {
       where: { id },
       data: { password: hashedPassword },
     });
+  },
+
+  async updateUsername(id: string, newUsername: string): Promise<User> {
+    await prismaPromise;
+    const trimmed = newUsername.trim();
+    if (!trimmed) throw new Error("Username is required");
+    try {
+      return await prisma.user.update({
+        where: { id },
+        data: { username: trimmed },
+      });
+    } catch (e: any) {
+      if (e?.code === "P2002") throw new Error("Username is already taken");
+      throw e;
+    }
   },
 
   async updatePermissions(id: string, permissions: {
