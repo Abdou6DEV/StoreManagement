@@ -4,6 +4,7 @@ export { loggerAPI } from "./loggerAPI";
 export { authAPI } from "./authAPI";
 export { systemAPI } from "./systemAPI";
 export { backupAPI } from "./backupAPI";
+export { activityLogAPI } from "./activityLogAPI";
 export type {
   API,
   DatabaseAPI,

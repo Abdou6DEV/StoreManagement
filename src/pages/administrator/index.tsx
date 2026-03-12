@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router-dom";
 import { FileText, Printer, Users, Settings, Database, Download } from "lucide-react";
-import LoggerAdmin from "./components/loggerAdmin";
+import ActivityLogs from "./components/activityLogs";
 import { OptionsList } from "./components/optionsList";
 import { ReceiptConfig } from "./components/receiptConfig";
 import { BackupManagement } from "./components/backupManagement";
@@ -143,7 +143,7 @@ export default function AdministratorPage() {
 
       {activeTab === "logs" && (
         <section className="bg-card border border-border rounded-xl shadow-sm p-6">
-          <LoggerAdmin />
+          <ActivityLogs />
         </section>
       )}
 

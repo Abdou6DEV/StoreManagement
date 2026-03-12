@@ -300,3 +300,16 @@ model ServiceAppointment {
   @@index([completedAt])
   @@index([clientId])
 }
+
+// Activity/audit log: every user action (login, edit client, record sale, etc.)
+model ActivityLog {
+  id       String   @id @default(uuid())
+  username String   // Who performed the action
+  action   String   // e.g. "login", "edit_client", "record_sale"
+  details  String?  // Optional JSON or human-readable detail (e.g. client name, sale id)
+  createdAt DateTime @default(now())
+
+  @@index([username])
+  @@index([createdAt])
+  @@index([username, createdAt])
+}

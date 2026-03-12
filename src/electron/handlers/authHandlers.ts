@@ -5,6 +5,7 @@ import {
   LoginCredentials,
 } from "../../lib/database/users";
 import { getMachineGuid, validateKey } from "../utils/validationKey";
+import { createActivityLog } from "../../lib/database/activityLogs";
 
 const defaultAdminPayload = () => ({
   id: "hardcoded-admin",
@@ -34,6 +35,13 @@ export const setupAuthHandlers = () => {
   ipcMain.handle("auth:login", async (_, credentials: LoginCredentials) => {
     try {
       const result = await users.login(credentials);
+      if (result.success && result.user) {
+        createActivityLog({
+          username: result.user.username,
+          action: "Logged in",
+          details: null,
+        }).catch(() => {});
+      }
       return result;
     } catch (error) {
       return {
@@ -104,13 +112,24 @@ export const setupAuthHandlers = () => {
         };
       }
       const primaryAdmin = await users.getPrimaryAdmin();
+      const username = primaryAdmin?.username ?? "admin";
       if (primaryAdmin) {
         const { password, ...userWithoutPassword } = primaryAdmin;
+        createActivityLog({
+          username,
+          action: "Logged in via activation key",
+          details: null,
+        }).catch(() => {});
         return {
           success: true,
           user: { ...userWithoutPassword, id: "hardcoded-admin" },
         };
       }
+      createActivityLog({
+        username: "admin",
+        action: "Logged in via activation key",
+        details: null,
+      }).catch(() => {});
       return {
         success: true,
         user: defaultAdminPayload(),

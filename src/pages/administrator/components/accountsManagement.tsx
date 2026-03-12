@@ -20,6 +20,7 @@ import { Switch } from "../../../lib/components/switch";
 import { Modal } from "../../../lib/components/modal";
 import { ConfirmDialog } from "../../../lib/components/confirmDialog";
 import { useToast } from "../../../lib/contexts/toastContext";
+import { useAuth } from "../../../lib/contexts/authContext";
 
 interface User {
   id: string;
@@ -67,6 +68,7 @@ export default function AccountsManagement() {
   const { t, i18n } = useTranslation();
   const isRTL = i18n.language === "ar";
   const { showToast } = useToast();
+  const { user } = useAuth();
 
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -285,6 +287,11 @@ export default function AccountsManagement() {
       });
 
       if (result.success) {
+        window.api?.activityLog?.log({
+          username: user?.username ?? "unknown",
+          action: "Created user",
+          details: formData.username,
+        }).catch(() => {});
         showToast("User created successfully", "success");
         setShowAddModal(false);
         resetForm();

@@ -349,6 +349,24 @@ const getDateFromBackupFileName = (fileName: string): Date | null => {
 const cleanOldAutoBackups = () => {
   try {
     const backupDir = ensureBackupDir();
+    const now = Date.now();
+
+    // Remove any backups with future dates in filename (corrupted/wrong clock)
+    fs.readdirSync(backupDir)
+      .filter(file => file.startsWith("auto_backup_") && file.endsWith(".db"))
+      .forEach(file => {
+        const dateFromName = getDateFromBackupFileName(file);
+        if (dateFromName && dateFromName.getTime() > now) {
+          try {
+            const filePath = path.join(backupDir, file);
+            fs.unlinkSync(filePath);
+            logger.info("Removed backup with future date in filename", "Backup", { file });
+          } catch (err) {
+            logger.error("Failed to remove future-dated backup", "Backup", { file, error: err });
+          }
+        }
+      });
+
     const files = fs.readdirSync(backupDir)
       .filter(file => file.startsWith("auto_backup_") && file.endsWith(".db"))
       .map(file => {

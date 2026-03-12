@@ -5,6 +5,7 @@ import PaymentSummary from "../../../lib/components/paymentSummary";
 import ActionButtons from "./actionButtons";
 import CategoryInfoModal from "./categoryInfoModal";
 import { useToast } from "../../../lib/contexts/toastContext";
+import { useAuth } from "../../../lib/contexts/authContext";
 // import { useStock } from "../../../lib/contexts/stockContext"; // Removed - was causing performance issues
 import { printReceiptDirectly } from "./receiptModal";
 import { NoPrinterModal } from "../../../lib/components/noPrinterModal";
@@ -50,6 +51,7 @@ const CashierSession = memo(function CashierSession({
 }: CashierSessionProps) {
   const { t } = useTranslation();
   const { showToast } = useToast();
+  const { user } = useAuth();
   // const { refetchProducts } = useStock(); // Removed - was causing performance issues
 
   // Get current session data
@@ -284,6 +286,31 @@ const CashierSession = memo(function CashierSession({
       setDiscount("");
       resetClientSession();
       resetPaymentSession();
+      const discountNum = Number(discount) || 0;
+      const totalAfterDiscount = total - discountNum;
+      const lines: string[] = [];
+      if (sale?.id) lines.push(`Sale ID: ${sale.id}`);
+      lines.push("Items:");
+      soldItems.forEach((i) => {
+        const lineTotal = i.price * i.qty;
+        lines.push(`  • ${i.name} x${i.qty} @ ${i.price} = ${lineTotal}`);
+      });
+      lines.push("");
+      lines.push(`Subtotal: ${total}`);
+      if (discountNum > 0) lines.push(`Discount: ${discountNum}`);
+      lines.push(`Total: ${totalAfterDiscount}`);
+      if (clientName.trim()) {
+        lines.push("");
+        lines.push(`Client: ${clientName.trim()}`);
+      }
+      if (paymentType === "credit") lines.push("Payment: Credit");
+      if (paymentType === "versement") lines.push(`Payment: Versement | Amount: ${paymentAmount}`);
+      const detailsStr = lines.join("\n");
+      window.api?.activityLog?.log({
+        username: user?.username ?? "unknown",
+        action: sale ? "Recorded a sale" : paymentType === "versement" ? "Recorded a versement" : "Recorded a sale",
+        details: detailsStr,
+      }).catch(() => {});
       // Refresh products only when needed (e.g., when product browser opens)
       // This prevents UI pause after every sale
       // setProductRefreshKey((k: number) => k + 1);
@@ -329,6 +356,7 @@ const CashierSession = memo(function CashierSession({
     t,
     activeSession,
     onUpdateSessionClient,
+    user?.username,
   ]);
 
   // Clear the cart and reset session state

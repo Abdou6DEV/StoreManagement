@@ -409,6 +409,22 @@ export type BackupAPI = {
   onAutoBackupSuccess: (callback: () => void) => () => void;
 };
 
+export type ActivityLogAPI = {
+  log: (payload: { username: string; action: string; details?: string | null }) => Promise<void>;
+  getList: (filter: {
+    username?: string | null;
+    dateFrom?: string | null;
+    dateTo?: string | null;
+    search?: string | null;
+    limit?: number;
+    offset?: number;
+  }) => Promise<{ entries: Array<{ id: string; username: string; action: string; details: string | null; createdAt: Date }>; total: number }>;
+  getUsernames: () => Promise<string[]>;
+  getRetentionDays: () => Promise<number>;
+  setRetentionDays: (days: number) => Promise<void>;
+  cleanupOld: () => Promise<number>;
+};
+
 export type API = {
   database: DatabaseAPI;
   app: AppAPI;
@@ -416,4 +432,5 @@ export type API = {
   auth: AuthAPI;
   system: SystemAPI;
   backup: BackupAPI;
+  activityLog: ActivityLogAPI;
 };

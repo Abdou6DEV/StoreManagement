@@ -210,6 +210,13 @@ async function createTablesManually(client: any) {
       "completedAt" DATETIME,
       "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
       "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )`,
+    `CREATE TABLE IF NOT EXISTS "ActivityLog" (
+      "id" TEXT PRIMARY KEY,
+      "username" TEXT NOT NULL,
+      "action" TEXT NOT NULL,
+      "details" TEXT,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
     )`
   ];
 
@@ -238,7 +245,10 @@ async function createTablesManually(client: any) {
     `CREATE INDEX IF NOT EXISTS "idx_serviceappointment_isCompleted" ON "ServiceAppointment"("isCompleted")`,
     `CREATE INDEX IF NOT EXISTS "idx_serviceappointment_completedAt" ON "ServiceAppointment"("completedAt")`,
     `CREATE INDEX IF NOT EXISTS "idx_serviceappointment_clientId" ON "ServiceAppointment"("clientId")`,
-    `CREATE INDEX IF NOT EXISTS "idx_service_serviceAppointmentId" ON "Service"("serviceAppointmentId")`
+    `CREATE INDEX IF NOT EXISTS "idx_service_serviceAppointmentId" ON "Service"("serviceAppointmentId")`,
+    `CREATE INDEX IF NOT EXISTS "idx_activitylog_username" ON "ActivityLog"("username")`,
+    `CREATE INDEX IF NOT EXISTS "idx_activitylog_createdAt" ON "ActivityLog"("createdAt")`,
+    `CREATE INDEX IF NOT EXISTS "idx_activitylog_username_createdAt" ON "ActivityLog"("username", "createdAt")`
   ];
 
   for (const sql of indexes) {
@@ -254,6 +264,29 @@ async function createTablesManually(client: any) {
   
   console.log("✅ Manual table creation completed");
   logger.info("Database schema created manually", "Database");
+}
+
+// Ensure ActivityLog table exists (for existing DBs that didn't run migration)
+async function ensureActivityLogTable(client: import("@prisma/client").PrismaClient) {
+  try {
+    await client.$queryRawUnsafe(
+      `CREATE TABLE IF NOT EXISTS "ActivityLog" (
+        "id" TEXT PRIMARY KEY,
+        "username" TEXT NOT NULL,
+        "action" TEXT NOT NULL,
+        "details" TEXT,
+        "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+      )`
+    );
+    await client.$executeRawUnsafe(
+      `CREATE INDEX IF NOT EXISTS "idx_activitylog_username" ON "ActivityLog"("username")`
+    );
+    await client.$executeRawUnsafe(
+      `CREATE INDEX IF NOT EXISTS "idx_activitylog_createdAt" ON "ActivityLog"("createdAt")`
+    );
+  } catch (err) {
+    console.error("ensureActivityLogTable:", err);
+  }
 }
 
 // Ensure canAccessZakat column exists in UserPermissions (run first after connect)
@@ -299,6 +332,7 @@ async function initializeDatabase() {
 
     // Run canAccessZakat migration first so user.create never fails
     await ensureCanAccessZakatColumn(prismaClientInstance);
+    await ensureActivityLogTable(prismaClientInstance);
     
     // Try a simple query to check if the User table exists
     try {

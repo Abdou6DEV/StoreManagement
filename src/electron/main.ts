@@ -69,6 +69,7 @@ import {
   setupAuthHandlers,
   setupSystemHandlers,
   setupBackupHandlers,
+  setupActivityLogHandlers,
 } from "./handlers";
 import { setupAppHandlers } from "./handlers/appHandlers";
 
@@ -87,6 +88,7 @@ const createWindow = async () => {
   setupAuthHandlers();
   setupSystemHandlers();
   setupBackupHandlers();
+  setupActivityLogHandlers();
   setupAppHandlers();
 
   const { width, height, x, y } = screen.getPrimaryDisplay().workArea;

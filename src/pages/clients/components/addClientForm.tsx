@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Button } from "../../../lib/components/button";
 import { Loader2, Users, ChevronDown, ChevronUp } from "lucide-react";
 import { useToast } from "../../../lib/contexts/toastContext";
+import { useAuth } from "../../../lib/contexts/authContext";
 
 interface AddClientFormProps {
   openPanel: "add" | "addPayment" | "addSupplier" | null;
@@ -26,6 +27,7 @@ export default function AddClientForm({
 }: AddClientFormProps) {
   const { t } = useTranslation();
   const { showToast } = useToast();
+  const { user } = useAuth();
   const [form, setForm] = useState(initialForm);
   const [loading, setLoading] = useState(false);
   const [nameExists, setNameExists] = useState(false);
@@ -105,6 +107,11 @@ export default function AddClientForm({
       });
       setForm(initialForm);
       onClientAdded();
+      window.api?.activityLog?.log({
+        username: user?.username ?? "unknown",
+        action: "Added client",
+        details: form.name,
+      }).catch(() => {});
       showToast(
         t("clients.addSuccess", "Client added successfully"),
         "success",

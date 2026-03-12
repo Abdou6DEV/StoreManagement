@@ -32,7 +32,7 @@ import type { BackupFile } from "../../../electron/preload/types";
 export function BackupManagement() {
   const { t } = useTranslation();
   const { showToast } = useToast();
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   const navigate = useNavigate();
   const [backups, setBackups] = useState<BackupFile[]>([]);
   const [loading, setLoading] = useState(false);
@@ -114,6 +114,11 @@ export function BackupManagement() {
       const result = await backupPromise;
       
       if (result.success) {
+        window.api?.activityLog?.log({
+          username: user?.username ?? "unknown",
+          action: "Created manual backup",
+          details: result.backupPath ?? null,
+        }).catch(() => {});
         showToast("Backup created successfully", "success");
         await loadBackups(); // Refresh the list
       } else {

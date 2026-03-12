@@ -44,6 +44,7 @@ import {
 import type { Client, Seller } from "@prisma/client";
 import type { ClientWithTotalPurchases, PaymentWithClient } from "../../types";
 import { useToast } from "../../lib/contexts/toastContext";
+import { useAuth } from "../../lib/contexts/authContext";
 import { useOverduePayments } from "../../lib/contexts/overduePaymentsContext";
 import { useDueSoonPayments } from "../../lib/contexts/dueSoonPaymentsContext";
 import { BadgeNotification } from "../../lib/components/badgeNotification";
@@ -57,6 +58,7 @@ export default function Clients() {
   const location = useLocation();
   const { t } = useTranslation();
   const { showToast } = useToast();
+  const { user } = useAuth();
   const { unseenOverdueCreditsCount, unseenOverdueVersementsCount, markOverdueCreditsAsSeen, markOverdueVersementsAsSeen } = useOverduePayments();
   const { unseenDueSoonCreditsCount, unseenDueSoonVersementsCount, markDueSoonCreditsAsSeen, markDueSoonVersementsAsSeen } = useDueSoonPayments();
   const notificationAction = (location.state as { notificationAction?: string } | null)?.notificationAction;
@@ -232,6 +234,7 @@ export default function Clients() {
     if (!editingClient) return;
     setEditLoading(true);
     try {
+      const name = editingClient.name;
       await window.api.database.clients.update(editingClient.id, {
         name: editingClient.name,
         phone: editingClient.phone,
@@ -240,6 +243,11 @@ export default function Clients() {
       });
       setEditingClient(null);
       await fetchClients();
+      window.api?.activityLog?.log({
+        username: user?.username ?? "unknown",
+        action: "Edited client",
+        details: name,
+      }).catch(() => {});
       showToast(
         t("clients.updateSuccess", "Client updated successfully"),
         "success",
@@ -302,6 +310,7 @@ export default function Clients() {
   const handleEditSupplierSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingSupplier) return;
+    const supplierName = editingSupplier.name;
     setEditSupplierLoading(true);
     try {
       await window.api.database.sellers.update(editingSupplier.id, {
@@ -313,6 +322,11 @@ export default function Clients() {
       });
       setEditingSupplier(null);
       await fetchSuppliers();
+      window.api?.activityLog?.log({
+        username: user?.username ?? "unknown",
+        action: "Edited supplier",
+        details: supplierName,
+      }).catch(() => {});
       showToast(
         t("suppliers.updateSuccess", "Supplier updated successfully"),
         "success",
