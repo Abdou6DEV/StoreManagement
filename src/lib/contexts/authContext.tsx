@@ -10,6 +10,11 @@ interface AuthContextType {
     username: string,
     password: string,
   ) => Promise<{ success: boolean; error?: string }>;
+  /** Log in as admin using activation key (forgot username/password). Pass machineId to validate against the same GUID shown on screen. */
+  loginByActivationKey: (
+    activationKey: string,
+    machineId?: string,
+  ) => Promise<{ success: boolean; error?: string }>;
   /** Call after login success UI sequence (green button, fade out) to show preload transition. */
   confirmLoginTransition: () => void;
   logout: () => void;
@@ -72,13 +77,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (result.success && result.user) {
         setUser(result.user);
         setUserRole(result.user.role);
-        // Don't set isAuthenticated yet – Login runs green button → fade out, then calls confirmLoginTransition()
-
-        // Preload is run by the preload screen (same React tree as App) so same chunks as React.lazy
         setIsPreloading(true);
         setPreloadProgress(0);
         setPreloadComplete(false);
-
         return { success: true };
       } else {
         return { success: false, error: result.error || "Login failed" };
@@ -86,6 +87,35 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } catch (error) {
       console.error("Login error:", error);
       return { success: false, error: "Login failed" };
+    }
+  };
+
+  const loginByActivationKey = async (
+    activationKey: string,
+    machineId?: string,
+  ): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const result = await window.api.auth.loginByActivationKey(
+        activationKey,
+        machineId,
+      );
+
+      if (result.success && result.user) {
+        setUser(result.user);
+        setUserRole(result.user.role);
+        setIsPreloading(true);
+        setPreloadProgress(0);
+        setPreloadComplete(false);
+        return { success: true };
+      } else {
+        return {
+          success: false,
+          error: result.error || "Invalid activation key",
+        };
+      }
+    } catch (error) {
+      console.error("Login by activation key error:", error);
+      return { success: false, error: "Invalid activation key" };
     }
   };
 
@@ -160,6 +190,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     userRole,
     isAdmin: userRole === "ADMIN",
     login,
+    loginByActivationKey,
     logout,
     loading,
     isPreloading,

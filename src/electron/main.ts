@@ -69,7 +69,6 @@ import {
   setupAuthHandlers,
   setupSystemHandlers,
   setupBackupHandlers,
-  performDailyBackup,
 } from "./handlers";
 import { setupAppHandlers } from "./handlers/appHandlers";
 
@@ -145,37 +144,6 @@ const createWindow = async () => {
 app.on("ready", () => {
   // createWindow is now called directly since Squirrel events exit early
   createWindow();
-});
-
-// Set up automatic daily backup
-let backupInterval: NodeJS.Timeout | null = null;
-
-const scheduleDailyBackup = () => {
-  // Clear existing interval
-  if (backupInterval) {
-    clearInterval(backupInterval);
-  }
-
-  // Perform backup immediately on startup
-  performDailyBackup();
-
-  // Schedule backup every 24 hours (86400000 ms)
-  backupInterval = setInterval(() => {
-    performDailyBackup();
-  }, 24 * 60 * 60 * 1000);
-};
-
-// Start backup scheduling when app is ready
-app.on("ready", () => {
-  // Small delay to ensure database is initialized
-  setTimeout(scheduleDailyBackup, 5000);
-});
-
-// Clean up on app quit
-app.on("before-quit", () => {
-  if (backupInterval) {
-    clearInterval(backupInterval);
-  }
 });
 
 app.on("window-all-closed", () => {

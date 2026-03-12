@@ -736,6 +736,15 @@
     "enterPassword": "Enter your password",
     "signingIn": "Signing in...",
     "signIn": "Sign In",
+    "loginViaActivationKey": "Log in via activation key (forgot username or password)",
+    "backToUsernamePassword": "Back to username and password",
+    "licenseCode": "License code (send to support for activation key)",
+    "activationKey": "Activation key",
+    "enterActivationKey": "Enter activation key",
+    "invalidActivationKey": "Invalid activation key",
+    "activationKeyError": "An unexpected error occurred",
+    "loading": "Loading...",
+    "copyGuid": "Copy",
     "copyright": "© 2025 Reda Tech. All rights reserved."
   },
   "loading": {
@@ -1801,6 +1810,7 @@
     "backup.failedToLoadBackups": "Failed to load backups",
     "backup.errorLoadingBackups": "Error loading backups",
     "backup.backupCreatedSuccessfully": "Backup created successfully",
+    "backup.autoBackupCreatedSuccess": "Automatic backup created successfully",
     "backup.failedToCreateBackup": "Failed to create backup:",
     "backup.errorCreatingBackup": "Error creating backup",
     "backup.cleanupFailed": "Cleanup failed:",

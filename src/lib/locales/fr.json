@@ -413,6 +413,15 @@
     "enterPassword": "Entrez votre mot de passe",
     "signingIn": "Connexion en cours...",
     "signIn": "Se Connecter",
+    "loginViaActivationKey": "Connexion par clé d'activation (oubli du nom d'utilisateur ou du mot de passe)",
+    "backToUsernamePassword": "Retour au nom d'utilisateur et mot de passe",
+    "licenseCode": "Code licence (envoyez au support pour obtenir la clé d'activation)",
+    "activationKey": "Clé d'activation",
+    "enterActivationKey": "Entrez la clé d'activation",
+    "invalidActivationKey": "Clé d'activation invalide",
+    "activationKeyError": "Une erreur inattendue s'est produite",
+    "loading": "Chargement...",
+    "copyGuid": "Copier",
     "copyright": "© 2025 Reda Tech. Tous droits réservés."
   },
   "loading": {
@@ -1624,6 +1633,7 @@
     "backup.failedToLoadBackups": "Échec du chargement des sauvegardes",
     "backup.errorLoadingBackups": "Erreur lors du chargement des sauvegardes",
     "backup.backupCreatedSuccessfully": "Sauvegarde créée avec succès",
+    "backup.autoBackupCreatedSuccess": "Sauvegarde automatique créée avec succès",
     "backup.failedToCreateBackup": "Échec de la création de sauvegarde :",
     "backup.errorCreatingBackup": "Erreur lors de la création de sauvegarde",
     "backup.cleanupFailed": "Échec du nettoyage :",

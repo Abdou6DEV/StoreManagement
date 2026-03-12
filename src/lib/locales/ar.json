@@ -421,6 +421,15 @@
     "enterPassword": "أدخل كلمة المرور",
     "signingIn": "جاري تسجيل الدخول...",
     "signIn": "تسجيل الدخول",
+    "loginViaActivationKey": "تسجيل الدخول بمفتاح التفعيل (نسيت اسم المستخدم أو كلمة المرور)",
+    "backToUsernamePassword": "العودة لاسم المستخدم وكلمة المرور",
+    "licenseCode": "رمز الترخيص (أرسله للدعم للحصول على مفتاح التفعيل)",
+    "activationKey": "مفتاح التفعيل",
+    "enterActivationKey": "أدخل مفتاح التفعيل",
+    "invalidActivationKey": "مفتاح التفعيل غير صالح",
+    "activationKeyError": "حدث خطأ غير متوقع",
+    "loading": "جاري التحميل...",
+    "copyGuid": "نسخ",
     "copyright": "© 2025 Reda Tech. جميع الحقوق محفوظة."
   },
   "loading": {
@@ -1524,6 +1533,7 @@
     "backup.failedToLoadBackups": "فشل في تحميل النسخ الاحتياطية",
     "backup.errorLoadingBackups": "خطأ في تحميل النسخ الاحتياطية",
     "backup.backupCreatedSuccessfully": "تم إنشاء النسخة الاحتياطية بنجاح",
+    "backup.autoBackupCreatedSuccess": "تم إنشاء النسخة الاحتياطية التلقائية بنجاح",
     "backup.failedToCreateBackup": "فشل في إنشاء النسخة الاحتياطية:",
     "backup.errorCreatingBackup": "خطأ في إنشاء النسخة الاحتياطية",
     "backup.cleanupFailed": "فشل التنظيف:",

@@ -54,6 +54,20 @@ export function BackupManagement() {
     loadBackups();
   }, []);
 
+  // Refresh list when an automatic backup was just created (so the new backup appears)
+  useEffect(() => {
+    const refresh = () => loadBackups();
+    window.addEventListener("backup:created", refresh);
+    const unsub =
+      typeof window.api?.backup?.onAutoBackupSuccess === "function"
+        ? window.api.backup.onAutoBackupSuccess(refresh)
+        : undefined;
+    return () => {
+      window.removeEventListener("backup:created", refresh);
+      unsub?.();
+    };
+  }, []);
+
   const loadBackups = async () => {
     try {
       setLoading(true);

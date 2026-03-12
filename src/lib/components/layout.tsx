@@ -7,6 +7,19 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     localStorage.getItem("sidebarCollapsed") === "true",
   );
 
+  // Run daily backup once when user reaches main app (after login). Toast only when a backup was actually created.
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.api?.backup?.ensureDailyBackup) return;
+    const timer = setTimeout(() => {
+      window.api.backup.ensureDailyBackup().then((result) => {
+        if (result?.created) {
+          window.dispatchEvent(new CustomEvent("backup:created"));
+        }
+      });
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, []);
+
   useEffect(() => {
     const handleSidebarChange = (event: CustomEvent) => {
       const newCollapsed = event.detail?.collapsed;

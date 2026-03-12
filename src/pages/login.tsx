@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useAuth } from "../lib/contexts/authContext";
-import { Eye, EyeOff, User, Lock, AlertCircle, Settings } from "lucide-react";
+import { Eye, EyeOff, User, Lock, AlertCircle, Settings, Key, ArrowLeft, Copy, Check } from "lucide-react";
 import { useTheme } from "../lib/hooks/useTheme";
 import { ThemeToggleButton } from "../lib/components/themeToggleButton";
 import { FullscreenToggleButton } from "../lib/components/fullscreenToggleButton";
@@ -19,33 +19,63 @@ import { LOGO_ICON, LOGO_ICON_DARK } from "../lib/assets";
 export default function Login() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [activationKey, setActivationKey] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [successPhase, setSuccessPhase] = useState<'idle' | 'green_hold' | 'fade_out'>('idle');
-  const { login, confirmLoginTransition } = useAuth();
+  const [useActivationKey, setUseActivationKey] = useState(false);
+  const [machineId, setMachineId] = useState<string | null>(null);
+  const [machineIdLoading, setMachineIdLoading] = useState(false);
+  const [guidCopied, setGuidCopied] = useState(false);
+  const { login, loginByActivationKey, confirmLoginTransition } = useAuth();
   const { t, i18n } = useTranslation();
   const { isDark } = useTheme();
   
-  // Refs for focus management
   const usernameRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
+  const activationKeyRef = useRef<HTMLInputElement>(null);
   const submitButtonRef = useRef<HTMLButtonElement>(null);
 
-  // Focus username input on page load
+  // Focus username or activation key input on page load
   useEffect(() => {
-    if (usernameRef.current) {
+    if (useActivationKey && activationKeyRef.current) {
+      activationKeyRef.current.focus();
+    } else if (usernameRef.current) {
       usernameRef.current.focus();
     }
-  }, []);
+  }, [useActivationKey]);
 
-  // Focus username input when error occurs (preventScroll to avoid layout flicker)
+  // Load machine ID when switching to activation key mode
   useEffect(() => {
-    if (error && usernameRef.current) {
+    if (!useActivationKey) return;
+    let cancelled = false;
+    setMachineIdLoading(true);
+    window.api.system
+      .getMachineId()
+      .then((res) => {
+        if (!cancelled && res.success && res.machineId) {
+          setMachineId(res.machineId);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setMachineIdLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [useActivationKey]);
+
+  // Focus appropriate input when error occurs
+  useEffect(() => {
+    if (!error) return;
+    if (useActivationKey && activationKeyRef.current) {
+      activationKeyRef.current.focus({ preventScroll: true });
+    } else if (usernameRef.current) {
       usernameRef.current.focus({ preventScroll: true });
     }
-  }, [error]);
+  }, [error, useActivationKey]);
 
   // Clear error (and revert button) after 2 seconds
   useEffect(() => {
@@ -70,56 +100,72 @@ export default function Login() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!username.trim() || !password.trim()) {
-      // Focus the first empty field
-      if (!username.trim() && usernameRef.current) {
-        usernameRef.current.focus();
-      } else if (!password.trim() && passwordRef.current) {
-        passwordRef.current.focus();
+    if (useActivationKey) {
+      if (!activationKey.trim()) {
+        activationKeyRef.current?.focus();
+        return;
       }
+      setIsLoading(true);
+      setError(null);
+      try {
+        const result = await loginByActivationKey(
+          activationKey.trim(),
+          machineId ?? undefined
+        );
+        if (result.success) {
+          setSuccessPhase("green_hold");
+          setIsLoading(false);
+        } else {
+          setError(result.error || t("login.invalidActivationKey", "Invalid activation key"));
+          activationKeyRef.current?.focus();
+          setIsLoading(false);
+        }
+      } catch (err) {
+        setError(t("login.activationKeyError", "An unexpected error occurred"));
+        activationKeyRef.current?.focus();
+        setIsLoading(false);
+      }
+      return;
+    }
+
+    if (!username.trim() || !password.trim()) {
+      if (!username.trim() && usernameRef.current) usernameRef.current.focus();
+      else if (!password.trim() && passwordRef.current) passwordRef.current.focus();
       return;
     }
 
     setIsLoading(true);
     setError(null);
-
     try {
       const result = await login(username, password);
       if (result.success) {
-        // Single update: green button (no separate loading=false to avoid extra re-render flicker)
-        setSuccessPhase('green_hold');
+        setSuccessPhase("green_hold");
         setIsLoading(false);
       } else {
         setError(result.error || "Login failed");
-        if (usernameRef.current) {
-          usernameRef.current.focus();
-        }
+        usernameRef.current?.focus();
         setIsLoading(false);
       }
     } catch (err) {
       setError("An unexpected error occurred");
-      if (usernameRef.current) {
-        usernameRef.current.focus();
-      }
+      usernameRef.current?.focus();
       setIsLoading(false);
     }
   };
 
-  // Handle Enter key navigation
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      if (e.currentTarget === usernameRef.current) {
-        // From username, go to password
-        if (passwordRef.current) {
-          passwordRef.current.focus();
-        }
-      } else if (e.currentTarget === passwordRef.current) {
-        // From password, trigger submit
-        if (submitButtonRef.current && !isLoading) {
-          submitButtonRef.current.click();
-        }
+    if (e.key !== "Enter") return;
+    e.preventDefault();
+    if (useActivationKey) {
+      if (e.currentTarget === activationKeyRef.current && submitButtonRef.current && !isLoading) {
+        submitButtonRef.current.click();
       }
+      return;
+    }
+    if (e.currentTarget === usernameRef.current && passwordRef.current) {
+      passwordRef.current.focus();
+    } else if (e.currentTarget === passwordRef.current && submitButtonRef.current && !isLoading) {
+      submitButtonRef.current.click();
     }
   };
 
@@ -281,7 +327,7 @@ export default function Login() {
                     : undefined,
             }}
           >
-            <h2 className="text-3xl font-bold text-foreground mb-2 mt-15">
+            <h2 className="text-3xl font-bold text-foreground mb-2 mt-0">
               {t("login.welcomeBack", "Welcome Back")}
             </h2>
             <p className="text-muted-foreground">
@@ -305,76 +351,179 @@ export default function Login() {
         >
         <div className="bg-card rounded-xl border border-border p-8 shadow-sm">
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Username Field */}
-            <div>
-              <label
-                htmlFor="username"
-                className="block text-sm font-medium text-foreground mb-2"
-              >
-                {t("login.username", "Username")}
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <User className="h-5 w-5 text-muted-foreground" />
-                </div>
-                <input
-                  ref={usernameRef}
-                  id="username"
-                  name="username"
-                  type="text"
-                  required
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  className="block w-full pl-10 pr-3 py-3 border border-input rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-all duration-200"
-                  placeholder={t("login.enterUsername", "Enter your username")}
-                />
-              </div>
-            </div>
-
-            {/* Password Field */}
-            <div>
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium text-foreground mb-2"
-              >
-                {t("login.password", "Password")}
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Lock className="h-5 w-5 text-muted-foreground" />
-                </div>
-                <input
-                  ref={passwordRef}
-                  id="password"
-                  name="password"
-                  type={showPassword ? "text" : "password"}
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  className="block w-full pl-10 pr-12 py-3 border border-input rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-all duration-200"
-                  placeholder={t("login.enterPassword", "UPDATE WORKEED")}
-                />
+            {useActivationKey ? (
+              <>
+                {/* Back to username/password */}
                 <button
                   type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-muted-foreground hover:text-foreground transition-colors"
+                  onClick={() => {
+                    setUseActivationKey(false);
+                    setActivationKey("");
+                    setError(null);
+                  }}
+                  className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  {showPassword ? (
-                    <EyeOff className="h-5 w-5" />
-                  ) : (
-                    <Eye className="h-5 w-5" />
-                  )}
+                  <ArrowLeft className="h-4 w-4" />
+                  {t("login.backToUsernamePassword", "Back to username and password")}
                 </button>
-              </div>
-            </div>
 
-            {/* Submit Button – green "Signing in..." on success hold, then form fades out */}
+                {/* GUID used to create activation key */}
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-2">
+                    {t("login.licenseCode", "License code (send to support for activation key)")}
+                  </label>
+                  <div className="bg-muted/30 rounded-lg p-3 border border-border/50 relative group">
+                    <code className="text-sm font-mono text-foreground tracking-wide break-all pr-10">
+                      {machineIdLoading
+                        ? t("login.loading", "Loading...")
+                        : machineId
+                          ? machineId.replace(/-/g, "").toLowerCase()
+                          : "—"}
+                    </code>
+                    {machineId && (
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          const text = machineId.replace(/-/g, "").toLowerCase();
+                          try {
+                            await navigator.clipboard.writeText(text);
+                            setGuidCopied(true);
+                            setTimeout(() => setGuidCopied(false), 2000);
+                          } catch (err) {
+                            console.error("Copy failed:", err);
+                          }
+                        }}
+                        className="absolute top-2 right-2 p-2 rounded-md bg-muted hover:bg-muted/80 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring"
+                        title={t("login.copyGuid", "Copy")}
+                      >
+                        {guidCopied ? (
+                          <Check className="h-4 w-4 text-green-600" />
+                        ) : (
+                          <Copy className="h-4 w-4 text-muted-foreground" />
+                        )}
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Activation Key Field */}
+                <div>
+                  <label
+                    htmlFor="activationKey"
+                    className="block text-sm font-medium text-foreground mb-2"
+                  >
+                    {t("login.activationKey", "Activation key")}
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Key className="h-5 w-5 text-muted-foreground" />
+                    </div>
+                    <input
+                      ref={activationKeyRef}
+                      id="activationKey"
+                      name="activationKey"
+                      type="text"
+                      value={activationKey}
+                      onChange={(e) => setActivationKey(e.target.value.toUpperCase())}
+                      onKeyDown={handleKeyDown}
+                      maxLength={16}
+                      className="block w-full pl-10 pr-3 py-3 border border-input rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-all duration-200 font-mono"
+                      placeholder={t("login.enterActivationKey", "Enter activation key")}
+                    />
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                {/* Username Field */}
+                <div>
+                  <label
+                    htmlFor="username"
+                    className="block text-sm font-medium text-foreground mb-2"
+                  >
+                    {t("login.username", "Username")}
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <User className="h-5 w-5 text-muted-foreground" />
+                    </div>
+                    <input
+                      ref={usernameRef}
+                      id="username"
+                      name="username"
+                      type="text"
+                      required
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      onKeyDown={handleKeyDown}
+                      className="block w-full pl-10 pr-3 py-3 border border-input rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-all duration-200"
+                      placeholder={t("login.enterUsername", "Enter your username")}
+                    />
+                  </div>
+                </div>
+
+                {/* Password Field */}
+                <div>
+                  <label
+                    htmlFor="password"
+                    className="block text-sm font-medium text-foreground mb-2"
+                  >
+                    {t("login.password", "Password")}
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Lock className="h-5 w-5 text-muted-foreground" />
+                    </div>
+                    <input
+                      ref={passwordRef}
+                      id="password"
+                      name="password"
+                      type={showPassword ? "text" : "password"}
+                      required
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      onKeyDown={handleKeyDown}
+                      className="block w-full pl-10 pr-12 py-3 border border-input rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-all duration-200"
+                      placeholder={t("login.enterPassword", "Enter your password")}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-5 w-5" />
+                      ) : (
+                        <Eye className="h-5 w-5" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Forgot username/password → activation key */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUseActivationKey(true);
+                    setError(null);
+                  }}
+                  className="text-sm text-muted-foreground hover:text-foreground underline transition-colors w-full text-center"
+                >
+                  {t("login.loginViaActivationKey", "Log in via activation key (forgot username or password)")}
+                </button>
+              </>
+            )}
+
+            {/* Submit Button */}
             <button
               ref={submitButtonRef}
               type="submit"
-              disabled={isLoading || !!error || !username.trim() || !password.trim() || successPhase !== 'idle'}
+              disabled={
+                isLoading ||
+                !!error ||
+                successPhase !== "idle" ||
+                (useActivationKey ? !activationKey.trim() : !username.trim() || !password.trim())
+              }
               className={`group relative w-full flex justify-center items-center min-h-[3rem] py-3 px-4 border border-transparent text-sm font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed transition-all duration-200 ${
                 successPhase === 'green_hold' || successPhase === 'fade_out'
                   ? "bg-green-600 text-white hover:bg-green-600"

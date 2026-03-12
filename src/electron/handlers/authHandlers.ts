@@ -4,6 +4,30 @@ import {
   CreateUserData,
   LoginCredentials,
 } from "../../lib/database/users";
+import { getMachineGuid, validateKey } from "../utils/validationKey";
+
+const defaultAdminPayload = () => ({
+  id: "hardcoded-admin",
+  username: "admin",
+  email: "admin@store.com",
+  role: "ADMIN" as const,
+  isActive: true,
+  createdAt: new Date(),
+  updatedAt: new Date(),
+  permissions: {
+    canAccessCashier: true,
+    canAccessStock: true,
+    canAccessClients: true,
+    canAccessBills: true,
+    canAccessHistory: true,
+    canAccessServices: true,
+    canAccessDashboard: true,
+    canAccessZakat: true,
+    canManageUsers: true,
+    canViewLogs: true,
+    canManageSettings: true,
+  },
+});
 
 export const setupAuthHandlers = () => {
   // Login handler
@@ -64,6 +88,38 @@ export const setupAuthHandlers = () => {
       return {
         success: false,
         error: "Failed to get user",
+      };
+    }
+  });
+
+  // Login with activation key (forgot username/password) — logs in as admin.
+  // If machineId is provided (from the login page display), use it so validation matches the GUID we showed.
+  ipcMain.handle("auth:loginByActivationKey", async (_, activationKey: string, machineIdFromFrontend?: string) => {
+    try {
+      const machineId = machineIdFromFrontend?.trim() || getMachineGuid();
+      if (!validateKey(machineId, activationKey.trim())) {
+        return {
+          success: false,
+          error: "Invalid activation key",
+        };
+      }
+      const primaryAdmin = await users.getPrimaryAdmin();
+      if (primaryAdmin) {
+        const { password, ...userWithoutPassword } = primaryAdmin;
+        return {
+          success: true,
+          user: { ...userWithoutPassword, id: "hardcoded-admin" },
+        };
+      }
+      return {
+        success: true,
+        user: defaultAdminPayload(),
+      };
+    } catch (error) {
+      console.error("Login by activation key error:", error);
+      return {
+        success: false,
+        error: (error as Error).message || "Invalid activation key",
       };
     }
   });

@@ -262,6 +262,11 @@ export type AuthAPI = {
     user?: Omit<User, "password">;
     error?: string;
   }>;
+  loginByActivationKey: (activationKey: string, machineId?: string) => Promise<{
+    success: boolean;
+    user?: Omit<User, "password"> & { permissions?: any };
+    error?: string;
+  }>;
   createUser: (userData: {
     username: string;
     email?: string;
@@ -392,9 +397,16 @@ export type BackupResult = {
 export type BackupAPI = {
   create: () => Promise<BackupResult>;
   createManual: () => Promise<BackupResult>;
+  ensureDailyBackup: () => Promise<{
+    success: boolean;
+    created?: boolean;
+    skipped?: boolean;
+    error?: string;
+  }>;
   list: () => Promise<{ success: boolean; backups?: BackupFile[]; error?: string }>;
   restore: (backupPath: string) => Promise<BackupResult>;
   getInfo: () => Promise<{ backupDir: string; databasePath: string; backupExists: boolean }>;
+  onAutoBackupSuccess: (callback: () => void) => () => void;
 };
 
 export type API = {

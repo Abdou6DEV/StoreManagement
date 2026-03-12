@@ -1,4 +1,4 @@
-import { ipcMain, app, dialog } from "electron";
+import { ipcMain, app, dialog, BrowserWindow } from "electron";
 import fs from "fs";
 import path from "path";
 import { prisma } from "../../lib/database/prismaClient";
@@ -139,6 +139,13 @@ const createAutoBackup = async (date: Date = new Date()) => {
       fs.unlinkSync(backupPath);
       throw new Error("Backup file is not a valid database");
     }
+
+    // 8. Set file mtime to backup time (copyFileSync preserves source mtime; use Date on Windows)
+    try {
+      fs.utimesSync(backupPath, date, date);
+    } catch (utimesErr) {
+      logger.warn("Could not set backup file date", "Backup", { path: backupPath, error: utimesErr });
+    }
     
     logger.info("Backup created successfully", "Backup", {
       backupPath,
@@ -216,6 +223,11 @@ const createManualBackup = async (date: Date = new Date()) => {
       logger.error("Backup validation failed", "Backup", testError);
       fs.unlinkSync(backupPath);
       throw new Error("Backup file is not a valid database");
+    }
+    try {
+      fs.utimesSync(backupPath, date, date);
+    } catch (utimesErr) {
+      logger.warn("Could not set backup file date", "Backup", { path: backupPath, error: utimesErr });
     }
     
     logger.info("Manual backup created successfully", "Backup", {
@@ -297,6 +309,11 @@ const createManualBackupToPath = async (customPath: string, date: Date = new Dat
       fs.unlinkSync(customPath);
       throw new Error("Backup file is not a valid database");
     }
+    try {
+      fs.utimesSync(customPath, date, date);
+    } catch (utimesErr) {
+      logger.warn("Could not set backup file date", "Backup", { path: customPath, error: utimesErr });
+    }
     
     logger.info("Manual backup created to custom path successfully", "Backup", {
       customPath,
@@ -319,17 +336,31 @@ const createManualBackupToPath = async (customPath: string, date: Date = new Dat
   }
 };
 
-// Clean old automatic backups (keep only 2 most recent)
+// Parse date from backup filename (auto_backup_YYYY-MM-DD_HH-MM-SS.db or manual_backup_...)
+const getDateFromBackupFileName = (fileName: string): Date | null => {
+  const match = fileName.match(/^(?:auto|manual)_backup_(\d{4})-(\d{2})-(\d{2})_(\d{2})-(\d{2})-(\d{2})\.db$/);
+  if (!match) return null;
+  const [, y, mo, d, h, min, s] = match;
+  const date = new Date(parseInt(y!, 10), parseInt(mo!, 10) - 1, parseInt(d!, 10), parseInt(h!, 10), parseInt(min!, 10), parseInt(s!, 10));
+  return isNaN(date.getTime()) ? null : date;
+};
+
+// Clean old automatic backups (keep only 2 most recent by date in filename)
 const cleanOldAutoBackups = () => {
   try {
     const backupDir = ensureBackupDir();
     const files = fs.readdirSync(backupDir)
       .filter(file => file.startsWith("auto_backup_") && file.endsWith(".db"))
-      .map(file => ({
-        name: file,
-        path: path.join(backupDir, file),
-        date: fs.statSync(path.join(backupDir, file)).mtime
-      }))
+      .map(file => {
+        const filePath = path.join(backupDir, file);
+        const stats = fs.statSync(filePath);
+        const dateFromName = getDateFromBackupFileName(file);
+        return {
+          name: file,
+          path: filePath,
+          date: dateFromName ?? stats.mtime
+        };
+      })
       .sort((a, b) => b.date.getTime() - a.date.getTime());
     
     // Keep only the 2 most recent automatic backups
@@ -368,12 +399,14 @@ const listBackups = () => {
         const filePath = path.join(backupDir, file);
         const stats = fs.statSync(filePath);
         const isAuto = file.startsWith("auto_backup_");
+        const dateFromName = getDateFromBackupFileName(file);
+        const displayDate = dateFromName ?? stats.mtime;
         return {
           name: file,
           path: filePath,
           size: stats.size,
-          date: stats.mtime.toISOString(),
-          readableDate: stats.mtime.toLocaleDateString(),
+          date: displayDate.toISOString(),
+          readableDate: displayDate.toLocaleDateString(),
           type: isAuto ? "automatic" : "manual"
         };
       })
@@ -523,7 +556,44 @@ const isDatabaseInUse = async (): Promise<boolean> => {
   }
 };
 
+function notifyAutoBackupSuccess() {
+  BrowserWindow.getAllWindows().forEach((win) => {
+    if (win.webContents && !win.isDestroyed()) {
+      win.webContents.send("backup:autoBackupSuccess");
+    }
+  });
+}
+
 export function setupBackupHandlers() {
+  // Ensure daily backup (call when user reaches main app after login). Once per day; toast only when actually created.
+  ipcMain.handle("backup:ensureDailyBackup", async () => {
+    const tryBackup = async (isRetry: boolean): Promise<{ success: boolean; created?: boolean; skipped?: boolean; error?: string }> => {
+      const result = await createAutoBackup();
+      if (result.success && !result.skipped) {
+        cleanOldAutoBackups();
+        // Only send event for retry (renderer already gets created: true from promise on first try)
+        if (isRetry) {
+          notifyAutoBackupSuccess();
+        }
+        return { success: true, created: true };
+      }
+      if (result.success && result.skipped) {
+        return { success: true, skipped: true };
+      }
+      if (!isRetry) {
+        setTimeout(() => {
+          tryBackup(true).then((retryResult) => {
+            if (retryResult.created) {
+              logger.info("Daily backup created on retry", "Backup");
+            }
+          });
+        }, 45000);
+      }
+      return { success: false, error: result.error };
+    };
+    return tryBackup(false);
+  });
+
   // Create automatic backup
   ipcMain.handle("backup:create", async () => {
     // Check if database is in use
@@ -693,15 +763,28 @@ export function setupBackupHandlers() {
 export const performDailyBackup = async () => {
   try {
     logger.info("Starting daily automatic backup", "Backup");
+
+    // Skip if database is in use (e.g. app is running) to avoid read failures
+    // that get reported as "Source database is corrupted or invalid"
+    if (await isDatabaseInUse()) {
+      logger.info("Daily automatic backup skipped - database in use, will retry next run", "Backup");
+      return { success: true, skipped: true, message: "Database in use" };
+    }
+
     const result = await createAutoBackup();
-    
+
     if (result.success) {
       if (result.skipped) {
         logger.info("Daily automatic backup skipped - already exists for today", "Backup");
       } else {
         logger.info("Daily automatic backup completed successfully", "Backup");
-        // Only clean up if we actually created a new backup
         cleanOldAutoBackups();
+        // Notify renderer to show success toast
+        BrowserWindow.getAllWindows().forEach((win) => {
+          if (win.webContents && !win.isDestroyed()) {
+            win.webContents.send("backup:autoBackupSuccess");
+          }
+        });
       }
     } else {
       logger.error("Daily automatic backup failed", "Backup", { error: result.error });
@@ -709,6 +792,6 @@ export const performDailyBackup = async () => {
     return result;
   } catch (error) {
     logger.error("Daily automatic backup error", "Backup", error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error as Error).message };
   }
 };

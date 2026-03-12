@@ -10,6 +10,15 @@ export const backupAPI = {
   // Create manual backup to custom path
   createManualToPath: (customPath: string) => ipcRenderer.invoke("backup:createManualToPath", customPath),
   
+  // Ensure daily backup exists (call after user logs in; once per day, toast on create)
+  ensureDailyBackup: () =>
+    ipcRenderer.invoke("backup:ensureDailyBackup") as Promise<{
+      success: boolean;
+      created?: boolean;
+      skipped?: boolean;
+      error?: string;
+    }>,
+
   // List all available backups
   list: () => ipcRenderer.invoke("backup:list"),
   
@@ -27,6 +36,13 @@ export const backupAPI = {
   
   // Open file dialog to select restore path
   selectRestorePath: () => ipcRenderer.invoke("backup:selectRestorePath"),
+
+  // Subscribe to auto backup success (main process sends when daily backup completes)
+  onAutoBackupSuccess: (callback: () => void) => {
+    const handler = () => callback();
+    ipcRenderer.on("backup:autoBackupSuccess", handler);
+    return () => ipcRenderer.removeListener("backup:autoBackupSuccess", handler);
+  },
 };
 
 export type BackupInfo = {

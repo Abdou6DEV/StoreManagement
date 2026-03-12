@@ -15,22 +15,20 @@ const _hash = (str) => {
 // Same dictionary as in the app
 const _chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
-// Function to generate validation key from Machine GUID
+// Function to generate validation key from Machine GUID (must match app: first 16 non-hyphen chars, lowercase)
 function generateValidationKey(machineId) {
-  if (!machineId || machineId.length < 16) {
-    throw new Error("Invalid machine ID. Must be at least 16 characters.");
+  const withoutHyphens = (machineId || '').replace(/-/g, '').toLowerCase();
+  if (withoutHyphens.length < 16) {
+    throw new Error("Invalid machine ID. Must have at least 16 characters (after removing hyphens).");
   }
-  
-  // Use first 16 characters, remove hyphens
-  const idPart = machineId.substring(0, 16).replace(/-/g, '');
-  
-  // Generate validation key
+  const idPart = withoutHyphens.substring(0, 16);
+
   const validationKey = idPart.split('').map((char, i) => {
-    const hash = _hash(char + i.toString()); // Hash char + its position
+    const hash = _hash(char + i.toString());
     const index = hash % _chars.length;
     return _chars[index];
   }).join('');
-  
+
   return validationKey;
 }
 

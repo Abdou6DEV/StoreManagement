@@ -251,7 +251,7 @@ export default function LicenseValidation() {
             </p>
             <div className="bg-muted/30 rounded-lg p-4 border border-border/50 relative group">
               <code className="text-base font-mono font-semibold text-foreground tracking-wide">
-                {machineId ? machineId.replace(/-/g, '').toUpperCase() : t("license.loading", "Loading...")}
+                {machineId ? machineId.replace(/-/g, '').toLowerCase() : t("license.loading", "Loading...")}
               </code>
               <button
                 onClick={handleCopyMachineId}

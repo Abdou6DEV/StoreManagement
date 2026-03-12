@@ -6,9 +6,34 @@ import React, {
   useRef,
   useEffect,
 } from "react";
+import { useTranslation } from "react-i18next";
 import { ToastType, Toast } from "../../types";
 import { CheckCircle, XCircle, Info, X } from "lucide-react";
 import { playToastSound } from "../utils/soundUtils";
+
+/** Shows toast when a daily backup was actually created (first try via custom event, retry via IPC from main). */
+function BackupToastListener() {
+  const { showToast } = useToast();
+  const { t } = useTranslation();
+  const message = t("backup.autoBackupCreatedSuccess", "Automatic backup created successfully");
+
+  useEffect(() => {
+    const onCreated = () => showToast(message, "success");
+
+    const onCustomCreated = () => onCreated();
+    window.addEventListener("backup:created", onCustomCreated);
+
+    let unsubscribe: (() => void) | undefined;
+    if (typeof window !== "undefined" && window.api?.backup?.onAutoBackupSuccess) {
+      unsubscribe = window.api.backup.onAutoBackupSuccess(onCreated);
+    }
+    return () => {
+      window.removeEventListener("backup:created", onCustomCreated);
+      unsubscribe?.();
+    };
+  }, [showToast, message]);
+  return null;
+}
 
 interface ToastContextProps {
   showToast: (message: string, type?: ToastType) => void;
@@ -103,6 +128,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({
   return (
     <ToastContext.Provider value={{ showToast }}>
       {children}
+      <BackupToastListener />
       {/* Toasts rendered here for global access */}
       {toasts.length > 0 && (
         <div className="fixed z-[60] flex flex-col gap-3 p-4 top-4 right-4 max-w-sm w-full">
