@@ -75,6 +75,14 @@ export async function createClient(data: {
 }
 
 export async function deleteClient(id: string) {
+  // Delete related payments and sales first so no orphan rows remain.
+  // SQLite does not enforce FK cascades by default, so we do it explicitly.
+  await prisma.payment.deleteMany({ where: { clientId: id } });
+  await prisma.sale.deleteMany({ where: { clientId: id } });
+  await prisma.serviceAppointment.updateMany({
+    where: { clientId: id },
+    data: { clientId: null },
+  });
   return await prisma.client.delete({ where: { id } });
 }
 

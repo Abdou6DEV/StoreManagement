@@ -210,6 +210,11 @@ const CashierSession = memo(function CashierSession({
             });
             saleClientId = client.id;
             onUpdateSessionClient(activeSession, clientName.trim(), client.id);
+            window.api?.activityLog?.log({
+              username: user?.username ?? "unknown",
+              action: "activityLog.actions.clientAdded",
+              details: `During checkout:\nClient: ${client.name}`,
+            }).catch(() => {});
           }
         } catch (error) {
           // If findByName doesn't exist, create directly (fallback)
@@ -218,6 +223,11 @@ const CashierSession = memo(function CashierSession({
           });
           saleClientId = client.id;
           onUpdateSessionClient(activeSession, clientName.trim(), client.id);
+          window.api?.activityLog?.log({
+            username: user?.username ?? "unknown",
+            action: "activityLog.actions.clientAdded",
+            details: `During checkout:\nClient: ${client.name}`,
+          }).catch(() => {});
         }
       }
 
@@ -288,27 +298,35 @@ const CashierSession = memo(function CashierSession({
       resetPaymentSession();
       const discountNum = Number(discount) || 0;
       const totalAfterDiscount = total - discountNum;
-      const lines: string[] = [];
-      if (sale?.id) lines.push(`Sale ID: ${sale.id}`);
-      lines.push("Items:");
-      soldItems.forEach((i) => {
-        const lineTotal = i.price * i.qty;
-        lines.push(`  • ${i.name} x${i.qty} @ ${i.price} = ${lineTotal}`);
-      });
-      lines.push("");
-      lines.push(`Subtotal: ${total}`);
-      if (discountNum > 0) lines.push(`Discount: ${discountNum}`);
-      lines.push(`Total: ${totalAfterDiscount}`);
-      if (clientName.trim()) {
-        lines.push("");
-        lines.push(`Client: ${clientName.trim()}`);
-      }
-      if (paymentType === "credit") lines.push("Payment: Credit");
-      if (paymentType === "versement") lines.push(`Payment: Versement | Amount: ${paymentAmount}`);
-      const detailsStr = lines.join("\n");
+      const actionKey = sale
+        ? "activityLog.actions.saleRecorded"
+        : paymentType === "versement"
+          ? "activityLog.actions.versementRecorded"
+          : "activityLog.actions.creditRecorded";
+      const detailsStr = sale
+        ? `Sale ID: ${sale.id}`
+        : (() => {
+            const lines: string[] = [];
+            lines.push("Items:");
+            soldItems.forEach((i) => {
+              const lineTotal = i.price * i.qty;
+              lines.push(`  • ${i.name} x${i.qty} @ ${i.price} = ${lineTotal}`);
+            });
+            lines.push("");
+            lines.push(`Subtotal: ${total}`);
+            if (discountNum > 0) lines.push(`Discount: ${discountNum}`);
+            lines.push(`Total: ${totalAfterDiscount}`);
+            if (clientName.trim()) {
+              lines.push("");
+              lines.push(`Client: ${clientName.trim()}`);
+            }
+            if (paymentType === "credit") lines.push("Payment: Credit");
+            if (paymentType === "versement") lines.push(`Payment: Versement | Amount: ${paymentAmount}`);
+            return lines.join("\n");
+          })();
       window.api?.activityLog?.log({
         username: user?.username ?? "unknown",
-        action: sale ? "Recorded a sale" : paymentType === "versement" ? "Recorded a versement" : "Recorded a sale",
+        action: actionKey,
         details: detailsStr,
       }).catch(() => {});
       // Refresh products only when needed (e.g., when product browser opens)

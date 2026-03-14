@@ -124,10 +124,12 @@
   body {
     @apply bg-background text-foreground;
   }
-  /* Re-enable text selection for inputs and textareas */
+  /* Re-enable text selection for inputs, textareas, and elements that need copyable text */
   input,
   textarea,
-  [contenteditable="true"] {
+  [contenteditable="true"],
+  .select-text,
+  .select-text * {
     -webkit-user-select: text;
     -moz-user-select: text;
     -ms-user-select: text;

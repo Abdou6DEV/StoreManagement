@@ -14,7 +14,14 @@ export interface ActivityLogFilter {
   username?: string | null;
   dateFrom?: Date | string | null;
   dateTo?: Date | string | null;
+  /** @deprecated Use searchAction + searchDetails instead */
   search?: string | null;
+  /** Search in action only (and actionKeys for translated match) */
+  searchAction?: string | null;
+  /** Search in details and username */
+  searchDetails?: string | null;
+  /** Action keys whose translation matches searchAction (for i18n search) */
+  actionKeys?: string[] | null;
   limit?: number;
   offset?: number;
 }
@@ -76,13 +83,45 @@ export async function getActivityLogs(filter: ActivityLogFilter): Promise<Activi
   }
   if (Object.keys(dateRange).length > 0) where.createdAt = dateRange;
 
-  if (filter.search?.trim()) {
+  const andConditions: Record<string, unknown>[] = [];
+
+  if (filter.searchDetails?.trim()) {
+    const term = filter.searchDetails.trim();
+    andConditions.push({
+      OR: [
+        { details: { contains: term } },
+        { username: { contains: term } },
+      ],
+    });
+  }
+
+  const hasActionFilter =
+    filter.searchAction?.trim() ||
+    (Array.isArray(filter.actionKeys) && filter.actionKeys.length > 0);
+  if (hasActionFilter) {
+    const actionOr: Record<string, unknown>[] = [];
+    if (filter.searchAction?.trim()) {
+      actionOr.push({ action: { contains: filter.searchAction.trim() } });
+    }
+    if (Array.isArray(filter.actionKeys) && filter.actionKeys.length > 0) {
+      actionOr.push({ action: { in: filter.actionKeys } });
+    }
+    andConditions.push(actionOr.length === 1 ? actionOr[0] : { OR: actionOr });
+  }
+
+  if (filter.search?.trim() && !filter.searchAction && !filter.searchDetails) {
     const searchTerm = filter.search.trim();
-    where.OR = [
-      { username: { contains: searchTerm } },
-      { action: { contains: searchTerm } },
-      { details: { contains: searchTerm } },
-    ];
+    andConditions.push({
+      OR: [
+        { username: { contains: searchTerm } },
+        { action: { contains: searchTerm } },
+        { details: { contains: searchTerm } },
+      ],
+    });
+  }
+
+  if (andConditions.length > 0) {
+    where.AND = andConditions;
   }
 
   const [entries, total] = await Promise.all([

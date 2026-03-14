@@ -21,6 +21,8 @@ export interface ModalProps {
   // Header configuration
   title?: string;
   subtitle?: string;
+  /** Custom content rendered below the title (e.g. ID + copy button). Takes precedence over subtitle when both exist. */
+  subtitleContent?: React.ReactNode;
   icon?: React.ReactNode;
   showCloseButton?: boolean;
   headerClassName?: string;
@@ -64,6 +66,7 @@ function DialogModal({
   overlayClassName,
   title,
   subtitle,
+  subtitleContent,
   icon,
   showCloseButton = true,
   headerClassName,
@@ -79,6 +82,7 @@ function DialogModal({
 }: Omit<ModalProps, "type">) {
   const modalContentRef = React.useRef<HTMLDivElement>(null);
   const descriptionId = React.useId();
+  const hasDescription = Boolean(subtitle) || subtitleContent != null;
 
   const handleOpenChange = (newOpen: boolean) => {
     if (!newOpen && preventClose) return;
@@ -181,16 +185,11 @@ function DialogModal({
           onEscapeKeyDown={
             closeOnEscape ? undefined : (e) => e.preventDefault()
           }
-          aria-describedby={descriptionId}
+          aria-describedby={hasDescription ? descriptionId : undefined}
           {...props}
         >
-          {!subtitle && (
-            <DialogPrimitive.Description id={descriptionId} className="sr-only">
-              {title ?? "Dialog"}
-            </DialogPrimitive.Description>
-          )}
           {/* Header */}
-          {(title || subtitle || showCloseButton) && (
+          {(title || subtitle || subtitleContent || showCloseButton) && (
             <div className={cn("flex flex-col space-y-2", headerClassName)}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
@@ -205,11 +204,13 @@ function DialogModal({
                         {title}
                       </DialogPrimitive.Title>
                     )}
-                    {subtitle && (
+                    {subtitleContent != null ? (
+                      <div id={descriptionId} className="mt-0.5">{subtitleContent}</div>
+                    ) : subtitle ? (
                       <DialogPrimitive.Description id={descriptionId} className="text-sm text-muted-foreground mt-1">
                         {subtitle}
                       </DialogPrimitive.Description>
-                    )}
+                    ) : null}
                   </div>
                 </div>
                 {showCloseButton && (

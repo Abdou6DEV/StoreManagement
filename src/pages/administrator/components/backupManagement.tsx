@@ -116,7 +116,7 @@ export function BackupManagement() {
       if (result.success) {
         window.api?.activityLog?.log({
           username: user?.username ?? "unknown",
-          action: "Created manual backup",
+          action: "activityLog.actions.backupCreated",
           details: result.backupPath ?? null,
         }).catch(() => {});
         showToast("Backup created successfully", "success");
@@ -365,7 +365,7 @@ export function BackupManagement() {
       {/* Header */}
       <div>
         <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
-          <Database className="w-6 h-6" />
+          <Database className="w-6 h-6 text-orange-500" />
           {t("admin.backup.title", "Database Backup Management")}
         </h2>
         <p className="text-muted-foreground mt-1">

@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Button } from "../../../lib/components/button";
 import { Loader2, CreditCard, ChevronDown, ChevronUp } from "lucide-react";
 import { useToast } from "../../../lib/contexts/toastContext";
+import { useAuth } from "../../../lib/contexts/authContext";
 import {
   Command,
   CommandGroup,
@@ -46,6 +47,7 @@ export default function AddPaymentForm({
 }: AddPaymentFormProps) {
   const { t } = useTranslation();
   const { showToast } = useToast();
+  const { user } = useAuth();
   const [form, setForm] = useState(initialForm);
   const [loading, setLoading] = useState(false);
   const [clients, setClients] = useState<
@@ -203,6 +205,11 @@ export default function AddPaymentForm({
       setForm(initialForm);
       onPaymentAdded();
       onClientAdded?.(); // Refresh clients list to update totals
+      window.api?.activityLog?.log({
+        username: user?.username ?? "unknown",
+        action: "activityLog.actions.paymentAdded",
+        details: form.clientName ? `Client: ${form.clientName}, Credit amount: ${form.givenAmount}` : String(form.givenAmount),
+      }).catch(() => {});
       showToast(
         t("clients.paymentAddSuccess", "Payment added successfully"),
         "success",

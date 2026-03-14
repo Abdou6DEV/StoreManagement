@@ -14,6 +14,7 @@ import AddClientModal from "./addClientModal";
 import CalculatorModal from "./calculatorModal";
 import ClientDetailsModal from "../../../lib/components/clientDetailsModal";
 import { useToast } from "../../../lib/contexts/toastContext";
+import { useAuth } from "../../../lib/contexts/authContext";
 import { Tooltip } from "../../../lib/components/tooltip";
 import rendererLogger from "../../../lib/logger/rendererLogger";
 import { useDebounce } from "../../../lib/hooks/useDebounce";
@@ -57,6 +58,7 @@ export default function ActionButtons({
 }: Props) {
   const { t, i18n } = useTranslation();
   const { showToast } = useToast();
+  const { user } = useAuth();
   const [clientSuggestions, setClientSuggestions] = useState<
     ClientSuggestion[]
   >([]);
@@ -247,6 +249,16 @@ export default function ActionButtons({
       });
       setClientName(client.name);
       setClientId(client.id);
+      const lines = [`Client: ${client.name}`];
+      if (client.phone?.trim()) lines.push(`Phone: ${client.phone.trim()}`);
+      if (client.address?.trim()) lines.push(`Address: ${client.address.trim()}`);
+      if (client.notes?.trim()) lines.push(`Notes: ${client.notes.trim()}`);
+      lines.unshift("From cashier:");
+      window.api?.activityLog?.log({
+        username: user?.username ?? "unknown",
+        action: "activityLog.actions.clientAdded",
+        details: lines.join("\n"),
+      }).catch(() => {});
       // Safely refresh client suggestions with error handling
       window.api.database.clients
         .getAll()

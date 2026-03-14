@@ -105,6 +105,7 @@ export async function updatePurchase(
 }
 
 export async function deletePurchase(id: string) {
+  await prisma.purchaseItem.deleteMany({ where: { purchaseId: id } });
   return await prisma.purchase.delete({
     where: { id },
   });

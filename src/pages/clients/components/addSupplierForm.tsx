@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "../../../lib/components/button";
 import { Loader2, Users, ChevronDown, ChevronUp } from "lucide-react";
 import { useToast } from "../../../lib/contexts/toastContext";
+import { useAuth } from "../../../lib/contexts/authContext";
 
 interface AddSupplierFormProps {
   openPanel: "add" | "addPayment" | "addSupplier" | null;
@@ -27,8 +28,38 @@ export default function AddSupplierForm({
 }: AddSupplierFormProps) {
   const { t } = useTranslation();
   const { showToast } = useToast();
+  const { user } = useAuth();
   const [form, setForm] = useState(initialForm);
   const [loading, setLoading] = useState(false);
+  const nameRef = useRef<HTMLInputElement>(null);
+  const phoneRef = useRef<HTMLInputElement>(null);
+  const emailRef = useRef<HTMLInputElement>(null);
+  const addressRef = useRef<HTMLInputElement>(null);
+  const notesRef = useRef<HTMLInputElement>(null);
+  const submitButtonRef = useRef<HTMLButtonElement>(null);
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, currentField: string) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      switch (currentField) {
+        case "name":
+          phoneRef.current?.focus();
+          break;
+        case "phone":
+          emailRef.current?.focus();
+          break;
+        case "email":
+          addressRef.current?.focus();
+          break;
+        case "address":
+          notesRef.current?.focus();
+          break;
+        case "notes":
+          submitButtonRef.current?.click();
+          break;
+      }
+    }
+  };
 
   const handleFormChange = (key: keyof typeof form, value: string) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -47,6 +78,16 @@ export default function AddSupplierForm({
       });
       setForm(initialForm);
       onSupplierAdded();
+      const lines = [`Supplier: ${form.name}`];
+      if (form.phone?.trim()) lines.push(`Phone: ${form.phone.trim()}`);
+      if (form.email?.trim()) lines.push(`Email: ${form.email.trim()}`);
+      if (form.address?.trim()) lines.push(`Address: ${form.address.trim()}`);
+      if (form.notes?.trim()) lines.push(`Notes: ${form.notes.trim()}`);
+      window.api?.activityLog?.log({
+        username: user?.username ?? "unknown",
+        action: "activityLog.actions.supplierAdded",
+        details: lines.join("\n"),
+      }).catch(() => {});
       showToast(
         t("suppliers.addSuccess", "Supplier added successfully"),
         "success",
@@ -87,10 +128,12 @@ export default function AddSupplierForm({
             <Legend>
               <label>{t("suppliers.name", "Name")}</label>
               <input
+                ref={nameRef}
                 type="text"
                 placeholder={t("suppliers.name", "Name")}
                 value={form.name}
                 onChange={(e) => handleFormChange("name", e.target.value)}
+                onKeyDown={(e) => handleKeyDown(e, "name")}
                 className="w-full px-4 h-10 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-red-500/50 focus:border-red-500 transition-all"
                 required
               />
@@ -98,40 +141,48 @@ export default function AddSupplierForm({
             <Legend>
               <label>{t("suppliers.phone", "Phone")}</label>
               <input
+                ref={phoneRef}
                 type="text"
                 placeholder={t("suppliers.phone", "Phone")}
                 value={form.phone}
                 onChange={(e) => handleFormChange("phone", e.target.value)}
+                onKeyDown={(e) => handleKeyDown(e, "phone")}
                 className="w-full px-4 h-10 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-red-500/50 focus:border-red-500 transition-all"
               />
             </Legend>
             <Legend>
               <label>{t("suppliers.email", "Email")}</label>
               <input
+                ref={emailRef}
                 type="email"
                 placeholder={t("suppliers.email", "Email")}
                 value={form.email}
                 onChange={(e) => handleFormChange("email", e.target.value)}
+                onKeyDown={(e) => handleKeyDown(e, "email")}
                 className="w-full px-4 h-10 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-red-500/50 focus:border-red-500 transition-all"
               />
             </Legend>
             <Legend>
               <label>{t("suppliers.address", "Address")}</label>
               <input
+                ref={addressRef}
                 type="text"
                 placeholder={t("suppliers.address", "Address")}
                 value={form.address}
                 onChange={(e) => handleFormChange("address", e.target.value)}
+                onKeyDown={(e) => handleKeyDown(e, "address")}
                 className="w-full px-4 h-10 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-red-500/50 focus:border-red-500 transition-all"
               />
             </Legend>
             <Legend>
               <label>{t("suppliers.notes", "Notes")}</label>
               <input
+                ref={notesRef}
                 type="text"
                 placeholder={t("suppliers.notes", "Notes")}
                 value={form.notes}
                 onChange={(e) => handleFormChange("notes", e.target.value)}
+                onKeyDown={(e) => handleKeyDown(e, "notes")}
                 className="w-full px-4 h-10 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-red-500/50 focus:border-red-500 transition-all"
               />
             </Legend>
@@ -139,6 +190,7 @@ export default function AddSupplierForm({
           <hr />
           <div>
             <Button
+              ref={submitButtonRef}
               type="submit"
               disabled={loading}
               className="bg-red-600 hover:bg-red-700 text-white h-10"

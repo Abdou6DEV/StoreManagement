@@ -9,6 +9,7 @@ import SaleDetailsModal from "../../../../lib/components/saleDetailsModal";
 import SectionControls from "./sectionControls";
 import { ConfirmDialog } from "../../../../lib/components/confirmDialog";
 import { useToast } from "../../../../lib/contexts/toastContext";
+import { useAuth } from "../../../../lib/contexts/authContext";
 import { printReceiptDirectly } from "../../../cashier/components/receiptModal";
 
 interface SalesSectionProps {
@@ -168,6 +169,13 @@ export default function SalesSection({
     try {
       // Delete the sale using the API
       await window.api.database.sales.delete(saleToDelete.id);
+      const itemCount = saleToDelete.saleItems?.length ?? 0;
+      const clientName = saleToDelete.client?.name ? ` Client: ${saleToDelete.client.name}` : "";
+      window.api?.activityLog?.log({
+        username: user?.username ?? "unknown",
+        action: "activityLog.actions.saleDeleted",
+        details: `Sale ID: ${saleToDelete.id}. Items: ${itemCount}.${clientName}`,
+      }).catch(() => {});
       
       // Close the dialog
       setShowDeleteConfirm(false);

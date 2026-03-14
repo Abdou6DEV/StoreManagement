@@ -8,6 +8,7 @@ import PaymentStatus from "./paymentStatus";
 import PaymentActions from "./paymentActions";
 import { Tooltip } from "../../../lib/components/tooltip";
 import EditPaymentModal from "./editPaymentModal";
+import { useAuth } from "../../../lib/contexts/authContext";
 
 interface PaymentRowProps {
   payment: PaymentWithClient;
@@ -49,6 +50,7 @@ const PaymentRow: React.FC<PaymentRowProps> = ({
   isNewlyDueSoon = false,
 }) => {
   const { t, i18n } = useTranslation();
+  const { user } = useAuth();
   const isRTL = i18n.language === "ar";
   const [showEditModal, setShowEditModal] = useState(false);
   const [isCreditPaymentSale, setIsCreditPaymentSale] = useState(false);
@@ -70,18 +72,19 @@ const PaymentRow: React.FC<PaymentRowProps> = ({
 
   const handleEditPayment = async (newAmount: number) => {
     try {
-      // Update the payment amount by adding the new amount to the existing amount
-      const updatedAmount = payment.givenAmount + newAmount;
+      const oldAmount = payment.givenAmount ?? 0;
+      const updatedAmount = oldAmount + newAmount;
       await window.api.database.payments.updateAmount(payment.id, updatedAmount);
+      const typeLabel = payment.type === "VERSEMENT" ? "Versement" : "Credit";
+      const detailsStr = `Client: ${payment.client?.name ?? ""}\nType: ${typeLabel}\nAmount: ${oldAmount} → ${updatedAmount}`;
+      window.api?.activityLog?.log({
+        username: user?.username ?? "unknown",
+        action: "activityLog.actions.paymentAmountUpdated",
+        details: detailsStr,
+      }).catch(() => {});
       setShowEditModal(false);
-      // Refresh the payments table
-      if (onRefreshPayments) {
-        onRefreshPayments();
-      }
-      // Refresh clients list to update totals
-      if (onClientsRefresh) {
-        onClientsRefresh();
-      }
+      if (onRefreshPayments) onRefreshPayments();
+      if (onClientsRefresh) onClientsRefresh();
     } catch (error) {
       console.error("Failed to update payment:", error);
     }

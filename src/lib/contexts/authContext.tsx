@@ -133,6 +133,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, []);
 
   const logout = () => {
+    const username = user?.username;
+    if (username) {
+      window.api?.activityLog?.log({
+        username,
+        action: "activityLog.actions.loggedOut",
+        details: null,
+      }).catch(() => {});
+    }
     setIsAuthenticated(false);
     setUser(null);
     setUserRole(null);

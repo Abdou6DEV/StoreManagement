@@ -14,6 +14,7 @@ import {
   Save,
   RotateCcw,
   Trash2,
+  Copy,
 } from "lucide-react";
 import PaymentSummary from "./paymentSummary";
 import { useToast } from "../contexts/toastContext";
@@ -22,6 +23,7 @@ import rendererLogger from "../logger/rendererLogger";
 import { printReceiptDirectly } from "../../pages/cashier/components/receiptModal";
 import CategoryInfoModal from "../../pages/cashier/components/categoryInfoModal";
 import { useStock } from "../contexts/stockContext";
+import { useAuth } from "../contexts/authContext";
 
 interface SaleDetailsModalProps {
   sale: Sale | null;
@@ -43,6 +45,7 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
 }) => {
   const { t } = useTranslation();
   const { showToast } = useToast();
+  const { user } = useAuth();
   const { products: allProducts } = useStock();
   const [isEditing, setIsEditing] = useState(false);
   const [editedCart, setEditedCart] = useState<CartItem[]>([]);
@@ -382,7 +385,44 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
         })),
         discount: editedDiscount,
       });
-
+      // Build "what changed" description for the log
+      const changeLines: string[] = [];
+      const oldDiscount = displaySale.discount ?? 0;
+      if (editedDiscount !== oldDiscount) {
+        if (oldDiscount === 0) changeLines.push(`Discount added: ${editedDiscount}`);
+        else if (editedDiscount === 0) changeLines.push("Discount removed");
+        else changeLines.push(`Discount changed from ${oldDiscount} to ${editedDiscount}`);
+      }
+      const SEP = "\u0001";
+      const getItemKey = (name: string, price: number) => `${name}${SEP}${price}`;
+      const oldItems = displaySale.saleItems ?? [];
+      const oldMap = new Map<string, number>();
+      oldItems.forEach((s) => {
+        const name = s.product?.name ?? s.manualProduct?.name ?? s.service?.name ?? "?";
+        const key = getItemKey(name, s.price);
+        oldMap.set(key, (oldMap.get(key) ?? 0) + s.quantity);
+      });
+      const newMap = new Map<string, number>();
+      editedCart.forEach((c) => {
+        const key = getItemKey(c.name, c.price);
+        newMap.set(key, (newMap.get(key) ?? 0) + c.qty);
+      });
+      const allKeys = new Set([...oldMap.keys(), ...newMap.keys()]);
+      allKeys.forEach((key) => {
+        const name = key.split(SEP)[0] ?? "?";
+        const oldQty = oldMap.get(key) ?? 0;
+        const newQty = newMap.get(key) ?? 0;
+        if (newQty > oldQty) changeLines.push(`Added: ${name} x${newQty - oldQty}`);
+        else if (newQty < oldQty) changeLines.push(`Removed: ${name} x${oldQty - newQty}`);
+      });
+      const detailsStr = changeLines.length > 0
+        ? `Sale ID: ${displaySale.id}\n${changeLines.join("\n")}`
+        : `Sale ID: ${displaySale.id} (no item or discount changes)`;
+      window.api?.activityLog?.log({
+        username: user?.username ?? "unknown",
+        action: "activityLog.actions.saleUpdated",
+        details: detailsStr,
+      }).catch(() => {});
       showToast(
         t("cashier.saleUpdated", "Sale updated successfully"),
         "success",
@@ -404,6 +444,14 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
     setIsDeleting(true);
     try {
       await window.api.database.sales.delete(displaySale.id);
+      const saleItemsCount = displaySale.saleItems?.length ?? 0;
+      const saleClient = displaySale.client?.name ? ` Client: ${displaySale.client.name}` : "";
+      const saleDetailsStr = `Sale ID: ${displaySale.id}. Items: ${saleItemsCount}.${saleClient}`;
+      window.api?.activityLog?.log({
+        username: user?.username ?? "unknown",
+        action: "activityLog.actions.saleDeleted",
+        details: saleDetailsStr,
+      }).catch(() => {});
       showToast(
         t("cashier.saleDeleted", "Sale deleted successfully"),
         "success",
@@ -463,7 +511,22 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
                   ? t("cashier.editSale", "Edit Sale")
                   : t("cashier.saleDetails", "Sale Details")}
               </h2>
-              <p className="text-sm text-muted-foreground mt-0.5">{displaySale.id}</p>
+              <div className="flex items-center gap-2 mt-0.5">
+                <p className="text-sm text-muted-foreground">{displaySale.id}</p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(displaySale.id).then(
+                      () => showToast(t("common.copied", "Copied to clipboard"), "success"),
+                      () => showToast(t("common.copyFailed", "Failed to copy"), "error")
+                    );
+                  }}
+                  className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                  title={t("common.copy", "Copy")}
+                >
+                  <Copy className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
           </div>
 

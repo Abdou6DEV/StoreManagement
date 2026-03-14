@@ -9,7 +9,7 @@ import { Loader2, CreditCard, ArrowUpCircle, Users } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { useToast } from "../../../lib/contexts/toastContext";
-
+import { useAuth } from "../../../lib/contexts/authContext";
 import { useOverduePayments } from "../../../lib/contexts/overduePaymentsContext";
 
 import { useDueSoonPayments } from "../../../lib/contexts/dueSoonPaymentsContext";
@@ -100,9 +100,8 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
 }) => {
 
   const { t } = useTranslation();
-
+  const { user } = useAuth();
   const { showToast } = useToast();
-
   const { markOverdueCreditsAsSeen, markOverdueVersementsAsSeen } = useOverduePayments();
 
   const { markDueSoonCreditsAsSeen, markDueSoonVersementsAsSeen, dueSoonThresholdDays } = useDueSoonPayments();
@@ -597,38 +596,30 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
 
 
   const handleMarkAsPaid = async (paymentId: string) => {
-
+    const payment = payments.find((p) => p.id === paymentId);
+    const typeLabel = payment?.type === "VERSEMENT" ? "Versement" : "Credit";
+    const detailsStr = payment
+      ? `Client: ${payment.client?.name ?? ""}\nType: ${typeLabel}\nMarked as paid`
+      : `Payment ID: ${paymentId}`;
     try {
-
       await window.api.database.payments.markAsPaid(paymentId, new Date());
-
-
-
-      onRefresh(); // Refresh payments after marking as paid
-      onClientsRefresh?.(); // Refresh clients list to update totals
-
-
-
+      window.api?.activityLog?.log({
+        username: user?.username ?? "unknown",
+        action: "activityLog.actions.paymentMarkedAsPaid",
+        details: detailsStr,
+      }).catch(() => {});
+      onRefresh();
+      onClientsRefresh?.();
       showToast(
-
         t("clients.paymentMarkedAsPaid", "Payment marked as paid"),
-
         "success",
-
       );
-
     } catch (err) {
-
       showToast(
-
         t("clients.paymentMarkError", "Failed to mark payment as paid"),
-
         "error",
-
       );
-
     }
-
   };
 
   
@@ -656,38 +647,30 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
 
 
   const handleMarkAsUnpaid = async (paymentId: string) => {
-
+    const payment = payments.find((p) => p.id === paymentId);
+    const typeLabel = payment?.type === "VERSEMENT" ? "Versement" : "Credit";
+    const detailsStr = payment
+      ? `Client: ${payment.client?.name ?? ""}\nType: ${typeLabel}\nMarked as unpaid`
+      : `Payment ID: ${paymentId}`;
     try {
-
       await window.api.database.payments.markAsPaid(paymentId, null);
-
-
-
-      onRefresh(); // Refresh payments after marking as unpaid
-      onClientsRefresh?.(); // Refresh clients list to update totals
-
-
-
+      window.api?.activityLog?.log({
+        username: user?.username ?? "unknown",
+        action: "activityLog.actions.paymentMarkedAsUnpaid",
+        details: detailsStr,
+      }).catch(() => {});
+      onRefresh();
+      onClientsRefresh?.();
       showToast(
-
         t("clients.paymentMarkedAsUnpaid", "Payment marked as unpaid"),
-
         "success",
-
       );
-
     } catch (err) {
-
       showToast(
-
         t("clients.paymentUnmarkError", "Failed to mark payment as unpaid"),
-
         "error",
-
       );
-
     }
-
   };
 
 
@@ -733,46 +716,31 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
 
 
   const handleCancelVersement = async (paymentId: string) => {
-
+    const payment = payments.find((p) => p.id === paymentId);
+    const detailsStr = payment
+      ? `Client: ${payment.client?.name ?? ""}\nVersement cancelled`
+      : `Payment ID: ${paymentId}`;
     try {
-
       await window.api.database.payments.cancelVersement(paymentId);
-
+      window.api?.activityLog?.log({
+        username: user?.username ?? "unknown",
+        action: "activityLog.actions.versementCancelled",
+        details: detailsStr,
+      }).catch(() => {});
       onRefresh();
-      onClientsRefresh?.(); // Refresh clients list to update totals
-
-
-
+      onClientsRefresh?.();
       showToast(
-
-        t(
-
-          "clients.versementCancelled",
-
-          "Versement cancelled",
-
-        ),
-
+        t("clients.versementCancelled", "Versement cancelled"),
         "success",
-
       );
-
     } catch (error) {
-
       console.error("Failed to cancel versement:", error);
-
       showToast(
-
         t("clients.versementCancelError", "Failed to cancel versement"),
-
         "error",
-
       );
-
       throw error;
-
     }
-
   };
 
 
@@ -802,40 +770,31 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
 
 
   const handleUpdateAmount = async (paymentId: string) => {
-
+    const payment = payments.find((p) => p.id === paymentId);
+    const typeLabel = payment?.type === "VERSEMENT" ? "Versement" : "Credit";
+    const detailsStr = payment
+      ? `Client: ${payment.client?.name ?? ""}\nType: ${typeLabel}\nAmount: ${payment.givenAmount ?? 0} → ${editAmount}`
+      : `Payment ID: ${paymentId}\nAmount: ${editAmount}`;
     try {
-
       await window.api.database.payments.updateAmount(paymentId, editAmount);
-
+      window.api?.activityLog?.log({
+        username: user?.username ?? "unknown",
+        action: "activityLog.actions.paymentAmountUpdated",
+        details: detailsStr,
+      }).catch(() => {});
       setEditingPayment(null);
-
-
-
-      onRefresh(); // Refresh payments after updating amount
-      onClientsRefresh?.(); // Refresh clients list to update totals
-
-
-
+      onRefresh();
+      onClientsRefresh?.();
       showToast(
-
         t("clients.paymentAmountUpdated", "Payment amount updated"),
-
         "success",
-
       );
-
     } catch (err) {
-
       showToast(
-
         t("clients.paymentAmountError", "Failed to update payment amount"),
-
         "error",
-
       );
-
     }
-
   };
 
 

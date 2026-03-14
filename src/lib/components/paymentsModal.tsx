@@ -4,6 +4,7 @@ import { Modal } from "./modal";
 import { Loader2, CreditCard } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useToast } from "../contexts/toastContext";
+import { useAuth } from "../contexts/authContext";
 import { ClientSuggestion, Sale, CartItem } from "../../types";
 import { ConfirmDialog } from "./confirmDialog";
 import PaymentTabs from "./paymentsModal/paymentTabs";
@@ -22,6 +23,7 @@ type TabType = "summary" | "credits" | "versements";
 
 const PaymentsModal: React.FC<PaymentsModalProps> = ({ client, onClose }) => {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const { showToast } = useToast();
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -234,15 +236,21 @@ const PaymentsModal: React.FC<PaymentsModalProps> = ({ client, onClose }) => {
   };
 
   const handleMarkAsUnpaid = async (paymentId: string) => {
+    const payment = payments.find((p) => p.id === paymentId);
+    const typeLabel = payment?.type === "VERSEMENT" ? "Versement" : "Credit";
+    const detailsStr = `Client: ${client.name}\nType: ${typeLabel}\nMarked as unpaid`;
     try {
       await window.api.database.payments.markAsPaid(paymentId, null);
-
+      window.api?.activityLog?.log({
+        username: user?.username ?? "unknown",
+        action: "activityLog.actions.paymentMarkedAsUnpaid",
+        details: detailsStr,
+      }).catch(() => {});
       setPayments((prevPayments) =>
         prevPayments.map((payment) =>
           payment.id === paymentId ? { ...payment, paidDate: null } : payment,
         ),
       );
-
       showToast(
         t("clients.paymentMarkedAsUnpaid", "Payment marked as unpaid"),
         "success",
@@ -267,10 +275,18 @@ const PaymentsModal: React.FC<PaymentsModalProps> = ({ client, onClose }) => {
   };
 
   const handleUpdateAmount = async (paymentId: string) => {
+    const payment = payments.find((p) => p.id === paymentId);
+    const typeLabel = payment?.type === "VERSEMENT" ? "Versement" : "Credit";
+    const oldAmount = payment?.givenAmount ?? 0;
+    const detailsStr = `Client: ${client.name}\nType: ${typeLabel}\nAmount: ${oldAmount} → ${editAmount}`;
     try {
       await window.api.database.payments.updateAmount(paymentId, editAmount);
+      window.api?.activityLog?.log({
+        username: user?.username ?? "unknown",
+        action: "activityLog.actions.paymentAmountUpdated",
+        details: detailsStr,
+      }).catch(() => {});
       setEditingPayment(null);
-
       setPayments((prevPayments) =>
         prevPayments.map((payment) =>
           payment.id === paymentId
@@ -278,7 +294,6 @@ const PaymentsModal: React.FC<PaymentsModalProps> = ({ client, onClose }) => {
             : payment,
         ),
       );
-
       showToast(
         t("clients.paymentAmountUpdated", "Payment amount updated"),
         "success",

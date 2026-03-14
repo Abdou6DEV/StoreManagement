@@ -416,6 +416,9 @@ export type ActivityLogAPI = {
     dateFrom?: string | null;
     dateTo?: string | null;
     search?: string | null;
+    searchAction?: string | null;
+    searchDetails?: string | null;
+    actionKeys?: string[] | null;
     limit?: number;
     offset?: number;
   }) => Promise<{ entries: Array<{ id: string; username: string; action: string; details: string | null; createdAt: Date }>; total: number }>;

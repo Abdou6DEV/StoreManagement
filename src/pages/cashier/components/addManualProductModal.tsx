@@ -6,6 +6,7 @@ import { Plus } from "lucide-react";
 import type { CartItem } from "../../../types";
 import type { ManualProduct } from "@prisma/client";
 import { useToast } from "../../../lib/contexts/toastContext";
+import { useAuth } from "../../../lib/contexts/authContext";
 
 // Use ManualProduct directly since it already has costPrice
 type ManualProductWithCost = ManualProduct & {
@@ -42,6 +43,7 @@ export default function AddManualProductModal({
 }: AddManualProductModalProps) {
   const { t } = useTranslation();
   const { showToast } = useToast();
+  const { user } = useAuth();
   const [manualProduct, setManualProduct] = useState({
     name: "",
     type: "",
@@ -363,12 +365,26 @@ export default function AddManualProductModal({
               await window.api.database.categories.ensure(manualProduct.type.trim());
               
               // Update existing product with new stock
+              const newQty = existingProduct.quantity + Number(stockQuantity);
+              const newBought = safePrice(manualProduct.costPrice);
+              const newSelling = safePrice(manualProduct.sold);
               await window.api.database.products.update(existingProduct.id, {
-                quantity: existingProduct.quantity + Number(stockQuantity),
-                // Optionally update prices if they're different
-                boughtPrice: safePrice(manualProduct.costPrice),
-                sellingPrice: safePrice(manualProduct.sold),
-              });
+                quantity: newQty,
+                boughtPrice: newBought,
+                sellingPrice: newSelling,
+              }, user?.username ?? "unknown", "activityLog.actions.quantityAdded");
+              const changeLines: string[] = [];
+              if (newQty !== existingProduct.quantity) changeLines.push(`Quantity: ${existingProduct.quantity} → ${newQty}`);
+              if (newBought !== (existingProduct.boughtPrice ?? 0)) changeLines.push(`Bought price: ${existingProduct.boughtPrice ?? 0} → ${newBought}`);
+              if (newSelling !== existingProduct.sellingPrice) changeLines.push(`Selling price: ${existingProduct.sellingPrice} → ${newSelling}`);
+              const detailsStr = changeLines.length > 0
+                ? `Product: ${manualProduct.name.trim()}\n${changeLines.join("\n")}`
+                : `Product: ${manualProduct.name.trim()}`;
+              window.api?.activityLog?.log({
+                username: user?.username ?? "unknown",
+                action: "activityLog.actions.productUpdated",
+                details: detailsStr,
+              }).catch(() => {});
               
               showToast(
                 t("cashier.stockUpdated", `Added ${stockQuantity} units to existing product "${manualProduct.name}"`),
@@ -388,15 +404,17 @@ export default function AddManualProductModal({
             await window.api.database.categories.ensure(manualProduct.type.trim());
             
             await window.api.database.products.add({
-              name: manualProduct.name.trim(),
-              categoryName: manualProduct.type.trim(),
-              quantity: Number(stockQuantity),
-              boughtPrice: safePrice(manualProduct.costPrice),
-              sellingPrice: safePrice(manualProduct.sold),
-              codebar: manualProduct.barcode.trim() || null, // Use entered barcode or null
-              photo: null, // Empty photo for now
+              product: {
+                name: manualProduct.name.trim(),
+                categoryName: manualProduct.type.trim(),
+                quantity: Number(stockQuantity),
+                boughtPrice: safePrice(manualProduct.costPrice),
+                sellingPrice: safePrice(manualProduct.sold),
+                codebar: manualProduct.barcode.trim() || null,
+                photo: null,
+              },
+              username: user?.username ?? "unknown",
             });
-            
             showToast(
               t("cashier.productAddedToStock", "Product added to stock successfully"),
               "success"

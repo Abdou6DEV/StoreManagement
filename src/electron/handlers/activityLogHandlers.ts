@@ -23,6 +23,7 @@ export function setupActivityLogHandlers() {
         });
       } catch (error) {
         console.error("activityLog:log error", error);
+        throw error;
       }
     }
   );
@@ -36,6 +37,9 @@ export function setupActivityLogHandlers() {
         dateFrom?: string | null;
         dateTo?: string | null;
         search?: string | null;
+        searchAction?: string | null;
+        searchDetails?: string | null;
+        actionKeys?: string[] | null;
         limit?: number;
         offset?: number;
       }
@@ -46,6 +50,9 @@ export function setupActivityLogHandlers() {
           dateFrom: filter.dateFrom,
           dateTo: filter.dateTo,
           search: filter.search,
+          searchAction: filter.searchAction,
+          searchDetails: filter.searchDetails,
+          actionKeys: filter.actionKeys,
           limit: filter.limit ?? 100,
           offset: filter.offset ?? 0,
         });

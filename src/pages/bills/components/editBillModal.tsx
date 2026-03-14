@@ -5,6 +5,7 @@ import { Button } from "../../../lib/components/button";
 import { Modal } from "../../../lib/components/modal";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../lib/components/select";
 import { useToast } from "../../../lib/contexts/toastContext";
+import { useAuth } from "../../../lib/contexts/authContext";
 
 interface Bill {
   id: string;
@@ -92,6 +93,7 @@ export default function EditBillModal({
 }: EditBillModalProps) {
   const { t } = useTranslation();
   const { showToast } = useToast();
+  const { user } = useAuth();
   const [form, setForm] = useState({
     title: "",
     type: "",
@@ -141,6 +143,20 @@ export default function EditBillModal({
       };
 
       await window.api.database.bills.update(bill.id, billData);
+      const changeLines: string[] = [];
+      if (billData.title !== (bill.title ?? "")) changeLines.push(`Title: ${bill.title ?? ""} → ${billData.title}`);
+      if (billData.type !== (bill.type ?? "")) changeLines.push(`Type: ${bill.type ?? ""} → ${billData.type}`);
+      if (billData.duration !== (bill.duration ?? "")) changeLines.push(`Duration: ${bill.duration ?? ""} → ${billData.duration}`);
+      if ((billData.description ?? "") !== (bill.description ?? "")) changeLines.push(`Description: ${bill.description ?? ""} → ${billData.description ?? ""}`);
+      if ((billData.notes ?? "") !== (bill.notes ?? "")) changeLines.push(`Notes: ${bill.notes ?? ""} → ${billData.notes ?? ""}`);
+      const detailsStr = changeLines.length > 0
+        ? `Bill: ${billData.title}\n${changeLines.join("\n")}`
+        : `Bill: ${billData.title}`;
+      window.api?.activityLog?.log({
+        username: user?.username ?? "unknown",
+        action: "activityLog.actions.billUpdated",
+        details: detailsStr,
+      }).catch(() => {});
       onBillUpdated();
       showToast(t("bills.billUpdatedSuccessfully", "Bill updated successfully"), "success");
       onClose();

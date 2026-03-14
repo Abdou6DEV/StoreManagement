@@ -30,13 +30,23 @@ export function LicenseProvider({ children }: { children: React.ReactNode }) {
           return;
         }
         
-        // License invalid, clear it
-        localStorage.removeItem("storeManagementLicense");
+        // Only clear when we got a successful response that said the key is invalid.
+        // Do not clear on IPC/network errors (result.success === false) so we don't
+        // wipe the license on transient failures.
+        if (result.success && result.isValid === false) {
+          localStorage.removeItem("storeManagementLicense");
+        }
       }
       
       setIsLicenseValid(false);
     } catch (error) {
       setIsLicenseValid(false);
+      // Clear only corrupted stored data (JSON parse error), not on IPC/validation failures
+      if (error instanceof SyntaxError) {
+        try {
+          localStorage.removeItem("storeManagementLicense");
+        } catch (_) {}
+      }
     } finally {
       setIsLoading(false);
     }

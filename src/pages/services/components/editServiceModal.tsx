@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from "react";
-import { Wrench, Loader2, Printer } from "lucide-react";
+import React, { useState, useEffect, useRef } from "react";
+import { Wrench, Loader2, Printer, Copy } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "../../../lib/components/button";
 import { Modal } from "../../../lib/components/modal";
 import { DatePicker } from "../../../lib/components/datePicker";
 import { useToast } from "../../../lib/contexts/toastContext";
+import { useAuth } from "../../../lib/contexts/authContext";
 import { Tooltip } from "../../../lib/components/tooltip";
 import { generateReceiptBarcode } from "../../../lib/utils/barcodeVisual";
 import { printServiceLabel } from "../utils/serviceLabelPrintUtils";
@@ -46,6 +47,7 @@ export default function EditServiceModal({
 }: EditServiceModalProps) {
   const { t } = useTranslation();
   const { showToast } = useToast();
+  const { user } = useAuth();
   const [form, setForm] = useState({
     name: "",
     serviceType: "",
@@ -59,6 +61,7 @@ export default function EditServiceModal({
   const [isPaid, setIsPaid] = useState(false);
   const [showNoReceiptPrinterModal, setShowNoReceiptPrinterModal] = useState(false);
   const [showNoLabelPrinterModal, setShowNoLabelPrinterModal] = useState(false);
+  const initialIsPaidRef = useRef<boolean | null>(null);
 
   useEffect(() => {
     if (service) {
@@ -76,10 +79,18 @@ export default function EditServiceModal({
         dueDate: dueDateString,
         notes: service.notes || "",
       });
-      // Load payment status
+      // Load payment status and store initial for change detection
       window.api.database.serviceAppointments.getPaymentStatus(service.id)
-        .then(setIsPaid)
-        .catch(() => setIsPaid(false));
+        .then((status) => {
+          initialIsPaidRef.current = status;
+          setIsPaid(status);
+        })
+        .catch(() => {
+          initialIsPaidRef.current = false;
+          setIsPaid(false);
+        });
+    } else {
+      initialIsPaidRef.current = null;
     }
   }, [service]);
 
@@ -110,6 +121,25 @@ export default function EditServiceModal({
       await window.api.database.serviceAppointments.update(service.id, serviceData);
       // Update payment status
       await window.api.database.serviceAppointments.updatePaymentStatus(service.id, isPaid);
+      const changeLines: string[] = [];
+      if (serviceData.name !== (service.name ?? "")) changeLines.push(`Name: ${service.name ?? ""} → ${serviceData.name}`);
+      if (serviceData.serviceType !== (service.serviceType ?? "")) changeLines.push(`Service type: ${service.serviceType ?? ""} → ${serviceData.serviceType}`);
+      if ((serviceData.description ?? "") !== (service.description ?? "")) changeLines.push(`Description: ${service.description ?? ""} → ${serviceData.description ?? ""}`);
+      if (serviceData.costPrice !== (service.costPrice ?? 0)) changeLines.push(`Cost price: ${service.costPrice ?? 0} → ${serviceData.costPrice}`);
+      if (serviceData.servicePrice !== (service.servicePrice ?? 0)) changeLines.push(`Service price: ${service.servicePrice ?? 0} → ${serviceData.servicePrice}`);
+      if (form.dueDate !== (service.dueDate ? new Date(service.dueDate).toISOString().split("T")[0] : "")) changeLines.push(`Due date: ${service.dueDate ?? ""} → ${form.dueDate}`);
+      if ((serviceData.notes ?? "") !== (service.notes ?? "")) changeLines.push(`Notes: ${service.notes ?? ""} → ${serviceData.notes ?? ""}`);
+      if (initialIsPaidRef.current !== null && isPaid !== initialIsPaidRef.current) {
+        changeLines.push(`Payment: ${initialIsPaidRef.current ? "Paid" : "Unpaid"} → ${isPaid ? "Paid" : "Unpaid"}`);
+      }
+      const detailsStr = changeLines.length > 0
+        ? `Service ID: ${service.id}\nService: ${serviceData.name}\n${changeLines.join("\n")}`
+        : `Service ID: ${service.id}\nService: ${serviceData.name}`;
+      window.api?.activityLog?.log({
+        username: user?.username ?? "unknown",
+        action: "activityLog.actions.serviceUpdated",
+        details: detailsStr,
+      }).catch(() => {});
       onServiceUpdated();
       showToast(t("services.serviceUpdatedSuccessfully", "Service updated successfully"), "success");
       onClose();
@@ -523,6 +553,24 @@ export default function EditServiceModal({
       onOpenChange={(open) => !open && onClose()} 
       size="xl"
       title={t("services.editService", "Edit Service")}
+      subtitleContent={service ? (
+        <div className="flex items-center gap-2">
+          <p className="text-sm text-muted-foreground">{service.id}</p>
+          <button
+            type="button"
+            onClick={() => {
+              navigator.clipboard.writeText(service.id).then(
+                () => showToast(t("common.copied", "Copied to clipboard"), "success"),
+                () => showToast(t("common.copyFailed", "Failed to copy"), "error")
+              );
+            }}
+            className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+            title={t("common.copy", "Copy")}
+          >
+            <Copy className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      ) : undefined}
       icon={<Wrench className="w-5 h-5 text-cyan-600" />}
       showCloseButton={true}
     >

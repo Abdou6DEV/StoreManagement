@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { Wrench, BarChart3, FileText } from "lucide-react";
 import { Button } from "../../lib/components/button";
 import { Tooltip } from "../../lib/components/tooltip";
 import { useTranslation } from "react-i18next";
+import { useAuth } from "../../lib/contexts/authContext";
 import { useOverdueServices } from "../../lib/contexts/overdueServicesContext";
 import { useDueSoonServices } from "../../lib/contexts/dueSoonServicesContext";
 import ServicesTable from "./components/servicesTable";
@@ -35,9 +36,11 @@ interface ServiceAppointment {
 export default function ServicesPage() {
   const location = useLocation();
   const { t } = useTranslation();
+  const { user } = useAuth();
   const { unseenOverdueServicesCount, markOverdueServicesAsSeen } = useOverdueServices();
   const { unseenDueSoonServicesCount, markDueSoonServicesAsSeen, dueSoonThresholdDays } = useDueSoonServices();
   const notificationAction = (location.state as { notificationAction?: string } | null)?.notificationAction;
+  const appliedInitialSearchRef = useRef(false);
   const [openPanel, setOpenPanel] = useState<"add" | null>(null);
   const [showServiceTypes, setShowServiceTypes] = useState(false);
   const [services, setServices] = useState<ServiceAppointment[]>([]);
@@ -112,14 +115,21 @@ export default function ServicesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Only run once on mount
 
-  // Handle notification actions
+  // Handle notification actions and initial search (e.g. from activity log service ID click)
   useEffect(() => {
-    if (notificationAction === 'overdue') {
+    const state = location.state as { notificationAction?: string; search?: string } | null;
+    if (state?.search != null && state.search.trim() !== "" && !appliedInitialSearchRef.current) {
+      appliedInitialSearchRef.current = true;
+      setFilters((prev) => ({ ...prev, search: state.search.trim() }));
+      setCurrentPage(1);
+      window.history.replaceState({ ...state, search: undefined }, "");
+    }
+    if (state?.notificationAction === 'overdue') {
       setFilters((prev) => ({ ...prev, dateFilter: 'overdue' }));
-    } else if (notificationAction === 'dueSoon') {
+    } else if (state?.notificationAction === 'dueSoon') {
       setFilters((prev) => ({ ...prev, dateFilter: 'dueSoon' }));
     }
-  }, [notificationAction]);
+  }, [location.state]);
 
   // Load services and service types
   useEffect(() => {
@@ -136,10 +146,12 @@ export default function ServicesPage() {
       let filteredServices = allServices;
       
       if (filters.search) {
+        const searchLower = filters.search.toLowerCase().trim();
         filteredServices = filteredServices.filter((service: ServiceAppointment) =>
-          service.name.toLowerCase().includes(filters.search.toLowerCase()) ||
-          service.serviceType.toLowerCase().includes(filters.search.toLowerCase()) ||
-          (service.client && service.client.name.toLowerCase().includes(filters.search.toLowerCase()))
+          service.id.toLowerCase().includes(searchLower) ||
+          service.name.toLowerCase().includes(searchLower) ||
+          service.serviceType.toLowerCase().includes(searchLower) ||
+          (service.client && service.client.name.toLowerCase().includes(searchLower))
         );
       }
       
@@ -449,7 +461,15 @@ export default function ServicesPage() {
   const handleDeleteService = async (serviceId: string) => {
     try {
       setDeleteLoading(serviceId);
+      const service = services.find((s) => s.id === serviceId);
+      const serviceName = service ? `${service.name} (${service.serviceType})` : serviceId;
+      const clientName = service?.client?.name ?? "—";
       await window.api.database.serviceAppointments.delete(serviceId);
+      window.api?.activityLog?.log({
+        username: user?.username ?? "unknown",
+        action: "activityLog.actions.serviceDeleted",
+        details: `Service ID: ${serviceId}\nService: ${serviceName}\nClient: ${clientName}`,
+      }).catch(() => {});
       loadServices();
     } catch (error) {
       console.error("Error deleting service:", error);

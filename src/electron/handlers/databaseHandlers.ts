@@ -1,4 +1,5 @@
 import { ipcMain } from "electron";
+import { createActivityLog } from "../../lib/database/activityLogs";
 import {
   getAllCategories,
   ensureCategory,
@@ -122,12 +123,47 @@ export function setupDatabaseHandlers() {
     return await getAllProducts();
   });
 
-  ipcMain.handle("db:products:add", async (_event, product) => {
-    return await addProduct(product);
+  ipcMain.handle("db:products:add", async (_event, payload) => {
+    const product = payload?.product != null ? payload.product : payload;
+    const username = typeof payload?.username === "string" ? payload.username : "unknown";
+    const created = await addProduct(product);
+    const lines = [
+      `Product: ${created.name}`,
+      `Category: ${created.categoryName}`,
+      `Quantity: ${created.quantity}`,
+      `Bought price: ${created.boughtPrice}`,
+      `Selling price: ${created.sellingPrice}`,
+    ];
+    if (created.codebar?.trim()) lines.push(`Barcode: ${created.codebar.trim()}`);
+    try {
+      await createActivityLog({
+        username,
+        action: "activityLog.actions.productAdded",
+        details: lines.join("\n"),
+      });
+      console.log("[ActivityLog] Product added:", created.name);
+    } catch (e) {
+      console.error("[ActivityLog] Product added log failed", e);
+    }
+    return created;
   });
 
-  ipcMain.handle("db:products:update", async (_event, { id, data }) => {
-    return await updateProduct(id, data);
+  ipcMain.handle("db:products:update", async (_event, payload) => {
+    const { id, data, username, logAction } = payload ?? {};
+    const updated = await updateProduct(id, data);
+    const logUsername = typeof username === "string" ? username : "unknown";
+    const action = logAction === "activityLog.actions.quantityAdded"
+      ? "activityLog.actions.quantityAdded"
+      : "activityLog.actions.productUpdated";
+    const details = action === "activityLog.actions.quantityAdded"
+      ? `Product: ${updated.name}\nQuantity: ${updated.quantity}\nSelling price: ${updated.sellingPrice}`
+      : `Product: ${updated.name}\nQuantity: ${updated.quantity}\nSelling price: ${updated.sellingPrice}`;
+    try {
+      await createActivityLog({ username: logUsername, action, details });
+    } catch (e) {
+      console.error("[ActivityLog] Product update log failed", e);
+    }
+    return updated;
   });
 
   ipcMain.handle("db:products:delete", async (_event, id: string) => {
@@ -143,30 +179,61 @@ export function setupDatabaseHandlers() {
 
   ipcMain.handle(
     "db:products:createWithPurchase",
-    async (_event, { productData, purchaseData }) => {
-      return await createProductWithPurchase(productData, purchaseData);
+    async (_event, payload) => {
+      const { productData, purchaseData, username } = payload ?? {};
+      const created = await createProductWithPurchase(productData, purchaseData);
+      const logUsername = typeof username === "string" ? username : "unknown";
+      const lines = [
+        `Product: ${created.name}`,
+        `Category: ${created.categoryName}`,
+        `Quantity: ${created.quantity}`,
+        `Bought price: ${created.boughtPrice}`,
+        `Selling price: ${created.sellingPrice}`,
+      ];
+      if (created.codebar?.trim()) lines.push(`Barcode: ${created.codebar.trim()}`);
+      try {
+        await createActivityLog({
+          username: logUsername,
+          action: "activityLog.actions.productAdded",
+          details: lines.join("\n"),
+        });
+        console.log("[ActivityLog] Product added (with purchase):", created.name);
+      } catch (e) {
+        console.error("[ActivityLog] Product added log failed", e);
+      }
+      return created;
     }
   );
 
   ipcMain.handle(
     "db:products:updateWithPurchase",
-    async (
-      _event,
-      {
+    async (_event, payload) => {
+      const {
         productId,
         additionalQuantity,
         purchaseData,
         updateBoughtPrice,
         newSellingPrice,
-      }
-    ) => {
-      return await updateProductWithPurchase(
+        username,
+      } = payload ?? {};
+      const updated = await updateProductWithPurchase(
         productId,
         additionalQuantity,
         purchaseData,
         updateBoughtPrice || false,
         newSellingPrice
       );
+      const logUsername = typeof username === "string" ? username : "unknown";
+      try {
+        await createActivityLog({
+          username: logUsername,
+          action: "activityLog.actions.quantityAdded",
+          details: `Product: ${updated.name}\nQuantity added: ${additionalQuantity}\nNew total quantity: ${updated.quantity}`,
+        });
+      } catch (e) {
+        console.error("[ActivityLog] Quantity added log failed", e);
+      }
+      return updated;
     }
   );
 

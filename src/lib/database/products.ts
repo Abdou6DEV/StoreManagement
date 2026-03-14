@@ -85,6 +85,8 @@ export async function addProduct(product: Product) {
 }
 
 export async function deleteProduct(id: string) {
+  await prisma.purchaseItem.deleteMany({ where: { productId: id } });
+  await prisma.saleItem.deleteMany({ where: { productId: id } });
   return await prisma.product.delete({
     where: { id },
   });

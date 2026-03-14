@@ -6,6 +6,7 @@ import { Save, X, Loader2, Package, QrCode, Eye, Printer } from "lucide-react";
 import { useStock } from "../../../lib/contexts/stockContext";
 import { ImageUpload } from "../../../lib/components/imageUpload";
 import { useToast } from "../../../lib/contexts/toastContext";
+import { useAuth } from "../../../lib/contexts/authContext";
 import { BarcodePreviewModal } from "./addStockForm/BarcodePreviewModal";
 import { printBarcodeLabel } from "./addStockForm/barcodePrintUtils";
 import { Tooltip } from "../../../lib/components/tooltip";
@@ -18,6 +19,7 @@ export default function EditStockForm({
   setProductID: React.Dispatch<React.SetStateAction<string | null>>;
 }) {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const { products, refetchProducts } = useStock();
   const { showToast } = useToast();
 
@@ -115,7 +117,22 @@ export default function EditStockForm({
         sellingPrice: Number(sellingPrice),
         codebar,
         photo,
-      });
+      }, user?.username ?? "unknown");
+      const changeLines: string[] = [];
+      if (String(name) !== String(product.name)) changeLines.push(`Name: ${product.name ?? ""} → ${name ?? ""}`);
+      if (String(categoryName) !== String(product.categoryName ?? "")) changeLines.push(`Category: ${product.categoryName ?? ""} → ${categoryName ?? ""}`);
+      if (Number(quantity) !== Number(product.quantity)) changeLines.push(`Quantity: ${product.quantity} → ${quantity}`);
+      if (Number(boughtPrice) !== Number(product.boughtPrice ?? 0)) changeLines.push(`Bought price: ${product.boughtPrice ?? 0} → ${boughtPrice}`);
+      if (Number(sellingPrice) !== Number(product.sellingPrice)) changeLines.push(`Selling price: ${product.sellingPrice} → ${sellingPrice}`);
+      if ((codebar ?? "") !== (product.codebar ?? "")) changeLines.push(`Barcode: ${product.codebar ?? ""} → ${codebar ?? ""}`);
+      const detailsStr = changeLines.length > 0
+        ? `Product: ${name}\n${changeLines.join("\n")}`
+        : `Product: ${name}`;
+      window.api?.activityLog?.log({
+        username: user?.username ?? "unknown",
+        action: "activityLog.actions.productUpdated",
+        details: detailsStr,
+      }).catch(() => {});
       showToast(
         t("stock.toastUpdateSuccess", "Product updated successfully!"),
         "success",

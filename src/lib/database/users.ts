@@ -306,6 +306,7 @@ export const users = {
 
   async delete(id: string): Promise<void> {
     await prismaPromise; // Ensure Prisma is ready
+    await prisma.userPermissions.deleteMany({ where: { userId: id } });
     await prisma.user.delete({
       where: { id },
     });

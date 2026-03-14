@@ -9,6 +9,7 @@ import { ImageUpload } from "../../../../lib/components/imageUpload";
 // Barcode generation is now handled by the database layer
 import type { AddStockFormState } from "../../../../types";
 import { useToast } from "../../../../lib/contexts/toastContext";
+import { useAuth } from "../../../../lib/contexts/authContext";
 import rendererLogger from "../../../../lib/logger/rendererLogger";
 import { PriceConfirmationDialog } from "../priceConfirmationDialog";
 import { SellingPriceWarningDialog } from "../sellingPriceWarningDialog";
@@ -87,6 +88,7 @@ export default function AddStockForm({
   setOpenPanel: React.Dispatch<React.SetStateAction<"add" | null>>;
 }) {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const { products, categories, refetchCategories, refetchProducts } =
     useStock();
   const { showToast } = useToast();
@@ -425,6 +427,11 @@ export default function AddStockForm({
           const newSeller = await window.api.database.sellers.create({
             name: sellerName,
           });
+          window.api?.activityLog?.log({
+            username: user?.username ?? "unknown",
+            action: "activityLog.actions.supplierAdded",
+            details: `From stock form:\nSupplier: ${sellerName}`,
+          }).catch(() => {});
 
           // Add to local sellers list
           setSellers((prev) => [...prev, newSeller]);
@@ -655,6 +662,7 @@ export default function AddStockForm({
                       purchaseData: purchaseData,
                       updateBoughtPrice: true,
                       newSellingPrice: safePrice(form.sellingPrice),
+                      username: user?.username ?? "unknown",
                     });
                     showToast(
                       t(
@@ -671,6 +679,7 @@ export default function AddStockForm({
                       purchaseData: purchaseData,
                       updateBoughtPrice: false,
                       newSellingPrice: safePrice(form.sellingPrice),
+                      username: user?.username ?? "unknown",
                     });
                     showToast(
                       t(
@@ -693,7 +702,7 @@ export default function AddStockForm({
                       quantity: existingProduct.quantity + quantity,
                       boughtPrice: weightedPrice,
                       sellingPrice: safePrice(form.sellingPrice),
-                    });
+                    }, user?.username ?? "unknown", "activityLog.actions.quantityAdded");
                     showToast(
                       t(
                         "stock.inventoryUpdatedSuccess",
@@ -706,7 +715,7 @@ export default function AddStockForm({
                       quantity: existingProduct.quantity + quantity,
                       boughtPrice: boughtPrice,
                       sellingPrice: safePrice(form.sellingPrice),
-                    });
+                    }, user?.username ?? "unknown", "activityLog.actions.quantityAdded");
                     showToast(
                       t(
                         "stock.inventoryUpdatedSuccess",
@@ -785,6 +794,7 @@ export default function AddStockForm({
               purchaseData: purchaseData,
               updateBoughtPrice: false,
               newSellingPrice: safePrice(form.sellingPrice),
+              username: user?.username ?? "unknown",
             });
             showToast(
               t("stock.toastUpdateSuccess", "Product updated successfully!"),
@@ -794,7 +804,7 @@ export default function AddStockForm({
             await window.api.database.products.update(existingProduct.id, {
               quantity: existingProduct.quantity + quantity,
               sellingPrice: safePrice(form.sellingPrice),
-            });
+            }, user?.username ?? "unknown", "activityLog.actions.quantityAdded");
             showToast(
               t("stock.inventoryUpdatedSuccess", "Inventory updated successfully!"),
               "success"
@@ -815,13 +825,17 @@ export default function AddStockForm({
             await window.api.database.products.createWithPurchase({
               productData: productData,
               purchaseData: purchaseData,
+              username: user?.username ?? "unknown",
             });
             showToast(
               t("stock.toastAddSuccess", "Product added successfully!"),
               "success"
             );
           } else {
-            await window.api.database.products.add(productData);
+            await window.api.database.products.add({
+              product: productData,
+              username: user?.username ?? "unknown",
+            });
             showToast(
               t("stock.inventoryUpdatedSuccess", "Inventory updated successfully!"),
               "success"
@@ -924,8 +938,10 @@ export default function AddStockForm({
           photo: newProduct.photo,
         };
 
-        const createdProduct =
-          await window.api.database.products.add(productData);
+        const createdProduct = await window.api.database.products.add({
+          product: productData,
+          username: user?.username ?? "unknown",
+        });
         purchaseItems.push({
           productId: createdProduct.id,
           quantity: newProduct.quantity,
@@ -950,7 +966,9 @@ export default function AddStockForm({
                 quantity: currentQuantity + existingProduct.quantity,
                 boughtPrice: existingProduct.boughtPrice, // Use the calculated price from pending list
                 sellingPrice: safePrice(existingProduct.sellingPrice),
-              }
+              },
+              user?.username ?? "unknown",
+              "activityLog.actions.quantityAdded"
             );
 
             // Create the purchase record separately
@@ -1131,6 +1149,7 @@ export default function AddStockForm({
             purchaseData: purchaseData,
             updateBoughtPrice: true,
             newSellingPrice: safePrice(form.sellingPrice),
+            username: user?.username ?? "unknown",
           });
 
           showToast(
@@ -1155,7 +1174,7 @@ export default function AddStockForm({
               quantity: currentProduct.quantity + priceConfirmationData.quantity,
               boughtPrice: weightedPrice,
               sellingPrice: safePrice(form.sellingPrice),
-            });
+            }, user?.username ?? "unknown", "activityLog.actions.quantityAdded");
           }
 
           showToast(
@@ -1258,6 +1277,7 @@ export default function AddStockForm({
             purchaseData: purchaseData,
             updateBoughtPrice: false, // false = keep NEW price, true = calculate weighted average
             newSellingPrice: safePrice(form.sellingPrice),
+            username: user?.username ?? "unknown",
           });
 
           showToast(
@@ -1272,7 +1292,7 @@ export default function AddStockForm({
               quantity: currentProduct.quantity + priceConfirmationData.quantity,
               boughtPrice: priceConfirmationData.newPrice,
               sellingPrice: safePrice(form.sellingPrice),
-            });
+            }, user?.username ?? "unknown", "activityLog.actions.quantityAdded");
           }
 
           showToast(
@@ -1514,6 +1534,7 @@ export default function AddStockForm({
                       purchaseData: purchaseData,
                       updateBoughtPrice: true,
                       newSellingPrice: safePrice(form.sellingPrice),
+                      username: user?.username ?? "unknown",
                     });
                     showToast(
                       t(
@@ -1530,6 +1551,7 @@ export default function AddStockForm({
                       purchaseData: purchaseData,
                       updateBoughtPrice: false,
                       newSellingPrice: safePrice(form.sellingPrice),
+                      username: user?.username ?? "unknown",
                     });
                     showToast(
                       t(
@@ -1552,7 +1574,7 @@ export default function AddStockForm({
                       quantity: existingProduct.quantity + quantity,
                       boughtPrice: weightedPrice,
                       sellingPrice: safePrice(form.sellingPrice),
-                    });
+                    }, user?.username ?? "unknown", "activityLog.actions.quantityAdded");
                     showToast(
                       t(
                         "stock.inventoryUpdatedSuccess",
@@ -1565,7 +1587,7 @@ export default function AddStockForm({
                       quantity: existingProduct.quantity + quantity,
                       boughtPrice: boughtPrice,
                       sellingPrice: safePrice(form.sellingPrice),
-                    });
+                    }, user?.username ?? "unknown", "activityLog.actions.quantityAdded");
                     showToast(
                       t(
                         "stock.inventoryUpdatedSuccess",
@@ -1644,6 +1666,7 @@ export default function AddStockForm({
               purchaseData: purchaseData,
               updateBoughtPrice: false,
               newSellingPrice: safePrice(form.sellingPrice),
+              username: user?.username ?? "unknown",
             });
             showToast(
               t("stock.toastUpdateSuccess", "Product updated successfully!"),
@@ -1653,7 +1676,7 @@ export default function AddStockForm({
             await window.api.database.products.update(existingProduct.id, {
               quantity: existingProduct.quantity + quantity,
               sellingPrice: safePrice(form.sellingPrice),
-            });
+            }, user?.username ?? "unknown", "activityLog.actions.quantityAdded");
             showToast(
               t("stock.inventoryUpdatedSuccess", "Inventory updated successfully!"),
               "success"
@@ -1674,13 +1697,17 @@ export default function AddStockForm({
             await window.api.database.products.createWithPurchase({
               productData: productData,
               purchaseData: purchaseData,
+              username: user?.username ?? "unknown",
             });
             showToast(
               t("stock.toastAddSuccess", "Product added successfully!"),
               "success"
             );
           } else {
-            await window.api.database.products.add(productData);
+            await window.api.database.products.add({
+              product: productData,
+              username: user?.username ?? "unknown",
+            });
             showToast(
               t("stock.inventoryUpdatedSuccess", "Inventory updated successfully!"),
               "success"
@@ -1762,8 +1789,10 @@ export default function AddStockForm({
           photo: newProduct.photo,
         };
 
-        const createdProduct =
-          await window.api.database.products.add(productData);
+        const createdProduct = await window.api.database.products.add({
+          product: productData,
+          username: user?.username ?? "unknown",
+        });
         purchaseItems.push({
           productId: createdProduct.id,
           quantity: newProduct.quantity,
@@ -1788,7 +1817,9 @@ export default function AddStockForm({
                 quantity: currentQuantity + existingProduct.quantity,
                 boughtPrice: existingProduct.boughtPrice, // Use the calculated price from pending list
                 sellingPrice: safePrice(existingProduct.sellingPrice),
-              }
+              },
+              user?.username ?? "unknown",
+              "activityLog.actions.quantityAdded"
             );
 
             // Create the purchase record separately

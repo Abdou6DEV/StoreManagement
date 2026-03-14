@@ -315,6 +315,119 @@ async function ensureCanAccessZakatColumn(client: import("@prisma/client").Prism
   }
 }
 
+/** Delete payments whose client no longer exists (e.g. client was deleted without cascade). Runs on app start. */
+async function repairOrphanPayments(
+  prisma: import("@prisma/client").PrismaClient
+): Promise<void> {
+  try {
+    const clientIds = await prisma.client.findMany({ select: { id: true } });
+    const validIds = new Set(clientIds.map((c) => c.id));
+    const payments = await prisma.payment.findMany({
+      select: { id: true, clientId: true },
+    });
+    const orphanIds = payments
+      .filter((p) => !validIds.has(p.clientId))
+      .map((p) => p.id);
+    if (orphanIds.length > 0) {
+      await prisma.payment.deleteMany({ where: { id: { in: orphanIds } } });
+      console.log(
+        `✅ Repaired database: removed ${orphanIds.length} orphan payment(s) (client no longer exists)`
+      );
+      logger.info(
+        `Removed ${orphanIds.length} orphan payment(s)`,
+        "Database"
+      );
+    }
+  } catch (err) {
+    console.warn("Orphan payments repair skipped or failed:", err);
+    logger.warn("Orphan payments repair skipped or failed", "Database", err);
+  }
+}
+
+/** Delete BillPayments whose bill no longer exists. Runs on app start. */
+async function repairOrphanBillPayments(
+  prisma: import("@prisma/client").PrismaClient
+): Promise<void> {
+  try {
+    const billIds = await prisma.bill.findMany({ select: { id: true } });
+    const validIds = new Set(billIds.map((b) => b.id));
+    const billPayments = await prisma.billPayment.findMany({
+      select: { id: true, billId: true },
+    });
+    const orphanIds = billPayments
+      .filter((p) => !validIds.has(p.billId))
+      .map((p) => p.id);
+    if (orphanIds.length > 0) {
+      await prisma.billPayment.deleteMany({ where: { id: { in: orphanIds } } });
+      console.log(
+        `✅ Repaired database: removed ${orphanIds.length} orphan bill payment(s)`
+      );
+      logger.info(`Removed ${orphanIds.length} orphan bill payment(s)`, "Database");
+    }
+  } catch (err) {
+    console.warn("Orphan bill payments repair skipped or failed:", err);
+    logger.warn("Orphan bill payments repair skipped or failed", "Database", err);
+  }
+}
+
+/** Delete PurchaseItems whose purchase or product no longer exists. Runs on app start. */
+async function repairOrphanPurchaseItems(
+  prisma: import("@prisma/client").PrismaClient
+): Promise<void> {
+  try {
+    const [purchaseIds, productIds] = await Promise.all([
+      prisma.purchase.findMany({ select: { id: true } }),
+      prisma.product.findMany({ select: { id: true } }),
+    ]);
+    const validPurchaseIds = new Set(purchaseIds.map((p) => p.id));
+    const validProductIds = new Set(productIds.map((p) => p.id));
+    const items = await prisma.purchaseItem.findMany({
+      select: { id: true, purchaseId: true, productId: true },
+    });
+    const orphanIds = items
+      .filter(
+        (i) => !validPurchaseIds.has(i.purchaseId) || !validProductIds.has(i.productId)
+      )
+      .map((i) => i.id);
+    if (orphanIds.length > 0) {
+      await prisma.purchaseItem.deleteMany({ where: { id: { in: orphanIds } } });
+      console.log(
+        `✅ Repaired database: removed ${orphanIds.length} orphan purchase item(s)`
+      );
+      logger.info(`Removed ${orphanIds.length} orphan purchase item(s)`, "Database");
+    }
+  } catch (err) {
+    console.warn("Orphan purchase items repair skipped or failed:", err);
+    logger.warn("Orphan purchase items repair skipped or failed", "Database", err);
+  }
+}
+
+/** Delete UserPermissions whose user no longer exists. Runs on app start. */
+async function repairOrphanUserPermissions(
+  prisma: import("@prisma/client").PrismaClient
+): Promise<void> {
+  try {
+    const userIds = await prisma.user.findMany({ select: { id: true } });
+    const validIds = new Set(userIds.map((u) => u.id));
+    const perms = await prisma.userPermissions.findMany({
+      select: { id: true, userId: true },
+    });
+    const orphanIds = perms
+      .filter((p) => !validIds.has(p.userId))
+      .map((p) => p.id);
+    if (orphanIds.length > 0) {
+      await prisma.userPermissions.deleteMany({ where: { id: { in: orphanIds } } });
+      console.log(
+        `✅ Repaired database: removed ${orphanIds.length} orphan user permission(s)`
+      );
+      logger.info(`Removed ${orphanIds.length} orphan user permission(s)`, "Database");
+    }
+  } catch (err) {
+    console.warn("Orphan user permissions repair skipped or failed:", err);
+    logger.warn("Orphan user permissions repair skipped or failed", "Database", err);
+  }
+}
+
 // Function to initialize database schema
 async function initializeDatabase() {
   if (!prismaClientInstance) {
@@ -333,7 +446,12 @@ async function initializeDatabase() {
     // Run canAccessZakat migration first so user.create never fails
     await ensureCanAccessZakatColumn(prismaClientInstance);
     await ensureActivityLogTable(prismaClientInstance);
-    
+    // Remove orphan records (parent was deleted without cascade) so queries don't fail
+    await repairOrphanPayments(prismaClientInstance);
+    await repairOrphanBillPayments(prismaClientInstance);
+    await repairOrphanPurchaseItems(prismaClientInstance);
+    await repairOrphanUserPermissions(prismaClientInstance);
+
     // Try a simple query to check if the User table exists
     try {
       await prismaClientInstance.user.findFirst();

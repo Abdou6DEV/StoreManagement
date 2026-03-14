@@ -6,6 +6,7 @@ import { DatePicker } from "../../../lib/components/datePicker";
 import { Popover, PopoverContent, PopoverTrigger } from "../../../lib/components/popover";
 import { Command, CommandGroup, CommandInput, CommandItem, CommandList } from "../../../lib/components/command";
 import { useToast } from "../../../lib/contexts/toastContext";
+import { useAuth } from "../../../lib/contexts/authContext";
 import { cn } from "../../../lib/utils";
 import AddClientModal from "../../../pages/cashier/components/addClientModal";
 import { generateReceiptBarcode } from "../../../lib/utils/barcodeVisual";
@@ -68,6 +69,7 @@ export default function AddServiceForm({
 }: AddServiceFormProps) {
   const { t } = useTranslation();
   const { showToast } = useToast();
+  const { user } = useAuth();
   const [form, setForm] = useState(initialForm);
   const [loading, setLoading] = useState(false);
   const [clients, setClients] = useState<Client[]>([]);
@@ -97,7 +99,8 @@ export default function AddServiceForm({
   const [showNoReceiptPrinterModal, setShowNoReceiptPrinterModal] = useState(false);
   const [showNoLabelPrinterModal, setShowNoLabelPrinterModal] = useState(false);
   const [hideCostPrice, setHideCostPrice] = useState(true);
-  
+  const initialIsPaidRef = useRef<boolean | null>(null);
+
   // Refs for dropdown management and field navigation
   const typeInputRef = useRef<HTMLInputElement>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
@@ -119,12 +122,20 @@ export default function AddServiceForm({
         dueDate: editingService.dueDate.split('T')[0],
         notes: editingService.notes || "",
       });
+      setSelectedClient(editingService.client ? { id: editingService.client.id, name: editingService.client.name, phone: editingService.client.phone } : null);
       setIsExistingService(true);
-      // Load payment status
+      // Load payment status and store initial for change detection
       window.api.database.serviceAppointments.getPaymentStatus(editingService.id)
-        .then(setIsPaid)
-        .catch(() => setIsPaid(false));
+        .then((status) => {
+          initialIsPaidRef.current = status;
+          setIsPaid(status);
+        })
+        .catch(() => {
+          initialIsPaidRef.current = false;
+          setIsPaid(false);
+        });
     } else {
+      initialIsPaidRef.current = null;
       // Set default due date to 3 days later for new services
       const defaultDate = new Date();
       defaultDate.setDate(defaultDate.getDate() + 3);
@@ -215,7 +226,15 @@ export default function AddServiceForm({
         selectClient(createdClient);
         setClientPopoverOpen(false);
       }
-      
+      const lines = ["From service form:", `Client: ${newClient.name}`];
+      if (newClient.phone?.trim()) lines.push(`Phone: ${newClient.phone.trim()}`);
+      if (newClient.address?.trim()) lines.push(`Address: ${newClient.address.trim()}`);
+      if (newClient.notes?.trim()) lines.push(`Notes: ${newClient.notes.trim()}`);
+      window.api?.activityLog?.log({
+        username: user?.username ?? "unknown",
+        action: "activityLog.actions.clientAdded",
+        details: lines.join("\n"),
+      }).catch(() => {});
       // Reset form and close modal
       setClientName("");
       setClientPhone("");
@@ -1127,6 +1146,29 @@ export default function AddServiceForm({
         await window.api.database.serviceAppointments.update(editingService.id, serviceData);
         // Update payment status
         await window.api.database.serviceAppointments.updatePaymentStatus(editingService.id, isPaid);
+        const changeLines: string[] = [];
+        if (serviceData.name !== (editingService.name ?? "")) changeLines.push(`Name: ${editingService.name ?? ""} → ${serviceData.name}`);
+        if (serviceData.serviceType !== (editingService.serviceType ?? "")) changeLines.push(`Service type: ${editingService.serviceType ?? ""} → ${serviceData.serviceType}`);
+        if ((serviceData.description ?? "") !== (editingService.description ?? "")) changeLines.push(`Description: ${editingService.description ?? ""} → ${serviceData.description ?? ""}`);
+        if (serviceData.costPrice !== (editingService.costPrice ?? 0)) changeLines.push(`Cost price: ${editingService.costPrice ?? 0} → ${serviceData.costPrice}`);
+        if (serviceData.servicePrice !== (editingService.servicePrice ?? 0)) changeLines.push(`Service price: ${editingService.servicePrice ?? 0} → ${serviceData.servicePrice}`);
+        const oldDue = editingService.dueDate ? new Date(editingService.dueDate).toISOString().split("T")[0] : "";
+        if (dueDate !== oldDue) changeLines.push(`Due date: ${oldDue} → ${dueDate}`);
+        if ((serviceData.notes ?? "") !== (editingService.notes ?? "")) changeLines.push(`Notes: ${editingService.notes ?? ""} → ${serviceData.notes ?? ""}`);
+        const oldClientName = editingService.client?.name ?? "—";
+        const newClientName = selectedClient?.name ?? clients.find((c) => c.id === form.clientId)?.name ?? "—";
+        if (oldClientName !== newClientName) changeLines.push(`Client: ${oldClientName} → ${newClientName}`);
+        if (initialIsPaidRef.current !== null && isPaid !== initialIsPaidRef.current) {
+          changeLines.push(`Payment: ${initialIsPaidRef.current ? "Paid" : "Unpaid"} → ${isPaid ? "Paid" : "Unpaid"}`);
+        }
+        const detailsStr = changeLines.length > 0
+          ? `Service ID: ${editingService.id}\nService: ${serviceData.name}\n${changeLines.join("\n")}`
+          : `Service ID: ${editingService.id}\nService: ${serviceData.name}`;
+        window.api?.activityLog?.log({
+          username: user?.username ?? "unknown",
+          action: "activityLog.actions.serviceUpdated",
+          details: detailsStr,
+        }).catch(() => {});
         onServiceUpdated?.();
         showToast(t("services.serviceUpdatedSuccessfully", "Service updated successfully"), "success");
       } else {
@@ -1147,6 +1189,11 @@ export default function AddServiceForm({
         if (newService?.id && isPaid) {
           await window.api.database.serviceAppointments.updatePaymentStatus(newService.id, isPaid);
         }
+        window.api?.activityLog?.log({
+          username: user?.username ?? "unknown",
+          action: "activityLog.actions.serviceCreated",
+          details: `Service ID: ${newService.id}`,
+        }).catch(() => {});
         onServiceAdded?.();
         showToast(t("services.serviceAddedSuccessfully", "Service added successfully"), "success");
 

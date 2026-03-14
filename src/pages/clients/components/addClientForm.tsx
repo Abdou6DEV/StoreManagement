@@ -107,10 +107,14 @@ export default function AddClientForm({
       });
       setForm(initialForm);
       onClientAdded();
+      const lines = [`Client: ${form.name}`];
+      if (form.phone?.trim()) lines.push(`Phone: ${form.phone.trim()}`);
+      if (form.address?.trim()) lines.push(`Address: ${form.address.trim()}`);
+      if (form.notes?.trim()) lines.push(`Notes: ${form.notes.trim()}`);
       window.api?.activityLog?.log({
         username: user?.username ?? "unknown",
-        action: "Added client",
-        details: form.name,
+        action: "activityLog.actions.clientAdded",
+        details: lines.join("\n"),
       }).catch(() => {});
       showToast(
         t("clients.addSuccess", "Client added successfully"),

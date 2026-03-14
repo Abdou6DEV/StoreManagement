@@ -88,7 +88,6 @@ export const UpdateProvider: React.FC<UpdateProviderProps> = ({ children }) => {
     // If we already checked recently (within 5 minutes), return cached result
     const now = Date.now();
     if (globalUpdateState.updateInfo && globalUpdateState.lastChecked && (now - globalUpdateState.lastChecked) < 5 * 60 * 1000) {
-      console.log("Using cached update info");
       return globalUpdateState.updateInfo;
     }
 
@@ -108,9 +107,7 @@ export const UpdateProvider: React.FC<UpdateProviderProps> = ({ children }) => {
     notifyListeners({ ...globalUpdateState, isChecking: true, error: null });
     
     try {
-      console.log("Calling window.api.app.checkForUpdates()");
       const updateInfo = await window.api.app.checkForUpdates();
-      console.log("Update info received:", updateInfo);
       
       notifyListeners({ 
         ...globalUpdateState, 
@@ -146,7 +143,7 @@ export const UpdateProvider: React.FC<UpdateProviderProps> = ({ children }) => {
   }, []);
 
   const reset = useCallback(() => {
-    const resetState = {
+    const resetState: UpdateState = {
       isChecking: false,
       updateInfo: null,
       error: null,

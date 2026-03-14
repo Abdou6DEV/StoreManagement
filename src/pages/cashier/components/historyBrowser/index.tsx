@@ -11,6 +11,7 @@ import SearchBar from "./searchBar";
 import SalesList from "./salesList";
 import { ConfirmDialog } from "../../../../lib/components/confirmDialog";
 import { Lock } from "lucide-react";
+import { useAuth } from "../../../../lib/contexts/authContext";
 import { printReceiptDirectly } from "../receiptModal";
 import { NoPrinterModal } from "../../../../lib/components/noPrinterModal";
 import type { CartItem } from "../../../../types";
@@ -20,6 +21,7 @@ const HistoryBrowser: React.FC<HistoryBrowserProps> = ({
   salesRefreshKey,
 }) => {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const { refetchProducts } = useStock();
   const { showToast } = useToast();
   const { isEnabled: isHistoryEnabled, isLoading: isHistoryLoading } = useCashierHistory();
@@ -223,6 +225,13 @@ const HistoryBrowser: React.FC<HistoryBrowserProps> = ({
     setIsDeleting(true);
     try {
       await window.api.database.sales.delete(saleToDelete.id);
+      const itemCount = saleToDelete.saleItems?.length ?? 0;
+      const clientName = saleToDelete.client?.name ? ` Client: ${saleToDelete.client.name}` : "";
+      window.api?.activityLog?.log({
+        username: user?.username ?? "unknown",
+        action: "activityLog.actions.saleDeleted",
+        details: `Sale ID: ${saleToDelete.id}. Items: ${itemCount}.${clientName}`,
+      }).catch(() => {});
 
       // Remove the sale from the local state
       setSales((prevSales) =>

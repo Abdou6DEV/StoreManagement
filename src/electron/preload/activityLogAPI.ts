@@ -13,6 +13,9 @@ export type ActivityLogFilter = {
   dateFrom?: string | null;
   dateTo?: string | null;
   search?: string | null;
+  searchAction?: string | null;
+  searchDetails?: string | null;
+  actionKeys?: string[] | null;
   limit?: number;
   offset?: number;
 };

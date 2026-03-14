@@ -88,6 +88,7 @@ export default function AccountsManagement() {
     userId: null,
     username: "",
   });
+  const [deleteLoadingUserId, setDeleteLoadingUserId] = useState<string | null>(null);
 
   const [formData, setFormData] = useState<UserFormData>({
     username: "",
@@ -233,11 +234,18 @@ export default function AccountsManagement() {
   const confirmDeleteUser = async () => {
     if (!confirmDelete.userId) return;
 
+    setDeleteLoadingUserId(confirmDelete.userId);
     try {
       const result = await window.api.auth.deleteUser(confirmDelete.userId);
       if (result.success) {
+        window.api?.activityLog?.log({
+          username: user?.username ?? "unknown",
+          action: "activityLog.actions.userDeleted",
+          details: confirmDelete.username ?? null,
+        }).catch(() => {});
         showToast(t("admin.accounts.deleteUserSuccess", "User deleted successfully"), "success");
         loadUsers();
+        setConfirmDelete({ open: false, userId: null, username: "" });
       } else {
         showToast(t("admin.accounts.deleteUserError", "Failed to delete user"), "error");
       }
@@ -245,11 +253,7 @@ export default function AccountsManagement() {
       console.error("Error deleting user:", error);
       showToast(t("admin.accounts.deleteUserError", "Failed to delete user"), "error");
     } finally {
-      setConfirmDelete({
-        open: false,
-        userId: null,
-        username: "",
-      });
+      setDeleteLoadingUserId(null);
     }
   };
 
@@ -289,7 +293,7 @@ export default function AccountsManagement() {
       if (result.success) {
         window.api?.activityLog?.log({
           username: user?.username ?? "unknown",
-          action: "Created user",
+          action: "activityLog.actions.userCreated",
           details: formData.username,
         }).catch(() => {});
         showToast("User created successfully", "success");
@@ -335,6 +339,24 @@ export default function AccountsManagement() {
       );
 
       if (result.success) {
+        const changeLines: string[] = [];
+        if (usernameChanged) changeLines.push(`Username: ${editingUser.username ?? ""} → ${formData.username.trim()}`);
+        const oldPerms = editingUser.permissions ?? {};
+        const newPerms = formData.permissions;
+        const permKeys = ["canAccessCashier", "canAccessStock", "canAccessClients", "canAccessBills", "canAccessHistory", "canAccessServices", "canAccessDashboard", "canManageUsers", "canViewLogs", "canManageSettings"] as const;
+        permKeys.forEach((key) => {
+          const oldVal = oldPerms[key];
+          const newVal = newPerms[key];
+          if (oldVal !== newVal) changeLines.push(`${key}: ${oldVal ?? false} → ${newVal ?? false}`);
+        });
+        const detailsStr = changeLines.length > 0
+          ? `User: ${formData.username.trim()}\n${changeLines.join("\n")}`
+          : `User: ${formData.username.trim()}`;
+        window.api?.activityLog?.log({
+          username: user?.username ?? "unknown",
+          action: usernameChanged ? "activityLog.actions.userUpdated" : "activityLog.actions.permissionsUpdated",
+          details: detailsStr,
+        }).catch(() => {});
         showToast(
           usernameChanged
             ? t("admin.accounts.userUpdatedSuccess", "User updated successfully")
@@ -381,6 +403,12 @@ export default function AccountsManagement() {
       );
 
       if (result.success) {
+        const detailsStr = `User: ${passwordUser.username ?? ""}`;
+        window.api?.activityLog?.log({
+          username: user?.username ?? "unknown",
+          action: "activityLog.actions.passwordUpdated",
+          details: detailsStr,
+        }).catch(() => {});
         showToast("Password updated successfully", "success");
         setShowPasswordModal(false);
         setPasswordUser(null);
@@ -438,7 +466,7 @@ export default function AccountsManagement() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Users className="h-6 w-6 text-primary" />
+          <Users className="h-6 w-6 text-orange-500" />
           <h2 className="text-2xl font-bold text-foreground">
             {t("admin.accounts.title", "Accounts Management")}
           </h2>
@@ -875,6 +903,7 @@ export default function AccountsManagement() {
         cancelText={t("admin.accounts.cancel", "Cancel")}
         variant="danger"
         onConfirm={confirmDeleteUser}
+        loading={deleteLoadingUserId !== null}
       />
     </div>
   );

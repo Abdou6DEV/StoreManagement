@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Button } from "../../../lib/components/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../lib/components/select";
 import { useToast } from "../../../lib/contexts/toastContext";
+import { useAuth } from "../../../lib/contexts/authContext";
 import { cn } from "../../../lib/utils";
 
 interface Bill {
@@ -97,6 +98,7 @@ export default function AddBillForm({
 }: AddBillFormProps) {
   const { t } = useTranslation();
   const { showToast } = useToast();
+  const { user } = useAuth();
   const [form, setForm] = useState(initialForm);
   const [loading, setLoading] = useState(false);
   const [billTypes, setBillTypes] = useState<string[]>([]);
@@ -382,17 +384,39 @@ export default function AddBillForm({
         };
 
         await window.api.database.bills.update(editingBill.id, billData);
+        const changeLines: string[] = [];
+        if (billData.title !== (editingBill.title ?? "")) changeLines.push(`Title: ${editingBill.title ?? ""} → ${billData.title}`);
+        if (billData.type !== (editingBill.type ?? "")) changeLines.push(`Type: ${editingBill.type ?? ""} → ${billData.type}`);
+        if (billData.duration !== (editingBill.duration ?? "")) changeLines.push(`Duration: ${editingBill.duration ?? ""} → ${billData.duration}`);
+        if ((billData.description ?? "") !== (editingBill.description ?? "")) changeLines.push(`Description: ${editingBill.description ?? ""} → ${billData.description ?? ""}`);
+        if ((billData.notes ?? "") !== (editingBill.notes ?? "")) changeLines.push(`Notes: ${editingBill.notes ?? ""} → ${billData.notes ?? ""}`);
+        const detailsStr = changeLines.length > 0
+          ? `Bill: ${billData.title}\n${changeLines.join("\n")}`
+          : `Bill: ${billData.title}`;
+        window.api?.activityLog?.log({
+          username: user?.username ?? "unknown",
+          action: "activityLog.actions.billUpdated",
+          details: detailsStr,
+        }).catch(() => {});
         onBillUpdated?.();
         showToast(t("bills.billUpdatedSuccessfully", "Bill updated successfully"), "success");
       } else if (isExistingBill) {
         // Record payment for existing bill
         const existingBill = await window.api.database.bills.getBillByTitle(form.title.trim());
         if (existingBill) {
+          const amountCentimes = Math.round(parseFloat(form.amount) * 100);
           await window.api.database.bills.recordPayment(
-            existingBill.id, 
-            Math.round(parseFloat(form.amount) * 100),
+            existingBill.id,
+            amountCentimes,
             form.notes.trim() || undefined
           );
+          const amountDisplay = (amountCentimes / 100).toFixed(2);
+          const detailsStr = `Bill: ${existingBill.title}\nAmount: ${amountDisplay}`;
+          window.api?.activityLog?.log({
+            username: user?.username ?? "unknown",
+            action: "activityLog.actions.billPaymentRecorded",
+            details: detailsStr,
+          }).catch(() => {});
           onBillAdded?.();
           showToast(t("bills.paymentRecordedSuccessfully", "Payment recorded successfully"), "success");
         }
@@ -411,6 +435,11 @@ export default function AddBillForm({
         };
 
         await window.api.database.bills.create(billData);
+        window.api?.activityLog?.log({
+          username: user?.username ?? "unknown",
+          action: "activityLog.actions.billCreated",
+          details: billData.title,
+        }).catch(() => {});
         onBillAdded?.();
         showToast(t("bills.billAddedSuccessfully", "Bill added successfully"), "success");
       }

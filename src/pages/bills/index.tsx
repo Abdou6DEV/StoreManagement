@@ -4,6 +4,7 @@ import { Button } from "../../lib/components/button";
 import { FileText, ChevronDown, Check, CreditCard, DollarSign, Search } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useToast } from "../../lib/contexts/toastContext";
+import { useAuth } from "../../lib/contexts/authContext";
 import { useOverdueBills } from "../../lib/contexts/overdueBillsContext";
 import { useDueSoonBills } from "../../lib/contexts/dueSoonBillsContext";
 import {
@@ -48,6 +49,7 @@ export default function BillsPage() {
   const location = useLocation();
   const { t } = useTranslation();
   const { showToast } = useToast();
+  const { user } = useAuth();
   const { unseenOverdueBillsCount, markOverdueBillsAsSeen } = useOverdueBills();
   const { unseenDueSoonBillsCount, markDueSoonBillsAsSeen, dueSoonThresholdDays } = useDueSoonBills();
   const notificationAction = (location.state as { notificationAction?: string } | null)?.notificationAction;
@@ -316,8 +318,15 @@ export default function BillsPage() {
   const handleDelete = async (billId: string) => {
     try {
       setDeleteLoading(billId);
+      const bill = allBills.find((b) => b.id === billId);
+      const billTitle = bill?.title ?? billId;
       await window.api.database.bills.delete(billId);
       await loadBills();
+      window.api?.activityLog?.log({
+        username: user?.username ?? "unknown",
+        action: "activityLog.actions.billDeleted",
+        details: `"${billTitle}" (${bill?.type ?? ""})`,
+      }).catch(() => {});
       showToast(t("bills.billDeletedSuccessfully", "Bill deleted successfully"), "success");
     } catch (error) {
       console.error("Error deleting bill:", error);

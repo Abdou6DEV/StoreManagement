@@ -5,6 +5,7 @@ import { useStock } from "../../../../lib/contexts/stockContext";
 import { useLowStock } from "../../../../lib/contexts/lowStockContext";
 import { useOutOfStock } from "../../../../lib/contexts/outOfStockContext";
 import { useToast } from "../../../../lib/contexts/toastContext";
+import { useAuth } from "../../../../lib/contexts/authContext";
 import { ConfirmModal } from "../../../../lib/components/modal";
 import { ProductInfoModal } from "../productInfoModal";
 import { EditProductModal } from "../editProductModal";
@@ -23,6 +24,7 @@ import type {
 
 export const StockTable = ({ notificationAction }: { notificationAction?: string }) => {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const { categories, products, refetchProducts } = useStock();
   const { unseenLowStockCount, lowStockThreshold: contextThreshold, markLowStockAsSeen } = useLowStock();
   const { markOutOfStockAsSeen } = useOutOfStock();
@@ -46,6 +48,7 @@ export const StockTable = ({ notificationAction }: { notificationAction?: string
     productId: null,
     productName: "",
   });
+  const [deleteLoadingProductId, setDeleteLoadingProductId] = useState<string | null>(null);
   const [productInfo, setProductInfo] = useState<ProductInfoState>({
     open: false,
     productId: null,
@@ -219,18 +222,27 @@ export const StockTable = ({ notificationAction }: { notificationAction?: string
   const confirmDeleteProduct = async () => {
     if (!confirmDelete.productId) return;
 
+    setDeleteLoadingProductId(confirmDelete.productId);
     try {
       await window.api.database.products.delete(confirmDelete.productId);
+      window.api?.activityLog?.log({
+        username: user?.username ?? "unknown",
+        action: "activityLog.actions.productDeleted",
+        details: confirmDelete.productName ?? confirmDelete.productId,
+      }).catch(() => {});
       showToast(
         t("stock.toastDeleteSuccess", "Product deleted successfully!"),
         "success",
       );
       refetchProducts();
+      setConfirmDelete((prev) => ({ ...prev, open: false, productId: null, productName: "" }));
     } catch (err) {
       showToast(
         t("stock.toastDeleteError", "Failed to delete product"),
         "error",
       );
+    } finally {
+      setDeleteLoadingProductId(null);
     }
   };
 
@@ -601,9 +613,10 @@ export const StockTable = ({ notificationAction }: { notificationAction?: string
           { name: confirmDelete.productName },
         )}
         confirmText={t("stock.delete", "Delete")}
-                    cancelText={t("common.cancel")}
+        cancelText={t("common.cancel")}
         variant="danger"
         onConfirm={confirmDeleteProduct}
+        loading={deleteLoadingProductId === confirmDelete.productId}
       />
 
       {/* Product Info Modal */}

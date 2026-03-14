@@ -67,6 +67,7 @@ export default function Clients() {
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [editingClient, setEditingClient] = useState<Client | null>(null);
+  const [editingClientOriginal, setEditingClientOriginal] = useState<Client | null>(null);
   const [editLoading, setEditLoading] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -99,6 +100,7 @@ export default function Clients() {
   const [suppliersError, setSuppliersError] = useState<string | null>(null);
   const [suppliersSearch, setSuppliersSearch] = useState("");
   const [editingSupplier, setEditingSupplier] = useState<Seller | null>(null);
+  const [editingSupplierOriginal, setEditingSupplierOriginal] = useState<Seller | null>(null);
   const [editSupplierLoading, setEditSupplierLoading] = useState(false);
   const [deleteSupplierLoading, setDeleteSupplierLoading] = useState<
     string | null
@@ -210,6 +212,11 @@ export default function Clients() {
     try {
       await window.api.database.clients.delete(confirmDelete.clientId);
       await fetchClients();
+      window.api?.activityLog?.log({
+        username: user?.username ?? "unknown",
+        action: "activityLog.actions.clientDeleted",
+        details: confirmDelete.clientName ?? null,
+      }).catch(() => {});
       showToast(
         t("clients.deleteSuccess", "Client deleted successfully"),
         "success",
@@ -223,6 +230,7 @@ export default function Clients() {
 
   const handleEdit = (client: Client) => {
     setEditingClient(client);
+    setEditingClientOriginal(client);
   };
 
   const handleEditChange = (key: keyof Client, value: string) => {
@@ -231,10 +239,17 @@ export default function Clients() {
 
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingClient) return;
+    if (!editingClient || !editingClientOriginal) return;
     setEditLoading(true);
     try {
-      const name = editingClient.name;
+      const changeLines: string[] = [];
+      if (editingClient.name !== editingClientOriginal.name) changeLines.push(`Name: ${editingClientOriginal.name ?? ""} → ${editingClient.name ?? ""}`);
+      if ((editingClient.phone ?? "") !== (editingClientOriginal.phone ?? "")) changeLines.push(`Phone: ${editingClientOriginal.phone ?? ""} → ${editingClient.phone ?? ""}`);
+      if ((editingClient.address ?? "") !== (editingClientOriginal.address ?? "")) changeLines.push(`Address: ${editingClientOriginal.address ?? ""} → ${editingClient.address ?? ""}`);
+      if ((editingClient.notes ?? "") !== (editingClientOriginal.notes ?? "")) changeLines.push(`Notes: ${editingClientOriginal.notes ?? ""} → ${editingClient.notes ?? ""}`);
+      const detailsStr = changeLines.length > 0
+        ? `Client: ${editingClient.name}\n${changeLines.join("\n")}`
+        : `Client: ${editingClient.name}`;
       await window.api.database.clients.update(editingClient.id, {
         name: editingClient.name,
         phone: editingClient.phone,
@@ -242,11 +257,12 @@ export default function Clients() {
         notes: editingClient.notes,
       });
       setEditingClient(null);
+      setEditingClientOriginal(null);
       await fetchClients();
       window.api?.activityLog?.log({
         username: user?.username ?? "unknown",
-        action: "Edited client",
-        details: name,
+        action: "activityLog.actions.clientUpdated",
+        details: detailsStr,
       }).catch(() => {});
       showToast(
         t("clients.updateSuccess", "Client updated successfully"),
@@ -285,6 +301,11 @@ export default function Clients() {
         confirmDeleteSupplier.supplierId,
       );
       await fetchSuppliers();
+      window.api?.activityLog?.log({
+        username: user?.username ?? "unknown",
+        action: "activityLog.actions.supplierDeleted",
+        details: confirmDeleteSupplier.supplierName ?? null,
+      }).catch(() => {});
       showToast(
         t("suppliers.deleteSuccess", "Supplier deleted successfully"),
         "success",
@@ -301,6 +322,7 @@ export default function Clients() {
 
   const handleEditSupplier = (supplier: Seller) => {
     setEditingSupplier(supplier);
+    setEditingSupplierOriginal(supplier);
   };
 
   const handleEditSupplierChange = (key: keyof Seller, value: string) => {
@@ -309,10 +331,18 @@ export default function Clients() {
 
   const handleEditSupplierSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingSupplier) return;
-    const supplierName = editingSupplier.name;
+    if (!editingSupplier || !editingSupplierOriginal) return;
     setEditSupplierLoading(true);
     try {
+      const changeLines: string[] = [];
+      if (editingSupplier.name !== editingSupplierOriginal.name) changeLines.push(`Name: ${editingSupplierOriginal.name ?? ""} → ${editingSupplier.name ?? ""}`);
+      if ((editingSupplier.phone ?? "") !== (editingSupplierOriginal.phone ?? "")) changeLines.push(`Phone: ${editingSupplierOriginal.phone ?? ""} → ${editingSupplier.phone ?? ""}`);
+      if ((editingSupplier.email ?? "") !== (editingSupplierOriginal.email ?? "")) changeLines.push(`Email: ${editingSupplierOriginal.email ?? ""} → ${editingSupplier.email ?? ""}`);
+      if ((editingSupplier.address ?? "") !== (editingSupplierOriginal.address ?? "")) changeLines.push(`Address: ${editingSupplierOriginal.address ?? ""} → ${editingSupplier.address ?? ""}`);
+      if ((editingSupplier.notes ?? "") !== (editingSupplierOriginal.notes ?? "")) changeLines.push(`Notes: ${editingSupplierOriginal.notes ?? ""} → ${editingSupplier.notes ?? ""}`);
+      const detailsStr = changeLines.length > 0
+        ? `Supplier: ${editingSupplier.name}\n${changeLines.join("\n")}`
+        : `Supplier: ${editingSupplier.name}`;
       await window.api.database.sellers.update(editingSupplier.id, {
         name: editingSupplier.name,
         phone: editingSupplier.phone,
@@ -321,11 +351,12 @@ export default function Clients() {
         notes: editingSupplier.notes,
       });
       setEditingSupplier(null);
+      setEditingSupplierOriginal(null);
       await fetchSuppliers();
       window.api?.activityLog?.log({
         username: user?.username ?? "unknown",
-        action: "Edited supplier",
-        details: supplierName,
+        action: "activityLog.actions.supplierUpdated",
+        details: detailsStr,
       }).catch(() => {});
       showToast(
         t("suppliers.updateSuccess", "Supplier updated successfully"),
@@ -348,11 +379,18 @@ export default function Clients() {
 
   const handleUpdateCredit = async (supplierId: string, credit: number) => {
     try {
-      // Store credit amount in the email field (as string)
+      const supplier = suppliers.find((s) => s.id === supplierId);
+      const oldCredit = supplier?.email ? Number(supplier.email) : 0;
       await window.api.database.sellers.update(supplierId, {
         email: credit.toString(),
       });
       await fetchSuppliers();
+      const detailsStr = `Supplier: ${supplier?.name ?? supplierId}\nCredit: ${oldCredit} → ${credit}`;
+      window.api?.activityLog?.log({
+        username: user?.username ?? "unknown",
+        action: "activityLog.actions.supplierUpdated",
+        details: detailsStr,
+      }).catch(() => {});
       showToast(
         t("suppliers.creditUpdateSuccess", "Credit updated successfully"),
         "success",
@@ -959,14 +997,14 @@ export default function Clients() {
       <EditClientDialog
         client={editingClient}
         onChange={handleEditChange}
-        onClose={() => setEditingClient(null)}
+        onClose={() => { setEditingClient(null); setEditingClientOriginal(null); }}
         onSubmit={handleEditSubmit}
         loading={editLoading}
       />
       <EditSupplierModal
         supplier={editingSupplier}
         onChange={handleEditSupplierChange}
-        onClose={() => setEditingSupplier(null)}
+        onClose={() => { setEditingSupplier(null); setEditingSupplierOriginal(null); }}
         onSubmit={handleEditSupplierSubmit}
         loading={editSupplierLoading}
       />

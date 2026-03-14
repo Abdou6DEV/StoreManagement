@@ -298,7 +298,7 @@ export default function UpdateManagement() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-foreground flex items-center gap-3">
-            <Shield className="w-6 h-6 text-primary" />
+            <Shield className="w-6 h-6 text-orange-500" />
             {t("admin.updatesContent.title", "System Updates")}
           </h2>
           <p className="text-muted-foreground mt-1">

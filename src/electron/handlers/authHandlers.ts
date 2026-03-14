@@ -38,7 +38,7 @@ export const setupAuthHandlers = () => {
       if (result.success && result.user) {
         createActivityLog({
           username: result.user.username,
-          action: "Logged in",
+          action: "activityLog.actions.loggedIn",
           details: null,
         }).catch(() => {});
       }
@@ -117,7 +117,7 @@ export const setupAuthHandlers = () => {
         const { password, ...userWithoutPassword } = primaryAdmin;
         createActivityLog({
           username,
-          action: "Logged in via activation key",
+          action: "activityLog.actions.loggedInActivationKey",
           details: null,
         }).catch(() => {});
         return {
@@ -127,7 +127,7 @@ export const setupAuthHandlers = () => {
       }
       createActivityLog({
         username: "admin",
-        action: "Logged in via activation key",
+        action: "activityLog.actions.loggedInActivationKey",
         details: null,
       }).catch(() => {});
       return {

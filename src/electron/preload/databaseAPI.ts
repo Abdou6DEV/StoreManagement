@@ -4,12 +4,14 @@ import { Product } from "@prisma/client";
 export const databaseAPI = {
   products: {
     getAll: () => ipcRenderer.invoke("db:products:getAll"),
-    add: (product: Omit<Product, "id" | "createdAt" | "updatedAt">) =>
-      ipcRenderer.invoke("db:products:add", product),
+    add: (productOrPayload: Omit<Product, "id" | "createdAt" | "updatedAt"> | { product: Omit<Product, "id" | "createdAt" | "updatedAt">; username?: string }) =>
+      ipcRenderer.invoke("db:products:add", productOrPayload),
     update: (
       id: string,
-      data: Partial<Omit<Product, "id" | "createdAt" | "updatedAt">>
-    ) => ipcRenderer.invoke("db:products:update", { id, data }),
+      data: Partial<Omit<Product, "id" | "createdAt" | "updatedAt">>,
+      username?: string,
+      logAction?: string
+    ) => ipcRenderer.invoke("db:products:update", { id, data, username, logAction }),
     delete: (id: string) => ipcRenderer.invoke("db:products:delete", id),
     getSalesCounts: () => ipcRenderer.invoke("db:products:getSalesCounts"),
     getWithPurchaseHistory: (id: string) =>
@@ -17,6 +19,7 @@ export const databaseAPI = {
     createWithPurchase: (data: {
       productData: any;
       purchaseData: { sellerId?: string; quantity: number; price: number };
+      username?: string;
     }) => ipcRenderer.invoke("db:products:createWithPurchase", data),
     updateWithPurchase: (data: {
       productId: string;
@@ -24,6 +27,7 @@ export const databaseAPI = {
       purchaseData: { sellerId?: string; quantity: number; price: number };
       updateBoughtPrice?: boolean;
       newSellingPrice?: number;
+      username?: string;
     }) => ipcRenderer.invoke("db:products:updateWithPurchase", data),
     generateUniqueBarcode: () => ipcRenderer.invoke("db:products:generateUniqueBarcode"),
         getUnused: () => ipcRenderer.invoke("db:products:getUnused"),

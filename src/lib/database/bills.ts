@@ -119,6 +119,7 @@ export const bills = {
   },
 
   async delete(id: string): Promise<void> {
+    await prisma.billPayment.deleteMany({ where: { billId: id } });
     await prisma.bill.delete({
       where: { id },
     });
