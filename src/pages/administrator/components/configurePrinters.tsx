@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useToast } from "../../../lib/contexts/toastContext";
+import { useAuth } from "../../../lib/contexts/authContext";
 import { Button } from "../../../lib/components/button";
 import {
   Select,
@@ -16,6 +17,8 @@ type PrinterInfo = { name: string; displayName: string; status: number };
 export function ConfigurePrinters() {
   const { t } = useTranslation();
   const { showToast } = useToast();
+  const { user } = useAuth();
+  const initialPrintersRef = useRef<{ receipt: string; label: string } | null>(null);
   const [printers, setPrinters] = useState<PrinterInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -47,9 +50,11 @@ export function ConfigurePrinters() {
       ]);
       setReceiptPrinterName(receipt || "");
       setLabelPrinterName(label || "");
+      initialPrintersRef.current = { receipt: receipt || "", label: label || "" };
     } catch {
       setReceiptPrinterName("");
       setLabelPrinterName("");
+      initialPrintersRef.current = null;
     }
   };
 
@@ -66,6 +71,24 @@ export function ConfigurePrinters() {
         window.api.database.options.set("receiptPrinterName", receiptPrinterName),
         window.api.database.options.set("labelPrinterName", labelPrinterName),
       ]);
+      const initial = initialPrintersRef.current;
+      const changeLines: string[] = [];
+      if (initial) {
+        if (initial.receipt !== receiptPrinterName) {
+          changeLines.push(`receipt.receiptPrinterName: ${initial.receipt || "(none)"} → ${receiptPrinterName || "(none)"}`);
+        }
+        if (initial.label !== labelPrinterName) {
+          changeLines.push(`receipt.labelPrinterName: ${initial.label || "(none)"} → ${labelPrinterName || "(none)"}`);
+        }
+      }
+      if (changeLines.length > 0) {
+        window.api?.activityLog?.log({
+          username: user?.username ?? "unknown",
+          action: "activityLog.actions.printersConfigUpdated",
+          details: changeLines.join("\n"),
+        }).catch(() => {});
+      }
+      initialPrintersRef.current = { receipt: receiptPrinterName, label: labelPrinterName };
       showToast(t("admin.printersSaved", "Printer settings saved"), "success");
     } catch {
       showToast(t("admin.printersSaveError", "Failed to save printer settings"), "error");

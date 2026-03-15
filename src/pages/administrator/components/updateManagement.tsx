@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { 
-  Download, 
-  WifiOff, 
-  CheckCircle, 
-  AlertCircle, 
-  Loader2, 
+import {
+  Download,
+  WifiOff,
+  CheckCircle,
+  AlertCircle,
+  Loader2,
   ArrowDown,
   Play,
   Shield,
@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { useUpdateChecker } from "../../../lib/hooks/useUpdateChecker";
 import { useToast } from "../../../lib/contexts/toastContext";
+import { useAuth } from "../../../lib/contexts/authContext";
 import {
   Dialog,
   DialogContent,
@@ -30,6 +31,7 @@ import { Button } from "../../../lib/components/button";
 export default function UpdateManagement() {
   const { t } = useTranslation();
   const { showToast } = useToast();
+  const { user } = useAuth();
   const { 
     state,
     clearError,
@@ -94,7 +96,8 @@ export default function UpdateManagement() {
   const handleConfirmDownload = async () => {
     setShowWarningDialog(false);
     if (!updateInfo?.downloadUrl) return;
-    
+
+    const version = updateInfo?.version ?? "unknown";
     setDownloadState({
       isDownloading: true,
       downloadProgress: 0,
@@ -104,10 +107,16 @@ export default function UpdateManagement() {
       isDownloaded: false,
       isPaused: false
     });
-    
+
+    window.api?.activityLog?.log({
+      username: user?.username ?? "unknown",
+      action: "activityLog.actions.updateDownloadStarted",
+      details: `Version: ${version}`,
+    }).catch(() => {});
+
     try {
       const result = await window.api.app.downloadUpdate(updateInfo.downloadUrl);
-      
+
       if (result.success) {
         setDownloadState({
           downloadProgress: 100,
@@ -115,8 +124,13 @@ export default function UpdateManagement() {
           downloadPath: result.path,
           isDownloading: false
         });
-        
-        // Show success toast
+
+        window.api?.activityLog?.log({
+          username: user?.username ?? "unknown",
+          action: "activityLog.actions.updateDownloadCompleted",
+          details: `Version: ${version}\nPath: ${result.path ?? ""}`,
+        }).catch(() => {});
+
         showToast(t("updates.downloadSuccess", "Download completed successfully!"), "success");
       } else {
         throw new Error(result.error || "Download failed");
@@ -161,13 +175,19 @@ export default function UpdateManagement() {
 
   const handleInstallUpdate = async () => {
     if (!downloadPath) return;
-    
+
     setDownloadState({ isInstalling: true });
-    
+
     try {
       const result = await window.api.app.installUpdate(downloadPath);
-      
+
       if (result.success) {
+        window.api?.activityLog?.log({
+          username: user?.username ?? "unknown",
+          action: "activityLog.actions.updateInstallStarted",
+          details: `Path: ${downloadPath}`,
+        }).catch(() => {});
+
         showToast(t("updates.installSuccess", "Installation started"), "success");
       } else {
         throw new Error(result.error || "Installation failed");
@@ -181,11 +201,17 @@ export default function UpdateManagement() {
 
   const handleCancelDownload = async () => {
     try {
-      // Actually cancel the download in the main process
       await window.api.app.cancelUpdateDownload();
+
+      const version = updateInfo?.version ?? "unknown";
+      window.api?.activityLog?.log({
+        username: user?.username ?? "unknown",
+        action: "activityLog.actions.updateDownloadCancelled",
+        details: `Version: ${version}`,
+      }).catch(() => {});
+
       showToast(t("updates.downloadCancelled", "Download cancelled"), "info");
-      
-      // Reset the UI state
+
       setDownloadState({
         isDownloading: false,
         downloadProgress: 0,

@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import type { SetURLSearchParams } from "react-router-dom";
 import { Input } from "../../../lib/components/input";
 import { Button } from "../../../lib/components/button";
 import { Checkbox } from "../../../lib/components/checkbox";
 import { useTranslation } from "react-i18next";
 import { useToast } from "../../../lib/contexts/toastContext";
+import { useAuth } from "../../../lib/contexts/authContext";
 import {
   Printer,
   Loader2,
@@ -31,9 +32,17 @@ interface ReceiptConfigProps {
   setSearchParams?: SetURLSearchParams;
 }
 
+const RECEIPT_FIELD_KEYS = [
+  "storeName", "storeAddress", "storePhone", "phoneNumbers",
+  "footerMessage", "serviceTicketFooterMessage", "receiptLanguage",
+  "storeLogo", "logoNeedsInversion", "logoSize",
+] as const;
+
 export const ReceiptConfig: React.FC<ReceiptConfigProps> = ({ subTabFromUrl, setSearchParams }) => {
   const { t } = useTranslation();
   const { showToast } = useToast();
+  const { user } = useAuth();
+  const initialReceiptRef = useRef<Record<string, string> | null>(null);
   const [printingSubTab, setPrintingSubTab] = useState<PrintingSubTab>(
     subTabFromUrl === "configurePrinters" ? "configurePrinters" : "receiptAndService"
   );
@@ -1519,6 +1528,18 @@ export const ReceiptConfig: React.FC<ReceiptConfigProps> = ({ subTabFromUrl, set
         setStoreLogo(logo || null);
         setLogoNeedsInversion(needsInversion === "true");
         setLogoSize(size ? parseInt(size) : 100);
+        initialReceiptRef.current = {
+          storeName: name || "",
+          storeAddress: address || "",
+          storePhone: phone || "",
+          phoneNumbers: phones || "[]",
+          footerMessage: footer || "",
+          serviceTicketFooterMessage: serviceFooter || "",
+          receiptLanguage: (language as string) || "fr",
+          storeLogo: logo || "",
+          logoNeedsInversion: needsInversion === "true" ? "true" : "false",
+          logoSize: size ? String(parseInt(size)) : "100",
+        };
         setLoading(false);
       })
       .catch(() => {
@@ -1587,11 +1608,12 @@ export const ReceiptConfig: React.FC<ReceiptConfigProps> = ({ subTabFromUrl, set
     e.preventDefault();
     setSaving(true);
     try {
+      const phoneNumbersJson = JSON.stringify(phoneNumbers);
       await Promise.all([
         window.api.database.options.set("storeName", storeName),
         window.api.database.options.set("storeAddress", storeAddress),
         window.api.database.options.set("storePhone", storePhone),
-        window.api.database.options.set("storePhoneNumbers", JSON.stringify(phoneNumbers)),
+        window.api.database.options.set("storePhoneNumbers", phoneNumbersJson),
         window.api.database.options.set("receiptFooterMessage", footerMessage),
         window.api.database.options.set("serviceTicketFooterMessage", serviceTicketFooterMessage),
         window.api.database.options.set("receiptLanguage", receiptLanguage),
@@ -1599,6 +1621,48 @@ export const ReceiptConfig: React.FC<ReceiptConfigProps> = ({ subTabFromUrl, set
         window.api.database.options.set("logoNeedsInversion", logoNeedsInversion ? "true" : "false"),
         window.api.database.options.set("logoSize", logoSize.toString()),
       ]);
+      const initial = initialReceiptRef.current;
+      const changeLines: string[] = [];
+      if (initial) {
+        const newVals: Record<string, string> = {
+          storeName,
+          storeAddress,
+          storePhone,
+          phoneNumbers: phoneNumbersJson,
+          footerMessage,
+          serviceTicketFooterMessage,
+          receiptLanguage,
+          storeLogo: storeLogo || "",
+          logoNeedsInversion: logoNeedsInversion ? "true" : "false",
+          logoSize: String(logoSize),
+        };
+        for (const key of RECEIPT_FIELD_KEYS) {
+          const oldVal = key === "storeLogo" && initial[key] ? "set" : key === "storeLogo" && !initial[key] ? "empty" : initial[key];
+          const newVal = key === "storeLogo" && newVals[key] ? "set" : key === "storeLogo" && !newVals[key] ? "empty" : newVals[key];
+          if (oldVal !== newVal) {
+            changeLines.push(`receipt.${key}: ${oldVal} → ${newVal}`);
+          }
+        }
+      }
+      if (changeLines.length > 0) {
+        window.api?.activityLog?.log({
+          username: user?.username ?? "unknown",
+          action: "activityLog.actions.receiptConfigUpdated",
+          details: changeLines.join("\n"),
+        }).catch(() => {});
+      }
+      initialReceiptRef.current = {
+        storeName,
+        storeAddress,
+        storePhone,
+        phoneNumbers: phoneNumbersJson,
+        footerMessage,
+        serviceTicketFooterMessage,
+        receiptLanguage,
+        storeLogo: storeLogo || "",
+        logoNeedsInversion: logoNeedsInversion ? "true" : "false",
+        logoSize: String(logoSize),
+      };
       showToast(t("admin.receiptSaved", "Receipt settings saved successfully!"), "success");
     } catch {
       showToast(t("admin.receiptSaveError", "Failed to save receipt settings"), "error");

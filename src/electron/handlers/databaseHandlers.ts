@@ -149,19 +149,21 @@ export function setupDatabaseHandlers() {
   });
 
   ipcMain.handle("db:products:update", async (_event, payload) => {
-    const { id, data, username, logAction } = payload ?? {};
+    const { id, data, username, logAction, skipLog } = payload ?? {};
     const updated = await updateProduct(id, data);
-    const logUsername = typeof username === "string" ? username : "unknown";
-    const action = logAction === "activityLog.actions.quantityAdded"
-      ? "activityLog.actions.quantityAdded"
-      : "activityLog.actions.productUpdated";
-    const details = action === "activityLog.actions.quantityAdded"
-      ? `Product: ${updated.name}\nQuantity: ${updated.quantity}\nSelling price: ${updated.sellingPrice}`
-      : `Product: ${updated.name}\nQuantity: ${updated.quantity}\nSelling price: ${updated.sellingPrice}`;
-    try {
-      await createActivityLog({ username: logUsername, action, details });
-    } catch (e) {
-      console.error("[ActivityLog] Product update log failed", e);
+    if (!skipLog) {
+      const logUsername = typeof username === "string" ? username : "unknown";
+      const action = logAction === "activityLog.actions.quantityAdded"
+        ? "activityLog.actions.quantityAdded"
+        : "activityLog.actions.productUpdated";
+      const details = action === "activityLog.actions.quantityAdded"
+        ? `Product: ${updated.name}\nQuantity: ${updated.quantity}\nSelling price: ${updated.sellingPrice}`
+        : `Product: ${updated.name}\nQuantity: ${updated.quantity}\nSelling price: ${updated.sellingPrice}`;
+      try {
+        await createActivityLog({ username: logUsername, action, details });
+      } catch (e) {
+        console.error("[ActivityLog] Product update log failed", e);
+      }
     }
     return updated;
   });

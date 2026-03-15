@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Input } from "../../../lib/components/input";
 import { Button } from "../../../lib/components/button";
 import { Switch } from "../../../lib/components/switch";
 import { useTranslation } from "react-i18next";
 import { useToast } from "../../../lib/contexts/toastContext";
 import { useCompletedServices } from "../../../lib/contexts/completedServicesContext";
+import { useAuth } from "../../../lib/contexts/authContext";
 import {
   Shield,
   Loader2,
@@ -28,10 +29,21 @@ import {
   DropdownMenuTrigger,
 } from "../../../lib/components/dropdownMenu";
 
+const OPTION_KEYS = [
+  "lowStockThreshold", "enableLowStockBadge", "enableOutOfStockBadge",
+  "enableOverduePaymentsBadge", "enableDueSoonPaymentsBadge", "enableOverdueBillsBadge",
+  "enableDueSoonBillsBadge", "enableOverdueServicesBadge", "enableDueSoonServicesBadge",
+  "dueSoonThresholdDays", "dueSoonBillsThresholdDays", "dueSoonServicesThresholdDays",
+  "cashierSalesHistoryDays", "enableCashierHistory", "enableCompletedServicesBadge",
+  "categoriesRequiringInfo",
+] as const;
+
 export const OptionsList: React.FC = () => {
   const { t } = useTranslation();
   const { showToast } = useToast();
   const { refreshCompletedServicesCount } = useCompletedServices();
+  const { user } = useAuth();
+  const initialValuesRef = useRef<Record<string, string> | null>(null);
   const [lowStock, setLowStock] = useState(0);
   const [enableLowStockBadge, setEnableLowStockBadge] = useState(true);
   const [enableOutOfStockBadge, setEnableOutOfStockBadge] = useState(true);
@@ -91,6 +103,24 @@ export const OptionsList: React.FC = () => {
         setEnableCompletedServicesBadge(enableCompletedServicesBadgeVal !== "false"); // Default to true if not set
         setCategoriesRequiringInfo(categoriesRequiringInfoVal ? JSON.parse(categoriesRequiringInfoVal) : []);
         setAllCategories(categoriesData || []);
+        initialValuesRef.current = {
+          lowStockThreshold: String(lowStockVal ?? 0),
+          enableLowStockBadge: enableBadgeVal !== "false" ? "true" : "false",
+          enableOutOfStockBadge: enableOutOfStockBadgeVal !== "false" ? "true" : "false",
+          enableOverduePaymentsBadge: enableOverdueVal !== "false" ? "true" : "false",
+          enableDueSoonPaymentsBadge: enableDueSoonVal !== "false" ? "true" : "false",
+          enableOverdueBillsBadge: enableOverdueBillsVal !== "false" ? "true" : "false",
+          enableDueSoonBillsBadge: enableDueSoonBillsVal !== "false" ? "true" : "false",
+          enableOverdueServicesBadge: enableOverdueServicesVal !== "false" ? "true" : "false",
+          enableDueSoonServicesBadge: enableDueSoonServicesVal !== "false" ? "true" : "false",
+          dueSoonThresholdDays: String(dueSoonThresholdVal ?? 2),
+          dueSoonBillsThresholdDays: String(dueSoonBillsThresholdVal ?? 2),
+          dueSoonServicesThresholdDays: String(dueSoonServicesThresholdVal ?? 2),
+          cashierSalesHistoryDays: String(cashierSalesHistoryDaysVal ?? 7),
+          enableCashierHistory: enableCashierHistoryVal !== "false" ? "true" : "false",
+          enableCompletedServicesBadge: enableCompletedServicesBadgeVal !== "false" ? "true" : "false",
+          categoriesRequiringInfo: categoriesRequiringInfoVal ?? "[]",
+        };
         setLoading(false);
       })
       .catch(() => {
@@ -103,28 +133,66 @@ export const OptionsList: React.FC = () => {
     e.preventDefault();
     setSaving(true);
     try {
+      const newValues: Record<string, string> = {
+        lowStockThreshold: String(lowStock),
+        enableLowStockBadge: String(enableLowStockBadge),
+        enableOutOfStockBadge: String(enableOutOfStockBadge),
+        enableOverduePaymentsBadge: String(enableOverduePaymentsBadge),
+        enableDueSoonPaymentsBadge: String(enableDueSoonPaymentsBadge),
+        enableOverdueBillsBadge: String(enableOverdueBillsBadge),
+        enableDueSoonBillsBadge: String(enableDueSoonBillsBadge),
+        enableOverdueServicesBadge: String(enableOverdueServicesBadge),
+        enableDueSoonServicesBadge: String(enableDueSoonServicesBadge),
+        dueSoonThresholdDays: String(dueSoonThresholdDays),
+        dueSoonBillsThresholdDays: String(dueSoonBillsThresholdDays),
+        dueSoonServicesThresholdDays: String(dueSoonServicesThresholdDays),
+        cashierSalesHistoryDays: String(cashierSalesHistoryDays),
+        enableCashierHistory: String(enableCashierHistory),
+        enableCompletedServicesBadge: String(enableCompletedServicesBadge),
+        categoriesRequiringInfo: JSON.stringify(categoriesRequiringInfo),
+      };
       await Promise.all([
-        window.api.database.options.set("lowStockThreshold", String(lowStock)),
-        window.api.database.options.set("enableLowStockBadge", String(enableLowStockBadge)),
-        window.api.database.options.set("enableOutOfStockBadge", String(enableOutOfStockBadge)),
-        window.api.database.options.set("enableOverduePaymentsBadge", String(enableOverduePaymentsBadge)),
-        window.api.database.options.set("enableDueSoonPaymentsBadge", String(enableDueSoonPaymentsBadge)),
-        window.api.database.options.set("enableOverdueBillsBadge", String(enableOverdueBillsBadge)),
-        window.api.database.options.set("enableDueSoonBillsBadge", String(enableDueSoonBillsBadge)),
-        window.api.database.options.set("enableOverdueServicesBadge", String(enableOverdueServicesBadge)),
-        window.api.database.options.set("enableDueSoonServicesBadge", String(enableDueSoonServicesBadge)),
-        window.api.database.options.set("dueSoonThresholdDays", String(dueSoonThresholdDays)),
-        window.api.database.options.set("dueSoonBillsThresholdDays", String(dueSoonBillsThresholdDays)),
-        window.api.database.options.set("dueSoonServicesThresholdDays", String(dueSoonServicesThresholdDays)),
-        window.api.database.options.set("cashierSalesHistoryDays", String(cashierSalesHistoryDays)),
-        window.api.database.options.set("enableCashierHistory", String(enableCashierHistory)),
-        window.api.database.options.set("enableCompletedServicesBadge", String(enableCompletedServicesBadge)),
-        window.api.database.options.set("categoriesRequiringInfo", JSON.stringify(categoriesRequiringInfo)),
+        window.api.database.options.set("lowStockThreshold", newValues.lowStockThreshold),
+        window.api.database.options.set("enableLowStockBadge", newValues.enableLowStockBadge),
+        window.api.database.options.set("enableOutOfStockBadge", newValues.enableOutOfStockBadge),
+        window.api.database.options.set("enableOverduePaymentsBadge", newValues.enableOverduePaymentsBadge),
+        window.api.database.options.set("enableDueSoonPaymentsBadge", newValues.enableDueSoonPaymentsBadge),
+        window.api.database.options.set("enableOverdueBillsBadge", newValues.enableOverdueBillsBadge),
+        window.api.database.options.set("enableDueSoonBillsBadge", newValues.enableDueSoonBillsBadge),
+        window.api.database.options.set("enableOverdueServicesBadge", newValues.enableOverdueServicesBadge),
+        window.api.database.options.set("enableDueSoonServicesBadge", newValues.enableDueSoonServicesBadge),
+        window.api.database.options.set("dueSoonThresholdDays", newValues.dueSoonThresholdDays),
+        window.api.database.options.set("dueSoonBillsThresholdDays", newValues.dueSoonBillsThresholdDays),
+        window.api.database.options.set("dueSoonServicesThresholdDays", newValues.dueSoonServicesThresholdDays),
+        window.api.database.options.set("cashierSalesHistoryDays", newValues.cashierSalesHistoryDays),
+        window.api.database.options.set("enableCashierHistory", newValues.enableCashierHistory),
+        window.api.database.options.set("enableCompletedServicesBadge", newValues.enableCompletedServicesBadge),
+        window.api.database.options.set("categoriesRequiringInfo", newValues.categoriesRequiringInfo),
       ]);
-      
+
+      const initial = initialValuesRef.current;
+      const changeLines: string[] = [];
+      if (initial) {
+        for (const key of OPTION_KEYS) {
+          const oldVal = initial[key];
+          const newVal = newValues[key];
+          if (oldVal !== newVal) {
+            changeLines.push(`option.${key}: ${oldVal} → ${newVal}`);
+          }
+        }
+      }
+      if (changeLines.length > 0) {
+        window.api?.activityLog?.log({
+          username: user?.username ?? "unknown",
+          action: "activityLog.actions.settingsUpdated",
+          details: changeLines.join("\n"),
+        }).catch(() => {});
+      }
+      initialValuesRef.current = newValues;
+
       // Refresh completed services count immediately if the setting changed
       refreshCompletedServicesCount();
-      
+
       showToast(t("admin.saved", "Settings saved successfully!"), "success");
     } catch {
       showToast(t("admin.saveError", "Failed to save settings"), "error");

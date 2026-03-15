@@ -33,6 +33,7 @@ import {
   CommandList,
 } from "../../../../lib/components/command";
 import { useToast } from "../../../../lib/contexts/toastContext";
+import { useAuth } from "../../../../lib/contexts/authContext";
 import { DatePicker } from "../../../../lib/components/datePicker";
 import {
   Pagination,
@@ -119,6 +120,15 @@ const ACTIVITY_LOG_ACTION_KEYS = [
   "activityLog.actions.serviceUpdated",
   "activityLog.actions.serviceDeleted",
   "activityLog.actions.backupCreated",
+  "activityLog.actions.settingsUpdated",
+  "activityLog.actions.receiptConfigUpdated",
+  "activityLog.actions.printersConfigUpdated",
+  "activityLog.actions.logRetentionUpdated",
+  "activityLog.actions.logCleanupRun",
+  "activityLog.actions.updateDownloadStarted",
+  "activityLog.actions.updateDownloadCompleted",
+  "activityLog.actions.updateDownloadCancelled",
+  "activityLog.actions.updateInstallStarted",
 ];
 
 function formatLogTime(createdAt: Date | string): string {
@@ -133,6 +143,9 @@ function formatLogTime(createdAt: Date | string): string {
 export default function ActivityLogs() {
   const { t, i18n } = useTranslation();
   const { showToast } = useToast();
+  const { user } = useAuth();
+  const userRef = useRef(user);
+  userRef.current = user;
   const navigate = useNavigate();
   const isRTL = i18n.language === "ar";
 
@@ -277,6 +290,34 @@ export default function ActivityLogs() {
     // Translate payment type values (Credit/Versement) when they appear at end of a line
     s = s.replace(/ Credit$/gm, " " + t("activityLog.detailsLabels.creditLabel", "Credit"));
     s = s.replace(/ Versement$/gm, " " + t("activityLog.detailsLabels.versementLabel", "Versement"));
+    // Admin: settings option keys (option.lowStockThreshold -> translated label)
+    const optionKeys = ["lowStockThreshold", "enableLowStockBadge", "enableOutOfStockBadge", "enableOverduePaymentsBadge", "enableDueSoonPaymentsBadge", "enableOverdueBillsBadge", "enableDueSoonBillsBadge", "enableOverdueServicesBadge", "enableDueSoonServicesBadge", "dueSoonThresholdDays", "dueSoonBillsThresholdDays", "dueSoonServicesThresholdDays", "cashierSalesHistoryDays", "enableCashierHistory", "enableCompletedServicesBadge", "categoriesRequiringInfo"];
+    optionKeys.forEach((key) => {
+      const labelKey = "option" + key.charAt(0).toUpperCase() + key.slice(1);
+      s = s.replace(new RegExp("option\\." + key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g"), t("activityLog.detailsLabels." + labelKey, key));
+    });
+    // Admin: receipt/store keys (receipt.storeName -> translated label)
+    const receiptKeyToLabel: Record<string, string> = {
+      storeName: "receiptStoreName", storeAddress: "receiptStoreAddress", storePhone: "receiptStorePhone",
+      phoneNumbers: "receiptPhoneNumbers", footerMessage: "receiptFooterMessage", serviceTicketFooterMessage: "receiptServiceTicketFooterMessage",
+      receiptLanguage: "receiptLanguage", storeLogo: "receiptStoreLogo", logoNeedsInversion: "receiptLogoInversion",
+      logoSize: "receiptLogoSize", receiptPrinterName: "receiptReceiptPrinterName", labelPrinterName: "receiptLabelPrinterName",
+    };
+    Object.entries(receiptKeyToLabel).forEach(([key, labelKey]) => {
+      s = s.replace(new RegExp("receipt\\." + key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g"), t("activityLog.detailsLabels." + labelKey, key));
+    });
+    // Admin: permission keys in account details
+    const permissionKeys = ["canAccessCashier", "canAccessStock", "canAccessClients", "canAccessBills", "canAccessHistory", "canAccessServices", "canAccessDashboard", "canManageUsers", "canViewLogs", "canManageSettings"];
+    permissionKeys.forEach((key) => {
+      const labelKey = "permission" + key.charAt(0).toUpperCase() + key.slice(1);
+      s = s.replace(new RegExp(key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g"), t("activityLog.detailsLabels." + labelKey, key));
+    });
+    // Admin: log retention, cleanup, update details
+    s = s.replace(/^Retention: /gm, k("retentionDays") + " ");
+    s = s.replace(/^Entries removed: /gm, k("entriesRemoved") + " ");
+    s = s.replace(/^Version: /gm, k("version") + " ");
+    s = s.replace(/^Path: /gm, k("updateDownloadPath") + " ");
+    s = s.replace(/ → /g, " " + t("activityLog.detailsLabels.previousToNew", " → ") + " ");
     return s;
   };
 
@@ -363,7 +404,15 @@ export default function ActivityLogs() {
     (async () => {
       setCleaning(true);
       try {
-        await window.api.activityLog.cleanupOld();
+        const count = await window.api.activityLog.cleanupOld();
+        const currentUser = userRef.current;
+        if (!cancelled && count > 0 && currentUser?.username) {
+          window.api?.activityLog?.log({
+            username: currentUser.username,
+            action: "activityLog.actions.logCleanupRun",
+            details: `Entries removed: ${count}`,
+          }).catch(() => {});
+        }
       } catch {
         showToast(t("activityLog.errorCleanup", "Cleanup failed"), "error");
       } finally {
@@ -395,6 +444,11 @@ export default function ActivityLogs() {
     try {
       await window.api.activityLog.setRetentionDays(num);
       setRetentionDays(num);
+      window.api?.activityLog?.log({
+        username: user?.username ?? "unknown",
+        action: "activityLog.actions.logRetentionUpdated",
+        details: `Retention: ${num} days`,
+      }).catch(() => {});
       showToast(t("activityLog.retentionSaved", "Retention days saved"), "success");
     } catch (err) {
       showToast(t("activityLog.errorSaveRetention", "Failed to save retention"), "error");

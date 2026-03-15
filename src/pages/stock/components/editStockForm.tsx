@@ -109,15 +109,21 @@ export default function EditStockForm({
         photo,
       } = form;
 
-      await window.api.database.products.update(product.id, {
-        name,
-        categoryName,
-        quantity: Number(quantity),
-        boughtPrice: Number(boughtPrice),
-        sellingPrice: Number(sellingPrice),
-        codebar,
-        photo,
-      }, user?.username ?? "unknown");
+      await window.api.database.products.update(
+        product.id,
+        {
+          name,
+          categoryName,
+          quantity: Number(quantity),
+          boughtPrice: Number(boughtPrice),
+          sellingPrice: Number(sellingPrice),
+          codebar,
+          photo,
+        },
+        user?.username ?? "unknown",
+        undefined,
+        true // skipLog: form logs with detailed changes
+      );
       const changeLines: string[] = [];
       if (String(name) !== String(product.name)) changeLines.push(`Name: ${product.name ?? ""} → ${name ?? ""}`);
       if (String(categoryName) !== String(product.categoryName ?? "")) changeLines.push(`Category: ${product.categoryName ?? ""} → ${categoryName ?? ""}`);

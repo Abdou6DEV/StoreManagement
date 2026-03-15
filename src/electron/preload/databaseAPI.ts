@@ -10,8 +10,9 @@ export const databaseAPI = {
       id: string,
       data: Partial<Omit<Product, "id" | "createdAt" | "updatedAt">>,
       username?: string,
-      logAction?: string
-    ) => ipcRenderer.invoke("db:products:update", { id, data, username, logAction }),
+      logAction?: string,
+      skipLog?: boolean
+    ) => ipcRenderer.invoke("db:products:update", { id, data, username, logAction, skipLog }),
     delete: (id: string) => ipcRenderer.invoke("db:products:delete", id),
     getSalesCounts: () => ipcRenderer.invoke("db:products:getSalesCounts"),
     getWithPurchaseHistory: (id: string) =>
