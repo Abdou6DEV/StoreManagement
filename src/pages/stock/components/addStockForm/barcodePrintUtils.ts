@@ -7,16 +7,33 @@ export interface BarcodeLabelData {
   barcode: string;
 }
 
+/** Label size: 20×40mm (default), 35×45mm, or 25×50mm (width × height). Content is scaled to fit. */
+export type LabelSize = '20x40' | '35x45' | '25x50';
+
+/** Dimensions as width × height (mm). 20×40 = 40mm wide × 20mm tall; 25×50 = 50×25; 35×45 = 45×35. */
+const LABEL_SIZE_MM: Record<LabelSize, { width: number; height: number }> = {
+  '20x40': { width: 40, height: 20 },
+  '35x45': { width: 45, height: 35 },  // 35mm height × 45mm width
+  '25x50': { width: 50, height: 25 },  // 25mm height × 50mm width
+};
+
+/** Uniform scale so content fills the label without stretching (scale up, crop overflow). */
+function getLabelScale(size: LabelSize): number {
+  const { width, height } = LABEL_SIZE_MM[size];
+  return Math.max(width / 40, height / 20);
+}
+
 /**
  * Print barcode label with real, scannable barcode
- * Supports multiple labels per print, size = 40mm x 20mm (4cm x 2cm) per label
+ * Supports multiple labels per print. Base size 40×20mm; optional 35×45 or 25×50 with scaling.
  */
 export const printBarcodeLabel = async (
   data: BarcodeLabelData,
   quantity = 1,
   showBarcode = true,
   showStoreName = true,
-  previousPrice?: number | string
+  previousPrice?: number | string,
+  labelSize: LabelSize = '20x40'
 ): Promise<void> => {
   const { productName, price, barcode } = data;
 
@@ -122,12 +139,17 @@ export const printBarcodeLabel = async (
     ? `<div class="label-no-barcode-big-price"><span class="big-price${priceWrapperClass}">${priceContent}</span></div>`
     : '';
 
+  const { width: widthMm, height: heightMm } = LABEL_SIZE_MM[labelSize];
+  const scale = getLabelScale(labelSize);
+
   const labelHTML = `
-      <div class="label ${noBarcodeClass} ${noStoreNameClass}">
-        ${storeNameLine}
-        <div class="product-name">${productName}</div>
-        ${hasBarcode ? `<div class="price${priceWrapperClass}">${priceContent}</div>` : ''}
-        ${hasBarcode ? barcodeHTML : noBarcodeBigPriceHTML}
+      <div class="label-outer">
+        <div class="label ${noBarcodeClass} ${noStoreNameClass}">
+          ${storeNameLine}
+          <div class="product-name">${productName}</div>
+          ${hasBarcode ? `<div class="price${priceWrapperClass}">${priceContent}</div>` : ''}
+          ${hasBarcode ? barcodeHTML : noBarcodeBigPriceHTML}
+        </div>
       </div>
   `;
 
@@ -143,7 +165,7 @@ export const printBarcodeLabel = async (
       <style>
         ${fontFaceCss}
         @page {
-          size: 40mm auto; /* 4cm width, auto height - fixed height causes blank prints */
+          size: ${widthMm}mm auto;
           margin: 0;
         }
         @media print {
@@ -156,10 +178,17 @@ export const printBarcodeLabel = async (
             margin: 0 !important;
             padding: 0 !important;
             background: white !important;
-            width: 40mm !important;
+            width: ${widthMm}mm !important;
             print-color-adjust: exact !important;
             -webkit-print-color-adjust: exact !important;
             color-adjust: exact !important;
+          }
+          .label-outer {
+            width: ${widthMm}mm !important;
+            height: ${heightMm}mm !important;
+            overflow: hidden !important;
+            page-break-after: always;
+            page-break-inside: avoid;
           }
           .label {
             margin: 0 !important;
@@ -170,6 +199,8 @@ export const printBarcodeLabel = async (
             position: relative !important;
             left: 0 !important;
             top: 0 !important;
+            transform: scale(${scale}) !important;
+            transform-origin: center center !important;
           }
         }
         body {
@@ -177,23 +208,43 @@ export const printBarcodeLabel = async (
           margin: 0;
           padding: 0;
           background: white;
-          width: 40mm;
+          width: ${widthMm}mm;
         }
-        .label {
-          text-align: center;
-          width: 40mm;
-          height: 20mm;
+        .label-outer {
+          width: ${widthMm}mm;
+          height: ${heightMm}mm;
           display: flex;
-          flex-direction: column;
           align-items: center;
-          justify-content: space-between;
+          justify-content: center;
+          overflow: hidden;
           padding: 0;
           margin: 0;
           page-break-after: always;
           page-break-inside: avoid;
           box-sizing: border-box;
         }
-        .label:first-child {
+        .label-outer:first-child {
+          page-break-before: auto;
+        }
+        .label-outer:last-child {
+          page-break-after: auto;
+        }
+        .label {
+          text-align: center;
+          width: 40mm;
+          height: 20mm;
+          flex-shrink: 0;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: space-between;
+          padding: 0;
+          margin: 0;
+          box-sizing: border-box;
+          transform: scale(${scale});
+          transform-origin: center center;
+        }
+        .label-outer:first-child .label {
           page-break-before: auto;
         }
         .label-no-barcode {
@@ -220,9 +271,6 @@ export const printBarcodeLabel = async (
         }
         .label-no-barcode-big-price .price-currency {
           font-size: 0.7em;
-        }
-        .label:last-child {
-          page-break-after: auto;
         }
         .label-store-name {
           align-self: center;

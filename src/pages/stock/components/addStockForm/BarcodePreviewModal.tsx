@@ -7,6 +7,7 @@ import { Button } from '../../../../lib/components/button';
 import StyledNumberInput from '../../../../lib/components/inputNumber';
 import { Checkbox } from '../../../../lib/components/checkbox';
 import { generateRealBarcode, getRecommendedFormat } from '../../../../lib/utils/barcodeVisual';
+import type { LabelSize } from './barcodePrintUtils';
 import { Tooltip } from '../../../../lib/components/tooltip';
 import { useAuth } from '../../../../lib/contexts/authContext';
 import '@fontsource/instrument-serif';
@@ -19,7 +20,7 @@ interface BarcodePreviewModalProps {
   barcode: string;
   /** When set (e.g. user changed price in edit form), can show previous price with strikethrough next to current price */
   previousPrice?: number | string;
-  onPrint: (quantity?: number, showBarcode?: boolean, showStoreName?: boolean, showPreviousPrice?: boolean) => void;
+  onPrint: (quantity?: number, showBarcode?: boolean, showStoreName?: boolean, showPreviousPrice?: boolean, labelSize?: LabelSize) => void;
 }
 
 const SHOW_BARCODE_CACHE_KEY = 'barcodePreview_showBarcode';
@@ -51,6 +52,7 @@ export const BarcodePreviewModal: React.FC<BarcodePreviewModalProps> = ({
   const [storeNameFetched, setStoreNameFetched] = useState(false);
   const [labelPrinterName, setLabelPrinterName] = useState<string | null>(null);
   const [showNoPrinterDialog, setShowNoPrinterDialog] = useState<boolean>(true);
+  const [labelSize, setLabelSize] = useState<LabelSize>('20x40');
 
   useEffect(() => {
     if (!open) return;
@@ -394,6 +396,28 @@ export const BarcodePreviewModal: React.FC<BarcodePreviewModalProps> = ({
           )}
         </div>
 
+        {/* Label size */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-foreground">
+            {t('stock.labelSize', 'Label size')}
+          </label>
+          <div className="flex flex-wrap gap-3">
+            {(['20x40', '35x45', '25x50'] as const).map((size) => (
+              <label key={size} className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="labelSize"
+                  value={size}
+                  checked={labelSize === size}
+                  onChange={() => setLabelSize(size)}
+                  className="text-green-600 focus:ring-green-500"
+                />
+                <span className="text-sm">{size.replace('x', '×')} mm</span>
+              </label>
+            ))}
+          </div>
+        </div>
+
         {/* Quantity Input */}
         <div className="space-y-2">
           <label className="text-sm font-medium text-foreground">
@@ -434,7 +458,7 @@ export const BarcodePreviewModal: React.FC<BarcodePreviewModalProps> = ({
                   const shouldShowBarcode = canShowBarcode && showBarcode === true;
                   const shouldShowStoreName = hasStoreName && showStoreName === true;
                   const shouldShowPreviousPrice = showPreviousPrice && previousPrice != null && previousPrice !== '';
-                  onPrint(qty, shouldShowBarcode, shouldShowStoreName, shouldShowPreviousPrice);
+                  onPrint(qty, shouldShowBarcode, shouldShowStoreName, shouldShowPreviousPrice, labelSize);
                 }}
                 disabled={!hasLabelPrinter}
                 className="bg-green-600 hover:bg-green-700 text-white disabled:opacity-50 disabled:pointer-events-none"

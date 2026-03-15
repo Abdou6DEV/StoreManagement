@@ -1149,6 +1149,7 @@
     "showBarcode": "إظهار الباركود",
     "showPreviousPrice": "إظهار السعر السابق",
     "showStoreNameOnLabel": "إظهار اسم المتجر ",
+    "labelSize": "حجم الملصق",
     "storeNameRequiredForLabelTooltip": "أدخل اسم المتجر في الإدارة → الإيصال وتذكرة الخدمة لعرضه على الملصقات.",
     "labelPrinterNotSetTitle": "طابعة الملصقات غير معينة",
     "labelPrinterNotSetMessage": "يجب تعيين طابعة الملصقات من صفحة الإدارة لطباعة ملصقات الباركود. انتقل إلى الإدارة → تكوين الطباعة → تكوين الطابعات واختر طابعة الملصقات.",

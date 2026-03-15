@@ -7,7 +7,8 @@ export const appAPI = {
   cancelUpdateDownload: () => ipcRenderer.invoke("app:cancelUpdateDownload"),
   installUpdate: (path: string) => ipcRenderer.invoke("app:installUpdate", path),
   getPrinters: () => ipcRenderer.invoke("app:getPrinters") as Promise<{ name: string; displayName: string; status: number }[]>,
-  printSilently: (html: string, deviceName?: string) => ipcRenderer.invoke("app:printSilently", html, deviceName),
+  printSilently: (html: string, deviceName?: string, options?: { pageWidthMm?: number; pageHeightMm?: number }) =>
+    ipcRenderer.invoke("app:printSilently", html, deviceName, options),
   
   // Event listeners for download progress
   onDownloadProgress: (callback: (data: any) => void) => {

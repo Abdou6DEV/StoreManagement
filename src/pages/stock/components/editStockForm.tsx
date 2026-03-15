@@ -63,7 +63,8 @@ export default function EditStockForm({
     quantity: number = 1,
     showBarcode: boolean = true,
     showStoreName: boolean = true,
-    showPreviousPrice: boolean = false
+    showPreviousPrice: boolean = false,
+    labelSize: '20x40' | '35x45' | '25x50' = '20x40'
   ) => {
     if (!form || !product) return;
 
@@ -81,7 +82,8 @@ export default function EditStockForm({
         quantity,
         shouldShowBarcode,
         shouldShowStoreName,
-        showPreviousPrice ? previousPrice : undefined
+        showPreviousPrice ? previousPrice : undefined,
+        labelSize
       );
       showToast(t("stock.barcodePrinted", "Barcode printed successfully"), "success");
     } catch (error) {

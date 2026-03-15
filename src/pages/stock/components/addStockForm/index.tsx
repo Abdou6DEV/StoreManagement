@@ -157,7 +157,8 @@ export default function AddStockForm({
     quantity = 1,
     showBarcode = true,
     showStoreName = true,
-    showPreviousPrice = false
+    showPreviousPrice = false,
+    labelSize: '20x40' | '35x45' | '25x50' = '20x40'
   ) => {
     try {
       const shouldShowBarcode = showBarcode === true;
@@ -178,7 +179,8 @@ export default function AddStockForm({
         quantity,
         shouldShowBarcode,
         shouldShowStoreName,
-        previousPrice
+        previousPrice,
+        labelSize
       );
       setShowBarcodePreview(false);
       showToast(t("stock.barcodePrint", "Printing barcode..."), "info");

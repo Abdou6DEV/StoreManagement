@@ -785,6 +785,7 @@
     "showBarcode": "Afficher le code-barres",
     "showPreviousPrice": "Afficher l'ancien prix",
     "showStoreNameOnLabel": "Afficher le nom du magasin",
+    "labelSize": "Taille de l'étiquette",
     "storeNameRequiredForLabelTooltip": "Saisissez le nom du magasin dans Admin → Reçu et ticket de service pour l'afficher sur les étiquettes.",
     "labelPrinterNotSetTitle": "Imprimante d'étiquettes non configurée",
     "labelPrinterNotSetMessage": "Vous devez configurer l'imprimante d'étiquettes dans la page Admin pour imprimer les étiquettes code-barres. Allez dans Admin → Configurer l'impression → Configurer les imprimantes et choisissez votre imprimante d'étiquettes.",

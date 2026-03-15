@@ -1449,6 +1449,7 @@
     "showBarcode": "Show Barcode",
     "showPreviousPrice": "Show previous price",
     "showStoreNameOnLabel": "Show store name",
+    "labelSize": "Label size",
     "storeNameRequiredForLabelTooltip": "Enter the store name in Admin → Receipt & Service Ticket to show it on labels.",
     "labelPrinterNotSetTitle": "Label printer not set",
     "labelPrinterNotSetMessage": "You need to set up the label printer in the Admin page to print barcode labels. Go to Admin → Configure Printing → Configure Printers and choose your label printer.",
