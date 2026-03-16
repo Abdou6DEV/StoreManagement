@@ -459,24 +459,39 @@ export async function updateSale(
         : [];
       
       const productMap = new Map(products.map(p => [p.id, p]));
-      
-      // Restore original quantities in batch
-      if (oldProductIds.length > 0) {
+
+      // Net-delta stock update: one update per product so qty never miscalculates.
+      // delta = originalSaleQty - newSaleQty (positive = put back, negative = take more).
+      const originalQtyByProduct = new Map<string, number>();
+      originalSale.saleItems
+        .filter((item): item is typeof item & { productId: string } => !!item.productId)
+        .forEach((item) => {
+          const id = item.productId;
+          originalQtyByProduct.set(id, (originalQtyByProduct.get(id) ?? 0) + item.quantity);
+        });
+      const newQtyByProduct = new Map<string, number>();
+      processedItems
+        .filter((item): item is typeof item & { productId: string } => !!item.productId)
+        .forEach((item) => {
+          const id = item.productId;
+          newQtyByProduct.set(id, (newQtyByProduct.get(id) ?? 0) + item.quantity);
+        });
+
+      if (allProductIds.length > 0) {
         await Promise.all(
-          originalSale.saleItems
-            .filter(item => item.productId)
-            .map(item => {
-              const productId = item.productId as string;
-              const product = productMap.get(productId);
-              if (product) {
-                const newQty = product.quantity + item.quantity;
-                return tx.product.update({
-                  where: { id: productId },
-                  data: { quantity: newQty },
-                });
-              }
-              return Promise.resolve();
-            })
+          allProductIds.map((productId) => {
+            const product = productMap.get(productId);
+            if (!product) return Promise.resolve();
+            const originalQty = originalQtyByProduct.get(productId) ?? 0;
+            const newQty = newQtyByProduct.get(productId) ?? 0;
+            const delta = originalQty - newQty;
+            if (delta === 0) return Promise.resolve();
+            const updatedQuantity = Math.max(0, product.quantity + delta);
+            return tx.product.update({
+              where: { id: productId },
+              data: { quantity: updatedQuantity },
+            });
+          })
         );
       }
 
@@ -484,26 +499,6 @@ export async function updateSale(
       await tx.saleItem.deleteMany({
         where: { saleId },
       });
-
-      // Update quantities for new items in batch
-      if (newProductIds.length > 0) {
-        await Promise.all(
-          processedItems
-            .filter(item => item.productId)
-            .map(item => {
-              const productId = item.productId as string;
-              const product = productMap.get(productId);
-              if (product) {
-                const newQty = Math.max(0, product.quantity - item.quantity);
-                return tx.product.update({
-                  where: { id: productId },
-                  data: { quantity: newQty },
-                });
-              }
-              return Promise.resolve();
-            })
-        );
-      }
 
       // Calculate totals for performance
       const totalAmount = processedItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);

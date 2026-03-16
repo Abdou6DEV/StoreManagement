@@ -152,7 +152,7 @@ export default function EditServiceModal({
 
   const handlePrintServiceLabel = async () => {
     if (!service) return;
-    const labelPrinterName = (await window.api.database.options.get("labelPrinterName")) ?? "";
+    const labelPrinterName = (await window.api.database.options.get("labelPrinterName_20x40")) ?? (await window.api.database.options.get("labelPrinterName")) ?? "";
     if (!labelPrinterName.trim()) {
       setShowNoLabelPrinterModal(true);
       return;

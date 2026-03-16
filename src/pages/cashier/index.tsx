@@ -64,7 +64,7 @@ export default function CashierPage() {
   const { t, i18n } = useTranslation();
   const isRTL = i18n.language === "ar";
   const { refreshCompletedServicesCount } = useCompletedServices();
-  const { updateProductQuantities } = useStock();
+  const { updateProductQuantities, refetchProducts } = useStock();
   const [productRefreshKey, setProductRefreshKey] = useState(0);
   const [salesRefreshKey, setSalesRefreshKey] = useState(0);
   const [showProductBrowser, setShowProductBrowser] = useState(false);
@@ -191,7 +191,7 @@ export default function CashierPage() {
     );
   };
 
-  const handleSaleComplete = (saleId?: string, soldItems?: CartItem[]) => {
+  const handleSaleComplete = async (saleId?: string, soldItems?: CartItem[]) => {
     if (saleId) {
       setLastSaleId(saleId);
       // Don't show receipt modal - printing is handled directly in cashier session
@@ -212,6 +212,12 @@ export default function CashierPage() {
       if (updates.length > 0) {
         updateProductQuantities(updates);
       }
+      // Refresh stock context (quantity + totalSold) so stock table stays in sync
+      try {
+        await refetchProducts();
+      } catch (error) {
+        rendererLogger.error("Error refreshing stock after sale", "CashierPage", error);
+      }
     }
 
     // Refresh sales history when a sale is completed
@@ -221,7 +227,7 @@ export default function CashierPage() {
     refreshCompletedServicesCount();
   };
 
-  const handleSaleCompleted = (saleId?: string, soldItems?: CartItem[]) => {
+  const handleSaleCompleted = async (saleId?: string, soldItems?: CartItem[]) => {
     console.log('handleSaleCompleted called with:', { saleId, soldItems });
     // Update product quantities locally for immediate UI feedback
     if (soldItems) {
@@ -237,6 +243,12 @@ export default function CashierPage() {
       
       if (updates.length > 0) {
         updateProductQuantities(updates);
+      }
+      // Refresh stock context (quantity + totalSold) so stock table stays in sync
+      try {
+        await refetchProducts();
+      } catch (error) {
+        rendererLogger.error("Error refreshing stock after sale", "CashierPage", error);
       }
     }
 

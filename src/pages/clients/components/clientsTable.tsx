@@ -176,21 +176,32 @@ const ClientsTable: React.FC<ClientsTableProps> = ({
                   </Tooltip>
 
                   <Tooltip
-                    content={t("clients.deleteTooltip", "Delete client")}
+                    content={
+                      (client.totalPurchases ?? 0) > 0 || (client.totalCredit ?? 0) > 0 || (client.totalVersement ?? 0) > 0
+                        ? t("clients.cannotDeleteHasSalesOrCredit", "Cannot delete: client has sales or unpaid balance")
+                        : t("clients.deleteTooltip", "Delete client")
+                    }
                   >
-                    <Button
-                      onClick={() => onDelete(client.id)}
-                      size="sm"
-                      variant="outline"
-                      className="text-red-600 border-red-200 hover:bg-red-50 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-950/30"
-                      disabled={deleteLoading === client.id}
-                    >
-                      {deleteLoading === client.id ? (
-                        <Loader2 className="w-3 h-3 animate-spin" />
-                      ) : (
-                        <Trash2 className="w-3 h-3" />
-                      )}
-                    </Button>
+                    <span className="inline-block">
+                      <Button
+                        onClick={() => onDelete(client.id)}
+                        size="sm"
+                        variant="outline"
+                        className="text-red-600 border-red-200 hover:bg-red-50 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-950/30"
+                        disabled={
+                          deleteLoading === client.id ||
+                          (client.totalPurchases ?? 0) > 0 ||
+                          (client.totalCredit ?? 0) > 0 ||
+                          (client.totalVersement ?? 0) > 0
+                        }
+                      >
+                        {deleteLoading === client.id ? (
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                        ) : (
+                          <Trash2 className="w-3 h-3" />
+                        )}
+                      </Button>
+                    </span>
                   </Tooltip>
                 </div>
               </td>

@@ -10,6 +10,12 @@ export interface BarcodeLabelData {
 /** Label size: 20×40mm (default), 35×45mm, or 25×50mm (width × height). Content is scaled to fit. */
 export type LabelSize = '20x40' | '35x45' | '25x50';
 
+const LABEL_PRINTER_OPTION_KEYS: Record<LabelSize, string> = {
+  '20x40': 'labelPrinterName_20x40',
+  '35x45': 'labelPrinterName_35x45',
+  '25x50': 'labelPrinterName_25x50',
+};
+
 /** Dimensions as width × height (mm). 20×40 = 40mm wide × 20mm tall; 25×50 = 50×25; 35×45 = 45×35. */
 const LABEL_SIZE_MM: Record<LabelSize, { width: number; height: number }> = {
   '20x40': { width: 40, height: 20 },
@@ -613,7 +619,8 @@ export const printBarcodeLabel = async (
           if (!iframeHTML || iframeHTML.length < 100) {
             throw new Error('Iframe HTML is invalid or too short');
           }
-          const deviceName = (await window.api.database.options.get("labelPrinterName")) || "";
+          const optionKey = LABEL_PRINTER_OPTION_KEYS[labelSize];
+          const deviceName = (await window.api.database.options.get(optionKey)) || (await window.api.database.options.get("labelPrinterName")) || "";
           window.api.app.printSilently(`<!DOCTYPE html>${iframeHTML}`, deviceName)
             .then(() => {
               if (iframe.parentNode) {

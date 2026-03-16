@@ -10,6 +10,7 @@ import SectionControls from "./sectionControls";
 import { ConfirmDialog } from "../../../../lib/components/confirmDialog";
 import { useToast } from "../../../../lib/contexts/toastContext";
 import { useAuth } from "../../../../lib/contexts/authContext";
+import { useStock } from "../../../../lib/contexts/stockContext";
 import { printReceiptDirectly } from "../../../cashier/components/receiptModal";
 
 interface SalesSectionProps {
@@ -31,6 +32,8 @@ export default function SalesSection({
 }: SalesSectionProps) {
   const { t } = useTranslation();
   const { showToast } = useToast();
+  const { user } = useAuth();
+  const { refetchProducts } = useStock();
   const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -150,11 +153,23 @@ export default function SalesSection({
     if (onRefresh) {
       await onRefresh();
     }
+    // Refresh stock so product quantities stay in sync
+    try {
+      await refetchProducts();
+    } catch (error) {
+      console.error("Error refreshing stock after sale update:", error);
+    }
   };
 
-  const handleSaleDeleted = (saleId: string) => {
-    // Handle sale deletion if needed
+  const handleSaleDeleted = async (saleId: string) => {
     handleCloseModal();
+    if (onRefresh) onRefresh();
+    // Refresh stock so product quantities stay in sync
+    try {
+      await refetchProducts();
+    } catch (error) {
+      console.error("Error refreshing stock after sale delete:", error);
+    }
   };
 
   const handleDeleteSale = (sale: SaleForHistory) => {
@@ -185,7 +200,13 @@ export default function SalesSection({
       if (onRefresh) {
         onRefresh();
       }
-      
+      // Refresh stock so product quantities stay in sync
+      try {
+        await refetchProducts();
+      } catch (error) {
+        console.error("Error refreshing stock after sale delete:", error);
+      }
+
       // Show success message
       showToast(t("cashier.saleDeleted", "Sale deleted successfully"), "success");
     } catch (error) {

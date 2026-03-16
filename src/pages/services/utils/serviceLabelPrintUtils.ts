@@ -215,7 +215,7 @@ export const printServiceLabel = async (
           }
           if (window.api?.app?.printSilently) {
             const iframeHTML = iframeDoc.documentElement.outerHTML;
-            const deviceName = (await window.api.database.options.get('labelPrinterName')) || '';
+            const deviceName = (await window.api.database.options.get('labelPrinterName_20x40')) || (await window.api.database.options.get('labelPrinterName')) || '';
             await window.api.app.printSilently(`<!DOCTYPE html>${iframeHTML}`, deviceName);
           } else {
             iframe.contentWindow?.print();

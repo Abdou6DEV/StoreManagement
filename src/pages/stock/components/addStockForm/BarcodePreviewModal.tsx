@@ -25,6 +25,8 @@ interface BarcodePreviewModalProps {
 
 const SHOW_BARCODE_CACHE_KEY = 'barcodePreview_showBarcode';
 const SHOW_STORE_NAME_CACHE_KEY = 'barcodePreview_showStoreName';
+const LABEL_SIZE_CACHE_KEY = 'barcodePreview_labelSize';
+const VALID_LABEL_SIZES: LabelSize[] = ['20x40', '35x45', '25x50'];
 
 export const BarcodePreviewModal: React.FC<BarcodePreviewModalProps> = ({
   open,
@@ -50,9 +52,12 @@ export const BarcodePreviewModal: React.FC<BarcodePreviewModalProps> = ({
   });
   const [storeName, setStoreName] = useState<string>('');
   const [storeNameFetched, setStoreNameFetched] = useState(false);
-  const [labelPrinterName, setLabelPrinterName] = useState<string | null>(null);
+  const [labelPrinters, setLabelPrinters] = useState<Record<LabelSize, string> | null>(null);
   const [showNoPrinterDialog, setShowNoPrinterDialog] = useState<boolean>(true);
-  const [labelSize, setLabelSize] = useState<LabelSize>('20x40');
+  const [labelSize, setLabelSize] = useState<LabelSize>(() => {
+    const cached = localStorage.getItem(LABEL_SIZE_CACHE_KEY);
+    return cached && VALID_LABEL_SIZES.includes(cached as LabelSize) ? (cached as LabelSize) : '20x40';
+  });
 
   useEffect(() => {
     if (!open) return;
@@ -62,12 +67,23 @@ export const BarcodePreviewModal: React.FC<BarcodePreviewModalProps> = ({
       setStoreName(name ?? '');
       setStoreNameFetched(true);
     });
-    void window.api?.database?.options?.get?.('labelPrinterName').then((name: string | undefined) => {
-      setLabelPrinterName(name ?? '');
+    void Promise.all([
+      window.api?.database?.options?.get?.('labelPrinterName_20x40'),
+      window.api?.database?.options?.get?.('labelPrinterName_35x45'),
+      window.api?.database?.options?.get?.('labelPrinterName_25x50'),
+      window.api?.database?.options?.get?.('labelPrinterName'),
+    ]).then(([p20, p35, p25, legacy]) => {
+      const fallback = legacy ?? '';
+      setLabelPrinters({
+        '20x40': p20 ?? fallback,
+        '35x45': p35 ?? fallback,
+        '25x50': p25 ?? fallback,
+      });
     });
   }, [open]);
 
-  const hasLabelPrinter = labelPrinterName != null && labelPrinterName.trim() !== '';
+  const printerForSize = labelPrinters?.[labelSize] ?? '';
+  const hasLabelPrinter = labelPrinters != null && printerForSize.trim() !== '';
   const hasStoreName = storeName != null && storeName.trim() !== '';
   const canAccessAdmin = canAccessPage('administrator');
 
@@ -95,6 +111,11 @@ export const BarcodePreviewModal: React.FC<BarcodePreviewModalProps> = ({
   const handleShowStoreNameChange = (checked: boolean) => {
     setShowStoreName(checked);
     localStorage.setItem(SHOW_STORE_NAME_CACHE_KEY, String(checked));
+  };
+
+  const handleLabelSizeChange = (size: LabelSize) => {
+    setLabelSize(size);
+    localStorage.setItem(LABEL_SIZE_CACHE_KEY, size);
   };
 
   const formatPrice = (price: number | string): string => {
@@ -168,7 +189,7 @@ export const BarcodePreviewModal: React.FC<BarcodePreviewModalProps> = ({
     >
       <div className="space-y-2">
         {/* No label printer set: show dialog and disable Print (only after load: labelPrinterName !== null) */}
-        {labelPrinterName !== null && !hasLabelPrinter && showNoPrinterDialog && (
+        {labelPrinters !== null && !hasLabelPrinter && showNoPrinterDialog && (
           <div className="rounded-lg border border-amber-500/50 bg-amber-500/10 p-4 space-y-3">
             <h3 className="font-semibold text-foreground flex items-center gap-2">
               <Settings className="w-4 h-4 text-amber-600" />
@@ -396,24 +417,20 @@ export const BarcodePreviewModal: React.FC<BarcodePreviewModalProps> = ({
           )}
         </div>
 
-        {/* Label size */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-foreground">
+        {/* Label size - checkboxes, only one selectable */}
+        <div className="space-y-2 flex flex-col items-center">
+          <span className="text-sm font-medium text-foreground block">
             {t('stock.labelSize', 'Label size')}
-          </label>
-          <div className="flex flex-wrap gap-3">
+          </span>
+          <div className="flex flex-wrap gap-3 justify-center">
             {(['20x40', '35x45', '25x50'] as const).map((size) => (
-              <label key={size} className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="radio"
-                  name="labelSize"
-                  value={size}
-                  checked={labelSize === size}
-                  onChange={() => setLabelSize(size)}
-                  className="text-green-600 focus:ring-green-500"
-                />
-                <span className="text-sm">{size.replace('x', '×')} mm</span>
-              </label>
+              <Checkbox
+                key={size}
+                checked={labelSize === size}
+                onChange={(checked) => checked && handleLabelSizeChange(size)}
+                label={`${size.replace('x', '×')} mm`}
+                color="green"
+              />
             ))}
           </div>
         </div>
