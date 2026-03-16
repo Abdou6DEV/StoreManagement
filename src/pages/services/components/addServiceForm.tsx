@@ -11,6 +11,7 @@ import { cn } from "../../../lib/utils";
 import AddClientModal from "../../../pages/cashier/components/addClientModal";
 import { generateReceiptBarcode } from "../../../lib/utils/barcodeVisual";
 import { printServiceLabel } from "../utils/serviceLabelPrintUtils";
+import { ServiceLabelPrintModal } from "./ServiceLabelPrintModal";
 import { NoPrinterModal } from "../../../lib/components/noPrinterModal";
 import { Tooltip } from "../../../lib/components/tooltip";
 
@@ -97,7 +98,7 @@ export default function AddServiceForm({
   const [clientNotes, setClientNotes] = useState("");
   const [isPaid, setIsPaid] = useState(false);
   const [showNoReceiptPrinterModal, setShowNoReceiptPrinterModal] = useState(false);
-  const [showNoLabelPrinterModal, setShowNoLabelPrinterModal] = useState(false);
+  const [showServiceLabelModal, setShowServiceLabelModal] = useState(false);
   const [hideCostPrice, setHideCostPrice] = useState(true);
   const initialIsPaidRef = useRef<boolean | null>(null);
 
@@ -1222,33 +1223,30 @@ export default function AddServiceForm({
     }
   };
 
-  const handlePrintServiceLabel = async () => {
-    const labelPrinterName = (await window.api.database.options.get("labelPrinterName_20x40")) ?? (await window.api.database.options.get("labelPrinterName")) ?? "";
-    if (!labelPrinterName.trim()) {
-      setShowNoLabelPrinterModal(true);
-      return;
-    }
+  const getServiceLabelData = () => ({
+    serviceName: form.name.trim(),
+    clientName: selectedClient?.name ?? clients.find((c) => c.id === form.clientId)?.name ?? "",
+    deviceName: (form.description || form.serviceType || "").trim(),
+    price: form.servicePrice || 0,
+    isPaid,
+    dueDate: form.dueDate || undefined,
+    problems: form.notes?.trim() || undefined,
+  });
+  const getServiceLabelLabels = () => ({
+    service: t('services.serviceLabelService', 'Service:'),
+    client: t('services.serviceLabelClient', 'Client:'),
+    device: t('services.serviceLabelDevice', 'Device:'),
+    price: t('services.serviceLabelPrice', 'Price:'),
+    payed: t('services.payed', 'Payed'),
+    notPayed: t('services.notPayed', 'Not payed'),
+    dueDate: t('services.dueDate', 'Due Date'),
+    problems: t('services.notes', 'Problems/Breakdown'),
+  });
+  const handlePrintServiceLabelFromModal = async (labelSize: '20x40' | '35x45' | '25x50', quantity: number) => {
     try {
-      const clientName = selectedClient?.name ?? clients.find((c) => c.id === form.clientId)?.name ?? "";
-      await printServiceLabel(
-        {
-          serviceName: form.name.trim(),
-          clientName,
-          deviceName: (form.description || form.serviceType || "").trim(),
-          price: form.servicePrice || 0,
-          isPaid,
-        },
-        1,
-        {
-          service: t('services.serviceLabelService', 'Service:'),
-          client: t('services.serviceLabelClient', 'Client:'),
-          device: t('services.serviceLabelDevice', 'Device:'),
-          price: t('services.serviceLabelPrice', 'Price:'),
-          payed: t('services.payed', 'Payed'),
-          notPayed: t('services.notPayed', 'Not payed'),
-        }
-      );
+      await printServiceLabel(getServiceLabelData(), quantity, getServiceLabelLabels(), labelSize);
       showToast(t("services.serviceLabelPrinted", "Service label printed successfully"), "success");
+      setShowServiceLabelModal(false);
     } catch (err) {
       showToast(t("services.serviceLabelPrintError", "Failed to print service label"), "error");
     }
@@ -1654,7 +1652,7 @@ export default function AddServiceForm({
             <Button
               type="button"
               disabled={!form.name?.trim()}
-              onClick={() => handlePrintServiceLabel()}
+              onClick={() => setShowServiceLabelModal(true)}
               className="bg-cyan-600 hover:bg-cyan-700 text-white h-10 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Printer className="w-4 h-4" />
@@ -1691,10 +1689,12 @@ export default function AddServiceForm({
       onOpenChange={setShowNoReceiptPrinterModal}
       printerType="receipt"
     />
-    <NoPrinterModal
-      open={showNoLabelPrinterModal}
-      onOpenChange={setShowNoLabelPrinterModal}
-      printerType="label"
+    <ServiceLabelPrintModal
+      open={showServiceLabelModal}
+      onOpenChange={setShowServiceLabelModal}
+      data={getServiceLabelData()}
+      labels={getServiceLabelLabels()}
+      onPrint={handlePrintServiceLabelFromModal}
     />
     </>
   );

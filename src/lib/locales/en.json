@@ -419,6 +419,7 @@
     "serviceLabelClient": "Client:",
     "serviceLabelDevice": "Device:",
     "serviceLabelPrice": "Price:",
+    "serviceLabelFullSizeHint": "Larger sizes show due date and problems.",
     "currency": "DA",
     "itemsPerPage": "Items per page:",
     "clientCannotBeChanged": "Client cannot be changed after service creation",

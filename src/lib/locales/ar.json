@@ -2110,6 +2110,7 @@
     "serviceLabelClient": "العميل:",
     "serviceLabelDevice": "الجهاز:",
     "serviceLabelPrice": "السعر:",
+    "serviceLabelFullSizeHint": "المقاسات الأكبر تعرض تاريخ الاستحقاق والمشاكل.",
     "emptyTitle": "لم يتم العثور على خدمات",
     "emptyDesc": "لم تقم بإضافة أي خدمات بعد. أضف خدمة للبدء.",
     "editTooltip": "تعديل الخدمة",

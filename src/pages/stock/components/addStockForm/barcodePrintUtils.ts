@@ -23,10 +23,11 @@ const LABEL_SIZE_MM: Record<LabelSize, { width: number; height: number }> = {
   '25x50': { width: 50, height: 25 },  // 25mm height × 50mm width
 };
 
-/** Uniform scale so content fills the label without stretching (scale up, crop overflow). */
+/** Scale so the 40×20mm base content fits entirely inside the chosen label (no cropping, uniform scale). */
 function getLabelScale(size: LabelSize): number {
   const { width, height } = LABEL_SIZE_MM[size];
-  return Math.max(width / 40, height / 20);
+  // Base content is 40mm wide × 20mm tall. We pick the limiting ratio so it fits in both directions.
+  return Math.min(width / 40, height / 20);
 }
 
 /**
