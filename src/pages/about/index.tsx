@@ -35,7 +35,8 @@ import {
   Zap,
   Download,
   Calculator,
-  RefreshCw
+  RefreshCw,
+  ScrollText,
 } from "lucide-react";
 
 export default function AboutPage() {
@@ -72,7 +73,7 @@ export default function AboutPage() {
     {
       icon: PackageSearch,
       title: t("about.features.inventory", "Inventory Management"),
-      description: t("about.features.inventoryDesc", "Complete stock management with low stock alerts, barcode printing, best/worst selling products, category summary, product info with warranty tracking, purchase management, supplier tracking, and category-specific information fields (IMEI, warranty, specifications)")
+      description: t("about.features.inventoryDesc", "Complete stock management with low stock alerts, barcode label printing with accurate preview (including when product has no barcode), best/worst selling products, category summary, product info with warranty tracking, purchase management, supplier tracking, and category-specific information fields (IMEI, warranty, specifications)")
     },
     {
       icon: Users,
@@ -92,7 +93,7 @@ export default function AboutPage() {
     {
       icon: Wrench,
       title: t("about.features.services", "Service Management"),
-      description: t("about.features.servicesDesc", "Service appointment scheduling with service types management, due date tracking, overdue/due soon alerts, completion status, service ticket printing with barcode, and service history")
+      description: t("about.features.servicesDesc", "Service appointment scheduling with service types management, due date tracking, overdue/due soon alerts, completion status with confirm dialog, service ticket and service label printing (multiple sizes, WYSIWYG preview), search by service name, type or device, and service history")
     },
     {
       icon: Bell,
@@ -132,12 +133,17 @@ export default function AboutPage() {
     {
       icon: Settings,
       title: t("about.features.admin", "Administration"),
-      description: t("about.features.adminDesc", "System administration with user management, backup/restore tools, receipt configuration, update management, logger system, and comprehensive settings")
+      description: t("about.features.adminDesc", "System administration with user management, activity log (audit trail with filters and links to sales/services), backup/restore tools, receipt and printer configuration, update management, system logger, and comprehensive settings")
     },
     {
       icon: CreditCard,
       title: t("about.features.accounts", "Account Management"),
       description: t("about.features.accountsDesc", "User account management with role-based permissions and access control")
+    },
+    {
+      icon: ScrollText,
+      title: t("about.features.activityLog", "Activity Log"),
+      description: t("about.features.activityLogDesc", "Audit trail of user actions: logins, sales, clients, suppliers, services, bills, backups, and settings changes. Filter by user, date range, or search; view sale or service details from log entries; configurable retention and cleanup")
     },
     {
       icon: Calculator,

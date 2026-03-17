@@ -151,6 +151,7 @@ export default function ServicesPage() {
           service.id.toLowerCase().includes(searchLower) ||
           service.name.toLowerCase().includes(searchLower) ||
           service.serviceType.toLowerCase().includes(searchLower) ||
+          (service.description && service.description.toLowerCase().includes(searchLower)) ||
           (service.client && service.client.name.toLowerCase().includes(searchLower))
         );
       }

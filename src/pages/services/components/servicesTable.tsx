@@ -90,6 +90,7 @@ const ServicesTable: React.FC<ServicesTableProps> = ({
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingService, setEditingService] = useState<ServiceAppointment | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [completeConfirmServiceId, setCompleteConfirmServiceId] = useState<string | null>(null);
   const [cancelingServiceId, setCancelingServiceId] = useState<string | null>(null);
   const [paymentStatuses, setPaymentStatuses] = useState<Record<string, boolean>>({});
   const { refreshCompletedServicesCount } = useCompletedServices();
@@ -486,7 +487,7 @@ const ServicesTable: React.FC<ServicesTableProps> = ({
                           )}
                         >
                           <Button
-                            onClick={() => markAsComplete(service.id)}
+                            onClick={() => setCompleteConfirmServiceId(service.id)}
                             size="sm"
                             variant="outline"
                             className="text-green-600 border-green-200 hover:bg-green-50 dark:text-green-400 dark:border-green-800 dark:hover:bg-green-950/30"
@@ -609,6 +610,21 @@ const ServicesTable: React.FC<ServicesTableProps> = ({
         onClose={handleEditModalClose}
         service={editingService}
         onServiceUpdated={handleServiceUpdated}
+      />
+
+      <ConfirmDialog
+        open={completeConfirmServiceId !== null}
+        onOpenChange={(open) => !open && setCompleteConfirmServiceId(null)}
+        title={t("services.markCompleteConfirmTitle", "Mark service as complete?")}
+        message={t("services.markCompleteConfirmMessage", "Are you sure you want to mark this service as complete? You can cancel completion later if needed.")}
+        confirmText={t("services.markCompleteConfirmButton", "Mark complete")}
+        variant="success"
+        onConfirm={async () => {
+          if (completeConfirmServiceId) {
+            await markAsComplete(completeConfirmServiceId);
+            setCompleteConfirmServiceId(null);
+          }
+        }}
       />
 
       <ConfirmDialog

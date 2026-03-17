@@ -122,11 +122,11 @@ export default function ServicesFilters({
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
           <input
             type="text"
-            placeholder={t("services.searchServiceNameOrType", "Search by service name or type...")}
+            placeholder={t("services.searchServiceNameTypeOrDevice", "Search by service name, type or device...")}
             value={filters.search}
             onChange={(e) => onFilterChange("search", e.target.value)}
             className="pl-9 pr-3 py-1.5 rounded-md border-2 border-primary/20 bg-card text-sm focus:outline-none focus:ring-1 focus:ring-primary/50 transition w-[310px]"
-            aria-label={t("services.searchServiceNameOrType", "Search by service name or type")}
+            aria-label={t("services.searchServiceNameTypeOrDevice", "Search by service name, type or device")}
           />
         </div>
 

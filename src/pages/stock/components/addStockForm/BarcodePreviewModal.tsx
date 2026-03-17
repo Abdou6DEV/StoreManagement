@@ -224,14 +224,13 @@ export const BarcodePreviewModal: React.FC<BarcodePreviewModalProps> = ({
             className={`bg-white border-2 border-gray-300 rounded-lg shadow-lg ${!showBarcode ? 'flex items-center justify-center' : ''}`}
             style={{ 
               width: '310px', 
-              height: '160px',
-              minHeight: '160px',
+              ...(showBarcode
+                ? { height: '160px', minHeight: '160px', paddingTop: '2.85px', paddingBottom: 0 }
+                : { minHeight: '160px', height: 'auto', paddingTop: 12, paddingBottom: 12 }),
               textAlign: 'center',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
-              paddingTop: '2.85px', // 0.5mm scaled 1.5x
-              paddingBottom: '0',
               boxSizing: 'border-box',
               gap: showBarcode ? '0' : '10px',
               fontFamily: "'Instrument Serif', Georgia, serif",
@@ -254,6 +253,9 @@ export const BarcodePreviewModal: React.FC<BarcodePreviewModalProps> = ({
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
+                  flexShrink: 0,
+                  lineHeight: 1.25,
+                  minHeight: showBarcode ? undefined : '1.25em',
                 }}
               >
                 <span style={{ width: '2.65px', height: '2.65px', borderRadius: '50%', background: '#333', flexShrink: 0 }} aria-hidden />

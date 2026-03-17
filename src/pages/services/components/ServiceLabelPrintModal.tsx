@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Printer, X, Settings } from 'lucide-react';
+import '@fontsource/instrument-serif';
 import { Modal } from '../../../lib/components/modal';
 import { Button } from '../../../lib/components/button';
 import StyledNumberInput from '../../../lib/components/inputNumber';
@@ -110,9 +111,13 @@ export const ServiceLabelPrintModal: React.FC<ServiceLabelPrintModalProps> = ({
   const dueDateStr = dueDate ? new Date(dueDate).toLocaleDateString() : '';
   const problemsStr = problems?.trim() ?? '';
 
-  const outerWidthPx = SIZE_MM[labelSize].width * PREVIEW_PX_PER_MM;
-  const outerHeightPx = SIZE_MM[labelSize].height * PREVIEW_PX_PER_MM;
   const scale = getPreviewScale(labelSize);
+  const outerWidthPx = SIZE_MM[labelSize].width * PREVIEW_PX_PER_MM;
+  // 35×45: reduce preview box height so it doesn't leave a large empty band at the bottom
+  const outerHeightPx =
+    labelSize === '35x45'
+      ? Math.ceil(20 * PREVIEW_PX_PER_MM * scale) + 6
+      : SIZE_MM[labelSize].height * PREVIEW_PX_PER_MM;
   const innerSizePx = 40 * PREVIEW_PX_PER_MM; // 160px
   const innerHeightPx = 20 * PREVIEW_PX_PER_MM; // 80px
 
@@ -193,36 +198,34 @@ export const ServiceLabelPrintModal: React.FC<ServiceLabelPrintModalProps> = ({
                 flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: is35x45 ? 'flex-start' : 'center',
-                padding: is35x45 ? 6 : 4,
-                paddingTop: is35x45 ? 6 : 4,
+                ...(is35x45 ? { paddingTop: 6, paddingLeft: 6, paddingRight: 6, paddingBottom: 1 } : { padding: 4 }),
                 boxSizing: 'border-box',
-                fontFamily: "Georgia, serif",
+                fontFamily: "'Instrument Serif', Georgia, serif",
                 fontWeight: 700,
                 color: '#000',
-                fontSize: 15,
                 lineHeight: is35x45 ? 1.05 : 1.1,
               }}
             >
-              <div style={{ textAlign: 'center', maxWidth: '96%', ...(is35x45 ? { marginBottom: 3, whiteSpace: 'normal', wordBreak: 'break-word' } : { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }) }}>
+              <div style={{ textAlign: 'center', maxWidth: '96%', fontSize: is35x45 ? 18 : 17, ...(is35x45 ? { marginBottom: 2, whiteSpace: 'normal', wordBreak: 'break-word' } : { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }) }}>
                 {labels.service} {serviceName.trim() || '—'}
               </div>
-              <div style={{ textAlign: 'center', maxWidth: '96%', ...(is35x45 ? { marginBottom: 3, whiteSpace: 'normal', wordBreak: 'break-word' } : { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }) }}>
+              <div style={{ textAlign: 'center', maxWidth: '96%', fontSize: is35x45 ? 18 : 17, ...(is35x45 ? { marginBottom: 2, whiteSpace: 'normal', wordBreak: 'break-word' } : { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }) }}>
                 {labels.client} {clientName?.trim() || '—'}
               </div>
-              <div style={{ textAlign: 'center', maxWidth: '96%', ...(is35x45 ? { marginBottom: 3, whiteSpace: 'normal', wordBreak: 'break-word' } : { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }) }}>
+              <div style={{ textAlign: 'center', maxWidth: '96%', fontSize: is35x45 ? 17 : 16, ...(is35x45 ? { marginBottom: 2, whiteSpace: 'normal', wordBreak: 'break-word' } : { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }) }}>
                 {labels.device} {deviceName?.trim() || '—'}
               </div>
               {isFullLabel && dueDateStr && (
-                <div style={{ textAlign: 'center', maxWidth: '96%', fontSize: 13, ...(is35x45 ? { marginBottom: 3, whiteSpace: 'normal', wordBreak: 'break-word' } : { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }) }}>
+                <div style={{ textAlign: 'center', maxWidth: '96%', fontSize: is35x45 ? 15 : 14, ...(is35x45 ? { marginBottom: 2, whiteSpace: 'normal', wordBreak: 'break-word' } : { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }) }}>
                   {dueDateLabel} {dueDateStr}
                 </div>
               )}
               {isFullLabel && problemsStr && (
-                <div style={{ textAlign: 'center', maxWidth: '96%', fontSize: 13, ...(is35x45 ? { marginBottom: 3, whiteSpace: 'normal', wordBreak: 'break-word' } : { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }) }}>
+                <div style={{ textAlign: 'center', maxWidth: '96%', fontSize: is35x45 ? 15 : 14, ...(is35x45 ? { marginBottom: 2, whiteSpace: 'normal', wordBreak: 'break-word' } : { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }) }}>
                   {problemsLabel} {problemsStr}
                 </div>
               )}
-              <div style={{ textAlign: 'center', direction: 'ltr', unicodeBidi: 'embed', ...(is35x45 ? { whiteSpace: 'normal', wordBreak: 'break-word' } : {}) }}>
+              <div style={{ textAlign: 'center', direction: 'ltr', unicodeBidi: 'embed', fontSize: is35x45 ? 19 : 18, ...(is35x45 ? { whiteSpace: 'normal', wordBreak: 'break-word' } : {}) }}>
                 {labels.price} {formatPricePreview(price)}{paymentSuffix}
               </div>
             </div>
