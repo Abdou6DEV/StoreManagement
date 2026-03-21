@@ -2,35 +2,79 @@ import { useState, useEffect, useCallback } from "react";
 import rendererLogger from "../../../../lib/logger/rendererLogger";
 import type {
   SaleForHistory,
-  PaymentForHistory,
   PurchaseForHistory,
   SelectedPeriod,
 } from "../../../../types";
+
+/** Calendar previous period for day / month / year views. Returns null if the current value is invalid. */
+function getPreviousPeriodForDetails(
+  current: SelectedPeriod,
+): SelectedPeriod | null {
+  if (current.period === "day") {
+    const currentDate = new Date(current.periodValue);
+    if (Number.isNaN(currentDate.getTime())) {
+      return null;
+    }
+    const previousDate = new Date(currentDate);
+    previousDate.setDate(previousDate.getDate() - 1);
+    const year = previousDate.getFullYear();
+    const month = (previousDate.getMonth() + 1).toString().padStart(2, "0");
+    const day = previousDate.getDate().toString().padStart(2, "0");
+    return {
+      period: "day",
+      periodValue: `${year}-${month}-${day}`,
+    };
+  }
+
+  if (current.period === "month") {
+    const parts = current.periodValue.split("-");
+    if (parts.length < 2) return null;
+    const y = parseInt(parts[0], 10);
+    const m = parseInt(parts[1], 10);
+    if (!Number.isFinite(y) || !Number.isFinite(m) || m < 1 || m > 12) {
+      return null;
+    }
+    const currentDate = new Date(y, m - 1, 1);
+    if (Number.isNaN(currentDate.getTime())) {
+      return null;
+    }
+    const previousDate = new Date(currentDate);
+    previousDate.setMonth(previousDate.getMonth() - 1);
+    const prevYear = previousDate.getFullYear();
+    const prevMonth = (previousDate.getMonth() + 1).toString().padStart(2, "0");
+    return {
+      period: "month",
+      periodValue: `${prevYear}-${prevMonth}`,
+    };
+  }
+
+  const year = parseInt(current.periodValue, 10);
+  if (!Number.isFinite(year) || year <= 1) {
+    return null;
+  }
+  return {
+    period: "year",
+    periodValue: String(year - 1),
+  };
+}
 
 export function useDetailsHistoryData(period: SelectedPeriod) {
   const [sales, setSales] = useState<SaleForHistory[]>([]);
   const [billsPayments, setBillsPayments] = useState<any[]>([]);
   const [purchases, setPurchases] = useState<PurchaseForHistory[]>([]);
-  const [previousSalesData, setPreviousSalesData] = useState<SaleForHistory[]>(
-    []
+  const [previousPeriodRevenue, setPreviousPeriodRevenue] = useState(0);
+  const [previousPeriodProfit, setPreviousPeriodProfit] = useState(0);
+  const [growthBaselineAvailable, setGrowthBaselineAvailable] = useState(false);
+  const [comparisonPeriod, setComparisonPeriod] = useState<SelectedPeriod | null>(
+    null,
   );
-  const [previousPurchasesData, setPreviousPurchasesData] = useState<
-    PurchaseForHistory[]
-  >([]);
-  const [historicalAverages, setHistoricalAverages] = useState<{
-    averageRevenue: number;
-    averageProfit: number;
-    totalSales: number;
-  }>({ averageRevenue: 0, averageProfit: 0, totalSales: 0 });
-  const [loading, setLoading] = useState(true); // Start with loading true
+  const [loading, setLoading] = useState(true);
 
-  // Pagination state for each section
   const [salesPage, setSalesPage] = useState(1);
   const [billsPaymentsPage, setBillsPaymentsPage] = useState(1);
   const [purchasesPage, setPurchasesPage] = useState(1);
   const [itemsPerPage] = useState(10);
 
-  // Calculate pagination for each section
   const salesTotalPages = Math.ceil(sales.length / itemsPerPage);
   const billsPaymentsTotalPages = Math.ceil(billsPayments.length / itemsPerPage);
   const purchasesTotalPages = Math.ceil(purchases.length / itemsPerPage);
@@ -47,10 +91,9 @@ export function useDetailsHistoryData(period: SelectedPeriod) {
   const purchasesEndIndex = purchasesStartIndex + itemsPerPage;
   const currentPurchases = purchases.slice(
     purchasesStartIndex,
-    purchasesEndIndex
+    purchasesEndIndex,
   );
 
-  // Use pre-calculated totals for performance
   const salesTotal = sales.reduce((sum, sale) => {
     return sum + (sale.totalAmountWithDiscount || 0);
   }, 0);
@@ -58,18 +101,11 @@ export function useDetailsHistoryData(period: SelectedPeriod) {
   const salesProfit = sales.reduce((sum, sale) => {
     return sum + (sale.totalProfit || 0);
   }, 0);
-  
-  // DEBUG: Log the total profit calculation
-  console.log('🔍 TOTAL PROFIT DEBUG:', {
-    totalProfit: salesProfit,
-    salesCount: sales.length,
-    individualProfits: sales.map(sale => sale.totalProfit || 0)
-  });
 
   const purchasesTotal = purchases.reduce((sum, purchase) => {
     const totalAmount = purchase.PurchaseItems.reduce(
       (itemSum, item) => itemSum + item.price * item.quantity,
-      0
+      0,
     );
     return sum + totalAmount;
   }, 0);
@@ -78,97 +114,59 @@ export function useDetailsHistoryData(period: SelectedPeriod) {
     return sum + payment.amount;
   }, 0);
 
-  // Get previous period for comparison
-  const getPreviousPeriod = (currentPeriod: SelectedPeriod): SelectedPeriod => {
-    if (currentPeriod.period === "day") {
-      const currentDate = new Date(currentPeriod.periodValue);
-      const previousDate = new Date(currentDate);
-      previousDate.setDate(previousDate.getDate() - 1);
-      const year = previousDate.getFullYear();
-      const month = (previousDate.getMonth() + 1).toString().padStart(2, "0");
-      const day = previousDate.getDate().toString().padStart(2, "0");
-      return {
-        period: "day",
-        periodValue: `${year}-${month}-${day}`,
-      };
-    } else if (currentPeriod.period === "month") {
-      const [year, month] = currentPeriod.periodValue.split("-");
-      const currentDate = new Date(parseInt(year), parseInt(month) - 1);
-      const previousDate = new Date(currentDate);
-      previousDate.setMonth(previousDate.getMonth() - 1);
-      const prevYear = previousDate.getFullYear();
-      const prevMonth = (previousDate.getMonth() + 1)
-        .toString()
-        .padStart(2, "0");
-      return {
-        period: "month",
-        periodValue: `${prevYear}-${prevMonth}`,
-      };
-    } else {
-      const year = parseInt(currentPeriod.periodValue);
-      return {
-        period: "year",
-        periodValue: (year - 1).toString(),
-      };
-    }
-  };
-
   const fetchPeriodData = useCallback(async () => {
     try {
       setLoading(true);
 
-      const previousPeriod = getPreviousPeriod(period);
+      const previousPeriod = getPreviousPeriodForDetails(period);
 
-      // Calculate date range for historical averages (last 30 days/periods)
-      const historicalEndDate = new Date();
-      const historicalStartDate = new Date();
-      historicalStartDate.setDate(historicalStartDate.getDate() - 30);
-
-      // Fetch data for the selected period, previous period, and historical averages
       const [
         salesData,
         billsPaymentsData,
         purchasesData,
         previousSalesData,
-        previousPurchasesData,
-        historicalSummary,
       ] = await Promise.all([
         window.api.database.sales.getBySpecificPeriod(
           period.period,
-          period.periodValue
+          period.periodValue,
         ),
         window.api.database.bills.getBySpecificPeriod(
           period.period,
-          period.periodValue
+          period.periodValue,
         ),
         window.api.database.purchases.getBySpecificPeriod(
           period.period,
-          period.periodValue
+          period.periodValue,
         ),
-        window.api.database.sales.getBySpecificPeriod(
-          previousPeriod.period,
-          previousPeriod.periodValue
-        ),
-        window.api.database.purchases.getBySpecificPeriod(
-          previousPeriod.period,
-          previousPeriod.periodValue
-        ),
-        window.api.database.sales.getSummary(
-          historicalStartDate,
-          historicalEndDate
-        ),
+        previousPeriod
+          ? window.api.database.sales.getBySpecificPeriod(
+              previousPeriod.period,
+              previousPeriod.periodValue,
+            )
+          : Promise.resolve([] as SaleForHistory[]),
       ]);
 
       setSales(salesData);
       setBillsPayments(billsPaymentsData);
       setPurchases(purchasesData);
-      setPreviousSalesData(previousSalesData);
-      setPreviousPurchasesData(previousPurchasesData);
-      setHistoricalAverages({
-        averageRevenue: historicalSummary.averageRevenue || 0,
-        averageProfit: historicalSummary.averageProfit || 0,
-        totalSales: historicalSummary.totalSales || 0,
-      });
+
+      const prevList = Array.isArray(previousSalesData) ? previousSalesData : [];
+      const prevRevenue = prevList.reduce(
+        (sum, sale) => sum + (sale.totalAmountWithDiscount || 0),
+        0,
+      );
+      const prevProfit = prevList.reduce(
+        (sum, sale) => sum + (sale.totalProfit || 0),
+        0,
+      );
+      const prevCount = prevList.length;
+
+      setPreviousPeriodRevenue(prevRevenue);
+      setPreviousPeriodProfit(prevProfit);
+      setComparisonPeriod(previousPeriod);
+      setGrowthBaselineAvailable(
+        previousPeriod !== null && prevCount > 0,
+      );
 
       rendererLogger.debug(
         "Period data fetched successfully",
@@ -179,49 +177,34 @@ export function useDetailsHistoryData(period: SelectedPeriod) {
           salesCount: salesData.length,
           billsPaymentsCount: billsPaymentsData.length,
           purchasesCount: purchasesData.length,
-        }
+          previousPeriodSaleCount: prevCount,
+        },
       );
     } catch (error) {
       rendererLogger.error(
         "Error fetching period data",
         "DetailsHistory",
-        error
+        error,
       );
+      setComparisonPeriod(null);
+      setGrowthBaselineAvailable(false);
     } finally {
       setLoading(false);
     }
   }, [period.period, period.periodValue]);
 
-  // Reset pagination when section changes
   useEffect(() => {
     setSalesPage(1);
     setBillsPaymentsPage(1);
     setPurchasesPage(1);
   }, []);
 
-  // Reset pagination and fetch data when period changes
   useEffect(() => {
     setSalesPage(1);
     setBillsPaymentsPage(1);
     setPurchasesPage(1);
     fetchPeriodData();
   }, [fetchPeriodData]);
-
-  // Calculate previous period totals using pre-calculated data
-  const previousSalesTotal = previousSalesData.reduce((sum, sale) => {
-    return sum + (sale.totalAmountWithDiscount || 0);
-  }, 0);
-
-  const previousPurchasesTotal = previousPurchasesData.reduce(
-    (sum, purchase) => {
-      const totalAmount = purchase.PurchaseItems.reduce(
-        (itemSum, item) => itemSum + item.price * item.quantity,
-        0
-      );
-      return sum + totalAmount;
-    },
-    0
-  );
 
   return {
     sales,
@@ -244,9 +227,10 @@ export function useDetailsHistoryData(period: SelectedPeriod) {
     salesProfit,
     purchasesTotal,
     billsPaymentsTotal,
-    previousSalesTotal,
-    previousPurchasesTotal,
-    historicalAverages,
+    previousPeriodRevenue,
+    previousPeriodProfit,
+    growthBaselineAvailable,
+    comparisonPeriod,
     refreshData: fetchPeriodData,
   };
 }

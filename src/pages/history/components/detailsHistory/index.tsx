@@ -56,9 +56,10 @@ export default function DetailsHistory({
     salesProfit,
     purchasesTotal,
     billsPaymentsTotal,
-    previousSalesTotal,
-    previousPurchasesTotal,
-    historicalAverages,
+    previousPeriodRevenue,
+    previousPeriodProfit,
+    growthBaselineAvailable,
+    comparisonPeriod,
     refreshData,
   } = useDetailsHistoryData(effectivePeriod);
 
@@ -77,9 +78,10 @@ export default function DetailsHistory({
         salesTotal={salesTotal}
         salesProfit={salesProfit}
         purchasesTotal={purchasesTotal}
-        previousPeriodSalesTotal={previousSalesTotal}
-        previousPeriodPurchasesTotal={previousPurchasesTotal}
-        historicalAverages={historicalAverages}
+        previousPeriodRevenue={previousPeriodRevenue}
+        previousPeriodProfit={previousPeriodProfit}
+        growthBaselineAvailable={growthBaselineAvailable}
+        comparisonPeriod={comparisonPeriod}
       />
 
       <DetailsHistoryTabs
