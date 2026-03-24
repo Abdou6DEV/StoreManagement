@@ -170,6 +170,7 @@ export default function ActivityLogs() {
   const [showSaleDetailsModal, setShowSaleDetailsModal] = useState(false);
   const [loadingSale, setLoadingSale] = useState(false);
   const didInitialCleanupRef = useRef(false);
+  const [hasInitialized, setHasInitialized] = useState(false);
 
   const DETAILS_PREVIEW_LENGTH = 100;
 
@@ -397,8 +398,10 @@ export default function ActivityLogs() {
     loadRetention();
   }, [loadUsernames, loadRetention]);
 
-  // On entry: run retention cleanup (delete logs older than threshold), then load data. Block UI until done.
+  // On entry: run retention cleanup once, then load data.
   useEffect(() => {
+    if (didInitialCleanupRef.current) return;
+    didInitialCleanupRef.current = true;
     if (!window.api?.activityLog?.cleanupOld) return;
     let cancelled = false;
     (async () => {
@@ -421,8 +424,8 @@ export default function ActivityLogs() {
       if (cancelled) return;
       await loadRetention();
       await loadUsernames();
-      loadLogs();
-      didInitialCleanupRef.current = true;
+      await loadLogs();
+      setHasInitialized(true);
     })();
     return () => {
       cancelled = true;
@@ -430,9 +433,9 @@ export default function ActivityLogs() {
   }, [loadRetention, loadUsernames, loadLogs, showToast, t]);
 
   useEffect(() => {
-    if (!didInitialCleanupRef.current) return;
+    if (!hasInitialized) return;
     loadLogs();
-  }, [loadLogs]);
+  }, [hasInitialized, loadLogs]);
 
   const handleSaveRetention = async () => {
     const num = parseInt(retentionInput, 10);
@@ -459,21 +462,6 @@ export default function ActivityLogs() {
 
   const totalPages = Math.max(1, Math.ceil(total / itemsPerPage));
 
-  if (cleaning) {
-    return (
-      <div
-        className="fixed inset-0 z-[100] flex flex-col items-center justify-center gap-4 bg-background/95 backdrop-blur-sm"
-        role="alert"
-        aria-busy="true"
-      >
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
-        <p className="text-muted-foreground text-center px-4">
-          {t("activityLog.cleanupOnEntryMessage", "Removing logs older than retention period. Please wait…")}
-        </p>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6" dir={isRTL ? "rtl" : "ltr"}>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -498,6 +486,15 @@ export default function ActivityLogs() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {cleaning && (
+            <div className="flex items-center gap-2 rounded-md border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+              <RefreshCw className="h-4 w-4 animate-spin" />
+              <span>
+                {t("activityLog.cleanupOnEntryMessage", "Removing logs older than retention period. Please wait…")}
+              </span>
+            </div>
+          )}
+
           {/* All filters inline, same height */}
           <div className="flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-2 shrink-0">
