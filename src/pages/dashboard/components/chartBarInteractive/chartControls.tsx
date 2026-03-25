@@ -5,7 +5,7 @@ import { useState } from "react";
 import { ChevronDownIcon } from "lucide-react";
 import { Button } from "../../../../lib/components/button";
 import { Popover, PopoverContent, PopoverTrigger } from "../../../../lib/components/popover";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "../../../../lib/components/command";
+import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from "../../../../lib/components/command";
 
 export function ChartControls({
   chartType,
@@ -29,49 +29,58 @@ export function ChartControls({
 
   const chartTypeOptions = [
     { value: "profits", label: chartTypes.profits.label },
-    { value: "clients", label: chartTypes.clients.label },
     { value: "sales", label: chartTypes.sales.label },
   ];
 
   return (
     <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
-      {/* Chart Type Selector - Popover Command */}
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            role="combobox"
-            aria-expanded={open}
-            className={`w-[200px] justify-between ${controlBg} ${controlBorder} ${controlText} hover:bg-opacity-80`}
-          >
-            {chartTypeOptions.find((option) => option.value === chartType)?.label || "Select chart type..."}
-            <ChevronDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-[200px] p-0" align="start">
-          <Command>
-            <CommandInput placeholder="Search chart type..." />
-            <CommandList>
-              <CommandEmpty>No chart type found.</CommandEmpty>
-              <CommandGroup>
-                {chartTypeOptions.map((option) => (
-                  <CommandItem
-                    key={option.value}
-                    value={option.value}
-                    onSelect={(currentValue) => {
-                      setChartType(currentValue as "profits" | "clients" | "sales");
-                      setOpen(false);
-                    }}
-                    className="cursor-pointer"
-                  >
-                    {option.label}
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            </CommandList>
-          </Command>
-        </PopoverContent>
-      </Popover>
+      {/* Chart Type Selector */}
+      {chartTypeOptions.length === 1 ? (
+        <div
+          className={`w-[200px] flex items-center justify-between ${controlBg} ${controlBorder} ${controlText} px-3 py-2 rounded-md border`}
+        >
+          <span className="text-sm font-medium">
+            {chartTypeOptions[0]?.label ?? ""}
+          </span>
+        </div>
+      ) : (
+        // Chart Type Selector - Popover Command
+        <Popover open={open} onOpenChange={setOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              role="combobox"
+              aria-expanded={open}
+              className={`w-[200px] justify-between ${controlBg} ${controlBorder} ${controlText} hover:bg-opacity-80`}
+            >
+              {chartTypeOptions.find((option) => option.value === chartType)?.label || "Select chart type..."}
+              <ChevronDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-[200px] p-0" align="start">
+            <Command>
+              <CommandList>
+                <CommandEmpty>No chart type found.</CommandEmpty>
+                <CommandGroup>
+                  {chartTypeOptions.map((option) => (
+                    <CommandItem
+                      key={option.value}
+                      value={option.value}
+                      onSelect={(currentValue) => {
+                        setChartType(currentValue as "profits" | "clients" | "sales");
+                        setOpen(false);
+                      }}
+                      className="cursor-pointer"
+                    >
+                      {option.label}
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
+      )}
 
       {/* Time Period Toggle Buttons */}
       <div
@@ -88,9 +97,9 @@ export function ChartControls({
             }`}
           >
             {key === "1m"
-              ? t("dashboard.last30Days")
+              ? t("history.daily")
               : key === "12m"
-                ? t("dashboard.12M")
+                ? t("history.monthly")
                 : t("dashboard.years")}
           </button>
         ))}

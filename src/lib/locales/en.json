@@ -56,6 +56,7 @@
     "revenue": "Revenue",
     "profit": "Profit",
     "itemsSold": "Items Sold",
+    "quantity": "Quantity",
     "totalProducts": "Total Products",
     "lowStockItems": "Low Stock Items",
     "stockValue": "Stock Value",

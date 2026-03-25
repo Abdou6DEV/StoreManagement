@@ -1,5 +1,4 @@
 import { SectionCards } from "./components/sectionCards";
-import { ChartBarInteractive } from "./components/chartBarInteractive";
 import { DashboardProvider, useDashboardLoading } from "../../lib/contexts/dashboardContext";
 
 function DashboardContent() {
@@ -8,7 +7,7 @@ function DashboardContent() {
   return (
     <div className="space-y-8 max-w-7xl mx-auto">
       <SectionCards />
-      {!dashboardLoading && <ChartBarInteractive />}
+      {/* ChartBarInteractive is rendered inside SectionCards */}
     </div>
   );
 }

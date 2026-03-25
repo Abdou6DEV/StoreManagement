@@ -3,6 +3,9 @@ export interface ChartData {
   profits: number;
   clients: number;
   sales: number;
+  // Used by the "sales" tooltip to display sales count and total quantity.
+  salesCount?: number;
+  salesQuantity?: number;
 }
 
 export interface ChartTypeConfig {

@@ -44,11 +44,15 @@ export function useChartData() {
       const startTime = Date.now();
       const minProcessingTime = 100; // Minimum 100ms to match other components
 
-      // --- 1m: Last 30 days ---
-      const days = Array.from({ length: 30 }, (_, i) => {
-        const date = new Date();
-        date.setDate(date.getDate() - (29 - i));
-        return date;
+      const now = new Date();
+
+      // --- 1m: Daily values for the current month (from day 1 to today) ---
+      const daysCount = now.getDate();
+      const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const days = Array.from({ length: daysCount }, (_, i) => {
+        const d = new Date(firstDayOfMonth);
+        d.setDate(firstDayOfMonth.getDate() + i);
+        return d;
       });
 
       const daily = days.map((date, idx) => {
@@ -75,22 +79,30 @@ export function useChartData() {
           0,
         );
 
+        const salesCount = daySales.length;
+        const salesQuantity = daySales.reduce(
+          (sum: number, s) => sum + (s.totalItems || 0),
+          0,
+        );
+
         const salesTotal = daySales.reduce(
           (sum: number, s) => sum + (s.totalAmountWithDiscount || 0),
           0,
         );
 
         return {
-          period: getPeriodLabel("day", 0, idx, t),
+          // Show actual dates like "1 Mar", "23 Mar" (translated month name).
+          period: `${date.getDate()} ${t(`dashboard.months.${date.getMonth()}`)}`,
           profits,
           clients: dayClients.length,
           sales: salesTotal,
+          salesCount,
+          salesQuantity,
         };
       });
 
-      // --- 12m: Current year, by month ---
-      const now = new Date();
-      const months = Array.from({ length: 12 }, (_, i) => i);
+      // --- 12m: Current year, by month (up to current month) ---
+      const months = Array.from({ length: now.getMonth() + 1 }, (_, i) => i);
 
       const monthly = months.map((monthIdx) => {
         const monthSales = sales.filter((s) => {
@@ -112,6 +124,12 @@ export function useChartData() {
           0,
         );
 
+        const salesCount = monthSales.length;
+        const salesQuantity = monthSales.reduce(
+          (sum: number, s) => sum + (s.totalItems || 0),
+          0,
+        );
+
         const salesTotal = monthSales.reduce(
           (sum: number, s) => sum + (s.totalAmountWithDiscount || 0),
           0,
@@ -122,6 +140,8 @@ export function useChartData() {
           profits,
           clients: monthClients.length,
           sales: salesTotal,
+          salesCount,
+          salesQuantity,
         };
       });
 
@@ -145,6 +165,12 @@ export function useChartData() {
           0,
         );
 
+        const salesCount = yearSales.length;
+        const salesQuantity = yearSales.reduce(
+          (sum: number, s) => sum + (s.totalItems || 0),
+          0,
+        );
+
         const salesTotal = yearSales.reduce(
           (sum: number, s) => sum + (s.totalAmountWithDiscount || 0),
           0,
@@ -155,6 +181,8 @@ export function useChartData() {
           profits,
           clients: yearClients.length,
           sales: salesTotal,
+          salesCount,
+          salesQuantity,
         };
       });
 

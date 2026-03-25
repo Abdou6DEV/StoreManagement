@@ -15,6 +15,7 @@ import {
 import { ProfitChart } from "./profitCharts";
 import { StockStatsCard } from "./stockStatsCard";
 import { ServiceStatsCard } from "./serviceStatsCard";
+import { ChartBarInteractive } from "./chartBarInteractive";
 import { Switch } from "../../../lib/components/switch";
 import { Tooltip } from "../../../lib/components/tooltip";
 import { Button } from "../../../lib/components/button";
@@ -613,7 +614,7 @@ export function SectionCards() {
     // Special handling for client stats section
     if (titleKey === "clientStatsSection") {
       return (
-        <div className="w-full p-8 bg-card rounded-xl shadow-md border flex flex-col space-y-3">
+        <div className="w-full p-8 bg-card rounded-xl shadow-md border flex flex-col space-y-3 hover:shadow-lg transition-shadow duration-300 relative min-h-[280px]">
           <div className="flex items-center gap-2 mb-4">
             <Users className="h-6 w-6 text-primary" />
             <h2 className="text-xl font-semibold text-foreground">
@@ -986,6 +987,7 @@ export function SectionCards() {
   return (
     <div className="space-y-8">
       {renderSection("overviewSection", salesStats)}
+      <ChartBarInteractive />
       {renderSection("stockStatsSection", stockStats)}
       <ServiceStatsCard />
       {renderSection("clientStatsSection", clientStats)}

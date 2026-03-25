@@ -283,7 +283,7 @@ export function StockStatsCard() {
 
   if (loading) {
     return (
-      <div className="w-full p-8 bg-card rounded-xl shadow-md border flex flex-col space-y-3">
+      <div className="w-full p-8 bg-card rounded-xl shadow-md border flex flex-col space-y-3 hover:shadow-lg transition-shadow duration-300 relative min-h-[280px]">
         <div className="flex items-center gap-2 mb-4">
           <PackageIcon className="h-6 w-6 text-primary" />
           <h2 className="text-xl font-semibold text-foreground">
@@ -324,7 +324,7 @@ export function StockStatsCard() {
   }
 
   return (
-    <div className="w-full p-8 bg-card rounded-xl shadow-md border flex flex-col space-y-3">
+    <div className="w-full p-8 bg-card rounded-xl shadow-md border flex flex-col space-y-3 hover:shadow-lg transition-shadow duration-300 relative min-h-[280px]">
       <div className="flex items-center gap-2 mb-4">
         <PackageIcon className="h-6 w-6 text-primary" />
         <h2 className="text-xl font-semibold text-foreground">

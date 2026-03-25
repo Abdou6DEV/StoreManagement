@@ -12,7 +12,7 @@ export function ChartBarInteractive() {
   const { t } = useTranslation();
   const { isDark } = useTheme();
   const [timePeriod, setTimePeriod] = React.useState<"1m" | "12m" | "years">(
-    "12m",
+    "1m",
   );
   const [chartType, setChartType] = React.useState<
     "profits" | "clients" | "sales"
@@ -21,21 +21,16 @@ export function ChartBarInteractive() {
   const { chartData, loading: chartLoading } = useChartData();
   const { chartTypes } = useChartConfigs();
 
-  // Don't render until chart data is ready
-  if (chartLoading) {
-    return null;
-  }
-
   const timePeriods: Record<string, TimePeriodConfig> = {
     "1m": {
       data: chartData["1m"],
-      label: t("dashboard.last30Days"),
-      description: t("dashboard.last30Days"),
+      label: t("history.daily"),
+      description: t("history.daily"),
     },
     "12m": {
       data: chartData["12m"],
-      label: t("dashboard.12M"),
-      description: t("dashboard.currentYearMonths"),
+      label: t("history.monthly"),
+      description: t("history.monthly"),
     },
     years: {
       data: chartData.years,
@@ -46,21 +41,26 @@ export function ChartBarInteractive() {
 
   const currentChart = chartTypes[chartType];
   const currentPeriod = timePeriods[timePeriod];
-
-  // Check if there's any data in the current period
-  const hasData = currentPeriod.data && currentPeriod.data.length > 0 && 
-    currentPeriod.data.some((item: any) => {
-      const value = item[chartType === "profits" ? "profits" : chartType === "clients" ? "clients" : "sales"];
-      return value > 0;
+  // Only show the empty state when there is no meaningful value at all.
+  const hasData =
+    (currentPeriod?.data?.length ?? 0) > 0 &&
+    (currentPeriod?.data ?? []).some((item: any) => {
+      const value =
+        chartType === "profits"
+          ? item?.profits
+          : chartType === "clients"
+            ? item?.clients
+            : item?.sales;
+      return (value ?? 0) !== 0;
     });
 
-  // Theme-aware styling
-  const bgClass = isDark
-    ? "bg-[#18181b] border border-gray-700 text-gray-100"
-    : "bg-white border border-gray-200 text-gray-900";
+  // Don't render until chart data is ready (hooks must run before this return)
+  if (chartLoading) {
+    return null;
+  }
 
   return (
-    <div className={`${bgClass} rounded-xl shadow-sm p-6`}>
+    <div className="w-full p-8 bg-card rounded-xl shadow-md border flex flex-col hover:shadow-lg transition-shadow duration-300 relative min-h-[280px]">
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
         <ChartHeader

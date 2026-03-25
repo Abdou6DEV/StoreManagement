@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { CartesianGrid, Line, LineChart, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
 import { useTheme } from "../../../lib/hooks/useTheme";
@@ -25,6 +25,33 @@ export function ProfitChart({ period, className = "" }: ProfitChartProps) {
   const dashboardLoading = useDashboardLoading();
   const [chartData, setChartData] = useState<ProfitData[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const currencyLabel = t("currency");
+  const yAxisWidth = useMemo(() => {
+    // Recharts will clip tick labels if there's not enough space.
+    // Instead of guessing via `margin`, reserve a dynamic width on the Y-axis
+    // based on the longest formatted profit value we might render.
+    const profits = chartData.map((d) => d.profit ?? 0);
+    if (profits.length === 0) return 60;
+
+    const minProfit = Math.min(...profits);
+    const maxProfit = Math.max(...profits);
+
+    const formatTickValue = (value: number) => `${value.toLocaleString()} ${currencyLabel}`;
+
+    const formattedMin = formatTickValue(minProfit);
+    const formattedMax = formatTickValue(maxProfit);
+    const longest = formattedMin.length >= formattedMax.length ? formattedMin : formattedMax;
+
+    // Approx: SVG text width is roughly ~7.2px/char at fontSize=12 (with separators/minus).
+    // Add padding to account for glyph variety.
+    const approxCharWidth = 7.2;
+    const paddingPx = 16;
+    const computed = Math.ceil(longest.length * approxCharWidth + paddingPx);
+
+    // Clamp to keep the chart usable across small/large screens.
+    return Math.max(56, Math.min(170, computed));
+  }, [chartData, currencyLabel]);
 
   useEffect(() => {
     // Only process data when dashboard data is loaded
@@ -325,10 +352,13 @@ export function ProfitChart({ period, className = "" }: ProfitChartProps) {
             axisLine={false}
             tickMargin={8}
             tickFormatter={(value) => {
-              return `${value.toLocaleString()}${t("currency")}`;
+              return `${value.toLocaleString()} ${t("currency")}`;
             }}
             fontSize={12}
             fill={axisColor}
+            width={yAxisWidth}
+            // For left Y-axis: LTR labels should align to the inner edge (`end`)
+            // while RTL should mirror to the inner edge (`start`).
             textAnchor={i18n.language === "ar" ? "start" : "end"}
             style={{ whiteSpace: 'nowrap' }}
           />
