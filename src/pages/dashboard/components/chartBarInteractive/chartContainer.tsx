@@ -10,6 +10,8 @@ import {
   ResponsiveContainer,
   Tooltip,
   ReferenceLine,
+  LineChart,
+  Line,
 } from "recharts";
 import { useTheme } from "../../../../lib/hooks/useTheme";
 import { ChartContainerProps } from "./types";
@@ -18,9 +20,31 @@ export function ChartContainer({
   currentPeriod,
   chartType,
   timePeriod,
+  chartView,
 }: ChartContainerProps) {
   const { t, i18n } = useTranslation();
   const { isDark } = useTheme();
+
+  const isDailyView = timePeriod === "today" || timePeriod === "thisMonth";
+  const periodAnimationKey = `period-${timePeriod}`;
+
+  const currentPeriodIndicatorX = useMemo(() => {
+    const now = new Date();
+
+    if (timePeriod === "thisMonth" || timePeriod === "today") {
+      // Must match the chartUtils daily label format: `${day} ${translatedMonth}`
+      return `${now.getDate()} ${t(`dashboard.months.${now.getMonth()}`)}`;
+    }
+    if (timePeriod === "thisYear") {
+      // Month label format for yearly (monthly aggregation): translated month name
+      return t(`dashboard.months.${now.getMonth()}`);
+    }
+    if (timePeriod === "overall") {
+      // Year labels are stored as plain year strings
+      return now.getFullYear().toString();
+    }
+    return null;
+  }, [timePeriod, t, i18n.language]);
 
   // Define theme-aware bar gradients
   const barRedGradientStops = isDark
@@ -46,6 +70,7 @@ export function ChartContainer({
   const gridColor = isDark ? "#2a2a33" : "#eef2f7";
   // Slightly lighter axis/grid tone (keep text readable).
   const axisColor = isDark ? "rgba(148, 147, 147, 0.7)" : "rgba(85, 85, 85, 0.48)";
+  const lineStroke = isDark ? "#34d399" : "#16a34a";
 
   const getDataKey = () => {
     switch (chartType) {
@@ -92,6 +117,35 @@ export function ChartContainer({
     return sum / nonZeroValues.length;
   }, [currentPeriod?.data, dataKey]);
 
+  const lineGreen = isDark ? "#34d399" : "#16a34a";
+  const lineRed = isDark ? "#fb7185" : "#dc2626";
+
+  const lineDomain = useMemo(() => {
+    const values = (currentPeriod?.data ?? [])
+      .map((d: any) => {
+        const raw = d?.[dataKey];
+        return typeof raw === "number" ? raw : 0;
+      })
+      .filter((v: number) => !Number.isNaN(v));
+
+    if (!values.length) return { min: 0, max: 0 };
+    const min = Math.min(...values, 0);
+    const max = Math.max(...values, 0);
+    return { min, max };
+  }, [currentPeriod?.data, dataKey]);
+
+  const avgFromTop = useMemo(() => {
+    const { min, max } = lineDomain;
+    if (max === min) return 0.5;
+    // y=0 is top, y=1 is bottom. Higher values appear towards the top.
+    return (max - avgValue) / (max - min);
+  }, [lineDomain, avgValue]);
+
+  const avgStopPct = Math.max(0, Math.min(1, avgFromTop)) * 100;
+  const gradientTransitionPct = 6; // smoother change between green and red
+  const avgStopPctSmoothEnd = Math.max(0, Math.min(100, avgStopPct + gradientTransitionPct));
+  const lineGradientId = `lineGradient-${periodAnimationKey}-${dataKey}-${chartType}`;
+
   const gridTicks = useMemo(() => {
     const values = (currentPeriod?.data ?? [])
       .map((d: any) => {
@@ -126,8 +180,8 @@ export function ChartContainer({
     return uniq;
   }, [currentPeriod?.data, dataKey]);
 
-  // Daily tick (1m): render non-rotated two-line labels:
-  // first line = day number, second line = translated month ("2 Mars", "23 Mar", ...)
+  // X-axis tick renderer that can show the indicator dot under the current period label.
+  // The indicator dot is positioned as an extra line under the existing tick text.
   const DailyTick = ({ x, y, payload }: any) => {
     const raw: string = payload?.value ?? "";
     const parts = raw.split(" ");
@@ -137,23 +191,69 @@ export function ChartContainer({
     const point = (currentPeriod?.data ?? []).find((d: any) => d?.period === raw);
     const value = point?.[dataKey] ?? 0;
     const isZero = (value ?? 0) === 0;
+    const isIndicator = !!currentPeriodIndicatorX && currentPeriodIndicatorX === raw;
+
+    const arrowFill = isDark ? "#60a5fa" : "#3b82f6";
+    // month line is at dy=14 from the base `y`, and the indicator was placed at dy=10.
+    // So triangle tip ~= y + 14 + 10.
+    const tipY = y + 24;
+    const baseY = tipY + 9;
+    const leftX = x - 7;
+    const rightX = x + 7;
 
     return (
-      <text
-        x={x}
-        y={y}
-        textAnchor="middle"
-        fill={isZero ? axisColor : isDark ? "#ffffff" : "#000000"}
-        fontSize={12}
-        fontWeight={600}
-      >
-        <tspan x={x} dy={0}>
-          {day}
-        </tspan>
-        <tspan x={x} dy={14} fontSize={12}>
-          {month}
-        </tspan>
-      </text>
+      <g>
+        <text
+          x={x}
+          y={y}
+          textAnchor="middle"
+          fill={isZero ? axisColor : isDark ? "#ffffff" : "#000000"}
+          fontSize={12}
+          fontWeight={600}
+        >
+          <tspan x={x} dy={0}>
+            {day}
+          </tspan>
+          <tspan x={x} dy={14} fontSize={12}>
+            {month}
+          </tspan>
+        </text>
+        {isIndicator ? (
+          <polygon
+            points={`${leftX},${baseY} ${rightX},${baseY} ${x},${tipY}`}
+            fill={arrowFill}
+          />
+        ) : null}
+      </g>
+    );
+  };
+
+  const NonDailyTick = ({ x, y, payload }: any) => {
+    const label = payload?.value ?? "";
+    const isIndicator = !!currentPeriodIndicatorX && currentPeriodIndicatorX === label;
+    const fill = isDark ? "#ffffff" : "#000000";
+
+    const arrowFill = isDark ? "#60a5fa" : "#3b82f6";
+    // Single label at dy=0, and indicator was previously at dy=12.
+    const tipY = y + 12;
+    const baseY = tipY + 9;
+    const leftX = x - 7;
+    const rightX = x + 7;
+
+    return (
+      <g>
+        <text x={x} y={y} textAnchor="middle" fill={fill} fontSize={12} fontWeight={600}>
+          <tspan x={x} dy={0}>
+            {label}
+          </tspan>
+        </text>
+        {isIndicator ? (
+          <polygon
+            points={`${leftX},${baseY} ${rightX},${baseY} ${x},${tipY}`}
+            fill={arrowFill}
+          />
+        ) : null}
+      </g>
     );
   };
   const yAxisWidth = useMemo(() => {
@@ -181,18 +281,256 @@ export function ChartContainer({
     return Math.max(56, Math.min(190, computed));
   }, [currentPeriod.data, chartType, currencyLabel, t, i18n.language]);
 
+  const tooltipContent = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      const point = (currentPeriod?.data ?? []).find((d: any) => d.period === label);
+      const revenue = point?.sales ?? 0;
+      const profit = point?.profits ?? 0;
+      const salesCount = point?.salesCount ?? 0;
+      const salesQuantity = point?.salesQuantity ?? 0;
+      return (
+        <div
+          className={
+            isDark
+              ? "bg-[#18181b] border border-gray-700 rounded-lg shadow-lg p-3 min-w-[120px]"
+              : "bg-white border border-gray-200 rounded-lg shadow-lg p-3 min-w-[120px]"
+          }
+          dir={i18n.language === "ar" ? "rtl" : undefined}
+        >
+          <div
+            className={
+              isDark ? "border-b border-gray-800 pb-2" : "border-b border-gray-100 pb-2"
+            }
+          >
+            <p
+              className={
+                isDark ? "text-sm font-semibold text-white" : "text-sm font-semibold text-gray-900"
+              }
+            >
+              {label}
+            </p>
+          </div>
+          {chartType === "sales" ? (
+            <>
+              <div className="flex justify-between items-center mt-2">
+                <span className={isDark ? "text-sm font-medium text-gray-200" : "text-sm font-medium text-gray-700"}>
+                  {t("dashboard.sales")}:
+                </span>
+                <span
+                  className={
+                    salesCount === 0
+                      ? "text-sm font-semibold text-gray-400 mx-1 opacity-60"
+                      : isDark
+                        ? "text-sm font-semibold text-white mx-1"
+                        : "text-sm font-semibold text-gray-900 mx-1"
+                  }
+                >
+                  {salesCount.toLocaleString()}
+                </span>
+              </div>
+              <div className="flex justify-between items-center mt-1">
+                <span className={isDark ? "text-sm font-medium text-gray-200" : "text-sm font-medium text-gray-700"}>
+                  {t("dashboard.quantity")}:
+                </span>
+                <span
+                  className={
+                    salesQuantity === 0
+                      ? "text-sm font-semibold text-gray-400 mx-1 opacity-60"
+                      : isDark
+                        ? "text-sm font-semibold text-green-400 mx-1"
+                        : "text-sm font-semibold text-green-600 mx-1"
+                  }
+                >
+                  {salesQuantity.toLocaleString()}
+                </span>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="flex justify-between items-center mt-2">
+                <span className={isDark ? "text-sm font-medium text-gray-200" : "text-sm font-medium text-gray-700"}>
+                  {t("dashboard.revenue")}:
+                </span>
+                <span
+                  className={
+                    revenue === 0
+                      ? "text-sm font-semibold text-gray-400 mx-1 opacity-60"
+                      : isDark
+                        ? "text-sm font-semibold text-white mx-1"
+                        : "text-sm font-semibold text-gray-900 mx-1"
+                  }
+                >
+                  {revenue.toLocaleString()} {t("currency")}
+                </span>
+              </div>
+              <div className="flex justify-between items-center mt-1">
+                <span className={isDark ? "text-sm font-medium text-gray-200" : "text-sm font-medium text-gray-700"}>
+                  {t("dashboard.profit")}:
+                </span>
+                <span
+                  className={
+                    profit === 0
+                      ? "text-sm font-semibold text-gray-400 mx-1 opacity-60"
+                      : isDark
+                        ? "text-sm font-semibold text-green-400 mx-1"
+                        : "text-sm font-semibold text-green-600 mx-1"
+                  }
+                >
+                  {profit.toLocaleString()} {t("currency")}
+                </span>
+              </div>
+            </>
+          )}
+        </div>
+      );
+    }
+    return null;
+  };
+
   return (
     <div className="h-[400px] w-full">
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart
-          data={currentPeriod.data}
-          margin={{
-            top: 20,
-            right: 60,
-            left: 20,
-            bottom: 20,
-          }}
-        >
+        {chartView === "line" ? (
+          <LineChart
+            key={`line-${periodAnimationKey}`}
+            data={currentPeriod.data}
+            margin={{
+              top: 20,
+              right: 60,
+              left: 20,
+              bottom: 20,
+            }}
+          >
+            <defs>
+              {/* Color change point is the avgValue (horizontal reference) */}
+              <linearGradient
+                id={lineGradientId}
+                x1="0"
+                y1="0"
+                x2="0"
+                y2="1"
+                gradientUnits="objectBoundingBox"
+              >
+                <stop offset="0%" stopColor={lineGreen} />
+                <stop offset={`${avgStopPct}%`} stopColor={lineGreen} />
+                <stop offset={`${avgStopPctSmoothEnd}%`} stopColor={lineRed} />
+                <stop offset="100%" stopColor={lineRed} />
+              </linearGradient>
+            </defs>
+            {/* We draw horizontal gridlines ourselves to control: y=0 continuous only */}
+            <CartesianGrid vertical={false} horizontal={false} />
+            {gridTicks.map((tick) =>
+              Math.abs(tick - 0) < 1e-9 ? (
+                <ReferenceLine
+                  key={`grid-0`}
+                  y={0}
+                  stroke={axisColor}
+                  strokeWidth={1}
+                  strokeDasharray="0"
+                />
+              ) : (
+                <ReferenceLine
+                  key={`grid-${tick}`}
+                  y={tick}
+                  stroke={axisColor}
+                  strokeWidth={1}
+                  strokeDasharray="5 4"
+                />
+              ),
+            )}
+
+            <XAxis
+              dataKey="period"
+              tickLine={false}
+              axisLine={false}
+              tickMargin={8}
+              angle={0}
+              textAnchor="middle"
+              fontSize={isDailyView ? 10 : 14}
+              interval={0}
+              ticks={
+                isDailyView ? currentPeriod.data.map((d) => d.period) : undefined
+              }
+              height={isDailyView ? 76 : 44}
+              fill={isDark ? "#ffffff" : "#000000"}
+              fontWeight={600}
+              stroke={isDark ? "#ffffff" : "#000000"}
+              strokeWidth={0.3}
+              tick={isDailyView ? DailyTick : NonDailyTick}
+            />
+
+            <YAxis
+              tickLine={{ stroke: axisColor, strokeWidth: 1 }}
+              axisLine={{ stroke: axisColor, strokeWidth: 1 }}
+              tickMargin={8}
+              fontSize={14}
+              fontWeight={600}
+              fill={isDark ? "#ffffff" : "#000000"}
+              stroke={isDark ? "#ffffff" : "#000000"}
+              strokeWidth={0.3}
+              tickFormatter={formatValue}
+              textAnchor={i18n.language === "ar" ? "start" : "end"}
+              style={{ whiteSpace: "nowrap" }}
+              width={yAxisWidth}
+            />
+
+            <Tooltip
+              content={tooltipContent}
+              cursor={{
+                stroke: isDark ? "rgba(59,130,246,0.35)" : "rgba(59,130,246,0.3)",
+                strokeWidth: 1,
+              }}
+              position={{ x: undefined, y: undefined }}
+            />
+
+            <Line
+              type="monotone"
+              dataKey={dataKey}
+              strokeWidth={3}
+              isAnimationActive={true}
+              animationDuration={1800}
+              stroke={`url(#${lineGradientId})`}
+              dot={(props: any) => {
+                const v = props?.payload?.[dataKey] ?? 0;
+                const fill = v >= avgValue ? lineGreen : lineRed;
+                return (
+                  <circle
+                    cx={props.cx}
+                    cy={props.cy}
+                    r={4}
+                    fill={fill}
+                    stroke={isDark ? "#0b1220" : "#ffffff"}
+                    strokeWidth={1}
+                  />
+                );
+              }}
+              activeDot={(props: any) => {
+                const v = props?.payload?.[dataKey] ?? 0;
+                const fill = v >= avgValue ? lineGreen : lineRed;
+                return (
+                  <circle
+                    cx={props.cx}
+                    cy={props.cy}
+                    r={6}
+                    fill={fill}
+                    stroke={isDark ? "#0b1220" : "#ffffff"}
+                    strokeWidth={1}
+                  />
+                );
+              }}
+            />
+          </LineChart>
+        ) : (
+          <BarChart
+            key={`bar-${periodAnimationKey}`}
+            data={currentPeriod.data}
+            margin={{
+              top: 20,
+              right: 60,
+              left: 20,
+              bottom: 20,
+            }}
+          >
           <defs>
             <linearGradient id="barGradientRed" x1="0" y1="0" x2="0" y2="1">
               {barRedGradientStops.map((stop) => (
@@ -245,20 +583,18 @@ export function ChartContainer({
             tickMargin={8}
             angle={0}
             textAnchor="middle"
-            fontSize={timePeriod === "1m" ? 10 : 14}
+            fontSize={isDailyView ? 10 : 14}
             interval={0}
             // Force render every tick for daily view to avoid skipped days (e.g. "2 Mars").
             ticks={
-              timePeriod === "1m"
-                ? currentPeriod.data.map((d) => d.period)
-                : undefined
+              isDailyView ? currentPeriod.data.map((d) => d.period) : undefined
             }
-            height={timePeriod === "1m" ? 60 : 30}
+            height={isDailyView ? 76 : 44}
             fill={isDark ? "#ffffff" : "#000000"}
             fontWeight={600}
             stroke={isDark ? "#ffffff" : "#000000"}
             strokeWidth={0.3}
-            tick={timePeriod === "1m" ? DailyTick : undefined}
+              tick={isDailyView ? DailyTick : NonDailyTick}
           />
 
           <YAxis
@@ -277,139 +613,7 @@ export function ChartContainer({
           />
 
           <Tooltip
-            content={({ active, payload, label }) => {
-              if (active && payload && payload.length) {
-                const point = (currentPeriod?.data ?? []).find((d) => d.period === label);
-                const revenue = point?.sales ?? 0;
-                const profit = point?.profits ?? 0;
-                const salesCount = point?.salesCount ?? 0;
-                const salesQuantity = point?.salesQuantity ?? 0;
-                return (
-                  <div
-                    className={
-                      isDark
-                        ? "bg-[#18181b] border border-gray-700 rounded-lg shadow-lg p-3 min-w-[120px]"
-                        : "bg-white border border-gray-200 rounded-lg shadow-lg p-3 min-w-[120px]"
-                    }
-                    dir={i18n.language === "ar" ? "rtl" : undefined}
-                  >
-                    <div
-                      className={
-                        isDark
-                          ? "border-b border-gray-800 pb-2"
-                          : "border-b border-gray-100 pb-2"
-                      }
-                    >
-                      <p
-                        className={
-                          isDark
-                            ? "text-sm font-semibold text-white"
-                            : "text-sm font-semibold text-gray-900"
-                        }
-                      >
-                        {label}
-                      </p>
-                    </div>
-                    {chartType === "sales" ? (
-                      <>
-                        <div className="flex justify-between items-center mt-2">
-                          <span
-                            className={
-                              isDark
-                                ? "text-sm font-medium text-gray-200"
-                                : "text-sm font-medium text-gray-700"
-                            }
-                          >
-                            {t("dashboard.sales")}:
-                          </span>
-                          <span
-                            className={
-                              salesCount === 0
-                                ? "text-sm font-semibold text-gray-400 mx-1 opacity-60"
-                                : isDark
-                                  ? "text-sm font-semibold text-white mx-1"
-                                  : "text-sm font-semibold text-gray-900 mx-1"
-                            }
-                          >
-                            {salesCount.toLocaleString()}
-                          </span>
-                        </div>
-                        <div className="flex justify-between items-center mt-1">
-                          <span
-                            className={
-                              isDark
-                                ? "text-sm font-medium text-gray-200"
-                                : "text-sm font-medium text-gray-700"
-                            }
-                          >
-                            {t("dashboard.quantity")}:
-                          </span>
-                          <span
-                            className={
-                              salesQuantity === 0
-                                ? "text-sm font-semibold text-gray-400 mx-1 opacity-60"
-                                : isDark
-                                  ? "text-sm font-semibold text-green-400 mx-1"
-                                  : "text-sm font-semibold text-green-600 mx-1"
-                            }
-                          >
-                            {salesQuantity.toLocaleString()}
-                          </span>
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <div className="flex justify-between items-center mt-2">
-                          <span
-                            className={
-                              isDark
-                                ? "text-sm font-medium text-gray-200"
-                                : "text-sm font-medium text-gray-700"
-                            }
-                          >
-                            {t("dashboard.revenue")}
-                          </span>
-                          <span
-                            className={
-                              revenue === 0
-                                ? "text-sm font-semibold text-gray-400 mx-1 opacity-60"
-                                : isDark
-                                  ? "text-sm font-semibold text-white mx-1"
-                                  : "text-sm font-semibold text-gray-900 mx-1"
-                            }
-                          >
-                            {revenue.toLocaleString()} {t("currency")}
-                          </span>
-                        </div>
-                        <div className="flex justify-between items-center mt-1">
-                          <span
-                            className={
-                              isDark
-                                ? "text-sm font-medium text-gray-200"
-                                : "text-sm font-medium text-gray-700"
-                            }
-                          >
-                            {t("dashboard.profit")}
-                          </span>
-                          <span
-                            className={
-                              profit === 0
-                                ? "text-sm font-semibold text-gray-400 mx-1 opacity-60"
-                                : isDark
-                                  ? "text-sm font-semibold text-green-400 mx-1"
-                                  : "text-sm font-semibold text-green-600 mx-1"
-                            }
-                          >
-                            {profit.toLocaleString()} {t("currency")}
-                          </span>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                );
-              }
-              return null;
-            }}
+            content={tooltipContent}
             cursor={{
               fill: isDark ? "rgba(59,130,246,0.15)" : "rgba(59,130,246,0.1)",
             }}
@@ -417,10 +621,13 @@ export function ChartContainer({
           />
 
           <Bar
+            key={`bar-series-${periodAnimationKey}`}
             dataKey={dataKey}
             fill="url(#barGradientGreen)"
             radius={[4, 4, 0, 0]}
             maxBarSize={60}
+            isAnimationActive={true}
+            animationDuration={650}
           >
             {(currentPeriod?.data ?? []).map((d: any) => {
               const v = d?.[dataKey] ?? 0;
@@ -435,7 +642,8 @@ export function ChartContainer({
               );
             })}
           </Bar>
-        </BarChart>
+          </BarChart>
+        )}
       </ResponsiveContainer>
     </div>
   );

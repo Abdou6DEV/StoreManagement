@@ -25,8 +25,10 @@ export interface TimePeriodConfig {
 export interface ChartControlsProps {
   chartType: "profits" | "clients" | "sales";
   setChartType: (type: "profits" | "clients" | "sales") => void;
-  timePeriod: "1m" | "12m" | "years";
-  setTimePeriod: (period: "1m" | "12m" | "years") => void;
+  timePeriod: "today" | "thisMonth" | "thisYear" | "overall";
+  setTimePeriod: (period: "today" | "thisMonth" | "thisYear" | "overall") => void;
+  chartView: "bar" | "line";
+  setChartView: (view: "bar" | "line") => void;
   chartTypes: Record<string, ChartTypeConfig>;
   timePeriods: Record<string, TimePeriodConfig>;
 }
@@ -39,11 +41,13 @@ export interface ChartHeaderProps {
 export interface ChartContainerProps {
   currentPeriod: TimePeriodConfig;
   chartType: "profits" | "clients" | "sales";
-  timePeriod: "1m" | "12m" | "years";
+  timePeriod: "today" | "thisMonth" | "thisYear" | "overall";
+  chartView: "bar" | "line";
 }
 
 export interface ChartDataState {
-  "1m": ChartData[];
-  "12m": ChartData[];
-  years: ChartData[];
+  today: ChartData[];
+  thisMonth: ChartData[];
+  thisYear: ChartData[];
+  overall: ChartData[];
 }

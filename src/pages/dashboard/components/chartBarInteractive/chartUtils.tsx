@@ -27,9 +27,10 @@ export function useChartData() {
   const dashboardLoading = useDashboardLoading();
   
   const [chartData, setChartData] = React.useState<ChartDataState>({
-    "1m": [],
-    "12m": [],
-    years: [],
+    today: [],
+    thisMonth: [],
+    thisYear: [],
+    overall: [],
   });
   const [loading, setLoading] = React.useState(true);
 
@@ -45,6 +46,50 @@ export function useChartData() {
       const minProcessingTime = 100; // Minimum 100ms to match other components
 
       const now = new Date();
+
+      // --- today: Hourly values for today (from 00:00 to current hour) ---
+      const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const currentHour = now.getHours();
+      const hours = Array.from({ length: currentHour + 1 }, (_, i) => i);
+
+      const todayHourly = hours.map((hour) => {
+        const hourSales = sales.filter((s) => {
+          const d = new Date(s.createdAt);
+          return (
+            d.getFullYear() === startOfToday.getFullYear() &&
+            d.getMonth() === startOfToday.getMonth() &&
+            d.getDate() === startOfToday.getDate() &&
+            d.getHours() === hour
+          );
+        });
+
+        const hourClients = clients.filter((c: Client) => {
+          const d = new Date(c.createdAt);
+          return (
+            d.getFullYear() === startOfToday.getFullYear() &&
+            d.getMonth() === startOfToday.getMonth() &&
+            d.getDate() === startOfToday.getDate() &&
+            d.getHours() === hour
+          );
+        });
+
+        const profits = hourSales.reduce((sum: number, s) => sum + (s.totalProfit || 0), 0);
+        const salesCount = hourSales.length;
+        const salesQuantity = hourSales.reduce((sum: number, s) => sum + (s.totalItems || 0), 0);
+        const salesTotal = hourSales.reduce(
+          (sum: number, s) => sum + (s.totalAmountWithDiscount || 0),
+          0,
+        );
+
+        return {
+          period: `${String(hour).padStart(2, "0")}:00`,
+          profits,
+          clients: hourClients.length,
+          sales: salesTotal,
+          salesCount,
+          salesQuantity,
+        };
+      });
 
       // --- 1m: Daily values for the current month (from day 1 to today) ---
       const daysCount = now.getDate();
@@ -193,7 +238,12 @@ export function useChartData() {
         await new Promise(resolve => setTimeout(resolve, remainingTime));
       }
 
-      setChartData({ "1m": daily, "12m": monthly, years: yearly });
+      setChartData({
+        today: todayHourly,
+        thisMonth: daily,
+        thisYear: monthly,
+        overall: yearly,
+      });
       setLoading(false);
     }
 

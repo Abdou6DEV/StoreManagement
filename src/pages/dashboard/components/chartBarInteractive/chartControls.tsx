@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next";
 import { useTheme } from "../../../../lib/hooks/useTheme";
 import { ChartControlsProps } from "./types";
 import { useState } from "react";
-import { ChevronDownIcon } from "lucide-react";
+import { BarChart3, ChevronDownIcon, LineChart } from "lucide-react";
 import { Button } from "../../../../lib/components/button";
 import { Popover, PopoverContent, PopoverTrigger } from "../../../../lib/components/popover";
 import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from "../../../../lib/components/command";
@@ -12,6 +12,8 @@ export function ChartControls({
   setChartType,
   timePeriod,
   setTimePeriod,
+  chartView,
+  setChartView,
   chartTypes,
   timePeriods,
 }: ChartControlsProps) {
@@ -34,6 +36,32 @@ export function ChartControls({
 
   return (
     <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+      {/* Chart View Toggle (Bar / Line) */}
+      <div className={`flex rounded-lg border ${controlBorder} ${toggleBg} p-1`}>
+        <button
+          type="button"
+          onClick={() => setChartView("bar")}
+          aria-pressed={chartView === "bar"}
+          aria-label="Bar chart"
+          className={`px-2.5 py-1.5 text-xs font-medium rounded-md transition-all ${
+            chartView === "bar" ? `${controlBg} ${controlText} shadow-sm` : controlInactive
+          }`}
+        >
+          <BarChart3 className="h-4 w-4" />
+        </button>
+        <button
+          type="button"
+          onClick={() => setChartView("line")}
+          aria-pressed={chartView === "line"}
+          aria-label="Line chart"
+          className={`px-2.5 py-1.5 text-xs font-medium rounded-md transition-all ${
+            chartView === "line" ? `${controlBg} ${controlText} shadow-sm` : controlInactive
+          }`}
+        >
+          <LineChart className="h-4 w-4" />
+        </button>
+      </div>
+
       {/* Chart Type Selector */}
       {chartTypeOptions.length === 1 ? (
         <div
@@ -89,18 +117,22 @@ export function ChartControls({
         {Object.entries(timePeriods).map(([key]) => (
           <button
             key={key}
-            onClick={() => setTimePeriod(key as "1m" | "12m" | "years")}
+            onClick={() =>
+              setTimePeriod(key as "today" | "thisMonth" | "thisYear" | "overall")
+            }
             className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
               timePeriod === key
                 ? `${controlBg} ${controlText} shadow-sm`
                 : controlInactive
             }`}
           >
-            {key === "1m"
-              ? t("history.daily")
-              : key === "12m"
-                ? t("history.monthly")
-                : t("dashboard.years")}
+            {key === "today"
+              ? t("dashboard.today")
+              : key === "thisMonth"
+                ? t("dashboard.thisMonth")
+                : key === "thisYear"
+                  ? t("dashboard.thisYear")
+                  : t("dashboard.overall")}
           </button>
         ))}
       </div>
