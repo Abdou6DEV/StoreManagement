@@ -49,7 +49,7 @@
     "today": "Aujourd'hui",
     "thisMonth": "Ce Mois",
     "thisYear": "Cette Année",
-    "overall": "Global",
+    "overall": "Tout le temps",
     "revenue": "Revenu",
     "profit": "Bénéfice",
     "itemsSold": "Articles Vendus",
@@ -137,6 +137,9 @@
     "yearlyPerformance": "Performance annuelle",
     "noChartData": "Aucune Donnée Disponible",
     "noChartDataDesc": "Aucune donnée disponible pour la période et le type de graphique sélectionnés. Essayez de sélectionner une période ou un type de graphique différent.",
+    "billsAndExpenses": "Factures & Dépenses",
+    "singlePointLineChartTitle": "Pas assez de points pour un graphique en courbe",
+    "singlePointLineChartDesc": "Une seule période est disponible sur l'axe X. Un graphique en courbe nécessite au moins deux périodes. Passez à la vue en barres ou choisissez une plage plus large.",
     "months": {
       "0": "Janv",
       "1": "Févr",

@@ -3,6 +3,8 @@ export interface ChartData {
   profits: number;
   clients: number;
   sales: number;
+  purchases?: number;
+  billsPayments?: number;
   // Used by the "sales" tooltip to display sales count and total quantity.
   salesCount?: number;
   salesQuantity?: number;
@@ -43,6 +45,16 @@ export interface ChartContainerProps {
   chartType: "profits" | "clients" | "sales";
   timePeriod: "today" | "thisMonth" | "thisYear" | "overall";
   chartView: "bar" | "line";
+  kpiTimePeriod?: "today" | "thisMonth" | "thisYear" | "overall";
+  kpiVsAverage?: {
+    percentage: number;
+    direction: "up" | "down";
+  };
+  billsPaymentsData?: Array<{ amount?: number; paidDate?: string | Date }>;
+  purchasesData?: Array<{
+    createdAt?: string | Date;
+    PurchaseItems?: Array<{ quantity?: number; price?: number }>;
+  }>;
 }
 
 export interface ChartDataState {

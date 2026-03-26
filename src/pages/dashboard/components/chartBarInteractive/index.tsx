@@ -35,6 +35,9 @@ export function ChartBarInteractive() {
   const [billPaymentsData, setBillPaymentsData] = React.useState<
     Array<{ amount: number; paidDate?: string | Date }>
   >([]);
+  const [purchasesData, setPurchasesData] = React.useState<
+    Array<{ createdAt?: string | Date; PurchaseItems?: Array<{ quantity?: number; price?: number }> }>
+  >([]);
 
   const { chartData, loading: chartLoading } = useChartData();
   const { chartTypes } = useChartConfigs();
@@ -146,8 +149,17 @@ export function ChartBarInteractive() {
     const revenue = filtered.reduce((sum: number, s: any) => sum + (s.totalAmountWithDiscount || 0), 0);
     const profit = filtered.reduce((sum: number, s: any) => sum + (s.totalProfit || 0), 0);
     const itemsSold = filtered.reduce((sum: number, s: any) => sum + (s.totalItems || 0), 0);
-    return { revenue, profit, itemsSold };
-  }, [sales, filterSaleByPeriod]);
+    const purchases = (purchasesData ?? [])
+      .filter((p) => (p?.createdAt ? filterSaleByPeriod(p.createdAt) : false))
+      .reduce((sum, p) => {
+        const total = (p.PurchaseItems ?? []).reduce(
+          (itemSum, item) => itemSum + (item.price || 0) * (item.quantity || 0),
+          0,
+        );
+        return sum + total;
+      }, 0);
+    return { revenue, profit, itemsSold, purchases };
+  }, [sales, purchasesData, filterSaleByPeriod]);
 
   // Bills payments total (used for "net profit" display only)
   React.useEffect(() => {
@@ -210,6 +222,28 @@ export function ChartBarInteractive() {
       cancelled = true;
     };
   }, [dashboardLoading, kpiTimePeriod]);
+
+  React.useEffect(() => {
+    if (dashboardLoading) return;
+    let cancelled = false;
+
+    (async () => {
+      if (!window?.api?.database?.purchases?.getAll) {
+        if (!cancelled) setPurchasesData([]);
+        return;
+      }
+      try {
+        const fetchedPurchases = await window.api.database.purchases.getAll();
+        if (!cancelled) setPurchasesData(Array.isArray(fetchedPurchases) ? fetchedPurchases : []);
+      } catch (e) {
+        if (!cancelled) setPurchasesData([]);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [dashboardLoading]);
 
   const adjustedProfit = overviewNetProfitEnabled
     ? overviewTotals.profit - (billPaymentsTotal ?? 0)
@@ -518,6 +552,24 @@ export function ChartBarInteractive() {
             </span>
           </div>
         </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-4">
+          <div className="flex flex-col items-center gap-1 text-center">
+            <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+              {t("dashboard.billsAndExpenses")}
+            </span>
+            <span className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+              {formatCurrency(billPaymentsTotal)}
+            </span>
+          </div>
+          <div className="flex flex-col items-center gap-1 text-center">
+            <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+              {t("history.purchases")}
+            </span>
+            <span className="text-2xl font-bold text-orange-600 dark:text-orange-400">
+              {formatCurrency(overviewTotals.purchases)}
+            </span>
+          </div>
+        </div>
       </div>
 
       {/* Chart or Empty State */}
@@ -527,6 +579,10 @@ export function ChartBarInteractive() {
           chartType={chartType}
           timePeriod={chartTimePeriod}
           chartView={chartView}
+          kpiTimePeriod={kpiTimePeriod}
+          kpiVsAverage={vsAverage}
+          billsPaymentsData={billPaymentsData}
+          purchasesData={purchasesData}
         />
       ) : (
         <div className="h-[400px] w-full flex flex-col items-center justify-center py-12 text-center">

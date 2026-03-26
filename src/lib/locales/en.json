@@ -52,7 +52,7 @@
     "today": "Today",
     "thisMonth": "This Month",
     "thisYear": "This Year",
-    "overall": "Overall",
+    "overall": "All-time",
     "revenue": "Revenue",
     "profit": "Profit",
     "itemsSold": "Items Sold",
@@ -149,6 +149,9 @@
     "yearlyPerformance": "Yearly performance",
     "noChartData": "No Data Available",
     "noChartDataDesc": "No data available for the selected period and chart type. Try selecting a different period or chart type.",
+    "billsAndExpenses": "Bills & Expenses",
+    "singlePointLineChartTitle": "Not enough points for a line chart",
+    "singlePointLineChartDesc": "Only one period is available on the X-axis. A line chart needs at least two periods. Switch to bar view or select a wider range.",
     "months": {
       "0": "Jan",
       "1": "Feb",

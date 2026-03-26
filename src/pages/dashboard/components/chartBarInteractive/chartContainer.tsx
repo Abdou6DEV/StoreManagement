@@ -13,6 +13,7 @@ import {
   LineChart,
   Line,
 } from "recharts";
+import { TrendingDown, TrendingUp } from "lucide-react";
 import { useTheme } from "../../../../lib/hooks/useTheme";
 import { ChartContainerProps } from "./types";
 
@@ -21,6 +22,10 @@ export function ChartContainer({
   chartType,
   timePeriod,
   chartView,
+  kpiTimePeriod,
+  kpiVsAverage,
+  billsPaymentsData = [],
+  purchasesData = [],
 }: ChartContainerProps) {
   const { t, i18n } = useTranslation();
   const { isDark } = useTheme();
@@ -231,7 +236,10 @@ export function ChartContainer({
   const NonDailyTick = ({ x, y, payload }: any) => {
     const label = payload?.value ?? "";
     const isIndicator = !!currentPeriodIndicatorX && currentPeriodIndicatorX === label;
-    const fill = isDark ? "#ffffff" : "#000000";
+    const point = (currentPeriod?.data ?? []).find((d: any) => d?.period === label);
+    const value = point?.[dataKey] ?? 0;
+    const isZero = (value ?? 0) === 0;
+    const fill = isZero ? axisColor : isDark ? "#ffffff" : "#000000";
 
     const arrowFill = isDark ? "#60a5fa" : "#3b82f6";
     // Single label at dy=0, and indicator was previously at dy=12.
@@ -288,6 +296,49 @@ export function ChartContainer({
       const profit = point?.profits ?? 0;
       const salesCount = point?.salesCount ?? 0;
       const salesQuantity = point?.salesQuantity ?? 0;
+      const isCurrentIndicator = !!currentPeriodIndicatorX && currentPeriodIndicatorX === label;
+      const shouldUseKpiRating =
+        chartType === "profits" &&
+        kpiTimePeriod === "today" &&
+        isCurrentIndicator &&
+        !!kpiVsAverage;
+      const pct = avgValue !== 0 ? ((profit - avgValue) / Math.abs(avgValue)) * 100 : 0;
+      const ratingDirection: "up" | "down" = shouldUseKpiRating
+        ? (kpiVsAverage?.direction ?? "up")
+        : pct >= 0
+          ? "up"
+          : "down";
+      const ratingPercentage = shouldUseKpiRating
+        ? (kpiVsAverage?.percentage ?? 0)
+        : Math.abs(pct);
+      const billsForHoveredPeriod = (billsPaymentsData ?? []).reduce((sum, p) => {
+        if (!p?.paidDate) return sum;
+        const d = new Date(p.paidDate);
+        const mappedLabel =
+          timePeriod === "thisMonth"
+            ? `${d.getDate()} ${t(`dashboard.months.${d.getMonth()}`)}`
+            : timePeriod === "thisYear"
+              ? t(`dashboard.months.${d.getMonth()}`)
+              : d.getFullYear().toString();
+        if (mappedLabel !== label) return sum;
+        return sum + ((p.amount || 0) / 100);
+      }, 0);
+      const purchasesForHoveredPeriod = (purchasesData ?? []).reduce((sum, p) => {
+        if (!p?.createdAt) return sum;
+        const d = new Date(p.createdAt);
+        const mappedLabel =
+          timePeriod === "thisMonth"
+            ? `${d.getDate()} ${t(`dashboard.months.${d.getMonth()}`)}`
+            : timePeriod === "thisYear"
+              ? t(`dashboard.months.${d.getMonth()}`)
+              : d.getFullYear().toString();
+        if (mappedLabel !== label) return sum;
+        const purchaseTotal = (p.PurchaseItems ?? []).reduce(
+          (itemSum, item) => itemSum + (item.price || 0) * (item.quantity || 0),
+          0,
+        );
+        return sum + purchaseTotal;
+      }, 0);
       return (
         <div
           className={
@@ -299,7 +350,9 @@ export function ChartContainer({
         >
           <div
             className={
-              isDark ? "border-b border-gray-800 pb-2" : "border-b border-gray-100 pb-2"
+              isDark
+                ? "border-b border-gray-800 pb-2 flex items-center justify-between gap-2"
+                : "border-b border-gray-100 pb-2 flex items-center justify-between gap-2"
             }
           >
             <p
@@ -309,6 +362,22 @@ export function ChartContainer({
             >
               {label}
             </p>
+            {chartType === "profits" && ratingPercentage > 0 ? (
+              <span
+                className={
+                  ratingDirection === "up"
+                    ? "inline-flex items-center gap-1 text-xs font-semibold text-green-600 dark:text-green-400"
+                    : "inline-flex items-center gap-1 text-xs font-semibold text-red-600 dark:text-red-400"
+                }
+              >
+                {ratingDirection === "up" ? (
+                  <TrendingUp className="h-3 w-3" />
+                ) : (
+                  <TrendingDown className="h-3 w-3" />
+                )}
+                {ratingPercentage.toFixed(1)}%
+              </span>
+            ) : null}
           </div>
           {chartType === "sales" ? (
             <>
@@ -342,6 +411,22 @@ export function ChartContainer({
                   }
                 >
                   {salesQuantity.toLocaleString()}
+                </span>
+              </div>
+              <div className="flex justify-between items-center mt-1">
+                <span className={isDark ? "text-sm font-medium text-gray-200" : "text-sm font-medium text-gray-700"}>
+                  {t("dashboard.billsAndExpenses")}:
+                </span>
+                <span className="text-sm font-semibold text-purple-600 dark:text-purple-400 mx-1">
+                  {billsForHoveredPeriod.toLocaleString()} {t("currency")}
+                </span>
+              </div>
+              <div className="flex justify-between items-center mt-1">
+                <span className={isDark ? "text-sm font-medium text-gray-200" : "text-sm font-medium text-gray-700"}>
+                  {t("history.purchases")}:
+                </span>
+                <span className="text-sm font-semibold text-orange-600 dark:text-orange-400 mx-1">
+                  {purchasesForHoveredPeriod.toLocaleString()} {t("currency")}
                 </span>
               </div>
             </>
@@ -379,6 +464,22 @@ export function ChartContainer({
                   {profit.toLocaleString()} {t("currency")}
                 </span>
               </div>
+              <div className="flex justify-between items-center mt-1">
+                <span className={isDark ? "text-sm font-medium text-gray-200" : "text-sm font-medium text-gray-700"}>
+                  {t("dashboard.billsAndExpenses")}:
+                </span>
+                <span className="text-sm font-semibold text-purple-600 dark:text-purple-400 mx-1">
+                  {billsForHoveredPeriod.toLocaleString()} {t("currency")}
+                </span>
+              </div>
+              <div className="flex justify-between items-center mt-1">
+                <span className={isDark ? "text-sm font-medium text-gray-200" : "text-sm font-medium text-gray-700"}>
+                  {t("history.purchases")}:
+                </span>
+                <span className="text-sm font-semibold text-orange-600 dark:text-orange-400 mx-1">
+                  {purchasesForHoveredPeriod.toLocaleString()} {t("currency")}
+                </span>
+              </div>
             </>
           )}
         </div>
@@ -387,10 +488,29 @@ export function ChartContainer({
     return null;
   };
 
+  const xAxisPointCount = currentPeriod?.data?.length ?? 0;
+  const shouldShowSinglePointLineMessage =
+    chartView === "line" &&
+    (timePeriod === "thisMonth" || timePeriod === "thisYear") &&
+    xAxisPointCount === 1;
+
   return (
     <div className="h-[400px] w-full">
-      <ResponsiveContainer width="100%" height="100%">
-        {chartView === "line" ? (
+      {shouldShowSinglePointLineMessage ? (
+        <div className="h-full w-full flex flex-col items-center justify-center py-12 text-center">
+          <h3 className="text-lg font-semibold text-foreground mb-2">
+            {t("dashboard.singlePointLineChartTitle", "Not enough points for a line chart")}
+          </h3>
+          <p className="text-sm text-muted-foreground max-w-md">
+            {t(
+              "dashboard.singlePointLineChartDesc",
+              "Only one period is available on the X-axis. Add more days or months, or switch to bar view.",
+            )}
+          </p>
+        </div>
+      ) : (
+        <ResponsiveContainer width="100%" height="100%">
+          {chartView === "line" ? (
           <LineChart
             key={`line-${periodAnimationKey}`}
             data={currentPeriod.data}
@@ -520,8 +640,8 @@ export function ChartContainer({
               }}
             />
           </LineChart>
-        ) : (
-          <BarChart
+          ) : (
+            <BarChart
             key={`bar-${periodAnimationKey}`}
             data={currentPeriod.data}
             margin={{
@@ -643,8 +763,9 @@ export function ChartContainer({
             })}
           </Bar>
           </BarChart>
-        )}
-      </ResponsiveContainer>
+          )}
+        </ResponsiveContainer>
+      )}
     </div>
   );
 }
