@@ -291,6 +291,38 @@ export function ChartContainer({
 
   const tooltipContent = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
+      const now = new Date();
+      const mapDateToPeriodLabel = (rawDate: string | Date | undefined) => {
+        if (!rawDate) return null;
+        const d = new Date(rawDate);
+        if (Number.isNaN(d.getTime())) return null;
+
+        if (timePeriod === "today") {
+          if (
+            d.getFullYear() !== now.getFullYear() ||
+            d.getMonth() !== now.getMonth() ||
+            d.getDate() !== now.getDate()
+          ) {
+            return null;
+          }
+          return `${String(d.getHours()).padStart(2, "0")}:00`;
+        }
+
+        if (timePeriod === "thisMonth") {
+          if (d.getFullYear() !== now.getFullYear() || d.getMonth() !== now.getMonth()) {
+            return null;
+          }
+          return `${d.getDate()} ${t(`dashboard.months.${d.getMonth()}`)}`;
+        }
+
+        if (timePeriod === "thisYear") {
+          if (d.getFullYear() !== now.getFullYear()) return null;
+          return t(`dashboard.months.${d.getMonth()}`);
+        }
+
+        return d.getFullYear().toString();
+      };
+
       const point = (currentPeriod?.data ?? []).find((d: any) => d.period === label);
       const revenue = point?.sales ?? 0;
       const profit = point?.profits ?? 0;
@@ -313,25 +345,15 @@ export function ChartContainer({
         : Math.abs(pct);
       const billsForHoveredPeriod = (billsPaymentsData ?? []).reduce((sum, p) => {
         if (!p?.paidDate) return sum;
-        const d = new Date(p.paidDate);
-        const mappedLabel =
-          timePeriod === "thisMonth"
-            ? `${d.getDate()} ${t(`dashboard.months.${d.getMonth()}`)}`
-            : timePeriod === "thisYear"
-              ? t(`dashboard.months.${d.getMonth()}`)
-              : d.getFullYear().toString();
+        const mappedLabel = mapDateToPeriodLabel(p.paidDate);
+        if (!mappedLabel) return sum;
         if (mappedLabel !== label) return sum;
         return sum + ((p.amount || 0) / 100);
       }, 0);
       const purchasesForHoveredPeriod = (purchasesData ?? []).reduce((sum, p) => {
         if (!p?.createdAt) return sum;
-        const d = new Date(p.createdAt);
-        const mappedLabel =
-          timePeriod === "thisMonth"
-            ? `${d.getDate()} ${t(`dashboard.months.${d.getMonth()}`)}`
-            : timePeriod === "thisYear"
-              ? t(`dashboard.months.${d.getMonth()}`)
-              : d.getFullYear().toString();
+        const mappedLabel = mapDateToPeriodLabel(p.createdAt);
+        if (!mappedLabel) return sum;
         if (mappedLabel !== label) return sum;
         const purchaseTotal = (p.PurchaseItems ?? []).reduce(
           (itemSum, item) => itemSum + (item.price || 0) * (item.quantity || 0),
