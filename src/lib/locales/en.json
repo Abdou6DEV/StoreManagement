@@ -758,7 +758,10 @@
     "activationKeyError": "An unexpected error occurred",
     "loading": "Loading...",
     "copyGuid": "Copy",
-    "copyright": "© 2025 Reda Tech. All rights reserved."
+    "copyright": "© 2025 Reda Tech. All rights reserved.",
+    "devLogIn": "Dev: log in as primary admin",
+    "devLogInHint": "Development build only: opens a session as the first ADMIN user in your database (no password).",
+    "devLogInFailed": "Dev login failed"
   },
   "loading": {
     "title": "Loading...",

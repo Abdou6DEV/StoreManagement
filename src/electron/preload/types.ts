@@ -262,6 +262,12 @@ export type AuthAPI = {
     user?: Omit<User, "password">;
     error?: string;
   }>;
+  /** Unpackaged dev build only: session as primary ADMIN from DB without password. */
+  loginDevAsPrimaryAdmin: () => Promise<{
+    success: boolean;
+    user?: Omit<User, "password"> & { permissions?: any };
+    error?: string;
+  }>;
   loginByActivationKey: (activationKey: string, machineId?: string) => Promise<{
     success: boolean;
     user?: Omit<User, "password"> & { permissions?: any };

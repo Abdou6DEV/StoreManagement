@@ -1,22 +1,25 @@
 import * as React from "react";
 import { useTranslation } from "react-i18next";
-import { useTheme } from "../../../../lib/hooks/useTheme";
 import { BarChart3, ExternalLink, TrendingDown, TrendingUp } from "lucide-react";
-import { ChartHeader } from "./chartHeader";
 import { ChartControls } from "./chartControls";
 import { ChartContainer } from "./chartContainer";
-import { useChartData, useChartConfigs } from "./chartUtils";
-import { TimePeriodConfig } from "./types";
+import { useChartConfigs } from "./chartUtils";
+import { ChartDataState, TimePeriodConfig } from "./types";
 import { useSales, useDashboardLoading } from "../../../../lib/contexts/dashboardContext";
 import { Switch } from "../../../../lib/components/switch";
 import { Tooltip } from "../../../../lib/components/tooltip";
 import { Button } from "../../../../lib/components/button";
 import { useAuth } from "../../../../lib/contexts/authContext";
 import { useNavigate } from "react-router-dom";
+import { DashboardStaggerItem } from "../dashboardStagger";
 
-export function ChartBarInteractive() {
+export type ChartBarInteractiveProps = {
+  chartData: ChartDataState;
+  chartLoading: boolean;
+};
+
+export function ChartBarInteractive({ chartData, chartLoading }: ChartBarInteractiveProps) {
   const { t, i18n } = useTranslation();
-  const { isDark } = useTheme();
   const navigate = useNavigate();
   const { canAccessPage } = useAuth();
   const canAccessHistory = canAccessPage("history");
@@ -26,9 +29,7 @@ export function ChartBarInteractive() {
   const [timePeriod, setTimePeriod] = React.useState<
     "today" | "thisMonth" | "thisYear" | "overall"
   >("today");
-  const [chartType, setChartType] = React.useState<
-    "profits" | "clients" | "sales"
-  >("profits");
+  const chartType = "profits" as const;
   const [chartView, setChartView] = React.useState<"bar" | "line">("bar");
   const [overviewNetProfitEnabled, setOverviewNetProfitEnabled] = React.useState(false);
   const [billPaymentsTotal, setBillPaymentsTotal] = React.useState(0);
@@ -39,46 +40,39 @@ export function ChartBarInteractive() {
     Array<{ createdAt?: string | Date; PurchaseItems?: Array<{ quantity?: number; price?: number }> }>
   >([]);
 
-  const { chartData, loading: chartLoading } = useChartData();
   const { chartTypes } = useChartConfigs();
 
   const timePeriods: Record<string, TimePeriodConfig> = {
     today: {
       data: chartData.today,
       label: t("dashboard.today"),
-      description: t("dashboard.today"),
+      description: t("dashboard.hourlyProfitTrend"),
     },
     thisMonth: {
       data: chartData.thisMonth,
       label: t("dashboard.thisMonth"),
-      description: t("dashboard.thisMonth"),
+      description: t("dashboard.dailyProfitTrend"),
     },
     thisYear: {
       data: chartData.thisYear,
       label: t("dashboard.thisYear"),
-      description: t("dashboard.thisYear"),
+      description: t("dashboard.monthlyProfitTrend"),
     },
     overall: {
       data: chartData.overall,
       label: t("dashboard.overall"),
-      description: t("dashboard.yearlyPerformance"),
+      description: t("dashboard.yearlyProfitTrend"),
     },
   };
 
-  const currentChart = chartTypes[chartType];
-  // Chart request differs from KPI request:
-  // - When user selects "today", chart should show "this month (daily up to now)"
-  // - KPIs should still show real "today" totals
-  const chartTimePeriod = timePeriod === "today" ? "thisMonth" : timePeriod;
+  const currentChart = chartTypes.profits;
   const kpiTimePeriod = timePeriod;
-  const currentPeriod = timePeriods[chartTimePeriod];
+  const currentPeriod = timePeriods[timePeriod];
 
   const periodLabel = React.useMemo(() => {
     const now = new Date();
 
-    // Today behaves as "thisMonth" in the chart.
     if (timePeriod === "today") {
-      // Show real "Today" date under the title (not month name).
       return now.toLocaleDateString(i18n.language, {
         day: "numeric",
         month: "long",
@@ -110,15 +104,9 @@ export function ChartBarInteractive() {
   // Only show the empty state when there is no meaningful value at all.
   const hasData =
     (currentPeriod?.data?.length ?? 0) > 0 &&
-    (currentPeriod?.data ?? []).some((item: any) => {
-      const value =
-        chartType === "profits"
-          ? item?.profits
-          : chartType === "clients"
-            ? item?.clients
-            : item?.sales;
-      return (value ?? 0) !== 0;
-    });
+    (currentPeriod?.data ?? []).some(
+      (item: any) => !item?.future && (item?.profits ?? 0) !== 0,
+    );
 
   const formatCurrency = (amount: number) => `${amount.toLocaleString()} ${t("currency")}`;
 
@@ -253,7 +241,6 @@ export function ChartBarInteractive() {
 
   const periodToRender = React.useMemo(() => {
     if (!overviewNetProfitEnabled) return currentPeriod;
-    if (chartType !== "profits") return currentPeriod;
     if (!Array.isArray(billPaymentsData) || billPaymentsData.length === 0) return currentPeriod;
 
     const now = new Date();
@@ -270,7 +257,22 @@ export function ChartBarInteractive() {
       const pd = new Date(payment.paidDate);
       const amount = convertPaymentAmount(payment.amount ?? 0);
 
-      if (chartTimePeriod === "thisMonth") {
+      if (timePeriod === "today") {
+        if (
+          pd.getFullYear() !== now.getFullYear() ||
+          pd.getMonth() !== now.getMonth() ||
+          pd.getDate() !== now.getDate()
+        ) {
+          return;
+        }
+        const label = `${String(pd.getHours()).padStart(2, "0")}:00`;
+        if (byPeriod.has(label)) {
+          byPeriod.set(label, (byPeriod.get(label) ?? 0) + amount);
+        }
+        return;
+      }
+
+      if (timePeriod === "thisMonth") {
         if (pd.getFullYear() !== now.getFullYear()) return;
         if (pd.getMonth() !== now.getMonth()) return;
         const label = `${pd.getDate()} ${t(`dashboard.months.${pd.getMonth()}`)}`;
@@ -280,7 +282,7 @@ export function ChartBarInteractive() {
         return;
       }
 
-      if (chartTimePeriod === "thisYear") {
+      if (timePeriod === "thisYear") {
         if (pd.getFullYear() !== now.getFullYear()) return;
         const label = t(`dashboard.months.${pd.getMonth()}`);
         if (byPeriod.has(label)) {
@@ -289,7 +291,7 @@ export function ChartBarInteractive() {
         return;
       }
 
-      if (chartTimePeriod === "overall") {
+      if (timePeriod === "overall") {
         const label = pd.getFullYear().toString();
         if (byPeriod.has(label)) {
           byPeriod.set(label, (byPeriod.get(label) ?? 0) + amount);
@@ -299,10 +301,12 @@ export function ChartBarInteractive() {
     });
 
     const adjustedData = (currentPeriod?.data ?? []).map((p: any) => {
+      const gross = p.profits ?? 0;
       const bills = byPeriod.get(p.period) ?? 0;
       return {
         ...p,
-        profits: (p.profits ?? 0) - bills,
+        profitsGross: gross,
+        profits: gross - bills,
       };
     });
 
@@ -310,15 +314,7 @@ export function ChartBarInteractive() {
       ...currentPeriod,
       data: adjustedData,
     };
-  }, [
-    overviewNetProfitEnabled,
-    chartType,
-    billPaymentsData,
-    currentPeriod,
-    chartTimePeriod,
-    t,
-    i18n.language,
-  ]);
+  }, [overviewNetProfitEnabled, billPaymentsData, currentPeriod, timePeriod, t, i18n.language]);
 
   const handleJumpToHistory = (period: "today" | "thisMonth" | "thisYear") => {
     const today = new Date();
@@ -420,15 +416,13 @@ export function ChartBarInteractive() {
 
   const showHistoryJump = timePeriod !== "overall";
 
-  // Don't render until chart data is ready (keep hooks order stable)
   if (chartLoading) {
     return null;
   }
 
   return (
     <div className="w-full p-8 bg-card rounded-xl shadow-md border flex flex-col hover:shadow-lg transition-shadow duration-300 relative">
-      {/* Header + KPIs */}
-      <div className="flex flex-col gap-4 mb-6">
+      <DashboardStaggerItem step={0} className="mb-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="flex items-start gap-4">
             <BarChart3 className="h-6 w-6 text-primary mt-1" />
@@ -486,38 +480,36 @@ export function ChartBarInteractive() {
                   </span>
                 </Tooltip>
               )}
-
             </div>
 
-        {/* Controls */}
-        <ChartControls
-          chartType={chartType}
-          setChartType={setChartType}
-          timePeriod={timePeriod}
-          setTimePeriod={setTimePeriod}
+            <ChartControls
+              timePeriod={timePeriod}
+              setTimePeriod={setTimePeriod}
               chartView={chartView}
               setChartView={setChartView}
-          chartTypes={chartTypes}
-          timePeriods={timePeriods}
-        />
+              timePeriods={timePeriods}
+            />
           </div>
         </div>
+      </DashboardStaggerItem>
 
+      <DashboardStaggerItem step={1} className="mb-6">
+        <div className="flex flex-col">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-          <div className="flex flex-col items-center gap-1 text-center">
-            <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+          <div className="flex flex-col items-center gap-0.5 text-center">
+            <span className="text-sm md:text-base font-medium text-muted-foreground uppercase tracking-wide leading-none">
               {t("dashboard.revenue")}
             </span>
-            <span className="text-3xl font-bold text-primary">
+            <span className="text-3xl md:text-4xl font-bold tabular-nums text-primary leading-none">
               {formatCurrency(overviewTotals.revenue)}
             </span>
           </div>
 
-          <div className="flex flex-col items-center gap-1 text-center">
-            <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+          <div className="flex flex-col items-center gap-0.5 text-center">
+            <span className="text-sm md:text-base font-medium text-muted-foreground uppercase tracking-wide leading-none">
               {profitLabel}
             </span>
-            <span className="text-3xl font-bold text-green-600 mt-1">
+            <span className="text-3xl md:text-4xl font-bold tabular-nums text-green-600 leading-none">
               {formatCurrency(adjustedProfit)}
             </span>
 
@@ -530,9 +522,9 @@ export function ChartBarInteractive() {
                 }`}
               >
                 {vsAverage.direction === "up" ? (
-                  <TrendingUp className="h-4 w-4" />
+                  <TrendingUp className="h-4 w-4 shrink-0" />
                 ) : (
-                  <TrendingDown className="h-4 w-4" />
+                  <TrendingDown className="h-4 w-4 shrink-0" />
                 )}
                 <span className="font-semibold">{vsAverage.percentage.toFixed(1)}%</span>
                 <span className="text-xs text-muted-foreground">
@@ -543,65 +535,74 @@ export function ChartBarInteractive() {
             )}
           </div>
 
-          <div className="flex flex-col items-center gap-1 text-center">
-            <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+          <div className="flex flex-col items-center gap-0.5 text-center">
+            <span className="text-sm md:text-base font-medium text-muted-foreground uppercase tracking-wide leading-none">
               {t("dashboard.itemsSold")}
             </span>
-            <span className="text-2xl font-bold text-orange-600">
+            <span className="text-3xl md:text-4xl font-bold tabular-nums text-orange-600 leading-none">
               {overviewTotals.itemsSold.toLocaleString()}
             </span>
           </div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-4">
-          <div className="flex flex-col items-center gap-1 text-center">
-            <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+          <div className="flex flex-col items-center gap-0.5 text-center">
+            <span className="text-sm md:text-base font-medium text-muted-foreground uppercase tracking-wide leading-none">
               {t("dashboard.billsAndExpenses")}
             </span>
-            <span className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+            <span className="text-3xl md:text-4xl font-bold tabular-nums text-purple-600 dark:text-purple-400 leading-none">
               {formatCurrency(billPaymentsTotal)}
             </span>
           </div>
-          <div className="flex flex-col items-center gap-1 text-center">
-            <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+          <div className="flex flex-col items-center gap-0.5 text-center">
+            <span className="text-sm md:text-base font-medium text-muted-foreground uppercase tracking-wide leading-none">
               {t("history.purchases")}
             </span>
-            <span className="text-2xl font-bold text-orange-600 dark:text-orange-400">
+            <span className="text-3xl md:text-4xl font-bold tabular-nums text-orange-600 dark:text-orange-400 leading-none">
               {formatCurrency(overviewTotals.purchases)}
             </span>
           </div>
         </div>
-      </div>
-
-      {/* Chart or Empty State */}
-      {hasData ? (
-        <ChartContainer
-          currentPeriod={periodToRender}
-          chartType={chartType}
-          timePeriod={chartTimePeriod}
-          chartView={chartView}
-          kpiTimePeriod={kpiTimePeriod}
-          kpiVsAverage={vsAverage}
-          billsPaymentsData={billPaymentsData}
-          purchasesData={purchasesData}
-        />
-      ) : (
-        <div className="h-[400px] w-full flex flex-col items-center justify-center py-12 text-center">
-          <BarChart3 className="w-12 h-12 text-muted-foreground mb-4" />
-          <h3 className="text-lg font-semibold text-foreground mb-2">
-            {t("dashboard.noChartData", "No Data Available")}
-          </h3>
-          <p className="text-sm text-muted-foreground max-w-md">
-            {t("dashboard.noChartDataDesc", "No data available for the selected period and chart type. Try selecting a different period or chart type.")}
-          </p>
         </div>
-      )}
+      </DashboardStaggerItem>
 
-      <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground pt-4 border-t mt-4">
-        <TrendingUp className="h-4 w-4" />
-        <span>
-          {currentChart.description} - {currentPeriod.description}
-        </span>
-      </div>
+      <DashboardStaggerItem step={2}>
+        {hasData ? (
+          <ChartContainer
+            currentPeriod={periodToRender}
+            chartType={chartType}
+            timePeriod={timePeriod}
+            chartView={chartView}
+            kpiTimePeriod={kpiTimePeriod}
+            kpiVsAverage={vsAverage}
+            billsPaymentsData={billPaymentsData}
+            purchasesData={purchasesData}
+            grossProfitYAxis={
+              overviewNetProfitEnabled &&
+              Array.isArray(billPaymentsData) &&
+              billPaymentsData.length > 0
+            }
+          />
+        ) : (
+          <div className="h-[400px] w-full flex flex-col items-center justify-center py-12 text-center">
+            <BarChart3 className="w-12 h-12 text-muted-foreground" />
+            <h3 className="text-lg font-semibold text-foreground">
+              {t("dashboard.noChartData", "No Data Available")}
+            </h3>
+            <p className="text-sm text-muted-foreground max-w-md">
+              {t("dashboard.noChartDataDesc", "No data available for the selected period and chart type. Try selecting a different period or chart type.")}
+            </p>
+          </div>
+        )}
+      </DashboardStaggerItem>
+
+      <DashboardStaggerItem step={3} className="pt-4 border-t">
+        <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+          <TrendingUp className="h-4 w-4" />
+          <span>
+            {currentChart.description} - {currentPeriod.description}
+          </span>
+        </div>
+      </DashboardStaggerItem>
     </div>
   );
 }

@@ -430,7 +430,10 @@
     "activationKeyError": "Une erreur inattendue s'est produite",
     "loading": "Chargement...",
     "copyGuid": "Copier",
-    "copyright": "© 2025 Reda Tech. Tous droits réservés."
+    "copyright": "© 2025 Reda Tech. Tous droits réservés.",
+    "devLogIn": "Dev : connexion admin principal",
+    "devLogInHint": "Build de développement uniquement : ouvre une session comme le premier utilisateur ADMIN en base (sans mot de passe).",
+    "devLogInFailed": "Échec de la connexion dev"
   },
   "loading": {
     "title": "Chargement...",

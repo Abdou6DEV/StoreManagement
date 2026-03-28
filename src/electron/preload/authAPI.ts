@@ -3,6 +3,8 @@ import type { AuthAPI } from "./types";
 
 const authAPI: AuthAPI = {
   login: (credentials) => ipcRenderer.invoke("auth:login", credentials),
+  loginDevAsPrimaryAdmin: () =>
+    ipcRenderer.invoke("auth:loginDevAsPrimaryAdmin"),
   loginByActivationKey: (activationKey, machineId?) =>
     ipcRenderer.invoke("auth:loginByActivationKey", activationKey, machineId),
   createUser: (userData) => ipcRenderer.invoke("auth:createUser", userData),

@@ -29,7 +29,8 @@ export default function Login() {
   const [machineId, setMachineId] = useState<string | null>(null);
   const [machineIdLoading, setMachineIdLoading] = useState(false);
   const [guidCopied, setGuidCopied] = useState(false);
-  const { login, loginByActivationKey, confirmLoginTransition } = useAuth();
+  const { login, loginByActivationKey, loginDevAsPrimaryAdmin, confirmLoginTransition } =
+    useAuth();
   const { t, i18n } = useTranslation();
   const { isDark } = useTheme();
   
@@ -97,6 +98,27 @@ export default function Login() {
     const t = setTimeout(() => confirmLoginTransition(), 1500);
     return () => clearTimeout(t);
   }, [successPhase, confirmLoginTransition]);
+
+  // Production builds: Vite sets DEV=false, PROD=true — button and IPC path are inert.
+  const showDevLoginButton = import.meta.env.DEV && !import.meta.env.PROD;
+
+  const handleDevLogin = async () => {
+    setError(null);
+    setIsLoading(true);
+    try {
+      const result = await loginDevAsPrimaryAdmin();
+      if (result.success) {
+        setSuccessPhase("green_hold");
+        setIsLoading(false);
+      } else {
+        setError(result.error || t("login.devLogInFailed", "Dev login failed"));
+        setIsLoading(false);
+      }
+    } catch {
+      setError(t("login.devLogInFailed", "Dev login failed"));
+      setIsLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -551,6 +573,20 @@ export default function Login() {
                 t("login.signIn", "Sign In")
               )}
             </button>
+
+            {showDevLoginButton && !useActivationKey ? (
+              <div className="pt-4 border-t border-border">
+                <button
+                  type="button"
+                  onClick={handleDevLogin}
+                  disabled={isLoading || successPhase !== "idle" || !!error}
+                  title={t("login.devLogInHint")}
+                  className="w-full text-xs font-medium text-amber-700/90 dark:text-amber-400/90 py-2.5 px-3 rounded-lg border border-dashed border-amber-600/35 dark:border-amber-500/35 bg-amber-500/5 hover:bg-amber-500/10 transition-colors disabled:opacity-50 disabled:pointer-events-none"
+                >
+                  {t("login.devLogIn")}
+                </button>
+              </div>
+            ) : null}
           </form>
 
         </div>

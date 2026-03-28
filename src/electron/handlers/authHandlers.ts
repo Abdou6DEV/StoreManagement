@@ -1,4 +1,4 @@
-import { ipcMain } from "electron";
+import { app, ipcMain } from "electron";
 import {
   users,
   CreateUserData,
@@ -47,6 +47,47 @@ export const setupAuthHandlers = () => {
       return {
         success: false,
         error: "Authentication failed",
+      };
+    }
+  });
+
+  /**
+   * Dev-only bypass: primary ADMIN from DB. Must never work in production:
+   * - Packaged installers (end users)
+   * - NODE_ENV=production (e.g. production-like runs)
+   */
+  ipcMain.handle("auth:loginDevAsPrimaryAdmin", async () => {
+    try {
+      if (app.isPackaged || process.env.NODE_ENV === "production") {
+        return { success: false, error: "Not available" };
+      }
+      const primaryAdmin = await users.getPrimaryAdmin();
+      if (primaryAdmin) {
+        const { password: _pw, ...userWithoutPassword } = primaryAdmin;
+        createActivityLog({
+          username: primaryAdmin.username,
+          action: "activityLog.actions.loggedIn",
+          details: null,
+        }).catch(() => {});
+        return {
+          success: true,
+          user: { ...userWithoutPassword, id: "hardcoded-admin" },
+        };
+      }
+      createActivityLog({
+        username: "admin",
+        action: "activityLog.actions.loggedIn",
+        details: null,
+      }).catch(() => {});
+      return {
+        success: true,
+        user: defaultAdminPayload(),
+      };
+    } catch (error) {
+      console.error("auth:loginDevAsPrimaryAdmin error:", error);
+      return {
+        success: false,
+        error: "Dev login failed",
       };
     }
   });

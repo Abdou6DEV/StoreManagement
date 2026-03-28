@@ -15,6 +15,8 @@ interface AuthContextType {
     activationKey: string,
     machineId?: string,
   ) => Promise<{ success: boolean; error?: string }>;
+  /** Dev / unpackaged only: primary admin from DB, no credentials. */
+  loginDevAsPrimaryAdmin: () => Promise<{ success: boolean; error?: string }>;
   /** Call after login success UI sequence (green button, fade out) to show preload transition. */
   confirmLoginTransition: () => void;
   logout: () => void;
@@ -119,6 +121,33 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const loginDevAsPrimaryAdmin = async (): Promise<{
+    success: boolean;
+    error?: string;
+  }> => {
+    if (import.meta.env.PROD) {
+      return { success: false, error: "Not available" };
+    }
+    try {
+      const result = await window.api.auth.loginDevAsPrimaryAdmin();
+      if (result.success && result.user) {
+        setUser(result.user);
+        setUserRole(result.user.role);
+        setIsPreloading(true);
+        setPreloadProgress(0);
+        setPreloadComplete(false);
+        return { success: true };
+      }
+      return {
+        success: false,
+        error: result.error || "Dev login failed",
+      };
+    } catch (error) {
+      console.error("loginDevAsPrimaryAdmin error:", error);
+      return { success: false, error: "Dev login failed" };
+    }
+  };
+
   const markPreloadComplete = () => {
     setPreloadComplete(true);
   };
@@ -199,6 +228,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isAdmin: userRole === "ADMIN",
     login,
     loginByActivationKey,
+    loginDevAsPrimaryAdmin,
     logout,
     loading,
     isPreloading,

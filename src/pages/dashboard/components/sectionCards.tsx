@@ -12,6 +12,8 @@ import {
 import { StockStatsCard } from "./stockStatsCard";
 import { ServiceStatsCard } from "./serviceStatsCard";
 import { ChartBarInteractive } from "./chartBarInteractive";
+import { useChartData } from "./chartBarInteractive/chartUtils";
+import { DashboardStaggerItem } from "./dashboardStagger";
 import { LoadingState } from "../../../lib/components/loadingState";
 import { useSales, useProducts, useClients, usePayments, useLowStockThreshold, useDashboardLoading } from "../../../lib/contexts/dashboardContext";
 
@@ -27,7 +29,8 @@ export function SectionCards() {
   const payments = usePayments();
   const lowStockThreshold = useLowStockThreshold();
   const dashboardLoading = useDashboardLoading();
-  
+  const { chartData, loading: chartDataLoading } = useChartData();
+
   const [loadingStates, setLoadingStates] = useState({
     salesStats: true,
     stockStats: true,
@@ -569,12 +572,26 @@ export function SectionCards() {
     );
   }
 
+  const overviewReady = !chartDataLoading;
+
   return (
     <div className="space-y-8">
-      <ChartBarInteractive />
-      {renderSection("stockStatsSection", stockStats)}
-      <ServiceStatsCard />
-      {renderSection("clientStatsSection", clientStats)}
+      <DashboardStaggerItem step={0}>
+        <ChartBarInteractive chartData={chartData} chartLoading={chartDataLoading} />
+      </DashboardStaggerItem>
+      {overviewReady ? (
+        <>
+          <DashboardStaggerItem step={1}>
+            {renderSection("stockStatsSection", stockStats)}
+          </DashboardStaggerItem>
+          <DashboardStaggerItem step={2}>
+            <ServiceStatsCard />
+          </DashboardStaggerItem>
+          <DashboardStaggerItem step={3}>
+            {renderSection("clientStatsSection", clientStats)}
+          </DashboardStaggerItem>
+        </>
+      ) : null}
     </div>
   );
 }

@@ -438,7 +438,10 @@
     "activationKeyError": "حدث خطأ غير متوقع",
     "loading": "جاري التحميل...",
     "copyGuid": "نسخ",
-    "copyright": "© 2025 Reda Tech. جميع الحقوق محفوظة."
+    "copyright": "© 2025 Reda Tech. جميع الحقوق محفوظة.",
+    "devLogIn": "تطوير: دخول كأول مدير",
+    "devLogInHint": "نسخة التطوير فقط: جلسة كأول مستخدم ADMIN في قاعدة البيانات (بدون كلمة مرور).",
+    "devLogInFailed": "فشل دخول التطوير"
   },
   "loading": {
     "title": "جاري التحميل...",

@@ -1,6 +1,10 @@
 export interface ChartData {
   period: string;
+  /** True when this X slot is after “now” (rest of month / year). Excluded from chart averages & scale max; line uses null to stop drawing. */
+  future?: boolean;
   profits: number;
+  /** Gross profit before bill deductions; set when net-profit view still uses gross Y-scale. */
+  profitsGross?: number;
   clients: number;
   sales: number;
   purchases?: number;
@@ -25,13 +29,10 @@ export interface TimePeriodConfig {
 }
 
 export interface ChartControlsProps {
-  chartType: "profits" | "clients" | "sales";
-  setChartType: (type: "profits" | "clients" | "sales") => void;
   timePeriod: "today" | "thisMonth" | "thisYear" | "overall";
   setTimePeriod: (period: "today" | "thisMonth" | "thisYear" | "overall") => void;
   chartView: "bar" | "line";
   setChartView: (view: "bar" | "line") => void;
-  chartTypes: Record<string, ChartTypeConfig>;
   timePeriods: Record<string, TimePeriodConfig>;
 }
 
@@ -55,6 +56,8 @@ export interface ChartContainerProps {
     createdAt?: string | Date;
     PurchaseItems?: Array<{ quantity?: number; price?: number }>;
   }>;
+  /** When true (profits chart), Y-axis ticks/domain follow gross profit; bars/line still use `profits` (net). */
+  grossProfitYAxis?: boolean;
 }
 
 export interface ChartDataState {

@@ -88,19 +88,37 @@ export function useChartData() {
           sales: salesTotal,
           salesCount,
           salesQuantity,
+          future: false,
         };
       });
 
-      // --- 1m: Daily values for the current month (from day 1 to today) ---
-      const daysCount = now.getDate();
+      // --- 1m: Daily values for full current month; days after today are placeholders (future: true) ---
       const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-      const days = Array.from({ length: daysCount }, (_, i) => {
+      const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+      const days = Array.from({ length: daysInMonth }, (_, i) => {
         const d = new Date(firstDayOfMonth);
         d.setDate(firstDayOfMonth.getDate() + i);
         return d;
       });
 
-      const daily = days.map((date, idx) => {
+      const daily = days.map((date) => {
+        const isFuture = date.getTime() > todayStart.getTime();
+        const period = `${date.getDate()} ${t(`dashboard.months.${date.getMonth()}`)}`;
+
+        if (isFuture) {
+          return {
+            period,
+            profits: 0,
+            clients: 0,
+            sales: 0,
+            salesCount: 0,
+            salesQuantity: 0,
+            future: true,
+          };
+        }
+
         const daySales = sales.filter((s) => {
           const d = new Date(s.createdAt);
           return (
@@ -136,20 +154,33 @@ export function useChartData() {
         );
 
         return {
-          // Show actual dates like "1 Mar", "23 Mar" (translated month name).
-          period: `${date.getDate()} ${t(`dashboard.months.${date.getMonth()}`)}`,
+          period,
           profits,
           clients: dayClients.length,
           sales: salesTotal,
           salesCount,
           salesQuantity,
+          future: false,
         };
       });
 
-      // --- 12m: Current year, by month (up to current month) ---
-      const months = Array.from({ length: now.getMonth() + 1 }, (_, i) => i);
+      // --- 12m: Full calendar year by month; months after current month are placeholders (future: true) ---
+      const monthly = Array.from({ length: 12 }, (_, monthIdx) => {
+        const isFuture = monthIdx > now.getMonth();
+        const period = getPeriodLabel("month", monthIdx, monthIdx, t);
 
-      const monthly = months.map((monthIdx) => {
+        if (isFuture) {
+          return {
+            period,
+            profits: 0,
+            clients: 0,
+            sales: 0,
+            salesCount: 0,
+            salesQuantity: 0,
+            future: true,
+          };
+        }
+
         const monthSales = sales.filter((s) => {
           const d = new Date(s.createdAt);
           return (
@@ -181,20 +212,47 @@ export function useChartData() {
         );
 
         return {
-          period: getPeriodLabel("month", monthIdx, monthIdx, t),
+          period,
           profits,
           clients: monthClients.length,
           sales: salesTotal,
           salesCount,
           salesQuantity,
+          future: false,
         };
       });
 
-      // --- years: Last 6 years ---
-      const startYear = now.getFullYear() - 5;
-      const years = Array.from({ length: 6 }, (_, i) => startYear + i);
+      // --- overall: min(nowYear - 1, first data year) … nowYear + 3; years > nowYear are placeholders (future) ---
+      const nowYear = now.getFullYear();
+      let minDataYear = nowYear;
+      const considerYear = (createdAt: Date | string | null | undefined) => {
+        const d = new Date(createdAt as string);
+        if (Number.isNaN(d.getTime())) return;
+        minDataYear = Math.min(minDataYear, d.getFullYear());
+      };
+      sales.forEach((s) => considerYear(s.createdAt));
+      clients.forEach((c: Client) => considerYear(c.createdAt));
+      const startYear = Math.min(nowYear - 1, minDataYear);
+      const endYear = nowYear + 3;
+      const years = Array.from(
+        { length: endYear - startYear + 1 },
+        (_, i) => startYear + i,
+      );
 
       const yearly = years.map((year) => {
+        const isFuture = year > nowYear;
+        if (isFuture) {
+          return {
+            period: year.toString(),
+            profits: 0,
+            clients: 0,
+            sales: 0,
+            salesCount: 0,
+            salesQuantity: 0,
+            future: true,
+          };
+        }
+
         const yearSales = sales.filter((s) => {
           const d = new Date(s.createdAt);
           return d.getFullYear() === year;
@@ -228,6 +286,7 @@ export function useChartData() {
           sales: salesTotal,
           salesCount,
           salesQuantity,
+          future: false,
         };
       });
 
