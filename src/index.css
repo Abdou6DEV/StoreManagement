@@ -137,6 +137,28 @@
   }
 }
 
+/* Recharts: wrapper/SVG can receive focus; hide click outline (global * ring is too loud) */
+.recharts-wrapper:focus,
+.recharts-wrapper:focus-visible,
+.recharts-responsive-container:focus,
+.recharts-responsive-container:focus-visible,
+.recharts-surface:focus,
+.recharts-surface:focus-visible {
+  outline: none;
+}
+
+/* Pie slices: no focus outline; Recharts default stroke is #fff between slices */
+.recharts-pie-sector:focus,
+.recharts-pie-sector:focus-visible,
+.recharts-pie .recharts-sector:focus,
+.recharts-pie .recharts-sector:focus-visible {
+  outline: none;
+}
+
+.recharts-pie .recharts-sector {
+  stroke: none;
+}
+
 @media print {
   @page {
     margin: 0;

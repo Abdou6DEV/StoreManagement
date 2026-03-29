@@ -33,6 +33,7 @@ export default function GeneralHistory({
   } = useGeneralHistoryData();
   const [highlightEnabled, setHighlightEnabled] = useState(false);
   const [netProfitEnabled, setNetProfitEnabled] = useState(false);
+  const [showTotalsRow, setShowTotalsRow] = useState(true);
 
   const handleRowDoubleClick = (period: string) => {
     if (onPeriodSelect) {
@@ -49,6 +50,8 @@ export default function GeneralHistory({
         onHighlightChange={setHighlightEnabled}
         netProfitEnabled={netProfitEnabled}
         onNetProfitChange={setNetProfitEnabled}
+        showTotalsRow={showTotalsRow}
+        onShowTotalsRowChange={setShowTotalsRow}
         startDate={startDate}
         endDate={endDate}
         onStartDateChange={setStartDate}
@@ -71,6 +74,7 @@ export default function GeneralHistory({
             onRowDoubleClick={handleRowDoubleClick}
             highlightEnabled={highlightEnabled}
             netProfitEnabled={netProfitEnabled}
+            showTotalsRow={showTotalsRow}
             currentPage={currentPage}
             itemsPerPage={itemsPerPage}
           />

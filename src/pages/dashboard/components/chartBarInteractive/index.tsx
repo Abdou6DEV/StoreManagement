@@ -233,14 +233,25 @@ export function ChartBarInteractive({ chartData, chartLoading }: ChartBarInterac
     };
   }, [dashboardLoading]);
 
-  const adjustedProfit = overviewNetProfitEnabled
+  /** Bill total is already filtered to the selected period in the fetch effect. */
+  const canSubtractBillsForPeriod = (billPaymentsTotal ?? 0) > 0;
+
+  React.useEffect(() => {
+    if (!canSubtractBillsForPeriod) {
+      setOverviewNetProfitEnabled(false);
+    }
+  }, [canSubtractBillsForPeriod]);
+
+  const netProfitActive = overviewNetProfitEnabled && canSubtractBillsForPeriod;
+
+  const adjustedProfit = netProfitActive
     ? overviewTotals.profit - (billPaymentsTotal ?? 0)
     : overviewTotals.profit;
 
-  const profitLabel = overviewNetProfitEnabled ? t("dashboard.netProfit") : t("dashboard.profit");
+  const profitLabel = netProfitActive ? t("dashboard.netProfit") : t("dashboard.profit");
 
   const periodToRender = React.useMemo(() => {
-    if (!overviewNetProfitEnabled) return currentPeriod;
+    if (!netProfitActive) return currentPeriod;
     if (!Array.isArray(billPaymentsData) || billPaymentsData.length === 0) return currentPeriod;
 
     const now = new Date();
@@ -314,7 +325,7 @@ export function ChartBarInteractive({ chartData, chartLoading }: ChartBarInterac
       ...currentPeriod,
       data: adjustedData,
     };
-  }, [overviewNetProfitEnabled, billPaymentsData, currentPeriod, timePeriod, t, i18n.language]);
+  }, [netProfitActive, billPaymentsData, currentPeriod, timePeriod, t, i18n.language]);
 
   const handleJumpToHistory = (period: "today" | "thisMonth" | "thisYear") => {
     const today = new Date();
@@ -438,16 +449,27 @@ export function ChartBarInteractive({ chartData, chartLoading }: ChartBarInterac
 
           <div className="flex flex-col gap-2 items-start lg:items-end">
             <div className="flex items-center gap-3 flex-wrap">
-              <Tooltip content={t("dashboard.calculateNetProfitTooltip")}>
+              <Tooltip
+                content={
+                  canSubtractBillsForPeriod
+                    ? t("dashboard.calculateNetProfitTooltip")
+                    : t("dashboard.calculateNetProfitDisabledNoBills")
+                }
+              >
                 <div className="flex items-center gap-2 text-sm rtl:flex-row-reverse">
                   <Switch
-                    checked={overviewNetProfitEnabled}
+                    checked={netProfitActive}
                     onCheckedChange={setOverviewNetProfitEnabled}
+                    disabled={!canSubtractBillsForPeriod}
                     id="dashboard-net-profit-toggle"
                   />
                   <label
                     htmlFor="dashboard-net-profit-toggle"
-                    className="font-medium text-foreground cursor-pointer select-none"
+                    className={
+                      canSubtractBillsForPeriod
+                        ? "font-medium text-foreground cursor-pointer select-none"
+                        : "font-medium text-muted-foreground cursor-not-allowed select-none"
+                    }
                   >
                     {t("dashboard.calculateNetProfit")}
                   </label>
@@ -566,6 +588,14 @@ export function ChartBarInteractive({ chartData, chartLoading }: ChartBarInterac
       </DashboardStaggerItem>
 
       <DashboardStaggerItem step={2}>
+        <div className="text-center mb-4">
+          <h3 className="text-lg font-semibold text-foreground mb-2">
+            {t("dashboard.chartProfitsTitle")}
+          </h3>
+          <p className="text-sm text-muted-foreground">
+            {t("dashboard.chartProfitsDesc")}
+          </p>
+        </div>
         {hasData ? (
           <ChartContainer
             currentPeriod={periodToRender}
@@ -577,7 +607,7 @@ export function ChartBarInteractive({ chartData, chartLoading }: ChartBarInterac
             billsPaymentsData={billPaymentsData}
             purchasesData={purchasesData}
             grossProfitYAxis={
-              overviewNetProfitEnabled &&
+              netProfitActive &&
               Array.isArray(billPaymentsData) &&
               billPaymentsData.length > 0
             }

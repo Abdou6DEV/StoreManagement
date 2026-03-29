@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import type { AggregatedData, AggregationLevel } from "../../../../types";
 import {
@@ -16,6 +17,7 @@ interface GeneralHistoryTableProps {
   onRowDoubleClick: (period: string) => void;
   highlightEnabled: boolean;
   netProfitEnabled: boolean;
+  showTotalsRow: boolean;
   currentPage: number;
   itemsPerPage: number;
 }
@@ -27,6 +29,7 @@ export default function GeneralHistoryTable({
   onRowDoubleClick,
   highlightEnabled,
   netProfitEnabled,
+  showTotalsRow,
   currentPage,
   itemsPerPage,
 }: GeneralHistoryTableProps) {
@@ -91,6 +94,33 @@ export default function GeneralHistoryTable({
     }
     return "text-muted-foreground";
   };
+
+  const pageFooterStats = useMemo(() => {
+    if (!showTotalsRow || data.length === 0) return null;
+    const totals = data.reduce(
+      (acc, item) => ({
+        count: acc.count + (item.count || 0),
+        revenue: acc.revenue + (item.revenue || 0),
+        profit: acc.profit + getProfitValue(item),
+        purchases: acc.purchases + (item.purchases || 0),
+        bills: acc.bills + getBillsPaymentsValue(item),
+      }),
+      { count: 0, revenue: 0, profit: 0, purchases: 0, bills: 0 },
+    );
+    const eps = 1e-6;
+    let aboveAverageCount = 0;
+    let belowAverageCount = 0;
+    for (const item of data) {
+      const p = getProfitValue(item);
+      if (p - averageProfit > eps) aboveAverageCount += 1;
+      else if (averageProfit - p > eps) belowAverageCount += 1;
+    }
+    return {
+      ...totals,
+      aboveAverageCount,
+      belowAverageCount,
+    };
+  }, [data, averageProfit, netProfitEnabled, showTotalsRow]);
 
   return (
     <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
@@ -187,6 +217,94 @@ export default function GeneralHistoryTable({
             );
             })}
           </tbody>
+          {pageFooterStats ? (
+            <tfoot>
+              <tr
+                className="bg-muted/45 border-t-2 border-border font-semibold text-foreground"
+                aria-label={t("history.totalsRowLabel")}
+              >
+                <td className="px-4 py-3 text-left rtl:text-right align-top">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide leading-tight">
+                      {t("history.totalsRowLabel")}
+                    </span>
+                    <span className="text-xs text-muted-foreground/80 leading-tight">
+                      {t("history.totalRowPageScope")}
+                    </span>
+                  </div>
+                </td>
+                <td className="px-4 py-3 text-right rtl:text-left align-top">
+                  <div className="flex flex-col items-end gap-1">
+                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide leading-none">
+                      {t("history.totalRowSales")}
+                    </span>
+                    <span className="text-lg md:text-xl font-bold tabular-nums leading-tight text-orange-600">
+                      {formatNumber(pageFooterStats.count)}
+                    </span>
+                  </div>
+                </td>
+                <td className="px-4 py-3 text-right rtl:text-left align-top">
+                  <div className="flex flex-col items-end gap-1">
+                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide leading-none">
+                      {t("history.totalRowRevenue")}
+                    </span>
+                    <span className="text-lg md:text-xl font-bold tabular-nums leading-tight text-primary">
+                      {formatCurrency(pageFooterStats.revenue)}
+                    </span>
+                  </div>
+                </td>
+                <td className="px-4 py-3 text-right rtl:text-left align-top">
+                  <div className="flex flex-col items-end gap-1">
+                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide leading-none">
+                      {t(netProfitEnabled ? "history.totalRowNetProfit" : "history.totalRowProfit")}
+                    </span>
+                    <span className="text-lg md:text-xl font-bold tabular-nums leading-tight text-green-600 dark:text-green-400">
+                      {formatCurrency(pageFooterStats.profit)}
+                    </span>
+                  </div>
+                </td>
+                <td className="px-4 py-3 text-right rtl:text-left align-top">
+                  <div className="flex flex-col items-end gap-1">
+                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide leading-none">
+                      {t("history.totalRowPurchases")}
+                    </span>
+                    <span className="text-lg md:text-xl font-bold tabular-nums leading-tight text-orange-600 dark:text-orange-400">
+                      {formatCurrency(pageFooterStats.purchases)}
+                    </span>
+                  </div>
+                </td>
+                <td className="px-4 py-3 text-right rtl:text-left align-top">
+                  <div className="flex flex-col items-end gap-1">
+                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide leading-none">
+                      {t("history.totalRowBillsPayments")}
+                    </span>
+                    <span className="text-lg md:text-xl font-bold tabular-nums leading-tight text-purple-600 dark:text-purple-400">
+                      {formatCurrency(pageFooterStats.bills)}
+                    </span>
+                  </div>
+                </td>
+                <td className="px-4 py-3 text-right rtl:text-left align-top">
+                  <div className="flex flex-col items-end gap-1.5">
+                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide leading-none">
+                      {t("history.totalRowVsAverage")}
+                    </span>
+                    <span className="inline-flex flex-wrap items-baseline justify-end gap-1.5">
+                      <span className="text-sm md:text-sm font-bold tabular-nums leading-none text-green-600 dark:text-green-400">
+                        {pageFooterStats.aboveAverageCount}
+                      </span>
+                      <span className="text-sm text-foreground">{t("history.totalRowAboveAverageSuffix")}</span>
+                    </span>
+                    <span className="inline-flex flex-wrap items-baseline justify-end gap-1.5">
+                      <span className="text-sm md:text-sm font-bold tabular-nums leading-none text-red-600 dark:text-red-400">
+                        {pageFooterStats.belowAverageCount}
+                      </span>
+                      <span className="text-sm text-foreground">{t("history.totalRowBelowAverageSuffix")}</span>
+                    </span>
+                  </div>
+                </td>
+              </tr>
+            </tfoot>
+          ) : null}
         </table>
       </div>
     </div>

@@ -27,6 +27,8 @@ interface GeneralHistoryControlsProps {
   onHighlightChange: (enabled: boolean) => void;
   netProfitEnabled: boolean;
   onNetProfitChange: (enabled: boolean) => void;
+  showTotalsRow: boolean;
+  onShowTotalsRowChange: (enabled: boolean) => void;
   startDate: string;
   endDate: string;
   onStartDateChange: (date: string) => void;
@@ -43,6 +45,8 @@ export default function GeneralHistoryControls({
   onHighlightChange,
   netProfitEnabled,
   onNetProfitChange,
+  showTotalsRow,
+  onShowTotalsRowChange,
   startDate,
   endDate,
   onStartDateChange,
@@ -309,6 +313,22 @@ export default function GeneralHistoryControls({
                   id="net-profit-toggle"
                 />
                 
+              </div>
+            </Tooltip>
+
+            <Tooltip content={t("history.tooltips.showTotal")}>
+              <div className="flex items-center gap-2 text-sm rtl:flex-row-reverse">
+                <label
+                  htmlFor="show-total-toggle"
+                  className="font-medium text-foreground cursor-pointer select-none"
+                >
+                  {t("history.showTotal")}
+                </label>
+                <Switch
+                  checked={showTotalsRow}
+                  onCheckedChange={onShowTotalsRowChange}
+                  id="show-total-toggle"
+                />
               </div>
             </Tooltip>
           </div>
