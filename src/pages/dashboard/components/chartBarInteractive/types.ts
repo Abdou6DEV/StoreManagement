@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+
 export interface ChartData {
   period: string;
   /** True when this X slot is after “now” (rest of month / year). Excluded from chart averages & scale max; line uses null to stop drawing. */
@@ -58,6 +60,15 @@ export interface ChartContainerProps {
   }>;
   /** When true (profits chart), Y-axis ticks/domain follow gross profit; bars/line still use `profits` (net). */
   grossProfitYAxis?: boolean;
+  /**
+   * Optional override for the Recharts Tooltip renderer.
+   * Used by other dashboard cards to keep the exact tooltip content.
+   */
+  tooltipContentOverride?: (args: {
+    active?: boolean;
+    payload?: any[];
+    label?: any;
+  }) => ReactNode;
 }
 
 export interface ChartDataState {

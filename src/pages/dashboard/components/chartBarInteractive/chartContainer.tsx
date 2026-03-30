@@ -80,6 +80,7 @@ export function ChartContainer({
   billsPaymentsData = [],
   purchasesData = [],
   grossProfitYAxis = false,
+  tooltipContentOverride,
 }: ChartContainerProps) {
   const { t, i18n } = useTranslation();
   const { isDark } = useTheme();
@@ -627,6 +628,8 @@ export function ChartContainer({
     return null;
   };
 
+  const resolvedTooltipContent = tooltipContentOverride ?? tooltipContent;
+
   const nonFutureSlotCount = (currentPeriod?.data ?? []).filter((d: any) => !d?.future).length;
   const shouldShowSinglePointLineMessage =
     chartView === "line" &&
@@ -738,7 +741,7 @@ export function ChartContainer({
             />
 
             <Tooltip
-              content={tooltipContent}
+              content={resolvedTooltipContent}
               cursor={{
                 stroke: isDark ? "rgba(59,130,246,0.35)" : "rgba(59,130,246,0.3)",
                 strokeWidth: 1,
@@ -883,7 +886,7 @@ export function ChartContainer({
           />
 
           <Tooltip
-            content={tooltipContent}
+            content={resolvedTooltipContent}
             cursor={{
               fill: isDark ? "rgba(59,130,246,0.15)" : "rgba(59,130,246,0.1)",
             }}

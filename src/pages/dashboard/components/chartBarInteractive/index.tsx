@@ -69,6 +69,56 @@ export function ChartBarInteractive({ chartData, chartLoading }: ChartBarInterac
   const kpiTimePeriod = timePeriod;
   const currentPeriod = timePeriods[timePeriod];
 
+  const periodHasMeaningfulData = React.useCallback(
+    (period: "today" | "thisMonth" | "thisYear" | "overall") => {
+      const data = timePeriods?.[period]?.data ?? [];
+      if (!Array.isArray(data) || data.length === 0) return false;
+      return data.some((item: any) => {
+        if (item?.future) return false;
+        const profits = item?.profits ?? 0;
+        const salesAmount = item?.sales ?? 0;
+        const clients = item?.clients ?? 0;
+        return (profits ?? 0) !== 0 || (salesAmount ?? 0) !== 0 || (clients ?? 0) !== 0;
+      });
+    },
+    [timePeriods],
+  );
+
+  const hasUserSelectedPeriodRef = React.useRef(false);
+  const setTimePeriodFromUser = React.useCallback(
+    (period: "today" | "thisMonth" | "thisYear" | "overall") => {
+      hasUserSelectedPeriodRef.current = true;
+      setTimePeriod(period);
+    },
+    [],
+  );
+
+  // Auto-advance default selection when a period is empty:
+  // today -> thisMonth -> thisYear (-> overall as last fallback)
+  React.useEffect(() => {
+    if (chartLoading || dashboardLoading) return;
+    if (hasUserSelectedPeriodRef.current) return;
+
+    const order: Array<"today" | "thisMonth" | "thisYear" | "overall"> = [
+      "today",
+      "thisMonth",
+      "thisYear",
+      "overall",
+    ];
+
+    if (periodHasMeaningfulData(timePeriod)) return;
+
+    const currentIdx = order.indexOf(timePeriod);
+    const startIdx = currentIdx >= 0 ? currentIdx : 0;
+    for (let i = startIdx + 1; i < order.length; i++) {
+      const next = order[i];
+      if (periodHasMeaningfulData(next)) {
+        setTimePeriod(next);
+        return;
+      }
+    }
+  }, [chartLoading, dashboardLoading, timePeriod, periodHasMeaningfulData]);
+
   const periodLabel = React.useMemo(() => {
     const now = new Date();
 
@@ -506,7 +556,7 @@ export function ChartBarInteractive({ chartData, chartLoading }: ChartBarInterac
 
             <ChartControls
               timePeriod={timePeriod}
-              setTimePeriod={setTimePeriod}
+              setTimePeriod={setTimePeriodFromUser}
               chartView={chartView}
               setChartView={setChartView}
               timePeriods={timePeriods}

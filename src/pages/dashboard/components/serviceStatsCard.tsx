@@ -4,7 +4,7 @@ import * as React from "react"
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { Wrench, TrendingUp, Clock, CheckCircle, AlertCircle, DollarSign } from "lucide-react"
-import { Pie, PieChart, Tooltip, ResponsiveContainer, Line, LineChart, XAxis, YAxis, CartesianGrid } from "recharts"
+import { Pie, PieChart, Tooltip, ResponsiveContainer, Line, LineChart, XAxis, YAxis, CartesianGrid, ReferenceLine } from "recharts"
 import { Tooltip as UITooltip } from "../../../lib/components/tooltip"
 import { useDashboardLoading } from "../../../lib/contexts/dashboardContext"
 import { useTheme } from "../../../lib/hooks/useTheme"
@@ -35,7 +35,19 @@ interface ServiceStats {
     fill: string
   }>
   monthlyTrends: Array<{
-    month: string
+    period: string
+    completed: number
+    revenue: number
+    profit: number
+  }>
+  twelveMonthTrends: Array<{
+    period: string
+    completed: number
+    revenue: number
+    profit: number
+  }>
+  yearlyTrends: Array<{
+    period: string
     completed: number
     revenue: number
     profit: number
@@ -69,6 +81,55 @@ const chartColors = [
   "#84cc16", // Lime
   "#f97316", // Orange
 ]
+
+/**
+ * Same Y-axis tick system as `chartBarInteractive`:
+ * 5 labels, 4 equal steps, "nice" rounded ceilings.
+ */
+const QUARTER_TOP_FACTORS = [1, 2, 2.5, 3.75, 5, 7.5, 10] as const;
+
+function minimalNiceStepForQuarterTop(minTop: number): number {
+  const floor = Math.max(minTop, 1e-12);
+  let exp = Math.floor(Math.log10(floor / 4));
+  for (let guard = 0; guard < 48; guard++) {
+    const steps = QUARTER_TOP_FACTORS.map((nf) => nf * 10 ** exp).sort((a, b) => a - b);
+    for (const step of steps) {
+      if (4 * step >= floor - 1e-9) return step;
+    }
+    exp += 1;
+  }
+  return floor / 4;
+}
+
+function buildNiceYTicksQuarterMax(scaleMin: number, rawTop: number): number[] {
+  if (!Number.isFinite(scaleMin) || !Number.isFinite(rawTop)) return [0];
+  if (rawTop < scaleMin) return [0];
+  if (Math.abs(rawTop - scaleMin) < 1e-12) {
+    return scaleMin === 0 ? [0] : [scaleMin];
+  }
+
+  if (scaleMin >= 0) {
+    const step = minimalNiceStepForQuarterTop(rawTop);
+    const hi = 4 * step;
+    return [0, step, 2 * step, 3 * step, hi];
+  }
+
+  const spanNeed = rawTop - scaleMin;
+  let exp = Math.floor(Math.log10(Math.max(spanNeed / 4, 1e-12)));
+  for (let guard = 0; guard < 48; guard++) {
+    for (const nf of QUARTER_TOP_FACTORS) {
+      const step = nf * 10 ** exp;
+      const t0 = Math.floor(scaleMin / step) * step;
+      const hi = t0 + 4 * step;
+      if (hi >= rawTop - 1e-9) {
+        return [t0, t0 + step, t0 + 2 * step, t0 + 3 * step, hi];
+      }
+    }
+    exp += 1;
+  }
+
+  return [scaleMin, rawTop];
+}
 
 // Custom tooltip component
 const CustomTooltip = ({ active, payload, totalServices, t }: {
@@ -125,6 +186,7 @@ export function ServiceStatsCard() {
   const { isDark } = useTheme();
   
   const [viewMode, setViewMode] = useState<ViewMode>('names')
+  const [trendPeriod, setTrendPeriod] = useState<"sixMonths" | "twelveMonths" | "allTime">("sixMonths")
   const [serviceStats, setServiceStats] = useState<ServiceStats>({
     totalServices: 0,
     completedServices: 0,
@@ -138,6 +200,8 @@ export function ServiceStatsCard() {
     serviceTypesData: [],
     serviceNamesData: [],
     monthlyTrends: [],
+    twelveMonthTrends: [],
+    yearlyTrends: [],
     topServiceTypes: [],
     topServiceNames: []
   })
@@ -287,50 +351,83 @@ export function ServiceStatsCard() {
             fill: chartColors[index % chartColors.length]
           }));
         
-        // Calculate monthly trends - only include months that have data or are within the last 6 months
-        const monthlyTrends = [];
-        
-        // Find the earliest service date to determine how far back to go
-        const serviceDates = allServices
-          .map((s: any) => s.completedAt ? new Date(s.completedAt) : new Date(s.createdAt))
-          .filter((date: Date) => !isNaN(date.getTime()));
-        
-        const earliestDate = serviceDates.length > 0 
-          ? new Date(Math.min(...serviceDates.map((d: Date) => d.getTime())))
-          : now;
-        
-        // Calculate how many months to show (max 6, but only show months with data or recent months)
-        const monthsToShow = Math.min(6, Math.max(1, 
-          (now.getFullYear() - earliestDate.getFullYear()) * 12 + 
-          (now.getMonth() - earliestDate.getMonth()) + 1
-        ));
-        
-        for (let i = monthsToShow - 1; i >= 0; i--) {
-          const date = new Date();
-          date.setMonth(date.getMonth() - i);
-          const monthKey = date.toLocaleString('en-US', { month: 'short' });
-          
-          const monthServices = allServices.filter((s: any) => {
-            const serviceDate = s.completedAt ? new Date(s.completedAt) : new Date(s.createdAt);
-            return serviceDate.getMonth() === date.getMonth() && 
-                   serviceDate.getFullYear() === date.getFullYear();
+        const getServiceDate = (s: any) =>
+          (s.completedAt ? new Date(s.completedAt) : new Date(s.createdAt));
+
+        // Build fixed windows so X-axis stays consistent:
+        // - 6m and 12m are calendar months (including zeros)
+        // - All-time is yearly buckets (from earliest service year -> now)
+        const buildMonthTrends = (monthsCount: number) => {
+          const trends: Array<{ period: string; completed: number; revenue: number; profit: number }> = [];
+
+          for (let i = monthsCount - 1; i >= 0; i--) {
+            const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+
+            const monthServices = allServices.filter((s: any) => {
+              const serviceDate = getServiceDate(s);
+              return (
+                !isNaN(serviceDate.getTime()) &&
+                serviceDate.getMonth() === date.getMonth() &&
+                serviceDate.getFullYear() === date.getFullYear()
+              );
+            });
+
+            const completedServices = monthServices.filter((s: any) => s.isCompleted);
+            const completed = completedServices.length;
+
+            const revenue = completedServices.reduce(
+              (sum: number, s: any) => sum + (s.servicePrice || 0),
+              0,
+            );
+            const cost = completedServices.reduce(
+              (sum: number, s: any) => sum + (s.costPrice || 0),
+              0,
+            );
+
+            trends.push({
+              period: t(`dashboard.months.${date.getMonth()}`),
+              completed,
+              revenue,
+              profit: revenue - cost,
+            });
+          }
+
+          return trends;
+        };
+
+        const monthlyTrends = buildMonthTrends(6);
+        const twelveMonthTrends = buildMonthTrends(12);
+
+        const serviceDates = allServices.map((s: any) => getServiceDate(s)).filter((d: Date) => !isNaN(d.getTime()));
+        const earliestDate = serviceDates.length > 0 ? new Date(Math.min(...serviceDates.map((d: Date) => d.getTime()))) : now;
+        const startYear = earliestDate.getFullYear();
+        const endYear = now.getFullYear();
+
+        const yearlyTrends = Array.from({ length: endYear - startYear + 1 }, (_, idx) => startYear + idx).map((year) => {
+          const yearServices = allServices.filter((s: any) => {
+            const serviceDate = getServiceDate(s);
+            return !isNaN(serviceDate.getTime()) && serviceDate.getFullYear() === year;
           });
-          
-          const completed = monthServices.filter((s: any) => s.isCompleted).length;
-          const revenue = monthServices
-            .filter((s: any) => s.isCompleted)
-            .reduce((sum: number, s: any) => sum + (s.servicePrice || 0), 0);
-          const profit = monthServices
-            .filter((s: any) => s.isCompleted)
-            .reduce((sum: number, s: any) => sum + ((s.servicePrice || 0) - (s.costPrice || 0)), 0);
-          
-          monthlyTrends.push({
-            month: monthKey,
+
+          const completedServices = yearServices.filter((s: any) => s.isCompleted);
+          const completed = completedServices.length;
+
+          const revenue = completedServices.reduce(
+            (sum: number, s: any) => sum + (s.servicePrice || 0),
+            0,
+          );
+          const cost = completedServices.reduce(
+            (sum: number, s: any) => sum + (s.costPrice || 0),
+            0,
+          );
+
+          return {
+            period: year.toString(),
             completed,
             revenue,
-            profit
-          });
-        }
+            profit: revenue - cost,
+          };
+        });
         
         setServiceStats({
           totalServices,
@@ -345,6 +442,8 @@ export function ServiceStatsCard() {
           serviceTypesData,
           serviceNamesData,
           monthlyTrends,
+          twelveMonthTrends,
+          yearlyTrends,
           topServiceTypes,
           topServiceNames
         });
@@ -356,7 +455,7 @@ export function ServiceStatsCard() {
     }
 
     processServiceStats()
-  }, [dashboardLoading])
+  }, [dashboardLoading, t, i18n.language])
 
   const formatCurrency = (amount: number) =>
     `${amount.toLocaleString()} ${t("currency")}`
@@ -556,7 +655,7 @@ export function ServiceStatsCard() {
                       </p>
                     </div>
                     <div className="w-full h-[300px] overflow-hidden rounded-lg bg-card">
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height="100%" minHeight={300}>
                       <PieChart
                         style={{
                           background: 'transparent'
@@ -579,6 +678,7 @@ export function ServiceStatsCard() {
                               : "0"
                             return (
                               <text
+                                key={`service-type-label-${String(payload?.serviceType ?? "")}`}
                                 cx={props.cx}
                                 cy={props.cy}
                                 x={props.x}
@@ -669,7 +769,7 @@ export function ServiceStatsCard() {
                       </p>
                     </div>
                     <div className="w-full h-[300px] overflow-hidden rounded-lg bg-card">
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height="100%" minHeight={300}>
                       <PieChart
                         style={{
                           background: 'transparent'
@@ -692,6 +792,7 @@ export function ServiceStatsCard() {
                               : "0"
                             return (
                               <text
+                                key={`service-name-label-${String(payload?.serviceName ?? "")}-${String(payload?.serviceType ?? "")}`}
                                 cx={props.cx}
                                 cy={props.cy}
                                 x={props.x}
@@ -770,10 +871,75 @@ export function ServiceStatsCard() {
               )
             ) : (
               (() => {
-                // Check if there's any actual data (not all zeros)
-                const hasTrendData = serviceStats.monthlyTrends.some(
-                  (item) => item.revenue > 0 || item.profit > 0 || item.completed > 0
-                );
+                const isMeaningfulTrendValue = (item: {
+                  completed: number;
+                  revenue: number;
+                  profit: number;
+                }) => item.revenue > 0 || item.profit > 0 || item.completed > 0;
+
+                const meaningfulMonths6Count = serviceStats.monthlyTrends.filter(isMeaningfulTrendValue).length;
+                const meaningfulMonths12Count = serviceStats.twelveMonthTrends.filter(isMeaningfulTrendValue).length;
+
+                // Disable 12 months and all-time when we don't have enough meaningful data to render them.
+                const disable12AndAll = meaningfulMonths12Count <= 1;
+                const isSingleMonthMessage = meaningfulMonths6Count === 1;
+
+                const effectiveTrendPeriod = disable12AndAll ? "sixMonths" : trendPeriod;
+
+                const filteredSingleMonthData = serviceStats.monthlyTrends.filter(isMeaningfulTrendValue);
+
+                const chartData =
+                  effectiveTrendPeriod === "sixMonths"
+                    ? isSingleMonthMessage
+                      ? filteredSingleMonthData
+                      : serviceStats.monthlyTrends
+                    : effectiveTrendPeriod === "twelveMonths"
+                      ? serviceStats.twelveMonthTrends
+                      : serviceStats.yearlyTrends;
+
+                // --- ChartBarInteractive-like axis/grid styling for this trends chart (but keep same data/lines/tooltip) ---
+                const axisColor = isDark ? "rgba(148, 147, 147, 0.7)" : "rgba(85, 85, 85, 0.48)";
+
+                const maxValue = chartData.reduce((acc, d) => {
+                  const r = typeof d?.revenue === "number" ? d.revenue : 0;
+                  const p = typeof d?.profit === "number" ? d.profit : 0;
+                  return Math.max(acc, r, p);
+                }, 0);
+
+                const HEADROOM = 1.1;
+                const rawTop = Math.max(maxValue, 0) * HEADROOM;
+                const gridTicks = maxValue <= 0 ? [0] : buildNiceYTicksQuarterMax(0, Math.max(rawTop, 1));
+
+                const yAxisDomain: [number, number] = (() => {
+                  if (!gridTicks.length) return [0, 1];
+                  const lo = Math.min(...gridTicks);
+                  const hi = Math.max(...gridTicks);
+                  if (hi <= lo) return [0, lo === 0 && hi === 0 ? 1 : Math.max(hi, 1)];
+                  return [lo, hi];
+                })();
+
+                const formatAxisCurrency = (value: number) => {
+                  const n = Math.round(Number(value));
+                  return `${n.toLocaleString(i18n.language, {
+                    maximumFractionDigits: 0,
+                    useGrouping: true,
+                  })}${t("currency")}`;
+                };
+
+                const yAxisWidth = (() => {
+                  if (!gridTicks.length) return 60;
+                  const minTick = Math.min(...gridTicks);
+                  const maxTick = Math.max(...gridTicks);
+                  const formattedMin = formatAxisCurrency(minTick);
+                  const formattedMax = formatAxisCurrency(maxTick);
+                  const longest = formattedMin.length >= formattedMax.length ? formattedMin : formattedMax;
+                  const approxCharWidth = 7.5;
+                  const paddingPx = 18;
+                  const computed = Math.ceil(longest.length * approxCharWidth + paddingPx);
+                  return Math.max(56, Math.min(190, computed));
+                })();
+
+                const hasTrendData = chartData.some(isMeaningfulTrendValue);
                 
                 return hasTrendData ? (
                   <div className="space-y-4">
@@ -782,56 +948,139 @@ export function ServiceStatsCard() {
                         {t("dashboard.serviceCompletionTrends", "Service Completion Trends")}
                       </h3>
                       <p className="text-sm text-muted-foreground">
-                        {serviceStats.monthlyTrends.length === 1
+                        {effectiveTrendPeriod === "sixMonths" && isSingleMonthMessage
                           ? t("dashboard.currentMonthTrends", "Completed services, revenue, and profit for the current month")
                           : t("dashboard.last6MonthsTrends", "Completed services, revenue, and profit over the last 6 months")}
                       </p>
                     </div>
                     
+                    {/* Period Toggle (mirrors ChartBarInteractive period UI) */}
+                    <div className="flex items-center justify-end">
+                      {(() => {
+                        const controlBorder = isDark ? "border-gray-700" : "border-gray-300";
+                        const controlBg = isDark ? "bg-[#232326]" : "bg-white";
+                        const controlActiveBlue = "text-blue-600 dark:text-blue-400";
+                        const controlInactive = isDark
+                          ? "text-gray-400 hover:text-gray-200"
+                          : "text-gray-500 hover:text-gray-700";
+                        const toggleBg = isDark ? "bg-[#232326]" : "bg-gray-50";
+
+                        const buttonClass = (active: boolean) =>
+                          active
+                            ? `${controlBg} ${controlActiveBlue} shadow-sm`
+                            : controlInactive;
+
+                        return (
+                          <div className={`flex rounded-lg border ${controlBorder} ${toggleBg} p-1`}>
+                            <button
+                              type="button"
+                              onClick={() => setTrendPeriod("sixMonths")}
+                              aria-pressed={effectiveTrendPeriod === "sixMonths"}
+                              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${buttonClass(
+                                effectiveTrendPeriod === "sixMonths",
+                              )}`}
+                            >
+                              {t("dashboard.last6Months", "Last 6 months")}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setTrendPeriod("twelveMonths")}
+                              aria-pressed={effectiveTrendPeriod === "twelveMonths"}
+                              disabled={disable12AndAll}
+                              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${buttonClass(
+                                effectiveTrendPeriod === "twelveMonths",
+                              )} disabled:opacity-50 disabled:pointer-events-none`}
+                            >
+                              {t("dashboard.last12Months", "Last 12 months")}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setTrendPeriod("allTime")}
+                              aria-pressed={effectiveTrendPeriod === "allTime"}
+                              disabled={disable12AndAll}
+                              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${buttonClass(
+                                effectiveTrendPeriod === "allTime",
+                              )} disabled:opacity-50 disabled:pointer-events-none`}
+                            >
+                              {t("dashboard.allTime", "All time")}
+                            </button>
+                          </div>
+                        );
+                      })()}
+                    </div>
+
                     {/* Trends Chart */}
                     <div className="w-full h-[300px]" dir={i18n.language === "ar" ? "rtl" : "ltr"}>
-                  <ResponsiveContainer width="100%" height="100%">
+                      <div>
+                  <ResponsiveContainer width="100%" height="100%" minHeight={300}>
                     <LineChart
-                      data={serviceStats.monthlyTrends}
+                      key={`services-trends-${effectiveTrendPeriod}`}
+                      data={chartData}
                       margin={{
-                        left: 12,
-                        right: 40,
-                        top: 12,
-                        bottom: 12,
+                        top: 20,
+                        right: 60,
+                        left: 20,
+                        bottom: 20,
                       }}
                     >
-                      <CartesianGrid 
-                        vertical={false} 
-                        strokeDasharray="4 4"
-                        stroke={gridColor}
-                        strokeWidth={1}
-                      />
+                      {/* Match `chartBarInteractive` grid style: custom ReferenceLines (y=0 solid, others dashed) */}
+                      <CartesianGrid vertical={false} horizontal={false} />
+                      {gridTicks.map((tick) =>
+                        Math.abs(tick - 0) < 1e-9 ? (
+                          <ReferenceLine
+                            key={`grid-0`}
+                            y={0}
+                            stroke={axisColor}
+                            strokeWidth={1}
+                            strokeDasharray="0"
+                          />
+                        ) : (
+                          <ReferenceLine
+                            key={`grid-${tick}`}
+                            y={tick}
+                            stroke={axisColor}
+                            strokeWidth={1}
+                            strokeDasharray="5 4"
+                          />
+                        ),
+                      )}
                       <XAxis
-                        dataKey="month"
+                        dataKey="period"
                         tickLine={false}
                         axisLine={false}
                         tickMargin={8}
-                        fontSize={12}
-                        fill={axisColor}
+                        angle={0}
+                        textAnchor="middle"
+                        fontSize={14}
+                        interval={0}
+                        height={44}
+                        fill={isDark ? "#ffffff" : "#000000"}
+                        fontWeight={600}
+                        stroke={isDark ? "#ffffff" : "#000000"}
+                        strokeWidth={0.3}
                       />
                       <YAxis
-                        yAxisId="right"
-                        orientation="right"
-                        tickLine={false}
-                        axisLine={false}
+                        type="number"
+                        domain={yAxisDomain}
+                        ticks={gridTicks}
+                        allowDecimals
+                        tickLine={{ stroke: axisColor, strokeWidth: 1 }}
+                        axisLine={{ stroke: axisColor, strokeWidth: 1 }}
                         tickMargin={8}
                         fontSize={14}
                         fontWeight={600}
-                        fill={axisColor}
-                        textAnchor={i18n.language === "ar" ? "end" : "start"}
-                        tickFormatter={(value) => `${value.toLocaleString()}${t("currency")}`}
-                        style={{ whiteSpace: 'nowrap' }}
+                        fill={isDark ? "#ffffff" : "#000000"}
+                        stroke={isDark ? "#ffffff" : "#000000"}
+                        strokeWidth={0.3}
+                        tickFormatter={formatAxisCurrency}
+                        textAnchor={i18n.language === "ar" ? "start" : "end"}
+                        style={{ whiteSpace: "nowrap" }}
+                        width={yAxisWidth}
                       />
                       <Tooltip
                         content={({ active, payload, label }) => {
                           if (active && payload && payload.length) {
-                            // Find the completed value from the data
-                            const dataPoint = serviceStats.monthlyTrends.find((item) => item.month === label);
+                            const dataPoint = chartData.find((item) => item.period === label);
                             const completedValue = dataPoint?.completed || 0;
                             
                             return (
@@ -932,26 +1181,31 @@ export function ServiceStatsCard() {
                         }}
                       />
                       <Line
-                        yAxisId="right"
                         dataKey="revenue"
                         type="natural"
                         stroke={isDark ? "#3b82f6" : "#2563eb"}
                         strokeWidth={2}
+                        isAnimationActive={true}
+                        animationDuration={1800}
+                        animationBegin={0}
                         dot={{ fill: isDark ? "#3b82f6" : "#2563eb", r: 4 }}
                         activeDot={{ r: 6 }}
                       />
                       <Line
-                        yAxisId="right"
                         dataKey="profit"
                         type="natural"
                         stroke={isDark ? "#10b981" : "#059669"}
                         strokeWidth={2}
                         strokeDasharray="5 5"
+                        isAnimationActive={true}
+                        animationDuration={1800}
+                        animationBegin={0}
                         dot={{ fill: isDark ? "#10b981" : "#059669", r: 4 }}
                         activeDot={{ r: 6 }}
                       />
                     </LineChart>
                   </ResponsiveContainer>
+                      </div>
                 </div>
               </div>
                 ) : (
