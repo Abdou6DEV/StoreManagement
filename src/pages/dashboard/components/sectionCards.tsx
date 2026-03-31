@@ -12,10 +12,12 @@ import {
 import { StockStatsCard } from "./stockStatsCard";
 import { ServiceStatsCard } from "./serviceStatsCard";
 import { ChartBarInteractive } from "./chartBarInteractive";
+import { ClientStatsRadialActiveInactive } from "./clientStatsRadialActiveInactive";
 import { useChartData } from "./chartBarInteractive/chartUtils";
 import { DashboardStaggerItem } from "./dashboardStagger";
 import { LoadingState } from "../../../lib/components/loadingState";
 import { useSales, useProducts, useClients, usePayments, useLowStockThreshold, useDashboardLoading } from "../../../lib/contexts/dashboardContext";
+
 
 type OverviewPeriod = "today" | "thisMonth" | "thisYear" | "overall";
 
@@ -246,13 +248,19 @@ export function SectionCards() {
         .reduce((sum: number, p: { givenAmount: number }) => sum + p.givenAmount, 0);
       
       // Calculate client activity stats
-      const calculatedActiveClients = clients.filter((c: { lastPurchaseDate?: string | Date }) => {
-        if (!c.lastPurchaseDate) return false;
-        const lastPurchase = new Date(c.lastPurchaseDate);
-        const thirtyDaysAgo = new Date();
-        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-        return lastPurchase >= thirtyDaysAgo;
-      }).length;
+      // Active clients: distinct clients with at least one sale in the last 30 days
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      const activeClientIds = new Set<string>();
+      (sales ?? []).forEach((s: any) => {
+        if (!s?.clientId) return;
+        const saleDate = new Date(s.createdAt);
+        if (Number.isNaN(saleDate.getTime())) return;
+        if (saleDate >= thirtyDaysAgo) {
+          activeClientIds.add(String(s.clientId));
+        }
+      });
+      const calculatedActiveClients = activeClientIds.size;
       
       const calculatedNewClientsThisMonth = clients.filter((c: { createdAt: string | Date }) => {
         const created = new Date(c.createdAt);
@@ -450,6 +458,13 @@ export function SectionCards() {
                     : formatCurrency(0)}
                 </span>
               </div>
+            </div>
+
+            <div className="mt-8">
+              <ClientStatsRadialActiveInactive
+                activeClients={activeClients}
+                totalClients={numberOfClients}
+              />
             </div>
           </div>
         </div>
