@@ -3,7 +3,15 @@
 import * as React from "react"
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
-import { Wrench, TrendingUp, Clock, CheckCircle, AlertCircle, DollarSign } from "lucide-react"
+import {
+  Wrench,
+  TrendingUp,
+  Clock,
+  AlertCircle,
+  DollarSign,
+  PieChart as PieChartIcon,
+  LineChart as LineChartIcon,
+} from "lucide-react"
 import { Pie, PieChart, Tooltip, ResponsiveContainer, Line, LineChart, XAxis, YAxis, CartesianGrid, ReferenceLine } from "recharts"
 import { Tooltip as UITooltip } from "../../../lib/components/tooltip"
 import { useDashboardLoading } from "../../../lib/contexts/dashboardContext"
@@ -608,7 +616,7 @@ export function ServiceStatsCard() {
                         : 'text-muted-foreground hover:text-foreground'
                     }`}
                   >
-                    <Wrench className="h-4 w-4" />
+                    <PieChartIcon className="h-4 w-4" />
                     {t("dashboard.serviceTypes", "Types")}
                   </button>
                 </UITooltip>
@@ -621,8 +629,8 @@ export function ServiceStatsCard() {
                         : 'text-muted-foreground hover:text-foreground'
                     }`}
                   >
-                    <CheckCircle className="h-4 w-4" />
-                    {t("dashboard.serviceNames", "Names")}
+                    <PieChartIcon className="h-4 w-4" />
+                    {t("dashboard.serviceNames", "Top 5 services")}
                   </button>
                 </UITooltip>
                 <UITooltip content={t("dashboard.trendTooltip", "View completion trends over time")}>
@@ -634,7 +642,7 @@ export function ServiceStatsCard() {
                         : 'text-muted-foreground hover:text-foreground'
                     }`}
                   >
-                    <TrendingUp className="h-4 w-4" />
+                    <LineChartIcon className="h-4 w-4" />
                     {t("dashboard.trends", "Trends")}
                   </button>
                 </UITooltip>
@@ -1226,7 +1234,7 @@ export function ServiceStatsCard() {
 
         {/* Footer with trend info */}
         <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground pt-4 border-t">
-          <CheckCircle className="h-4 w-4" />
+          <TrendingUp className="h-4 w-4" />
           <span>
             {t("dashboard.serviceStatsFooter", "Real-time service monitoring and performance analysis")}
           </span>

@@ -3,7 +3,7 @@
 import * as React from "react"
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
-import { TrendingUp, PackageIcon, BarChart3, PieChart as PieChartIcon } from "lucide-react"
+import { TrendingUp, PackageIcon, PieChart as PieChartIcon } from "lucide-react"
 import { Pie, PieChart, Tooltip, ResponsiveContainer } from "recharts"
 import { Tooltip as UITooltip } from "../../../lib/components/tooltip"
 import { useSales, useProducts, useLowStockThreshold, useDashboardLoading } from "../../../lib/contexts/dashboardContext"
@@ -432,7 +432,7 @@ export function StockStatsCard() {
                       }`}
                     >
                       <PieChartIcon className="h-4 w-4" />
-                      {t("dashboard.categories", "Categories")}
+                      {t("dashboard.categories", "Top 5 categories")}
                     </button>
                   </UITooltip>
                   <UITooltip content={t("dashboard.productsTooltip", "View sales distribution by individual products")}>
@@ -444,8 +444,8 @@ export function StockStatsCard() {
                           : 'text-muted-foreground hover:text-foreground'
                       }`}
                     >
-                      <BarChart3 className="h-4 w-4" />
-                      {t("dashboard.products", "Products")}
+                      <PieChartIcon className="h-4 w-4" />
+                      {t("dashboard.products", "Top 10 products")}
                     </button>
                   </UITooltip>
                 </div>

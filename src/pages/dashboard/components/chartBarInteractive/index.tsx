@@ -13,6 +13,36 @@ import { useAuth } from "../../../../lib/contexts/authContext";
 import { useNavigate } from "react-router-dom";
 import { DashboardStaggerItem } from "../dashboardStagger";
 
+function dateMatchesOverviewPeriod(
+  period: "today" | "thisMonth" | "thisYear" | "overall",
+  d: Date,
+  now: Date,
+): boolean {
+  if (period === "today") {
+    return (
+      d.getFullYear() === now.getFullYear() &&
+      d.getMonth() === now.getMonth() &&
+      d.getDate() === now.getDate()
+    );
+  }
+  if (period === "thisMonth") {
+    return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+  }
+  if (period === "thisYear") {
+    return d.getFullYear() === now.getFullYear();
+  }
+  return true;
+}
+
+function purchaseOrderTotal(p: {
+  PurchaseItems?: Array<{ quantity?: number; price?: number }>;
+}): number {
+  return (p.PurchaseItems ?? []).reduce(
+    (sum, item) => sum + (item.price || 0) * (item.quantity || 0),
+    0,
+  );
+}
+
 export type ChartBarInteractiveProps = {
   chartData: ChartDataState;
   chartLoading: boolean;
@@ -71,17 +101,39 @@ export function ChartBarInteractive({ chartData, chartLoading }: ChartBarInterac
 
   const periodHasMeaningfulData = React.useCallback(
     (period: "today" | "thisMonth" | "thisYear" | "overall") => {
+      const now = new Date();
       const data = timePeriods?.[period]?.data ?? [];
-      if (!Array.isArray(data) || data.length === 0) return false;
-      return data.some((item: any) => {
-        if (item?.future) return false;
-        const profits = item?.profits ?? 0;
-        const salesAmount = item?.sales ?? 0;
-        const clients = item?.clients ?? 0;
-        return (profits ?? 0) !== 0 || (salesAmount ?? 0) !== 0 || (clients ?? 0) !== 0;
+
+      if (Array.isArray(data) && data.length > 0) {
+        const chartHasSalesOrProfit = data.some((item: any) => {
+          if (item?.future) return false;
+          const profits = item?.profits ?? 0;
+          const salesAmount = item?.sales ?? 0;
+          return profits !== 0 || salesAmount !== 0;
+        });
+        if (chartHasSalesOrProfit) return true;
+      }
+
+      const convertPaymentAmount = (amount: number) => (typeof amount === "number" ? amount / 100 : 0);
+      const hasBills = (billPaymentsData ?? []).some((p) => {
+        if (!p?.paidDate) return false;
+        const pd = new Date(p.paidDate);
+        if (Number.isNaN(pd.getTime())) return false;
+        if (!dateMatchesOverviewPeriod(period, pd, now)) return false;
+        return convertPaymentAmount(p.amount ?? 0) > 0;
       });
+      if (hasBills) return true;
+
+      const hasPurchases = (purchasesData ?? []).some((p) => {
+        if (!p?.createdAt) return false;
+        const cd = new Date(p.createdAt);
+        if (Number.isNaN(cd.getTime())) return false;
+        if (!dateMatchesOverviewPeriod(period, cd, now)) return false;
+        return purchaseOrderTotal(p) > 0;
+      });
+      return hasPurchases;
     },
-    [timePeriods],
+    [timePeriods, billPaymentsData, purchasesData],
   );
 
   const hasUserSelectedPeriodRef = React.useRef(false);
@@ -151,12 +203,6 @@ export function ChartBarInteractive({ chartData, chartLoading }: ChartBarInterac
     }
     return "";
   }, [timePeriod, chartData.overall, i18n.language]);
-  // Only show the empty state when there is no meaningful value at all.
-  const hasData =
-    (currentPeriod?.data?.length ?? 0) > 0 &&
-    (currentPeriod?.data ?? []).some(
-      (item: any) => !item?.future && (item?.profits ?? 0) !== 0,
-    );
 
   const formatCurrency = (amount: number) => `${amount.toLocaleString()} ${t("currency")}`;
 
@@ -376,6 +422,13 @@ export function ChartBarInteractive({ chartData, chartLoading }: ChartBarInterac
       data: adjustedData,
     };
   }, [netProfitActive, billPaymentsData, currentPeriod, timePeriod, t, i18n.language]);
+
+  // Chart visibility: only non-zero profit in the rendered series (includes net-profit / bill adjustments).
+  const hasData = React.useMemo(() => {
+    const data = periodToRender?.data ?? [];
+    if (!Array.isArray(data) || data.length === 0) return false;
+    return data.some((item: any) => !item?.future && (item?.profits ?? 0) !== 0);
+  }, [periodToRender]);
 
   const handleJumpToHistory = (period: "today" | "thisMonth" | "thisYear") => {
     const today = new Date();
