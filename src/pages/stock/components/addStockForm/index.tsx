@@ -16,6 +16,7 @@ import { SellingPriceWarningDialog } from "../sellingPriceWarningDialog";
 import { BarcodePreviewModal } from "./BarcodePreviewModal";
 import { printBarcodeLabel } from "./barcodePrintUtils";
 import { Tooltip } from "../../../../lib/components/tooltip";
+import { ConfirmDialog } from "../../../../lib/components/confirmDialog";
 
 // Import the new components
 import ModeToggle from "./ModeToggle";
@@ -269,6 +270,26 @@ export default function AddStockForm({
 
   // Barcode preview modal state
   const [showBarcodePreview, setShowBarcodePreview] = useState(false);
+  const [showDiscardAddStockConfirm, setShowDiscardAddStockConfirm] =
+    useState(false);
+
+  const isAddStockDirty = React.useMemo(() => {
+    if (pendingProducts.length > 0) return true;
+    if (multiSellerId.trim() !== "") return true;
+    const f = form;
+    if (f.name.trim()) return true;
+    if (f.categoryName.trim()) return true;
+    const q = String(f.quantity ?? "").trim();
+    if (q !== "" && Number(f.quantity) !== 0) return true;
+    const bp = String(f.boughtPrice ?? "").trim();
+    if (bp !== "") return true;
+    const sp = String(f.sellingPrice ?? "").trim();
+    if (sp !== "") return true;
+    if (f.codebar.trim()) return true;
+    if (f.sellerId.trim()) return true;
+    if (f.photo) return true;
+    return false;
+  }, [form, pendingProducts, multiSellerId]);
 
   // For infinite scroll in product dropdown
   const PAGE_SIZE = 50;
@@ -2098,13 +2119,15 @@ export default function AddStockForm({
   // Handler for opening the add stock panel and focusing on product name
   const handleOpenPanel = () => {
     const newPanelState = openPanel === "add" ? null : "add";
+    if (newPanelState === null && openPanel === "add" && isAddStockDirty) {
+      setShowDiscardAddStockConfirm(true);
+      return;
+    }
     setOpenPanel(newPanelState);
 
     if (newPanelState === null) {
-      // Reset all state when closing the panel
       resetAllState();
     } else {
-      // If opening the panel, focus on product name field after a short delay
       setTimeout(() => {
         const productNameInput = document.querySelector(
           '[data-field="product-name"]'
@@ -2112,7 +2135,7 @@ export default function AddStockForm({
         if (productNameInput) {
           productNameInput.focus();
         }
-      }, 100); // Small delay to ensure the panel is fully rendered
+      }, 100);
     }
   };
 
@@ -2506,6 +2529,23 @@ export default function AddStockForm({
         }
         barcode={form.codebar}
         onPrint={handlePrintBarcode}
+      />
+
+      <ConfirmDialog
+        open={showDiscardAddStockConfirm}
+        onOpenChange={setShowDiscardAddStockConfirm}
+        title={t("common.unsavedChangesTitle", "Discard changes?")}
+        message={t(
+          "common.unsavedChangesMessage",
+          "You have unsaved changes. If you continue, they will be lost.",
+        )}
+        cancelText={t("common.cancel", "Cancel")}
+        confirmText={t("common.discardChanges", "Discard changes")}
+        variant="warning"
+        onConfirm={() => {
+          resetAllState();
+          setOpenPanel(null);
+        }}
       />
     </section>
   );

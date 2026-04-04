@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Users,
   Loader2,
@@ -123,6 +123,27 @@ export default function Clients() {
     supplierId: string | null;
     supplierName: string;
   }>({ open: false, supplierId: null, supplierName: "" });
+
+  const clientEditHasChanges = useMemo(() => {
+    if (!editingClient || !editingClientOriginal) return false;
+    return (
+      editingClient.name !== editingClientOriginal.name ||
+      (editingClient.phone ?? "") !== (editingClientOriginal.phone ?? "") ||
+      (editingClient.address ?? "") !== (editingClientOriginal.address ?? "") ||
+      (editingClient.notes ?? "") !== (editingClientOriginal.notes ?? "")
+    );
+  }, [editingClient, editingClientOriginal]);
+
+  const supplierEditHasChanges = useMemo(() => {
+    if (!editingSupplier || !editingSupplierOriginal) return false;
+    return (
+      editingSupplier.name !== editingSupplierOriginal.name ||
+      (editingSupplier.phone ?? "") !== (editingSupplierOriginal.phone ?? "") ||
+      (editingSupplier.email ?? "") !== (editingSupplierOriginal.email ?? "") ||
+      (editingSupplier.address ?? "") !== (editingSupplierOriginal.address ?? "") ||
+      (editingSupplier.notes ?? "") !== (editingSupplierOriginal.notes ?? "")
+    );
+  }, [editingSupplier, editingSupplierOriginal]);
 
   const fetchClients = async () => {
     setLoading(true);
@@ -1000,6 +1021,11 @@ export default function Clients() {
         onClose={() => { setEditingClient(null); setEditingClientOriginal(null); }}
         onSubmit={handleEditSubmit}
         loading={editLoading}
+        hasUnsavedChanges={clientEditHasChanges}
+        onDiscard={() => {
+          setEditingClient(null);
+          setEditingClientOriginal(null);
+        }}
       />
       <EditSupplierModal
         supplier={editingSupplier}
@@ -1007,6 +1033,11 @@ export default function Clients() {
         onClose={() => { setEditingSupplier(null); setEditingSupplierOriginal(null); }}
         onSubmit={handleEditSupplierSubmit}
         loading={editSupplierLoading}
+        hasUnsavedChanges={supplierEditHasChanges}
+        onDiscard={() => {
+          setEditingSupplier(null);
+          setEditingSupplierOriginal(null);
+        }}
       />
       <SupplierPurchasesModal
         open={showPurchasesModal}

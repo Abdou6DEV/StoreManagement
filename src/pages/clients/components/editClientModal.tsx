@@ -11,6 +11,8 @@ interface EditClientDialogProps {
   onClose: () => void;
   onSubmit: (e: React.FormEvent) => void;
   loading: boolean;
+  hasUnsavedChanges?: boolean;
+  onDiscard?: () => void;
 }
 
 const EditClientDialog: React.FC<EditClientDialogProps> = ({
@@ -19,12 +21,16 @@ const EditClientDialog: React.FC<EditClientDialogProps> = ({
   onClose,
   onSubmit,
   loading,
+  hasUnsavedChanges = false,
+  onDiscard,
 }) => {
   const { t } = useTranslation();
   return (
     <FormModal
       open={!!client}
       onClose={onClose}
+      hasUnsavedChanges={hasUnsavedChanges}
+      onDiscard={onDiscard}
       title={t("clients.editTitle", "Edit Client")}
       subtitle={String(t("clients.editing", { name: client?.name }))}
       icon={<Edit className="w-5 h-5 text-red-600" />}

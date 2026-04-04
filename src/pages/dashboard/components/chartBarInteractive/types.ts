@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import type { TooltipContentProps } from "recharts";
 
 export interface ChartData {
   period: string;
@@ -64,11 +65,7 @@ export interface ChartContainerProps {
    * Optional override for the Recharts Tooltip renderer.
    * Used by other dashboard cards to keep the exact tooltip content.
    */
-  tooltipContentOverride?: (args: {
-    active?: boolean;
-    payload?: any[];
-    label?: any;
-  }) => ReactNode;
+  tooltipContentOverride?: (props: TooltipContentProps) => ReactNode;
 }
 
 export interface ChartDataState {

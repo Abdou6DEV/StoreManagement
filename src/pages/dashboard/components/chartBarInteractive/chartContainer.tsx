@@ -12,6 +12,7 @@ import {
   ReferenceLine,
   LineChart,
   Line,
+  type TooltipContentProps,
 } from "recharts";
 import { TrendingDown, TrendingUp } from "lucide-react";
 import { useTheme } from "../../../../lib/hooks/useTheme";
@@ -380,7 +381,7 @@ export function ChartContainer({
     return Math.max(56, Math.min(190, computed));
   }, [gridTicks, chartType, i18n.language, t]);
 
-  const tooltipContent = ({ active, payload, label }: any) => {
+  const tooltipContent = ({ active, payload, label }: TooltipContentProps) => {
     if (active && payload && payload.length) {
       const now = new Date();
       const mapDateToPeriodLabel = (rawDate: string | Date | undefined) => {

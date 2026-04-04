@@ -88,7 +88,7 @@
     "unpaidVersementPayments": "Unpaid Versements",
     "activeClients": "Active Clients",
     "inactiveClients": "Inactive Clients",
-    "sales": "Sales",
+    
     "credits": "Credits",
     "creditSales": "Credit Sales",
     "normalSales": "Normal Sales",
@@ -529,10 +529,10 @@
     "enterDescriptionOptional": "Enter device name (optional)",
     "enterNotesOptional": "Enter problems/breakdown (optional)",
     "serviceTypesStats": "Service Types Statistics",
-    "totalServices": "Total Services",
+    
     "completedServices": "Completed",
     "totalRevenue": "Total Revenue",
-    "totalProfit": "Total Profit",
+    
     "byServiceType": "By Service Type",
     "total": "Total",
     "revenue": "Revenue",
@@ -575,7 +575,7 @@
     "enterCostPrice": "Enter cost price",
     "enterServicePrice": "Enter service price",
 
-    "totalCost": "Total Cost",
+    
 
     "activeFilters": "Active filters",
     "showing": "Showing",
@@ -1585,7 +1585,6 @@
     "paymentDueDate": "Due Date",
     "paymentPaidDate": "Paid Date",
     "paymentCreatedAt": "Created At",
-    "markAsPaid": "Mark as Paid",
     "markAsUnpaid": "Mark as Unpaid",
     "paymentMarkedAsPaid": "Payment marked as paid",
     "paymentMarkError": "Failed to mark payment as paid",
@@ -2202,7 +2201,10 @@
     "currency": "DA",
     "copy": "Copy",
     "copied": "Copied to clipboard",
-    "copyFailed": "Failed to copy"
+    "copyFailed": "Failed to copy",
+    "unsavedChangesTitle": "Discard changes?",
+    "unsavedChangesMessage": "You have unsaved changes. If you close now, they will be lost.",
+    "discardChanges": "Discard changes"
   },
   "imageUpload": {
     "clickToUpload": "Click to upload or drag and drop",

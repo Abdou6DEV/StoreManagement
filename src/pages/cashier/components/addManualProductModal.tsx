@@ -470,10 +470,22 @@ export default function AddManualProductModal({
     onClose();
   };
 
+  const hasManualDraft =
+    open &&
+    (manualProduct.name.trim() !== "" ||
+      manualProduct.type.trim() !== "" ||
+      manualProduct.sold !== 0 ||
+      manualProduct.costPrice !== 0 ||
+      manualProduct.barcode.trim() !== "" ||
+      addToStock ||
+      stockQuantity !== "");
+
   return (
     <FormModal
       open={open}
       onClose={handleClose}
+      hasUnsavedChanges={hasManualDraft}
+      onDiscard={handleClose}
       title={t("cashier.addManualProduct", "Add Manual Product")}
       subtitle={t(
         "cashier.addManualProductDesc",

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import {
   X,
@@ -24,6 +24,7 @@ import { printReceiptDirectly } from "../../pages/cashier/components/receiptModa
 import CategoryInfoModal from "../../pages/cashier/components/categoryInfoModal";
 import { useStock } from "../contexts/stockContext";
 import { useAuth } from "../contexts/authContext";
+import { ConfirmDialog } from "./confirmDialog";
 
 interface SaleDetailsModalProps {
   sale: Sale | null;
@@ -59,6 +60,9 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
   const [cartItemsForPrint, setCartItemsForPrint] = useState<CartItem[]>([]);
 
   const [currentSale, setCurrentSale] = useState<Sale | null>(null);
+  type UnsavedSalePrompt = "closeModal" | "cancelEdit" | null;
+  const [unsavedSalePrompt, setUnsavedSalePrompt] =
+    useState<UnsavedSalePrompt>(null);
 
   // Load categories requiring additional information
   useEffect(() => {
@@ -139,9 +143,6 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
       setEditedDiscount(saleToUse.discount);
     }
   }, [currentSale, sale, isEditing, t]);
-
-  // Use currentSale if available, otherwise fallback to sale prop
-  const displaySale = currentSale || sale;
 
   // Check if any products in cart require additional information
   const checkCategoryInfoRequired = useCallback((cartItems: CartItem[]) => {
@@ -294,6 +295,59 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
     setCartItemsForPrint([]);
   }, []);
 
+  const displaySale = currentSale || sale;
+
+  const saleEditHasUnsavedChanges = useMemo(() => {
+    if (!isEditing || !displaySale) return false;
+    const origDiscount = displaySale.discount ?? 0;
+    if (editedDiscount !== origDiscount) return true;
+    const items = displaySale.saleItems ?? [];
+    if (editedCart.length !== items.length) return true;
+    const lineSig = (id: string, price: number, qty: number) =>
+      `${id}|${price}|${qty}`;
+    const editedSigs = editedCart
+      .map((c) => lineSig(String(c.id), c.price, c.qty))
+      .sort();
+    const origSigs = items
+      .map((item) => {
+        const id =
+          item.product?.id || item.service?.id || `manual-${item.id}`;
+        return lineSig(String(id), item.price, item.quantity);
+      })
+      .sort();
+    return editedSigs.join(";") !== origSigs.join(";");
+  }, [isEditing, displaySale, editedCart, editedDiscount]);
+
+  const requestCloseSaleModal = useCallback(() => {
+    if (showCategoryInfoModal) return;
+    if (isEditing && saleEditHasUnsavedChanges) {
+      setUnsavedSalePrompt("closeModal");
+      return;
+    }
+    onClose();
+  }, [
+    showCategoryInfoModal,
+    isEditing,
+    saleEditHasUnsavedChanges,
+    onClose,
+  ]);
+
+  useEffect(() => {
+    if (!isOpen || showCategoryInfoModal || showDeleteConfirm) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      e.preventDefault();
+      requestCloseSaleModal();
+    };
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
+  }, [
+    isOpen,
+    showCategoryInfoModal,
+    showDeleteConfirm,
+    requestCloseSaleModal,
+  ]);
+
   // Early return after all hooks
   if (!isOpen || !displaySale) return null;
 
@@ -306,15 +360,17 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
   };
 
   const handleModify = () => {
-    if (isEditing) {
-      // Cancel editing
-      setIsEditing(false);
-      setEditedCart([]);
-      setEditedDiscount(0);
-    } else {
-      // Start editing
+    if (!isEditing) {
       setIsEditing(true);
+      return;
     }
+    if (saleEditHasUnsavedChanges) {
+      setUnsavedSalePrompt("cancelEdit");
+      return;
+    }
+    setIsEditing(false);
+    setEditedCart([]);
+    setEditedDiscount(0);
   };
 
   const handleSave = async () => {
@@ -491,7 +547,7 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
       className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
       onClick={(e) => {
         if (!showCategoryInfoModal && e.target === e.currentTarget) {
-          onClose();
+          requestCloseSaleModal();
         }
       }}
     >
@@ -592,7 +648,8 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
               <Printer className="w-4 h-4 text-muted-foreground" />
             </button>
             <button
-              onClick={onClose}
+              type="button"
+              onClick={requestCloseSaleModal}
               className="p-2.5 hover:bg-muted/50 rounded-lg transition-colors"
             >
               <X className="w-4 h-4 text-muted-foreground" />
@@ -784,6 +841,30 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
           allProducts={allProducts}
         />
       )}
+
+      <ConfirmDialog
+        open={unsavedSalePrompt !== null}
+        onOpenChange={(open) => {
+          if (!open) setUnsavedSalePrompt(null);
+        }}
+        title={t("common.unsavedChangesTitle", "Discard changes?")}
+        message={t(
+          "common.unsavedChangesMessage",
+          "You have unsaved changes. If you continue, they will be lost.",
+        )}
+        cancelText={t("common.cancel", "Cancel")}
+        confirmText={t("common.discardChanges", "Discard changes")}
+        variant="warning"
+        onConfirm={() => {
+          const mode = unsavedSalePrompt;
+          setIsEditing(false);
+          setEditedCart([]);
+          setEditedDiscount(0);
+          if (mode === "closeModal") {
+            onClose();
+          }
+        }}
+      />
     </div>
   );
 };

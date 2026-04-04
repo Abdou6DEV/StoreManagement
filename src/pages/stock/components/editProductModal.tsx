@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Edit } from "lucide-react";
@@ -21,6 +22,11 @@ export const EditProductModal = ({
   products,
 }: EditProductModalProps) => {
   const { t } = useTranslation();
+  const [formDirty, setFormDirty] = useState(false);
+
+  useEffect(() => {
+    if (!open) setFormDirty(false);
+  }, [open]);
 
   const currentProduct = products.find((product) => product.id === productId);
 
@@ -35,8 +41,17 @@ export const EditProductModal = ({
       className="min-w-[85%]"
       showCloseButton={false}
       showFooter={false}
+      hasUnsavedChanges={formDirty}
+      onDiscard={() => {
+        setFormDirty(false);
+        setProductId(null);
+      }}
     >
-      <EditStockForm productID={productId} setProductID={setProductId} />
+      <EditStockForm
+        productID={productId}
+        setProductID={setProductId}
+        onDirtyChange={setFormDirty}
+      />
     </Modal>
   );
 };

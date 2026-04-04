@@ -1,5 +1,5 @@
 import { Wallet } from "lucide-react";
-import { FormModal } from "../../../lib/components/modal";
+import { FormModal, useModalUnsavedChanges } from "../../../lib/components/modal";
 import { DatePicker } from "../../../lib/components/datePicker";
 import type { CartItem } from "../../../types";
 import type { TFunction } from "i18next";
@@ -36,6 +36,7 @@ const AddPaymentModal: React.FC<AddPaymentModalProps> = ({
   t,
   onConfirm,
 }) => {
+  const { isDirty, markDirty } = useModalUnsavedChanges(open);
   const [inputValue, setInputValue] = useState("");
   const totalAfterDiscount = cartTotal - discount;
   const rest = totalAfterDiscount - paymentAmount;
@@ -75,6 +76,8 @@ const AddPaymentModal: React.FC<AddPaymentModalProps> = ({
     <FormModal
       open={open}
       onClose={onClose}
+      hasUnsavedChanges={isDirty}
+      onDiscard={onClose}
       title={
         paymentType === "credit"
           ? t("cashier.addCredit", "Add Credit")
@@ -92,12 +95,20 @@ const AddPaymentModal: React.FC<AddPaymentModalProps> = ({
       cancelText={t("cashier.cancel", "Cancel")}
       submitDisabled={!isValidAmount || !paymentDate || isAmountTooHigh || isVersementAmountInvalid}
     >
+      <div
+        className="contents"
+        onChangeCapture={() => markDirty()}
+        onInputCapture={() => markDirty()}
+      >
       {/* Payment type pill toggle */}
       <div className="flex justify-center mb-6">
         <div className="inline-flex rounded-full bg-muted p-1 border border-border shadow-inner">
           <button
             type="button"
-            onClick={() => setPaymentType("credit")}
+            onClick={() => {
+              markDirty();
+              setPaymentType("credit");
+            }}
             className={`px-6 py-2 rounded-full font-semibold text-sm transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-primary/40 ${
               paymentType === "credit"
                 ? "bg-primary text-primary-foreground shadow"
@@ -109,7 +120,10 @@ const AddPaymentModal: React.FC<AddPaymentModalProps> = ({
           <span className="w-2" />
           <button
             type="button"
-            onClick={() => setPaymentType("versement")}
+            onClick={() => {
+              markDirty();
+              setPaymentType("versement");
+            }}
             className={`px-6 py-2 rounded-full font-semibold text-sm transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-primary/40 ${
               paymentType === "versement"
                 ? "bg-primary text-primary-foreground shadow"
@@ -205,6 +219,7 @@ const AddPaymentModal: React.FC<AddPaymentModalProps> = ({
           {rest.toLocaleString()}{" "}
           {t("cashier.currency", "DA")}
         </div>
+      </div>
       </div>
     </FormModal>
   );

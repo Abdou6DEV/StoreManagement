@@ -85,7 +85,6 @@
     "unpaidVersementPayments": "Paiements VERSEMENT non payés",
     "activeClients": "Clients Actifs",
     "inactiveClients": "Clients inactifs",
-    "sales": "Ventes",
     "credits": "Crédits",
     "creditSales": "Ventes à crédit",
     "normalSales": "Ventes normales",
@@ -1999,7 +1998,10 @@
     "currency": "DA",
     "copy": "Copier",
     "copied": "Copié dans le presse-papiers",
-    "copyFailed": "Échec de la copie"
+    "copyFailed": "Échec de la copie",
+    "unsavedChangesTitle": "Abandonner les modifications ?",
+    "unsavedChangesMessage": "Vous avez des modifications non enregistrées. Si vous fermez maintenant, elles seront perdues.",
+    "discardChanges": "Abandonner les modifications"
   },
   "pagination": {
     "next": "Suivant",

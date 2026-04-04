@@ -85,7 +85,7 @@
     "unpaidVersementPayments": "دفعات الدفع غير المدفوعة",
     "activeClients": "العملاء النشطون",
     "inactiveClients": "العملاء غير النشطين",
-    "sales": "المبيعات",
+   
     "credits": "الديون",
     "creditSales": "مبيعات بالدين",
     "normalSales": "مبيعات عادية",
@@ -1304,7 +1304,7 @@
     "paymentDueDate": "تاريخ الاستحقاق",
     "paymentPaidDate": "تاريخ الدفع",
     "paymentCreatedAt": "تاريخ الإنشاء",
-    "markAsPaid": "تحديد كمدفوع",
+    
     "markAsUnpaid": "تحديد كغير مدفوع",
     "paymentMarkedAsPaid": "تم تحديد المدفوع كمدفوع",
     "paymentMarkError": "فشل في تحديد المدفوع كمدفوع",
@@ -1897,7 +1897,10 @@
     "currency": "دج",
     "copy": "نسخ",
     "copied": "تم النسخ إلى الحافظة",
-    "copyFailed": "فشل النسخ"
+    "copyFailed": "فشل النسخ",
+    "unsavedChangesTitle": "تجاهل التغييرات؟",
+    "unsavedChangesMessage": "لديك تغييرات غير محفوظة. إذا أغلقت الآن، ستفقدها.",
+    "discardChanges": "تجاهل التغييرات"
   },
   "pagination": {
     "next": "التالي",
@@ -2143,10 +2146,10 @@
     "viewServiceTypesTooltip": "عرض جميع أنواع الخدمات",
     "noClient": "لا يوجد عميل مخصص",
     "serviceTypesStats": "إحصائيات أنواع الخدمات",
-    "totalServices": "إجمالي الخدمات",
+   
     "completedServices": "مكتملة",
     "totalRevenue": "إجمالي الإيرادات",
-    "totalProfit": "إجمالي الربح",
+   
     "byServiceType": "حسب نوع الخدمة",
     "total": "الإجمالي",
     "revenue": "الإيرادات",

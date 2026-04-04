@@ -126,6 +126,8 @@ const EditPaymentModal: React.FC<EditPaymentModalProps> = ({
     <FormModal
       open={open}
       onClose={onClose}
+      hasUnsavedChanges={open && newPaymentAmount > 0}
+      onDiscard={onClose}
       title={t("clients.editPayment", "Edit Payment")}
       subtitle={t(
         "clients.editPaymentDesc",

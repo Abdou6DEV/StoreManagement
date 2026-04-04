@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Printer, X, Settings } from 'lucide-react';
-import { Modal } from '../../../../lib/components/modal';
+import { Modal, useModalRequestClose } from '../../../../lib/components/modal';
 import { Button } from '../../../../lib/components/button';
 import StyledNumberInput from '../../../../lib/components/inputNumber';
 import { Checkbox } from '../../../../lib/components/checkbox';
@@ -61,6 +61,8 @@ export const BarcodePreviewModal: React.FC<BarcodePreviewModalProps> = ({
 
   useEffect(() => {
     if (!open) return;
+    setQuantity(1);
+    setShowPreviousPrice(false);
     setShowNoPrinterDialog(true);
     setStoreNameFetched(false);
     void window.api?.database?.options?.get?.('storeName').then((name: string | undefined) => {
@@ -180,12 +182,17 @@ export const BarcodePreviewModal: React.FC<BarcodePreviewModalProps> = ({
   // When no barcode, force "show barcode" off and treat as label without barcode
   const canShowBarcode = hasBarcodeValue && barcodeImage.length > 0;
 
+  const barcodePreviewHasDraft =
+    Number(quantity || 1) !== 1 || showPreviousPrice === true;
+
   return (
     <Modal
       open={open}
       onOpenChange={onOpenChange}
       title={t('stock.barcodePreview', 'Barcode Label Preview')}
       size="lg"
+      hasUnsavedChanges={barcodePreviewHasDraft}
+      onDiscard={() => {}}
     >
       <div className="space-y-2">
         {/* No label printer set: show dialog and disable Print (only after load: labelPrinterName !== null) */}
@@ -451,44 +458,96 @@ export const BarcodePreviewModal: React.FC<BarcodePreviewModalProps> = ({
           />
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex gap-3 justify-end">
-          <Tooltip
-            content={t('common.cancelTooltip', 'Cancel and close preview')}
-            position="top"
-          >
-            <Button
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-            >
-              <X className="w-4 h-4 mr-2" />
-              {t('common.cancel', 'Cancel')}
-            </Button>
-          </Tooltip>
-          <Tooltip
-            content={!hasLabelPrinter ? t('stock.labelPrinterNotSetTitle', 'Label printer not set') : t('stock.printBarcodeTooltip', 'Print barcode label(s)')}
-            position="top"
-          >
-            <span className="inline-block">
-              <Button
-                onClick={() => {
-                  if (!hasLabelPrinter) return;
-                  const qty = quantity || 1;
-                  const shouldShowBarcode = canShowBarcode && showBarcode === true;
-                  const shouldShowStoreName = hasStoreName && showStoreName === true;
-                  const shouldShowPreviousPrice = showPreviousPrice && previousPrice != null && previousPrice !== '';
-                  onPrint(qty, shouldShowBarcode, shouldShowStoreName, shouldShowPreviousPrice, labelSize);
-                }}
-                disabled={!hasLabelPrinter}
-                className="bg-green-600 hover:bg-green-700 text-white disabled:opacity-50 disabled:pointer-events-none"
-              >
-                <Printer className="w-4 h-4 mr-2" />
-                {t('stock.printBarcode', 'Print')} {(quantity || 1) > 1 ? `(${quantity || 1})` : ''}
-              </Button>
-            </span>
-          </Tooltip>
-        </div>
+        <BarcodePreviewFooter
+          hasLabelPrinter={hasLabelPrinter}
+          quantity={quantity}
+          canShowBarcode={canShowBarcode}
+          showBarcode={showBarcode}
+          hasStoreName={hasStoreName}
+          showStoreName={showStoreName}
+          showPreviousPrice={showPreviousPrice}
+          previousPrice={previousPrice}
+          labelSize={labelSize}
+          onPrint={onPrint}
+        />
       </div>
     </Modal>
   );
 };
+
+function BarcodePreviewFooter({
+  hasLabelPrinter,
+  quantity,
+  canShowBarcode,
+  showBarcode,
+  hasStoreName,
+  showStoreName,
+  showPreviousPrice,
+  previousPrice,
+  labelSize,
+  onPrint,
+}: {
+  hasLabelPrinter: boolean;
+  quantity: number | "";
+  canShowBarcode: boolean;
+  showBarcode: boolean;
+  hasStoreName: boolean;
+  showStoreName: boolean;
+  showPreviousPrice: boolean;
+  previousPrice?: number | string;
+  labelSize: LabelSize;
+  onPrint: BarcodePreviewModalProps["onPrint"];
+}) {
+  const { t } = useTranslation();
+  const requestClose = useModalRequestClose();
+  return (
+    <div className="flex gap-3 justify-end">
+      <Tooltip
+        content={t("common.cancelTooltip", "Cancel and close preview")}
+        position="top"
+      >
+        <Button variant="outline" type="button" onClick={() => requestClose()}>
+          <X className="w-4 h-4 mr-2" />
+          {t("common.cancel", "Cancel")}
+        </Button>
+      </Tooltip>
+      <Tooltip
+        content={
+          !hasLabelPrinter
+            ? t("stock.labelPrinterNotSetTitle", "Label printer not set")
+            : t("stock.printBarcodeTooltip", "Print barcode label(s)")
+        }
+        position="top"
+      >
+        <span className="inline-block">
+          <Button
+            type="button"
+            onClick={() => {
+              if (!hasLabelPrinter) return;
+              const qty = quantity || 1;
+              const shouldShowBarcode = canShowBarcode && showBarcode === true;
+              const shouldShowStoreName = hasStoreName && showStoreName === true;
+              const shouldShowPreviousPrice =
+                showPreviousPrice &&
+                previousPrice != null &&
+                previousPrice !== "";
+              onPrint(
+                qty,
+                shouldShowBarcode,
+                shouldShowStoreName,
+                shouldShowPreviousPrice,
+                labelSize,
+              );
+            }}
+            disabled={!hasLabelPrinter}
+            className="bg-green-600 hover:bg-green-700 text-white disabled:opacity-50 disabled:pointer-events-none"
+          >
+            <Printer className="w-4 h-4 mr-2" />
+            {t("stock.printBarcode", "Print")}{" "}
+            {(quantity || 1) > 1 ? `(${quantity || 1})` : ""}
+          </Button>
+        </span>
+      </Tooltip>
+    </div>
+  );
+}

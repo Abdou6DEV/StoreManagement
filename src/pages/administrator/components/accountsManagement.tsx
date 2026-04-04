@@ -17,7 +17,7 @@ import {
 import { Button } from "../../../lib/components/button";
 import { Input } from "../../../lib/components/input";
 import { Switch } from "../../../lib/components/switch";
-import { Modal } from "../../../lib/components/modal";
+import { Modal, useModalRequestClose } from "../../../lib/components/modal";
 import { ConfirmDialog } from "../../../lib/components/confirmDialog";
 import { useToast } from "../../../lib/contexts/toastContext";
 import { useAuth } from "../../../lib/contexts/authContext";
@@ -62,6 +62,44 @@ interface UserFormData {
     canViewLogs: boolean;
     canManageSettings: boolean;
   };
+}
+
+const EMPTY_ADD_USER_FORM: UserFormData = {
+  username: "",
+  email: "",
+  password: "",
+  confirmPassword: "",
+  permissions: {
+    canAccessCashier: false,
+    canAccessStock: false,
+    canAccessClients: false,
+    canAccessBills: false,
+    canAccessHistory: false,
+    canAccessServices: false,
+    canAccessDashboard: false,
+    canAccessZakat: false,
+    canManageUsers: false,
+    canViewLogs: false,
+    canManageSettings: false,
+  },
+};
+
+function snapshotAddUserForm(fd: UserFormData) {
+  return JSON.stringify({
+    username: fd.username.trim(),
+    email: (fd.email || "").trim(),
+    password: fd.password,
+    confirmPassword: fd.confirmPassword,
+    permissions: fd.permissions,
+  });
+}
+
+function snapshotEditUserForm(fd: UserFormData) {
+  return JSON.stringify({
+    username: fd.username.trim(),
+    email: (fd.email || "").trim(),
+    permissions: fd.permissions,
+  });
 }
 
 export default function AccountsManagement() {
@@ -115,11 +153,26 @@ export default function AccountsManagement() {
     newPassword: "",
     confirmPassword: "",
   });
+  const [editFormBaseline, setEditFormBaseline] = useState("");
 
   // Load users on component mount
   useEffect(() => {
     loadUsers();
   }, []);
+
+  const addUserHasUnsavedChanges =
+    showAddModal &&
+    snapshotAddUserForm(formData) !== snapshotAddUserForm(EMPTY_ADD_USER_FORM);
+
+  const editUserHasUnsavedChanges =
+    showEditModal &&
+    editFormBaseline !== "" &&
+    snapshotEditUserForm(formData) !== editFormBaseline;
+
+  const passwordModalHasUnsavedChanges =
+    showPasswordModal &&
+    (passwordData.newPassword.trim() !== "" ||
+      passwordData.confirmPassword.trim() !== "");
 
   const loadUsers = async () => {
     try {
@@ -168,43 +221,50 @@ export default function AccountsManagement() {
     setShowAddModal(true);
   };
 
-  const handleEditUser = (user: User) => {
-    setEditingUser(user);
-    
-    // Filter out metadata fields from permissions
-    const cleanPermissions = user.permissions ? {
-      canAccessCashier: user.permissions.canAccessCashier || false,
-      canAccessStock: user.permissions.canAccessStock || false,
-      canAccessClients: user.permissions.canAccessClients || false,
-      canAccessBills: user.permissions.canAccessBills || false,
-      canAccessHistory: user.permissions.canAccessHistory || false,
-      canAccessServices: user.permissions.canAccessServices || false,
-      canAccessDashboard: user.permissions.canAccessDashboard || false,
-      canAccessZakat: (user.permissions as any)?.canAccessZakat || false,
-      canManageUsers: user.permissions.canManageUsers || false,
-      canViewLogs: user.permissions.canViewLogs || false,
-      canManageSettings: user.permissions.canManageSettings || false,
-    } : {
-      canAccessCashier: false,
-      canAccessStock: false,
-      canAccessClients: false,
-      canAccessBills: false,
-      canAccessHistory: false,
-      canAccessServices: false,
-      canAccessDashboard: false,
-      canAccessZakat: false,
-      canManageUsers: false,
-      canViewLogs: false,
-      canManageSettings: false,
-    };
-    
-    setFormData({
+  const applyUserToEditForm = (user: User) => {
+    const cleanPermissions = user.permissions
+      ? {
+          canAccessCashier: user.permissions.canAccessCashier || false,
+          canAccessStock: user.permissions.canAccessStock || false,
+          canAccessClients: user.permissions.canAccessClients || false,
+          canAccessBills: user.permissions.canAccessBills || false,
+          canAccessHistory: user.permissions.canAccessHistory || false,
+          canAccessServices: user.permissions.canAccessServices || false,
+          canAccessDashboard: user.permissions.canAccessDashboard || false,
+          canAccessZakat: (user.permissions as { canAccessZakat?: boolean })
+            ?.canAccessZakat || false,
+          canManageUsers: user.permissions.canManageUsers || false,
+          canViewLogs: user.permissions.canViewLogs || false,
+          canManageSettings: user.permissions.canManageSettings || false,
+        }
+      : {
+          canAccessCashier: false,
+          canAccessStock: false,
+          canAccessClients: false,
+          canAccessBills: false,
+          canAccessHistory: false,
+          canAccessServices: false,
+          canAccessDashboard: false,
+          canAccessZakat: false,
+          canManageUsers: false,
+          canViewLogs: false,
+          canManageSettings: false,
+        };
+
+    const nextForm: UserFormData = {
       username: user.username ?? "",
       email: user.email ?? "",
       password: "",
       confirmPassword: "",
       permissions: cleanPermissions,
-    });
+    };
+    setFormData(nextForm);
+    setEditFormBaseline(snapshotEditUserForm(nextForm));
+  };
+
+  const handleEditUser = (user: User) => {
+    setEditingUser(user);
+    applyUserToEditForm(user);
     setShowEditModal(true);
   };
 
@@ -341,7 +401,8 @@ export default function AccountsManagement() {
       if (result.success) {
         const changeLines: string[] = [];
         if (usernameChanged) changeLines.push(`Username: ${editingUser.username ?? ""} → ${formData.username.trim()}`);
-        const oldPerms = editingUser.permissions ?? {};
+        const oldPerms = (editingUser.permissions ??
+          {}) as UserFormData["permissions"];
         const newPerms = formData.permissions;
         const permKeys = ["canAccessCashier", "canAccessStock", "canAccessClients", "canAccessBills", "canAccessHistory", "canAccessServices", "canAccessDashboard", "canManageUsers", "canViewLogs", "canManageSettings"] as const;
         permKeys.forEach((key) => {
@@ -592,8 +653,14 @@ export default function AccountsManagement() {
         onOpenChange={setShowAddModal}
         title={t("admin.accounts.addUser", "Add New User")}
         size="lg"
+        hasUnsavedChanges={addUserHasUnsavedChanges}
+        onDiscard={resetForm}
       >
-        <form onSubmit={handleSubmitAdd} className="space-y-6">
+        <form
+          id="admin-add-user-form"
+          onSubmit={handleSubmitAdd}
+          className="space-y-6"
+        >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-foreground mb-2">
@@ -697,19 +764,7 @@ export default function AccountsManagement() {
             </div>
           </div>
 
-          <div className="flex justify-end gap-3">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setShowAddModal(false)}
-            >
-              {t("admin.accounts.cancel", "Cancel")}
-            </Button>
-            <Button type="submit" className="flex items-center gap-2">
-              <Check className="h-4 w-4" />
-              {t("admin.accounts.add", "Create User")}
-            </Button>
-          </div>
+          <AddUserModalActions />
         </form>
       </Modal>
 
@@ -719,8 +774,16 @@ export default function AccountsManagement() {
         onOpenChange={setShowEditModal}
         title={t("admin.accounts.editUser", "Edit User Permissions")}
         size="lg"
+        hasUnsavedChanges={editUserHasUnsavedChanges}
+        onDiscard={() => {
+          if (editingUser) applyUserToEditForm(editingUser);
+        }}
       >
-        <form onSubmit={handleSubmitEdit} className="space-y-6">
+        <form
+          id="admin-edit-user-form"
+          onSubmit={handleSubmitEdit}
+          className="space-y-6"
+        >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-foreground mb-2">
@@ -794,19 +857,7 @@ export default function AccountsManagement() {
             </div>
           </div>
 
-          <div className="flex justify-end gap-3">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setShowEditModal(false)}
-            >
-              {t("admin.accounts.cancel", "Cancel")}
-            </Button>
-            <Button type="submit" className="flex items-center gap-2">
-              <Save className="h-4 w-4" />
-              {t("admin.accounts.save", "Save Changes")}
-            </Button>
-          </div>
+          <EditUserModalActions />
         </form>
       </Modal>
 
@@ -816,8 +867,20 @@ export default function AccountsManagement() {
         onOpenChange={setShowPasswordModal}
         title={t("admin.accounts.changePassword", "Change Password")}
         size="md"
+        hasUnsavedChanges={passwordModalHasUnsavedChanges}
+        onDiscard={() =>
+          setPasswordData({
+            currentPassword: "",
+            newPassword: "",
+            confirmPassword: "",
+          })
+        }
       >
-        <form onSubmit={handleSubmitPassword} className="space-y-6">
+        <form
+          id="admin-change-password-form"
+          onSubmit={handleSubmitPassword}
+          className="space-y-6"
+        >
           <div>
             <label className="block text-sm font-medium text-foreground mb-2">
               {t("admin.accounts.user", "User")}
@@ -873,19 +936,7 @@ export default function AccountsManagement() {
             </div>
           </div>
 
-          <div className="flex justify-end gap-3">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setShowPasswordModal(false)}
-            >
-              {t("admin.accounts.cancel", "Cancel")}
-            </Button>
-            <Button type="submit" className="flex items-center gap-2">
-              <Key className="h-4 w-4" />
-              {t("admin.accounts.save", "Update Password")}
-            </Button>
-          </div>
+          <ChangePasswordModalActions />
         </form>
       </Modal>
 
@@ -905,6 +956,66 @@ export default function AccountsManagement() {
         onConfirm={confirmDeleteUser}
         loading={deleteLoadingUserId !== null}
       />
+    </div>
+  );
+}
+
+function AddUserModalActions() {
+  const { t } = useTranslation();
+  const requestClose = useModalRequestClose();
+  return (
+    <div className="flex justify-end gap-3">
+      <Button type="button" variant="outline" onClick={() => requestClose()}>
+        {t("admin.accounts.cancel", "Cancel")}
+      </Button>
+      <Button
+        type="submit"
+        form="admin-add-user-form"
+        className="flex items-center gap-2"
+      >
+        <Check className="h-4 w-4" />
+        {t("admin.accounts.add", "Create User")}
+      </Button>
+    </div>
+  );
+}
+
+function EditUserModalActions() {
+  const { t } = useTranslation();
+  const requestClose = useModalRequestClose();
+  return (
+    <div className="flex justify-end gap-3">
+      <Button type="button" variant="outline" onClick={() => requestClose()}>
+        {t("admin.accounts.cancel", "Cancel")}
+      </Button>
+      <Button
+        type="submit"
+        form="admin-edit-user-form"
+        className="flex items-center gap-2"
+      >
+        <Save className="h-4 w-4" />
+        {t("admin.accounts.save", "Save Changes")}
+      </Button>
+    </div>
+  );
+}
+
+function ChangePasswordModalActions() {
+  const { t } = useTranslation();
+  const requestClose = useModalRequestClose();
+  return (
+    <div className="flex justify-end gap-3">
+      <Button type="button" variant="outline" onClick={() => requestClose()}>
+        {t("admin.accounts.cancel", "Cancel")}
+      </Button>
+      <Button
+        type="submit"
+        form="admin-change-password-form"
+        className="flex items-center gap-2"
+      >
+        <Key className="h-4 w-4" />
+        {t("admin.accounts.save", "Update Password")}
+      </Button>
     </div>
   );
 }

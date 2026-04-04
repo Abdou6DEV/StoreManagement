@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Modal } from "../../../lib/components/modal";
+import type { TFunction } from "i18next";
+import { Modal, useModalRequestClose } from "../../../lib/components/modal";
 import { Input } from "../../../lib/components/input";
 import { Button } from "../../../lib/components/button";
 import { DatePicker } from "../../../lib/components/datePicker";
@@ -16,6 +17,47 @@ interface CategoryInfoModalProps {
   cartItems: CartItem[];
   categoriesRequiringInfo: string[];
   allProducts: any[];
+}
+
+function CategoryInfoModalFooter({
+  totalUnits,
+  t,
+  onSkip,
+}: {
+  totalUnits: number;
+  t: TFunction;
+  onSkip: () => void;
+}) {
+  const requestClose = useModalRequestClose();
+  return (
+    <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-4 mt-4 border-t bg-background -mx-6 -mb-6 px-6 pb-6">
+      <Button
+        type="button"
+        variant="outline"
+        onClick={() => requestClose()}
+        className="w-full sm:w-auto"
+      >
+        <X className="w-4 h-4 mr-2" />
+        {t("cashier.cancel", "Cancel")}
+      </Button>
+      <Button
+        type="button"
+        variant="secondary"
+        onClick={onSkip}
+        className="w-full sm:w-auto"
+      >
+        {t("cashier.skip", "Skip")}
+      </Button>
+      <Button
+        type="submit"
+        form="category-info-form"
+        className="w-full sm:w-auto"
+      >
+        {t("cashier.submit", "Submit")} ({totalUnits}{" "}
+        {t("cashier.units", "units")})
+      </Button>
+    </div>
+  );
 }
 
 // Expand items by quantity - each unit needs its own form
@@ -114,11 +156,22 @@ export default function CategoryInfoModal({
     onSkip();
   };
 
-  const handleCancel = () => {
-    onClose();
-  };
-
   const totalUnits = expandedItems.length;
+
+  const hasCategoryInfoDraft = React.useMemo(() => {
+    for (const itemId of Object.keys(categoryInfoMap)) {
+      const arr = categoryInfoMap[itemId] || [];
+      for (const unit of arr) {
+        if (!unit) continue;
+        if ((unit.imeiSerialNumber || "").trim()) return true;
+        if ((unit.warranty || "").trim()) return true;
+        if (unit.usedNew && unit.usedNew !== "new") return true;
+        if ((unit.problemsReplacedParts || "").trim()) return true;
+        if ((unit.specifications || "").trim()) return true;
+      }
+    }
+    return false;
+  }, [categoryInfoMap]);
 
   return (
     <Modal
@@ -129,6 +182,8 @@ export default function CategoryInfoModal({
       subtitle={t("cashier.categoryInfoDesc", "Please provide additional information for each unit")}
       icon={<Package className="w-6 h-6 text-blue-600" />}
       showFooter={false}
+      hasUnsavedChanges={hasCategoryInfoDraft}
+      onDiscard={() => {}}
     >
       <div className="flex flex-col max-h-[80vh]">
         <div className="flex-1 overflow-y-auto space-y-6 px-2">
@@ -349,33 +404,11 @@ export default function CategoryInfoModal({
           </form>
         </div>
         
-        {/* Action Buttons - Fixed footer */}
-        <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-4 mt-4 border-t bg-background -mx-6 -mb-6 px-6 pb-6">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={handleCancel}
-            className="w-full sm:w-auto"
-          >
-            <X className="w-4 h-4 mr-2" />
-            {t("cashier.cancel", "Cancel")}
-          </Button>
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={handleSkip}
-            className="w-full sm:w-auto"
-          >
-            {t("cashier.skip", "Skip")}
-          </Button>
-          <Button
-            type="submit"
-            form="category-info-form"
-            className="w-full sm:w-auto"
-          >
-            {t("cashier.submit", "Submit")} ({totalUnits} {t("cashier.units", "units")})
-          </Button>
-        </div>
+        <CategoryInfoModalFooter
+          totalUnits={totalUnits}
+          t={t}
+          onSkip={handleSkip}
+        />
       </div>
     </Modal>
   );

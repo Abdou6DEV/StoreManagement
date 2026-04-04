@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { FileText, Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "../../../lib/components/button";
-import { Modal } from "../../../lib/components/modal";
+import { Modal, useModalRequestClose } from "../../../lib/components/modal";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../lib/components/select";
 import { useToast } from "../../../lib/contexts/toastContext";
 import { useAuth } from "../../../lib/contexts/authContext";
@@ -85,6 +85,22 @@ const calculateNextBillDate = (duration: string): Date => {
   }
 };
 
+/** Must render under `<Modal>` so `useModalRequestClose` sees `ModalCloseContext`. */
+function EditBillCancelButton({ loading }: { loading: boolean }) {
+  const { t } = useTranslation();
+  const requestClose = useModalRequestClose();
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      onClick={() => requestClose()}
+      disabled={loading}
+    >
+      {t("common.cancel", "Cancel")}
+    </Button>
+  );
+}
+
 export default function EditBillModal({
   isOpen,
   onClose,
@@ -104,6 +120,14 @@ export default function EditBillModal({
   const [loading, setLoading] = useState(false);
 
   const durationOptions = getDurationOptions(t);
+
+  const hasUnsavedChanges =
+    !!bill &&
+    (form.title !== (bill.title || "") ||
+      form.type !== (bill.type || "") ||
+      form.duration !== (bill.duration || "NO_NEXT") ||
+      form.description !== (bill.description || "") ||
+      form.notes !== (bill.notes || ""));
 
   useEffect(() => {
     if (bill) {
@@ -177,6 +201,8 @@ export default function EditBillModal({
       title={t("bills.editBill", "Edit Bill")}
       icon={<FileText className="w-5 h-5 text-purple-600" />}
       showCloseButton={true}
+      hasUnsavedChanges={hasUnsavedChanges}
+      onDiscard={onClose}
     >
       <div className="p-6">
 
@@ -280,16 +306,9 @@ export default function EditBillModal({
             />
           </div>
 
-          {/* Action Buttons */}
+          {/* Action Buttons — Cancel uses useModalRequestClose inside Modal subtree */}
           <div className="flex justify-end gap-3 pt-4 border-t border-border">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onClose}
-              disabled={loading}
-            >
-              {t("common.cancel", "Cancel")}
-            </Button>
+            <EditBillCancelButton loading={loading} />
             <Button
               type="submit"
               disabled={loading}

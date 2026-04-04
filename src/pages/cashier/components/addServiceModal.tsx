@@ -324,10 +324,19 @@ export default function AddServiceModal({
     onClose();
   };
 
+  const hasServiceDraft =
+    open &&
+    (service.name.trim() !== "" ||
+      service.description.trim() !== "" ||
+      service.price !== 0 ||
+      service.costPrice !== 0);
+
   return (
     <FormModal
       open={open}
       onClose={handleClose}
+      hasUnsavedChanges={hasServiceDraft}
+      onDiscard={handleClose}
       title={t("cashier.addService", "Add Service")}
         subtitle={t("cashier.selectServiceDesc", "Click completed services to add directly to cart, or select templates to customize")}
       icon={<Plus className="w-5 h-5 text-blue-500" />}

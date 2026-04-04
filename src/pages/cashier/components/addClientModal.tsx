@@ -109,10 +109,21 @@ export default function AddClientModal({
     onConfirm();
   };
 
+  const hasDraft =
+    open &&
+    Boolean(
+      clientName.trim() ||
+        clientPhone.trim() ||
+        clientAddress.trim() ||
+        clientNotes.trim(),
+    );
+
   return (
     <FormModal
       open={open}
       onClose={onClose}
+      hasUnsavedChanges={hasDraft}
+      onDiscard={onClose}
       title={t("cashier.addNewClient", "Add New Client")}
       subtitle={t(
         "cashier.addClientDesc",

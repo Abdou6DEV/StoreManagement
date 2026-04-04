@@ -11,6 +11,8 @@ interface EditSupplierModalProps {
   onClose: () => void;
   onSubmit: (e: React.FormEvent) => void;
   loading: boolean;
+  hasUnsavedChanges?: boolean;
+  onDiscard?: () => void;
 }
 
 const EditSupplierModal: React.FC<EditSupplierModalProps> = ({
@@ -19,12 +21,16 @@ const EditSupplierModal: React.FC<EditSupplierModalProps> = ({
   onClose,
   onSubmit,
   loading,
+  hasUnsavedChanges = false,
+  onDiscard,
 }) => {
   const { t } = useTranslation();
   return (
     <FormModal
       open={!!supplier}
       onClose={onClose}
+      hasUnsavedChanges={hasUnsavedChanges}
+      onDiscard={onDiscard}
       title={t("suppliers.editSupplier", "Edit Supplier")}
       subtitle={String(t("suppliers.editing", { name: supplier?.name }))}
       icon={<Edit className="w-5 h-5 text-blue-600" />}

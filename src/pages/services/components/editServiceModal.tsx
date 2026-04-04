@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Wrench, Loader2, Printer, Copy } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "../../../lib/components/button";
-import { Modal } from "../../../lib/components/modal";
+import { Modal, useModalRequestClose } from "../../../lib/components/modal";
 import { DatePicker } from "../../../lib/components/datePicker";
 import { useToast } from "../../../lib/contexts/toastContext";
 import { useAuth } from "../../../lib/contexts/authContext";
@@ -40,6 +40,22 @@ interface EditServiceModalProps {
   onServiceUpdated: () => void;
 }
 
+/** Must render under `<Modal>` so `useModalRequestClose` sees `ModalCloseContext`. */
+function EditServiceCancelButton({ loading }: { loading: boolean }) {
+  const { t } = useTranslation();
+  const requestClose = useModalRequestClose();
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      onClick={() => requestClose()}
+      disabled={loading}
+    >
+      {t("common.cancel", "Cancel")}
+    </Button>
+  );
+}
+
 export default function EditServiceModal({
   isOpen,
   onClose,
@@ -63,6 +79,21 @@ export default function EditServiceModal({
   const [showNoReceiptPrinterModal, setShowNoReceiptPrinterModal] = useState(false);
   const [showServiceLabelModal, setShowServiceLabelModal] = useState(false);
   const initialIsPaidRef = useRef<boolean | null>(null);
+
+  const origDueStr = service?.dueDate
+    ? new Date(service.dueDate).toISOString().split("T")[0]
+    : "";
+
+  const hasUnsavedChanges =
+    !!service &&
+    (form.name !== (service.name || "") ||
+      form.serviceType !== (service.serviceType || "") ||
+      form.description !== (service.description || "") ||
+      (parseFloat(form.costPrice) || 0) !== (service.costPrice || 0) ||
+      (parseFloat(form.servicePrice) || 0) !== (service.servicePrice || 0) ||
+      form.dueDate !== origDueStr ||
+      form.notes !== (service.notes || "") ||
+      isPaid !== (initialIsPaidRef.current ?? false));
 
   useEffect(() => {
     if (service) {
@@ -545,11 +576,29 @@ export default function EditServiceModal({
 
   if (!service) return null;
 
+  const discardServiceEdits = () => {
+    const dueDateString = service.dueDate
+      ? new Date(service.dueDate).toISOString().split("T")[0]
+      : "";
+    setForm({
+      name: service.name || "",
+      serviceType: service.serviceType || "",
+      description: service.description || "",
+      costPrice: service.costPrice.toString() || "",
+      servicePrice: service.servicePrice.toString() || "",
+      dueDate: dueDateString,
+      notes: service.notes || "",
+    });
+    if (initialIsPaidRef.current !== null) {
+      setIsPaid(initialIsPaidRef.current);
+    }
+  };
+
   return (
     <>
     <Modal
       open={isOpen}
-      onOpenChange={(open) => !open && onClose()} 
+      onOpenChange={(open) => !open && onClose()}
       size="xl"
       title={t("services.editService", "Edit Service")}
       subtitleContent={service ? (
@@ -572,6 +621,8 @@ export default function EditServiceModal({
       ) : undefined}
       icon={<Wrench className="w-5 h-5 text-cyan-600" />}
       showCloseButton={true}
+      hasUnsavedChanges={isOpen && hasUnsavedChanges}
+      onDiscard={discardServiceEdits}
     >
       <div className="p-6">
         {/* Form */}
@@ -746,14 +797,7 @@ export default function EditServiceModal({
 
           {/* Action Buttons */}
           <div className="flex justify-end gap-3 pt-4 border-t border-border">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onClose}
-              disabled={loading}
-            >
-              {t("common.cancel", "Cancel")}
-            </Button>
+            <EditServiceCancelButton loading={loading} />
             <Button
               type="button"
               onClick={printServiceTicket}

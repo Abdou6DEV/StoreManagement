@@ -1,9 +1,34 @@
 import * as React from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { XIcon } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { cn } from "../utils";
 import { Button } from "./button";
+import { ConfirmDialog } from "./confirmDialog";
 import type { ModalSize, ModalType, ModalAction } from "../../types";
+
+const ModalCloseContext = React.createContext<{
+  requestClose: () => void;
+} | null>(null);
+
+/** Use inside Modal/FormModal to close with unsaved-changes guard (e.g. footer Cancel). */
+export function useModalRequestClose() {
+  return React.useContext(ModalCloseContext)?.requestClose ?? (() => {});
+}
+
+/** Resets dirty when `isOpen` becomes true; use `markDirty` / `setDirty` from inputs. */
+export function useModalUnsavedChanges(isOpen: boolean) {
+  const [isDirty, setIsDirty] = React.useState(false);
+  React.useEffect(() => {
+    if (isOpen) setIsDirty(false);
+  }, [isOpen]);
+  return {
+    isDirty,
+    setDirty: React.useCallback((v: boolean) => setIsDirty(v), []),
+    markDirty: React.useCallback(() => setIsDirty(true), []),
+    resetDirty: React.useCallback(() => setIsDirty(false), []),
+  };
+}
 
 // Core modal props
 export interface ModalProps {
@@ -40,6 +65,14 @@ export interface ModalProps {
   closeOnOverlayClick?: boolean;
   closeOnEscape?: boolean;
   preventClose?: boolean;
+
+  /** When true, overlay / X / Escape / footer cancel ask before closing. */
+  hasUnsavedChanges?: boolean;
+  /** Called when user confirms discarding changes (before modal closes). */
+  onDiscard?: () => void;
+
+  /** Notified when internal `requestClose` is ready (for FormModal / custom footers). */
+  onCloseApiReady?: (api: { requestClose: () => void } | null) => void;
 
   // Accessibility
   "aria-label"?: string;
@@ -78,24 +111,67 @@ function DialogModal({
   closeOnOverlayClick = true,
   closeOnEscape = true,
   preventClose = false,
+  hasUnsavedChanges = false,
+  onDiscard,
+  onCloseApiReady,
   ...props
 }: Omit<ModalProps, "type">) {
+  const { t } = useTranslation();
   const modalContentRef = React.useRef<HTMLDivElement>(null);
   const descriptionId = React.useId();
   const hasDescription = Boolean(subtitle) || subtitleContent != null;
+  const [discardConfirmOpen, setDiscardConfirmOpen] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!open) setDiscardConfirmOpen(false);
+  }, [open]);
+
+  const performClose = React.useCallback(() => {
+    setDiscardConfirmOpen(false);
+    onOpenChange?.(false);
+    onClose?.();
+  }, [onOpenChange, onClose]);
+
+  const requestClose = React.useCallback(() => {
+    if (preventClose) return;
+    if (hasUnsavedChanges) {
+      setDiscardConfirmOpen(true);
+    } else {
+      performClose();
+    }
+  }, [preventClose, hasUnsavedChanges, performClose]);
 
   const handleOpenChange = (newOpen: boolean) => {
-    if (!newOpen && preventClose) return;
-    onOpenChange?.(newOpen);
-    if (!newOpen) onClose?.();
+    if (newOpen) return;
+    if (preventClose) return;
+    if (hasUnsavedChanges) {
+      setDiscardConfirmOpen(true);
+      return;
+    }
+    performClose();
   };
 
   const handleOverlayClick = (e: React.MouseEvent) => {
     if (!closeOnOverlayClick || preventClose) return;
     if (e.target === e.currentTarget) {
-      handleOpenChange(false);
+      requestClose();
     }
   };
+
+  const closeContextValue = React.useMemo(
+    () => ({ requestClose }),
+    [requestClose],
+  );
+
+  const handleConfirmDiscard = React.useCallback(() => {
+    onDiscard?.();
+    performClose();
+  }, [onDiscard, performClose]);
+
+  React.useLayoutEffect(() => {
+    onCloseApiReady?.({ requestClose });
+    return () => onCloseApiReady?.(null);
+  }, [onCloseApiReady, requestClose]);
 
   // Auto-focus and type-to-focus functionality for modals
   React.useEffect(() => {
@@ -155,39 +231,50 @@ function DialogModal({
   }, [open]);
 
   return (
-    <DialogPrimitive.Root
-      open={open}
-      onOpenChange={handleOpenChange}
-      modal={modal}
-    >
-      <DialogPrimitive.Portal>
-        <DialogPrimitive.Overlay
-          className={cn(
-            "fixed inset-0 z-50 bg-black/50 transition-opacity",
-            "data-[state=open]:animate-in data-[state=closed]:animate-out",
-            "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
-            overlayClassName,
-          )}
-          onClick={handleOverlayClick}
-        />
-        <DialogPrimitive.Content
-          ref={modalContentRef}
-          className={cn(
-            "fixed left-[50%] top-[50%] z-50 grid w-full translate-x-[-50%] translate-y-[-50%]",
-            "gap-4 border bg-background p-6 shadow-lg duration-200",
-            "data-[state=open]:animate-in data-[state=closed]:animate-out",
-            "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
-            "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
-            "rounded-lg",
-            sizeClasses[size],
-            className,
-          )}
-          onEscapeKeyDown={
-            closeOnEscape ? undefined : (e) => e.preventDefault()
-          }
-          aria-describedby={hasDescription ? descriptionId : undefined}
-          {...props}
+    <>
+      <ModalCloseContext.Provider value={closeContextValue}>
+        <DialogPrimitive.Root
+          open={open}
+          onOpenChange={handleOpenChange}
+          modal={modal}
         >
+          <DialogPrimitive.Portal>
+            <DialogPrimitive.Overlay
+              className={cn(
+                "fixed inset-0 z-50 bg-black/50 transition-opacity",
+                "data-[state=open]:animate-in data-[state=closed]:animate-out",
+                "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+                overlayClassName,
+              )}
+              onClick={handleOverlayClick}
+            />
+            <DialogPrimitive.Content
+              ref={modalContentRef}
+              className={cn(
+                "fixed left-[50%] top-[50%] z-50 grid w-full translate-x-[-50%] translate-y-[-50%]",
+                "gap-4 border bg-background p-6 shadow-lg duration-200",
+                "data-[state=open]:animate-in data-[state=closed]:animate-out",
+                "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+                "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
+                "rounded-lg",
+                sizeClasses[size],
+                className,
+              )}
+              onEscapeKeyDown={
+                !closeOnEscape
+                  ? (e) => e.preventDefault()
+                  : preventClose
+                    ? (e) => e.preventDefault()
+                    : hasUnsavedChanges
+                      ? (e) => {
+                          e.preventDefault();
+                          setDiscardConfirmOpen(true);
+                        }
+                      : undefined
+              }
+              aria-describedby={hasDescription ? descriptionId : undefined}
+              {...props}
+            >
           {/* Header */}
           {(title || subtitle || subtitleContent || showCloseButton) && (
             <div className={cn("flex flex-col space-y-2", headerClassName)}>
@@ -261,15 +348,32 @@ function DialogModal({
               ))}
             </div>
           )}
-        </DialogPrimitive.Content>
-      </DialogPrimitive.Portal>
-    </DialogPrimitive.Root>
+            </DialogPrimitive.Content>
+          </DialogPrimitive.Portal>
+        </DialogPrimitive.Root>
+      </ModalCloseContext.Provider>
+      <ConfirmDialog
+        open={discardConfirmOpen}
+        onOpenChange={setDiscardConfirmOpen}
+        title={t("common.unsavedChangesTitle", "Discard changes?")}
+        message={t(
+          "common.unsavedChangesMessage",
+          "You have unsaved changes. If you close now, they will be lost.",
+        )}
+        cancelText={t("common.cancel", "Cancel")}
+        confirmText={t("common.discardChanges", "Discard changes")}
+        variant="warning"
+        onConfirm={handleConfirmDiscard}
+        onCancel={() => setDiscardConfirmOpen(false)}
+      />
+    </>
   );
 }
 
 // Overlay-based modal component (for custom overlays like calculator)
 function OverlayModal({
   open,
+  onOpenChange,
   onClose,
   className,
   overlayClassName,
@@ -277,7 +381,41 @@ function OverlayModal({
   closeOnOverlayClick = true,
   closeOnEscape = true,
   preventClose = false,
+  hasUnsavedChanges = false,
+  onDiscard,
 }: Omit<ModalProps, "type">) {
+  const { t } = useTranslation();
+  const [discardConfirmOpen, setDiscardConfirmOpen] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!open) setDiscardConfirmOpen(false);
+  }, [open]);
+
+  const performClose = React.useCallback(() => {
+    setDiscardConfirmOpen(false);
+    onOpenChange?.(false);
+    onClose?.();
+  }, [onOpenChange, onClose]);
+
+  const requestClose = React.useCallback(() => {
+    if (preventClose) return;
+    if (hasUnsavedChanges) {
+      setDiscardConfirmOpen(true);
+    } else {
+      performClose();
+    }
+  }, [preventClose, hasUnsavedChanges, performClose]);
+
+  const closeContextValue = React.useMemo(
+    () => ({ requestClose }),
+    [requestClose],
+  );
+
+  const handleConfirmDiscard = React.useCallback(() => {
+    onDiscard?.();
+    performClose();
+  }, [onDiscard, performClose]);
+
   // Type-to-focus functionality for overlay modals
   React.useEffect(() => {
     if (!open) return;
@@ -347,32 +485,55 @@ function OverlayModal({
     if (!open || !closeOnEscape) return;
 
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && !preventClose) {
-        onClose?.();
+      if (e.key !== "Escape" || preventClose) return;
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.stopPropagation();
+        setDiscardConfirmOpen(true);
+      } else {
+        performClose();
       }
     };
 
-    window.addEventListener("keydown", handleEscape);
-    return () => window.removeEventListener("keydown", handleEscape);
-  }, [open, closeOnEscape, preventClose, onClose]);
+    window.addEventListener("keydown", handleEscape, true);
+    return () => window.removeEventListener("keydown", handleEscape, true);
+  }, [open, closeOnEscape, preventClose, hasUnsavedChanges, performClose]);
 
   if (!open) return null;
 
   const handleOverlayClick = (e: React.MouseEvent) => {
     if (!closeOnOverlayClick || preventClose) return;
     if (e.target === e.currentTarget) {
-      onClose?.();
+      requestClose();
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div
-        className={cn("absolute inset-0 bg-black/50", overlayClassName)}
-        onClick={handleOverlayClick}
+    <>
+      <ModalCloseContext.Provider value={closeContextValue}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className={cn("absolute inset-0 bg-black/50", overlayClassName)}
+            onClick={handleOverlayClick}
+          />
+          <div className={cn("relative z-10", className)}>{children}</div>
+        </div>
+      </ModalCloseContext.Provider>
+      <ConfirmDialog
+        open={discardConfirmOpen}
+        onOpenChange={setDiscardConfirmOpen}
+        title={t("common.unsavedChangesTitle", "Discard changes?")}
+        message={t(
+          "common.unsavedChangesMessage",
+          "You have unsaved changes. If you close now, they will be lost.",
+        )}
+        cancelText={t("common.cancel", "Cancel")}
+        confirmText={t("common.discardChanges", "Discard changes")}
+        variant="warning"
+        onConfirm={handleConfirmDiscard}
+        onCancel={() => setDiscardConfirmOpen(false)}
       />
-      <div className={cn("relative z-10", className)}>{children}</div>
-    </div>
+    </>
   );
 }
 
@@ -518,9 +679,11 @@ export function FormModal({
   loading = false,
   submitDisabled = false,
   submitButtonClassName,
+  onCloseApiReady: parentCloseApiReady,
   ...props
 }: FormModalProps) {
   const formRef = React.useRef<HTMLFormElement>(null);
+  const closeApiRef = React.useRef<{ requestClose: () => void } | null>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -529,7 +692,11 @@ export function FormModal({
 
   const handleCancel = () => {
     onCancel?.();
-    onClose?.();
+    if (closeApiRef.current) {
+      closeApiRef.current.requestClose();
+    } else {
+      onClose?.();
+    }
   };
 
   const handleButtonSubmit = (e?: React.MouseEvent) => {
@@ -573,6 +740,10 @@ export function FormModal({
     <Modal
       {...props}
       onClose={onClose}
+      onCloseApiReady={(api) => {
+        closeApiRef.current = api;
+        parentCloseApiReady?.(api);
+      }}
       actions={actions}
       preventClose={loading}
     >

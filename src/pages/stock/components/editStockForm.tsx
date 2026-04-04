@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import StyledNumberInput from "../../../lib/components/inputNumber";
 import { Button } from "../../../lib/components/button";
@@ -10,15 +10,19 @@ import { useAuth } from "../../../lib/contexts/authContext";
 import { BarcodePreviewModal } from "./addStockForm/BarcodePreviewModal";
 import { printBarcodeLabel } from "./addStockForm/barcodePrintUtils";
 import { Tooltip } from "../../../lib/components/tooltip";
+import { useModalRequestClose } from "../../../lib/components/modal";
 
 export default function EditStockForm({
   productID,
   setProductID,
+  onDirtyChange,
 }: {
   productID: string | null;
   setProductID: React.Dispatch<React.SetStateAction<string | null>>;
+  onDirtyChange?: (dirty: boolean) => void;
 }) {
   const { t } = useTranslation();
+  const requestClose = useModalRequestClose();
   const { user } = useAuth();
   const { products, refetchProducts } = useStock();
   const { showToast } = useToast();
@@ -40,6 +44,23 @@ export default function EditStockForm({
   ) => {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
+
+  useEffect(() => {
+    if (!onDirtyChange) return;
+    if (!form || !product) {
+      onDirtyChange(false);
+      return;
+    }
+    const dirty =
+      form.name !== product.name ||
+      String(form.categoryName) !== String(product.categoryName ?? "") ||
+      Number(form.quantity) !== Number(product.quantity) ||
+      Number(form.boughtPrice) !== Number(product.boughtPrice ?? 0) ||
+      Number(form.sellingPrice) !== Number(product.sellingPrice ?? 0) ||
+      String(form.codebar ?? "") !== String(product.codebar ?? "") ||
+      String(form.photo ?? "") !== String(product.photo ?? "");
+    onDirtyChange(dirty);
+  }, [form, product, onDirtyChange]);
 
   const handleBarcodeAction = async () => {
     if (!form) return;
@@ -337,7 +358,7 @@ export default function EditStockForm({
           <Button
             type="button"
             variant="outline"
-            onClick={() => setProductID(null)}
+            onClick={() => requestClose()}
             className="w-full"
           >
             <X className="w-4 h-4" />
