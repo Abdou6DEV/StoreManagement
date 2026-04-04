@@ -116,6 +116,7 @@ const ACTIVITY_LOG_ACTION_KEYS = [
   "activityLog.actions.billUpdated",
   "activityLog.actions.billDeleted",
   "activityLog.actions.billPaymentRecorded",
+  "activityLog.actions.billPaymentDeleted",
   "activityLog.actions.serviceCreated",
   "activityLog.actions.serviceUpdated",
   "activityLog.actions.serviceDeleted",

@@ -45,8 +45,7 @@ export default function ServicesPage() {
   const [showServiceTypes, setShowServiceTypes] = useState(false);
   const [services, setServices] = useState<ServiceAppointment[]>([]);
   const [filteredServicesList, setFilteredServicesList] = useState<ServiceAppointment[]>([]);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [_loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
@@ -553,6 +552,7 @@ export default function ServicesPage() {
             <ServicesTable
               services={services}
               filteredServices={filteredServicesList}
+              loading={loading}
               onEdit={handleServiceUpdated}
               onDelete={handleDeleteService}
               deleteLoading={deleteLoading}

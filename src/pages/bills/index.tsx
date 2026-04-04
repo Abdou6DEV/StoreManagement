@@ -69,6 +69,9 @@ export default function BillsPage() {
   }[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
+  const [paymentDeleteLoading, setPaymentDeleteLoading] = useState<
+    string | null
+  >(null);
   const [editingBill, setEditingBill] = useState<Bill | null>(null);
   
   // Pagination state
@@ -150,15 +153,22 @@ export default function BillsPage() {
       return matchesSearch && matchesType && matchesStatus && matchesDueStatus;
     })
     .sort((a, b) => {
-      // Prioritize highlighted bills (newly overdue and due soon)
-      const aIsHighlighted = newlyOverdueBillsIds.has(a.id) || newlyDueSoonBillsIds.has(a.id);
-      const bIsHighlighted = newlyOverdueBillsIds.has(b.id) || newlyDueSoonBillsIds.has(b.id);
-      
-      if (aIsHighlighted && !bIsHighlighted) return -1;
-      if (!aIsHighlighted && bIsHighlighted) return 1;
-      
-      // If both or neither are highlighted, sort by next bill date
-      return new Date(a.nextBillDate).getTime() - new Date(b.nextBillDate).getTime();
+      const isActive = (bill: Bill) => bill.duration !== "NO_NEXT";
+      const totalPaid = (bill: Bill) =>
+        (bill.payments ?? []).reduce((sum, p) => sum + p.amount, 0);
+
+      const aActive = isActive(a);
+      const bActive = isActive(b);
+      if (aActive !== bActive) {
+        return aActive ? -1 : 1;
+      }
+
+      const paidDiff = totalPaid(b) - totalPaid(a);
+      if (paidDiff !== 0) {
+        return paidDiff;
+      }
+
+      return a.title.localeCompare(b.title, undefined, { sensitivity: "base" });
     });
 
   // Calculate newly overdue/due soon bills for highlighting (always, not just when filtered)
@@ -333,6 +343,34 @@ export default function BillsPage() {
       showToast(t("bills.failedToDeleteBill", "Failed to delete bill"), "error");
     } finally {
       setDeleteLoading(null);
+    }
+  };
+
+  const handleDeletePayment = async (payment: {
+    id: string;
+    bill: { title: string; type: string };
+  }) => {
+    try {
+      setPaymentDeleteLoading(payment.id);
+      // Activity log is written in the main process after a successful DB delete.
+      await window.api.database.bills.deletePayment(
+        payment.id,
+        user?.username ?? "unknown",
+      );
+      await loadAllPayments();
+      await loadBills();
+      showToast(
+        t("bills.paymentDeletedSuccessfully", "Payment deleted successfully"),
+        "success",
+      );
+    } catch (error) {
+      console.error("Error deleting bill payment:", error);
+      showToast(
+        t("bills.failedToDeletePayment", "Failed to delete payment"),
+        "error",
+      );
+    } finally {
+      setPaymentDeleteLoading(null);
     }
   };
 
@@ -817,6 +855,8 @@ export default function BillsPage() {
                      typeFilter={paymentsTypeFilter}
                      onTypeFilterChange={setPaymentsTypeFilter}
                      billTypes={billTypes}
+                     onDeletePayment={handleDeletePayment}
+                     paymentDeleteLoading={paymentDeleteLoading}
                    />
                  ) : (
                    <>

@@ -45,6 +45,7 @@ interface ServiceAppointment {
 interface ServicesTableProps {
   services: ServiceAppointment[];
   filteredServices?: ServiceAppointment[];
+  loading?: boolean;
   onEdit: (service: ServiceAppointment) => void;
   onDelete: (id: string) => void;
   deleteLoading: string | null;
@@ -67,6 +68,7 @@ interface ServicesTableProps {
 const ServicesTable: React.FC<ServicesTableProps> = ({
   services,
   filteredServices,
+  loading = false,
   onEdit,
   onDelete,
   deleteLoading,
@@ -299,6 +301,31 @@ const ServicesTable: React.FC<ServicesTableProps> = ({
   const isFirstPage = currentPage === 1;
   const isLastPage = currentPage === totalPages;
   const hasNoData = services.length === 0;
+
+  if (loading) {
+    return (
+      <div
+        className="flex flex-col items-center justify-center py-12 gap-3 text-center"
+        role="status"
+        aria-live="polite"
+        aria-busy="true"
+      >
+        <div
+          className="mb-1 size-12 shrink-0 rounded-full border-[3px] border-cyan-500/20 border-t-cyan-500 animate-spin motion-reduce:animate-none"
+          aria-hidden
+        />
+        <h3 className="text-xl font-semibold text-foreground">
+          {t("services.loadingTitle", "Loading services...")}
+        </h3>
+        <p className="text-base text-muted-foreground max-w-md">
+          {t(
+            "services.loadingDesc",
+            "Please wait while your service requests are loaded.",
+          )}
+        </p>
+      </div>
+    );
+  }
 
   if (services.length === 0) {
     return (

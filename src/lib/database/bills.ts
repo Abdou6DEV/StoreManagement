@@ -362,6 +362,55 @@ export const bills = {
     });
   },
 
+  /**
+   * Deletes a single bill payment row. Safe: no other tables reference BillPayment;
+   * only Bill → BillPayment (parent keeps existing; optional empty payment list).
+   * Runs in a transaction so read-and-delete is atomic.
+   */
+  async deletePayment(id: string): Promise<{
+    paymentId: string;
+    billId: string;
+    billTitle: string;
+    billType: string;
+    amount: number;
+    paidDate: Date;
+    notes: string | null;
+  }> {
+    const trimmed = id?.trim();
+    if (!trimmed) {
+      throw new Error("Invalid payment id");
+    }
+
+    return prisma.$transaction(async (tx) => {
+      const row = await tx.billPayment.findUnique({
+        where: { id: trimmed },
+        include: {
+          bill: { select: { id: true, title: true, type: true } },
+        },
+      });
+
+      if (!row) {
+        throw new Error("Payment not found");
+      }
+
+      if (!row.bill) {
+        throw new Error("Bill not found for payment");
+      }
+
+      await tx.billPayment.delete({ where: { id: trimmed } });
+
+      return {
+        paymentId: row.id,
+        billId: row.bill.id,
+        billTitle: row.bill.title,
+        billType: row.bill.type,
+        amount: row.amount,
+        paidDate: row.paidDate,
+        notes: row.notes ?? null,
+      };
+    });
+  },
+
   async getAllPayments(): Promise<any[]> {
     return prisma.billPayment.findMany({
       include: {

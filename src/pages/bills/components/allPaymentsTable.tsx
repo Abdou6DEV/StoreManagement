@@ -1,5 +1,5 @@
-import React from "react";
-import { Calendar, CreditCard, ChevronDown, Check } from "lucide-react";
+import React, { useState } from "react";
+import { Calendar, CreditCard, ChevronDown, Check, Trash2, Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Tooltip } from "../../../lib/components/tooltip";
 import { Badge } from "../../../lib/components/badge";
@@ -26,6 +26,7 @@ import {
   PaginationEllipsis,
 } from "../../../lib/components/pagination";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../lib/components/select";
+import { ConfirmDialog } from "../../../lib/components/confirmDialog";
 
 interface Payment {
   id: string;
@@ -53,6 +54,8 @@ interface AllPaymentsTableProps {
   onTypeFilterChange: (type: string) => void;
   billTypes: string[];
   showFilters?: boolean;
+  onDeletePayment: (payment: Payment) => void;
+  paymentDeleteLoading: string | null;
 }
 
 const AllPaymentsTable: React.FC<AllPaymentsTableProps> = ({ 
@@ -67,10 +70,13 @@ const AllPaymentsTable: React.FC<AllPaymentsTableProps> = ({
   typeFilter,
   onTypeFilterChange,
   billTypes,
-  showFilters = true
+  showFilters = true,
+  onDeletePayment,
+  paymentDeleteLoading,
 }) => {
   const { t, i18n } = useTranslation();
   const isRTL = i18n.language === "ar";
+  const [paymentToDelete, setPaymentToDelete] = useState<Payment | null>(null);
 
   const formatCurrency = (amount: number) => {
     // Bills are stored in centimes, so always divide by 100
@@ -180,6 +186,9 @@ const AllPaymentsTable: React.FC<AllPaymentsTableProps> = ({
               <th className={`px-4 py-3 ${isRTL ? "text-right" : "text-left"}`}>
                 {t("bills.notes", "Notes")}
               </th>
+              <th className={`px-4 py-3 ${isRTL ? "text-right" : "text-left"}`}>
+                {t("bills.actions", "Actions")}
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
@@ -212,6 +221,33 @@ const AllPaymentsTable: React.FC<AllPaymentsTableProps> = ({
                 </td>
                 <td className={`px-4 py-2 ${isRTL ? "text-right" : "text-left"}`}>
                   {payment.notes || "-"}
+                </td>
+                <td className={`px-4 py-2 ${isRTL ? "text-right" : "text-left"}`}>
+                  <div
+                    className={`flex gap-2 ${isRTL ? "flex-row-reverse justify-end" : ""}`}
+                  >
+                    <Tooltip
+                      content={t(
+                        "bills.deletePaymentTooltip",
+                        "Delete this payment",
+                      )}
+                    >
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        className="text-red-600 border-red-200 hover:bg-red-50 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-950/30"
+                        disabled={paymentDeleteLoading === payment.id}
+                        onClick={() => setPaymentToDelete(payment)}
+                      >
+                        {paymentDeleteLoading === payment.id ? (
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                        ) : (
+                          <Trash2 className="w-3 h-3" />
+                        )}
+                      </Button>
+                    </Tooltip>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -261,6 +297,23 @@ const AllPaymentsTable: React.FC<AllPaymentsTableProps> = ({
           </Pagination>
         </div>
       )}
+
+      <ConfirmDialog
+        open={paymentToDelete !== null}
+        onOpenChange={(open) => !open && setPaymentToDelete(null)}
+        title={t("bills.deletePayment", "Delete payment")}
+        message={t(
+          "bills.deletePaymentConfirm",
+          "Remove this payment record? The bill itself will stay; only this payment line is deleted.",
+        )}
+        onConfirm={() => {
+          if (paymentToDelete) {
+            onDeletePayment(paymentToDelete);
+            setPaymentToDelete(null);
+          }
+        }}
+        variant="danger"
+      />
     </>
   );
 };

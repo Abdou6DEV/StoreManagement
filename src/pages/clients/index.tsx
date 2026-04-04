@@ -54,6 +54,13 @@ import { cn } from "../../lib/utils";
 import { Tooltip } from "../../lib/components/tooltip";
 import ClientSearchInput from "./components/clientSearchInput";
 
+type ClientsListSortMode =
+  | "creditsVersements"
+  | "totalPurchases"
+  | "latestAdded"
+  | "oldestAdded"
+  | "notes";
+
 export default function Clients() {
   const location = useLocation();
   const { t } = useTranslation();
@@ -88,6 +95,8 @@ export default function Clients() {
     id: string;
     name: string;
   } | null>(null);
+  const [clientsSortMode, setClientsSortMode] =
+    useState<ClientsListSortMode>("creditsVersements");
 
   // Payments state
   const [payments, setPayments] = useState<PaymentWithClient[]>([]);
@@ -144,6 +153,41 @@ export default function Clients() {
       (editingSupplier.notes ?? "") !== (editingSupplierOriginal.notes ?? "")
     );
   }, [editingSupplier, editingSupplierOriginal]);
+
+  const clientsSortOptions = useMemo(
+    () =>
+      [
+        {
+          value: "creditsVersements" as const,
+          label: t("clients.sortCreditsVersements"),
+          tooltip: t("clients.sortCreditsVersementsTooltip"),
+        },
+        {
+          value: "totalPurchases" as const,
+          label: t("clients.sortTotalPurchases"),
+          tooltip: t("clients.sortTotalPurchasesTooltip"),
+        },
+        {
+          value: "latestAdded" as const,
+          label: t("clients.sortLatestAdded"),
+          tooltip: t("clients.sortLatestAddedTooltip"),
+        },
+        {
+          value: "oldestAdded" as const,
+          label: t("clients.sortOldestAdded"),
+          tooltip: t("clients.sortOldestAddedTooltip"),
+        },
+        {
+          value: "notes" as const,
+          label: t("clients.sortNotes"),
+          tooltip: t("clients.sortNotesTooltip"),
+        },
+      ],
+    [t],
+  );
+
+  const clientsSortLabel =
+    clientsSortOptions.find((o) => o.value === clientsSortMode)?.label ?? "";
 
   const fetchClients = async () => {
     setLoading(true);
@@ -425,32 +469,76 @@ export default function Clients() {
     }
   };
 
-  const filteredClients = selectedClientFilter
-    ? clients.filter((client) => client.id === selectedClientFilter.id)
-    : clients.filter(
-        (client) =>
-          client.name.toLowerCase().includes(search.toLowerCase()) ||
-          (client.phone &&
-            client.phone.toLowerCase().includes(search.toLowerCase())) ||
-          (client.address &&
-            client.address.toLowerCase().includes(search.toLowerCase())),
-      );
+  const filteredClients = useMemo(() => {
+    return selectedClientFilter
+      ? clients.filter((client) => client.id === selectedClientFilter.id)
+      : clients.filter((client) => {
+          const q = search.toLowerCase();
+          return (
+            client.name.toLowerCase().includes(q) ||
+            (client.phone && client.phone.toLowerCase().includes(q)) ||
+            (client.address && client.address.toLowerCase().includes(q)) ||
+            (client.notes && client.notes.toLowerCase().includes(q))
+          );
+        });
+  }, [clients, search, selectedClientFilter]);
 
-  // Sort by credit (descending - highest first), then by versement
-  const sortedClients = [...filteredClients].sort((a, b) => {
-    const creditA = a.totalCredit || 0;
-    const creditB = b.totalCredit || 0;
-    
-    // First sort by credit (descending)
-    if (creditB !== creditA) {
-      return creditB - creditA;
+  const sortedClients = useMemo(() => {
+    const copy = [...filteredClients];
+    const sortByCreditsThenVersement = (
+      a: ClientWithTotalPurchases,
+      b: ClientWithTotalPurchases,
+    ) => {
+      const creditA = a.totalCredit || 0;
+      const creditB = b.totalCredit || 0;
+      if (creditB !== creditA) return creditB - creditA;
+      const versementA = a.totalVersement || 0;
+      const versementB = b.totalVersement || 0;
+      return versementB - versementA;
+    };
+
+    switch (clientsSortMode) {
+      case "totalPurchases":
+        copy.sort((a, b) => {
+          const diff =
+            (b.totalPurchases || 0) - (a.totalPurchases || 0);
+          if (diff !== 0) return diff;
+          return sortByCreditsThenVersement(a, b);
+        });
+        break;
+      case "latestAdded":
+        copy.sort((a, b) => {
+          const ta = new Date(a.createdAt).getTime();
+          const tb = new Date(b.createdAt).getTime();
+          return tb - ta;
+        });
+        break;
+      case "oldestAdded":
+        copy.sort((a, b) => {
+          const ta = new Date(a.createdAt).getTime();
+          const tb = new Date(b.createdAt).getTime();
+          return ta - tb;
+        });
+        break;
+      case "notes": {
+        const hasNotes = (c: ClientWithTotalPurchases) =>
+          (c.notes?.trim() ?? "").length > 0;
+        copy.sort((a, b) => {
+          const sa = hasNotes(a) ? 1 : 0;
+          const sb = hasNotes(b) ? 1 : 0;
+          if (sb !== sa) return sb - sa;
+          return a.name.localeCompare(b.name, undefined, {
+            sensitivity: "base",
+          });
+        });
+        break;
+      }
+      case "creditsVersements":
+      default:
+        copy.sort(sortByCreditsThenVersement);
     }
-    
-    // If credits are equal, sort by versement (descending)
-    const versementA = a.totalVersement || 0;
-    const versementB = b.totalVersement || 0;
-    return versementB - versementA;
-  });
+    return copy;
+  }, [filteredClients, clientsSortMode]);
 
   // Pagination logic
   const totalPages = Math.max(
@@ -462,10 +550,10 @@ export default function Clients() {
     currentPage * itemsPerPage,
   );
 
-  // Reset to page 1 when search or itemsPerPage changes
+  // Reset to page 1 when search, sort, or items per page changes
   React.useEffect(() => {
     setCurrentPage(1);
-  }, [search, itemsPerPage]);
+  }, [search, itemsPerPage, clientsSortMode, selectedClientFilter]);
 
   // Suppliers filtering and pagination
   const filteredSuppliers = suppliers.filter(
@@ -584,8 +672,8 @@ export default function Clients() {
                 </Tooltip>
               </div>
 
-              {/* Items per page selector and search bar in the same row */}
-              <div className="flex items-center gap-4 mb-4">
+              {/* Items per page, search, and sort in the same row */}
+              <div className="flex flex-wrap items-center gap-4 mb-4">
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-muted-foreground">
                     {t("clients.itemsPerPage", "Items per page:")}
@@ -634,7 +722,6 @@ export default function Clients() {
                     </PopoverContent>
                   </Popover>
                 </div>
-                {/* Search bar inline */}
                 <ClientSearchInput
                   value={search}
                   onChange={(value) => {
@@ -646,7 +733,10 @@ export default function Clients() {
                   clients={clients}
                   selectedClientId={selectedClientFilter?.id ?? null}
                   onSelectClient={(client) => {
-                    setSelectedClientFilter({ id: client.id, name: client.name });
+                    setSelectedClientFilter({
+                      id: client.id,
+                      name: client.name,
+                    });
                     setSearch(client.name);
                   }}
                   onClearSelection={() => {
@@ -654,17 +744,74 @@ export default function Clients() {
                     setSearch("");
                   }}
                 />
-              </div>
-              {loading ? (
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Loader2 className="animate-spin" />{" "}
-                  {t("clients.loading", "Loading clients...")}
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="text-sm text-muted-foreground shrink-0">
+                    {t("clients.sortBy")}
+                  </span>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="px-3 py-1.5 min-w-[200px] max-w-[min(100%,280px)] flex items-center font-normal"
+                        aria-label={t("clients.selectSortMode")}
+                      >
+                        <span className="truncate min-w-0 flex-1 text-left">
+                          {clientsSortLabel}
+                        </span>
+                        <ChevronDown className="ml-2 w-4 h-4 shrink-0" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent
+                      className="p-0 z-50 w-[min(100vw-2rem,280px)]"
+                      align="start"
+                    >
+                      <Command shouldFilter={false}>
+                        <CommandList>
+                          <CommandGroup>
+                            {clientsSortOptions.map((opt) => (
+                              <CommandItem
+                                key={opt.value}
+                                value={opt.value}
+                                onSelect={() => {
+                                  setClientsSortMode(opt.value);
+                                }}
+                                className="p-0"
+                              >
+                                <Tooltip
+                                  content={opt.tooltip}
+                                  position="left"
+                                  triggerClassName="block w-full min-w-0"
+                                  className="max-w-[14rem] whitespace-normal text-start leading-snug"
+                                >
+                                  <span className="flex w-full min-w-0 cursor-pointer items-center gap-2 px-2 py-1.5">
+                                    <span className="min-w-0 flex-1 truncate text-left">
+                                      {opt.label}
+                                    </span>
+                                    <Check
+                                      className={cn(
+                                        "h-4 w-4 shrink-0",
+                                        clientsSortMode === opt.value
+                                          ? "opacity-100"
+                                          : "opacity-0",
+                                      )}
+                                    />
+                                  </span>
+                                </Tooltip>
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                 </div>
-              ) : error ? (
+              </div>
+              {error ? (
                 <div className="text-red-500">{error}</div>
               ) : (
                 <>
                   <ClientsTable
+                    loading={loading}
                     clients={paginatedClients}
                     onEdit={handleEdit}
                     onDelete={handleDelete}
@@ -673,7 +820,7 @@ export default function Clients() {
                     onQuickFilterPayments={handleQuickFilterPayments}
                   />
                   {/* Pagination Navigation (bottom, shadcn style) */}
-                  {totalPages > 1 && (
+                  {!loading && totalPages > 1 && (
                     <Pagination className="mt-6">
                       <PaginationContent>
                         <PaginationItem>
@@ -754,6 +901,7 @@ export default function Clients() {
                   )}
                 </>
               )}
+              {!loading && (
               <div className="mt-4 flex flex-wrap items-center justify-center gap-10 text-sm">
                 {/* Total Clients */}
                 <div className="flex items-center gap-2">
@@ -815,6 +963,7 @@ export default function Clients() {
                   </span>
                 </div>
               </div>
+              )}
             </div>
           ) : (
             <AllPaymentsView

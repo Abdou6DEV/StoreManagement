@@ -319,6 +319,8 @@ export const databaseAPI = {
     recordPayment: (billId: string, amount: number, notes?: string) => ipcRenderer.invoke("db:bills:recordPayment", billId, amount, notes),
     getBillWithPayments: (billId: string) => ipcRenderer.invoke("db:bills:getBillWithPayments", billId),
     getAllPayments: () => ipcRenderer.invoke("db:bills:getAllPayments"),
+    deletePayment: (id: string, username?: string) =>
+      ipcRenderer.invoke("db:bills:deletePayment", { id, username }),
     getBillsPaymentsAggregatedByPeriod: (
       period: "day" | "month" | "year",
       startDate: Date,

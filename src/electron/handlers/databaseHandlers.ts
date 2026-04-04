@@ -636,6 +636,47 @@ ipcMain.handle("db:products:deleteMultipleProducts", async (_, productIds: strin
     return await bills.getAllPayments();
   });
 
+  ipcMain.handle(
+    "db:bills:deletePayment",
+    async (
+      _event,
+      payload: { id: string; username?: string } | string,
+    ) => {
+      const id =
+        typeof payload === "string" ? payload.trim() : payload?.id?.trim();
+      if (!id) {
+        throw new Error("Invalid payment id");
+      }
+      const username =
+        typeof payload === "object" &&
+        payload !== null &&
+        typeof payload.username === "string" &&
+        payload.username.trim()
+          ? payload.username.trim()
+          : "unknown";
+
+      const meta = await bills.deletePayment(id);
+
+      const amountDisplay = (meta.amount / 100).toLocaleString("fr-FR");
+      const paidStr = meta.paidDate.toISOString();
+      const notesLine =
+        meta.notes?.trim() ? `\nNotes: ${meta.notes.trim()}` : "";
+      const details = `Bill: "${meta.billTitle}" (${meta.billType})\nPayment id: ${meta.paymentId}\nAmount: ${amountDisplay} DA (${meta.amount} centimes)\nPaid: ${paidStr}${notesLine}`;
+
+      try {
+        await createActivityLog({
+          username,
+          action: "activityLog.actions.billPaymentDeleted",
+          details,
+        });
+      } catch (e) {
+        console.error("[ActivityLog] Bill payment delete log failed", e);
+      }
+
+      return meta;
+    },
+  );
+
   ipcMain.handle("db:bills:getBillsPaymentsAggregatedByPeriod", async (_event, period, startDate, endDate) => {
     return await bills.getBillsPaymentsAggregatedByPeriod(period, startDate, endDate);
   });

@@ -7,6 +7,8 @@ interface TooltipProps {
   content: ReactNode;
   children: ReactNode;
   className?: string;
+  /** Classes for the hover target wrapper (default: inline-block) */
+  triggerClassName?: string;
   delay?: number;
   position?: "top" | "bottom" | "left" | "right";
 }
@@ -15,6 +17,7 @@ export const Tooltip: React.FC<TooltipProps> = ({
   content,
   children,
   className,
+  triggerClassName,
   delay = 200,
   position = "top",
 }) => {
@@ -88,7 +91,7 @@ export const Tooltip: React.FC<TooltipProps> = ({
   return (
     <span
       ref={triggerRef}
-      className="relative inline-block"
+      className={cn("relative", triggerClassName ?? "inline-block")}
       onMouseEnter={show}
       onMouseLeave={hide}
       onPointerEnter={show}
@@ -101,10 +104,11 @@ export const Tooltip: React.FC<TooltipProps> = ({
       {createPortal(
         <div
           className={cn(
-            "fixed z-[9999] px-2 py-1 rounded text-xs whitespace-nowrap shadow-lg pointer-events-none",
+            "fixed z-[9999] px-2 py-1 rounded text-xs shadow-lg pointer-events-none",
             "bg-black text-white dark:bg-white dark:text-black",
             "opacity-0 scale-90 transition-all duration-200 ease-out",
             visible && "opacity-100 scale-100",
+            "whitespace-nowrap",
             className,
           )}
           style={{

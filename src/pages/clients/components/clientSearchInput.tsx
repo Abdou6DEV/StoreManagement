@@ -10,6 +10,8 @@ type ClientOption = {
   id: string;
   name: string;
   phone?: string | null;
+  address?: string | null;
+  notes?: string | null;
 };
 
 interface ClientSearchInputProps {
@@ -45,6 +47,9 @@ const ClientSearchInput: React.FC<ClientSearchInputProps> = ({
   const debouncedQuery = useDebounce(value, 200);
   const trimmedQuery = debouncedQuery.trim().toLowerCase();
 
+  const resolvedPlaceholder =
+    placeholder ?? t("clients.searchClients", "Search clients...");
+
   const suggestions = useMemo(() => {
     if (!trimmedQuery) {
       return [];
@@ -56,7 +61,18 @@ const ClientSearchInput: React.FC<ClientSearchInputProps> = ({
         const matchesPhone =
           client.phone &&
           client.phone.toString().toLowerCase().includes(trimmedQuery);
-        return matchesName || matchesPhone;
+        const matchesAddress =
+          client.address &&
+          client.address.toLowerCase().includes(trimmedQuery);
+        const matchesNotes =
+          client.notes &&
+          client.notes.toLowerCase().includes(trimmedQuery);
+        return (
+          matchesName ||
+          matchesPhone ||
+          matchesAddress ||
+          matchesNotes
+        );
       })
       .slice(0, MAX_SUGGESTIONS);
   }, [clients, trimmedQuery]);
@@ -121,16 +137,18 @@ const ClientSearchInput: React.FC<ClientSearchInputProps> = ({
   };
 
   return (
-    <div className={cn("relative", className)}>
+    <div
+      className={cn(
+        "relative w-[min(100%,15rem)] shrink-0 sm:w-[16rem]",
+        className,
+      )}
+    >
       <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-primary" />
       <Input
         ref={inputRef}
         type="text"
         value={value}
-        placeholder={
-          placeholder ??
-          t("clients.searchClients", "Search clients...")
-        }
+        placeholder={resolvedPlaceholder}
         onChange={(event) => onChange(event.target.value)}
         onFocus={() => {
           if (blurTimeoutRef.current) {
