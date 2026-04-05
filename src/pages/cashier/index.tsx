@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, startTransition } from "react";
 import type { ProductWithSales, CartItem } from "../../types";
 import { useTranslation } from "react-i18next";
 import ProductBrowser from "./components/productBrowser";
@@ -7,6 +7,7 @@ import AddServiceModal from "./components/addServiceModal";
 import ReceiptModal from "./components/receiptModal";
 import CashierLayout from "./components/cashierLayout";
 import SessionManager from "./components/sessionManager";
+import type { CompletedServiceForCashierSearch } from "./components/productSearch";
 import { ConfirmDialog } from "../../lib/components/confirmDialog";
 import rendererLogger from "../../lib/logger/rendererLogger";
 import { Product } from "@prisma/client";
@@ -69,6 +70,9 @@ export default function CashierPage() {
   const [salesRefreshKey, setSalesRefreshKey] = useState(0);
   const [showProductBrowser, setShowProductBrowser] = useState(false);
   const [allProducts, setAllProducts] = useState<ProductWithSales[]>([]);
+  const [completedServicesForSearch, setCompletedServicesForSearch] = useState<
+    CompletedServiceForCashierSearch[]
+  >([]);
   const productBrowserRef = useRef<{ handleClose: () => void }>(null);
   const [showStockWarning, setShowStockWarning] = useState(false);
   const [showProductOutOfStockModal, setShowProductOutOfStockModal] = useState(false);
@@ -87,17 +91,17 @@ export default function CashierPage() {
     paymentDate?: Date;
   } | null>(null);
   const [outOfStockConfirmed, setOutOfStockConfirmed] = useState(false);
+  /** After first bootstrap attempt — avoids showing "no products" while allProducts is still []. */
+  const [productsInitialFetchDone, setProductsInitialFetchDone] = useState(false);
 
-  // Fetch all products along with sales counts for accurate "frequently used" ordering
+  // Single IPC bootstrap: products + sales counts + completed services (one structured-clone vs three).
   useEffect(() => {
     let isMounted = true;
-    
+
     const fetchProducts = async () => {
       try {
-        const [products, salesCounts] = await Promise.all([
-          window.api.database.products.getAll(),
-          window.api.database.products.getSalesCounts(),
-        ]);
+        const { products, salesCounts, completedServices } =
+          await window.api.database.cashier.getBootstrap();
 
         if (!isMounted) return;
 
@@ -108,20 +112,29 @@ export default function CashierPage() {
           ]),
         );
 
-        setAllProducts(
-          products.map((p: Product) => ({
-            ...p,
-            totalSold: salesMap.get(p.id) || 0,
-          })) as ProductWithSales[]
-        );
+        const merged = products.map((p: Product) => ({
+          ...p,
+          totalSold: salesMap.get(p.id) || 0,
+        })) as ProductWithSales[];
+
+        startTransition(() => {
+          setAllProducts(merged);
+          setCompletedServicesForSearch(
+            completedServices as CompletedServiceForCashierSearch[],
+          );
+          setProductsInitialFetchDone(true);
+        });
       } catch (error) {
         if (!isMounted) return;
-        
+
         rendererLogger.error(
           "Error fetching products",
           "CashierPage",
-          error
+          error,
         );
+        startTransition(() => {
+          setProductsInitialFetchDone(true);
+        });
       }
     };
 
@@ -353,6 +366,8 @@ export default function CashierPage() {
              sessions={sessions}
              activeSession={activeSession}
              allProducts={allProducts}
+             productsInitialFetchDone={productsInitialFetchDone}
+             completedServicesForSearch={completedServicesForSearch}
              isRTL={isRTL}
              productRefreshKey={productRefreshKey}
              setProductRefreshKey={setProductRefreshKey}

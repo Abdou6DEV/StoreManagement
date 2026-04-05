@@ -1082,6 +1082,10 @@
     "errorOccurred": "An error occurred during validation"
   },
   "cashier": {
+    "loadingTitle": "Loading cashier...",
+    "loadingDesc": "Please wait while products and search data are loaded.",
+    "historyLoadingTitle": "Loading sales history...",
+    "historyLoadingDesc": "Please wait while recent sales are loaded.",
     "costPrice": "Cost Price",
     "session": "Page",
     "products": "Products",

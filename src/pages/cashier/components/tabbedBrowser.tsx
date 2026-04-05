@@ -9,6 +9,7 @@ import { useCashierHistory } from "../../../lib/contexts/cashierHistoryContext";
 
 interface TabbedBrowserProps {
   allProducts: ProductWithSales[];
+  productsInitialFetchDone: boolean;
   cart: CartItem[];
   setCart: React.Dispatch<React.SetStateAction<CartItem[]>>;
   salesRefreshKey?: number;
@@ -21,6 +22,7 @@ type TabType = "favorites" | "history";
 
 const TabbedBrowser: React.FC<TabbedBrowserProps> = ({
   allProducts,
+  productsInitialFetchDone,
   cart,
   setCart,
   salesRefreshKey,
@@ -31,6 +33,8 @@ const TabbedBrowser: React.FC<TabbedBrowserProps> = ({
   const { t } = useTranslation();
   const { isEnabled: isHistoryEnabled, isLoading: isHistoryLoading } = useCashierHistory();
   const [activeTab, setActiveTab] = useState<TabType>("favorites");
+  /** Once true, History stays mounted (hidden on Favorites) so switching back does not refetch. */
+  const [historyTabWasOpened, setHistoryTabWasOpened] = useState(false);
 
   const tabs = [
     {
@@ -55,8 +59,11 @@ const TabbedBrowser: React.FC<TabbedBrowserProps> = ({
   };
 
   const handleTabClick = (tabId: TabType) => {
-    const tab = tabs.find(t => t.id === tabId);
+    const tab = tabs.find((x) => x.id === tabId);
     if (tab && !tab.disabled) {
+      if (tabId === "history") {
+        setHistoryTabWasOpened(true);
+      }
       setActiveTab(tabId);
     }
   };
@@ -94,13 +101,15 @@ const TabbedBrowser: React.FC<TabbedBrowserProps> = ({
         })}
       </div>
 
-      {/* Tab Content */}
-      <div className="flex-1 overflow-hidden">
+      {/* Both panels stay mounted after first shown (hidden when inactive) so tab switches do not remount — no reload spinner or stagger replay. */}
+      <div className="flex-1 overflow-hidden flex flex-col min-h-0">
         <div
-          className={`h-full ${activeTab === "favorites" ? "block" : "hidden"}`}
+          className={`min-h-0 flex-1 flex flex-col ${activeTab !== "favorites" ? "hidden" : ""}`}
+          aria-hidden={activeTab !== "favorites"}
         >
           <FavoritesBrowser
             allProducts={allProducts}
+            productsInitialFetchDone={productsInitialFetchDone}
             cart={cart}
             setCart={setCart}
             addProductToCart={addProductToCart}
@@ -109,14 +118,17 @@ const TabbedBrowser: React.FC<TabbedBrowserProps> = ({
           />
         </div>
 
-        <div
-          className={`h-full p-3 overflow-y-auto ${activeTab === "history" ? "block" : "hidden"}`}
-        >
-          <HistoryBrowser
-            onSaleSelect={handleSaleSelect}
-            salesRefreshKey={salesRefreshKey}
-          />
-        </div>
+        {historyTabWasOpened && (
+          <div
+            className={`min-h-0 flex-1 flex flex-col overflow-y-auto p-3 ${activeTab !== "history" ? "hidden" : ""}`}
+            aria-hidden={activeTab !== "history"}
+          >
+            <HistoryBrowser
+              onSaleSelect={handleSaleSelect}
+              salesRefreshKey={salesRefreshKey}
+            />
+          </div>
+        )}
       </div>
     </div>
   );

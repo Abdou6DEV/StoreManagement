@@ -6,7 +6,7 @@ import type { CartItem } from "../../../types";
 import { useToast } from "../../../lib/contexts/toastContext";
 import { useCompletedServices } from "../../../lib/contexts/completedServicesContext";
 
-interface CompletedServiceAppointment {
+export interface CompletedServiceForCashierSearch {
   id: string;
   name: string;
   serviceType: string;
@@ -32,6 +32,10 @@ interface Props {
   refreshKey: number;
   cart: CartItem[];
   onClientSelect?: (clientId: string, clientName: string) => void;
+  /** From CashierPage — avoids a duplicate products.getAll IPC on mount. */
+  products: Product[];
+  /** From CashierPage — avoids duplicate getCompletedForCashier IPC. */
+  completedServices: CompletedServiceForCashierSearch[];
 }
 
 type GroupedSuggestions = {
@@ -39,14 +43,19 @@ type GroupedSuggestions = {
   items: Product[];
 }[];
 
-export default function ProductSearch({ onAdd, refreshKey, cart, onClientSelect }: Props) {
+export default function ProductSearch({
+  onAdd,
+  refreshKey,
+  cart,
+  onClientSelect,
+  products: allProducts,
+  completedServices,
+}: Props) {
   const { t } = useTranslation();
   const { showToast } = useToast();
   const { refreshCompletedServicesCount } = useCompletedServices();
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [allProducts, setAllProducts] = useState<Product[]>([]);
-  const [completedServices, setCompletedServices] = useState<CompletedServiceAppointment[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [highlight, setHighlight] = useState<{
     catIdx: number;
@@ -59,15 +68,6 @@ export default function ProductSearch({ onAdd, refreshKey, cart, onClientSelect 
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    Promise.all([
-      window.api.database.products.getAll(),
-      window.api.database.serviceAppointments.getCompletedForCashier()
-    ]).then(([products, services]) => {
-      setAllProducts(products);
-      setCompletedServices(services);
-    });
-    
-    // Auto-focus on mount and after refresh
     if (inputRef.current) {
       inputRef.current.focus();
     }

@@ -1,5 +1,7 @@
+import type { Product } from "@prisma/client";
 import type { ProductWithSales, CartItem } from "../../../types";
 import type { Session } from "./sessionManager";
+import type { CompletedServiceForCashierSearch } from "./productSearch";
 import TotalHeader from "./totalHeader";
 import ProductControls from "./productControls";
 import TabbedBrowser from "./tabbedBrowser";
@@ -10,6 +12,8 @@ interface CashierLayoutProps {
   sessions: Session[];
   activeSession: number;
   allProducts: ProductWithSales[];
+  productsInitialFetchDone: boolean;
+  completedServicesForSearch: CompletedServiceForCashierSearch[];
   isRTL: boolean;
   productRefreshKey: number;
   setProductRefreshKey: (key: number | ((prev: number) => number)) => void;
@@ -40,6 +44,8 @@ export default function CashierLayout({
   sessions,
   activeSession,
   allProducts,
+  productsInitialFetchDone,
+  completedServicesForSearch,
   isRTL,
   productRefreshKey,
   setProductRefreshKey,
@@ -88,15 +94,18 @@ export default function CashierLayout({
             onAddProduct={onAddProduct}
             productRefreshKey={productRefreshKey}
             cart={currentSession.cart}
-            onClientSelect={(clientId, clientName) => 
+            onClientSelect={(clientId, clientName) =>
               onUpdateSessionClient(activeSession, clientName, clientId)
             }
+            searchProducts={allProducts as Product[]}
+            completedServicesForSearch={completedServicesForSearch}
           />
 
           {/* Tabbed Browser */}
           <div className="flex-1 min-h-0">
             <TabbedBrowser
               allProducts={allProducts}
+              productsInitialFetchDone={productsInitialFetchDone}
               cart={currentSession.cart}
               setCart={(
                 newCart: CartItem[] | ((prev: CartItem[]) => CartItem[]),

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import SaleDetailsModal from "../../../../lib/components/saleDetailsModal";
 import { useStock } from "../../../../lib/contexts/stockContext";
@@ -35,6 +35,8 @@ const HistoryBrowser: React.FC<HistoryBrowserProps> = ({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showNoReceiptPrinterModal, setShowNoReceiptPrinterModal] = useState(false);
+  /** Avoid duplicate fetch: salesRefreshKey effect already loads on mount; search effect would fire again after 300ms for "". */
+  const skipSearchDebounceOnMount = useRef(true);
 
   const fetchSales = async (searchTerm?: string) => {
     try {
@@ -77,11 +79,15 @@ const HistoryBrowser: React.FC<HistoryBrowserProps> = ({
     fetchSales();
   }, [salesRefreshKey]);
 
-  // Search effect - trigger search when search term changes
+  // Debounced search when the user edits the query (not on initial mount — covered by salesRefreshKey effect).
   useEffect(() => {
+    if (skipSearchDebounceOnMount.current) {
+      skipSearchDebounceOnMount.current = false;
+      return;
+    }
     const timeoutId = setTimeout(() => {
       fetchSales(searchTerm);
-    }, 300); // Debounce search by 300ms
+    }, 300);
 
     return () => clearTimeout(timeoutId);
   }, [searchTerm]);

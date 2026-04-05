@@ -2,6 +2,9 @@ import { ipcRenderer } from "electron";
 import { Product } from "@prisma/client";
 
 export const databaseAPI = {
+  cashier: {
+    getBootstrap: () => ipcRenderer.invoke("db:cashier:getBootstrap"),
+  },
   products: {
     getAll: () => ipcRenderer.invoke("db:products:getAll"),
     add: (productOrPayload: Omit<Product, "id" | "createdAt" | "updatedAt"> | { product: Omit<Product, "id" | "createdAt" | "updatedAt">; username?: string }) =>

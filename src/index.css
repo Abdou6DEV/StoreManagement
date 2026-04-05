@@ -270,8 +270,20 @@ input[type="number"] {
   animation-delay: var(--stagger-delay, 0ms);
 }
 
+/* Cashier favorites / frequently-used browser (same motion as dashboard stagger) */
+.cashier-browser-stagger-in {
+  animation: dashboard-stagger-fade-up 0.52s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: var(--stagger-delay, 0ms);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .dashboard-stagger-in {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  .cashier-browser-stagger-in {
     animation: none;
     opacity: 1;
     transform: none;

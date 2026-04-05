@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, {
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+  type CSSProperties,
+} from "react";
 import type { ProductWithSales, CartItem } from "../../../types";
 import { useTranslation } from "react-i18next";
 import { Star } from "lucide-react";
@@ -7,6 +13,8 @@ import rendererLogger from "../../../lib/logger/rendererLogger";
 
 interface FavoritesBrowserProps {
   allProducts: ProductWithSales[];
+  /** False until cashier bootstrap finished — empty allProducts means loading, not "no products". */
+  productsInitialFetchDone: boolean;
   cart: CartItem[];
   setCart: React.Dispatch<React.SetStateAction<CartItem[]>>;
   addProductToCart: (cart: CartItem[], product: ProductWithSales, allProducts: ProductWithSales[], onOutOfStock: (product: ProductWithSales, currentQty: number) => void) => CartItem[] | null;
@@ -16,6 +24,7 @@ interface FavoritesBrowserProps {
 
 const FavoritesBrowser: React.FC<FavoritesBrowserProps> = ({
   allProducts,
+  productsInitialFetchDone,
   cart,
   setCart,
   addProductToCart,
@@ -102,6 +111,44 @@ const FavoritesBrowser: React.FC<FavoritesBrowserProps> = ({
       .slice(0, 10); // Show top 10
   }, [allProducts, favorites]);
 
+  const staggerDelays = useMemo(() => {
+    const step = 52;
+    let t = step;
+    const favHeader = 0;
+    const favCards: number[] = [];
+    let favEmpty = 0;
+
+    if (favoriteProducts.length > 0) {
+      for (let i = 0; i < favoriteProducts.length; i++) {
+        favCards.push(t);
+        t += step;
+      }
+    } else if (hasAnyProducts) {
+      favEmpty = t;
+      t += step;
+    }
+
+    const freqCards: number[] = [];
+    let freqHeader = 0;
+    if (frequentlyUsedProducts.length > 0) {
+      freqHeader = t;
+      t += step;
+      for (let j = 0; j < frequentlyUsedProducts.length; j++) {
+        freqCards.push(t);
+        t += step;
+      }
+    }
+
+    return { favHeader, favCards, favEmpty, freqHeader, freqCards };
+  }, [
+    favoriteProducts.length,
+    frequentlyUsedProducts.length,
+    hasAnyProducts,
+  ]);
+
+  const staggerStyle = (ms: number): CSSProperties =>
+    ({ "--stagger-delay": `${ms}ms` }) as CSSProperties;
+
   const handleAddToCart = useCallback((product: ProductWithSales) => {
     const updatedCart = addProductToCart(cart, product, allProducts, onOutOfStock);
     if (updatedCart) {
@@ -156,33 +203,69 @@ const FavoritesBrowser: React.FC<FavoritesBrowserProps> = ({
     }
   }, [setCart, outOfStockConfirmed, onOutOfStock, cart]);
 
+  if (!productsInitialFetchDone) {
+    return (
+      <div
+        className="h-full overflow-hidden flex flex-col items-center justify-center gap-3 text-center px-3 py-8"
+        role="status"
+        aria-live="polite"
+        aria-busy="true"
+      >
+        <div
+          className="mb-1 size-12 shrink-0 rounded-full border-[3px] border-yellow-500/20 border-t-yellow-500 animate-spin motion-reduce:animate-none"
+          aria-hidden
+        />
+        <h3 className="text-xl font-semibold text-foreground">
+          {t("cashier.loadingTitle", "Loading cashier...")}
+        </h3>
+        <p className="text-base text-muted-foreground max-w-md">
+          {t(
+            "cashier.loadingDesc",
+            "Please wait while products and search data are loaded.",
+          )}
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="h-full overflow-hidden flex flex-col p-3">
       <div className="flex-1 overflow-y-auto space-y-6">
         {/* Favorites Section */}
         {hasAnyProducts && (
           <div>
-            <div className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1">
+            <div
+              className="cashier-browser-stagger-in text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1"
+              style={staggerStyle(staggerDelays.favHeader)}
+            >
               <Star className="w-4 h-4 text-yellow-500" />
               {t("cashier.favorites", "Favorites")}
             </div>
             {favoriteProducts.length > 0 ? (
               <div className="grid grid-cols-3 gap-3">
-                {favoriteProducts.map((product) => (
-                  <ProductCard
+                {favoriteProducts.map((product, i) => (
+                  <div
                     key={product.id}
-                    product={product}
-                    favorites={favorites}
-                    isInCart={isInCart}
-                    getCartQuantity={getCartQuantity}
-                    handleAddToCart={handleAddToCart}
-                    handleQuantityChange={handleQuantityChange}
-                    toggleFavorite={toggleFavorite}
-                  />
+                    className="cashier-browser-stagger-in min-h-0"
+                    style={staggerStyle(staggerDelays.favCards[i] ?? 0)}
+                  >
+                    <ProductCard
+                      product={product}
+                      favorites={favorites}
+                      isInCart={isInCart}
+                      getCartQuantity={getCartQuantity}
+                      handleAddToCart={handleAddToCart}
+                      handleQuantityChange={handleQuantityChange}
+                      toggleFavorite={toggleFavorite}
+                    />
+                  </div>
                 ))}
               </div>
             ) : (
-              <div className="text-center py-4 text-muted-foreground border border-dashed rounded-lg">
+              <div
+                className="cashier-browser-stagger-in text-center py-4 text-muted-foreground border border-dashed rounded-lg"
+                style={staggerStyle(staggerDelays.favEmpty)}
+              >
                 <Star className="w-8 h-8 mx-auto mb-2 text-muted-foreground/50" />
                 <div className="text-sm">
                   {t("cashier.noFavorites", "No favorites yet")}
@@ -201,21 +284,29 @@ const FavoritesBrowser: React.FC<FavoritesBrowserProps> = ({
         {/* Frequently Used Section */}
         {frequentlyUsedProducts.length > 0 && (
           <div>
-            <div className="text-xs font-medium text-muted-foreground mb-2">
+            <div
+              className="cashier-browser-stagger-in text-xs font-medium text-muted-foreground mb-2"
+              style={staggerStyle(staggerDelays.freqHeader)}
+            >
               {t("cashier.frequentlyUsed", "Frequently Used")}
             </div>
             <div className="grid grid-cols-3 gap-3">
-              {frequentlyUsedProducts.map((product) => (
-                <ProductCard
+              {frequentlyUsedProducts.map((product, j) => (
+                <div
                   key={product.id}
-                  product={product}
-                  favorites={favorites}
-                  isInCart={isInCart}
-                  getCartQuantity={getCartQuantity}
-                  handleAddToCart={handleAddToCart}
-                  handleQuantityChange={handleQuantityChange}
-                  toggleFavorite={toggleFavorite}
-                />
+                  className="cashier-browser-stagger-in min-h-0"
+                  style={staggerStyle(staggerDelays.freqCards[j] ?? 0)}
+                >
+                  <ProductCard
+                    product={product}
+                    favorites={favorites}
+                    isInCart={isInCart}
+                    getCartQuantity={getCartQuantity}
+                    handleAddToCart={handleAddToCart}
+                    handleQuantityChange={handleQuantityChange}
+                    toggleFavorite={toggleFavorite}
+                  />
+                </div>
               ))}
             </div>
           </div>
@@ -223,7 +314,10 @@ const FavoritesBrowser: React.FC<FavoritesBrowserProps> = ({
 
         {/* Empty State - Only when no products exist at all */}
         {!hasAnyProducts && (
-          <div className="text-center py-6 text-muted-foreground">
+          <div
+            className="cashier-browser-stagger-in text-center py-6 text-muted-foreground"
+            style={staggerStyle(0)}
+          >
             <div className="text-sm">
               {t("cashier.noProductsAvailable", "No products available yet")}
             </div>

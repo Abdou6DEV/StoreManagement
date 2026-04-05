@@ -26,6 +26,13 @@ export type SaleWithDetails = Sale & {
 };
 
 export type DatabaseAPI = {
+  cashier: {
+    getBootstrap: () => Promise<{
+      products: Product[];
+      salesCounts: { productId: string; totalSold: number }[];
+      completedServices: unknown[];
+    }>;
+  };
   products: {
     getAll: () => Promise<Product[]>;
     add: (

@@ -1,6 +1,9 @@
 import { useTranslation } from "react-i18next";
 import { ShoppingCart, PlusCircle, Wrench } from "lucide-react";
-import ProductSearch from "./productSearch";
+import { Product } from "@prisma/client";
+import ProductSearch, {
+  type CompletedServiceForCashierSearch,
+} from "./productSearch";
 import { Tooltip } from "../../../lib/components/tooltip";
 import { BadgeNotification } from "../../../lib/components/badgeNotification";
 import { useCompletedServices } from "../../../lib/contexts/completedServicesContext";
@@ -14,6 +17,8 @@ interface ProductControlsProps {
   productRefreshKey: number;
   cart: CartItem[];
   onClientSelect?: (clientId: string, clientName: string) => void;
+  searchProducts: Product[];
+  completedServicesForSearch: CompletedServiceForCashierSearch[];
 }
 
 export default function ProductControls({
@@ -24,6 +29,8 @@ export default function ProductControls({
   productRefreshKey,
   cart,
   onClientSelect,
+  searchProducts,
+  completedServicesForSearch,
 }: ProductControlsProps) {
   const { t } = useTranslation();
   const { completedServicesCount } = useCompletedServices();
@@ -31,11 +38,13 @@ export default function ProductControls({
   return (
     <div className="bg-card border border-border rounded-xl p-3 shadow-sm flex-shrink-0">
       <div className="flex items-center justify-center gap-2">
-        <ProductSearch 
-          onAdd={onAddProduct} 
-          refreshKey={productRefreshKey} 
+        <ProductSearch
+          onAdd={onAddProduct}
+          refreshKey={productRefreshKey}
           cart={cart}
           onClientSelect={onClientSelect}
+          products={searchProducts}
+          completedServices={completedServicesForSearch}
         />
         <Tooltip
           content={t("cashier.tooltipBrowseProducts", "Browse Products (F1)")}

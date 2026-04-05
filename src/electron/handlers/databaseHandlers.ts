@@ -123,6 +123,16 @@ export function setupDatabaseHandlers() {
     return await getAllProducts();
   });
 
+  /** One IPC round-trip for cashier first paint (less serialization overhead than 3 invokes). */
+  ipcMain.handle("db:cashier:getBootstrap", async () => {
+    const [products, salesCounts, completedServices] = await Promise.all([
+      getAllProducts(),
+      getProductSalesCounts(),
+      getCompletedServicesForCashier(),
+    ]);
+    return { products, salesCounts, completedServices };
+  });
+
   ipcMain.handle("db:products:add", async (_event, payload) => {
     const product = payload?.product != null ? payload.product : payload;
     const username = typeof payload?.username === "string" ? payload.username : "unknown";

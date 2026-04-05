@@ -988,6 +988,10 @@
     "inventoryModeDesc": "Ajouter à l'inventaire sans enregistrer d'achat"
   },
   "cashier": {
+    "loadingTitle": "Chargement de la caisse...",
+    "loadingDesc": "Veuillez patienter pendant le chargement des produits et des données de recherche.",
+    "historyLoadingTitle": "Chargement de l'historique des ventes...",
+    "historyLoadingDesc": "Veuillez patienter pendant le chargement des ventes récentes.",
     "total": "Total",
     "productInfo": "Informations sur le produit",
     "session": "Page",
