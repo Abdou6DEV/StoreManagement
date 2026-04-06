@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useLocation } from "react-router-dom";
 import { Button } from "../../lib/components/button";
 import { FileText, ChevronDown, Check, CreditCard, DollarSign, Search } from "lucide-react";
@@ -25,6 +25,8 @@ import { Tooltip } from "../../lib/components/tooltip";
 import BillsTable from "./components/billsTable";
 import AllPaymentsTable from "./components/allPaymentsTable";
 import AddBillForm from "./components/addBillForm";
+import { BillsTotalsFooter } from "./components/billsTotalsFooter";
+import { BillsPaymentsTotalsFooter } from "./components/billsPaymentsTotalsFooter";
 
 interface Bill {
   id: string;
@@ -91,6 +93,11 @@ export default function BillsPage() {
   const [paymentsTypeFilter, setPaymentsTypeFilter] = useState("all");
   const [billTypes, setBillTypes] = useState<string[]>([]);
   const [allBills, setAllBills] = useState<Bill[]>([]);
+
+  const billsById = useMemo(
+    () => new Map(allBills.map((b) => [b.id, { duration: b.duration }])),
+    [allBills],
+  );
   const [seenOverdueBills, setSeenOverdueBills] = useState<Set<string>>(new Set());
   const [seenDueSoonBills, setSeenDueSoonBills] = useState<Set<string>>(new Set());
   const [newlyOverdueBillsIds, setNewlyOverdueBillsIds] = useState<Set<string>>(new Set());
@@ -880,6 +887,21 @@ export default function BillsPage() {
                    />
                    </>
                  )}
+
+                 {/* Totals Footer (matches Stock/Services pattern: full filtered list) */}
+                 {showAllPayments ? (
+                   filteredPayments.length > 0 ? (
+                     <BillsPaymentsTotalsFooter
+                       filteredPayments={filteredPayments}
+                       billsById={billsById}
+                     />
+                   ) : null
+                 ) : filteredBills.length > 0 ? (
+                   <BillsTotalsFooter
+                     filteredBills={filteredBills}
+                     dueSoonThresholdDays={dueSoonThresholdDays}
+                   />
+                 ) : null}
         </div>
       </div>
     </main>

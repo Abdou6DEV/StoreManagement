@@ -147,7 +147,6 @@ const AllPaymentsTable: React.FC<AllPaymentsTableProps> = ({
   const isLastPage = currentPage === totalPages;
   const hasNoData = payments.length === 0;
 
-
   if (payments.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 gap-3 text-center">

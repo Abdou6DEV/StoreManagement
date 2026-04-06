@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Printer, X, Settings } from 'lucide-react';
-import { Modal, useModalRequestClose } from '../../../../lib/components/modal';
+import { Modal } from '../../../../lib/components/modal';
 import { Button } from '../../../../lib/components/button';
 import StyledNumberInput from '../../../../lib/components/inputNumber';
 import { Checkbox } from '../../../../lib/components/checkbox';
@@ -182,17 +182,12 @@ export const BarcodePreviewModal: React.FC<BarcodePreviewModalProps> = ({
   // When no barcode, force "show barcode" off and treat as label without barcode
   const canShowBarcode = hasBarcodeValue && barcodeImage.length > 0;
 
-  const barcodePreviewHasDraft =
-    Number(quantity || 1) !== 1 || showPreviousPrice === true;
-
   return (
     <Modal
       open={open}
       onOpenChange={onOpenChange}
       title={t('stock.barcodePreview', 'Barcode Label Preview')}
       size="lg"
-      hasUnsavedChanges={barcodePreviewHasDraft}
-      onDiscard={() => {}}
     >
       <div className="space-y-2">
         {/* No label printer set: show dialog and disable Print (only after load: labelPrinterName !== null) */}
@@ -468,6 +463,7 @@ export const BarcodePreviewModal: React.FC<BarcodePreviewModalProps> = ({
           showPreviousPrice={showPreviousPrice}
           previousPrice={previousPrice}
           labelSize={labelSize}
+          onClose={() => onOpenChange(false)}
           onPrint={onPrint}
         />
       </div>
@@ -485,6 +481,7 @@ function BarcodePreviewFooter({
   showPreviousPrice,
   previousPrice,
   labelSize,
+  onClose,
   onPrint,
 }: {
   hasLabelPrinter: boolean;
@@ -496,17 +493,17 @@ function BarcodePreviewFooter({
   showPreviousPrice: boolean;
   previousPrice?: number | string;
   labelSize: LabelSize;
+  onClose: () => void;
   onPrint: BarcodePreviewModalProps["onPrint"];
 }) {
   const { t } = useTranslation();
-  const requestClose = useModalRequestClose();
   return (
     <div className="flex gap-3 justify-end">
       <Tooltip
         content={t("common.cancelTooltip", "Cancel and close preview")}
         position="top"
       >
-        <Button variant="outline" type="button" onClick={() => requestClose()}>
+        <Button variant="outline" type="button" onClick={onClose}>
           <X className="w-4 h-4 mr-2" />
           {t("common.cancel", "Cancel")}
         </Button>
@@ -538,6 +535,7 @@ function BarcodePreviewFooter({
                 shouldShowPreviousPrice,
                 labelSize,
               );
+              onClose();
             }}
             disabled={!hasLabelPrinter}
             className="bg-green-600 hover:bg-green-700 text-white disabled:opacity-50 disabled:pointer-events-none"
