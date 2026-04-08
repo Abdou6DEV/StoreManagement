@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { getWarmupSnapshot, subscribeWarmup } from '../warmup/appWarmup';
 
 interface OverduePaymentsContextType {
   unseenOverdueCreditsCount: number;
@@ -28,42 +29,28 @@ export const OverduePaymentsProvider: React.FC<OverduePaymentsProviderProps> = (
   const [enableBadge, setEnableBadge] = useState(false);
   const [badgeLoaded, setBadgeLoaded] = useState(false);
 
-  // Load badge setting
+  // Load badge setting (prefer warmup snapshot to avoid polling here)
   useEffect(() => {
-    const loadBadgeSetting = () => {
-      window.api.database.options
-        .get("enableOverduePaymentsBadge")
-        .then((val) => {
-          setEnableBadge(val !== "false"); // Default to true if not set
-          setBadgeLoaded(true);
-        });
-    };
-
-    loadBadgeSetting();
-
-    // Poll for changes every 1 second
-    const interval = setInterval(loadBadgeSetting, 1000);
-
-    return () => clearInterval(interval);
+    const snap = getWarmupSnapshot();
+    const v = snap.options?.["enableOverduePaymentsBadge"];
+    setEnableBadge(v !== "false");
+    setBadgeLoaded(true);
+    return subscribeWarmup((detail) => {
+      if (detail.key !== "options") return;
+      const val = detail.snapshot.options?.["enableOverduePaymentsBadge"];
+      setEnableBadge(val !== "false");
+      setBadgeLoaded(true);
+    });
   }, []);
 
-  // Load payments
+  // Load payments (prefer warmup snapshot to avoid polling here)
   useEffect(() => {
-    const loadPayments = async () => {
-      try {
-        const allPayments = await window.api.database.payments.getAll();
-        setPayments(allPayments);
-      } catch (error) {
-        console.error('Failed to load payments:', error);
-      }
-    };
-
-    loadPayments();
-
-    // Poll for changes every 5 seconds
-    const interval = setInterval(loadPayments, 5000);
-
-    return () => clearInterval(interval);
+    const snap = getWarmupSnapshot();
+    if (snap.payments) setPayments(snap.payments);
+    return subscribeWarmup((detail) => {
+      if (detail.key !== "payments") return;
+      if (detail.snapshot.payments) setPayments(detail.snapshot.payments);
+    });
   }, []);
 
   // Load seen payments from localStorage on mount

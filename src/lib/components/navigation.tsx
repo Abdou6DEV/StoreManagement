@@ -34,6 +34,7 @@ import { useAuth } from "../contexts/authContext";
 import { useNotifications } from "../hooks/useNotifications";
 import { useNavigate } from "react-router-dom";
 import { cn } from "../utils";
+import { useEffect, useRef } from "react";
 
 export default function Navigation() {
   const location = useLocation();
@@ -47,10 +48,22 @@ export default function Navigation() {
   const isCashierPage = location.pathname.startsWith("/cashier");
   const isRTL = i18n.language === "ar";
 
+  // Animate header only when it appears after leaving cashier.
+  const prevIsCashierPage = useRef(isCashierPage);
+  const shouldAnimateHeader = prevIsCashierPage.current && !isCashierPage;
+  useEffect(() => {
+    prevIsCashierPage.current = isCashierPage;
+  }, [isCashierPage]);
+
   // Show loading while authentication is being checked
   if (loading) {
     return (
-      <div className="w-full px-4 pt-4">
+      <div
+        className={cn(
+          "w-full px-4 pt-4",
+          shouldAnimateHeader && "nav-transition-enter",
+        )}
+      >
         <div className="flex items-center justify-between rounded-xl border border-border px-6 h-20 bg-card">
           <div className="animate-pulse bg-gray-300 dark:bg-gray-600 h-20 w-40 rounded"></div>
           <div className="animate-pulse bg-gray-300 dark:bg-gray-600 h-8 w-32 rounded"></div>
@@ -62,7 +75,9 @@ export default function Navigation() {
 
   if (isCashierPage) {
     return (
-      <div className="fixed top-4 -left-0 right-4 z-50 flex items-center justify-between pl-2 pr-4">
+      <div
+        className="fixed top-4 -left-0 right-4 z-50 flex items-center justify-between pl-2 pr-4"
+      >
         <UserBadge size="md" className="h-14" showRole={true} />
         <DropdownMenu onOpenChange={setDropdownOpen}>
           <DropdownMenuTrigger asChild>
@@ -150,7 +165,12 @@ export default function Navigation() {
   }
 
   return (
-    <div className="w-full px-4 pt-4">
+    <div
+      className={cn(
+        "w-full px-4 pt-4",
+        shouldAnimateHeader && "nav-transition-enter",
+      )}
+    >
       <div className="relative flex items-center justify-between rounded-xl border border-border bg-card shadow-md px-8 h-20 hover:shadow-lg transition-shadow duration-300">
         <UserBadge size="md" className="h-16 shrink-0" />
         {/* === Dynamic Page Title (centered in header) === */}

@@ -7,6 +7,7 @@ import {
 } from "react";
 import type { ProductWithSales, StockContextType } from "../../types";
 import rendererLogger from "../logger/rendererLogger";
+import { getWarmupSnapshot, subscribeWarmup } from "../warmup/appWarmup";
 
 const StockContext = createContext<StockContextType | undefined>(undefined);
 
@@ -85,7 +86,25 @@ export function StockProvider({ children }: { children: ReactNode }) {
     const initializeData = async () => {
       setLoading(true);
       try {
-        await Promise.all([fetchCategories(), fetchProducts()]);
+        // Prefer warmup snapshot to avoid heavy fetch during initial UI animations.
+        const snap = getWarmupSnapshot();
+        if (snap.categories && snap.products && snap.salesCounts) {
+          setCategories(snap.categories.map((c: { name: string }) => c.name));
+          const salesMap = new Map(
+            (snap.salesCounts as Array<{ productId: string; totalSold: number }>).map((s) => [
+              s.productId,
+              s.totalSold,
+            ]),
+          );
+          setProducts(
+            (snap.products as ProductWithSales[]).map((p: ProductWithSales) => ({
+              ...p,
+              totalSold: salesMap.get(p.id) || 0,
+            })),
+          );
+        } else {
+          await Promise.all([fetchCategories(), fetchProducts()]);
+        }
       } catch (err) {
         setError(
           err instanceof Error ? err.message : "Failed to initialize data"
@@ -96,6 +115,31 @@ export function StockProvider({ children }: { children: ReactNode }) {
     };
 
     initializeData();
+  }, []);
+
+  // Keep context in sync with warmup polling.
+  useEffect(() => {
+    return subscribeWarmup((detail) => {
+      if (detail.key !== "stock") return;
+      const snap = detail.snapshot;
+      if (snap.categories) {
+        setCategories(snap.categories.map((c: { name: string }) => c.name));
+      }
+      if (snap.products && snap.salesCounts) {
+        const salesMap = new Map(
+          (snap.salesCounts as Array<{ productId: string; totalSold: number }>).map((s) => [
+            s.productId,
+            s.totalSold,
+          ]),
+        );
+        setProducts(
+          (snap.products as ProductWithSales[]).map((p: ProductWithSales) => ({
+            ...p,
+            totalSold: salesMap.get(p.id) || 0,
+          })),
+        );
+      }
+    });
   }, []);
 
   const value: StockContextType = {

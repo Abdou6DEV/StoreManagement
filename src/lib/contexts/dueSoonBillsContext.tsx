@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
+import { getWarmupSnapshot, subscribeWarmup } from '../warmup/appWarmup';
 
 interface DueSoonBillsContextType {
   unseenDueSoonBillsCount: number;
@@ -27,99 +28,40 @@ export const DueSoonBillsProvider: React.FC<DueSoonBillsProviderProps> = ({ chil
   const [badgeLoaded, setBadgeLoaded] = useState(false);
   const [dueSoonThresholdDays, setDueSoonThresholdDays] = useState(2);
 
-  // Load enableDueSoonBillsBadge setting
+  // Load enableDueSoonBillsBadge setting (prefer warmup snapshot)
   useEffect(() => {
-    let isMounted = true;
-    
-    const loadBadgeSetting = () => {
-      if (!isMounted) return;
-      
-      window.api.database.options
-        .get("enableDueSoonBillsBadge")
-        .then((val) => {
-          if (!isMounted) return;
-          setEnableBadge(val !== "false"); // Default to true if not set
-          setBadgeLoaded(true);
-        })
-        .catch(() => {
-          if (!isMounted) return;
-          setEnableBadge(true); // Default to true on error
-          setBadgeLoaded(true);
-        });
-    };
-
-    // Load initial setting
-    loadBadgeSetting();
-
-    // Poll for changes every 1 second
-    const interval = setInterval(loadBadgeSetting, 1000);
-
-    return () => {
-      isMounted = false;
-      clearInterval(interval);
-    };
+    const snap = getWarmupSnapshot();
+    const v = snap.options?.["enableDueSoonBillsBadge"];
+    setEnableBadge(v !== "false");
+    setBadgeLoaded(true);
+    return subscribeWarmup((detail) => {
+      if (detail.key !== "options") return;
+      const val = detail.snapshot.options?.["enableDueSoonBillsBadge"];
+      setEnableBadge(val !== "false");
+      setBadgeLoaded(true);
+    });
   }, []);
 
-  // Load dueSoonThresholdDays setting
+  // Load dueSoonThresholdDays setting (prefer warmup snapshot)
   useEffect(() => {
-    let isMounted = true;
-    
-    const loadThresholdSetting = () => {
-      if (!isMounted) return;
-      
-      window.api.database.options
-        .get("dueSoonBillsThresholdDays")
-        .then((val) => {
-          if (!isMounted) return;
-          setDueSoonThresholdDays(val ? Number(val) : 2); // Default to 2 days
-        })
-        .catch(() => {
-          if (!isMounted) return;
-          setDueSoonThresholdDays(2); // Default to 2 days on error
-        });
-    };
-
-    // Load initial setting
-    loadThresholdSetting();
-
-    // Poll for changes every 1 second
-    const interval = setInterval(loadThresholdSetting, 1000);
-
-    return () => {
-      isMounted = false;
-      clearInterval(interval);
-    };
+    const snap = getWarmupSnapshot();
+    const v = snap.options?.["dueSoonBillsThresholdDays"];
+    setDueSoonThresholdDays(v ? Number(v) : 2);
+    return subscribeWarmup((detail) => {
+      if (detail.key !== "options") return;
+      const val = detail.snapshot.options?.["dueSoonBillsThresholdDays"];
+      setDueSoonThresholdDays(val ? Number(val) : 2);
+    });
   }, []);
 
-  // Load all bills
+  // Load all bills (prefer warmup snapshot)
   useEffect(() => {
-    let isMounted = true;
-    
-    const loadBills = () => {
-      if (!isMounted) return;
-      
-      window.api.database.bills
-        .getAll()
-        .then((data) => {
-          if (!isMounted) return;
-          setBills(data);
-        })
-        .catch((error) => {
-          if (!isMounted) return;
-          console.error("Failed to load bills:", error);
-        });
-    };
-
-    // Load initial bills
-    loadBills();
-
-    // Poll for changes every 5 seconds
-    const interval = setInterval(loadBills, 5000);
-
-    return () => {
-      isMounted = false;
-      clearInterval(interval);
-    };
+    const snap = getWarmupSnapshot();
+    if (snap.bills) setBills(snap.bills);
+    return subscribeWarmup((detail) => {
+      if (detail.key !== "bills") return;
+      if (detail.snapshot.bills) setBills(detail.snapshot.bills);
+    });
   }, []);
 
   // Load seen bills from localStorage

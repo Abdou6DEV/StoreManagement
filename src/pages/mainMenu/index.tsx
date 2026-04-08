@@ -11,7 +11,7 @@ import {
   Calculator,
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useState, useEffect } from "react";
+import React, { type CSSProperties, useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../lib/contexts/authContext";
 import { useLowStock } from "../../lib/contexts/lowStockContext";
@@ -26,6 +26,11 @@ import { useCompletedServices } from "../../lib/contexts/completedServicesContex
 import { useUpdateContext } from "../../lib/contexts/updateContext";
 import { UpdateModal } from "./components/updateModal";
 import "../../lib/i18n";
+
+/** Match cashier favorites / frequently-used stagger (see favoritesBrowser + index.css). */
+const STAGGER_STEP_MS = 52;
+const staggerStyle = (index: number): CSSProperties =>
+  ({ "--stagger-delay": `${index * STAGGER_STEP_MS}ms` }) as CSSProperties;
 
 export default function MainMenu() {
   const { t } = useTranslation();
@@ -181,11 +186,12 @@ export default function MainMenu() {
       />
       <main className="py-4 px-4 md:px-12 ml-20 flex-1 rounded-xl">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
-        {menuItems.map((item) => (
+        {menuItems.map((item, index) => (
           <Link
             to={`/${item.key}`}
-            className="group p-6 border rounded-xl bg-card transition-all duration-300 flex flex-col h-full
+            className="cashier-browser-stagger-in group p-6 border rounded-xl bg-card transition-all duration-300 flex flex-col h-full
                       hover:border-red-400 hover:-translate-y-1 hover:shadow-md relative overflow-hidden"
+            style={staggerStyle(index)}
             key={item.key}
           >
             <div className="flex items-center gap-4 mb-3">

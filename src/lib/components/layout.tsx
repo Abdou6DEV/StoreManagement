@@ -6,6 +6,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(
     localStorage.getItem("sidebarCollapsed") === "true",
   );
+  const [animateMargin, setAnimateMargin] = useState(false);
 
   // Run daily backup once when user reaches main app (after login). Toast only when a backup was actually created.
   useEffect(() => {
@@ -25,6 +26,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       const newCollapsed = event.detail?.collapsed;
       if (newCollapsed !== undefined) {
         setCollapsed(newCollapsed);
+        // Only animate content shift when the user collapses/expands the sidebar.
+        setAnimateMargin(true);
+        window.setTimeout(() => setAnimateMargin(false), 520);
       }
     };
 
@@ -51,7 +55,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       {/* === Main Content === */}
       <main
-        className="transition-[margin-left] duration-500 ease-in-out px-2 md:px-4 py-8 md:py-12 min-h-screen overflow-y-auto"
+        className={`px-2 md:px-4 py-8 md:py-12 min-h-screen overflow-y-auto ${
+          animateMargin ? "transition-[margin-left] duration-500 ease-in-out" : ""
+        }`}
         style={{
           marginLeft:
             location.pathname === "/" ? 0 : collapsed ? "50px" : "190px",

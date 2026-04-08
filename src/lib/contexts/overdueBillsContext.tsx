@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { getWarmupSnapshot, subscribeWarmup } from '../warmup/appWarmup';
 
 interface OverdueBillsContextType {
   unseenOverdueBillsCount: number;
@@ -25,42 +26,28 @@ export const OverdueBillsProvider: React.FC<OverdueBillsProviderProps> = ({ chil
   const [enableBadge, setEnableBadge] = useState(false);
   const [badgeLoaded, setBadgeLoaded] = useState(false);
 
-  // Load badge setting
+  // Load badge setting (prefer warmup snapshot)
   useEffect(() => {
-    const loadBadgeSetting = () => {
-      window.api.database.options
-        .get("enableOverdueBillsBadge")
-        .then((val) => {
-          setEnableBadge(val !== "false"); // Default to true if not set
-          setBadgeLoaded(true);
-        });
-    };
-
-    loadBadgeSetting();
-
-    // Poll for changes every 1 second
-    const interval = setInterval(loadBadgeSetting, 1000);
-
-    return () => clearInterval(interval);
+    const snap = getWarmupSnapshot();
+    const v = snap.options?.["enableOverdueBillsBadge"];
+    setEnableBadge(v !== "false");
+    setBadgeLoaded(true);
+    return subscribeWarmup((detail) => {
+      if (detail.key !== "options") return;
+      const val = detail.snapshot.options?.["enableOverdueBillsBadge"];
+      setEnableBadge(val !== "false");
+      setBadgeLoaded(true);
+    });
   }, []);
 
-  // Load bills
+  // Load bills (prefer warmup snapshot)
   useEffect(() => {
-    const loadBills = async () => {
-      try {
-        const allBills = await window.api.database.bills.getAll();
-        setBills(allBills);
-      } catch (error) {
-        console.error('Failed to load bills:', error);
-      }
-    };
-
-    loadBills();
-
-    // Poll for changes every 5 seconds
-    const interval = setInterval(loadBills, 5000);
-
-    return () => clearInterval(interval);
+    const snap = getWarmupSnapshot();
+    if (snap.bills) setBills(snap.bills);
+    return subscribeWarmup((detail) => {
+      if (detail.key !== "bills") return;
+      if (detail.snapshot.bills) setBills(detail.snapshot.bills);
+    });
   }, []);
 
   // Load seen bills from localStorage on mount

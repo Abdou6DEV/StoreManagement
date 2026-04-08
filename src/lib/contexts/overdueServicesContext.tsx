@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { getWarmupSnapshot, subscribeWarmup } from "../warmup/appWarmup";
 
 interface OverdueServicesContextType {
   unseenOverdueServicesCount: number;
@@ -15,6 +16,7 @@ export const OverdueServicesProvider = ({ children }: { children: ReactNode }) =
   const [isLoading, setIsLoading] = useState(true);
   const [enableBadge, setEnableBadge] = useState(false); // Start as false to prevent flash
   const [badgeLoaded, setBadgeLoaded] = useState(false);
+  const [services, setServices] = useState<any[] | null>(null);
 
   const calculateOverdueServices = async () => {
     try {
@@ -24,7 +26,7 @@ export const OverdueServicesProvider = ({ children }: { children: ReactNode }) =
         return;
       }
 
-      const allServices = await window.api.database.serviceAppointments.getAll();
+      const allServices = services ?? [];
       const today = new Date();
       
       // Get seen overdue services from localStorage
@@ -48,7 +50,7 @@ export const OverdueServicesProvider = ({ children }: { children: ReactNode }) =
 
   const markOverdueServicesAsSeen = () => {
     // Mark all current overdue services as seen
-    window.api.database.serviceAppointments.getAll().then((allServices: any[]) => {
+    const allServices = services ?? [];
       const today = new Date();
       const overdueServices = allServices.filter((service) => {
         if (service.isCompleted) return false;
@@ -59,27 +61,26 @@ export const OverdueServicesProvider = ({ children }: { children: ReactNode }) =
       const overdueIds = overdueServices.map((service) => service.id);
       localStorage.setItem('seenOverdueServices', JSON.stringify(overdueIds));
       setUnseenOverdueServicesCount(0);
-    });
   };
 
-  // Load badge setting and listen for changes
+  // Load badge setting and services list from warmup (no polling here)
   useEffect(() => {
-    const loadBadgeSetting = () => {
-      window.api.database.options
-        .get("enableOverdueServicesBadge")
-        .then((val) => {
-          setEnableBadge(val !== "false"); // Default to true if not set
-          setBadgeLoaded(true); // Mark as loaded
-        });
-    };
+    const snap = getWarmupSnapshot();
+    setServices(snap.services);
+    const v = snap.options?.["enableOverdueServicesBadge"];
+    setEnableBadge(v !== "false");
+    setBadgeLoaded(true);
 
-    // Load initial setting
-    loadBadgeSetting();
-
-    // Poll for changes every 1 second
-    const interval = setInterval(loadBadgeSetting, 1000);
-
-    return () => clearInterval(interval);
+    return subscribeWarmup((detail) => {
+      if (detail.key === "services") {
+        setServices(detail.snapshot.services);
+      }
+      if (detail.key === "options") {
+        const val = detail.snapshot.options?.["enableOverdueServicesBadge"];
+        setEnableBadge(val !== "false");
+        setBadgeLoaded(true);
+      }
+    });
   }, []);
 
   useEffect(() => {
@@ -89,7 +90,7 @@ export const OverdueServicesProvider = ({ children }: { children: ReactNode }) =
     const interval = setInterval(calculateOverdueServices, 60000);
     
     return () => clearInterval(interval);
-  }, [enableBadge, badgeLoaded]);
+  }, [services, enableBadge, badgeLoaded]);
 
   return (
     <OverdueServicesContext.Provider value={{ unseenOverdueServicesCount, markOverdueServicesAsSeen, isLoading, enableBadge, badgeLoaded }}>

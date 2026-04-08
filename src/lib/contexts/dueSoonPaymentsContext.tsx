@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import type { PaymentWithClient } from '../../types';
+import { getWarmupSnapshot, subscribeWarmup } from '../warmup/appWarmup';
 
 interface DueSoonPaymentsContextType {
   unseenDueSoonCreditsCount: number;
@@ -31,99 +32,40 @@ export const DueSoonPaymentsProvider: React.FC<DueSoonPaymentsProviderProps> = (
   const [badgeLoaded, setBadgeLoaded] = useState(false);
   const [dueSoonThresholdDays, setDueSoonThresholdDays] = useState(2);
 
-  // Load enableDueSoonPaymentsBadge setting
+  // Load enableDueSoonPaymentsBadge setting (prefer warmup snapshot)
   useEffect(() => {
-    let isMounted = true;
-    
-    const loadBadgeSetting = () => {
-      if (!isMounted) return;
-      
-      window.api.database.options
-        .get("enableDueSoonPaymentsBadge")
-        .then((val) => {
-          if (!isMounted) return;
-          setEnableBadge(val !== "false"); // Default to true if not set
-          setBadgeLoaded(true);
-        })
-        .catch(() => {
-          if (!isMounted) return;
-          setEnableBadge(true); // Default to true on error
-          setBadgeLoaded(true);
-        });
-    };
-
-    // Load initial setting
-    loadBadgeSetting();
-
-    // Poll for changes every 1 second
-    const interval = setInterval(loadBadgeSetting, 1000);
-
-    return () => {
-      isMounted = false;
-      clearInterval(interval);
-    };
+    const snap = getWarmupSnapshot();
+    const v = snap.options?.["enableDueSoonPaymentsBadge"];
+    setEnableBadge(v !== "false");
+    setBadgeLoaded(true);
+    return subscribeWarmup((detail) => {
+      if (detail.key !== "options") return;
+      const val = detail.snapshot.options?.["enableDueSoonPaymentsBadge"];
+      setEnableBadge(val !== "false");
+      setBadgeLoaded(true);
+    });
   }, []); // Empty dependency array is correct here
 
-  // Load dueSoonThresholdDays setting
+  // Load dueSoonThresholdDays setting (prefer warmup snapshot)
   useEffect(() => {
-    let isMounted = true;
-    
-    const loadThresholdSetting = () => {
-      if (!isMounted) return;
-      
-      window.api.database.options
-        .get("dueSoonThresholdDays")
-        .then((val) => {
-          if (!isMounted) return;
-          setDueSoonThresholdDays(val ? Number(val) : 2); // Default to 2 days
-        })
-        .catch(() => {
-          if (!isMounted) return;
-          setDueSoonThresholdDays(2); // Default to 2 days on error
-        });
-    };
-
-    // Load initial setting
-    loadThresholdSetting();
-
-    // Poll for changes every 1 second
-    const interval = setInterval(loadThresholdSetting, 1000);
-
-    return () => {
-      isMounted = false;
-      clearInterval(interval);
-    };
+    const snap = getWarmupSnapshot();
+    const v = snap.options?.["dueSoonThresholdDays"];
+    setDueSoonThresholdDays(v ? Number(v) : 2);
+    return subscribeWarmup((detail) => {
+      if (detail.key !== "options") return;
+      const val = detail.snapshot.options?.["dueSoonThresholdDays"];
+      setDueSoonThresholdDays(val ? Number(val) : 2);
+    });
   }, []);
 
-  // Load all payments
+  // Load all payments (prefer warmup snapshot)
   useEffect(() => {
-    let isMounted = true;
-    
-    const loadPayments = () => {
-      if (!isMounted) return;
-      
-      window.api.database.payments
-        .getAll()
-        .then((data) => {
-          if (!isMounted) return;
-          setPayments(data);
-        })
-        .catch((error) => {
-          if (!isMounted) return;
-          console.error("Failed to load payments:", error);
-        });
-    };
-
-    // Load initial payments
-    loadPayments();
-
-    // Poll for changes every 5 seconds
-    const interval = setInterval(loadPayments, 5000);
-
-    return () => {
-      isMounted = false;
-      clearInterval(interval);
-    };
+    const snap = getWarmupSnapshot();
+    if (snap.payments) setPayments(snap.payments as PaymentWithClient[]);
+    return subscribeWarmup((detail) => {
+      if (detail.key !== "payments") return;
+      if (detail.snapshot.payments) setPayments(detail.snapshot.payments as PaymentWithClient[]);
+    });
   }, []);
 
   // Load seen payments from localStorage

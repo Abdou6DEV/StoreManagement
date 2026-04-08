@@ -331,6 +331,7 @@ export default function Sidebar() {
     <nav
       data-collapsed={collapsed}
       className={cn(
+        "page-transition-slide-left",
         "fixed top-0 left-0 z-50 flex flex-col bg-card border-r rounded-xl shadow-md transition-[width] duration-500 ease-in-out",
         collapsed ? "w-14" : "w-[200px]",
       )}

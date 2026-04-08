@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { getWarmupSnapshot, subscribeWarmup } from '../warmup/appWarmup';
 
 interface CompletedServicesContextType {
   completedServicesCount: number;
@@ -14,18 +15,21 @@ export function CompletedServicesProvider({ children }: { children: React.ReactN
 
   const refreshCompletedServicesCount = async () => {
     try {
-      // Check if badge is enabled first
-      const badgeEnabled = await window.api.database.options.get("enableCompletedServicesBadge");
-      const isEnabled = badgeEnabled !== "false"; // Default to true if not set
+      // Prefer warmup snapshot; fall back to live call if not ready.
+      const snap = getWarmupSnapshot();
+      const badgeEnabled = snap.options?.["enableCompletedServicesBadge"];
+      const isEnabled = badgeEnabled !== "false";
       setIsBadgeEnabled(isEnabled);
-      
-      if (isEnabled) {
-        // Get completed services that are not sold using the optimized function
-        const completedServices = await window.api.database.serviceAppointments.getCompletedForCashier();
-        setCompletedServicesCount(completedServices.length);
-      } else {
+      if (!isEnabled) {
         setCompletedServicesCount(0);
+        return;
       }
+      if (snap.completedServices) {
+        setCompletedServicesCount(snap.completedServices.length);
+        return;
+      }
+      const completedServices = await window.api.database.serviceAppointments.getCompletedForCashier();
+      setCompletedServicesCount(completedServices.length);
     } catch (error) {
       console.error('Error fetching completed services count:', error);
       setCompletedServicesCount(0);
@@ -34,13 +38,13 @@ export function CompletedServicesProvider({ children }: { children: React.ReactN
 
   useEffect(() => {
     refreshCompletedServicesCount();
-    
-    // Listen for changes to the admin setting
-    const interval = setInterval(() => {
-      refreshCompletedServicesCount();
-    }, 2000); // Check every 2 seconds for setting changes
-    
-    return () => clearInterval(interval);
+
+    // Subscribe to warmup updates instead of polling.
+    return subscribeWarmup((detail) => {
+      if (detail.key === "options" || detail.key === "services") {
+        void refreshCompletedServicesCount();
+      }
+    });
   }, []);
 
   return (

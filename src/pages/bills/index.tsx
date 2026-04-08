@@ -899,7 +899,6 @@ export default function BillsPage() {
                  ) : filteredBills.length > 0 ? (
                    <BillsTotalsFooter
                      filteredBills={filteredBills}
-                     dueSoonThresholdDays={dueSoonThresholdDays}
                    />
                  ) : null}
         </div>

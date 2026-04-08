@@ -4,6 +4,7 @@ import { useTheme } from "../hooks/useTheme";
 import { LOGO_ICON, LOGO_ICON_DARK } from "../assets";
 import PreloadLoading from "./preloadLoading";
 import { routeLoaders } from "../../pages/lazyRoutes";
+import { runAppWarmupOnce, startAppWarmup } from "../warmup/appWarmup";
 
 const LOGO_FADE_DURATION_MS = 500;   // logo fades in up-to-down
 const CONTENT_DELAY_MS = 200;       // delay before other preload content fades in (after logo)
@@ -28,14 +29,21 @@ export default function LoginToPreloadTransition({ onPreloadComplete }: LoginToP
     if (!isPreloading) return;
     let cancelled = false;
     const run = async () => {
-      const total = routeLoaders.length;
+      // Start persistent warmup/polling early (idempotent).
+      startAppWarmup();
+
+      const steps = [...routeLoaders.map((fn) => () => fn()), () => runAppWarmupOnce()];
+      const total = steps.length;
       try {
+        // Let the preload UI paint before heavy work begins.
+        await new Promise<void>((r) => requestAnimationFrame(() => r()));
+
         for (let i = 0; i < total; i++) {
           if (cancelled) break;
           try {
-            await routeLoaders[i]();
+            await steps[i]();
           } catch (error) {
-            console.error(`Failed to preload route ${i}:`, error);
+            console.error(`Failed preload step ${i}:`, error);
           }
           if (!cancelled) setPreloadProgress(Math.round(((i + 1) / total) * 100));
         }

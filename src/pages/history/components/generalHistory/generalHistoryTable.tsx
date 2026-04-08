@@ -96,8 +96,8 @@ export default function GeneralHistoryTable({
   };
 
   const pageFooterStats = useMemo(() => {
-    if (!showTotalsRow || data.length === 0) return null;
-    const totals = data.reduce(
+    if (!showTotalsRow || allData.length === 0) return null;
+    const totals = allData.reduce(
       (acc, item) => ({
         count: acc.count + (item.count || 0),
         revenue: acc.revenue + (item.revenue || 0),
@@ -110,7 +110,7 @@ export default function GeneralHistoryTable({
     const eps = 1e-6;
     let aboveAverageCount = 0;
     let belowAverageCount = 0;
-    for (const item of data) {
+    for (const item of allData) {
       const p = getProfitValue(item);
       if (p - averageProfit > eps) aboveAverageCount += 1;
       else if (averageProfit - p > eps) belowAverageCount += 1;
@@ -120,7 +120,7 @@ export default function GeneralHistoryTable({
       aboveAverageCount,
       belowAverageCount,
     };
-  }, [data, averageProfit, netProfitEnabled, showTotalsRow]);
+  }, [allData, averageProfit, netProfitEnabled, showTotalsRow]);
 
   return (
     <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
@@ -227,9 +227,6 @@ export default function GeneralHistoryTable({
                   <div className="flex flex-col gap-1">
                     <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide leading-tight">
                       {t("history.totalsRowLabel")}
-                    </span>
-                    <span className="text-xs text-muted-foreground/80 leading-tight">
-                      {t("history.totalRowPageScope")}
                     </span>
                   </div>
                 </td>

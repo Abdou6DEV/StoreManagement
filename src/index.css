@@ -249,6 +249,15 @@ input[type="number"] {
     transform: translateY(0);
   }
 }
+
+/* Navigation header: fade + slide down (top -> bottom) */
+@keyframes nav-fade-down {
+  from { opacity: 0; transform: translateY(-16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.nav-transition-enter {
+  animation: nav-fade-down 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+}
 .animate-fade-in {
   animation: fade-in 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -284,6 +293,12 @@ input[type="number"] {
   }
 
   .cashier-browser-stagger-in {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  .nav-transition-enter {
     animation: none;
     opacity: 1;
     transform: none;

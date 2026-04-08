@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useStock } from './stockContext';
+import { getWarmupSnapshot, subscribeWarmup } from '../warmup/appWarmup';
 
 interface LowStockContextType {
   unseenLowStockCount: number;
@@ -26,30 +27,18 @@ export const LowStockProvider: React.FC<LowStockProviderProps> = ({ children }) 
   const [lowStockThreshold, setLowStockThreshold] = useState<number>(5);
   const [seenLowStockProducts, setSeenLowStockProducts] = useState<Set<string>>(new Set());
 
-  // Load low stock threshold from options and listen for changes
+  // Load low stock threshold from warmup (avoid polling here)
   useEffect(() => {
-    const loadThreshold = () => {
-      window.api.database.options
-        .get("lowStockThreshold")
-        .then((val) => {
-          const newThreshold = val ? Number(val) : 5;
-          setLowStockThreshold(prev => {
-            // Only update if threshold actually changed
-            if (prev !== newThreshold) {
-              return newThreshold;
-            }
-            return prev;
-          });
-        });
-    };
-
-    // Load initial threshold
-    loadThreshold();
-
-    // Listen for threshold changes (poll every 1 second for responsiveness)
-    const interval = setInterval(loadThreshold, 1000);
-
-    return () => clearInterval(interval);
+    const snap = getWarmupSnapshot();
+    const v = snap.options?.["lowStockThreshold"];
+    const initial = v ? Number(v) : 5;
+    setLowStockThreshold(initial);
+    return subscribeWarmup((detail) => {
+      if (detail.key !== "options") return;
+      const val = detail.snapshot.options?.["lowStockThreshold"];
+      const next = val ? Number(val) : 5;
+      setLowStockThreshold((prev) => (prev !== next ? next : prev));
+    });
   }, []);
 
   // Load seen products from localStorage on mount

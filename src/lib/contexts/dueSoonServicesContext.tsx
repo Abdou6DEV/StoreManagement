@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { getWarmupSnapshot, subscribeWarmup } from "../warmup/appWarmup";
 
 interface DueSoonServicesContextType {
   unseenDueSoonServicesCount: number;
@@ -17,6 +18,7 @@ export const DueSoonServicesProvider = ({ children }: { children: ReactNode }) =
   const [isLoading, setIsLoading] = useState(true);
   const [enableBadge, setEnableBadge] = useState(false); // Start as false to prevent flash
   const [badgeLoaded, setBadgeLoaded] = useState(false);
+  const [services, setServices] = useState<any[] | null>(null);
 
   const calculateDueSoonServices = async () => {
     try {
@@ -26,7 +28,7 @@ export const DueSoonServicesProvider = ({ children }: { children: ReactNode }) =
         return;
       }
 
-      const allServices = await window.api.database.serviceAppointments.getAll();
+      const allServices = services ?? [];
       const today = new Date();
       const dueSoonDate = new Date(today.getTime() + dueSoonThresholdDays * 24 * 60 * 60 * 1000);
       
@@ -51,7 +53,7 @@ export const DueSoonServicesProvider = ({ children }: { children: ReactNode }) =
 
   const markDueSoonServicesAsSeen = () => {
     // Mark all current due soon services as seen
-    window.api.database.serviceAppointments.getAll().then((allServices: any[]) => {
+    const allServices = services ?? [];
       const today = new Date();
       const dueSoonDate = new Date(today.getTime() + dueSoonThresholdDays * 24 * 60 * 60 * 1000);
       
@@ -64,45 +66,30 @@ export const DueSoonServicesProvider = ({ children }: { children: ReactNode }) =
       const dueSoonIds = dueSoonServices.map((service) => service.id);
       localStorage.setItem('seenDueSoonServices', JSON.stringify(dueSoonIds));
       setUnseenDueSoonServicesCount(0);
-    });
   };
 
-  // Load badge setting and listen for changes
+  // Load badge setting, threshold, and services list from warmup (no polling here)
   useEffect(() => {
-    const loadBadgeSetting = () => {
-      window.api.database.options
-        .get("enableDueSoonServicesBadge")
-        .then((val) => {
-          setEnableBadge(val !== "false"); // Default to true if not set
-          setBadgeLoaded(true); // Mark as loaded
-        });
-    };
+    const snap = getWarmupSnapshot();
+    setServices(snap.services);
+    const badge = snap.options?.["enableDueSoonServicesBadge"];
+    setEnableBadge(badge !== "false");
+    setBadgeLoaded(true);
+    const thresh = snap.options?.["dueSoonServicesThresholdDays"];
+    setDueSoonThresholdDays(thresh ? Number(thresh) : 2);
 
-    // Load initial setting
-    loadBadgeSetting();
-
-    // Poll for changes every 1 second
-    const interval = setInterval(loadBadgeSetting, 1000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
-    const loadThresholdSetting = () => {
-      window.api.database.options.get("dueSoonServicesThresholdDays").then((value) => {
-        if (value) {
-          setDueSoonThresholdDays(Number(value));
-        }
-      });
-    };
-
-    // Load initial setting
-    loadThresholdSetting();
-
-    // Poll for changes every 1 second
-    const interval = setInterval(loadThresholdSetting, 1000);
-
-    return () => clearInterval(interval);
+    return subscribeWarmup((detail) => {
+      if (detail.key === "services") {
+        setServices(detail.snapshot.services);
+      }
+      if (detail.key === "options") {
+        const b = detail.snapshot.options?.["enableDueSoonServicesBadge"];
+        setEnableBadge(b !== "false");
+        setBadgeLoaded(true);
+        const t = detail.snapshot.options?.["dueSoonServicesThresholdDays"];
+        setDueSoonThresholdDays(t ? Number(t) : 2);
+      }
+    });
   }, []);
 
   useEffect(() => {
@@ -112,7 +99,7 @@ export const DueSoonServicesProvider = ({ children }: { children: ReactNode }) =
     const interval = setInterval(calculateDueSoonServices, 60000);
     
     return () => clearInterval(interval);
-  }, [dueSoonThresholdDays, enableBadge, badgeLoaded]);
+  }, [services, dueSoonThresholdDays, enableBadge, badgeLoaded]);
 
   return (
     <DueSoonServicesContext.Provider value={{ unseenDueSoonServicesCount, markDueSoonServicesAsSeen, dueSoonThresholdDays, isLoading, enableBadge, badgeLoaded }}>
