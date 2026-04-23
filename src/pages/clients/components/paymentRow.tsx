@@ -9,6 +9,8 @@ import PaymentActions from "./paymentActions";
 import { Tooltip } from "../../../lib/components/tooltip";
 import EditPaymentModal from "./editPaymentModal";
 import { useAuth } from "../../../lib/contexts/authContext";
+import { Badge } from "../../../lib/components/badge";
+import { useToast } from "../../../lib/contexts/toastContext";
 
 interface PaymentRowProps {
   payment: PaymentWithClient;
@@ -51,9 +53,12 @@ const PaymentRow: React.FC<PaymentRowProps> = ({
 }) => {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
+  const { showToast } = useToast();
   const isRTL = i18n.language === "ar";
   const [showEditModal, setShowEditModal] = useState(false);
   const [isCreditPaymentSale, setIsCreditPaymentSale] = useState(false);
+  const [editingReason, setEditingReason] = useState(false);
+  const [reasonDraft, setReasonDraft] = useState("");
 
   const canCancelVersement = payment.type === "VERSEMENT" && !!payment.pendingSaleItems && !payment.paidDate;
 
@@ -69,6 +74,32 @@ const PaymentRow: React.FC<PaymentRowProps> = ({
 
     checkIfStandaloneCreditPayment();
   }, [payment.saleId, payment.type]);
+
+  useEffect(() => {
+    if (!editingReason) return;
+    setReasonDraft(payment.reason ?? "");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editingReason]);
+
+  const saveReasonIfChanged = async (next: string) => {
+    const prev = (payment.reason ?? "").trim();
+    const normalized = next.trim();
+    if (normalized === prev) {
+      setEditingReason(false);
+      return;
+    }
+    try {
+      await window.api.database.payments.updateReason(
+        payment.id,
+        normalized ? normalized : null,
+      );
+      showToast(t("clients.reasonSaved", "Reason saved"), "success");
+      setEditingReason(false);
+      onRefreshPayments?.();
+    } catch {
+      showToast(t("clients.reasonSaveError", "Failed to save reason"), "error");
+    }
+  };
 
   const handleEditPayment = async (newAmount: number) => {
     try {
@@ -91,7 +122,7 @@ const PaymentRow: React.FC<PaymentRowProps> = ({
   };
 
   return (
-    <tr className={`hover:bg-muted/40 transition ${
+    <tr className={`group hover:bg-muted/40 transition ${
       isNewlyOverdue
         ? "bg-red-50 dark:bg-red-950/20 border-l-4 border-l-red-500"
         : isNewlyDueSoon
@@ -110,6 +141,61 @@ const PaymentRow: React.FC<PaymentRowProps> = ({
             )}
           </div>
         </div>
+      </td>
+      <td className={`px-4 py-2 ${isRTL ? "text-right" : "text-left"}`}>
+        {payment.type !== "CREDIT" ? (
+          "—"
+        ) : payment.saleId ? (
+          <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 text-xs hover:bg-blue-100 dark:hover:bg-blue-900/30 w-fit">
+            {t("clients.creditReasonSale", "Sale")}
+          </Badge>
+        ) : editingReason ? (
+          <div className={`flex items-center gap-2 ${isRTL ? "flex-row-reverse" : ""}`}>
+            <Input
+              value={reasonDraft}
+              onChange={(e) => setReasonDraft(e.target.value)}
+              className="h-8 px-2 text-[0.9375rem] font-semibold w-[240px]"
+              autoFocus
+            />
+            <Button
+              size="sm"
+              className="h-8 px-2"
+              onClick={() => void saveReasonIfChanged(reasonDraft)}
+            >
+              <Save className="w-3 h-3" />
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 px-2"
+              onClick={() => setEditingReason(false)}
+            >
+              <X className="w-3 h-3" />
+            </Button>
+          </div>
+        ) : (
+          <div className={`flex items-center gap-2 ${isRTL ? "flex-row-reverse" : ""}`}>
+            {(payment.reason ?? "").trim() ? (
+              <span className="truncate max-w-[240px] font-semibold text-[0.9375rem] text-foreground">
+                {payment.reason}
+              </span>
+            ) : (
+              <span className="truncate max-w-[240px] font-semibold text-muted-foreground">
+                {t("clients.creditReasonNone", "No reason")}
+              </span>
+            )}
+            <Tooltip content={t("clients.editReasonTooltip", "Edit reason")}>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-6 px-1 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-200"
+                onClick={() => setEditingReason(true)}
+              >
+                <Edit className="w-3 h-3" />
+              </Button>
+            </Tooltip>
+          </div>
+        )}
       </td>
       <td className="px-4 py-2">
         {editingPayment === payment.id ? (
@@ -164,7 +250,7 @@ const PaymentRow: React.FC<PaymentRowProps> = ({
                 size="sm"
                 variant="outline"
                 onClick={() => setShowEditModal(true)}
-                className="h-6 px-1"
+                className="h-6 px-1 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-200"
               >
                 <Edit className="w-3 h-3" />
               </Button>

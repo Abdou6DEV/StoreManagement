@@ -144,6 +144,7 @@ export interface PaymentWithClient extends Omit<Payment, 'pendingSaleItems' | 'd
   remainingAmount?: number;
   pendingSaleItems?: string | null;
   discount?: number | null;
+  reason?: string | null;
 }
 
 export interface StockContextType {

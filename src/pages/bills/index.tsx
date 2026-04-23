@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { Button } from "../../lib/components/button";
 import { FileText, ChevronDown, Check, CreditCard, DollarSign, Search } from "lucide-react";
@@ -55,6 +55,7 @@ export default function BillsPage() {
   const { unseenOverdueBillsCount, markOverdueBillsAsSeen } = useOverdueBills();
   const { unseenDueSoonBillsCount, markDueSoonBillsAsSeen, dueSoonThresholdDays } = useDueSoonBills();
   const notificationAction = (location.state as { notificationAction?: string } | null)?.notificationAction;
+  const hasLoadedOnceRef = useRef(false);
   const [openPanel, setOpenPanel] = useState<"add" | null>(null);
   const [showAllPayments, setShowAllPayments] = useState(false);
   const [allPayments, setAllPayments] = useState<{
@@ -107,13 +108,14 @@ export default function BillsPage() {
 
   const loadBills = async () => {
     try {
-      setLoading(true);
+      if (!hasLoadedOnceRef.current) setLoading(true);
       const billsData = await window.api.database.bills.getAll();
       setAllBills(billsData);
     } catch (error) {
       console.error("Error loading bills:", error);
       showToast(t("bills.failedToLoadBills", "Failed to load bills"), "error");
     } finally {
+      hasLoadedOnceRef.current = true;
       setLoading(false);
     }
   };
@@ -401,15 +403,6 @@ export default function BillsPage() {
   const handleBackToBills = () => {
     setShowAllPayments(false);
   };
-
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
-      </div>
-    );
-  }
 
   return (
     <main className="px-6 md:px-12 flex-1 space-y-4">
@@ -869,6 +862,7 @@ export default function BillsPage() {
                    <>
                    <BillsTable
                      bills={paginatedBills}
+                     loading={loading}
                      onEdit={handleEdit}
                      onDelete={handleDelete}
                      deleteLoading={deleteLoading}

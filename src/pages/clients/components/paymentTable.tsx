@@ -57,6 +57,9 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
               {t("clients.clientName", "Client")}
             </th>
             <th className={`px-4 py-3 ${isRTL ? "text-right" : "text-left"}`}>
+              {t("clients.creditReason", "Reason")}
+            </th>
+            <th className={`px-4 py-3 ${isRTL ? "text-right" : "text-left"}`}>
               {t("clients.paymentAmount", "Amount")}
             </th>
             <th className={`px-4 py-3 ${isRTL ? "text-right" : "text-left"}`}>

@@ -41,6 +41,7 @@ export default function ServicesPage() {
   const { unseenDueSoonServicesCount, markDueSoonServicesAsSeen, dueSoonThresholdDays } = useDueSoonServices();
   const notificationAction = (location.state as { notificationAction?: string } | null)?.notificationAction;
   const appliedInitialSearchRef = useRef(false);
+  const hasLoadedOnceRef = useRef(false);
   const [openPanel, setOpenPanel] = useState<"add" | null>(null);
   const [showServiceTypes, setShowServiceTypes] = useState(false);
   const [services, setServices] = useState<ServiceAppointment[]>([]);
@@ -138,7 +139,9 @@ export default function ServicesPage() {
 
   const loadServices = async () => {
     try {
-      setLoading(true);
+      // Only show the full-page "Loading services..." state on first entry to this page.
+      // Subsequent table actions (pagination, filters, profit toggle) should not flash the initial loader.
+      if (!hasLoadedOnceRef.current) setLoading(true);
       const allServices = await window.api.database.serviceAppointments.getAll();
       
       // Apply filters
@@ -334,6 +337,7 @@ export default function ServicesPage() {
     } catch (error) {
       console.error("Error loading services:", error);
     } finally {
+      hasLoadedOnceRef.current = true;
       setLoading(false);
     }
   };
@@ -480,7 +484,11 @@ export default function ServicesPage() {
 
   const handleFilterChange = (key: string, value: string | boolean) => {
     setFilters(prev => ({ ...prev, [key]: value }));
-    setCurrentPage(1); // Reset to first page when filtering
+    // Reset pagination only when the filter changes the dataset.
+    // UI-only toggles like profit visibility should not kick the user back to page 1.
+    if (key !== "hideProfit") {
+      setCurrentPage(1);
+    }
   };
 
   const handleViewServiceTypes = () => {

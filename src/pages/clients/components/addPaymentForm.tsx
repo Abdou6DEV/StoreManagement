@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "../../../lib/components/button";
 import { Loader2, CreditCard, ChevronDown, ChevronUp } from "lucide-react";
@@ -17,6 +17,7 @@ import {
 } from "../../../lib/components/popover";
 import { DatePicker } from "../../../lib/components/datePicker";
 import rendererLogger from "../../../lib/logger/rendererLogger";
+import { cn } from "../../../lib/utils";
 
 interface AddPaymentFormProps {
   openPanel: "add" | "addPayment" | "addSupplier" | null;
@@ -35,6 +36,7 @@ const initialForm = {
   givenAmount: "",
   dueDate: "",
   type: "CREDIT" as "CREDIT" | "VERSEMENT",
+  reason: "",
 };
 
 export default function AddPaymentForm({
@@ -56,9 +58,70 @@ export default function AddPaymentForm({
   const [clientSearch, setClientSearch] = useState("");
   const [clientPopoverOpen, setClientPopoverOpen] = useState(false);
   const [typePopoverOpen, setTypePopoverOpen] = useState(false);
+  const [reasonSuggestions, setReasonSuggestions] = useState<string[]>([]);
+  const [showReasonDropdown, setShowReasonDropdown] = useState(false);
+  const [filteredReasons, setFilteredReasons] = useState<string[]>([]);
+  const [selectedReasonIndex, setSelectedReasonIndex] = useState(-1);
+
+  useEffect(() => {
+    if (openPanel !== "addPayment") return;
+    if (form.type !== "CREDIT") return;
+    window.api.database.payments
+      .getReasonSuggestions()
+      .then(setReasonSuggestions)
+      .catch(() => setReasonSuggestions([]));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openPanel, form.type]);
+
+  const handleReasonChange = (value: string) => {
+    handleFormChange("reason", value);
+    const q = value.toLowerCase().trim();
+    const filtered = !q
+      ? reasonSuggestions
+      : reasonSuggestions.filter((r) => r.toLowerCase().includes(q));
+    setFilteredReasons(filtered);
+    setShowReasonDropdown(filtered.length > 0);
+    setSelectedReasonIndex(-1);
+  };
+
+  const handleReasonKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    switch (e.key) {
+      case "ArrowDown":
+        if (!showReasonDropdown || filteredReasons.length === 0) return;
+        e.preventDefault();
+        setSelectedReasonIndex((prev) =>
+          prev < filteredReasons.length - 1 ? prev + 1 : prev,
+        );
+        break;
+      case "ArrowUp":
+        if (!showReasonDropdown || filteredReasons.length === 0) return;
+        e.preventDefault();
+        setSelectedReasonIndex((prev) => (prev > 0 ? prev - 1 : prev));
+        break;
+      case "Enter":
+        if (showReasonDropdown && selectedReasonIndex >= 0) {
+          e.preventDefault();
+          const picked = filteredReasons[selectedReasonIndex];
+          handleFormChange("reason", picked);
+          setShowReasonDropdown(false);
+          setSelectedReasonIndex(-1);
+        } else {
+          // Move forward in the form when user presses Enter with no selection.
+          handleKeyDown(e as unknown as React.KeyboardEvent<HTMLInputElement>, "reason");
+        }
+        break;
+      case "Escape":
+        if (!showReasonDropdown) return;
+        e.preventDefault();
+        setShowReasonDropdown(false);
+        setSelectedReasonIndex(-1);
+        break;
+    }
+  };
   
   // Refs for keyboard navigation
   const amountRef = useRef<HTMLInputElement>(null);
+  const reasonRef = useRef<HTMLInputElement>(null);
   const dueDateRef = useRef<HTMLInputElement>(null);
   const submitButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -144,6 +207,13 @@ export default function AddPaymentForm({
       
       switch (currentField) {
         case "amount":
+          if (form.type === "CREDIT") {
+            reasonRef.current?.focus();
+          } else {
+            dueDateRef.current?.focus();
+          }
+          break;
+        case "reason":
           dueDateRef.current?.focus();
           break;
         case "dueDate":
@@ -184,12 +254,20 @@ export default function AddPaymentForm({
     setLoading(true);
     try {
       if (form.type === "CREDIT") {
+        if (!form.reason.trim()) {
+          showToast(
+            t("clients.creditReasonRequired", "Please enter a reason for this credit"),
+            "error",
+          );
+          return;
+        }
         // For CREDIT: Create a standalone payment without a sale
         // The amount typed is what we owe the client (remaining amount)
         await window.api.database.payments.create({
           clientId: form.clientId,
           givenAmount: 0, // Client paid 0, we owe them the full amount
           creditAmount: Number(form.givenAmount), // Store the credit amount
+          reason: form.reason.trim(),
           dueDate: new Date(form.dueDate),
           type: "CREDIT",
         });
@@ -395,6 +473,56 @@ export default function AddPaymentForm({
               />
             </Legend>
 
+            {/* Reason (standalone credit only) */}
+            {form.type === "CREDIT" && (
+              <Legend>
+                <label>{t("clients.creditReason", "Reason")}</label>
+                <div className="relative">
+                  <input
+                    ref={reasonRef}
+                    type="text"
+                    placeholder={t("clients.creditReasonPlaceholder", "Why is this credit created?")}
+                    value={form.reason}
+                    onChange={(e) => handleReasonChange(e.target.value)}
+                    onKeyDown={handleReasonKeyDown}
+                    onFocus={() => {
+                      // Show suggestions immediately on focus (like AddStockForm seller field).
+                      setFilteredReasons(reasonSuggestions);
+                      setShowReasonDropdown(reasonSuggestions.length > 0);
+                      setSelectedReasonIndex(-1);
+                    }}
+                    onBlur={() => window.setTimeout(() => setShowReasonDropdown(false), 120)}
+                    className="w-full px-4 h-10 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-red-500/50 focus:border-red-500 transition-all"
+                    required
+                  />
+
+                  {showReasonDropdown && filteredReasons.length > 0 && (
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-lg shadow-lg z-50 max-h-56 overflow-y-auto">
+                      {filteredReasons.map((r, index) => (
+                        <div
+                          key={`${r}-${index}`}
+                          className={cn(
+                            "px-4 py-2 cursor-pointer",
+                            index === selectedReasonIndex
+                              ? "bg-accent text-accent-foreground"
+                              : "hover:bg-accent/50",
+                          )}
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => {
+                            handleFormChange("reason", r);
+                            setShowReasonDropdown(false);
+                            setSelectedReasonIndex(-1);
+                          }}
+                        >
+                          <span className="text-sm font-medium">{r}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </Legend>
+            )}
+
             {/* Due Date */}
             <Legend>
               <label>{t("clients.dueDate", "Due Date")}</label>
@@ -419,7 +547,11 @@ export default function AddPaymentForm({
               ref={submitButtonRef}
               type="submit"
               disabled={
-                loading || !form.clientId || !form.givenAmount || !form.dueDate
+                loading ||
+                !form.clientId ||
+                !form.givenAmount ||
+                !form.dueDate ||
+                (form.type === "CREDIT" && !form.reason.trim())
               }
               className="bg-red-600 hover:bg-red-700 text-white h-10"
             >

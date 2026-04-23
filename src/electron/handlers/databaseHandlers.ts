@@ -49,6 +49,8 @@ import {
   getAllPaymentsWithClientInfo,
   updatePaymentPaidAt,
   updatePaymentAmount,
+  updatePaymentReason,
+  getPaymentReasonSuggestions,
   getPaymentsBySpecificPeriod,
   cancelVersementPayment,
 } from "../../lib/database/payments";
@@ -416,6 +418,17 @@ ipcMain.handle("db:products:deleteMultipleProducts", async (_, productIds: strin
       return await updatePaymentAmount(paymentId, givenAmount);
     }
   );
+
+  ipcMain.handle(
+    "db:payments:updateReason",
+    async (_event, { paymentId, reason }) => {
+      return await updatePaymentReason(paymentId, reason);
+    }
+  );
+
+  ipcMain.handle("db:payments:getReasonSuggestions", async () => {
+    return await getPaymentReasonSuggestions();
+  });
 
   ipcMain.handle(
     "db:payments:getBySpecificPeriod",

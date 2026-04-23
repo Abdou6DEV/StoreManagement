@@ -129,6 +129,7 @@ export const databaseAPI = {
       clientId: string;
       givenAmount: number;
       creditAmount?: number;
+      reason?: string;
       dueDate: Date;
       paidDate?: Date;
       type: "CREDIT" | "VERSEMENT";
@@ -161,6 +162,13 @@ export const databaseAPI = {
         paymentId,
         givenAmount,
       }),
+    updateReason: (paymentId: string, reason: string | null) =>
+      ipcRenderer.invoke("db:payments:updateReason", {
+        paymentId,
+        reason,
+      }),
+    getReasonSuggestions: () =>
+      ipcRenderer.invoke("db:payments:getReasonSuggestions"),
     cancelVersement: (paymentId: string) =>
       ipcRenderer.invoke("db:payments:cancelVersement", paymentId),
   },

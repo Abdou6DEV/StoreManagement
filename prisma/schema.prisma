@@ -195,6 +195,7 @@ model Payment {
   clientId         String
   givenAmount      Int
   creditAmount     Int? // For standalone credits: total amount we owe the client
+  reason           String? // For standalone credits: why this credit exists
   dueDate          DateTime
   paidDate         DateTime?
   type             PaymentType

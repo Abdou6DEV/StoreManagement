@@ -124,9 +124,13 @@ export type DatabaseAPI = {
       saleId?: string;
       clientId: string;
       givenAmount: number;
+      creditAmount?: number;
+      reason?: string;
       dueDate: Date;
       paidDate?: Date;
       type: "CREDIT" | "VERSEMENT";
+      pendingSaleItems?: string;
+      discount?: number;
     }) => Promise<Payment>;
     getByClient: (clientId: string) => Promise<Payment[]>;
     getAll: () => Promise<(Payment & { client: Client; sale: Sale })[]>;
@@ -135,6 +139,8 @@ export type DatabaseAPI = {
     >;
     markAsPaid: (paymentId: string, paidDate: Date) => Promise<void>;
     updateAmount: (paymentId: string, givenAmount: number) => Promise<void>;
+    updateReason: (paymentId: string, reason: string | null) => Promise<void>;
+    getReasonSuggestions: () => Promise<string[]>;
     cancelVersement: (paymentId: string) => Promise<{ success: boolean }>;
   };
   sellers: {

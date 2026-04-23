@@ -6,6 +6,7 @@ export async function createPayment(data: {
   clientId: string;
   givenAmount: number;
   creditAmount?: number;
+  reason?: string;
   dueDate: Date;
   paidDate?: Date;
   type: "CREDIT" | "VERSEMENT";
@@ -18,6 +19,7 @@ export async function createPayment(data: {
       clientId: data.clientId,
       givenAmount: data.givenAmount,
       creditAmount: data.creditAmount,
+      reason: data.reason,
       dueDate: data.dueDate,
       paidDate: data.paidDate,
       type: data.type,
@@ -43,6 +45,7 @@ export async function getPaymentsByClientWithInfo(clientId: string) {
       clientId: true,
       givenAmount: true,
       creditAmount: true,
+      reason: true,
       dueDate: true,
       paidDate: true,
       type: true,
@@ -126,6 +129,7 @@ export async function getAllPaymentsWithClientInfo() {
       clientId: true,
       givenAmount: true,
       creditAmount: true,
+      reason: true,
       dueDate: true,
       paidDate: true,
       type: true,
@@ -307,6 +311,33 @@ export async function updatePaymentAmount(
     where: { id: paymentId },
     data: { givenAmount },
   });
+}
+
+export async function updatePaymentReason(paymentId: string, reason: string | null) {
+  const normalized =
+    reason != null && reason.trim() ? reason.trim().slice(0, 250) : null;
+  return await prisma.payment.update({
+    where: { id: paymentId },
+    data: { reason: normalized } as any,
+  });
+}
+
+export async function getPaymentReasonSuggestions() {
+  const rows = await prisma.payment.findMany({
+    where: {
+      type: "CREDIT",
+      saleId: null,
+      reason: { not: null },
+    } as any,
+    distinct: ["reason"],
+    select: { reason: true },
+    orderBy: { updatedAt: "desc" },
+    take: 50,
+  } as any);
+
+  return rows
+    .map((r: any) => (typeof r.reason === "string" ? r.reason.trim() : ""))
+    .filter(Boolean);
 }
 
 export async function getPaymentsByDateRange(startDate: Date, endDate: Date) {

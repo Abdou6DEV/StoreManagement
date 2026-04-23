@@ -130,6 +130,7 @@ async function createTablesManually(client: any) {
       "clientId" TEXT NOT NULL,
       "givenAmount" INTEGER NOT NULL,
       "creditAmount" INTEGER,
+      "reason" TEXT,
       "dueDate" DATETIME NOT NULL,
       "paidDate" DATETIME,
       "type" TEXT NOT NULL,
@@ -315,6 +316,27 @@ async function ensureCanAccessZakatColumn(client: import("@prisma/client").Prism
   }
 }
 
+// Ensure reason column exists in Payment (for existing DBs after update)
+async function ensurePaymentReasonColumn(client: import("@prisma/client").PrismaClient) {
+  try {
+    const tableInfo = await client.$queryRawUnsafe<Array<Record<string, unknown>>>(
+      'PRAGMA table_info("Payment")'
+    );
+    if (!Array.isArray(tableInfo) || tableInfo.length === 0) return; // Table doesn't exist yet
+    const hasColumn = tableInfo.some(
+      (row) => String(row.name ?? row.NAME ?? "").toLowerCase() === "reason"
+    );
+    if (hasColumn) return;
+    await client.$executeRawUnsafe(`
+      ALTER TABLE "Payment" ADD COLUMN "reason" TEXT
+    `);
+    logger.info("Added reason column to Payment", "Database");
+  } catch (err) {
+    console.error("❌ ensurePaymentReasonColumn:", err);
+    logger.error("Failed to add reason column to Payment", "Database", err);
+  }
+}
+
 /** Delete payments whose client no longer exists (e.g. client was deleted without cascade). Runs on app start. */
 async function repairOrphanPayments(
   prisma: import("@prisma/client").PrismaClient
@@ -445,6 +467,7 @@ async function initializeDatabase() {
 
     // Run canAccessZakat migration first so user.create never fails
     await ensureCanAccessZakatColumn(prismaClientInstance);
+    await ensurePaymentReasonColumn(prismaClientInstance);
     await ensureActivityLogTable(prismaClientInstance);
     // Remove orphan records (parent was deleted without cascade) so queries don't fail
     await repairOrphanPayments(prismaClientInstance);
