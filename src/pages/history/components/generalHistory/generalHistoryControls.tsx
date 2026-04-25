@@ -199,14 +199,14 @@ export default function GeneralHistoryControls({
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
-                  className="px-3 py-1.5 min-w-[70px]"
+                  className="px-3 py-1.5 w-[70px] justify-between"
                   aria-label={t(
                     "stock.selectItemsPerPage",
                     "Select items per page",
                   )}
                 >
                   {itemsPerPage}
-                  <ChevronDown className="ml-2 w-4 h-4" />
+                  <ChevronDown className="w-4 h-4" />
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-[120px] p-0 z-50">

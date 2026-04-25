@@ -79,24 +79,73 @@ export default function EditServiceModal({
   const [showNoReceiptPrinterModal, setShowNoReceiptPrinterModal] = useState(false);
   const [showServiceLabelModal, setShowServiceLabelModal] = useState(false);
   const initialIsPaidRef = useRef<boolean | null>(null);
+  const initialSnapshotRef = useRef<{
+    name: string;
+    serviceType: string;
+    description: string;
+    costPrice: number;
+    servicePrice: number;
+    dueDate: string;
+    notes: string;
+    isPaid: boolean;
+  } | null>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   const origDueStr = service?.dueDate
     ? new Date(service.dueDate).toISOString().split("T")[0]
     : "";
 
+  const normalizeSnapshot = (snapshot: {
+    name: string;
+    serviceType: string;
+    description: string;
+    costPrice: string;
+    servicePrice: string;
+    dueDate: string;
+    notes: string;
+    isPaid: boolean;
+  }) => ({
+    name: snapshot.name,
+    serviceType: snapshot.serviceType,
+    description: snapshot.description,
+    costPrice: Number.parseFloat(snapshot.costPrice) || 0,
+    servicePrice: Number.parseFloat(snapshot.servicePrice) || 0,
+    dueDate: snapshot.dueDate,
+    notes: snapshot.notes,
+    isPaid: snapshot.isPaid,
+  });
+
   const hasUnsavedChanges =
     !!service &&
-    (form.name !== (service.name || "") ||
-      form.serviceType !== (service.serviceType || "") ||
-      form.description !== (service.description || "") ||
-      (parseFloat(form.costPrice) || 0) !== (service.costPrice || 0) ||
-      (parseFloat(form.servicePrice) || 0) !== (service.servicePrice || 0) ||
-      form.dueDate !== origDueStr ||
-      form.notes !== (service.notes || "") ||
-      isPaid !== (initialIsPaidRef.current ?? false));
+    isInitialized &&
+    !!initialSnapshotRef.current &&
+    (() => {
+      const current = normalizeSnapshot({
+        name: form.name,
+        serviceType: form.serviceType,
+        description: form.description,
+        costPrice: form.costPrice,
+        servicePrice: form.servicePrice,
+        dueDate: form.dueDate,
+        notes: form.notes,
+        isPaid,
+      });
+      const initial = initialSnapshotRef.current;
+      return (
+        current.name !== initial.name ||
+        current.serviceType !== initial.serviceType ||
+        current.description !== initial.description ||
+        current.costPrice !== initial.costPrice ||
+        current.servicePrice !== initial.servicePrice ||
+        current.dueDate !== initial.dueDate ||
+        current.notes !== initial.notes ||
+        current.isPaid !== initial.isPaid
+      );
+    })();
 
   useEffect(() => {
     if (service) {
+      setIsInitialized(false);
       // Format dueDate to YYYY-MM-DD format for DatePicker
       const dueDateString = service.dueDate 
         ? new Date(service.dueDate).toISOString().split('T')[0]
@@ -114,15 +163,40 @@ export default function EditServiceModal({
       // Load payment status and store initial for change detection
       window.api.database.serviceAppointments.getPaymentStatus(service.id)
         .then((status) => {
-          initialIsPaidRef.current = status;
-          setIsPaid(status);
+          const paid = Boolean(status);
+          initialIsPaidRef.current = paid;
+          setIsPaid(paid);
+          initialSnapshotRef.current = {
+            name: service.name || "",
+            serviceType: service.serviceType || "",
+            description: service.description || "",
+            costPrice: service.costPrice || 0,
+            servicePrice: service.servicePrice || 0,
+            dueDate: dueDateString,
+            notes: service.notes || "",
+            isPaid: paid,
+          };
+          setIsInitialized(true);
         })
         .catch(() => {
           initialIsPaidRef.current = false;
           setIsPaid(false);
+          initialSnapshotRef.current = {
+            name: service.name || "",
+            serviceType: service.serviceType || "",
+            description: service.description || "",
+            costPrice: service.costPrice || 0,
+            servicePrice: service.servicePrice || 0,
+            dueDate: dueDateString,
+            notes: service.notes || "",
+            isPaid: false,
+          };
+          setIsInitialized(true);
         });
     } else {
       initialIsPaidRef.current = null;
+      initialSnapshotRef.current = null;
+      setIsInitialized(false);
     }
   }, [service]);
 
@@ -591,6 +665,19 @@ export default function EditServiceModal({
     });
     if (initialIsPaidRef.current !== null) {
       setIsPaid(initialIsPaidRef.current);
+    }
+    if (initialIsPaidRef.current !== null) {
+      initialSnapshotRef.current = {
+        name: service.name || "",
+        serviceType: service.serviceType || "",
+        description: service.description || "",
+        costPrice: service.costPrice || 0,
+        servicePrice: service.servicePrice || 0,
+        dueDate: dueDateString,
+        notes: service.notes || "",
+        isPaid: initialIsPaidRef.current,
+      };
+      setIsInitialized(true);
     }
   };
 
