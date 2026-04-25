@@ -159,12 +159,12 @@ export function SectionCards() {
         (p: { quantity: number }) => p.quantity <= threshold && p.quantity > 0
       ).length;
       const outOfStock = products.filter((p: { quantity: number }) => p.quantity === 0).length;
-      const stockValue = products.reduce(
-        (sum: number, p: { boughtPrice: number; quantity: number }) => sum + p.boughtPrice * p.quantity,
-        0
+      const stockSellingTotal = products.reduce(
+        (sum: number, p: { sellingPrice: number; quantity: number }) => sum + p.sellingPrice * p.quantity,
+        0,
       );
-      
-      // Set stock stats immediately
+
+      // Set stock stats immediately (same selling-total semantics as stock page footer `stock.stockValue`)
       setStockStats([
         {
           labelKey: "dashboard.totalProducts",
@@ -179,8 +179,8 @@ export function SectionCards() {
           icon: AlertTriangleIcon,
         },
         {
-          labelKey: "dashboard.stockValue",
-          value: formatCurrency(stockValue),
+          labelKey: "stock.stockValue",
+          value: formatCurrency(stockSellingTotal),
           descriptionKey: "dashboard.totalInventory",
           icon: DollarSignIcon,
         },

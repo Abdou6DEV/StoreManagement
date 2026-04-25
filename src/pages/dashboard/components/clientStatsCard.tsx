@@ -422,7 +422,12 @@ export function ClientStatsCard() {
                       </p>
                     </div>
                     <div className="w-full min-h-[300px] h-[300px] overflow-hidden rounded-lg bg-card">
-                      <ResponsiveContainer width="100%" height="100%">
+                      <ResponsiveContainer
+                        width="100%"
+                        height="100%"
+                        minWidth={0}
+                        initialDimension={{ width: 400, height: 300 }}
+                      >
                         <PieChart style={{ background: "transparent" }}>
                           <Tooltip
                             content={

@@ -90,6 +90,11 @@ const chartColors = [
   "#f97316", // Orange
 ]
 
+/** Recharts `Pie` sector typings omit DOM events; call preventDefault only when it exists. */
+function preventPiePointerDefault(e: unknown) {
+  (e as { preventDefault?: () => void })?.preventDefault?.()
+}
+
 /**
  * Same Y-axis tick system as `chartBarInteractive`:
  * 5 labels, 4 equal steps, "nice" rounded ceilings.
@@ -663,7 +668,13 @@ export function ServiceStatsCard() {
                       </p>
                     </div>
                     <div className="w-full h-[300px] overflow-hidden rounded-lg bg-card">
-                    <ResponsiveContainer width="100%" height="100%" minHeight={300}>
+                    <ResponsiveContainer
+                      width="100%"
+                      height="100%"
+                      minWidth={0}
+                      minHeight={300}
+                      initialDimension={{ width: 600, height: 300 }}
+                    >
                       <PieChart
                         style={{
                           background: 'transparent'
@@ -702,9 +713,9 @@ export function ServiceStatsCard() {
                           }}
                           className="cursor-default"
                           stroke="none"
-                          onClick={(e) => e.preventDefault()}
-                          onMouseDown={(e) => e.preventDefault()}
-                          onMouseUp={(e) => e.preventDefault()}
+                          onClick={preventPiePointerDefault}
+                          onMouseDown={preventPiePointerDefault}
+                          onMouseUp={preventPiePointerDefault}
                         />
                       </PieChart>
                     </ResponsiveContainer>
@@ -777,7 +788,13 @@ export function ServiceStatsCard() {
                       </p>
                     </div>
                     <div className="w-full h-[300px] overflow-hidden rounded-lg bg-card">
-                    <ResponsiveContainer width="100%" height="100%" minHeight={300}>
+                    <ResponsiveContainer
+                      width="100%"
+                      height="100%"
+                      minWidth={0}
+                      minHeight={300}
+                      initialDimension={{ width: 600, height: 300 }}
+                    >
                       <PieChart
                         style={{
                           background: 'transparent'
@@ -816,9 +833,9 @@ export function ServiceStatsCard() {
                           }}
                           className="cursor-default"
                           stroke="none"
-                          onClick={(e) => e.preventDefault()}
-                          onMouseDown={(e) => e.preventDefault()}
-                          onMouseUp={(e) => e.preventDefault()}
+                          onClick={preventPiePointerDefault}
+                          onMouseDown={preventPiePointerDefault}
+                          onMouseUp={preventPiePointerDefault}
                         />
                       </PieChart>
                     </ResponsiveContainer>
@@ -1020,7 +1037,13 @@ export function ServiceStatsCard() {
                     {/* Trends Chart */}
                     <div className="w-full h-[300px]" dir={i18n.language === "ar" ? "rtl" : "ltr"}>
                       <div>
-                  <ResponsiveContainer width="100%" height="100%" minHeight={300}>
+                  <ResponsiveContainer
+                    width="100%"
+                    height="100%"
+                    minWidth={0}
+                    minHeight={300}
+                    initialDimension={{ width: 900, height: 300 }}
+                  >
                     <LineChart
                       key={`services-trends-${effectiveTrendPeriod}`}
                       data={chartData}

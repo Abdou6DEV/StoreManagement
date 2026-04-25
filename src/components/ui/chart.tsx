@@ -12,6 +12,9 @@ import { cn } from "@/lib/utils";
 
 const THEMES = { light: "", dark: ".dark" } as const;
 
+/** Avoid Recharts 3 first-paint warning (default initialDimension is -1×-1). */
+const DEFAULT_CHART_INITIAL_DIMENSION = { width: 280, height: 280 } as const;
+
 export type ChartConfig = {
   [k: string]: {
     label?: React.ReactNode;
@@ -64,8 +67,9 @@ export const ChartContainer = React.forwardRef<
   React.ComponentProps<"div"> & {
     config: ChartConfig;
     children: React.ComponentProps<typeof ResponsiveContainer>["children"];
+    initialDimension?: { width: number; height: number };
   }
->(({ id, className, children, config, ...props }, ref) => {
+>(({ id, className, children, config, initialDimension = DEFAULT_CHART_INITIAL_DIMENSION, ...props }, ref) => {
   const uniqueId = React.useId();
   const chartId = `chart-${id || uniqueId.replace(/:/g, "")}`;
 
@@ -93,7 +97,9 @@ export const ChartContainer = React.forwardRef<
         {...props}
       >
         <ChartStyle id={chartId} config={config} />
-        <ResponsiveContainer>{children}</ResponsiveContainer>
+        <ResponsiveContainer initialDimension={initialDimension} minWidth={0}>
+          {children}
+        </ResponsiveContainer>
       </div>
     </ChartContext.Provider>
   );

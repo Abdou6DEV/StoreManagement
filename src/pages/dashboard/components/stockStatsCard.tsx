@@ -12,9 +12,15 @@ import { useSales, useProducts, useLowStockThreshold, useDashboardLoading } from
 
 interface StockStats {
   totalProducts: number
+  totalQuantity: number
+  /** Sum of boughtPrice × quantity (matches stock table footer). */
+  stockCost: number
+  /** Sum of sellingPrice × quantity (matches stock table `stock.stockValue`). */
+  stockSellingTotal: number
+  /** Sum of (sellingPrice − boughtPrice) × quantity (matches stock table `stock.profitPotential`). */
+  profitPotential: number
   lowStockItems: number
   outOfStock: number
-  stockValue: number
   averageMargin: number
   averageMarginPercentage: number
   averageROI: number
@@ -40,6 +46,8 @@ interface StockStats {
 
 type ViewMode = 'categories' | 'products'
 
+/** Same as stock page `totalsFooter` — avoids US-style comma grouping when UI is English. */
+const STOCK_STATS_NUMBER_LOCALE = "fr-FR"
 
 // Using CSS variables for chart colors defined in chartConfig
 
@@ -54,6 +62,11 @@ const chartColors = [
   "#84cc16", // Lime
   "#f97316", // Orange
 ]
+
+/** Recharts `Pie` sector typings omit DOM events; call preventDefault only when it exists. */
+function preventPiePointerDefault(e: unknown) {
+  (e as { preventDefault?: () => void })?.preventDefault?.()
+}
 
 // Custom tooltip component
 const CustomTooltip = ({ active, payload, totalItemsSold, t }: {
@@ -101,9 +114,12 @@ export function StockStatsCard() {
   const [viewMode, setViewMode] = useState<ViewMode>('categories')
   const [stockStats, setStockStats] = useState<StockStats>({
     totalProducts: 0,
+    totalQuantity: 0,
+    stockCost: 0,
+    stockSellingTotal: 0,
+    profitPotential: 0,
     lowStockItems: 0,
     outOfStock: 0,
-    stockValue: 0,
     averageMargin: 0,
     averageMarginPercentage: 0,
     averageROI: 0,
@@ -128,10 +144,24 @@ export function StockStatsCard() {
           (p: { quantity: number }) => p.quantity <= threshold && p.quantity > 0
         ).length
         const outOfStock = products.filter((p: { quantity: number }) => p.quantity === 0).length
-         const stockValue = products.reduce(
-           (sum: number, p: { boughtPrice: number; quantity: number }) => sum + p.boughtPrice * p.quantity,
-           0
-         )
+
+        const totalQuantity = products.reduce(
+          (sum: number, p: { quantity: number }) => sum + p.quantity,
+          0,
+        )
+        const stockCost = products.reduce(
+          (sum: number, p: { boughtPrice: number; quantity: number }) => sum + p.boughtPrice * p.quantity,
+          0,
+        )
+        const stockSellingTotal = products.reduce(
+          (sum: number, p: { sellingPrice: number; quantity: number }) => sum + p.sellingPrice * p.quantity,
+          0,
+        )
+        const profitPotential = products.reduce(
+          (sum: number, p: { sellingPrice: number; boughtPrice: number; quantity: number }) =>
+            sum + (p.sellingPrice - p.boughtPrice) * p.quantity,
+          0,
+        )
 
          // Calculate average margin and ROI
          const margins = products.map((p: { sellingPrice: number; boughtPrice: number }) => p.sellingPrice - p.boughtPrice)
@@ -253,9 +283,12 @@ export function StockStatsCard() {
 
         setStockStats({
           totalProducts: products.length,
+          totalQuantity,
+          stockCost,
+          stockSellingTotal,
+          profitPotential,
           lowStockItems,
           outOfStock,
-          stockValue,
           averageMargin,
           averageMarginPercentage,
           averageROI,
@@ -274,8 +307,12 @@ export function StockStatsCard() {
     processStockStats()
   }, [dashboardLoading, sales, products, lowStockThreshold])
 
+  /** Same pattern as stock page `totalsFooter` (fr-FR digits + NBSP before currency). */
+  const formatStockMoney = (amount: number) =>
+    `${Math.round(amount).toLocaleString(STOCK_STATS_NUMBER_LOCALE, { maximumFractionDigits: 0 })}\u00A0${t("cashier.currency")}`
+
   const formatCurrency = (amount: number) =>
-    `${amount.toLocaleString()} ${t("currency")}`
+    `${Math.round(amount).toLocaleString(STOCK_STATS_NUMBER_LOCALE, { maximumFractionDigits: 0 })}\u00A0${t("currency")}`
 
   const totalItemsSold = React.useMemo(() => {
     return stockStats.categoriesData.reduce((acc, curr) => acc + curr.sold, 0)
@@ -294,18 +331,32 @@ export function StockStatsCard() {
           {t("dashboard.stockStatsDesc", "Comprehensive stock overview and category performance")}
         </p>
         
-        {/* Skeleton for stats grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="bg-muted/50 rounded-lg p-4">
-              <div className="flex items-center justify-between mb-2">
-                <div className="h-4 w-20 bg-muted-foreground/20 rounded animate-pulse" />
-                <div className="h-5 w-5 bg-muted-foreground/20 rounded animate-pulse" />
+        {/* Skeleton: 4 + 4 + 3 */}
+        <div className="mx-auto mb-6 flex max-w-5xl flex-col gap-6">
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="rounded-lg bg-muted/50 p-4">
+                <div className="mb-2 h-4 w-20 rounded bg-muted-foreground/20 animate-pulse" />
+                <div className="h-6 w-16 rounded bg-muted-foreground/20 animate-pulse" />
               </div>
-              <div className="h-6 w-16 bg-muted-foreground/20 rounded animate-pulse mb-1" />
-              <div className="h-3 w-12 bg-muted-foreground/20 rounded animate-pulse" />
-            </div>
-          ))}
+            ))}
+          </div>
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={`r2-${i}`} className="rounded-lg bg-muted/50 p-4">
+                <div className="mb-2 h-4 w-20 rounded bg-muted-foreground/20 animate-pulse" />
+                <div className="h-6 w-16 rounded bg-muted-foreground/20 animate-pulse" />
+              </div>
+            ))}
+          </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={`r3-${i}`} className="rounded-lg bg-muted/50 p-4">
+                <div className="mb-2 h-4 w-20 rounded bg-muted-foreground/20 animate-pulse" />
+                <div className="h-6 w-16 rounded bg-muted-foreground/20 animate-pulse" />
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Skeleton for charts */}
@@ -335,86 +386,110 @@ export function StockStatsCard() {
         {t("dashboard.stockStatsDesc", "Comprehensive stock overview and category performance")}
       </p>
       <div className="space-y-6">
-         {/* Stock Overview Stats */}
-         <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-           <div className="flex flex-col items-center gap-1">
-             <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-               {t("dashboard.totalProducts")}
-             </span>
-             <span className="text-3xl font-bold text-foreground">
-               {stockStats.totalProducts.toLocaleString()}
-             </span>
-           </div>
-
-           <div className="flex flex-col items-center gap-1">
-             <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-               {t("dashboard.lowStockItems")}
-             </span>
-             <span className="text-3xl font-bold text-orange-600">
-               {stockStats.lowStockItems.toLocaleString()}
-             </span>
-           </div>
-
-           <div className="flex flex-col items-center gap-1">
-             <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-               {t("dashboard.outOfStock")}
-             </span>
-             <span className="text-3xl font-bold text-red-600">
-               {stockStats.outOfStock.toLocaleString()}
-             </span>
-           </div>
-
-           <div className="flex flex-col items-center gap-1">
-             <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-               {t("dashboard.stockValue")}
-             </span>
-             <span className="text-3xl font-bold text-foreground">
-               {formatCurrency(stockStats.stockValue)}
-             </span>
-           </div>
-         </div>
-
-         {/* Additional Stats */}
-         <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-           <div className="flex flex-col items-center gap-1">
-             <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-               {t("dashboard.averageMargin", "Avg Margin")}
-             </span>
-             <span className="text-3xl font-bold text-foreground">
-               {Math.round(stockStats.averageMargin).toLocaleString()} {t("currency")}
-             </span>
-             <span className="text-sm text-muted-foreground">
-               {stockStats.averageMarginPercentage.toFixed(1)}%
-             </span>
-           </div>
-
-           <div className="flex flex-col items-center gap-1">
-             <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-               {t("dashboard.averageROI", "Avg ROI")}
-             </span>
-             <span className="text-3xl font-bold text-foreground">
-               {stockStats.averageROI.toFixed(1)}%
-             </span>
-           </div>
-
-           <div className="flex flex-col items-center gap-1">
-             <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-               {t("dashboard.noCodebar", "No Barcode")}
-             </span>
-             <span className="text-3xl font-bold text-foreground">
-               {stockStats.productsWithoutCodebar.toLocaleString()}
-             </span>
-           </div>
-
-           <div className="flex flex-col items-center gap-1">
-             <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-               {t("dashboard.worstSelling", "Worst Selling")}
-             </span>
-             <span className="text-3xl font-bold text-foreground">
-               {stockStats.worstSellingProducts.length}
-             </span>
-           </div>
-         </div>
+        <div className="mx-auto flex max-w-5xl flex-col gap-6">
+          {/* Row 1: 4 */}
+          <div className="grid grid-cols-2 gap-6 md:grid-cols-4 justify-items-center text-center">
+            <div className="flex flex-col items-center gap-1">
+              <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                {t("stock.totalProducts")}
+              </span>
+              <span className="text-3xl font-bold tabular-nums whitespace-nowrap text-foreground">
+                {stockStats.totalProducts.toLocaleString(STOCK_STATS_NUMBER_LOCALE)}
+              </span>
+            </div>
+            <div className="flex flex-col items-center gap-1">
+              <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                {t("stock.totalQuantity")}
+              </span>
+              <span className="text-3xl font-bold tabular-nums whitespace-nowrap text-foreground">
+                {stockStats.totalQuantity.toLocaleString(STOCK_STATS_NUMBER_LOCALE)}
+              </span>
+            </div>
+            <div className="flex flex-col items-center gap-1">
+              <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                {t("stock.stockCost")}
+              </span>
+              <span className="text-3xl font-bold tabular-nums whitespace-nowrap text-foreground">
+                {formatStockMoney(stockStats.stockCost)}
+              </span>
+            </div>
+            <div className="flex flex-col items-center gap-1">
+              <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                {t("stock.stockValue")}
+              </span>
+              <span className="text-3xl font-bold tabular-nums whitespace-nowrap text-foreground">
+                {formatStockMoney(stockStats.stockSellingTotal)}
+              </span>
+            </div>
+          </div>
+          {/* Row 2: 4 */}
+          <div className="grid grid-cols-2 gap-6 md:grid-cols-4 justify-items-center text-center">
+            <div className="flex flex-col items-center gap-1">
+              <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                {t("stock.profitPotential")}
+              </span>
+              <span className="text-3xl font-bold tabular-nums whitespace-nowrap text-green-600 dark:text-green-400">
+                {formatStockMoney(stockStats.profitPotential)}
+              </span>
+            </div>
+            <div className="flex flex-col items-center gap-1">
+              <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                {t("dashboard.lowStockItems")}
+              </span>
+              <span className="text-3xl font-bold tabular-nums whitespace-nowrap text-orange-600">
+                {stockStats.lowStockItems.toLocaleString(STOCK_STATS_NUMBER_LOCALE)}
+              </span>
+            </div>
+            <div className="flex flex-col items-center gap-1">
+              <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                {t("dashboard.outOfStock")}
+              </span>
+              <span className="text-3xl font-bold tabular-nums whitespace-nowrap text-red-600">
+                {stockStats.outOfStock.toLocaleString(STOCK_STATS_NUMBER_LOCALE)}
+              </span>
+            </div>
+            <div className="flex flex-col items-center gap-1">
+              <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                {t("dashboard.averageMargin", "Avg Margin")}
+              </span>
+              <span className="text-3xl font-bold tabular-nums whitespace-nowrap text-foreground">
+                {Math.round(stockStats.averageMargin).toLocaleString(STOCK_STATS_NUMBER_LOCALE)}
+                {"\u00A0"}
+                {t("currency")}
+              </span>
+              <span className="text-sm text-muted-foreground">
+                {stockStats.averageMarginPercentage.toFixed(1)}%
+              </span>
+            </div>
+          </div>
+          {/* Row 3: 3 */}
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-3 justify-items-center text-center">
+            <div className="flex flex-col items-center gap-1">
+              <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                {t("dashboard.averageROI", "Avg ROI")}
+              </span>
+              <span className="text-3xl font-bold tabular-nums whitespace-nowrap text-foreground">
+                {stockStats.averageROI.toFixed(1)}%
+              </span>
+            </div>
+            <div className="flex flex-col items-center gap-1">
+              <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                {t("dashboard.noCodebar", "No Barcode")}
+              </span>
+              <span className="text-3xl font-bold tabular-nums whitespace-nowrap text-foreground">
+                {stockStats.productsWithoutCodebar.toLocaleString(STOCK_STATS_NUMBER_LOCALE)}
+              </span>
+            </div>
+            <div className="flex flex-col items-center gap-1">
+              <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                {t("dashboard.worstSelling", "Worst Selling")}
+              </span>
+              <span className="text-3xl font-bold tabular-nums whitespace-nowrap text-foreground">
+                {stockStats.worstSellingProducts.length}
+              </span>
+            </div>
+          </div>
+        </div>
 
          {/* Chart Section with Toggle */}
         {((viewMode === 'categories' && stockStats.categoriesData.length > 0) || 
@@ -465,7 +540,12 @@ export function StockStatsCard() {
                        </p>
                      </div>
                      <div className="w-full h-[300px] overflow-hidden rounded-lg bg-card">
-                      <ResponsiveContainer width="100%" height="100%">
+                      <ResponsiveContainer
+                        width="100%"
+                        height="100%"
+                        minWidth={0}
+                        initialDimension={{ width: 400, height: 300 }}
+                      >
                         <PieChart
                           style={{
                             background: 'transparent'
@@ -503,9 +583,9 @@ export function StockStatsCard() {
                             }}
                             className="cursor-default"
                             stroke="none"
-                            onClick={(e) => e.preventDefault()}
-                            onMouseDown={(e) => e.preventDefault()}
-                            onMouseUp={(e) => e.preventDefault()}
+                            onClick={preventPiePointerDefault}
+                            onMouseDown={preventPiePointerDefault}
+                            onMouseUp={preventPiePointerDefault}
                           />
                         </PieChart>
                       </ResponsiveContainer>
@@ -559,7 +639,12 @@ export function StockStatsCard() {
                        </p>
                      </div>
                      <div className="w-full h-[300px] overflow-hidden rounded-lg bg-card">
-                      <ResponsiveContainer width="100%" height="100%">
+                      <ResponsiveContainer
+                        width="100%"
+                        height="100%"
+                        minWidth={0}
+                        initialDimension={{ width: 400, height: 300 }}
+                      >
                         <PieChart
                           style={{
                             background: 'transparent'
@@ -597,9 +682,9 @@ export function StockStatsCard() {
                             }}
                             className="cursor-default"
                             stroke="none"
-                            onClick={(e) => e.preventDefault()}
-                            onMouseDown={(e) => e.preventDefault()}
-                            onMouseUp={(e) => e.preventDefault()}
+                            onClick={preventPiePointerDefault}
+                            onMouseDown={preventPiePointerDefault}
+                            onMouseUp={preventPiePointerDefault}
                           />
                         </PieChart>
                       </ResponsiveContainer>
