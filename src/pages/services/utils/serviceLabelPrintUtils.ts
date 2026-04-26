@@ -21,52 +21,7 @@ function getServiceLabelScale(size: ServiceLabelSize): number {
   return Math.min(width / 40, height / 20);
 }
 
-export interface ServiceLabelData {
-  serviceName: string;
-  clientName: string;
-  deviceName: string;
-  price: number | string;
-  isPaid?: boolean;
-  /** Shown on 25×50 and 35×45 labels only */
-  dueDate?: string;
-  /** Shown on 25×50 and 35×45 labels only */
-  problems?: string;
-}
-
-export interface ServiceLabelLabels {
-  service: string;
-  client: string;
-  device: string;
-  price: string;
-  payed: string;
-  notPayed: string;
-  dueDate?: string;
-  problems?: string;
-}
-
-/**
- * Print service label. 20×40: compact (service, client, device, price).
- * 25×50 and 35×45: full (adds due date and problems/issues). Uses label printer per size.
- */
-export const printServiceLabel = async (
-  data: ServiceLabelData,
-  quantity = 1,
-  labels: ServiceLabelLabels = {
-    service: 'Service:',
-    client: 'Client:',
-    device: 'Device:',
-    price: 'Price:',
-    payed: 'Payed',
-    notPayed: 'Not payed',
-  },
-  labelSize: ServiceLabelSize = '20x40'
-): Promise<void> => {
-  const { serviceName, clientName, deviceName, price, isPaid = false, dueDate, problems } = data;
-
-  if (!serviceName || !serviceName.trim()) {
-    throw new Error('Service name is required for printing');
-  }
-
+async function loadInstrumentSerifFont(): Promise<{ fontFaceCss: string; fontFamily: string }> {
   let fontFaceCss = '';
   let fontFamily = 'Georgia, serif';
   try {
@@ -92,6 +47,143 @@ export const printServiceLabel = async (
   } catch {
     fontFaceCss = '';
   }
+  return { fontFaceCss, fontFamily };
+}
+
+export async function printLabelHtmlDocument(
+  html: string,
+  labelSize: ServiceLabelSize,
+  title = 'Label',
+): Promise<void> {
+  const iframe = document.createElement('iframe');
+  iframe.style.position = 'fixed';
+  iframe.style.left = '-9999px';
+  iframe.style.top = '0';
+  iframe.style.width = '180px';
+  iframe.style.height = '400px';
+  iframe.style.border = '0';
+  iframe.style.opacity = '0';
+  iframe.style.pointerEvents = 'none';
+  document.body.appendChild(iframe);
+
+  const iframeDoc = iframe.contentWindow?.document;
+  if (!iframeDoc) {
+    document.body.removeChild(iframe);
+    throw new Error('Failed to initialize print iframe');
+  }
+
+  const printContent = `<!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <title>${title}</title>
+    </head>
+    <body>${html}</body>
+    </html>`;
+
+  iframeDoc.open();
+  iframeDoc.write(printContent);
+  iframeDoc.close();
+
+  return new Promise<void>((resolve, reject) => {
+    iframe.onload = () => {
+      setTimeout(async () => {
+        try {
+          const bodyContent = iframeDoc.body?.innerHTML || '';
+          if (!bodyContent || bodyContent.trim().length === 0) {
+            throw new Error('Iframe body is empty - cannot print');
+          }
+          if (window.api?.app?.printSilently) {
+            const iframeHTML = iframeDoc.documentElement.outerHTML;
+            const optionKey = LABEL_PRINTER_OPTION_KEYS[labelSize];
+            const deviceName =
+              (await window.api.database.options.get(optionKey)) ||
+              (await window.api.database.options.get('labelPrinterName')) ||
+              '';
+            await window.api.app.printSilently(`<!DOCTYPE html>${iframeHTML}`, deviceName);
+          } else {
+            iframe.contentWindow?.print();
+          }
+          resolve();
+        } catch (error) {
+          if (window.api?.app?.printSilently) {
+            try {
+              iframe.contentWindow?.print();
+              resolve();
+            } catch {
+              reject(error);
+            }
+          } else {
+            reject(error);
+          }
+        } finally {
+          setTimeout(() => {
+            if (iframe.parentNode) document.body.removeChild(iframe);
+          }, 100);
+        }
+      }, 200);
+    };
+  });
+}
+
+export interface ServiceLabelData {
+  serviceName: string;
+  clientName: string;
+  deviceName: string;
+  price: number | string;
+  isPaid?: boolean;
+  /** Shown on 25×50 and 35×45 labels only */
+  dueDate?: string;
+  /** Shown on 25×50 and 35×45 labels only */
+  problems?: string;
+}
+
+export interface ServiceLabelLabels {
+  service: string;
+  client: string;
+  device: string;
+  price: string;
+  payed: string;
+  notPayed: string;
+  dueDate?: string;
+  problems?: string;
+}
+
+export interface ReturnSupplierLabelData {
+  title: string;
+  productName: string;
+  supplierName: string;
+  boughtPrice: number | string;
+  dateLabel: string;
+  priceLabel: string;
+  purchaseDate?: string;
+  issue?: string;
+}
+
+/**
+ * Print service label. 20×40: compact (service, client, device, price).
+ * 25×50 and 35×45: full (adds due date and problems/issues). Uses label printer per size.
+ */
+export const printServiceLabel = async (
+  data: ServiceLabelData,
+  quantity = 1,
+  labels: ServiceLabelLabels = {
+    service: 'Service:',
+    client: 'Client:',
+    device: 'Device:',
+    price: 'Price:',
+    payed: 'Payed',
+    notPayed: 'Not payed',
+  },
+  labelSize: ServiceLabelSize = '20x40'
+): Promise<void> => {
+  const { serviceName, clientName, deviceName, price, isPaid = false, dueDate, problems } = data;
+
+  if (!serviceName || !serviceName.trim()) {
+    throw new Error('Service name is required for printing');
+  }
+
+  const { fontFaceCss, fontFamily } = await loadInstrumentSerifFont();
 
   const formatPrice = (p: number | string): string => {
     if (p === '' || p == null) return '\u200E—';
@@ -166,11 +258,6 @@ export const printServiceLabel = async (
   const labelsHTML = Array(quantity).fill(labelHTML).join('');
 
   const printContent = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8">
-      <title>Service Label</title>
       <style>
         ${fontFaceCss}
         @page { size: ${widthMm}mm auto; margin: 0; }
@@ -290,66 +377,188 @@ export const printServiceLabel = async (
         .price { font-size: 15px; direction: ltr; unicode-bidi: embed; }
         .price-currency { font-size: 0.8em; font-weight: 700; }
       </style>
-    </head>
-    <body>${labelsHTML}</body>
-    </html>
+      ${labelsHTML}
   `;
 
-  const iframe = document.createElement('iframe');
-  iframe.style.position = 'fixed';
-  iframe.style.left = '-9999px';
-  iframe.style.top = '0';
-  iframe.style.width = '180px';
-  iframe.style.height = '400px';
-  iframe.style.border = '0';
-  iframe.style.opacity = '0';
-  iframe.style.pointerEvents = 'none';
-  document.body.appendChild(iframe);
+  await printLabelHtmlDocument(printContent, labelSize, 'Service Label');
+};
 
-  const iframeDoc = iframe.contentWindow?.document;
-  if (!iframeDoc) {
-    document.body.removeChild(iframe);
-    throw new Error('Failed to initialize print iframe');
-  }
+export const printReturnSupplierLabels = async (
+  labels: ReturnSupplierLabelData[],
+  labelSize: ServiceLabelSize = '20x40',
+): Promise<void> => {
+  const { fontFaceCss, fontFamily } = await loadInstrumentSerifFont();
+  const widthMm = SERVICE_LABEL_SIZE_MM[labelSize].width;
+  const heightMm = SERVICE_LABEL_SIZE_MM[labelSize].height;
+  const scale = getServiceLabelScale(labelSize);
 
-  iframeDoc.open();
-  iframeDoc.write(printContent);
-  iframeDoc.close();
+  const escape = (s: string) =>
+    s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
-  return new Promise<void>((resolve, reject) => {
-    iframe.onload = () => {
-      setTimeout(async () => {
-        try {
-          const bodyContent = iframeDoc.body?.innerHTML || '';
-          if (!bodyContent || bodyContent.trim().length === 0) {
-            throw new Error('Iframe body is empty - cannot print');
+  const formatPrice = (p: number | string): string => {
+    if (p === '' || p == null) return '\u200E—';
+    const numPrice = Number(p);
+    const spaceThousands = (s: string) => s.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+    const lrm = '\u200E';
+    if (numPrice % 1 === 0) {
+      return `${lrm}${spaceThousands(String(Math.round(numPrice)))}<span class="price-currency">DA</span>`;
+    }
+    const [intPart, decPart] = numPrice.toFixed(2).split('.');
+    return `${lrm}${spaceThousands(intPart)}.${decPart}<span class="price-currency">DA</span>`;
+  };
+
+  const makeOne = (d: ReturnSupplierLabelData): string => {
+    const titleLine = escape(d.title?.trim() || '—');
+    const productLine = escape(d.productName?.trim() || '—');
+    const supplierLine = escape(d.supplierName?.trim() || '—');
+    const dateLine = d.purchaseDate ? escape(new Date(d.purchaseDate).toLocaleDateString()) : '';
+    const issueLine = d.issue?.trim() ? escape(d.issue.trim()) : '';
+    const priceLine = formatPrice(d.boughtPrice);
+    const dateLabel = escape(d.dateLabel?.trim() || 'Date:');
+    const priceLabel = escape(d.priceLabel?.trim() || 'Price:');
+
+    const is35x45 = labelSize === '35x45';
+    const baseClass = `return-label${is35x45 ? ' return-label-35x45' : ''}`;
+    const isCompact = labelSize === '20x40';
+    const metaLine =
+      dateLine || priceLine
+        ? `<div class="return-label-line meta">
+            ${dateLine ? `<span class="meta-date">${dateLabel} ${dateLine}</span>` : `<span class="meta-date"></span>`}
+            <span class="meta-price" dir="ltr">${priceLabel} ${priceLine}</span>
+          </div>`
+        : '';
+    return `
+      <div class="${baseClass}">
+        <div class="return-label-line title">${titleLine}</div>
+        <div class="return-label-line product">${productLine}</div>
+        ${isCompact ? '' : `<div class="return-label-line supplier">${supplierLine}</div>`}
+        ${metaLine}
+        ${issueLine ? `<div class="return-label-line issue">${issueLine}</div>` : ''}
+      </div>
+    `.trim();
+  };
+
+  const isFullLabel = labelSize === '25x50' || labelSize === '35x45';
+  const oneLabel = (d: ReturnSupplierLabelData) =>
+    isFullLabel
+      ? `<div class="label-outer"><div class="return-label-inner">${makeOne(d)}</div></div>`
+      : makeOne(d);
+
+  const labelsHTML = labels.map(oneLabel).join('');
+
+  const printContent = `
+      <style>
+        ${fontFaceCss}
+        @page { size: ${widthMm}mm auto; margin: 0; }
+        @media print {
+          * { print-color-adjust: exact !important; -webkit-print-color-adjust: exact !important; }
+          body { margin: 0 !important; padding: 0 !important; background: white !important; width: ${widthMm}mm !important; }
+          .label-outer {
+            width: ${widthMm}mm !important;
+            height: ${heightMm}mm !important;
+            overflow: hidden !important;
+            page-break-after: always;
+            page-break-inside: avoid;
           }
-          if (window.api?.app?.printSilently) {
-            const iframeHTML = iframeDoc.documentElement.outerHTML;
-            const optionKey = LABEL_PRINTER_OPTION_KEYS[labelSize];
-            const deviceName = (await window.api.database.options.get(optionKey)) || (await window.api.database.options.get('labelPrinterName')) || '';
-            await window.api.app.printSilently(`<!DOCTYPE html>${iframeHTML}`, deviceName);
-          } else {
-            iframe.contentWindow?.print();
+          .label-outer .return-label-inner {
+            width: 40mm !important;
+            height: 20mm !important;
+            transform: scale(${scale}) !important;
+            transform-origin: left top !important;
           }
-          resolve();
-        } catch (error) {
-          if (window.api?.app?.printSilently) {
-            try {
-              iframe.contentWindow?.print();
-              resolve();
-            } catch {
-              reject(error);
-            }
-          } else {
-            reject(error);
+          .return-label {
+            width: 40mm !important;
+            height: 20mm !important;
+            margin: 0 !important;
+            padding: 0 !important;
           }
-        } finally {
-          setTimeout(() => {
-            if (iframe.parentNode) document.body.removeChild(iframe);
-          }, 100);
         }
-      }, 200);
-    };
-  });
+        body {
+          font-family: ${fontFamily};
+          margin: 0;
+          padding: 0;
+          background: white;
+          width: ${widthMm}mm;
+        }
+        .label-outer {
+          width: ${widthMm}mm;
+          height: ${heightMm}mm;
+          overflow: hidden;
+          page-break-after: always;
+          page-break-inside: avoid;
+        }
+        .label-outer:last-child { page-break-after: auto; }
+        .label-outer .return-label-inner {
+          width: 40mm;
+          height: 20mm;
+          transform-origin: left top;
+        }
+        .return-label {
+          width: 40mm;
+          height: 20mm;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 1mm 1mm;
+          padding-top: 0.5mm;
+          margin: 0;
+          page-break-after: always;
+          page-break-inside: avoid;
+          box-sizing: border-box;
+        }
+        .return-label:last-child { page-break-after: auto; }
+        .return-label-line {
+          text-align: center;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          max-width: 96%;
+          line-height: 1.1;
+          color: #000;
+          font-weight: 700;
+        }
+        .meta {
+          display: flex;
+          justify-content: space-between;
+          align-items: baseline;
+          gap: 3mm;
+          width: 100%;
+          max-width: 100%;
+          padding: 0 0.5mm;
+          box-sizing: border-box;
+        }
+        .meta-date, .meta-price {
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          max-width: 50%;
+        }
+        .return-label-35x45 {
+          overflow: visible;
+          justify-content: flex-start;
+          padding-top: 0.8mm;
+        }
+        .return-label-35x45 .return-label-line {
+          white-space: normal;
+          word-wrap: break-word;
+          word-break: break-word;
+          margin-bottom: 0.6mm;
+          overflow: visible;
+          line-height: 1.05;
+          flex-shrink: 0;
+          box-sizing: border-box;
+        }
+        .return-label-35x45 .return-label-line:last-child { margin-bottom: 0; }
+        .title { font-size: 14px; }
+        .product { font-size: 14px; }
+        .supplier { font-size: 13px; }
+        .meta { font-size: 12px; }
+        .issue { font-size: 12px; }
+        .price-currency { font-size: 0.8em; font-weight: 700; }
+      </style>
+      ${labelsHTML}
+  `;
+
+  await printLabelHtmlDocument(printContent, labelSize, 'Return To Supplier');
 };

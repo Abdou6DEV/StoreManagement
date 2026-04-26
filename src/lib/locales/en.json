@@ -2553,6 +2553,34 @@
     "hide": "Hide",
     "rowsPerPage": "Rows per page:",
     "selectRowsPerPage": "Select rows per page"
+  },
+  "supplierReturn": {
+    "editConfirmTitle": "Confirm deletion",
+    "editConfirmMessage": "You removed products from this sale. Do you want to save these changes?",
+    "confirmTitle": "Return deleted products to supplier?",
+    "confirmMessage": "Some deleted products may need to be returned to a supplier. Do you want to select products to return?",
+    "yes": "Yes",
+    "no": "No",
+    "modalTitle": "Select products to return",
+    "modalDesc": "Select the products (and quantities) that should be returned to the supplier.",
+    "product": "Product",
+    "supplier": "Supplier",
+    "noSuppliers": "No suppliers",
+    "manualSupplierPlaceholder": "Enter supplier name",
+    "labelSize": "Label size",
+    "labelTitle": "Return To Supplier",
+    "returnTo": "Return To",
+    "date": "Date",
+    "price": "Price",
+    "issue": "Issue/Problem",
+    "issuePlaceholder": "Type the issue",
+    "printError": "Failed to print return labels",
+    "lastPurchasePrice": "Last purchase",
+    "deletedQty": "Deleted qty",
+    "returnQty": "Return qty",
+    "printReturnLabel": "Print return label",
+    "skipPrinting": "Skip printing",
+    "cancel": "Cancel"
   }
 }
 

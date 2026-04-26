@@ -2470,5 +2470,33 @@
     "hide": "Masquer",
     "rowsPerPage": "Lignes par page :",
     "selectRowsPerPage": "Choisir le nombre de lignes"
+  },
+  "supplierReturn": {
+    "editConfirmTitle": "Confirmer la suppression",
+    "editConfirmMessage": "Vous avez supprimé des produits de cette vente. Voulez-vous enregistrer ces changements ?",
+    "confirmTitle": "Retourner les produits supprimés au fournisseur ?",
+    "confirmMessage": "Certains produits supprimés peuvent devoir être retournés à un fournisseur. Voulez-vous sélectionner les produits à retourner ?",
+    "yes": "Oui",
+    "no": "Non",
+    "modalTitle": "Sélectionner les produits à retourner",
+    "modalDesc": "Sélectionnez les produits (et les quantités) qui doivent être retournés au fournisseur.",
+    "product": "Produit",
+    "supplier": "Fournisseur",
+    "noSuppliers": "Aucun fournisseur",
+    "manualSupplierPlaceholder": "Entrez le nom du fournisseur",
+    "labelSize": "Taille d’étiquette",
+    "labelTitle": "Retour au fournisseur",
+    "returnTo": "Retour à",
+    "date": "Date",
+    "price": "Prix",
+    "issue": "Problème/Panne",
+    "issuePlaceholder": "Saisissez le problème",
+    "printError": "Échec de l’impression des étiquettes de retour",
+    "lastPurchasePrice": "Dernier achat",
+    "deletedQty": "Qté supprimée",
+    "returnQty": "Qté à retourner",
+    "printReturnLabel": "Imprimer l’étiquette de retour",
+    "skipPrinting": "Ignorer l’impression",
+    "cancel": "Annuler"
   }
 }

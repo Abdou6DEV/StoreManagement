@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import {
   X,
@@ -25,6 +25,21 @@ import CategoryInfoModal from "../../pages/cashier/components/categoryInfoModal"
 import { useStock } from "../contexts/stockContext";
 import { useAuth } from "../contexts/authContext";
 import { ConfirmDialog } from "./confirmDialog";
+import { Modal } from "./modal";
+import { Button } from "./button";
+import { Checkbox } from "./checkbox";
+import { Input } from "./input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./select";
+import {
+  printReturnSupplierLabels,
+  type ServiceLabelSize,
+} from "../../pages/services/utils/serviceLabelPrintUtils";
 
 interface SaleDetailsModalProps {
   sale: Sale | null;
@@ -60,9 +75,211 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
   const [cartItemsForPrint, setCartItemsForPrint] = useState<CartItem[]>([]);
 
   const [currentSale, setCurrentSale] = useState<Sale | null>(null);
+  type SupplierReturnCandidate = { productId: string; name: string; deletedQty: number };
+  type SupplierOption = { sellerId: string; sellerName: string; lastPrice: number; lastDate?: string };
+  const [supplierReturnConfirmOpen, setSupplierReturnConfirmOpen] = useState(false);
+  const [supplierReturnModalOpen, setSupplierReturnModalOpen] = useState(false);
+  const [supplierReturnCandidates, setSupplierReturnCandidates] = useState<SupplierReturnCandidate[]>([]);
+  const [supplierReturnSelected, setSupplierReturnSelected] = useState<Record<string, boolean>>({});
+  const [supplierReturnQty, setSupplierReturnQty] = useState<Record<string, number>>({});
+  const [supplierOptionsByProduct, setSupplierOptionsByProduct] = useState<Record<string, SupplierOption[]>>({});
+  const [selectedSupplierByProduct, setSelectedSupplierByProduct] = useState<Record<string, string>>({});
+  const [manualSupplierByProduct, setManualSupplierByProduct] = useState<Record<string, string>>({});
+  const [returnIssueByProduct, setReturnIssueByProduct] = useState<Record<string, string>>({});
+  const [lastPurchaseByProduct, setLastPurchaseByProduct] = useState<
+    Record<string, { lastPrice: number; lastDate?: string }>
+  >({});
+  const [returnLabelSize, setReturnLabelSize] = useState<ServiceLabelSize>(() => {
+    try {
+      const cached = typeof localStorage !== "undefined" ? localStorage.getItem("supplierReturn_labelSize") : null;
+      return cached === "20x40" || cached === "35x45" || cached === "25x50" ? (cached as ServiceLabelSize) : "20x40";
+    } catch {
+      return "20x40";
+    }
+  });
+  const [isPrintingReturnLabels, setIsPrintingReturnLabels] = useState(false);
+  const [editDeleteConfirmOpen, setEditDeleteConfirmOpen] = useState(false);
+  const [pendingEditDeletedCandidates, setPendingEditDeletedCandidates] = useState<SupplierReturnCandidate[]>([]);
+  const [pendingAction, setPendingAction] = useState<null | (() => Promise<boolean>)>(null);
+  const [pendingSaleDeletedId, setPendingSaleDeletedId] = useState<string | null>(null);
+  const advancingToReturnModalRef = useRef(false);
+  const wasOpenRef = useRef(false);
   type UnsavedSalePrompt = "closeModal" | "cancelEdit" | null;
   const [unsavedSalePrompt, setUnsavedSalePrompt] =
     useState<UnsavedSalePrompt>(null);
+
+  const isNormalProductId = useCallback((id: string) => {
+    if (!id) return false;
+    if (id.startsWith("manual-")) return false;
+    // Services use their own IDs (uuid) too; we rely on CartItem flags where possible.
+    return true;
+  }, []);
+
+  const computeDeletedNormalProductsForEdit = useCallback((): SupplierReturnCandidate[] => {
+    const displaySale = currentSale || sale;
+    if (!displaySale) return [];
+
+    const originalQty = new Map<string, { qty: number; name: string }>();
+    displaySale.saleItems.forEach((si) => {
+      const pid = si.product?.id;
+      if (!pid) return;
+      const prev = originalQty.get(pid);
+      originalQty.set(pid, {
+        qty: (prev?.qty ?? 0) + si.quantity,
+        name: si.product?.name ?? prev?.name ?? "?",
+      });
+    });
+
+    const newQty = new Map<string, number>();
+    editedCart.forEach((c) => {
+      // Only “normal products”: not manual, not service.
+      if (c.isManual || c.isService) return;
+      if (!isNormalProductId(c.id)) return;
+      newQty.set(c.id, (newQty.get(c.id) ?? 0) + c.qty);
+    });
+
+    const candidates: SupplierReturnCandidate[] = [];
+    for (const [pid, orig] of originalQty.entries()) {
+      const after = newQty.get(pid) ?? 0;
+      const deletedQty = Math.max(0, orig.qty - after);
+      if (deletedQty > 0) {
+        candidates.push({ productId: pid, name: orig.name, deletedQty });
+      }
+    }
+    return candidates;
+  }, [currentSale, sale, editedCart, isNormalProductId]);
+
+  const computeDeletedNormalProductsForDeleteSale = useCallback((): SupplierReturnCandidate[] => {
+    const displaySale = currentSale || sale;
+    if (!displaySale) return [];
+    const map = new Map<string, SupplierReturnCandidate>();
+    displaySale.saleItems.forEach((si) => {
+      const pid = si.product?.id;
+      if (!pid) return;
+      const prev = map.get(pid);
+      map.set(pid, {
+        productId: pid,
+        name: si.product?.name ?? prev?.name ?? "?",
+        deletedQty: (prev?.deletedQty ?? 0) + si.quantity,
+      });
+    });
+    return Array.from(map.values()).filter((c) => c.deletedQty > 0);
+  }, [currentSale, sale]);
+
+  const startSupplierReturnUi = useCallback((candidates: SupplierReturnCandidate[]) => {
+    if (candidates.length === 0) return;
+    setSupplierReturnCandidates(candidates);
+    const initialSelected: Record<string, boolean> = {};
+    const initialQty: Record<string, number> = {};
+    const initialIssues: Record<string, string> = {};
+    candidates.forEach((c) => {
+      initialSelected[c.productId] = true;
+      initialQty[c.productId] = c.deletedQty;
+      initialIssues[c.productId] = "";
+    });
+    setSupplierReturnSelected(initialSelected);
+    setSupplierReturnQty(initialQty);
+    setReturnIssueByProduct(initialIssues);
+    setSupplierReturnConfirmOpen(true);
+  }, []);
+
+  // Load supplier options from purchase history when return modal opens
+  useEffect(() => {
+    if (!supplierReturnModalOpen) return;
+    if (supplierReturnCandidates.length === 0) return;
+
+    let cancelled = false;
+    const load = async () => {
+      const entries = await Promise.all(
+        supplierReturnCandidates.map(async (c) => {
+          // If we don't have a real product id (history fallback), we can't load suppliers.
+          if (!c.productId || c.productId.startsWith("name:")) {
+            return [c.productId, [] as SupplierOption[]] as const;
+          }
+          try {
+            const productWithHistory = await window.api.database.products.getWithPurchaseHistory(
+              c.productId,
+            );
+            const purchaseItems: any[] = productWithHistory?.PurchaseItems ?? [];
+
+            // PurchaseItems are ordered desc in DB. For each seller, the first hit is the latest price.
+            const seen = new Set<string>();
+            const options: SupplierOption[] = [];
+            for (const pi of purchaseItems) {
+              const seller = pi?.purchase?.seller;
+              const sellerId: string | undefined = seller?.id;
+              const sellerName: string | undefined = seller?.name;
+              if (!sellerId || !sellerName) continue;
+              if (seen.has(sellerId)) continue;
+              seen.add(sellerId);
+              const dateVal: unknown = pi?.purchase?.createdAt ?? pi?.createdAt;
+              options.push({
+                sellerId,
+                sellerName,
+                lastPrice: Number(pi?.price ?? 0),
+                lastDate: dateVal ? new Date(dateVal as string | number | Date).toISOString() : undefined,
+              });
+            }
+            const overallDateVal: unknown =
+              purchaseItems?.[0]?.purchase?.createdAt ?? purchaseItems?.[0]?.createdAt;
+            const overall = purchaseItems?.[0]
+              ? {
+                  lastPrice: Number(purchaseItems?.[0]?.price ?? 0),
+                  lastDate: overallDateVal
+                    ? new Date(overallDateVal as string | number | Date).toISOString()
+                    : undefined,
+                }
+              : ({ lastPrice: 0 } as { lastPrice: number; lastDate?: string });
+            return [c.productId, options, overall] as const;
+          } catch {
+            return [c.productId, [] as SupplierOption[], { lastPrice: 0 } as { lastPrice: number; lastDate?: string }] as const;
+          }
+        }),
+      );
+
+      if (cancelled) return;
+      const map: Record<string, SupplierOption[]> = {};
+      const selected: Record<string, string> = {};
+      const overallByProduct: Record<string, { lastPrice: number; lastDate?: string }> = {};
+      for (const [productId, opts, overall] of entries as any) {
+        map[productId] = opts;
+        if (opts.length > 0) {
+          selected[productId] = opts[0].sellerId;
+        }
+        overallByProduct[productId] = overall;
+      }
+      setSupplierOptionsByProduct(map);
+      setSelectedSupplierByProduct((prev) => ({ ...selected, ...prev }));
+      setLastPurchaseByProduct(overallByProduct);
+    };
+
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [supplierReturnModalOpen, supplierReturnCandidates]);
+
+  const resetSupplierReturnState = useCallback(() => {
+    setSupplierReturnConfirmOpen(false);
+    setSupplierReturnModalOpen(false);
+    setSupplierReturnCandidates([]);
+    setSupplierReturnSelected({});
+    setSupplierReturnQty({});
+    setSupplierOptionsByProduct({});
+    setSelectedSupplierByProduct({});
+    setManualSupplierByProduct({});
+    setReturnIssueByProduct({});
+    setLastPurchaseByProduct({});
+  }, []);
+
+  const finalizeDeleteIfNeeded = useCallback(() => {
+    if (!pendingSaleDeletedId) return;
+    onSaleDeleted?.(pendingSaleDeletedId);
+    setPendingSaleDeletedId(null);
+    onClose();
+  }, [onClose, onSaleDeleted, pendingSaleDeletedId]);
+
+  // (kept here intentionally; other flows use pendingAction in edit confirm)
 
   // Load categories requiring additional information
   useEffect(() => {
@@ -84,7 +301,13 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
 
   // Reset edit state when modal opens/closes and refresh sale data
   useEffect(() => {
-    if (isOpen && sale) {
+    // Only reset when the modal transitions closed -> open.
+    // When `sale` changes while open (e.g. after saving edits), we must NOT reset state,
+    // otherwise we can wipe the supplier-return flow right after save.
+    const isOpeningNow = isOpen && !wasOpenRef.current;
+    wasOpenRef.current = isOpen;
+
+    if (isOpeningNow && sale) {
       // Reset edit mode when modal opens
       setIsEditing(false);
       setEditedCart([]);
@@ -92,6 +315,13 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
       setShowCategoryInfoModal(false);
       setPendingPrintAction(null);
       setCartItemsForPrint([]);
+      // Reset supplier-return flow when modal opens
+      resetSupplierReturnState();
+      setPendingAction(null);
+      setPendingSaleDeletedId(null);
+      setEditDeleteConfirmOpen(false);
+      setPendingEditDeletedCandidates([]);
+      setPendingAction(null);
       
       // Refresh sale data to get latest payment information
       const refreshSaleData = async () => {
@@ -110,10 +340,10 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
       };
       
       refreshSaleData();
-    } else {
+    } else if (!isOpen) {
       setCurrentSale(null);
     }
-  }, [isOpen, sale]);
+  }, [isOpen, sale, resetSupplierReturnState]);
 
   // Initialize edit state when sale changes and editing starts
   useEffect(() => {
@@ -376,6 +606,7 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
   const handleSave = async () => {
     if (!displaySale) return;
 
+    const performSave = async (): Promise<boolean> => {
     // Validate that the cart is not empty
     if (editedCart.length === 0) {
       showToast(
@@ -385,7 +616,7 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
         ),
         "error",
       );
-      return;
+      return false;
     }
 
     // Validate that all items have valid quantities
@@ -398,7 +629,7 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
         ),
         "error",
       );
-      return;
+      return false;
     }
 
     // Calculate subtotal and validate discount
@@ -420,7 +651,7 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
         ),
         "error",
       );
-      return;
+      return false;
     }
 
     setIsSaving(true);
@@ -486,17 +717,30 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
       setIsEditing(false);
       setCurrentSale(updatedSale);
       onSaleUpdated?.(updatedSale);
+      return true;
     } catch (error) {
       rendererLogger.error("Error updating sale", "SaleDetailsModal", error);
       showToast(t("cashier.saleUpdateError", "Failed to update sale"), "error");
+      return false;
     } finally {
       setIsSaving(false);
     }
+    };
+
+    const deletedCandidates = computeDeletedNormalProductsForEdit();
+    if (deletedCandidates.length > 0) {
+      setPendingEditDeletedCandidates(deletedCandidates);
+      setPendingAction(() => performSave);
+      setEditDeleteConfirmOpen(true);
+      return;
+    }
+    await performSave();
   };
 
   const handleDelete = async () => {
     if (!displaySale) return;
 
+    const performDelete = async (): Promise<boolean> => {
     setIsDeleting(true);
     try {
       await window.api.database.sales.delete(displaySale.id);
@@ -512,14 +756,29 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
         t("cashier.saleDeleted", "Sale deleted successfully"),
         "success",
       );
-      onSaleDeleted?.(displaySale.id);
-      onClose();
+      // Wait to notify parent/close until supplier-return flow ends.
+      setPendingSaleDeletedId(displaySale.id);
+      return true;
     } catch (error) {
       rendererLogger.error("Error deleting sale", "SaleDetailsModal", error);
       showToast(t("cashier.saleDeleteError", "Failed to delete sale"), "error");
+      return false;
     } finally {
       setIsDeleting(false);
       setShowDeleteConfirm(false);
+    }
+    };
+
+    const deletedCandidates = computeDeletedNormalProductsForDeleteSale();
+    const ok = await performDelete();
+    if (!ok) return;
+    if (deletedCandidates.length > 0) {
+      // Show supplier return flow AFTER deletion (as requested).
+      startSupplierReturnUi(deletedCandidates);
+    } else {
+      // No return flow: close & notify immediately.
+      onSaleDeleted?.(displaySale.id);
+      onClose();
     }
   };
 
@@ -546,7 +805,14 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
     <div
       className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
       onClick={(e) => {
-        if (!showCategoryInfoModal && e.target === e.currentTarget) {
+        if (
+          !showCategoryInfoModal &&
+          !showDeleteConfirm &&
+          !editDeleteConfirmOpen &&
+          !supplierReturnConfirmOpen &&
+          !supplierReturnModalOpen &&
+          e.target === e.currentTarget
+        ) {
           requestCloseSaleModal();
         }
       }}
@@ -828,6 +1094,327 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
           </div>
         </div>
       )}
+
+      {/* Edit Sale - Confirm deleted products */}
+      <ConfirmDialog
+        open={editDeleteConfirmOpen}
+        onOpenChange={(open) => {
+          setEditDeleteConfirmOpen(open);
+          if (!open) {
+            setPendingEditDeletedCandidates([]);
+            setPendingAction(null);
+          }
+        }}
+        title={t("supplierReturn.editConfirmTitle")}
+        message={t("supplierReturn.editConfirmMessage")}
+        confirmText={t("cashier.saveChanges", "Save Changes")}
+        cancelText={t("common.cancel", "Cancel")}
+        variant="danger"
+        onConfirm={async () => {
+          const candidates = pendingEditDeletedCandidates;
+          const action = pendingAction;
+          setPendingEditDeletedCandidates([]);
+          setPendingAction(null);
+          setEditDeleteConfirmOpen(false);
+          if (!action) return;
+          // Save first (remove products), then show supplier-return flow.
+          const ok = await action();
+          if (!ok) return;
+          startSupplierReturnUi(candidates);
+        }}
+      />
+
+      {/* Supplier Return Confirm */}
+      <ConfirmDialog
+        open={supplierReturnConfirmOpen}
+        onOpenChange={(open) => {
+          setSupplierReturnConfirmOpen(open);
+          // If dismissed via outside click / Esc, finalize deletion.
+          if (!open) {
+            if (advancingToReturnModalRef.current) {
+              advancingToReturnModalRef.current = false;
+              return;
+            }
+            resetSupplierReturnState();
+            finalizeDeleteIfNeeded();
+          }
+        }}
+        title={t("supplierReturn.confirmTitle")}
+        message={t("supplierReturn.confirmMessage")}
+        confirmText={t("supplierReturn.yes")}
+        cancelText={t("supplierReturn.no")}
+        variant="warning"
+        onConfirm={() => {
+          advancingToReturnModalRef.current = true;
+          setSupplierReturnConfirmOpen(false);
+          // Ensure modal opens after confirm fully closes
+          setTimeout(() => setSupplierReturnModalOpen(true), 0);
+        }}
+        onCancel={() => {
+          resetSupplierReturnState();
+          finalizeDeleteIfNeeded();
+        }}
+      />
+
+      {/* Supplier Return Selection Modal */}
+      <Modal
+        open={supplierReturnModalOpen}
+        onOpenChange={(open) => {
+          setSupplierReturnModalOpen(open);
+          // If dismissed via outside click / Esc, finalize deletion.
+          if (!open) {
+            resetSupplierReturnState();
+            finalizeDeleteIfNeeded();
+          }
+        }}
+        title={t("supplierReturn.modalTitle")}
+        subtitle={t("supplierReturn.modalDesc")}
+        size="xl"
+        showFooter={false}
+      >
+        <div className="space-y-4">
+          {/* Label size (same sizes as service labels) */}
+          <div className="space-y-2 flex flex-col items-center">
+            <span className="text-sm font-medium text-foreground block">
+              {t("supplierReturn.labelSize", "Label size")}
+            </span>
+            <div className="flex flex-wrap gap-3 justify-center">
+              {(["20x40", "35x45", "25x50"] as ServiceLabelSize[]).map((size) => (
+                <Checkbox
+                  key={size}
+                  checked={returnLabelSize === size}
+                  onChange={(checked) => {
+                    if (checked) {
+                      setReturnLabelSize(size);
+                      try {
+                        localStorage.setItem("supplierReturn_labelSize", size);
+                      } catch {
+                        // ignore
+                      }
+                    }
+                  }}
+                  label={`${size.replace("x", "×")} mm`}
+                  color="cyan"
+                />
+              ))}
+            </div>
+          </div>
+
+          <div className="border rounded-lg overflow-hidden">
+            <div className="grid grid-cols-20 gap-2 px-4 py-2 bg-muted/40 text-sm font-medium">
+              <div className="col-span-5">{t("supplierReturn.product")}</div>
+              <div className="col-span-5">{t("supplierReturn.supplier", "Supplier")}</div>
+              <div className="col-span-5">{t("supplierReturn.issue", "Issue/Problem")}</div>
+              <div className="col-span-2 text-center">{t("supplierReturn.deletedQty")}</div>
+              <div className="col-span-3 text-center">{t("supplierReturn.returnQty")}</div>
+            </div>
+            <div className="divide-y">
+              {supplierReturnCandidates.map((c) => {
+                const checked = supplierReturnSelected[c.productId] ?? false;
+                const qty = supplierReturnQty[c.productId] ?? c.deletedQty;
+                const min = 1;
+                const max = c.deletedQty;
+                const supplierOptions = supplierOptionsByProduct[c.productId] ?? [];
+                const selectedSupplierId = selectedSupplierByProduct[c.productId] ?? "";
+                const selectedSupplier = supplierOptions.find((o) => o.sellerId === selectedSupplierId);
+                return (
+                  <div key={c.productId} className="grid grid-cols-20 gap-2 px-4 py-3 items-center">
+                    <div className="col-span-5 flex items-center gap-3 min-w-0">
+                      <Checkbox
+                        checked={checked}
+                        onChange={(v) =>
+                          setSupplierReturnSelected((prev) => ({ ...prev, [c.productId]: v }))
+                        }
+                        color="orange"
+                      />
+                      <div className="truncate">
+                        <div className="text-sm font-medium text-foreground truncate">{c.name}</div>
+                      </div>
+                    </div>
+                    <div className="col-span-5">
+                      {checked ? (
+                        <div className="space-y-1">
+                          {supplierOptions.length > 0 ? (
+                            <Select
+                              value={selectedSupplierId}
+                              onValueChange={(value) =>
+                                setSelectedSupplierByProduct((prev) => ({
+                                  ...prev,
+                                  [c.productId]: value,
+                                }))
+                              }
+                            >
+                              <SelectTrigger className="h-10">
+                                <SelectValue placeholder={t("supplierReturn.supplier", "Supplier")} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {supplierOptions.map((o) => (
+                                  <SelectItem key={o.sellerId} value={o.sellerId}>
+                                    {o.sellerName}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            <Input
+                              value={manualSupplierByProduct[c.productId] ?? ""}
+                              onChange={(e) =>
+                                setManualSupplierByProduct((prev) => ({
+                                  ...prev,
+                                  [c.productId]: e.target.value,
+                                }))
+                              }
+                              placeholder={t(
+                                "supplierReturn.manualSupplierPlaceholder",
+                                "Enter supplier name",
+                              )}
+                              className="h-10"
+                            />
+                          )}
+                          {selectedSupplier ? (
+                            <div className="text-xs text-muted-foreground">
+                              {t("supplierReturn.lastPurchasePrice", "Last purchase")}:{" "}
+                              {`${Number(selectedSupplier.lastPrice).toLocaleString()} ${t("currency")}`}
+                            </div>
+                          ) : null}
+                        </div>
+                      ) : (
+                        <div className="text-sm text-muted-foreground">-</div>
+                      )}
+                    </div>
+                    <div className="col-span-5">
+                      {checked ? (
+                        <Input
+                          value={returnIssueByProduct[c.productId] ?? ""}
+                          onChange={(e) =>
+                            setReturnIssueByProduct((prev) => ({
+                              ...prev,
+                              [c.productId]: e.target.value,
+                            }))
+                          }
+                          placeholder={t("supplierReturn.issuePlaceholder", "Type the issue")}
+                          className="h-10"
+                        />
+                      ) : (
+                        <div className="text-sm text-muted-foreground">-</div>
+                      )}
+                    </div>
+                    <div className="col-span-2 text-center text-sm">{c.deletedQty}</div>
+                    <div className="col-span-3 flex items-center justify-center">
+                      {checked && c.deletedQty > 1 ? (
+                        <input
+                          type="number"
+                          inputMode="numeric"
+                          min={min}
+                          max={max}
+                          value={Math.min(Math.max(qty, min), max)}
+                          onFocus={(e) => e.currentTarget.select()}
+                          onChange={(e) => {
+                            const v = Number(e.target.value);
+                            const clamped = Number.isFinite(v) ? Math.min(Math.max(v, min), max) : min;
+                            setSupplierReturnQty((prev) => ({ ...prev, [c.productId]: clamped }));
+                          }}
+                          className="w-24 px-3 py-2 rounded-md border border-border bg-background text-sm text-center"
+                        />
+                      ) : (
+                        <div className="text-sm text-muted-foreground">
+                          {checked ? 1 : "-"}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                // Skip printing -> just finalize delete for now.
+                resetSupplierReturnState();
+                finalizeDeleteIfNeeded();
+              }}
+              disabled={isPrintingReturnLabels}
+            >
+              {t("supplierReturn.skipPrinting")}
+            </Button>
+            <Button
+              disabled={isPrintingReturnLabels}
+              onClick={async () => {
+                try {
+                  setIsPrintingReturnLabels(true);
+                  const compactReturnTo = t("supplierReturn.returnTo", "Return To");
+                  const titleFull = t("supplierReturn.labelTitle", "Return To Supplier");
+                  const dateLabel = t("supplierReturn.date", "Date");
+                  const priceLabel = t("supplierReturn.price", "Price");
+                  const labels: Array<{
+                    title: string;
+                    productName: string;
+                    supplierName: string;
+                    boughtPrice: number | string;
+                    dateLabel: string;
+                    priceLabel: string;
+                    purchaseDate?: string;
+                    issue?: string;
+                  }> = [];
+
+                  for (const c of supplierReturnCandidates) {
+                    const checked = supplierReturnSelected[c.productId] ?? false;
+                    if (!checked) continue;
+                    const qty = supplierReturnQty[c.productId] ?? c.deletedQty;
+                    const supplierOptions = supplierOptionsByProduct[c.productId] ?? [];
+                    const selectedSupplierId = selectedSupplierByProduct[c.productId] ?? "";
+                    const selectedSupplier = supplierOptions.find((o) => o.sellerId === selectedSupplierId);
+                    const manualSupplier = (manualSupplierByProduct[c.productId] ?? "").trim();
+                    const fallback = lastPurchaseByProduct[c.productId];
+
+                    const supplierName = selectedSupplier?.sellerName ?? manualSupplier ?? "";
+                    const boughtPrice = selectedSupplier?.lastPrice ?? fallback?.lastPrice ?? 0;
+                    const purchaseDate =
+                      selectedSupplier?.lastDate ?? fallback?.lastDate ?? undefined;
+                    const issue = (returnIssueByProduct[c.productId] ?? "").trim();
+
+                    const count = Math.max(1, Number.isFinite(qty) ? Math.floor(qty) : 1);
+                    for (let i = 0; i < count; i++) {
+                      labels.push({
+                        title:
+                          returnLabelSize === "20x40"
+                            ? `${compactReturnTo}: ${supplierName || "—"}`
+                            : titleFull,
+                        productName: c.name,
+                        supplierName: supplierName || "—",
+                        boughtPrice,
+                        dateLabel: `${dateLabel}:`,
+                        priceLabel: `${priceLabel}:`,
+                        purchaseDate,
+                        issue: issue || undefined,
+                      });
+                    }
+                  }
+
+                  if (labels.length > 0) {
+                    await printReturnSupplierLabels(labels, returnLabelSize);
+                  }
+
+                  resetSupplierReturnState();
+                  finalizeDeleteIfNeeded();
+                } catch (e) {
+                  showToast(
+                    t("supplierReturn.printError", "Failed to print return labels"),
+                    "error",
+                  );
+                } finally {
+                  setIsPrintingReturnLabels(false);
+                }
+              }}
+            >
+              {t("supplierReturn.printReturnLabel")}
+            </Button>
+          </div>
+        </div>
+      </Modal>
 
       {/* Category Info Modal - Rendered outside to prevent click propagation */}
       {showCategoryInfoModal && (

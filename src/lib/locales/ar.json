@@ -2533,5 +2533,33 @@
     "hide": "إخفاء",
     "rowsPerPage": "صفوف في الصفحة:",
     "selectRowsPerPage": "اختر عدد الصفوف"
+  },
+  "supplierReturn": {
+    "editConfirmTitle": "تأكيد الحذف",
+    "editConfirmMessage": "لقد قمت بحذف منتجات من هذه الفاتورة. هل تريد حفظ هذه التغييرات؟",
+    "confirmTitle": "إرجاع المنتجات المحذوفة إلى المورّد؟",
+    "confirmMessage": "قد تحتاج بعض المنتجات المحذوفة إلى إرجاعها إلى مورّد. هل تريد تحديد المنتجات المراد إرجاعها؟",
+    "yes": "نعم",
+    "no": "لا",
+    "modalTitle": "تحديد المنتجات المراد إرجاعها",
+    "modalDesc": "حدّد المنتجات (والكميات) التي يجب إرجاعها إلى المورّد.",
+    "product": "المنتج",
+    "supplier": "المورّد",
+    "noSuppliers": "لا يوجد مورّدون",
+    "manualSupplierPlaceholder": "أدخل اسم المورّد",
+    "labelSize": "حجم الملصق",
+    "labelTitle": "إرجاع إلى المورّد",
+    "returnTo": "إرجاع إلى",
+    "date": "التاريخ",
+    "price": "السعر",
+    "issue": "المشكلة/العطل",
+    "issuePlaceholder": "اكتب المشكلة",
+    "printError": "فشل طباعة ملصقات الإرجاع",
+    "lastPurchasePrice": "آخر شراء",
+    "deletedQty": "الكمية المحذوفة",
+    "returnQty": "الكمية المراد إرجاعها",
+    "printReturnLabel": "طباعة ملصق الإرجاع",
+    "skipPrinting": "تخطي الطباعة",
+    "cancel": "إلغاء"
   }
 }
