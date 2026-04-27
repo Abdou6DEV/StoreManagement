@@ -2489,6 +2489,7 @@
     "returnTo": "Retour à",
     "date": "Date",
     "price": "Prix",
+    "panne": "Panne",
     "issue": "Problème/Panne",
     "issuePlaceholder": "Saisissez le problème",
     "printError": "Échec de l’impression des étiquettes de retour",

@@ -156,6 +156,7 @@ export interface ReturnSupplierLabelData {
   boughtPrice: number | string;
   dateLabel: string;
   priceLabel: string;
+  issueLabel: string;
   purchaseDate?: string;
   issue?: string;
 }
@@ -412,28 +413,38 @@ export const printReturnSupplierLabels = async (
     const productLine = escape(d.productName?.trim() || '—');
     const supplierLine = escape(d.supplierName?.trim() || '—');
     const dateLine = d.purchaseDate ? escape(new Date(d.purchaseDate).toLocaleDateString()) : '';
-    const issueLine = d.issue?.trim() ? escape(d.issue.trim()) : '';
+    const issueText = d.issue?.trim() ? escape(d.issue.trim()) : '';
     const priceLine = formatPrice(d.boughtPrice);
     const dateLabel = escape(d.dateLabel?.trim() || 'Date:');
     const priceLabel = escape(d.priceLabel?.trim() || 'Price:');
+    const issueLabel = escape(d.issueLabel?.trim() || 'Issue:');
 
-    const is35x45 = labelSize === '35x45';
-    const baseClass = `return-label${is35x45 ? ' return-label-35x45' : ''}`;
     const isCompact = labelSize === '20x40';
-    const metaLine =
-      dateLine || priceLine
+    const is35x45 = labelSize === '35x45';
+    const baseClass = `return-label${is35x45 ? ' return-label-35x45' : ''}${isCompact ? ' return-label-20x40' : ''}`;
+    const issueRow = issueText
+      ? `<div class="return-label-line issue">${issueLabel} ${issueText}</div>`
+      : '';
+
+    const needsCompactIssueTwoLines =
+      isCompact && !!issueText && d.issue.trim().length > 22;
+
+    const compactMetaRow =
+      needsCompactIssueTwoLines
         ? `<div class="return-label-line meta">
             ${dateLine ? `<span class="meta-date">${dateLabel} ${dateLine}</span>` : `<span class="meta-date"></span>`}
             <span class="meta-price" dir="ltr">${priceLabel} ${priceLine}</span>
           </div>`
         : '';
+    const priceRow = `<div class="return-label-line price" dir="ltr">${priceLabel} ${priceLine}</div>`;
+    const dateRow = dateLine ? `<div class="return-label-line date">${dateLabel} ${dateLine}</div>` : '';
     return `
       <div class="${baseClass}">
         <div class="return-label-line title">${titleLine}</div>
         <div class="return-label-line product">${productLine}</div>
         ${isCompact ? '' : `<div class="return-label-line supplier">${supplierLine}</div>`}
-        ${metaLine}
-        ${issueLine ? `<div class="return-label-line issue">${issueLine}</div>` : ''}
+        ${needsCompactIssueTwoLines ? compactMetaRow : `${priceRow}${dateRow}`}
+        ${issueRow}
       </div>
     `.trim();
   };
@@ -472,6 +483,10 @@ export const printReturnSupplierLabels = async (
             margin: 0 !important;
             padding: 0 !important;
           }
+          /* 20×40: allow slight top padding in print */
+          .return-label-20x40 {
+            padding-top: 0.8mm !important;
+          }
         }
         body {
           font-family: ${fontFamily};
@@ -507,6 +522,11 @@ export const printReturnSupplierLabels = async (
           page-break-inside: avoid;
           box-sizing: border-box;
         }
+        /* 20×40: move content upward to fit more lines */
+        .return-label-20x40 {
+          justify-content: flex-start;
+          padding-top: 0.8mm;
+        }
         .return-label:last-child { page-break-after: auto; }
         .return-label-line {
           text-align: center;
@@ -525,7 +545,8 @@ export const printReturnSupplierLabels = async (
           gap: 3mm;
           width: 100%;
           max-width: 100%;
-          padding: 0 0.5mm;
+          /* Slightly more horizontal padding to avoid left-edge clipping on some printers */
+          padding: 0 1mm;
           box-sizing: border-box;
         }
         .meta-date, .meta-price {
@@ -554,7 +575,21 @@ export const printReturnSupplierLabels = async (
         .product { font-size: 14px; }
         .supplier { font-size: 13px; }
         .meta { font-size: 12px; }
+        .price { font-size: 12px; direction: ltr; unicode-bidi: embed; }
+        .date { font-size: 12px; }
         .issue { font-size: 12px; }
+        /* 20×40: allow issue to wrap to 2 lines */
+        .return-label-20x40 .issue {
+          white-space: normal;
+          word-wrap: break-word;
+          word-break: break-word;
+          display: -webkit-box;
+          -webkit-box-orient: vertical;
+          -webkit-line-clamp: 2;
+          overflow: hidden;
+          max-width: 100%;
+          line-height: 1.05;
+        }
         .price-currency { font-size: 0.8em; font-weight: 700; }
       </style>
       ${labelsHTML}

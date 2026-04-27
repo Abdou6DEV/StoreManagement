@@ -2572,6 +2572,7 @@
     "returnTo": "Return To",
     "date": "Date",
     "price": "Price",
+    "panne": "Issue",
     "issue": "Issue/Problem",
     "issuePlaceholder": "Type the issue",
     "printError": "Failed to print return labels",
