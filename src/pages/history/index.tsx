@@ -7,6 +7,7 @@ import GeneralHistory from "./components/generalHistory";
 import DetailsHistory from "./components/detailsHistory";
 import { useTooltip } from "../../lib/contexts/tooltipContext";
 import type { AggregationLevel, SelectedPeriod } from "../../types";
+import { FadeUp } from "../../lib/components/fadeUp";
 
 export default function History() {
   const { t } = useTranslation();
@@ -160,12 +161,14 @@ export default function History() {
 
       {/* Tab Content */}
       <div className="min-h-[650px]">
-        {activeTab === "general" && (
-          <GeneralHistory onPeriodSelect={handlePeriodSelect} />
-        )}
-        {activeTab === "details" && (
-          <DetailsHistory selectedPeriod={selectedPeriod} />
-        )}
+        <FadeUp contentKey={`history:${activeTab}`}>
+          {activeTab === "general" && (
+            <GeneralHistory onPeriodSelect={handlePeriodSelect} />
+          )}
+          {activeTab === "details" && (
+            <DetailsHistory selectedPeriod={selectedPeriod} />
+          )}
+        </FadeUp>
       </div>
     </div>
   );

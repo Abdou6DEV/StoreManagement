@@ -6,6 +6,7 @@ import DetailsHistoryTabs from "./detailsHistoryTabs";
 import SalesSection from "./salesSection";
 import PurchasesSection from "./purchasesSection";
 import BillsPaymentsSection from "./billsPaymentsSection";
+import { FadeUp } from "../../../../lib/components/fadeUp";
 import EmptyState from "./emptyState";
 import LoadingState from "./loadingState";
 
@@ -93,36 +94,38 @@ export default function DetailsHistory({
       />
 
       <div className="min-h-[400px]">
-        {activeSection === "sales" && (
-          <SalesSection
-            sales={sales}
-            currentSales={currentSales}
-            currentPage={salesPage}
-            totalPages={salesTotalPages}
-            onPageChange={setSalesPage}
-            onRefresh={refreshData}
-          />
-        )}
+        <FadeUp contentKey={`detailsHistory:${activeSection}`}>
+          {activeSection === "sales" && (
+            <SalesSection
+              sales={sales}
+              currentSales={currentSales}
+              currentPage={salesPage}
+              totalPages={salesTotalPages}
+              onPageChange={setSalesPage}
+              onRefresh={refreshData}
+            />
+          )}
 
-        {activeSection === "billsPayments" && (
-          <BillsPaymentsSection
-            billsPayments={billsPayments}
-            currentBillsPayments={currentBillsPayments}
-            currentPage={billsPaymentsPage}
-            totalPages={billsPaymentsTotalPages}
-            onPageChange={setBillsPaymentsPage}
-          />
-        )}
+          {activeSection === "billsPayments" && (
+            <BillsPaymentsSection
+              billsPayments={billsPayments}
+              currentBillsPayments={currentBillsPayments}
+              currentPage={billsPaymentsPage}
+              totalPages={billsPaymentsTotalPages}
+              onPageChange={setBillsPaymentsPage}
+            />
+          )}
 
-        {activeSection === "purchases" && (
-          <PurchasesSection
-            purchases={purchases}
-            currentPurchases={currentPurchases}
-            currentPage={purchasesPage}
-            totalPages={purchasesTotalPages}
-            onPageChange={setPurchasesPage}
-          />
-        )}
+          {activeSection === "purchases" && (
+            <PurchasesSection
+              purchases={purchases}
+              currentPurchases={currentPurchases}
+              currentPage={purchasesPage}
+              totalPages={purchasesTotalPages}
+              onPageChange={setPurchasesPage}
+            />
+          )}
+        </FadeUp>
       </div>
     </div>
   );

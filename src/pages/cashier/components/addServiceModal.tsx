@@ -3,10 +3,11 @@ import { useTranslation } from "react-i18next";
 import { useToast } from "../../../lib/contexts/toastContext";
 import { FormModal } from "../../../lib/components/modal";
 import StyledNumberInput from "../../../lib/components/inputNumber";
-import { Plus } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import type { CartItem } from "../../../types";
 import type { Service } from "@prisma/client";
 import { useCompletedServices } from "../../../lib/contexts/completedServicesContext";
+import { ConfirmDialog } from "../../../lib/components/confirmDialog";
 
 interface CompletedServiceAppointment {
   id: string;
@@ -39,6 +40,7 @@ interface AddServiceModalProps {
 
 // Maximum value for INT column in SQLite (2^31 - 1)
 const MAX_PRICE = 2147483647;
+const HIDDEN_SERVICE_TEMPLATES_OPTION_KEY = "hiddenServiceTemplateIds";
 
 export default function AddServiceModal({
   open,
@@ -64,25 +66,67 @@ export default function AddServiceModal({
   const [allServices, setAllServices] = useState<Service[]>([]);
   const [completedServices, setCompletedServices] = useState<CompletedServiceAppointment[]>([]);
   const [hideCostPrice, setHideCostPrice] = useState(true);
+  const [hiddenTemplateIds, setHiddenTemplateIds] = useState<Set<string>>(new Set());
+  const [hideDialogOpen, setHideDialogOpen] = useState(false);
+  const [hideTarget, setHideTarget] = useState<Service | null>(null);
+  const [isHidingTemplate, setIsHidingTemplate] = useState(false);
   
   // Fetch all services and completed service appointments when modal opens
   // Filter cart items on render instead of in useEffect for better performance
   useEffect(() => {
     if (open) {
-      Promise.all([
-        window.api.database.services.getAll(),
-        window.api.database.serviceAppointments.getCompletedForCashier()
-      ])
-        .then(([services, completed]) => {
-          setAllServices(services);
+      (async () => {
+        try {
+          const hiddenRaw = await window.api.database.options.get(HIDDEN_SERVICE_TEMPLATES_OPTION_KEY);
+          const hiddenIds = (() => {
+            if (!hiddenRaw) return [];
+            try {
+              const parsed = JSON.parse(hiddenRaw);
+              return Array.isArray(parsed) ? parsed.filter((x) => typeof x === "string") : [];
+            } catch {
+              return [];
+            }
+          })();
+          const hiddenSet = new Set<string>(hiddenIds);
+          setHiddenTemplateIds(hiddenSet);
+
+          const [services, completed] = await Promise.all([
+            window.api.database.services.getAll(),
+            window.api.database.serviceAppointments.getCompletedForCashier(),
+          ]);
+          setAllServices(services.filter((s: Service) => !hiddenSet.has(s.id)));
           setCompletedServices(completed);
-        })
-        .catch(() => {
+        } catch {
+          setHiddenTemplateIds(new Set());
           setAllServices([]);
           setCompletedServices([]);
-        });
+        }
+      })();
     }
   }, [open]); // Removed cart dependency - filter during render instead
+
+  const confirmHideTemplate = async () => {
+    if (!hideTarget) return;
+    if (isHidingTemplate) return;
+
+    setIsHidingTemplate(true);
+    try {
+      const next = new Set(hiddenTemplateIds);
+      next.add(hideTarget.id);
+      await window.api.database.options.set(
+        HIDDEN_SERVICE_TEMPLATES_OPTION_KEY,
+        JSON.stringify(Array.from(next)),
+      );
+      setHiddenTemplateIds(next);
+      setAllServices((prev) => prev.filter((s: Service) => s.id !== hideTarget.id));
+      showToast(t("cashier.hideServiceTemplateSuccess", "Template hidden"), "success");
+    } catch (error) {
+      console.error("Failed to hide service template:", error);
+      showToast(t("cashier.hideServiceTemplateError", "Failed to hide template"), "error");
+    } finally {
+      setIsHidingTemplate(false);
+    }
+  };
   
   // Filter completed services based on cart (computed during render)
   const availableCompletedServices = completedServices.filter((service) => {
@@ -161,10 +205,11 @@ export default function AddServiceModal({
       try {
         const query = service.name.trim() || service.description.trim();
         const results = await window.api.database.services.search(query);
-        setSuggestions(results.slice(0, 2));
+        const filtered = results.filter((s: Service) => !hiddenTemplateIds.has(s.id));
+        setSuggestions(filtered.slice(0, 2));
         // Only show suggestions if we haven't just selected one
         if (!justSelectedSuggestion) {
-          setShowSuggestions(results.length > 0);
+          setShowSuggestions(filtered.length > 0);
         }
         setSelectedSuggestionIndex(-1);
       } catch (error) {
@@ -581,6 +626,19 @@ export default function AddServiceModal({
                         className="p-3 border rounded-lg h-[60px] flex flex-col justify-between relative overflow-hidden w-full bg-card hover:border-primary hover:shadow-md transition-all cursor-pointer"
                         onClick={() => handleSelectService(srv)}
                       >
+                        <button
+                          type="button"
+                          className="absolute top-1.5 right-1.5 p-1 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                          aria-label={t("cashier.hideServiceTemplate", "Hide template")}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setHideTarget(srv);
+                            setHideDialogOpen(true);
+                          }}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                         <div className="flex flex-col gap-1 flex-1 min-w-0">
                           <div
                             className="font-medium text-sm break-words leading-tight min-h-[1rem] max-h-[1rem] flex-1 overflow-hidden"
@@ -608,6 +666,28 @@ export default function AddServiceModal({
           )}
         </div>
       </div>
+      <ConfirmDialog
+        open={hideDialogOpen}
+        onOpenChange={(nextOpen) => {
+          setHideDialogOpen(nextOpen);
+          if (!nextOpen) {
+            setHideTarget(null);
+            setIsHidingTemplate(false);
+          }
+        }}
+        title={t("cashier.hideServiceTemplate", "Hide template")}
+        message={t(
+          "cashier.hideServiceTemplateConfirm",
+          "Hide service template \"{{name}}\"? It will no longer appear in the list, but it will stay in your database so past sales keep their names.",
+          { name: hideTarget?.name ?? "" },
+        )}
+        confirmText={t("cashier.hide", "Hide")}
+        cancelText={t("common.cancel", "Cancel")}
+        variant="danger"
+        loading={isHidingTemplate}
+        onConfirm={confirmHideTemplate}
+        onCancel={() => setHideTarget(null)}
+      />
     </FormModal>
   );
 }

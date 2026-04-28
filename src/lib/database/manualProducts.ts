@@ -1,5 +1,7 @@
 import { prisma } from "./prismaClient";
 
+const MANUAL_PRODUCT_IN_USE_ERROR = "MANUAL_PRODUCT_IN_USE";
+
 export async function createManualProduct(data: {
   name: string;
   type: string;
@@ -102,6 +104,14 @@ export async function updateManualProduct(
 }
 
 export async function deleteManualProduct(id: string) {
+  const usageCount = await prisma.saleItem.count({
+    where: { manualProductId: id },
+  });
+
+  if (usageCount > 0) {
+    throw new Error(MANUAL_PRODUCT_IN_USE_ERROR);
+  }
+
   return await prisma.manualProduct.delete({
     where: { id },
   });

@@ -2,11 +2,12 @@ import React, { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { FormModal } from "../../../lib/components/modal";
 import StyledNumberInput from "../../../lib/components/inputNumber";
-import { Plus } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import type { CartItem } from "../../../types";
 import type { ManualProduct } from "@prisma/client";
 import { useToast } from "../../../lib/contexts/toastContext";
 import { useAuth } from "../../../lib/contexts/authContext";
+import { ConfirmDialog } from "../../../lib/components/confirmDialog";
 
 // Use ManualProduct directly since it already has costPrice
 type ManualProductWithCost = ManualProduct & {
@@ -35,6 +36,7 @@ interface AddManualProductModalProps {
 
 // Maximum value for INT column in SQLite (2^31 - 1)
 const MAX_PRICE = 2147483647;
+const HIDDEN_TEMPLATES_OPTION_KEY = "hiddenManualProductTemplateIds";
 
 export default function AddManualProductModal({
   open,
@@ -57,6 +59,10 @@ export default function AddManualProductModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [existingProductWarning, setExistingProductWarning] = useState<string | null>(null);
   const [hideCostPrice, setHideCostPrice] = useState(true);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<ManualProductWithCost | null>(null);
+  const [isDeletingTemplate, setIsDeletingTemplate] = useState(false);
+  const [hiddenTemplateIds, setHiddenTemplateIds] = useState<Set<string>>(new Set());
   
   // Helper function for safe price calculations with proper rounding
   const safePrice = (value: number | string | undefined): number => {
@@ -67,12 +73,59 @@ export default function AddManualProductModal({
   // Fetch all manual products when modal opens
   useEffect(() => {
     if (open) {
-      window.api.database.manualProducts
-        .getAll()
-        .then(setAllManualProducts)
-        .catch(() => setAllManualProducts([]));
+      (async () => {
+        try {
+          const hiddenRaw = await window.api.database.options.get(HIDDEN_TEMPLATES_OPTION_KEY);
+          const hiddenIds = (() => {
+            if (!hiddenRaw) return [];
+            try {
+              const parsed = JSON.parse(hiddenRaw);
+              return Array.isArray(parsed) ? parsed.filter((x) => typeof x === "string") : [];
+            } catch {
+              return [];
+            }
+          })();
+          const hiddenSet = new Set<string>(hiddenIds);
+          setHiddenTemplateIds(hiddenSet);
+
+          const list = await window.api.database.manualProducts.getAll();
+          setAllManualProducts(list.filter((p: ManualProductWithCost) => !hiddenSet.has(p.id)));
+        } catch {
+          setHiddenTemplateIds(new Set());
+          setAllManualProducts([]);
+        }
+      })();
     }
   }, [open]);
+
+  const handleDeleteManualTemplate = async () => {
+    if (!deleteTarget) return;
+    if (isDeletingTemplate) return;
+
+    setIsDeletingTemplate(true);
+    try {
+      const next = new Set(hiddenTemplateIds);
+      next.add(deleteTarget.id);
+      await window.api.database.options.set(
+        HIDDEN_TEMPLATES_OPTION_KEY,
+        JSON.stringify(Array.from(next)),
+      );
+      setHiddenTemplateIds(next);
+      setAllManualProducts((prev) => prev.filter((p: ManualProductWithCost) => p.id !== deleteTarget.id));
+      showToast(
+        t("cashier.hideManualTemplateSuccess", "Template hidden"),
+        "success",
+      );
+    } catch (error: any) {
+      console.error("Failed to hide manual template:", error);
+      showToast(
+        t("cashier.hideManualTemplateError", "Failed to hide template"),
+        "error",
+      );
+    } finally {
+      setIsDeletingTemplate(false);
+    }
+  };
 
   // Check for existing products in inventory when name/type changes
   useEffect(() => {
@@ -150,10 +203,11 @@ export default function AddManualProductModal({
         
         // Only update state if this search hasn't been cancelled
         if (!isCancelled) {
-        setSuggestions(results.slice(0, 2));
+        const filtered = results.filter((p: ManualProductWithCost) => !hiddenTemplateIds.has(p.id));
+        setSuggestions(filtered.slice(0, 2));
         // Only show suggestions if we haven't just selected one
         if (!justSelectedSuggestion) {
-          setShowSuggestions(results.length > 0);
+          setShowSuggestions(filtered.length > 0);
         }
         setSelectedSuggestionIndex(-1);
         }
@@ -481,31 +535,32 @@ export default function AddManualProductModal({
       stockQuantity !== "");
 
   return (
-    <FormModal
-      open={open}
-      onClose={handleClose}
-      hasUnsavedChanges={hasManualDraft}
-      onDiscard={handleClose}
-      title={t("cashier.addManualProduct", "Add Manual Product")}
-      subtitle={t(
-        "cashier.addManualProductDesc",
-        "Add a product that is not in your inventory",
-      )}
-      icon={<Plus className="w-5 h-5 text-green-500" />}
-      size="lg"
-      className="max-w-5xl"
-      onSubmit={handleSubmit}
-      submitText={t("cashier.addToCart", "Add to Cart")}
-      cancelText={t("cashier.cancel", "Cancel")}
-      submitDisabled={
-        isSubmitting ||
-        !manualProduct.name.trim() ||
-        !manualProduct.type.trim() ||
-        !manualProduct.sold ||
-        (addToStock && (!stockQuantity || (typeof stockQuantity === "number" && stockQuantity <= 0)))
-      }
-    >
-      <div className="flex flex-row gap-8">
+    <>
+      <FormModal
+        open={open}
+        onClose={handleClose}
+        hasUnsavedChanges={hasManualDraft}
+        onDiscard={handleClose}
+        title={t("cashier.addManualProduct", "Add Manual Product")}
+        subtitle={t(
+          "cashier.addManualProductDesc",
+          "Add a product that is not in your inventory",
+        )}
+        icon={<Plus className="w-5 h-5 text-green-500" />}
+        size="lg"
+        className="max-w-5xl"
+        onSubmit={handleSubmit}
+        submitText={t("cashier.addToCart", "Add to Cart")}
+        cancelText={t("cashier.cancel", "Cancel")}
+        submitDisabled={
+          isSubmitting ||
+          !manualProduct.name.trim() ||
+          !manualProduct.type.trim() ||
+          !manualProduct.sold ||
+          (addToStock && (!stockQuantity || (typeof stockQuantity === "number" && stockQuantity <= 0)))
+        }
+      >
+        <div className="flex flex-row gap-8">
         {/* Left: Product Form */}
         <div className="w-[260px] min-w-0 space-y-4 pl-2">
           <Legend>
@@ -774,6 +829,19 @@ export default function AddManualProductModal({
                   className="p-3 border rounded-lg h-[60px] flex flex-col justify-between relative overflow-hidden w-full bg-card hover:border-primary hover:shadow-md transition-all cursor-pointer"
                   onClick={() => handleSelectManualProduct(product)}
                 >
+                  <button
+                    type="button"
+                    className="absolute top-1.5 right-1.5 p-1 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                    aria-label={t("cashier.hideManualTemplate", "Hide template")}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setDeleteTarget(product);
+                      setDeleteDialogOpen(true);
+                    }}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                   <div className="flex flex-col gap-1 flex-1 min-w-0">
                     <div
                       className="font-medium text-sm break-words leading-tight min-h-[1rem] max-h-[1rem] flex-1 overflow-hidden"
@@ -795,8 +863,32 @@ export default function AddManualProductModal({
             </div>
           )}
         </div>
-      </div>
-    </FormModal>
+        </div>
+      </FormModal>
+
+      <ConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={(nextOpen) => {
+          setDeleteDialogOpen(nextOpen);
+          if (!nextOpen) {
+            setDeleteTarget(null);
+            setIsDeletingTemplate(false);
+          }
+        }}
+        title={t("cashier.hideManualTemplate", "Hide template")}
+        message={t(
+          "cashier.hideManualTemplateConfirm",
+          "Hide manual template \"{{name}}\"? It will no longer appear in the list, but it will stay in your database so past sales keep their names.",
+          { name: deleteTarget?.name ?? "" },
+        )}
+        confirmText={t("common.delete", "Delete")}
+        cancelText={t("common.cancel", "Cancel")}
+        variant="danger"
+        loading={isDeletingTemplate}
+        onConfirm={handleDeleteManualTemplate}
+        onCancel={() => setDeleteTarget(null)}
+      />
+    </>
   );
 }
 

@@ -53,6 +53,7 @@ import { Button } from "../../lib/components/button";
 import { cn } from "../../lib/utils";
 import { Tooltip } from "../../lib/components/tooltip";
 import ClientSearchInput from "./components/clientSearchInput";
+import { FadeUp } from "../../lib/components/fadeUp";
 
 type ClientsListSortMode =
   | "creditsVersements"
@@ -622,7 +623,7 @@ export default function Clients() {
 
       {/* Clients Tab Content */}
       {activeTab === "clients" && (
-        <div className="space-y-4">
+        <FadeUp contentKey={`clients:${viewMode}`} className="space-y-4">
           <AddClientForm
             openPanel={openPanel}
             setOpenPanel={setOpenPanel}
@@ -978,12 +979,12 @@ export default function Clients() {
               notificationAction={notificationAction}
             />
           )}
-        </div>
+        </FadeUp>
       )}
 
       {/* Suppliers Tab Content */}
       {activeTab === "suppliers" && (
-        <div className="space-y-4">
+        <FadeUp contentKey={`suppliers`} className="space-y-4">
           <AddSupplierForm
             openPanel={openPanel}
             setOpenPanel={setOpenPanel}
@@ -1162,7 +1163,7 @@ export default function Clients() {
               </>
             )}
           </div>
-        </div>
+        </FadeUp>
       )}
       <EditClientDialog
         client={editingClient}

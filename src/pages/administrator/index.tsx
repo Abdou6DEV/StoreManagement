@@ -9,6 +9,7 @@ import { BackupManagement } from "./components/backupManagement";
 import AccountsManagement from "./components/accountsManagement";
 import UpdateManagement from "./components/updateManagement";
 import { useUpdateContext } from "../../lib/contexts/updateContext";
+import { FadeUp } from "../../lib/components/fadeUp";
 
 export default function AdministratorPage() {
   const { t, i18n } = useTranslation();
@@ -131,33 +132,40 @@ export default function AdministratorPage() {
         </button>
       </div>
 
-      {activeTab === "settings" && <OptionsList />}
+      <FadeUp contentKey={`${activeTab}:${subTabFromUrl ?? ""}`}>
+        {activeTab === "settings" && <OptionsList />}
 
-      {activeTab === "receipt" && <ReceiptConfig subTabFromUrl={subTabFromUrl} setSearchParams={setSearchParams} />}
+        {activeTab === "receipt" && (
+          <ReceiptConfig
+            subTabFromUrl={subTabFromUrl}
+            setSearchParams={setSearchParams}
+          />
+        )}
 
-      {activeTab === "accounts" && (
-        <section className="bg-card border border-border rounded-xl shadow-sm p-6">
-          <AccountsManagement />
-        </section>
-      )}
+        {activeTab === "accounts" && (
+          <section className="bg-card border border-border rounded-xl shadow-sm p-6">
+            <AccountsManagement />
+          </section>
+        )}
 
-      {activeTab === "logs" && (
-        <section className="bg-card border border-border rounded-xl shadow-sm p-6">
-          <ActivityLogs />
-        </section>
-      )}
+        {activeTab === "logs" && (
+          <section className="bg-card border border-border rounded-xl shadow-sm p-6">
+            <ActivityLogs />
+          </section>
+        )}
 
-      {activeTab === "backup" && (
-        <section className="bg-card border border-border rounded-xl shadow-sm p-6">
-          <BackupManagement />
-        </section>
-      )}
+        {activeTab === "backup" && (
+          <section className="bg-card border border-border rounded-xl shadow-sm p-6">
+            <BackupManagement />
+          </section>
+        )}
 
-      {activeTab === "updates" && (
-        <section className="bg-card border border-border rounded-xl shadow-sm p-6">
-          <UpdateManagement />
-        </section>
-      )}
+        {activeTab === "updates" && (
+          <section className="bg-card border border-border rounded-xl shadow-sm p-6">
+            <UpdateManagement />
+          </section>
+        )}
+      </FadeUp>
     </main>
   );
 }
