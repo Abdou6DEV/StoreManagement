@@ -34,6 +34,15 @@ interface ClientDetailsModalProps {
   client: ClientSuggestion | null;
 }
 
+/** Latest-first for history tables (IPC may return arbitrary order). */
+function sortByCreatedAtLatestFirst<T extends { createdAt: Date | string }>(
+  items: T[],
+): T[] {
+  return [...items].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+  );
+}
+
 interface ClientData {
   sales: (Sale & {
     saleItems: Array<{
@@ -124,14 +133,14 @@ export const ClientDetailsModal = ({
       const pendingVersements = versements.filter((p: any) => !p.paidDate).reduce((sum: number, p: any) => sum + p.givenAmount, 0);
 
       setClientData({
-        sales: salesData,
-        payments: paymentsData,
-        services: servicesData,
+        sales: sortByCreatedAtLatestFirst(salesData),
+        payments: sortByCreatedAtLatestFirst(paymentsData),
+        services: sortByCreatedAtLatestFirst(servicesData),
         totalSpent,
         totalCredits,
         totalVersements,
         pendingCredits,
-        pendingVersements
+        pendingVersements,
       });
     } catch (err) {
       setError(t("clients.fetchError", "Failed to fetch client data"));
@@ -175,7 +184,7 @@ export const ClientDetailsModal = ({
       icon={<User className="w-5 h-5 text-blue-600" />}
       showCloseButton={false}
       size="lg"
-      className="min-w-[70%] max-h-[70vh] overflow-y-auto"
+      className="min-w-[70%] max-h-[70vh]"
       showFooter={false}
     >
       {loading ? (

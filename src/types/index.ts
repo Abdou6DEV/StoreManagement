@@ -8,7 +8,7 @@ import type {
 
 export type ToastType = "success" | "error" | "info";
 export type Theme = "light" | "dark";
-export type ModalSize = "sm" | "md" | "lg" | "xl" | "full" | "auto";
+export type ModalSize = "sm" | "md" | "lg" | "xl" | "2xl" | "full" | "auto";
 export type ModalType = "dialog" | "overlay";
 export type ClientWithTotalPurchases = Client & { 
   totalPurchases: number;

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { PackageX } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { ConfirmDialog } from "./confirmDialog";
 import { Modal } from "./modal";
@@ -292,12 +293,18 @@ const SupplierReturnFlow: React.FC<SupplierReturnFlowProps> = ({
         }}
         title={t("supplierReturn.modalTitle")}
         subtitle={t("supplierReturn.modalDesc")}
-        size="xl"
+        icon={
+          <PackageX
+            className="h-5 w-5 shrink-0 text-orange-600 dark:text-orange-500"
+            aria-hidden
+          />
+        }
+        size="2xl"
         showFooter={false}
       >
-        <div className="space-y-4">
+        <div className="flex min-h-0 flex-col gap-4">
           {/* Label size selection */}
-          <div className="space-y-2 flex flex-col items-center">
+          <div className="flex shrink-0 flex-col items-center space-y-2">
             <span className="text-sm font-medium text-foreground block">
               {t("supplierReturn.labelSize", "Label size")}
             </span>
@@ -323,17 +330,18 @@ const SupplierReturnFlow: React.FC<SupplierReturnFlowProps> = ({
             </div>
           </div>
 
-          {/* Product list */}
-          <div className="border rounded-lg overflow-hidden">
-            <div className="grid grid-cols-24 gap-2 px-4 py-2 bg-muted/40 text-sm font-medium">
-              <div className="col-span-5">{t("supplierReturn.product")}</div>
-              <div className="col-span-5">{t("supplierReturn.supplier", "Supplier")}</div>
-              <div className="col-span-4">{t("supplierReturn.price", "Price")}</div>
-              <div className="col-span-5">{t("supplierReturn.issue", "Issue/Problem")}</div>
-              <div className="col-span-2 text-center">{t("supplierReturn.deletedQty")}</div>
-              <div className="col-span-3 text-center">{t("supplierReturn.returnQty")}</div>
-            </div>
-            <div className="divide-y">
+          {/* Product list — scrolls when many rows; header stays visible */}
+          <div className="rounded-lg border">
+            <div className="scrollbar-themed max-h-[min(52vh,560px)] overflow-y-auto overscroll-contain sm:max-h-[min(58vh,640px)]">
+              <div className="sticky top-0 z-[1] grid grid-cols-24 gap-2 border-b border-border bg-muted/95 px-4 py-2 text-sm font-medium backdrop-blur-sm">
+                <div className="col-span-5">{t("supplierReturn.product")}</div>
+                <div className="col-span-6">{t("supplierReturn.supplier", "Supplier")}</div>
+                <div className="col-span-3">{t("supplierReturn.price", "Price")}</div>
+                <div className="col-span-5">{t("supplierReturn.issue", "Issue/Problem")}</div>
+                <div className="col-span-2 text-center">{t("supplierReturn.deletedQty")}</div>
+                <div className="col-span-3 text-center">{t("supplierReturn.returnQty")}</div>
+              </div>
+              <div className="divide-y">
               {candidates.map((c) => {
                 const checked = supplierReturnSelected[c.productId] ?? false;
                 const qty = supplierReturnQty[c.productId] ?? c.deletedQty;
@@ -358,7 +366,7 @@ const SupplierReturnFlow: React.FC<SupplierReturnFlowProps> = ({
                     </div>
 
                     {/* Supplier */}
-                    <div className="col-span-5">
+                    <div className="col-span-6">
                       {checked ? (
                         <div className="space-y-1">
                           {supplierOptions.length > 0 ? (
@@ -412,7 +420,7 @@ const SupplierReturnFlow: React.FC<SupplierReturnFlowProps> = ({
                     </div>
 
                     {/* Price */}
-                    <div className="col-span-4">
+                    <div className="col-span-3">
                       {checked ? (
                         <Input
                           inputMode="decimal"
@@ -488,11 +496,12 @@ const SupplierReturnFlow: React.FC<SupplierReturnFlowProps> = ({
                   </div>
                 );
               })}
+              </div>
             </div>
           </div>
 
           {/* Footer actions */}
-          <div className="flex items-center justify-end gap-2">
+          <div className="flex shrink-0 items-center justify-end gap-2 border-t border-border/60 pt-1">
             <Button
               variant="outline"
               onClick={finishFlow}

@@ -207,6 +207,34 @@
   background-color: rgba(156, 163, 175, 0.7);
 }
 
+/* Themed scrollbar: used only on supplier return product list (global rule above hides WebKit bars). */
+.scrollbar-themed {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklch, var(--muted-foreground) 55%, transparent) transparent;
+}
+
+.scrollbar-themed::-webkit-scrollbar {
+  width: 10px !important;
+  height: 10px !important;
+  display: block !important;
+}
+
+.scrollbar-themed::-webkit-scrollbar-track {
+  background: color-mix(in oklch, var(--muted) 40%, transparent);
+  border-radius: 6px;
+}
+
+.scrollbar-themed::-webkit-scrollbar-thumb {
+  background-color: color-mix(in oklch, var(--muted-foreground) 50%, transparent);
+  border-radius: 6px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.scrollbar-themed::-webkit-scrollbar-thumb:hover {
+  background-color: color-mix(in oklch, var(--muted-foreground) 70%, transparent);
+}
+
 #sidebar,
 .sidebar,
 [data-sidebar],

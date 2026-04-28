@@ -85,6 +85,7 @@ const sizeClasses: Record<ModalSize, string> = {
   md: "max-w-md",
   lg: "max-w-lg",
   xl: "max-w-4xl",
+  "2xl": "max-w-6xl",
   full: "max-w-[95vw] max-h-[95vh]",
   auto: "max-w-fit",
 };
@@ -251,7 +252,8 @@ function DialogModal({
             <DialogPrimitive.Content
               ref={modalContentRef}
               className={cn(
-                "fixed left-[50%] top-[50%] z-50 grid w-full translate-x-[-50%] translate-y-[-50%]",
+                "fixed left-[50%] top-[50%] z-50 flex w-full max-h-[90vh] flex-col overflow-hidden",
+                "translate-x-[-50%] translate-y-[-50%]",
                 "gap-4 border bg-background p-6 shadow-lg duration-200",
                 "data-[state=open]:animate-in data-[state=closed]:animate-out",
                 "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
@@ -277,7 +279,7 @@ function DialogModal({
             >
           {/* Header */}
           {(title || subtitle || subtitleContent || showCloseButton) && (
-            <div className={cn("flex flex-col space-y-2", headerClassName)}>
+            <div className={cn("flex shrink-0 flex-col space-y-2", headerClassName)}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                   {icon && (
@@ -318,14 +320,16 @@ function DialogModal({
             </div>
           )}
 
-          {/* Content */}
-          <div className="flex-1 overflow-auto">{children}</div>
+          {/* Content — min-h-0 so flex child can shrink and scroll inside max-h-[90vh] shell */}
+          <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
+            {children}
+          </div>
 
           {/* Footer */}
           {showFooter && actions && actions.length > 0 && (
             <div
               className={cn(
-                "flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 space-y-2 space-y-reverse sm:space-y-0",
+                "flex shrink-0 flex-col-reverse space-y-2 space-y-reverse sm:flex-row sm:justify-end sm:space-x-2 sm:space-y-0",
                 footerClassName,
               )}
             >

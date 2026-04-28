@@ -185,7 +185,7 @@ export async function getProductWithPurchaseHistory(id: string) {
           },
         },
         orderBy: {
-          createdAt: "desc",
+          sale: { createdAt: "desc" },
         },
       },
     },

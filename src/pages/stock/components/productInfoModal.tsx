@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Info, Package, ShoppingCart, ChevronDown } from "lucide-react";
 import { Modal } from "../../../lib/components/modal";
 import { Client, Sale, SaleItem } from "@prisma/client";
@@ -44,6 +44,26 @@ export const ProductInfoModal = ({
   const isRTL = i18n.language === "ar";
   const [purchaseLimit, setPurchaseLimit] = useState(5);
   const [salesLimit, setSalesLimit] = useState(5);
+
+  const sortedPurchaseItems = useMemo(() => {
+    const items = productData?.PurchaseItems;
+    if (!items?.length) return [];
+    return [...items].sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    );
+  }, [productData]);
+
+  const sortedSaleItems = useMemo(() => {
+    const items = productData?.saleItems;
+    if (!items?.length) return [];
+    return [...items].sort((a, b) => {
+      const tb = new Date(b.sale.createdAt).getTime();
+      const ta = new Date(a.sale.createdAt).getTime();
+      if (tb !== ta) return tb - ta;
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+  }, [productData]);
 
   return (
     <Modal
@@ -315,7 +335,7 @@ export const ProductInfoModal = ({
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border">
-                      {productData.PurchaseItems.slice(0, purchaseLimit).map(
+                      {sortedPurchaseItems.slice(0, purchaseLimit).map(
                         (
                           purchaseItem: {
                             id: string;
@@ -327,10 +347,9 @@ export const ProductInfoModal = ({
                               seller: { name: string } | null;
                             };
                           },
-                          index: number
                         ) => (
                           <tr
-                            key={index}
+                            key={purchaseItem.id}
                             className="hover:bg-muted/40 transition"
                           >
                             <td
@@ -510,15 +529,14 @@ export const ProductInfoModal = ({
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border">
-                      {productData.saleItems.slice(0, salesLimit).map(
+                      {sortedSaleItems.slice(0, salesLimit).map(
                         (
                           saleItem: SaleItem & {
                             sale: Sale & { client: Client };
                           },
-                          index: number
                         ) => (
                           <tr
-                            key={index}
+                            key={saleItem.id}
                             className="hover:bg-muted/30 transition-colors border-b border-border/50 last:border-0"
                           >
                             <td
