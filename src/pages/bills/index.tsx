@@ -25,6 +25,7 @@ import { Tooltip } from "../../lib/components/tooltip";
 import BillsTable from "./components/billsTable";
 import AllPaymentsTable from "./components/allPaymentsTable";
 import AddBillForm from "./components/addBillForm";
+import AddSalaryForm from "./components/addSalaryForm";
 import { BillsTotalsFooter } from "./components/billsTotalsFooter";
 import { BillsPaymentsTotalsFooter } from "./components/billsPaymentsTotalsFooter";
 
@@ -57,6 +58,7 @@ export default function BillsPage() {
   const notificationAction = (location.state as { notificationAction?: string } | null)?.notificationAction;
   const hasLoadedOnceRef = useRef(false);
   const [openPanel, setOpenPanel] = useState<"add" | null>(null);
+  const [openSalaryPanel, setOpenSalaryPanel] = useState<"salary" | null>(null);
   const [showAllPayments, setShowAllPayments] = useState(false);
   const [allPayments, setAllPayments] = useState<{
     id: string;
@@ -395,6 +397,12 @@ export default function BillsPage() {
     setEditingBill(null);
   };
 
+  const handleSalaryPaymentRecorded = () => {
+    loadBills();
+    loadBillTypes();
+    if (showAllPayments) loadAllPayments();
+  };
+
   const handleViewPayments = () => {
     setShowAllPayments(true);
     loadAllPayments();
@@ -412,6 +420,11 @@ export default function BillsPage() {
         editingBill={editingBill}
         onBillAdded={handleBillAdded}
         onBillUpdated={handleBillUpdated}
+      />
+      <AddSalaryForm
+        openPanel={openSalaryPanel}
+        setOpenPanel={setOpenSalaryPanel}
+        onSalaryPaymentRecorded={handleSalaryPaymentRecorded}
       />
       
       <div className="bg-card rounded-xl border border-border shadow-sm">

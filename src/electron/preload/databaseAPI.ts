@@ -302,6 +302,7 @@ export const databaseAPI = {
       nextBillDate: Date;
       duration: string;
       notes?: string;
+      firstPaymentNotes?: string;
     }) => ipcRenderer.invoke("db:bills:create", data),
     getAll: () => ipcRenderer.invoke("db:bills:getAll"),
     getById: (id: string) => ipcRenderer.invoke("db:bills:getById", id),

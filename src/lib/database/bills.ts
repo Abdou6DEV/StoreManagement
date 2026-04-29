@@ -9,6 +9,7 @@ export interface CreateBillData {
   nextBillDate: Date;
   duration: string;
   notes?: string;
+  firstPaymentNotes?: string;
 }
 
 export interface UpdateBillData {
@@ -54,7 +55,7 @@ export const bills = {
       data: {
         billId: bill.id,
         amount: data.amount,
-        notes: "Initial payment",
+        notes: data.firstPaymentNotes ?? "Initial payment",
       }
     });
 
