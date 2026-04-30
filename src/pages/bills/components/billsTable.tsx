@@ -320,7 +320,13 @@ const BillsTable: React.FC<BillsTableProps> = ({
                   {bill.title}
                 </td>
                 <td className={`px-4 py-2 ${isRTL ? "text-right" : "text-left"}`}>
-                  {bill.type}
+                  {bill.type === "SALARY" ? (
+                    <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300 hover:bg-purple-100 dark:hover:bg-purple-900/40 font-medium text-sm">
+                      {t("bills.salary", "Salary")}
+                    </Badge>
+                  ) : (
+                    bill.type
+                  )}
                 </td>
                 <td className={`px-4 py-2 ${isRTL ? "text-right" : "text-left"}`}>
                   <span className={`text-xs px-2 py-1 rounded-full ${

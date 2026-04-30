@@ -19,6 +19,7 @@ import {
   PopoverTrigger,
 } from "../../lib/components/popover";
 import { cn } from "../../lib/utils";
+import { DatePicker } from "../../lib/components/datePicker";
 import { BadgeNotification } from "../../lib/components/badgeNotification";
 import { Tooltip } from "../../lib/components/tooltip";
 
@@ -94,6 +95,10 @@ export default function BillsPage() {
   // Payments filter states
   const [paymentsSearchTerm, setPaymentsSearchTerm] = useState("");
   const [paymentsTypeFilter, setPaymentsTypeFilter] = useState("all");
+  const [paymentsFromDate, setPaymentsFromDate] = useState<string>("");
+  const [paymentsToDate, setPaymentsToDate] = useState<string>("");
+  const [paymentsMinDate, setPaymentsMinDate] = useState<string>("");
+  const [paymentsMaxDate, setPaymentsMaxDate] = useState<string>("");
   const [billTypes, setBillTypes] = useState<string[]>([]);
   const [allBills, setAllBills] = useState<Bill[]>([]);
 
@@ -237,7 +242,7 @@ export default function BillsPage() {
   // Reset payments pagination when payments filters change
   useEffect(() => {
     setPaymentsCurrentPage(1);
-  }, [paymentsSearchTerm, paymentsTypeFilter]);
+  }, [paymentsSearchTerm, paymentsTypeFilter, paymentsFromDate, paymentsToDate]);
 
   // Filter payments
   const filteredPayments = allPayments.filter((payment) => {
@@ -251,7 +256,15 @@ export default function BillsPage() {
     // Type filter
     const matchesType = paymentsTypeFilter === "all" || payment.bill.type === paymentsTypeFilter;
 
-    return matchesSearch && matchesType;
+    // Date range filter
+    const paidDate = new Date(payment.paidDate);
+    paidDate.setHours(0, 0, 0, 0);
+    const from = paymentsFromDate ? new Date(paymentsFromDate + "T00:00:00") : null;
+    const to = paymentsToDate ? new Date(paymentsToDate + "T23:59:59") : null;
+    const matchesFrom = !from || paidDate >= from;
+    const matchesTo = !to || paidDate <= to;
+
+    return matchesSearch && matchesType && matchesFrom && matchesTo;
   });
 
   // Pagination calculations
@@ -271,6 +284,16 @@ export default function BillsPage() {
 
   useEffect(() => {
     setPaymentsCurrentPage(1);
+    if (allPayments.length > 0) {
+      const dates = allPayments.map((p) => new Date(p.paidDate).getTime());
+      const toISO = (ts: number) => new Date(ts).toISOString().split("T")[0];
+      const minDate = toISO(Math.min(...dates));
+      const maxDate = toISO(Math.max(...dates));
+      setPaymentsMinDate(minDate);
+      setPaymentsMaxDate(maxDate);
+      setPaymentsFromDate((prev) => prev || minDate);
+      setPaymentsToDate((prev) => prev || maxDate);
+    }
   }, [allPayments]);
 
   const loadBillTypes = async () => {
@@ -850,6 +873,34 @@ export default function BillsPage() {
                     </Command>
                   </PopoverContent>
                 </Popover>
+
+                {/* Date range pickers */}
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-foreground whitespace-nowrap">
+                    {t("history.from", "From")}:
+                  </span>
+                  <DatePicker
+                    value={paymentsFromDate}
+                    onChange={setPaymentsFromDate}
+                    placeholder={t("history.from", "From")}
+                    min={paymentsMinDate}
+                    max={paymentsToDate || paymentsMaxDate}
+                    className="w-36 h-8 text-sm"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-foreground whitespace-nowrap">
+                    {t("history.to", "To")}:
+                  </span>
+                  <DatePicker
+                    value={paymentsToDate}
+                    onChange={setPaymentsToDate}
+                    placeholder={t("history.to", "To")}
+                    min={paymentsFromDate || paymentsMinDate}
+                    max={paymentsMaxDate}
+                    className="w-36 h-8 text-sm"
+                  />
+                </div>
               </div>
             </div>
           )}

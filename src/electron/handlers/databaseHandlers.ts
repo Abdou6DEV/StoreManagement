@@ -599,7 +599,10 @@ ipcMain.handle("db:products:deleteMultipleProducts", async (_, productIds: strin
 
   // Bills handlers
   ipcMain.handle("db:bills:create", async (_event, data) => {
-    return await bills.create(data);
+    return await bills.create({
+      ...data,
+      ...(data.firstPaymentPaidDate ? { firstPaymentPaidDate: new Date(data.firstPaymentPaidDate) } : {}),
+    });
   });
 
   ipcMain.handle("db:bills:getAll", async () => {
@@ -647,8 +650,8 @@ ipcMain.handle("db:products:deleteMultipleProducts", async (_, productIds: strin
     return await bills.getBillByTitle(title);
   });
 
-  ipcMain.handle("db:bills:recordPayment", async (_event, billId: string, amount: number, notes?: string) => {
-    return await bills.recordPayment(billId, amount, notes);
+  ipcMain.handle("db:bills:recordPayment", async (_event, billId: string, amount: number, notes?: string, paidDate?: Date) => {
+    return await bills.recordPayment(billId, amount, notes, paidDate ? new Date(paidDate) : undefined);
   });
 
   ipcMain.handle("db:bills:getBillWithPayments", async (_event, billId: string) => {

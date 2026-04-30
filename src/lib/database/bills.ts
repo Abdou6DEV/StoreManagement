@@ -10,6 +10,7 @@ export interface CreateBillData {
   duration: string;
   notes?: string;
   firstPaymentNotes?: string;
+  firstPaymentPaidDate?: Date;
 }
 
 export interface UpdateBillData {
@@ -56,6 +57,7 @@ export const bills = {
         billId: bill.id,
         amount: data.amount,
         notes: data.firstPaymentNotes ?? "Initial payment",
+        ...(data.firstPaymentPaidDate ? { paidDate: data.firstPaymentPaidDate } : {}),
       }
     });
 
@@ -245,13 +247,14 @@ export const bills = {
     });
   },
 
-  async recordPayment(billId: string, amount: number, notes?: string): Promise<Bill> {
+  async recordPayment(billId: string, amount: number, notes?: string, paidDate?: Date): Promise<Bill> {
     // Record the payment
     await prisma.billPayment.create({
       data: {
         billId,
         amount,
         notes,
+        ...(paidDate ? { paidDate } : {}),
       }
     });
 
@@ -262,22 +265,30 @@ export const bills = {
     }
 
     if (bill.duration !== "NO_NEXT") {
-      const nextBillDate = this.calculateNextBillDate(bill.duration);
-      
-      return prisma.bill.update({
-        where: { id: billId },
-        data: {
-          nextBillDate,
-          amount, // Update the bill amount to the latest payment
-        },
-        include: {
-          payments: {
-            orderBy: {
-              paidDate: 'desc'
+      // Only advance nextBillDate for current-day payments.
+      // Past/missed payments should not shift the existing reminder date.
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+      const isCurrentPayment = !paidDate || paidDate >= todayStart;
+
+      if (isCurrentPayment) {
+        const nextBillDate = this.calculateNextBillDate(bill.duration);
+
+        return prisma.bill.update({
+          where: { id: billId },
+          data: {
+            nextBillDate,
+            amount,
+          },
+          include: {
+            payments: {
+              orderBy: {
+                paidDate: 'desc'
+              }
             }
           }
-        }
-      });
+        });
+      }
     }
 
     return prisma.bill.findUnique({
@@ -308,36 +319,33 @@ export const bills = {
   // Calculate next bill date based on duration
   calculateNextBillDate(duration: string): Date {
     const today = new Date();
-    
+
+    // Adds months while clamping the day to the last valid day of the target month.
+    // Prevents silent day-overflow (e.g. Aug 31 + 1 month → Sep 30, not Oct 1).
+    const addMonths = (d: Date, months: number): Date => {
+      const targetMonth = d.getMonth() + months;
+      const lastDay = new Date(d.getFullYear(), targetMonth + 1, 0).getDate();
+      return new Date(d.getFullYear(), targetMonth, Math.min(d.getDate(), lastDay));
+    };
+
     switch (duration) {
       case "NO_NEXT":
-        return today; // No next bill
-      case "1_MONTH":
-        return new Date(today.getFullYear(), today.getMonth() + 1, today.getDate());
-      case "2_MONTHS":
-        return new Date(today.getFullYear(), today.getMonth() + 2, today.getDate());
-      case "3_MONTHS":
-        return new Date(today.getFullYear(), today.getMonth() + 3, today.getDate());
-      case "4_MONTHS":
-        return new Date(today.getFullYear(), today.getMonth() + 4, today.getDate());
-      case "5_MONTHS":
-        return new Date(today.getFullYear(), today.getMonth() + 5, today.getDate());
-      case "6_MONTHS":
-        return new Date(today.getFullYear(), today.getMonth() + 6, today.getDate());
-      case "7_MONTHS":
-        return new Date(today.getFullYear(), today.getMonth() + 7, today.getDate());
-      case "8_MONTHS":
-        return new Date(today.getFullYear(), today.getMonth() + 8, today.getDate());
-      case "9_MONTHS":
-        return new Date(today.getFullYear(), today.getMonth() + 9, today.getDate());
-      case "10_MONTHS":
-        return new Date(today.getFullYear(), today.getMonth() + 10, today.getDate());
-      case "11_MONTHS":
-        return new Date(today.getFullYear(), today.getMonth() + 11, today.getDate());
-      case "ANNUALLY":
-        return new Date(today.getFullYear() + 1, today.getMonth(), today.getDate());
-      default:
         return today;
+      case "1_DAY":
+        return new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+      case "1_MONTH":   return addMonths(today, 1);
+      case "2_MONTHS":  return addMonths(today, 2);
+      case "3_MONTHS":  return addMonths(today, 3);
+      case "4_MONTHS":  return addMonths(today, 4);
+      case "5_MONTHS":  return addMonths(today, 5);
+      case "6_MONTHS":  return addMonths(today, 6);
+      case "7_MONTHS":  return addMonths(today, 7);
+      case "8_MONTHS":  return addMonths(today, 8);
+      case "9_MONTHS":  return addMonths(today, 9);
+      case "10_MONTHS": return addMonths(today, 10);
+      case "11_MONTHS": return addMonths(today, 11);
+      case "ANNUALLY":  return addMonths(today, 12);
+      default:          return today;
     }
   },
 

@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { FileText, Loader2 } from "lucide-react";
+import { FileText, Loader2, UserMinus, UserCheck } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "../../../lib/components/button";
 import { Modal, useModalRequestClose } from "../../../lib/components/modal";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../lib/components/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "../../../lib/components/dialog";
 import { useToast } from "../../../lib/contexts/toastContext";
 import { useAuth } from "../../../lib/contexts/authContext";
 
@@ -49,39 +50,33 @@ const getDurationOptions = (t: any) => [
   { value: "ANNUALLY", label: t("bills.annually", "Annually") },
 ];
 
+// Adds months while clamping the day to the last valid day of the target month.
+const addMonths = (d: Date, months: number): Date => {
+  const targetMonth = d.getMonth() + months;
+  const lastDay = new Date(d.getFullYear(), targetMonth + 1, 0).getDate();
+  return new Date(d.getFullYear(), targetMonth, Math.min(d.getDate(), lastDay));
+};
+
 // Calculate next bill date based on duration
 const calculateNextBillDate = (duration: string): Date => {
   const today = new Date();
-  
+
   switch (duration) {
-    case "NO_NEXT":
-      return today; // No next bill
-    case "1_MONTH":
-      return new Date(today.getFullYear(), today.getMonth() + 1, today.getDate());
-    case "2_MONTHS":
-      return new Date(today.getFullYear(), today.getMonth() + 2, today.getDate());
-    case "3_MONTHS":
-      return new Date(today.getFullYear(), today.getMonth() + 3, today.getDate());
-    case "4_MONTHS":
-      return new Date(today.getFullYear(), today.getMonth() + 4, today.getDate());
-    case "5_MONTHS":
-      return new Date(today.getFullYear(), today.getMonth() + 5, today.getDate());
-    case "6_MONTHS":
-      return new Date(today.getFullYear(), today.getMonth() + 6, today.getDate());
-    case "7_MONTHS":
-      return new Date(today.getFullYear(), today.getMonth() + 7, today.getDate());
-    case "8_MONTHS":
-      return new Date(today.getFullYear(), today.getMonth() + 8, today.getDate());
-    case "9_MONTHS":
-      return new Date(today.getFullYear(), today.getMonth() + 9, today.getDate());
-    case "10_MONTHS":
-      return new Date(today.getFullYear(), today.getMonth() + 10, today.getDate());
-    case "11_MONTHS":
-      return new Date(today.getFullYear(), today.getMonth() + 11, today.getDate());
-    case "ANNUALLY":
-      return new Date(today.getFullYear() + 1, today.getMonth(), today.getDate());
-    default:
-      return today;
+    case "NO_NEXT":   return today;
+    case "1_DAY":     return new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+    case "1_MONTH":   return addMonths(today, 1);
+    case "2_MONTHS":  return addMonths(today, 2);
+    case "3_MONTHS":  return addMonths(today, 3);
+    case "4_MONTHS":  return addMonths(today, 4);
+    case "5_MONTHS":  return addMonths(today, 5);
+    case "6_MONTHS":  return addMonths(today, 6);
+    case "7_MONTHS":  return addMonths(today, 7);
+    case "8_MONTHS":  return addMonths(today, 8);
+    case "9_MONTHS":  return addMonths(today, 9);
+    case "10_MONTHS": return addMonths(today, 10);
+    case "11_MONTHS": return addMonths(today, 11);
+    case "ANNUALLY":  return addMonths(today, 12);
+    default:          return today;
   }
 };
 
@@ -118,6 +113,8 @@ export default function EditBillModal({
     notes: "",
   });
   const [loading, setLoading] = useState(false);
+  const [statusLoading, setStatusLoading] = useState(false);
+  const [deactivateDialogOpen, setDeactivateDialogOpen] = useState(false);
 
   const durationOptions = getDurationOptions(t);
 
@@ -146,6 +143,43 @@ export default function EditBillModal({
       ...prev,
       [field]: value
     }));
+  };
+
+  const handleDeactivateConfirm = async () => {
+    if (!bill) return;
+    setStatusLoading(true);
+    try {
+      await window.api.database.bills.update(bill.id, { duration: "NO_NEXT" });
+      showToast(t("bills.employeeDeactivated", "Employee deactivated — no more payment reminders"), "success");
+      setDeactivateDialogOpen(false);
+      onBillUpdated();
+      onClose();
+    } catch {
+      showToast(t("bills.failedToSaveBill", "Failed to save bill"), "error");
+    } finally {
+      setStatusLoading(false);
+    }
+  };
+
+  const handleReactivate = async () => {
+    if (!bill) return;
+    setStatusLoading(true);
+    try {
+      const period = bill.notes?.match(/period=(DAILY|MONTHLY)/)?.[1] ?? "MONTHLY";
+      const duration = period === "DAILY" ? "1_DAY" : "1_MONTH";
+      const today = new Date();
+      const nextBillDate = period === "DAILY"
+        ? new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1)
+        : addMonths(today, 1);
+      await window.api.database.bills.update(bill.id, { duration, nextBillDate });
+      showToast(t("bills.employeeReactivated", "Employee reactivated — payment reminders resumed"), "success");
+      onBillUpdated();
+      onClose();
+    } catch {
+      showToast(t("bills.failedToSaveBill", "Failed to save bill"), "error");
+    } finally {
+      setStatusLoading(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -193,6 +227,8 @@ export default function EditBillModal({
 
   if (!bill) return null;
 
+  const isSalary = bill.type === "SALARY";
+
   return (
     <Modal 
       open={isOpen} 
@@ -234,7 +270,8 @@ export default function EditBillModal({
                 placeholder={t("bills.enterBillType", "Enter bill type")}
                 value={form.type}
                 onChange={(e) => handleFormChange("type", e.target.value)}
-                className="w-full px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-purple-500/50 focus:border-purple-500 transition-all"
+                disabled={isSalary}
+                className="w-full px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-purple-500/50 focus:border-purple-500 transition-all disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed"
                 required
               />
             </div>
@@ -247,8 +284,9 @@ export default function EditBillModal({
               <Select
                 value={form.duration}
                 onValueChange={(value) => handleFormChange("duration", value)}
+                disabled={isSalary}
               >
-                <SelectTrigger className="w-full h-12 px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-purple-500/50 focus:border-purple-500 transition-all">
+                <SelectTrigger className="w-full h-12 px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-purple-500/50 focus:border-purple-500 transition-all disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed">
                   <SelectValue placeholder={t("bills.selectDuration", "Select duration")} />
                 </SelectTrigger>
                 <SelectContent>
@@ -302,9 +340,87 @@ export default function EditBillModal({
               placeholder={t("bills.enterNotesOptional", "Enter notes (optional)")}
               value={form.notes}
               onChange={(e) => handleFormChange("notes", e.target.value)}
-              className="w-full px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-purple-500/50 focus:border-purple-500 transition-all"
+              disabled={isSalary}
+              className="w-full px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-purple-500/50 focus:border-purple-500 transition-all disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed"
             />
+            {isSalary && (
+              <p className="text-xs text-muted-foreground">
+                {t("bills.salaryFieldsLocked", "These fields are managed automatically by the salary system")}
+              </p>
+            )}
           </div>
+
+          {/* Salary employee status toggle */}
+          {isSalary && (() => {
+            const isActive = bill.duration !== "NO_NEXT";
+            return (
+              <>
+                <div className="flex items-center justify-between gap-4 px-4 py-3 rounded-lg border border-border bg-muted/40">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-2 h-2 rounded-full ${isActive ? "bg-green-500" : "bg-muted-foreground"}`} />
+                    <div>
+                      <p className="text-sm font-medium">
+                        {isActive
+                          ? t("bills.employeeActive", "Employee Active")
+                          : t("bills.employeeInactive", "Employee Inactive")}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {isActive
+                          ? t("bills.employeeActiveDesc", "Payment reminders are enabled for this employee")
+                          : t("bills.employeeInactiveDesc", "No payment reminders — employee no longer active")}
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={isActive ? () => setDeactivateDialogOpen(true) : handleReactivate}
+                    disabled={statusLoading || loading}
+                    className={isActive
+                      ? "border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950/30 shrink-0"
+                      : "border-green-200 text-green-600 hover:bg-green-50 hover:border-green-300 dark:border-green-800 dark:text-green-400 dark:hover:bg-green-950/30 shrink-0"
+                    }
+                  >
+                    {statusLoading ? (
+                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                    ) : isActive ? (
+                      <UserMinus className="w-4 h-4 mr-2" />
+                    ) : (
+                      <UserCheck className="w-4 h-4 mr-2" />
+                    )}
+                    {isActive
+                      ? t("bills.deactivateEmployee", "Deactivate Employee")
+                      : t("bills.reactivateEmployee", "Reactivate Employee")}
+                  </Button>
+                </div>
+
+                {/* Deactivation confirmation dialog */}
+                <Dialog open={deactivateDialogOpen} onOpenChange={setDeactivateDialogOpen}>
+                  <DialogContent showCloseButton>
+                    <DialogHeader>
+                      <DialogTitle>{t("bills.confirmDeactivate", "Confirm Deactivation")}</DialogTitle>
+                      <DialogDescription>
+                        {t("bills.confirmDeactivateDesc", "This will stop all payment reminders for {{name}}. You can reactivate them at any time.", { name: bill.title })}
+                      </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setDeactivateDialogOpen(false)} disabled={statusLoading}>
+                        {t("common.cancel", "Cancel")}
+                      </Button>
+                      <Button
+                        onClick={handleDeactivateConfirm}
+                        disabled={statusLoading}
+                        className="bg-red-600 hover:bg-red-700 text-white"
+                      >
+                        {statusLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <UserMinus className="w-4 h-4 mr-2" />}
+                        {t("bills.deactivateEmployee", "Deactivate Employee")}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              </>
+            );
+          })()}
 
           {/* Action Buttons — Cancel uses useModalRequestClose inside Modal subtree */}
           <div className="flex justify-end gap-3 pt-4 border-t border-border">

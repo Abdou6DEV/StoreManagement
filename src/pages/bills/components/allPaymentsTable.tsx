@@ -208,7 +208,13 @@ const AllPaymentsTable: React.FC<AllPaymentsTableProps> = ({
                   {payment.bill.title}
                 </td>
                 <td className={`px-4 py-2 font-medium ${isRTL ? "text-right" : "text-left"}`}>
-                  {payment.bill.type}
+                  {payment.bill.type === "SALARY" ? (
+                    <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300 hover:bg-purple-100 dark:hover:bg-purple-900/40 font-medium">
+                      {t("bills.salary", "Salary")}
+                    </Badge>
+                  ) : (
+                    payment.bill.type
+                  )}
                 </td>
                 <td className={`px-4 py-2 ${isRTL ? "text-right" : "text-left"}`}>
                   <div className="flex items-center gap-2">
