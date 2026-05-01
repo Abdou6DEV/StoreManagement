@@ -1,0 +1,54 @@
+REDA TECH Gestion de magasin — version X.Y.Z
+Notes pour les utilisateurs
+
+Bonjour,
+
+Voici les principales nouveautés de cette version.
+
+
+[Thème — titre court, ex. Factures et dépenses]
+
+- …
+- …
+
+
+[Thème — titre court, ex. Caisse]
+
+- …
+- …
+
+
+[Thème — titre court, ex. Tableau de bord]
+
+- …
+
+
+[Thème — titre court, ex. Confort d’utilisation]
+
+- …
+
+
+Langues (si des textes ont changé)
+
+- Textes mis à jour en français, anglais et / ou arabe pour …
+
+
+En bref
+
+- …
+- …
+- …
+
+
+Merci de votre confiance.
+L’équipe REDA TECH
+
+
+--- Comment utiliser ce modèle (équipe) ---
+
+1. Remplacer X.Y.Z par le numéro de version.
+2. Ne décrire que ce que les utilisateurs voient ou ressentent (pas de noms techniques, fichiers, APIs).
+3. Regrouper par thème ; une idée par ligne, commençant par "- ".
+4. Laisser une ligne vide entre chaque thème et avant "En bref".
+5. "En bref" : 3 à 5 puces très courtes (résumé pour les clients).
+6. Coller le texte tel quel dans la description de release GitHub (sans gras Markdown si vous préférez l’affichage simple).
