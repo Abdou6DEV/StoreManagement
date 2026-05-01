@@ -2,6 +2,18 @@ import { PrismaClient, Product } from "@prisma/client";
 import { faker } from "@faker-js/faker";
 import { generateDAPrice } from "../utils/generators";
 
+function startOfDay(d: Date) {
+  const x = new Date(d);
+  x.setHours(0, 0, 0, 0);
+  return x;
+}
+
+function addDays(d: Date, days: number) {
+  const x = new Date(d);
+  x.setDate(x.getDate() + days);
+  return x;
+}
+
 /**
  * Create sales one-by-one and attach items immediately.
  * No createMany for sales, no "fetch batch by date" — each sale gets its id, then we create its items. Reliable.
@@ -15,170 +27,204 @@ export async function seedSales(prisma: PrismaClient, products: Product[]) {
   const threeYearsAgo = new Date();
   threeYearsAgo.setFullYear(threeYearsAgo.getFullYear() - 3);
 
-  const daysInThreeYears = 1095;
-  const salesPerDay = 3.5;
-  const totalSales = Math.floor(daysInThreeYears * salesPerDay);
-  const salesWithClients = Math.floor(totalSales * 0.3);
+  const fromDay = startOfDay(threeYearsAgo);
+  const toDay = startOfDay(new Date());
+  const days = Math.max(
+    1,
+    Math.ceil((toDay.getTime() - fromDay.getTime()) / (1000 * 60 * 60 * 24)),
+  );
 
-  console.log(`   - Creating ${totalSales} sales, 5-6 items each, 30% with clients...`);
+  // USER REQUEST: 5–17 items sold per day (including services).
+  // We interpret "items" as total quantities sold (service counts as 1 item).
+  console.log(`   - Creating ~${days} days of sales, 5–17 items/day (including services)...`);
 
-  let salesWithClientsCount = 0;
   let totalSaleItemsCreated = 0;
 
-  for (let i = 0; i < totalSales; i++) {
-    if (i > 0 && i % 500 === 0) {
-      console.log(`   - Progress: ${i}/${totalSales} sales, ${totalSaleItemsCreated} items...`);
+  // Keep a mutable pool to avoid filtering 2000 products for each sale.
+  const productById = new Map(products.map((p) => [p.id, p]));
+  const availableProductIds = products.filter((p) => p.quantity > 0).map((p) => p.id);
+
+  const pickAvailableProduct = (): Product | null => {
+    while (availableProductIds.length > 0) {
+      const idx = faker.number.int({ min: 0, max: availableProductIds.length - 1 });
+      const id = availableProductIds[idx];
+      const p = productById.get(id);
+      if (!p || p.quantity <= 0) {
+        availableProductIds.splice(idx, 1);
+        continue;
+      }
+      return p;
     }
+    return null;
+  };
 
-    const shouldHaveClient =
-      salesWithClientsCount < salesWithClients &&
-      faker.number.float({ min: 0, max: 1 }) <
-        (salesWithClients - salesWithClientsCount) / (totalSales - i);
-    const client =
-      shouldHaveClient && clients.length > 0
-        ? faker.helpers.arrayElement(clients)
-        : null;
-    if (client) salesWithClientsCount++;
+  let saleCount = 0;
+  let salesWithClientsCount = 0;
 
-    const saleCreatedAt = faker.date.between({
-      from: threeYearsAgo,
-      to: new Date(),
-    });
+  for (let dayIndex = 0; dayIndex < days; dayIndex++) {
+    const dayStart = addDays(fromDay, dayIndex);
+    const dayEnd = addDays(dayStart, 1);
 
-    const sale = await prisma.sale.create({
-      data: {
-        clientId: client?.id ?? null,
-        discount: 0,
-        totalAmount: 0,
-        totalAmountWithDiscount: 0,
-        totalItems: 0,
-        totalCost: 0,
-        totalProfit: 0,
-        createdAt: saleCreatedAt,
-        updatedAt: saleCreatedAt,
-      },
-    });
+    let remainingItemsForDay = faker.number.int({ min: 5, max: 17 });
+    const salesTodayTarget = Math.min(
+      faker.number.int({ min: 1, max: 4 }),
+      remainingItemsForDay,
+    );
 
-    const saleItemsCount = faker.number.int({ min: 5, max: 6 });
-    const includeServices = faker.datatype.boolean({ probability: 0.2 });
+    for (let s = 0; s < salesTodayTarget; s++) {
+      if (remainingItemsForDay <= 0) break;
 
-    const availableProducts = products.filter((p) => p.quantity > 0);
-    let regularProductCount = saleItemsCount;
-    if (includeServices) regularProductCount = Math.max(1, regularProductCount - 1);
-    const targetProductCount =
-      availableProducts.length > 0
-        ? Math.max(1, Math.min(regularProductCount, availableProducts.length))
-        : 0;
+      saleCount++;
+      if (saleCount % 500 === 0) {
+        console.log(
+          `   - Progress: ${saleCount} sales, ${totalSaleItemsCreated} items...`,
+        );
+      }
 
-    const saleProducts =
-      availableProducts.length > 0
-        ? faker.helpers.arrayElements(availableProducts, targetProductCount)
-        : [];
+      const client =
+        clients.length > 0 && faker.number.float({ min: 0, max: 1 }) < 0.3
+          ? faker.helpers.arrayElement(clients)
+          : null;
+      if (client) salesWithClientsCount++;
 
-    const usedProductIds = new Set<string>();
-    let totalAmount = 0;
-    let totalCost = 0;
-    let totalItems = 0;
-    let fallbackProductUsed: Product | null = null;
+      // Random time within the day (avoid timezone edge cases).
+      const saleCreatedAt = faker.date.between({ from: dayStart, to: dayEnd });
 
-    for (const product of saleProducts) {
-      if (usedProductIds.has(product.id)) continue;
-      usedProductIds.add(product.id);
-      const maxQty = Math.min(3, product.quantity);
-      if (maxQty <= 0) continue;
-      const quantity = faker.number.int({ min: 1, max: maxQty });
-
-      await prisma.saleItem.create({
+      const sale = await prisma.sale.create({
         data: {
-          saleId: sale.id,
-          productId: product.id,
-          quantity,
-          price: product.sellingPrice,
-          boughtPrice: product.boughtPrice,
+          clientId: client?.id ?? null,
+          discount: 0,
+          totalAmount: 0,
+          totalAmountWithDiscount: 0,
+          totalItems: 0,
+          totalCost: 0,
+          totalProfit: 0,
+          createdAt: saleCreatedAt,
+          updatedAt: saleCreatedAt,
         },
       });
-      totalAmount += product.sellingPrice * quantity;
-      totalCost += (product.boughtPrice ?? 0) * quantity;
-      totalItems += quantity;
-      product.quantity -= quantity;
-      totalSaleItemsCreated++;
-    }
 
-    if (includeServices && services.length > 0) {
-      const service = faker.helpers.arrayElement(services);
-      const servicePrice = generateDAPrice(500, 27000);
-      await prisma.saleItem.create({
-        data: {
-          saleId: sale.id,
-          serviceId: service.id,
-          quantity: 1,
-          price: servicePrice,
-          boughtPrice: Math.floor(servicePrice * 0.5),
-        },
-      });
-      totalAmount += servicePrice;
-      totalCost += Math.floor(servicePrice * 0.5);
-      totalItems += 1;
-      totalSaleItemsCreated++;
-    }
+      // Decide how many items this sale will carry from the day's remaining pool.
+      // Keep individual sales small so the "items/day" constraint is easy to respect.
+      const maxItemsThisSale = Math.min(6, remainingItemsForDay);
+      let itemsThisSaleTarget = faker.number.int({ min: 1, max: maxItemsThisSale });
 
-    // Guarantee every sale has at least one item (for dashboard/history): use a real product
-    if (totalItems === 0 && availableProducts.length > 0) {
-      const fallbackProduct = faker.helpers.arrayElement(availableProducts);
-      const fallbackQty = Math.min(1, fallbackProduct.quantity);
-      if (fallbackQty >= 1) {
+      // Optionally include 1 service item (counts as 1 item).
+      const includeService =
+        services.length > 0 &&
+        itemsThisSaleTarget > 0 &&
+        faker.number.float({ min: 0, max: 1 }) < 0.25;
+
+      let totalAmount = 0;
+      let totalCost = 0;
+      let totalItems = 0;
+
+      if (includeService && itemsThisSaleTarget > 0) {
+        const service = faker.helpers.arrayElement(services);
+        const servicePrice = generateDAPrice(500, 27000);
         await prisma.saleItem.create({
           data: {
             saleId: sale.id,
-            productId: fallbackProduct.id,
-            quantity: fallbackQty,
-            price: fallbackProduct.sellingPrice,
-            boughtPrice: fallbackProduct.boughtPrice,
+            serviceId: service.id,
+            quantity: 1,
+            price: servicePrice,
+            boughtPrice: Math.floor(servicePrice * 0.5),
           },
         });
-        totalAmount = fallbackProduct.sellingPrice * fallbackQty;
-        totalCost = (fallbackProduct.boughtPrice ?? 0) * fallbackQty;
-        totalItems = fallbackQty;
+        totalAmount += servicePrice;
+        totalCost += Math.floor(servicePrice * 0.5);
+        totalItems += 1;
         totalSaleItemsCreated++;
-        fallbackProduct.quantity -= fallbackQty;
-        usedProductIds.add(fallbackProduct.id);
-        fallbackProductUsed = fallbackProduct;
+        itemsThisSaleTarget -= 1;
       }
-    }
 
-    const discountPercentage = faker.number.float({ min: 0, max: 0.15, fractionDigits: 2 });
-    const discount = Math.round(Math.floor(totalAmount * discountPercentage) / 10) * 10;
-    const totalAmountWithDiscount = Math.round((totalAmount - discount) / 10) * 10;
-    const totalProfit = Math.round((totalAmountWithDiscount - totalCost) / 10) * 10;
+      // Product items: use quantity=1 so "items" == total sold units.
+      const usedProductIds = new Set<string>();
+      for (let k = 0; k < itemsThisSaleTarget; k++) {
+        const p = pickAvailableProduct();
+        if (!p) break;
+        if (usedProductIds.has(p.id)) continue;
+        usedProductIds.add(p.id);
 
-    await prisma.sale.update({
-      where: { id: sale.id },
-      data: {
-        discount,
+        await prisma.saleItem.create({
+          data: {
+            saleId: sale.id,
+            productId: p.id,
+            quantity: 1,
+            price: p.sellingPrice,
+            boughtPrice: p.boughtPrice,
+          },
+        });
+
+        totalAmount += p.sellingPrice;
+        totalCost += p.boughtPrice ?? 0;
+        totalItems += 1;
+        totalSaleItemsCreated++;
+        p.quantity -= 1;
+      }
+
+      // Ensure at least one item exists.
+      if (totalItems === 0) {
+        const p = pickAvailableProduct();
+        if (p) {
+          await prisma.saleItem.create({
+            data: {
+              saleId: sale.id,
+              productId: p.id,
+              quantity: 1,
+              price: p.sellingPrice,
+              boughtPrice: p.boughtPrice,
+            },
+          });
+          totalAmount += p.sellingPrice;
+          totalCost += p.boughtPrice ?? 0;
+          totalItems += 1;
+          totalSaleItemsCreated++;
+          p.quantity -= 1;
+        }
+      }
+
+      const discountPercentage = faker.number.float({
+        min: 0,
+        max: 0.15,
+        fractionDigits: 2,
+      });
+      const discount = Math.round(Math.floor(totalAmount * discountPercentage) / 10) * 10;
+      const totalAmountWithDiscount = Math.round((totalAmount - discount) / 10) * 10;
+      const totalProfit = Math.round((totalAmountWithDiscount - totalCost) / 10) * 10;
+
+      await prisma.sale.update({
+        where: { id: sale.id },
+        data: {
+          discount,
+          totalAmount,
+          totalAmountWithDiscount,
+          totalItems,
+          totalCost,
+          totalProfit,
+        },
+      });
+
+      // Persist stock changes for products used in this sale.
+      for (const productId of usedProductIds) {
+        const p = productById.get(productId);
+        if (!p) continue;
+        await prisma.product.update({
+          where: { id: productId },
+          data: { quantity: p.quantity },
+        });
+      }
+
+      remainingItemsForDay -= totalItems;
+      sales.push({
+        ...sale,
         totalAmount,
         totalAmountWithDiscount,
         totalItems,
         totalCost,
         totalProfit,
-      },
-    });
-
-    for (const product of saleProducts) {
-      if (usedProductIds.has(product.id)) {
-        await prisma.product.update({
-          where: { id: product.id },
-          data: { quantity: product.quantity },
-        });
-      }
-    }
-    if (fallbackProductUsed) {
-      await prisma.product.update({
-        where: { id: fallbackProductUsed.id },
-        data: { quantity: fallbackProductUsed.quantity },
       });
     }
-
-    sales.push({ ...sale, totalAmount, totalAmountWithDiscount, totalItems, totalCost, totalProfit });
   }
 
   console.log(`   - ${sales.length} sales created`);

@@ -7,6 +7,17 @@ import {
   generateDAPrice,
 } from "../utils/generators";
 
+function generateSeedBoughtPriceDA(category: string): number {
+  // Only phones can reach 6 digits in DA.
+  // For non-phone categories:
+  // - 20% of products: 5 digits (10,000 - 99,999 DA)
+  // - 80% of products: 3-4 digits (100 - 9,999 DA)
+  const isPhone = category === "Phone";
+  if (isPhone) return generateDAPrice(100_000, 999_999);
+  const isFiveDigits = faker.number.float({ min: 0, max: 1 }) < 0.2;
+  return isFiveDigits ? generateDAPrice(10_000, 99_999) : generateDAPrice(100, 9_999);
+}
+
 export async function seedProducts(
   prisma: PrismaClient,
   sellers: Seller[],
@@ -47,11 +58,7 @@ export async function seedProducts(
       usedProductNames.add(productName);
 
       const category = faker.helpers.arrayElement(predefinedCategories);
-      // Phones: 5-6 digits (10,000 - 999,999 DA). Others: 3-4 digits only (100 - 9,999 DA)
-      const isPhone = category === "Phone";
-      const boughtPrice = isPhone
-        ? generateDAPrice(10_000, 999_999) // 5-6 digits DA
-        : generateDAPrice(100, 9_999); // 3-4 digits DA
+      const boughtPrice = generateSeedBoughtPriceDA(category);
       
       const markupPercentage = faker.number.float({ min: 1.15, max: 1.5 }); // 15-50% markup
       const sellingPrice = Math.round(Math.floor(boughtPrice * markupPercentage) / 10) * 10; // Ensure last digit is 0

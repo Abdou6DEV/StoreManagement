@@ -26,6 +26,7 @@ import {
   Calendar,
   CreditCard,
   DollarSign,
+  Banknote,
   FileCheck,
   HardDrive,
   Monitor,
@@ -88,7 +89,18 @@ export default function AboutPage() {
     {
       icon: FileText,
       title: t("about.features.bills", "Bills & Expenses"),
-      description: t("about.features.billsDesc", "Bill management system with recurring payments, expense tracking, overdue/due soon alerts, payment history, and financial oversight")
+      description: t(
+        "about.features.billsDesc",
+        "Bill management system with recurring payments, expense tracking, overdue/due soon alerts, payment history, and financial oversight.",
+      )
+    },
+    {
+      icon: Banknote,
+      title: t("about.features.salary", "Employee Salaries"),
+      description: t(
+        "about.features.salaryDesc",
+        "Dedicated salary payments on the Bills page: daily or monthly schedules, fixed amount or percentage of profit, duplicate-payment warnings, and full payment history.",
+      ),
     },
     {
       icon: Wrench,

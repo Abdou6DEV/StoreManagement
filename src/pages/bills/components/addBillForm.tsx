@@ -20,6 +20,13 @@ interface Bill {
   updatedAt: Date;
 }
 
+interface BillTitleSuggestion {
+  title: string;
+  type: string;
+  amount: number;
+  duration: string;
+}
+
 interface AddBillFormProps {
   openPanel: "add" | null;
   setOpenPanel: React.Dispatch<React.SetStateAction<"add" | null>>;
@@ -102,13 +109,13 @@ export default function AddBillForm({
   const [form, setForm] = useState(initialForm);
   const [loading, setLoading] = useState(false);
   const [billTypes, setBillTypes] = useState<string[]>([]);
-  const [billTitles, setBillTitles] = useState<{ title: string; type: string; amount: number; duration: string }[]>([]);
+  const [billTitles, setBillTitles] = useState<BillTitleSuggestion[]>([]);
   const [isExistingBill, setIsExistingBill] = useState(false);
   
   // Enhanced dropdown states
   const [showTitleDropdown, setShowTitleDropdown] = useState(false);
   const [showTypeDropdown, setShowTypeDropdown] = useState(false);
-  const [filteredTitles, setFilteredTitles] = useState<{ title: string; type: string; amount: number; duration: string }[]>([]);
+  const [filteredTitles, setFilteredTitles] = useState<BillTitleSuggestion[]>([]);
   const [filteredTypes, setFilteredTypes] = useState<string[]>([]);
   const [titleSearch, setTitleSearch] = useState("");
   const [typeSearch, setTypeSearch] = useState("");
@@ -184,8 +191,14 @@ export default function AddBillForm({
         window.api.database.bills.getBillTypes(),
         window.api.database.bills.getBillTitles()
       ]);
-      setBillTypes(types);
-      setBillTitles(titles);
+      // Salary bills are created via the Salary form, not the generic Bills form.
+      // Keep them out of the suggestions here to avoid confusion.
+      const typesList = (types ?? []) as string[];
+      const titlesList = (titles ?? []) as BillTitleSuggestion[];
+      const filteredTypes = typesList.filter((type) => type !== "SALARY");
+      const filteredTitles = titlesList.filter((bill) => bill.type !== "SALARY");
+      setBillTypes(filteredTypes);
+      setBillTitles(filteredTitles);
     } catch (error) {
       console.error("Error loading bill data:", error);
     }
@@ -298,7 +311,7 @@ export default function AddBillForm({
 
 
   // Select title and pre-fill form
-  const selectTitle = async (bill: { title: string; type: string; amount: number; duration: string }) => {
+  const selectTitle = async (bill: BillTitleSuggestion) => {
     setForm(prev => ({
       ...prev,
       title: bill.title,
