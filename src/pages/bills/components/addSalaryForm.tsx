@@ -28,7 +28,15 @@ interface AddSalaryFormProps {
   onSalaryPaymentRecorded?: () => void;
 }
 
-const getTodayStr = () => new Date().toISOString().split("T")[0];
+/** Local calendar YYYY-MM-DD (matches DatePicker). */
+const toLocalYyyyMmDd = (d: Date): string => {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+};
+
+const getTodayStr = () => toLocalYyyyMmDd(new Date());
 
 
 
@@ -297,6 +305,15 @@ export default function AddSalaryForm({
   };
 
   const buildPaidDate = (): Date => {
+    const now = new Date();
+    if (form.forDate === toLocalYyyyMmDd(now)) {
+      return now;
+    }
+    const parts = form.forDate.split("-").map(Number);
+    if (parts.length === 3 && parts.every((n) => !Number.isNaN(n))) {
+      const [y, mo, day] = parts;
+      return new Date(y, mo - 1, day, 12, 0, 0, 0);
+    }
     const d = new Date(form.forDate);
     d.setHours(12, 0, 0, 0);
     return d;

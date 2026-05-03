@@ -16,10 +16,17 @@ export default function EditStockForm({
   productID,
   setProductID,
   onDirtyChange,
+  onAfterStockDecreaseForReturn,
 }: {
   productID: string | null;
   setProductID: React.Dispatch<React.SetStateAction<string | null>>;
   onDirtyChange?: (dirty: boolean) => void;
+  /** After a successful update where quantity went down, opens supplier return flow (same as sale delete). */
+  onAfterStockDecreaseForReturn?: (payload: {
+    productId: string;
+    name: string;
+    decreasedBy: number;
+  }) => void;
 }) {
   const { t } = useTranslation();
   const requestClose = useModalRequestClose();
@@ -166,6 +173,18 @@ export default function EditStockForm({
         t("stock.toastUpdateSuccess", "Product updated successfully!"),
         "success",
       );
+      const prevQty = Number(product.quantity);
+      const newQty = Number(quantity);
+      if (newQty < prevQty) {
+        const decreasedBy = Math.max(0, Math.round(prevQty - newQty));
+        if (decreasedBy > 0) {
+          onAfterStockDecreaseForReturn?.({
+            productId: product.id,
+            name: String(name),
+            decreasedBy,
+          });
+        }
+      }
       setProductID(null);
     } catch (err) {
       // Handle barcode conflict specifically

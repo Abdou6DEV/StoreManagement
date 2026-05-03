@@ -18,6 +18,7 @@ import {
   type ServiceLabelSize,
 } from "../../pages/services/utils/serviceLabelPrintUtils";
 import { useToast } from "../contexts/toastContext";
+import { useStock } from "../contexts/stockContext";
 
 export type SupplierReturnCandidate = {
   productId: string;
@@ -38,6 +39,11 @@ interface SupplierReturnFlowProps {
   candidates: SupplierReturnCandidate[];
   /** Called when the flow fully ends (dismissed, skipped, or after printing). */
   onDone: () => void;
+  /**
+   * When true, stock already matches the return (e.g. quantity lowered in edit product).
+   * Hides the “subtract from stock” checkbox and never deducts again.
+   */
+  inventoryAlreadyReduced?: boolean;
 }
 
 /**
@@ -52,9 +58,11 @@ const SupplierReturnFlow: React.FC<SupplierReturnFlowProps> = ({
   open,
   candidates,
   onDone,
+  inventoryAlreadyReduced = false,
 }) => {
   const { t } = useTranslation();
   const { showToast } = useToast();
+  const { refetchProducts } = useStock();
 
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
@@ -83,6 +91,8 @@ const SupplierReturnFlow: React.FC<SupplierReturnFlowProps> = ({
     }
   });
   const [isPrintingReturnLabels, setIsPrintingReturnLabels] = useState(false);
+  const [isApplyingInventory, setIsApplyingInventory] = useState(false);
+  const [reduceInventoryChecked, setReduceInventoryChecked] = useState(true);
 
   // Prevents calling onDone when merely transitioning from confirm → modal.
   const advancingToReturnModalRef = useRef(false);
@@ -125,6 +135,7 @@ const SupplierReturnFlow: React.FC<SupplierReturnFlowProps> = ({
         setSupplierReturnQty(initialQty);
         setReturnIssueByProduct(initialIssues);
         setReturnPriceByProduct(initialPrices);
+        setReduceInventoryChecked(true);
         setConfirmOpen(true);
       };
       start();
@@ -240,7 +251,54 @@ const SupplierReturnFlow: React.FC<SupplierReturnFlowProps> = ({
     setReturnPriceByProduct({});
     setReturnIssueByProduct({});
     setLastPurchaseByProduct({});
+    setReduceInventoryChecked(true);
     advancingToReturnModalRef.current = false;
+  };
+
+  const applyInventoryReductionIfNeeded = async () => {
+    if (inventoryAlreadyReduced) return;
+    if (!reduceInventoryChecked) return;
+    let anySuccess = false;
+    for (const c of candidates) {
+      if (!supplierReturnSelected[c.productId]) continue;
+      if (!c.productId || c.productId.startsWith("name:")) continue;
+      const maxAllowed = Math.floor(Math.max(0, Number(c.deletedQty)));
+      if (maxAllowed < 1) continue;
+      const qtyRaw = supplierReturnQty[c.productId] ?? c.deletedQty;
+      const deduct = Math.min(
+        Math.max(1, Math.floor(Number(qtyRaw))),
+        maxAllowed,
+      );
+      try {
+        const row = await window.api.database.products.getWithPurchaseHistory(c.productId);
+        const current = Number(row?.quantity ?? 0);
+        const newQty = Math.max(0, current - deduct);
+        await window.api.database.products.update(
+          c.productId,
+          { quantity: newQty },
+          "unknown",
+          undefined,
+          true,
+        );
+        anySuccess = true;
+      } catch {
+        showToast(
+          t(
+            "supplierReturn.reduceInventoryError",
+            "Failed to update stock for {{name}}",
+            { name: c.name },
+          ),
+          "error",
+        );
+      }
+    }
+    if (anySuccess) {
+      try {
+        await refetchProducts();
+      } catch {
+        // ignore refetch failure
+      }
+    }
   };
 
   const finishFlow = () => {
@@ -331,7 +389,7 @@ const SupplierReturnFlow: React.FC<SupplierReturnFlowProps> = ({
           </div>
 
           {/* Product list — scrolls when many rows; header stays visible */}
-          <div className="rounded-lg border">
+          <div className="rounded-lg border p-2">
             <div className="scrollbar-themed max-h-[min(52vh,560px)] overflow-y-auto overscroll-contain sm:max-h-[min(58vh,640px)]">
               <div className="sticky top-0 z-[1] grid grid-cols-24 gap-2 border-b border-border bg-muted/95 px-4 py-2 text-sm font-medium backdrop-blur-sm">
                 <div className="col-span-5">{t("supplierReturn.product")}</div>
@@ -500,21 +558,51 @@ const SupplierReturnFlow: React.FC<SupplierReturnFlowProps> = ({
             </div>
           </div>
 
-          {/* Footer actions */}
-          <div className="flex shrink-0 items-center justify-end gap-2 border-t border-border/60 pt-1">
-            <Button
-              variant="outline"
-              onClick={finishFlow}
-              disabled={isPrintingReturnLabels}
-            >
-              {t("supplierReturn.skipPrinting")}
-            </Button>
-            <Button
-              disabled={
-                isPrintingReturnLabels ||
-                !candidates.some((c) => supplierReturnSelected[c.productId])
-              }
-              onClick={async () => {
+          {/* Footer: optional reduce-stock + actions */}
+          <div
+            className={`flex shrink-0 border-t border-border/60 pt-3 gap-2 ${
+              inventoryAlreadyReduced
+                ? "flex-row items-center justify-end"
+                : "flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
+            }`}
+          >
+            {!inventoryAlreadyReduced && (
+              <Checkbox
+                checked={reduceInventoryChecked}
+                onChange={setReduceInventoryChecked}
+                disabled={isPrintingReturnLabels || isApplyingInventory}
+                label={t(
+                  "supplierReturn.reduceInventoryLabel",
+                  "Subtract return quantities from stock (checked products only).",
+                )}
+                color="orange"
+                className="items-start min-w-0 flex-1"
+                labelClassName="text-xs sm:text-sm text-foreground leading-snug"
+              />
+            )}
+            <div className="flex shrink-0 items-center justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={async () => {
+                  setIsApplyingInventory(true);
+                  try {
+                    await applyInventoryReductionIfNeeded();
+                    finishFlow();
+                  } finally {
+                    setIsApplyingInventory(false);
+                  }
+                }}
+                disabled={isPrintingReturnLabels || isApplyingInventory}
+              >
+                {t("supplierReturn.skipPrinting")}
+              </Button>
+              <Button
+                disabled={
+                  isPrintingReturnLabels ||
+                  isApplyingInventory ||
+                  !candidates.some((c) => supplierReturnSelected[c.productId])
+                }
+                onClick={async () => {
                 if (!candidates.some((c) => supplierReturnSelected[c.productId])) return;
                 try {
                   setIsPrintingReturnLabels(true);
@@ -605,6 +693,7 @@ const SupplierReturnFlow: React.FC<SupplierReturnFlowProps> = ({
                     await printReturnSupplierLabels(labels, returnLabelSize);
                   }
 
+                  await applyInventoryReductionIfNeeded();
                   finishFlow();
                 } catch {
                   showToast(
@@ -617,7 +706,8 @@ const SupplierReturnFlow: React.FC<SupplierReturnFlowProps> = ({
               }}
             >
               {t("supplierReturn.printReturnLabel")}
-            </Button>
+              </Button>
+            </div>
           </div>
         </div>
       </Modal>

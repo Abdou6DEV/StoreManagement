@@ -2629,7 +2629,9 @@
     "returnQty": "Return qty",
     "printReturnLabel": "Print return label",
     "skipPrinting": "Skip printing",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "reduceInventoryLabel": "Subtract return quantities from stock (checked products only).",
+    "reduceInventoryError": "Failed to update stock for {{name}}"
   }
 }
 

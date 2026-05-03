@@ -2546,6 +2546,8 @@
     "returnQty": "Qté à retourner",
     "printReturnLabel": "Imprimer l’étiquette de retour",
     "skipPrinting": "Ignorer l’impression",
-    "cancel": "Annuler"
+    "cancel": "Annuler",
+    "reduceInventoryLabel": "Déduire les quantités à retourner du stock (produits cochés uniquement).",
+    "reduceInventoryError": "Impossible de mettre à jour le stock pour {{name}}"
   }
 }

@@ -2609,6 +2609,8 @@
     "returnQty": "الكمية المراد إرجاعها",
     "printReturnLabel": "طباعة ملصق الإرجاع",
     "skipPrinting": "تخطي الطباعة",
-    "cancel": "إلغاء"
+    "cancel": "إلغاء",
+    "reduceInventoryLabel": "خصم كميات الإرجاع من المخزون (المنتجات المحدّدة فقط).",
+    "reduceInventoryError": "تعذّر تحديث المخزون لـ {{name}}"
   }
 }
