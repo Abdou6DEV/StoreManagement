@@ -1,4 +1,12 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  type ReactNode,
+} from "react";
 import { getWarmupSnapshot, subscribeWarmup } from "../warmup/appWarmup";
 
 interface DueSoonServicesContextType {
@@ -20,7 +28,7 @@ export const DueSoonServicesProvider = ({ children }: { children: ReactNode }) =
   const [badgeLoaded, setBadgeLoaded] = useState(false);
   const [services, setServices] = useState<any[] | null>(null);
 
-  const calculateDueSoonServices = async () => {
+  const calculateDueSoonServices = useCallback(async () => {
     try {
       setIsLoading(true);
       if (!enableBadge || !badgeLoaded) {
@@ -30,43 +38,55 @@ export const DueSoonServicesProvider = ({ children }: { children: ReactNode }) =
 
       const allServices = services ?? [];
       const today = new Date();
-      const dueSoonDate = new Date(today.getTime() + dueSoonThresholdDays * 24 * 60 * 60 * 1000);
-      
-      // Get seen due soon services from localStorage
-      const savedSeen = localStorage.getItem('seenDueSoonServices');
-      const seenIds = savedSeen ? new Set(JSON.parse(savedSeen)) : new Set();
-      
-      // Count due soon services that haven't been seen
+      const dueSoonDate = new Date(
+        today.getTime() + dueSoonThresholdDays * 24 * 60 * 60 * 1000,
+      );
+
+      const savedSeen = localStorage.getItem("seenDueSoonServices");
+      let seenIds = new Set<string>();
+      if (savedSeen) {
+        try {
+          seenIds = new Set(JSON.parse(savedSeen) as string[]);
+        } catch {
+          seenIds = new Set();
+        }
+      }
+
       const dueSoonServices = allServices.filter((service: any) => {
         if (service.isCompleted) return false;
         const dueDate = new Date(service.dueDate);
-        return dueDate >= today && dueDate <= dueSoonDate && !seenIds.has(service.id);
+        return (
+          dueDate >= today &&
+          dueDate <= dueSoonDate &&
+          !seenIds.has(service.id)
+        );
       });
-      
+
       setUnseenDueSoonServicesCount(dueSoonServices.length);
     } catch (error) {
       console.error("Error calculating due soon services:", error);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [services, dueSoonThresholdDays, enableBadge, badgeLoaded]);
 
-  const markDueSoonServicesAsSeen = () => {
-    // Mark all current due soon services as seen
+  const markDueSoonServicesAsSeen = useCallback(() => {
     const allServices = services ?? [];
-      const today = new Date();
-      const dueSoonDate = new Date(today.getTime() + dueSoonThresholdDays * 24 * 60 * 60 * 1000);
-      
-      const dueSoonServices = allServices.filter((service) => {
-        if (service.isCompleted) return false;
-        const dueDate = new Date(service.dueDate);
-        return dueDate >= today && dueDate <= dueSoonDate;
-      });
-      
-      const dueSoonIds = dueSoonServices.map((service) => service.id);
-      localStorage.setItem('seenDueSoonServices', JSON.stringify(dueSoonIds));
-      setUnseenDueSoonServicesCount(0);
-  };
+    const today = new Date();
+    const dueSoonDate = new Date(
+      today.getTime() + dueSoonThresholdDays * 24 * 60 * 60 * 1000,
+    );
+
+    const dueSoonServices = allServices.filter((service) => {
+      if (service.isCompleted) return false;
+      const dueDate = new Date(service.dueDate);
+      return dueDate >= today && dueDate <= dueSoonDate;
+    });
+
+    const dueSoonIds = dueSoonServices.map((service) => service.id);
+    localStorage.setItem("seenDueSoonServices", JSON.stringify(dueSoonIds));
+    setUnseenDueSoonServicesCount((c) => (c === 0 ? c : 0));
+  }, [services, dueSoonThresholdDays]);
 
   // Load badge setting, threshold, and services list from warmup (no polling here)
   useEffect(() => {
@@ -93,16 +113,36 @@ export const DueSoonServicesProvider = ({ children }: { children: ReactNode }) =
   }, []);
 
   useEffect(() => {
-    calculateDueSoonServices();
-    
-    // Refresh every minute
-    const interval = setInterval(calculateDueSoonServices, 60000);
-    
+    void calculateDueSoonServices();
+
+    const interval = setInterval(() => {
+      void calculateDueSoonServices();
+    }, 60000);
+
     return () => clearInterval(interval);
-  }, [services, dueSoonThresholdDays, enableBadge, badgeLoaded]);
+  }, [calculateDueSoonServices]);
+
+  const value = useMemo(
+    () => ({
+      unseenDueSoonServicesCount,
+      markDueSoonServicesAsSeen,
+      dueSoonThresholdDays,
+      isLoading,
+      enableBadge,
+      badgeLoaded,
+    }),
+    [
+      unseenDueSoonServicesCount,
+      markDueSoonServicesAsSeen,
+      dueSoonThresholdDays,
+      isLoading,
+      enableBadge,
+      badgeLoaded,
+    ],
+  );
 
   return (
-    <DueSoonServicesContext.Provider value={{ unseenDueSoonServicesCount, markDueSoonServicesAsSeen, dueSoonThresholdDays, isLoading, enableBadge, badgeLoaded }}>
+    <DueSoonServicesContext.Provider value={value}>
       {children}
     </DueSoonServicesContext.Provider>
   );

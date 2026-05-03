@@ -1,4 +1,12 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  type ReactNode,
+} from "react";
 import { getWarmupSnapshot, subscribeWarmup } from "../warmup/appWarmup";
 
 interface OverdueServicesContextType {
@@ -18,7 +26,7 @@ export const OverdueServicesProvider = ({ children }: { children: ReactNode }) =
   const [badgeLoaded, setBadgeLoaded] = useState(false);
   const [services, setServices] = useState<any[] | null>(null);
 
-  const calculateOverdueServices = async () => {
+  const calculateOverdueServices = useCallback(async () => {
     try {
       setIsLoading(true);
       if (!enableBadge || !badgeLoaded) {
@@ -28,40 +36,46 @@ export const OverdueServicesProvider = ({ children }: { children: ReactNode }) =
 
       const allServices = services ?? [];
       const today = new Date();
-      
+
       // Get seen overdue services from localStorage
-      const savedSeen = localStorage.getItem('seenOverdueServices');
-      const seenIds = savedSeen ? new Set(JSON.parse(savedSeen)) : new Set();
-      
+      const savedSeen = localStorage.getItem("seenOverdueServices");
+      let seenIds = new Set<string>();
+      if (savedSeen) {
+        try {
+          seenIds = new Set(JSON.parse(savedSeen) as string[]);
+        } catch {
+          seenIds = new Set();
+        }
+      }
+
       // Count overdue services that haven't been seen
       const overdueServices = allServices.filter((service: any) => {
         if (service.isCompleted) return false;
         const dueDate = new Date(service.dueDate);
         return dueDate < today && !seenIds.has(service.id);
       });
-      
+
       setUnseenOverdueServicesCount(overdueServices.length);
     } catch (error) {
       console.error("Error calculating overdue services:", error);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [services, enableBadge, badgeLoaded]);
 
-  const markOverdueServicesAsSeen = () => {
-    // Mark all current overdue services as seen
+  const markOverdueServicesAsSeen = useCallback(() => {
     const allServices = services ?? [];
-      const today = new Date();
-      const overdueServices = allServices.filter((service) => {
-        if (service.isCompleted) return false;
-        const dueDate = new Date(service.dueDate);
-        return dueDate < today;
-      });
-      
-      const overdueIds = overdueServices.map((service) => service.id);
-      localStorage.setItem('seenOverdueServices', JSON.stringify(overdueIds));
-      setUnseenOverdueServicesCount(0);
-  };
+    const today = new Date();
+    const overdueServices = allServices.filter((service) => {
+      if (service.isCompleted) return false;
+      const dueDate = new Date(service.dueDate);
+      return dueDate < today;
+    });
+
+    const overdueIds = overdueServices.map((service) => service.id);
+    localStorage.setItem("seenOverdueServices", JSON.stringify(overdueIds));
+    setUnseenOverdueServicesCount((c) => (c === 0 ? c : 0));
+  }, [services]);
 
   // Load badge setting and services list from warmup (no polling here)
   useEffect(() => {
@@ -84,16 +98,34 @@ export const OverdueServicesProvider = ({ children }: { children: ReactNode }) =
   }, []);
 
   useEffect(() => {
-    calculateOverdueServices();
-    
-    // Refresh every minute
-    const interval = setInterval(calculateOverdueServices, 60000);
-    
+    void calculateOverdueServices();
+
+    const interval = setInterval(() => {
+      void calculateOverdueServices();
+    }, 60000);
+
     return () => clearInterval(interval);
-  }, [services, enableBadge, badgeLoaded]);
+  }, [calculateOverdueServices]);
+
+  const value = useMemo(
+    () => ({
+      unseenOverdueServicesCount,
+      markOverdueServicesAsSeen,
+      isLoading,
+      enableBadge,
+      badgeLoaded,
+    }),
+    [
+      unseenOverdueServicesCount,
+      markOverdueServicesAsSeen,
+      isLoading,
+      enableBadge,
+      badgeLoaded,
+    ],
+  );
 
   return (
-    <OverdueServicesContext.Provider value={{ unseenOverdueServicesCount, markOverdueServicesAsSeen, isLoading, enableBadge, badgeLoaded }}>
+    <OverdueServicesContext.Provider value={value}>
       {children}
     </OverdueServicesContext.Provider>
   );

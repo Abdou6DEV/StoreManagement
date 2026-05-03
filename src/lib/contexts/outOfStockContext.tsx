@@ -1,4 +1,12 @@
-import React, { createContext, useContext, useMemo, useState, useEffect, ReactNode } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useMemo,
+  useState,
+  useEffect,
+  useCallback,
+  type ReactNode,
+} from "react";
 import { useStock } from './stockContext';
 
 interface OutOfStockContextType {
@@ -52,20 +60,30 @@ export const OutOfStockProvider: React.FC<OutOfStockProviderProps> = ({ children
     return unseenProducts.length;
   }, [products, seenOutOfStockProducts]);
 
-  // Mark all current out of stock products as seen
-  const markOutOfStockAsSeen = () => {
+  const markOutOfStockAsSeen = useCallback(() => {
     if (!products.length) return;
 
-    const outOfStockProducts = products.filter(product => product.quantity === 0);
-    const newSeenProducts = new Set(seenOutOfStockProducts);
-    
-    outOfStockProducts.forEach(product => {
-      newSeenProducts.add(product.id);
+    const outOfStockIds = products
+      .filter((product) => product.quantity === 0)
+      .map((p) => p.id);
+
+    setSeenOutOfStockProducts((prev) => {
+      const next = new Set(prev);
+      let changed = false;
+      for (const id of outOfStockIds) {
+        if (!next.has(id)) {
+          next.add(id);
+          changed = true;
+        }
+      }
+      if (!changed) return prev;
+      localStorage.setItem(
+        "seenOutOfStockProducts",
+        JSON.stringify([...next]),
+      );
+      return next;
     });
-    
-    setSeenOutOfStockProducts(newSeenProducts);
-    localStorage.setItem('seenOutOfStockProducts', JSON.stringify(Array.from(newSeenProducts)));
-  };
+  }, [products]);
 
   // Clean up seen products that are no longer out of stock
   useEffect(() => {
@@ -88,11 +106,14 @@ export const OutOfStockProvider: React.FC<OutOfStockProviderProps> = ({ children
     }
   }, [products, seenOutOfStockProducts]);
 
-  const value: OutOfStockContextType = {
-    outOfStockCount,
-    unseenOutOfStockCount,
-    markOutOfStockAsSeen,
-  };
+  const value = useMemo<OutOfStockContextType>(
+    () => ({
+      outOfStockCount,
+      unseenOutOfStockCount,
+      markOutOfStockAsSeen,
+    }),
+    [outOfStockCount, unseenOutOfStockCount, markOutOfStockAsSeen],
+  );
 
   return (
     <OutOfStockContext.Provider value={value}>

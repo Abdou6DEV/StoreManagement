@@ -1,4 +1,12 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  type ReactNode,
+} from "react";
 import { useStock } from './stockContext';
 import { getWarmupSnapshot, subscribeWarmup } from '../warmup/appWarmup';
 
@@ -64,20 +72,35 @@ export const LowStockProvider: React.FC<LowStockProviderProps> = ({ children }) 
     return unseenProducts.length;
   }, [products, lowStockThreshold, seenLowStockProducts]);
 
-  // Mark all current low stock products as seen
-  const markLowStockAsSeen = () => {
+  // Stable reference: StockTable effects depend on this; inline functions caused
+  // effect cleanups to re-run every provider render and call setState in a loop.
+  const markLowStockAsSeen = useCallback(() => {
     if (!products.length || lowStockThreshold === 0) return;
 
-    const lowStockProducts = products.filter(product => product.quantity > 0 && product.quantity <= lowStockThreshold);
-    const newSeenProducts = new Set(seenLowStockProducts);
-    
-    lowStockProducts.forEach(product => {
-      newSeenProducts.add(product.id);
+    const lowStockIds = products
+      .filter(
+        (product) =>
+          product.quantity > 0 && product.quantity <= lowStockThreshold,
+      )
+      .map((p) => p.id);
+
+    setSeenLowStockProducts((prev) => {
+      const next = new Set(prev);
+      let changed = false;
+      for (const id of lowStockIds) {
+        if (!next.has(id)) {
+          next.add(id);
+          changed = true;
+        }
+      }
+      if (!changed) return prev;
+      localStorage.setItem(
+        "seenLowStockProducts",
+        JSON.stringify([...next]),
+      );
+      return next;
     });
-    
-    setSeenLowStockProducts(newSeenProducts);
-    localStorage.setItem('seenLowStockProducts', JSON.stringify(Array.from(newSeenProducts)));
-  };
+  }, [products, lowStockThreshold]);
 
   // Clean up seen products that are no longer low stock - SIMPLE
   useEffect(() => {
@@ -100,11 +123,14 @@ export const LowStockProvider: React.FC<LowStockProviderProps> = ({ children }) 
     }
   }, [products, lowStockThreshold, seenLowStockProducts]);
 
-  const value: LowStockContextType = {
-    unseenLowStockCount,
-    markLowStockAsSeen,
-    lowStockThreshold,
-  };
+  const value = useMemo<LowStockContextType>(
+    () => ({
+      unseenLowStockCount,
+      markLowStockAsSeen,
+      lowStockThreshold,
+    }),
+    [unseenLowStockCount, markLowStockAsSeen, lowStockThreshold],
+  );
 
   return (
     <LowStockContext.Provider value={value}>
