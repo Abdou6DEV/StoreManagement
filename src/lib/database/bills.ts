@@ -248,59 +248,58 @@ export const bills = {
   },
 
   async recordPayment(billId: string, amount: number, notes?: string, paidDate?: Date): Promise<Bill> {
-    // Record the payment
-    await prisma.billPayment.create({
-      data: {
-        billId,
-        amount,
-        notes,
-        ...(paidDate ? { paidDate } : {}),
+    return prisma.$transaction(async (tx) => {
+      const bill = await tx.bill.findUnique({ where: { id: billId } });
+      if (!bill) {
+        throw new Error("Bill not found");
       }
-    });
 
-    // Update the bill's next due date based on its duration
-    const bill = await prisma.bill.findUnique({ where: { id: billId } });
-    if (!bill) {
-      throw new Error("Bill not found");
-    }
+      await tx.billPayment.create({
+        data: {
+          billId,
+          amount,
+          notes,
+          ...(paidDate ? { paidDate } : {}),
+        }
+      });
 
-    if (bill.duration !== "NO_NEXT") {
-      // Only advance nextBillDate for current-day payments.
-      // Past/missed payments should not shift the existing reminder date.
-      const todayStart = new Date();
-      todayStart.setHours(0, 0, 0, 0);
-      const isCurrentPayment = !paidDate || paidDate >= todayStart;
+      if (bill.duration !== "NO_NEXT") {
+        // Only advance nextBillDate for current-day payments.
+        // Past/missed payments should not shift the existing reminder date.
+        const todayStart = new Date();
+        todayStart.setHours(0, 0, 0, 0);
+        const isCurrentPayment = !paidDate || paidDate >= todayStart;
 
-      if (isCurrentPayment) {
-        const nextBillDate = this.calculateNextBillDate(bill.duration);
+        if (isCurrentPayment) {
+          const nextBillDate = this.calculateNextBillDate(bill.duration);
 
-        return prisma.bill.update({
-          where: { id: billId },
-          data: {
-            nextBillDate,
-            amount,
-          },
-          include: {
-            payments: {
-              orderBy: {
-                paidDate: 'desc'
+          return tx.bill.update({
+            where: { id: billId },
+            data: {
+              nextBillDate,
+            },
+            include: {
+              payments: {
+                orderBy: {
+                  paidDate: 'desc'
+                }
               }
             }
-          }
-        });
-      }
-    }
-
-    return prisma.bill.findUnique({
-      where: { id: billId },
-      include: {
-        payments: {
-          orderBy: {
-            paidDate: 'desc'
-          }
+          });
         }
       }
-    }) as Promise<Bill>;
+
+      return tx.bill.findUnique({
+        where: { id: billId },
+        include: {
+          payments: {
+            orderBy: {
+              paidDate: 'desc'
+            }
+          }
+        }
+      }) as Promise<Bill>;
+    });
   },
 
   async getBillWithPayments(billId: string): Promise<Bill & { payments: any[] } | null> {
