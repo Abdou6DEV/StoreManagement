@@ -66,7 +66,12 @@ export const OverdueBillsProvider: React.FC<OverdueBillsProviderProps> = ({ chil
   // Helper function to check if bill is overdue
   const isOverdue = (nextBillDate: Date, duration: string) => {
     if (duration === "NO_NEXT") return false;
-    return new Date(nextBillDate) < new Date() && new Date(nextBillDate).getTime() !== 0;
+    // Compare by date-only (start of day) so "today" is not overdue.
+    const due = new Date(nextBillDate);
+    due.setHours(0, 0, 0, 0);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return due < today && due.getTime() !== 0;
   };
 
   // Calculate unseen overdue bills count

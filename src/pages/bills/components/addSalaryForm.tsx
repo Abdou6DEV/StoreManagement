@@ -97,6 +97,8 @@ export default function AddSalaryForm({
   const [fetchingProfit, setFetchingProfit] = useState(false);
   // Prevents the profit useEffect from overwriting an amount the user typed manually
   const skipAmountUpdateRef = useRef(false);
+  // Forces auto-calculation to re-run on reselecting the same employee.
+  const [recalcSalt, setRecalcSalt] = useState(0);
 
   const [employeePayments, setEmployeePayments] = useState<any[]>([]);
   const [duplicatePayment, setDuplicatePayment] = useState<any | null>(null);
@@ -138,6 +140,9 @@ export default function AddSalaryForm({
   ) => setForm((prev) => ({ ...prev, [key]: value }));
 
   const applyEmployeeFromBill = async (bill: SalaryBill) => {
+    // Switching/reselecting an employee should allow auto-calculation again.
+    skipAmountUpdateRef.current = false;
+    setRecalcSalt((s) => s + 1);
     const parsed = parseSalaryBillNotes(bill.notes);
     setIsExistingEmployee(true);
     setExistingBillId(bill.id);
@@ -164,13 +169,19 @@ export default function AddSalaryForm({
 
         const pctMatch = last.notes?.match(/(\d+(?:\.\d+)?)%/);
         if (pctMatch) {
+          const pct = parseFloat(pctMatch[1]);
+          const immediateCalc =
+            profitDA !== null && !Number.isNaN(pct) && pct > 0
+              ? Math.max(0, Math.round((profitDA * pct) / 100))
+              : null;
           setForm((prev) => ({
             ...prev,
             ...baseFields,
             mode: "PERCENT",
             percentage: pctMatch[1],
-            amount: "",
+            amount: immediateCalc !== null ? immediateCalc.toFixed(0) : "",
           }));
+          if (immediateCalc !== null) setCalculatedAmountDA(immediateCalc);
         } else {
           const amountDA = last.amount / 100;
           setForm((prev) => ({
@@ -224,8 +235,6 @@ export default function AddSalaryForm({
   };
 
   // Fetch profit whenever % mode is active (debounced).
-  // Amount is only auto-filled from percentage when pct > 0 and the user
-  // didn't manually type the amount (skipAmountUpdateRef).
   useEffect(() => {
     if (form.mode !== "PERCENT") {
       setProfitDA(null);
@@ -253,14 +262,6 @@ export default function AddSalaryForm({
         const summary = await window.api.database.sales.getSummary(startDate, endDate);
         const profit = summary?.totalProfit ?? 0;
         setProfitDA(profit);
-
-        const pct = parseFloat(form.percentage);
-        if (!skipAmountUpdateRef.current && !isNaN(pct) && pct > 0) {
-          const calc = Math.max(0, Math.round((profit * pct) / 100));
-          setCalculatedAmountDA(calc);
-          setForm((prev) => ({ ...prev, amount: calc.toFixed(0) }));
-        }
-        skipAmountUpdateRef.current = false;
       } catch {
         setProfitDA(null);
         setCalculatedAmountDA(null);
@@ -271,6 +272,25 @@ export default function AddSalaryForm({
 
     return () => clearTimeout(timeout);
   }, [form.mode, form.period, form.forDate]);
+
+  // Auto-calculate amount when we have a profit and a valid percentage,
+  // unless the user manually overrode the amount field.
+  useEffect(() => {
+    if (form.mode !== "PERCENT") return;
+    if (profitDA === null) return;
+
+    const pct = parseFloat(form.percentage);
+    if (skipAmountUpdateRef.current) return;
+    if (Number.isNaN(pct) || pct <= 0) {
+      setCalculatedAmountDA(null);
+      setForm((prev) => ({ ...prev, amount: "" }));
+      return;
+    }
+
+    const calc = Math.max(0, Math.round((profitDA * pct) / 100));
+    setCalculatedAmountDA(calc);
+    setForm((prev) => ({ ...prev, amount: calc.toFixed(0) }));
+  }, [form.mode, form.percentage, profitDA, recalcSalt]);
 
   // Duplicate payment check
   useEffect(() => {
@@ -337,6 +357,20 @@ export default function AddSalaryForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    const normalizedName = form.name.trim().toLowerCase();
+    const existingByName = salaryBills.find((b) => b.title.trim().toLowerCase() === normalizedName);
+    if (!isExistingEmployee && existingByName) {
+      showToast(
+        t(
+          "bills.employeeNameAlreadyExists",
+          "This employee name already exists. Please select it from the suggestions."
+        ),
+        "error"
+      );
+      return;
+    }
+
     const amountNum = parseFloat(form.amount);
     if (!amountNum || amountNum <= 0) {
       showToast(t("bills.amountRequired", "Amount must be greater than 0"), "error");
@@ -567,13 +601,14 @@ export default function AddSalaryForm({
                 />
                 <Checkbox
                   checked={form.mode === "PERCENT"}
-                  onChange={() =>
+                  onChange={() => {
+                    skipAmountUpdateRef.current = false;
                     setForm((prev) => ({
                       ...prev,
                       mode: "PERCENT",
                       amount: "",
-                    }))
-                  }
+                    }));
+                  }}
                   label={t("bills.byPercentage", "By %")}
                   color="purple"
                 />
@@ -595,7 +630,6 @@ export default function AddSalaryForm({
                     const value = e.target.value;
                     setField("percentage", value);
                     if (profitDA !== null && profitDA > 0) {
-                      skipAmountUpdateRef.current = true;
                       const pct = parseFloat(value);
                       if (!isNaN(pct) && pct > 0) {
                         const calc = Math.max(0, Math.round((profitDA * pct) / 100));

@@ -192,9 +192,12 @@ export default function BillsPage() {
     // Always calculate highlighting for all bills
     const overdueBills = allBills.filter(bill => {
       if (bill.duration === "NO_NEXT") return false;
+      // Compare by date-only (start of day) so "today" is never considered overdue.
       const today = new Date();
+      today.setHours(0, 0, 0, 0);
       const dueDate = new Date(bill.nextBillDate);
-      return dueDate < today && !seenOverdueBills.has(bill.id);
+      dueDate.setHours(0, 0, 0, 0);
+      return dueDate < today && dueDate.getTime() !== 0 && !seenOverdueBills.has(bill.id);
     });
     
     const dueSoonBills = allBills.filter(bill => {

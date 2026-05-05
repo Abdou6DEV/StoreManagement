@@ -80,11 +80,14 @@ export const DueSoonBillsProvider: React.FC<DueSoonBillsProviderProps> = ({ chil
   // Helper function to check if a bill is due soon (within configured threshold days)
   const isDueSoon = (nextBillDate: Date, duration: string): boolean => {
     if (duration === "NO_NEXT" || !nextBillDate) return false;
+    // Compare by date-only (start of day) and include "today" as due soon.
     const due = new Date(nextBillDate);
+    due.setHours(0, 0, 0, 0);
     const now = new Date();
+    now.setHours(0, 0, 0, 0);
     const diffTime = due.getTime() - now.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays > 0 && diffDays <= dueSoonThresholdDays;
+    return diffDays >= 0 && diffDays <= dueSoonThresholdDays && due.getTime() !== 0;
   };
 
   // Calculate unseen due soon bills count
