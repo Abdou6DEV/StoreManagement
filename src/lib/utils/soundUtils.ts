@@ -5,12 +5,20 @@
 
 export type SoundType = 'success' | 'error' | 'info';
 
-// Sound file paths - you can customize these to point to your own audio files
-const SOUND_FILES = {
-  success: '/sounds/success.mp3',
-  error: '/sounds/error.mp3', 
-  info: '/sounds/info.mp3'
-} as const;
+function getAssetBaseUrl(): string {
+  // In production the renderer is loaded via file:// and Vite is configured with base "./".
+  // Using "/sounds/..." would incorrectly resolve to the OS root (e.g. C:\sounds\... on Windows).
+  const base = (import.meta as any)?.env?.BASE_URL ?? "./";
+  return base.endsWith("/") ? base : `${base}/`;
+}
+
+// Sound file paths served from Vite `public/` (e.g. `public/sounds/success.mp3`).
+// This is intentionally mutable because `setCustomSoundFiles()` can override paths at runtime.
+let SOUND_FILES: Record<SoundType, string> = {
+  success: `${getAssetBaseUrl()}sounds/success.mp3`,
+  error: `${getAssetBaseUrl()}sounds/error.mp3`,
+  info: `${getAssetBaseUrl()}sounds/info.mp3`,
+};
 
 // Fallback to generated sounds if custom files are not available
 let useCustomSounds = true;
