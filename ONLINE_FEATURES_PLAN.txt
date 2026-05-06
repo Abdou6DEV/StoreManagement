@@ -30,6 +30,7 @@ What we agreed on (so far)
 - Do NOT embed Supabase service role key in the app.
 - Use a secure backend endpoint (Supabase Edge Function recommended) that the app calls to check whether a device is allowed.
 - Protect the Edge Function with a simple shared secret header (e.g. `x-app-secret`).
+ - (RECOMMENDED DEFAULT): use the same `x-app-secret` protection for backup endpoints too (upload/list/download).
 
 5) Offline behavior (agreed)
 - Licensing is checked during login:
@@ -49,8 +50,38 @@ What we agreed on (so far)
 - Current app already creates local DB backups under userData/backups.
 - Plan: upload backup DB files (or the newest daily backup) to cloud storage and keep metadata in DB.
 - Details (bucket/table, upload mechanism) still to be decided.
-- Auto-upload behavior (agreed):
-  - Online backup upload will be an optional feature (user can enable/disable it in settings).
+- Auto-upload behavior (future, optional):
+  - Auto-upload may be added later as an optional feature (user can enable/disable it in settings).
+ - v1 upload behavior (RECOMMENDED DEFAULT):
+   - Manual upload only (from the backup page). No automatic uploads in v1.
+   - Auto-upload may be added later as an optional setting, but not required for initial release.
+- Non-goal (AGREED):
+  - No row-by-row / realtime database sync. Online data movement is backup upload/download only.
+ - Cloud retention + overwrite policy (AGREED):
+   - Keep only 1 cloud backup per customer (always the latest).
+   - Manual “Upload now” from the backup page:
+     - create a new local backup first
+     - upload it
+     - delete/overwrite the previous cloud backup for that customer
+   - Automatic uploads (if enabled later) should follow the same “latest only” rule.
+ - Cloud storage layout (RECOMMENDED DEFAULT):
+   - Store at a fixed path (overwrite each time):
+     - `backups/<customer_id>/latest.db`
+     - `backups/<customer_id>/latest.json` (metadata)
+ - Metadata to store (RECOMMENDED DEFAULT):
+   - `uploaded_at` (ISO timestamp)
+   - `size_bytes`
+   - `source` (e.g. `manual_upload` / `auto_upload`)
+   - `app_version` (REQUIRED) — used for restore compatibility checks
+   - `device_id` (optional, for troubleshooting)
+ - Restore compatibility rule (RECOMMENDED DEFAULT, simple):
+   - On restore: read `latest.json` first.
+   - If `latest.json.app_version` is newer than the installed app version → block restore and require updating the app first.
+   - Rationale: avoids restoring a DB created by a newer schema into an older app.
+ - Restore behavior (RECOMMENDED DEFAULT):
+   - Restore downloads `latest.db` for the provided `customer_id` and replaces the local DB.
+   - After restore completes: force logout and redirect to `/login`.
+   - Licensing rules still apply normally after restore (if offline grace expired, must go online to log in).
 
 7) Supabase project strategy (multiple apps)
 - Use a separate Supabase project per app/product (Store Management app gets its own Supabase project).
@@ -71,6 +102,19 @@ What we agreed on (so far)
   - If offline: show that the device must be online to be activated.
 - While online on that page: poll Supabase periodically to detect activation, then automatically unlock the app.
   - Polling strategy: start fast (e.g. 5–10s for ~1–2 minutes) then back off (30s → 60s → a few minutes) to reduce load.
+  - Polling schedule (RECOMMENDED DEFAULT):
+    - every 5s for 60s
+    - then every 15s for 120s
+    - then every 60s until activated (or until user leaves the page)
+ - Auto data collection (AGREED):
+   - On first-time / never-activated devices, the license page should include inputs for customer details (e.g. `name`, `phone`).
+   - When online, the app submits `{ device_id, name, phone }` to Supabase via an Edge Function to create/update a pending request.
+   - This is for admin identification and duplicate prevention; it does NOT automatically license the device.
+ - Duplicate handling / validation (AGREED):
+   - Normalize phone numbers server-side (remove spaces/dashes, normalize prefix) and prefer matching by normalized phone.
+   - If a matching customer already exists (same normalized phone; optionally same name too), link the request to that customer.
+   - Otherwise create a new customer record in a pending state (or create a customer request record) for admin review.
+   - Admin final step remains: create/update `allowed_devices` with `active/expires_at` to license the device.
 
 Implementation notes (high-level)
 - Add new IPC handlers in Electron main to call the Edge Function(s).
@@ -85,30 +129,50 @@ Unfinished questions / decisions (must answer before implementation)
 10) Backups: how to link old backups after PC change
 - MachineGuid cannot be entered/changed on a new PC, so backups cannot be keyed only by `device_id` if we want easy restore on a new machine.
 - Decide backup ownership identity:
-  - Option A (recommended, simple/admin): introduce a stable `customer_code` (or `customer_id`) and store it on `allowed_devices`. Backups belong to `customer_code`.
-  - Option B (more UX work): user enters a “customer code” once on the new PC to access backups.
+  - Option A (AGREED): introduce a stable `customer_id` (UUID) and store it on `allowed_devices` (foreign key to `customers`). Backups belong to `customer_id` (not `device_id`).
+  - Notes:
+    - Admin must be able to look up `customer_id` by customer name/phone in Supabase.
+    - Customer receives their `customer_id` from admin (treated like a secret).
 
 11) Where can user restore when unlicensed / on a fresh PC
 - A new PC may have an empty local DB (no users) until restore.
 - Decide where to expose “Restore from online backup”:
-  - License waiting page and/or login screen (recommended), not only inside the main app.
+  - (AGREED): Login screen only (pre-login). Not only inside the main app.
+- Restore availability constraint (AGREED):
+  - “Restore from online backup (different PC)” should only be enabled when the local DB is empty / fresh install.
+  - If local DB already contains data, hide/disable this option to prevent accidental overwrite (use existing backup/restore tools inside the app instead).
+ - Online requirement (RECOMMENDED DEFAULT):
+   - Restore-from-online requires internet access. If offline, show a message that restore needs an internet connection.
+- Definition of “empty DB” (AGREED):
+  - “Empty” ignores default/system tables such as `users` (default admin may exist), `option` (settings), and logs.
+  - Consider DB “NOT empty” if ANY of these core modules has data:
+    - Stock/Products
+    - Cashier/Sales
+    - Clients
+    - Bills
+    - Services
 
 12) Supabase implementation details still pending
-- Finalize schema (after deciding `customer_code`):
-  - `allowed_devices` (include `device_id`, `active`, `expires_at`, and likely `customer_code`)
+- Finalize schema (after deciding `customer_id`):
+  - `customers` (include `id`, and fields for admin lookup like `name` and optional `phone`)
+  - `allowed_devices` (include `device_id`, `customer_id`, `active`, `expires_at`)
   - `backups` table + Storage bucket layout
 - Implement Edge Functions:
   - `device-check` (already chosen: protected by `x-app-secret`)
   - backup list/upload/download endpoints (depend on ownership model)
 
 13) Polling schedule exact values
-- We agreed on “fast then backoff”, but not the exact timings and maximum wait behavior.
+- (RESOLVED): Polling schedule values defined in section 9.
 
 14) DB Option keys for grace (exact names)
 - Decide exact Option keys to store grace/license state, e.g.:
   - `license.last_ok_at`
   - `license.last_ok_expires_at`
   - `license.last_ok_allowed`
+ - (RECOMMENDED DEFAULT – lock names for implementation):
+   - `license.last_ok_at_ms` (number as string; Date.now())
+   - `license.last_ok_grace_until_ms` (number as string; last_ok + 7 days)
+   - `license.last_ok_expires_at_ms` (number as string or empty; mirrors server expiry when provided)
 
 15) App routing/licensing refactor scope
 - Current `App.tsx` blocks the whole app when `licenseContext` says invalid (old offline activation-key model).
@@ -118,7 +182,51 @@ Unfinished questions / decisions (must answer before implementation)
   - update `licenseValidation.tsx` to remove the “enter activation key” input (this adds/changes UI text → requires translations).
 
 16) Online backup upload mode for large DBs
-- Auto-upload is optional (agreed), but upload method is undecided:
-  - simple upload + retry (restarts on failure)
-  - resumable/chunked upload (more work, best for unstable internet and 100MB+)
+- Upload method (RECOMMENDED DEFAULT):
+  - Simple upload + retry (no resumable/chunked in v1).
+
+---
+
+## Progress checkpoint (resume here)
+
+Last session: 2026-05-06
+
+### Implemented in Supabase (done)
+- **Project**: Free tier (may pause when idle; resume from dashboard if needed).
+- **Storage**: Private bucket **`backups`** (note: Free tier ~**50 MB per single upload**; large DBs may fail until Pro or another approach).
+- **Database tables** (SQL ran successfully):
+  - `public.customers` (`id`, `name`, `phone`, `created_at`)
+  - `public.allowed_devices` (`device_id` PK, `customer_id` FK, `active`, `expires_at`, `created_at`)
+  - `public.device_requests` (`device_id`, `name`, `phone`, `phone_normalized`, `status`, `customer_id`, timestamps)
+- **Index**: `device_requests_device_pending_unique` — at most one **pending** row per `device_id`.
+- **Secret**: `X_APP_SECRET` stored under **Project Settings → Secrets** (name must be exactly `X_APP_SECRET`). Do **not** paste the secret value into this file or git.
+- **Edge Function `device-check`** (Editor):
+  - `POST` JSON `{ "device_id": "<MachineGuid>" }`
+  - Header `x-app-secret` must match `X_APP_SECRET`
+  - Returns `{ ok, allowed, customer_id, expires_at, ... }`
+  - **Verified**: test device returns `allowed: true` with linked `customer_id`.
+- **Edge Function `device-request`** (Editor):
+  - `POST` JSON `{ "device_id", "name", "phone" }` (phone optional but recommended)
+  - Same `x-app-secret` header
+  - Upserts logic fixed (no broken `upsert` on partial unique index): **read pending → update OR insert**
+  - **Verified**: returns `ok: true`, `status: "pending"`, `request_id` (e.g. row visible in `device_requests`).
+
+### Known follow-ups from this session
+- **Phone matching**: `device-request` sets `customer_id` only if `customers.phone` equals **normalized** phone; store customer phones in a consistent format (e.g. `+212...`) or extend normalization.
+- **Secret hygiene**: the chat-shared `X_APP_SECRET` should be **rotated** before production (new secret in Supabase Secrets + same value in the app build config).
+
+### Not implemented yet (do next)
+1) **Supabase Edge Functions (backups)**
+   - `backup-upload-latest`: overwrite `backups/<customer_id>/latest.db` + write `latest.json` (metadata: `uploaded_at`, `size_bytes`, `source`, `app_version`, optional `device_id`). Enforce licensed device or validate `customer_id` matches `allowed_devices` for caller’s `device_id`.
+   - `backup-download-latest` (or split: metadata + file): for **restore on empty DB** using `customer_id` only — must align with security model (customer_id is a secret; rate-limit in function).
+2) **Electron app (code)**
+   - New IPC in **main** to call Edge Functions with `x-app-secret` (never from renderer); expose `window.api.*` wrappers.
+   - **Refactor routing**: `App.tsx` must allow **Login first**; after successful login, if not licensed → **license waiting** page (remove old “activation key” licensing gate before login).
+   - **`licenseContext`**: stop `localStorage` + `validateKey`; use **`options` table** keys: `license.last_ok_at_ms`, `license.last_ok_grace_until_ms`, `license.last_ok_expires_at_ms`; call `device-check` when online; apply **7-day offline grace** per plan.
+   - **License waiting UI**: show MachineGuid; collect `name`/`phone` and call `device-request`; **polling** schedule per section 9; remove validation-key input.
+   - **Admin recovery**: keep activation-key login but **still require** online device allowlist after login (per section 8).
+   - **Login-only cloud restore** (empty core data + online): download `latest.json`, **app_version** gate vs installed app, then download `latest.db` and use existing local restore path; then logout → `/login`.
+   - **Backup page**: manual “upload to cloud” — create local backup → upload → overwrite cloud `latest` only.
+3) **Plan doc cleanup (optional)**
+   - Section 12: mark `customers` / `allowed_devices` / `device_requests` / bucket as **done**; leave **backup Edge Functions** as the remaining Supabase work (optional `backups` audit table later).
 
