@@ -5,6 +5,13 @@ Goal
 - Add lightweight “online” capabilities (not fully cloud): device activation / deactivation, optional time-limited activation, and online backup upload.
 - App remains primarily local/offline (local Prisma/SQLite DB).
 
+High-level UX + routing rule (RECOMMENDED DEFAULT / professional)
+- The app has three “zones”:
+  1) **Pre-login zone** (always accessible): Login, Admin recovery login, Restore-from-online (only on fresh/empty DB + online).
+  2) **Main app zone** (protected): requires successful login AND valid license (or valid offline grace).
+  3) **License waiting zone**: shown when device is not licensed; collects device/customer info and polls until activated.
+- Never hard-block the entire app at boot. Only block access to the **Main app zone** when unlicensed.
+
 What we agreed on (so far)
 
 1) Device identity (per-device licensing)
@@ -31,12 +38,13 @@ What we agreed on (so far)
 - Use a secure backend endpoint (Supabase Edge Function recommended) that the app calls to check whether a device is allowed.
 - Protect the Edge Function with a simple shared secret header (e.g. `x-app-secret`).
  - (RECOMMENDED DEFAULT): use the same `x-app-secret` protection for backup endpoints too (upload/list/download).
+ - (RECOMMENDED DEFAULT): keep Supabase Edge Functions “Verify JWT” enabled and send `Authorization: Bearer <anon key>` in addition to `x-app-secret`.
 
 5) Offline behavior (agreed)
-- Licensing is checked during login:
+- Licensing is checked when entering the **Main app zone** (after successful login / before protected routes):
   - If internet is available, app verifies device status with Supabase (active + not expired).
-  - If internet is NOT available, app can still run only if the offline grace window has NOT expired.
-- If offline grace window is expired, the app must force an online check (require internet) before allowing login to proceed.
+  - If internet is NOT available, app can still enter the main app only if the offline grace window has NOT expired.
+- If offline grace window is expired, the app must force an online check (require internet) before allowing entry to the main app.
 - Offline grace period: 7 days.
 - Grace reset rule:
   - On a successful online login where the device is confirmed licensed, reset the grace timer.
@@ -176,10 +184,10 @@ Unfinished questions / decisions (must answer before implementation)
 
 15) App routing/licensing refactor scope
 - Current `App.tsx` blocks the whole app when `licenseContext` says invalid (old offline activation-key model).
-- We must refactor to match the new flow:
-  - allow reaching login
-  - after login: if not licensed -> redirect to license waiting page and start polling
-  - update `licenseValidation.tsx` to remove the “enter activation key” input (this adds/changes UI text → requires translations).
+- We must refactor to match the professional routing rule:
+  - `/login` is always reachable (includes admin recovery + restore entry on fresh/empty DB).
+  - After successful login: if not licensed -> redirect to license waiting page and start polling (block only the main app zone).
+  - Update `licenseValidation.tsx` to remove the “enter activation key” input (this adds/changes UI text → requires translations).
 
 16) Online backup upload mode for large DBs
 - Upload method (RECOMMENDED DEFAULT):
@@ -210,6 +218,18 @@ Last session: 2026-05-06
   - Same `x-app-secret` header
   - Upserts logic fixed (no broken `upsert` on partial unique index): **read pending → update OR insert**
   - **Verified**: returns `ok: true`, `status: "pending"`, `request_id` (e.g. row visible in `device_requests`).
+- **Edge Function `backup-upload-latest`** (Editor):
+  - Multipart `POST` with fields: `device_id`, `customer_id`, `app_version`, `source`, and `file` (SQLite `.db`)
+  - Uploads/overwrites:
+    - `backups/<customer_id>/latest.db`
+    - `backups/<customer_id>/latest.json`
+  - Validates device license + customer match via `allowed_devices`
+  - **Verified**: upload succeeded (dev db ~6.4 MB) and objects appear in Storage
+- **Edge Function `backup-download-latest`** (Editor):
+  - `POST` JSON `{ "device_id", "customer_id" }`
+  - Validates device license + customer match via `allowed_devices`
+  - Returns `db_signed_url` (fixed to include `/storage/v1/...`)
+  - **Verified**: signed URL works and file downloads successfully
 
 ### Known follow-ups from this session
 - **Phone matching**: `device-request` sets `customer_id` only if `customers.phone` equals **normalized** phone; store customer phones in a consistent format (e.g. `+212...`) or extend normalization.
@@ -217,8 +237,7 @@ Last session: 2026-05-06
 
 ### Not implemented yet (do next)
 1) **Supabase Edge Functions (backups)**
-   - `backup-upload-latest`: overwrite `backups/<customer_id>/latest.db` + write `latest.json` (metadata: `uploaded_at`, `size_bytes`, `source`, `app_version`, optional `device_id`). Enforce licensed device or validate `customer_id` matches `allowed_devices` for caller’s `device_id`.
-   - `backup-download-latest` (or split: metadata + file): for **restore on empty DB** using `customer_id` only — must align with security model (customer_id is a secret; rate-limit in function).
+   - DONE (implemented + tested): `backup-upload-latest`, `backup-download-latest`
 2) **Electron app (code)**
    - New IPC in **main** to call Edge Functions with `x-app-secret` (never from renderer); expose `window.api.*` wrappers.
    - **Refactor routing**: `App.tsx` must allow **Login first**; after successful login, if not licensed → **license waiting** page (remove old “activation key” licensing gate before login).
