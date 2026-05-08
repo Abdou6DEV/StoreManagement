@@ -114,15 +114,21 @@ What we agreed on (so far)
     - every 5s for 60s
     - then every 15s for 120s
     - then every 60s until activated (or until user leaves the page)
- - Auto data collection (AGREED):
-   - On first-time / never-activated devices, the license page should include inputs for customer details (e.g. `name`, `phone`).
-   - When online, the app submits `{ device_id, name, phone }` to Supabase via an Edge Function to create/update a pending request.
-   - This is for admin identification and duplicate prevention; it does NOT automatically license the device.
+ - Auto data collection + auto provisioning (AGREED — target behavior):
+   - When: device is **not** in `allowed_devices` yet (never provisioned) **or** you treat “first registration” as the name/phone step (exact trigger is app-side; server should be idempotent).
+   - License waiting page shows **name + phone**; app calls **`device-request`** with `{ device_id, name, phone }`.
+   - Edge Function **`device-request`** must (single place of truth — **admin does NOT manually create `customers` rows** for normal flow):
+     1. Normalize `phone` → `phone_normalized`.
+     2. If a **`customers`** row exists with matching `phone` (same normalized value stored on `customers.phone`): use that `customer_id`.
+     3. Else **INSERT** a new row into **`customers`** (`name`, `phone` = normalized) and use the new `customer_id`.
+     4. **UPSERT** **`allowed_devices`**: `device_id`, `customer_id`, **`active = false`**, `expires_at = NULL` (until you activate).
+     5. Update **`device_requests`**: link `customer_id`, keep `status = pending` (or `provisioned`) — inbox only; **licensing** is still `allowed_devices.active`.
+   - **Admin work in Supabase is only**: open **`allowed_devices`** (or a filtered view) and set **`active = true/false`** (and `expires_at` if trial). No manual **`customers`** or **`allowed_devices`** row creation for the happy path.
+   - **Does NOT auto-license**: `device-check` stays `allowed: false` until **`active = true`**.
+ - Note: Current deployed **`device-request`** may still be the older version (pending row only). Before app integration, update **`device-request`** to match the steps above.
  - Duplicate handling / validation (AGREED):
-   - Normalize phone numbers server-side (remove spaces/dashes, normalize prefix) and prefer matching by normalized phone.
-   - If a matching customer already exists (same normalized phone; optionally same name too), link the request to that customer.
-   - Otherwise create a new customer record in a pending state (or create a customer request record) for admin review.
-   - Admin final step remains: create/update `allowed_devices` with `active/expires_at` to license the device.
+   - Prefer match on **normalized phone**; optional extra check on name if you want fewer false merges.
+   - If two shops share one phone, admin fixes linkage in dashboard (edge case).
 
 Implementation notes (high-level)
 - Add new IPC handlers in Electron main to call the Edge Function(s).
@@ -139,8 +145,8 @@ Unfinished questions / decisions (must answer before implementation)
 - Decide backup ownership identity:
   - Option A (AGREED): introduce a stable `customer_id` (UUID) and store it on `allowed_devices` (foreign key to `customers`). Backups belong to `customer_id` (not `device_id`).
   - Notes:
-    - Admin must be able to look up `customer_id` by customer name/phone in Supabase.
-    - Customer receives their `customer_id` from admin (treated like a secret).
+    - **`customer_id`** is created automatically when the user submits name/phone (see section 9). Admin can still look up by name/phone in **`customers`** or via **`device_requests`**.
+    - For restore on a new PC, the customer still needs their **`customer_id`** (you can send it after activation, or show it in-app once licensed — product choice).
 
 11) Where can user restore when unlicensed / on a fresh PC
 - A new PC may have an empty local DB (no users) until restore.
@@ -214,10 +220,8 @@ Last session: 2026-05-06
   - Returns `{ ok, allowed, customer_id, expires_at, ... }`
   - **Verified**: test device returns `allowed: true` with linked `customer_id`.
 - **Edge Function `device-request`** (Editor):
-  - `POST` JSON `{ "device_id", "name", "phone" }` (phone optional but recommended)
-  - Same `x-app-secret` header
-  - Upserts logic fixed (no broken `upsert` on partial unique index): **read pending → update OR insert**
-  - **Verified**: returns `ok: true`, `status: "pending"`, `request_id` (e.g. row visible in `device_requests`).
+  - **Current deploy (tested)**: pending **`device_requests`** row only (read pending → update OR insert).
+  - **Target (section 9)**: also **auto-create `customers`** if needed, **upsert `allowed_devices`** with **`active=false`**, so admin only toggles **`active`**. **Update the function before app integration** to match section 9.
 - **Edge Function `backup-upload-latest`** (Editor):
   - Multipart `POST` with fields: `device_id`, `customer_id`, `app_version`, `source`, and `file` (SQLite `.db`)
   - Uploads/overwrites:
@@ -232,13 +236,15 @@ Last session: 2026-05-06
   - **Verified**: signed URL works and file downloads successfully
 
 ### Known follow-ups from this session
-- **Phone matching**: `device-request` sets `customer_id` only if `customers.phone` equals **normalized** phone; store customer phones in a consistent format (e.g. `+212...`) or extend normalization.
+- **`device-request` upgrade**: implement section 9 (auto `customers` + `allowed_devices` inactive upsert); store **`customers.phone`** in the **same normalized form** used for matching.
 - **Secret hygiene**: the chat-shared `X_APP_SECRET` should be **rotated** before production (new secret in Supabase Secrets + same value in the app build config).
 
 ### Not implemented yet (do next)
-1) **Supabase Edge Functions (backups)**
+1) **Supabase Edge Function `device-request` (provisioning)**
+   - Upgrade per **section 9** (auto customer + `allowed_devices` with `active=false`).
+2) **Supabase Edge Functions (backups)**
    - DONE (implemented + tested): `backup-upload-latest`, `backup-download-latest`
-2) **Electron app (code)**
+3) **Electron app (code)**
    - New IPC in **main** to call Edge Functions with `x-app-secret` (never from renderer); expose `window.api.*` wrappers.
    - **Refactor routing**: `App.tsx` must allow **Login first**; after successful login, if not licensed → **license waiting** page (remove old “activation key” licensing gate before login).
    - **`licenseContext`**: stop `localStorage` + `validateKey`; use **`options` table** keys: `license.last_ok_at_ms`, `license.last_ok_grace_until_ms`, `license.last_ok_expires_at_ms`; call `device-check` when online; apply **7-day offline grace** per plan.
@@ -246,6 +252,6 @@ Last session: 2026-05-06
    - **Admin recovery**: keep activation-key login but **still require** online device allowlist after login (per section 8).
    - **Login-only cloud restore** (empty core data + online): download `latest.json`, **app_version** gate vs installed app, then download `latest.db` and use existing local restore path; then logout → `/login`.
    - **Backup page**: manual “upload to cloud” — create local backup → upload → overwrite cloud `latest` only.
-3) **Plan doc cleanup (optional)**
+4) **Plan doc cleanup (optional)**
    - Section 12: mark `customers` / `allowed_devices` / `device_requests` / bucket as **done**; leave **backup Edge Functions** as the remaining Supabase work (optional `backups` audit table later).
 
