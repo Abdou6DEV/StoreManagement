@@ -2,6 +2,7 @@ import { contextBridge } from "electron";
 // Updated systemAPI with event listeners
 import { databaseAPI, appAPI, loggerAPI, authAPI, systemAPI, activityLogAPI } from "./preload/index";
 import { backupAPI } from "./preload/backupAPI";
+import { onboardingAPI } from "./preload/onboardingAPI";
 
 contextBridge.exposeInMainWorld("api", {
   database: databaseAPI,
@@ -11,6 +12,7 @@ contextBridge.exposeInMainWorld("api", {
   system: systemAPI,
   backup: backupAPI,
   activityLog: activityLogAPI,
+  onboarding: onboardingAPI,
 });
 
 declare global {
@@ -23,6 +25,7 @@ declare global {
       system: typeof systemAPI;
       backup: typeof backupAPI;
       activityLog: typeof activityLogAPI;
+      onboarding: typeof onboardingAPI;
     };
   }
 }

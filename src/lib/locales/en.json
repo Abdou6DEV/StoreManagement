@@ -1114,6 +1114,49 @@
     },
     "footer": "© 2024 REDA TECH. All rights reserved. Built with ❤️ in Algeria."
   },
+  "pricing": {
+    "kicker": "Licensing",
+    "title": "Choose your license",
+    "subtitle": "Monthly, yearly, or lifetime — all plans include the full app. Prices in Algerian dinars (DA); contact your supplier to purchase and activate.",
+    "popular": "Best value",
+    "contactSupplier": "Contact supplier",
+    "supplierPhoneLabel": "Tel. {{phone}}",
+    "mailSubject": {
+      "monthly": "REDA TECH Store Management — Monthly license inquiry",
+      "yearly": "REDA TECH Store Management — Yearly license inquiry",
+      "lifetime": "REDA TECH Store Management — Lifetime license inquiry"
+    },
+    "plans": {
+      "monthly": {
+        "name": "Monthly",
+        "priceAmount": "2 500 DA",
+        "pricePeriod": "Per Month",
+        "tagline": "Flexible subscription, renew each month.",
+        "feature1": "Full desktop app and updates while subscribed",
+        "feature2": "Ideal for short-term or seasonal use",
+        "feature3": "Switch or upgrade plan with your supplier anytime"
+      },
+      "yearly": {
+        "name": "Yearly",
+        "priceAmount": "15 000 DA",
+        "pricePeriod": "Per Year",
+        "saveVsMonthly": "Save {{amount}} DA vs 12× monthly ({{percent}}% off)",
+        "tagline": "One payment per year, best balance of cost and commitment.",
+        "feature1": "Everything in Monthly with annual billing",
+        "feature2": "Typically lower total cost than twelve monthly renewals",
+        "feature3": "Priority channel for renewal and support with supplier"
+      },
+      "lifetime": {
+        "name": "Lifetime",
+        "priceAmount": "35 000 DA",
+        "pricePeriod": "One-time payment",
+        "tagline": "One-time license for long-term shops.",
+        "feature1": "Pay once, use the licensed app per your agreement",
+        "feature2": "Best for established businesses planning years ahead",
+        "feature3": "Terms and update policy as agreed with your supplier"
+      }
+    }
+  },
   "license": {
     "title": "License Activation",
     "subtitle": "Contact support to get your activation key",
@@ -2632,6 +2675,29 @@
     "cancel": "Cancel",
     "reduceInventoryLabel": "Subtract return quantities from stock (checked products only).",
     "reduceInventoryError": "Failed to update stock for {{name}}"
+  },
+  "welcome": {
+    "title": "Welcome to REDA TECH Store Management",
+    "subtitle": "Set up this computer for the first time. Choose a new shop trial or restore your data if you already use the app elsewhere.",
+    "setupTitle": "Your details for this installation",
+    "setupDescription": "The app needs your full name and a reachable phone number before you can use it on this computer. We use them to create or verify your shop account, run the free trial or cloud restore, link this device to your subscription, and contact you if support is required. This is separate from your login password and is processed as described in the privacy section above; we do not sell your data to third parties.",
+    "featuresHeading": "What you can do with this app",
+    "fullName": "Full name",
+    "fullNamePlaceholder": "First and last name",
+    "phone": "Phone number",
+    "phonePlaceholder": "Your phone number",
+    "existingShopNewPc": "This is a new PC for my existing shop (I already use Store Management)",
+    "customerId": "Customer ID",
+    "customerIdPlaceholder": "UUID from your supplier",
+    "customerIdHint": "Must match the phone number we have on file for this ID.",
+    "startTrial": "Start free 7-day trial",
+    "restoreFromCloud": "Restore data from cloud",
+    "fillNamePhone": "Please enter your full name and phone number.",
+    "switchToNewShopForTrial": "Uncheck “new PC / existing shop” to start a new shop trial.",
+    "checkExistingShop": "Check “new PC for my existing shop” and enter your customer ID.",
+    "customerIdRequired": "Enter the customer ID your supplier sent you.",
+    "trialNextStep": "Next step: connect this screen to the server (device request).",
+    "restoreNextStep": "Next step: device link + cloud restore over IPC."
   }
 }
 

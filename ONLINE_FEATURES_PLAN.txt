@@ -1,5 +1,5 @@
 Store Management – Online Features Plan (Working Draft)
-Last updated: 2026-05-06
+Last updated: 2026-05-09 (Welcome/onboarding UI + plan sync)
 
 Goal
 - Add lightweight “online” capabilities (not fully cloud): device activation / deactivation, optional time-limited activation, and online backup upload.
@@ -22,16 +22,34 @@ What we agreed on (so far)
 
 2) Licensing model (no license keys)
 - No end-user license key entry required.
-- Supabase stores an “allowed devices” list; the app is allowed to run if the current device GUID is active (and not expired).
-- You (admin) control activation/deactivation in Supabase.
-  - If a device is not allowed, user is redirected to a license/activation waiting page (see section 9).
+- Supabase stores provisioning + licensing in **`allowed_devices`** (and related **`customers`**). The app asks Edge Function **`device-check`** whether this device may run.
+- You (admin) control **paid** activation/deactivation in Supabase (`active`, `expires_at`). During the **free trial**, the device can be allowed **without** setting `active = true` (see **2.1**).
+  - If **`device-check`** returns not allowed, the user is redirected to a license/activation waiting page (see section 9).
 
-3) Lifetime vs limited-time activation
-- Use a nullable expiry timestamp.
-  - Lifetime activation: active=true and expires_at = NULL
-  - Limited-time activation: active=true and expires_at = now() + N days
-- Allow rule:
-  - active == true AND (expires_at IS NULL OR expires_at > now())
+2.1) Seven-day free trial — new PC (AGREED)
+- **Goal:** Any **new** device that completes registration (`device-request`) gets **7 calendar days** of access **before** you decide paid activation. No manual Supabase row for the happy path.
+- **Data model:** column **`allowed_devices.trial_ends_at`** (`timestamptz`, nullable).
+  - **First provision** (first time this `device_id` gets an `allowed_devices` row): set
+    - `trial_ends_at = now() + 7 days` (UTC),
+    - `active = false`,
+    - `expires_at = NULL` (paid expiry is separate from trial end).
+  - Optional later: `trial_started_at` for support only (not required for logic).
+- **`device-check` allow rule** (single source of truth — implement identically everywhere, including **backup** Edge Functions unless you explicitly want to block backups during trial):
+  - **`allowed: true`** if **either**:
+    1. **Trial still valid:** `trial_ends_at IS NOT NULL AND trial_ends_at > now()` (UTC), **or**
+    2. **Paid / granted:** `active = true AND (expires_at IS NULL OR expires_at > now())`.
+  - **`allowed: false`** if no row, trial ended and (2) is false, or paid subscription expired.
+- **After trial:** user is blocked until you set **`active = true`** (and **`expires_at`** if limited paid). You may set **`trial_ends_at = NULL`** when activating paid (optional clarity).
+- **`device-request` idempotency:** if `allowed_devices` **already exists** for `device_id`, **do not** extend or restart **`trial_ends_at`** on repeat calls (only set trial on **first insert**). You may still update `customer_id` / inbox rows.
+- **Repository:** SQL migration + reference Edge Functions live under **`supabase/`** in this repo (deploy to your Supabase project).
+
+3) Paid activation: lifetime vs limited-time (after trial or direct grant)
+- Applies when the device is on **paid** access (section **2.1** trial no longer covers them, or you skipped trial manually).
+- Use a nullable **`expires_at`** on **`allowed_devices`** when **`active = true`**.
+  - Lifetime paid: `active=true` and `expires_at = NULL`
+  - Limited-time paid: `active=true` and `expires_at` in the future
+- **Paid allow rule** (subset of **2.1** rule (2)):
+  - `active == true AND (expires_at IS NULL OR expires_at > now())`
 
 4) Security approach
 - Do NOT embed Supabase service role key in the app.
@@ -42,7 +60,7 @@ What we agreed on (so far)
 
 5) Offline behavior (agreed)
 - Licensing is checked when entering the **Main app zone** (after successful login / before protected routes):
-  - If internet is available, app verifies device status with Supabase (active + not expired).
+  - If internet is available, app verifies with **`device-check`** (valid **trial** or **paid** per section **2.1** / **3**).
   - If internet is NOT available, app can still enter the main app only if the offline grace window has NOT expired.
 - If offline grace window is expired, the app must force an online check (require internet) before allowing entry to the main app.
 - Offline grace period: 7 days.
@@ -51,8 +69,18 @@ What we agreed on (so far)
   - When the app becomes offline, start counting the 7-day grace window from the last successful online license check.
 - Grace storage (agreed):
   - Persist license check timestamps/state in the local SQLite DB (Option table) via existing `options.get/set`, not browser localStorage.
-- Unactivated devices: if the device has never been activated (no prior successful online activation), offline behavior is the same as “not licensed” / deactivated:
-  - The app must be online to activate.
+- Never successfully verified online: if the device has **never** received **`allowed: true`** from **`device-check`** (no row yet, or not provisioned), offline behavior matches “not licensed”:
+  - The app must be online to register and verify.
+- **During a valid trial or paid license**, the same offline grace rules apply as for any other allowed device (7 days from last successful online check that returned allowed).
+- **Grace vs server trial / paid end (AGREED — implement in app):** Offline grace and server dates are **two different clocks**. Grace alone must **not** let the main app run **past** a trial or paid end time that the app **already learned** from the last successful **`device-check`**.
+  - On each successful online check with **`allowed: true`**, persist the server timestamps returned in that response (**`trial_ends_at`**, **`expires_at`**) alongside **`license.last_ok_at_ms`** / **`license.last_ok_grace_until_ms`** (see section **14**).
+  - Compute **`grace_until`** = **`last_ok_at + 7 days`** (same as today).
+  - **Effective offline deadline** for main-app access = the **earliest** of:
+    - **`grace_until`**, and
+    - **`trial_ends_at`** (if not null on that response — caps trial / trial-still-valid path), and
+    - **`expires_at`** (if not null on that response — caps limited paid).
+  - Missing **`trial_ends_at`** or **`expires_at`** means **no cap** from that field (e.g. lifetime paid has no **`expires_at`** → only grace applies). If both caps exist, **`min(...)`** still applies (conservative).
+  - **Rationale:** avoids a long offline window where **`grace_until`** alone would extend access **after** the server would already return **`allowed: false`** for expired trial or subscription.
 
 6) Online backups (direction)
 - Current app already creates local DB backups under userData/backups.
@@ -96,19 +124,19 @@ What we agreed on (so far)
 - Keep it simple and isolated (data, Edge Functions, activations, backups per app).
 
 7.1) Activation management (agreed)
-- Manage device activation/deactivation directly in the Supabase dashboard (manual insert/update of `allowed_devices` rows).
+- **Paid access:** manage **`allowed_devices`** in the Supabase dashboard (`active`, `expires_at`). **`trial_ends_at`** is normally set by **`device-request`** on first provision (section **2.1**); manual edits are for support only.
 
 8) Admin recovery login (keep simple)
 - Keep the existing “activation key” login as an ADMIN recovery method (for forgotten credentials).
 - This recovery key is separate from online device activation:
-  - Even if recovery login succeeds, the app should still require the device to be allowed (active + not expired) in Supabase.
+  - Even if recovery login succeeds, the app should still require the device to be **allowed** per **`device-check`** (valid **trial** per **2.1** **or** **paid** per section **3**).
 
 9) License/activation waiting page + polling (agreed)
-- If login succeeds but the device is not licensed (not found / active=false / expired), redirect to a license validation page:
-  - Show the MachineGuid (same as today) and instruct the user to send it to the supplier for activation.
+- If login succeeds but the device is not licensed (**`device-check`** not allowed: no row / trial ended and not paid / paid expired / revoked), redirect to a license validation page:
+  - Show the MachineGuid (same as today). User may send it to the supplier; **registration (name + phone)** is the primary path for new PCs (starts trial per **2.1**).
   - Remove the input that lets the user enter a validation key (activation is server-side now).
-  - If offline: show that the device must be online to be activated.
-- While online on that page: poll Supabase periodically to detect activation, then automatically unlock the app.
+  - If offline: show that the device must be online to register or verify.
+- While online on that page: poll **`device-check`** periodically until **`allowed: true`** (supplier set **paid** `active`, or **trial** still valid after **`device-request`** provisioning).
   - Polling strategy: start fast (e.g. 5–10s for ~1–2 minutes) then back off (30s → 60s → a few minutes) to reduce load.
   - Polling schedule (RECOMMENDED DEFAULT):
     - every 5s for 60s
@@ -121,11 +149,13 @@ What we agreed on (so far)
      1. Normalize `phone` → `phone_normalized`.
      2. If a **`customers`** row exists with matching `phone` (same normalized value stored on `customers.phone`): use that `customer_id`.
      3. Else **INSERT** a new row into **`customers`** (`name`, `phone` = normalized) and use the new `customer_id`.
-     4. **UPSERT** **`allowed_devices`**: `device_id`, `customer_id`, **`active = false`**, `expires_at = NULL` (until you activate).
-     5. Update **`device_requests`**: link `customer_id`, keep `status = pending` (or `provisioned`) — inbox only; **licensing** is still `allowed_devices.active`.
-   - **Admin work in Supabase is only**: open **`allowed_devices`** (or a filtered view) and set **`active = true/false`** (and `expires_at` if trial). No manual **`customers`** or **`allowed_devices`** row creation for the happy path.
-   - **Does NOT auto-license**: `device-check` stays `allowed: false` until **`active = true`**.
- - Note: Current deployed **`device-request`** may still be the older version (pending row only). Before app integration, update **`device-request`** to match the steps above.
+     4. **Insert or update `allowed_devices`** (idempotent):
+        - **First time** this `device_id`: **INSERT** with `customer_id`, **`active = false`**, **`expires_at = NULL`**, **`trial_ends_at = now() + 7 days`**.
+        - **Existing row**: **UPDATE** e.g. `customer_id` only; **preserve** existing **`trial_ends_at`** (do **not** reset or extend trial on repeat **`device-request`**).
+     5. Update **`device_requests`**: link `customer_id`, keep `status = pending` (or `provisioned`) — inbox only; **paid licensing** after trial is still **`allowed_devices.active`** (+ `expires_at`).
+   - **Admin work after trial**: open **`allowed_devices`** and set **`active = true`** (and **`expires_at`** for limited paid). **During the 7-day trial**, no admin click is required for access.
+   - **Trial access**: after step 4 first insert, **`device-check`** returns **`allowed: true`** until **`trial_ends_at`** passes (unless you revoke by clearing trial / deleting row — product choice).
+ - Note: Deploy **`device-request`** from **`supabase/functions/device-request`** (or equivalent) so it matches **2.1** + the steps above. Older “pending row only” deploys must be upgraded.
  - Duplicate handling / validation (AGREED):
    - Prefer match on **normalized phone**; optional extra check on name if you want fewer false merges.
    - If two shops share one phone, admin fixes linkage in dashboard (edge case).
@@ -169,8 +199,8 @@ Unfinished questions / decisions (must answer before implementation)
 12) Supabase implementation details still pending
 - Finalize schema (after deciding `customer_id`):
   - `customers` (include `id`, and fields for admin lookup like `name` and optional `phone`)
-  - `allowed_devices` (include `device_id`, `customer_id`, `active`, `expires_at`)
-  - `backups` table + Storage bucket layout
+  - `allowed_devices` (include `device_id`, `customer_id`, `active`, `expires_at`, **`trial_ends_at`** per **2.1**)
+  - `backups` table + Storage bucket layout (optional; v1 may use Storage paths only)
 - Implement Edge Functions:
   - `device-check` (already chosen: protected by `x-app-secret`)
   - backup list/upload/download endpoints (depend on ownership model)
@@ -184,9 +214,11 @@ Unfinished questions / decisions (must answer before implementation)
   - `license.last_ok_expires_at`
   - `license.last_ok_allowed`
  - (RECOMMENDED DEFAULT – lock names for implementation):
-   - `license.last_ok_at_ms` (number as string; Date.now())
-   - `license.last_ok_grace_until_ms` (number as string; last_ok + 7 days)
-   - `license.last_ok_expires_at_ms` (number as string or empty; mirrors server expiry when provided)
+   - `license.last_ok_at_ms` (number as string; Date.now() at last successful **`device-check`** with **`allowed: true`**)
+   - `license.last_ok_grace_until_ms` (number as string; **`last_ok_at_ms + 7 days`** — rolling grace)
+   - `license.last_ok_trial_ends_at_ms` (number as string or **empty**; mirrors **`trial_ends_at`** from that **`device-check`** response when present — used to **cap** offline access during trial per section **5**)
+   - `license.last_ok_expires_at_ms` (number as string or **empty**; mirrors server **`expires_at`** when present — caps **limited paid** offline per section **5**)
+ - When deciding offline main-app access, compute **effective deadline** = **`min`** of **`license.last_ok_grace_until_ms`** and each **non-empty** cap above (see section **5**).
 
 15) App routing/licensing refactor scope
 - Current `App.tsx` blocks the whole app when `licenseContext` says invalid (old offline activation-key model).
@@ -203,25 +235,33 @@ Unfinished questions / decisions (must answer before implementation)
 
 ## Progress checkpoint (resume here)
 
-Last session: 2026-05-06
+Last session: 2026-05-09
+
+### Seven-day trial — Supabase (do / verify)
+1. **SQL:** run `supabase/migrations/20260509120000_allowed_devices_trial.sql` in the Supabase SQL editor (or via CLI) so **`allowed_devices.trial_ends_at`** exists.
+2. **Deploy Edge Functions** from this repo (or paste equivalent logic in the Dashboard editor):
+   - **`device-check`** → `supabase/functions/device-check/index.ts` (returns `trial_ends_at`; allow = trial **or** paid).
+   - **`device-request`** → `supabase/functions/device-request/index.ts` (first insert sets **7-day** `trial_ends_at`, `active=false`; repeats do **not** reset trial).
+3. **Secrets** (already standard): `X_APP_SECRET`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` on each function.
+4. **Backup functions** (`backup-upload-latest`, `backup-download-latest`): if they currently require `active=true` only, update their validation to the **same allow rule** as **`device-check`** (section **2.1**) so trials can use cloud backup — unless you intentionally want backups blocked until paid.
 
 ### Implemented in Supabase (done)
 - **Project**: Free tier (may pause when idle; resume from dashboard if needed).
 - **Storage**: Private bucket **`backups`** (note: Free tier ~**50 MB per single upload**; large DBs may fail until Pro or another approach).
 - **Database tables** (SQL ran successfully):
   - `public.customers` (`id`, `name`, `phone`, `created_at`)
-  - `public.allowed_devices` (`device_id` PK, `customer_id` FK, `active`, `expires_at`, `created_at`)
+  - `public.allowed_devices` (`device_id` PK, `customer_id` FK, `active`, `expires_at`, **`trial_ends_at` (add via migration in repo if missing)**, `created_at`)
   - `public.device_requests` (`device_id`, `name`, `phone`, `phone_normalized`, `status`, `customer_id`, timestamps)
 - **Index**: `device_requests_device_pending_unique` — at most one **pending** row per `device_id`.
 - **Secret**: `X_APP_SECRET` stored under **Project Settings → Secrets** (name must be exactly `X_APP_SECRET`). Do **not** paste the secret value into this file or git.
 - **Edge Function `device-check`** (Editor):
   - `POST` JSON `{ "device_id": "<MachineGuid>" }`
-  - Header `x-app-secret` must match `X_APP_SECRET`
-  - Returns `{ ok, allowed, customer_id, expires_at, ... }`
-  - **Verified**: test device returns `allowed: true` with linked `customer_id`.
+  - Headers: `x-app-secret` = `X_APP_SECRET`; (recommended) `Authorization: Bearer <anon>`, `apikey`.
+  - Returns `{ ok, allowed, customer_id, expires_at, trial_ends_at, ... }` per section **2.1**.
+  - **Re-verify after trial deploy**: device in trial → `allowed: true` with `active=false` and future `trial_ends_at`; paid device → `allowed: true` via `active` + `expires_at`.
 - **Edge Function `device-request`** (Editor):
-  - **Current deploy (tested)**: pending **`device_requests`** row only (read pending → update OR insert).
-  - **Target (section 9)**: also **auto-create `customers`** if needed, **upsert `allowed_devices`** with **`active=false`**, so admin only toggles **`active`**. **Update the function before app integration** to match section 9.
+  - **Target (sections 9 + 2.1)**: auto **`customers`**, first **`allowed_devices`** insert with **`trial_ends_at` + 7 days** and **`active=false`**, idempotent repeat calls — use repo **`supabase/functions/device-request`**.
+  - **Legacy**: pending **`device_requests`** only → **replace** with the version above for trial support.
 - **Edge Function `backup-upload-latest`** (Editor):
   - Multipart `POST` with fields: `device_id`, `customer_id`, `app_version`, `source`, and `file` (SQLite `.db`)
   - Uploads/overwrites:
@@ -235,19 +275,36 @@ Last session: 2026-05-06
   - Returns `db_signed_url` (fixed to include `/storage/v1/...`)
   - **Verified**: signed URL works and file downloads successfully
 
+### Welcome / first-run screen (Electron renderer) — done (2026-05-09)
+- **No skip control:** The Welcome setup form no longer offers “skip to login.” Name and phone are mandatory on this screen for the product story (aligns with section **9** auto-registration). Users only leave the welcome-only route shell after real onboarding steps persist **`onboarding.initialWelcomeDone`** (Option key) and the app handles **`INITIAL_WELCOME_DONE_EVENT`** (see `src/pages/app.tsx` — listener remains for flows that complete setup).
+- **Bugfix (earlier):** Welcome used `options.set({ key, value })`; correct API is **`options.set(key, value)`** (two string args).
+- **Form layout:** Setup block matches other Welcome cards (`rounded-2xl`, `shadow-lg`, `p-5 sm:p-8`, full content width); name and phone use **`md:grid-cols-2`** on larger breakpoints.
+- **Informational copy:** Heading + paragraph before the fields explain why the app needs name/phone (account/trial/restore/device link/support; points to privacy block above; no sale to third parties). i18n keys: **`welcome.setupTitle`**, **`welcome.setupDescription`** in **en / fr / ar**.
+- **Placeholders:** Full name placeholder stresses “full name” (e.g. EN “First and last name”). Phone placeholder is generic (**no** `+212` / `+213` style hints).
+- **Removed strings:** **`welcome.skipToLogin`** deleted; **`trialNextStep`** / **`restoreNextStep`** no longer mention skipping.
+
+### About page (desktop) — done (2026-05-09)
+- **Scope:** Keep the real **About** route as originally intended: **no pricing section** on About; pricing stays on **Welcome** via **`PricingPlansSection`**. Logo class restored to the intended display size on About.
+
+### Agreed next (Welcome ↔ online — still to implement in app)
+- **Wire buttons:** **`Start trial`** / **`Restore from cloud`** should call the real IPC → **`device-request`** (and restore flow) per sections **6** / **9**, then persist **`onboarding.initialWelcomeDone`** and dispatch **`INITIAL_WELCOME_DONE_EVENT`** (or equivalent) so navigation reaches **login / license waiting** without any skip path.
+- **Toast copy:** **`trialNextStep`** / **`restoreNextStep`** already describe next server steps; update if IPC errors or success paths need different user-facing text.
+
 ### Known follow-ups from this session
-- **`device-request` upgrade**: implement section 9 (auto `customers` + `allowed_devices` inactive upsert); store **`customers.phone`** in the **same normalized form** used for matching.
-- **Secret hygiene**: the chat-shared `X_APP_SECRET` should be **rotated** before production (new secret in Supabase Secrets + same value in the app build config).
+- **Trial column + functions**: run migration; redeploy **`device-check`** and **`device-request`** from **`supabase/`**; align **backup** validators with **2.1** if desired.
+- **`device-request`**: store **`customers.phone`** in the **same normalized form** used for matching (already in repo function).
+- **Secret hygiene**: rotate **`X_APP_SECRET`** before production if it was ever exposed.
 
 ### Not implemented yet (do next)
-1) **Supabase Edge Function `device-request` (provisioning)**
-   - Upgrade per **section 9** (auto customer + `allowed_devices` with `active=false`).
+1) **Supabase (trial)** — *in repo; deploy to your project*
+   - Run SQL migration; deploy **`device-check`** + **`device-request`**; optionally update **`backup-*`** allow rule.
 2) **Supabase Edge Functions (backups)**
    - DONE (implemented + tested): `backup-upload-latest`, `backup-download-latest`
 3) **Electron app (code)**
+   - **Welcome UI** (first-run): implemented as above (no skip, form copy/layout/placeholders). Still need IPC + Option flag when trial/restore completes.
    - New IPC in **main** to call Edge Functions with `x-app-secret` (never from renderer); expose `window.api.*` wrappers.
    - **Refactor routing**: `App.tsx` must allow **Login first**; after successful login, if not licensed → **license waiting** page (remove old “activation key” licensing gate before login).
-   - **`licenseContext`**: stop `localStorage` + `validateKey`; use **`options` table** keys: `license.last_ok_at_ms`, `license.last_ok_grace_until_ms`, `license.last_ok_expires_at_ms`; call `device-check` when online; apply **7-day offline grace** per plan.
+   - **`licenseContext`**: stop `localStorage` + `validateKey`; use **`options` table** keys: `license.last_ok_at_ms`, `license.last_ok_grace_until_ms`, `license.last_ok_trial_ends_at_ms`, `license.last_ok_expires_at_ms`; call `device-check` when online; apply offline rule per section **5** (**`min`** of grace and server caps).
    - **License waiting UI**: show MachineGuid; collect `name`/`phone` and call `device-request`; **polling** schedule per section 9; remove validation-key input.
    - **Admin recovery**: keep activation-key login but **still require** online device allowlist after login (per section 8).
    - **Login-only cloud restore** (empty core data + online): download `latest.json`, **app_version** gate vs installed app, then download `latest.db` and use existing local restore path; then logout → `/login`.

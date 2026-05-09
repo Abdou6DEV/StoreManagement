@@ -428,6 +428,14 @@ export type BackupAPI = {
   onAutoBackupSuccess: (callback: () => void) => () => void;
 };
 
+export type OnboardingAPI = {
+  isCoreDatabaseEmpty: () => Promise<{
+    success: boolean;
+    isEmpty?: boolean;
+    error?: string;
+  }>;
+};
+
 export type ActivityLogAPI = {
   log: (payload: { username: string; action: string; details?: string | null }) => Promise<void>;
   getList: (filter: {
@@ -455,4 +463,5 @@ export type API = {
   system: SystemAPI;
   backup: BackupAPI;
   activityLog: ActivityLogAPI;
+  onboarding: OnboardingAPI;
 };

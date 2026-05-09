@@ -14,6 +14,8 @@ export const getLazyServices = () => import("./services");
 export const getLazyAdministrator = () => import("./administrator");
 export const getLazyZakatAlMal = () => import("./zakat");
 export const getLazyAbout = () => import("./about");
+/** Shown before login on empty DB; not part of post-login route preload. */
+export const getLazyWelcome = () => import("./welcome");
 
 export const routeLoaders = [
   getLazyMainMenu,

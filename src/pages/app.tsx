@@ -1,4 +1,4 @@
-import React, { Suspense, useEffect } from "react";
+import React, { Suspense, useEffect, useState } from "react";
 import { Routes, Route, Outlet, useLocation, Navigate } from "react-router-dom";
 import Layout from "../lib/components/layout";
 import ScrollToTop from "../lib/components/scrollToTop";
@@ -27,6 +27,10 @@ import { UpdateProvider } from "../lib/contexts/updateContext";
 import { useAuth } from "../lib/contexts/authContext";
 import { useLicense } from "../lib/contexts/licenseContext";
 import { BadgeMessageProvider } from "../lib/contexts/badgeMessageContext";
+import {
+  INITIAL_WELCOME_DONE_EVENT,
+  ONBOARDING_INITIAL_WELCOME_DONE_KEY,
+} from "../lib/onboarding/constants";
 
 import {
   getLazyMainMenu,
@@ -40,6 +44,7 @@ import {
   getLazyAdministrator,
   getLazyZakatAlMal,
   getLazyAbout,
+  getLazyWelcome,
 } from "./lazyRoutes";
 
 const MainMenu = React.lazy(getLazyMainMenu);
@@ -53,13 +58,15 @@ const Services = React.lazy(getLazyServices);
 const Administrator = React.lazy(getLazyAdministrator);
 const ZakatAlMal = React.lazy(getLazyZakatAlMal);
 const About = React.lazy(getLazyAbout);
+const WelcomeSetup = React.lazy(getLazyWelcome);
 
 export default function App() {
-  const { i18n } = useTranslation();
+  const { i18n, t } = useTranslation();
   const { isAuthenticated, loading, preloadComplete, markPreloadComplete } = useAuth();
   const { isLicenseValid, isLoading: licenseLoading } = useLicense();
   const location = useLocation();
   const dir = i18n.language === "ar" ? "rtl" : "ltr";
+  const [initialWelcome, setInitialWelcome] = useState<"loading" | "show" | "hide">("loading");
 
   // All hooks must be called in the same order every time
   useEffect(() => {
@@ -69,6 +76,74 @@ export default function App() {
   useEffect(() => {
     rendererLogger.debug(`Route changed to: ${location.pathname}`, "App");
   }, [location.pathname]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        if (typeof window === "undefined" || !window.api?.onboarding?.isCoreDatabaseEmpty) {
+          if (!cancelled) setInitialWelcome("hide");
+          return;
+        }
+        const [emptyRes, doneVal] = await Promise.all([
+          window.api.onboarding.isCoreDatabaseEmpty(),
+          window.api.database.options.get(ONBOARDING_INITIAL_WELCOME_DONE_KEY),
+        ]);
+        if (cancelled) return;
+        if (!emptyRes.success) {
+          setInitialWelcome("hide");
+          return;
+        }
+        const done = typeof doneVal === "string" && doneVal === "1";
+        setInitialWelcome(emptyRes.isEmpty === true && !done ? "show" : "hide");
+      } catch {
+        if (!cancelled) setInitialWelcome("hide");
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    const leaveWelcomeOnlyShell = () => setInitialWelcome("hide");
+    window.addEventListener(INITIAL_WELCOME_DONE_EVENT, leaveWelcomeOnlyShell);
+    return () => window.removeEventListener(INITIAL_WELCOME_DONE_EVENT, leaveWelcomeOnlyShell);
+  }, []);
+
+  if (initialWelcome === "loading") {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4" />
+          <p className="text-muted-foreground text-sm">{t("dashboard.loading", "Loading…")}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (initialWelcome === "show") {
+    return (
+      <div dir={dir} className="min-h-screen w-full bg-background" style={{ direction: dir }}>
+        <ToastProvider>
+          <UpdateProvider>
+            <Suspense
+              fallback={
+                <div className="flex min-h-screen items-center justify-center bg-background">
+                  <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                </div>
+              }
+            >
+              <Routes>
+                <Route path="/welcome" element={<WelcomeSetup />} />
+                <Route path="*" element={<Navigate to="/welcome" replace />} />
+              </Routes>
+            </Suspense>
+          </UpdateProvider>
+        </ToastProvider>
+      </div>
+    );
+  }
 
   // Show license validation if license is not valid
   if (!licenseLoading && !isLicenseValid) {

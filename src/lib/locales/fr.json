@@ -729,6 +729,49 @@
     },
     "footer": "© 2024 REDA TECH. Tous droits réservés. Construit avec ❤️ en Algérie."
   },
+  "pricing": {
+    "kicker": "Licences",
+    "title": "Choisissez votre licence",
+    "subtitle": "Mensuelle, annuelle ou à vie — tous les forfaits incluent l'application complète. Prix en dinars algériens (DA) ; contactez votre fournisseur pour acheter et activer.",
+    "popular": "Meilleur rapport qualité-prix",
+    "contactSupplier": "Contacter le fournisseur",
+    "supplierPhoneLabel": "Tél. {{phone}}",
+    "mailSubject": {
+      "monthly": "REDA TECH Store Management — Demande de licence mensuelle",
+      "yearly": "REDA TECH Store Management — Demande de licence annuelle",
+      "lifetime": "REDA TECH Store Management — Demande de licence à vie"
+    },
+    "plans": {
+      "monthly": {
+        "name": "Mensuelle",
+        "priceAmount": "2 500 DA",
+        "pricePeriod": "par mois",
+        "tagline": "Abonnement flexible, renouvelé chaque mois.",
+        "feature1": "Application bureau complète et mises à jour pendant l'abonnement",
+        "feature2": "Idéal pour une utilisation courte ou saisonnière",
+        "feature3": "Changez ou mettez à niveau avec votre fournisseur à tout moment"
+      },
+      "yearly": {
+        "name": "Annuelle",
+        "priceAmount": "15 000 DA",
+        "pricePeriod": "par an",
+        "saveVsMonthly": "Économisez {{amount}} DA vs 12 mois au mensuel ({{percent}} % de moins)",
+        "tagline": "Un paiement par an, bon équilibre coût et engagement.",
+        "feature1": "Tout le forfait Mensuel avec facturation annuelle",
+        "feature2": "Coût total souvent inférieur à douze mois séparés",
+        "feature3": "Canal privilégié pour renouvellement et support auprès du fournisseur"
+      },
+      "lifetime": {
+        "name": "À vie",
+        "priceAmount": "35 000 DA",
+        "pricePeriod": "paiement unique",
+        "tagline": "Licence unique pour les commerces sur le long terme.",
+        "feature1": "Paiement unique selon les conditions convenues avec le fournisseur",
+        "feature2": "Adaptée aux entreprises établies sur plusieurs années",
+        "feature3": "Conditions et politique de mises à jour selon accord avec le fournisseur"
+      }
+    }
+  },
   "license": {
     "title": "Activation de Licence",
     "subtitle": "Contactez le support pour obtenir votre clé d'activation",
@@ -2549,5 +2592,28 @@
     "cancel": "Annuler",
     "reduceInventoryLabel": "Déduire les quantités à retourner du stock (produits cochés uniquement).",
     "reduceInventoryError": "Impossible de mettre à jour le stock pour {{name}}"
+  },
+  "welcome": {
+    "title": "Bienvenue dans REDA TECH Store Management",
+    "subtitle": "Configurez cet ordinateur pour la première fois. Choisissez un essai pour une nouvelle boutique ou restaurez vos données si vous utilisez déjà l’application ailleurs.",
+    "setupTitle": "Vos informations pour cette installation",
+    "setupDescription": "L’application a besoin de votre nom complet et d’un numéro de téléphone joignable avant que vous puissiez l’utiliser sur cet ordinateur. Nous les utilisons pour créer ou vérifier le compte de votre boutique, activer l’essai gratuit ou la restauration cloud, associer cet appareil à votre abonnement et vous contacter si le support l’exige. Ces données sont distinctes de votre mot de passe de connexion et sont traitées comme indiqué dans la section confidentialité ci-dessus ; nous ne vendons pas vos données à des tiers.",
+    "featuresHeading": "Ce que vous pouvez faire avec cette application",
+    "fullName": "Nom complet",
+    "fullNamePlaceholder": "Prénom et nom",
+    "phone": "Numéro de téléphone",
+    "phonePlaceholder": "Votre numéro de téléphone",
+    "existingShopNewPc": "C’est un nouvel ordinateur pour ma boutique existante (j’utilise déjà Store Management)",
+    "customerId": "Identifiant client",
+    "customerIdPlaceholder": "UUID fourni par votre fournisseur",
+    "customerIdHint": "Doit correspondre au numéro enregistré pour cet identifiant.",
+    "startTrial": "Démarrer l’essai gratuit 7 jours",
+    "restoreFromCloud": "Restaurer les données depuis le cloud",
+    "fillNamePhone": "Veuillez saisir votre nom complet et votre téléphone.",
+    "switchToNewShopForTrial": "Décochez « nouvel PC / boutique existante » pour démarrer l’essai d’une nouvelle boutique.",
+    "checkExistingShop": "Cochez « nouvel PC pour ma boutique existante » et saisissez votre identifiant client.",
+    "customerIdRequired": "Saisissez l’identifiant client envoyé par votre fournisseur.",
+    "trialNextStep": "Étape suivante : connecter cet écran au serveur (device request).",
+    "restoreNextStep": "Étape suivante : liaison d’appareil + restauration cloud via IPC."
   }
 }

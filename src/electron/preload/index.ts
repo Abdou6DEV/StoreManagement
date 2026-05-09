@@ -16,4 +16,5 @@ export type {
   BackupFile,
   BackupResult,
   SaleWithDetails,
+  OnboardingAPI,
 } from "./types";

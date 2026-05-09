@@ -2,43 +2,11 @@ import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "../../lib/hooks/useTheme";
 import { LOGO_ICON, LOGO_ICON_DARK } from "../../lib/assets";
+import { Mail, Phone, MapPin, Code, Shield, FileText, Star } from "lucide-react";
 import {
-  Mail, 
-  Phone, 
-  MapPin, 
-  Code, 
-  Shield, 
-  Globe, 
-  Database,
-  ShoppingCart,
-  Users,
-  PackageSearch,
-  History,
-  FileText,
-  Wrench,
-  Settings,
-  BarChart3,
-  Clock,
-  CheckCircle,
-  Star,
-  AlertTriangle,
-  Bell,
-  Calendar,
-  CreditCard,
-  DollarSign,
-  Banknote,
-  FileCheck,
-  HardDrive,
-  Monitor,
-  TrendingUp,
-  UserCheck,
-  Wifi,
-  Zap,
-  Download,
-  Calculator,
-  RefreshCw,
-  ScrollText,
-} from "lucide-react";
+  ABOUT_MAIN_FEATURE_DEFS,
+  ABOUT_TECHNICAL_FEATURE_DEFS,
+} from "../../lib/about/featureDefinitions";
 
 export default function AboutPage() {
   const { t } = useTranslation();
@@ -60,162 +28,17 @@ export default function AboutPage() {
     getVersion();
   }, []);
 
-  const features = [
-    {
-      icon: ShoppingCart,
-      title: t("about.features.cashier", "Advanced Cashier System"),
-      description: t("about.features.cashierDesc", "Multi-session cashier with real-time inventory tracking, receipt printing with barcode support, manual products, services integration, credit/versement payments, discount application, category information collection, and sales history browser")
-    },
-    {
-      icon: BarChart3,
-      title: t("about.features.dashboard", "Analytics Dashboard"),
-      description: t("about.features.dashboardDesc", "Comprehensive analytics with revenue/profit tracking, interactive charts, today/month/year comparisons, stock statistics, client metrics, and business performance insights")
-    },
-    {
-      icon: PackageSearch,
-      title: t("about.features.inventory", "Inventory Management"),
-      description: t("about.features.inventoryDesc", "Complete stock management with low stock alerts, barcode label printing with accurate preview (including when product has no barcode), best/worst selling products, category summary, product info with warranty tracking, purchase management, supplier tracking, and category-specific information fields (IMEI, warranty, specifications)")
-    },
-    {
-      icon: Users,
-      title: t("about.features.clients", "Client Management"),
-      description: t("about.features.clientsDesc", "Customer database with credit/versement tracking, overdue/due soon payment alerts, payment history, supplier management with purchase tracking, and comprehensive client relationship management")
-    },
-    {
-      icon: History,
-      title: t("about.features.history", "Sales History"),
-      description: t("about.features.historyDesc", "Detailed transaction history with general and detailed views, advanced search, filtering by period, comprehensive reporting, and sale modification capabilities")
-    },
-    {
-      icon: FileText,
-      title: t("about.features.bills", "Bills & Expenses"),
-      description: t(
-        "about.features.billsDesc",
-        "Bill management system with recurring payments, expense tracking, overdue/due soon alerts, payment history, and financial oversight.",
-      )
-    },
-    {
-      icon: Banknote,
-      title: t("about.features.salary", "Employee Salaries"),
-      description: t(
-        "about.features.salaryDesc",
-        "Dedicated salary payments on the Bills page: daily or monthly schedules, fixed amount or percentage of profit, duplicate-payment warnings, and full payment history.",
-      ),
-    },
-    {
-      icon: Wrench,
-      title: t("about.features.services", "Service Management"),
-      description: t("about.features.servicesDesc", "Service appointment scheduling with service types management, due date tracking, overdue/due soon alerts, completion status with confirm dialog, service ticket and service label printing (multiple sizes, WYSIWYG preview), search by service name, type or device, and service history")
-    },
-    {
-      icon: Bell,
-      title: t("about.features.notifications", "Smart Notifications"),
-      description: t("about.features.notificationsDesc", "Real-time alerts for low stock, overdue payments, due soon payments, overdue bills, due soon bills, and overdue services with configurable notification badges")
-    },
-    {
-      icon: TrendingUp,
-      title: t("about.features.reporting", "Advanced Reporting"),
-      description: t("about.features.reportingDesc", "Comprehensive reports with profit analysis, sales trends, best/worst selling products, and business insights")
-    },
-    {
-      icon: Zap,
-      title: t("about.features.sessions", "Multi-Session Cashier"),
-      description: t("about.features.sessionsDesc", "Support for multiple concurrent cashier sessions with individual tracking and management")
-    },
-    {
-      icon: FileCheck,
-      title: t("about.features.receipts", "Receipt Management"),
-      description: t("about.features.receiptsDesc", "Customizable receipt printing with multilingual support, barcode, store info, and detailed transaction data with category information")
-    },
-    {
-      icon: UserCheck,
-      title: t("about.features.suppliers", "Supplier Management"),
-      description: t("about.features.suppliersDesc", "Complete supplier database with purchase tracking, payment history, and relationship management")
-    },
-    {
-      icon: HardDrive,
-      title: t("about.features.backup", "Backup & Recovery"),
-      description: t("about.features.backupDesc", "Automated backup system with data export/import and disaster recovery capabilities")
-    },
-    {
-      icon: Monitor,
-      title: t("about.features.logger", "System Logger"),
-      description: t("about.features.loggerDesc", "Comprehensive logging system for debugging, monitoring, and system maintenance")
-    },
-    {
-      icon: Settings,
-      title: t("about.features.admin", "Administration"),
-      description: t("about.features.adminDesc", "System administration with user management, activity log (audit trail with filters and links to sales/services), backup/restore tools, receipt and printer configuration, update management, system logger, and comprehensive settings")
-    },
-    {
-      icon: CreditCard,
-      title: t("about.features.accounts", "Account Management"),
-      description: t("about.features.accountsDesc", "User account management with role-based permissions and access control")
-    },
-    {
-      icon: ScrollText,
-      title: t("about.features.activityLog", "Activity Log"),
-      description: t("about.features.activityLogDesc", "Audit trail of user actions: logins, sales, clients, suppliers, services, bills, backups, and settings changes. Filter by user, date range, or search; view sale or service details from log entries; configurable retention and cleanup")
-    },
-    {
-      icon: Calculator,
-      title: t("about.features.zakat", "Zakat Calculator"),
-      description: t("about.features.zakatDesc", "Islamic wealth calculation tool with automatic stock value calculation, Nisab threshold support, 2.5% Zakat calculation, and comprehensive Islamic commerce guidelines with Quran quotes and Hadith references")
-    }
-  ];
+  const features = ABOUT_MAIN_FEATURE_DEFS.map((def) => ({
+    icon: def.icon,
+    title: t(def.titleKey),
+    description: t(def.descKey),
+  }));
 
-  const technicalFeatures = [
-    {
-      icon: Globe,
-      title: t("about.technical.multilingual", "Multi-language Support"),
-      description: t("about.technical.multilingualDesc", "Full support for English, French, and Arabic with RTL layout")
-    },
-    {
-      icon: Database,
-      title: t("about.technical.database", "Secure Database"),
-      description: t("about.technical.databaseDesc", "SQLite database with encryption and automatic backup capabilities")
-    },
-    {
-      icon: Shield,
-      title: t("about.technical.security", "Data Security"),
-      description: t("about.technical.securityDesc", "Role-based access control, secure authentication, and data protection")
-    },
-    {
-      icon: Clock,
-      title: t("about.technical.realtime", "Real-time Updates"),
-      description: t("about.technical.realtimeDesc", "Live inventory updates, instant notifications, and synchronized data")
-    },
-    {
-      icon: Wifi,
-      title: t("about.technical.offline", "Offline Capability"),
-      description: t("about.technical.offlineDesc", "Full functionality without internet connection, with automatic sync when online")
-    },
-    {
-      icon: Zap,
-      title: t("about.technical.performance", "High Performance"),
-      description: t("about.technical.performanceDesc", "Optimized for speed with efficient data processing and minimal resource usage")
-    },
-    {
-      icon: BarChart3,
-      title: t("about.technical.scalability", "Scalable Architecture"),
-      description: t("about.technical.scalabilityDesc", "Designed to handle growing business needs with modular and extensible codebase")
-    },
-    {
-      icon: Monitor,
-      title: t("about.technical.ui", "Modern UI/UX"),
-      description: t("about.technical.uiDesc", "Intuitive interface with dark mode, responsive design, and accessibility features")
-    },
-    {
-      icon: Code,
-      title: t("about.technical.api", "Robust API"),
-      description: t("about.technical.apiDesc", "Comprehensive API layer with error handling, validation, and type safety")
-    },
-    {
-      icon: RefreshCw,
-      title: t("about.technical.autoMigration", "Auto Database Migration"),
-      description: t("about.technical.autoMigrationDesc", "Automatic database schema updates on application startup, ensuring seamless upgrades without manual intervention")
-    }
-  ];
+  const technicalFeatures = ABOUT_TECHNICAL_FEATURE_DEFS.map((def) => ({
+    icon: def.icon,
+    title: t(def.titleKey),
+    description: t(def.descKey),
+  }));
 
   return (
     <div className="min-h-screen bg-background">
