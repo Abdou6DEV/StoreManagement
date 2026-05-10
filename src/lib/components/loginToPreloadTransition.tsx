@@ -94,7 +94,7 @@ export default function LoginToPreloadTransition({ onPreloadComplete }: LoginToP
           <img
             src={isDark ? LOGO_ICON : LOGO_ICON_DARK}
             alt=""
-            className="w-50 h-50 object-contain select-none animate-pulse"
+            className="h-50 w-50 object-contain select-none animate-pulse"
           />
         </div>
         {/* Other preload content: fades in after logo; stays visible until loading completes */}

@@ -145,23 +145,6 @@ export default function App() {
     );
   }
 
-  // Show license validation if license is not valid
-  if (!licenseLoading && !isLicenseValid) {
-    return <LicenseValidation />;
-  }
-
-  // Show loading while checking license
-  if (licenseLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Checking license...</p>
-        </div>
-      </div>
-    );
-  }
-
   // Show loading while checking authentication
   if (loading) {
     return (
@@ -193,6 +176,23 @@ export default function App() {
   // Redirect to main app if authenticated and on login page
   if (isAuthenticated && location.pathname === "/login") {
     return <Navigate to="/" replace />;
+  }
+
+  // Main app zone only (§15): after login + preload, require device-check / license
+  if (isAuthenticated && preloadComplete) {
+    if (licenseLoading) {
+      return (
+        <div className="min-h-screen bg-background flex items-center justify-center p-4">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4" />
+            <p className="text-muted-foreground">{t("license.checking", "Checking license…")}</p>
+          </div>
+        </div>
+      );
+    }
+    if (!isLicenseValid) {
+      return <LicenseValidation />;
+    }
   }
 
   return (

@@ -174,7 +174,7 @@ export default function PreloadLoading({ onComplete, hideLogo, isPreloading, pre
             <img
               src={isDark ? LOGO_ICON : LOGO_ICON_DARK}
               alt=""
-              className={`w-50 h-50 object-contain select-none ${!displayComplete ? "animate-pulse" : ""}`}
+              className={`h-50 w-50 object-contain select-none ${!displayComplete ? "animate-pulse" : ""}`}
             />
           </div>
         )}

@@ -1,5 +1,5 @@
 Store Management – Online Features Plan (Working Draft)
-Last updated: 2026-05-10 (checkpoint: Welcome offline + phone validation + grace agreement notes)
+Last updated: 2026-05-10 (checkpoint: device-check + post-login license gate + login UX; grace/options still open)
 
 Goal
 - Add lightweight “online” capabilities (not fully cloud): device activation / deactivation, optional time-limited activation, and online backup upload.
@@ -133,10 +133,10 @@ What we agreed on (so far)
 
 9) License/activation waiting page + polling (agreed)
 - If login succeeds but the device is not licensed (**`device-check`** not allowed: no row / trial ended and not paid / paid expired / revoked), redirect to a license validation page:
-  - Show the MachineGuid (same as today). User may send it to the supplier; **registration (name + phone)** is the primary path for new PCs (starts trial per **2.1**).
-  - Remove the input that lets the user enter a validation key (activation is server-side now).
-  - If offline: show that the device must be online to register or verify.
-- While online on that page: poll **`device-check`** periodically until **`allowed: true`** (supplier set **paid** `active`, or **trial** still valid after **`device-request`** provisioning).
+  - **Current UI:** messaging + **pricing** + **sign out**; no MachineGuid block, no “check again” button (product choice for less clutter). **Registration (name + phone)** for brand-new PCs remains on **Welcome** / **`device-request`**, not duplicated as a form on the gate.
+  - Remove the input that lets the user enter a validation key (activation is server-side now) — **done** on the gate screen.
+  - If offline: show that the device must be online to register or verify — **partially** covered by login-time **`device-check`** errors; gate assumes session already opened after online check returned **not allowed**.
+- **Spec (still optional in app):** While online on that page: poll **`device-check`** periodically until **`allowed: true`** (supplier set **paid** `active`, or **trial** still valid after **`device-request`** provisioning).
   - Polling strategy: start fast (e.g. 5–10s for ~1–2 minutes) then back off (30s → 60s → a few minutes) to reduce load.
   - Polling schedule (RECOMMENDED DEFAULT):
     - every 5s for 60s
@@ -221,21 +221,26 @@ Unfinished questions / decisions (must answer before implementation)
  - When deciding offline main-app access, compute **effective deadline** = **`min`** of **`license.last_ok_grace_until_ms`** and each **non-empty** cap above (see section **5**).
 
 15) App routing/licensing refactor scope
-- Current `App.tsx` blocks the whole app when `licenseContext` says invalid (old offline activation-key model).
-- We must refactor to match the professional routing rule:
-  - `/login` is always reachable (includes admin recovery + restore entry on fresh/empty DB).
-  - After successful login: if not licensed -> redirect to license waiting page and start polling (block only the main app zone).
-  - Update `licenseValidation.tsx` to remove the “enter activation key” input (this adds/changes UI text → requires translations).
+- **Implemented in app (2026):** `App.tsx` no longer blocks the shell before login. **`/login`** stays reachable. After credentials succeed, **`device-check`** runs on the login page; if allowed, preload runs then main app; if not allowed, a short red error state then session opens on the license gate. If **`device-check`** fails (network, etc.), pending login is abandoned and the user stays on login with i18n errors.
+- **Still to spec (section 9):** optional **polling** on the license page for **`allowed: true`** without signing in again — **not** in the current UI (retry today = **sign out → sign in** to re-run **`device-check`**).
+- **`licenseValidation.tsx`:** activation-key field removed from this screen; copy uses **`licenseGate.*`** (en/fr/ar). Pricing block reused; preferences menu + sign out.
 
 16) Online backup upload mode for large DBs
 - Upload method (RECOMMENDED DEFAULT):
   - Simple upload + retry (no resumable/chunked in v1).
 
+17) Local license snapshot + countdown UX + customer display (planned — product intent 2026-05-10)
+- **Goal:** The app should **know** the **trial end** date (if any) and the **paid license expiry** date (if any), keep that data **locally** in SQLite **`options`** (same persistence story as §14 / offline grace), and **refresh** it on **every successful `device-check`** response (not only when `allowed: true`, if the API returns useful dates when blocked — product choice; at minimum refresh when allowed).
+- **Offline / grace:** When there is no internet, the UI can still show the **last known** `trial_ends_at` / `expires_at` from the previous check (stale but useful for countdowns and messaging; cap logic still follows §5 **`min(grace, trial, exp)`** once implemented).
+- **UX (later):** Trial **countdown**, subscription **expiry countdown** (banner, settings, dashboard widget, etc.). All new user-visible strings → **i18n** (en / fr / ar).
+- **Customer profile (optional same tranche):** Persist **store/shop name** and **phone** (normalized or display form per product) locally when **`device-check`** (or a dedicated field in the same payload) supplies them, and **overwrite** on each successful check so the client stays aligned with Supabase **`customers`**.
+- **Server note:** Ensure **`device-check`** returns everything the app needs (`trial_ends_at`, `expires_at`, and optionally `customer` name/phone / `customer_id`). Extend Edge Function + `DeviceCheckResult` types if missing.
+
 ---
 
 ## Progress checkpoint (resume here)
 
-Last plan sync: 2026-05-11
+Last plan sync: 2026-05-10
 
 Use this section as the single source of truth for **done vs not done**. Spec sections **1–16** above remain the design; below tracks **reality in the repo and on your Supabase project**.
 
@@ -244,7 +249,7 @@ Use this section as the single source of truth for **done vs not done**. Spec se
 
 **Welcome (first-run) — wired to online provisioning**
 - **`Start free 7-day trial`** and **`Restore from cloud`** call **`window.api.online.deviceRequest`** → IPC **`online:deviceRequest`** → Edge Function **`device-request`** (URL from `STORE_ONLINE_*` / `getStoreOnlineConfig`).
-- On success: persists **`onboarding.initialWelcomeDone`** = `1`, optional **`online.customerId`** from response, dispatches **`INITIAL_WELCOME_DONE_EVENT`**; user proceeds to the normal app shell (then hits **license** gate — see gaps below).
+- On success: persists **`onboarding.initialWelcomeDone`** = `1`, optional **`online.customerId`** from response, dispatches **`INITIAL_WELCOME_DONE_EVENT`**; user proceeds to login / app shell; **license** is enforced after successful sign-in + **`device-check`** (§15), not on Welcome alone.
 - **Tested:** flow works when env is configured; errors surface for **`missing_env`** and HTTP/edge failures (toasts + i18n).
 - **Files:** `src/pages/welcome/index.tsx`, `src/electron/handlers/onlineHandlers.ts`, `src/electron/utils/onlineConfig.ts`, `src/electron/preload/onlineAPI.ts`, `src/lib/onboarding/constants.ts`.
 
@@ -263,8 +268,28 @@ Use this section as the single source of truth for **done vs not done**. Spec se
 - **Navigation:** App **`await`s** **`deviceRequest`** until resolve before **`finishWelcomeAfterProvisioning`**; login shell only after success (**no** fire-and-forget).
 
 **Online IPC surface (current scope)**
-- **Implemented:** **`deviceRequest`** only (preload **`window.api.online`**).
-- **Not in app:** **`device-check`**, backup upload/download IPC, or any license grace persistence in SQLite **`options`**.
+- **Implemented:** **`deviceRequest`** and **`deviceCheck`** (preload **`window.api.online`**).
+- **Still not in app:** backup upload/download IPC from renderer; license **§14** grace persistence in SQLite **`options`**.
+
+**`device-check` + post-login licensing (2026-05-10)**
+- **IPC:** **`online:deviceCheck`** in **`src/electron/handlers/onlineHandlers.ts`**; preload **`onlineAPI.ts`** + types in **`electron/types/deviceCheck`**.
+- **`licenseContext`:** **`checkLicense(preFetched?)`** calls **`device-check`** (or applies a result already awaited on login). **No** `localStorage` license flag for this path; **`isLicenseValid`** follows **`allowed`**.
+- **Login:** After **successful** credentials (password, activation-key recovery, first-admin setup, or dev login), **`completeLoginAfterDeviceCheck`** runs **`device-check`** once, passes result into **`checkLicense(r)`** to avoid duplicate calls.
+  - **`allowed: true`:** **`startPreloadAfterLicenseGate()`** → green success UI → **`confirmLoginTransition`** → preload → main app.
+  - **`allowed: false`:** short **`login.licenseBlockedPendingRedirect`** message on the **red** submit button, **3s** delay, then **`openSessionBlockedOnLicense()`** → **`App`** shows **`LicenseValidation`** (user remains authenticated).
+  - **Transport / identity errors:** **`abandonPendingLogin()`** + i18n keys (**`login.internetRequiredToSignIn`**, **`login.onlineLicensingNotConfigured`**, etc.); user stays logged out.
+- **Files (non-exhaustive):** `src/pages/login.tsx`, `src/lib/contexts/authContext.tsx`, `src/lib/contexts/licenseContext.tsx`, `src/pages/app.tsx`.
+
+**License gate UI — `licenseValidation.tsx` (2026-05-10)**
+- Full-page gate: logo, **`licenseGate.title` / `subtitle`** (explicit “license” wording), **`ShieldAlert`** on title, staggered **fade-up** animations (login-like easing), **`PricingPlansSection`**, settings dropdown (theme / language / fullscreen), **sign out**.
+- **Removed from this screen:** activation-key field, MachineGuid block, “not active” badge copy, verify / “check again” button (retry = sign out + sign in).
+- **i18n:** **`licenseGate.*`**, **`login.licenseBlockedPendingRedirect`**, **`license.checking`**, etc. (**en / fr / ar**).
+
+**Routing — §15 (2026-05-10)**
+- **`App.tsx`:** Welcome shell unchanged. After that: **login** is always reachable when not authenticated. **No** full-app license block **before** auth. **`isAuthenticated && !preloadComplete`** → login→preload transition. **`isAuthenticated && preloadComplete`** → if **`licenseLoading`** spinner; if **`!isLicenseValid`** → **`LicenseValidation`**; else main **`Routes`**.
+
+**Branding polish**
+- Login / **`loginToPreloadTransition`** / **`preloadLoading`** logos aligned at **`h-50 w-50`**.
 
 **First administrator account (local SQLite) — not the same as online trial**
 - When **no** `ADMIN` user exists yet (`getPrimaryAdmin()` is null), **Login** shows **Create administrator account** (username, password, confirm) instead of default `admin`/`admin`; creates full-permission **ADMIN**, then logs in like a normal session.
@@ -293,75 +318,71 @@ Use this section as the single source of truth for **done vs not done**. Spec se
 **Repo note:** Function **sources** may live under **`supabase/functions/`** in git when committed; deploy from repo or Dashboard editor so **app** and **server** stay in sync.
 
 ----------------------------------------------------------------------------
-### C) NOT IMPLEMENTED YET (app) — licensing, grace, routing, trial awareness
+### C) NOT IMPLEMENTED YET (app) — larger gaps
 
-These items are **still entirely or mostly missing** in the desktop app relative to sections **5**, **8**, **9**, **14**, **15**.
+**1) Offline grace + §14 `options` keys + `min` deadline (section 5) + §17 snapshot**
+- **`device-check`** runs when online at login / on provider mount, but **no** persistence of **`license.last_ok_at_ms`**, **`license.last_ok_grace_until_ms`**, **`license.last_ok_trial_ends_at_ms`**, **`license.last_ok_expires_at_ms`**.
+- **No** offline path using **7-day** rolling grace or **effective deadline** = **`min(grace_until, trial_ends_at, expires_at)`**.
+- **`licenseContext`** does not yet use **`trial_ends_at` / `expires_at`** from the API response for caps (even when online logic could).
+- **§17 (not started):** no persisted **trial / expiry** snapshot for **countdown UI**; no local **customer name / phone** mirror updated on each **`device-check`**.
 
-**1) `device-check` in the client**
-- The app **never** calls **`device-check`** after Welcome or on a schedule.
-- **Consequence:** the app **does not know** server-side **7-day trial** end time, **`expires_at`**, or **`allowed: false`** from Supabase. Provisioning via **`device-request`** updates the **server** only.
+**2) License gate — spec extras (section 9) vs current product**
+- **Polling** **`device-check`** on the gate (5s → 15s → 60s) — **not** implemented; **`LICENSE_RECHECK_AFTER_LOGIN_EVENT`** exists but **confirm nothing dispatches it** (optional cleanup or wire-up).
+- Optional **name/phone / `device-request`** on the gate for edge cases — **not** implemented (Welcome remains primary).
 
-**2) `licenseContext` — still the old model**
-- **`src/lib/contexts/licenseContext.tsx`** still uses **`localStorage`** (`storeManagementLicense`) + **`window.api.system.validateKey`** (local activation key).
-- **Missing:** persistence of section **14** keys in SQLite **`options`**:  
-  **`license.last_ok_at_ms`**, **`license.last_ok_grace_until_ms`**, **`license.last_ok_trial_ends_at_ms`**, **`license.last_ok_expires_at_ms`**.
+**3) Login-only cloud restore (section 11 + 6)**
+- **`backup-download-latest`** → **`latest.json`** version gate → replace DB → logout — **not** wired in Electron.
 
-**3) Offline grace + “min” deadline (section 5) — not implemented**
-- No **7-day** grace from last successful online check stored in **`options`**.
-- No **effective offline deadline** = **`min(grace_until, trial_ends_at, expires_at)`** as agreed.
-- **Never verified online:** app should behave as **not licensed** for main zone except via planned online path — **not** wired to **`device-check`**.
-- **Agreed (discussion 2026-05-11):** Offline grace must **not** stack as “trial + another free 7 days”; **`trial_ends_at`** / **`expires_at`** returned from **`device-check`** cap offline access even when grace alone would still be open (**section 5** rule). **Implementation still pending** — depends on **`device-check`** + **`options`** keys (**§14**) + **`licenseContext`** refactor.
-- **Product nuance:** Desktop SQLite can be edited; **authoritative** deny remains server-side when online; offline **`min`** rule is correct UX + honest-user enforcement, not unbreakable DRM.
+**4) Backup page → cloud upload (section 6)**
+- No renderer IPC to **`backup-upload-latest`**; local backups only in-app.
 
-**4) Routing (section 15) — not implemented**
-- **`App.tsx`** still shows **`LicenseValidation`** (full-screen) when **`!isLicenseValid`** **before** login — blocks the whole app, not only the “main app zone.”
-- **Target:** **Login** (and recovery) always reachable; **after** successful login, if device not allowed → **license waiting** + polling — **not** done.
-
-**5) License waiting / activation UI (section 9) — not refactored**
-- **`licenseValidation.tsx`** still centers on **enter activation key** + machine code.
-- **Missing:** remove key entry as primary path; optional **`device-request`** from that page; **polling** schedule (5s → 15s → 60s); copy/i18n updates.
-
-**6) Admin recovery vs online allowlist (section 8)**
-- Activation-key login can still succeed **without** any **`device-check`** enforcement afterward.
-
-**7) Login-only cloud restore (section 11 + **6**)**
-- Welcome collects **`customer_id`** for restore path but **no** full flow: **`backup-download-latest`** → **`latest.json`** version gate → replace local DB → force logout — **not** implemented in Electron.
-
-**8) Backup page → cloud (section 6)**
-- No IPC from renderer to **`backup-upload-latest`** (multipart) in the codebase snapshot; local backups exist, cloud upload is **manual on server / future app work**.
+**5) Backup Edge Functions vs trial (section 2.1)**
+- If validators still require **`active=true`** only, align with **trial allowed** when you want trial customers uploading.
 
 ----------------------------------------------------------------------------
-### D) Quick matrix (spec topic → status)
+### D) Small / polish todos (nice-to-have)
+
+- Decide whether to **re-add** “Check again” or **silent polling** on **`licenseValidation`** without forcing sign-out.
+- **`device-check` response:** persist **`trial_ends_at` / `expires_at`** to **`options`** when implementing §14 (even before full offline grace); same write path feeds **§17** countdowns and last-known dates offline.
+- **Second `device-check`:** on app startup when already authenticated — current flow relies on login + **`LicenseProvider`** mount; document if periodic recheck is needed.
+- **i18n / copy:** keep **`licenseGate.*`** and **`login.*`** in sync when UX changes.
+
+----------------------------------------------------------------------------
+### E) Quick matrix (spec topic → status)
 
 | Topic                         | Server (Supabase)     | Electron app                                      |
 |------------------------------|------------------------|---------------------------------------------------|
-| Trial **`trial_ends_at`**    | Designed + deploy      | **Not read**; no trial countdown / enforcement   |
+| Trial **`trial_ends_at`**    | Designed + deploy      | **Used indirectly** via **`allowed`**; **no** UI countdown / §14 caps |
 | **`device-request`**         | Deploy                 | **Done** (Welcome)                                |
-| **`device-check`**           | Deploy                 | **Not called**                                    |
+| **`device-check`**           | Deploy                 | **Done** (IPC + login + **`licenseContext`**)     |
 | Offline grace (7 days)       | N/A                    | **Not implemented**                               |
 | **`min(grace, trial, exp)`**| N/A                    | **Not implemented**                               |
-| License before login         | N/A                    | **Yes (old key model)** — conflicts with §15      |
-| License after login only     | N/A                    | **No**                                            |
-| First ADMIN setup on login   | N/A                    | **Done** (empty DB / no ADMIN)                    |
+| License before login         | N/A                    | **No** (login first; old localStorage gate removed from this path) |
+| License after login + preload | N/A                   | **Yes** (**`App.tsx`** §15 branch)                |
+| First ADMIN setup on login   | N/A                    | **Done**                                          |
+| Activation-key recovery      | Local validate in main | **Done**; still runs **`device-check`** after success |
 | Cloud backup upload/download | Functions exist        | **No app IPC** for upload/download restore        |
-| Welcome offline banner       | N/A                    | **Done** (`navigator.onLine` + disabled block)     |
-| Welcome phone validation     | N/A                    | **Done** (digits + optional leading `+`)           |
+| Welcome offline banner       | N/A                    | **Done**                                          |
+| Welcome phone validation     | N/A                    | **Done**                                          |
+| License gate polling         | N/A                    | **Not done** (optional per §9)                    |
 
 ----------------------------------------------------------------------------
-### E) Suggested implementation order (next sprints)
+### F) Suggested implementation order (next sprints)
 
-1. **IPC `online:deviceCheck`** (+ preload) calling Edge Function with **`device_id`** + **`x-app-secret`**; parse **`allowed`**, **`trial_ends_at`**, **`expires_at`**.
-2. **Refactor `licenseContext`**: on success **`allowed: true`**, write section **14** **`options`** keys; compute **`license.last_ok_grace_until_ms`** = **`last_ok_at_ms + 7d`**; when offline, **`Date.now() < min(grace_until, caps)`**.
-3. **Refactor `App.tsx`**: always allow **`/login`**; run license check **after** auth for protected routes → **`LicenseWaiting`** vs main app.
-4. **Replace `licenseValidation.tsx`** UX per section **9** (polling, no key-first story).
-5. **Backup IPC** + restore path + backup page “Upload to cloud.”
-6. **Re-test** backup Edge Functions with **2.1** allow rule if trial users should upload.
+1. **§14 + §5 + §17:** On each relevant **`device-check`**, persist **`options`** keys (grace + **`trial_ends_at` / `expires_at`** mirrors); optional **`customer.display_name` / `customer.phone`** (names TBD); expose read API for UI; implement **`min`** deadline for offline main-zone access; then **countdown / banner** components (i18n).
+2. **License gate:** optional **polling** or **recheck** button; or dispatch **`LICENSE_RECHECK_AFTER_LOGIN_EVENT`** when appropriate.
+3. **Backup IPC:** upload from backup page + login restore path + version gate.
+4. **Re-test** backup Edge Functions with **2.1** allow rule for trial uploads.
 
 ----------------------------------------------------------------------------
-### F) Obsolete bullets (do not follow as “still TODO”)
+### G) Obsolete bullets (do not follow as “still TODO”)
 
 - ~~“Wire Welcome buttons to device-request”~~ → **Done** (see **A**).
 - ~~“Welcome still needs IPC + Option flag”~~ → **Done** for trial/restore success path (**A**).
+- ~~“App never calls `device-check`”~~ → **Done** (**`online:deviceCheck`** + login + **`licenseContext`**).
+- ~~“`licenseContext` localStorage + validateKey”~~ → **Superseded** for main license path (recovery key remains **auth** only, not **`licenseContext`**).
+- ~~“`App.tsx` blocks whole app before login on license”~~ → **Done** (§15 routing).
+- ~~“`licenseValidation` activation key first”~~ → **Done** (gate + pricing).
 
 Keep **`device-request`** phone normalization and **`X_APP_SECRET`** hygiene as ongoing ops tasks, not app blockers.
 

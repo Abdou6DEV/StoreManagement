@@ -48,7 +48,7 @@ export default function AboutPage() {
           <img
             src={isDark ? LOGO_ICON : LOGO_ICON_DARK}
             alt=""
-            className="mx-auto w-50 h-50 object-contain select-none mb-6"
+            className="mx-auto h-50 w-50 object-contain select-none mb-6"
           />
           <h1 className="text-4xl font-bold text-foreground mb-4">
             {t("about.title", "About REDA TECH Store Management")}

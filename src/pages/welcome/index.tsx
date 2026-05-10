@@ -76,6 +76,9 @@ function sanitizeWelcomePhoneInput(raw: string): string {
   return stripped.replace(/\D/g, "");
 }
 
+/** Let the success toast render before leaving the welcome shell (ToastProvider unmounts with it). */
+const WELCOME_SUCCESS_TOAST_VISIBLE_MS = 2500;
+
 export default function WelcomeSetup() {
   const { t, i18n } = useTranslation();
   const { isDark } = useTheme();
@@ -151,11 +154,12 @@ export default function WelcomeSetup() {
         showToast(deviceRequestErrorToastMessage(result, t), "error");
         return;
       }
-      await finishWelcomeAfterProvisioning(result.customerId ?? undefined);
       showToast(
         t("welcome.provisioningSuccessTrial", "This device is registered. Continue to log in."),
         "success",
       );
+      await new Promise((r) => setTimeout(r, WELCOME_SUCCESS_TOAST_VISIBLE_MS));
+      await finishWelcomeAfterProvisioning(result.customerId ?? undefined);
     } catch {
       showToast(
         t(
@@ -198,7 +202,6 @@ export default function WelcomeSetup() {
         showToast(deviceRequestErrorToastMessage(result, t), "error");
         return;
       }
-      await finishWelcomeAfterProvisioning(result.customerId ?? cid);
       showToast(
         t(
           "welcome.provisioningSuccessRestore",
@@ -206,6 +209,8 @@ export default function WelcomeSetup() {
         ),
         "success",
       );
+      await new Promise((r) => setTimeout(r, WELCOME_SUCCESS_TOAST_VISIBLE_MS));
+      await finishWelcomeAfterProvisioning(result.customerId ?? cid);
     } catch {
       showToast(
         t(
@@ -299,7 +304,7 @@ export default function WelcomeSetup() {
           <img
             src={isDark ? LOGO_ICON : LOGO_ICON_DARK}
             alt=""
-            className="mx-auto h-32 w-32 object-contain select-none sm:h-44 sm:w-44 md:h-52 md:w-52 mb-4"
+            className="mx-auto mb-4 h-36 w-36 object-contain select-none sm:h-48 sm:w-48 md:h-56 md:w-56"
           />
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
             {t("welcome.title", "Welcome to REDA TECH Store Management")}
@@ -596,20 +601,40 @@ export default function WelcomeSetup() {
               {!existingShopNewPc ? (
                 <Button
                   type="button"
-                  className="w-full border-transparent bg-green-600 text-white shadow-xs hover:bg-green-700 focus-visible:ring-green-500/35 dark:bg-green-600 dark:text-white dark:hover:bg-green-500"
+                  className="w-full min-h-[3rem] border-transparent bg-green-600 text-white shadow-xs hover:bg-green-700 focus-visible:ring-green-500/35 dark:bg-green-600 dark:text-white dark:hover:bg-green-500"
                   disabled={!online || busy}
                   onClick={handleStartTrial}
                 >
-                  {t("welcome.startTrial", "Start free 7-day trial")}
+                  {busy && !existingShopNewPc ? (
+                    <span className="flex items-center justify-center">
+                      <span
+                        className="mr-2 h-5 w-5 shrink-0 animate-spin rounded-full border-b-2 border-white"
+                        aria-hidden
+                      />
+                      {t("welcome.startingTrial", "Registering device…")}
+                    </span>
+                  ) : (
+                    t("welcome.startTrial", "Start free 7-day trial")
+                  )}
                 </Button>
               ) : (
                 <Button
                   type="button"
-                  className="w-full border-transparent bg-blue-600 text-white shadow-xs hover:bg-blue-700 focus-visible:ring-blue-500/35 dark:bg-blue-600 dark:text-white dark:hover:bg-blue-500"
+                  className="w-full min-h-[3rem] border-transparent bg-blue-600 text-white shadow-xs hover:bg-blue-700 focus-visible:ring-blue-500/35 dark:bg-blue-600 dark:text-white dark:hover:bg-blue-500"
                   disabled={!online || busy}
                   onClick={handleRestore}
                 >
-                  {t("welcome.restoreFromCloud", "Restore data from cloud")}
+                  {busy && existingShopNewPc ? (
+                    <span className="flex items-center justify-center">
+                      <span
+                        className="mr-2 h-5 w-5 shrink-0 animate-spin rounded-full border-b-2 border-white"
+                        aria-hidden
+                      />
+                      {t("welcome.linkingDevice", "Linking device…")}
+                    </span>
+                  ) : (
+                    t("welcome.restoreFromCloud", "Restore data from cloud")
+                  )}
                 </Button>
               )}
             </div>

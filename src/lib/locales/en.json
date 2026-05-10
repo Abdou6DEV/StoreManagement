@@ -871,6 +871,11 @@
     "enterUsername": "Enter your username",
     "enterPassword": "Enter your password",
     "signingIn": "Signing in...",
+    "internetRequiredToSignIn": "We couldn't verify this device because there is no internet connection. Check your network, then try signing in again.",
+    "onlineLicensingNotConfigured": "Online licensing isn't set up on this computer. Ask your administrator to configure the connection, then try again.",
+    "licenseVerificationFailed": "We couldn't reach the licensing service. Check your internet connection and try again. If the problem continues, wait a few minutes or contact support.",
+    "deviceIdentityLicenseError": "This PC couldn't be identified for licensing. Restart the application or contact support.",
+    "licenseBlockedPendingRedirect": "Not licensed on this PC. Redirecting…",
     "signIn": "Sign In",
     "loginViaActivationKey": "Log in via activation key (forgot username or password)",
     "backToUsernamePassword": "Back to username and password",
@@ -1171,6 +1176,7 @@
     }
   },
   "license": {
+    "checking": "Checking license…",
     "title": "License Activation",
     "subtitle": "Contact support to get your activation key",
     "licenseCode": "License Code",
@@ -1187,6 +1193,12 @@
     "invalidKey": "Invalid validation key. Please contact support.",
     "validationFailed": "Validation failed",
     "errorOccurred": "An error occurred during validation"
+  },
+  "licenseGate": {
+    "title": "License required on this computer",
+    "subtitle": "You are signed in, but this PC does not have an active license for the full application yet. Review the plans below and contact your supplier to activate your license. After it is enabled, sign out and sign in again to continue.",
+    "signOut": "Sign out",
+    "signedInAs": "Signed in as {{name}}"
   },
   "cashier": {
     "loadingTitle": "Loading cashier...",
@@ -2706,6 +2718,8 @@
     "customerIdPlaceholder": "UUID from your supplier",
     "customerIdHint": "Must match the phone number we have on file for this ID.",
     "startTrial": "Start free 7-day trial",
+    "startingTrial": "Registering device…",
+    "linkingDevice": "Linking device…",
     "restoreFromCloud": "Restore data from cloud",
     "fillNamePhone": "Please enter your full name and phone number.",
     "switchToNewShopForTrial": "Uncheck “new PC / existing shop” to start a new shop trial.",

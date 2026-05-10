@@ -26,6 +26,12 @@ interface AuthContextType {
   ) => Promise<{ success: boolean; error?: string }>;
   /** Call after login success UI sequence (green button, fade out) to show preload transition. */
   confirmLoginTransition: () => void;
+  /** After credentials validated + device-check allowed: start chunk preload (before `confirmLoginTransition`). */
+  startPreloadAfterLicenseGate: () => void;
+  /** After credentials validated but device not allowed: mark session authenticated and skip preload so `App` shows license screen. */
+  openSessionBlockedOnLicense: () => void;
+  /** Clear user session when login succeeded locally but online step was abandoned (e.g. offline during device-check). */
+  abandonPendingLogin: () => void;
   logout: () => void;
   loading: boolean;
   isPreloading: boolean;
@@ -86,9 +92,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (result.success && result.user) {
         setUser(result.user);
         setUserRole(result.user.role);
-        setIsPreloading(true);
-        setPreloadProgress(0);
-        setPreloadComplete(false);
         return { success: true };
       } else {
         return { success: false, error: result.error || "Login failed" };
@@ -112,9 +115,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (result.success && result.user) {
         setUser(result.user);
         setUserRole(result.user.role);
-        setIsPreloading(true);
-        setPreloadProgress(0);
-        setPreloadComplete(false);
         return { success: true };
       } else {
         return {
@@ -140,9 +140,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (result.success && result.user) {
         setUser(result.user);
         setUserRole(result.user.role);
-        setIsPreloading(true);
-        setPreloadProgress(0);
-        setPreloadComplete(false);
         return { success: true };
       }
       return {
@@ -176,9 +173,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (result.success && result.user) {
         setUser(result.user);
         setUserRole(result.user.role);
-        setIsPreloading(true);
-        setPreloadProgress(0);
-        setPreloadComplete(false);
         return { success: true };
       }
       return {
@@ -202,6 +196,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const confirmLoginTransition = useCallback(() => {
     setIsAuthenticated(true);
     setJustLoggedIn(true);
+  }, []);
+
+  const startPreloadAfterLicenseGate = useCallback(() => {
+    setIsPreloading(true);
+    setPreloadProgress(0);
+    setPreloadComplete(false);
+  }, []);
+
+  const openSessionBlockedOnLicense = useCallback(() => {
+    setIsAuthenticated(true);
+    setIsPreloading(false);
+    setPreloadComplete(true);
+    setJustLoggedIn(false);
+  }, []);
+
+  const abandonPendingLogin = useCallback(() => {
+    setUser(null);
+    setUserRole(null);
+    setIsPreloading(false);
+    setPreloadComplete(false);
+    setJustLoggedIn(false);
   }, []);
 
   const logout = () => {
@@ -285,6 +300,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     justLoggedIn,
     markLoginTransitionDone,
     confirmLoginTransition,
+    startPreloadAfterLicenseGate,
+    openSessionBlockedOnLicense,
+    abandonPendingLogin,
     canAccessPage,
     hasPermission,
   };

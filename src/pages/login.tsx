@@ -1,5 +1,6 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { useAuth } from "../lib/contexts/authContext";
+import { useLicense } from "../lib/contexts/licenseContext";
 import { Eye, EyeOff, User, Lock, AlertCircle, Settings, Key, ArrowLeft, Copy, Check } from "lucide-react";
 import { useTheme } from "../lib/hooks/useTheme";
 import { ThemeToggleButton } from "../lib/components/themeToggleButton";
@@ -23,6 +24,7 @@ export default function Login() {
   const [activationKey, setActivationKey] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [awaitingLicenseCheck, setAwaitingLicenseCheck] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [successPhase, setSuccessPhase] = useState<'idle' | 'green_hold' | 'fade_out'>('idle');
@@ -38,10 +40,63 @@ export default function Login() {
     loginByActivationKey,
     loginDevAsPrimaryAdmin,
     confirmLoginTransition,
+    startPreloadAfterLicenseGate,
+    openSessionBlockedOnLicense,
+    abandonPendingLogin,
     needsInitialAdminSetup,
     completeInitialAdminSetup,
   } = useAuth();
+  const { checkLicense } = useLicense();
   const { t, i18n } = useTranslation();
+
+  const completeLoginAfterDeviceCheck = useCallback(async () => {
+    try {
+      const r = await window.api.online.deviceCheck();
+      await checkLicense(r);
+
+      if (r.success === true && r.allowed) {
+        startPreloadAfterLicenseGate();
+        setSuccessPhase("green_hold");
+        return;
+      }
+
+      if (r.success === true && !r.allowed) {
+        setError("login.licenseBlockedPendingRedirect");
+        if (licenseRedirectTimerRef.current) {
+          clearTimeout(licenseRedirectTimerRef.current);
+        }
+        licenseRedirectTimerRef.current = setTimeout(() => {
+          licenseRedirectTimerRef.current = null;
+          openSessionBlockedOnLicense();
+        }, 3000);
+        return;
+      }
+
+      if (r.success === false) {
+        abandonPendingLogin();
+        if (r.code === "missing_env") {
+          setError("login.onlineLicensingNotConfigured");
+        } else if (r.code === "network") {
+          setError("login.internetRequiredToSignIn");
+        } else if (r.code === "invalid") {
+          setError("login.deviceIdentityLicenseError");
+        } else {
+          setError("login.licenseVerificationFailed");
+        }
+      }
+    } catch {
+      try {
+        await checkLicense();
+      } catch {
+        /* ignore */
+      }
+      abandonPendingLogin();
+      setError("login.internetRequiredToSignIn");
+    } finally {
+      setAwaitingLicenseCheck(false);
+      setIsLoading(false);
+    }
+  }, [abandonPendingLogin, checkLicense, openSessionBlockedOnLicense, startPreloadAfterLicenseGate]);
   const { isDark } = useTheme();
 
   const isFirstAdminSetup = initialAdminSetupRequired === true;
@@ -57,6 +112,7 @@ export default function Login() {
   const confirmPasswordRef = useRef<HTMLInputElement>(null);
   const activationKeyRef = useRef<HTMLInputElement>(null);
   const submitButtonRef = useRef<HTMLButtonElement>(null);
+  const licenseRedirectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -74,6 +130,15 @@ export default function Login() {
       setActivationKey("");
     }
   }, [initialAdminSetupRequired]);
+
+  useEffect(() => {
+    return () => {
+      if (licenseRedirectTimerRef.current) {
+        clearTimeout(licenseRedirectTimerRef.current);
+        licenseRedirectTimerRef.current = null;
+      }
+    };
+  }, []);
 
   // Focus username or activation key input on page load
   useEffect(() => {
@@ -127,10 +192,10 @@ export default function Login() {
     }
   }, [error, useActivationKey, isFirstAdminSetup]);
 
-  // Clear error (and revert button) after 2 seconds
+  // Clear error (and revert button) after a few seconds so longer messages stay readable
   useEffect(() => {
     if (!error) return;
-    const errorClearTimer = window.setTimeout(() => setError(null), 2000);
+    const errorClearTimer = window.setTimeout(() => setError(null), 5500);
     return () => clearTimeout(errorClearTimer);
   }, [error]);
 
@@ -154,11 +219,12 @@ export default function Login() {
   const handleDevLogin = async () => {
     setError(null);
     setIsLoading(true);
+    setAwaitingLicenseCheck(false);
     try {
       const result = await loginDevAsPrimaryAdmin();
       if (result.success) {
-        setSuccessPhase("green_hold");
-        setIsLoading(false);
+        setAwaitingLicenseCheck(true);
+        await completeLoginAfterDeviceCheck();
       } else {
         setError(result.error || t("login.devLogInFailed", "Dev login failed"));
         setIsLoading(false);
@@ -190,6 +256,7 @@ export default function Login() {
         return;
       }
       setIsLoading(true);
+      setAwaitingLicenseCheck(false);
       setError(null);
       try {
         const result = await completeInitialAdminSetup(
@@ -197,8 +264,8 @@ export default function Login() {
           password,
         );
         if (result.success) {
-          setSuccessPhase("green_hold");
-          setIsLoading(false);
+          setAwaitingLicenseCheck(true);
+          await completeLoginAfterDeviceCheck();
         } else {
           setError(result.error || "login.initialSetup.failed");
           setIsLoading(false);
@@ -216,6 +283,7 @@ export default function Login() {
         return;
       }
       setIsLoading(true);
+      setAwaitingLicenseCheck(false);
       setError(null);
       try {
         const result = await loginByActivationKey(
@@ -223,8 +291,8 @@ export default function Login() {
           machineId ?? undefined
         );
         if (result.success) {
-          setSuccessPhase("green_hold");
-          setIsLoading(false);
+          setAwaitingLicenseCheck(true);
+          await completeLoginAfterDeviceCheck();
         } else {
           setError(result.error || t("login.invalidActivationKey", "Invalid activation key"));
           activationKeyRef.current?.focus();
@@ -245,12 +313,13 @@ export default function Login() {
     }
 
     setIsLoading(true);
+    setAwaitingLicenseCheck(false);
     setError(null);
     try {
       const result = await login(username, password);
       if (result.success) {
-        setSuccessPhase("green_hold");
-        setIsLoading(false);
+        setAwaitingLicenseCheck(true);
+        await completeLoginAfterDeviceCheck();
       } else {
         setError(result.error || "Login failed");
         usernameRef.current?.focus();
@@ -731,6 +800,11 @@ export default function Login() {
                 <div className="flex items-center">
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
                   {t("login.signingIn", "Signing in...")}
+                </div>
+              ) : isLoading && awaitingLicenseCheck ? (
+                <div className="flex items-center">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary-foreground mr-2"></div>
+                  {t("license.checking", "Checking license…")}
                 </div>
               ) : isLoading ? (
                 <div className="flex items-center">

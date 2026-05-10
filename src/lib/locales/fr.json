@@ -485,6 +485,11 @@
     "enterUsername": "Entrez votre nom d'utilisateur",
     "enterPassword": "Entrez votre mot de passe",
     "signingIn": "Connexion en cours...",
+    "internetRequiredToSignIn": "Nous n'avons pas pu vérifier cet appareil : aucune connexion Internet. Vérifiez le réseau, puis reconnectez-vous.",
+    "onlineLicensingNotConfigured": "La licence en ligne n'est pas configurée sur cet ordinateur. Demandez à votre administrateur de configurer la connexion, puis réessayez.",
+    "licenseVerificationFailed": "Nous n'avons pas pu joindre le service de licence. Vérifiez votre connexion Internet et réessayez. Si le problème persiste, attendez quelques minutes ou contactez le support.",
+    "deviceIdentityLicenseError": "Cet ordinateur n'a pas pu être identifié pour la licence. Redémarrez l'application ou contactez le support.",
+    "licenseBlockedPendingRedirect": "Pas de licence sur ce PC. Redirection…",
     "signIn": "Se Connecter",
     "loginViaActivationKey": "Connexion par clé d'activation (oubli du nom d'utilisateur ou du mot de passe)",
     "backToUsernamePassword": "Retour au nom d'utilisateur et mot de passe",
@@ -786,6 +791,7 @@
     }
   },
   "license": {
+    "checking": "Vérification de la licence…",
     "title": "Activation de Licence",
     "subtitle": "Contactez le support pour obtenir votre clé d'activation",
     "licenseCode": "Code de Licence",
@@ -802,6 +808,12 @@
     "invalidKey": "Clé de validation invalide. Veuillez contacter le support.",
     "validationFailed": "Échec de la validation",
     "errorOccurred": "Une erreur s'est produite lors de la validation"
+  },
+  "licenseGate": {
+    "title": "Licence requise sur cet ordinateur",
+    "subtitle": "Vous êtes connecté, mais ce PC n’a pas encore de licence active pour l’application complète. Consultez les formules ci-dessous et contactez votre fournisseur pour activer votre licence. Une fois activée, déconnectez-vous puis reconnectez-vous pour continuer.",
+    "signOut": "Se déconnecter",
+    "signedInAs": "Connecté en tant que {{name}}"
   },
   "stock": {
     "product": "Nom du produit",
@@ -2623,6 +2635,8 @@
     "customerIdPlaceholder": "UUID fourni par votre fournisseur",
     "customerIdHint": "Doit correspondre au numéro enregistré pour cet identifiant.",
     "startTrial": "Démarrer l’essai gratuit 7 jours",
+    "startingTrial": "Enregistrement de l’appareil…",
+    "linkingDevice": "Liaison de l’appareil…",
     "restoreFromCloud": "Restaurer les données depuis le cloud",
     "fillNamePhone": "Veuillez saisir votre nom complet et votre téléphone.",
     "switchToNewShopForTrial": "Décochez « nouvel PC / boutique existante » pour démarrer l’essai d’une nouvelle boutique.",

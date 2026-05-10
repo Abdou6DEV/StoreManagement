@@ -11,6 +11,7 @@ import {
 } from "@prisma/client";
 import { LogLevel } from "../../lib/logger/common";
 import type { DeviceRequestPayload, DeviceRequestResult } from "../types/deviceRequest";
+import type { DeviceCheckResult } from "../types/deviceCheck";
 
 export type SaleWithDetails = Sale & {
   client?: Client;
@@ -447,6 +448,7 @@ export type OnboardingAPI = {
 };
 
 export type OnlineAPI = {
+  deviceCheck: () => Promise<DeviceCheckResult>;
   deviceRequest: (payload: DeviceRequestPayload) => Promise<DeviceRequestResult>;
 };
 
