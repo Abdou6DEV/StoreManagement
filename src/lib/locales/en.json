@@ -884,7 +884,20 @@
     "copyright": "© 2025 Reda Tech. All rights reserved.",
     "devLogIn": "Dev: log in as primary admin",
     "devLogInHint": "Development build only: opens a session as the first ADMIN user in your database (no password).",
-    "devLogInFailed": "Dev login failed"
+    "devLogInFailed": "Dev login failed",
+    "createAdminTitle": "Create administrator account",
+    "createAdminSubtitle": "Choose the username and password for the main administrator. You can add more accounts later.",
+    "confirmPassword": "Confirm password",
+    "enterConfirmPassword": "Confirm your password",
+    "createAdminAccount": "Create account",
+    "initialSetup": {
+      "passwordMismatch": "Passwords do not match",
+      "passwordTooShort": "Password must be at least 6 characters",
+      "usernameRequired": "Username is required",
+      "usernameTaken": "This username is already taken",
+      "alreadyCompleted": "An administrator already exists. Sign in with your credentials.",
+      "failed": "Could not create the administrator account. Please try again."
+    }
   },
   "loading": {
     "title": "Loading...",
@@ -1118,7 +1131,7 @@
     "kicker": "Licensing",
     "title": "Choose your license",
     "subtitle": "Monthly, yearly, or lifetime — all plans include the full app. Prices in Algerian dinars (DA); contact your supplier to purchase and activate.",
-    "popular": "Best value",
+    "popular": "Recommended",
     "contactSupplier": "Contact supplier",
     "supplierPhoneLabel": "Tel. {{phone}}",
     "mailSubject": {
@@ -2679,13 +2692,15 @@
   "welcome": {
     "title": "Welcome to REDA TECH Store Management",
     "subtitle": "Set up this computer for the first time. Choose a new shop trial or restore your data if you already use the app elsewhere.",
-    "setupTitle": "Your details for this installation",
-    "setupDescription": "The app needs your full name and a reachable phone number before you can use it on this computer. We use them to create or verify your shop account, run the free trial or cloud restore, link this device to your subscription, and contact you if support is required. This is separate from your login password and is processed as described in the privacy section above; we do not sell your data to third parties.",
+    "trialBadge": "7-day free trial !",
+    "setupTitle": "Get started with us",
+    "setupDescription": "Tell us who you are so we can set up your shop on this computer. Add your full name and phone — we use them to start your trial or restore your data, connect this device to your account, and reach you if you need help. It only takes a moment. Your details stay separate from your login password and are handled as described in the privacy section above.",
     "featuresHeading": "What you can do with this app",
     "fullName": "Full name",
     "fullNamePlaceholder": "First and last name",
     "phone": "Phone number",
-    "phonePlaceholder": "Your phone number",
+    "phonePlaceholder": "Digits only, or + then digits (country code)",
+    "phoneInvalid": "Enter a phone number using digits only. You may add a single + at the beginning for a country code.",
     "existingShopNewPc": "This is a new PC for my existing shop (I already use Store Management)",
     "customerId": "Customer ID",
     "customerIdPlaceholder": "UUID from your supplier",
@@ -2696,6 +2711,13 @@
     "switchToNewShopForTrial": "Uncheck “new PC / existing shop” to start a new shop trial.",
     "checkExistingShop": "Check “new PC for my existing shop” and enter your customer ID.",
     "customerIdRequired": "Enter the customer ID your supplier sent you.",
+    "onlineNotConfigured": "Online setup is not configured on this PC. Ask your administrator to set STORE_ONLINE_* environment variables.",
+    "deviceRequestFailed": "Could not reach the server.",
+    "offlineSetupTitle": "Internet connection required",
+    "offlineSetupDescription": "Registering this device and starting your free trial (or linking an existing shop) requires an active internet connection. Connect to Wi‑Fi or Ethernet, then continue below when you are back online.",
+    "serverUnreachable": "We could not reach our servers. Check your internet connection and try again. If this continues, wait a few minutes or contact support.",
+    "provisioningSuccessTrial": "This device is registered. Continue to log in.",
+    "provisioningSuccessRestore": "This device is linked. Continue to log in to finish restore.",
     "trialNextStep": "Next step: connect this screen to the server (device request).",
     "restoreNextStep": "Next step: device link + cloud restore over IPC."
   }

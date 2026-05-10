@@ -1,5 +1,5 @@
 Store Management – Online Features Plan (Working Draft)
-Last updated: 2026-05-09 (Welcome/onboarding UI + plan sync)
+Last updated: 2026-05-10 (checkpoint: Welcome offline + phone validation + grace agreement notes)
 
 Goal
 - Add lightweight “online” capabilities (not fully cloud): device activation / deactivation, optional time-limited activation, and online backup upload.
@@ -235,80 +235,133 @@ Unfinished questions / decisions (must answer before implementation)
 
 ## Progress checkpoint (resume here)
 
-Last session: 2026-05-09
+Last plan sync: 2026-05-11
 
-### Seven-day trial — Supabase (do / verify)
-1. **SQL:** run `supabase/migrations/20260509120000_allowed_devices_trial.sql` in the Supabase SQL editor (or via CLI) so **`allowed_devices.trial_ends_at`** exists.
-2. **Deploy Edge Functions** from this repo (or paste equivalent logic in the Dashboard editor):
-   - **`device-check`** → `supabase/functions/device-check/index.ts` (returns `trial_ends_at`; allow = trial **or** paid).
-   - **`device-request`** → `supabase/functions/device-request/index.ts` (first insert sets **7-day** `trial_ends_at`, `active=false`; repeats do **not** reset trial).
-3. **Secrets** (already standard): `X_APP_SECRET`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` on each function.
-4. **Backup functions** (`backup-upload-latest`, `backup-download-latest`): if they currently require `active=true` only, update their validation to the **same allow rule** as **`device-check`** (section **2.1**) so trials can use cloud backup — unless you intentionally want backups blocked until paid.
+Use this section as the single source of truth for **done vs not done**. Spec sections **1–16** above remain the design; below tracks **reality in the repo and on your Supabase project**.
 
-### Implemented in Supabase (done)
-- **Project**: Free tier (may pause when idle; resume from dashboard if needed).
-- **Storage**: Private bucket **`backups`** (note: Free tier ~**50 MB per single upload**; large DBs may fail until Pro or another approach).
-- **Database tables** (SQL ran successfully):
-  - `public.customers` (`id`, `name`, `phone`, `created_at`)
-  - `public.allowed_devices` (`device_id` PK, `customer_id` FK, `active`, `expires_at`, **`trial_ends_at` (add via migration in repo if missing)**, `created_at`)
-  - `public.device_requests` (`device_id`, `name`, `phone`, `phone_normalized`, `status`, `customer_id`, timestamps)
-- **Index**: `device_requests_device_pending_unique` — at most one **pending** row per `device_id`.
-- **Secret**: `X_APP_SECRET` stored under **Project Settings → Secrets** (name must be exactly `X_APP_SECRET`). Do **not** paste the secret value into this file or git.
-- **Edge Function `device-check`** (Editor):
-  - `POST` JSON `{ "device_id": "<MachineGuid>" }`
-  - Headers: `x-app-secret` = `X_APP_SECRET`; (recommended) `Authorization: Bearer <anon>`, `apikey`.
-  - Returns `{ ok, allowed, customer_id, expires_at, trial_ends_at, ... }` per section **2.1**.
-  - **Re-verify after trial deploy**: device in trial → `allowed: true` with `active=false` and future `trial_ends_at`; paid device → `allowed: true` via `active` + `expires_at`.
-- **Edge Function `device-request`** (Editor):
-  - **Target (sections 9 + 2.1)**: auto **`customers`**, first **`allowed_devices`** insert with **`trial_ends_at` + 7 days** and **`active=false`**, idempotent repeat calls — use repo **`supabase/functions/device-request`**.
-  - **Legacy**: pending **`device_requests`** only → **replace** with the version above for trial support.
-- **Edge Function `backup-upload-latest`** (Editor):
-  - Multipart `POST` with fields: `device_id`, `customer_id`, `app_version`, `source`, and `file` (SQLite `.db`)
-  - Uploads/overwrites:
-    - `backups/<customer_id>/latest.db`
-    - `backups/<customer_id>/latest.json`
-  - Validates device license + customer match via `allowed_devices`
-  - **Verified**: upload succeeded (dev db ~6.4 MB) and objects appear in Storage
-- **Edge Function `backup-download-latest`** (Editor):
-  - `POST` JSON `{ "device_id", "customer_id" }`
-  - Validates device license + customer match via `allowed_devices`
-  - Returns `db_signed_url` (fixed to include `/storage/v1/...`)
-  - **Verified**: signed URL works and file downloads successfully
+----------------------------------------------------------------------------
+### A) IMPLEMENTED IN THE ELECTRON APP (code) — done / manually tested
 
-### Welcome / first-run screen (Electron renderer) — done (2026-05-09)
-- **No skip control:** The Welcome setup form no longer offers “skip to login.” Name and phone are mandatory on this screen for the product story (aligns with section **9** auto-registration). Users only leave the welcome-only route shell after real onboarding steps persist **`onboarding.initialWelcomeDone`** (Option key) and the app handles **`INITIAL_WELCOME_DONE_EVENT`** (see `src/pages/app.tsx` — listener remains for flows that complete setup).
-- **Bugfix (earlier):** Welcome used `options.set({ key, value })`; correct API is **`options.set(key, value)`** (two string args).
-- **Form layout:** Setup block matches other Welcome cards (`rounded-2xl`, `shadow-lg`, `p-5 sm:p-8`, full content width); name and phone use **`md:grid-cols-2`** on larger breakpoints.
-- **Informational copy:** Heading + paragraph before the fields explain why the app needs name/phone (account/trial/restore/device link/support; points to privacy block above; no sale to third parties). i18n keys: **`welcome.setupTitle`**, **`welcome.setupDescription`** in **en / fr / ar**.
-- **Placeholders:** Full name placeholder stresses “full name” (e.g. EN “First and last name”). Phone placeholder is generic (**no** `+212` / `+213` style hints).
-- **Removed strings:** **`welcome.skipToLogin`** deleted; **`trialNextStep`** / **`restoreNextStep`** no longer mention skipping.
+**Welcome (first-run) — wired to online provisioning**
+- **`Start free 7-day trial`** and **`Restore from cloud`** call **`window.api.online.deviceRequest`** → IPC **`online:deviceRequest`** → Edge Function **`device-request`** (URL from `STORE_ONLINE_*` / `getStoreOnlineConfig`).
+- On success: persists **`onboarding.initialWelcomeDone`** = `1`, optional **`online.customerId`** from response, dispatches **`INITIAL_WELCOME_DONE_EVENT`**; user proceeds to the normal app shell (then hits **license** gate — see gaps below).
+- **Tested:** flow works when env is configured; errors surface for **`missing_env`** and HTTP/edge failures (toasts + i18n).
+- **Files:** `src/pages/welcome/index.tsx`, `src/electron/handlers/onlineHandlers.ts`, `src/electron/utils/onlineConfig.ts`, `src/electron/preload/onlineAPI.ts`, `src/lib/onboarding/constants.ts`.
 
-### About page (desktop) — done (2026-05-09)
-- **Scope:** Keep the real **About** route as originally intended: **no pricing section** on About; pricing stays on **Welcome** via **`PricingPlansSection`**. Logo class restored to the intended display size on About.
+**Welcome — offline UX + friendlier errors (2026-05-11)**
+- **`navigator.onLine`** + **`online` / `offline`** window listeners; when offline: amber alert (**`welcome.offlineSetupTitle`**, **`welcome.offlineSetupDescription`**), trial/setup header + form dimmed and non-interactive, inputs/checkbox/buttons **`disabled`**.
+- Toasts: **`deviceRequestErrorToastMessage`** maps **`network`** / connectivity-like messages → **`welcome.serverUnreachable`** (production-facing copy); **`missing_env`** unchanged; **`catch`** uses **`serverUnreachable`** instead of raw exception text (**Restart trial** path aligned with restore).
+- **i18n:** **`offlineSetupTitle`**, **`offlineSetupDescription`**, **`serverUnreachable`** — **en / fr / ar**.
 
-### Agreed next (Welcome ↔ online — still to implement in app)
-- **Wire buttons:** **`Start trial`** / **`Restore from cloud`** should call the real IPC → **`device-request`** (and restore flow) per sections **6** / **9**, then persist **`onboarding.initialWelcomeDone`** and dispatch **`INITIAL_WELCOME_DONE_EVENT`** (or equivalent) so navigation reaches **login / license waiting** without any skip path.
-- **Toast copy:** **`trialNextStep`** / **`restoreNextStep`** already describe next server steps; update if IPC errors or success paths need different user-facing text.
+**Welcome — phone field validation (2026-05-11)**
+- **`sanitizeWelcomePhoneInput`**: only **digits** and optional **single leading `+`** (international prefix); strips everything else on input.
+- Submit requires **at least one digit** (reject **`+` alone**); toast **`welcome.phoneInvalid`**; placeholders describe rule **without** specific country codes (**en / fr / ar**).
+- **`device-request`** receives sanitized **`phone`** string.
 
-### Known follow-ups from this session
-- **Trial column + functions**: run migration; redeploy **`device-check`** and **`device-request`** from **`supabase/`**; align **backup** validators with **2.1** if desired.
-- **`device-request`**: store **`customers.phone`** in the **same normalized form** used for matching (already in repo function).
-- **Secret hygiene**: rotate **`X_APP_SECRET`** before production if it was ever exposed.
+**Welcome — provisioning semantics (clarification)**
+- **Trial clock:** **`trial_ends_at`** on Supabase is set when **`device-request`** succeeds with **first insert** for **`device_id`** (**§2.1**), not when the welcome page opens; repeats **do not** extend trial.
+- **Navigation:** App **`await`s** **`deviceRequest`** until resolve before **`finishWelcomeAfterProvisioning`**; login shell only after success (**no** fire-and-forget).
 
-### Not implemented yet (do next)
-1) **Supabase (trial)** — *in repo; deploy to your project*
-   - Run SQL migration; deploy **`device-check`** + **`device-request`**; optionally update **`backup-*`** allow rule.
-2) **Supabase Edge Functions (backups)**
-   - DONE (implemented + tested): `backup-upload-latest`, `backup-download-latest`
-3) **Electron app (code)**
-   - **Welcome UI** (first-run): implemented as above (no skip, form copy/layout/placeholders). Still need IPC + Option flag when trial/restore completes.
-   - New IPC in **main** to call Edge Functions with `x-app-secret` (never from renderer); expose `window.api.*` wrappers.
-   - **Refactor routing**: `App.tsx` must allow **Login first**; after successful login, if not licensed → **license waiting** page (remove old “activation key” licensing gate before login).
-   - **`licenseContext`**: stop `localStorage` + `validateKey`; use **`options` table** keys: `license.last_ok_at_ms`, `license.last_ok_grace_until_ms`, `license.last_ok_trial_ends_at_ms`, `license.last_ok_expires_at_ms`; call `device-check` when online; apply offline rule per section **5** (**`min`** of grace and server caps).
-   - **License waiting UI**: show MachineGuid; collect `name`/`phone` and call `device-request`; **polling** schedule per section 9; remove validation-key input.
-   - **Admin recovery**: keep activation-key login but **still require** online device allowlist after login (per section 8).
-   - **Login-only cloud restore** (empty core data + online): download `latest.json`, **app_version** gate vs installed app, then download `latest.db` and use existing local restore path; then logout → `/login`.
-   - **Backup page**: manual “upload to cloud” — create local backup → upload → overwrite cloud `latest` only.
-4) **Plan doc cleanup (optional)**
-   - Section 12: mark `customers` / `allowed_devices` / `device_requests` / bucket as **done**; leave **backup Edge Functions** as the remaining Supabase work (optional `backups` audit table later).
+**Online IPC surface (current scope)**
+- **Implemented:** **`deviceRequest`** only (preload **`window.api.online`**).
+- **Not in app:** **`device-check`**, backup upload/download IPC, or any license grace persistence in SQLite **`options`**.
+
+**First administrator account (local SQLite) — not the same as online trial**
+- When **no** `ADMIN` user exists yet (`getPrimaryAdmin()` is null), **Login** shows **Create administrator account** (username, password, confirm) instead of default `admin`/`admin`; creates full-permission **ADMIN**, then logs in like a normal session.
+- **Tested:** logic in code paths; treat as **manually QA** on fresh DB.
+- **Files:** `src/lib/database/users.ts` (`needsInitialAdminSetup`, `completeInitialAdminSetup`), `src/electron/handlers/authHandlers.ts`, `src/lib/contexts/authContext.tsx`, `src/pages/login.tsx`, locales **en/fr/ar**.
+
+**Welcome UX / copy (earlier tranche)**
+- No skip-to-login; mandatory name/phone story; **`options.set(key, value)`** fix; layout + **`welcome.setupTitle` / `welcome.setupDescription`** (en/fr/ar).
+- About: pricing stays on Welcome, not on About.
+
+----------------------------------------------------------------------------
+### B) SUPABASE (your project) — reported done + what to keep verifying
+
+*(This mirrors the checklist you used when deploying; re-run if you change functions or schema.)*
+
+**Schema / data**
+- **`customers`**, **`allowed_devices`** (incl. **`trial_ends_at`** via migration **2.1**), **`device_requests`**, index for pending uniqueness.
+- **Action if unsure:** run / confirm migration **`20260509120000_allowed_devices_trial.sql`** (or equivalent) so **`trial_ends_at`** exists.
+
+**Edge Functions (deploy + secrets)**
+- **`device-request`**: first insert sets **7-day** **`trial_ends_at`**, **`active=false`**; repeats **do not** reset trial; matches sections **2.1** + **9**.
+- **`device-check`**: returns **`allowed`**, **`trial_ends_at`**, **`expires_at`**, etc.; allow rule = trial **or** paid (**2.1**).
+- **Secrets:** `X_APP_SECRET`, service URL/keys as per Supabase docs — **never** in git.
+- **Backups:** **`backup-upload-latest`**, **`backup-download-latest`** — **reported tested** (upload ~6.4 MB, signed download). **Open:** align backup validators with **2.1** (trial allowed) if they still require **`active=true`** only.
+
+**Repo note:** Function **sources** may live under **`supabase/functions/`** in git when committed; deploy from repo or Dashboard editor so **app** and **server** stay in sync.
+
+----------------------------------------------------------------------------
+### C) NOT IMPLEMENTED YET (app) — licensing, grace, routing, trial awareness
+
+These items are **still entirely or mostly missing** in the desktop app relative to sections **5**, **8**, **9**, **14**, **15**.
+
+**1) `device-check` in the client**
+- The app **never** calls **`device-check`** after Welcome or on a schedule.
+- **Consequence:** the app **does not know** server-side **7-day trial** end time, **`expires_at`**, or **`allowed: false`** from Supabase. Provisioning via **`device-request`** updates the **server** only.
+
+**2) `licenseContext` — still the old model**
+- **`src/lib/contexts/licenseContext.tsx`** still uses **`localStorage`** (`storeManagementLicense`) + **`window.api.system.validateKey`** (local activation key).
+- **Missing:** persistence of section **14** keys in SQLite **`options`**:  
+  **`license.last_ok_at_ms`**, **`license.last_ok_grace_until_ms`**, **`license.last_ok_trial_ends_at_ms`**, **`license.last_ok_expires_at_ms`**.
+
+**3) Offline grace + “min” deadline (section 5) — not implemented**
+- No **7-day** grace from last successful online check stored in **`options`**.
+- No **effective offline deadline** = **`min(grace_until, trial_ends_at, expires_at)`** as agreed.
+- **Never verified online:** app should behave as **not licensed** for main zone except via planned online path — **not** wired to **`device-check`**.
+- **Agreed (discussion 2026-05-11):** Offline grace must **not** stack as “trial + another free 7 days”; **`trial_ends_at`** / **`expires_at`** returned from **`device-check`** cap offline access even when grace alone would still be open (**section 5** rule). **Implementation still pending** — depends on **`device-check`** + **`options`** keys (**§14**) + **`licenseContext`** refactor.
+- **Product nuance:** Desktop SQLite can be edited; **authoritative** deny remains server-side when online; offline **`min`** rule is correct UX + honest-user enforcement, not unbreakable DRM.
+
+**4) Routing (section 15) — not implemented**
+- **`App.tsx`** still shows **`LicenseValidation`** (full-screen) when **`!isLicenseValid`** **before** login — blocks the whole app, not only the “main app zone.”
+- **Target:** **Login** (and recovery) always reachable; **after** successful login, if device not allowed → **license waiting** + polling — **not** done.
+
+**5) License waiting / activation UI (section 9) — not refactored**
+- **`licenseValidation.tsx`** still centers on **enter activation key** + machine code.
+- **Missing:** remove key entry as primary path; optional **`device-request`** from that page; **polling** schedule (5s → 15s → 60s); copy/i18n updates.
+
+**6) Admin recovery vs online allowlist (section 8)**
+- Activation-key login can still succeed **without** any **`device-check`** enforcement afterward.
+
+**7) Login-only cloud restore (section 11 + **6**)**
+- Welcome collects **`customer_id`** for restore path but **no** full flow: **`backup-download-latest`** → **`latest.json`** version gate → replace local DB → force logout — **not** implemented in Electron.
+
+**8) Backup page → cloud (section 6)**
+- No IPC from renderer to **`backup-upload-latest`** (multipart) in the codebase snapshot; local backups exist, cloud upload is **manual on server / future app work**.
+
+----------------------------------------------------------------------------
+### D) Quick matrix (spec topic → status)
+
+| Topic                         | Server (Supabase)     | Electron app                                      |
+|------------------------------|------------------------|---------------------------------------------------|
+| Trial **`trial_ends_at`**    | Designed + deploy      | **Not read**; no trial countdown / enforcement   |
+| **`device-request`**         | Deploy                 | **Done** (Welcome)                                |
+| **`device-check`**           | Deploy                 | **Not called**                                    |
+| Offline grace (7 days)       | N/A                    | **Not implemented**                               |
+| **`min(grace, trial, exp)`**| N/A                    | **Not implemented**                               |
+| License before login         | N/A                    | **Yes (old key model)** — conflicts with §15      |
+| License after login only     | N/A                    | **No**                                            |
+| First ADMIN setup on login   | N/A                    | **Done** (empty DB / no ADMIN)                    |
+| Cloud backup upload/download | Functions exist        | **No app IPC** for upload/download restore        |
+| Welcome offline banner       | N/A                    | **Done** (`navigator.onLine` + disabled block)     |
+| Welcome phone validation     | N/A                    | **Done** (digits + optional leading `+`)           |
+
+----------------------------------------------------------------------------
+### E) Suggested implementation order (next sprints)
+
+1. **IPC `online:deviceCheck`** (+ preload) calling Edge Function with **`device_id`** + **`x-app-secret`**; parse **`allowed`**, **`trial_ends_at`**, **`expires_at`**.
+2. **Refactor `licenseContext`**: on success **`allowed: true`**, write section **14** **`options`** keys; compute **`license.last_ok_grace_until_ms`** = **`last_ok_at_ms + 7d`**; when offline, **`Date.now() < min(grace_until, caps)`**.
+3. **Refactor `App.tsx`**: always allow **`/login`**; run license check **after** auth for protected routes → **`LicenseWaiting`** vs main app.
+4. **Replace `licenseValidation.tsx`** UX per section **9** (polling, no key-first story).
+5. **Backup IPC** + restore path + backup page “Upload to cloud.”
+6. **Re-test** backup Edge Functions with **2.1** allow rule if trial users should upload.
+
+----------------------------------------------------------------------------
+### F) Obsolete bullets (do not follow as “still TODO”)
+
+- ~~“Wire Welcome buttons to device-request”~~ → **Done** (see **A**).
+- ~~“Welcome still needs IPC + Option flag”~~ → **Done** for trial/restore success path (**A**).
+
+Keep **`device-request`** phone normalization and **`X_APP_SECRET`** hygiene as ongoing ops tasks, not app blockers.
 

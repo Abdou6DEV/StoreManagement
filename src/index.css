@@ -716,3 +716,118 @@ input[type="date"].success {
   transform-origin: center;
   pointer-events: none;
 }
+
+/* Welcome “Get started” card — folded corner ribbon (adapted from CSS pattern; green for trial) */
+.welcome-trial-ribbon {
+  --f: 0.65em;
+  --r: 1em;
+
+  position: absolute;
+  top: 1rem;
+  right: calc(-1 * var(--f));
+  z-index: 20;
+  pointer-events: none;
+  width: max-content;
+  max-width: min(calc(100vw - 2rem), 22rem);
+  padding-inline: 0.65em;
+  /* Match pricing `pricePeriod` (e.g. “Per month”): inherited UI font, bold, wide tracking, uppercase */
+  font-family: inherit;
+  font-size: clamp(0.8125rem, 2.4vw, 1.0625rem);
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  line-height: 1.8;
+  white-space: nowrap;
+  text-transform: uppercase;
+  color: #fff;
+  text-align: center;
+  background: #16a34a;
+  border-bottom: var(--f) solid rgb(0 0 0 / 0.35);
+  border-left: var(--r) solid transparent;
+  clip-path: polygon(
+    var(--r) 0,
+    100% 0,
+    100% calc(100% - var(--f)),
+    calc(100% - var(--f)) 100%,
+    calc(100% - var(--f)) calc(100% - var(--f)),
+    var(--r) calc(100% - var(--f)),
+    0 calc(50% - var(--f) / 2)
+  );
+}
+
+.dark .welcome-trial-ribbon {
+  background: #15803d;
+  border-bottom-color: rgb(0 0 0 / 0.45);
+}
+
+.welcome-trial-ribbon--rtl {
+  right: auto;
+  left: calc(-1 * var(--f));
+  border-left: none;
+  border-right: var(--r) solid transparent;
+  clip-path: polygon(
+    calc(100% - var(--r)) 0,
+    0 0,
+    0 calc(100% - var(--f)),
+    var(--f) 100%,
+    var(--f) calc(100% - var(--f)),
+    calc(100% - var(--r)) calc(100% - var(--f)),
+    100% calc(50% - var(--f) / 2)
+  );
+}
+
+/* Pricing yearly plan — same folded ribbon shape as welcome trial; red */
+.pricing-yearly-ribbon {
+  --f: 0.45em;
+  --r: 0.75em;
+
+  position: absolute;
+  top: 0.35rem;
+  right: calc(-1 * var(--f));
+  z-index: 10;
+  pointer-events: none;
+  width: max-content;
+  max-width: min(calc(100% - 0.75rem), 12rem);
+  padding-inline: 0.5em;
+  font-family: inherit;
+  font-size: clamp(0.625rem, 1.65vw, 0.75rem);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  line-height: 1.8;
+  white-space: nowrap;
+  text-transform: uppercase;
+  color: #fff;
+  text-align: center;
+  background: #dc2626;
+  border-bottom: var(--f) solid rgb(0 0 0 / 0.35);
+  border-left: var(--r) solid transparent;
+  clip-path: polygon(
+    var(--r) 0,
+    100% 0,
+    100% calc(100% - var(--f)),
+    calc(100% - var(--f)) 100%,
+    calc(100% - var(--f)) calc(100% - var(--f)),
+    var(--r) calc(100% - var(--f)),
+    0 calc(50% - var(--f) / 2)
+  );
+}
+
+.dark .pricing-yearly-ribbon {
+  background: #b91c1c;
+  border-bottom-color: rgb(0 0 0 / 0.45);
+}
+
+.pricing-yearly-ribbon--rtl {
+  right: auto;
+  left: calc(-1 * var(--f));
+  border-left: none;
+  border-right: var(--r) solid transparent;
+  clip-path: polygon(
+    calc(100% - var(--r)) 0,
+    0 0,
+    0 calc(100% - var(--f)),
+    var(--f) 100%,
+    var(--f) calc(100% - var(--f)),
+    calc(100% - var(--r)) calc(100% - var(--f)),
+    100% calc(50% - var(--f) / 2)
+  );
+}

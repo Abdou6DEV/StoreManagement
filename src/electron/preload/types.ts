@@ -10,6 +10,7 @@ import {
   UserRole,
 } from "@prisma/client";
 import { LogLevel } from "../../lib/logger/common";
+import type { DeviceRequestPayload, DeviceRequestResult } from "../types/deviceRequest";
 
 export type SaleWithDetails = Sale & {
   client?: Client;
@@ -286,6 +287,15 @@ export type AuthAPI = {
     user?: Omit<User, "password"> & { permissions?: any };
     error?: string;
   }>;
+  needsInitialAdminSetup: () => Promise<{ needsSetup: boolean }>;
+  completeInitialAdminSetup: (credentials: {
+    username: string;
+    password: string;
+  }) => Promise<{
+    success: boolean;
+    user?: Omit<User, "password"> & { permissions?: any };
+    error?: string;
+  }>;
   createUser: (userData: {
     username: string;
     email?: string;
@@ -436,6 +446,10 @@ export type OnboardingAPI = {
   }>;
 };
 
+export type OnlineAPI = {
+  deviceRequest: (payload: DeviceRequestPayload) => Promise<DeviceRequestResult>;
+};
+
 export type ActivityLogAPI = {
   log: (payload: { username: string; action: string; details?: string | null }) => Promise<void>;
   getList: (filter: {
@@ -464,4 +478,5 @@ export type API = {
   backup: BackupAPI;
   activityLog: ActivityLogAPI;
   onboarding: OnboardingAPI;
+  online: OnlineAPI;
 };

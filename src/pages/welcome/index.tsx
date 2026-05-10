@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Settings, User, Star, Shield, Code, Mail, Phone, MapPin, FileText } from "lucide-react";
+import { Settings, Sparkles, Star, Shield, Code, Mail, Phone, MapPin, FileText, User, WifiOff } from "lucide-react";
 import { useTheme } from "../../lib/hooks/useTheme";
+import { cn } from "../../lib/utils";
 import {
   ABOUT_MAIN_FEATURE_DEFS,
   ABOUT_TECHNICAL_FEATURE_DEFS,
@@ -23,6 +24,57 @@ import { FullscreenToggleButton } from "../../lib/components/fullscreenToggleBut
 import { TooltipToggleButton } from "../../lib/components/tooltipToggleButton";
 import { useToast } from "../../lib/contexts/toastContext";
 import { PricingPlansSection } from "../../lib/components/pricingPlansSection";
+import {
+  INITIAL_WELCOME_DONE_EVENT,
+  ONBOARDING_INITIAL_WELCOME_DONE_KEY,
+  ONLINE_CUSTOMER_ID_OPTION_KEY,
+} from "../../lib/onboarding/constants";
+import type { DeviceRequestResult } from "../../electron/types/deviceRequest";
+
+function isConnectivityErrorText(message: string): boolean {
+  const s = message.toLowerCase();
+  return (
+    s.includes("fetch") ||
+    s.includes("network") ||
+    s.includes("econnrefused") ||
+    s.includes("enotfound") ||
+    s.includes("econnreset") ||
+    s.includes("etimedout") ||
+    s.includes("getaddrinfo") ||
+    s.includes("socket") ||
+    s.includes("internet") ||
+    s.includes("offline")
+  );
+}
+
+function deviceRequestErrorToastMessage(
+  result: Extract<DeviceRequestResult, { success: false }>,
+  t: (key: string, defaultValue: string) => string,
+): string {
+  if (result.code === "missing_env") {
+    return t(
+      "welcome.onlineNotConfigured",
+      "Online setup is not configured on this PC. Ask your administrator to set STORE_ONLINE_* environment variables.",
+    );
+  }
+  if (result.code === "network" || isConnectivityErrorText(result.error)) {
+    return t(
+      "welcome.serverUnreachable",
+      "We could not reach our servers. Check your internet connection and try again. If this continues, wait a few minutes or contact support.",
+    );
+  }
+  return result.error;
+}
+
+/** Allow only digits and an optional leading + (country code). */
+function sanitizeWelcomePhoneInput(raw: string): string {
+  const stripped = raw.replace(/[^\d+]/g, "");
+  if (!stripped) return "";
+  if (stripped[0] === "+") {
+    return "+" + stripped.slice(1).replace(/\D/g, "");
+  }
+  return stripped.replace(/\D/g, "");
+}
 
 export default function WelcomeSetup() {
   const { t, i18n } = useTranslation();
@@ -37,6 +89,20 @@ export default function WelcomeSetup() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [appVersion, setAppVersion] = useState<string>("1.0.0");
+  const [online, setOnline] = useState(
+    () => typeof navigator !== "undefined" && navigator.onLine,
+  );
+
+  useEffect(() => {
+    const goOnline = () => setOnline(true);
+    const goOffline = () => setOnline(false);
+    window.addEventListener("online", goOnline);
+    window.addEventListener("offline", goOffline);
+    return () => {
+      window.removeEventListener("online", goOnline);
+      window.removeEventListener("offline", goOffline);
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -53,29 +119,50 @@ export default function WelcomeSetup() {
     };
   }, []);
 
+  const finishWelcomeAfterProvisioning = async (customerIdFromServer?: string | null) => {
+    await window.api.database.options.set(ONBOARDING_INITIAL_WELCOME_DONE_KEY, "1");
+    if (customerIdFromServer) {
+      await window.api.database.options.set(ONLINE_CUSTOMER_ID_OPTION_KEY, customerIdFromServer);
+    }
+    window.dispatchEvent(new Event(INITIAL_WELCOME_DONE_EVENT));
+  };
+
   const handleStartTrial = async () => {
     const name = fullName.trim();
-    const ph = phone.trim();
+    const ph = sanitizeWelcomePhoneInput(phone).trim();
     if (!name || !ph) {
       showToast(t("welcome.fillNamePhone", "Please enter your full name and phone number."), "error");
       return;
     }
-    if (existingShopNewPc) {
+    if (!/\d/.test(ph)) {
       showToast(
-        t("welcome.switchToNewShopForTrial", "Uncheck “new PC / existing shop” to start a new shop trial."),
+        t(
+          "welcome.phoneInvalid",
+          "Enter a phone number using digits only. You may add a single + at the beginning for a country code.",
+        ),
         "error",
       );
       return;
     }
     setBusy(true);
     try {
-      // Supabase device-request IPC will be wired next; avoids a dead-end if users reach here offline.
+      const result = await window.api.online.deviceRequest({ name, phone: ph });
+      if (result.success === false) {
+        showToast(deviceRequestErrorToastMessage(result, t), "error");
+        return;
+      }
+      await finishWelcomeAfterProvisioning(result.customerId ?? undefined);
+      showToast(
+        t("welcome.provisioningSuccessTrial", "This device is registered. Continue to log in."),
+        "success",
+      );
+    } catch {
       showToast(
         t(
-          "welcome.trialNextStep",
-          "Next step: connect this screen to the server (device request). You can use “Skip to login” until then.",
+          "welcome.serverUnreachable",
+          "We could not reach our servers. Check your internet connection and try again. If this continues, wait a few minutes or contact support.",
         ),
-        "info",
+        "error",
       );
     } finally {
       setBusy(false);
@@ -84,15 +171,18 @@ export default function WelcomeSetup() {
 
   const handleRestore = async () => {
     const name = fullName.trim();
-    const ph = phone.trim();
+    const ph = sanitizeWelcomePhoneInput(phone).trim();
     const cid = customerId.trim();
     if (!name || !ph) {
       showToast(t("welcome.fillNamePhone", "Please enter your full name and phone number."), "error");
       return;
     }
-    if (!existingShopNewPc) {
+    if (!/\d/.test(ph)) {
       showToast(
-        t("welcome.checkExistingShop", "Check “new PC for my existing shop” and enter your customer ID."),
+        t(
+          "welcome.phoneInvalid",
+          "Enter a phone number using digits only. You may add a single + at the beginning for a country code.",
+        ),
         "error",
       );
       return;
@@ -103,12 +193,26 @@ export default function WelcomeSetup() {
     }
     setBusy(true);
     try {
+      const result = await window.api.online.deviceRequest({ name, phone: ph, customerId: cid });
+      if (result.success === false) {
+        showToast(deviceRequestErrorToastMessage(result, t), "error");
+        return;
+      }
+      await finishWelcomeAfterProvisioning(result.customerId ?? cid);
       showToast(
         t(
-          "welcome.restoreNextStep",
-          "Next step: device link + cloud restore over IPC. You can use “Skip to login” until then.",
+          "welcome.provisioningSuccessRestore",
+          "This device is linked. Continue to log in to finish restore.",
         ),
-        "info",
+        "success",
+      );
+    } catch {
+      showToast(
+        t(
+          "welcome.serverUnreachable",
+          "We could not reach our servers. Check your internet connection and try again. If this continues, wait a few minutes or contact support.",
+        ),
+        "error",
       );
     } finally {
       setBusy(false);
@@ -370,93 +474,146 @@ export default function WelcomeSetup() {
 
         <PricingPlansSection className="mt-2" />
 
-        <section className="bg-card rounded-2xl border border-border shadow-lg p-5 sm:p-8 mb-8 mt-8 space-y-6">
-          <header className="space-y-3">
-            <h2 className="text-xl sm:text-2xl font-bold text-foreground flex items-center gap-3">
-              <User className="w-6 h-6 text-primary shrink-0" aria-hidden />
-              {t("welcome.setupTitle", "Your details for this installation")}
+        <section
+          className={cn(
+            "relative overflow-visible bg-card rounded-2xl border shadow-lg p-5 sm:p-8 mb-8 mt-8 space-y-6",
+            online ? "border-border" : "border-amber-500/45 dark:border-amber-500/35",
+          )}
+          aria-busy={busy}
+        >
+          <div
+            className={cn("welcome-trial-ribbon", isRTL && "welcome-trial-ribbon--rtl")}
+            role="status"
+            aria-label={t("welcome.trialBadge", "7-day free trial")}
+          >
+            {t("welcome.trialBadge", "7-day free trial!")}
+          </div>
+
+          {!online ? (
+            <div
+              className="rounded-xl border border-amber-500/40 bg-amber-500/10 dark:bg-amber-500/15 px-4 py-3 sm:px-5 sm:py-4 flex gap-3 sm:gap-4 text-start"
+              role="alert"
+            >
+              <WifiOff
+                className="w-5 h-5 sm:w-6 sm:h-6 text-amber-700 dark:text-amber-400 shrink-0 mt-0.5"
+                aria-hidden
+              />
+              <div className="min-w-0 space-y-1">
+                <p className="text-sm font-semibold text-foreground">
+                  {t("welcome.offlineSetupTitle", "Internet connection required")}
+                </p>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  {t(
+                    "welcome.offlineSetupDescription",
+                    "Registering this device and starting your free trial (or linking an existing shop) requires an active internet connection. Connect to Wi‑Fi or Ethernet, then continue below when you are back online.",
+                  )}
+                </p>
+              </div>
+            </div>
+          ) : null}
+
+          <div
+            className={cn(
+              "space-y-6 transition-opacity",
+              !online && "pointer-events-none opacity-50 select-none",
+            )}
+          >
+          <header className="mx-auto max-w-3xl space-y-3 text-center pt-8 sm:pt-7 md:pt-8">
+            <h2 className="text-xl sm:text-2xl font-bold text-foreground flex flex-wrap items-center justify-center gap-3">
+              <Sparkles className="w-6 h-6 text-primary shrink-0" aria-hidden />
+              {t("welcome.setupTitle", "Get started with us")}
             </h2>
-            <p className="text-sm text-muted-foreground leading-relaxed max-w-4xl">
+            <p className="mx-auto max-w-3xl text-sm text-muted-foreground leading-relaxed">
               {t(
                 "welcome.setupDescription",
-                "The app needs your full name and a reachable phone number before you can use it on this computer. We use them to create or verify your shop account, run the free trial or cloud restore, link this device to your subscription, and contact you if support is required. This is separate from your login password and is processed as described in the privacy section above; we do not sell your data to third parties.",
+                "Tell us who you are so we can set up your shop on this computer. Add your full name and phone — we use them to start your trial or restore your data, connect this device to your account, and reach you if you need help. It only takes a moment. Your details stay separate from your login password and are handled as described in the privacy section above.",
               )}
             </p>
           </header>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <label htmlFor="welcome-full-name" className="text-sm font-medium">
-                {t("welcome.fullName", "Full name")}
-              </label>
-              <Input
-                id="welcome-full-name"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                autoComplete="name"
-                placeholder={t("welcome.fullNamePlaceholder", "First and last name")}
-              />
+          <div className="mx-auto w-full max-w-2xl space-y-6 text-start">
+            <div className="flex flex-col gap-6">
+              <div className="space-y-2">
+                <label htmlFor="welcome-full-name" className="text-sm font-medium">
+                  {t("welcome.fullName", "Full name")}
+                </label>
+                <Input
+                  id="welcome-full-name"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  autoComplete="name"
+                  placeholder={t("welcome.fullNamePlaceholder", "First and last name")}
+                  disabled={!online || busy}
+                />
+              </div>
+              <div className="space-y-2">
+                <label htmlFor="welcome-phone" className="text-sm font-medium">
+                  {t("welcome.phone", "Phone number")}
+                </label>
+                <Input
+                  id="welcome-phone"
+                  value={phone}
+                  onChange={(e) => setPhone(sanitizeWelcomePhoneInput(e.target.value))}
+                  autoComplete="tel"
+                  inputMode="tel"
+                  placeholder={t("welcome.phonePlaceholder", "Your phone number")}
+                  disabled={!online || busy}
+                />
+              </div>
             </div>
-            <div className="space-y-2">
-              <label htmlFor="welcome-phone" className="text-sm font-medium">
-                {t("welcome.phone", "Phone number")}
-              </label>
-              <Input
-                id="welcome-phone"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                autoComplete="tel"
-                placeholder={t("welcome.phonePlaceholder", "Your phone number")}
-              />
+
+            <Checkbox
+              checked={existingShopNewPc}
+              onChange={setExistingShopNewPc}
+              label={t(
+                "welcome.existingShopNewPc",
+                "This is a new PC for my existing shop (I already use Store Management)",
+              )}
+              color="blue"
+              disabled={!online || busy}
+            />
+
+            {existingShopNewPc ? (
+              <div className="space-y-2 pt-1">
+                <label htmlFor="welcome-customer-id" className="text-sm font-medium">
+                  {t("welcome.customerId", "Customer ID")}
+                </label>
+                <Input
+                  id="welcome-customer-id"
+                  value={customerId}
+                  onChange={(e) => setCustomerId(e.target.value)}
+                  placeholder={t("welcome.customerIdPlaceholder", "UUID from your supplier")}
+                  className="font-mono text-sm"
+                  disabled={!online || busy}
+                />
+                <p className="text-xs text-muted-foreground">
+                  {t("welcome.customerIdHint", "Must match the phone number we have on file for this ID.")}
+                </p>
+              </div>
+            ) : null}
+
+            <div className="flex flex-col gap-3 pt-2">
+              {!existingShopNewPc ? (
+                <Button
+                  type="button"
+                  className="w-full border-transparent bg-green-600 text-white shadow-xs hover:bg-green-700 focus-visible:ring-green-500/35 dark:bg-green-600 dark:text-white dark:hover:bg-green-500"
+                  disabled={!online || busy}
+                  onClick={handleStartTrial}
+                >
+                  {t("welcome.startTrial", "Start free 7-day trial")}
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  className="w-full border-transparent bg-blue-600 text-white shadow-xs hover:bg-blue-700 focus-visible:ring-blue-500/35 dark:bg-blue-600 dark:text-white dark:hover:bg-blue-500"
+                  disabled={!online || busy}
+                  onClick={handleRestore}
+                >
+                  {t("welcome.restoreFromCloud", "Restore data from cloud")}
+                </Button>
+              )}
             </div>
           </div>
-
-          <Checkbox
-            checked={existingShopNewPc}
-            onChange={setExistingShopNewPc}
-            label={t(
-              "welcome.existingShopNewPc",
-              "This is a new PC for my existing shop (I already use Store Management)",
-            )}
-            color="blue"
-          />
-
-          {existingShopNewPc ? (
-            <div className="space-y-2 pt-1">
-              <label htmlFor="welcome-customer-id" className="text-sm font-medium">
-                {t("welcome.customerId", "Customer ID")}
-              </label>
-              <Input
-                id="welcome-customer-id"
-                value={customerId}
-                onChange={(e) => setCustomerId(e.target.value)}
-                placeholder={t("welcome.customerIdPlaceholder", "UUID from your supplier")}
-                className="font-mono text-sm"
-              />
-              <p className="text-xs text-muted-foreground">
-                {t("welcome.customerIdHint", "Must match the phone number we have on file for this ID.")}
-              </p>
-            </div>
-          ) : null}
-
-          <div className="flex flex-col sm:flex-row gap-3 pt-2">
-            <Button
-              type="button"
-              className="flex-1"
-              disabled={busy}
-              onClick={handleStartTrial}
-            >
-              {t("welcome.startTrial", "Start free 7-day trial")}
-            </Button>
-            <Button
-              type="button"
-              variant="secondary"
-              className="flex-1"
-              disabled={busy}
-              onClick={handleRestore}
-            >
-              {t("welcome.restoreFromCloud", "Restore data from cloud")}
-            </Button>
           </div>
         </section>
       </div>

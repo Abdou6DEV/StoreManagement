@@ -17,6 +17,13 @@ interface AuthContextType {
   ) => Promise<{ success: boolean; error?: string }>;
   /** Dev / unpackaged only: primary admin from DB, no credentials. */
   loginDevAsPrimaryAdmin: () => Promise<{ success: boolean; error?: string }>;
+  /** True when no ADMIN row exists yet (login page should offer first-time setup). */
+  needsInitialAdminSetup: () => Promise<boolean>;
+  /** Create first ADMIN and start session (same post-login state as login()). */
+  completeInitialAdminSetup: (
+    username: string,
+    password: string,
+  ) => Promise<{ success: boolean; error?: string }>;
   /** Call after login success UI sequence (green button, fade out) to show preload transition. */
   confirmLoginTransition: () => void;
   logout: () => void;
@@ -148,6 +155,42 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const needsInitialAdminSetup = useCallback(async (): Promise<boolean> => {
+    try {
+      const res = await window.api.auth.needsInitialAdminSetup();
+      return !!res.needsSetup;
+    } catch {
+      return false;
+    }
+  }, []);
+
+  const completeInitialAdminSetup = async (
+    username: string,
+    password: string,
+  ): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const result = await window.api.auth.completeInitialAdminSetup({
+        username,
+        password,
+      });
+      if (result.success && result.user) {
+        setUser(result.user);
+        setUserRole(result.user.role);
+        setIsPreloading(true);
+        setPreloadProgress(0);
+        setPreloadComplete(false);
+        return { success: true };
+      }
+      return {
+        success: false,
+        error: result.error || "login.initialSetup.failed",
+      };
+    } catch (error) {
+      console.error("completeInitialAdminSetup error:", error);
+      return { success: false, error: "login.initialSetup.failed" };
+    }
+  };
+
   const markPreloadComplete = () => {
     setPreloadComplete(true);
   };
@@ -229,6 +272,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     login,
     loginByActivationKey,
     loginDevAsPrimaryAdmin,
+    needsInitialAdminSetup,
+    completeInitialAdminSetup,
     logout,
     loading,
     isPreloading,

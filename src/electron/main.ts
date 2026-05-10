@@ -3,6 +3,9 @@ import path from "node:path";
 import fs from "node:fs";
 import { spawn } from "child_process";
 import { prismaPromise } from "../lib/database/prismaClient";
+import { loadEnvFile } from "./utils/loadEnvFile";
+
+loadEnvFile();
 
 // Handle Squirrel events on Windows
 const handleSquirrelEvent = (): boolean => {
@@ -71,6 +74,7 @@ import {
   setupBackupHandlers,
   setupActivityLogHandlers,
   setupOnboardingHandlers,
+  setupOnlineHandlers,
 } from "./handlers";
 import { setupAppHandlers } from "./handlers/appHandlers";
 
@@ -91,6 +95,7 @@ const createWindow = async () => {
   setupBackupHandlers();
   setupActivityLogHandlers();
   setupOnboardingHandlers();
+  setupOnlineHandlers();
   setupAppHandlers();
 
   const { width, height, x, y } = screen.getPrimaryDisplay().workArea;

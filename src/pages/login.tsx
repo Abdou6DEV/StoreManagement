@@ -19,6 +19,7 @@ import { LOGO_ICON, LOGO_ICON_DARK } from "../lib/assets";
 export default function Login() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [activationKey, setActivationKey] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -29,24 +30,60 @@ export default function Login() {
   const [machineId, setMachineId] = useState<string | null>(null);
   const [machineIdLoading, setMachineIdLoading] = useState(false);
   const [guidCopied, setGuidCopied] = useState(false);
-  const { login, loginByActivationKey, loginDevAsPrimaryAdmin, confirmLoginTransition } =
-    useAuth();
+  const [initialAdminSetupRequired, setInitialAdminSetupRequired] = useState<
+    boolean | null
+  >(null);
+  const {
+    login,
+    loginByActivationKey,
+    loginDevAsPrimaryAdmin,
+    confirmLoginTransition,
+    needsInitialAdminSetup,
+    completeInitialAdminSetup,
+  } = useAuth();
   const { t, i18n } = useTranslation();
   const { isDark } = useTheme();
-  
+
+  const isFirstAdminSetup = initialAdminSetupRequired === true;
+  const credentialsIncomplete =
+    useActivationKey
+      ? !activationKey.trim()
+      : isFirstAdminSetup
+        ? !username.trim() || !password.trim() || !confirmPassword.trim()
+        : !username.trim() || !password.trim();
+
   const usernameRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
+  const confirmPasswordRef = useRef<HTMLInputElement>(null);
   const activationKeyRef = useRef<HTMLInputElement>(null);
   const submitButtonRef = useRef<HTMLButtonElement>(null);
 
+  useEffect(() => {
+    let cancelled = false;
+    needsInitialAdminSetup().then((needs) => {
+      if (!cancelled) setInitialAdminSetupRequired(needs);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [needsInitialAdminSetup]);
+
+  useEffect(() => {
+    if (initialAdminSetupRequired === true) {
+      setUseActivationKey(false);
+      setActivationKey("");
+    }
+  }, [initialAdminSetupRequired]);
+
   // Focus username or activation key input on page load
   useEffect(() => {
+    if (initialAdminSetupRequired === null) return;
     if (useActivationKey && activationKeyRef.current) {
       activationKeyRef.current.focus();
     } else if (usernameRef.current) {
       usernameRef.current.focus();
     }
-  }, [useActivationKey]);
+  }, [useActivationKey, initialAdminSetupRequired]);
 
   // Load machine ID when switching to activation key mode
   useEffect(() => {
@@ -73,16 +110,28 @@ export default function Login() {
     if (!error) return;
     if (useActivationKey && activationKeyRef.current) {
       activationKeyRef.current.focus({ preventScroll: true });
+    } else if (
+      isFirstAdminSetup &&
+      error === "login.initialSetup.passwordMismatch" &&
+      confirmPasswordRef.current
+    ) {
+      confirmPasswordRef.current.focus({ preventScroll: true });
+    } else if (
+      isFirstAdminSetup &&
+      error === "login.initialSetup.passwordTooShort" &&
+      passwordRef.current
+    ) {
+      passwordRef.current.focus({ preventScroll: true });
     } else if (usernameRef.current) {
       usernameRef.current.focus({ preventScroll: true });
     }
-  }, [error, useActivationKey]);
+  }, [error, useActivationKey, isFirstAdminSetup]);
 
   // Clear error (and revert button) after 2 seconds
   useEffect(() => {
     if (!error) return;
-    const t = setTimeout(() => setError(null), 2000);
-    return () => clearTimeout(t);
+    const errorClearTimer = window.setTimeout(() => setError(null), 2000);
+    return () => clearTimeout(errorClearTimer);
   }, [error]);
 
   // Success flow: green button 1s → fade out → confirm transition
@@ -122,6 +171,45 @@ export default function Login() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isFirstAdminSetup) {
+      if (!username.trim() || !password.trim() || !confirmPassword.trim()) {
+        if (!username.trim() && usernameRef.current) usernameRef.current.focus();
+        else if (!password.trim() && passwordRef.current) passwordRef.current.focus();
+        else if (!confirmPassword.trim() && confirmPasswordRef.current)
+          confirmPasswordRef.current.focus();
+        return;
+      }
+      if (password !== confirmPassword) {
+        setError("login.initialSetup.passwordMismatch");
+        confirmPasswordRef.current?.focus();
+        return;
+      }
+      if (password.length < 6) {
+        setError("login.initialSetup.passwordTooShort");
+        passwordRef.current?.focus();
+        return;
+      }
+      setIsLoading(true);
+      setError(null);
+      try {
+        const result = await completeInitialAdminSetup(
+          username.trim(),
+          password,
+        );
+        if (result.success) {
+          setSuccessPhase("green_hold");
+          setIsLoading(false);
+        } else {
+          setError(result.error || "login.initialSetup.failed");
+          setIsLoading(false);
+        }
+      } catch {
+        setError("login.initialSetup.failed");
+        setIsLoading(false);
+      }
+      return;
+    }
+
     if (useActivationKey) {
       if (!activationKey.trim()) {
         activationKeyRef.current?.focus();
@@ -180,6 +268,23 @@ export default function Login() {
     e.preventDefault();
     if (useActivationKey) {
       if (e.currentTarget === activationKeyRef.current && submitButtonRef.current && !isLoading) {
+        submitButtonRef.current.click();
+      }
+      return;
+    }
+    if (isFirstAdminSetup) {
+      if (e.currentTarget === usernameRef.current && passwordRef.current) {
+        passwordRef.current.focus();
+      } else if (
+        e.currentTarget === passwordRef.current &&
+        confirmPasswordRef.current
+      ) {
+        confirmPasswordRef.current.focus();
+      } else if (
+        e.currentTarget === confirmPasswordRef.current &&
+        submitButtonRef.current &&
+        !isLoading
+      ) {
         submitButtonRef.current.click();
       }
       return;
@@ -350,10 +455,23 @@ export default function Login() {
             }}
           >
             <h2 className="text-3xl font-bold text-foreground mb-2 mt-0">
-              {t("login.welcomeBack", "Welcome Back")}
+              {isFirstAdminSetup
+                ? t(
+                    "login.createAdminTitle",
+                    "Create administrator account",
+                  )
+                : t("login.welcomeBack", "Welcome Back")}
             </h2>
             <p className="text-muted-foreground">
-              {t("login.signInToAccount", "Sign in to your Store Management account")}
+              {isFirstAdminSetup
+                ? t(
+                    "login.createAdminSubtitle",
+                    "Choose the username and password for the main administrator. You can add more accounts later.",
+                  )
+                : t(
+                    "login.signInToAccount",
+                    "Sign in to your Store Management account",
+                  )}
             </p>
           </div>
         </div>
@@ -372,6 +490,11 @@ export default function Login() {
           }}
         >
         <div className="bg-card rounded-xl border border-border p-8 shadow-sm">
+          {initialAdminSetupRequired === null ? (
+            <p className="text-center text-muted-foreground py-10">
+              {t("login.loading", "Loading...")}
+            </p>
+          ) : (
           <form onSubmit={handleSubmit} className="space-y-6">
             {useActivationKey ? (
               <>
@@ -522,17 +645,61 @@ export default function Login() {
                   </div>
                 </div>
 
+                {isFirstAdminSetup ? (
+                  <div>
+                    <label
+                      htmlFor="confirmPassword"
+                      className="block text-sm font-medium text-foreground mb-2"
+                    >
+                      {t("login.confirmPassword", "Confirm password")}
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Lock className="h-5 w-5 text-muted-foreground" />
+                      </div>
+                      <input
+                        ref={confirmPasswordRef}
+                        id="confirmPassword"
+                        name="confirmPassword"
+                        type={showPassword ? "text" : "password"}
+                        required
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        onKeyDown={handleKeyDown}
+                        className="block w-full pl-10 pr-12 py-3 border border-input rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-all duration-200"
+                        placeholder={t(
+                          "login.enterConfirmPassword",
+                          "Confirm your password",
+                        )}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-5 w-5" />
+                        ) : (
+                          <Eye className="h-5 w-5" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
+
                 {/* Forgot username/password → activation key */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setUseActivationKey(true);
-                    setError(null);
-                  }}
-                  className="text-sm text-muted-foreground hover:text-foreground underline transition-colors w-full text-center"
-                >
-                  {t("login.loginViaActivationKey", "Log in via activation key (forgot username or password)")}
-                </button>
+                {!isFirstAdminSetup ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setUseActivationKey(true);
+                      setError(null);
+                    }}
+                    className="text-sm text-muted-foreground hover:text-foreground underline transition-colors w-full text-center"
+                  >
+                    {t("login.loginViaActivationKey", "Log in via activation key (forgot username or password)")}
+                  </button>
+                ) : null}
               </>
             )}
 
@@ -541,10 +708,11 @@ export default function Login() {
               ref={submitButtonRef}
               type="submit"
               disabled={
+                initialAdminSetupRequired === null ||
                 isLoading ||
                 !!error ||
                 successPhase !== "idle" ||
-                (useActivationKey ? !activationKey.trim() : !username.trim() || !password.trim())
+                credentialsIncomplete
               }
               className={`group relative w-full flex justify-center items-center min-h-[3rem] py-3 px-4 border border-transparent text-sm font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed transition-all duration-200 ${
                 successPhase === 'green_hold' || successPhase === 'fade_out'
@@ -552,12 +720,12 @@ export default function Login() {
                   : error
                     ? "bg-destructive text-white hover:bg-destructive/90"
                     : "text-primary-foreground bg-primary hover:bg-primary/90"
-              } ${!error && successPhase === 'idle' && (isLoading || !username.trim() || !password.trim()) ? "disabled:opacity-50" : ""}`}
+              } ${!error && successPhase === 'idle' && (isLoading || credentialsIncomplete) ? "disabled:opacity-50" : ""}`}
             >
               {error ? (
                 <span className="flex items-center gap-2 text-white">
                   <AlertCircle className="h-5 w-5 flex-shrink-0" aria-hidden />
-                  {error}
+                  {t(error, error)}
                 </span>
               ) : successPhase === 'green_hold' || successPhase === 'fade_out' ? (
                 <div className="flex items-center">
@@ -569,12 +737,16 @@ export default function Login() {
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary-foreground mr-2"></div>
                   {t("login.signingIn", "Signing in...")}
                 </div>
+              ) : isFirstAdminSetup ? (
+                t("login.createAdminAccount", "Create account")
               ) : (
                 t("login.signIn", "Sign In")
               )}
             </button>
 
-            {showDevLoginButton && !useActivationKey ? (
+            {showDevLoginButton &&
+            !useActivationKey &&
+            initialAdminSetupRequired === false ? (
               <div className="pt-4 border-t border-border">
                 <button
                   type="button"
@@ -588,6 +760,7 @@ export default function Login() {
               </div>
             ) : null}
           </form>
+          )}
 
         </div>
 

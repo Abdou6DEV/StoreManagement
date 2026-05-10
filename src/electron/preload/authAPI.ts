@@ -7,6 +7,10 @@ const authAPI: AuthAPI = {
     ipcRenderer.invoke("auth:loginDevAsPrimaryAdmin"),
   loginByActivationKey: (activationKey, machineId?) =>
     ipcRenderer.invoke("auth:loginByActivationKey", activationKey, machineId),
+  needsInitialAdminSetup: () =>
+    ipcRenderer.invoke("auth:needsInitialAdminSetup"),
+  completeInitialAdminSetup: (credentials) =>
+    ipcRenderer.invoke("auth:completeInitialAdminSetup", credentials),
   createUser: (userData) => ipcRenderer.invoke("auth:createUser", userData),
   getUserById: (userId) => ipcRenderer.invoke("auth:getUserById", userId),
   getUserByUsername: (username) =>

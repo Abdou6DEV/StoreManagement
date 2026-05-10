@@ -51,6 +51,39 @@ export const setupAuthHandlers = () => {
     }
   });
 
+  ipcMain.handle("auth:needsInitialAdminSetup", async () => {
+    try {
+      const needsSetup = await users.needsInitialAdminSetup();
+      return { needsSetup };
+    } catch (error) {
+      console.error("auth:needsInitialAdminSetup error:", error);
+      return { needsSetup: false };
+    }
+  });
+
+  ipcMain.handle(
+    "auth:completeInitialAdminSetup",
+    async (_, credentials: LoginCredentials) => {
+      try {
+        const result = await users.completeInitialAdminSetup(credentials);
+        if (result.success && result.user) {
+          createActivityLog({
+            username: result.user.username,
+            action: "activityLog.actions.loggedIn",
+            details: null,
+          }).catch(() => {});
+        }
+        return result;
+      } catch (error) {
+        console.error("auth:completeInitialAdminSetup error:", error);
+        return {
+          success: false,
+          error: "login.initialSetup.failed",
+        };
+      }
+    },
+  );
+
   /**
    * Dev-only bypass: primary ADMIN from DB. Must never work in production:
    * - Packaged installers (end users)

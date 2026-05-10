@@ -498,7 +498,20 @@
     "copyright": "© 2025 Reda Tech. Tous droits réservés.",
     "devLogIn": "Dev : connexion admin principal",
     "devLogInHint": "Build de développement uniquement : ouvre une session comme le premier utilisateur ADMIN en base (sans mot de passe).",
-    "devLogInFailed": "Échec de la connexion dev"
+    "devLogInFailed": "Échec de la connexion dev",
+    "createAdminTitle": "Créer le compte administrateur",
+    "createAdminSubtitle": "Choisissez le nom d'utilisateur et le mot de passe de l'administrateur principal. Vous pourrez ajouter d'autres comptes ensuite.",
+    "confirmPassword": "Confirmer le mot de passe",
+    "enterConfirmPassword": "Confirmez votre mot de passe",
+    "createAdminAccount": "Créer le compte",
+    "initialSetup": {
+      "passwordMismatch": "Les mots de passe ne correspondent pas",
+      "passwordTooShort": "Le mot de passe doit contenir au moins 6 caractères",
+      "usernameRequired": "Le nom d'utilisateur est obligatoire",
+      "usernameTaken": "Ce nom d'utilisateur est déjà utilisé",
+      "alreadyCompleted": "Un administrateur existe déjà. Connectez-vous avec vos identifiants.",
+      "failed": "Impossible de créer le compte administrateur. Veuillez réessayer."
+    }
   },
   "loading": {
     "title": "Chargement...",
@@ -733,7 +746,7 @@
     "kicker": "Licences",
     "title": "Choisissez votre licence",
     "subtitle": "Mensuelle, annuelle ou à vie — tous les forfaits incluent l'application complète. Prix en dinars algériens (DA) ; contactez votre fournisseur pour acheter et activer.",
-    "popular": "Meilleur rapport qualité-prix",
+    "popular": "Recommandé",
     "contactSupplier": "Contacter le fournisseur",
     "supplierPhoneLabel": "Tél. {{phone}}",
     "mailSubject": {
@@ -2596,13 +2609,15 @@
   "welcome": {
     "title": "Bienvenue dans REDA TECH Store Management",
     "subtitle": "Configurez cet ordinateur pour la première fois. Choisissez un essai pour une nouvelle boutique ou restaurez vos données si vous utilisez déjà l’application ailleurs.",
-    "setupTitle": "Vos informations pour cette installation",
-    "setupDescription": "L’application a besoin de votre nom complet et d’un numéro de téléphone joignable avant que vous puissiez l’utiliser sur cet ordinateur. Nous les utilisons pour créer ou vérifier le compte de votre boutique, activer l’essai gratuit ou la restauration cloud, associer cet appareil à votre abonnement et vous contacter si le support l’exige. Ces données sont distinctes de votre mot de passe de connexion et sont traitées comme indiqué dans la section confidentialité ci-dessus ; nous ne vendons pas vos données à des tiers.",
+    "trialBadge": "Essai gratuit 7 jours !",
+    "setupTitle": "Commencez avec nous",
+    "setupDescription": "Présentez-vous pour que nous puissions configurer votre boutique sur cet ordinateur. Indiquez votre nom complet et votre téléphone : nous en avons besoin pour lancer votre essai ou restaurer vos données, lier cet appareil à votre compte et vous joindre si besoin. Quelques secondes suffisent. Ces informations sont distinctes de votre mot de passe et sont traitées comme indiqué dans la section confidentialité ci-dessus.",
     "featuresHeading": "Ce que vous pouvez faire avec cette application",
     "fullName": "Nom complet",
     "fullNamePlaceholder": "Prénom et nom",
     "phone": "Numéro de téléphone",
-    "phonePlaceholder": "Votre numéro de téléphone",
+    "phonePlaceholder": "Chiffres uniquement, ou + puis chiffres (indicatif)",
+    "phoneInvalid": "Saisissez un numéro avec des chiffres uniquement. Vous pouvez mettre un seul + au début pour l’indicatif pays.",
     "existingShopNewPc": "C’est un nouvel ordinateur pour ma boutique existante (j’utilise déjà Store Management)",
     "customerId": "Identifiant client",
     "customerIdPlaceholder": "UUID fourni par votre fournisseur",
@@ -2613,6 +2628,13 @@
     "switchToNewShopForTrial": "Décochez « nouvel PC / boutique existante » pour démarrer l’essai d’une nouvelle boutique.",
     "checkExistingShop": "Cochez « nouvel PC pour ma boutique existante » et saisissez votre identifiant client.",
     "customerIdRequired": "Saisissez l’identifiant client envoyé par votre fournisseur.",
+    "onlineNotConfigured": "La configuration en ligne n’est pas définie sur ce PC. Demandez à l’administrateur de définir les variables d’environnement STORE_ONLINE_*.",
+    "deviceRequestFailed": "Impossible de joindre le serveur.",
+    "offlineSetupTitle": "Connexion Internet requise",
+    "offlineSetupDescription": "L’enregistrement de cet appareil et le démarrage de l’essai gratuit (ou la liaison d’une boutique existante) nécessitent une connexion Internet active. Connectez le PC au Wi‑Fi ou au câble Ethernet, puis continuez ci-dessous une fois en ligne.",
+    "serverUnreachable": "Nous n’avons pas pu joindre nos serveurs. Vérifiez votre connexion Internet et réessayez. Si le problème persiste, attendez quelques minutes ou contactez le support.",
+    "provisioningSuccessTrial": "Cet appareil est enregistré. Poursuivez vers la connexion.",
+    "provisioningSuccessRestore": "Cet appareil est lié. Connectez-vous pour terminer la restauration.",
     "trialNextStep": "Étape suivante : connecter cet écran au serveur (device request).",
     "restoreNextStep": "Étape suivante : liaison d’appareil + restauration cloud via IPC."
   }

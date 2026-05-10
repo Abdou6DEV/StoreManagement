@@ -33,6 +33,20 @@ export interface AuthResult {
   error?: string;
 }
 
+const FULL_ADMIN_PERMISSIONS: NonNullable<CreateUserData["permissions"]> = {
+  canAccessCashier: true,
+  canAccessStock: true,
+  canAccessClients: true,
+  canAccessBills: true,
+  canAccessHistory: true,
+  canAccessServices: true,
+  canAccessDashboard: true,
+  canAccessZakat: true,
+  canManageUsers: true,
+  canViewLogs: true,
+  canManageSettings: true,
+};
+
 export const users = {
   async create(data: CreateUserData): Promise<User> {
     await prismaPromise; // Ensure Prisma is ready
@@ -405,5 +419,82 @@ export const users = {
     });
 
     return users.map(({ password, ...user }) => user);
+  },
+
+  /** True when no ADMIN exists yet (first launch / before any real admin row). */
+  async needsInitialAdminSetup(): Promise<boolean> {
+    await prismaPromise;
+    const primary = await this.getPrimaryAdmin();
+    return primary === null;
+  },
+
+  /** Create the first ADMIN with full permissions; safe to call only when needsInitialAdminSetup is true. */
+  async completeInitialAdminSetup(
+    credentials: LoginCredentials,
+  ): Promise<AuthResult> {
+    try {
+      await prismaPromise;
+      const primary = await this.getPrimaryAdmin();
+      if (primary) {
+        return {
+          success: false,
+          error: "login.initialSetup.alreadyCompleted",
+        };
+      }
+
+      const username = credentials.username.trim();
+      if (!username) {
+        return {
+          success: false,
+          error: "login.initialSetup.usernameRequired",
+        };
+      }
+
+      if (credentials.password.length < 6) {
+        return {
+          success: false,
+          error: "login.initialSetup.passwordTooShort",
+        };
+      }
+
+      const existing = await prisma.user.findUnique({
+        where: { username },
+      });
+      if (existing) {
+        return {
+          success: false,
+          error: "login.initialSetup.usernameTaken",
+        };
+      }
+
+      const created = await this.create({
+        username,
+        password: credentials.password,
+        role: "ADMIN",
+        permissions: FULL_ADMIN_PERMISSIONS,
+      });
+
+      const { password: _pw, ...userWithoutPassword } = created;
+      return {
+        success: true,
+        user: {
+          ...userWithoutPassword,
+          id: "hardcoded-admin",
+        },
+      };
+    } catch (error: unknown) {
+      const code = (error as { code?: string })?.code;
+      if (code === "P2002") {
+        return {
+          success: false,
+          error: "login.initialSetup.usernameTaken",
+        };
+      }
+      console.error("completeInitialAdminSetup error:", error);
+      return {
+        success: false,
+        error: "login.initialSetup.failed",
+      };
+    }
   },
 };

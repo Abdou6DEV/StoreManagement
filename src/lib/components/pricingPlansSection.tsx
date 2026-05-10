@@ -4,7 +4,6 @@ import { Calendar, CalendarRange, Infinity, Check, MessageCircle } from "lucide-
 import { Button } from "./button";
 import { cn } from "../utils";
 
-const SUPPLIER_EMAIL = "abdoukahia853@gmail.com";
 const SUPPLIER_PHONE_DISPLAY = "0793420745";
 
 /** Must match monthly/yearly `priceAmount` figures in locale files (DA). */
@@ -29,17 +28,13 @@ const PLANS: {
 
 export function PricingPlansSection({ className }: { className?: string }) {
   const { t, i18n } = useTranslation();
+  const isRTL = i18n.language === "ar";
 
   const monthlyAnnualDzd = MONTHLY_PRICE_DZD * 12;
   const yearlySaveDzd = monthlyAnnualDzd - YEARLY_PRICE_DZD;
   const yearlySavePercent =
     monthlyAnnualDzd > 0 ? Math.round((yearlySaveDzd / monthlyAnnualDzd) * 100) : 0;
   const yearlySaveAmountFormatted = formatGroupedDzdAmount(yearlySaveDzd);
-
-  const contactSupplier = (planId: PlanId) => {
-    const subject = t(`pricing.mailSubject.${planId}`);
-    window.location.href = `mailto:${SUPPLIER_EMAIL}?subject=${encodeURIComponent(subject)}`;
-  };
 
   return (
     <section
@@ -94,30 +89,34 @@ export function PricingPlansSection({ className }: { className?: string }) {
                 "group flex flex-col rounded-2xl border-2 border-red-200/40 bg-gradient-to-b from-card/95 to-red-50/20 backdrop-blur-[2px] p-6 sm:p-7 transition-all duration-300 ease-out",
                 "dark:border-red-950/35 dark:from-card/95 dark:to-red-950/12",
                 "hover:-translate-y-0.5 hover:shadow-md hover:border-red-300/50 hover:shadow-red-100/15 dark:hover:border-red-900/45 dark:hover:shadow-black/25",
-                featured && "ring-2 ring-red-300/35 shadow-md shadow-red-100/15 lg:z-[1] lg:scale-[1.015] dark:ring-red-800/30 dark:shadow-black/20",
+                featured &&
+                  "relative overflow-visible ring-2 ring-red-300/35 shadow-md shadow-red-100/15 lg:z-[1] lg:scale-[1.015] dark:ring-red-800/30 dark:shadow-black/20",
               )}
             >
+              {featured && id === "yearly" ? (
+                <div
+                  className={cn("pricing-yearly-ribbon", isRTL && "pricing-yearly-ribbon--rtl")}
+                  role="status"
+                  aria-label={t("pricing.popular", "Recommended")}
+                >
+                  {t("pricing.popular", "Recommended")}
+                </div>
+              ) : null}
+
               <div className="mb-4 -mt-1 flex min-h-[4.5rem] flex-col items-center justify-center gap-2">
-                {featured ? (
-                  <>
-                    <span className="inline-flex items-center rounded-full border border-red-200/70 bg-red-50/80 px-3 py-1 text-xs font-semibold text-red-900 dark:border-red-800/40 dark:bg-red-950/40 dark:text-red-100">
-                      {t("pricing.popular", "Best value")}
-                    </span>
-                    {id === "yearly" && (
-                      <span
-                        className="inline-flex max-w-[min(100%,18rem)] items-center justify-center rounded-full border border-red-200/60 bg-card/90 px-3 py-1.5 text-center text-[11px] font-semibold leading-snug text-red-900 tabular-nums shadow-sm dark:border-red-800/35 dark:bg-card/80 dark:text-red-100 sm:text-xs"
-                        aria-label={t("pricing.plans.yearly.saveVsMonthly", {
-                          amount: yearlySaveAmountFormatted,
-                          percent: yearlySavePercent,
-                        })}
-                      >
-                        {t("pricing.plans.yearly.saveVsMonthly", {
-                          amount: yearlySaveAmountFormatted,
-                          percent: yearlySavePercent,
-                        })}
-                      </span>
-                    )}
-                  </>
+                {featured && id === "yearly" ? (
+                  <p
+                    className="max-w-[min(100%,18rem)] px-1 pt-10 text-center text-[11px] font-semibold leading-snug text-red-800 tabular-nums dark:text-red-200 sm:pt-9 sm:text-xs"
+                    aria-label={t("pricing.plans.yearly.saveVsMonthly", {
+                      amount: yearlySaveAmountFormatted,
+                      percent: yearlySavePercent,
+                    })}
+                  >
+                    {t("pricing.plans.yearly.saveVsMonthly", {
+                      amount: yearlySaveAmountFormatted,
+                      percent: yearlySavePercent,
+                    })}
+                  </p>
                 ) : null}
               </div>
 
@@ -136,7 +135,7 @@ export function PricingPlansSection({ className }: { className?: string }) {
                 <div
                   dir="ltr"
                   className={cn(
-                    "group/price relative inline-flex max-w-full flex-wrap items-baseline justify-center gap-x-1.5 gap-y-0.5 overflow-hidden rounded-2xl border px-4 py-3.5 sm:px-5 sm:py-4",
+                    "group/price relative flex max-w-full flex-col items-center gap-1 overflow-hidden rounded-2xl border px-4 py-3.5 sm:px-5 sm:py-4",
                     "border-red-200/55 bg-gradient-to-br from-card/95 via-card/90 to-red-50/35",
                     "shadow-[inset_0_1px_0_0_rgba(255,255,255,0.5),0_8px_20px_-12px_rgba(185,28,28,0.12)]",
                     "dark:border-red-900/40 dark:from-card/90 dark:via-card/80 dark:to-red-950/20",
@@ -145,7 +144,7 @@ export function PricingPlansSection({ className }: { className?: string }) {
                     "hover:scale-[1.02] hover:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.55),0_10px_24px_-12px_rgba(185,28,28,0.15)]",
                     featured && "ring-1 ring-red-300/25 dark:ring-red-800/25",
                   )}
-                  aria-label={`${t(`pricing.plans.${id}.priceAmount`)} / ${t(`pricing.plans.${id}.pricePeriod`)}`}
+                  aria-label={`${t(`pricing.plans.${id}.priceAmount`)}, ${t(`pricing.plans.${id}.pricePeriod`)}`}
                 >
                   <span
                     className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-tr from-white/15 via-transparent to-transparent opacity-70 dark:from-white/[0.04]"
@@ -154,20 +153,7 @@ export function PricingPlansSection({ className }: { className?: string }) {
                   <span className="relative text-[1.35rem] font-black tabular-nums tracking-tight text-foreground sm:text-3xl">
                     {t(`pricing.plans.${id}.priceAmount`)}
                   </span>
-                  <span
-                    className="relative mx-0.5 select-none text-lg font-extralight text-muted-foreground sm:text-2xl"
-                    aria-hidden
-                  >
-                    /
-                  </span>
-                  <span
-                    className={cn(
-                      "relative max-w-[14rem] text-left font-bold leading-snug text-red-800/90 sm:max-w-none dark:text-red-300/90",
-                      id === "lifetime" || i18n.language === "ar"
-                        ? "text-[0.7rem] tracking-wide normal-case sm:text-[0.8rem]"
-                        : "text-[0.65rem] uppercase tracking-[0.14em] sm:text-xs",
-                    )}
-                  >
+                  <span className="relative w-full max-w-[14rem] text-center text-[0.65rem] font-bold uppercase leading-snug tracking-[0.14em] text-red-800/90 sm:max-w-none sm:text-xs dark:text-red-300/90">
                     {t(`pricing.plans.${id}.pricePeriod`)}
                   </span>
                 </div>
@@ -197,7 +183,6 @@ export function PricingPlansSection({ className }: { className?: string }) {
                   !featured &&
                     "border-2 border-border bg-card/90 shadow-none hover:bg-red-50/60 hover:text-foreground dark:hover:bg-red-950/25",
                 )}
-                onClick={() => contactSupplier(id)}
               >
                 <MessageCircle className="h-4 w-4 shrink-0" aria-hidden />
                 <span className="flex flex-col items-center gap-0.5 leading-tight">

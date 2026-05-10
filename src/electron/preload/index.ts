@@ -5,6 +5,7 @@ export { authAPI } from "./authAPI";
 export { systemAPI } from "./systemAPI";
 export { backupAPI } from "./backupAPI";
 export { activityLogAPI } from "./activityLogAPI";
+export { onlineAPI } from "./onlineAPI";
 export type {
   API,
   DatabaseAPI,
@@ -17,4 +18,5 @@ export type {
   BackupResult,
   SaleWithDetails,
   OnboardingAPI,
+  OnlineAPI,
 } from "./types";

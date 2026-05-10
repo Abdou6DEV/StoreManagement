@@ -1,4 +1,4 @@
-import { ipcMain, app, BrowserWindow } from "electron";
+import { ipcMain, app, BrowserWindow, shell } from "electron";
 import path from "path";
 import fs from "fs";
 import { exec, spawn } from "child_process";
@@ -75,6 +75,25 @@ export function setupAppHandlers() {
   // Get app version
   ipcMain.handle("app:getVersion", () => {
     return app.getVersion();
+  });
+
+  /** Open mailto / https in the system browser or default mail client without navigating the app window. */
+  ipcMain.handle("app:openExternal", async (_event, url: unknown) => {
+    if (typeof url !== "string" || !url.trim()) return;
+    const u = url.trim();
+    const lower = u.toLowerCase();
+    if (
+      !lower.startsWith("mailto:") &&
+      !lower.startsWith("https://") &&
+      !lower.startsWith("http://")
+    ) {
+      return;
+    }
+    try {
+      await shell.openExternal(u);
+    } catch (e) {
+      console.warn("[app:openExternal]", e);
+    }
   });
 
   // Check for updates

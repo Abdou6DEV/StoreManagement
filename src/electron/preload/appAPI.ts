@@ -2,6 +2,7 @@ import { ipcRenderer } from "electron";
 
 export const appAPI = {
   getVersion: () => ipcRenderer.invoke("app:getVersion"),
+  openExternal: (url: string) => ipcRenderer.invoke("app:openExternal", url),
   checkForUpdates: () => ipcRenderer.invoke("app:checkForUpdates"),
   downloadUpdate: (url: string) => ipcRenderer.invoke("app:downloadUpdate", url),
   cancelUpdateDownload: () => ipcRenderer.invoke("app:cancelUpdateDownload"),
