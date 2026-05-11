@@ -1,6 +1,12 @@
 import { ipcMain } from "electron";
 import { getMachineGuid } from "../utils/validationKey";
 import { getStoreOnlineConfig } from "../utils/onlineConfig";
+import {
+  clearStoredLicenseGrace,
+  persistStoredLicenseGrace,
+  readStoredLicenseGrace,
+  type LicenseGraceSnapshot,
+} from "../utils/licenseGraceStore";
 import type { DeviceRequestPayload, DeviceRequestResult } from "../types/deviceRequest";
 import type { DeviceCheckResult } from "../types/deviceCheck";
 
@@ -207,5 +213,29 @@ export function setupOnlineHandlers(): void {
         code: "network",
       };
     }
+  });
+
+  ipcMain.handle("online:licenseGrace:read", (): LicenseGraceSnapshot | null => {
+    return readStoredLicenseGrace();
+  });
+
+  ipcMain.handle(
+    "online:licenseGrace:persist",
+    (
+      _event,
+      payload: { trialEndsAt?: string | null; expiresAt?: string | null } | undefined,
+    ): { success: true } | { success: false; error: string } => {
+      try {
+        persistStoredLicenseGrace(payload?.trialEndsAt, payload?.expiresAt);
+        return { success: true };
+      } catch (e) {
+        return { success: false, error: (e as Error).message || "Failed to persist license grace." };
+      }
+    },
+  );
+
+  ipcMain.handle("online:licenseGrace:clear", (): { success: true } => {
+    clearStoredLicenseGrace();
+    return { success: true };
   });
 }

@@ -1,13 +1,14 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router-dom";
-import { FileText, Printer, Users, Settings, Database, Download } from "lucide-react";
+import { FileText, Printer, Users, Settings, Database, Download, Shield } from "lucide-react";
 import ActivityLogs from "./components/activityLogs";
 import { OptionsList } from "./components/optionsList";
 import { ReceiptConfig } from "./components/receiptConfig";
 import { BackupManagement } from "./components/backupManagement";
 import AccountsManagement from "./components/accountsManagement";
 import UpdateManagement from "./components/updateManagement";
+import { LicenseManagement } from "./components/licenseManagement";
 import { useUpdateContext } from "../../lib/contexts/updateContext";
 import { FadeUp } from "../../lib/components/fadeUp";
 
@@ -15,12 +16,23 @@ export default function AdministratorPage() {
   const { t, i18n } = useTranslation();
   const isRTL = i18n.language === "ar";
   const [searchParams, setSearchParams] = useSearchParams();
-  const tabFromUrl = searchParams.get("tab") as "settings" | "receipt" | "logs" | "accounts" | "backup" | "updates" | null;
+  const tabFromUrl = searchParams.get("tab") as
+    | "settings"
+    | "receipt"
+    | "logs"
+    | "accounts"
+    | "backup"
+    | "license"
+    | "updates"
+    | null;
   const subTabFromUrl = searchParams.get("subTab") as string | null;
-  const [activeTab, setActiveTab] = useState<"settings" | "receipt" | "logs" | "accounts" | "backup" | "updates">(
-    tabFromUrl && ["settings", "receipt", "logs", "accounts", "backup", "updates"].includes(tabFromUrl) 
-      ? tabFromUrl 
-      : "settings"
+  const [activeTab, setActiveTab] = useState<
+    "settings" | "receipt" | "logs" | "accounts" | "backup" | "license" | "updates"
+  >(
+    tabFromUrl &&
+      ["settings", "receipt", "logs", "accounts", "backup", "license", "updates"].includes(tabFromUrl)
+      ? tabFromUrl
+      : "settings",
   );
   const { state: updateState } = useUpdateContext();
 
@@ -35,7 +47,10 @@ export default function AdministratorPage() {
 
   // Update tab when URL changes
   useEffect(() => {
-    if (tabFromUrl && ["settings", "receipt", "logs", "accounts", "backup", "updates"].includes(tabFromUrl)) {
+    if (
+      tabFromUrl &&
+      ["settings", "receipt", "logs", "accounts", "backup", "license", "updates"].includes(tabFromUrl)
+    ) {
       setActiveTab(tabFromUrl);
     }
   }, [tabFromUrl]);
@@ -100,6 +115,19 @@ export default function AdministratorPage() {
           </div>
         </button>
         <button
+          onClick={() => setActiveTab("license")}
+          className={`px-4 py-2 font-medium transition-colors ${
+            activeTab === "license"
+              ? "border-b-2 border-orange-500 text-orange-600"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <Shield className="w-4 h-4" />
+            {t("admin.licenseTab", "License")}
+          </div>
+        </button>
+        <button
           onClick={() => setActiveTab("backup")}
           className={`px-4 py-2 font-medium transition-colors ${
             activeTab === "backup"
@@ -151,6 +179,12 @@ export default function AdministratorPage() {
         {activeTab === "logs" && (
           <section className="bg-card border border-border rounded-xl shadow-sm p-6">
             <ActivityLogs />
+          </section>
+        )}
+
+        {activeTab === "license" && (
+          <section className="bg-card border border-border rounded-xl shadow-sm p-6">
+            <LicenseManagement />
           </section>
         )}
 

@@ -3,6 +3,10 @@ import fs from "fs";
 import path from "path";
 import { prisma } from "../../lib/database/prismaClient";
 import logger from "../../lib/logger";
+import {
+  clearStoredLicenseGrace,
+  LEGACY_LICENSE_OPTION_KEYS,
+} from "../utils/licenseGraceStore";
 
 // Backup directory path
 const getBackupDir = () => {
@@ -518,6 +522,11 @@ const restoreBackup = async (backupPath: string) => {
     } catch (connectError) {
       throw new Error(`Database connection failed after restore: ${connectError.message}`);
     }
+
+    clearStoredLicenseGrace();
+    await prisma.option.deleteMany({
+      where: { key: { in: [...LEGACY_LICENSE_OPTION_KEYS] } },
+    });
     
     logger.info("Database restored successfully", "Backup", {
       backupPath,

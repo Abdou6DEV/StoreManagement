@@ -52,9 +52,9 @@ export default function Login() {
   const completeLoginAfterDeviceCheck = useCallback(async () => {
     try {
       const r = await window.api.online.deviceCheck();
-      await checkLicense(r);
+      const isLicensed = await checkLicense(r);
 
-      if (r.success === true && r.allowed) {
+      if (isLicensed) {
         startPreloadAfterLicenseGate();
         setSuccessPhase("green_hold");
         return;
@@ -85,10 +85,11 @@ export default function Login() {
         }
       }
     } catch {
-      try {
-        await checkLicense();
-      } catch {
-        /* ignore */
+      const isLicensed = await checkLicense();
+      if (isLicensed) {
+        startPreloadAfterLicenseGate();
+        setSuccessPhase("green_hold");
+        return;
       }
       abandonPendingLogin();
       setError("login.internetRequiredToSignIn");

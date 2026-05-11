@@ -1,12 +1,17 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import type { DeviceCheckResult } from "../../electron/types/deviceCheck";
+import {
+  isOfflineLicenseAllowed,
+  readLicenseGraceSnapshot,
+  resolveLicenseValidityFromDeviceCheck,
+} from "../license/offlineGrace";
 import { LICENSE_RECHECK_AFTER_LOGIN_EVENT } from "../license/recheckEvents";
 
 interface LicenseContextType {
   isLicenseValid: boolean;
   isLoading: boolean;
   /** Pass `preFetched` to apply the result of a `device-check` you already awaited (avoids a duplicate request). */
-  checkLicense: (preFetched?: DeviceCheckResult) => Promise<void>;
+  checkLicense: (preFetched?: DeviceCheckResult) => Promise<boolean>;
 }
 
 const LicenseContext = createContext<LicenseContextType | undefined>(undefined);
@@ -20,15 +25,19 @@ export function LicenseProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(true);
 
       const online = preFetched ?? (await window.api.online.deviceCheck());
-
-      if (online.success === true) {
-        setIsLicenseValid(online.allowed);
-        return;
-      }
-
-      setIsLicenseValid(false);
+      const valid = await resolveLicenseValidityFromDeviceCheck(online);
+      setIsLicenseValid(valid);
+      return valid;
     } catch {
-      setIsLicenseValid(false);
+      try {
+        const snapshot = await readLicenseGraceSnapshot();
+        const valid = isOfflineLicenseAllowed(snapshot);
+        setIsLicenseValid(valid);
+        return valid;
+      } catch {
+        setIsLicenseValid(false);
+        return false;
+      }
     } finally {
       setIsLoading(false);
     }

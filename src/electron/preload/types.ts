@@ -447,9 +447,22 @@ export type OnboardingAPI = {
   }>;
 };
 
+export type LicenseGraceSnapshot = {
+  lastOkAtMs: number;
+  graceUntilMs: number;
+  trialEndsAtMs?: number;
+  expiresAtMs?: number;
+};
+
 export type OnlineAPI = {
   deviceCheck: () => Promise<DeviceCheckResult>;
   deviceRequest: (payload: DeviceRequestPayload) => Promise<DeviceRequestResult>;
+  readLicenseGrace: () => Promise<LicenseGraceSnapshot | null>;
+  persistLicenseGrace: (payload: {
+    trialEndsAt?: string | null;
+    expiresAt?: string | null;
+  }) => Promise<{ success: true } | { success: false; error: string }>;
+  clearLicenseGrace: () => Promise<{ success: true }>;
 };
 
 export type ActivityLogAPI = {

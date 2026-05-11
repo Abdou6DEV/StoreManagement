@@ -1,0 +1,63 @@
+import type { DeviceCheckResult } from "../../electron/types/deviceCheck";
+
+export const OFFLINE_GRACE_MS = 7 * 24 * 60 * 60 * 1000;
+
+export type LicenseGraceSnapshot = {
+  lastOkAtMs: number;
+  graceUntilMs: number;
+  trialEndsAtMs?: number;
+  expiresAtMs?: number;
+};
+
+export function getEffectiveOfflineDeadlineMs(
+  snapshot: LicenseGraceSnapshot,
+  nowMs: number = Date.now(),
+): number {
+  const candidates = [snapshot.graceUntilMs];
+  if (snapshot.trialEndsAtMs != null && snapshot.trialEndsAtMs > nowMs) {
+    candidates.push(snapshot.trialEndsAtMs);
+  }
+  if (snapshot.expiresAtMs != null) {
+    candidates.push(snapshot.expiresAtMs);
+  }
+  return Math.min(...candidates);
+}
+
+export function isOfflineLicenseAllowed(
+  snapshot: LicenseGraceSnapshot | null,
+  nowMs: number = Date.now(),
+): boolean {
+  if (!snapshot) return false;
+  return nowMs < getEffectiveOfflineDeadlineMs(snapshot);
+}
+
+export async function readLicenseGraceSnapshot(): Promise<LicenseGraceSnapshot | null> {
+  return window.api.online.readLicenseGrace();
+}
+
+export async function persistLicenseGraceFromAllowedCheck(
+  trialEndsAt?: string | null,
+  expiresAt?: string | null,
+): Promise<void> {
+  const result = await window.api.online.persistLicenseGrace({ trialEndsAt, expiresAt });
+  if (result.success === false) {
+    throw new Error(result.error);
+  }
+}
+
+export async function resolveLicenseValidityFromDeviceCheck(
+  result: DeviceCheckResult,
+): Promise<boolean> {
+  if (result.success === true) {
+    if (!result.allowed) return false;
+    await persistLicenseGraceFromAllowedCheck(result.trialEndsAt, result.expiresAt);
+    return true;
+  }
+
+  if (result.code === "network") {
+    const snapshot = await readLicenseGraceSnapshot();
+    return isOfflineLicenseAllowed(snapshot);
+  }
+
+  return false;
+}
