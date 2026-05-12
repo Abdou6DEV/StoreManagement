@@ -115,19 +115,6 @@ export default function AdministratorPage() {
           </div>
         </button>
         <button
-          onClick={() => setActiveTab("license")}
-          className={`px-4 py-2 font-medium transition-colors ${
-            activeTab === "license"
-              ? "border-b-2 border-orange-500 text-orange-600"
-              : "text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          <div className="flex items-center gap-2">
-            <Shield className="w-4 h-4" />
-            {t("admin.licenseTab", "License")}
-          </div>
-        </button>
-        <button
           onClick={() => setActiveTab("backup")}
           className={`px-4 py-2 font-medium transition-colors ${
             activeTab === "backup"
@@ -158,6 +145,19 @@ export default function AdministratorPage() {
             )}
           </div>
         </button>
+        <button
+          onClick={() => setActiveTab("license")}
+          className={`px-4 py-2 font-medium transition-colors ${
+            activeTab === "license"
+              ? "border-b-2 border-orange-500 text-orange-600"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <Shield className="w-4 h-4" />
+            {t("admin.licenseTab", "License")}
+          </div>
+        </button>
       </div>
 
       <FadeUp contentKey={`${activeTab}:${subTabFromUrl ?? ""}`}>
@@ -182,12 +182,6 @@ export default function AdministratorPage() {
           </section>
         )}
 
-        {activeTab === "license" && (
-          <section className="bg-card border border-border rounded-xl shadow-sm p-6">
-            <LicenseManagement />
-          </section>
-        )}
-
         {activeTab === "backup" && (
           <section className="bg-card border border-border rounded-xl shadow-sm p-6">
             <BackupManagement />
@@ -197,6 +191,12 @@ export default function AdministratorPage() {
         {activeTab === "updates" && (
           <section className="bg-card border border-border rounded-xl shadow-sm p-6">
             <UpdateManagement />
+          </section>
+        )}
+
+        {activeTab === "license" && (
+          <section className="bg-card border border-border rounded-xl shadow-sm p-6">
+            <LicenseManagement />
           </section>
         )}
       </FadeUp>

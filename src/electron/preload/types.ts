@@ -12,6 +12,7 @@ import {
 import { LogLevel } from "../../lib/logger/common";
 import type { DeviceRequestPayload, DeviceRequestResult } from "../types/deviceRequest";
 import type { DeviceCheckResult } from "../types/deviceCheck";
+import type { CloudBackupDownloadResult, CloudBackupUploadResult } from "../types/cloudBackup";
 
 export type SaleWithDetails = Sale & {
   client?: Client;
@@ -463,6 +464,8 @@ export type OnlineAPI = {
     expiresAt?: string | null;
   }) => Promise<{ success: true } | { success: false; error: string }>;
   clearLicenseGrace: () => Promise<{ success: true }>;
+  backupUploadLatest: (backupFilePath: string) => Promise<CloudBackupUploadResult>;
+  backupDownloadLatest: () => Promise<CloudBackupDownloadResult>;
 };
 
 export type ActivityLogAPI = {

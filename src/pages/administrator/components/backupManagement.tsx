@@ -11,7 +11,8 @@ import {
   Clock,
   HardDrive,
   Calendar,
-  FolderOpen
+  FolderOpen,
+  CloudUpload,
 } from "lucide-react";
 import { Button } from "../../../lib/components/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../../lib/components/card";
@@ -48,6 +49,7 @@ export function BackupManagement() {
   const [customPath, setCustomPath] = useState("");
   const [restoreFromFileDialogOpen, setRestoreFromFileDialogOpen] = useState(false);
   const [selectedRestoreFile, setSelectedRestoreFile] = useState("");
+  const [uploadingCloud, setUploadingCloud] = useState(false);
 
   // Load backups on component mount
   useEffect(() => {
@@ -82,6 +84,75 @@ export function BackupManagement() {
       console.error("Error loading backups:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const uploadToCloud = async () => {
+    try {
+      setUploadingCloud(true);
+      const created = await window.api.backup.createManual();
+      if (!created.success || !created.backupPath) {
+        showToast(
+          `${t("admin.backup.failedToCreateBackup", "Failed to create backup:")} ${created.error ?? ""}`,
+          "error",
+        );
+        return;
+      }
+
+      await loadBackups();
+      const uploaded = await window.api.online.backupUploadLatest(created.backupPath);
+      if (uploaded.success) {
+        showToast(t("admin.backup.cloudUploadSuccess", "Cloud backup uploaded successfully"), "success");
+        return;
+      }
+
+      if (uploaded.success === false) {
+        const normalizedError = uploaded.error.trim().toLowerCase();
+        if (uploaded.code === "missing_customer_id") {
+          showToast(
+            t(
+              "admin.backup.cloudUploadMissingCustomer",
+              "Customer ID is not recorded on this device. Complete welcome setup first.",
+            ),
+            "error",
+          );
+          return;
+        }
+        if (uploaded.code === "file_too_large" || normalizedError.includes("file_too_large")) {
+          showToast(
+            t("admin.backup.cloudUploadFileTooLarge", "This backup is too large to upload on the current plan."),
+            "error",
+          );
+          return;
+        }
+        if (normalizedError.includes("device_inactive")) {
+          showToast(
+            t(
+              "admin.backup.cloudUploadDeviceInactive",
+              "This device is not activated for paid cloud backup yet.",
+            ),
+            "error",
+          );
+          return;
+        }
+        if (uploaded.code === "missing_env") {
+          showToast(
+            t("admin.backup.cloudUploadNeedsOnline", "Online backup is not configured on this app build."),
+            "error",
+          );
+          return;
+        }
+
+        showToast(
+          `${t("admin.backup.cloudUploadFailed", "Failed to upload cloud backup")}: ${uploaded.error}`,
+          "error",
+        );
+      }
+    } catch (error) {
+      showToast(t("admin.backup.cloudUploadFailed", "Failed to upload cloud backup"), "error");
+      console.error("Error uploading cloud backup:", error);
+    } finally {
+      setUploadingCloud(false);
     }
   };
 
@@ -413,6 +484,22 @@ export function BackupManagement() {
            {t("admin.backup.backupToCustomPath", "Backup to Custom Path")}
          </Button>
          
+         <Button
+           onClick={() => void uploadToCloud()}
+           disabled={creatingBackup || uploadingCloud || !!restoring}
+           variant="outline"
+           className="flex items-center gap-2"
+         >
+           {uploadingCloud ? (
+             <RefreshCw className="w-4 h-4 animate-spin" />
+           ) : (
+             <CloudUpload className="w-4 h-4" />
+           )}
+           {uploadingCloud
+             ? t("admin.backup.uploadingToCloud", "Uploading to cloud...")
+             : t("admin.backup.uploadToCloud", "Upload to cloud")}
+         </Button>
+
          <Button
            onClick={() => setRestoreFromFileDialogOpen(true)}
            disabled={!!restoring}

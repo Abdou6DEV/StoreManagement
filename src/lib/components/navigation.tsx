@@ -32,6 +32,8 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../contexts/authContext";
 import { useNotifications } from "../hooks/useNotifications";
+import { TrialHeaderBanner } from "./trialHeaderBanner";
+import { PaidExpiryHeaderBanner } from "./paidExpiryHeaderBanner";
 import { useNavigate } from "react-router-dom";
 import { cn } from "../utils";
 import { useEffect, useRef } from "react";
@@ -206,7 +208,9 @@ export default function Navigation() {
         </h1>
 
         {/* === Notifications and Settings === */}
-        <div className="flex items-center gap-4 shrink-0">
+        <div className="flex items-center gap-3 shrink-0">
+          <TrialHeaderBanner className="hidden md:inline-flex" />
+          <PaidExpiryHeaderBanner className="hidden md:inline-flex" />
           {/* Notifications Dropdown */}
           <DropdownMenu onOpenChange={setNotificationsOpen}>
             <DropdownMenuTrigger asChild>

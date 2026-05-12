@@ -2,6 +2,10 @@ import { ipcRenderer } from "electron";
 import type { DeviceRequestPayload, DeviceRequestResult } from "../types/deviceRequest";
 import type { DeviceCheckResult } from "../types/deviceCheck";
 import type { LicenseGraceSnapshot } from "./types";
+import type {
+  CloudBackupDownloadResult,
+  CloudBackupUploadResult,
+} from "../types/cloudBackup";
 
 export const onlineAPI = {
   deviceCheck: () => ipcRenderer.invoke("online:deviceCheck") as Promise<DeviceCheckResult>,
@@ -15,4 +19,8 @@ export const onlineAPI = {
     >,
   clearLicenseGrace: () =>
     ipcRenderer.invoke("online:licenseGrace:clear") as Promise<{ success: true }>,
+  backupUploadLatest: (backupFilePath: string) =>
+    ipcRenderer.invoke("online:backupUploadLatest", backupFilePath) as Promise<CloudBackupUploadResult>,
+  backupDownloadLatest: () =>
+    ipcRenderer.invoke("online:backupDownloadLatest") as Promise<CloudBackupDownloadResult>,
 };

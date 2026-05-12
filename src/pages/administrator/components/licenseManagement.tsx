@@ -22,16 +22,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "../../../lib/component
 import { Badge } from "../../../lib/components/badge";
 import { Alert, AlertDescription } from "../../../lib/components/alert";
 import { useToast } from "../../../lib/contexts/toastContext";
+import { useLicense } from "../../../lib/contexts/licenseContext";
 import { ONLINE_CUSTOMER_ID_OPTION_KEY } from "../../../lib/onboarding/constants";
 import {
   getEffectiveOfflineDeadlineMs,
   isOfflineLicenseAllowed,
   readLicenseGraceSnapshot,
-  resolveLicenseValidityFromDeviceCheck,
   type LicenseGraceSnapshot,
 } from "../../../lib/license/offlineGrace";
 
 type AccessMode = "licensed_online" | "licensed_offline" | "not_licensed" | "unknown";
+
+const ONLINE_CHECK_COOLDOWN_MS = 60_000;
 
 function readCustomerIdFromCheck(result: DeviceCheckResult | null): string | null {
   if (!result || result.success !== true || !result.raw || typeof result.raw !== "object") {
@@ -96,52 +98,78 @@ function InfoRow({
 export function LicenseManagement() {
   const { t, i18n } = useTranslation();
   const { showToast } = useToast();
-  const [loading, setLoading] = useState(true);
+  const { isLicenseValid, lastDeviceCheckResult, applyDeviceCheckResult } = useLicense();
   const [refreshing, setRefreshing] = useState(false);
   const [nowMs, setNowMs] = useState(() => Date.now());
   const [isOnline, setIsOnline] = useState(() => navigator.onLine);
   const [deviceId, setDeviceId] = useState<string | null>(null);
   const [storedCustomerId, setStoredCustomerId] = useState<string | null>(null);
   const [snapshot, setSnapshot] = useState<LicenseGraceSnapshot | null>(null);
-  const [checkResult, setCheckResult] = useState<DeviceCheckResult | null>(null);
+  const [pageCheckResult, setPageCheckResult] = useState<DeviceCheckResult | null>(null);
+  const [lastOnlineCheckAtMs, setLastOnlineCheckAtMs] = useState<number | null>(null);
   const [copiedDeviceId, setCopiedDeviceId] = useState(false);
   const [copiedCustomerId, setCopiedCustomerId] = useState(false);
 
   const locale = i18n.language === "ar" ? "ar" : i18n.language === "fr" ? "fr" : "en";
 
-  const refreshLicense = useCallback(
-    async (showSpinner = true) => {
-      if (showSpinner) setRefreshing(true);
-      try {
-        const [machineResult, customerIdValue, deviceCheck] = await Promise.all([
-          window.api.system.getMachineId(),
-          window.api.database.options.get(ONLINE_CUSTOMER_ID_OPTION_KEY),
-          window.api.online.deviceCheck(),
-        ]);
+  const loadSavedLicense = useCallback(async () => {
+    try {
+      const [machineResult, customerIdValue, localSnapshot] = await Promise.all([
+        window.api.system.getMachineId(),
+        window.api.database.options.get(ONLINE_CUSTOMER_ID_OPTION_KEY),
+        readLicenseGraceSnapshot(),
+      ]);
 
-        setDeviceId(machineResult.success ? machineResult.machineId ?? null : null);
-        setStoredCustomerId(customerIdValue?.trim() || null);
-        setCheckResult(deviceCheck);
-        await resolveLicenseValidityFromDeviceCheck(deviceCheck);
-        setSnapshot(await readLicenseGraceSnapshot());
-      } catch {
-        setCheckResult(null);
-      } finally {
-        setLoading(false);
-        setRefreshing(false);
-      }
-    },
-    [],
-  );
+      setDeviceId(machineResult.success ? machineResult.machineId ?? null : null);
+      setStoredCustomerId(customerIdValue?.trim() || null);
+      setSnapshot(localSnapshot);
+    } catch {
+      setSnapshot(null);
+    }
+  }, []);
+
+  const checkOnlineLicense = useCallback(async () => {
+    if (refreshing) return;
+    if (
+      lastOnlineCheckAtMs != null &&
+      Date.now() < lastOnlineCheckAtMs + ONLINE_CHECK_COOLDOWN_MS
+    ) {
+      return;
+    }
+
+    setRefreshing(true);
+    try {
+      const deviceCheck = await window.api.online.deviceCheck();
+      setPageCheckResult(deviceCheck);
+      await applyDeviceCheckResult(deviceCheck);
+      setSnapshot(await readLicenseGraceSnapshot());
+      setLastOnlineCheckAtMs(Date.now());
+    } catch {
+      setPageCheckResult(null);
+      showToast(
+        t("admin.license.checkOnlineFailed", "Could not complete the online license check"),
+        "error",
+      );
+    } finally {
+      setRefreshing(false);
+    }
+  }, [applyDeviceCheckResult, lastOnlineCheckAtMs, refreshing, showToast, t]);
 
   useEffect(() => {
-    void refreshLicense(false);
-  }, [refreshLicense]);
+    void loadSavedLicense();
+  }, [loadSavedLicense]);
 
   useEffect(() => {
     const timer = window.setInterval(() => setNowMs(Date.now()), 60_000);
     return () => window.clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    if (lastOnlineCheckAtMs == null) return;
+    if (Date.now() >= lastOnlineCheckAtMs + ONLINE_CHECK_COOLDOWN_MS) return;
+    const timer = window.setInterval(() => setNowMs(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, [lastOnlineCheckAtMs]);
 
   useEffect(() => {
     const syncOnline = () => setIsOnline(navigator.onLine);
@@ -153,35 +181,49 @@ export function LicenseManagement() {
     };
   }, []);
 
-  const remoteCustomerId = useMemo(() => readCustomerIdFromCheck(checkResult), [checkResult]);
+  const effectiveCheckResult = pageCheckResult ?? lastDeviceCheckResult;
+
+  const remoteCustomerId = useMemo(
+    () => readCustomerIdFromCheck(effectiveCheckResult),
+    [effectiveCheckResult],
+  );
   const customerId = remoteCustomerId ?? storedCustomerId;
 
+  const onlineCheckCooldownRemainingMs = useMemo(() => {
+    if (lastOnlineCheckAtMs == null) return 0;
+    return Math.max(0, lastOnlineCheckAtMs + ONLINE_CHECK_COOLDOWN_MS - nowMs);
+  }, [lastOnlineCheckAtMs, nowMs]);
+
   const accessMode: AccessMode = useMemo(() => {
-    if (!checkResult) return "unknown";
-    if (checkResult.success === true) {
-      return checkResult.allowed ? "licensed_online" : "not_licensed";
+    if (!effectiveCheckResult) {
+      if (!snapshot) return "unknown";
+      if (!isOfflineLicenseAllowed(snapshot, nowMs)) return "not_licensed";
+      return isLicenseValid ? "licensed_online" : "licensed_offline";
     }
-    if (checkResult.code === "network" && isOfflineLicenseAllowed(snapshot, nowMs)) {
+    if (effectiveCheckResult.success === true) {
+      return effectiveCheckResult.allowed ? "licensed_online" : "not_licensed";
+    }
+    if (effectiveCheckResult.code === "network" && isOfflineLicenseAllowed(snapshot, nowMs)) {
       return "licensed_offline";
     }
     return "not_licensed";
-  }, [checkResult, snapshot, nowMs]);
+  }, [effectiveCheckResult, isLicenseValid, snapshot, nowMs]);
 
   const trialEndsAtMs = useMemo(() => {
-    if (checkResult?.success === true && checkResult.trialEndsAt) {
-      const parsed = Date.parse(checkResult.trialEndsAt);
+    if (effectiveCheckResult?.success === true && effectiveCheckResult.trialEndsAt) {
+      const parsed = Date.parse(effectiveCheckResult.trialEndsAt);
       if (Number.isFinite(parsed)) return parsed;
     }
     return snapshot?.trialEndsAtMs ?? null;
-  }, [checkResult, snapshot]);
+  }, [effectiveCheckResult, snapshot]);
 
   const subscriptionEndsAtMs = useMemo(() => {
-    if (checkResult?.success === true && checkResult.expiresAt) {
-      const parsed = Date.parse(checkResult.expiresAt);
+    if (effectiveCheckResult?.success === true && effectiveCheckResult.expiresAt) {
+      const parsed = Date.parse(effectiveCheckResult.expiresAt);
       if (Number.isFinite(parsed)) return parsed;
     }
     return snapshot?.expiresAtMs ?? null;
-  }, [checkResult, snapshot]);
+  }, [effectiveCheckResult, snapshot]);
 
   const effectiveOfflineDeadlineMs = snapshot ? getEffectiveOfflineDeadlineMs(snapshot) : null;
   const isTrialActive =
@@ -258,29 +300,23 @@ export function LicenseManagement() {
     },
     unknown: {
       icon: Shield,
-      badge: t("admin.license.statusUnknown", "Checking"),
+      badge: t("admin.license.statusUnknown", "Not checked online"),
       badgeClass: "bg-muted text-muted-foreground border-border",
-      title: t("admin.license.statusUnknownTitle", "License status is still loading"),
+      title: t("admin.license.statusUnknownTitle", "No online check on this page yet"),
       description: t(
         "admin.license.statusUnknownDescription",
-        "Refresh this page to run another online license check.",
+        "Review the saved dates below, or use Check online in the top right for a current server result. Online checks are limited to once per minute.",
       ),
     },
   }[accessMode];
 
   const StatusIcon = statusMeta.icon;
   const checkError =
-    checkResult && checkResult.success === false && checkResult.code !== "network"
-      ? checkResult.error
+    effectiveCheckResult &&
+    effectiveCheckResult.success === false &&
+    effectiveCheckResult.code !== "network"
+      ? effectiveCheckResult.error
       : null;
-
-  if (loading) {
-    return (
-      <div className="flex min-h-[320px] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
@@ -300,8 +336,8 @@ export function LicenseManagement() {
         <Button
           type="button"
           variant="outline"
-          onClick={() => void refreshLicense()}
-          disabled={refreshing}
+          onClick={() => void checkOnlineLicense()}
+          disabled={refreshing || onlineCheckCooldownRemainingMs > 0}
           className="shrink-0"
         >
           {refreshing ? (
@@ -309,7 +345,11 @@ export function LicenseManagement() {
           ) : (
             <RefreshCw className="mr-2 h-4 w-4" />
           )}
-          {t("admin.license.refresh", "Refresh status")}
+          {onlineCheckCooldownRemainingMs > 0
+            ? t("admin.license.checkOnlineCooldown", "Check online ({{seconds}}s)", {
+                seconds: Math.ceil(onlineCheckCooldownRemainingMs / 1000),
+              })
+            : t("admin.license.checkOnline", "Check online")}
         </Button>
       </div>
 
@@ -431,8 +471,8 @@ export function LicenseManagement() {
             <InfoRow
               label={t("admin.license.serverAllowed", "Server result")}
               value={
-                checkResult?.success === true
-                  ? checkResult.allowed
+                effectiveCheckResult?.success === true
+                  ? effectiveCheckResult.allowed
                     ? t("admin.license.allowedYes", "Allowed")
                     : t("admin.license.allowedNo", "Not allowed")
                   : t("admin.license.unavailable", "Unavailable")
