@@ -121,6 +121,9 @@ function parseDeviceCheckJson(json: unknown): {
   allowed: boolean;
   trialEndsAt?: string | null;
   expiresAt?: string | null;
+  customerId?: string | null;
+  customerName?: string | null;
+  customerPhone?: string | null;
 } | null {
   if (!json || typeof json !== "object") return null;
   const o = json as Record<string, unknown>;
@@ -140,7 +143,39 @@ function parseDeviceCheckJson(json: unknown): {
     else if (o.expires_at !== undefined) expiresAt = String(o.expires_at);
   }
 
-  return { allowed: o.allowed, trialEndsAt, expiresAt };
+  let customerId: string | null | undefined;
+  if ("customer_id" in o) {
+    if (o.customer_id === null) customerId = null;
+    else if (typeof o.customer_id === "string") customerId = o.customer_id.trim() || null;
+    else if (o.customer_id !== undefined) customerId = String(o.customer_id).trim() || null;
+  }
+
+  let customerName: string | null | undefined;
+  let customerPhone: string | null | undefined;
+  if (typeof o.customer_name === "string" && o.customer_name.trim()) {
+    customerName = o.customer_name.trim();
+  }
+  if (typeof o.customer_phone === "string" && o.customer_phone.trim()) {
+    customerPhone = o.customer_phone.trim();
+  }
+  if (o.customer && typeof o.customer === "object") {
+    const c = o.customer as Record<string, unknown>;
+    if (customerName == null && typeof c.name === "string" && c.name.trim()) {
+      customerName = c.name.trim();
+    }
+    if (customerPhone == null && typeof c.phone === "string" && c.phone.trim()) {
+      customerPhone = c.phone.trim();
+    }
+  }
+
+  return {
+    allowed: o.allowed,
+    trialEndsAt,
+    expiresAt,
+    customerId,
+    customerName,
+    customerPhone,
+  };
 }
 
 export function setupOnlineHandlers(): void {
@@ -211,6 +246,9 @@ export function setupOnlineHandlers(): void {
         allowed: parsed.allowed,
         trialEndsAt: parsed.trialEndsAt,
         expiresAt: parsed.expiresAt,
+        customerId: parsed.customerId,
+        customerName: parsed.customerName,
+        customerPhone: parsed.customerPhone,
         raw: json,
       };
     } catch (e) {

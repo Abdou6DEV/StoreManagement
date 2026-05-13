@@ -14,6 +14,7 @@ export type WelcomeSectionNavProps = {
   onNavigate: (sectionId: string) => void;
   isRTL: boolean;
   className?: string;
+  style?: React.CSSProperties;
 };
 
 export function WelcomeSectionNav({
@@ -22,6 +23,7 @@ export function WelcomeSectionNav({
   onNavigate,
   isRTL,
   className,
+  style,
 }: WelcomeSectionNavProps) {
   const { t } = useTranslation();
 
@@ -32,6 +34,7 @@ export function WelcomeSectionNav({
         "pointer-events-none fixed inset-x-0 top-0 z-40 hidden justify-center px-4 sm:top-0 sm:px-6 xl:flex",
         className,
       )}
+      style={style}
     >
       <ul
         className={cn(

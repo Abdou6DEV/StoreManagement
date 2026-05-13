@@ -16,6 +16,7 @@ export type WelcomeJourneyNavProps = {
   onBackToTop: () => void;
   isRTL?: boolean;
   className?: string;
+  style?: React.CSSProperties;
 };
 
 export function WelcomeJourneyNav({
@@ -25,6 +26,7 @@ export function WelcomeJourneyNav({
   onBackToTop,
   isRTL = false,
   className,
+  style,
 }: WelcomeJourneyNavProps) {
   const { t } = useTranslation();
   const [isNearPageEnd, setIsNearPageEnd] = useState(false);
@@ -149,6 +151,7 @@ export function WelcomeJourneyNav({
         isRTL ? "right-4 sm:right-5" : "left-4 sm:left-5",
         className,
       )}
+      style={style}
     >
       <div
         className={cn(

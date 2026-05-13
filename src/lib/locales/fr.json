@@ -2795,6 +2795,16 @@
     "serverUnreachable": "Nous n’avons pas pu joindre nos serveurs. Vérifiez votre connexion Internet et réessayez. Si le problème persiste, attendez quelques minutes ou contactez le support.",
     "provisioningSuccessTrial": "Cet appareil est enregistré. Poursuivez vers la connexion.",
     "provisioningSuccessRestore": "Cet appareil est lié. Connectez-vous pour terminer la restauration.",
+    "devicePrecheckLoading": "Vérification si cet appareil est déjà enregistré…",
+    "registeredDeviceBadge": "Appareil enregistré",
+    "registeredDeviceTitle": "Cet appareil est déjà enregistré",
+    "registeredDeviceDescriptionBoth": "Cet appareil est déjà enregistré sous <highlight>{{name}}</highlight> ({{phone}}). Vous pouvez continuer vers la connexion.",
+    "registeredDeviceDescriptionName": "Cet appareil est déjà enregistré sous <highlight>{{name}}</highlight>. Vous pouvez continuer vers la connexion.",
+    "registeredDeviceDescriptionPhone": "Cet appareil est déjà enregistré avec le numéro {{phone}}. Vous pouvez continuer vers la connexion.",
+    "registeredDeviceDescriptionGeneric": "Cet appareil est déjà enregistré dans notre système. Vous pouvez continuer vers la connexion.",
+    "continueToApp": "Continuer vers l'application",
+    "continuing": "Continuation…",
+    "continueToAppToast": "Continuation — vous pourrez vous connecter à l'écran suivant.",
     "trialNextStep": "Étape suivante : connecter cet écran au serveur (device request).",
     "restoreNextStep": "Étape suivante : liaison d’appareil + restauration cloud via IPC."
   }

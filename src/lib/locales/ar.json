@@ -2858,6 +2858,16 @@
     "serverUnreachable": "تعذّر الوصول إلى خوادمنا. تحقق من اتصال الإنترنت وحاول مرة أخرى. إن استمرت المشكلة، انتظر قليلاً أو تواصل مع الدعم.",
     "provisioningSuccessTrial": "تم تسجيل هذا الجهاز. تابع إلى تسجيل الدخول.",
     "provisioningSuccessRestore": "تم ربط هذا الجهاز. سجّل الدخول لإكمال الاستعادة.",
+    "devicePrecheckLoading": "جارٍ التحقق مما إذا كان هذا الجهاز مسجّلاً مسبقاً…",
+    "registeredDeviceBadge": "جهاز مسجّل",
+    "registeredDeviceTitle": "هذا الجهاز مسجّل مسبقاً",
+    "registeredDeviceDescriptionBoth": "هذا الجهاز مسجّل مسبقاً باسم <highlight>{{name}}</highlight> ({{phone}}). يمكنك المتابعة إلى تسجيل الدخول.",
+    "registeredDeviceDescriptionName": "هذا الجهاز مسجّل مسبقاً باسم <highlight>{{name}}</highlight>. يمكنك المتابعة إلى تسجيل الدخول.",
+    "registeredDeviceDescriptionPhone": "هذا الجهاز مسجّل مسبقاً برقم {{phone}}. يمكنك المتابعة إلى تسجيل الدخول.",
+    "registeredDeviceDescriptionGeneric": "هذا الجهاز مسجّل مسبقاً في نظامنا. يمكنك المتابعة إلى تسجيل الدخول.",
+    "continueToApp": "متابعة إلى التطبيق",
+    "continuing": "جارٍ المتابعة…",
+    "continueToAppToast": "جارٍ المتابعة — يمكنك تسجيل الدخول في الشاشة التالية.",
     "trialNextStep": "الخطوة التالية: ربط هذه الشاشة بالخادم (طلب الجهاز).",
     "restoreNextStep": "الخطوة التالية: ربط الجهاز والاستعادة من السحابة عبر IPC."
   }

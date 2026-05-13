@@ -2878,6 +2878,16 @@
     "serverUnreachable": "We could not reach our servers. Check your internet connection and try again. If this continues, wait a few minutes or contact support.",
     "provisioningSuccessTrial": "This device is registered. Continue to log in.",
     "provisioningSuccessRestore": "This device is linked. Continue to log in to finish restore.",
+    "devicePrecheckLoading": "Checking whether this device is already registered…",
+    "registeredDeviceBadge": "Registered device",
+    "registeredDeviceTitle": "This device is already registered",
+    "registeredDeviceDescriptionBoth": "This device is already registered under <highlight>{{name}}</highlight> ({{phone}}). You can continue to sign in.",
+    "registeredDeviceDescriptionName": "This device is already registered under <highlight>{{name}}</highlight>. You can continue to sign in.",
+    "registeredDeviceDescriptionPhone": "This device is already registered with phone {{phone}}. You can continue to sign in.",
+    "registeredDeviceDescriptionGeneric": "This device is already registered in our system. You can continue to sign in.",
+    "continueToApp": "Continue to the app",
+    "continuing": "Continuing…",
+    "continueToAppToast": "Continuing — you can sign in on the next screen.",
     "trialNextStep": "Next step: connect this screen to the server (device request).",
     "restoreNextStep": "Next step: device link + cloud restore over IPC."
   }

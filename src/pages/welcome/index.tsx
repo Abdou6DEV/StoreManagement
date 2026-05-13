@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useState } from "react";
-import { useTranslation } from "react-i18next";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Trans, useTranslation } from "react-i18next";
 import {
   Code,
   FileText,
@@ -15,6 +15,8 @@ import {
   KeyRound,
   LifeBuoy,
   Rocket,
+  ArrowRight,
+  Loader2,
 } from "lucide-react";
 import { useTheme } from "../../lib/hooks/useTheme";
 import { cn } from "../../lib/utils";
@@ -90,6 +92,149 @@ const WELCOME_PRICING_SCROLL_EXTRA_UP_PX = 20;
 const WELCOME_TECHNICAL_SCROLL_EXTRA_DOWN_PX = 110;
 const WELCOME_LEGAL_SCROLL_EXTRA_DOWN_PX = 90;
 
+type WelcomeInKind = "fadeUp" | "slide";
+
+type WelcomeDevicePrecheck = "loading" | "new_device" | "existing_device";
+
+/** Strict top-to-bottom order: only one segment animates at a time (`introStep` advances on `animationend`). */
+const SEQ = {
+  heroGlow: 0,
+  logo: 1,
+  title: 2,
+  subtitle: 3,
+  aboutLine: 4,
+  badges: 5,
+  card: 6,
+  keyIntro: 7,
+  keyCarousel: 8,
+  techIntro: 9,
+  techTiles: 10,
+  techCarousel: 11,
+  pricing: 12,
+  devCard: 13,
+  legal: 14,
+  footer: 15,
+} as const;
+
+const INTRO_STEP_COUNT = 16;
+const SEQ_ANIM_S = 0.38;
+const SEQ_ANIM_MS = Math.round(SEQ_ANIM_S * 1000);
+const WELCOME_IN_EASE = "cubic-bezier(0.25, 0.46, 0.45, 0.94)";
+
+function welcomeSeqStyle(reduceMotion: boolean, kind: WelcomeInKind, isRTL: boolean): React.CSSProperties {
+  if (reduceMotion) return { opacity: 1 };
+  const dur = `${SEQ_ANIM_S}s`;
+  const name =
+    kind === "fadeUp"
+      ? "welcomeInFadeUp"
+      : isRTL
+        ? "welcomeInSlideRtl"
+        : "welcomeInSlideLtr";
+  return {
+    opacity: 0,
+    animation: `${name} ${dur} ${WELCOME_IN_EASE} 0s forwards`,
+  };
+}
+
+type SequentialIntroSlotProps = {
+  stepIndex: number;
+  introStep: number;
+  reduceMotion: boolean;
+  isRTL: boolean;
+  kind: WelcomeInKind;
+  onStepComplete: () => void;
+  /** Until this step: render nothing (saves heavy trees until needed). */
+  defer?: boolean;
+  className?: string;
+  children: React.ReactNode;
+  /**
+   * When set, the slot does not run the outer entrance animation; `onStepComplete` runs after this delay
+   * while the step is active (use when the visible entrance is handled inside `children`).
+   */
+  advanceIntroAfterMs?: number;
+};
+
+function SequentialIntroSlot({
+  stepIndex,
+  introStep,
+  reduceMotion,
+  isRTL,
+  kind,
+  onStepComplete,
+  defer,
+  className,
+  children,
+  advanceIntroAfterMs,
+}: SequentialIntroSlotProps) {
+  const ref = useRef<HTMLDivElement>(null);
+  const completedRef = useRef(false);
+  const done = stepIndex < introStep;
+  const active = stepIndex === introStep && introStep < INTRO_STEP_COUNT;
+  const waiting = stepIndex > introStep;
+
+  useEffect(() => {
+    if (reduceMotion || !active) {
+      completedRef.current = false;
+      return;
+    }
+    completedRef.current = false;
+
+    if (advanceIntroAfterMs != null) {
+      const id = window.setTimeout(() => {
+        if (completedRef.current) return;
+        completedRef.current = true;
+        onStepComplete();
+      }, advanceIntroAfterMs);
+      return () => {
+        window.clearTimeout(id);
+        completedRef.current = false;
+      };
+    }
+
+    const node = ref.current;
+    if (!node) return;
+    const onEnd = (e: AnimationEvent) => {
+      if (e.target !== node) return;
+      if (!String(e.animationName || "").includes("welcomeIn")) return;
+      if (completedRef.current) return;
+      completedRef.current = true;
+      onStepComplete();
+    };
+    node.addEventListener("animationend", onEnd);
+    return () => node.removeEventListener("animationend", onEnd);
+  }, [active, reduceMotion, onStepComplete, advanceIntroAfterMs]);
+
+  if (reduceMotion) {
+    return <div className={className}>{children}</div>;
+  }
+
+  if (waiting && defer) {
+    return null;
+  }
+
+  if (waiting) {
+    return null;
+  }
+
+  if (done) {
+    return <div className={className}>{children}</div>;
+  }
+
+  if (advanceIntroAfterMs != null) {
+    return (
+      <div ref={ref} className={className}>
+        {children}
+      </div>
+    );
+  }
+
+  return (
+    <div ref={ref} className={className} style={welcomeSeqStyle(false, kind, isRTL)}>
+      {children}
+    </div>
+  );
+}
+
 function isConnectivityErrorText(message: string): boolean {
   const s = message.toLowerCase();
   return (
@@ -158,6 +303,11 @@ export default function WelcomeSetup() {
     WELCOME_SECTION_NAV_ITEMS[0].id,
   );
   const [reduceMotion, setReduceMotion] = useState(false);
+  const [introStep, setIntroStep] = useState(0);
+  const [devicePrecheck, setDevicePrecheck] = useState<WelcomeDevicePrecheck>("loading");
+  const [precheckCustomerId, setPrecheckCustomerId] = useState<string | null>(null);
+  const [precheckCustomerName, setPrecheckCustomerName] = useState<string | null>(null);
+  const [precheckCustomerPhone, setPrecheckCustomerPhone] = useState<string | null>(null);
 
   useEffect(() => {
     const goOnline = () => setOnline(true);
@@ -171,11 +321,83 @@ export default function WelcomeSetup() {
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
+
+    const run = async () => {
+      if (typeof navigator !== "undefined" && !navigator.onLine) {
+        setDevicePrecheck("new_device");
+        setPrecheckCustomerId(null);
+        setPrecheckCustomerName(null);
+        setPrecheckCustomerPhone(null);
+        return;
+      }
+
+      setDevicePrecheck("loading");
+      try {
+        const r = await window.api.online.deviceCheck();
+        if (cancelled || (typeof navigator !== "undefined" && !navigator.onLine)) {
+          setDevicePrecheck("new_device");
+          setPrecheckCustomerId(null);
+          setPrecheckCustomerName(null);
+          setPrecheckCustomerPhone(null);
+          return;
+        }
+
+        if (r.success === false) {
+          setDevicePrecheck("new_device");
+          setPrecheckCustomerId(null);
+          setPrecheckCustomerName(null);
+          setPrecheckCustomerPhone(null);
+          return;
+        }
+
+        const cid =
+          typeof r.customerId === "string" && r.customerId.trim() ? r.customerId.trim() : null;
+        if (cid) {
+          setPrecheckCustomerId(cid);
+          const nm =
+            typeof r.customerName === "string" && r.customerName.trim() ? r.customerName.trim() : null;
+          const ph =
+            typeof r.customerPhone === "string" && r.customerPhone.trim() ? r.customerPhone.trim() : null;
+          setPrecheckCustomerName(nm);
+          setPrecheckCustomerPhone(ph);
+          setDevicePrecheck("existing_device");
+        } else {
+          setPrecheckCustomerId(null);
+          setPrecheckCustomerName(null);
+          setPrecheckCustomerPhone(null);
+          setDevicePrecheck("new_device");
+        }
+      } catch {
+        if (!cancelled) {
+          setDevicePrecheck("new_device");
+          setPrecheckCustomerId(null);
+          setPrecheckCustomerName(null);
+          setPrecheckCustomerPhone(null);
+        }
+      }
+    };
+
+    void run();
+    return () => {
+      cancelled = true;
+    };
+  }, [online]);
+
+  useEffect(() => {
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const update = () => setReduceMotion(mq.matches);
+    const update = () => {
+      const reduced = mq.matches;
+      setReduceMotion(reduced);
+      if (reduced) setIntroStep(INTRO_STEP_COUNT);
+    };
     update();
     mq.addEventListener("change", update);
     return () => mq.removeEventListener("change", update);
+  }, []);
+
+  const advanceIntro = useCallback(() => {
+    setIntroStep((s) => Math.min(s + 1, INTRO_STEP_COUNT));
   }, []);
 
   useEffect(() => {
@@ -325,6 +547,55 @@ export default function WelcomeSetup() {
     window.dispatchEvent(new Event(INITIAL_WELCOME_DONE_EVENT));
   };
 
+  const registeredIntroDescription = useMemo(() => {
+    const highlight = <span className="font-semibold text-green-700 not-italic" />;
+    if (precheckCustomerName && precheckCustomerPhone) {
+      return (
+        <Trans
+          i18nKey="welcome.registeredDeviceDescriptionBoth"
+          components={{ highlight }}
+          values={{ name: precheckCustomerName, phone: precheckCustomerPhone }}
+        />
+      );
+    }
+    if (precheckCustomerName) {
+      return (
+        <Trans
+          i18nKey="welcome.registeredDeviceDescriptionName"
+          components={{ highlight }}
+          values={{ name: precheckCustomerName }}
+        />
+      );
+    }
+    if (precheckCustomerPhone) {
+      return t(
+        "welcome.registeredDeviceDescriptionPhone",
+        "This device is already registered with phone {{phone}}. You can continue to sign in.",
+        { phone: precheckCustomerPhone },
+      );
+    }
+    return t(
+      "welcome.registeredDeviceDescriptionGeneric",
+      "This device is already registered in our system. Continue to sign in. If you still need to start a new trial or restore from the cloud for another shop, use the options below.",
+    );
+  }, [precheckCustomerName, precheckCustomerPhone, t]);
+
+  const handleContinueRegisteredDevice = async () => {
+    const cid = precheckCustomerId?.trim();
+    if (!cid) return;
+    setBusy(true);
+    try {
+      showToast(
+        t("welcome.continueToAppToast", "Continuing — you can sign in on the next screen."),
+        "success",
+      );
+      await new Promise((r) => setTimeout(r, WELCOME_SUCCESS_TOAST_VISIBLE_MS));
+      await finishWelcomeAfterProvisioning(cid);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const handleStartTrial = async () => {
     const name = fullName.trim();
     const ph = sanitizeWelcomePhoneInput(phone).trim();
@@ -422,12 +693,44 @@ export default function WelcomeSetup() {
   return (
     <div
       dir={isRTL ? "rtl" : "ltr"}
-      className={cn(
-        "min-h-screen bg-background pb-16 text-foreground xl:pt-24",
-        "animate-in fade-in duration-500 motion-reduce:animate-none motion-reduce:opacity-100",
-      )}
+      className="welcome-intro-scope min-h-screen bg-background pb-16 text-foreground xl:pt-24"
       style={{ direction: isRTL ? "rtl" : "ltr" }}
     >
+      <style>{`
+        @keyframes welcomeInFadeUp {
+          from {
+            opacity: 0;
+            transform: translate3d(0, 12px, 0);
+          }
+          to {
+            opacity: 1;
+            transform: translate3d(0, 0, 0);
+          }
+        }
+        .welcome-gs-body-fadeup {
+          animation: welcomeInFadeUp ${SEQ_ANIM_S}s ${WELCOME_IN_EASE} 0s both;
+        }
+        @keyframes welcomeInSlideLtr {
+          from {
+            opacity: 0;
+            transform: translate3d(-22px, 12px, 0);
+          }
+          to {
+            opacity: 1;
+            transform: translate3d(0, 0, 0);
+          }
+        }
+        @keyframes welcomeInSlideRtl {
+          from {
+            opacity: 0;
+            transform: translate3d(22px, 12px, 0);
+          }
+          to {
+            opacity: 1;
+            transform: translate3d(0, 0, 0);
+          }
+        }
+      `}</style>
       <WelcomeSectionNav
         items={WELCOME_SECTION_NAV_ITEMS}
         activeId={activeNavSectionId}
@@ -514,75 +817,162 @@ export default function WelcomeSetup() {
 
       <section
         id="welcome-hero"
-        className={cn("relative overflow-hidden border-b border-border/60", WELCOME_SECTION_SCROLL_MARGIN)}
+        className={cn(
+          "relative overflow-hidden",
+          introStep >= SEQ.keyIntro && "border-b border-border/60",
+          WELCOME_SECTION_SCROLL_MARGIN,
+        )}
       >
-        <div
+        <SequentialIntroSlot
+          stepIndex={SEQ.heroGlow}
+          introStep={introStep}
+          reduceMotion={reduceMotion}
+          isRTL={isRTL}
+          kind="fadeUp"
+          onStepComplete={advanceIntro}
           className="pointer-events-none absolute -left-24 top-0 h-72 w-72 rounded-full bg-primary/10 blur-3xl"
-          aria-hidden
-        />
+        >
+          <span aria-hidden className="block h-full w-full" />
+        </SequentialIntroSlot>
         <div className="relative mx-auto max-w-6xl px-4 pb-14 pt-12 sm:px-6 sm:pb-16 sm:pt-16 lg:grid lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:items-start lg:gap-12 lg:pb-20 lg:pt-20">
           <div className="text-center lg:text-start">
-            <img
-              src={isDark ? LOGO_ICON : LOGO_ICON_DARK}
-              alt=""
-              className="mx-auto mb-6 h-28 w-28 object-contain select-none sm:h-32 sm:w-32 lg:mx-0"
-            />
-            <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl lg:text-[2.5rem] lg:leading-tight">
-              {t("welcome.title", "Welcome to REDA TECH Store Management")}
-            </h1>
-            <p className="mx-auto mt-4 max-w-xl text-base text-muted-foreground sm:text-lg lg:mx-0">
-              {t(
-                "welcome.subtitle",
-                "Set up this computer for the first time. Choose a new shop trial or restore your data if you already use the app elsewhere.",
-              )}
-            </p>
-            <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-muted-foreground/90 lg:mx-0">
-              {t(
-                "about.subtitle",
-                "A comprehensive store management solution designed to streamline your business operations with modern technology and intuitive design.",
-              )}
-            </p>
-            <div className="mt-6 flex flex-wrap items-center justify-center gap-2 lg:justify-start">
-              <span className="rounded-full border border-border/70 bg-card/80 px-3 py-1 text-xs font-medium text-foreground backdrop-blur-sm">
-                {t("about.version", "Version")} v{appVersion}
-              </span>
-              <span className="rounded-full border border-border/70 bg-card/80 px-3 py-1 text-xs font-medium text-muted-foreground backdrop-blur-sm">
-                {t("about.platform", "Platform")}: Desktop
-              </span>
-              <span className="rounded-full border border-border/70 bg-card/80 px-3 py-1 text-xs font-medium text-muted-foreground backdrop-blur-sm">
-                Electron + React + TypeScript
-              </span>
-              <span className="rounded-full border border-border/70 bg-card/80 px-3 py-1 text-xs font-medium text-muted-foreground backdrop-blur-sm">
-                {t("about.database", "Database")}: SQLite
-              </span>
-            </div>
+            <SequentialIntroSlot
+              stepIndex={SEQ.logo}
+              introStep={introStep}
+              reduceMotion={reduceMotion}
+              isRTL={isRTL}
+              kind="slide"
+              onStepComplete={advanceIntro}
+            >
+              <img
+                src={isDark ? LOGO_ICON : LOGO_ICON_DARK}
+                alt=""
+                className="mx-auto mb-6 h-28 w-28 object-contain select-none sm:h-32 sm:w-32 lg:mx-0"
+              />
+            </SequentialIntroSlot>
+            <SequentialIntroSlot
+              stepIndex={SEQ.title}
+              introStep={introStep}
+              reduceMotion={reduceMotion}
+              isRTL={isRTL}
+              kind="slide"
+              onStepComplete={advanceIntro}
+            >
+              <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl lg:text-[2.5rem] lg:leading-tight">
+                {t("welcome.title", "Welcome to REDA TECH Store Management")}
+              </h1>
+            </SequentialIntroSlot>
+            <SequentialIntroSlot
+              stepIndex={SEQ.subtitle}
+              introStep={introStep}
+              reduceMotion={reduceMotion}
+              isRTL={isRTL}
+              kind="fadeUp"
+              onStepComplete={advanceIntro}
+            >
+              <p className="mx-auto mt-4 max-w-xl text-base text-muted-foreground sm:text-lg lg:mx-0">
+                {t(
+                  "welcome.subtitle",
+                  "Set up this computer for the first time. Choose a new shop trial or restore your data if you already use the app elsewhere.",
+                )}
+              </p>
+            </SequentialIntroSlot>
+            <SequentialIntroSlot
+              stepIndex={SEQ.aboutLine}
+              introStep={introStep}
+              reduceMotion={reduceMotion}
+              isRTL={isRTL}
+              kind="fadeUp"
+              onStepComplete={advanceIntro}
+            >
+              <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-muted-foreground/90 lg:mx-0">
+                {t(
+                  "about.subtitle",
+                  "A comprehensive store management solution designed to streamline your business operations with modern technology and intuitive design.",
+                )}
+              </p>
+            </SequentialIntroSlot>
+            <SequentialIntroSlot
+              stepIndex={SEQ.badges}
+              introStep={introStep}
+              reduceMotion={reduceMotion}
+              isRTL={isRTL}
+              kind="fadeUp"
+              onStepComplete={advanceIntro}
+            >
+              <div className="mt-6 flex flex-wrap items-center justify-center gap-2 lg:justify-start">
+                <span className="rounded-full border border-border/70 bg-card/80 px-3 py-1 text-xs font-medium text-foreground backdrop-blur-sm">
+                  {t("about.version", "Version")} v{appVersion}
+                </span>
+                <span className="rounded-full border border-border/70 bg-card/80 px-3 py-1 text-xs font-medium text-muted-foreground backdrop-blur-sm">
+                  {t("about.platform", "Platform")}: Desktop
+                </span>
+                <span className="rounded-full border border-border/70 bg-card/80 px-3 py-1 text-xs font-medium text-muted-foreground backdrop-blur-sm">
+                  Electron + React + TypeScript
+                </span>
+                <span className="rounded-full border border-border/70 bg-card/80 px-3 py-1 text-xs font-medium text-muted-foreground backdrop-blur-sm">
+                  {t("about.database", "Database")}: SQLite
+                </span>
+              </div>
+            </SequentialIntroSlot>
           </div>
 
-          <div className="relative isolate mt-10 lg:mt-0">
-            <div
-              className="pointer-events-none absolute -right-14 -top-14 z-0 h-52 w-52 rounded-full bg-green-500/22 blur-3xl sm:h-60 sm:w-60 sm:-right-16 sm:-top-16"
-              aria-hidden
-            />
-            <div
-              className="pointer-events-none absolute -bottom-10 -left-12 z-0 h-28 w-28 rounded-full bg-green-500/16 blur-2xl sm:h-32 sm:w-32 sm:-bottom-12 sm:-left-14"
-              aria-hidden
-            />
+          <SequentialIntroSlot
+            stepIndex={SEQ.card}
+            introStep={introStep}
+            reduceMotion={reduceMotion}
+            isRTL={isRTL}
+            kind="fadeUp"
+            onStepComplete={advanceIntro}
+            advanceIntroAfterMs={SEQ_ANIM_MS}
+            className={cn(
+              "relative isolate mt-10 lg:mt-0",
+              online &&
+                devicePrecheck === "existing_device" &&
+                "mt-28 sm:mt-36 lg:mt-28 xl:mt-36 2xl:mt-40",
+            )}
+          >
+            {!(online && devicePrecheck === "loading") ? (
+              <>
+                <div
+                  className="pointer-events-none absolute -right-14 -top-14 z-0 h-52 w-52 rounded-full bg-green-500/22 blur-3xl sm:h-60 sm:w-60 sm:-right-16 sm:-top-16"
+                  aria-hidden
+                />
+                <div
+                  className="pointer-events-none absolute -bottom-10 -left-12 z-0 h-28 w-28 rounded-full bg-green-500/16 blur-2xl sm:h-32 sm:w-32 sm:-bottom-12 sm:-left-14"
+                  aria-hidden
+                />
+              </>
+            ) : null}
             <section
               id="get-started"
               className={cn(
-                "relative z-[1] overflow-visible rounded-3xl border bg-card/90 p-5 shadow-xl shadow-black/5 backdrop-blur-sm sm:p-7",
-                online ? "border-border/80" : "border-amber-500/45 dark:border-amber-500/35",
+                "relative z-[1] overflow-visible rounded-3xl border backdrop-blur-sm",
+                online && devicePrecheck === "loading"
+                  ? "border-dashed border-border/70 bg-muted/20 p-8 shadow-none sm:p-10"
+                  : cn(
+                      "bg-card/90 p-5 shadow-xl shadow-black/5 sm:p-7",
+                      online ? "border-border/80" : "border-amber-500/45 dark:border-amber-500/35",
+                    ),
               )}
-              aria-busy={busy}
+              aria-busy={busy || (online && devicePrecheck === "loading")}
             >
+            {devicePrecheck === "new_device" ? (
+              <div
+                className={cn("welcome-trial-ribbon", isRTL && "welcome-trial-ribbon--rtl")}
+                role="status"
+                aria-label={t("welcome.trialBadge", "7-day free trial")}
+              >
+                {t("welcome.trialBadge", "7-day free trial!")}
+              </div>
+            ) : null}
             <div
-              className={cn("welcome-trial-ribbon", isRTL && "welcome-trial-ribbon--rtl")}
-              role="status"
-              aria-label={t("welcome.trialBadge", "7-day free trial")}
+              key={`gs-${String(online)}-${devicePrecheck}`}
+              className={cn(
+                "min-h-0",
+                !reduceMotion && devicePrecheck !== "loading" && "welcome-gs-body-fadeup",
+              )}
             >
-              {t("welcome.trialBadge", "7-day free trial!")}
-            </div>
-
             {!online ? (
               <div
                 className="mb-6 flex gap-3 rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-start dark:bg-amber-500/15 sm:gap-4 sm:px-5 sm:py-4"
@@ -612,21 +1002,65 @@ export default function WelcomeSetup() {
                 !online && "pointer-events-none select-none opacity-50",
               )}
             >
-              <header className="space-y-3 pt-6 text-center sm:pt-5">
-                <h2 className="flex flex-wrap items-center justify-center gap-3 text-xl font-bold text-foreground sm:text-2xl">
-                  <Sparkles className="h-6 w-6 shrink-0 text-primary" aria-hidden />
-                  {t("welcome.setupTitle", "Get started with us")}
-                </h2>
-                <p className="mx-auto max-w-xl text-sm leading-relaxed text-muted-foreground">
-                  {t(
-                    "welcome.setupDescription",
-                    "Tell us who you are so we can set up your shop on this computer. Add your full name and phone — we use them to start your trial or restore your data, connect this device to your account, and reach you if you need help. It only takes a moment. Your details stay separate from your login password and are handled as described in the privacy section above.",
-                  )}
-                </p>
-              </header>
+              {online && devicePrecheck === "loading" ? (
+                <div className="flex min-h-[11rem] flex-col items-center justify-center gap-4 py-4 sm:min-h-[12rem]">
+                  <Loader2 className="h-10 w-10 animate-spin text-primary" aria-hidden />
+                  <p className="max-w-sm text-center text-sm text-muted-foreground">
+                    {t("welcome.devicePrecheckLoading", "Checking whether this device is already registered…")}
+                  </p>
+                </div>
+              ) : online && devicePrecheck === "existing_device" ? (
+                <div className="space-y-6 pt-6 text-center sm:pt-5">
+                  <header className="space-y-3">
+                    <h2 className="flex flex-wrap items-center justify-center gap-3 text-xl font-bold text-foreground sm:text-2xl">
+                      <Shield className="h-6 w-6 shrink-0 text-emerald-600" aria-hidden />
+                      {t("welcome.registeredDeviceTitle", "This device is already registered")}
+                    </h2>
+                    <p className="mx-auto max-w-xl text-sm leading-relaxed text-muted-foreground">
+                      {registeredIntroDescription}
+                    </p>
+                  </header>
+                  <div className="flex flex-col gap-3 pt-1">
+                    <Button
+                      type="button"
+                      className="min-h-[3rem] w-full border-transparent bg-emerald-600 text-white shadow-xs hover:bg-emerald-700 focus-visible:ring-emerald-500/35 dark:bg-emerald-600 dark:text-white dark:hover:bg-emerald-500"
+                      disabled={busy}
+                      onClick={() => void handleContinueRegisteredDevice()}
+                    >
+                      {busy ? (
+                        <span className="flex items-center justify-center">
+                          <span
+                            className="mr-2 h-5 w-5 shrink-0 animate-spin rounded-full border-b-2 border-white"
+                            aria-hidden
+                          />
+                          {t("welcome.continuing", "Continuing…")}
+                        </span>
+                      ) : (
+                        <span className="flex items-center justify-center gap-2">
+                          {t("welcome.continueToApp", "Continue to the app")}
+                          <ArrowRight className="h-5 w-5 shrink-0" aria-hidden />
+                        </span>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <header className="space-y-3 pt-6 text-center sm:pt-5">
+                    <h2 className="flex flex-wrap items-center justify-center gap-3 text-xl font-bold text-foreground sm:text-2xl">
+                      <Sparkles className="h-6 w-6 shrink-0 text-primary" aria-hidden />
+                      {t("welcome.setupTitle", "Get started with us")}
+                    </h2>
+                    <p className="mx-auto max-w-xl text-sm leading-relaxed text-muted-foreground">
+                      {t(
+                        "welcome.setupDescription",
+                        "Tell us who you are so we can set up your shop on this computer. Add your full name and phone — we use them to start your trial or restore your data, connect this device to your account, and reach you if you need help. It only takes a moment. Your details stay separate from your login password and are handled as described in the legal section below.",
+                      )}
+                    </p>
+                  </header>
 
-              <div className="space-y-6 text-start">
-                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-6 text-start">
+                    <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2 sm:col-span-2">
                     <label htmlFor="welcome-full-name" className="text-sm font-medium">
                       {t("welcome.fullName", "Full name")}
@@ -727,15 +1161,29 @@ export default function WelcomeSetup() {
                     </Button>
                   )}
                 </div>
-              </div>
+                  </div>
+                </>
+              )}
+            </div>
             </div>
           </section>
-          </div>
+          </SequentialIntroSlot>
         </div>
       </section>
 
-      <section id="welcome-key-features" className={cn("mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-16", WELCOME_SECTION_SCROLL_MARGIN)}>
-        <div className="mx-auto mb-11 max-w-2xl text-center sm:mb-12">
+      <section
+        id="welcome-key-features"
+        className={cn("mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-16", WELCOME_SECTION_SCROLL_MARGIN)}
+      >
+        <SequentialIntroSlot
+          stepIndex={SEQ.keyIntro}
+          introStep={introStep}
+          reduceMotion={reduceMotion}
+          isRTL={isRTL}
+          kind="fadeUp"
+          onStepComplete={advanceIntro}
+          className="mx-auto mb-11 max-w-2xl text-center sm:mb-12"
+        >
           <h2 className="flex items-center justify-center gap-3 text-[1.75rem] font-bold text-foreground sm:text-3xl">
             <Star className="h-8 w-8 shrink-0 text-primary" aria-hidden />
             {t("about.features.title", "Key Features")}
@@ -746,16 +1194,37 @@ export default function WelcomeSetup() {
               "A comprehensive store management solution designed to streamline your business operations with modern technology and intuitive design.",
             )}
           </p>
-        </div>
-        <FeaturesCarousel items={ABOUT_MAIN_FEATURE_DEFS} isRTL={isRTL} />
+        </SequentialIntroSlot>
+        <SequentialIntroSlot
+          stepIndex={SEQ.keyCarousel}
+          introStep={introStep}
+          reduceMotion={reduceMotion}
+          isRTL={isRTL}
+          kind="fadeUp"
+          onStepComplete={advanceIntro}
+          defer
+        >
+          <FeaturesCarousel items={ABOUT_MAIN_FEATURE_DEFS} isRTL={isRTL} />
+        </SequentialIntroSlot>
       </section>
 
       <section
         id="welcome-technical-features"
-        className={cn("border-y border-border/60 bg-muted/15", WELCOME_SECTION_SCROLL_MARGIN)}
+        className={cn(
+          introStep >= SEQ.techIntro && "border-y border-border/60 bg-muted/15",
+          WELCOME_SECTION_SCROLL_MARGIN,
+        )}
       >
         <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-16">
-          <div className="mx-auto max-w-3xl text-center">
+          <SequentialIntroSlot
+            stepIndex={SEQ.techIntro}
+            introStep={introStep}
+            reduceMotion={reduceMotion}
+            isRTL={isRTL}
+            kind="fadeUp"
+            onStepComplete={advanceIntro}
+            className="mx-auto max-w-3xl text-center"
+          >
             <h2 className="flex items-center justify-center gap-3 text-2xl font-bold text-foreground sm:text-3xl">
               <Shield className="h-7 w-7 shrink-0 text-primary" aria-hidden />
               {t("about.technical.title", "Technical Features")}
@@ -766,13 +1235,21 @@ export default function WelcomeSetup() {
                 "The features above cover day-to-day sales, stock, and clients. This is a desktop application: your shop data stays on this PC, keeps working when the connection is weak, and access stays controlled for each staff member.",
               )}
             </p>
-          </div>
+          </SequentialIntroSlot>
 
-          <div className="mt-10 grid grid-cols-1 gap-4 md:grid-cols-3">
+          <SequentialIntroSlot
+            stepIndex={SEQ.techTiles}
+            introStep={introStep}
+            reduceMotion={reduceMotion}
+            isRTL={isRTL}
+            kind="fadeUp"
+            onStepComplete={advanceIntro}
+            className="mt-10 grid grid-cols-1 gap-4 md:grid-cols-3"
+          >
             {WELCOME_TECHNOLOGY_BRIDGE_HIGHLIGHTS.map(({ icon: Icon, titleKey, descKey }) => (
               <article
                 key={titleKey}
-                className="rounded-2xl border border-border/60 bg-card/80 p-5"
+                className="h-full rounded-2xl border border-border/60 bg-card/80 p-5"
               >
                 <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10">
                   <Icon className="h-5 w-5 text-primary" aria-hidden />
@@ -781,29 +1258,61 @@ export default function WelcomeSetup() {
                 <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{t(descKey)}</p>
               </article>
             ))}
-          </div>
+          </SequentialIntroSlot>
 
-          <div className="mt-12 sm:mt-14">
+          <SequentialIntroSlot
+            stepIndex={SEQ.techCarousel}
+            introStep={introStep}
+            reduceMotion={reduceMotion}
+            isRTL={isRTL}
+            kind="fadeUp"
+            onStepComplete={advanceIntro}
+            defer
+            className="mt-12 sm:mt-14"
+          >
             <FeaturesCarousel
               items={ABOUT_TECHNICAL_FEATURE_DEFS}
               isRTL={isRTL}
               tabListAriaLabel={t("about.technical.title", "Technical Features")}
             />
-          </div>
+          </SequentialIntroSlot>
         </div>
       </section>
 
-      <section className={cn("border-y border-border/60", WELCOME_SECTION_SCROLL_MARGIN)}>
-        <div className="mx-auto max-w-6xl px-4 pb-14 pt-4 sm:px-6 sm:pb-16 sm:pt-6 short:pb-8 short:pt-4 short:sm:pb-10 short:sm:pt-5">
+      <section
+        className={cn(
+          introStep >= SEQ.pricing && "border-y border-border/60",
+          WELCOME_SECTION_SCROLL_MARGIN,
+        )}
+      >
+        <SequentialIntroSlot
+          stepIndex={SEQ.pricing}
+          introStep={introStep}
+          reduceMotion={reduceMotion}
+          isRTL={isRTL}
+          kind="fadeUp"
+          onStepComplete={advanceIntro}
+          defer
+          className="mx-auto max-w-6xl px-4 pb-14 pt-4 sm:px-6 sm:pb-16 sm:pt-6 short:pb-8 short:pt-4 short:sm:pb-10 short:sm:pt-5"
+        >
           <PricingPlansSection id="welcome-pricing" className="!mb-0" />
-        </div>
+        </SequentialIntroSlot>
       </section>
 
       <section
         id="welcome-developer"
         className={cn("mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-16", WELCOME_SECTION_SCROLL_MARGIN)}
       >
-        <div className="overflow-hidden rounded-3xl border border-border/70 bg-card/80 shadow-lg">
+        <SequentialIntroSlot
+          stepIndex={SEQ.devCard}
+          introStep={introStep}
+          reduceMotion={reduceMotion}
+          isRTL={isRTL}
+          kind="fadeUp"
+          onStepComplete={advanceIntro}
+          defer
+          className="overflow-hidden rounded-3xl border border-border/70 bg-card/80 shadow-lg"
+        >
           <div className="border-b border-border/60 bg-muted/25 px-6 py-8 sm:px-8">
             <h2 className="flex items-center gap-3 text-xl font-bold text-foreground sm:text-2xl">
               <Code className="h-6 w-6 shrink-0 text-primary" aria-hidden />
@@ -848,55 +1357,78 @@ export default function WelcomeSetup() {
               </p>
             </div>
           </div>
-        </div>
+        </SequentialIntroSlot>
       </section>
 
       <section
         id="welcome-legal"
-        className={cn("border-t border-border/60 bg-muted/15", WELCOME_SECTION_SCROLL_MARGIN)}
+        className={cn(
+          introStep >= SEQ.legal && "border-t border-border/60 bg-muted/15",
+          WELCOME_SECTION_SCROLL_MARGIN,
+        )}
       >
         <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-16">
-          <div className="mx-auto mb-10 max-w-2xl text-center sm:mb-12">
-            <h2 className="text-2xl font-bold text-foreground sm:text-3xl">
-              {t("welcome.sectionNav.legal", "Legal")}
-            </h2>
-          </div>
+          <SequentialIntroSlot
+            stepIndex={SEQ.legal}
+            introStep={introStep}
+            reduceMotion={reduceMotion}
+            isRTL={isRTL}
+            kind="fadeUp"
+            onStepComplete={advanceIntro}
+            defer
+          >
+            <div className="mx-auto mb-10 max-w-2xl text-center sm:mb-12">
+              <h2 className="text-2xl font-bold text-foreground sm:text-3xl">
+                {t("welcome.sectionNav.legal", "Legal")}
+              </h2>
+            </div>
 
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 lg:gap-8">
-            <article className="rounded-2xl border border-border/70 bg-card/80 p-6 shadow-sm sm:p-8">
-              <h3 className="mb-4 flex items-center gap-3 text-xl font-bold text-foreground">
-                <Shield className="h-5 w-5 shrink-0 text-primary" aria-hidden />
-                {t("about.privacy.title", "Privacy Policy")}
-              </h3>
-              <p className="mb-4 text-sm leading-relaxed text-muted-foreground">{t("about.privacy.intro")}</p>
-              <ul className="list-disc space-y-3 ps-5 text-sm leading-relaxed text-muted-foreground">
-                {ABOUT_PRIVACY_POINT_KEYS.map((key) => (
-                  <li key={key}>{t(key)}</li>
-                ))}
-              </ul>
-            </article>
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 lg:gap-8">
+              <article className="h-full rounded-2xl border border-border/70 bg-card/80 p-6 shadow-sm sm:p-8">
+                <h3 className="mb-4 flex items-center gap-3 text-xl font-bold text-foreground">
+                  <Shield className="h-5 w-5 shrink-0 text-primary" aria-hidden />
+                  {t("about.privacy.title", "Privacy Policy")}
+                </h3>
+                <p className="mb-4 text-sm leading-relaxed text-muted-foreground">{t("about.privacy.intro")}</p>
+                <ul className="list-disc space-y-3 ps-5 text-sm leading-relaxed text-muted-foreground">
+                  {ABOUT_PRIVACY_POINT_KEYS.map((key) => (
+                    <li key={key}>{t(key)}</li>
+                  ))}
+                </ul>
+              </article>
 
-            <article className="rounded-2xl border border-border/70 bg-card/80 p-6 shadow-sm sm:p-8">
-              <h3 className="mb-4 flex items-center gap-3 text-xl font-bold text-foreground">
-                <FileText className="h-5 w-5 shrink-0 text-primary" aria-hidden />
-                {t("about.terms.title", "Terms of Service")}
-              </h3>
-              <p className="mb-4 text-sm leading-relaxed text-muted-foreground">{t("about.terms.intro")}</p>
-              <ul className="list-disc space-y-3 ps-5 text-sm leading-relaxed text-muted-foreground">
-                {ABOUT_TERMS_POINT_KEYS.map((key) => (
-                  <li key={key}>{t(key)}</li>
-                ))}
-              </ul>
-            </article>
-          </div>
+              <article className="h-full rounded-2xl border border-border/70 bg-card/80 p-6 shadow-sm sm:p-8">
+                <h3 className="mb-4 flex items-center gap-3 text-xl font-bold text-foreground">
+                  <FileText className="h-5 w-5 shrink-0 text-primary" aria-hidden />
+                  {t("about.terms.title", "Terms of Service")}
+                </h3>
+                <p className="mb-4 text-sm leading-relaxed text-muted-foreground">{t("about.terms.intro")}</p>
+                <ul className="list-disc space-y-3 ps-5 text-sm leading-relaxed text-muted-foreground">
+                  {ABOUT_TERMS_POINT_KEYS.map((key) => (
+                    <li key={key}>{t(key)}</li>
+                  ))}
+                </ul>
+              </article>
+            </div>
+          </SequentialIntroSlot>
         </div>
       </section>
 
-      <footer className="border-t border-border/60 px-4 py-8 text-center">
-        <p className="text-sm text-muted-foreground">
-          {t("about.footer", "© 2024 REDA TECH. All rights reserved. Built with ❤️ in Algeria.")}
-        </p>
-      </footer>
+      <SequentialIntroSlot
+        stepIndex={SEQ.footer}
+        introStep={introStep}
+        reduceMotion={reduceMotion}
+        isRTL={isRTL}
+        kind="fadeUp"
+        onStepComplete={advanceIntro}
+        defer
+      >
+        <footer className="border-t border-border/60 px-4 py-8 text-center">
+          <p className="text-sm text-muted-foreground">
+            {t("about.footer", "© 2024 REDA TECH. All rights reserved. Built with ❤️ in Algeria.")}
+          </p>
+        </footer>
+      </SequentialIntroSlot>
     </div>
   );
 }
