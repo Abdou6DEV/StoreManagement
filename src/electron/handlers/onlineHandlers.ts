@@ -331,7 +331,7 @@ export function setupOnlineHandlers(): void {
 
   ipcMain.handle(
     "online:backupUploadLatest",
-    async (_event, backupFilePath: string): Promise<CloudBackupUploadResult> => {
+    async (_event, backupFilePath: string, uploadSource?: string): Promise<CloudBackupUploadResult> => {
       const backupPath = String(backupFilePath ?? "").trim();
       if (!backupPath) {
         return { success: false, error: "Backup file path is required.", code: "missing_file" };
@@ -359,7 +359,11 @@ export function setupOnlineHandlers(): void {
       form.append("device_id", identity.deviceId);
       form.append("customer_id", identity.customerId);
       form.append("app_version", app.getVersion());
-      form.append("source", "manual_upload");
+      const source =
+        typeof uploadSource === "string" && uploadSource.trim().length > 0
+          ? uploadSource.trim()
+          : "manual_upload";
+      form.append("source", source);
       form.append("file", new Blob([fileBuffer], { type: "application/octet-stream" }), path.basename(backupPath));
 
       try {

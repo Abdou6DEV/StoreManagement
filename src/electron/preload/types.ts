@@ -412,7 +412,7 @@ export type BackupFile = {
   size: number;
   date: string;
   readableDate: string;
-  type: "automatic" | "manual";
+  type: "automatic" | "manual" | "cloud";
 };
 
 export type BackupResult = {
@@ -428,6 +428,7 @@ export type BackupResult = {
 export type BackupAPI = {
   create: () => Promise<BackupResult>;
   createManual: () => Promise<BackupResult>;
+  createCloud: () => Promise<BackupResult>;
   ensureDailyBackup: () => Promise<{
     success: boolean;
     created?: boolean;
@@ -464,7 +465,7 @@ export type OnlineAPI = {
     expiresAt?: string | null;
   }) => Promise<{ success: true } | { success: false; error: string }>;
   clearLicenseGrace: () => Promise<{ success: true }>;
-  backupUploadLatest: (backupFilePath: string) => Promise<CloudBackupUploadResult>;
+  backupUploadLatest: (backupFilePath: string, uploadSource?: string) => Promise<CloudBackupUploadResult>;
   backupDownloadLatest: () => Promise<CloudBackupDownloadResult>;
 };
 

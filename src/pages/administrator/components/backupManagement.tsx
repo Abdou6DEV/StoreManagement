@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { 
@@ -13,6 +13,7 @@ import {
   Calendar,
   FolderOpen,
   CloudUpload,
+  Cloud,
 } from "lucide-react";
 import { Button } from "../../../lib/components/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../../lib/components/card";
@@ -29,6 +30,7 @@ import {
 import { useToast } from "../../../lib/contexts/toastContext";
 import { useAuth } from "../../../lib/contexts/authContext";
 import type { BackupFile } from "../../../electron/preload/types";
+import { cn } from "../../../lib/utils";
 
 export function BackupManagement() {
   const { t } = useTranslation();
@@ -90,7 +92,7 @@ export function BackupManagement() {
   const uploadToCloud = async () => {
     try {
       setUploadingCloud(true);
-      const created = await window.api.backup.createManual();
+      const created = await window.api.backup.createCloud();
       if (!created.success || !created.backupPath) {
         showToast(
           `${t("admin.backup.failedToCreateBackup", "Failed to create backup:")} ${created.error ?? ""}`,
@@ -100,7 +102,7 @@ export function BackupManagement() {
       }
 
       await loadBackups();
-      const uploaded = await window.api.online.backupUploadLatest(created.backupPath);
+      const uploaded = await window.api.online.backupUploadLatest(created.backupPath, "cloud_backup");
       if (uploaded.success) {
         showToast(t("admin.backup.cloudUploadSuccess", "Cloud backup uploaded successfully"), "success");
         return;
@@ -189,7 +191,9 @@ export function BackupManagement() {
           username: user?.username ?? "unknown",
           action: "activityLog.actions.backupCreated",
           details: result.backupPath ?? null,
-        }).catch(() => {});
+        }).catch((): void => {
+          return;
+        });
         showToast("Backup created successfully", "success");
         await loadBackups(); // Refresh the list
       } else {
@@ -419,192 +423,273 @@ export function BackupManagement() {
     const backupDate = new Date(backup.date);
     const now = new Date();
     const diffInHours = (now.getTime() - backupDate.getTime()) / (1000 * 60 * 60);
-    
+
+    if (backup.type === "cloud") {
+      return { status: "cloud", color: "bg-sky-500", text: t("admin.backup.cloud", "Cloud") };
+    }
     if (backup.type === "manual") {
       return { status: "manual", color: "bg-blue-500", text: t("admin.backup.manual", "Manual") };
-    } else if (diffInHours < 24) {
-      return { status: "recent", color: "bg-green-500", text: t("admin.backup.recent", "Recent") };
-    } else if (diffInHours < 48) {
-      return { status: "yesterday", color: "bg-yellow-500", text: t("admin.backup.yesterday", "Yesterday") };
-    } else {
-      return { status: "old", color: "bg-red-500", text: t("admin.backup.older", "Older") };
     }
+    if (diffInHours < 24) {
+      return { status: "recent", color: "bg-green-500", text: t("admin.backup.recent", "Recent") };
+    }
+    if (diffInHours < 48) {
+      return { status: "yesterday", color: "bg-yellow-500", text: t("admin.backup.yesterday", "Yesterday") };
+    }
+    return { status: "old", color: "bg-red-500", text: t("admin.backup.older", "Older") };
+  };
+
+  const autoBackups = useMemo(
+    () => backups.filter((b) => b.type === "automatic"),
+    [backups],
+  );
+  const cloudBackups = useMemo(() => backups.filter((b) => b.type === "cloud"), [backups]);
+  const manualBackups = useMemo(() => backups.filter((b) => b.type === "manual"), [backups]);
+
+  const renderBackupCard = (backup: BackupFile, indexInSection: number) => {
+    const status = getBackupStatus(backup);
+    const showLatest = indexInSection === 0;
+    return (
+      <Card key={backup.name} className="relative border-border/80 shadow-sm">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2 sm:gap-3">
+              <div className={cn("h-3 w-3 shrink-0 rounded-full", status.color)} />
+              <CardTitle className="break-all text-base font-semibold sm:text-lg">{backup.name}</CardTitle>
+              <Badge variant="secondary" className="shrink-0 font-normal">
+                {status.text}
+              </Badge>
+              {backup.type === "cloud" ? (
+                <Cloud className="h-4 w-4 shrink-0 text-sky-600 dark:text-sky-400" aria-hidden />
+              ) : null}
+            </div>
+            {showLatest ? (
+              <div className="shrink-0 text-sm text-muted-foreground">{t("admin.backup.latest", "Latest")}</div>
+            ) : null}
+          </div>
+        </CardHeader>
+        <CardContent className="pt-0">
+          <div className="mb-4 grid grid-cols-1 gap-4 md:grid-cols-3">
+            <div className="flex items-center gap-2 text-sm">
+              <Calendar className="h-4 w-4 shrink-0 text-muted-foreground" />
+              <span className="text-muted-foreground">{t("admin.backup.created", "Created:")}</span>
+              <span className="font-medium">{formatDate(backup.date)}</span>
+            </div>
+            <div className="flex items-center gap-2 text-sm">
+              <HardDrive className="h-4 w-4 shrink-0 text-muted-foreground" />
+              <span className="text-muted-foreground">{t("admin.backup.size", "Size:")}</span>
+              <span className="font-medium">{formatFileSize(backup.size)}</span>
+            </div>
+            <div className="flex items-center gap-2 text-sm">
+              <Clock className="h-4 w-4 shrink-0 text-muted-foreground" />
+              <span className="text-muted-foreground">{t("admin.backup.age", "Age:")}</span>
+              <span className="font-medium">
+                {Math.floor((Date.now() - new Date(backup.date).getTime()) / (1000 * 60 * 60 * 24))}{" "}
+                {t("admin.backup.days", "days")}
+              </span>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              onClick={() => openRestoreDialog(backup)}
+              disabled={restoring === backup.path}
+              variant="destructive"
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              {restoring === backup.path ? (
+                <RefreshCw className="h-4 w-4 animate-spin" />
+              ) : (
+                <Upload className="h-4 w-4" />
+              )}
+              {restoring === backup.path ? t("admin.backup.restoring", "Restoring...") : t("admin.backup.restore", "Restore")}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
-          <Database className="w-6 h-6 text-orange-500" />
-          {t("admin.backup.title", "Database Backup Management")}
-        </h2>
-        <p className="text-muted-foreground mt-1">
-          {t("admin.backup.description", "Manage your database backups. The system automatically creates daily backups and keeps the 2 most recent ones.")}
-        </p>
+    <div className="space-y-8">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div>
+          <h2 className="flex items-center gap-2 text-2xl font-semibold tracking-tight text-foreground">
+            <Database className="h-6 w-6 text-orange-500" aria-hidden />
+            {t("admin.backup.title", "Database Backup Management")}
+          </h2>
+          <p className="mt-1 max-w-3xl text-muted-foreground">
+            {t(
+              "admin.backup.descriptionPage",
+              "Backups are grouped below: automatic (daily on this PC), cloud (snapshot + upload), and manual (local copies you create). Use Refresh to reload lists.",
+            )}
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            onClick={loadBackups}
+            disabled={loading}
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
+            {t("admin.backup.refresh", "Refresh")}
+          </Button>
+          <Button
+            onClick={() => setRestoreFromFileDialogOpen(true)}
+            disabled={!!restoring}
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            <Upload className="h-4 w-4" />
+            {t("admin.backup.restoreFromFile", "Restore from File")}
+          </Button>
+        </div>
       </div>
 
-      {/* Auto Backup Info */}
-      <Alert>
-        <CheckCircle className="h-4 w-4" />
-        <AlertDescription>
-          <strong>{t("admin.backup.automaticBackup", "Automatic Backup:")}</strong> {t("admin.backup.automaticBackupDesc", "The system automatically creates a backup every day at startup and keeps the 2 most recent backups. You can also create manual backups anytime.")}
-        </AlertDescription>
-      </Alert>
+      {loading && backups.length === 0 ? (
+        <div className="flex items-center justify-center rounded-xl border border-border bg-muted/20 py-16">
+          <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
+          <span className="ml-2 text-muted-foreground">{t("admin.backup.loadingBackups", "Loading backups...")}</span>
+        </div>
+      ) : (
+        <>
+          {/* Automatic backups */}
+          <section
+            className="overflow-hidden rounded-xl border border-border bg-card shadow-sm"
+            aria-labelledby="backup-section-auto"
+          >
+            <div className="flex flex-col gap-3 border-b border-border bg-muted/30 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+              <div className="min-w-0">
+                <h3 id="backup-section-auto" className="flex items-center gap-2 text-base font-semibold text-foreground">
+                  <Calendar className="h-5 w-5 shrink-0 text-muted-foreground" aria-hidden />
+                  {t("admin.backup.sectionAutoTitle", "Automatic backups")}
+                </h3>
+                <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                  {t(
+                    "admin.backup.sectionAutoDesc",
+                    "Created daily when you use the app; only the two most recent files are kept in the backup folder.",
+                  )}
+                </p>
+              </div>
+              <Button onClick={cleanupOldBackups} disabled={loading} variant="outline" size="sm" className="shrink-0">
+                <Database className="mr-2 h-4 w-4" />
+                {t("admin.backup.cleanupOld", "Cleanup Old Backups")}
+              </Button>
+            </div>
+            <div className="space-y-4 bg-card p-4 sm:p-5">
+              {autoBackups.length === 0 ? (
+                <p className="rounded-lg border border-dashed border-border bg-muted/20 px-4 py-8 text-center text-sm text-muted-foreground">
+                  {t("admin.backup.emptyAuto", "No automatic backups yet. They appear after daily backup runs.")}
+                </p>
+              ) : (
+                <div className="grid gap-4">{autoBackups.map((b, i) => renderBackupCard(b, i))}</div>
+              )}
+            </div>
+          </section>
 
-       {/* Actions */}
-       <div className="flex gap-4">
-         <Button 
-           onClick={loadBackups} 
-           disabled={loading}
-           variant="outline"
-           className="flex items-center gap-2"
-         >
-           <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-           {t("admin.backup.refresh", "Refresh")}
-         </Button>
-         
-         <Button 
-           onClick={cleanupOldBackups} 
-           disabled={loading}
-           variant="outline"
-           className="flex items-center gap-2"
-         >
-           <Database className="w-4 h-4" />
-           {t("admin.backup.cleanupOld", "Cleanup Old Backups")}
-         </Button>
-         
-         <Button
-           onClick={() => setCustomPathDialogOpen(true)}
-           disabled={creatingBackup}
-           variant="outline"
-           className="flex items-center gap-2"
-         >
-           <FolderOpen className="w-4 h-4" />
-           {t("admin.backup.backupToCustomPath", "Backup to Custom Path")}
-         </Button>
-         
-         <Button
-           onClick={() => void uploadToCloud()}
-           disabled={creatingBackup || uploadingCloud || !!restoring}
-           variant="outline"
-           className="flex items-center gap-2"
-         >
-           {uploadingCloud ? (
-             <RefreshCw className="w-4 h-4 animate-spin" />
-           ) : (
-             <CloudUpload className="w-4 h-4" />
-           )}
-           {uploadingCloud
-             ? t("admin.backup.uploadingToCloud", "Uploading to cloud...")
-             : t("admin.backup.uploadToCloud", "Upload to cloud")}
-         </Button>
+          {/* Cloud backups */}
+          <section
+            className="overflow-hidden rounded-xl border border-border bg-card shadow-sm"
+            aria-labelledby="backup-section-cloud"
+          >
+            <div className="flex flex-col gap-3 border-b border-border bg-muted/30 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+              <div className="min-w-0">
+                <h3 id="backup-section-cloud" className="flex items-center gap-2 text-base font-semibold text-foreground">
+                  <Cloud className="h-5 w-5 shrink-0 text-muted-foreground" aria-hidden />
+                  {t("admin.backup.sectionCloudTitle", "Online cloud backups")}
+                </h3>
+                <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                  {t(
+                    "admin.backup.sectionCloudDesc",
+                    "Creates a cloud_backup file on this PC, uploads it to your supplier’s online storage, and lists snapshots here.",
+                  )}
+                </p>
+              </div>
+              <Button
+                onClick={() => void uploadToCloud()}
+                disabled={creatingBackup || uploadingCloud || !!restoring}
+                size="sm"
+                className="shrink-0"
+              >
+                {uploadingCloud ? (
+                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <CloudUpload className="mr-2 h-4 w-4" />
+                )}
+                {uploadingCloud
+                  ? t("admin.backup.uploadingToCloud", "Uploading to cloud...")
+                  : t("admin.backup.uploadToCloud", "Cloud backup & upload")}
+              </Button>
+            </div>
+            <div className="space-y-4 bg-card p-4 sm:p-5">
+              {cloudBackups.length === 0 ? (
+                <p className="rounded-lg border border-dashed border-border bg-muted/20 px-4 py-8 text-center text-sm text-muted-foreground">
+                  {t(
+                    "admin.backup.emptyCloud",
+                    "No cloud snapshots in the backup folder yet. Use the button above to create and upload one.",
+                  )}
+                </p>
+              ) : (
+                <div className="grid gap-4">{cloudBackups.map((b, i) => renderBackupCard(b, i))}</div>
+              )}
+            </div>
+          </section>
 
-         <Button
-           onClick={() => setRestoreFromFileDialogOpen(true)}
-           disabled={!!restoring}
-           variant="outline"
-           className="flex items-center gap-2"
-         >
-           <Upload className="w-4 h-4" />
-           {t("admin.backup.restoreFromFile", "Restore from File")}
-         </Button>
-       </div>
+          {/* Manual backups */}
+          <section
+            className="overflow-hidden rounded-xl border border-border bg-card shadow-sm"
+            aria-labelledby="backup-section-manual"
+          >
+            <div className="flex flex-col gap-3 border-b border-border bg-muted/30 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+              <div className="min-w-0">
+                <h3 id="backup-section-manual" className="flex items-center gap-2 text-base font-semibold text-foreground">
+                  <HardDrive className="h-5 w-5 shrink-0 text-muted-foreground" aria-hidden />
+                  {t("admin.backup.sectionManualTitle", "Manual backups")}
+                </h3>
+                <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                  {t(
+                    "admin.backup.sectionManualDesc",
+                    "Local copies you create in the backup folder, or save elsewhere with “Backup to custom path” (those paths are not listed here).",
+                  )}
+                </p>
+              </div>
+              <div className="flex shrink-0 flex-wrap gap-2">
+                <Button
+                  onClick={() => void createBackup()}
+                  disabled={creatingBackup || uploadingCloud || !!restoring}
+                  size="sm"
+                >
+                  {creatingBackup ? (
+                    <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Download className="mr-2 h-4 w-4" />
+                  )}
+                  {t("admin.backup.manualBackup", "Manual Backup")}
+                </Button>
+                <Button onClick={() => setCustomPathDialogOpen(true)} disabled={creatingBackup} variant="outline" size="sm">
+                  <FolderOpen className="mr-2 h-4 w-4" />
+                  {t("admin.backup.backupToCustomPath", "Backup to Custom Path")}
+                </Button>
+              </div>
+            </div>
+            <div className="space-y-4 bg-card p-4 sm:p-5">
+              {manualBackups.length === 0 ? (
+                <p className="rounded-lg border border-dashed border-border bg-muted/20 px-4 py-8 text-center text-sm text-muted-foreground">
+                  {t(
+                    "admin.backup.emptyManual",
+                    "No manual backups in the folder yet. Create one with the buttons above.",
+                  )}
+                </p>
+              ) : (
+                <div className="grid gap-4">{manualBackups.map((b, i) => renderBackupCard(b, i))}</div>
+              )}
+            </div>
+          </section>
+        </>
+      )}
 
-      {/* Backups List */}
-      <div className="space-y-4">
-        <h3 className="text-lg font-semibold text-foreground">
-          {t("admin.backup.availableBackups", "Available Backups")}
-        </h3>
-        
-        {loading ? (
-          <div className="flex items-center justify-center py-8">
-            <RefreshCw className="w-6 h-6 animate-spin text-muted-foreground" />
-            <span className="ml-2 text-muted-foreground">{t("admin.backup.loadingBackups", "Loading backups...")}</span>
-          </div>
-        ) : backups.length === 0 ? (
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center py-8">
-              <Database className="w-12 h-12 text-muted-foreground mb-4" />
-              <p className="text-muted-foreground text-center">
-                {t("admin.backup.noBackupsAvailable", "No backups available. Create your first backup to get started.")}
-              </p>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid gap-4">
-            {backups.map((backup, index) => {
-              const status = getBackupStatus(backup);
-              return (
-                <Card key={backup.name} className="relative">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className={`w-3 h-3 rounded-full ${status.color}`}></div>
-                        <CardTitle className="text-lg">{backup.name}</CardTitle>
-                        <Badge variant="outline" className={status.color.replace("bg-", "text-")}>
-                          {status.text}
-                        </Badge>
-                      </div>
-                      <div className="text-sm text-muted-foreground">
-                        {index === 0 && t("admin.backup.latest", "Latest")}
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                      <div className="flex items-center gap-2 text-sm">
-                        <Calendar className="w-4 h-4 text-muted-foreground" />
-                        <span className="text-muted-foreground">{t("admin.backup.created", "Created:")}</span>
-                        <span className="font-medium">{formatDate(backup.date)}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <HardDrive className="w-4 h-4 text-muted-foreground" />
-                        <span className="text-muted-foreground">{t("admin.backup.size", "Size:")}</span>
-                        <span className="font-medium">{formatFileSize(backup.size)}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <Clock className="w-4 h-4 text-muted-foreground" />
-                        <span className="text-muted-foreground">{t("admin.backup.age", "Age:")}</span>
-                        <span className="font-medium">
-                          {Math.floor((Date.now() - new Date(backup.date).getTime()) / (1000 * 60 * 60 * 24))} {t("admin.backup.days", "days")}
-                        </span>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center gap-2 text-sm mb-4">
-                      <Database className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-muted-foreground">{t("admin.backup.type", "Type:")}</span>
-                      <Badge variant={backup.type === "automatic" ? "default" : "secondary"}>
-                        {backup.type === "automatic" ? t("admin.backup.automatic", "Automatic") : t("admin.backup.manual", "Manual")}
-                      </Badge>
-                    </div>
-                    
-                     <div className="flex gap-2">
-                       <Button
-                         onClick={() => openRestoreDialog(backup)}
-                         disabled={restoring === backup.path}
-                         variant="destructive"
-                         size="sm"
-                         className="flex items-center gap-2"
-                       >
-                         {restoring === backup.path ? (
-                           <RefreshCw className="w-4 h-4 animate-spin" />
-                         ) : (
-                           <Upload className="w-4 h-4" />
-                         )}
-                         {restoring === backup.path ? t("admin.backup.restoring", "Restoring...") : t("admin.backup.restore", "Restore")}
-                       </Button>
-                     </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-       {/* Warning */}
+      {/* Warning */}
        <Alert variant="destructive">
          <AlertTriangle className="h-4 w-4" />
          <AlertDescription>
@@ -617,7 +702,7 @@ export function BackupManagement() {
          <DialogContent className="sm:max-w-md">
            <DialogHeader>
              <DialogTitle className="flex items-center gap-2 text-lg">
-               <AlertTriangle className="w-5 h-5 text-orange-500" />
+               <AlertTriangle className="h-5 w-5 text-muted-foreground" aria-hidden />
                {t("admin.backup.restoreDatabase", "Restore Database")}
              </DialogTitle>
              <DialogDescription>
@@ -706,7 +791,7 @@ export function BackupManagement() {
                  {backupProgress < 100 ? (
                    <RefreshCw className="w-5 h-5 text-primary animate-spin" />
                  ) : (
-                   <CheckCircle className="w-5 h-5 text-green-500" />
+                  <CheckCircle className="h-5 w-5 text-primary" aria-hidden />
                  )}
                </div>
                <div className="flex-1">

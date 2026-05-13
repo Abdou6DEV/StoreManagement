@@ -6,6 +6,9 @@ export const backupAPI = {
   
   // Create manual backup (from admin panel)
   createManual: () => ipcRenderer.invoke("backup:createManual"),
+
+  /** Snapshot for cloud upload (`cloud_backup_*.db`); not the same as manual backup. */
+  createCloud: () => ipcRenderer.invoke("backup:createCloud"),
   
   // Create manual backup to custom path
   createManualToPath: (customPath: string) => ipcRenderer.invoke("backup:createManualToPath", customPath),
@@ -57,6 +60,7 @@ export type BackupFile = {
   size: number;
   date: string;
   readableDate: string;
+  type: "automatic" | "manual" | "cloud";
 };
 
 export type BackupResult = {

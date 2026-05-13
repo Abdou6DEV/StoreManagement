@@ -189,10 +189,10 @@ export function WelcomeJourneyNav({
               <Check className="h-4 w-4" aria-hidden />
             </span>
             <span className="min-w-0">
-              <span className="block text-xs font-semibold leading-tight text-emerald-700 dark:text-emerald-300">
+              <span className="block break-words text-xs font-semibold leading-tight text-emerald-700 dark:text-emerald-300">
                 {t("welcome.journey.completeTitle", "Overview complete")}
               </span>
-              <span className="mt-0.5 block text-[10px] leading-snug text-muted-foreground">
+              <span className="mt-0.5 block break-words text-[10px] leading-snug text-muted-foreground">
                 {t("welcome.journey.completeHint", "You have viewed every section")}
               </span>
             </span>
@@ -212,10 +212,10 @@ export function WelcomeJourneyNav({
               <ChevronUp className="h-4 w-4" aria-hidden />
             </span>
             <span className="min-w-0">
-              <span className="block text-xs font-semibold leading-tight text-foreground">
+              <span className="block text-xs font-semibold leading-tight text-foreground break-words">
                 {t("welcome.journey.backToTop", "Back to top")}
               </span>
-              <span className="mt-0.5 block text-[10px] leading-snug text-muted-foreground">
+              <span className="mt-0.5 block break-words text-[10px] leading-snug text-muted-foreground">
                 {t("welcome.journey.backToTopHint", "Return to the welcome overview")}
               </span>
             </span>
@@ -246,10 +246,10 @@ export function WelcomeJourneyNav({
               </span>
             </span>
             <span className="min-w-0">
-              <span className="block text-xs font-semibold leading-tight text-foreground">
+              <span className="block break-words text-xs font-semibold leading-tight text-foreground">
                 {t("welcome.journey.exploreMore", "Discover More")}
               </span>
-              <span className="mt-0.5 block truncate text-[10px] leading-snug text-muted-foreground">
+              <span className="mt-0.5 block break-words text-[10px] leading-snug text-muted-foreground">
                 {t("welcome.journey.nextSection", {
                   section: nextSectionLabel,
                   defaultValue: "Next: {{section}}",

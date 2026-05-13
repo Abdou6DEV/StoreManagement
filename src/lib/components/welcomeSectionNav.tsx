@@ -54,7 +54,7 @@ export function WelcomeSectionNav({
                 }}
                 aria-current={isActive ? "location" : undefined}
                 className={cn(
-                  "flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 whitespace-nowrap transition-colors duration-500 ease-out motion-reduce:transition-none focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+                  "flex max-w-[11rem] items-start gap-1.5 rounded-xl px-2.5 py-1.5 text-start transition-colors duration-500 ease-out motion-reduce:transition-none focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
                   isActive
                     ? "bg-primary/10 font-medium text-foreground"
                     : "bg-transparent font-normal text-muted-foreground hover:bg-muted/45 hover:text-foreground",
@@ -62,12 +62,12 @@ export function WelcomeSectionNav({
               >
                 <span
                   className={cn(
-                    "h-1.5 w-1.5 shrink-0 rounded-full transition-colors",
+                    "mt-1 h-1.5 w-1.5 shrink-0 rounded-full transition-colors",
                     isActive ? "bg-primary" : "bg-muted-foreground/40",
                   )}
                   aria-hidden
                 />
-                <span>{label}</span>
+                <span className="min-w-0 break-words leading-snug">{label}</span>
               </button>
             </li>
           );

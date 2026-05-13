@@ -53,6 +53,16 @@ const getManualBackupFileName = (date: Date) => {
   return `manual_backup_${year}-${month}-${day}_${hours}-${minutes}-${seconds}.db`;
 };
 
+const getCloudBackupFileName = (date: Date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  const seconds = String(date.getSeconds()).padStart(2, "0");
+  return `cloud_backup_${year}-${month}-${day}_${hours}-${minutes}-${seconds}.db`;
+};
+
 // Get automatic backup file path
 const getAutoBackupFilePath = (date: Date) => {
   const backupDir = ensureBackupDir();
@@ -64,6 +74,12 @@ const getAutoBackupFilePath = (date: Date) => {
 const getManualBackupFilePath = (date: Date) => {
   const backupDir = ensureBackupDir();
   const fileName = getManualBackupFileName(date);
+  return path.join(backupDir, fileName);
+};
+
+const getCloudBackupFilePath = (date: Date) => {
+  const backupDir = ensureBackupDir();
+  const fileName = getCloudBackupFileName(date);
   return path.join(backupDir, fileName);
 };
 
@@ -255,6 +271,82 @@ const createManualBackup = async (date: Date = new Date()) => {
   }
 };
 
+/** Local snapshot created for cloud upload — distinct filename/type from manual backups. */
+const createCloudBackup = async (date: Date = new Date()) => {
+  try {
+    const sourcePath = getDatabasePath();
+    const backupPath = getCloudBackupFilePath(date);
+
+    if (!fs.existsSync(sourcePath)) {
+      throw new Error("Database file not found");
+    }
+
+    if (!validateSQLiteFile(sourcePath)) {
+      throw new Error("Source database is corrupted or invalid");
+    }
+
+    ensureBackupDir();
+
+    const tempBackupPath = backupPath + ".tmp";
+    fs.copyFileSync(sourcePath, tempBackupPath);
+
+    if (!validateSQLiteFile(tempBackupPath)) {
+      fs.unlinkSync(tempBackupPath);
+      throw new Error("Backup file is corrupted");
+    }
+
+    fs.renameSync(tempBackupPath, backupPath);
+
+    if (!fs.existsSync(backupPath)) {
+      throw new Error("Backup creation failed - file not found after creation");
+    }
+
+    const stats = fs.statSync(backupPath);
+
+    try {
+      const { PrismaClient } = await import("@prisma/client");
+      const testPrisma = new PrismaClient({
+        datasources: {
+          db: {
+            url: `file:${backupPath}`,
+          },
+        },
+      });
+      await testPrisma.$connect();
+      await testPrisma.$queryRaw`SELECT 1`;
+      await testPrisma.$disconnect();
+    } catch (testError) {
+      logger.error("Backup validation failed", "Backup", testError);
+      fs.unlinkSync(backupPath);
+      throw new Error("Backup file is not a valid database");
+    }
+    try {
+      fs.utimesSync(backupPath, date, date);
+    } catch (utimesErr) {
+      logger.warn("Could not set backup file date", "Backup", { path: backupPath, error: utimesErr });
+    }
+
+    logger.info("Cloud backup file created successfully", "Backup", {
+      backupPath,
+      size: stats.size,
+      date: date.toISOString(),
+    });
+
+    return {
+      success: true,
+      backupPath,
+      size: stats.size,
+      date: date.toISOString(),
+    };
+  } catch (error) {
+    logger.error("Cloud backup creation failed", "Backup", error);
+    return {
+      success: false,
+      error: (error as Error).message,
+    };
+  }
+};
+
 // Create a manual backup to a custom path
 const createManualBackupToPath = async (customPath: string, date: Date = new Date()) => {
   try {
@@ -340,12 +432,25 @@ const createManualBackupToPath = async (customPath: string, date: Date = new Dat
   }
 };
 
-// Parse date from backup filename (auto_backup_YYYY-MM-DD_HH-MM-SS.db or manual_backup_...)
+// Parse date from backup filename (auto_backup_..., manual_backup_..., cloud_backup_...)
 const getDateFromBackupFileName = (fileName: string): Date | null => {
-  const match = fileName.match(/^(?:auto|manual)_backup_(\d{4})-(\d{2})-(\d{2})_(\d{2})-(\d{2})-(\d{2})\.db$/);
+  const match = fileName.match(/^(?:auto|manual|cloud)_backup_(\d{4})-(\d{2})-(\d{2})_(\d{2})-(\d{2})-(\d{2})\.db$/);
   if (!match) return null;
-  const [, y, mo, d, h, min, s] = match;
-  const date = new Date(parseInt(y!, 10), parseInt(mo!, 10) - 1, parseInt(d!, 10), parseInt(h!, 10), parseInt(min!, 10), parseInt(s!, 10));
+  const y = match[1];
+  const mo = match[2];
+  const d = match[3];
+  const h = match[4];
+  const min = match[5];
+  const s = match[6];
+  if (!y || !mo || !d || !h || !min || !s) return null;
+  const date = new Date(
+    parseInt(y, 10),
+    parseInt(mo, 10) - 1,
+    parseInt(d, 10),
+    parseInt(h, 10),
+    parseInt(min, 10),
+    parseInt(s, 10),
+  );
   return isNaN(date.getTime()) ? null : date;
 };
 
@@ -416,11 +521,19 @@ const listBackups = () => {
   try {
     const backupDir = ensureBackupDir();
     const files = fs.readdirSync(backupDir)
-      .filter(file => (file.startsWith("auto_backup_") || file.startsWith("manual_backup_")) && file.endsWith(".db"))
-      .map(file => {
+      .filter(
+        (file) =>
+          (file.startsWith("auto_backup_") ||
+            file.startsWith("manual_backup_") ||
+            file.startsWith("cloud_backup_")) &&
+          file.endsWith(".db"),
+      )
+      .map((file) => {
         const filePath = path.join(backupDir, file);
         const stats = fs.statSync(filePath);
         const isAuto = file.startsWith("auto_backup_");
+        const isCloud = file.startsWith("cloud_backup_");
+        const type: "automatic" | "manual" | "cloud" = isAuto ? "automatic" : isCloud ? "cloud" : "manual";
         const dateFromName = getDateFromBackupFileName(file);
         const displayDate = dateFromName ?? stats.mtime;
         return {
@@ -429,7 +542,7 @@ const listBackups = () => {
           size: stats.size,
           date: displayDate.toISOString(),
           readableDate: displayDate.toLocaleDateString(),
-          type: isAuto ? "automatic" : "manual"
+          type,
         };
       })
       .sort((a, b) => b.date.localeCompare(a.date));
@@ -681,6 +794,21 @@ export function setupBackupHandlers() {
     const result = await createManualBackup();
     if (result.success) {
       // Clean up old automatic backups after manual backup too
+      cleanOldAutoBackups();
+    }
+    return result;
+  });
+
+  ipcMain.handle("backup:createCloud", async () => {
+    if (await isDatabaseInUse()) {
+      return {
+        success: false,
+        error: "Database is currently in use. Please wait and try again.",
+      };
+    }
+
+    const result = await createCloudBackup();
+    if (result.success) {
       cleanOldAutoBackups();
     }
     return result;

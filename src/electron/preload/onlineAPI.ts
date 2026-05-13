@@ -19,8 +19,8 @@ export const onlineAPI = {
     >,
   clearLicenseGrace: () =>
     ipcRenderer.invoke("online:licenseGrace:clear") as Promise<{ success: true }>,
-  backupUploadLatest: (backupFilePath: string) =>
-    ipcRenderer.invoke("online:backupUploadLatest", backupFilePath) as Promise<CloudBackupUploadResult>,
+  backupUploadLatest: (backupFilePath: string, uploadSource?: string) =>
+    ipcRenderer.invoke("online:backupUploadLatest", backupFilePath, uploadSource) as Promise<CloudBackupUploadResult>,
   backupDownloadLatest: () =>
     ipcRenderer.invoke("online:backupDownloadLatest") as Promise<CloudBackupDownloadResult>,
 };
