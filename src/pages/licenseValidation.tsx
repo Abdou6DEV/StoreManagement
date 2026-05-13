@@ -133,17 +133,17 @@ export default function LicenseValidation() {
       </div>
 
       {/* Brand, license copy, and pricing centered together in the main area */}
-      <div className="flex flex-1 flex-col justify-center px-4 py-8 sm:px-6 sm:py-10">
-        <header className="mx-auto mb-6 max-w-xl shrink-0 text-center sm:mb-8">
+      <div className="flex flex-1 flex-col justify-center px-4 py-8 sm:px-6 sm:py-10 short:py-4 short:sm:py-6">
+        <header className="mx-auto mb-6 max-w-xl shrink-0 text-center sm:mb-8 short:mb-4 short:sm:mb-5">
           <div className="license-gate-anim" style={fadeUp(80)}>
             <img
               src={isDark ? LOGO_ICON : LOGO_ICON_DARK}
               alt=""
-              className="mx-auto mb-4 h-30 w-30 object-contain select-none sm:mb-5 sm:h-40 sm:w-40"
+              className="mx-auto mb-4 h-24 w-24 object-contain select-none sm:mb-5 sm:h-32 sm:w-32 short:h-20 short:w-20 short:sm:h-28 short:sm:w-28"
             />
           </div>
           <h1
-            className="license-gate-anim flex items-center justify-center gap-2 text-2xl font-bold tracking-tight text-foreground sm:gap-3 sm:text-3xl"
+            className="license-gate-anim flex items-center justify-center gap-2 text-2xl font-bold tracking-tight text-foreground sm:gap-3 sm:text-3xl short:text-xl short:sm:text-2xl"
             style={fadeUp(160)}
           >
             <ShieldAlert
@@ -153,7 +153,7 @@ export default function LicenseValidation() {
             <span>{t("licenseGate.title")}</span>
           </h1>
           <p
-            className="license-gate-anim mx-auto mt-3 max-w-xl text-sm leading-relaxed text-muted-foreground sm:text-base"
+            className="license-gate-anim mx-auto mt-3 max-w-xl text-sm leading-relaxed text-muted-foreground sm:text-base short:mt-2 short:text-sm"
             style={fadeUp(240)}
           >
             {t("licenseGate.subtitle")}
@@ -164,7 +164,7 @@ export default function LicenseValidation() {
         </div>
       </div>
 
-      <footer className="license-gate-anim shrink-0 px-4 pb-10 pt-6 text-center" style={fadeUp(400)}>
+      <footer className="license-gate-anim shrink-0 px-4 pb-10 pt-6 text-center short:pb-6 short:pt-4" style={fadeUp(400)}>
         <Button type="button" variant="outline" size="lg" className="min-w-[200px]" onClick={() => logout()}>
           <LogOut className="h-4 w-4" />
           {t("licenseGate.signOut")}

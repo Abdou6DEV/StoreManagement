@@ -739,19 +739,31 @@
     },
     "privacy": {
       "title": "Politique de Confidentialité",
-      "dataCollection": "• Nous collectons uniquement les données commerciales nécessaires au fonctionnement de l'application",
-      "dataStorage": "• Toutes les données sont stockées localement sur votre appareil",
-      "dataSharing": "• Nous ne partageons pas vos données avec des tiers",
-      "dataSecurity": "• Vos données sont protégées par chiffrement et stockage sécurisé",
-      "dataAccess": "• Vous avez un contrôle total sur vos données et pouvez les exporter/sauvegarder à tout moment"
+      "intro": "Cette politique décrit comment REDA TECH Store Management traite les informations de votre boutique sur cet ordinateur. Dernière mise à jour : mai 2026.",
+      "localOperations": "Les données courantes du magasin (ventes, stock, clients, factures et données associées) sont stockées dans une base SQLite locale sur ce PC. L'utilisation hors ligne de l'application ne transmet pas, à elle seule, ces données d'exploitation.",
+      "registrationData": "Lors de la première configuration, l'application peut envoyer votre nom complet, votre numéro de téléphone et—si vous reliez une boutique existante—votre identifiant client au service en ligne de provisionnement REDA TECH pour enregistrer cet appareil et démarrer un essai ou rétablir l'accès.",
+      "deviceIdentity": "L'application utilise un identifiant d'appareil dérivé de cet ordinateur (MachineGuid Windows) pour les contrôles de licence, de liaison et d'activation.",
+      "licensingChecks": "Lorsque les services en ligne sont configurés, l'application contacte les serveurs REDA TECH pour vérifier si cet appareil est autorisé à fonctionner. Les dates de fin d'essai ou de licence payante peuvent être mémorisées localement pour une période de grâce hors ligne limitée après un contrôle réussi.",
+      "cloudBackup": "Si vous utilisez la sauvegarde cloud alors que l'appareil est activé, l'application peut envoyer une copie de la base de données avec les identifiants client et appareil et la version de l'application. Un nouvel envoi remplace la copie cloud précédente pour ce client. La restauration depuis le cloud peut être proposée à l'accueil ou à la connexion lorsque la base locale est vide, selon la configuration en ligne.",
+      "accountsAndLogs": "Les noms d'utilisateur et mots de passe du personnel sont stockés localement. L'activité d'administration et les journaux applicatifs optionnels restent sur cet appareil sauf export ou sauvegarde.",
+      "onlineProviders": "L'enregistrement en ligne, les licences et la sauvegarde cloud s'appuient sur des services backend configurés (y compris une infrastructure telle que Supabase) uniquement pour ces fonctions—notamment pas pour des profils publicitaires.",
+      "yourChoices": "Vous pouvez créer des sauvegardes locales, restaurer depuis des fichiers de sauvegarde et choisir quand effectuer un envoi cloud manuel. Sans accès Internet, les licences en ligne et la sauvegarde cloud sont limitées, mais les données du magasin restent sur ce PC.",
+      "contact": "Les questions relatives à cette politique peuvent être adressées à votre fournisseur agréé ou à REDA TECH via les coordonnées du développeur indiquées dans cette application."
     },
     "terms": {
       "title": "Conditions d'Utilisation",
-      "license": "• Ce logiciel est sous licence pour usage commercial",
-      "warranty": "• Logiciel fourni 'tel quel' sans garantie",
-      "liability": "• Le développeur n'est pas responsable de la perte de données ou des dommages commerciaux",
-      "updates": "• Mises à jour et support fournis selon disponibilité",
-      "termination": "• La licence peut être résiliée à tout moment"
+      "intro": "Ces conditions régissent votre utilisation de REDA TECH Store Management sur cet ordinateur. En installant, en enregistrant ou en utilisant l'application, vous les acceptez.",
+      "licenseGrant": "Le droit d'utiliser le logiciel est accordé via la licence de votre fournisseur (mensuelle, annuelle ou à vie). L'application est destinée à un usage commercial légal de gestion de magasin par votre entreprise.",
+      "trialAccess": "Un nouvel appareil peut bénéficier d'un essai limité dans le temps lors d'un enregistrement en ligne, comme indiqué à la configuration. Après l'essai, l'accès continu nécessite une licence payante activée par votre fournisseur, sauf accord contraire.",
+      "offlineGrace": "Après un contrôle de licence en ligne réussi, l'application peut autoriser une utilisation limitée hors ligne jusqu'à sept jours lorsque les contrôles ne peuvent joindre le serveur. Une fois cette période expirée ou la licence révoquée, une vérification en ligne est à nouveau requise.",
+      "supplierActivation": "Les licences, la facturation et l'activation sont gérées par votre fournisseur, pas dans l'application. L'accès peut être suspendu si les enregistrements de licence indiquent que l'appareil n'est pas autorisé.",
+      "acceptableUse": "Vous êtes responsable de l'exactitude des données commerciales, du respect de la loi applicable (y compris les règles fiscales et comptables) et de la sécurité des comptes du personnel sur vos lieux.",
+      "warranty": "Le logiciel est fourni tel quel et selon disponibilité, sans garantie de fonctionnement ininterrompu, d'absence d'erreurs ou d'adéquation à un usage particulier.",
+      "liability": "Dans la mesure permise par la loi, REDA TECH n'est pas responsable de la perte de données, du manque à gagner ou des dommages indirects. Vous devez maintenir des sauvegardes des données critiques.",
+      "updates": "Les mises à jour et le support peuvent être fournis lorsqu'ils sont disponibles via les mécanismes de mise à jour de l'application et votre fournisseur.",
+      "termination": "Les licences peuvent prendre fin, changer ou être transférées selon les conditions du fournisseur. Si l'accès prend fin, vous pouvez conserver les fichiers de données locaux sous réserve de vos sauvegardes et droits d'export.",
+      "changes": "Nous pouvons mettre à jour ces conditions et la politique de confidentialité ; les changements importants seront reflétés dans une version ultérieure de l'application. L'utilisation continue vaut acceptation.",
+      "governingLaw": "Ces conditions s'adressent aux utilisateurs en Algérie et s'interprètent conformément au droit algérien applicable, sans préjudice des protections impératives des consommateurs."
     },
     "footer": "© 2024 REDA TECH. Tous droits réservés. Construit avec ❤️ en Algérie."
   },
@@ -2703,8 +2715,49 @@
     "subtitle": "Configurez cet ordinateur pour la première fois. Choisissez un essai pour une nouvelle boutique ou restaurez vos données si vous utilisez déjà l’application ailleurs.",
     "trialBadge": "Essai gratuit 7 jours !",
     "setupTitle": "Commencez avec nous",
-    "setupDescription": "Présentez-vous pour que nous puissions configurer votre boutique sur cet ordinateur. Indiquez votre nom complet et votre téléphone : nous en avons besoin pour lancer votre essai ou restaurer vos données, lier cet appareil à votre compte et vous joindre si besoin. Quelques secondes suffisent. Ces informations sont distinctes de votre mot de passe et sont traitées comme indiqué dans la section confidentialité ci-dessus.",
+    "setupDescription": "Présentez-vous pour que nous puissions configurer votre boutique sur cet ordinateur. Indiquez votre nom complet et votre téléphone : nous en avons besoin pour lancer votre essai ou restaurer vos données, lier cet appareil à votre compte et vous joindre si besoin. Quelques secondes suffisent. Ces informations sont distinctes de votre mot de passe et sont traitées comme indiqué dans la section mentions légales ci-dessous.",
     "featuresHeading": "Ce que vous pouvez faire avec cette application",
+    "technologyBridge": {
+      "title": "Pensé pour votre comptoir, sur cet ordinateur",
+      "description": "Les fonctionnalités ci-dessus couvrent les ventes, le stock et la clientèle au quotidien. Il s’agit d’une application de bureau : les données de votre boutique restent sur ce PC, restent utilisables quand la connexion faiblit, et chaque accès du personnel est maîtrisé.",
+      "highlights": {
+        "quickSetup": {
+          "title": "Mise en route rapide sur ce PC",
+          "description": "Lancez un essai gratuit pour une nouvelle boutique ou reliez cet ordinateur à un compte existant et restaurez vos données — sans tout reconstruire depuis zéro."
+        },
+        "licensedDevice": {
+          "title": "Licence sur cet ordinateur",
+          "description": "L’accès est lié à la licence de votre boutique sur cet appareil. Votre fournisseur peut activer, renouveler ou transférer l’autorisation lors d’un changement de caisse."
+        },
+        "supplierSupport": {
+          "title": "Accompagnement fournisseur",
+          "description": "Les formules et l’activation passent par votre fournisseur. Contactez-le pour un devis, l’aide licence et la mise en route de l’application en boutique."
+        }
+      }
+    },
+    "sectionNav": {
+      "ariaLabel": "Sections de la page d’accueil",
+      "overview": "Aperçu",
+      "getStarted": "Commencer",
+      "keyFeatures": "Fonctionnalités clés",
+      "platform": "Sur cet ordinateur",
+      "technical": "Fonctionnalités techniques",
+      "pricing": "Tarifs",
+      "developer": "Développeur",
+      "legal": "Mentions légales"
+    },
+    "journey": {
+      "exploreMore": "Découvrir plus",
+      "nextSection": "Section suivante : {{section}}",
+      "exploreAria": "Découvrir la section suivante : {{section}}",
+      "backToTop": "Retour en haut",
+      "backToTopHint": "Revenir à l’aperçu d’accueil",
+      "backToTopAria": "Retour en haut de la page d’accueil",
+      "progressAria": "Progression sur la page d’accueil",
+      "completeTitle": "Aperçu terminé",
+      "completeHint": "Vous avez consulté chaque section",
+      "completeAria": "Aperçu de la page d’accueil terminé"
+    },
     "fullName": "Nom complet",
     "fullNamePlaceholder": "Prénom et nom",
     "phone": "Numéro de téléphone",

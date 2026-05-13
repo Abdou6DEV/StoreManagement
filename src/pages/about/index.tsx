@@ -7,6 +7,7 @@ import {
   ABOUT_MAIN_FEATURE_DEFS,
   ABOUT_TECHNICAL_FEATURE_DEFS,
 } from "../../lib/about/featureDefinitions";
+import { ABOUT_PRIVACY_POINT_KEYS, ABOUT_TERMS_POINT_KEYS } from "../../lib/about/legalCopy";
 
 export default function AboutPage() {
   const { t } = useTranslation();
@@ -188,13 +189,12 @@ export default function AboutPage() {
               <Shield className="w-5 h-5 text-primary dark:text-primary" />
               {t("about.privacy.title", "Privacy Policy")}
             </h2>
-            <div className="space-y-3 text-sm text-muted-foreground">
-              <p>{t("about.privacy.dataCollection", "• We collect only necessary business data for application functionality")}</p>
-              <p>{t("about.privacy.dataStorage", "• All data is stored locally on your device")}</p>
-              <p>{t("about.privacy.dataSharing", "• We do not share your data with third parties")}</p>
-              <p>{t("about.privacy.dataSecurity", "• Your data is protected with encryption and secure storage")}</p>
-              <p>{t("about.privacy.dataAccess", "• You have full control over your data and can export/backup anytime")}</p>
-            </div>
+            <p className="mb-4 text-sm leading-relaxed text-muted-foreground">{t("about.privacy.intro")}</p>
+            <ul className="list-disc space-y-3 ps-5 text-sm leading-relaxed text-muted-foreground">
+              {ABOUT_PRIVACY_POINT_KEYS.map((key) => (
+                <li key={key}>{t(key)}</li>
+              ))}
+            </ul>
           </div>
 
           {/* Terms of Service */}
@@ -203,13 +203,12 @@ export default function AboutPage() {
               <FileText className="w-5 h-5 text-primary dark:text-primary" />
               {t("about.terms.title", "Terms of Service")}
             </h2>
-            <div className="space-y-3 text-sm text-muted-foreground">
-              <p>{t("about.terms.license", "• This software is licensed for commercial use")}</p>
-              <p>{t("about.terms.warranty", "• Software provided 'as is' without warranty")}</p>
-              <p>{t("about.terms.liability", "• Developer not liable for data loss or business damages")}</p>
-              <p>{t("about.terms.updates", "• Updates and support provided as available")}</p>
-              <p>{t("about.terms.termination", "• License can be terminated at any time")}</p>
-            </div>
+            <p className="mb-4 text-sm leading-relaxed text-muted-foreground">{t("about.terms.intro")}</p>
+            <ul className="list-disc space-y-3 ps-5 text-sm leading-relaxed text-muted-foreground">
+              {ABOUT_TERMS_POINT_KEYS.map((key) => (
+                <li key={key}>{t(key)}</li>
+              ))}
+            </ul>
           </div>
         </div>
 

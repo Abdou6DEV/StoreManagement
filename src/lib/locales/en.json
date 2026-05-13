@@ -1124,19 +1124,31 @@
     },
     "privacy": {
       "title": "Privacy Policy",
-      "dataCollection": "• We collect only necessary business data for application functionality",
-      "dataStorage": "• All data is stored locally on your device",
-      "dataSharing": "• We do not share your data with third parties",
-      "dataSecurity": "• Your data is protected with encryption and secure storage",
-      "dataAccess": "• You have full control over your data and can export/backup anytime"
+      "intro": "This policy describes how REDA TECH Store Management handles information for your shop on this computer. Last updated: May 2026.",
+      "localOperations": "Day-to-day shop records (sales, stock, clients, bills, and related data) are stored in a local SQLite database on this PC. Using the app offline does not, by itself, upload that operational data.",
+      "registrationData": "During first-time setup, the app may send your full name, phone number, and—when you link an existing shop—your customer ID to REDA TECH's online provisioning service to register this device and start a trial or restore access.",
+      "deviceIdentity": "The app uses a device identifier derived from this computer (Windows MachineGuid) for licensing, device linking, and activation checks.",
+      "licensingChecks": "When online services are configured, the app contacts REDA TECH servers to verify whether this device may run. Trial and paid licence end dates may be stored locally for a limited offline grace period after a successful check.",
+      "cloudBackup": "If you use cloud backup while your device is activated, the app can upload a database backup together with customer and device identifiers and the app version. A new upload replaces the previous cloud copy for that customer. Restore from cloud may be offered during welcome or login when the local database is empty, subject to online configuration.",
+      "accountsAndLogs": "Staff usernames and passwords for the app are stored locally. Administrative activity and optional application logs remain on this device unless you export or back them up.",
+      "onlineProviders": "Online registration, licensing, and cloud backup rely on configured backend services (including infrastructure such as Supabase) to operate those features—not to build advertising profiles.",
+      "yourChoices": "You can create local backups, restore from backup files, and choose when to perform a manual cloud upload. Without internet access, online licensing and cloud backup are limited, but local shop data remains on this PC.",
+      "contact": "Questions about this policy may be directed to your authorised supplier or to REDA TECH using the developer contact details shown in this application."
     },
     "terms": {
       "title": "Terms of Service",
-      "license": "• This software is licensed for commercial use",
-      "warranty": "• Software provided 'as is' without warranty",
-      "liability": "• Developer not liable for data loss or business damages",
-      "updates": "• Updates and support provided as available",
-      "termination": "• License can be terminated at any time"
+      "intro": "These terms govern your use of REDA TECH Store Management on this computer. By installing, registering, or using the app, you agree to them.",
+      "licenseGrant": "Rights to use the software are granted through your supplier's licence (monthly, yearly, or lifetime). The app is intended for lawful retail and store-management use by your business.",
+      "trialAccess": "A new device may receive a time-limited trial when registered online, as described during setup. After the trial, continued access requires a paid licence activated by your supplier unless otherwise agreed.",
+      "offlineGrace": "After a successful online licence check, the app may allow limited use while offline for up to seven days when checks cannot reach the server. Once that grace expires or the licence is revoked, online verification is required again.",
+      "supplierActivation": "Licensing, billing, and activation are handled by your supplier, not inside the app. Access may be suspended if licence records show the device is not allowed.",
+      "acceptableUse": "You are responsible for accurate business data, compliance with applicable local law (including tax and accounting rules), and securing staff accounts on your premises.",
+      "warranty": "The software is provided as is and as available, without warranties of uninterrupted operation, error-free performance, or fitness for a particular purpose.",
+      "liability": "To the maximum extent permitted by law, REDA TECH is not liable for loss of data, lost profits, or indirect damages. You are responsible for maintaining backups of business-critical data.",
+      "updates": "Updates and support may be delivered when available through the app's update mechanisms and your supplier.",
+      "termination": "Licences may end, change, or transfer according to supplier terms. If access ends, you may retain local data files subject to your backups and export rights.",
+      "changes": "We may update these terms and the privacy policy; material changes will be reflected in a future app release. Continued use after updates constitutes acceptance.",
+      "governingLaw": "These terms are intended for users in Algeria and shall be interpreted in accordance with applicable Algerian law, without prejudice to mandatory consumer protections."
     },
     "footer": "© 2024 REDA TECH. All rights reserved. Built with ❤️ in Algeria."
   },
@@ -2786,8 +2798,49 @@
     "subtitle": "Set up this computer for the first time. Choose a new shop trial or restore your data if you already use the app elsewhere.",
     "trialBadge": "7-day free trial !",
     "setupTitle": "Get started with us",
-    "setupDescription": "Tell us who you are so we can set up your shop on this computer. Add your full name and phone — we use them to start your trial or restore your data, connect this device to your account, and reach you if you need help. It only takes a moment. Your details stay separate from your login password and are handled as described in the privacy section above.",
+    "setupDescription": "Tell us who you are so we can set up your shop on this computer. Add your full name and phone — we use them to start your trial or restore your data, connect this device to your account, and reach you if you need help. It only takes a moment. Your details stay separate from your login password and are handled as described in the legal section below.",
     "featuresHeading": "What you can do with this app",
+    "technologyBridge": {
+      "title": "Built for your counter, on this computer",
+      "description": "The features above cover day-to-day sales, stock, and clients. This is a desktop application: your shop data stays on this PC, keeps working when the connection is weak, and access stays controlled for each staff member.",
+      "highlights": {
+        "quickSetup": {
+          "title": "Quick setup on this PC",
+          "description": "Start a free trial for a new shop or link this computer to an existing account and restore your data—without rebuilding everything from scratch."
+        },
+        "licensedDevice": {
+          "title": "Licensed on this computer",
+          "description": "Access is tied to your shop license on this device. Your supplier can activate, renew, or move entitlement when you add or replace a counter PC."
+        },
+        "supplierSupport": {
+          "title": "Supplier support",
+          "description": "Plans and activation go through your supplier. Contact them for quotes, license help, and getting this app running on your shop floor."
+        }
+      }
+    },
+    "sectionNav": {
+      "ariaLabel": "Welcome page sections",
+      "overview": "Overview",
+      "getStarted": "Get started",
+      "keyFeatures": "Key features",
+      "platform": "On your computer",
+      "technical": "Technical features",
+      "pricing": "Pricing",
+      "developer": "Developer",
+      "legal": "Legal"
+    },
+    "journey": {
+      "exploreMore": "Discover More",
+      "nextSection": "Next: {{section}}",
+      "exploreAria": "Discover next section: {{section}}",
+      "backToTop": "Back to top",
+      "backToTopHint": "Return to the welcome overview",
+      "backToTopAria": "Back to top of the welcome page",
+      "progressAria": "Welcome page progress",
+      "completeTitle": "Overview complete",
+      "completeHint": "You have viewed every section",
+      "completeAria": "Welcome page overview completed"
+    },
     "fullName": "Full name",
     "fullNamePlaceholder": "First and last name",
     "phone": "Phone number",
