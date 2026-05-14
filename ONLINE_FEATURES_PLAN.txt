@@ -1,5 +1,5 @@
 Store Management – Online Features Plan (Working Draft)
-Last updated: 2026-05-12 (checkpoint: nav trial/paid-expiry banners; License tab manual online check + shared license state; cloud backup upload IPC + Backup tab button; login cloud restore + download version gate still open)
+Last updated: 2026-05-14 (checkpoint: Backup online hub — check / download-to-local / upload with warning dialog + progress bar + IPC progress; nav trial/paid-expiry + License tab unchanged; login cloud restore + download version gate still open)
 
 Goal
 - Add lightweight “online” capabilities (not fully cloud): device activation / deactivation, optional time-limited activation, and online backup upload.
@@ -240,7 +240,7 @@ Unfinished questions / decisions (must answer before implementation)
 
 ## Progress checkpoint (resume here)
 
-Last plan sync: 2026-05-13
+Last plan sync: 2026-05-14
 
 Use this section as the single source of truth for **done vs not done**. Spec sections **1–16** above remain the design; below tracks **reality in the repo and on your Supabase project**.
 
@@ -275,9 +275,9 @@ Use this section as the single source of truth for **done vs not done**. Spec se
 - **Files:** `src/pages/welcome/index.tsx` (scoped **`@keyframes`** + **`SequentialIntroSlot`**), **`src/index.css`** (ribbon unchanged aside from DOM placement in TSX).
 
 **Online IPC surface (current scope)**
-- **Implemented:** **`deviceRequest`**, **`deviceCheck`**, **`readLicenseGrace`**, **`persistLicenseGrace`**, **`clearLicenseGrace`**, **`backupUploadLatest`**, **`backupDownloadLatest`** (preload **`window.api.online`**).
-- **Upload (app):** **`online:backupUploadLatest`** → Edge **`backup-upload-latest`** (multipart **`device_id`**, **`customer_id`**, **`app_version`**, **`source`**, **`file`**); used from Administrator **Backup** tab (**create manual backup** then upload).
-- **Download (app):** **`online:backupDownloadLatest`** → Edge **`backup-download-latest`** (JSON **`device_id`**, **`customer_id`** → **`db_signed_url`**). **IPC only** — **no** login restore UI yet; **no** **`latest.json`** / app-version gate in app until server or client adds it.
+- **Implemented:** **`deviceRequest`**, **`deviceCheck`**, **`readLicenseGrace`**, **`persistLicenseGrace`**, **`clearLicenseGrace`**, **`backupUploadLatest`**, **`backupDownloadLatest`**, **`backupDownloadLatestToLocal`**, **`onCloudBackupTransferProgress`** (preload **`window.api.online`**).
+- **Upload (app):** **`online:backupUploadLatest`** → Edge **`backup-upload-latest`** (multipart **`device_id`**, **`customer_id`**, **`app_version`**, **`source`**, **`file`**); used from Administrator **Backup** tab (**createCloud** staging path then upload).
+- **Download (app):** **`online:backupDownloadLatest`** (signed URL only) and **`online:backupDownloadLatestToLocal`** (fetch stream → **`cloud_latest_from_online.db`** in backups folder). **Backup tab** uses both for check vs save-to-disk. **No** login restore UI yet; **no** **`latest.json`** / app-version gate in app until server or client adds it.
 - **Still not in app:** login-screen cloud restore flow; backup download → replace DB → logout.
 
 **Offline grace + local snapshot (2026-05-11)** — §5 + §14 (file, not SQLite **`options`**) + partial §17
@@ -316,12 +316,15 @@ Use this section as the single source of truth for **done vs not done**. Spec se
 - **i18n:** **`navigation.trialBanner*`**, **`navigation.subscriptionBanner*`** (**en / fr / ar**).
 - **Files:** `src/lib/components/trialHeaderBanner.tsx`, `paidExpiryHeaderBanner.tsx`, `src/lib/hooks/useActiveTrial.ts`, `usePaidExpiryWarning.ts`, `src/lib/license/formatDeadlineRemaining.ts`, `src/lib/components/navigation.tsx`.
 
-**Administrator — Backup tab cloud upload (2026-05-12)** — §6 v1 manual upload (partial)
-- **UI:** **Upload to cloud** on **`backupManagement.tsx`** — **`createManual`** then **`window.api.online.backupUploadLatest(backupPath)`**.
-- **Identity:** **`device_id`** (MachineGuid), **`customer_id`** from **`online.customerId`** option; **`app_version`** from **`app.getVersion()`**; **`source`** = **`manual_upload`**.
-- **Errors (toasts + i18n):** missing customer, **`missing_env`**, **`device_inactive`**, file too large, generic failure.
-- **Server contract (deployed):** **`backup-upload-latest`** multipart; **`backup-download-latest`** returns **`db_signed_url`** only — see **B** / **C** for trial **`active`** gate and missing **`latest.json`** on download.
-- **Files:** `src/electron/handlers/onlineHandlers.ts`, `src/electron/types/cloudBackup.ts`, `src/electron/preload/onlineAPI.ts`, `src/pages/administrator/components/backupManagement.tsx`.
+**Administrator — Backup tab online hub + cloud transfer (2026-05-12 … 2026-05-14)** — §6 v1 manual upload / download-to-PC (partial vs full §6 restore)
+- **UI (`backupManagement.tsx`):** Online backup **hub** — **Check cloud backup** (`backupDownloadLatest`), **Download from cloud** (`backupDownloadLatestToLocal` → saves **`cloud_latest_from_online.db`** under userData backups), **Create & upload to cloud** (`createCloud` staging then **`backupUploadLatest`**, staging delete on success). Hub styled like License tab; auto **check** on tab mount; per-card delete / restore flows as implemented in repo.
+- **Transfer UX (2026-05-14):** On upload or download **start**: modal warning (do not close app / stable internet) — **`admin.backup.cloudTransferWarning*`** **en / fr / ar**. **Progress bar** under hub buttons (same visual pattern as update download: track, %, speed, bytes/total, ETA). While upload or download: disable **Check**, **Download**, **Upload**; also disable those three when **`!navigator.onLine`**.
+- **Main (`onlineHandlers.ts`):** **`cloud-backup-transfer-progress`** IPC (~1s throttle, `sender.isDestroyed()` guard). **Download:** stream signed URL body to disk with backpressure-safe **`writeStreamChunk`** (error + drain cleanup). **Upload:** chunked disk read → progress ~0–35%; network phase **estimated** progress (fetch has no upload bytes); 100% on success.
+- **Preload:** **`onlineAPI.onCloudBackupTransferProgress(cb) → cleanup`**; type **`CloudBackupTransferProgressPayload`** in **`electron/types/cloudBackup.ts`**. Renderer uses **`cloudTransferPhaseRef`** + explicit **`cloudTransferDialogPhase`** for dialog title; **`errMsg`** for safe download error strings.
+- **Identity / payload:** unchanged vs Edge — **`device_id`**, **`customer_id`**, **`app_version`**, **`source`** (**`manual_upload`**), multipart **`file`**.
+- **Errors (toasts + i18n):** missing customer, **`missing_env`**, **`device_inactive`**, file too large, not_found, network, generic failure (existing + warning strings).
+- **Server contract:** **`backup-upload-latest`** multipart; **`backup-download-latest`** → **`db_signed_url`**. No Edge changes required for streaming/progress (client-only). See **B** / **C** for trial **`active`** gate and **`latest.json`** / login restore.
+- **Files:** `onlineHandlers.ts`, `onlineAPI.ts`, `cloudBackup.ts` (types), `backupManagement.tsx`, locales **en / fr / ar** (`admin.backup.cloudTransfer*`, hub strings).
 
 **License gate UI — `licenseValidation.tsx` (2026-05-10)**
 - Full-page gate: logo, **`licenseGate.title` / `subtitle`** (explicit “license” wording), **`ShieldAlert`** on title, staggered **fade-up** animations (login-like easing), **`PricingPlansSection`**, settings dropdown (theme / language / fullscreen), **sign out**.
@@ -378,8 +381,8 @@ Use this section as the single source of truth for **done vs not done**. Spec se
 **4) Login-only cloud restore (section 11 + 6)**
 - **`backup-download-latest`** IPC returns **`db_signed_url`**; **login** restore on empty DB, **`latest.json`** version gate, replace DB, logout — **not** wired in UI.
 
-**5) Backup page → cloud upload (section 6)**
-- **Done (manual v1):** Administrator **Backup** tab **Upload to cloud** + **`online:backupUploadLatest`** (see **A**). **Not done:** auto-upload setting; login restore.
+**5) Backup page → cloud upload / download to PC (section 6)**
+- **Done (manual v1 + hub):** Administrator **Backup** tab — **check**, **download to local folder**, **create & upload**, transfer warning + progress IPC (see **A**, 2026-05-14). **Not done:** auto-upload setting; login restore; **`latest.json`** version gate in app.
 
 **6) Backup Edge Functions vs trial (section 2.1)**
 - If validators still require **`active=true`** only, align with **trial allowed** when you want trial customers uploading.
@@ -409,7 +412,7 @@ Use this section as the single source of truth for **done vs not done**. Spec se
 | License after login + preload | N/A                   | **Yes** (**`App.tsx`** §15 branch)                |
 | First ADMIN setup on login   | N/A                    | **Done**                                          |
 | Activation-key recovery      | Local validate in main | **Done**; still runs **`device-check`** after success |
-| Cloud backup upload/download | Functions exist        | **Upload IPC + Backup UI**; **download IPC only**; **no login restore** |
+| Cloud backup upload/download | Functions exist        | **Upload + download-to-local IPC + Backup hub UI** (check / download / upload + progress); **no login restore** |
 | Welcome offline banner       | N/A                    | **Done**                                          |
 | Welcome phone validation     | N/A                    | **Done**                                          |
 | Welcome sequential intro / ribbon / borders | N/A                    | **Done** (2026-05-13 polish)                      |
@@ -437,6 +440,7 @@ Use this section as the single source of truth for **done vs not done**. Spec se
 - ~~“Offline grace / **`min` deadline** not implemented”~~ → **Done** (**A**); expired-trial cap fix **2026-05-11**.
 - ~~“No §17 license UI”~~ → **Partial** (Administrator **License** tab + nav pills — **A**).
 - ~~“No renderer IPC to backup-upload-latest”~~ → **Done** (**A**); login restore still open (**C**).
+- ~~“Backup download IPC only (no save-to-disk UI)”~~ → **Superseded** — **`backupDownloadLatestToLocal`** + hub check/download + progress (**A**, 2026-05-14).
 - ~~“License tab auto device-check on open”~~ → **Superseded** — manual **Check online** + cooldown (**A**).
 
 Keep **`device-request`** phone normalization and **`X_APP_SECRET`** hygiene as ongoing ops tasks, not app blockers.

@@ -12,7 +12,12 @@ import {
 import { LogLevel } from "../../lib/logger/common";
 import type { DeviceRequestPayload, DeviceRequestResult } from "../types/deviceRequest";
 import type { DeviceCheckResult } from "../types/deviceCheck";
-import type { CloudBackupDownloadResult, CloudBackupUploadResult } from "../types/cloudBackup";
+import type {
+  CloudBackupDownloadResult,
+  CloudBackupDownloadToLocalResult,
+  CloudBackupTransferProgressPayload,
+  CloudBackupUploadResult,
+} from "../types/cloudBackup";
 
 export type SaleWithDetails = Sale & {
   client?: Client;
@@ -429,6 +434,8 @@ export type BackupAPI = {
   create: () => Promise<BackupResult>;
   createManual: () => Promise<BackupResult>;
   createCloud: () => Promise<BackupResult>;
+  deleteCloudUploadStaging: (backupPath: string) => Promise<{ success: boolean; error?: string }>;
+  deleteListingFile: (backupPath: string) => Promise<{ success: boolean; error?: string }>;
   ensureDailyBackup: () => Promise<{
     success: boolean;
     created?: boolean;
@@ -467,6 +474,8 @@ export type OnlineAPI = {
   clearLicenseGrace: () => Promise<{ success: true }>;
   backupUploadLatest: (backupFilePath: string, uploadSource?: string) => Promise<CloudBackupUploadResult>;
   backupDownloadLatest: () => Promise<CloudBackupDownloadResult>;
+  backupDownloadLatestToLocal: () => Promise<CloudBackupDownloadToLocalResult>;
+  onCloudBackupTransferProgress: (callback: (data: CloudBackupTransferProgressPayload) => void) => () => void;
 };
 
 export type ActivityLogAPI = {

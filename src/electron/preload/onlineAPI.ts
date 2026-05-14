@@ -4,6 +4,8 @@ import type { DeviceCheckResult } from "../types/deviceCheck";
 import type { LicenseGraceSnapshot } from "./types";
 import type {
   CloudBackupDownloadResult,
+  CloudBackupDownloadToLocalResult,
+  CloudBackupTransferProgressPayload,
   CloudBackupUploadResult,
 } from "../types/cloudBackup";
 
@@ -23,4 +25,16 @@ export const onlineAPI = {
     ipcRenderer.invoke("online:backupUploadLatest", backupFilePath, uploadSource) as Promise<CloudBackupUploadResult>,
   backupDownloadLatest: () =>
     ipcRenderer.invoke("online:backupDownloadLatest") as Promise<CloudBackupDownloadResult>,
+  backupDownloadLatestToLocal: () =>
+    ipcRenderer.invoke("online:backupDownloadLatestToLocal") as Promise<CloudBackupDownloadToLocalResult>,
+  onCloudBackupTransferProgress: (
+    callback: (data: CloudBackupTransferProgressPayload) => void,
+  ): (() => void) => {
+    const handler = (_e: unknown, data: CloudBackupTransferProgressPayload) => callback(data);
+    ipcRenderer.on("cloud-backup-transfer-progress", handler);
+    const cleanup = (): void => {
+      void ipcRenderer.removeListener("cloud-backup-transfer-progress", handler);
+    };
+    return cleanup;
+  },
 };

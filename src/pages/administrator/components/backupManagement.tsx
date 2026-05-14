@@ -1,19 +1,25 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
-import { 
-  Database, 
-  Download, 
-  Upload, 
-  RefreshCw, 
-  AlertTriangle, 
-  CheckCircle, 
+import {
+  Database,
+  Download,
+  Upload,
+  RefreshCw,
+  AlertTriangle,
+  CheckCircle,
   Clock,
   HardDrive,
   Calendar,
   FolderOpen,
   CloudUpload,
   Cloud,
+  Copy,
+  Check,
+  Loader2,
+  Wifi,
+  WifiOff,
+  Trash2,
 } from "lucide-react";
 import { Button } from "../../../lib/components/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../../lib/components/card";
@@ -31,9 +37,31 @@ import { useToast } from "../../../lib/contexts/toastContext";
 import { useAuth } from "../../../lib/contexts/authContext";
 import type { BackupFile } from "../../../electron/preload/types";
 import { cn } from "../../../lib/utils";
+import { ONLINE_CUSTOMER_ID_OPTION_KEY } from "../../../lib/onboarding/constants";
+import type { CloudBackupTransferProgressPayload } from "../../../electron/types/cloudBackup";
+
+const RESTORE_CONFIRM_WORD = "YES";
+
+function InfoRow({
+  label,
+  value,
+  hint,
+}: {
+  label: string;
+  value: React.ReactNode;
+  hint?: string;
+}) {
+  return (
+    <div className="flex flex-col gap-1 rounded-lg border border-border/70 bg-muted/20 px-4 py-3">
+      <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</span>
+      <div className="break-all text-sm font-semibold text-foreground">{value}</div>
+      {hint ? <span className="text-xs text-muted-foreground">{hint}</span> : null}
+    </div>
+  );
+}
 
 export function BackupManagement() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { showToast } = useToast();
   const { logout, user } = useAuth();
   const navigate = useNavigate();
@@ -41,6 +69,7 @@ export function BackupManagement() {
   const [loading, setLoading] = useState(false);
   const [creatingBackup, setCreatingBackup] = useState(false);
   const [restoring, setRestoring] = useState<string | null>(null);
+  const [deletingPath, setDeletingPath] = useState<string | null>(null);
   const [restoreDialogOpen, setRestoreDialogOpen] = useState(false);
   const [selectedBackup, setSelectedBackup] = useState<BackupFile | null>(null);
   const [confirmText, setConfirmText] = useState("");
@@ -52,10 +81,54 @@ export function BackupManagement() {
   const [restoreFromFileDialogOpen, setRestoreFromFileDialogOpen] = useState(false);
   const [selectedRestoreFile, setSelectedRestoreFile] = useState("");
   const [uploadingCloud, setUploadingCloud] = useState(false);
+  const [storedCustomerId, setStoredCustomerId] = useState<string | null>(null);
+  const [isOnline, setIsOnline] = useState(() => navigator.onLine);
+  const [copiedCustomerId, setCopiedCustomerId] = useState(false);
+  const [checkingCloudPresence, setCheckingCloudPresence] = useState(false);
+  const [downloadingCloudBackup, setDownloadingCloudBackup] = useState(false);
+  const [lastRemoteBackupCheckMs, setLastRemoteBackupCheckMs] = useState<number | null>(null);
+  const [remoteBackupKnownAvailable, setRemoteBackupKnownAvailable] = useState<boolean | null>(null);
+  const [cloudTransferWarningOpen, setCloudTransferWarningOpen] = useState(false);
+  const [cloudTransferDialogPhase, setCloudTransferDialogPhase] = useState<"upload" | "download" | null>(null);
+  const [cloudTransferProgress, setCloudTransferProgress] = useState<CloudBackupTransferProgressPayload | null>(null);
+  const cloudTransferPhaseRef = useRef<"upload" | "download" | null>(null);
+
+  const loadStoredCustomerId = useCallback(async () => {
+    try {
+      const v = await window.api.database.options.get(ONLINE_CUSTOMER_ID_OPTION_KEY);
+      setStoredCustomerId(v?.trim() || null);
+    } catch {
+      setStoredCustomerId(null);
+    }
+  }, []);
 
   // Load backups on component mount
   useEffect(() => {
     loadBackups();
+  }, []);
+
+  useEffect(() => {
+    void loadStoredCustomerId();
+  }, [loadStoredCustomerId]);
+
+  useEffect(() => {
+    const syncOnline = () => setIsOnline(navigator.onLine);
+    window.addEventListener("online", syncOnline);
+    window.addEventListener("offline", syncOnline);
+    return () => {
+      window.removeEventListener("online", syncOnline);
+      window.removeEventListener("offline", syncOnline);
+    };
+  }, []);
+
+  useEffect(() => {
+    const cleanup = window.api.online.onCloudBackupTransferProgress((data) => {
+      if (cloudTransferPhaseRef.current !== data.phase) return;
+      setCloudTransferProgress(data);
+    });
+    return () => {
+      cleanup();
+    };
   }, []);
 
   // Refresh list when an automatic backup was just created (so the new backup appears)
@@ -90,8 +163,18 @@ export function BackupManagement() {
   };
 
   const uploadToCloud = async () => {
+    cloudTransferPhaseRef.current = "upload";
     try {
       setUploadingCloud(true);
+      setCloudTransferDialogPhase("upload");
+      setCloudTransferWarningOpen(true);
+      setCloudTransferProgress({
+        phase: "upload",
+        progress: 0,
+        downloaded: 0,
+        total: 0,
+        speed: 0,
+      });
       const created = await window.api.backup.createCloud();
       if (!created.success || !created.backupPath) {
         showToast(
@@ -101,10 +184,13 @@ export function BackupManagement() {
         return;
       }
 
-      await loadBackups();
-      const uploaded = await window.api.online.backupUploadLatest(created.backupPath, "cloud_backup");
-      if (uploaded.success) {
+      const uploaded = await window.api.online.backupUploadLatest(created.backupPath, "manual_upload");
+      if (uploaded.success === true) {
+        await window.api.backup.deleteCloudUploadStaging(created.backupPath);
+        await loadBackups();
         showToast(t("admin.backup.cloudUploadSuccess", "Cloud backup uploaded successfully"), "success");
+        setLastRemoteBackupCheckMs(Date.now());
+        setRemoteBackupKnownAvailable(true);
         return;
       }
 
@@ -154,7 +240,180 @@ export function BackupManagement() {
       showToast(t("admin.backup.cloudUploadFailed", "Failed to upload cloud backup"), "error");
       console.error("Error uploading cloud backup:", error);
     } finally {
+      cloudTransferPhaseRef.current = null;
       setUploadingCloud(false);
+      setCloudTransferDialogPhase(null);
+      setCloudTransferWarningOpen(false);
+      setCloudTransferProgress(null);
+    }
+  };
+
+  const checkRemoteCloudBackup = useCallback(async () => {
+    try {
+      setCheckingCloudPresence(true);
+      const r = await window.api.online.backupDownloadLatest();
+      if (r.success === true) {
+        setLastRemoteBackupCheckMs(Date.now());
+        setRemoteBackupKnownAvailable(true);
+        showToast(
+          t("admin.backup.cloudCheckFound", "A cloud backup is available for this customer account."),
+          "success",
+        );
+        return;
+      }
+
+      setLastRemoteBackupCheckMs(Date.now());
+      if (r.code === "not_found") {
+        setRemoteBackupKnownAvailable(false);
+        showToast(
+          t("admin.backup.cloudCheckNone", "No cloud backup was found for this customer yet."),
+          "info",
+        );
+        return;
+      }
+
+      setRemoteBackupKnownAvailable(null);
+      if (r.code === "missing_customer_id") {
+        showToast(
+          t(
+            "admin.backup.cloudUploadMissingCustomer",
+            "Customer ID is not recorded on this device. Complete welcome setup first.",
+          ),
+          "error",
+        );
+        return;
+      }
+      if (r.code === "missing_env") {
+        showToast(
+          t("admin.backup.cloudUploadNeedsOnline", "Online backup is not configured on this app build."),
+          "error",
+        );
+        return;
+      }
+      if (r.code === "network") {
+        showToast(t("admin.backup.cloudCheckNetwork", "Could not reach the server. Check your connection."), "error");
+        return;
+      }
+
+      showToast(
+        t("admin.backup.cloudCheckFailed", "Could not verify cloud backup: {{message}}", { message: r.error }),
+        "error",
+      );
+    } catch {
+      showToast(t("admin.backup.cloudCheckFailedGeneric", "Could not verify cloud backup."), "error");
+    } finally {
+      setCheckingCloudPresence(false);
+    }
+  }, [showToast, t]);
+
+  useEffect(() => {
+    void checkRemoteCloudBackup();
+  }, [checkRemoteCloudBackup]);
+
+  const downloadRemoteCloudBackup = async () => {
+    cloudTransferPhaseRef.current = "download";
+    try {
+      setDownloadingCloudBackup(true);
+      setCloudTransferDialogPhase("download");
+      setCloudTransferWarningOpen(true);
+      setCloudTransferProgress({
+        phase: "download",
+        progress: 0,
+        downloaded: 0,
+        total: 0,
+        speed: 0,
+      });
+      const r = await window.api.online.backupDownloadLatestToLocal();
+      if (r.success === true) {
+        setLastRemoteBackupCheckMs(Date.now());
+        setRemoteBackupKnownAvailable(true);
+        await loadBackups();
+        showToast(
+          t(
+            "admin.backup.cloudDownloadSaved",
+            "Latest cloud backup saved to this computer. You can restore it from the list below.",
+          ),
+          "success",
+        );
+        return;
+      }
+
+      if (r.code === "not_found") {
+        setLastRemoteBackupCheckMs(Date.now());
+        setRemoteBackupKnownAvailable(false);
+        showToast(
+          t("admin.backup.cloudDownloadNotFound", "No cloud backup was found to download."),
+          "info",
+        );
+        return;
+      }
+
+      const errMsg = r.success === false ? String(r.error ?? "") : "";
+
+      if (r.code === "missing_customer_id") {
+        showToast(
+          t(
+            "admin.backup.cloudUploadMissingCustomer",
+            "Customer ID is not recorded on this device. Complete welcome setup first.",
+          ),
+          "error",
+        );
+        return;
+      }
+      if (r.code === "missing_env") {
+        showToast(
+          t("admin.backup.cloudUploadNeedsOnline", "Online backup is not configured on this app build."),
+          "error",
+        );
+        return;
+      }
+      if (errMsg.toLowerCase().includes("device_inactive")) {
+        showToast(
+          t(
+            "admin.backup.cloudUploadDeviceInactive",
+            "This device is not activated for paid cloud backup yet.",
+          ),
+          "error",
+        );
+        return;
+      }
+      if (r.code === "network") {
+        showToast(t("admin.backup.cloudDownloadNetwork", "Download failed. Check your connection."), "error");
+        return;
+      }
+
+      showToast(
+        t("admin.backup.cloudDownloadFailed", "Cloud download failed: {{message}}", { message: errMsg || "Unknown error" }),
+        "error",
+      );
+    } catch {
+      showToast(t("admin.backup.cloudDownloadFailedGeneric", "Cloud download failed."), "error");
+    } finally {
+      cloudTransferPhaseRef.current = null;
+      setDownloadingCloudBackup(false);
+      setCloudTransferDialogPhase(null);
+      setCloudTransferWarningOpen(false);
+      setCloudTransferProgress(null);
+    }
+  };
+
+  const formatBytes = (bytes: number): string => {
+    if (bytes === 0) return "0 B";
+    const k = 1024;
+    const sizes = ["B", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
+  };
+
+  const copyCustomerId = async () => {
+    if (!storedCustomerId) return;
+    try {
+      await navigator.clipboard.writeText(storedCustomerId);
+      setCopiedCustomerId(true);
+      showToast(t("admin.backup.customerIdCopied", "Customer ID copied"), "success");
+      window.setTimeout(() => setCopiedCustomerId(false), 2000);
+    } catch {
+      showToast(t("admin.backup.customerIdCopyFailed", "Could not copy customer ID"), "error");
     }
   };
 
@@ -350,8 +609,11 @@ export function BackupManagement() {
   const confirmRestore = async () => {
     if (!selectedBackup) return;
     
-    if (confirmText !== "YES") {
-      showToast("Please type 'YES' to confirm", "error");
+    if (confirmText !== RESTORE_CONFIRM_WORD) {
+      showToast(
+        t("admin.backup.pleaseTypeYesToConfirm", "Please type YES to confirm"),
+        "error",
+      );
       return;
     }
 
@@ -446,6 +708,74 @@ export function BackupManagement() {
   const cloudBackups = useMemo(() => backups.filter((b) => b.type === "cloud"), [backups]);
   const manualBackups = useMemo(() => backups.filter((b) => b.type === "manual"), [backups]);
 
+  const lastRemoteCheckLabel = useMemo(() => {
+    if (lastRemoteBackupCheckMs == null) return "—";
+    const loc = i18n.language === "ar" ? "ar" : i18n.language === "fr" ? "fr" : "en";
+    return new Intl.DateTimeFormat(loc, { dateStyle: "medium", timeStyle: "short" }).format(
+      new Date(lastRemoteBackupCheckMs),
+    );
+  }, [lastRemoteBackupCheckMs, i18n.language]);
+
+  const remotePresenceBadge = useMemo(() => {
+    if (!isOnline) {
+      return {
+        className: "border-border text-muted-foreground",
+        label: t("admin.backup.hubRemoteOffline", "Offline — connect to use the server"),
+      };
+    }
+    if (checkingCloudPresence || downloadingCloudBackup) {
+      return {
+        className: "border-amber-500/40 bg-amber-500/10 text-amber-800 dark:text-amber-200",
+        label: t("admin.backup.hubRemoteWorking", "Checking / downloading…"),
+      };
+    }
+    if (remoteBackupKnownAvailable === true) {
+      return {
+        className: "border-emerald-500/40 bg-emerald-500/10 text-emerald-800 dark:text-emerald-200",
+        label: t("admin.backup.hubRemoteYes", "Online backup available"),
+      };
+    }
+    if (remoteBackupKnownAvailable === false) {
+      return {
+        className: "border-border text-muted-foreground",
+        label: t("admin.backup.hubRemoteNo", "No file online (last check)"),
+      };
+    }
+    return {
+      className: "border-border text-muted-foreground",
+      label: t("admin.backup.hubRemoteUnknown", "Not checked against server"),
+    };
+  }, [checkingCloudPresence, downloadingCloudBackup, isOnline, remoteBackupKnownAvailable, t]);
+
+  const deleteBackupFile = async (backup: BackupFile) => {
+    if (
+      !window.confirm(
+        t("admin.backup.deleteBackupConfirm", "Delete {{name}}? This cannot be undone.", { name: backup.name }),
+      )
+    ) {
+      return;
+    }
+    try {
+      setDeletingPath(backup.path);
+      const result = await window.api.backup.deleteListingFile(backup.path);
+      if (result.success) {
+        showToast(t("admin.backup.deleteBackupSuccess", "Backup file deleted"), "success");
+        await loadBackups();
+      } else {
+        showToast(
+          t("admin.backup.deleteBackupFailed", "Could not delete backup: {{message}}", {
+            message: result.error ?? "",
+          }),
+          "error",
+        );
+      }
+    } catch {
+      showToast(t("admin.backup.deleteBackupFailedGeneric", "Could not delete backup"), "error");
+    } finally {
+      setDeletingPath(null);
+    }
+  };
+
   const renderBackupCard = (backup: BackupFile, indexInSection: number) => {
     const status = getBackupStatus(backup);
     const showLatest = indexInSection === 0;
@@ -489,10 +819,10 @@ export function BackupManagement() {
               </span>
             </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button
               onClick={() => openRestoreDialog(backup)}
-              disabled={restoring === backup.path}
+              disabled={restoring === backup.path || !!deletingPath}
               variant="destructive"
               size="sm"
               className="flex items-center gap-2"
@@ -504,6 +834,21 @@ export function BackupManagement() {
               )}
               {restoring === backup.path ? t("admin.backup.restoring", "Restoring...") : t("admin.backup.restore", "Restore")}
             </Button>
+            <Button
+              type="button"
+              onClick={() => void deleteBackupFile(backup)}
+              disabled={!!restoring || !!deletingPath}
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2 text-destructive hover:bg-destructive/10 hover:text-destructive"
+            >
+              {deletingPath === backup.path ? (
+                <RefreshCw className="h-4 w-4 animate-spin" aria-hidden />
+              ) : (
+                <Trash2 className="h-4 w-4" aria-hidden />
+              )}
+              {deletingPath === backup.path ? t("admin.backup.deleting", "Deleting...") : t("admin.backup.delete", "Delete")}
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -511,23 +856,26 @@ export function BackupManagement() {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <h2 className="flex items-center gap-2 text-2xl font-semibold tracking-tight text-foreground">
-            <Database className="h-6 w-6 text-orange-500" aria-hidden />
+          <h2 className="flex items-center gap-2 text-2xl font-bold tracking-tight text-foreground">
+            <Database className="h-7 w-7 text-orange-600" aria-hidden />
             {t("admin.backup.title", "Database Backup Management")}
           </h2>
-          <p className="mt-1 max-w-3xl text-muted-foreground">
+          <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
             {t(
-              "admin.backup.descriptionPage",
-              "Backups are grouped below: automatic (daily on this PC), cloud (snapshot + upload), and manual (local copies you create). Use Refresh to reload lists.",
+              "admin.backup.hubPageLead",
+              "Manage automatic copies, manual snapshots, and your optional online backup for this computer.",
             )}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button
-            onClick={loadBackups}
+            onClick={() => {
+              void loadBackups();
+              void loadStoredCustomerId();
+            }}
             disabled={loading}
             variant="outline"
             className="flex items-center gap-2"
@@ -547,19 +895,241 @@ export function BackupManagement() {
         </div>
       </div>
 
+      <Card className="overflow-hidden border-border shadow-sm">
+        <CardContent className="p-0">
+          <div className="flex flex-col gap-4 bg-gradient-to-br from-orange-500/10 via-background to-background p-6 md:flex-row md:items-start md:justify-between">
+            <div className="flex min-w-0 flex-1 items-start gap-4">
+              <div className="rounded-2xl bg-card p-3 shadow-sm ring-1 ring-border">
+                <Cloud className="h-7 w-7 text-orange-600" aria-hidden />
+              </div>
+              <div className="min-w-0 flex-1 space-y-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge variant="outline" className={cn("font-normal", remotePresenceBadge.className)}>
+                    {remotePresenceBadge.label}
+                  </Badge>
+                  <Badge variant="outline" className="border-border">
+                    {isOnline ? (
+                      <span className="inline-flex items-center gap-1">
+                        <Wifi className="h-3.5 w-3.5" aria-hidden />
+                        {t("admin.backup.hubOnline", "Online")}
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1">
+                        <WifiOff className="h-3.5 w-3.5" aria-hidden />
+                        {t("admin.backup.hubOffline", "Offline")}
+                      </span>
+                    )}
+                  </Badge>
+                </div>
+                <h3 className="text-lg font-semibold text-foreground">
+                  {t("admin.backup.hubTitle", "Online backup")}
+                </h3>
+                <p className="max-w-2xl text-sm text-muted-foreground">
+                  {t(
+                    "admin.backup.hubDescription",
+                    "Upload creates a fresh snapshot on this PC, sends it to secure storage, and keeps one latest file per customer. “Check cloud backup” only asks the server; “Download” saves that file into your local backup folder.",
+                  )}
+                </p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <InfoRow
+                    label={t("admin.backup.hubLastServerCheck", "Last server check")}
+                    value={lastRemoteCheckLabel}
+                    hint={t(
+                      "admin.backup.hubLastServerCheckHint",
+                      "Updated when you check, upload, or download the online backup.",
+                    )}
+                  />
+                  <InfoRow
+                    label={t("admin.backup.hubCustomerId", "Customer ID")}
+                    value={
+                      storedCustomerId ? (
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="font-mono text-xs sm:text-sm">{storedCustomerId}</span>
+                          <Button type="button" size="sm" variant="outline" onClick={() => void copyCustomerId()}>
+                            {copiedCustomerId ? (
+                              <Check className="mr-1 h-3.5 w-3.5" aria-hidden />
+                            ) : (
+                              <Copy className="mr-1 h-3.5 w-3.5" aria-hidden />
+                            )}
+                            {copiedCustomerId
+                              ? t("admin.backup.customerIdCopiedShort", "Copied")
+                              : t("admin.backup.customerIdCopy", "Copy")}
+                          </Button>
+                        </div>
+                      ) : (
+                        t("admin.backup.hubCustomerMissing", "Not recorded — complete welcome setup")
+                      )
+                    }
+                    hint={t(
+                      "admin.backup.hubCustomerHint",
+                      "Used with your device ID so the server knows which online backup belongs to this shop.",
+                    )}
+                  />
+                </div>
+                <div className="flex flex-wrap gap-2 pt-1">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => void checkRemoteCloudBackup()}
+                    disabled={
+                      !isOnline ||
+                      checkingCloudPresence ||
+                      downloadingCloudBackup ||
+                      uploadingCloud ||
+                      creatingBackup ||
+                      !!restoring
+                    }
+                  >
+                    {checkingCloudPresence ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
+                    ) : (
+                      <Cloud className="mr-2 h-4 w-4" aria-hidden />
+                    )}
+                    {t("admin.backup.checkCloudBackup", "Check cloud backup")}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => void downloadRemoteCloudBackup()}
+                    disabled={
+                      !isOnline ||
+                      checkingCloudPresence ||
+                      downloadingCloudBackup ||
+                      uploadingCloud ||
+                      creatingBackup ||
+                      !!restoring
+                    }
+                  >
+                    {downloadingCloudBackup ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
+                    ) : (
+                      <Download className="mr-2 h-4 w-4" aria-hidden />
+                    )}
+                    {t("admin.backup.downloadCloudBackup", "Download from cloud")}
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={() => void uploadToCloud()}
+                    disabled={
+                      !isOnline ||
+                      creatingBackup ||
+                      uploadingCloud ||
+                      checkingCloudPresence ||
+                      downloadingCloudBackup ||
+                      !!restoring
+                    }
+                  >
+                    {uploadingCloud ? (
+                      <RefreshCw className="mr-2 h-4 w-4 animate-spin" aria-hidden />
+                    ) : (
+                      <CloudUpload className="mr-2 h-4 w-4" aria-hidden />
+                    )}
+                    {uploadingCloud
+                      ? t("admin.backup.uploadingToCloud", "Uploading to cloud...")
+                      : t("admin.backup.uploadToCloud", "Create & upload to cloud")}
+                  </Button>
+                </div>
+                {(uploadingCloud || downloadingCloudBackup) && cloudTransferProgress ? (
+                  <div className="mt-4 w-full max-w-xl">
+                    <div className="w-full bg-muted rounded-full h-3 mb-3">
+                      <div
+                        className="bg-primary h-3 rounded-full transition-all duration-300"
+                        style={{ width: `${Math.min(100, Math.max(0, cloudTransferProgress.progress))}%` }}
+                      />
+                    </div>
+                    <div className="flex justify-between items-center text-sm text-muted-foreground mb-2">
+                      <span>
+                        {Math.round(cloudTransferProgress.progress)}%{" "}
+                        {t("admin.updatesContent.complete", "complete")}
+                      </span>
+                      <span>
+                        {cloudTransferProgress.speed > 0 && `${formatBytes(cloudTransferProgress.speed)}/s`}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center text-xs text-muted-foreground">
+                      <span>
+                        {formatBytes(cloudTransferProgress.downloaded)} / {formatBytes(cloudTransferProgress.total)}
+                      </span>
+                      <span>
+                        {cloudTransferProgress.total > 0 &&
+                          cloudTransferProgress.downloaded > 0 &&
+                          cloudTransferProgress.speed > 0 &&
+                          (() => {
+                            const remainingBytes = cloudTransferProgress.total - cloudTransferProgress.downloaded;
+                            const remainingSeconds = Math.ceil(
+                              remainingBytes / cloudTransferProgress.speed,
+                            );
+
+                            if (remainingSeconds < 60) {
+                              return `${remainingSeconds}s ${t("admin.updatesContent.remaining", "remaining")}`;
+                            }
+                            if (remainingSeconds < 3600) {
+                              const minutes = Math.floor(remainingSeconds / 60);
+                              const seconds = remainingSeconds % 60;
+                              return `${minutes}m ${seconds}s ${t("admin.updatesContent.remaining", "remaining")}`;
+                            }
+                            const hours = Math.floor(remainingSeconds / 3600);
+                            const minutes = Math.floor((remainingSeconds % 3600) / 60);
+                            return `${hours}h ${minutes}m ${t("admin.updatesContent.remaining", "remaining")}`;
+                          })()}
+                      </span>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          </div>
+          <div className="border-t border-border bg-card px-6 py-5">
+            <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold text-foreground">
+              <HardDrive className="h-4 w-4 text-muted-foreground" aria-hidden />
+              {t("admin.backup.hubLocalCloudSnapshots", "Latest backup downloaded from cloud")}
+            </h4>
+            <p className="mb-4 text-sm text-muted-foreground">
+              {t(
+                "admin.backup.hubLocalCloudSnapshotsDesc",
+                "Only one file is kept here: the newest copy downloaded from your online backup (each download replaces it). Uploads use a temporary file on disk that is removed after a successful send, so they do not appear in this list.",
+              )}
+            </p>
+            {cloudBackups.length === 0 ? (
+              <p className="rounded-lg border border-dashed border-border bg-muted/20 px-4 py-8 text-center text-sm text-muted-foreground">
+                {t(
+                  "admin.backup.emptyCloud",
+                  "Nothing downloaded from the cloud yet. Use “Download from cloud” above, then you can restore this single file like any other backup.",
+                )}
+              </p>
+            ) : (
+              <div className="grid gap-4">{cloudBackups.map((b, i) => renderBackupCard(b, i))}</div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Alert variant="destructive">
+        <AlertTriangle className="h-4 w-4" aria-hidden />
+        <AlertDescription>
+          <strong>{t("admin.backup.warning", "Warning:")}</strong>{" "}
+          {t(
+            "admin.backup.warningDesc",
+            "Restoring a backup will completely replace your current database. Make sure to create a manual backup before restoring if you want to keep your current data.",
+          )}
+        </AlertDescription>
+      </Alert>
+
       {loading && backups.length === 0 ? (
         <div className="flex items-center justify-center rounded-xl border border-border bg-muted/20 py-16">
-          <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
+          <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" aria-hidden />
           <span className="ml-2 text-muted-foreground">{t("admin.backup.loadingBackups", "Loading backups...")}</span>
         </div>
       ) : (
-        <>
-          {/* Automatic backups */}
+        <div className="grid gap-4 xl:grid-cols-2">
           <section
             className="overflow-hidden rounded-xl border border-border bg-card shadow-sm"
             aria-labelledby="backup-section-auto"
           >
-            <div className="flex flex-col gap-3 border-b border-border bg-muted/30 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+            <div className="flex flex-col gap-3 border-b border-border bg-muted/30 px-4 py-4 sm:px-5">
               <div className="min-w-0">
                 <h3 id="backup-section-auto" className="flex items-center gap-2 text-base font-semibold text-foreground">
                   <Calendar className="h-5 w-5 shrink-0 text-muted-foreground" aria-hidden />
@@ -572,10 +1142,12 @@ export function BackupManagement() {
                   )}
                 </p>
               </div>
-              <Button onClick={cleanupOldBackups} disabled={loading} variant="outline" size="sm" className="shrink-0">
-                <Database className="mr-2 h-4 w-4" />
-                {t("admin.backup.cleanupOld", "Cleanup Old Backups")}
-              </Button>
+              <div className="flex flex-wrap gap-2">
+                <Button onClick={cleanupOldBackups} disabled={loading} variant="outline" size="sm">
+                  <Database className="mr-2 h-4 w-4" aria-hidden />
+                  {t("admin.backup.cleanupOld", "Cleanup Old Backups")}
+                </Button>
+              </div>
             </div>
             <div className="space-y-4 bg-card p-4 sm:p-5">
               {autoBackups.length === 0 ? (
@@ -588,60 +1160,11 @@ export function BackupManagement() {
             </div>
           </section>
 
-          {/* Cloud backups */}
-          <section
-            className="overflow-hidden rounded-xl border border-border bg-card shadow-sm"
-            aria-labelledby="backup-section-cloud"
-          >
-            <div className="flex flex-col gap-3 border-b border-border bg-muted/30 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
-              <div className="min-w-0">
-                <h3 id="backup-section-cloud" className="flex items-center gap-2 text-base font-semibold text-foreground">
-                  <Cloud className="h-5 w-5 shrink-0 text-muted-foreground" aria-hidden />
-                  {t("admin.backup.sectionCloudTitle", "Online cloud backups")}
-                </h3>
-                <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-                  {t(
-                    "admin.backup.sectionCloudDesc",
-                    "Creates a cloud_backup file on this PC, uploads it to your supplier’s online storage, and lists snapshots here.",
-                  )}
-                </p>
-              </div>
-              <Button
-                onClick={() => void uploadToCloud()}
-                disabled={creatingBackup || uploadingCloud || !!restoring}
-                size="sm"
-                className="shrink-0"
-              >
-                {uploadingCloud ? (
-                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <CloudUpload className="mr-2 h-4 w-4" />
-                )}
-                {uploadingCloud
-                  ? t("admin.backup.uploadingToCloud", "Uploading to cloud...")
-                  : t("admin.backup.uploadToCloud", "Cloud backup & upload")}
-              </Button>
-            </div>
-            <div className="space-y-4 bg-card p-4 sm:p-5">
-              {cloudBackups.length === 0 ? (
-                <p className="rounded-lg border border-dashed border-border bg-muted/20 px-4 py-8 text-center text-sm text-muted-foreground">
-                  {t(
-                    "admin.backup.emptyCloud",
-                    "No cloud snapshots in the backup folder yet. Use the button above to create and upload one.",
-                  )}
-                </p>
-              ) : (
-                <div className="grid gap-4">{cloudBackups.map((b, i) => renderBackupCard(b, i))}</div>
-              )}
-            </div>
-          </section>
-
-          {/* Manual backups */}
           <section
             className="overflow-hidden rounded-xl border border-border bg-card shadow-sm"
             aria-labelledby="backup-section-manual"
           >
-            <div className="flex flex-col gap-3 border-b border-border bg-muted/30 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+            <div className="flex flex-col gap-3 border-b border-border bg-muted/30 px-4 py-4 sm:px-5">
               <div className="min-w-0">
                 <h3 id="backup-section-manual" className="flex items-center gap-2 text-base font-semibold text-foreground">
                   <HardDrive className="h-5 w-5 shrink-0 text-muted-foreground" aria-hidden />
@@ -654,21 +1177,26 @@ export function BackupManagement() {
                   )}
                 </p>
               </div>
-              <div className="flex shrink-0 flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2">
                 <Button
                   onClick={() => void createBackup()}
-                  disabled={creatingBackup || uploadingCloud || !!restoring}
+                  disabled={creatingBackup || uploadingCloud || !!restoring || checkingCloudPresence || downloadingCloudBackup}
                   size="sm"
                 >
                   {creatingBackup ? (
-                    <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                    <RefreshCw className="mr-2 h-4 w-4 animate-spin" aria-hidden />
                   ) : (
-                    <Download className="mr-2 h-4 w-4" />
+                    <Download className="mr-2 h-4 w-4" aria-hidden />
                   )}
                   {t("admin.backup.manualBackup", "Manual Backup")}
                 </Button>
-                <Button onClick={() => setCustomPathDialogOpen(true)} disabled={creatingBackup} variant="outline" size="sm">
-                  <FolderOpen className="mr-2 h-4 w-4" />
+                <Button
+                  onClick={() => setCustomPathDialogOpen(true)}
+                  disabled={creatingBackup}
+                  variant="outline"
+                  size="sm"
+                >
+                  <FolderOpen className="mr-2 h-4 w-4" aria-hidden />
                   {t("admin.backup.backupToCustomPath", "Backup to Custom Path")}
                 </Button>
               </div>
@@ -686,18 +1214,46 @@ export function BackupManagement() {
               )}
             </div>
           </section>
-        </>
+        </div>
       )}
 
-      {/* Warning */}
-       <Alert variant="destructive">
-         <AlertTriangle className="h-4 w-4" />
-         <AlertDescription>
-           <strong>{t("admin.backup.warning", "Warning:")}</strong> {t("admin.backup.warningDesc", "Restoring a backup will completely replace your current database. Make sure to create a manual backup before restoring if you want to keep your current data.")}
-         </AlertDescription>
-       </Alert>
+      {/* Cloud backup transfer notice */}
+      <Dialog
+        open={cloudTransferWarningOpen}
+        onOpenChange={(open) => {
+          if (!open) setCloudTransferWarningOpen(false);
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-lg">
+              <AlertTriangle className="h-5 w-5 text-amber-600" aria-hidden />
+              {cloudTransferDialogPhase === "upload"
+                ? t(
+                    "admin.backup.cloudTransferWarningTitleUpload",
+                    "Cloud upload in progress",
+                  )
+                : t(
+                    "admin.backup.cloudTransferWarningTitleDownload",
+                    "Cloud download in progress",
+                  )}
+            </DialogTitle>
+            <DialogDescription className="text-left">
+              {t(
+                "admin.backup.cloudTransferWarningDescription",
+                "Do not close the application until the transfer finishes. Keep a stable internet connection. Closing the app or losing connectivity may leave an incomplete file or cause the transfer to fail.",
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button type="button" onClick={() => setCloudTransferWarningOpen(false)}>
+              {t("admin.backup.cloudTransferWarningOk", "I understand")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-       {/* Restore Confirmation Dialog */}
+      {/* Restore Confirmation Dialog */}
        <Dialog open={restoreDialogOpen} onOpenChange={setRestoreDialogOpen}>
          <DialogContent className="sm:max-w-md">
            <DialogHeader>
@@ -715,15 +1271,15 @@ export function BackupManagement() {
            <div className="space-y-4">
              <div className="space-y-2">
                <label htmlFor="confirm-text" className="text-sm font-medium">
-                 Type "YES" to confirm:
+                 {t("admin.backup.typeYesToConfirm", "Type YES to confirm:")}
                </label>
                <input
                  id="confirm-text"
                  type="text"
                  value={confirmText}
                  onChange={(e) => setConfirmText(e.target.value)}
-                 placeholder="Type YES here"
-                 className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                 placeholder="YES"
+                 className="w-full rounded-md border border-border bg-background px-3 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                  autoComplete="off"
                />
              </div>
@@ -740,7 +1296,7 @@ export function BackupManagement() {
              <Button
                variant="destructive"
                onClick={confirmRestore}
-               disabled={confirmText !== "YES" || restoring !== null}
+               disabled={confirmText !== RESTORE_CONFIRM_WORD || restoring !== null}
                className="flex items-center gap-2"
              >
                {restoring ? (

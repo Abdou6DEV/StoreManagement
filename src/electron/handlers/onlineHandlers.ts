@@ -1,6 +1,7 @@
-import { app, ipcMain } from "electron";
+import { app, ipcMain, type IpcMainInvokeEvent } from "electron";
 import fs from "fs";
 import path from "path";
+import { finished } from "node:stream/promises";
 import { getMachineGuid } from "../utils/validationKey";
 import { getStoreOnlineConfig, type StoreOnlineConfig } from "../utils/onlineConfig";
 import {
@@ -13,7 +14,9 @@ import type { DeviceRequestPayload, DeviceRequestResult } from "../types/deviceR
 import type { DeviceCheckResult } from "../types/deviceCheck";
 import type {
   CloudBackupDownloadResult,
+  CloudBackupDownloadToLocalResult,
   CloudBackupErrorCode,
+  CloudBackupTransferProgressPayload,
   CloudBackupUploadMeta,
   CloudBackupUploadResult,
 } from "../types/cloudBackup";
@@ -48,9 +51,160 @@ function mapCloudBackupErrorCode(error: string, status: number): CloudBackupErro
   const normalized = error.trim().toLowerCase();
   if (normalized === "unauthorized") return "unauthorized";
   if (normalized === "file_too_large_free_tier") return "file_too_large";
+  if (status === 404) return "not_found";
+  if (
+    normalized.includes("not found") ||
+    normalized.includes("no backup") ||
+    normalized.includes("object not found")
+  ) {
+    return "not_found";
+  }
   if (status === 401 || status === 403) return "unauthorized";
   if (status >= 400 && status < 500) return "edge";
   return "http";
+}
+
+/** Must match backupHandlers list filter (single slot for download-from-cloud). */
+const CLOUD_LATEST_FROM_ONLINE_FILENAME = "cloud_latest_from_online.db";
+
+function sendCloudBackupProgressThrottled(
+  event: IpcMainInvokeEvent,
+): (payload: CloudBackupTransferProgressPayload) => void {
+  let lastTime = 0;
+  let lastDownloaded = 0;
+  return (payload: CloudBackupTransferProgressPayload) => {
+    const now = Date.now();
+    const timeDiff = now - lastTime;
+    const force = payload.progress >= 100;
+    if (!force && lastTime > 0 && timeDiff < 1000) {
+      return;
+    }
+    const speed =
+      lastTime > 0 && timeDiff > 0
+        ? ((payload.downloaded - lastDownloaded) / timeDiff) * 1000
+        : payload.speed;
+    const out: CloudBackupTransferProgressPayload = { ...payload, speed };
+    if (!event.sender.isDestroyed()) {
+      event.sender.send("cloud-backup-transfer-progress", out);
+    }
+    lastTime = now;
+    lastDownloaded = payload.downloaded;
+  };
+}
+
+async function writeStreamChunk(writeStream: fs.WriteStream, buf: Buffer): Promise<void> {
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const cleanup = () => {
+      writeStream.removeListener("error", onError);
+      writeStream.removeListener("drain", onDrain);
+    };
+    const finish = (fn: () => void) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      fn();
+    };
+    const onError = (err: Error) => {
+      finish(() => reject(err));
+    };
+    const onDrain = () => {
+      finish(() => resolve());
+    };
+
+    writeStream.once("error", onError);
+    writeStream.write(buf, (err) => {
+      if (err) {
+        finish(() => reject(err));
+        return;
+      }
+      if (writeStream.writableNeedDrain) {
+        writeStream.once("drain", onDrain);
+      } else {
+        finish(() => resolve());
+      }
+    });
+  });
+}
+
+async function requestCloudBackupDownloadSignedUrl(): Promise<CloudBackupDownloadResult> {
+  const identity = await resolveCloudBackupIdentity();
+  if (identity.success === false) {
+    return { success: false, error: identity.error, code: identity.code };
+  }
+
+  const cfg = getStoreOnlineConfig();
+  if ("error" in cfg) {
+    return {
+      success: false,
+      error: "Online backup is not configured (missing STORE_ONLINE_* env vars).",
+      code: "missing_env",
+    };
+  }
+
+  try {
+    const res = await fetch(backupDownloadUrl(cfg.supabaseUrl), {
+      method: "POST",
+      headers: {
+        ...onlineAuthedHeaders(cfg),
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        device_id: identity.deviceId,
+        customer_id: identity.customerId,
+      }),
+    });
+
+    const text = await res.text();
+    let json: unknown;
+    try {
+      json = text ? JSON.parse(text) : null;
+    } catch {
+      json = { raw: text };
+    }
+
+    if (!res.ok || (json && typeof json === "object" && (json as Record<string, unknown>).ok === false)) {
+      const edgeError = readEdgeError(json, res.status);
+      return {
+        success: false,
+        error: edgeError,
+        code: mapCloudBackupErrorCode(edgeError, res.status),
+      };
+    }
+
+    if (!json || typeof json !== "object") {
+      return {
+        success: false,
+        error: "Invalid cloud backup download response",
+        code: "edge",
+      };
+    }
+
+    const body = json as Record<string, unknown>;
+    const dbSignedUrl =
+      typeof body.db_signed_url === "string" && body.db_signed_url.trim()
+        ? body.db_signed_url.trim()
+        : null;
+    if (!dbSignedUrl) {
+      return {
+        success: false,
+        error: "Cloud backup download URL was not returned",
+        code: "edge",
+      };
+    }
+
+    return {
+      success: true,
+      customerId: identity.customerId,
+      dbSignedUrl,
+    };
+  } catch (e) {
+    return {
+      success: false,
+      error: (e as Error).message || "Network error",
+      code: "network",
+    };
+  }
 }
 
 function parseCloudBackupUploadMeta(value: unknown): CloudBackupUploadMeta | null {
@@ -369,7 +523,7 @@ export function setupOnlineHandlers(): void {
 
   ipcMain.handle(
     "online:backupUploadLatest",
-    async (_event, backupFilePath: string, uploadSource?: string): Promise<CloudBackupUploadResult> => {
+    async (event, backupFilePath: string, uploadSource?: string): Promise<CloudBackupUploadResult> => {
       const backupPath = String(backupFilePath ?? "").trim();
       if (!backupPath) {
         return { success: false, error: "Backup file path is required.", code: "missing_file" };
@@ -392,7 +546,33 @@ export function setupOnlineHandlers(): void {
         };
       }
 
-      const fileBuffer = fs.readFileSync(backupPath);
+      const send = sendCloudBackupProgressThrottled(event);
+      const totalSize = fs.statSync(backupPath).size;
+      const chunkSize = 2 * 1024 * 1024;
+      const parts: Buffer[] = [];
+      let readOff = 0;
+      const fd = fs.openSync(backupPath, "r");
+      try {
+        while (readOff < totalSize) {
+          const len = Math.min(chunkSize, totalSize - readOff);
+          const buf = Buffer.allocUnsafe(len);
+          fs.readSync(fd, buf, 0, len, readOff);
+          parts.push(buf);
+          readOff += len;
+          const progressRead = totalSize > 0 ? Math.min(35, Math.round((readOff / totalSize) * 35)) : 0;
+          send({
+            phase: "upload",
+            progress: progressRead,
+            downloaded: readOff,
+            total: totalSize || readOff,
+            speed: 0,
+          });
+        }
+      } finally {
+        fs.closeSync(fd);
+      }
+
+      const fileBuffer = Buffer.concat(parts);
       const form = new FormData();
       form.append("device_id", identity.deviceId);
       form.append("customer_id", identity.customerId);
@@ -403,6 +583,22 @@ export function setupOnlineHandlers(): void {
           : "manual_upload";
       form.append("source", source);
       form.append("file", new Blob([fileBuffer], { type: "application/octet-stream" }), path.basename(backupPath));
+
+      const networkStart = Date.now();
+      const estimatedMs = Math.max(8000, (totalSize / (200 * 1024)) * 1000);
+      let networkIv: ReturnType<typeof setInterval> | null = null;
+      networkIv = setInterval(() => {
+        const elapsed = Date.now() - networkStart;
+        const prog = Math.min(99, 35 + (elapsed / estimatedMs) * 64);
+        const downloadedDisplay = Math.floor((totalSize * prog) / 100);
+        send({
+          phase: "upload",
+          progress: Math.round(prog),
+          downloaded: downloadedDisplay,
+          total: totalSize,
+          speed: 0,
+        });
+      }, 1000);
 
       try {
         const res = await fetch(backupUploadUrl(cfg.supabaseUrl), {
@@ -446,6 +642,14 @@ export function setupOnlineHandlers(): void {
           };
         }
 
+        send({
+          phase: "upload",
+          progress: 100,
+          downloaded: totalSize,
+          total: totalSize,
+          speed: 0,
+        });
+
         return {
           success: true,
           dbPath: body.db_path,
@@ -458,87 +662,113 @@ export function setupOnlineHandlers(): void {
           error: (e as Error).message || "Network error",
           code: "network",
         };
+      } finally {
+        if (networkIv) clearInterval(networkIv);
       }
     },
   );
 
   ipcMain.handle("online:backupDownloadLatest", async (): Promise<CloudBackupDownloadResult> => {
-    const identity = await resolveCloudBackupIdentity();
-    if (identity.success === false) {
-      return { success: false, error: identity.error, code: identity.code };
-    }
-
-    const cfg = getStoreOnlineConfig();
-    if ("error" in cfg) {
-      return {
-        success: false,
-        error: "Online backup is not configured (missing STORE_ONLINE_* env vars).",
-        code: "missing_env",
-      };
-    }
-
-    try {
-      const res = await fetch(backupDownloadUrl(cfg.supabaseUrl), {
-        method: "POST",
-        headers: {
-          ...onlineAuthedHeaders(cfg),
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          device_id: identity.deviceId,
-          customer_id: identity.customerId,
-        }),
-      });
-
-      const text = await res.text();
-      let json: unknown;
-      try {
-        json = text ? JSON.parse(text) : null;
-      } catch {
-        json = { raw: text };
-      }
-
-      if (!res.ok || (json && typeof json === "object" && (json as Record<string, unknown>).ok === false)) {
-        const error = readEdgeError(json, res.status);
-        return {
-          success: false,
-          error,
-          code: mapCloudBackupErrorCode(error, res.status),
-        };
-      }
-
-      if (!json || typeof json !== "object") {
-        return {
-          success: false,
-          error: "Invalid cloud backup download response",
-          code: "edge",
-        };
-      }
-
-      const body = json as Record<string, unknown>;
-      const dbSignedUrl =
-        typeof body.db_signed_url === "string" && body.db_signed_url.trim()
-          ? body.db_signed_url.trim()
-          : null;
-      if (!dbSignedUrl) {
-        return {
-          success: false,
-          error: "Cloud backup download URL was not returned",
-          code: "edge",
-        };
-      }
-
-      return {
-        success: true,
-        customerId: identity.customerId,
-        dbSignedUrl,
-      };
-    } catch (e) {
-      return {
-        success: false,
-        error: (e as Error).message || "Network error",
-        code: "network",
-      };
-    }
+    return requestCloudBackupDownloadSignedUrl();
   });
+
+  ipcMain.handle(
+    "online:backupDownloadLatestToLocal",
+    async (event): Promise<CloudBackupDownloadToLocalResult> => {
+      const signed = await requestCloudBackupDownloadSignedUrl();
+      if (signed.success === false) {
+        return signed;
+      }
+
+      const backupDir = path.join(app.getPath("userData"), "backups");
+      if (!fs.existsSync(backupDir)) {
+        fs.mkdirSync(backupDir, { recursive: true });
+      }
+
+      const dest = path.join(backupDir, CLOUD_LATEST_FROM_ONLINE_FILENAME);
+      const send = sendCloudBackupProgressThrottled(event);
+
+      try {
+        const fileRes = await fetch(signed.dbSignedUrl);
+        if (!fileRes.ok) {
+          return {
+            success: false,
+            error: `Cloud file download failed (HTTP ${fileRes.status})`,
+            code: "http",
+          };
+        }
+
+        const totalSize = parseInt(fileRes.headers.get("content-length") ?? "0", 10) || 0;
+        const body = fileRes.body;
+        if (!body) {
+          return {
+            success: false,
+            error: "Cloud file download missing response body",
+            code: "network",
+          };
+        }
+
+        const reader = body.getReader();
+        const writeStream = fs.createWriteStream(dest);
+        let downloadedSize = 0;
+
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            if (value && value.byteLength > 0) {
+              const buf = Buffer.from(value);
+              await writeStreamChunk(writeStream, buf);
+              downloadedSize += buf.length;
+              const progress = totalSize > 0 ? (downloadedSize / totalSize) * 100 : downloadedSize > 0 ? 5 : 0;
+              send({
+                phase: "download",
+                progress: Math.min(99, Math.round(progress)),
+                downloaded: downloadedSize,
+                total: totalSize > 0 ? totalSize : downloadedSize,
+                speed: 0,
+              });
+            }
+          }
+        } catch (streamErr) {
+          writeStream.destroy();
+          try {
+            if (fs.existsSync(dest)) fs.unlinkSync(dest);
+          } catch {
+            /* ignore */
+          }
+          throw streamErr;
+        }
+
+        writeStream.end();
+        await finished(writeStream);
+
+        const sizeBytes = fs.existsSync(dest) ? fs.statSync(dest).size : downloadedSize;
+        send({
+          phase: "download",
+          progress: 100,
+          downloaded: sizeBytes,
+          total: sizeBytes,
+          speed: 0,
+        });
+
+        return {
+          success: true,
+          backupPath: dest,
+          sizeBytes,
+        };
+      } catch (e) {
+        try {
+          if (fs.existsSync(dest)) fs.unlinkSync(dest);
+        } catch {
+          /* ignore */
+        }
+        return {
+          success: false,
+          error: (e as Error).message || "Network error",
+          code: "network",
+        };
+      }
+    },
+  );
 }

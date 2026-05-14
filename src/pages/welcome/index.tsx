@@ -98,27 +98,31 @@ type WelcomeDevicePrecheck = "loading" | "new_device" | "existing_device";
 
 /** Strict top-to-bottom order: only one segment animates at a time (`introStep` advances on `animationend`). */
 const SEQ = {
-  heroGlow: 0,
-  logo: 1,
-  title: 2,
-  subtitle: 3,
-  aboutLine: 4,
-  badges: 5,
-  card: 6,
-  keyIntro: 7,
-  keyCarousel: 8,
-  techIntro: 9,
-  techTiles: 10,
-  techCarousel: 11,
-  pricing: 12,
-  devCard: 13,
-  legal: 14,
-  footer: 15,
+  logo: 0,
+  title: 1,
+  subtitle: 2,
+  aboutLine: 3,
+  badges: 4,
+  card: 5,
+  keyIntro: 6,
+  keyCarousel: 7,
+  techIntro: 8,
+  techTiles: 9,
+  techCarousel: 10,
+  pricing: 11,
+  devCard: 12,
+  legal: 13,
+  footer: 14,
 } as const;
 
-const INTRO_STEP_COUNT = 16;
+const INTRO_STEP_COUNT = 15;
 const SEQ_ANIM_S = 0.38;
-const SEQ_ANIM_MS = Math.round(SEQ_ANIM_S * 1000);
+/** Delay before the get-started card green glow fades in (after the panel is on screen). */
+const WELCOME_GLOW_DELAY_S = 0.7;
+/** Duration of the green glow opacity fade-in. */
+const WELCOME_GLOW_FADEIN_S = 0.48;
+/** Top section nav: fade + slide down into place. Bottom journey nav: fade + slide up into place. */
+const WELCOME_SECTION_NAV_IN_S = 0.45;
 const WELCOME_IN_EASE = "cubic-bezier(0.25, 0.46, 0.45, 0.94)";
 
 function welcomeSeqStyle(reduceMotion: boolean, kind: WelcomeInKind, isRTL: boolean): React.CSSProperties {
@@ -495,6 +499,12 @@ export default function WelcomeSetup() {
     const sectionIds = WELCOME_SECTION_NAV_ITEMS.map((item) => item.id);
 
     const updateActiveSection = () => {
+      const getStartedEl = document.getElementById("get-started");
+      if (!getStartedEl) {
+        setActiveNavSectionId(sectionIds[0]);
+        return;
+      }
+
       let bestId: WelcomeSectionId = sectionIds[0];
       let bestDistance = Number.POSITIVE_INFINITY;
 
@@ -522,7 +532,7 @@ export default function WelcomeSetup() {
       window.removeEventListener("scroll", updateActiveSection);
       window.removeEventListener("resize", updateActiveSection);
     };
-  }, []);
+  }, [introStep]);
 
   useEffect(() => {
     let cancelled = false;
@@ -690,6 +700,10 @@ export default function WelcomeSetup() {
     }
   };
 
+  /** Same moment the get-started green glow is in the tree: intro has reached the card and we are not in online-only loading. */
+  const mountWelcomeNavChrome =
+    introStep >= SEQ.card && !(online && devicePrecheck === "loading");
+
   return (
     <div
       dir={isRTL ? "rtl" : "ltr"}
@@ -707,8 +721,58 @@ export default function WelcomeSetup() {
             transform: translate3d(0, 0, 0);
           }
         }
-        .welcome-gs-body-fadeup {
+        .welcome-intro-scope .welcome-gs-body-fadeup {
           animation: welcomeInFadeUp ${SEQ_ANIM_S}s ${WELCOME_IN_EASE} 0s both;
+        }
+        @keyframes welcomeGlowFadeIn {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+        .welcome-intro-scope .welcome-gs-glow-fadein {
+          opacity: 0;
+          animation: welcomeGlowFadeIn ${WELCOME_GLOW_FADEIN_S}s ${WELCOME_IN_EASE} ${WELCOME_GLOW_DELAY_S}s both;
+        }
+        @keyframes welcomeSectionNavFadeDown {
+          from {
+            opacity: 0;
+            transform: translate3d(0, -14px, 0);
+          }
+          to {
+            opacity: 1;
+            transform: translate3d(0, 0, 0);
+          }
+        }
+        .welcome-intro-scope .welcome-section-nav-in {
+          opacity: 0;
+          animation: welcomeSectionNavFadeDown ${WELCOME_SECTION_NAV_IN_S}s ${WELCOME_IN_EASE} 0s both;
+        }
+        @keyframes welcomeJourneyNavFadeUp {
+          from {
+            opacity: 0;
+            transform: translate3d(0, 14px, 0);
+          }
+          to {
+            opacity: 1;
+            transform: translate3d(0, 0, 0);
+          }
+        }
+        .welcome-intro-scope .welcome-journey-nav-in {
+          opacity: 0;
+          animation: welcomeJourneyNavFadeUp ${WELCOME_SECTION_NAV_IN_S}s ${WELCOME_IN_EASE} 0s both;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .welcome-intro-scope .welcome-gs-body-fadeup,
+          .welcome-intro-scope .welcome-gs-glow-fadein,
+          .welcome-intro-scope .welcome-section-nav-in,
+          .welcome-intro-scope .welcome-journey-nav-in {
+            animation: none !important;
+            opacity: 1 !important;
+            transform: none !important;
+          }
         }
         @keyframes welcomeInSlideLtr {
           from {
@@ -731,19 +795,25 @@ export default function WelcomeSetup() {
           }
         }
       `}</style>
-      <WelcomeSectionNav
-        items={WELCOME_SECTION_NAV_ITEMS}
-        activeId={activeNavSectionId}
-        onNavigate={scrollToWelcomeSection}
-        isRTL={isRTL}
-      />
-      <WelcomeJourneyNav
-        items={WELCOME_SECTION_NAV_ITEMS}
-        activeId={activeNavSectionId}
-        onNavigate={scrollToWelcomeSection}
-        onBackToTop={scrollToWelcomeTop}
-        isRTL={isRTL}
-      />
+      {mountWelcomeNavChrome ? (
+        <>
+          <WelcomeSectionNav
+            items={WELCOME_SECTION_NAV_ITEMS}
+            activeId={activeNavSectionId}
+            onNavigate={scrollToWelcomeSection}
+            isRTL={isRTL}
+            className={cn("welcome-section-nav-in")}
+          />
+          <WelcomeJourneyNav
+            items={WELCOME_SECTION_NAV_ITEMS}
+            activeId={activeNavSectionId}
+            onNavigate={scrollToWelcomeSection}
+            onBackToTop={scrollToWelcomeTop}
+            isRTL={isRTL}
+            className={cn("welcome-journey-nav-in")}
+          />
+        </>
+      ) : null}
       <div className={cn("fixed top-4 z-50", isRTL ? "left-4" : "right-4")}>
         <DropdownMenu onOpenChange={setDropdownOpen}>
           <DropdownMenuTrigger asChild>
@@ -818,22 +888,11 @@ export default function WelcomeSetup() {
       <section
         id="welcome-hero"
         className={cn(
-          "relative overflow-hidden",
+          "relative",
           introStep >= SEQ.keyIntro && "border-b border-border/60",
           WELCOME_SECTION_SCROLL_MARGIN,
         )}
       >
-        <SequentialIntroSlot
-          stepIndex={SEQ.heroGlow}
-          introStep={introStep}
-          reduceMotion={reduceMotion}
-          isRTL={isRTL}
-          kind="fadeUp"
-          onStepComplete={advanceIntro}
-          className="pointer-events-none absolute -left-24 top-0 h-72 w-72 rounded-full bg-primary/10 blur-3xl"
-        >
-          <span aria-hidden className="block h-full w-full" />
-        </SequentialIntroSlot>
         <div className="relative mx-auto max-w-6xl px-4 pb-14 pt-12 sm:px-6 sm:pb-16 sm:pt-16 lg:grid lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:items-start lg:gap-12 lg:pb-20 lg:pt-20">
           <div className="text-center lg:text-start">
             <SequentialIntroSlot
@@ -855,7 +914,7 @@ export default function WelcomeSetup() {
               introStep={introStep}
               reduceMotion={reduceMotion}
               isRTL={isRTL}
-              kind="slide"
+              kind="fadeUp"
               onStepComplete={advanceIntro}
             >
               <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl lg:text-[2.5rem] lg:leading-tight">
@@ -924,25 +983,24 @@ export default function WelcomeSetup() {
             isRTL={isRTL}
             kind="fadeUp"
             onStepComplete={advanceIntro}
-            advanceIntroAfterMs={SEQ_ANIM_MS}
             className={cn(
-              "relative isolate mt-10 lg:mt-0",
+              "relative isolate mt-10 overflow-visible lg:mt-0",
               online &&
                 devicePrecheck === "existing_device" &&
                 "mt-28 sm:mt-36 lg:mt-28 xl:mt-36 2xl:mt-40",
             )}
           >
             {!(online && devicePrecheck === "loading") ? (
-              <>
-                <div
-                  className="pointer-events-none absolute -right-14 -top-14 z-0 h-52 w-52 rounded-full bg-green-500/22 blur-3xl sm:h-60 sm:w-60 sm:-right-16 sm:-top-16"
-                  aria-hidden
-                />
-                <div
-                  className="pointer-events-none absolute -bottom-10 -left-12 z-0 h-28 w-28 rounded-full bg-green-500/16 blur-2xl sm:h-32 sm:w-32 sm:-bottom-12 sm:-left-14"
-                  aria-hidden
-                />
-              </>
+              <div
+                className={cn(
+                  "pointer-events-none absolute inset-x-0 bottom-0 top-0 z-0 overflow-visible",
+                  !reduceMotion && devicePrecheck !== "loading" && "welcome-gs-glow-fadein",
+                )}
+                aria-hidden
+              >
+                <div className="absolute -right-14 -top-10 z-0 h-52 w-52 rounded-full bg-green-500/22 blur-3xl sm:h-60 sm:w-60 sm:-right-16 sm:-top-12" />
+                <div className="absolute -bottom-10 -left-12 z-0 h-28 w-28 rounded-full bg-green-500/16 blur-2xl sm:h-32 sm:w-32 sm:-bottom-12 sm:-left-14" />
+              </div>
             ) : null}
             <section
               id="get-started"
@@ -1425,7 +1483,7 @@ export default function WelcomeSetup() {
       >
         <footer className="border-t border-border/60 px-4 py-8 text-center">
           <p className="text-sm text-muted-foreground">
-            {t("about.footer", "© 2024 REDA TECH. All rights reserved. Built with ❤️ in Algeria.")}
+            {t("about.footer", "© 2026 REDA TECH. All rights reserved. Built with ❤️ in Algeria.")}
           </p>
         </footer>
       </SequentialIntroSlot>

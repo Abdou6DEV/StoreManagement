@@ -14,6 +14,9 @@ const getBackupDir = () => {
   return path.join(userDataPath, "backups");
 };
 
+/** Overwritten on each download-from-cloud; this is the only cloud entry in backup list UI. */
+const CLOUD_LATEST_FROM_ONLINE_FILENAME = "cloud_latest_from_online.db";
+
 // Ensure backup directory exists
 const ensureBackupDir = () => {
   const backupDir = getBackupDir();
@@ -516,24 +519,83 @@ const cleanOldAutoBackups = () => {
   }
 };
 
+function isPathInsideBackupDir(filePath: string): boolean {
+  const backupDir = path.resolve(ensureBackupDir());
+  const resolved = path.resolve(filePath);
+  const rel = path.relative(backupDir, resolved);
+  return rel !== "" && !rel.startsWith("..") && !path.isAbsolute(rel);
+}
+
+/** Removes temporary `cloud_backup_*.db` created for upload (not shown in backup list). */
+function deleteCloudUploadStagingFile(backupPath: string): { success: boolean; error?: string } {
+  const raw = String(backupPath ?? "").trim();
+  if (!raw) {
+    return { success: false, error: "Path is required." };
+  }
+  if (!isPathInsideBackupDir(raw)) {
+    return { success: false, error: "Path must be inside the backup folder." };
+  }
+  const base = path.basename(raw);
+  if (!/^cloud_backup_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}\.db$/.test(base)) {
+    return { success: false, error: "Only temporary cloud upload snapshots can be removed this way." };
+  }
+  try {
+    if (fs.existsSync(raw)) {
+      fs.unlinkSync(raw);
+    }
+    return { success: true };
+  } catch (e) {
+    return { success: false, error: (e as Error).message };
+  }
+}
+
+const LISTING_BACKUP_FILE_RE =
+  /^(?:auto_backup_|manual_backup_)\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}\.db$/;
+
+/** Deletes a file shown in backup list UI (auto/manual snapshot or latest cloud download). */
+function deleteListedBackupFile(backupPath: string): { success: boolean; error?: string } {
+  const raw = String(backupPath ?? "").trim();
+  if (!raw) {
+    return { success: false, error: "Path is required." };
+  }
+  if (!isPathInsideBackupDir(raw)) {
+    return { success: false, error: "Path must be inside the backup folder." };
+  }
+  const base = path.basename(raw);
+  const ok = LISTING_BACKUP_FILE_RE.test(base) || base === CLOUD_LATEST_FROM_ONLINE_FILENAME;
+  if (!ok) {
+    return { success: false, error: "This file cannot be deleted from the backup list." };
+  }
+  try {
+    if (fs.existsSync(raw)) {
+      fs.unlinkSync(raw);
+    }
+    return { success: true };
+  } catch (e) {
+    return { success: false, error: (e as Error).message };
+  }
+}
+
 // List available backups
 const listBackups = () => {
   try {
     const backupDir = ensureBackupDir();
     const files = fs.readdirSync(backupDir)
-      .filter(
-        (file) =>
-          (file.startsWith("auto_backup_") ||
-            file.startsWith("manual_backup_") ||
-            file.startsWith("cloud_backup_")) &&
-          file.endsWith(".db"),
-      )
+      .filter((file) => {
+        if (!file.endsWith(".db")) return false;
+        if (file.startsWith("auto_backup_") || file.startsWith("manual_backup_")) return true;
+        return file === CLOUD_LATEST_FROM_ONLINE_FILENAME;
+      })
       .map((file) => {
         const filePath = path.join(backupDir, file);
         const stats = fs.statSync(filePath);
         const isAuto = file.startsWith("auto_backup_");
-        const isCloud = file.startsWith("cloud_backup_");
-        const type: "automatic" | "manual" | "cloud" = isAuto ? "automatic" : isCloud ? "cloud" : "manual";
+        const isCloudFromOnline = file === CLOUD_LATEST_FROM_ONLINE_FILENAME;
+        const type: "automatic" | "manual" | "cloud" = isAuto
+          ? "automatic"
+          : isCloudFromOnline
+            ? "cloud"
+            : "manual";
         const dateFromName = getDateFromBackupFileName(file);
         const displayDate = dateFromName ?? stats.mtime;
         return {
@@ -546,16 +608,16 @@ const listBackups = () => {
         };
       })
       .sort((a, b) => b.date.localeCompare(a.date));
-    
+
     return {
       success: true,
-      backups: files
+      backups: files,
     };
   } catch (error) {
     logger.error("Failed to list backups", "Backup", error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 };
@@ -812,6 +874,14 @@ export function setupBackupHandlers() {
       cleanOldAutoBackups();
     }
     return result;
+  });
+
+  ipcMain.handle("backup:deleteCloudUploadStaging", (_event, backupPath: string) => {
+    return deleteCloudUploadStagingFile(String(backupPath ?? ""));
+  });
+
+  ipcMain.handle("backup:deleteListingFile", (_event, backupPath: string) => {
+    return deleteListedBackupFile(String(backupPath ?? ""));
   });
 
   // Manual backup to custom path

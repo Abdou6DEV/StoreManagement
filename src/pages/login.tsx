@@ -842,7 +842,7 @@ export default function Login() {
         {/* Footer */}
         <div className="text-center mt-4">
           <p className="text-sm text-muted-foreground">
-            {t("login.copyright", "© 2025 Store Management System. All rights reserved.")}
+            {t("login.copyright", "© 2026 Store Management System. All rights reserved.")}
           </p>
         </div>
         </div>

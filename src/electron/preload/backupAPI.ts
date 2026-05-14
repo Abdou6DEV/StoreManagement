@@ -7,9 +7,21 @@ export const backupAPI = {
   // Create manual backup (from admin panel)
   createManual: () => ipcRenderer.invoke("backup:createManual"),
 
-  /** Snapshot for cloud upload (`cloud_backup_*.db`); not the same as manual backup. */
+  /** Snapshot for cloud upload (`cloud_backup_*.db`, removed from disk after a successful upload). */
   createCloud: () => ipcRenderer.invoke("backup:createCloud"),
-  
+
+  deleteCloudUploadStaging: (backupPath: string) =>
+    ipcRenderer.invoke("backup:deleteCloudUploadStaging", backupPath) as Promise<{
+      success: boolean;
+      error?: string;
+    }>,
+
+  deleteListingFile: (backupPath: string) =>
+    ipcRenderer.invoke("backup:deleteListingFile", backupPath) as Promise<{
+      success: boolean;
+      error?: string;
+    }>,
+
   // Create manual backup to custom path
   createManualToPath: (customPath: string) => ipcRenderer.invoke("backup:createManualToPath", customPath),
   

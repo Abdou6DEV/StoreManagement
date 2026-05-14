@@ -215,7 +215,7 @@ export default function AboutPage() {
         {/* Footer */}
         <div className="text-center mt-12 pt-8 border-t border-border">
           <p className="text-muted-foreground">
-            {t("about.footer", "© 2024 REDA TECH. All rights reserved. Built with ❤️ in Algeria.")}
+            {t("about.footer", "© 2026 REDA TECH. All rights reserved. Built with ❤️ in Algeria.")}
           </p>
         </div>
       </div>
