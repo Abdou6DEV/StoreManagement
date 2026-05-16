@@ -58,6 +58,12 @@ export const backupAPI = {
     ipcRenderer.on("backup:autoBackupSuccess", handler);
     return () => ipcRenderer.removeListener("backup:autoBackupSuccess", handler);
   },
+
+  onAutoCloudUploadSuccess: (callback: () => void) => {
+    const handler = () => callback();
+    ipcRenderer.on("backup:autoCloudUploadSuccess", handler);
+    return () => ipcRenderer.removeListener("backup:autoCloudUploadSuccess", handler);
+  },
 };
 
 export type BackupInfo = {

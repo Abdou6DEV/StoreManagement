@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router-dom";
 import { FileText, Printer, Users, Settings, Database, Download, Shield } from "lucide-react";
@@ -36,21 +36,33 @@ export default function AdministratorPage() {
   );
   const { state: updateState } = useUpdateContext();
 
-  // Update URL when tab changes (preserve subTab for receipt tab)
-  useEffect(() => {
-    if (activeTab !== tabFromUrl) {
-      const next: Record<string, string> = { tab: activeTab };
-      if (activeTab === "receipt" && subTabFromUrl === "configurePrinters") next.subTab = "configurePrinters";
-      setSearchParams(next);
-    }
-  }, [activeTab, tabFromUrl, subTabFromUrl, setSearchParams]);
+  const validTabs = [
+    "settings",
+    "receipt",
+    "logs",
+    "accounts",
+    "backup",
+    "license",
+    "updates",
+  ] as const;
 
-  // Update tab when URL changes
+  type AdminTab = (typeof validTabs)[number];
+
+  const selectTab = useCallback(
+    (tab: AdminTab) => {
+      setActiveTab(tab);
+      const next: Record<string, string> = { tab };
+      if (tab === "receipt" && subTabFromUrl === "configurePrinters") {
+        next.subTab = "configurePrinters";
+      }
+      setSearchParams(next);
+    },
+    [subTabFromUrl, setSearchParams],
+  );
+
+  // External navigation (links, bookmarks): apply ?tab= to state only.
   useEffect(() => {
-    if (
-      tabFromUrl &&
-      ["settings", "receipt", "logs", "accounts", "backup", "license", "updates"].includes(tabFromUrl)
-    ) {
+    if (tabFromUrl && validTabs.includes(tabFromUrl)) {
       setActiveTab(tabFromUrl);
     }
   }, [tabFromUrl]);
@@ -63,7 +75,7 @@ export default function AdministratorPage() {
       {/* Tab Navigation */}
       <div className="flex border-b border-border">
         <button
-          onClick={() => setActiveTab("settings")}
+          onClick={() => selectTab("settings")}
           className={`px-4 py-2 font-medium transition-colors ${
             activeTab === "settings"
               ? "border-b-2 border-orange-500 text-orange-600"
@@ -76,7 +88,7 @@ export default function AdministratorPage() {
           </div>
         </button>
         <button
-          onClick={() => setActiveTab("receipt")}
+          onClick={() => selectTab("receipt")}
           className={`px-4 py-2 font-medium transition-colors ${
             activeTab === "receipt"
               ? "border-b-2 border-orange-500 text-orange-600"
@@ -89,7 +101,7 @@ export default function AdministratorPage() {
           </div>
         </button>
         <button
-          onClick={() => setActiveTab("accounts")}
+          onClick={() => selectTab("accounts")}
           className={`px-4 py-2 font-medium transition-colors ${
             activeTab === "accounts"
               ? "border-b-2 border-orange-500 text-orange-600"
@@ -102,7 +114,7 @@ export default function AdministratorPage() {
           </div>
         </button>
         <button
-          onClick={() => setActiveTab("logs")}
+          onClick={() => selectTab("logs")}
           className={`px-4 py-2 font-medium transition-colors ${
             activeTab === "logs"
               ? "border-b-2 border-orange-500 text-orange-600"
@@ -115,7 +127,7 @@ export default function AdministratorPage() {
           </div>
         </button>
         <button
-          onClick={() => setActiveTab("backup")}
+          onClick={() => selectTab("backup")}
           className={`px-4 py-2 font-medium transition-colors ${
             activeTab === "backup"
               ? "border-b-2 border-orange-500 text-orange-600"
@@ -128,7 +140,7 @@ export default function AdministratorPage() {
           </div>
         </button>
         <button
-          onClick={() => setActiveTab("updates")}
+          onClick={() => selectTab("updates")}
           className={`px-4 py-2 font-medium transition-colors ${
             activeTab === "updates"
               ? "border-b-2 border-orange-500 text-orange-600"
@@ -146,7 +158,7 @@ export default function AdministratorPage() {
           </div>
         </button>
         <button
-          onClick={() => setActiveTab("license")}
+          onClick={() => selectTab("license")}
           className={`px-4 py-2 font-medium transition-colors ${
             activeTab === "license"
               ? "border-b-2 border-orange-500 text-orange-600"
@@ -160,7 +172,10 @@ export default function AdministratorPage() {
         </button>
       </div>
 
-      <FadeUp contentKey={`${activeTab}:${subTabFromUrl ?? ""}`}>
+      <FadeUp
+        contentKey={`${activeTab}:${subTabFromUrl ?? ""}`}
+        className={activeTab === "backup" ? "animate-none" : undefined}
+      >
         {activeTab === "settings" && <OptionsList />}
 
         {activeTab === "receipt" && (
@@ -184,7 +199,7 @@ export default function AdministratorPage() {
 
         {activeTab === "backup" && (
           <section className="bg-card border border-border rounded-xl shadow-sm p-6">
-            <BackupManagement />
+            <BackupManagement onOpenLicenseTab={() => selectTab("license")} />
           </section>
         )}
 

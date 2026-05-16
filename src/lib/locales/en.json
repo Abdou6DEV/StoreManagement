@@ -1,4 +1,7 @@
 {
+  "app": {
+    "initializing": "Starting application…"
+  },
   "dashboard": {
     "title": "Dashboard",
     "loading": "Loading Dashboard",
@@ -2041,6 +2044,8 @@
     "backup.restore": "Restore",
     "backup.delete": "Delete",
     "backup.deleting": "Deleting...",
+    "backup.deleteBackupTitle": "Delete backup file",
+    "backup.deleteBackupDesc": "This permanently removes the file from your backup folder. This cannot be undone.",
     "backup.deleteBackupConfirm": "Delete {{name}}? This cannot be undone.",
     "backup.deleteBackupSuccess": "Backup file deleted",
     "backup.deleteBackupFailed": "Could not delete backup: {{message}}",
@@ -2117,6 +2122,18 @@
     "backup.cloudTransferWarningTitleDownload": "Cloud download in progress",
     "backup.cloudTransferWarningDescription": "Do not close the application until the transfer finishes. Keep a stable internet connection. Closing the app or losing connectivity may leave an incomplete file or cause the transfer to fail.",
     "backup.cloudTransferWarningOk": "I understand",
+    "backup.autoCloudBackupLabel": "Automatic cloud backup",
+    "backup.autoCloudBackupDesc": "When enabled, each new daily automatic backup on this PC is also uploaded to your online backup (latest only).",
+    "backup.autoCloudBackupSaveFailed": "Could not save automatic cloud backup setting.",
+    "backup.autoCloudBackupOn": "Enabled",
+    "backup.autoCloudBackupOff": "Disabled",
+    "backup.cloudBackupUnavailableTitle": "Online backup unavailable",
+    "backup.cloudBackupUnavailableTrial": "Online backup is included with a paid subscription. During the free trial, use local backups only. Open the License tab to see your status or contact your provider.",
+    "backup.cloudBackupUnavailableNotLicensed": "Online backup requires an active paid license. Sign in and verify your license on the License tab.",
+    "backup.cloudBackupUnavailableExpired": "Your paid subscription has ended. Renew your license to use online backup again.",
+    "backup.cloudBackupUnavailableUnknown": "Online backup will be available after your license is verified. Open the License tab and run an online check.",
+    "backup.cloudBackupOpenLicenseTab": "Open License tab",
+    "backup.cloudAccessChecking": "Checking online backup access…",
     "backup.downloadCloudBackup": "Download from cloud",
     "backup.cloudCheckFound": "A cloud backup is available for this customer account.",
     "backup.cloudCheckNone": "No cloud backup was found for this customer yet.",
@@ -2133,6 +2150,7 @@
     "backup.customerIdCopiedShort": "Copied",
     "backup.customerIdCopy": "Copy",
     "backup.autoBackupCreatedSuccess": "Automatic backup created successfully",
+    "backup.autoCloudUploadSuccess": "Automatic backup was uploaded to the cloud.",
     "backup.failedToCreateBackup": "Failed to create backup:",
     "backup.errorCreatingBackup": "Error creating backup",
     "backup.cleanupFailed": "Cleanup failed:",
@@ -2848,6 +2866,7 @@
     "reduceInventoryLabel": "Subtract return quantities from stock (checked products only).",
     "reduceInventoryError": "Failed to update stock for {{name}}"
   },
+  "admin.logs": "Logs",
   "welcome": {
     "title": "Welcome to REDA TECH Store Management",
     "subtitle": "Set up this computer for the first time. Choose a new shop trial or restore your data if you already use the app elsewhere.",

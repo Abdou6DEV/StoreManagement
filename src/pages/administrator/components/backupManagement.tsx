@@ -20,8 +20,10 @@ import {
   Wifi,
   WifiOff,
   Trash2,
+  Shield,
 } from "lucide-react";
 import { Button } from "../../../lib/components/button";
+import { Switch } from "../../../lib/components/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "../../../lib/components/card";
 import { Alert, AlertDescription } from "../../../lib/components/alert";
 import { Badge } from "../../../lib/components/badge";
@@ -37,8 +39,11 @@ import { useToast } from "../../../lib/contexts/toastContext";
 import { useAuth } from "../../../lib/contexts/authContext";
 import type { BackupFile } from "../../../electron/preload/types";
 import { cn } from "../../../lib/utils";
+import { AUTO_CLOUD_BACKUP_ENABLED_OPTION_KEY } from "../../../lib/backup/constants";
 import { ONLINE_CUSTOMER_ID_OPTION_KEY } from "../../../lib/onboarding/constants";
 import type { CloudBackupTransferProgressPayload } from "../../../electron/types/cloudBackup";
+import { usePaidCloudBackupAccess } from "../../../lib/hooks/usePaidCloudBackupAccess";
+import type { CloudBackupAccessBlockReason } from "../../../lib/license/paidCloudBackupAccess";
 
 const RESTORE_CONFIRM_WORD = "YES";
 
@@ -60,18 +65,26 @@ function InfoRow({
   );
 }
 
-export function BackupManagement() {
+type BackupManagementProps = {
+  onOpenLicenseTab?: () => void;
+};
+
+export function BackupManagement({ onOpenLicenseTab }: BackupManagementProps) {
   const { t, i18n } = useTranslation();
   const { showToast } = useToast();
   const { logout, user } = useAuth();
   const navigate = useNavigate();
+  const { hasPaidCloudBackupAccess, blockReason, isAccessResolved } = usePaidCloudBackupAccess();
+  const cloudBackupGateActive = isAccessResolved && !hasPaidCloudBackupAccess;
   const [backups, setBackups] = useState<BackupFile[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [creatingBackup, setCreatingBackup] = useState(false);
   const [restoring, setRestoring] = useState<string | null>(null);
   const [deletingPath, setDeletingPath] = useState<string | null>(null);
   const [restoreDialogOpen, setRestoreDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedBackup, setSelectedBackup] = useState<BackupFile | null>(null);
+  const [backupPendingDelete, setBackupPendingDelete] = useState<BackupFile | null>(null);
   const [confirmText, setConfirmText] = useState("");
   const [backupProgressOpen, setBackupProgressOpen] = useState(false);
   const [backupProgress, setBackupProgress] = useState(0);
@@ -91,6 +104,8 @@ export function BackupManagement() {
   const [cloudTransferWarningOpen, setCloudTransferWarningOpen] = useState(false);
   const [cloudTransferDialogPhase, setCloudTransferDialogPhase] = useState<"upload" | "download" | null>(null);
   const [cloudTransferProgress, setCloudTransferProgress] = useState<CloudBackupTransferProgressPayload | null>(null);
+  const [autoCloudBackupEnabled, setAutoCloudBackupEnabled] = useState(false);
+  const [savingAutoCloudSetting, setSavingAutoCloudSetting] = useState(false);
   const cloudTransferPhaseRef = useRef<"upload" | "download" | null>(null);
 
   const loadStoredCustomerId = useCallback(async () => {
@@ -111,6 +126,31 @@ export function BackupManagement() {
     void loadStoredCustomerId();
   }, [loadStoredCustomerId]);
 
+  const loadAutoCloudBackupSetting = useCallback(async () => {
+    try {
+      const v = await window.api.database.options.get(AUTO_CLOUD_BACKUP_ENABLED_OPTION_KEY);
+      setAutoCloudBackupEnabled(v === "1" || v?.trim().toLowerCase() === "true");
+    } catch {
+      setAutoCloudBackupEnabled(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadAutoCloudBackupSetting();
+  }, [loadAutoCloudBackupSetting]);
+
+  const handleAutoCloudBackupChange = async (checked: boolean) => {
+    setSavingAutoCloudSetting(true);
+    try {
+      await window.api.database.options.set(AUTO_CLOUD_BACKUP_ENABLED_OPTION_KEY, checked ? "1" : "0");
+      setAutoCloudBackupEnabled(checked);
+    } catch {
+      showToast(t("admin.backup.autoCloudBackupSaveFailed", "Could not save automatic cloud backup setting."), "error");
+    } finally {
+      setSavingAutoCloudSetting(false);
+    }
+  };
+
   useEffect(() => {
     const syncOnline = () => setIsOnline(navigator.onLine);
     window.addEventListener("online", syncOnline);
@@ -128,6 +168,19 @@ export function BackupManagement() {
     });
     return () => {
       cleanup();
+    };
+  }, []);
+
+  useEffect(() => {
+    const unsub =
+      typeof window.api?.backup?.onAutoCloudUploadSuccess === "function"
+        ? window.api.backup.onAutoCloudUploadSuccess(() => {
+            setLastRemoteBackupCheckMs(Date.now());
+            setRemoteBackupKnownAvailable(true);
+          })
+        : undefined;
+    return () => {
+      unsub?.();
     };
   }, []);
 
@@ -248,67 +301,85 @@ export function BackupManagement() {
     }
   };
 
-  const checkRemoteCloudBackup = useCallback(async () => {
-    try {
-      setCheckingCloudPresence(true);
-      const r = await window.api.online.backupDownloadLatest();
-      if (r.success === true) {
+  const checkRemoteCloudBackup = useCallback(
+    async (options?: { silent?: boolean }) => {
+      const silent = options?.silent === true;
+      try {
+        if (!silent) setCheckingCloudPresence(true);
+        const r = await window.api.online.backupDownloadLatest();
+        if (r.success === true) {
+          setLastRemoteBackupCheckMs(Date.now());
+          setRemoteBackupKnownAvailable(true);
+          return;
+        }
+
         setLastRemoteBackupCheckMs(Date.now());
-        setRemoteBackupKnownAvailable(true);
-        showToast(
-          t("admin.backup.cloudCheckFound", "A cloud backup is available for this customer account."),
-          "success",
-        );
-        return;
-      }
+        if (r.code === "not_found") {
+          setRemoteBackupKnownAvailable(false);
+          if (!silent) {
+            showToast(
+              t("admin.backup.cloudCheckNone", "No cloud backup was found for this customer yet."),
+              "info",
+            );
+          }
+          return;
+        }
 
-      setLastRemoteBackupCheckMs(Date.now());
-      if (r.code === "not_found") {
-        setRemoteBackupKnownAvailable(false);
-        showToast(
-          t("admin.backup.cloudCheckNone", "No cloud backup was found for this customer yet."),
-          "info",
-        );
-        return;
-      }
+        setRemoteBackupKnownAvailable(null);
+        if (r.code === "missing_customer_id") {
+          if (!silent) {
+            showToast(
+              t(
+                "admin.backup.cloudUploadMissingCustomer",
+                "Customer ID is not recorded on this device. Complete welcome setup first.",
+              ),
+              "error",
+            );
+          }
+          return;
+        }
+        if (r.code === "missing_env") {
+          if (!silent) {
+            showToast(
+              t("admin.backup.cloudUploadNeedsOnline", "Online backup is not configured on this app build."),
+              "error",
+            );
+          }
+          return;
+        }
+        if (r.code === "network") {
+          if (!silent) {
+            showToast(
+              t("admin.backup.cloudCheckNetwork", "Could not reach the server. Check your connection."),
+              "error",
+            );
+          }
+          return;
+        }
 
-      setRemoteBackupKnownAvailable(null);
-      if (r.code === "missing_customer_id") {
-        showToast(
-          t(
-            "admin.backup.cloudUploadMissingCustomer",
-            "Customer ID is not recorded on this device. Complete welcome setup first.",
-          ),
-          "error",
-        );
-        return;
+        if (!silent) {
+          showToast(
+            t("admin.backup.cloudCheckFailed", "Could not verify cloud backup: {{message}}", {
+              message: r.error,
+            }),
+            "error",
+          );
+        }
+      } catch {
+        if (!silent) {
+          showToast(t("admin.backup.cloudCheckFailedGeneric", "Could not verify cloud backup."), "error");
+        }
+      } finally {
+        if (!silent) setCheckingCloudPresence(false);
       }
-      if (r.code === "missing_env") {
-        showToast(
-          t("admin.backup.cloudUploadNeedsOnline", "Online backup is not configured on this app build."),
-          "error",
-        );
-        return;
-      }
-      if (r.code === "network") {
-        showToast(t("admin.backup.cloudCheckNetwork", "Could not reach the server. Check your connection."), "error");
-        return;
-      }
-
-      showToast(
-        t("admin.backup.cloudCheckFailed", "Could not verify cloud backup: {{message}}", { message: r.error }),
-        "error",
-      );
-    } catch {
-      showToast(t("admin.backup.cloudCheckFailedGeneric", "Could not verify cloud backup."), "error");
-    } finally {
-      setCheckingCloudPresence(false);
-    }
-  }, [showToast, t]);
+    },
+    [showToast, t],
+  );
 
   useEffect(() => {
-    void checkRemoteCloudBackup();
-  }, [checkRemoteCloudBackup]);
+    if (!isAccessResolved || !hasPaidCloudBackupAccess) return;
+    void checkRemoteCloudBackup({ silent: true });
+  }, [checkRemoteCloudBackup, hasPaidCloudBackupAccess, isAccessResolved]);
 
   const downloadRemoteCloudBackup = async () => {
     cloudTransferPhaseRef.current = "download";
@@ -678,7 +749,10 @@ export function BackupManagement() {
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString() + " " + date.toLocaleTimeString();
+    const loc = i18n.language === "ar" ? "ar" : i18n.language === "fr" ? "fr" : "en";
+    const datePart = new Intl.DateTimeFormat(loc, { dateStyle: "medium" }).format(date);
+    const timePart = new Intl.DateTimeFormat(loc, { hour: "2-digit", minute: "2-digit" }).format(date);
+    return `${datePart}\u00a0${timePart}`;
   };
 
   const getBackupStatus = (backup: BackupFile) => {
@@ -707,6 +781,38 @@ export function BackupManagement() {
   );
   const cloudBackups = useMemo(() => backups.filter((b) => b.type === "cloud"), [backups]);
   const manualBackups = useMemo(() => backups.filter((b) => b.type === "manual"), [backups]);
+
+  const cloudBackupBlockedMessage = useMemo(() => {
+    const reason: CloudBackupAccessBlockReason | null = cloudBackupGateActive
+      ? blockReason ?? "unknown"
+      : null;
+    switch (reason) {
+      case "trial":
+        return t(
+          "admin.backup.cloudBackupUnavailableTrial",
+          "Online backup is included with a paid subscription. During the free trial, use local backups only. Open the License tab to see your status or contact your provider.",
+        );
+      case "subscription_expired":
+        return t(
+          "admin.backup.cloudBackupUnavailableExpired",
+          "Your paid subscription has ended. Renew your license to use online backup again.",
+        );
+      case "not_licensed":
+        return t(
+          "admin.backup.cloudBackupUnavailableNotLicensed",
+          "Online backup requires an active paid license. Sign in and verify your license on the License tab.",
+        );
+      default:
+        return t(
+          "admin.backup.cloudBackupUnavailableUnknown",
+          "Online backup will be available after your license is verified. Open the License tab and run an online check.",
+        );
+    }
+  }, [blockReason, cloudBackupGateActive, t]);
+
+  const openLicenseTab = useCallback(() => {
+    onOpenLicenseTab?.();
+  }, [onOpenLicenseTab]);
 
   const lastRemoteCheckLabel = useMemo(() => {
     if (lastRemoteBackupCheckMs == null) return "—";
@@ -747,19 +853,27 @@ export function BackupManagement() {
     };
   }, [checkingCloudPresence, downloadingCloudBackup, isOnline, remoteBackupKnownAvailable, t]);
 
-  const deleteBackupFile = async (backup: BackupFile) => {
-    if (
-      !window.confirm(
-        t("admin.backup.deleteBackupConfirm", "Delete {{name}}? This cannot be undone.", { name: backup.name }),
-      )
-    ) {
-      return;
-    }
+  const openDeleteDialog = (backup: BackupFile) => {
+    setBackupPendingDelete(backup);
+    setDeleteDialogOpen(true);
+  };
+
+  const closeDeleteDialog = () => {
+    if (deletingPath) return;
+    setDeleteDialogOpen(false);
+    setBackupPendingDelete(null);
+  };
+
+  const confirmDeleteBackup = async () => {
+    if (!backupPendingDelete) return;
+    const backup = backupPendingDelete;
     try {
       setDeletingPath(backup.path);
       const result = await window.api.backup.deleteListingFile(backup.path);
       if (result.success) {
         showToast(t("admin.backup.deleteBackupSuccess", "Backup file deleted"), "success");
+        setDeleteDialogOpen(false);
+        setBackupPendingDelete(null);
         await loadBackups();
       } else {
         showToast(
@@ -800,10 +914,12 @@ export function BackupManagement() {
         </CardHeader>
         <CardContent className="pt-0">
           <div className="mb-4 grid grid-cols-1 gap-4 md:grid-cols-3">
-            <div className="flex items-center gap-2 text-sm">
-              <Calendar className="h-4 w-4 shrink-0 text-muted-foreground" />
-              <span className="text-muted-foreground">{t("admin.backup.created", "Created:")}</span>
-              <span className="font-medium">{formatDate(backup.date)}</span>
+            <div className="flex min-w-0 flex-nowrap items-center gap-2 text-sm">
+              <Calendar className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+              <span className="shrink-0 text-muted-foreground">{t("admin.backup.created", "Created:")}</span>
+              <span className="whitespace-nowrap font-medium" title={formatDate(backup.date)}>
+                {formatDate(backup.date)}
+              </span>
             </div>
             <div className="flex items-center gap-2 text-sm">
               <HardDrive className="h-4 w-4 shrink-0 text-muted-foreground" />
@@ -836,7 +952,7 @@ export function BackupManagement() {
             </Button>
             <Button
               type="button"
-              onClick={() => void deleteBackupFile(backup)}
+              onClick={() => openDeleteDialog(backup)}
               disabled={!!restoring || !!deletingPath}
               variant="outline"
               size="sm"
@@ -872,18 +988,6 @@ export function BackupManagement() {
         </div>
         <div className="flex flex-wrap gap-2">
           <Button
-            onClick={() => {
-              void loadBackups();
-              void loadStoredCustomerId();
-            }}
-            disabled={loading}
-            variant="outline"
-            className="flex items-center gap-2"
-          >
-            <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
-            {t("admin.backup.refresh", "Refresh")}
-          </Button>
-          <Button
             onClick={() => setRestoreFromFileDialogOpen(true)}
             disabled={!!restoring}
             variant="outline"
@@ -895,8 +999,22 @@ export function BackupManagement() {
         </div>
       </div>
 
-      <Card className="overflow-hidden border-border shadow-sm">
-        <CardContent className="p-0">
+      <Card className="relative overflow-hidden border-border shadow-sm">
+        <CardContent className="relative min-h-[28rem] p-0">
+          {!isAccessResolved ? (
+            <div
+              className="flex min-h-[28rem] items-center justify-center p-6"
+              aria-busy="true"
+              aria-label={t("admin.backup.cloudAccessChecking", "Checking online backup access…")}
+            >
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" aria-hidden />
+            </div>
+          ) : (
+            <>
+          <div
+            className={cn(cloudBackupGateActive && "pointer-events-none select-none opacity-50")}
+            aria-hidden={cloudBackupGateActive ? true : undefined}
+          >
           <div className="flex flex-col gap-4 bg-gradient-to-br from-orange-500/10 via-background to-background p-6 md:flex-row md:items-start md:justify-between">
             <div className="flex min-w-0 flex-1 items-start gap-4">
               <div className="rounded-2xl bg-card p-3 shadow-sm ring-1 ring-border">
@@ -924,12 +1042,6 @@ export function BackupManagement() {
                 <h3 className="text-lg font-semibold text-foreground">
                   {t("admin.backup.hubTitle", "Online backup")}
                 </h3>
-                <p className="max-w-2xl text-sm text-muted-foreground">
-                  {t(
-                    "admin.backup.hubDescription",
-                    "Upload creates a fresh snapshot on this PC, sends it to secure storage, and keeps one latest file per customer. “Check cloud backup” only asks the server; “Download” saves that file into your local backup folder.",
-                  )}
-                </p>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <InfoRow
                     label={t("admin.backup.hubLastServerCheck", "Last server check")}
@@ -965,6 +1077,36 @@ export function BackupManagement() {
                       "Used with your device ID so the server knows which online backup belongs to this shop.",
                     )}
                   />
+                </div>
+                <div className="flex flex-col gap-3 rounded-lg border border-border/70 bg-muted/20 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0 space-y-1">
+                    <label
+                      htmlFor="auto-cloud-backup"
+                      className="text-sm font-medium text-foreground"
+                    >
+                      {t("admin.backup.autoCloudBackupLabel", "Automatic cloud backup")}
+                    </label>
+                    <p className="text-xs text-muted-foreground">
+                      {t(
+                        "admin.backup.autoCloudBackupDesc",
+                        "When enabled, each new daily automatic backup on this PC is also uploaded to your online backup (latest only).",
+                      )}
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-3">
+                    <Switch
+                      id="auto-cloud-backup"
+                      checked={autoCloudBackupEnabled}
+                      onCheckedChange={(checked) => void handleAutoCloudBackupChange(checked)}
+                      disabled={savingAutoCloudSetting || uploadingCloud || downloadingCloudBackup}
+                      aria-label={t("admin.backup.autoCloudBackupLabel", "Automatic cloud backup")}
+                    />
+                    <span className="text-sm font-medium text-muted-foreground">
+                      {autoCloudBackupEnabled
+                        ? t("admin.backup.autoCloudBackupOn", "Enabled")
+                        : t("admin.backup.autoCloudBackupOff", "Disabled")}
+                    </span>
+                  </div>
                 </div>
                 <div className="flex flex-wrap gap-2 pt-1">
                   <Button
@@ -1104,6 +1246,34 @@ export function BackupManagement() {
               <div className="grid gap-4">{cloudBackups.map((b, i) => renderBackupCard(b, i))}</div>
             )}
           </div>
+          </div>
+          {cloudBackupGateActive ? (
+            <div
+              className="absolute inset-0 z-10 flex items-center justify-center bg-background/85 p-6 backdrop-blur-[2px]"
+              role="region"
+              aria-labelledby="cloud-backup-unavailable-title"
+            >
+              <div className="max-w-lg space-y-4 text-center">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-muted ring-1 ring-border">
+                  <Shield className="h-6 w-6 text-orange-600" aria-hidden />
+                </div>
+                <h4
+                  id="cloud-backup-unavailable-title"
+                  className="text-base font-semibold text-foreground"
+                >
+                  {t("admin.backup.cloudBackupUnavailableTitle", "Online backup unavailable")}
+                </h4>
+                <p className="text-sm leading-relaxed text-muted-foreground">
+                  {cloudBackupBlockedMessage}
+                </p>
+                <Button type="button" variant="outline" size="sm" onClick={openLicenseTab}>
+                  {t("admin.backup.cloudBackupOpenLicenseTab", "Open License tab")}
+                </Button>
+              </div>
+            </div>
+          ) : null}
+            </>
+          )}
         </CardContent>
       </Card>
 
@@ -1248,6 +1418,55 @@ export function BackupManagement() {
           <DialogFooter>
             <Button type="button" onClick={() => setCloudTransferWarningOpen(false)}>
               {t("admin.backup.cloudTransferWarningOk", "I understand")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete backup confirmation */}
+      <Dialog
+        open={deleteDialogOpen}
+        onOpenChange={(open) => {
+          if (!open) closeDeleteDialog();
+          else setDeleteDialogOpen(true);
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-lg">
+              <Trash2 className="h-5 w-5 text-destructive" aria-hidden />
+              {t("admin.backup.deleteBackupTitle", "Delete backup file")}
+            </DialogTitle>
+            <DialogDescription className="text-left">
+              {t(
+                "admin.backup.deleteBackupDesc",
+                "This permanently removes the file from your backup folder. This cannot be undone.",
+              )}
+              {backupPendingDelete ? (
+                <>
+                  <br />
+                  <strong className="mt-2 inline-block break-all text-foreground">{backupPendingDelete.name}</strong>
+                </>
+              ) : null}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button type="button" variant="outline" onClick={closeDeleteDialog} disabled={!!deletingPath}>
+              {t("admin.backup.cancel", "Cancel")}
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={() => void confirmDeleteBackup()}
+              disabled={!backupPendingDelete || !!deletingPath}
+              className="flex items-center gap-2"
+            >
+              {deletingPath ? (
+                <RefreshCw className="h-4 w-4 animate-spin" aria-hidden />
+              ) : (
+                <Trash2 className="h-4 w-4" aria-hidden />
+              )}
+              {deletingPath ? t("admin.backup.deleting", "Deleting...") : t("admin.backup.delete", "Delete")}
             </Button>
           </DialogFooter>
         </DialogContent>

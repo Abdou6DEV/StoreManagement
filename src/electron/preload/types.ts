@@ -446,6 +446,7 @@ export type BackupAPI = {
   restore: (backupPath: string) => Promise<BackupResult>;
   getInfo: () => Promise<{ backupDir: string; databasePath: string; backupExists: boolean }>;
   onAutoBackupSuccess: (callback: () => void) => () => void;
+  onAutoCloudUploadSuccess: (callback: () => void) => () => void;
 };
 
 export type OnboardingAPI = {

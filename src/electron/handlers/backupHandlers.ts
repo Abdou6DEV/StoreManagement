@@ -3,6 +3,12 @@ import fs from "fs";
 import path from "path";
 import { prisma } from "../../lib/database/prismaClient";
 import logger from "../../lib/logger";
+import { getOption } from "../../lib/database/options";
+import {
+  AUTO_CLOUD_BACKUP_ENABLED_OPTION_KEY,
+  isAutoCloudBackupEnabledOptionValue,
+} from "../../lib/backup/constants";
+import { uploadCloudBackupLatest } from "./onlineHandlers";
 import {
   clearStoredLicenseGrace,
   LEGACY_LICENSE_OPTION_KEYS,
@@ -766,6 +772,37 @@ function notifyAutoBackupSuccess() {
   });
 }
 
+function notifyAutoCloudUploadSuccess() {
+  BrowserWindow.getAllWindows().forEach((win) => {
+    if (win.webContents && !win.isDestroyed()) {
+      win.webContents.send("backup:autoCloudUploadSuccess");
+    }
+  });
+}
+
+async function maybeRunAutoCloudUpload(backupPath: string | undefined): Promise<void> {
+  if (!backupPath) return;
+  try {
+    const enabledRaw = await getOption(AUTO_CLOUD_BACKUP_ENABLED_OPTION_KEY);
+    if (!isAutoCloudBackupEnabledOptionValue(enabledRaw)) {
+      return;
+    }
+    logger.info("Automatic cloud backup upload starting", "Backup", { backupPath });
+    const result = await uploadCloudBackupLatest(null, backupPath, "auto_upload");
+    if (result.success === true) {
+      logger.info("Automatic cloud backup upload completed", "Backup");
+      notifyAutoCloudUploadSuccess();
+    } else {
+      logger.warn("Automatic cloud backup upload failed", "Backup", {
+        error: result.error,
+        code: result.code,
+      });
+    }
+  } catch (error) {
+    logger.warn("Automatic cloud backup upload error", "Backup", error);
+  }
+}
+
 export function setupBackupHandlers() {
   // Ensure daily backup (call when user reaches main app after login). Once per day; toast only when actually created.
   ipcMain.handle("backup:ensureDailyBackup", async () => {
@@ -773,6 +810,7 @@ export function setupBackupHandlers() {
       const result = await createAutoBackup();
       if (result.success && !result.skipped) {
         cleanOldAutoBackups();
+        void maybeRunAutoCloudUpload(result.backupPath);
         // Only send event for retry (renderer already gets created: true from promise on first try)
         if (isRetry) {
           notifyAutoBackupSuccess();
@@ -1004,6 +1042,7 @@ export const performDailyBackup = async () => {
       } else {
         logger.info("Daily automatic backup completed successfully", "Backup");
         cleanOldAutoBackups();
+        void maybeRunAutoCloudUpload(result.backupPath);
         // Notify renderer to show success toast
         BrowserWindow.getAllWindows().forEach((win) => {
           if (win.webContents && !win.isDestroyed()) {

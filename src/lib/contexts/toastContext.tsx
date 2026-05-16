@@ -11,27 +11,42 @@ import { ToastType, Toast } from "../../types";
 import { CheckCircle, XCircle, Info, X } from "lucide-react";
 import { playToastSound } from "../utils/soundUtils";
 
-/** Shows toast when a daily backup was actually created (first try via custom event, retry via IPC from main). */
-function BackupToastListener() {
+/** Toasts when a daily local backup is created or auto-uploaded to cloud (IPC from main). */
+function BackupToastListener(): React.ReactElement | null {
   const { showToast } = useToast();
   const { t } = useTranslation();
-  const message = t("backup.autoBackupCreatedSuccess", "Automatic backup created successfully");
+  const autoBackupMessage = t(
+    "admin.backup.autoBackupCreatedSuccess",
+    "Automatic backup created successfully",
+  );
+  const autoCloudUploadMessage = t(
+    "admin.backup.autoCloudUploadSuccess",
+    "Automatic backup was uploaded to the cloud.",
+  );
 
   useEffect(() => {
-    const onCreated = () => showToast(message, "success");
+    const onLocalCreated = () => showToast(autoBackupMessage, "success");
+    const onCloudUploaded = () => showToast(autoCloudUploadMessage, "success");
 
-    const onCustomCreated = () => onCreated();
+    const onCustomCreated = () => onLocalCreated();
     window.addEventListener("backup:created", onCustomCreated);
 
-    let unsubscribe: (() => void) | undefined;
-    if (typeof window !== "undefined" && window.api?.backup?.onAutoBackupSuccess) {
-      unsubscribe = window.api.backup.onAutoBackupSuccess(onCreated);
+    let unsubLocal: (() => void) | undefined;
+    let unsubCloud: (() => void) | undefined;
+    if (typeof window !== "undefined" && window.api?.backup) {
+      if (window.api.backup.onAutoBackupSuccess) {
+        unsubLocal = window.api.backup.onAutoBackupSuccess(onLocalCreated);
+      }
+      if (window.api.backup.onAutoCloudUploadSuccess) {
+        unsubCloud = window.api.backup.onAutoCloudUploadSuccess(onCloudUploaded);
+      }
     }
     return () => {
       window.removeEventListener("backup:created", onCustomCreated);
-      unsubscribe?.();
+      unsubLocal?.();
+      unsubCloud?.();
     };
-  }, [showToast, message]);
+  }, [showToast, autoBackupMessage, autoCloudUploadMessage]);
   return null;
 }
 

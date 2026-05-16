@@ -1,5 +1,5 @@
 Store Management – Online Features Plan (Working Draft)
-Last updated: 2026-05-14 (checkpoint: Backup online hub — check / download-to-local / upload with warning dialog + progress bar + IPC progress; nav trial/paid-expiry + License tab unchanged; login cloud restore + download version gate still open)
+Last updated: 2026-05-16 (checkpoint: paid-cloud backup hub gate + Backup tab/tab-URL stability + startup initializing copy; manual dev DB bloat script removed; login cloud restore + download version gate still open)
 
 Goal
 - Add lightweight “online” capabilities (not fully cloud): device activation / deactivation, optional time-limited activation, and online backup upload.
@@ -240,7 +240,7 @@ Unfinished questions / decisions (must answer before implementation)
 
 ## Progress checkpoint (resume here)
 
-Last plan sync: 2026-05-14
+Last plan sync: 2026-05-16
 
 Use this section as the single source of truth for **done vs not done**. Spec sections **1–16** above remain the design; below tracks **reality in the repo and on your Supabase project**.
 
@@ -316,15 +316,24 @@ Use this section as the single source of truth for **done vs not done**. Spec se
 - **i18n:** **`navigation.trialBanner*`**, **`navigation.subscriptionBanner*`** (**en / fr / ar**).
 - **Files:** `src/lib/components/trialHeaderBanner.tsx`, `paidExpiryHeaderBanner.tsx`, `src/lib/hooks/useActiveTrial.ts`, `usePaidExpiryWarning.ts`, `src/lib/license/formatDeadlineRemaining.ts`, `src/lib/components/navigation.tsx`.
 
-**Administrator — Backup tab online hub + cloud transfer (2026-05-12 … 2026-05-14)** — §6 v1 manual upload / download-to-PC (partial vs full §6 restore)
-- **UI (`backupManagement.tsx`):** Online backup **hub** — **Check cloud backup** (`backupDownloadLatest`), **Download from cloud** (`backupDownloadLatestToLocal` → saves **`cloud_latest_from_online.db`** under userData backups), **Create & upload to cloud** (`createCloud` staging then **`backupUploadLatest`**, staging delete on success). Hub styled like License tab; auto **check** on tab mount; per-card delete / restore flows as implemented in repo.
-- **Transfer UX (2026-05-14):** On upload or download **start**: modal warning (do not close app / stable internet) — **`admin.backup.cloudTransferWarning*`** **en / fr / ar**. **Progress bar** under hub buttons (same visual pattern as update download: track, %, speed, bytes/total, ETA). While upload or download: disable **Check**, **Download**, **Upload**; also disable those three when **`!navigator.onLine`**.
-- **Main (`onlineHandlers.ts`):** **`cloud-backup-transfer-progress`** IPC (~1s throttle, `sender.isDestroyed()` guard). **Download:** stream signed URL body to disk with backpressure-safe **`writeStreamChunk`** (error + drain cleanup). **Upload:** chunked disk read → progress ~0–35%; network phase **estimated** progress (fetch has no upload bytes); 100% on success.
-- **Preload:** **`onlineAPI.onCloudBackupTransferProgress(cb) → cleanup`**; type **`CloudBackupTransferProgressPayload`** in **`electron/types/cloudBackup.ts`**. Renderer uses **`cloudTransferPhaseRef`** + explicit **`cloudTransferDialogPhase`** for dialog title; **`errMsg`** for safe download error strings.
-- **Identity / payload:** unchanged vs Edge — **`device_id`**, **`customer_id`**, **`app_version`**, **`source`** (**`manual_upload`**), multipart **`file`**.
-- **Errors (toasts + i18n):** missing customer, **`missing_env`**, **`device_inactive`**, file too large, not_found, network, generic failure (existing + warning strings).
-- **Server contract:** **`backup-upload-latest`** multipart; **`backup-download-latest`** → **`db_signed_url`**. No Edge changes required for streaming/progress (client-only). See **B** / **C** for trial **`active`** gate and **`latest.json`** / login restore.
-- **Files:** `onlineHandlers.ts`, `onlineAPI.ts`, `cloudBackup.ts` (types), `backupManagement.tsx`, locales **en / fr / ar** (`admin.backup.cloudTransfer*`, hub strings).
+**Administrator — Backup tab online hub + cloud transfer (2026-05-12 … 2026-05-16)** — §6 v1 manual upload / download-to-PC + optional **auto cloud upload** after daily backup + **paid-cloud UI gate** (trial / unlicensed / expired paid overlay)
+
+- **Product rule:** While **trial** is active **or** the device has **no paid cloud backup access** (mirrors **`device-check`** + offline grace semantics in **`paidCloudBackupAccess.ts`**), the **whole Online backup** card shows a fixed-height **“checking access”** spinner, then becomes **read-only dimmed hub + overlay**: **`admin.backup.cloudBackupUnavailable*`** (**en / fr / ar**) + **Open License tab** (calls parent **`selectTab("license")`** — avoids URL-vs-**`activeTab`** redirect loops).
+- **Logic:** **`resolvePaidCloudBackupAccess`** (`src/lib/license/paidCloudBackupAccess.ts`) + **`usePaidCloudBackupAccess`**; gate resolves when license context finishes loading **and** grace snapshot loaded **or** **`lastDeviceCheckResult`** already present.
+
+- **Stability / polish (2026-05-16):** **`FadeUp`** on Administrator uses **`animate-none`** when **`activeTab === backup`** so the tab doesn’t slide every visit; **`checkRemoteCloudBackup({ silent: true })`** runs on mount **only when** paid cloud access (no misleading “Checking…” badge / noisy toasts); backup list **`useState(true)`** for **`loading`** to avoid empty-then-spinner flash.
+
+- **Auto cloud backup (optional setting):** Option **`backup.autoCloudUploadEnabled`** (`AUTO_CLOUD_BACKUP_ENABLED_OPTION_KEY`); **`maybeRunAutoCloudUpload`** in **`backupHandlers`** after daily backup succeeds; preload event **`backup:autoCloudUploadSuccess`** + toast **`admin.backup.autoCloudUploadSuccess`** via **`toastContext.tsx`**.
+
+- **UI (`backupManagement.tsx`):** **Check**, **Download** (save **`cloud_latest_from_online.db`**), **Create & upload**, transfer warning **`Dialog`**, progress IPC; delete backup confirmations via **`Dialog`** (**`deleteBackup*`** i18n). **`source`** on upload **`manual_upload`** vs **`auto_upload`** from Electron side.
+
+- **Administrator routing:** **`selectTab()`** applies **`setActiveTab` + `setSearchParams`** in one step so tab clicks aren’t overwritten by stale **`?tab=`**; **`useEffect([tabFromUrl])`** syncs **`activeTab`** when the URL alone changes.
+
+- **Transfer UX:** **`cloud-backup-transfer-progress`** (~1s throttle); **`onlineHandlers`** download stream + **`writeStreamChunk`**; upload read progress **0–35%** + estimated network phase — see **`electron/types/cloudBackup.ts`**, preload **`onlineAPI.onCloudBackupTransferProgress`**.
+- **`App.tsx` initial shell:** **`app.initializing`** (**en / fr / ar**) instead of reusing **`dashboard.loading`** on the onboarding empty-DB gate (avoids misleading “Loading Dashboard”).
+- **Dev tooling removed:** **`scripts/bloatDb.ts`** and **`npm run db:bloat`** (padding SQLite via Option **`__dev_db_padding__`**).
+- **Server contract unchanged:** multipart **`backup-upload-latest`**; **`backup-download-latest`** → **`db_signed_url`**. **C** lists login restore / **`latest.json`** still **open**.
+- **Primary files:** `paidCloudBackupAccess.ts`, `usePaidCloudBackupAccess.ts`, `backupManagement.tsx`, `administrator/index.tsx`, `backupHandlers.ts`, `backup/constants.ts`, `toastContext.tsx`, `app.tsx`, `fadeUp.tsx` usage site, **`onlineHandlers.ts`** / **`onlineAPI.ts`** / **`cloudBackup.ts`**.
 
 **License gate UI — `licenseValidation.tsx` (2026-05-10)**
 - Full-page gate: logo, **`licenseGate.title` / `subtitle`** (explicit “license” wording), **`ShieldAlert`** on title, staggered **fade-up** animations (login-like easing), **`PricingPlansSection`**, settings dropdown (theme / language / fullscreen), **sign out**.
@@ -382,7 +391,7 @@ Use this section as the single source of truth for **done vs not done**. Spec se
 - **`backup-download-latest`** IPC returns **`db_signed_url`**; **login** restore on empty DB, **`latest.json`** version gate, replace DB, logout — **not** wired in UI.
 
 **5) Backup page → cloud upload / download to PC (section 6)**
-- **Done (manual v1 + hub):** Administrator **Backup** tab — **check**, **download to local folder**, **create & upload**, transfer warning + progress IPC (see **A**, 2026-05-14). **Not done:** auto-upload setting; login restore; **`latest.json`** version gate in app.
+- **Done (manual v1 + hub + UX):** Administrator **Backup** tab — **check**, **download to local**, **create & upload**, transfer warning + progress IPC; optional **automatic cloud backup** after daily backup (option + **`auto_upload`** **`source`**); **paid-cloud hub gate** overlay for trial/unlicensed/expired subscription; **`selectTab`/URL stability** + mount stability polish (see **A**, 2026-05-16). **Still not done:** login restore; **`latest.json`** version gate in app.
 
 **6) Backup Edge Functions vs trial (section 2.1)**
 - If validators still require **`active=true`** only, align with **trial allowed** when you want trial customers uploading.
@@ -412,7 +421,7 @@ Use this section as the single source of truth for **done vs not done**. Spec se
 | License after login + preload | N/A                   | **Yes** (**`App.tsx`** §15 branch)                |
 | First ADMIN setup on login   | N/A                    | **Done**                                          |
 | Activation-key recovery      | Local validate in main | **Done**; still runs **`device-check`** after success |
-| Cloud backup upload/download | Functions exist        | **Upload + download-to-local IPC + Backup hub UI** (check / download / upload + progress); **no login restore** |
+| Cloud backup upload/download | Functions exist        | **Upload + download-to-local IPC + Backup hub UI** (+ optional auto-upload after daily backup, paid-cloud overlay gate); **no login restore** |
 | Welcome offline banner       | N/A                    | **Done**                                          |
 | Welcome phone validation     | N/A                    | **Done**                                          |
 | Welcome sequential intro / ribbon / borders | N/A                    | **Done** (2026-05-13 polish)                      |
