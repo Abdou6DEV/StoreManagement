@@ -189,6 +189,18 @@ export function LicenseManagement() {
   );
   const customerId = remoteCustomerId ?? storedCustomerId;
 
+  const customerName = useMemo(() => {
+    if (effectiveCheckResult?.success !== true) return null;
+    const name = effectiveCheckResult.customerName;
+    return typeof name === "string" && name.trim() ? name.trim() : null;
+  }, [effectiveCheckResult]);
+
+  const customerPhone = useMemo(() => {
+    if (effectiveCheckResult?.success !== true) return null;
+    const phone = effectiveCheckResult.customerPhone;
+    return typeof phone === "string" && phone.trim() ? phone.trim() : null;
+  }, [effectiveCheckResult]);
+
   const onlineCheckCooldownRemainingMs = useMemo(() => {
     if (lastOnlineCheckAtMs == null) return 0;
     return Math.max(0, lastOnlineCheckAtMs + ONLINE_CHECK_COOLDOWN_MS - nowMs);
@@ -448,6 +460,14 @@ export function LicenseManagement() {
                 "admin.license.customerIdHint",
                 "Used for cloud backup ownership after welcome setup.",
               )}
+            />
+            <InfoRow
+              label={t("admin.license.customerName", "Customer name")}
+              value={customerName ?? t("admin.license.notRecorded", "Not recorded")}
+            />
+            <InfoRow
+              label={t("admin.license.customerPhone", "Phone")}
+              value={customerPhone ?? t("admin.license.notRecorded", "Not recorded")}
             />
           </CardContent>
         </Card>

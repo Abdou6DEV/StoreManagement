@@ -11,6 +11,7 @@ import {
 } from "@prisma/client";
 import { LogLevel } from "../../lib/logger/common";
 import type { DeviceRequestPayload, DeviceRequestResult } from "../types/deviceRequest";
+import type { DeviceLinkExistingPayload, DeviceLinkExistingResult } from "../types/deviceLinkExisting";
 import type { DeviceCheckResult } from "../types/deviceCheck";
 import type {
   CloudBackupDownloadResult,
@@ -467,6 +468,7 @@ export type LicenseGraceSnapshot = {
 export type OnlineAPI = {
   deviceCheck: () => Promise<DeviceCheckResult>;
   deviceRequest: (payload: DeviceRequestPayload) => Promise<DeviceRequestResult>;
+  deviceLinkExisting: (payload: DeviceLinkExistingPayload) => Promise<DeviceLinkExistingResult>;
   readLicenseGrace: () => Promise<LicenseGraceSnapshot | null>;
   persistLicenseGrace: (payload: {
     trialEndsAt?: string | null;
@@ -475,7 +477,7 @@ export type OnlineAPI = {
   clearLicenseGrace: () => Promise<{ success: true }>;
   backupUploadLatest: (backupFilePath: string, uploadSource?: string) => Promise<CloudBackupUploadResult>;
   backupDownloadLatest: () => Promise<CloudBackupDownloadResult>;
-  backupDownloadLatestToLocal: () => Promise<CloudBackupDownloadToLocalResult>;
+  backupDownloadLatestToLocal: (customerId?: string) => Promise<CloudBackupDownloadToLocalResult>;
   onCloudBackupTransferProgress: (callback: (data: CloudBackupTransferProgressPayload) => void) => () => void;
 };
 

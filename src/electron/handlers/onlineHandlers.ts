@@ -11,6 +11,7 @@ import {
   type LicenseGraceSnapshot,
 } from "../utils/licenseGraceStore";
 import type { DeviceRequestPayload, DeviceRequestResult } from "../types/deviceRequest";
+import type { DeviceLinkExistingPayload, DeviceLinkExistingResult } from "../types/deviceLinkExisting";
 import type { DeviceCheckResult } from "../types/deviceCheck";
 import type {
   CloudBackupDownloadResult,
@@ -29,6 +30,10 @@ function deviceRequestUrl(base: string): string {
 
 function deviceCheckUrl(base: string): string {
   return `${base}/functions/v1/device-check`;
+}
+
+function deviceLinkExistingUrl(base: string): string {
+  return `${base}/functions/v1/device-link-existing`;
 }
 
 function backupUploadUrl(base: string): string {
@@ -281,8 +286,10 @@ async function writeStreamChunk(writeStream: fs.WriteStream, buf: Buffer): Promi
   });
 }
 
-async function requestCloudBackupDownloadSignedUrl(): Promise<CloudBackupDownloadResult> {
-  const identity = await resolveCloudBackupIdentity();
+async function requestCloudBackupDownloadSignedUrl(
+  overrideCustomerId?: string,
+): Promise<CloudBackupDownloadResult> {
+  const identity = await resolveCloudBackupIdentity(overrideCustomerId);
   if (identity.success === false) {
     return { success: false, error: identity.error, code: identity.code };
   }
@@ -384,7 +391,9 @@ function parseCloudBackupUploadMeta(value: unknown): CloudBackupUploadMeta | nul
   };
 }
 
-async function resolveCloudBackupIdentity(): Promise<
+async function resolveCloudBackupIdentity(
+  overrideCustomerId?: string,
+): Promise<
   | { success: true; deviceId: string; customerId: string }
   | { success: false; error: string; code: CloudBackupErrorCode }
 > {
@@ -404,7 +413,8 @@ async function resolveCloudBackupIdentity(): Promise<
     return { success: false, error: (e as Error).message, code: "invalid" };
   }
 
-  const customerId = (await getOption(ONLINE_CUSTOMER_ID_OPTION_KEY))?.trim();
+  const customerId =
+    (overrideCustomerId ?? "").trim() || (await getOption(ONLINE_CUSTOMER_ID_OPTION_KEY))?.trim();
   if (!customerId) {
     return {
       success: false,
@@ -568,6 +578,108 @@ export function setupOnlineHandlers(): void {
     }
   });
 
+  ipcMain.handle(
+    "online:deviceLinkExisting",
+    async (_event, payload: DeviceLinkExistingPayload): Promise<DeviceLinkExistingResult> => {
+      const customerId = (payload?.customerId ?? "").trim();
+      const name = (payload?.name ?? "").trim();
+      const phone = (payload?.phone ?? "").trim();
+      if (!customerId || !name || !phone) {
+        return {
+          success: false,
+          error: "Customer ID, name, and phone are required.",
+          code: "invalid",
+        };
+      }
+
+      const cfg = getStoreOnlineConfig();
+      if ("error" in cfg) {
+        return {
+          success: false,
+          error: "Online provisioning is not configured (missing STORE_ONLINE_* env vars).",
+          code: "missing_env",
+        };
+      }
+
+      let deviceId: string;
+      try {
+        deviceId = getMachineGuid();
+      } catch (e) {
+        return { success: false, error: (e as Error).message, code: "invalid" };
+      }
+
+      try {
+        const res = await fetch(deviceLinkExistingUrl(cfg.supabaseUrl), {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...onlineAuthedHeaders(cfg),
+          },
+          body: JSON.stringify({
+            device_id: deviceId,
+            customer_id: customerId,
+            name,
+            phone,
+          }),
+        });
+
+        const text = await res.text();
+        let json: unknown;
+        try {
+          json = text ? JSON.parse(text) : null;
+        } catch {
+          json = { raw: text };
+        }
+
+        if (!res.ok) {
+          return {
+            success: false,
+            error: readEdgeError(json, res.status),
+            code: "http",
+          };
+        }
+
+        if (json && typeof json === "object" && (json as Record<string, unknown>).ok === false) {
+          return {
+            success: false,
+            error: readEdgeError(json, res.status),
+            code: "edge",
+          };
+        }
+
+        if (!json || typeof json !== "object") {
+          return {
+            success: false,
+            error: "Invalid device-link-existing response",
+            code: "edge",
+          };
+        }
+
+        const body = json as Record<string, unknown>;
+        const returnedCustomerId =
+          typeof body.customer_id === "string" && body.customer_id.trim()
+            ? body.customer_id.trim()
+            : customerId;
+        const mode = typeof body.mode === "string" ? body.mode : null;
+        const alreadyLinked = body.already_linked === true;
+
+        return {
+          success: true,
+          customerId: returnedCustomerId,
+          mode,
+          alreadyLinked,
+          raw: json,
+        };
+      } catch (e) {
+        return {
+          success: false,
+          error: (e as Error).message || "Network error",
+          code: "network",
+        };
+      }
+    },
+  );
+
   ipcMain.handle("online:deviceRequest", async (_event, payload: DeviceRequestPayload): Promise<DeviceRequestResult> => {
     const name = (payload?.name ?? "").trim();
     const phone = (payload?.phone ?? "").trim();
@@ -687,8 +799,10 @@ export function setupOnlineHandlers(): void {
 
   ipcMain.handle(
     "online:backupDownloadLatestToLocal",
-    async (event): Promise<CloudBackupDownloadToLocalResult> => {
-      const signed = await requestCloudBackupDownloadSignedUrl();
+    async (event, overrideCustomerId?: string): Promise<CloudBackupDownloadToLocalResult> => {
+      const signed = await requestCloudBackupDownloadSignedUrl(
+        typeof overrideCustomerId === "string" ? overrideCustomerId : undefined,
+      );
       if (signed.success === false) {
         return signed;
       }

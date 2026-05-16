@@ -51,6 +51,9 @@ import {
   ONLINE_CUSTOMER_ID_OPTION_KEY,
 } from "../../lib/onboarding/constants";
 import type { DeviceRequestResult } from "../../electron/types/deviceRequest";
+import type { DeviceLinkExistingResult } from "../../electron/types/deviceLinkExisting";
+import type { CloudBackupTransferProgressPayload } from "../../electron/types/cloudBackup";
+import { CloudBackupTransferProgressBar } from "../../lib/components/cloudBackupTransferProgress";
 
 /** Welcome-only highlights before the technical carousel (not duplicated in the carousel). */
 const WELCOME_TECHNOLOGY_BRIDGE_HIGHLIGHTS = [
@@ -255,6 +258,49 @@ function isConnectivityErrorText(message: string): boolean {
   );
 }
 
+type WelcomeRestorePhase = "idle" | "linking" | "downloading" | "restoring" | "ready";
+
+function deviceLinkExistingErrorToastMessage(
+  result: Extract<DeviceLinkExistingResult, { success: false }>,
+  t: (key: string, defaultValue: string) => string,
+): string {
+  if (result.code === "missing_env") {
+    return t(
+      "welcome.onlineNotConfigured",
+      "Online setup is not configured on this PC. Ask your administrator to set STORE_ONLINE_* environment variables.",
+    );
+  }
+  if (result.code === "network" || isConnectivityErrorText(result.error)) {
+    return t(
+      "welcome.serverUnreachable",
+      "We could not reach our servers. Check your internet connection and try again. If this continues, wait a few minutes or contact support.",
+    );
+  }
+  const err = result.error.trim().toLowerCase();
+  if (err.includes("phone_mismatch")) {
+    return t(
+      "welcome.restorePhoneMismatch",
+      "This phone number does not match the customer ID. Check your details or contact support.",
+    );
+  }
+  if (err.includes("name_mismatch")) {
+    return t(
+      "welcome.restoreNameMismatch",
+      "This name does not match the customer ID on file.",
+    );
+  }
+  if (err.includes("customer_not_found")) {
+    return t("welcome.restoreCustomerNotFound", "Customer ID was not found.");
+  }
+  if (err.includes("device_already_linked_other_customer")) {
+    return t(
+      "welcome.restoreDeviceLinkedElsewhere",
+      "This computer is already linked to a different customer. Contact support.",
+    );
+  }
+  return result.error;
+}
+
 function deviceRequestErrorToastMessage(
   result: Extract<DeviceRequestResult, { success: false }>,
   t: (key: string, defaultValue: string) => string,
@@ -299,6 +345,10 @@ export default function WelcomeSetup() {
   const [customerId, setCustomerId] = useState("");
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [restorePhase, setRestorePhase] = useState<WelcomeRestorePhase>("idle");
+  const [linkedRestoreCustomerId, setLinkedRestoreCustomerId] = useState<string | null>(null);
+  const [cloudTransferProgress, setCloudTransferProgress] =
+    useState<CloudBackupTransferProgressPayload | null>(null);
   const [appVersion, setAppVersion] = useState<string>("1.0.0");
   const [online, setOnline] = useState(
     () => typeof navigator !== "undefined" && navigator.onLine,
@@ -549,6 +599,22 @@ export default function WelcomeSetup() {
     };
   }, []);
 
+  useEffect(() => {
+    if (restorePhase !== "downloading") return;
+    const cleanup = window.api.online.onCloudBackupTransferProgress((data) => {
+      setCloudTransferProgress(data);
+    });
+    return cleanup;
+  }, [restorePhase]);
+
+  useEffect(() => {
+    if (!existingShopNewPc) {
+      setRestorePhase("idle");
+      setLinkedRestoreCustomerId(null);
+      setCloudTransferProgress(null);
+    }
+  }, [existingShopNewPc]);
+
   const finishWelcomeAfterProvisioning = async (customerIdFromServer?: string | null) => {
     await window.api.database.options.set(ONBOARDING_INITIAL_WELCOME_DONE_KEY, "1");
     if (customerIdFromServer) {
@@ -649,6 +715,22 @@ export default function WelcomeSetup() {
     }
   };
 
+  const handleContinueAfterRestore = async () => {
+    const cid = linkedRestoreCustomerId?.trim();
+    if (!cid) return;
+    setBusy(true);
+    try {
+      showToast(
+        t("welcome.continueToAppToast", "Continuing — you can sign in on the next screen."),
+        "success",
+      );
+      await new Promise((r) => setTimeout(r, WELCOME_SUCCESS_TOAST_VISIBLE_MS));
+      await finishWelcomeAfterProvisioning(cid);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const handleRestore = async () => {
     const name = fullName.trim();
     const ph = sanitizeWelcomePhoneInput(phone).trim();
@@ -672,21 +754,113 @@ export default function WelcomeSetup() {
       return;
     }
     setBusy(true);
+    setRestorePhase("linking");
+    setCloudTransferProgress(null);
     try {
-      const result = await window.api.online.deviceRequest({ name, phone: ph, customerId: cid });
-      if (result.success === false) {
-        showToast(deviceRequestErrorToastMessage(result, t), "error");
+      const link = await window.api.online.deviceLinkExisting({
+        customerId: cid,
+        name,
+        phone: ph,
+      });
+      if (link.success === false) {
+        showToast(deviceLinkExistingErrorToastMessage(link, t), "error");
+        setRestorePhase("idle");
         return;
       }
+
+      const resolvedCustomerId = link.customerId ?? cid;
+      setLinkedRestoreCustomerId(resolvedCustomerId);
+      await window.api.database.options.set(ONLINE_CUSTOMER_ID_OPTION_KEY, resolvedCustomerId);
+
+      showToast(
+        t("welcome.restoreLinkSuccess", "Shop verified. Downloading your cloud backup…"),
+        "success",
+      );
+
+      setRestorePhase("downloading");
+      setCloudTransferProgress({
+        phase: "download",
+        progress: 0,
+        downloaded: 0,
+        total: 0,
+        speed: 0,
+      });
+
+      const download = await window.api.online.backupDownloadLatestToLocal(resolvedCustomerId);
+      if (download.success === false) {
+        if (download.code === "not_found") {
+          showToast(
+            t("welcome.restoreNoCloudBackup", "No cloud backup was found for this customer yet."),
+            "error",
+          );
+        } else if (download.code === "missing_env") {
+          showToast(
+            t(
+              "welcome.onlineNotConfigured",
+              "Online setup is not configured on this PC. Ask your administrator to set STORE_ONLINE_* environment variables.",
+            ),
+            "error",
+          );
+        } else if (download.code === "network") {
+          showToast(
+            t(
+              "welcome.serverUnreachable",
+              "We could not reach our servers. Check your internet connection and try again. If this continues, wait a few minutes or contact support.",
+            ),
+            "error",
+          );
+        } else {
+          const errMsg = download.error.trim().toLowerCase();
+          if (errMsg.includes("device_inactive")) {
+            showToast(
+              t(
+                "welcome.restoreDeviceInactive",
+                "This device is not allowed to download backups yet. Check your license or contact support.",
+              ),
+              "error",
+            );
+          } else {
+            showToast(
+              t("welcome.restoreDownloadFailed", "Could not download your cloud backup: {{message}}", {
+                message: download.error,
+              }),
+              "error",
+            );
+          }
+        }
+        setRestorePhase("idle");
+        setCloudTransferProgress(null);
+        return;
+      }
+
+      setRestorePhase("restoring");
+      setCloudTransferProgress({
+        phase: "download",
+        progress: 100,
+        downloaded: download.sizeBytes,
+        total: download.sizeBytes,
+        speed: 0,
+      });
+
+      const restored = await window.api.backup.restore(download.backupPath);
+      if (!restored?.success) {
+        showToast(
+          t("welcome.restoreApplyFailed", "Download finished but restoring the database failed."),
+          "error",
+        );
+        setRestorePhase("idle");
+        setCloudTransferProgress(null);
+        return;
+      }
+
+      setRestorePhase("ready");
       showToast(
         t(
-          "welcome.provisioningSuccessRestore",
-          "This device is linked. Continue to log in to finish restore.",
+          "welcome.restoreComplete",
+          "Your shop data was restored. Press Continue to sign in.",
         ),
         "success",
       );
-      await new Promise((r) => setTimeout(r, WELCOME_SUCCESS_TOAST_VISIBLE_MS));
-      await finishWelcomeAfterProvisioning(result.customerId ?? cid);
     } catch {
       showToast(
         t(
@@ -695,6 +869,8 @@ export default function WelcomeSetup() {
         ),
         "error",
       );
+      setRestorePhase("idle");
+      setCloudTransferProgress(null);
     } finally {
       setBusy(false);
     }
@@ -703,6 +879,9 @@ export default function WelcomeSetup() {
   /** Same moment the get-started green glow is in the tree: intro has reached the card and we are not in online-only loading. */
   const mountWelcomeNavChrome =
     introStep >= SEQ.card && !(online && devicePrecheck === "loading");
+
+  const restoreFieldsLocked =
+    busy || (existingShopNewPc && restorePhase !== "idle" && restorePhase !== "ready");
 
   return (
     <div
@@ -1129,7 +1308,7 @@ export default function WelcomeSetup() {
                       onChange={(e) => setFullName(e.target.value)}
                       autoComplete="name"
                       placeholder={t("welcome.fullNamePlaceholder", "First and last name")}
-                      disabled={!online || busy}
+                      disabled={!online || restoreFieldsLocked}
                     />
                   </div>
                   <div className="space-y-2 sm:col-span-2">
@@ -1143,7 +1322,7 @@ export default function WelcomeSetup() {
                       autoComplete="tel"
                       inputMode="tel"
                       placeholder={t("welcome.phonePlaceholder", "Your phone number")}
-                      disabled={!online || busy}
+                      disabled={!online || restoreFieldsLocked}
                     />
                   </div>
                 </div>
@@ -1156,7 +1335,7 @@ export default function WelcomeSetup() {
                     "This is a new PC for my existing shop (I already use Store Management)",
                   )}
                   color="blue"
-                  disabled={!online || busy}
+                  disabled={!online || restoreFieldsLocked}
                 />
 
                 {existingShopNewPc ? (
@@ -1170,7 +1349,7 @@ export default function WelcomeSetup() {
                       onChange={(e) => setCustomerId(e.target.value)}
                       placeholder={t("welcome.customerIdPlaceholder", "UUID from your supplier")}
                       className="font-mono text-sm"
-                      disabled={!online || busy}
+                      disabled={!online || restoreFieldsLocked}
                     />
                     <p className="text-xs text-muted-foreground">
                       {t("welcome.customerIdHint", "Must match the phone number we have on file for this ID.")}
@@ -1198,26 +1377,69 @@ export default function WelcomeSetup() {
                         t("welcome.startTrial", "Start free 7-day trial")
                       )}
                     </Button>
+                  ) : restorePhase === "ready" ? (
+                    <Button
+                      type="button"
+                      className="min-h-[3rem] w-full border-transparent bg-green-600 text-white shadow-xs hover:bg-green-700 focus-visible:ring-green-500/35 dark:bg-green-600 dark:text-white dark:hover:bg-green-500"
+                      disabled={!online || busy}
+                      onClick={() => void handleContinueAfterRestore()}
+                    >
+                      {busy ? (
+                        <span className="flex items-center justify-center">
+                          <Loader2 className="mr-2 h-5 w-5 shrink-0 animate-spin" aria-hidden />
+                          {t("welcome.continuing", "Continuing…")}
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center justify-center">
+                          {t("welcome.restoreContinue", "Continue")}
+                          <ArrowRight className="ms-2 h-4 w-4" aria-hidden />
+                        </span>
+                      )}
+                    </Button>
                   ) : (
                     <Button
                       type="button"
                       className="min-h-[3rem] w-full border-transparent bg-blue-600 text-white shadow-xs hover:bg-blue-700 focus-visible:ring-blue-500/35 dark:bg-blue-600 dark:text-white dark:hover:bg-blue-500"
-                      disabled={!online || busy}
-                      onClick={handleRestore}
+                      disabled={
+                        !online ||
+                        busy ||
+                        restorePhase === "downloading" ||
+                        restorePhase === "restoring"
+                      }
+                      onClick={() => void handleRestore()}
                     >
-                      {busy && existingShopNewPc ? (
+                      {restorePhase === "linking" ? (
                         <span className="flex items-center justify-center">
-                          <span
-                            className="mr-2 h-5 w-5 shrink-0 animate-spin rounded-full border-b-2 border-white"
-                            aria-hidden
-                          />
+                          <Loader2 className="mr-2 h-5 w-5 shrink-0 animate-spin" aria-hidden />
                           {t("welcome.linkingDevice", "Linking device…")}
+                        </span>
+                      ) : restorePhase === "downloading" ? (
+                        <span className="flex items-center justify-center">
+                          <Loader2 className="mr-2 h-5 w-5 shrink-0 animate-spin" aria-hidden />
+                          {t("welcome.restoreDownloading", "Downloading backup…")}
+                        </span>
+                      ) : restorePhase === "restoring" ? (
+                        <span className="flex items-center justify-center">
+                          <Loader2 className="mr-2 h-5 w-5 shrink-0 animate-spin" aria-hidden />
+                          {t("welcome.restoreApplying", "Applying backup…")}
                         </span>
                       ) : (
                         t("welcome.restoreFromCloud", "Restore data from cloud")
                       )}
                     </Button>
                   )}
+                  {existingShopNewPc &&
+                  (restorePhase === "downloading" || restorePhase === "restoring") &&
+                  cloudTransferProgress ? (
+                    <div className="rounded-lg border border-border/70 bg-muted/20 px-4 py-3">
+                      <p className="mb-3 text-sm font-medium text-foreground">
+                        {restorePhase === "restoring"
+                          ? t("welcome.restoreApplyingHint", "Applying backup to this computer…")
+                          : t("welcome.restoreDownloadingHint", "Downloading your latest cloud backup…")}
+                      </p>
+                      <CloudBackupTransferProgressBar progress={cloudTransferProgress} />
+                    </div>
+                  ) : null}
                 </div>
                   </div>
                 </>
