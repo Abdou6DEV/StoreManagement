@@ -298,6 +298,12 @@ function deviceLinkExistingErrorToastMessage(
       "This computer is already linked to a different customer. Contact support.",
     );
   }
+  if (err.includes("restore_requires_paid_license")) {
+    return t(
+      "welcome.restoreRequiresPaidLicense",
+      "Cloud restore needs a valid paid license on your account. Contact your supplier to renew or activate, then try again.",
+    );
+  }
   return result.error;
 }
 
@@ -346,6 +352,8 @@ export default function WelcomeSetup() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [restorePhase, setRestorePhase] = useState<WelcomeRestorePhase>("idle");
+  /** Set after cloud restore + DB apply succeed; prevents switching to trial on the same screen. */
+  const [restoreCompleted, setRestoreCompleted] = useState(false);
   const [linkedRestoreCustomerId, setLinkedRestoreCustomerId] = useState<string | null>(null);
   const [cloudTransferProgress, setCloudTransferProgress] =
     useState<CloudBackupTransferProgressPayload | null>(null);
@@ -608,12 +616,12 @@ export default function WelcomeSetup() {
   }, [restorePhase]);
 
   useEffect(() => {
-    if (!existingShopNewPc) {
+    if (!existingShopNewPc && !restoreCompleted) {
       setRestorePhase("idle");
       setLinkedRestoreCustomerId(null);
       setCloudTransferProgress(null);
     }
-  }, [existingShopNewPc]);
+  }, [existingShopNewPc, restoreCompleted]);
 
   const finishWelcomeAfterProvisioning = async (customerIdFromServer?: string | null) => {
     await window.api.database.options.set(ONBOARDING_INITIAL_WELCOME_DONE_KEY, "1");
@@ -673,6 +681,16 @@ export default function WelcomeSetup() {
   };
 
   const handleStartTrial = async () => {
+    if (restoreCompleted) {
+      showToast(
+        t(
+          "welcome.restoreAlreadyComplete",
+          "Your shop data is already restored. Press Continue to sign in.",
+        ),
+        "error",
+      );
+      return;
+    }
     const name = fullName.trim();
     const ph = sanitizeWelcomePhoneInput(phone).trim();
     if (!name || !ph) {
@@ -716,7 +734,7 @@ export default function WelcomeSetup() {
   };
 
   const handleContinueAfterRestore = async () => {
-    const cid = linkedRestoreCustomerId?.trim();
+    const cid = (linkedRestoreCustomerId ?? customerId).trim();
     if (!cid) return;
     setBusy(true);
     try {
@@ -853,7 +871,9 @@ export default function WelcomeSetup() {
         return;
       }
 
+      setRestoreCompleted(true);
       setRestorePhase("ready");
+      setExistingShopNewPc(true);
       showToast(
         t(
           "welcome.restoreComplete",
@@ -881,7 +901,23 @@ export default function WelcomeSetup() {
     introStep >= SEQ.card && !(online && devicePrecheck === "loading");
 
   const restoreFieldsLocked =
-    busy || (existingShopNewPc && restorePhase !== "idle" && restorePhase !== "ready");
+    busy ||
+    restoreCompleted ||
+    (existingShopNewPc && restorePhase !== "idle" && restorePhase !== "ready");
+
+  const handleExistingShopNewPcChange = (checked: boolean) => {
+    if (!checked && restoreCompleted) {
+      showToast(
+        t(
+          "welcome.restoreFinishWithContinue",
+          "Your data is already on this computer. Press Continue to finish setup.",
+        ),
+        "error",
+      );
+      return;
+    }
+    setExistingShopNewPc(checked);
+  };
 
   return (
     <div
@@ -1329,7 +1365,7 @@ export default function WelcomeSetup() {
 
                 <Checkbox
                   checked={existingShopNewPc}
-                  onChange={setExistingShopNewPc}
+                  onChange={handleExistingShopNewPcChange}
                   label={t(
                     "welcome.existingShopNewPc",
                     "This is a new PC for my existing shop (I already use Store Management)",
@@ -1358,26 +1394,7 @@ export default function WelcomeSetup() {
                 ) : null}
 
                 <div className="flex flex-col gap-3 pt-1">
-                  {!existingShopNewPc ? (
-                    <Button
-                      type="button"
-                      className="min-h-[3rem] w-full border-transparent bg-green-600 text-white shadow-xs hover:bg-green-700 focus-visible:ring-green-500/35 dark:bg-green-600 dark:text-white dark:hover:bg-green-500"
-                      disabled={!online || busy}
-                      onClick={handleStartTrial}
-                    >
-                      {busy && !existingShopNewPc ? (
-                        <span className="flex items-center justify-center">
-                          <span
-                            className="mr-2 h-5 w-5 shrink-0 animate-spin rounded-full border-b-2 border-white"
-                            aria-hidden
-                          />
-                          {t("welcome.startingTrial", "Registering device…")}
-                        </span>
-                      ) : (
-                        t("welcome.startTrial", "Start free 7-day trial")
-                      )}
-                    </Button>
-                  ) : restorePhase === "ready" ? (
+                  {restoreCompleted || restorePhase === "ready" ? (
                     <Button
                       type="button"
                       className="min-h-[3rem] w-full border-transparent bg-green-600 text-white shadow-xs hover:bg-green-700 focus-visible:ring-green-500/35 dark:bg-green-600 dark:text-white dark:hover:bg-green-500"
@@ -1394,6 +1411,25 @@ export default function WelcomeSetup() {
                           {t("welcome.restoreContinue", "Continue")}
                           <ArrowRight className="ms-2 h-4 w-4" aria-hidden />
                         </span>
+                      )}
+                    </Button>
+                  ) : !existingShopNewPc ? (
+                    <Button
+                      type="button"
+                      className="min-h-[3rem] w-full border-transparent bg-green-600 text-white shadow-xs hover:bg-green-700 focus-visible:ring-green-500/35 dark:bg-green-600 dark:text-white dark:hover:bg-green-500"
+                      disabled={!online || busy}
+                      onClick={handleStartTrial}
+                    >
+                      {busy ? (
+                        <span className="flex items-center justify-center">
+                          <span
+                            className="mr-2 h-5 w-5 shrink-0 animate-spin rounded-full border-b-2 border-white"
+                            aria-hidden
+                          />
+                          {t("welcome.startingTrial", "Registering device…")}
+                        </span>
+                      ) : (
+                        t("welcome.startTrial", "Start free 7-day trial")
                       )}
                     </Button>
                   ) : (
