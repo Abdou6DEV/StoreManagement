@@ -121,12 +121,21 @@ export function LicenseManagement() {
       ]);
 
       setDeviceId(machineResult.success ? machineResult.machineId ?? null : null);
-      setStoredCustomerId(customerIdValue?.trim() || null);
+      let trimmedCustomerId = customerIdValue?.trim() || null;
+      if (!trimmedCustomerId && isOnline) {
+        const check = await window.api.online.deviceCheck();
+        if (check.success === true && check.customerId?.trim()) {
+          trimmedCustomerId = check.customerId.trim();
+          const refreshed = await window.api.database.options.get(ONLINE_CUSTOMER_ID_OPTION_KEY);
+          trimmedCustomerId = refreshed?.trim() || trimmedCustomerId;
+        }
+      }
+      setStoredCustomerId(trimmedCustomerId);
       setSnapshot(localSnapshot);
     } catch {
       setSnapshot(null);
     }
-  }, []);
+  }, [isOnline]);
 
   const checkOnlineLicense = useCallback(async () => {
     if (refreshing) return;

@@ -625,8 +625,14 @@ export default function WelcomeSetup() {
 
   const finishWelcomeAfterProvisioning = async (customerIdFromServer?: string | null) => {
     await window.api.database.options.set(ONBOARDING_INITIAL_WELCOME_DONE_KEY, "1");
-    if (customerIdFromServer) {
-      await window.api.database.options.set(ONLINE_CUSTOMER_ID_OPTION_KEY, customerIdFromServer);
+    const cid = customerIdFromServer?.trim();
+    if (cid) {
+      await window.api.database.options.set(ONLINE_CUSTOMER_ID_OPTION_KEY, cid);
+    } else if (typeof navigator !== "undefined" && navigator.onLine) {
+      const check = await window.api.online.deviceCheck();
+      if (check.success === true && check.customerId?.trim()) {
+        await window.api.database.options.set(ONLINE_CUSTOMER_ID_OPTION_KEY, check.customerId.trim());
+      }
     }
     window.dispatchEvent(new Event(INITIAL_WELCOME_DONE_EVENT));
   };

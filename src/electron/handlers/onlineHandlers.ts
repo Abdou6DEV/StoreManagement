@@ -21,8 +21,10 @@ import type {
   CloudBackupUploadMeta,
   CloudBackupUploadResult,
 } from "../types/cloudBackup";
-import { getOption } from "../../lib/database/options";
-import { ONLINE_CUSTOMER_ID_OPTION_KEY } from "../../lib/onboarding/constants";
+import {
+  getStoredOnlineCustomerId,
+  persistOnlineCustomerIdIfAbsent,
+} from "../../lib/onboarding/onlineCustomerId";
 
 function deviceRequestUrl(base: string): string {
   return `${base}/functions/v1/device-request`;
@@ -413,8 +415,14 @@ async function resolveCloudBackupIdentity(
     return { success: false, error: (e as Error).message, code: "invalid" };
   }
 
-  const customerId =
-    (overrideCustomerId ?? "").trim() || (await getOption(ONLINE_CUSTOMER_ID_OPTION_KEY))?.trim();
+  let customerId =
+    (overrideCustomerId ?? "").trim() || (await getStoredOnlineCustomerId());
+  if (!customerId) {
+    const check = await runDeviceCheckInternal();
+    if (check.success === true && check.customerId?.trim()) {
+      customerId = (await persistOnlineCustomerIdIfAbsent(check.customerId)) ?? check.customerId.trim();
+    }
+  }
   if (!customerId) {
     return {
       success: false,
@@ -496,86 +504,94 @@ function parseDeviceCheckJson(json: unknown): {
   };
 }
 
+async function runDeviceCheckInternal(): Promise<DeviceCheckResult> {
+  const cfg = getStoreOnlineConfig();
+  if ("error" in cfg) {
+    return {
+      success: false,
+      error: "Online provisioning is not configured (missing STORE_ONLINE_* env vars).",
+      code: "missing_env",
+    };
+  }
+
+  let deviceId: string;
+  try {
+    deviceId = getMachineGuid();
+  } catch (e) {
+    return { success: false, error: (e as Error).message, code: "invalid" };
+  }
+
+  try {
+    const res = await fetch(deviceCheckUrl(cfg.supabaseUrl), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-app-secret": cfg.appSecret,
+        Authorization: `Bearer ${cfg.anonKey}`,
+        apikey: cfg.anonKey,
+      },
+      body: JSON.stringify({ device_id: deviceId }),
+    });
+
+    const text = await res.text();
+    let json: unknown;
+    try {
+      json = text ? JSON.parse(text) : null;
+    } catch {
+      json = { raw: text };
+    }
+
+    if (!res.ok) {
+      return {
+        success: false,
+        error: readEdgeError(json, res.status),
+        code: "http",
+      };
+    }
+
+    if (json && typeof json === "object" && (json as Record<string, unknown>).ok === false) {
+      return {
+        success: false,
+        error: readEdgeError(json, res.status),
+        code: "edge",
+      };
+    }
+
+    const parsed = parseDeviceCheckJson(json);
+    if (!parsed) {
+      return {
+        success: false,
+        error: "Invalid device-check response",
+        code: "edge",
+      };
+    }
+
+    return {
+      success: true,
+      allowed: parsed.allowed,
+      trialEndsAt: parsed.trialEndsAt,
+      expiresAt: parsed.expiresAt,
+      customerId: parsed.customerId,
+      customerName: parsed.customerName,
+      customerPhone: parsed.customerPhone,
+      raw: json,
+    };
+  } catch (e) {
+    return {
+      success: false,
+      error: (e as Error).message || "Network error",
+      code: "network",
+    };
+  }
+}
+
 export function setupOnlineHandlers(): void {
   ipcMain.handle("online:deviceCheck", async (): Promise<DeviceCheckResult> => {
-    const cfg = getStoreOnlineConfig();
-    if ("error" in cfg) {
-      return {
-        success: false,
-        error: "Online provisioning is not configured (missing STORE_ONLINE_* env vars).",
-        code: "missing_env",
-      };
+    const result = await runDeviceCheckInternal();
+    if (result.success === true && result.customerId?.trim()) {
+      await persistOnlineCustomerIdIfAbsent(result.customerId);
     }
-
-    let deviceId: string;
-    try {
-      deviceId = getMachineGuid();
-    } catch (e) {
-      return { success: false, error: (e as Error).message, code: "invalid" };
-    }
-
-    try {
-      const res = await fetch(deviceCheckUrl(cfg.supabaseUrl), {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-app-secret": cfg.appSecret,
-          Authorization: `Bearer ${cfg.anonKey}`,
-          apikey: cfg.anonKey,
-        },
-        body: JSON.stringify({ device_id: deviceId }),
-      });
-
-      const text = await res.text();
-      let json: unknown;
-      try {
-        json = text ? JSON.parse(text) : null;
-      } catch {
-        json = { raw: text };
-      }
-
-      if (!res.ok) {
-        return {
-          success: false,
-          error: readEdgeError(json, res.status),
-          code: "http",
-        };
-      }
-
-      if (json && typeof json === "object" && (json as Record<string, unknown>).ok === false) {
-        return {
-          success: false,
-          error: readEdgeError(json, res.status),
-          code: "edge",
-        };
-      }
-
-      const parsed = parseDeviceCheckJson(json);
-      if (!parsed) {
-        return {
-          success: false,
-          error: "Invalid device-check response",
-          code: "edge",
-        };
-      }
-
-      return {
-        success: true,
-        allowed: parsed.allowed,
-        trialEndsAt: parsed.trialEndsAt,
-        expiresAt: parsed.expiresAt,
-        customerId: parsed.customerId,
-        customerName: parsed.customerName,
-        customerPhone: parsed.customerPhone,
-        raw: json,
-      };
-    } catch (e) {
-      return {
-        success: false,
-        error: (e as Error).message || "Network error",
-        code: "network",
-      };
-    }
+    return result;
   });
 
   ipcMain.handle(
@@ -662,6 +678,8 @@ export function setupOnlineHandlers(): void {
             : customerId;
         const mode = typeof body.mode === "string" ? body.mode : null;
         const alreadyLinked = body.already_linked === true;
+
+        await persistOnlineCustomerIdIfAbsent(returnedCustomerId);
 
         return {
           success: true,
@@ -751,6 +769,10 @@ export function setupOnlineHandlers(): void {
       if (json && typeof json === "object") {
         const c = (json as Record<string, unknown>).customer_id;
         if (typeof c === "string" && c.trim()) returnedCustomerId = c.trim();
+      }
+
+      if (returnedCustomerId) {
+        await persistOnlineCustomerIdIfAbsent(returnedCustomerId);
       }
 
       return { success: true, customerId: returnedCustomerId ?? null, raw: json };

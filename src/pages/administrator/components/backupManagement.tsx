@@ -110,12 +110,21 @@ export function BackupManagement({ onOpenLicenseTab }: BackupManagementProps) {
 
   const loadStoredCustomerId = useCallback(async () => {
     try {
-      const v = await window.api.database.options.get(ONLINE_CUSTOMER_ID_OPTION_KEY);
-      setStoredCustomerId(v?.trim() || null);
+      let v = await window.api.database.options.get(ONLINE_CUSTOMER_ID_OPTION_KEY);
+      let trimmed = v?.trim() || null;
+      if (!trimmed && isOnline) {
+        const check = await window.api.online.deviceCheck();
+        if (check.success === true && check.customerId?.trim()) {
+          trimmed = check.customerId.trim();
+          v = await window.api.database.options.get(ONLINE_CUSTOMER_ID_OPTION_KEY);
+          trimmed = v?.trim() || trimmed;
+        }
+      }
+      setStoredCustomerId(trimmed);
     } catch {
       setStoredCustomerId(null);
     }
-  }, []);
+  }, [isOnline]);
 
   // Load backups on component mount
   useEffect(() => {
