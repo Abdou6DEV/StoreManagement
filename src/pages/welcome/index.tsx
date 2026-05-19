@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { Trans, useTranslation } from "react-i18next";
 import {
   Code,
@@ -16,6 +16,7 @@ import {
   LifeBuoy,
   Rocket,
   ArrowRight,
+  ArrowLeft,
   Loader2,
 } from "lucide-react";
 import { useTheme } from "../../lib/hooks/useTheme";
@@ -28,7 +29,6 @@ import { ABOUT_PRIVACY_POINT_KEYS, ABOUT_TERMS_POINT_KEYS } from "../../lib/abou
 import { LOGO_ICON, LOGO_ICON_DARK } from "../../lib/assets";
 import { Button } from "../../lib/components/button";
 import { Input } from "../../lib/components/input";
-import { Checkbox } from "../../lib/components/checkbox";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -54,6 +54,7 @@ import type { DeviceRequestResult } from "../../electron/types/deviceRequest";
 import type { DeviceLinkExistingResult } from "../../electron/types/deviceLinkExisting";
 import type { CloudBackupTransferProgressPayload } from "../../electron/types/cloudBackup";
 import { CloudBackupTransferProgressBar } from "../../lib/components/cloudBackupTransferProgress";
+import { AnimatedHeight } from "../../lib/components/animatedHeight";
 
 /** Welcome-only highlights before the technical carousel (not duplicated in the carousel). */
 const WELCOME_TECHNOLOGY_BRIDGE_HIGHLIGHTS = [
@@ -347,7 +348,7 @@ export default function WelcomeSetup() {
 
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
-  const [existingShopNewPc, setExistingShopNewPc] = useState(false);
+  const [showRestoreFlow, setShowRestoreFlow] = useState(false);
   const [customerId, setCustomerId] = useState("");
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -370,6 +371,11 @@ export default function WelcomeSetup() {
   const [precheckCustomerId, setPrecheckCustomerId] = useState<string | null>(null);
   const [precheckCustomerName, setPrecheckCustomerName] = useState<string | null>(null);
   const [precheckCustomerPhone, setPrecheckCustomerPhone] = useState<string | null>(null);
+
+  const welcomeFullNameRef = useRef<HTMLInputElement>(null);
+  const welcomePhoneRef = useRef<HTMLInputElement>(null);
+  const welcomeCustomerIdRef = useRef<HTMLInputElement>(null);
+  const welcomePrimaryActionRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const goOnline = () => setOnline(true);
@@ -616,12 +622,12 @@ export default function WelcomeSetup() {
   }, [restorePhase]);
 
   useEffect(() => {
-    if (!existingShopNewPc && !restoreCompleted) {
+    if (!showRestoreFlow && !restoreCompleted) {
       setRestorePhase("idle");
       setLinkedRestoreCustomerId(null);
       setCloudTransferProgress(null);
     }
-  }, [existingShopNewPc, restoreCompleted]);
+  }, [showRestoreFlow, restoreCompleted]);
 
   const finishWelcomeAfterProvisioning = async (customerIdFromServer?: string | null) => {
     await window.api.database.options.set(ONBOARDING_INITIAL_WELCOME_DONE_KEY, "1");
@@ -879,7 +885,7 @@ export default function WelcomeSetup() {
 
       setRestoreCompleted(true);
       setRestorePhase("ready");
-      setExistingShopNewPc(true);
+      setShowRestoreFlow(true);
       showToast(
         t(
           "welcome.restoreComplete",
@@ -909,10 +915,48 @@ export default function WelcomeSetup() {
   const restoreFieldsLocked =
     busy ||
     restoreCompleted ||
-    (existingShopNewPc && restorePhase !== "idle" && restorePhase !== "ready");
+    (showRestoreFlow && restorePhase !== "idle" && restorePhase !== "ready");
 
-  const handleExistingShopNewPcChange = (checked: boolean) => {
-    if (!checked && restoreCompleted) {
+  /** Blue corner glow only while restore is in progress; green when trial or after restore finishes. */
+  const restoreGlowActive = showRestoreFlow && !restoreCompleted;
+
+  const handleWelcomeFormKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key !== "Enter") return;
+    e.preventDefault();
+    if (!online || busy) return;
+    if (
+      showRestoreFlow &&
+      (restorePhase === "linking" ||
+        restorePhase === "downloading" ||
+        restorePhase === "restoring")
+    ) {
+      return;
+    }
+
+    const primary = welcomePrimaryActionRef.current;
+    if (!primary || primary.disabled) return;
+
+    if (e.currentTarget === welcomeFullNameRef.current) {
+      welcomePhoneRef.current?.focus();
+      return;
+    }
+
+    if (e.currentTarget === welcomePhoneRef.current) {
+      if (showRestoreFlow && welcomeCustomerIdRef.current && !restoreCompleted) {
+        welcomeCustomerIdRef.current.focus();
+        return;
+      }
+      primary.click();
+      return;
+    }
+
+    if (e.currentTarget === welcomeCustomerIdRef.current) {
+      primary.click();
+    }
+  };
+
+  const exitRestoreFlow = () => {
+    if (restoreCompleted) {
       showToast(
         t(
           "welcome.restoreFinishWithContinue",
@@ -922,7 +966,11 @@ export default function WelcomeSetup() {
       );
       return;
     }
-    setExistingShopNewPc(checked);
+    if (restoreFieldsLocked && restorePhase !== "idle" && restorePhase !== "ready") {
+      return;
+    }
+    setShowRestoreFlow(false);
+    setCustomerId("");
   };
 
   return (
@@ -1219,8 +1267,18 @@ export default function WelcomeSetup() {
                 )}
                 aria-hidden
               >
-                <div className="absolute -right-14 -top-10 z-0 h-52 w-52 rounded-full bg-green-500/22 blur-3xl sm:h-60 sm:w-60 sm:-right-16 sm:-top-12" />
-                <div className="absolute -bottom-10 -left-12 z-0 h-28 w-28 rounded-full bg-green-500/16 blur-2xl sm:h-32 sm:w-32 sm:-bottom-12 sm:-left-14" />
+                <div
+                  className={cn(
+                    "absolute -right-14 -top-10 z-0 h-52 w-52 rounded-full blur-3xl transition-colors duration-300 ease-in-out sm:h-60 sm:w-60 sm:-right-16 sm:-top-12",
+                    restoreGlowActive ? "bg-blue-500/30" : "bg-green-500/30",
+                  )}
+                />
+                <div
+                  className={cn(
+                    "absolute -bottom-10 -left-12 z-0 h-28 w-28 rounded-full blur-2xl transition-colors duration-300 ease-in-out sm:h-32 sm:w-32 sm:-bottom-12 sm:-left-14",
+                    restoreGlowActive ? "bg-blue-500/30" : "bg-green-500/30",
+                  )}
+                />
               </div>
             ) : null}
             <section
@@ -1236,7 +1294,7 @@ export default function WelcomeSetup() {
               )}
               aria-busy={busy || (online && devicePrecheck === "loading")}
             >
-            {devicePrecheck === "new_device" ? (
+            {devicePrecheck === "new_device" && !showRestoreFlow ? (
               <div
                 className={cn("welcome-trial-ribbon", isRTL && "welcome-trial-ribbon--rtl")}
                 role="status"
@@ -1324,16 +1382,36 @@ export default function WelcomeSetup() {
                   </div>
                 </div>
               ) : (
+                <AnimatedHeight
+                  reduceMotion={reduceMotion}
+                  deps={[
+                    showRestoreFlow,
+                    restorePhase,
+                    restoreCompleted,
+                    cloudTransferProgress?.progress,
+                  ]}
+                >
+                  {showRestoreFlow ? (
                 <>
-                  <header className="space-y-3 pt-6 text-center sm:pt-5">
+                  <button
+                    type="button"
+                    onClick={exitRestoreFlow}
+                    disabled={restoreFieldsLocked}
+                    className="mb-4 flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground disabled:pointer-events-none disabled:opacity-50 sm:mb-5"
+                  >
+                    <ArrowLeft className="h-4 w-4 shrink-0" aria-hidden />
+                    {t("welcome.backToNewShopSetup", "Back to new shop setup")}
+                  </button>
+
+                  <header className="space-y-3 text-center">
                     <h2 className="flex flex-wrap items-center justify-center gap-3 text-xl font-bold text-foreground sm:text-2xl">
-                      <Sparkles className="h-6 w-6 shrink-0 text-primary" aria-hidden />
-                      {t("welcome.setupTitle", "Get started with us")}
+                      <LifeBuoy className="h-6 w-6 shrink-0 text-blue-600 dark:text-blue-400" aria-hidden />
+                      {t("welcome.restoreTitle", "Restore on a new computer")}
                     </h2>
                     <p className="mx-auto max-w-xl text-sm leading-relaxed text-muted-foreground">
                       {t(
-                        "welcome.setupDescription",
-                        "Tell us who you are so we can set up your shop on this computer. Add your full name and phone — we use them to start your trial or restore your data, connect this device to your account, and reach you if you need help. It only takes a moment. Your details stay separate from your login password and are handled as described in the legal section below.",
+                        "welcome.restoreDescription",
+                        "Link this PC to your existing shop and download your latest cloud backup. This replaces data on this computer. A paid license is required.",
                       )}
                     </p>
                   </header>
@@ -1345,9 +1423,11 @@ export default function WelcomeSetup() {
                       {t("welcome.fullName", "Full name")}
                     </label>
                     <Input
+                      ref={welcomeFullNameRef}
                       id="welcome-full-name"
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
+                      onKeyDown={handleWelcomeFormKeyDown}
                       autoComplete="name"
                       placeholder={t("welcome.fullNamePlaceholder", "First and last name")}
                       disabled={!online || restoreFieldsLocked}
@@ -1358,9 +1438,11 @@ export default function WelcomeSetup() {
                       {t("welcome.phone", "Phone number")}
                     </label>
                     <Input
+                      ref={welcomePhoneRef}
                       id="welcome-phone"
                       value={phone}
                       onChange={(e) => setPhone(sanitizeWelcomePhoneInput(e.target.value))}
+                      onKeyDown={handleWelcomeFormKeyDown}
                       autoComplete="tel"
                       inputMode="tel"
                       placeholder={t("welcome.phonePlaceholder", "Your phone number")}
@@ -1369,26 +1451,16 @@ export default function WelcomeSetup() {
                   </div>
                 </div>
 
-                <Checkbox
-                  checked={existingShopNewPc}
-                  onChange={handleExistingShopNewPcChange}
-                  label={t(
-                    "welcome.existingShopNewPc",
-                    "This is a new PC for my existing shop (I already use Store Management)",
-                  )}
-                  color="blue"
-                  disabled={!online || restoreFieldsLocked}
-                />
-
-                {existingShopNewPc ? (
-                  <div className="space-y-2">
+                <div className="space-y-2">
                     <label htmlFor="welcome-customer-id" className="text-sm font-medium">
                       {t("welcome.customerId", "Customer ID")}
                     </label>
                     <Input
+                      ref={welcomeCustomerIdRef}
                       id="welcome-customer-id"
                       value={customerId}
                       onChange={(e) => setCustomerId(e.target.value)}
+                      onKeyDown={handleWelcomeFormKeyDown}
                       placeholder={t("welcome.customerIdPlaceholder", "UUID from your supplier")}
                       className="font-mono text-sm"
                       disabled={!online || restoreFieldsLocked}
@@ -1397,11 +1469,11 @@ export default function WelcomeSetup() {
                       {t("welcome.customerIdHint", "Must match the phone number we have on file for this ID.")}
                     </p>
                   </div>
-                ) : null}
 
                 <div className="flex flex-col gap-3 pt-1">
                   {restoreCompleted || restorePhase === "ready" ? (
                     <Button
+                      ref={welcomePrimaryActionRef}
                       type="button"
                       className="min-h-[3rem] w-full border-transparent bg-green-600 text-white shadow-xs hover:bg-green-700 focus-visible:ring-green-500/35 dark:bg-green-600 dark:text-white dark:hover:bg-green-500"
                       disabled={!online || busy}
@@ -1419,27 +1491,9 @@ export default function WelcomeSetup() {
                         </span>
                       )}
                     </Button>
-                  ) : !existingShopNewPc ? (
-                    <Button
-                      type="button"
-                      className="min-h-[3rem] w-full border-transparent bg-green-600 text-white shadow-xs hover:bg-green-700 focus-visible:ring-green-500/35 dark:bg-green-600 dark:text-white dark:hover:bg-green-500"
-                      disabled={!online || busy}
-                      onClick={handleStartTrial}
-                    >
-                      {busy ? (
-                        <span className="flex items-center justify-center">
-                          <span
-                            className="mr-2 h-5 w-5 shrink-0 animate-spin rounded-full border-b-2 border-white"
-                            aria-hidden
-                          />
-                          {t("welcome.startingTrial", "Registering device…")}
-                        </span>
-                      ) : (
-                        t("welcome.startTrial", "Start free 7-day trial")
-                      )}
-                    </Button>
                   ) : (
                     <Button
+                      ref={welcomePrimaryActionRef}
                       type="button"
                       className="min-h-[3rem] w-full border-transparent bg-blue-600 text-white shadow-xs hover:bg-blue-700 focus-visible:ring-blue-500/35 dark:bg-blue-600 dark:text-white dark:hover:bg-blue-500"
                       disabled={
@@ -1470,8 +1524,7 @@ export default function WelcomeSetup() {
                       )}
                     </Button>
                   )}
-                  {existingShopNewPc &&
-                  (restorePhase === "downloading" || restorePhase === "restoring") &&
+                  {(restorePhase === "downloading" || restorePhase === "restoring") &&
                   cloudTransferProgress ? (
                     <div className="rounded-lg border border-border/70 bg-muted/20 px-4 py-3">
                       <p className="mb-3 text-sm font-medium text-foreground">
@@ -1485,6 +1538,93 @@ export default function WelcomeSetup() {
                 </div>
                   </div>
                 </>
+              ) : (
+                <>
+                  <header className="space-y-3 pt-6 text-center sm:pt-5">
+                    <h2 className="flex flex-wrap items-center justify-center gap-3 text-xl font-bold text-foreground sm:text-2xl">
+                      <Sparkles className="h-6 w-6 shrink-0 text-primary" aria-hidden />
+                      {t("welcome.setupTitle", "Get started with us")}
+                    </h2>
+                    <p className="mx-auto max-w-xl text-sm leading-relaxed text-muted-foreground">
+                      {t(
+                        "welcome.setupDescriptionTrial",
+                        "Tell us who you are so we can start your free trial on this computer. Add your full name and phone — we use them to connect this device to your account. Your login password is separate and is set on the next screen.",
+                      )}
+                    </p>
+                  </header>
+
+                  <div className="space-y-6 text-start">
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="space-y-2 sm:col-span-2">
+                        <label htmlFor="welcome-full-name-trial" className="text-sm font-medium">
+                          {t("welcome.fullName", "Full name")}
+                        </label>
+                        <Input
+                          ref={welcomeFullNameRef}
+                          id="welcome-full-name-trial"
+                          value={fullName}
+                          onChange={(e) => setFullName(e.target.value)}
+                          onKeyDown={handleWelcomeFormKeyDown}
+                          autoComplete="name"
+                          placeholder={t("welcome.fullNamePlaceholder", "First and last name")}
+                          disabled={!online || busy}
+                        />
+                      </div>
+                      <div className="space-y-2 sm:col-span-2">
+                        <label htmlFor="welcome-phone-trial" className="text-sm font-medium">
+                          {t("welcome.phone", "Phone number")}
+                        </label>
+                        <Input
+                          ref={welcomePhoneRef}
+                          id="welcome-phone-trial"
+                          value={phone}
+                          onChange={(e) => setPhone(sanitizeWelcomePhoneInput(e.target.value))}
+                          onKeyDown={handleWelcomeFormKeyDown}
+                          autoComplete="tel"
+                          inputMode="tel"
+                          placeholder={t("welcome.phonePlaceholder", "Your phone number")}
+                          disabled={!online || busy}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-3 pt-1">
+                      <Button
+                        ref={welcomePrimaryActionRef}
+                        type="button"
+                        className="min-h-[3rem] w-full border-transparent bg-green-600 text-white shadow-xs hover:bg-green-700 focus-visible:ring-green-500/35 dark:bg-green-600 dark:text-white dark:hover:bg-green-500"
+                        disabled={!online || busy}
+                        onClick={handleStartTrial}
+                      >
+                        {busy ? (
+                          <span className="flex items-center justify-center">
+                            <span
+                              className="mr-2 h-5 w-5 shrink-0 animate-spin rounded-full border-b-2 border-white"
+                              aria-hidden
+                            />
+                            {t("welcome.startingTrial", "Registering device…")}
+                          </span>
+                        ) : (
+                          t("welcome.startTrial", "Start free 7-day trial")
+                        )}
+                      </Button>
+
+                      <button
+                        type="button"
+                        onClick={() => setShowRestoreFlow(true)}
+                        disabled={!online || busy}
+                        className="w-full text-center text-sm text-muted-foreground underline transition-colors hover:text-foreground disabled:pointer-events-none disabled:opacity-50"
+                      >
+                        {t(
+                          "welcome.restoreOnNewComputer",
+                          "Restore shop on a new computer (existing account)",
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </>
+                  )}
+                </AnimatedHeight>
               )}
             </div>
             </div>

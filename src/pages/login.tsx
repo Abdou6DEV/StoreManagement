@@ -16,6 +16,7 @@ import {
 } from "../lib/components/dropdownMenu";
 import { useTranslation } from "react-i18next";
 import { LOGO_ICON, LOGO_ICON_DARK } from "../lib/assets";
+import { AnimatedHeight } from "../lib/components/animatedHeight";
 
 export default function Login() {
   const [username, setUsername] = useState("");
@@ -565,6 +566,9 @@ export default function Login() {
               {t("login.loading", "Loading...")}
             </p>
           ) : (
+          <AnimatedHeight
+            deps={[useActivationKey, isFirstAdminSetup, machineIdLoading, !!machineId]}
+          >
           <form onSubmit={handleSubmit} className="space-y-6">
             {useActivationKey ? (
               <>
@@ -835,6 +839,7 @@ export default function Login() {
               </div>
             ) : null}
           </form>
+          </AnimatedHeight>
           )}
 
         </div>
