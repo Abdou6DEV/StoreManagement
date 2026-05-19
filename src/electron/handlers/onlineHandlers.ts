@@ -25,6 +25,14 @@ import {
   getStoredOnlineCustomerId,
   persistOnlineCustomerIdIfAbsent,
 } from "../../lib/onboarding/onlineCustomerId";
+import {
+  CLOUD_LATEST_FROM_ONLINE_DB,
+  CLOUD_LATEST_FROM_ONLINE_META,
+} from "../utils/cloudBackupFilenames";
+import {
+  checkCloudBackupAppVersionGate,
+  parseCloudBackupUploadMeta,
+} from "../utils/cloudBackupMeta";
 
 function deviceRequestUrl(base: string): string {
   return `${base}/functions/v1/device-request`;
@@ -71,8 +79,40 @@ function mapCloudBackupErrorCode(error: string, status: number): CloudBackupErro
   return "http";
 }
 
-/** Must match backupHandlers list filter (single slot for download-from-cloud). */
-const CLOUD_LATEST_FROM_ONLINE_FILENAME = "cloud_latest_from_online.db";
+function cloudBackupAppUpdateRequiredResult(
+  cloudAppVersion: string,
+  installedAppVersion: string,
+): CloudBackupDownloadToLocalResult {
+  return {
+    success: false,
+    error: `Cloud backup requires app version ${cloudAppVersion} or newer (installed: ${installedAppVersion}).`,
+    code: "app_update_required",
+    cloudAppVersion,
+    installedAppVersion,
+  };
+}
+
+async function fetchCloudBackupMetaFromSignedUrl(
+  metaSignedUrl: string,
+): Promise<CloudBackupUploadMeta | null> {
+  try {
+    const res = await fetch(metaSignedUrl);
+    if (!res.ok) return null;
+    const json: unknown = await res.json();
+    return parseCloudBackupUploadMeta(json);
+  } catch {
+    return null;
+  }
+}
+
+function versionGateBlockFromMeta(
+  meta: CloudBackupUploadMeta,
+  installedAppVersion: string,
+): CloudBackupDownloadToLocalResult | null {
+  const gate = checkCloudBackupAppVersionGate(meta, installedAppVersion);
+  if (!gate.blocked) return null;
+  return cloudBackupAppUpdateRequiredResult(gate.cloudAppVersion, gate.installedAppVersion);
+}
 
 function sendCloudBackupProgressThrottled(
   event: IpcMainInvokeEvent | null,
@@ -356,10 +396,15 @@ async function requestCloudBackupDownloadSignedUrl(
       };
     }
 
+    const metaSignedUrlRaw = body.meta_signed_url;
+    const metaSignedUrl =
+      typeof metaSignedUrlRaw === "string" && metaSignedUrlRaw.trim() ? metaSignedUrlRaw.trim() : null;
+
     return {
       success: true,
       customerId: identity.customerId,
       dbSignedUrl,
+      metaSignedUrl,
     };
   } catch (e) {
     return {
@@ -368,29 +413,6 @@ async function requestCloudBackupDownloadSignedUrl(
       code: "network",
     };
   }
-}
-
-function parseCloudBackupUploadMeta(value: unknown): CloudBackupUploadMeta | null {
-  if (!value || typeof value !== "object") return null;
-  const o = value as Record<string, unknown>;
-  if (
-    typeof o.uploaded_at !== "string" ||
-    typeof o.size_bytes !== "number" ||
-    typeof o.source !== "string" ||
-    typeof o.app_version !== "string" ||
-    typeof o.device_id !== "string" ||
-    typeof o.customer_id !== "string"
-  ) {
-    return null;
-  }
-  return {
-    uploaded_at: o.uploaded_at,
-    size_bytes: o.size_bytes,
-    source: o.source,
-    app_version: o.app_version,
-    device_id: o.device_id,
-    customer_id: o.customer_id,
-  };
 }
 
 async function resolveCloudBackupIdentity(
@@ -834,8 +856,24 @@ export function setupOnlineHandlers(): void {
         fs.mkdirSync(backupDir, { recursive: true });
       }
 
-      const dest = path.join(backupDir, CLOUD_LATEST_FROM_ONLINE_FILENAME);
+      const dest = path.join(backupDir, CLOUD_LATEST_FROM_ONLINE_DB);
+      const metaDest = path.join(backupDir, CLOUD_LATEST_FROM_ONLINE_META);
       const send = sendCloudBackupProgressThrottled(event);
+
+      if (signed.metaSignedUrl?.trim()) {
+        const meta = await fetchCloudBackupMetaFromSignedUrl(signed.metaSignedUrl.trim());
+        if (meta) {
+          const versionBlock = versionGateBlockFromMeta(meta, app.getVersion());
+          if (versionBlock) {
+            return versionBlock;
+          }
+          try {
+            fs.writeFileSync(metaDest, JSON.stringify(meta), "utf8");
+          } catch {
+            /* non-fatal — restore can still proceed */
+          }
+        }
+      }
 
       try {
         const fileRes = await fetch(signed.dbSignedUrl);

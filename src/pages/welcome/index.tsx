@@ -839,6 +839,18 @@ export default function WelcomeSetup() {
             ),
             "error",
           );
+        } else if (download.code === "app_update_required") {
+          showToast(
+            t(
+              "welcome.restoreAppUpdateRequired",
+              "This cloud backup needs app version {{cloudVersion}} or newer. You have {{installedVersion}}. Update the app, then try restore again.",
+              {
+                cloudVersion: download.cloudAppVersion ?? "?",
+                installedVersion: download.installedAppVersion ?? "?",
+              },
+            ),
+            "error",
+          );
         } else {
           const errMsg = download.error.trim().toLowerCase();
           if (errMsg.includes("device_inactive")) {
@@ -912,10 +924,15 @@ export default function WelcomeSetup() {
   const mountWelcomeNavChrome =
     introStep >= SEQ.card && !(online && devicePrecheck === "loading");
 
-  const restoreFieldsLocked =
-    busy ||
-    restoreCompleted ||
-    (showRestoreFlow && restorePhase !== "idle" && restorePhase !== "ready");
+  const restoreInProgress =
+    restorePhase === "linking" ||
+    restorePhase === "downloading" ||
+    restorePhase === "restoring";
+
+  const restoreFieldsLocked = busy || restoreCompleted || restoreInProgress;
+
+  /** Block leaving restore while linking/downloading/applying, or after data is restored. */
+  const restoreBackDisabled = restoreInProgress || restoreCompleted || busy;
 
   /** Blue corner glow only while restore is in progress; green when trial or after restore finishes. */
   const restoreGlowActive = showRestoreFlow && !restoreCompleted;
@@ -924,12 +941,7 @@ export default function WelcomeSetup() {
     if (e.key !== "Enter") return;
     e.preventDefault();
     if (!online || busy) return;
-    if (
-      showRestoreFlow &&
-      (restorePhase === "linking" ||
-        restorePhase === "downloading" ||
-        restorePhase === "restoring")
-    ) {
+    if (showRestoreFlow && restoreInProgress) {
       return;
     }
 
@@ -966,7 +978,7 @@ export default function WelcomeSetup() {
       );
       return;
     }
-    if (restoreFieldsLocked && restorePhase !== "idle" && restorePhase !== "ready") {
+    if (restoreBackDisabled) {
       return;
     }
     setShowRestoreFlow(false);
@@ -1276,7 +1288,7 @@ export default function WelcomeSetup() {
                 <div
                   className={cn(
                     "absolute -bottom-10 -left-12 z-0 h-28 w-28 rounded-full blur-2xl transition-colors duration-300 ease-in-out sm:h-32 sm:w-32 sm:-bottom-12 sm:-left-14",
-                    restoreGlowActive ? "bg-blue-500/30" : "bg-green-500/30",
+                    restoreGlowActive ? "bg-blue-500/20" : "bg-green-500/20",
                   )}
                 />
               </div>
@@ -1383,6 +1395,7 @@ export default function WelcomeSetup() {
                 </div>
               ) : (
                 <AnimatedHeight
+                  innerClassName="px-2"
                   reduceMotion={reduceMotion}
                   deps={[
                     showRestoreFlow,
@@ -1396,7 +1409,7 @@ export default function WelcomeSetup() {
                   <button
                     type="button"
                     onClick={exitRestoreFlow}
-                    disabled={restoreFieldsLocked}
+                    disabled={restoreBackDisabled}
                     className="mb-4 flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground disabled:pointer-events-none disabled:opacity-50 sm:mb-5"
                   >
                     <ArrowLeft className="h-4 w-4 shrink-0" aria-hidden />
@@ -1496,12 +1509,7 @@ export default function WelcomeSetup() {
                       ref={welcomePrimaryActionRef}
                       type="button"
                       className="min-h-[3rem] w-full border-transparent bg-blue-600 text-white shadow-xs hover:bg-blue-700 focus-visible:ring-blue-500/35 dark:bg-blue-600 dark:text-white dark:hover:bg-blue-500"
-                      disabled={
-                        !online ||
-                        busy ||
-                        restorePhase === "downloading" ||
-                        restorePhase === "restoring"
-                      }
+                      disabled={!online || busy || restoreInProgress}
                       onClick={() => void handleRestore()}
                     >
                       {restorePhase === "linking" ? (

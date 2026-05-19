@@ -567,6 +567,7 @@ export default function Login() {
             </p>
           ) : (
           <AnimatedHeight
+            innerClassName="px-2"
             deps={[useActivationKey, isFirstAdminSetup, machineIdLoading, !!machineId]}
           >
           <form onSubmit={handleSubmit} className="space-y-6">

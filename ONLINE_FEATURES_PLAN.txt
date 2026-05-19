@@ -1,5 +1,5 @@
 Store Management – Online Features Plan (Working Draft)
-Last updated: 2026-05-16 (checkpoint: Welcome restore — device-link-existing requires valid paid sibling (no trial/expired link); restoreRequiresPaidLicense toast; post-restore UI lock prevents trial after cloud restore; login restore + latest.json still open)
+Last updated: 2026-05-19 (checkpoint: latest.json gate in app + UI polish; backup-download-latest v2 deployed with meta_signed_url)
 
 Goal
 - Add lightweight “online” capabilities (not fully cloud): device activation / deactivation, optional time-limited activation, and online backup upload.
@@ -7,7 +7,7 @@ Goal
 
 High-level UX + routing rule (RECOMMENDED DEFAULT / professional)
 - The app has three “zones”:
-  1) **Pre-login zone** (always accessible): Login, Admin recovery login, Restore-from-online (only on fresh/empty DB + online).
+  1) **Pre-login zone** (always accessible): Login, Admin recovery login, Restore-from-online on **Welcome only** (fresh/empty DB + online — see §11).
   2) **Main app zone** (protected): requires successful login AND valid license (or valid offline grace).
   3) **License waiting zone**: shown when device is not licensed; collects device/customer info and polls until activated.
 - Never hard-block the entire app at boot. Only block access to the **Main app zone** when unlicensed.
@@ -180,8 +180,10 @@ Unfinished questions / decisions (must answer before implementation)
 
 11) Where can user restore when unlicensed / on a fresh PC
 - A new PC may have an empty local DB (no users) until restore.
-- Decide where to expose “Restore from online backup”:
-  - (AGREED): Login screen only (pre-login). Not only inside the main app.
+- **Where to expose “Restore from online backup” (AGREED 2026-05-19 — superseded early “login only” idea):**
+  - **Welcome only** (first-run shell when core DB is empty and **`onboarding.initialWelcomeDone`** is not set). **Not** on the Login screen.
+  - **WON'T DO — Login-screen restore:** If the user reached Login, they already finished Welcome. **Start free trial** runs **`device-request`** → a **new** **`customer_id`** per registration (even same phone → separate cloud paths). **Restore on Welcome** uses **`device-link-existing`** + download for the **existing** **`customer_id`**. Offering restore on Login would target the wrong identity (new ID in **`options`** vs old shop’s backup under another ID) and conflict with cloud upload/download ownership. Wrong-path recovery (picked trial but meant existing shop) is out of scope for Login — reinstall / support, not a second restore surface.
+  - Inside the main app: use Administrator **Backup** tab (download/upload), not “new PC” full replace — same as before.
 - Restore availability constraint (AGREED):
   - “Restore from online backup (different PC)” should only be enabled when the local DB is empty / fresh install.
   - If local DB already contains data, hide/disable this option to prevent accidental overwrite (use existing backup/restore tools inside the app instead).
@@ -240,11 +242,15 @@ Unfinished questions / decisions (must answer before implementation)
 
 ## Progress checkpoint (resume here)
 
-Last plan sync: 2026-05-16 (Welcome restore: paid-only device-link-existing, fail-fast toast, post-restore trial lock)
+Last plan sync: 2026-05-19 (Welcome restore + version gate in app + server; login restore won't do)
 
 Use this section as the single source of truth for **done vs not done**. Spec sections **1–16** above remain the design; below tracks **reality in the repo and on your Supabase project**.
 
-**Important:** **Restore from cloud on a new PC** (Welcome path) is **implemented in code** but **not complete** as a product feature — treat as **first pass / WIP**: needs more QA, edge cases, **`latest.json`** app-version gate, possible UX polish, and **login-screen** restore (§11) is still **not** built.
+**Important:**
+- **Restore from cloud on a new PC** is **Welcome-only** (§11). **Login-screen restore will not be built** (see §11 rationale).
+- **`latest.json` / `app_version` gate — DONE** (2026-05-19): **Electron app** checks meta before cloud **download** and when restoring **`cloud_latest_from_online.db`**; blocks if cloud version is **newer** than installed app (`app_update_required`).
+- **`backup-download-latest` v2 — DEPLOYED on Supabase:** returns **`db_signed_url`** + **`meta_signed_url`** (signs `{customer_id}/latest.json` after `latest.db`; null if JSON missing).
+- **Known product behavior:** **`device-link-existing` runs before download** — if restore fails, the PC may already be linked on the server; user should **retry Restore** (not start trial).
 
 ----------------------------------------------------------------------------
 ### A) IMPLEMENTED IN THE ELECTRON APP (code) — done / manually tested
@@ -255,22 +261,34 @@ Use this section as the single source of truth for **done vs not done**. Spec se
 - On success (trial or after restore **Continue**): persists **`onboarding.initialWelcomeDone`** = `1`, **`online.customerId`**, **`INITIAL_WELCOME_DONE_EVENT`** → login; **license** enforced after sign-in + **`device-check`** (§15).
 - **Files:** `src/pages/welcome/index.tsx`, `src/electron/handlers/onlineHandlers.ts`, `src/electron/utils/onlineConfig.ts`, `src/electron/preload/onlineAPI.ts`, `src/lib/onboarding/constants.ts`.
 
-**Welcome — restore from cloud / new PC for existing shop (2026-05-16) — IMPLEMENTED, NOT POLISHED**
-- **Status:** **First pass in app** — link + download + apply DB on Welcome; **not** production-final. Expect follow-up QA and **`latest.json`** / app-version block before calling “done”.
+**Welcome — restore from cloud / new PC for existing shop (2026-05-16, version gate 2026-05-19) — IMPLEMENTED**
+- **Status:** **Done** — link + version check + download + apply DB on Welcome (app + deployed **`backup-download-latest`** with **`meta_signed_url`**).
 - **UI:** User checks **`welcome.existingShopNewPc`**, enters **name + phone + customer ID**, clicks **Restore data from cloud**.
 - **Flow (app):**
   1. **`online:deviceLinkExisting`** → Edge **`device-link-existing`** (verify phone/name vs **`customer_id`**; see **paid-only link rule** below).
   2. Save **`online.customerId`** to SQLite **`options`**.
-  3. **`backupDownloadLatestToLocal(customerId)`** with **`onCloudBackupTransferProgress`** (progress bar — same pattern as Administrator Backup / update download).
-  4. **`backup:restore`** on downloaded **`cloud_latest_from_online.db`** (clears **`license-grace.json`** per existing restore handler).
+  3. **`backupDownloadLatestToLocal(customerId)`** — fetch **`latest.json`** via **`meta_signed_url`** when present; **block download** if **`app_version`** > installed; else download **`cloud_latest_from_online.db`** + write sidecar **`cloud_latest_from_online.json`**.
+  4. **`backup:restore`** on downloaded DB (re-checks version from sidecar; clears **`license-grace.json`** per existing restore handler).
   5. Button becomes green **Continue** → **`finishWelcomeAfterProvisioning`** → login.
-- **Toasts + i18n:** link success, download/restore failures (phone/name mismatch, no cloud backup, **`restore_requires_paid_license`**, device_inactive, network), restore complete — **`welcome.restore*`** (**en / fr / ar**).
+- **Toasts + i18n:** link success, download/restore failures (phone/name mismatch, no cloud backup, **`restore_requires_paid_license`**, **`app_update_required`**, device_inactive, network), restore complete — **`welcome.restore*`** (**en / fr / ar**).
 - **Shared UI:** **`CloudBackupTransferProgressBar`** (`src/lib/components/cloudBackupTransferProgress.tsx`).
-- **Still missing for “complete” restore product:**
-  - **`latest.json`** / **`app_version`** compatibility check before apply (§6).
-  - **Login-screen** restore when empty DB but Welcome already done (§11).
-  - Hardening: retry UX, confirm dialog, post-restore app reload story, full regression on old PC → new PC.
-- **Files:** `welcome/index.tsx`, `onlineHandlers.ts` (**`deviceLinkExisting`**, download with optional **`customerId`**), `deviceLinkExisting.ts`, `onlineAPI.ts`, `cloudBackupTransferProgress.tsx`.
+- **Explicitly out of scope:** Login-screen restore (§11 **won't do**); extra QA tranche; optional confirm / retry / post-restore reload UX; server unlink on failed restore.
+- **Files:** `welcome/index.tsx`, `onlineHandlers.ts`, `backupHandlers.ts`, `electron/utils/cloudBackupMeta.ts`, `electron/utils/cloudBackupFilenames.ts`, `lib/utils/compareVersions.ts`, `electron/types/cloudBackup.ts`, `deviceLinkExisting.ts`, `onlineAPI.ts`, `cloudBackupTransferProgress.tsx`.
+
+**Cloud backup `latest.json` version gate (2026-05-19, §6) — IMPLEMENTED in app**
+- **Upload (unchanged):** **`backup-upload-latest`** writes **`{customer_id}/latest.db`** + **`{customer_id}/latest.json`** with **`app_version`**, **`uploaded_at`**, **`size_bytes`**, **`source`**, **`device_id`**, **`customer_id`**.
+- **Download (app):** **`requestCloudBackupDownloadSignedUrl`** parses **`meta_signed_url`**; **`backupDownloadLatestToLocal`** fetches meta **before** DB bytes; **`compareVersions`** / **`checkCloudBackupAppVersionGate`**; error code **`app_update_required`**.
+- **Download (server — deployed):** After signing **`latest.db`**, sign **`latest.json`** (optional — if missing, **`meta_signed_url`** null, app allows download for legacy backups).
+- **Administrator Backup tab:** download + restore from cloud list use same gate; i18n **`admin.backup.cloudAppUpdateRequired`**, **`admin.backup.cloudRestoreAppUpdateRequired`**.
+- **Policy:** Block only when cloud **`app_version`** is **strictly newer** than **`app.getVersion()`**; equal or older → allow.
+
+**Welcome / Login form UI polish (2026-05-19)**
+- **`AnimatedHeight`** **`innerClassName="px-2"`** on Welcome restore/trial form and Login form — prevents input focus rings clipped by **`overflow-hidden`** height animation.
+- **Restore flow:** **`restoreBackDisabled`** — back button disabled during **linking / downloading / restoring** and after **`restoreCompleted`**; **`exitRestoreFlow`** respects same guard.
+
+**Welcome restore — back button during in-progress (2026-05-19, bugfix)**
+- **Bug:** User could leave restore UI while **`device-link-existing`** or download was running (phase still **`idle`** briefly, or **`busy`** not reflected on back button).
+- **Fix:** **`restoreInProgress`** + **`restoreBackDisabled`**; restore primary button disabled for full **`restoreInProgress`** (includes **linking**).
 
 **Welcome restore — paid-only link + fail-fast (2026-05-16, AGREED)**
 - **Product rule:** Cloud restore on a **new PC** is for **licensed (paid) shops** only. Do **not** link the new device if the customer has **no valid paid** license on any existing device (trial-only, expired paid, or no siblings).
@@ -318,8 +336,8 @@ Use this section as the single source of truth for **done vs not done**. Spec se
 **Online IPC surface (current scope)**
 - **Implemented:** **`deviceRequest`**, **`deviceLinkExisting`**, **`deviceCheck`**, **`readLicenseGrace`**, **`persistLicenseGrace`**, **`clearLicenseGrace`**, **`backupUploadLatest`**, **`backupDownloadLatest`**, **`backupDownloadLatestToLocal(customerId?)`**, **`onCloudBackupTransferProgress`** (preload **`window.api.online`**).
 - **Upload (app):** **`online:backupUploadLatest`** → Edge **`backup-upload-latest`**; Administrator **Backup** tab.
-- **Download (app):** **`backupDownloadLatest`** / **`backupDownloadLatestToLocal`**; optional **`customerId`** arg so Welcome can download before options are read on next boot. **Welcome restore** downloads then **`backup:restore`** in renderer.
-- **Still not in app:** login-screen cloud restore; **`latest.json`** / app-version gate before restore apply.
+- **Download (app):** **`backupDownloadLatest`** / **`backupDownloadLatestToLocal`**; optional **`customerId`** arg; **`meta_signed_url`** + **`app_update_required`** version gate (**2026-05-19**). **Welcome restore** downloads then **`backup:restore`** in renderer.
+- **Login-screen restore:** **won't do** (§11).
 
 **Offline grace + local snapshot (2026-05-11)** — §5 + §14 (file, not SQLite **`options`**) + partial §17
 - **Policy A:** persist snapshot only when **`device-check`** returns **`allowed: true`** (do **not** refresh caps from **`allowed: false`** responses).
@@ -374,7 +392,7 @@ Use this section as the single source of truth for **done vs not done**. Spec se
 - **Transfer UX:** **`cloud-backup-transfer-progress`** (~1s throttle); **`onlineHandlers`** download stream + **`writeStreamChunk`**; upload read progress **0–35%** + estimated network phase — see **`electron/types/cloudBackup.ts`**, preload **`onlineAPI.onCloudBackupTransferProgress`**.
 - **`App.tsx` initial shell:** **`app.initializing`** (**en / fr / ar**) instead of reusing **`dashboard.loading`** on the onboarding empty-DB gate (avoids misleading “Loading Dashboard”).
 - **Dev tooling removed:** **`scripts/bloatDb.ts`** and **`npm run db:bloat`** (padding SQLite via Option **`__dev_db_padding__`**).
-- **Server contract unchanged:** multipart **`backup-upload-latest`**; **`backup-download-latest`** → **`db_signed_url`**. **C** lists login restore / **`latest.json`** still **open**.
+- **Server contract:** multipart **`backup-upload-latest`**; **`backup-download-latest`** (deployed) → **`db_signed_url`** + **`meta_signed_url`**. App version gate **done**; login restore **won't do**.
 - **Primary files:** `paidCloudBackupAccess.ts`, `usePaidCloudBackupAccess.ts`, `backupManagement.tsx`, `administrator/index.tsx`, `backupHandlers.ts`, `backup/constants.ts`, `toastContext.tsx`, `app.tsx`, `fadeUp.tsx` usage site, **`onlineHandlers.ts`** / **`onlineAPI.ts`** / **`cloudBackup.ts`**.
 
 **License gate UI — `licenseValidation.tsx` (2026-05-10)**
@@ -414,9 +432,7 @@ Use this section as the single source of truth for **done vs not done**. Spec se
 - **`device-link-existing`** (deploy 2026, **updated 2026-05-16**): link **new `device_id`** to **known `customer_id`** when phone (+ optional name) match **only if** a sibling has **valid paid** license (`active=true`, `expires_at` null or future). Otherwise **`restore_requires_paid_license`** (no insert). On success: **`paid_copy`** only. Used by Welcome **restore** path. **Deploy via Supabase Dashboard** (function source not committed in Electron repo).
 - **`device-check`**: returns **`allowed`**, **`trial_ends_at`**, **`expires_at`**, **`customer_id`**, **`customer_name`**, **`customer_phone`**; allow rule = trial **or** paid (**2.1**).
 - **Secrets:** `X_APP_SECRET`, service URL/keys as per Supabase docs — **never** in git.
-- **Backups:** **`backup-upload-latest`**, **`backup-download-latest`** — **reported tested**. **Open:** align backup validators with **2.1** (trial allowed) if they still require **`active=true`** only; **`latest.json`** on download for version gate.
-
-**Repo note:** Function **sources** may live under **`supabase/functions/`** in git when committed; deploy from repo or Dashboard editor so **app** and **server** stay in sync.
+- **Backups:** **`backup-upload-latest`** (writes **`latest.json`**, **deployed**), **`backup-download-latest`** (**deployed v2, 2026-05-19**): same as before + sign **`{customer_id}/latest.json`** → return **`meta_signed_url`** (null if file missing). **Open:** align backup validators with **2.1** (trial allowed) if they still require **`active=true`** only on download.
 
 ----------------------------------------------------------------------------
 ### C) NOT IMPLEMENTED YET (app) — larger gaps
@@ -433,12 +449,12 @@ Use this section as the single source of truth for **done vs not done**. Spec se
 - **Polling** **`device-check`** on the gate (5s → 15s → 60s) — **not** implemented; **`LICENSE_RECHECK_AFTER_LOGIN_EVENT`** exists but **confirm nothing dispatches it** (optional cleanup or wire-up).
 - Optional **name/phone / `device-request`** on the gate for edge cases — **not** implemented (Welcome remains primary).
 
-**4) Welcome + Login cloud restore (section 11 + 6)**
-- **Welcome (existing shop / new PC):** **first pass done** — paid-only **`device-link-existing`** + download + **`backup:restore`** + **Continue** + post-restore UI lock (see **A**). **Not polished / not “complete”** — **`latest.json`** + login restore still open.
-- **Login-only restore:** empty DB gate on **Login**, same download + version check — **not** wired in UI.
+**4) Welcome cloud restore (section 11 + 6) — Login restore WON'T DO**
+- **Welcome (existing shop / new PC):** **Done** — paid-only link, **`latest.json`** gate, download, restore, Continue, post-restore UI lock, back-button lock (see **A**).
+- **Login-screen restore:** **Won't do (2026-05-19).** User on Login has **`initialWelcomeDone`**; trial path already created a **new** **`customer_id`**; old-shop backup lives under a **different** ID — see §11 rationale.
 
 **5) Backup page → cloud upload / download to PC (section 6)**
-- **Done (manual v1 + hub + UX):** Administrator **Backup** tab — **check**, **download to local**, **create & upload**, progress IPC; optional **auto-upload**; paid-cloud gate. **Still not done:** **`latest.json`** version gate; login restore.
+- **Done:** Administrator **Backup** tab — **check**, **download to local**, **create & upload**, progress IPC; optional **auto-upload**; paid-cloud gate; **`latest.json`** version gate on download + cloud-file restore (**2026-05-19**).
 
 **6) Backup Edge Functions vs trial (section 2.1)**
 - If validators still require **`active=true`** only, align with **trial allowed** when you want trial customers uploading.
@@ -469,8 +485,11 @@ Use this section as the single source of truth for **done vs not done**. Spec se
 | License after login + preload | N/A                   | **Yes** (**`App.tsx`** §15 branch)                |
 | First ADMIN setup on login   | N/A                    | **Done**                                          |
 | Activation-key recovery      | Local validate in main | **Done**; still runs **`device-check`** after success |
-| Cloud backup upload/download | Functions exist        | **Backup hub** + **Welcome restore download/apply (WIP)**; **no login restore**; **no `latest.json` gate** |
-| Welcome restore (old PC → new) | Paid-only **`device-link-existing`** | **First pass — not polished** (`latest.json`, login restore) |
+| Cloud backup upload/download | **Deployed** (upload + download v2) | **Backup hub** + Welcome restore; **`latest.json` gate** |
+| Welcome restore (old PC → new) | Paid-only **`device-link-existing`** | **Done** |
+| Login-screen cloud restore   | N/A                    | **Won't do** (§11 — Welcome-only; customer ID conflict) |
+| Welcome/Login form focus rings | N/A                    | **Done** (`AnimatedHeight` **`px-2`**) |
+| Restore back during progress | N/A                    | **Done** (`restoreBackDisabled`) |
 | Welcome offline banner       | N/A                    | **Done**                                          |
 | Welcome phone validation     | N/A                    | **Done**                                          |
 | Welcome sequential intro / ribbon / borders | N/A                    | **Done** (2026-05-13 polish)                      |
@@ -480,11 +499,10 @@ Use this section as the single source of truth for **done vs not done**. Spec se
 ----------------------------------------------------------------------------
 ### F) Suggested implementation order (next sprints)
 
-1. **Polish Welcome restore (WIP → done):** QA old-PC → new-PC path (paid licensed, trial rejected at link, expired paid rejected); **`latest.json`** / **`app_version`** gate; confirm dialog; optional app reload after restore.
-2. **Login cloud restore:** empty-DB gate on **Login** (reuse same IPC chain as Welcome).
-3. **§17 (remaining):** dashboard countdowns; local **customer** mirror in **`options`**; clearer login when offline snapshot **expired**.
-4. **License gate:** optional **polling**; **`LICENSE_RECHECK_AFTER_LOGIN_EVENT`** wire-up.
-5. **Supabase backups:** trial-aware validators; **`latest.json`** on download response.
+1. **§17 (remaining):** dashboard countdowns; local **customer** mirror in **`options`**; clearer login when offline snapshot **expired**.
+2. **License gate (optional):** **polling**; **`LICENSE_RECHECK_AFTER_LOGIN_EVENT`** wire-up — product choice.
+3. **Supabase backups:** trial-aware validators on download/upload if still **`active=true`** only.
+4. **Optional hardening:** fail-closed if **`meta_signed_url`** present but meta fetch/parse fails; copy when restore fails after link (“retry Restore”).
 
 ----------------------------------------------------------------------------
 ### G) Obsolete bullets (do not follow as “still TODO”)
@@ -499,11 +517,16 @@ Use this section as the single source of truth for **done vs not done**. Spec se
 - ~~“Offline grace / **`min` deadline** not implemented”~~ → **Done** (**A**); expired-trial cap fix **2026-05-11**.
 - ~~“No §17 license UI”~~ → **Partial** (Administrator **License** tab + nav pills — **A**).
 - ~~“No renderer IPC to backup-upload-latest”~~ → **Done** (**A**).
-- ~~“Welcome restore uses device-request only”~~ → **Superseded** — restore uses **`device-link-existing`** + download + **`backup:restore`** (**A**, WIP polish).
+- ~~“Welcome restore uses device-request only”~~ → **Superseded** — restore uses **`device-link-existing`** + download + **`backup:restore`** (**A**).
 - ~~“device-link-existing copies trial or starts new 7-day trial on restore”~~ → **Superseded (2026-05-16)** — restore link requires **valid paid** sibling; **`restore_requires_paid_license`** otherwise.
 - ~~“device-check does not return phone”~~ → **Superseded** — deployed **`device-check`** returns **`customer_phone`**; License tab shows it.
 - ~~“Backup download IPC only (no save-to-disk UI)”~~ → **Superseded** — **`backupDownloadLatestToLocal`** + hub check/download + progress (**A**, 2026-05-14).
 - ~~“License tab auto device-check on open”~~ → **Superseded** — manual **Check online** + cooldown (**A**).
+- ~~“§11 Restore from online on Login screen (pre-login)”~~ → **Won't do (2026-05-19)** — **Welcome-only**; Login implies Welcome done; trial already issued **new** **`customer_id`**; conflicts with old-shop cloud paths (see §11).
+- ~~“Login restore when empty DB but Welcome already done”~~ → **Won't do** — same rationale; mistaken trial is reinstall/support, not Login UI.
+- ~~“`latest.json` / app_version gate not in app”~~ → **Done (2026-05-19)** — app + deployed **`backup-download-latest`** with **`meta_signed_url`**.
+- ~~“Deploy backup-download-latest with meta_signed_url”~~ → **Done** — deployed on Supabase.
+- ~~“Welcome restore still missing version check”~~ → **Done** — gate before download + sidecar on restore.
 
 Keep **`device-request`** phone normalization and **`X_APP_SECRET`** hygiene as ongoing ops tasks, not app blockers.
 

@@ -461,6 +461,20 @@ export function BackupManagement({ onOpenLicenseTab }: BackupManagementProps) {
         showToast(t("admin.backup.cloudDownloadNetwork", "Download failed. Check your connection."), "error");
         return;
       }
+      if (r.code === "app_update_required") {
+        showToast(
+          t(
+            "admin.backup.cloudAppUpdateRequired",
+            "This cloud backup needs app version {{cloudVersion}} or newer. You have {{installedVersion}}. Update the app before downloading or restoring.",
+            {
+              cloudVersion: r.cloudAppVersion ?? "?",
+              installedVersion: r.installedAppVersion ?? "?",
+            },
+          ),
+          "error",
+        );
+        return;
+      }
 
       showToast(
         t("admin.backup.cloudDownloadFailed", "Cloud download failed: {{message}}", { message: errMsg || "Unknown error" }),
@@ -734,6 +748,28 @@ export function BackupManagement({ onOpenLicenseTab }: BackupManagementProps) {
           logout();
           navigate('/login', { replace: true });
         }, 2000);
+      } else if (
+        !result.success &&
+        "code" in result &&
+        result.code === "app_update_required"
+      ) {
+        showToast(
+          t(
+            "admin.backup.cloudRestoreAppUpdateRequired",
+            "This cloud backup needs app version {{cloudVersion}} or newer. You have {{installedVersion}}. Update the app, then restore again.",
+            {
+              cloudVersion:
+                "cloudAppVersion" in result && typeof result.cloudAppVersion === "string"
+                  ? result.cloudAppVersion
+                  : "?",
+              installedVersion:
+                "installedAppVersion" in result && typeof result.installedAppVersion === "string"
+                  ? result.installedAppVersion
+                  : "?",
+            },
+          ),
+          "error",
+        );
       } else {
         showToast(`Failed to restore backup: ${result.error}`, "error");
       }

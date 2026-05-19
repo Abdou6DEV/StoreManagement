@@ -10,6 +10,14 @@ import {
 } from "../../lib/backup/constants";
 import { uploadCloudBackupLatest } from "./onlineHandlers";
 import {
+  CLOUD_LATEST_FROM_ONLINE_DB,
+  CLOUD_LATEST_FROM_ONLINE_META,
+} from "../utils/cloudBackupFilenames";
+import {
+  checkCloudBackupAppVersionGate,
+  parseCloudBackupUploadMeta,
+} from "../utils/cloudBackupMeta";
+import {
   clearStoredLicenseGrace,
   LEGACY_LICENSE_OPTION_KEYS,
 } from "../utils/licenseGraceStore";
@@ -19,9 +27,6 @@ const getBackupDir = () => {
   const userDataPath = app.getPath("userData");
   return path.join(userDataPath, "backups");
 };
-
-/** Overwritten on each download-from-cloud; this is the only cloud entry in backup list UI. */
-const CLOUD_LATEST_FROM_ONLINE_FILENAME = "cloud_latest_from_online.db";
 
 // Ensure backup directory exists
 const ensureBackupDir = () => {
@@ -568,7 +573,7 @@ function deleteListedBackupFile(backupPath: string): { success: boolean; error?:
     return { success: false, error: "Path must be inside the backup folder." };
   }
   const base = path.basename(raw);
-  const ok = LISTING_BACKUP_FILE_RE.test(base) || base === CLOUD_LATEST_FROM_ONLINE_FILENAME;
+  const ok = LISTING_BACKUP_FILE_RE.test(base) || base === CLOUD_LATEST_FROM_ONLINE_DB;
   if (!ok) {
     return { success: false, error: "This file cannot be deleted from the backup list." };
   }
@@ -590,13 +595,13 @@ const listBackups = () => {
       .filter((file) => {
         if (!file.endsWith(".db")) return false;
         if (file.startsWith("auto_backup_") || file.startsWith("manual_backup_")) return true;
-        return file === CLOUD_LATEST_FROM_ONLINE_FILENAME;
+        return file === CLOUD_LATEST_FROM_ONLINE_DB;
       })
       .map((file) => {
         const filePath = path.join(backupDir, file);
         const stats = fs.statSync(filePath);
         const isAuto = file.startsWith("auto_backup_");
-        const isCloudFromOnline = file === CLOUD_LATEST_FROM_ONLINE_FILENAME;
+        const isCloudFromOnline = file === CLOUD_LATEST_FROM_ONLINE_DB;
         const type: "automatic" | "manual" | "cloud" = isAuto
           ? "automatic"
           : isCloudFromOnline
@@ -669,6 +674,30 @@ const restoreBackup = async (backupPath: string) => {
     
     if (!validateSQLiteFile(backupPath)) {
       throw new Error("Invalid backup file - not a valid SQLite database");
+    }
+
+    if (path.basename(backupPath) === CLOUD_LATEST_FROM_ONLINE_DB) {
+      const metaPath = path.join(path.dirname(backupPath), CLOUD_LATEST_FROM_ONLINE_META);
+      if (fs.existsSync(metaPath)) {
+        try {
+          const raw = JSON.parse(fs.readFileSync(metaPath, "utf8")) as unknown;
+          const meta = parseCloudBackupUploadMeta(raw);
+          if (meta) {
+            const gate = checkCloudBackupAppVersionGate(meta, app.getVersion());
+            if (gate.blocked) {
+              return {
+                success: false,
+                error: `Cloud backup requires app version ${gate.cloudAppVersion} or newer (installed: ${gate.installedAppVersion}).`,
+                code: "app_update_required",
+                cloudAppVersion: gate.cloudAppVersion,
+                installedAppVersion: gate.installedAppVersion,
+              };
+            }
+          }
+        } catch {
+          /* invalid sidecar — allow restore */
+        }
+      }
     }
     
     // 2. Create safety backup of current database

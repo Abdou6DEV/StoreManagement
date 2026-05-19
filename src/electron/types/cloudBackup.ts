@@ -17,7 +17,8 @@ export type CloudBackupErrorCode =
   | "http"
   | "edge"
   | "unauthorized"
-  | "not_found";
+  | "not_found"
+  | "app_update_required";
 
 export type CloudBackupUploadMeta = {
   uploaded_at: string;
@@ -46,12 +47,18 @@ export type CloudBackupDownloadResult =
       success: true;
       customerId: string;
       dbSignedUrl: string;
+      metaSignedUrl: string | null;
     }
   | {
       success: false;
       error: string;
       code: CloudBackupErrorCode;
     };
+
+export type CloudBackupVersionBlocked = {
+  cloudAppVersion: string;
+  installedAppVersion: string;
+};
 
 /** Downloaded cloud `.db` into the local backups folder (same naming pattern as upload snapshots). */
 export type CloudBackupDownloadToLocalResult =
@@ -60,8 +67,8 @@ export type CloudBackupDownloadToLocalResult =
       backupPath: string;
       sizeBytes: number;
     }
-  | {
+  | ({
       success: false;
       error: string;
       code: CloudBackupErrorCode;
-    };
+    } & Partial<CloudBackupVersionBlocked>);
