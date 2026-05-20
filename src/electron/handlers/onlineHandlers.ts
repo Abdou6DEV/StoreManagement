@@ -1002,11 +1002,15 @@ export function setupOnlineHandlers(): void {
         const reader = body.getReader();
         const writeStream = fs.createWriteStream(tempDest);
         let downloadedSize = 0;
+        let reading = true;
 
         try {
-          while (true) {
+          while (reading) {
             const { done, value } = await reader.read();
-            if (done) break;
+            if (done) {
+              reading = false;
+              continue;
+            }
             if (value && value.byteLength > 0) {
               const buf = Buffer.from(value);
               await writeStreamChunk(writeStream, buf);
