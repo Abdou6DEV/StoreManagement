@@ -92,16 +92,49 @@ function cloudBackupAppUpdateRequiredResult(
   };
 }
 
+function cloudBackupMetadataUnavailableResult(
+  error: string,
+  code: CloudBackupErrorCode = "edge",
+): CloudBackupDownloadToLocalResult {
+  return {
+    success: false,
+    error,
+    code,
+  };
+}
+
+type CloudBackupMetaFetchResult =
+  | { success: true; meta: CloudBackupUploadMeta }
+  | { success: false; error: string; code: CloudBackupErrorCode };
+
 async function fetchCloudBackupMetaFromSignedUrl(
   metaSignedUrl: string,
-): Promise<CloudBackupUploadMeta | null> {
+): Promise<CloudBackupMetaFetchResult> {
   try {
     const res = await fetch(metaSignedUrl);
-    if (!res.ok) return null;
+    if (!res.ok) {
+      return {
+        success: false,
+        error: `Cloud backup metadata download failed (HTTP ${res.status}).`,
+        code: "http",
+      };
+    }
     const json: unknown = await res.json();
-    return parseCloudBackupUploadMeta(json);
+    const meta = parseCloudBackupUploadMeta(json);
+    if (!meta) {
+      return {
+        success: false,
+        error: "Cloud backup metadata is invalid; download was stopped to protect this database.",
+        code: "edge",
+      };
+    }
+    return { success: true, meta };
   } catch {
-    return null;
+    return {
+      success: false,
+      error: "Could not download cloud backup metadata. Check your connection and try again.",
+      code: "network",
+    };
   }
 }
 
@@ -326,6 +359,68 @@ async function writeStreamChunk(writeStream: fs.WriteStream, buf: Buffer): Promi
       }
     });
   });
+}
+
+function cleanupFileIfExists(filePath: string): void {
+  try {
+    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+  } catch {
+    /* ignore cleanup errors */
+  }
+}
+
+function replaceDownloadedCloudBackupFiles(
+  tempDbPath: string,
+  dbDestPath: string,
+  tempMetaPath: string,
+  metaDestPath: string,
+): void {
+  const suffix = `.previous-${process.pid}-${Date.now()}`;
+  const previousDbPath = `${dbDestPath}${suffix}`;
+  const previousMetaPath = `${metaDestPath}${suffix}`;
+  let movedPreviousDb = false;
+  let movedPreviousMeta = false;
+  let installedDb = false;
+  let installedMeta = false;
+
+  try {
+    if (fs.existsSync(dbDestPath)) {
+      fs.renameSync(dbDestPath, previousDbPath);
+      movedPreviousDb = true;
+    }
+    if (fs.existsSync(metaDestPath)) {
+      fs.renameSync(metaDestPath, previousMetaPath);
+      movedPreviousMeta = true;
+    }
+
+    fs.renameSync(tempDbPath, dbDestPath);
+    installedDb = true;
+    fs.renameSync(tempMetaPath, metaDestPath);
+    installedMeta = true;
+
+    cleanupFileIfExists(previousDbPath);
+    cleanupFileIfExists(previousMetaPath);
+  } catch (error) {
+    if (installedDb) cleanupFileIfExists(dbDestPath);
+    if (installedMeta) cleanupFileIfExists(metaDestPath);
+
+    try {
+      if (movedPreviousDb && fs.existsSync(previousDbPath) && !fs.existsSync(dbDestPath)) {
+        fs.renameSync(previousDbPath, dbDestPath);
+      }
+    } catch {
+      /* best-effort rollback */
+    }
+    try {
+      if (movedPreviousMeta && fs.existsSync(previousMetaPath) && !fs.existsSync(metaDestPath)) {
+        fs.renameSync(previousMetaPath, metaDestPath);
+      }
+    } catch {
+      /* best-effort rollback */
+    }
+
+    throw error;
+  }
 }
 
 async function requestCloudBackupDownloadSignedUrl(
@@ -860,20 +955,27 @@ export function setupOnlineHandlers(): void {
       const metaDest = path.join(backupDir, CLOUD_LATEST_FROM_ONLINE_META);
       const send = sendCloudBackupProgressThrottled(event);
 
-      if (signed.metaSignedUrl?.trim()) {
-        const meta = await fetchCloudBackupMetaFromSignedUrl(signed.metaSignedUrl.trim());
-        if (meta) {
-          const versionBlock = versionGateBlockFromMeta(meta, app.getVersion());
-          if (versionBlock) {
-            return versionBlock;
-          }
-          try {
-            fs.writeFileSync(metaDest, JSON.stringify(meta), "utf8");
-          } catch {
-            /* non-fatal — restore can still proceed */
-          }
-        }
+      const metaSignedUrl = signed.metaSignedUrl?.trim();
+      if (!metaSignedUrl) {
+        return cloudBackupMetadataUnavailableResult(
+          "Cloud backup metadata is missing; download was stopped to protect this database.",
+        );
       }
+
+      const metaResult = await fetchCloudBackupMetaFromSignedUrl(metaSignedUrl);
+      if (metaResult.success === false) {
+        return metaResult;
+      }
+      const meta = metaResult.meta;
+
+      const versionBlock = versionGateBlockFromMeta(meta, app.getVersion());
+      if (versionBlock) {
+        return versionBlock;
+      }
+
+      const nonce = `${process.pid}-${Date.now()}`;
+      const tempDest = path.join(backupDir, `${CLOUD_LATEST_FROM_ONLINE_DB}.${nonce}.tmp`);
+      const tempMetaDest = path.join(backupDir, `${CLOUD_LATEST_FROM_ONLINE_META}.${nonce}.tmp`);
 
       try {
         const fileRes = await fetch(signed.dbSignedUrl);
@@ -895,14 +997,20 @@ export function setupOnlineHandlers(): void {
           };
         }
 
+        fs.writeFileSync(tempMetaDest, JSON.stringify(meta), "utf8");
+
         const reader = body.getReader();
-        const writeStream = fs.createWriteStream(dest);
+        const writeStream = fs.createWriteStream(tempDest);
         let downloadedSize = 0;
+        let reading = true;
 
         try {
-          while (true) {
+          while (reading) {
             const { done, value } = await reader.read();
-            if (done) break;
+            if (done) {
+              reading = false;
+              continue;
+            }
             if (value && value.byteLength > 0) {
               const buf = Buffer.from(value);
               await writeStreamChunk(writeStream, buf);
@@ -919,18 +1027,23 @@ export function setupOnlineHandlers(): void {
           }
         } catch (streamErr) {
           writeStream.destroy();
-          try {
-            if (fs.existsSync(dest)) fs.unlinkSync(dest);
-          } catch {
-            /* ignore */
-          }
+          cleanupFileIfExists(tempDest);
           throw streamErr;
         }
 
         writeStream.end();
         await finished(writeStream);
 
-        const sizeBytes = fs.existsSync(dest) ? fs.statSync(dest).size : downloadedSize;
+        const sizeBytes = fs.existsSync(tempDest) ? fs.statSync(tempDest).size : downloadedSize;
+        if (totalSize > 0 && sizeBytes !== totalSize) {
+          throw new Error("Cloud file download was incomplete.");
+        }
+        if (meta.size_bytes > 0 && sizeBytes !== meta.size_bytes) {
+          throw new Error("Cloud file size does not match its metadata.");
+        }
+
+        replaceDownloadedCloudBackupFiles(tempDest, dest, tempMetaDest, metaDest);
+
         send({
           phase: "download",
           progress: 100,
@@ -945,11 +1058,8 @@ export function setupOnlineHandlers(): void {
           sizeBytes,
         };
       } catch (e) {
-        try {
-          if (fs.existsSync(dest)) fs.unlinkSync(dest);
-        } catch {
-          /* ignore */
-        }
+        cleanupFileIfExists(tempDest);
+        cleanupFileIfExists(tempMetaDest);
         return {
           success: false,
           error: (e as Error).message || "Network error",

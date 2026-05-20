@@ -14,6 +14,7 @@ import type { DeviceRequestPayload, DeviceRequestResult } from "../types/deviceR
 import type { DeviceLinkExistingPayload, DeviceLinkExistingResult } from "../types/deviceLinkExisting";
 import type { DeviceCheckResult } from "../types/deviceCheck";
 import type {
+  CloudBackupErrorCode,
   CloudBackupDownloadResult,
   CloudBackupDownloadToLocalResult,
   CloudBackupTransferProgressPayload,
@@ -424,11 +425,15 @@ export type BackupFile = {
 export type BackupResult = {
   success: boolean;
   error?: string;
+  code?: CloudBackupErrorCode;
+  cloudAppVersion?: string;
+  installedAppVersion?: string;
   backupPath?: string;
   size?: number;
   date?: string;
   message?: string;
   backups?: BackupFile[];
+  safetyBackup?: string | null;
 };
 
 export type BackupAPI = {
