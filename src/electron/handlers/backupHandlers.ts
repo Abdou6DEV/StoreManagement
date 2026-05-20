@@ -22,6 +22,12 @@ import {
   LEGACY_LICENSE_OPTION_KEYS,
 } from "../utils/licenseGraceStore";
 
+const cloudBackupRestoreBlocked = (error: string) => ({
+  success: false,
+  error,
+  code: "invalid",
+});
+
 // Backup directory path
 const getBackupDir = () => {
   const userDataPath = app.getPath("userData");
@@ -678,25 +684,44 @@ const restoreBackup = async (backupPath: string) => {
 
     if (path.basename(backupPath) === CLOUD_LATEST_FROM_ONLINE_DB) {
       const metaPath = path.join(path.dirname(backupPath), CLOUD_LATEST_FROM_ONLINE_META);
-      if (fs.existsSync(metaPath)) {
-        try {
-          const raw = JSON.parse(fs.readFileSync(metaPath, "utf8")) as unknown;
-          const meta = parseCloudBackupUploadMeta(raw);
-          if (meta) {
-            const gate = checkCloudBackupAppVersionGate(meta, app.getVersion());
-            if (gate.blocked) {
-              return {
-                success: false,
-                error: `Cloud backup requires app version ${gate.cloudAppVersion} or newer (installed: ${gate.installedAppVersion}).`,
-                code: "app_update_required",
-                cloudAppVersion: gate.cloudAppVersion,
-                installedAppVersion: gate.installedAppVersion,
-              };
-            }
-          }
-        } catch {
-          /* invalid sidecar — allow restore */
-        }
+      if (!fs.existsSync(metaPath)) {
+        return cloudBackupRestoreBlocked(
+          "Cloud backup metadata is missing. Download the cloud backup again before restoring.",
+        );
+      }
+
+      let meta: ReturnType<typeof parseCloudBackupUploadMeta>;
+      try {
+        const raw = JSON.parse(fs.readFileSync(metaPath, "utf8")) as unknown;
+        meta = parseCloudBackupUploadMeta(raw);
+      } catch {
+        return cloudBackupRestoreBlocked(
+          "Cloud backup metadata is unreadable. Download the cloud backup again before restoring.",
+        );
+      }
+
+      if (!meta) {
+        return cloudBackupRestoreBlocked(
+          "Cloud backup metadata is invalid. Download the cloud backup again before restoring.",
+        );
+      }
+
+      const backupSizeBytes = fs.statSync(backupPath).size;
+      if (meta.size_bytes > 0 && backupSizeBytes !== meta.size_bytes) {
+        return cloudBackupRestoreBlocked(
+          "Cloud backup metadata does not match the downloaded database. Download it again before restoring.",
+        );
+      }
+
+      const gate = checkCloudBackupAppVersionGate(meta, app.getVersion());
+      if (gate.blocked) {
+        return {
+          success: false,
+          error: `Cloud backup requires app version ${gate.cloudAppVersion} or newer (installed: ${gate.installedAppVersion}).`,
+          code: "app_update_required",
+          cloudAppVersion: gate.cloudAppVersion,
+          installedAppVersion: gate.installedAppVersion,
+        };
       }
     }
     
