@@ -30,6 +30,10 @@ import {
   readLicenseGraceSnapshot,
   type LicenseGraceSnapshot,
 } from "../../../lib/license/offlineGrace";
+import {
+  loadLicenseLastOnlineCheckAtMs,
+  persistLicenseLastOnlineCheckAtMs,
+} from "../../../lib/license/adminLicenseOptions";
 
 type AccessMode = "licensed_online" | "licensed_offline" | "not_licensed" | "unknown";
 
@@ -114,13 +118,16 @@ export function LicenseManagement() {
 
   const loadSavedLicense = useCallback(async () => {
     try {
-      const [machineResult, customerIdValue, localSnapshot] = await Promise.all([
-        window.api.system.getMachineId(),
-        window.api.database.options.get(ONLINE_CUSTOMER_ID_OPTION_KEY),
-        readLicenseGraceSnapshot(),
-      ]);
+      const [machineResult, customerIdValue, localSnapshot, savedLastOnlineCheckAtMs] =
+        await Promise.all([
+          window.api.system.getMachineId(),
+          window.api.database.options.get(ONLINE_CUSTOMER_ID_OPTION_KEY),
+          readLicenseGraceSnapshot(),
+          loadLicenseLastOnlineCheckAtMs(),
+        ]);
 
       setDeviceId(machineResult.success ? machineResult.machineId ?? null : null);
+      setLastOnlineCheckAtMs(savedLastOnlineCheckAtMs);
       let trimmedCustomerId = customerIdValue?.trim() || null;
       if (!trimmedCustomerId && isOnline) {
         const check = await window.api.online.deviceCheck();
@@ -152,7 +159,9 @@ export function LicenseManagement() {
       setPageCheckResult(deviceCheck);
       await applyDeviceCheckResult(deviceCheck);
       setSnapshot(await readLicenseGraceSnapshot());
-      setLastOnlineCheckAtMs(Date.now());
+      const checkedAtMs = Date.now();
+      setLastOnlineCheckAtMs(checkedAtMs);
+      await persistLicenseLastOnlineCheckAtMs(checkedAtMs);
     } catch {
       setPageCheckResult(null);
       showToast(

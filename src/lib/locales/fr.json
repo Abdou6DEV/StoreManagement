@@ -1895,6 +1895,7 @@
     "backup.hubLocalCloudSnapshots": "Dernière sauvegarde téléchargée depuis le cloud",
     "backup.hubLocalCloudSnapshotsDesc": "Un seul fichier est conservé ici : la dernière copie téléchargée depuis votre sauvegarde en ligne (chaque téléchargement le remplace). Les envois utilisent un fichier temporaire supprimé après un envoi réussi, il n’apparaît donc pas dans cette liste.",
     "backup.checkCloudBackup": "Vérifier la sauvegarde cloud",
+    "backup.checkCloudBackupCooldown": "Vérifier la sauvegarde cloud ({{seconds}} s)",
     "backup.cloudTransferWarningTitleUpload": "Envoi cloud en cours",
     "backup.cloudTransferWarningTitleDownload": "Téléchargement cloud en cours",
     "backup.cloudTransferWarningDescription": "Ne fermez pas l’application tant que le transfert n’est pas terminé. Gardez une connexion Internet stable. Fermer l’application ou perdre la connexion peut laisser un fichier incomplet ou faire échouer le transfert.",

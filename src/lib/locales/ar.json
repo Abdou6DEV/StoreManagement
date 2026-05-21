@@ -1787,6 +1787,7 @@
     "backup.hubLocalCloudSnapshots": "آخر نسخة تم تنزيلها من السحابة",
     "backup.hubLocalCloudSnapshotsDesc": "يُحتفظ بملف واحد فقط هنا: أحدث نسخة تم تنزيلها من النسخة السحابية (كل تنزيل يستبدلها). الرفع يستخدم ملفًا مؤقتًا يُحذف بعد إرسال ناجح، لذلك لا يظهر في هذه القائمة.",
     "backup.checkCloudBackup": "التحقق من النسخة السحابية",
+    "backup.checkCloudBackupCooldown": "التحقق من النسخة السحابية ({{seconds}} ث)",
     "backup.cloudTransferWarningTitleUpload": "جارٍ الرفع إلى السحابة",
     "backup.cloudTransferWarningTitleDownload": "جارٍ التنزيل من السحابة",
     "backup.cloudTransferWarningDescription": "لا تغلق التطبيق حتى يكتمل النقل. حافظ على اتصال إنترنت مستقر. إغلاق التطبيق أو انقطاع الاتصال قد يترك ملفًا غير مكتمل أو يفشل النقل.",

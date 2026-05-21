@@ -40,12 +40,18 @@ import { useAuth } from "../../../lib/contexts/authContext";
 import type { BackupFile } from "../../../electron/preload/types";
 import { cn } from "../../../lib/utils";
 import { AUTO_CLOUD_BACKUP_ENABLED_OPTION_KEY } from "../../../lib/backup/constants";
+import {
+  loadCloudBackupPresenceFromOptions,
+  persistCloudBackupPresence,
+  type CloudBackupPresenceSnapshot,
+} from "../../../lib/backup/cloudBackupPresence";
 import { ONLINE_CUSTOMER_ID_OPTION_KEY } from "../../../lib/onboarding/constants";
 import type { CloudBackupTransferProgressPayload } from "../../../electron/types/cloudBackup";
 import { usePaidCloudBackupAccess } from "../../../lib/hooks/usePaidCloudBackupAccess";
 import type { CloudBackupAccessBlockReason } from "../../../lib/license/paidCloudBackupAccess";
 
 const RESTORE_CONFIRM_WORD = "YES";
+const CLOUD_BACKUP_CHECK_COOLDOWN_MS = 60_000;
 
 function InfoRow({
   label,
@@ -99,6 +105,8 @@ export function BackupManagement({ onOpenLicenseTab }: BackupManagementProps) {
   const [copiedCustomerId, setCopiedCustomerId] = useState(false);
   const [checkingCloudPresence, setCheckingCloudPresence] = useState(false);
   const [downloadingCloudBackup, setDownloadingCloudBackup] = useState(false);
+  const [nowMs, setNowMs] = useState(() => Date.now());
+  const [lastManualCloudBackupCheckMs, setLastManualCloudBackupCheckMs] = useState<number | null>(null);
   const [lastRemoteBackupCheckMs, setLastRemoteBackupCheckMs] = useState<number | null>(null);
   const [remoteBackupKnownAvailable, setRemoteBackupKnownAvailable] = useState<boolean | null>(null);
   const [cloudTransferWarningOpen, setCloudTransferWarningOpen] = useState(false);
@@ -107,6 +115,14 @@ export function BackupManagement({ onOpenLicenseTab }: BackupManagementProps) {
   const [autoCloudBackupEnabled, setAutoCloudBackupEnabled] = useState(false);
   const [savingAutoCloudSetting, setSavingAutoCloudSetting] = useState(false);
   const cloudTransferPhaseRef = useRef<"upload" | "download" | null>(null);
+  const cloudPresenceRef = useRef<CloudBackupPresenceSnapshot>({
+    lastCheckAtMs: null,
+    available: null,
+    lastManualCheckAtMs: null,
+    initialCheckDone: false,
+  });
+  const initialCloudCheckStartedRef = useRef(false);
+  const [cloudPresenceHydrated, setCloudPresenceHydrated] = useState(false);
 
   const loadStoredCustomerId = useCallback(async () => {
     try {
@@ -134,6 +150,29 @@ export function BackupManagement({ onOpenLicenseTab }: BackupManagementProps) {
   useEffect(() => {
     void loadStoredCustomerId();
   }, [loadStoredCustomerId]);
+
+  const applyCloudPresence = useCallback(async (patch: Partial<CloudBackupPresenceSnapshot>) => {
+    const next: CloudBackupPresenceSnapshot = {
+      ...cloudPresenceRef.current,
+      ...patch,
+    };
+    cloudPresenceRef.current = next;
+    setLastRemoteBackupCheckMs(next.lastCheckAtMs);
+    setRemoteBackupKnownAvailable(next.available);
+    setLastManualCloudBackupCheckMs(next.lastManualCheckAtMs);
+    await persistCloudBackupPresence(next);
+  }, []);
+
+  useEffect(() => {
+    void (async () => {
+      const saved = await loadCloudBackupPresenceFromOptions();
+      cloudPresenceRef.current = saved;
+      setLastRemoteBackupCheckMs(saved.lastCheckAtMs);
+      setRemoteBackupKnownAvailable(saved.available);
+      setLastManualCloudBackupCheckMs(saved.lastManualCheckAtMs);
+      setCloudPresenceHydrated(true);
+    })();
+  }, []);
 
   const loadAutoCloudBackupSetting = useCallback(async () => {
     try {
@@ -171,6 +210,23 @@ export function BackupManagement({ onOpenLicenseTab }: BackupManagementProps) {
   }, []);
 
   useEffect(() => {
+    const timer = window.setInterval(() => setNowMs(Date.now()), 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    if (lastManualCloudBackupCheckMs == null) return;
+    if (Date.now() >= lastManualCloudBackupCheckMs + CLOUD_BACKUP_CHECK_COOLDOWN_MS) return;
+    const timer = window.setInterval(() => setNowMs(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, [lastManualCloudBackupCheckMs]);
+
+  const cloudBackupCheckCooldownRemainingMs = useMemo(() => {
+    if (lastManualCloudBackupCheckMs == null) return 0;
+    return Math.max(0, lastManualCloudBackupCheckMs + CLOUD_BACKUP_CHECK_COOLDOWN_MS - nowMs);
+  }, [lastManualCloudBackupCheckMs, nowMs]);
+
+  useEffect(() => {
     const cleanup = window.api.online.onCloudBackupTransferProgress((data) => {
       if (cloudTransferPhaseRef.current !== data.phase) return;
       setCloudTransferProgress(data);
@@ -184,14 +240,16 @@ export function BackupManagement({ onOpenLicenseTab }: BackupManagementProps) {
     const unsub =
       typeof window.api?.backup?.onAutoCloudUploadSuccess === "function"
         ? window.api.backup.onAutoCloudUploadSuccess(() => {
-            setLastRemoteBackupCheckMs(Date.now());
-            setRemoteBackupKnownAvailable(true);
+            void applyCloudPresence({
+              lastCheckAtMs: Date.now(),
+              available: true,
+            });
           })
         : undefined;
     return () => {
       unsub?.();
     };
-  }, []);
+  }, [applyCloudPresence]);
 
   // Refresh list when an automatic backup was just created (so the new backup appears)
   useEffect(() => {
@@ -251,8 +309,10 @@ export function BackupManagement({ onOpenLicenseTab }: BackupManagementProps) {
         await window.api.backup.deleteCloudUploadStaging(created.backupPath);
         await loadBackups();
         showToast(t("admin.backup.cloudUploadSuccess", "Cloud backup uploaded successfully"), "success");
-        setLastRemoteBackupCheckMs(Date.now());
-        setRemoteBackupKnownAvailable(true);
+        await applyCloudPresence({
+          lastCheckAtMs: Date.now(),
+          available: true,
+        });
         return;
       }
 
@@ -313,18 +373,35 @@ export function BackupManagement({ onOpenLicenseTab }: BackupManagementProps) {
   const checkRemoteCloudBackup = useCallback(
     async (options?: { silent?: boolean }) => {
       const silent = options?.silent === true;
+      const manualCooldownAtMs = cloudPresenceRef.current.lastManualCheckAtMs;
+      if (
+        !silent &&
+        (checkingCloudPresence ||
+          (manualCooldownAtMs != null &&
+            Date.now() < manualCooldownAtMs + CLOUD_BACKUP_CHECK_COOLDOWN_MS))
+      ) {
+        return;
+      }
       try {
         if (!silent) setCheckingCloudPresence(true);
         const r = await window.api.online.backupDownloadLatest();
         if (r.success === true) {
-          setLastRemoteBackupCheckMs(Date.now());
-          setRemoteBackupKnownAvailable(true);
+          const checkedAtMs = Date.now();
+          await applyCloudPresence({
+            lastCheckAtMs: checkedAtMs,
+            available: true,
+            ...(silent ? {} : { lastManualCheckAtMs: checkedAtMs }),
+          });
           return;
         }
 
-        setLastRemoteBackupCheckMs(Date.now());
+        const checkedAtMs = Date.now();
         if (r.code === "not_found") {
-          setRemoteBackupKnownAvailable(false);
+          await applyCloudPresence({
+            lastCheckAtMs: checkedAtMs,
+            available: false,
+            ...(silent ? {} : { lastManualCheckAtMs: checkedAtMs }),
+          });
           if (!silent) {
             showToast(
               t("admin.backup.cloudCheckNone", "No cloud backup was found for this customer yet."),
@@ -382,13 +459,25 @@ export function BackupManagement({ onOpenLicenseTab }: BackupManagementProps) {
         if (!silent) setCheckingCloudPresence(false);
       }
     },
-    [showToast, t],
+    [applyCloudPresence, checkingCloudPresence, showToast, t],
   );
 
   useEffect(() => {
-    if (!isAccessResolved || !hasPaidCloudBackupAccess) return;
-    void checkRemoteCloudBackup({ silent: true });
-  }, [checkRemoteCloudBackup, hasPaidCloudBackupAccess, isAccessResolved]);
+    if (!cloudPresenceHydrated || !isAccessResolved || !hasPaidCloudBackupAccess) return;
+    if (cloudPresenceRef.current.initialCheckDone || initialCloudCheckStartedRef.current) return;
+    if (!isOnline) return;
+    initialCloudCheckStartedRef.current = true;
+    void checkRemoteCloudBackup({ silent: true }).finally(() => {
+      void applyCloudPresence({ initialCheckDone: true });
+    });
+  }, [
+    applyCloudPresence,
+    checkRemoteCloudBackup,
+    cloudPresenceHydrated,
+    hasPaidCloudBackupAccess,
+    isAccessResolved,
+    isOnline,
+  ]);
 
   const downloadRemoteCloudBackup = async () => {
     cloudTransferPhaseRef.current = "download";
@@ -405,8 +494,10 @@ export function BackupManagement({ onOpenLicenseTab }: BackupManagementProps) {
       });
       const r = await window.api.online.backupDownloadLatestToLocal();
       if (r.success === true) {
-        setLastRemoteBackupCheckMs(Date.now());
-        setRemoteBackupKnownAvailable(true);
+        await applyCloudPresence({
+          lastCheckAtMs: Date.now(),
+          available: true,
+        });
         await loadBackups();
         showToast(
           t(
@@ -419,8 +510,10 @@ export function BackupManagement({ onOpenLicenseTab }: BackupManagementProps) {
       }
 
       if (r.code === "not_found") {
-        setLastRemoteBackupCheckMs(Date.now());
-        setRemoteBackupKnownAvailable(false);
+        await applyCloudPresence({
+          lastCheckAtMs: Date.now(),
+          available: false,
+        });
         showToast(
           t("admin.backup.cloudDownloadNotFound", "No cloud backup was found to download."),
           "info",
@@ -1162,6 +1255,7 @@ export function BackupManagement({ onOpenLicenseTab }: BackupManagementProps) {
                     disabled={
                       !isOnline ||
                       checkingCloudPresence ||
+                      cloudBackupCheckCooldownRemainingMs > 0 ||
                       downloadingCloudBackup ||
                       uploadingCloud ||
                       creatingBackup ||
@@ -1173,7 +1267,11 @@ export function BackupManagement({ onOpenLicenseTab }: BackupManagementProps) {
                     ) : (
                       <Cloud className="mr-2 h-4 w-4" aria-hidden />
                     )}
-                    {t("admin.backup.checkCloudBackup", "Check cloud backup")}
+                    {cloudBackupCheckCooldownRemainingMs > 0
+                      ? t("admin.backup.checkCloudBackupCooldown", "Check cloud backup ({{seconds}}s)", {
+                          seconds: Math.ceil(cloudBackupCheckCooldownRemainingMs / 1000),
+                        })
+                      : t("admin.backup.checkCloudBackup", "Check cloud backup")}
                   </Button>
                   <Button
                     type="button"
