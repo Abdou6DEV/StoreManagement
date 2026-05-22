@@ -1,4 +1,5 @@
 import type { DeviceCheckResult } from "../../electron/types/deviceCheck";
+import { persistOnlineCustomerProfileFromDeviceCheck } from "../onboarding/onlineCustomerProfile";
 
 export const OFFLINE_GRACE_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -49,6 +50,7 @@ export async function resolveLicenseValidityFromDeviceCheck(
   result: DeviceCheckResult,
 ): Promise<boolean> {
   if (result.success === true) {
+    await persistOnlineCustomerProfileFromDeviceCheck(result);
     if (!result.allowed) return false;
     await persistLicenseGraceFromAllowedCheck(result.trialEndsAt, result.expiresAt);
     return true;

@@ -24,6 +24,7 @@ import { Alert, AlertDescription } from "../../../lib/components/alert";
 import { useToast } from "../../../lib/contexts/toastContext";
 import { useLicense } from "../../../lib/contexts/licenseContext";
 import { ONLINE_CUSTOMER_ID_OPTION_KEY } from "../../../lib/onboarding/constants";
+import { loadOnlineCustomerProfile } from "../../../lib/onboarding/onlineCustomerProfile";
 import {
   getEffectiveOfflineDeadlineMs,
   isOfflineLicenseAllowed,
@@ -111,6 +112,8 @@ export function LicenseManagement() {
   const [snapshot, setSnapshot] = useState<LicenseGraceSnapshot | null>(null);
   const [pageCheckResult, setPageCheckResult] = useState<DeviceCheckResult | null>(null);
   const [lastOnlineCheckAtMs, setLastOnlineCheckAtMs] = useState<number | null>(null);
+  const [storedCustomerName, setStoredCustomerName] = useState<string | null>(null);
+  const [storedCustomerPhone, setStoredCustomerPhone] = useState<string | null>(null);
   const [copiedDeviceId, setCopiedDeviceId] = useState(false);
   const [copiedCustomerId, setCopiedCustomerId] = useState(false);
 
@@ -118,16 +121,19 @@ export function LicenseManagement() {
 
   const loadSavedLicense = useCallback(async () => {
     try {
-      const [machineResult, customerIdValue, localSnapshot, savedLastOnlineCheckAtMs] =
+      const [machineResult, customerIdValue, localSnapshot, savedLastOnlineCheckAtMs, customerProfile] =
         await Promise.all([
           window.api.system.getMachineId(),
           window.api.database.options.get(ONLINE_CUSTOMER_ID_OPTION_KEY),
           readLicenseGraceSnapshot(),
           loadLicenseLastOnlineCheckAtMs(),
+          loadOnlineCustomerProfile(),
         ]);
 
       setDeviceId(machineResult.success ? machineResult.machineId ?? null : null);
       setLastOnlineCheckAtMs(savedLastOnlineCheckAtMs);
+      setStoredCustomerName(customerProfile.name);
+      setStoredCustomerPhone(customerProfile.phone);
       let trimmedCustomerId = customerIdValue?.trim() || null;
       if (!trimmedCustomerId && isOnline) {
         const check = await window.api.online.deviceCheck();
@@ -159,6 +165,9 @@ export function LicenseManagement() {
       setPageCheckResult(deviceCheck);
       await applyDeviceCheckResult(deviceCheck);
       setSnapshot(await readLicenseGraceSnapshot());
+      const profile = await loadOnlineCustomerProfile();
+      setStoredCustomerName(profile.name);
+      setStoredCustomerPhone(profile.phone);
       const checkedAtMs = Date.now();
       setLastOnlineCheckAtMs(checkedAtMs);
       await persistLicenseLastOnlineCheckAtMs(checkedAtMs);
@@ -185,6 +194,7 @@ export function LicenseManagement() {
   useEffect(() => {
     if (lastOnlineCheckAtMs == null) return;
     if (Date.now() >= lastOnlineCheckAtMs + ONLINE_CHECK_COOLDOWN_MS) return;
+    setNowMs(Date.now());
     const timer = window.setInterval(() => setNowMs(Date.now()), 1000);
     return () => window.clearInterval(timer);
   }, [lastOnlineCheckAtMs]);
@@ -208,20 +218,24 @@ export function LicenseManagement() {
   const customerId = remoteCustomerId ?? storedCustomerId;
 
   const customerName = useMemo(() => {
-    if (effectiveCheckResult?.success !== true) return null;
-    const name = effectiveCheckResult.customerName;
-    return typeof name === "string" && name.trim() ? name.trim() : null;
-  }, [effectiveCheckResult]);
+    if (effectiveCheckResult?.success === true) {
+      const name = effectiveCheckResult.customerName;
+      if (typeof name === "string" && name.trim()) return name.trim();
+    }
+    return storedCustomerName;
+  }, [effectiveCheckResult, storedCustomerName]);
 
   const customerPhone = useMemo(() => {
-    if (effectiveCheckResult?.success !== true) return null;
-    const phone = effectiveCheckResult.customerPhone;
-    return typeof phone === "string" && phone.trim() ? phone.trim() : null;
-  }, [effectiveCheckResult]);
+    if (effectiveCheckResult?.success === true) {
+      const phone = effectiveCheckResult.customerPhone;
+      if (typeof phone === "string" && phone.trim()) return phone.trim();
+    }
+    return storedCustomerPhone;
+  }, [effectiveCheckResult, storedCustomerPhone]);
 
   const onlineCheckCooldownRemainingMs = useMemo(() => {
     if (lastOnlineCheckAtMs == null) return 0;
-    return Math.max(0, lastOnlineCheckAtMs + ONLINE_CHECK_COOLDOWN_MS - nowMs);
+    return Math.max(0, lastOnlineCheckAtMs + ONLINE_CHECK_COOLDOWN_MS - Date.now());
   }, [lastOnlineCheckAtMs, nowMs]);
 
   const accessMode: AccessMode = useMemo(() => {

@@ -50,6 +50,10 @@ import {
   ONBOARDING_INITIAL_WELCOME_DONE_KEY,
   ONLINE_CUSTOMER_ID_OPTION_KEY,
 } from "../../lib/onboarding/constants";
+import {
+  persistOnlineCustomerProfile,
+  persistOnlineCustomerProfileFromDeviceCheck,
+} from "../../lib/onboarding/onlineCustomerProfile";
 import type { DeviceRequestResult } from "../../electron/types/deviceRequest";
 import type { DeviceLinkExistingResult } from "../../electron/types/deviceLinkExisting";
 import type { CloudBackupTransferProgressPayload } from "../../electron/types/cloudBackup";
@@ -629,16 +633,24 @@ export default function WelcomeSetup() {
     }
   }, [showRestoreFlow, restoreCompleted]);
 
-  const finishWelcomeAfterProvisioning = async (customerIdFromServer?: string | null) => {
+  const finishWelcomeAfterProvisioning = async (
+    customerIdFromServer?: string | null,
+    profile?: { name?: string | null; phone?: string | null },
+  ) => {
     await window.api.database.options.set(ONBOARDING_INITIAL_WELCOME_DONE_KEY, "1");
     const cid = customerIdFromServer?.trim();
     if (cid) {
       await window.api.database.options.set(ONLINE_CUSTOMER_ID_OPTION_KEY, cid);
-    } else if (typeof navigator !== "undefined" && navigator.onLine) {
+    }
+    if (typeof navigator !== "undefined" && navigator.onLine) {
       const check = await window.api.online.deviceCheck();
-      if (check.success === true && check.customerId?.trim()) {
+      if (!cid && check.success === true && check.customerId?.trim()) {
         await window.api.database.options.set(ONLINE_CUSTOMER_ID_OPTION_KEY, check.customerId.trim());
       }
+      await persistOnlineCustomerProfileFromDeviceCheck(check);
+    }
+    if (profile?.name != null || profile?.phone != null) {
+      await persistOnlineCustomerProfile(profile.name, profile.phone);
     }
     window.dispatchEvent(new Event(INITIAL_WELCOME_DONE_EVENT));
   };
@@ -686,7 +698,10 @@ export default function WelcomeSetup() {
         "success",
       );
       await new Promise((r) => setTimeout(r, WELCOME_SUCCESS_TOAST_VISIBLE_MS));
-      await finishWelcomeAfterProvisioning(cid);
+      await finishWelcomeAfterProvisioning(cid, {
+        name: precheckCustomerName,
+        phone: precheckCustomerPhone,
+      });
     } finally {
       setBusy(false);
     }
@@ -731,7 +746,7 @@ export default function WelcomeSetup() {
         "success",
       );
       await new Promise((r) => setTimeout(r, WELCOME_SUCCESS_TOAST_VISIBLE_MS));
-      await finishWelcomeAfterProvisioning(result.customerId ?? undefined);
+      await finishWelcomeAfterProvisioning(result.customerId ?? undefined, { name, phone: ph });
     } catch {
       showToast(
         t(
@@ -755,7 +770,10 @@ export default function WelcomeSetup() {
         "success",
       );
       await new Promise((r) => setTimeout(r, WELCOME_SUCCESS_TOAST_VISIBLE_MS));
-      await finishWelcomeAfterProvisioning(cid);
+      await finishWelcomeAfterProvisioning(cid, {
+        name: fullName.trim(),
+        phone: sanitizeWelcomePhoneInput(phone).trim(),
+      });
     } finally {
       setBusy(false);
     }

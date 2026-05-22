@@ -217,13 +217,17 @@ export function BackupManagement({ onOpenLicenseTab }: BackupManagementProps) {
   useEffect(() => {
     if (lastManualCloudBackupCheckMs == null) return;
     if (Date.now() >= lastManualCloudBackupCheckMs + CLOUD_BACKUP_CHECK_COOLDOWN_MS) return;
+    setNowMs(Date.now());
     const timer = window.setInterval(() => setNowMs(Date.now()), 1000);
     return () => window.clearInterval(timer);
   }, [lastManualCloudBackupCheckMs]);
 
   const cloudBackupCheckCooldownRemainingMs = useMemo(() => {
     if (lastManualCloudBackupCheckMs == null) return 0;
-    return Math.max(0, lastManualCloudBackupCheckMs + CLOUD_BACKUP_CHECK_COOLDOWN_MS - nowMs);
+    return Math.max(
+      0,
+      lastManualCloudBackupCheckMs + CLOUD_BACKUP_CHECK_COOLDOWN_MS - Date.now(),
+    );
   }, [lastManualCloudBackupCheckMs, nowMs]);
 
   useEffect(() => {
