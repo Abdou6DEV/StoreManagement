@@ -40,10 +40,24 @@ export async function persistLicenseGraceFromAllowedCheck(
   trialEndsAt?: string | null,
   expiresAt?: string | null,
 ): Promise<void> {
-  const result = await window.api.online.persistLicenseGrace({ trialEndsAt, expiresAt });
+  const result = await window.api.online.persistLicenseGrace({
+    trialEndsAt,
+    expiresAt,
+  });
   if (result.success === false) {
     throw new Error(result.error);
   }
+}
+
+function canUseOfflineGraceForDeviceCheckFailure(
+  result: DeviceCheckResult,
+): boolean {
+  return (
+    result.success === false &&
+    (result.code === "network" ||
+      result.code === "http" ||
+      result.code === "edge")
+  );
 }
 
 export async function resolveLicenseValidityFromDeviceCheck(
@@ -52,11 +66,14 @@ export async function resolveLicenseValidityFromDeviceCheck(
   if (result.success === true) {
     await persistOnlineCustomerProfileFromDeviceCheck(result);
     if (!result.allowed) return false;
-    await persistLicenseGraceFromAllowedCheck(result.trialEndsAt, result.expiresAt);
+    await persistLicenseGraceFromAllowedCheck(
+      result.trialEndsAt,
+      result.expiresAt,
+    );
     return true;
   }
 
-  if (result.code === "network") {
+  if (canUseOfflineGraceForDeviceCheckFailure(result)) {
     const snapshot = await readLicenseGraceSnapshot();
     return isOfflineLicenseAllowed(snapshot);
   }

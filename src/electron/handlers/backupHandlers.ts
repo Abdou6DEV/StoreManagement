@@ -105,58 +105,66 @@ const createAutoBackup = async (date: Date = new Date()) => {
     // Check if we already have a backup for today (prevent multiple backups per day)
     const today = new Date();
     const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-    
+
     const backupDir = ensureBackupDir();
-    const existingTodayBackups = fs.readdirSync(backupDir)
-      .filter(file => file.startsWith(`auto_backup_${todayStr}`) && file.endsWith(".db"));
-    
+    const existingTodayBackups = fs
+      .readdirSync(backupDir)
+      .filter(
+        (file) =>
+          file.startsWith(`auto_backup_${todayStr}`) && file.endsWith(".db"),
+      );
+
     if (existingTodayBackups.length > 0) {
-      logger.info("Automatic backup already exists for today, skipping", "Backup", { 
-        existingBackups: existingTodayBackups.length,
-        today: todayStr 
-      });
+      logger.info(
+        "Automatic backup already exists for today, skipping",
+        "Backup",
+        {
+          existingBackups: existingTodayBackups.length,
+          today: todayStr,
+        },
+      );
       return {
         success: true,
         message: "Backup already exists for today",
-        skipped: true
+        skipped: true,
       };
     }
-    
+
     const sourcePath = getDatabasePath();
     const backupPath = getAutoBackupFilePath(date);
-    
+
     // 1. Check if source database exists and is valid
     if (!fs.existsSync(sourcePath)) {
       throw new Error("Database file not found");
     }
-    
+
     if (!validateSQLiteFile(sourcePath)) {
       throw new Error("Source database is corrupted or invalid");
     }
-    
+
     // 2. Ensure backup directory exists
     ensureBackupDir();
-    
+
     // 3. Create backup with atomic operation
     const tempBackupPath = backupPath + ".tmp";
     fs.copyFileSync(sourcePath, tempBackupPath);
-    
+
     // 4. Validate the backup file
     if (!validateSQLiteFile(tempBackupPath)) {
       fs.unlinkSync(tempBackupPath);
       throw new Error("Backup file is corrupted");
     }
-    
+
     // 5. Atomic move to final location
     fs.renameSync(tempBackupPath, backupPath);
-    
+
     // 6. Final verification
     if (!fs.existsSync(backupPath)) {
       throw new Error("Backup creation failed - file not found after creation");
     }
-    
+
     const stats = fs.statSync(backupPath);
-    
+
     // 7. Verify backup is readable
     try {
       const { PrismaClient } = await import("@prisma/client");
@@ -180,26 +188,29 @@ const createAutoBackup = async (date: Date = new Date()) => {
     try {
       fs.utimesSync(backupPath, date, date);
     } catch (utimesErr) {
-      logger.warn("Could not set backup file date", "Backup", { path: backupPath, error: utimesErr });
+      logger.warn("Could not set backup file date", "Backup", {
+        path: backupPath,
+        error: utimesErr,
+      });
     }
-    
+
     logger.info("Backup created successfully", "Backup", {
       backupPath,
       size: stats.size,
-      date: date.toISOString()
+      date: date.toISOString(),
     });
-    
+
     return {
       success: true,
       backupPath,
       size: stats.size,
-      date: date.toISOString()
+      date: date.toISOString(),
     };
   } catch (error) {
     logger.error("Backup creation failed", "Backup", error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 };
@@ -209,39 +220,39 @@ const createManualBackup = async (date: Date = new Date()) => {
   try {
     const sourcePath = getDatabasePath();
     const backupPath = getManualBackupFilePath(date);
-    
+
     // 1. Check if source database exists and is valid
     if (!fs.existsSync(sourcePath)) {
       throw new Error("Database file not found");
     }
-    
+
     if (!validateSQLiteFile(sourcePath)) {
       throw new Error("Source database is corrupted or invalid");
     }
-    
+
     // 2. Ensure backup directory exists
     ensureBackupDir();
-    
+
     // 3. Create backup with atomic operation
     const tempBackupPath = backupPath + ".tmp";
     fs.copyFileSync(sourcePath, tempBackupPath);
-    
+
     // 4. Validate the backup file
     if (!validateSQLiteFile(tempBackupPath)) {
       fs.unlinkSync(tempBackupPath);
       throw new Error("Backup file is corrupted");
     }
-    
+
     // 5. Atomic move to final location
     fs.renameSync(tempBackupPath, backupPath);
-    
+
     // 6. Final verification
     if (!fs.existsSync(backupPath)) {
       throw new Error("Backup creation failed - file not found after creation");
     }
-    
+
     const stats = fs.statSync(backupPath);
-    
+
     // 7. Verify backup is readable
     try {
       const { PrismaClient } = await import("@prisma/client");
@@ -263,26 +274,29 @@ const createManualBackup = async (date: Date = new Date()) => {
     try {
       fs.utimesSync(backupPath, date, date);
     } catch (utimesErr) {
-      logger.warn("Could not set backup file date", "Backup", { path: backupPath, error: utimesErr });
+      logger.warn("Could not set backup file date", "Backup", {
+        path: backupPath,
+        error: utimesErr,
+      });
     }
-    
+
     logger.info("Manual backup created successfully", "Backup", {
       backupPath,
       size: stats.size,
-      date: date.toISOString()
+      date: date.toISOString(),
     });
-    
+
     return {
       success: true,
       backupPath,
       size: stats.size,
-      date: date.toISOString()
+      date: date.toISOString(),
     };
   } catch (error) {
     logger.error("Manual backup creation failed", "Backup", error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 };
@@ -339,7 +353,10 @@ const createCloudBackup = async (date: Date = new Date()) => {
     try {
       fs.utimesSync(backupPath, date, date);
     } catch (utimesErr) {
-      logger.warn("Could not set backup file date", "Backup", { path: backupPath, error: utimesErr });
+      logger.warn("Could not set backup file date", "Backup", {
+        path: backupPath,
+        error: utimesErr,
+      });
     }
 
     logger.info("Cloud backup file created successfully", "Backup", {
@@ -364,45 +381,48 @@ const createCloudBackup = async (date: Date = new Date()) => {
 };
 
 // Create a manual backup to a custom path
-const createManualBackupToPath = async (customPath: string, date: Date = new Date()) => {
+const createManualBackupToPath = async (
+  customPath: string,
+  date: Date = new Date(),
+) => {
   try {
     const sourcePath = getDatabasePath();
-    
+
     // 1. Check if source database exists and is valid
     if (!fs.existsSync(sourcePath)) {
       throw new Error("Database file not found");
     }
-    
+
     if (!validateSQLiteFile(sourcePath)) {
       throw new Error("Source database is corrupted or invalid");
     }
-    
+
     // 2. Ensure custom directory exists
     const customDir = path.dirname(customPath);
     if (!fs.existsSync(customDir)) {
       fs.mkdirSync(customDir, { recursive: true });
     }
-    
+
     // 3. Create backup with atomic operation
     const tempBackupPath = customPath + ".tmp";
     fs.copyFileSync(sourcePath, tempBackupPath);
-    
+
     // 4. Validate the backup file
     if (!validateSQLiteFile(tempBackupPath)) {
       fs.unlinkSync(tempBackupPath);
       throw new Error("Backup file is corrupted");
     }
-    
+
     // 5. Atomic move to final location
     fs.renameSync(tempBackupPath, customPath);
-    
+
     // 6. Final verification
     if (!fs.existsSync(customPath)) {
       throw new Error("Backup creation failed - file not found after creation");
     }
-    
+
     const stats = fs.statSync(customPath);
-    
+
     // 7. Verify backup is readable
     try {
       const { PrismaClient } = await import("@prisma/client");
@@ -424,33 +444,38 @@ const createManualBackupToPath = async (customPath: string, date: Date = new Dat
     try {
       fs.utimesSync(customPath, date, date);
     } catch (utimesErr) {
-      logger.warn("Could not set backup file date", "Backup", { path: customPath, error: utimesErr });
+      logger.warn("Could not set backup file date", "Backup", {
+        path: customPath,
+        error: utimesErr,
+      });
     }
-    
+
     logger.info("Manual backup created to custom path successfully", "Backup", {
       customPath,
       size: stats.size,
-      date: date.toISOString()
+      date: date.toISOString(),
     });
-    
+
     return {
       success: true,
       backupPath: customPath,
       size: stats.size,
-      date: date.toISOString()
+      date: date.toISOString(),
     };
   } catch (error) {
     logger.error("Manual backup to custom path failed", "Backup", error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 };
 
 // Parse date from backup filename (auto_backup_..., manual_backup_..., cloud_backup_...)
 const getDateFromBackupFileName = (fileName: string): Date | null => {
-  const match = fileName.match(/^(?:auto|manual|cloud)_backup_(\d{4})-(\d{2})-(\d{2})_(\d{2})-(\d{2})-(\d{2})\.db$/);
+  const match = fileName.match(
+    /^(?:auto|manual|cloud)_backup_(\d{4})-(\d{2})-(\d{2})_(\d{2})-(\d{2})-(\d{2})\.db$/,
+  );
   if (!match) return null;
   const y = match[1];
   const mo = match[2];
@@ -478,53 +503,66 @@ const cleanOldAutoBackups = () => {
 
     // Remove any backups with future dates in filename (corrupted/wrong clock)
     fs.readdirSync(backupDir)
-      .filter(file => file.startsWith("auto_backup_") && file.endsWith(".db"))
-      .forEach(file => {
+      .filter((file) => file.startsWith("auto_backup_") && file.endsWith(".db"))
+      .forEach((file) => {
         const dateFromName = getDateFromBackupFileName(file);
         if (dateFromName && dateFromName.getTime() > now) {
           try {
             const filePath = path.join(backupDir, file);
             fs.unlinkSync(filePath);
-            logger.info("Removed backup with future date in filename", "Backup", { file });
+            logger.info(
+              "Removed backup with future date in filename",
+              "Backup",
+              { file },
+            );
           } catch (err) {
-            logger.error("Failed to remove future-dated backup", "Backup", { file, error: err });
+            logger.error("Failed to remove future-dated backup", "Backup", {
+              file,
+              error: err,
+            });
           }
         }
       });
 
-    const files = fs.readdirSync(backupDir)
-      .filter(file => file.startsWith("auto_backup_") && file.endsWith(".db"))
-      .map(file => {
+    const files = fs
+      .readdirSync(backupDir)
+      .filter((file) => file.startsWith("auto_backup_") && file.endsWith(".db"))
+      .map((file) => {
         const filePath = path.join(backupDir, file);
         const stats = fs.statSync(filePath);
         const dateFromName = getDateFromBackupFileName(file);
         return {
           name: file,
           path: filePath,
-          date: dateFromName ?? stats.mtime
+          date: dateFromName ?? stats.mtime,
         };
       })
       .sort((a, b) => b.date.getTime() - a.date.getTime());
-    
+
     // Keep only the 2 most recent automatic backups
     if (files.length > 2) {
       const filesToDelete = files.slice(2);
-      filesToDelete.forEach(file => {
+      filesToDelete.forEach((file) => {
         try {
           fs.unlinkSync(file.path);
-          logger.info("Old automatic backup deleted", "Backup", { file: file.name });
+          logger.info("Old automatic backup deleted", "Backup", {
+            file: file.name,
+          });
         } catch (deleteError) {
-          logger.error("Failed to delete old backup", "Backup", { file: file.name, error: deleteError });
+          logger.error("Failed to delete old backup", "Backup", {
+            file: file.name,
+            error: deleteError,
+          });
         }
       });
     }
-    
-    logger.info("Automatic backup cleanup completed", "Backup", { 
-      totalFiles: files.length, 
+
+    logger.info("Automatic backup cleanup completed", "Backup", {
+      totalFiles: files.length,
       keptFiles: Math.min(files.length, 2),
-      deletedFiles: Math.max(0, files.length - 2)
+      deletedFiles: Math.max(0, files.length - 2),
     });
-    
+
     return files.slice(0, 2); // Return the 2 most recent automatic backups
   } catch (error) {
     logger.error("Failed to clean old automatic backups", "Backup", error);
@@ -540,7 +578,10 @@ function isPathInsideBackupDir(filePath: string): boolean {
 }
 
 /** Removes temporary `cloud_backup_*.db` created for upload (not shown in backup list). */
-function deleteCloudUploadStagingFile(backupPath: string): { success: boolean; error?: string } {
+function deleteCloudUploadStagingFile(backupPath: string): {
+  success: boolean;
+  error?: string;
+} {
   const raw = String(backupPath ?? "").trim();
   if (!raw) {
     return { success: false, error: "Path is required." };
@@ -550,7 +591,10 @@ function deleteCloudUploadStagingFile(backupPath: string): { success: boolean; e
   }
   const base = path.basename(raw);
   if (!/^cloud_backup_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}\.db$/.test(base)) {
-    return { success: false, error: "Only temporary cloud upload snapshots can be removed this way." };
+    return {
+      success: false,
+      error: "Only temporary cloud upload snapshots can be removed this way.",
+    };
   }
   try {
     if (fs.existsSync(raw)) {
@@ -566,7 +610,10 @@ const LISTING_BACKUP_FILE_RE =
   /^(?:auto_backup_|manual_backup_)\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}\.db$/;
 
 /** Deletes a file shown in backup list UI (auto/manual snapshot or latest cloud download). */
-function deleteListedBackupFile(backupPath: string): { success: boolean; error?: string } {
+function deleteListedBackupFile(backupPath: string): {
+  success: boolean;
+  error?: string;
+} {
   const raw = String(backupPath ?? "").trim();
   if (!raw) {
     return { success: false, error: "Path is required." };
@@ -575,9 +622,13 @@ function deleteListedBackupFile(backupPath: string): { success: boolean; error?:
     return { success: false, error: "Path must be inside the backup folder." };
   }
   const base = path.basename(raw);
-  const ok = LISTING_BACKUP_FILE_RE.test(base) || base === CLOUD_LATEST_FROM_ONLINE_DB;
+  const ok =
+    LISTING_BACKUP_FILE_RE.test(base) || base === CLOUD_LATEST_FROM_ONLINE_DB;
   if (!ok) {
-    return { success: false, error: "This file cannot be deleted from the backup list." };
+    return {
+      success: false,
+      error: "This file cannot be deleted from the backup list.",
+    };
   }
   try {
     if (fs.existsSync(raw)) {
@@ -593,10 +644,15 @@ function deleteListedBackupFile(backupPath: string): { success: boolean; error?:
 const listBackups = () => {
   try {
     const backupDir = ensureBackupDir();
-    const files = fs.readdirSync(backupDir)
+    const files = fs
+      .readdirSync(backupDir)
       .filter((file) => {
         if (!file.endsWith(".db")) return false;
-        if (file.startsWith("auto_backup_") || file.startsWith("manual_backup_")) return true;
+        if (
+          file.startsWith("auto_backup_") ||
+          file.startsWith("manual_backup_")
+        )
+          return true;
         return file === CLOUD_LATEST_FROM_ONLINE_DB;
       })
       .map((file) => {
@@ -641,23 +697,27 @@ const validateSQLiteFile = (filePath: string): boolean => {
     if (!fs.existsSync(filePath)) {
       return false;
     }
-    
+
     const stats = fs.statSync(filePath);
-    if (stats.size < 100) { // SQLite files should be at least 100 bytes
+    if (stats.size < 100) {
+      // SQLite files should be at least 100 bytes
       return false;
     }
-    
+
     // Read first 16 bytes to check SQLite header
-    const fd = fs.openSync(filePath, 'r');
+    const fd = fs.openSync(filePath, "r");
     const buffer = Buffer.alloc(16);
     fs.readSync(fd, buffer, 0, 16, 0);
     fs.closeSync(fd);
-    
+
     // SQLite files start with "SQLite format 3\0"
-    const sqliteHeader = buffer.toString('ascii');
-    return sqliteHeader.startsWith('SQLite format 3');
+    const sqliteHeader = buffer.toString("ascii");
+    return sqliteHeader.startsWith("SQLite format 3");
   } catch (error) {
-    logger.error("Failed to validate SQLite file", "Backup", { filePath, error });
+    logger.error("Failed to validate SQLite file", "Backup", {
+      filePath,
+      error,
+    });
     return false;
   }
 };
@@ -665,21 +725,24 @@ const validateSQLiteFile = (filePath: string): boolean => {
 // Restore from backup with full safety checks
 const restoreBackup = async (backupPath: string) => {
   let tempBackupPath: string | null = null;
-  
+
   try {
     const targetPath = getDatabasePath();
-    
+
     // 1. Validate backup file exists and is valid
     if (!fs.existsSync(backupPath)) {
       throw new Error("Backup file not found");
     }
-    
+
     if (!validateSQLiteFile(backupPath)) {
       throw new Error("Invalid backup file - not a valid SQLite database");
     }
 
     if (path.basename(backupPath) === CLOUD_LATEST_FROM_ONLINE_DB) {
-      const metaPath = path.join(path.dirname(backupPath), CLOUD_LATEST_FROM_ONLINE_META);
+      const metaPath = path.join(
+        path.dirname(backupPath),
+        CLOUD_LATEST_FROM_ONLINE_META,
+      );
       if (fs.existsSync(metaPath)) {
         try {
           const raw = JSON.parse(fs.readFileSync(metaPath, "utf8")) as unknown;
@@ -701,83 +764,88 @@ const restoreBackup = async (backupPath: string) => {
         }
       }
     }
-    
+
     // 2. Create safety backup of current database
     tempBackupPath = getAutoBackupFilePath(new Date()) + ".before_restore";
     if (fs.existsSync(targetPath)) {
       fs.copyFileSync(targetPath, tempBackupPath);
       logger.info("Safety backup created", "Backup", { tempBackupPath });
     }
-    
+
     // 3. Gracefully close database connections
     try {
       await prisma.$disconnect();
       // Small delay to ensure all operations complete
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
     } catch (disconnectError) {
       logger.warn("Error during disconnect", "Backup", disconnectError);
     }
-    
+
     // 4. Perform the restore operation
     fs.copyFileSync(backupPath, targetPath);
-    
+
     // 5. Validate the restored database
     if (!validateSQLiteFile(targetPath)) {
-      throw new Error("Restored database is invalid - restoring from safety backup");
+      throw new Error(
+        "Restored database is invalid - restoring from safety backup",
+      );
     }
-    
+
     // 6. Test database connection
     try {
       await prisma.$connect();
       // Test a simple query to ensure database is working
       await prisma.$queryRaw`SELECT 1`;
     } catch (connectError) {
-      throw new Error(`Database connection failed after restore: ${connectError.message}`);
+      throw new Error(
+        `Database connection failed after restore: ${connectError.message}`,
+      );
     }
 
     clearStoredLicenseGrace();
     await prisma.option.deleteMany({
       where: { key: { in: [...LEGACY_LICENSE_OPTION_KEYS] } },
     });
-    
+
     logger.info("Database restored successfully", "Backup", {
       backupPath,
       targetPath,
-      safetyBackup: tempBackupPath
+      safetyBackup: tempBackupPath,
     });
-    
+
     return {
       success: true,
       message: "Database restored successfully",
-      safetyBackup: tempBackupPath
+      safetyBackup: tempBackupPath,
     };
-    
   } catch (error) {
     logger.error("Database restore failed", "Backup", error);
-    
+
     // 7. Emergency recovery - restore from safety backup if available
     if (tempBackupPath && fs.existsSync(tempBackupPath)) {
       try {
         const targetPath = getDatabasePath();
         fs.copyFileSync(tempBackupPath, targetPath);
         await prisma.$connect();
-        logger.info("Emergency recovery successful", "Backup", { tempBackupPath });
+        logger.info("Emergency recovery successful", "Backup", {
+          tempBackupPath,
+        });
       } catch (recoveryError) {
         logger.error("Emergency recovery failed", "Backup", recoveryError);
       }
     }
-    
+
     // 8. Try to reconnect to database
     try {
       await prisma.$connect();
     } catch (reconnectError) {
       logger.error("Failed to reconnect to database", "Backup", reconnectError);
     }
-    
+
     return {
       success: false,
       error: error.message,
-      safetyBackup: tempBackupPath
+      safetyBackup: tempBackupPath,
     };
   }
 };
@@ -790,8 +858,10 @@ const isDatabaseInUse = async (): Promise<boolean> => {
     return false; // Database is available
   } catch (error) {
     // If we get a "database is locked" error, it's in use
-    return error.message.includes('database is locked') || 
-           error.message.includes('SQLITE_BUSY');
+    return (
+      error.message.includes("database is locked") ||
+      error.message.includes("SQLITE_BUSY")
+    );
   }
 };
 
@@ -811,18 +881,27 @@ function notifyAutoCloudUploadSuccess() {
   });
 }
 
-async function maybeRunAutoCloudUpload(backupPath: string | undefined): Promise<void> {
+async function maybeRunAutoCloudUpload(
+  backupPath: string | undefined,
+): Promise<void> {
   if (!backupPath) return;
   try {
     const enabledRaw = await getOption(AUTO_CLOUD_BACKUP_ENABLED_OPTION_KEY);
     if (!isAutoCloudBackupEnabledOptionValue(enabledRaw)) {
       return;
     }
-    logger.info("Automatic cloud backup upload starting", "Backup", { backupPath });
-    const result = await uploadCloudBackupLatest(null, backupPath, "auto_upload");
+    logger.info("Automatic cloud backup upload starting", "Backup", {
+      backupPath,
+    });
+    const result = await uploadCloudBackupLatest(
+      null,
+      backupPath,
+      "auto_upload",
+    );
     if (result.success === true) {
       logger.info("Automatic cloud backup upload completed", "Backup");
-      const lastUser = (await getOption(ACTIVITY_LOG_LAST_USERNAME_KEY))?.trim() || "unknown";
+      const lastUser =
+        (await getOption(ACTIVITY_LOG_LAST_USERNAME_KEY))?.trim() || "unknown";
       void createActivityLog({
         username: lastUser,
         action: "activityLog.actions.cloudBackupAutoUploaded",
@@ -843,7 +922,21 @@ async function maybeRunAutoCloudUpload(backupPath: string | undefined): Promise<
 export function setupBackupHandlers() {
   // Ensure daily backup (call when user reaches main app after login). Once per day; toast only when actually created.
   ipcMain.handle("backup:ensureDailyBackup", async () => {
-    const tryBackup = async (isRetry: boolean): Promise<{ success: boolean; created?: boolean; skipped?: boolean; error?: string }> => {
+    const tryBackup = async (
+      isRetry: boolean,
+    ): Promise<{
+      success: boolean;
+      created?: boolean;
+      skipped?: boolean;
+      error?: string;
+    }> => {
+      if (await isDatabaseInUse()) {
+        logger.info(
+          "Daily automatic backup skipped - database in use, will retry next run",
+          "Backup",
+        );
+        return { success: true, skipped: true };
+      }
       const result = await createAutoBackup();
       if (result.success && !result.skipped) {
         cleanOldAutoBackups();
@@ -877,10 +970,10 @@ export function setupBackupHandlers() {
     if (await isDatabaseInUse()) {
       return {
         success: false,
-        error: "Database is currently in use. Please wait and try again."
+        error: "Database is currently in use. Please wait and try again.",
       };
     }
-    
+
     const result = await createAutoBackup();
     if (result.success) {
       cleanOldAutoBackups(); // Clean old automatic backups after creating new one
@@ -899,10 +992,11 @@ export function setupBackupHandlers() {
     if (await isDatabaseInUse()) {
       return {
         success: false,
-        error: "Database is currently in use. Please close all operations and try again."
+        error:
+          "Database is currently in use. Please close all operations and try again.",
       };
     }
-    
+
     return await restoreBackup(backupPath);
   });
 
@@ -910,11 +1004,11 @@ export function setupBackupHandlers() {
   ipcMain.handle("backup:info", async () => {
     const backupDir = ensureBackupDir();
     const databasePath = getDatabasePath();
-    
+
     return {
       backupDir,
       databasePath,
-      backupExists: fs.existsSync(databasePath)
+      backupExists: fs.existsSync(databasePath),
     };
   });
 
@@ -924,10 +1018,10 @@ export function setupBackupHandlers() {
     if (await isDatabaseInUse()) {
       return {
         success: false,
-        error: "Database is currently in use. Please wait and try again."
+        error: "Database is currently in use. Please wait and try again.",
       };
     }
-    
+
     const result = await createManualBackup();
     if (result.success) {
       // Clean up old automatic backups after manual backup too
@@ -951,9 +1045,12 @@ export function setupBackupHandlers() {
     return result;
   });
 
-  ipcMain.handle("backup:deleteCloudUploadStaging", (_event, backupPath: string) => {
-    return deleteCloudUploadStagingFile(String(backupPath ?? ""));
-  });
+  ipcMain.handle(
+    "backup:deleteCloudUploadStaging",
+    (_event, backupPath: string) => {
+      return deleteCloudUploadStagingFile(String(backupPath ?? ""));
+    },
+  );
 
   ipcMain.handle("backup:deleteListingFile", (_event, backupPath: string) => {
     return deleteListedBackupFile(String(backupPath ?? ""));
@@ -965,10 +1062,10 @@ export function setupBackupHandlers() {
     if (await isDatabaseInUse()) {
       return {
         success: false,
-        error: "Database is currently in use. Please wait and try again."
+        error: "Database is currently in use. Please wait and try again.",
       };
     }
-    
+
     const result = await createManualBackupToPath(customPath);
     if (result.success) {
       // Clean up old automatic backups after manual backup too
@@ -984,13 +1081,13 @@ export function setupBackupHandlers() {
       return {
         success: true,
         message: `Cleaned up ${cleanedFiles.length} old automatic backups`,
-        cleanedFiles: cleanedFiles.map(f => f.name)
+        cleanedFiles: cleanedFiles.map((f) => f.name),
       };
     } catch (error) {
       logger.error("Manual cleanup failed", "Backup", error);
       return {
         success: false,
-        error: error.message
+        error: error.message,
       };
     }
   });
@@ -1000,12 +1097,12 @@ export function setupBackupHandlers() {
     try {
       const result = await dialog.showSaveDialog({
         title: "Select Backup Location",
-        defaultPath: `backup_${new Date().toISOString().split('T')[0]}.db`,
+        defaultPath: `backup_${new Date().toISOString().split("T")[0]}.db`,
         filters: [
           { name: "Database Files", extensions: ["db"] },
-          { name: "All Files", extensions: ["*"] }
+          { name: "All Files", extensions: ["*"] },
         ],
-        properties: ["createDirectory", "showOverwriteConfirmation"]
+        properties: ["createDirectory", "showOverwriteConfirmation"],
       });
 
       if (result.canceled) {
@@ -1014,13 +1111,13 @@ export function setupBackupHandlers() {
 
       return {
         success: true,
-        filePath: result.filePath
+        filePath: result.filePath,
       };
     } catch (error) {
       logger.error("File dialog failed", "Backup", error);
       return {
         success: false,
-        error: error.message
+        error: error.message,
       };
     }
   });
@@ -1032,9 +1129,9 @@ export function setupBackupHandlers() {
         title: "Select Backup File to Restore",
         filters: [
           { name: "Database Files", extensions: ["db"] },
-          { name: "All Files", extensions: ["*"] }
+          { name: "All Files", extensions: ["*"] },
         ],
-        properties: ["openFile"]
+        properties: ["openFile"],
       });
 
       if (result.canceled) {
@@ -1047,13 +1144,13 @@ export function setupBackupHandlers() {
 
       return {
         success: true,
-        filePath: result.filePaths[0]
+        filePath: result.filePaths[0],
       };
     } catch (error) {
       logger.error("Restore file dialog failed", "Backup", error);
       return {
         success: false,
-        error: error.message
+        error: error.message,
       };
     }
   });
@@ -1067,7 +1164,10 @@ export const performDailyBackup = async () => {
     // Skip if database is in use (e.g. app is running) to avoid read failures
     // that get reported as "Source database is corrupted or invalid"
     if (await isDatabaseInUse()) {
-      logger.info("Daily automatic backup skipped - database in use, will retry next run", "Backup");
+      logger.info(
+        "Daily automatic backup skipped - database in use, will retry next run",
+        "Backup",
+      );
       return { success: true, skipped: true, message: "Database in use" };
     }
 
@@ -1075,7 +1175,10 @@ export const performDailyBackup = async () => {
 
     if (result.success) {
       if (result.skipped) {
-        logger.info("Daily automatic backup skipped - already exists for today", "Backup");
+        logger.info(
+          "Daily automatic backup skipped - already exists for today",
+          "Backup",
+        );
       } else {
         logger.info("Daily automatic backup completed successfully", "Backup");
         cleanOldAutoBackups();
@@ -1088,7 +1191,9 @@ export const performDailyBackup = async () => {
         });
       }
     } else {
-      logger.error("Daily automatic backup failed", "Backup", { error: result.error });
+      logger.error("Daily automatic backup failed", "Backup", {
+        error: result.error,
+      });
     }
     return result;
   } catch (error) {
