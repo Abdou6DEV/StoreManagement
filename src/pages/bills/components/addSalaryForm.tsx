@@ -149,12 +149,15 @@ export default function AddSalaryForm({
 
     const baseFields = {
       name: bill.title,
-      ...(parsed
-        ? {
-            period: parsed.period === "DAILY" ? ("DAILY" as const) : ("MONTHLY" as const),
-          }
-        : {}),
+      period: (parsed?.period === "DAILY" ? "DAILY" : "MONTHLY") as "DAILY" | "MONTHLY",
+      mode: "FIXED" as const,
+      percentage: "",
+      amount: "",
     };
+
+    // Clear stale amount/mode immediately so the previous employee never "sticks".
+    setForm((prev) => ({ ...prev, ...baseFields }));
+    setCalculatedAmountDA(null);
 
     // Fetch last payment to pre-fill mode + value, and store all payments for duplicate check
     try {
@@ -170,39 +173,48 @@ export default function AddSalaryForm({
         const pctMatch = last.notes?.match(/(\d+(?:\.\d+)?)%/);
         if (pctMatch) {
           const pct = parseFloat(pctMatch[1]);
-          const immediateCalc =
-            profitDA !== null && !Number.isNaN(pct) && pct > 0
-              ? Math.max(0, Math.round((profitDA * pct) / 100))
-              : null;
           setForm((prev) => ({
             ...prev,
             ...baseFields,
             mode: "PERCENT",
             percentage: pctMatch[1],
-            amount: immediateCalc !== null ? immediateCalc.toFixed(0) : "",
+            amount: "",
           }));
-          if (immediateCalc !== null) setCalculatedAmountDA(immediateCalc);
-        } else {
-          const amountDA = last.amount / 100;
-          setForm((prev) => ({
-            ...prev,
-            ...baseFields,
-            mode: "FIXED",
-            percentage: "",
-            amount:
-              amountDA % 1 === 0
-                ? amountDA.toFixed(0)
-                : amountDA.toFixed(2),
-          }));
+          // Amount filled when profit loads (recalcSalt + profitDA effect).
+          return;
         }
+
+        const amountDA = last.amount / 100;
+        setForm((prev) => ({
+          ...prev,
+          ...baseFields,
+          mode: "FIXED",
+          percentage: "",
+          amount:
+            amountDA % 1 === 0
+              ? amountDA.toFixed(0)
+              : amountDA.toFixed(2),
+        }));
         return;
       }
+
+      // Bill exists but no payment rows — use stored bill amount if any
+      const billAmountCentimes = (billWithPayments as { amount?: number })?.amount;
+      if (billAmountCentimes && billAmountCentimes > 0) {
+        const amountDA = billAmountCentimes / 100;
+        setForm((prev) => ({
+          ...prev,
+          ...baseFields,
+          amount:
+            amountDA % 1 === 0
+              ? amountDA.toFixed(0)
+              : amountDA.toFixed(2),
+        }));
+      }
+      return;
     } catch (e) {
       console.error("Error fetching last payment:", e);
     }
-
-    // No payments yet — just apply base fields
-    setForm((prev) => ({ ...prev, ...baseFields }));
   };
 
   const handleNameChange = async (value: string) => {
@@ -224,6 +236,15 @@ export default function AddSalaryForm({
       setExistingBillId(null);
       setEmployeePayments([]);
       setDuplicatePayment(null);
+      skipAmountUpdateRef.current = false;
+      setCalculatedAmountDA(null);
+      setForm((prev) => ({
+        ...prev,
+        name: value,
+        mode: "FIXED",
+        percentage: "",
+        amount: "",
+      }));
     }
   };
 
@@ -385,11 +406,13 @@ export default function AddSalaryForm({
       const paidDate = buildPaidDate();
 
       if (isExistingEmployee && existingBillId) {
+        const salaryDuration = form.period === "DAILY" ? "1_DAY" : "1_MONTH";
         await window.api.database.bills.recordPayment(
           existingBillId,
           amountCentimes,
           paymentNotes,
-          paidDate
+          paidDate,
+          salaryDuration,
         );
         const currentBill = salaryBills.find((b) => b.id === existingBillId);
         if (currentBill && currentBill.notes !== billNotes) {
@@ -423,7 +446,7 @@ export default function AddSalaryForm({
           action: "activityLog.actions.billPaymentRecorded",
           details: `Salary | ${form.name.trim()} | ${amountNum.toFixed(0)} DA`,
         })
-        .catch(() => {});
+        .catch((): undefined => undefined);
 
       showToast(
         t("bills.salaryPaymentRecorded", "Salary payment recorded successfully"),

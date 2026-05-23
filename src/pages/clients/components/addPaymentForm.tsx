@@ -70,7 +70,6 @@ export default function AddPaymentForm({
       .getReasonSuggestions()
       .then(setReasonSuggestions)
       .catch(() => setReasonSuggestions([]));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openPanel, form.type]);
 
   const handleReasonChange = (value: string) => {
@@ -154,6 +153,16 @@ export default function AddPaymentForm({
 
   const handleFormChange = (key: keyof typeof form, value: string | number) => {
     setForm((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const resetFormState = () => {
+    setForm(initialForm);
+    setClientSearch("");
+    setClientPopoverOpen(false);
+    setTypePopoverOpen(false);
+    setShowReasonDropdown(false);
+    setFilteredReasons([]);
+    setSelectedReasonIndex(-1);
   };
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -280,18 +289,22 @@ export default function AddPaymentForm({
         return;
       }
 
-      setForm(initialForm);
+      const logDetails = form.clientName
+        ? `Client: ${form.clientName}, Credit amount: ${form.givenAmount}`
+        : String(form.givenAmount);
+      resetFormState();
       onPaymentAdded();
-      onClientAdded?.(); // Refresh clients list to update totals
+      onClientAdded?.();
       window.api?.activityLog?.log({
         username: user?.username ?? "unknown",
         action: "activityLog.actions.paymentAdded",
-        details: form.clientName ? `Client: ${form.clientName}, Credit amount: ${form.givenAmount}` : String(form.givenAmount),
-      }).catch(() => {});
+        details: logDetails,
+      }).catch((): undefined => undefined);
       showToast(
         t("clients.paymentAddSuccess", "Payment added successfully"),
         "success",
       );
+      amountRef.current?.focus();
     } catch (err) {
       showToast(t("clients.paymentAddError", "Failed to add payment"), "error");
     } finally {

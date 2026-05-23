@@ -43,6 +43,16 @@ function purchaseOrderTotal(p: {
   );
 }
 
+/** Day has sales or profit (closed days are omitted when "open days only" is on). */
+function periodHasActivity(point: { future?: boolean; profits?: number; sales?: number; salesCount?: number }): boolean {
+  if (point.future) return false;
+  return (
+    (point.profits ?? 0) !== 0 ||
+    (point.sales ?? 0) !== 0 ||
+    (point.salesCount ?? 0) > 0
+  );
+}
+
 export type ChartBarInteractiveProps = {
   chartData: ChartDataState;
   chartLoading: boolean;
@@ -62,6 +72,7 @@ export function ChartBarInteractive({ chartData, chartLoading }: ChartBarInterac
   const chartType = "profits" as const;
   const [chartView, setChartView] = React.useState<"bar" | "line">("bar");
   const [overviewNetProfitEnabled, setOverviewNetProfitEnabled] = React.useState(false);
+  const [hideEmptyDays, setHideEmptyDays] = React.useState(false);
   const [billPaymentsTotal, setBillPaymentsTotal] = React.useState(0);
   const [billPaymentsData, setBillPaymentsData] = React.useState<
     Array<{ amount: number; paidDate?: string | Date }>
@@ -346,7 +357,7 @@ export function ChartBarInteractive({ chartData, chartLoading }: ChartBarInterac
 
   const profitLabel = netProfitActive ? t("dashboard.netProfit") : t("dashboard.profit");
 
-  const periodToRender = React.useMemo(() => {
+  const periodWithBills = React.useMemo(() => {
     if (!netProfitActive) return currentPeriod;
     if (!Array.isArray(billPaymentsData) || billPaymentsData.length === 0) return currentPeriod;
 
@@ -422,6 +433,53 @@ export function ChartBarInteractive({ chartData, chartLoading }: ChartBarInterac
       data: adjustedData,
     };
   }, [netProfitActive, billPaymentsData, currentPeriod, timePeriod, t, i18n.language]);
+
+  const hideEmptyDaysStats = React.useMemo(() => {
+    if (timePeriod !== "thisMonth") {
+      return { canUse: false, reason: "notMonth" as const };
+    }
+    const pastDays = (periodWithBills?.data ?? []).filter((p: { future?: boolean }) => !p?.future);
+    const activeCount = pastDays.filter(periodHasActivity).length;
+    const emptyCount = pastDays.length - activeCount;
+    if (emptyCount === 0) {
+      return { canUse: false, reason: "noEmpty" as const };
+    }
+    if (activeCount < 2) {
+      return { canUse: false, reason: "tooFew" as const };
+    }
+    return { canUse: true, reason: null };
+  }, [periodWithBills, timePeriod]);
+
+  const canHideEmptyDays = hideEmptyDaysStats.canUse;
+  const hideEmptyDaysActive = hideEmptyDays && canHideEmptyDays;
+
+  const hideEmptyDaysTooltip = React.useMemo(() => {
+    if (!canHideEmptyDays) {
+      switch (hideEmptyDaysStats.reason) {
+        case "noEmpty":
+          return t("dashboard.hideEmptyDaysDisabledNoEmpty");
+        case "tooFew":
+          return t("dashboard.hideEmptyDaysDisabledTooFew");
+        default:
+          return t("dashboard.hideEmptyDaysDisabledNotMonth");
+      }
+    }
+    return t("dashboard.hideEmptyDaysTooltip");
+  }, [canHideEmptyDays, hideEmptyDaysStats.reason, t]);
+
+  const periodToRender = React.useMemo(() => {
+    const base = periodWithBills;
+    if (!hideEmptyDaysActive) return base;
+    const openDays = (base.data ?? []).filter(periodHasActivity);
+    if (openDays.length === 0) return base;
+    return { ...base, data: openDays };
+  }, [periodWithBills, hideEmptyDaysActive]);
+
+  const chartSeriesAnimationKey = React.useMemo(
+    () =>
+      `${timePeriod}-${netProfitActive ? "net" : "gross"}-${hideEmptyDaysActive ? "hideEmpty" : "allDays"}`,
+    [timePeriod, netProfitActive, hideEmptyDaysActive],
+  );
 
   // Chart visibility: only non-zero profit in the rendered series (includes net-profit / bill adjustments).
   const hasData = React.useMemo(() => {
@@ -552,6 +610,27 @@ export function ChartBarInteractive({ chartData, chartLoading }: ChartBarInterac
 
           <div className="flex flex-col gap-2 items-start lg:items-end">
             <div className="flex items-center gap-3 flex-wrap">
+              <Tooltip content={hideEmptyDaysTooltip}>
+                <div className="flex items-center gap-2 text-sm rtl:flex-row-reverse">
+                  <Switch
+                    checked={hideEmptyDaysActive}
+                    onCheckedChange={setHideEmptyDays}
+                    disabled={!canHideEmptyDays}
+                    id="dashboard-hide-empty-days-toggle"
+                  />
+                  <label
+                    htmlFor="dashboard-hide-empty-days-toggle"
+                    className={
+                      canHideEmptyDays
+                        ? "font-medium text-foreground cursor-pointer select-none"
+                        : "font-medium text-muted-foreground cursor-not-allowed select-none"
+                    }
+                  >
+                    {t("dashboard.hideEmptyDays")}
+                  </label>
+                </div>
+              </Tooltip>
+
               <Tooltip
                 content={
                   canSubtractBillsForPeriod
@@ -714,6 +793,7 @@ export function ChartBarInteractive({ chartData, chartLoading }: ChartBarInterac
               Array.isArray(billPaymentsData) &&
               billPaymentsData.length > 0
             }
+            seriesAnimationKey={chartSeriesAnimationKey}
           />
         ) : (
           <div className="h-[400px] w-full flex flex-col items-center justify-center py-12 text-center">

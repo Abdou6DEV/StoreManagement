@@ -87,7 +87,7 @@ export default function AddSupplierForm({
         username: user?.username ?? "unknown",
         action: "activityLog.actions.supplierAdded",
         details: lines.join("\n"),
-      }).catch(() => {});
+      }).catch((): undefined => undefined);
       showToast(
         t("suppliers.addSuccess", "Supplier added successfully"),
         "success",

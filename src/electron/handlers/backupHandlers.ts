@@ -3,7 +3,9 @@ import fs from "fs";
 import path from "path";
 import { prisma } from "../../lib/database/prismaClient";
 import logger from "../../lib/logger";
-import { getOption } from "../../lib/database/options";
+import { getOption, setOption } from "../../lib/database/options";
+import { createActivityLog } from "../../lib/database/activityLogs";
+import { ACTIVITY_LOG_LAST_USERNAME_KEY } from "../../lib/activityLog/constants";
 import {
   AUTO_CLOUD_BACKUP_ENABLED_OPTION_KEY,
   isAutoCloudBackupEnabledOptionValue,
@@ -820,6 +822,12 @@ async function maybeRunAutoCloudUpload(backupPath: string | undefined): Promise<
     const result = await uploadCloudBackupLatest(null, backupPath, "auto_upload");
     if (result.success === true) {
       logger.info("Automatic cloud backup upload completed", "Backup");
+      const lastUser = (await getOption(ACTIVITY_LOG_LAST_USERNAME_KEY))?.trim() || "unknown";
+      void createActivityLog({
+        username: lastUser,
+        action: "activityLog.actions.cloudBackupAutoUploaded",
+        details: backupPath,
+      }).catch((): undefined => undefined);
       notifyAutoCloudUploadSuccess();
     } else {
       logger.warn("Automatic cloud backup upload failed", "Backup", {

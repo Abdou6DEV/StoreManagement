@@ -235,7 +235,7 @@ export default function AddServiceForm({
         username: user?.username ?? "unknown",
         action: "activityLog.actions.clientAdded",
         details: lines.join("\n"),
-      }).catch(() => {});
+      }).catch((): undefined => undefined);
       // Reset form and close modal
       setClientName("");
       setClientPhone("");
@@ -1094,6 +1094,31 @@ export default function AddServiceForm({
     }
   };
 
+  const getDefaultFormForNewService = () => {
+    const defaultDate = new Date();
+    defaultDate.setDate(defaultDate.getDate() + 3);
+    return {
+      ...initialForm,
+      dueDate: defaultDate.toISOString().split("T")[0],
+    };
+  };
+
+  const resetFormForNewEntry = () => {
+    setForm(getDefaultFormForNewService());
+    setSelectedClient(null);
+    setClientSearch("");
+    setClientPopoverOpen(false);
+    setShowTypeDropdown(false);
+    setShowNameDropdown(false);
+    setSelectedTypeIndex(-1);
+    setSelectedNameIndex(-1);
+    setFilteredTypes([]);
+    setFilteredNames([]);
+    setIsExistingService(false);
+    setIsPaid(false);
+    initialIsPaidRef.current = null;
+  };
+
   const handleAddService = async (e: React.FormEvent, shouldPrint = false) => {
     e.preventDefault();
     
@@ -1169,7 +1194,7 @@ export default function AddServiceForm({
           username: user?.username ?? "unknown",
           action: "activityLog.actions.serviceUpdated",
           details: detailsStr,
-        }).catch(() => {});
+        }).catch((): undefined => undefined);
         onServiceUpdated?.();
         showToast(t("services.serviceUpdatedSuccessfully", "Service updated successfully"), "success");
       } else {
@@ -1194,7 +1219,7 @@ export default function AddServiceForm({
           username: user?.username ?? "unknown",
           action: "activityLog.actions.serviceCreated",
           details: `Service ID: ${newService.id}`,
-        }).catch(() => {});
+        }).catch((): undefined => undefined);
         onServiceAdded?.();
         showToast(t("services.serviceAddedSuccessfully", "Service added successfully"), "success");
 
@@ -1212,10 +1237,10 @@ export default function AddServiceForm({
             isPaid
           );
         }
+
+        resetFormForNewEntry();
+        nameInputRef.current?.focus();
       }
-      
-      setForm(initialForm);
-      setIsExistingService(false);
     } catch (err) {
       showToast(t("services.failedToSaveService", "Failed to save service"), "error");
     } finally {
@@ -1242,14 +1267,18 @@ export default function AddServiceForm({
     dueDate: t('services.dueDate', 'Due Date'),
     problems: t('services.notes', 'Problems/Breakdown'),
   });
-  const handlePrintServiceLabelFromModal = async (labelSize: '20x40' | '35x45' | '25x50', quantity: number) => {
-    try {
-      await printServiceLabel(getServiceLabelData(), quantity, getServiceLabelLabels(), labelSize);
-      showToast(t("services.serviceLabelPrinted", "Service label printed successfully"), "success");
-      setShowServiceLabelModal(false);
-    } catch (err) {
-      showToast(t("services.serviceLabelPrintError", "Failed to print service label"), "error");
-    }
+  const handlePrintServiceLabelFromModal = (
+    labelSize: '20x40' | '35x45' | '25x50',
+    quantity: number,
+  ) => {
+    void (async () => {
+      try {
+        await printServiceLabel(getServiceLabelData(), quantity, getServiceLabelLabels(), labelSize);
+        showToast(t("services.serviceLabelPrinted", "Service label printed successfully"), "success");
+      } catch {
+        showToast(t("services.serviceLabelPrintError", "Failed to print service label"), "error");
+      }
+    })();
   };
 
   return (

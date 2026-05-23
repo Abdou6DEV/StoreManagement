@@ -99,7 +99,6 @@ const SupplierReturnFlow: React.FC<SupplierReturnFlowProps> = ({
 
   // When parent opens the flow, first check if any label printer is configured.
   // If none is set up, skip the entire flow silently and call onDone immediately.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (open && candidates.length > 0) {
       const start = async () => {

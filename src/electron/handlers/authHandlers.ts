@@ -6,6 +6,13 @@ import {
 } from "../../lib/database/users";
 import { getMachineGuid, validateKey } from "../utils/validationKey";
 import { createActivityLog } from "../../lib/database/activityLogs";
+import { ACTIVITY_LOG_LAST_USERNAME_KEY } from "../../lib/activityLog/constants";
+import { setOption } from "../../lib/database/options";
+
+async function recordLoginActivity(username: string, action: string): Promise<void> {
+  await createActivityLog({ username, action, details: null }).catch((): undefined => undefined);
+  await setOption(ACTIVITY_LOG_LAST_USERNAME_KEY, username).catch((): undefined => undefined);
+}
 
 const defaultAdminPayload = () => ({
   id: "hardcoded-admin",
@@ -36,11 +43,7 @@ export const setupAuthHandlers = () => {
     try {
       const result = await users.login(credentials);
       if (result.success && result.user) {
-        createActivityLog({
-          username: result.user.username,
-          action: "activityLog.actions.loggedIn",
-          details: null,
-        }).catch(() => {});
+        void recordLoginActivity(result.user.username, "activityLog.actions.loggedIn");
       }
       return result;
     } catch (error) {
@@ -67,11 +70,7 @@ export const setupAuthHandlers = () => {
       try {
         const result = await users.completeInitialAdminSetup(credentials);
         if (result.success && result.user) {
-          createActivityLog({
-            username: result.user.username,
-            action: "activityLog.actions.loggedIn",
-            details: null,
-          }).catch(() => {});
+          void recordLoginActivity(result.user.username, "activityLog.actions.loggedIn");
         }
         return result;
       } catch (error) {
@@ -97,21 +96,13 @@ export const setupAuthHandlers = () => {
       const primaryAdmin = await users.getPrimaryAdmin();
       if (primaryAdmin) {
         const { password: _pw, ...userWithoutPassword } = primaryAdmin;
-        createActivityLog({
-          username: primaryAdmin.username,
-          action: "activityLog.actions.loggedIn",
-          details: null,
-        }).catch(() => {});
+        void recordLoginActivity(primaryAdmin.username, "activityLog.actions.loggedIn");
         return {
           success: true,
           user: { ...userWithoutPassword, id: "hardcoded-admin" },
         };
       }
-      createActivityLog({
-        username: "admin",
-        action: "activityLog.actions.loggedIn",
-        details: null,
-      }).catch(() => {});
+      void recordLoginActivity("admin", "activityLog.actions.loggedIn");
       return {
         success: true,
         user: defaultAdminPayload(),
@@ -189,21 +180,13 @@ export const setupAuthHandlers = () => {
       const username = primaryAdmin?.username ?? "admin";
       if (primaryAdmin) {
         const { password, ...userWithoutPassword } = primaryAdmin;
-        createActivityLog({
-          username,
-          action: "activityLog.actions.loggedInActivationKey",
-          details: null,
-        }).catch(() => {});
+        void recordLoginActivity(username, "activityLog.actions.loggedInActivationKey");
         return {
           success: true,
           user: { ...userWithoutPassword, id: "hardcoded-admin" },
         };
       }
-      createActivityLog({
-        username: "admin",
-        action: "activityLog.actions.loggedInActivationKey",
-        details: null,
-      }).catch(() => {});
+      void recordLoginActivity("admin", "activityLog.actions.loggedInActivationKey");
       return {
         success: true,
         user: defaultAdminPayload(),

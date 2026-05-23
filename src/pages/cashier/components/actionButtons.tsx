@@ -258,7 +258,7 @@ export default function ActionButtons({
         username: user?.username ?? "unknown",
         action: "activityLog.actions.clientAdded",
         details: lines.join("\n"),
-      }).catch(() => {});
+      }).catch((): undefined => undefined);
       // Safely refresh client suggestions with error handling
       window.api.database.clients
         .getAll()

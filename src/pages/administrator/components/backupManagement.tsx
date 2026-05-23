@@ -192,6 +192,13 @@ export function BackupManagement({ onOpenLicenseTab }: BackupManagementProps) {
     try {
       await window.api.database.options.set(AUTO_CLOUD_BACKUP_ENABLED_OPTION_KEY, checked ? "1" : "0");
       setAutoCloudBackupEnabled(checked);
+      window.api?.activityLog?.log({
+        username: user?.username ?? "unknown",
+        action: checked
+          ? "activityLog.actions.autoCloudBackupEnabled"
+          : "activityLog.actions.autoCloudBackupDisabled",
+        details: null,
+      }).catch((): undefined => undefined);
     } catch {
       showToast(t("admin.backup.autoCloudBackupSaveFailed", "Could not save automatic cloud backup setting."), "error");
     } finally {
@@ -310,6 +317,11 @@ export function BackupManagement({ onOpenLicenseTab }: BackupManagementProps) {
 
       const uploaded = await window.api.online.backupUploadLatest(created.backupPath, "manual_upload");
       if (uploaded.success === true) {
+        window.api?.activityLog?.log({
+          username: user?.username ?? "unknown",
+          action: "activityLog.actions.cloudBackupUploaded",
+          details: created.backupPath ?? null,
+        }).catch((): undefined => undefined);
         await window.api.backup.deleteCloudUploadStaging(created.backupPath);
         await loadBackups();
         showToast(t("admin.backup.cloudUploadSuccess", "Cloud backup uploaded successfully"), "success");
@@ -391,6 +403,13 @@ export function BackupManagement({ onOpenLicenseTab }: BackupManagementProps) {
         const r = await window.api.online.backupDownloadLatest();
         if (r.success === true) {
           const checkedAtMs = Date.now();
+          if (!silent) {
+            window.api?.activityLog?.log({
+              username: user?.username ?? "unknown",
+              action: "activityLog.actions.cloudBackupChecked",
+              details: "available",
+            }).catch((): undefined => undefined);
+          }
           await applyCloudPresence({
             lastCheckAtMs: checkedAtMs,
             available: true,
@@ -401,6 +420,13 @@ export function BackupManagement({ onOpenLicenseTab }: BackupManagementProps) {
 
         const checkedAtMs = Date.now();
         if (r.code === "not_found") {
+          if (!silent) {
+            window.api?.activityLog?.log({
+              username: user?.username ?? "unknown",
+              action: "activityLog.actions.cloudBackupChecked",
+              details: "not_found",
+            }).catch((): undefined => undefined);
+          }
           await applyCloudPresence({
             lastCheckAtMs: checkedAtMs,
             available: false,
@@ -463,7 +489,7 @@ export function BackupManagement({ onOpenLicenseTab }: BackupManagementProps) {
         if (!silent) setCheckingCloudPresence(false);
       }
     },
-    [applyCloudPresence, checkingCloudPresence, showToast, t],
+    [applyCloudPresence, checkingCloudPresence, showToast, t, user?.username],
   );
 
   useEffect(() => {
@@ -498,6 +524,11 @@ export function BackupManagement({ onOpenLicenseTab }: BackupManagementProps) {
       });
       const r = await window.api.online.backupDownloadLatestToLocal();
       if (r.success === true) {
+        window.api?.activityLog?.log({
+          username: user?.username ?? "unknown",
+          action: "activityLog.actions.cloudBackupDownloaded",
+          details: r.backupPath ?? null,
+        }).catch((): undefined => undefined);
         await applyCloudPresence({
           lastCheckAtMs: Date.now(),
           available: true,
@@ -764,6 +795,11 @@ export function BackupManagement({ onOpenLicenseTab }: BackupManagementProps) {
       const result = await restorePromise;
 
       if (result.success) {
+        window.api?.activityLog?.log({
+          username: user?.username ?? "unknown",
+          action: "activityLog.actions.backupRestored",
+          details: selectedRestoreFile || null,
+        }).catch((): undefined => undefined);
         showToast("Database restored successfully from custom file. Redirecting to login...", "success");
         setRestoreFromFileDialogOpen(false);
         setSelectedRestoreFile("");
@@ -836,6 +872,11 @@ export function BackupManagement({ onOpenLicenseTab }: BackupManagementProps) {
       const result = await restorePromise;
       
       if (result.success) {
+        window.api?.activityLog?.log({
+          username: user?.username ?? "unknown",
+          action: "activityLog.actions.backupRestored",
+          details: selectedBackup.path ?? null,
+        }).catch((): undefined => undefined);
         showToast("Database restored successfully. Redirecting to login...", "success");
         closeRestoreDialog();
         

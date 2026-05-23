@@ -214,7 +214,7 @@ const CashierSession = memo(function CashierSession({
               username: user?.username ?? "unknown",
               action: "activityLog.actions.clientAdded",
               details: `During checkout:\nClient: ${client.name}`,
-            }).catch(() => {});
+            }).catch((): undefined => undefined);
           }
         } catch (error) {
           // If findByName doesn't exist, create directly (fallback)
@@ -227,7 +227,7 @@ const CashierSession = memo(function CashierSession({
             username: user?.username ?? "unknown",
             action: "activityLog.actions.clientAdded",
             details: `During checkout:\nClient: ${client.name}`,
-          }).catch(() => {});
+          }).catch((): undefined => undefined);
         }
       }
 
@@ -328,7 +328,7 @@ const CashierSession = memo(function CashierSession({
         username: user?.username ?? "unknown",
         action: actionKey,
         details: detailsStr,
-      }).catch(() => {});
+      }).catch((): undefined => undefined);
       // Refresh products only when needed (e.g., when product browser opens)
       // This prevents UI pause after every sale
       // setProductRefreshKey((k: number) => k + 1);

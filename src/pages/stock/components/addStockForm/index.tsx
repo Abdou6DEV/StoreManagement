@@ -454,7 +454,7 @@ export default function AddStockForm({
             username: user?.username ?? "unknown",
             action: "activityLog.actions.supplierAdded",
             details: `From stock form:\nSupplier: ${sellerName}`,
-          }).catch(() => {});
+          }).catch((): undefined => undefined);
 
           // Add to local sellers list
           setSellers((prev) => [...prev, newSeller]);

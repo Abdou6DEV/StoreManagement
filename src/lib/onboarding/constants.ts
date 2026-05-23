@@ -1,4 +1,4 @@
-/** Option key: set when user finishes welcome (trial / restore) so we do not loop on empty core data. */
+/** Option key: set when user finishes welcome once (trial / link / restore); prevents showing welcome again. */
 export const ONBOARDING_INITIAL_WELCOME_DONE_KEY = "onboarding.initialWelcomeDone";
 
 /** Option key: `customer_id` returned from `device-request` (cloud backups / restore). */

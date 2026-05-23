@@ -88,10 +88,10 @@ export default function EditStockForm({
   };
 
   const handlePrintBarcode = async (
-    quantity: number = 1,
-    showBarcode: boolean = true,
-    showStoreName: boolean = true,
-    showPreviousPrice: boolean = false,
+    quantity = 1,
+    showBarcode = true,
+    showStoreName = true,
+    showPreviousPrice = false,
     labelSize: '20x40' | '35x45' | '25x50' = '20x40'
   ) => {
     if (!form || !product) return;
@@ -168,7 +168,7 @@ export default function EditStockForm({
         username: user?.username ?? "unknown",
         action: "activityLog.actions.productUpdated",
         details: detailsStr,
-      }).catch(() => {});
+      }).catch((): undefined => undefined);
       showToast(
         t("stock.toastUpdateSuccess", "Product updated successfully!"),
         "success",

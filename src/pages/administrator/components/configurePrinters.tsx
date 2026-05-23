@@ -112,7 +112,7 @@ export function ConfigurePrinters() {
           username: user?.username ?? "unknown",
           action: "activityLog.actions.printersConfigUpdated",
           details: changeLines.join("\n"),
-        }).catch(() => {});
+        }).catch((): undefined => undefined);
       }
       initialPrintersRef.current = { receipt: receiptPrinterName, label: labelPrinters };
       showToast(t("admin.printersSaved", "Printer settings saved"), "success");

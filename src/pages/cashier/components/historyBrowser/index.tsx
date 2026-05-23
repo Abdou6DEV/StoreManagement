@@ -258,7 +258,7 @@ const HistoryBrowser: React.FC<HistoryBrowserProps> = ({
         username: user?.username ?? "unknown",
         action: "activityLog.actions.saleDeleted",
         details: `Sale ID: ${saleToDelete.id}. Items: ${itemCount}.${clientName}`,
-      }).catch(() => {});
+      }).catch((): undefined => undefined);
 
       // Remove the sale from the local state
       setSales((prevSales) =>

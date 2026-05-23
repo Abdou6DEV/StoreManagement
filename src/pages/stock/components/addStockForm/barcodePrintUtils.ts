@@ -1,4 +1,5 @@
 import { generateRealBarcode, getRecommendedFormat } from '../../../../lib/utils/barcodeVisual';
+// eslint-disable-next-line import/no-unresolved -- Vite ?url asset import
 import instrumentSerifWoff2 from '@fontsource/instrument-serif/files/instrument-serif-latin-400-normal.woff2?url';
 
 export interface BarcodeLabelData {
@@ -96,7 +97,7 @@ export const printBarcodeLabel = async (
   document.body.appendChild(iframe);
 
   // Generate real barcode only if showBarcode is explicitly true
-  let barcodeImage: string = '';
+  let barcodeImage = '';
   if (shouldShowBarcode && barcode) {
     try {
       const barcodeFormat = getRecommendedFormat(barcode);

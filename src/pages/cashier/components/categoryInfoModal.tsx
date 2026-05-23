@@ -183,7 +183,7 @@ export default function CategoryInfoModal({
       icon={<Package className="w-6 h-6 text-blue-600" />}
       showFooter={false}
       hasUnsavedChanges={hasCategoryInfoDraft}
-      onDiscard={() => {}}
+      onDiscard={(): undefined => undefined}
     >
       <div className="flex flex-col max-h-[80vh]">
         <div className="flex-1 overflow-y-auto space-y-6 px-2">

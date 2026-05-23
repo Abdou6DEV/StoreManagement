@@ -1,3 +1,4 @@
+// eslint-disable-next-line import/no-unresolved -- Vite ?url asset import
 import instrumentSerifWoff2 from '@fontsource/instrument-serif/files/instrument-serif-latin-400-normal.woff2?url';
 
 export type ServiceLabelSize = '20x40' | '35x45' | '25x50';

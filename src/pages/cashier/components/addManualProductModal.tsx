@@ -438,7 +438,7 @@ export default function AddManualProductModal({
                 username: user?.username ?? "unknown",
                 action: "activityLog.actions.productUpdated",
                 details: detailsStr,
-              }).catch(() => {});
+              }).catch((): undefined => undefined);
               
               showToast(
                 t("cashier.stockUpdated", `Added ${stockQuantity} units to existing product "${manualProduct.name}"`),

@@ -245,7 +245,7 @@ const PaymentsModal: React.FC<PaymentsModalProps> = ({ client, onClose }) => {
         username: user?.username ?? "unknown",
         action: "activityLog.actions.paymentMarkedAsUnpaid",
         details: detailsStr,
-      }).catch(() => {});
+      }).catch((): undefined => undefined);
       setPayments((prevPayments) =>
         prevPayments.map((payment) =>
           payment.id === paymentId ? { ...payment, paidDate: null } : payment,
@@ -285,7 +285,7 @@ const PaymentsModal: React.FC<PaymentsModalProps> = ({ client, onClose }) => {
         username: user?.username ?? "unknown",
         action: "activityLog.actions.paymentAmountUpdated",
         details: detailsStr,
-      }).catch(() => {});
+      }).catch((): undefined => undefined);
       setEditingPayment(null);
       setPayments((prevPayments) =>
         prevPayments.map((payment) =>

@@ -78,7 +78,6 @@ const PaymentRow: React.FC<PaymentRowProps> = ({
   useEffect(() => {
     if (!editingReason) return;
     setReasonDraft(payment.reason ?? "");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editingReason]);
 
   const saveReasonIfChanged = async (next: string) => {
@@ -112,7 +111,7 @@ const PaymentRow: React.FC<PaymentRowProps> = ({
         username: user?.username ?? "unknown",
         action: "activityLog.actions.paymentAmountUpdated",
         details: detailsStr,
-      }).catch(() => {});
+      }).catch((): undefined => undefined);
       setShowEditModal(false);
       if (onRefreshPayments) onRefreshPayments();
       if (onClientsRefresh) onClientsRefresh();

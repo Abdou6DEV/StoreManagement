@@ -650,9 +650,25 @@ ipcMain.handle("db:products:deleteMultipleProducts", async (_, productIds: strin
     return await bills.getBillByTitle(title);
   });
 
-  ipcMain.handle("db:bills:recordPayment", async (_event, billId: string, amount: number, notes?: string, paidDate?: Date) => {
-    return await bills.recordPayment(billId, amount, notes, paidDate ? new Date(paidDate) : undefined);
-  });
+  ipcMain.handle(
+    "db:bills:recordPayment",
+    async (
+      _event,
+      billId: string,
+      amount: number,
+      notes?: string,
+      paidDate?: Date,
+      duration?: string,
+    ) => {
+      return await bills.recordPayment(
+        billId,
+        amount,
+        notes,
+        paidDate ? new Date(paidDate) : undefined,
+        duration,
+      );
+    },
+  );
 
   ipcMain.handle("db:bills:getBillWithPayments", async (_event, billId: string) => {
     return await bills.getBillWithPayments(billId);

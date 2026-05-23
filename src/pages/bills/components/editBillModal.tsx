@@ -214,7 +214,7 @@ export default function EditBillModal({
         username: user?.username ?? "unknown",
         action: "activityLog.actions.billUpdated",
         details: detailsStr,
-      }).catch(() => {});
+      }).catch((): undefined => undefined);
       onBillUpdated();
       showToast(t("bills.billUpdatedSuccessfully", "Bill updated successfully"), "success");
       onClose();

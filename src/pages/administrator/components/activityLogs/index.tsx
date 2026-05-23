@@ -121,6 +121,13 @@ const ACTIVITY_LOG_ACTION_KEYS = [
   "activityLog.actions.serviceUpdated",
   "activityLog.actions.serviceDeleted",
   "activityLog.actions.backupCreated",
+  "activityLog.actions.backupRestored",
+  "activityLog.actions.cloudBackupUploaded",
+  "activityLog.actions.cloudBackupDownloaded",
+  "activityLog.actions.cloudBackupChecked",
+  "activityLog.actions.cloudBackupAutoUploaded",
+  "activityLog.actions.autoCloudBackupEnabled",
+  "activityLog.actions.autoCloudBackupDisabled",
   "activityLog.actions.settingsUpdated",
   "activityLog.actions.receiptConfigUpdated",
   "activityLog.actions.printersConfigUpdated",
@@ -415,7 +422,7 @@ export default function ActivityLogs() {
             username: currentUser.username,
             action: "activityLog.actions.logCleanupRun",
             details: `Entries removed: ${count}`,
-          }).catch(() => {});
+          }).catch((): undefined => undefined);
         }
       } catch {
         showToast(t("activityLog.errorCleanup", "Cleanup failed"), "error");
@@ -452,7 +459,7 @@ export default function ActivityLogs() {
         username: user?.username ?? "unknown",
         action: "activityLog.actions.logRetentionUpdated",
         details: `Retention: ${num} days`,
-      }).catch(() => {});
+      }).catch((): undefined => undefined);
       showToast(t("activityLog.retentionSaved", "Retention days saved"), "success");
     } catch (err) {
       showToast(t("activityLog.errorSaveRetention", "Failed to save retention"), "error");

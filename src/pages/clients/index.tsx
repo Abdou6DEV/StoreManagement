@@ -282,7 +282,7 @@ export default function Clients() {
         username: user?.username ?? "unknown",
         action: "activityLog.actions.clientDeleted",
         details: confirmDelete.clientName ?? null,
-      }).catch(() => {});
+      }).catch((): undefined => undefined);
       showToast(
         t("clients.deleteSuccess", "Client deleted successfully"),
         "success",
@@ -329,7 +329,7 @@ export default function Clients() {
         username: user?.username ?? "unknown",
         action: "activityLog.actions.clientUpdated",
         details: detailsStr,
-      }).catch(() => {});
+      }).catch((): undefined => undefined);
       showToast(
         t("clients.updateSuccess", "Client updated successfully"),
         "success",
@@ -371,7 +371,7 @@ export default function Clients() {
         username: user?.username ?? "unknown",
         action: "activityLog.actions.supplierDeleted",
         details: confirmDeleteSupplier.supplierName ?? null,
-      }).catch(() => {});
+      }).catch((): undefined => undefined);
       showToast(
         t("suppliers.deleteSuccess", "Supplier deleted successfully"),
         "success",
@@ -423,7 +423,7 @@ export default function Clients() {
         username: user?.username ?? "unknown",
         action: "activityLog.actions.supplierUpdated",
         details: detailsStr,
-      }).catch(() => {});
+      }).catch((): undefined => undefined);
       showToast(
         t("suppliers.updateSuccess", "Supplier updated successfully"),
         "success",
@@ -456,7 +456,7 @@ export default function Clients() {
         username: user?.username ?? "unknown",
         action: "activityLog.actions.supplierUpdated",
         details: detailsStr,
-      }).catch(() => {});
+      }).catch((): undefined => undefined);
       showToast(
         t("suppliers.creditUpdateSuccess", "Credit updated successfully"),
         "success",

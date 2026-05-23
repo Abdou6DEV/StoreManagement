@@ -229,7 +229,7 @@ export const StockTable = ({ notificationAction }: { notificationAction?: string
         username: user?.username ?? "unknown",
         action: "activityLog.actions.productDeleted",
         details: confirmDelete.productName ?? confirmDelete.productId,
-      }).catch(() => {});
+      }).catch((): undefined => undefined);
       showToast(
         t("stock.toastDeleteSuccess", "Product deleted successfully!"),
         "success",

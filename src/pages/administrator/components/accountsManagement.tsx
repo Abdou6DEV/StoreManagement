@@ -302,7 +302,7 @@ export default function AccountsManagement() {
           username: user?.username ?? "unknown",
           action: "activityLog.actions.userDeleted",
           details: confirmDelete.username ?? null,
-        }).catch(() => {});
+        }).catch((): undefined => undefined);
         showToast(t("admin.accounts.deleteUserSuccess", "User deleted successfully"), "success");
         loadUsers();
         setConfirmDelete({ open: false, userId: null, username: "" });
@@ -355,7 +355,7 @@ export default function AccountsManagement() {
           username: user?.username ?? "unknown",
           action: "activityLog.actions.userCreated",
           details: formData.username,
-        }).catch(() => {});
+        }).catch((): undefined => undefined);
         showToast("User created successfully", "success");
         setShowAddModal(false);
         resetForm();
@@ -417,7 +417,7 @@ export default function AccountsManagement() {
           username: user?.username ?? "unknown",
           action: usernameChanged ? "activityLog.actions.userUpdated" : "activityLog.actions.permissionsUpdated",
           details: detailsStr,
-        }).catch(() => {});
+        }).catch((): undefined => undefined);
         showToast(
           usernameChanged
             ? t("admin.accounts.userUpdatedSuccess", "User updated successfully")
@@ -469,7 +469,7 @@ export default function AccountsManagement() {
           username: user?.username ?? "unknown",
           action: "activityLog.actions.passwordUpdated",
           details: detailsStr,
-        }).catch(() => {});
+        }).catch((): undefined => undefined);
         showToast("Password updated successfully", "success");
         setShowPasswordModal(false);
         setPasswordUser(null);

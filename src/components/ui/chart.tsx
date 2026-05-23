@@ -8,7 +8,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-import { cn } from "@/lib/utils";
+import { cn } from "../../lib/utils";
 
 const THEMES = { light: "", dark: ".dark" } as const;
 

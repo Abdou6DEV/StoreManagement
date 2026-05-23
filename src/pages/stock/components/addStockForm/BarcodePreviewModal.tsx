@@ -160,7 +160,7 @@ export const BarcodePreviewModal: React.FC<BarcodePreviewModalProps> = ({
 
   const hasBarcodeValue = barcode != null && barcode.trim() !== '';
   let barcodeFormat: 'EAN13' | 'CODE128' | 'UPC' = 'EAN13';
-  let barcodeImage: string = '';
+  let barcodeImage = '';
 
   if (hasBarcodeValue) {
     barcodeFormat = getRecommendedFormat(barcode);
@@ -380,7 +380,7 @@ export const BarcodePreviewModal: React.FC<BarcodePreviewModalProps> = ({
               <span className="inline-flex items-center self-center">
                 <Checkbox
                   checked={false}
-                  onChange={() => {}}
+                  onChange={(): undefined => undefined}
                   label={t('stock.showBarcode', 'Show Barcode')}
                   color="green"
                   disabled
@@ -411,7 +411,7 @@ export const BarcodePreviewModal: React.FC<BarcodePreviewModalProps> = ({
               <span className="inline-flex items-center self-center">
                 <Checkbox
                   checked={false}
-                  onChange={() => {}}
+                  onChange={(): undefined => undefined}
                   label={t('stock.showStoreNameOnLabel', 'Show store name on label')}
                   color="green"
                   disabled

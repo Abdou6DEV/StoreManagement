@@ -13,7 +13,7 @@ const ModalCloseContext = React.createContext<{
 
 /** Use inside Modal/FormModal to close with unsaved-changes guard (e.g. footer Cancel). */
 export function useModalRequestClose() {
-  return React.useContext(ModalCloseContext)?.requestClose ?? (() => {});
+  return React.useContext(ModalCloseContext)?.requestClose ?? ((): undefined => undefined);
 }
 
 /** Resets dirty when `isOpen` becomes true; use `markDirty` / `setDirty` from inputs. */

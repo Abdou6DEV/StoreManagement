@@ -14,7 +14,7 @@ function getAssetBaseUrl(): string {
 
 // Sound file paths served from Vite `public/` (e.g. `public/sounds/success.mp3`).
 // This is intentionally mutable because `setCustomSoundFiles()` can override paths at runtime.
-let SOUND_FILES: Record<SoundType, string> = {
+const SOUND_FILES: Record<SoundType, string> = {
   success: `${getAssetBaseUrl()}sounds/success.mp3`,
   error: `${getAssetBaseUrl()}sounds/error.mp3`,
   info: `${getAssetBaseUrl()}sounds/info.mp3`,

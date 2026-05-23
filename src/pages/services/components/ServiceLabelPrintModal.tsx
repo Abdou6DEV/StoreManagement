@@ -293,7 +293,9 @@ export const ServiceLabelPrintModal: React.FC<ServiceLabelPrintModalProps> = ({
               <Button
                 onClick={() => {
                   if (!hasLabelPrinter) return;
-                  onPrint(labelSize, typeof quantity === 'number' && quantity >= 1 ? quantity : 1);
+                  const qty = typeof quantity === 'number' && quantity >= 1 ? quantity : 1;
+                  onOpenChange(false);
+                  onPrint(labelSize, qty);
                 }}
                 disabled={!hasLabelPrinter}
                 className="bg-cyan-600 hover:bg-cyan-700 text-white disabled:opacity-50 disabled:pointer-events-none"

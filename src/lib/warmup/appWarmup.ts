@@ -23,7 +23,7 @@ type WarmupUpdateDetail = { key: WarmupKey; snapshot: WarmupSnapshot };
 const UPDATE_EVENT = "appWarmup:update";
 
 let started = false;
-let snapshot: WarmupSnapshot = {
+const snapshot: WarmupSnapshot = {
   options: {},
   categories: null,
   products: null,

@@ -10,8 +10,8 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { ChartContainer, ChartTooltip, type ChartConfig } from "@/components/ui/chart";
+} from "../../../components/ui/card";
+import { ChartContainer, ChartTooltip, type ChartConfig } from "../../../components/ui/chart";
 
 type Props = {
   paidCredits: number;

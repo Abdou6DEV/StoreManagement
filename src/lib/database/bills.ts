@@ -247,7 +247,13 @@ export const bills = {
     });
   },
 
-  async recordPayment(billId: string, amount: number, notes?: string, paidDate?: Date): Promise<Bill> {
+  async recordPayment(
+    billId: string,
+    amount: number,
+    notes?: string,
+    paidDate?: Date,
+    durationOverride?: string,
+  ): Promise<Bill> {
     // Record the payment
     await prisma.billPayment.create({
       data: {
@@ -264,7 +270,12 @@ export const bills = {
       throw new Error("Bill not found");
     }
 
-    if (bill.duration !== "NO_NEXT") {
+    const duration =
+      durationOverride?.trim() && durationOverride.trim().length > 0
+        ? durationOverride.trim()
+        : bill.duration;
+
+    if (duration !== "NO_NEXT") {
       // Only advance nextBillDate for current-day payments.
       // Past/missed payments should not shift the existing reminder date.
       const todayStart = new Date();
@@ -272,13 +283,14 @@ export const bills = {
       const isCurrentPayment = !paidDate || paidDate >= todayStart;
 
       if (isCurrentPayment) {
-        const nextBillDate = this.calculateNextBillDate(bill.duration);
+        const nextBillDate = this.calculateNextBillDate(duration);
 
         return prisma.bill.update({
           where: { id: billId },
           data: {
             nextBillDate,
             amount,
+            duration,
           },
           include: {
             payments: {

@@ -373,7 +373,7 @@ export default function BillsPage() {
         username: user?.username ?? "unknown",
         action: "activityLog.actions.billDeleted",
         details: `"${billTitle}" (${bill?.type ?? ""})`,
-      }).catch(() => {});
+      }).catch((): undefined => undefined);
       showToast(t("bills.billDeletedSuccessfully", "Bill deleted successfully"), "success");
     } catch (error) {
       console.error("Error deleting bill:", error);

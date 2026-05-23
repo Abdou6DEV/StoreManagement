@@ -410,7 +410,7 @@ export default function AddBillForm({
           username: user?.username ?? "unknown",
           action: "activityLog.actions.billUpdated",
           details: detailsStr,
-        }).catch(() => {});
+        }).catch((): undefined => undefined);
         onBillUpdated?.();
         showToast(t("bills.billUpdatedSuccessfully", "Bill updated successfully"), "success");
       } else if (isExistingBill) {
@@ -421,7 +421,9 @@ export default function AddBillForm({
           await window.api.database.bills.recordPayment(
             existingBill.id,
             amountCentimes,
-            form.notes.trim() || undefined
+            form.notes.trim() || undefined,
+            undefined,
+            form.duration,
           );
           const amountDisplay = (amountCentimes / 100).toFixed(2);
           const detailsStr = `Bill: ${existingBill.title}\nAmount: ${amountDisplay}`;
@@ -429,7 +431,7 @@ export default function AddBillForm({
             username: user?.username ?? "unknown",
             action: "activityLog.actions.billPaymentRecorded",
             details: detailsStr,
-          }).catch(() => {});
+          }).catch((): undefined => undefined);
           onBillAdded?.();
           showToast(t("bills.paymentRecordedSuccessfully", "Payment recorded successfully"), "success");
         }
@@ -452,7 +454,7 @@ export default function AddBillForm({
           username: user?.username ?? "unknown",
           action: "activityLog.actions.billCreated",
           details: billData.title,
-        }).catch(() => {});
+        }).catch((): undefined => undefined);
         onBillAdded?.();
         showToast(t("bills.billAddedSuccessfully", "Bill added successfully"), "success");
       }

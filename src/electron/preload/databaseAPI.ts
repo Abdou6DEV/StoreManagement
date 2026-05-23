@@ -329,7 +329,8 @@ export const databaseAPI = {
     getBillTypes: () => ipcRenderer.invoke("db:bills:getBillTypes"),
     getBillTitles: () => ipcRenderer.invoke("db:bills:getBillTitles"),
     getBillByTitle: (title: string) => ipcRenderer.invoke("db:bills:getBillByTitle", title),
-    recordPayment: (billId: string, amount: number, notes?: string, paidDate?: Date) => ipcRenderer.invoke("db:bills:recordPayment", billId, amount, notes, paidDate),
+    recordPayment: (billId: string, amount: number, notes?: string, paidDate?: Date, duration?: string) =>
+      ipcRenderer.invoke("db:bills:recordPayment", billId, amount, notes, paidDate, duration),
     getBillWithPayments: (billId: string) => ipcRenderer.invoke("db:bills:getBillWithPayments", billId),
     getAllPayments: () => ipcRenderer.invoke("db:bills:getAllPayments"),
     deletePayment: (id: string, username?: string) =>

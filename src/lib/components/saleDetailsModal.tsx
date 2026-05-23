@@ -580,7 +580,7 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
         username: user?.username ?? "unknown",
         action: "activityLog.actions.saleUpdated",
         details: detailsStr,
-      }).catch(() => {});
+      }).catch((): undefined => undefined);
       showToast(
         t("cashier.saleUpdated", "Sale updated successfully"),
         "success",
@@ -622,7 +622,7 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
         username: user?.username ?? "unknown",
         action: "activityLog.actions.saleDeleted",
         details: saleDetailsStr,
-      }).catch(() => {});
+      }).catch((): undefined => undefined);
       showToast(
         t("cashier.saleDeleted", "Sale deleted successfully"),
         "success",

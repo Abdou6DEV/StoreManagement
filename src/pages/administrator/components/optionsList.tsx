@@ -186,7 +186,7 @@ export const OptionsList: React.FC = () => {
           username: user?.username ?? "unknown",
           action: "activityLog.actions.settingsUpdated",
           details: changeLines.join("\n"),
-        }).catch(() => {});
+        }).catch((): undefined => undefined);
       }
       initialValuesRef.current = newValues;
 

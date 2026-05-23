@@ -19,7 +19,7 @@ import { useTheme } from "../../../../lib/hooks/useTheme";
 import { ChartContainerProps } from "./types";
 
 /**
- * Step multipliers so `top = 4 × step` stays readable (3.75 → 37 500 when top = 150 000).
+ * Step multipliers so `top = 4 * step` stays readable (3.75 -> 37 500 when top = 150 000).
  */
 const QUARTER_TOP_FACTORS = [1, 2, 2.5, 3.75, 5, 7.5, 10] as const;
 
@@ -39,7 +39,7 @@ function minimalNiceStepForQuarterTop(minTop: number): number {
 
 /**
  * **5** Y labels = **4** equal steps from 0 to `top`, with `top` as small as possible but ≥ data ceiling.
- * Same array for YAxis + dashed grid (e.g. 0, 37 500, 75 000, 112 500, 150 000 for ~116k peak).
+ * Same array for YAxis + dashed grid (e.g. 0, 37 500, 75 000, 112 500, 150 000 for ~116k peak).
  */
 function buildNiceYTicksQuarterMax(scaleMin: number, rawTop: number): number[] {
   if (!Number.isFinite(scaleMin) || !Number.isFinite(rawTop)) return [0];
@@ -81,6 +81,7 @@ export function ChartContainer({
   billsPaymentsData = [],
   purchasesData = [],
   grossProfitYAxis = false,
+  seriesAnimationKey,
   tooltipContentOverride,
 }: ChartContainerProps) {
   const { t, i18n } = useTranslation();
@@ -88,7 +89,7 @@ export function ChartContainer({
 
   const isDailyView = timePeriod === "today" || timePeriod === "thisMonth";
   const dailyXAxisHeight = timePeriod === "today" ? 52 : 76;
-  const periodAnimationKey = `period-${timePeriod}`;
+  const periodAnimationKey = seriesAnimationKey ?? `period-${timePeriod}`;
 
   const currentPeriodIndicatorX = useMemo(() => {
     const now = new Date();
@@ -756,12 +757,14 @@ export function ChartContainer({
             />
 
             <Line
+              key={`line-series-${periodAnimationKey}`}
               type="monotone"
               dataKey={dataKey}
               strokeWidth={3}
               connectNulls={false}
               isAnimationActive={true}
               animationDuration={1800}
+              animationBegin={0}
               stroke={`url(#${lineGradientId})`}
               dot={(props: any) => {
                 const v = props?.payload?.[dataKey];

@@ -115,7 +115,7 @@ export default function AddClientForm({
         username: user?.username ?? "unknown",
         action: "activityLog.actions.clientAdded",
         details: lines.join("\n"),
-      }).catch(() => {});
+      }).catch((): undefined => undefined);
       showToast(
         t("clients.addSuccess", "Client added successfully"),
         "success",

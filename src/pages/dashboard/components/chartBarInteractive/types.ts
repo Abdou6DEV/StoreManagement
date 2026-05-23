@@ -61,6 +61,8 @@ export interface ChartContainerProps {
   }>;
   /** When true (profits chart), Y-axis ticks/domain follow gross profit; bars/line still use `profits` (net). */
   grossProfitYAxis?: boolean;
+  /** Changes when series shape changes (net profit, hide empty) to remount line chart and replay animation. */
+  seriesAnimationKey?: string;
   /**
    * Optional override for the Recharts Tooltip renderer.
    * Used by other dashboard cards to keep the exact tooltip content.

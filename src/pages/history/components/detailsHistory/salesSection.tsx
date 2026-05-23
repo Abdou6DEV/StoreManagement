@@ -210,7 +210,7 @@ export default function SalesSection({
         username: user?.username ?? "unknown",
         action: "activityLog.actions.saleDeleted",
         details: `Sale ID: ${saleToDelete.id}. Items: ${itemCount}.${clientName}`,
-      }).catch(() => {});
+      }).catch((): undefined => undefined);
       
       // Close the dialog
       setShowDeleteConfirm(false);

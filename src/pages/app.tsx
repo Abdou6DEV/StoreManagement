@@ -30,6 +30,7 @@ import { BadgeMessageProvider } from "../lib/contexts/badgeMessageContext";
 import {
   INITIAL_WELCOME_DONE_EVENT,
   ONBOARDING_INITIAL_WELCOME_DONE_KEY,
+  ONLINE_CUSTOMER_ID_OPTION_KEY,
 } from "../lib/onboarding/constants";
 
 import {
@@ -81,21 +82,28 @@ export default function App() {
     let cancelled = false;
     (async () => {
       try {
-        if (typeof window === "undefined" || !window.api?.onboarding?.isCoreDatabaseEmpty) {
+        if (typeof window === "undefined" || !window.api?.database?.options?.get) {
           if (!cancelled) setInitialWelcome("hide");
           return;
         }
-        const [emptyRes, doneVal] = await Promise.all([
-          window.api.onboarding.isCoreDatabaseEmpty(),
+        const [doneVal, customerIdVal] = await Promise.all([
           window.api.database.options.get(ONBOARDING_INITIAL_WELCOME_DONE_KEY),
+          window.api.database.options.get(ONLINE_CUSTOMER_ID_OPTION_KEY),
         ]);
         if (cancelled) return;
-        if (!emptyRes.success) {
+        const done = typeof doneVal === "string" && doneVal === "1";
+        const hasCustomerId =
+          typeof customerIdVal === "string" && customerIdVal.trim().length > 0;
+        if (done) {
           setInitialWelcome("hide");
           return;
         }
-        const done = typeof doneVal === "string" && doneVal === "1";
-        setInitialWelcome(emptyRes.isEmpty === true && !done ? "show" : "hide");
+        if (hasCustomerId) {
+          await window.api.database.options.set(ONBOARDING_INITIAL_WELCOME_DONE_KEY, "1");
+          if (!cancelled) setInitialWelcome("hide");
+          return;
+        }
+        setInitialWelcome("show");
       } catch {
         if (!cancelled) setInitialWelcome("hide");
       }

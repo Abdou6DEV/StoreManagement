@@ -245,7 +245,7 @@ export default function EditServiceModal({
         username: user?.username ?? "unknown",
         action: "activityLog.actions.serviceUpdated",
         details: detailsStr,
-      }).catch(() => {});
+      }).catch((): undefined => undefined);
       onServiceUpdated();
       showToast(t("services.serviceUpdatedSuccessfully", "Service updated successfully"), "success");
       onClose();
@@ -275,15 +275,19 @@ export default function EditServiceModal({
     dueDate: t('services.dueDate', 'Due Date'),
     problems: t('services.notes', 'Problems/Breakdown'),
   });
-  const handlePrintServiceLabelFromModal = async (labelSize: '20x40' | '35x45' | '25x50', quantity: number) => {
+  const handlePrintServiceLabelFromModal = (
+    labelSize: '20x40' | '35x45' | '25x50',
+    quantity: number,
+  ) => {
     if (!service) return;
-    try {
-      await printServiceLabel(getServiceLabelData(), quantity, getServiceLabelLabels(), labelSize);
-      showToast(t("services.serviceLabelPrinted", "Service label printed successfully"), "success");
-      setShowServiceLabelModal(false);
-    } catch (err) {
-      showToast(t("services.serviceLabelPrintError", "Failed to print service label"), "error");
-    }
+    void (async () => {
+      try {
+        await printServiceLabel(getServiceLabelData(), quantity, getServiceLabelLabels(), labelSize);
+        showToast(t("services.serviceLabelPrinted", "Service label printed successfully"), "success");
+      } catch {
+        showToast(t("services.serviceLabelPrintError", "Failed to print service label"), "error");
+      }
+    })();
   };
 
   // Print Service Ticket function (same as in addServiceForm)

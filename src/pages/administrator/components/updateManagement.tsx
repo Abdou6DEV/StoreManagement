@@ -97,7 +97,7 @@ export default function UpdateManagement() {
     setShowWarningDialog(false);
     if (!updateInfo?.downloadUrl) return;
 
-    const version = updateInfo?.version ?? "unknown";
+    const version = updateInfo?.latestVersion ?? "unknown";
     setDownloadState({
       isDownloading: true,
       downloadProgress: 0,
@@ -112,7 +112,7 @@ export default function UpdateManagement() {
       username: user?.username ?? "unknown",
       action: "activityLog.actions.updateDownloadStarted",
       details: `Version: ${version}`,
-    }).catch(() => {});
+    }).catch((): undefined => undefined);
 
     try {
       const result = await window.api.app.downloadUpdate(updateInfo.downloadUrl);
@@ -129,7 +129,7 @@ export default function UpdateManagement() {
           username: user?.username ?? "unknown",
           action: "activityLog.actions.updateDownloadCompleted",
           details: `Version: ${version}\nPath: ${result.path ?? ""}`,
-        }).catch(() => {});
+        }).catch((): undefined => undefined);
 
         showToast(t("updates.downloadSuccess", "Download completed successfully!"), "success");
       } else {
@@ -186,7 +186,7 @@ export default function UpdateManagement() {
           username: user?.username ?? "unknown",
           action: "activityLog.actions.updateInstallStarted",
           details: `Path: ${downloadPath}`,
-        }).catch(() => {});
+        }).catch((): undefined => undefined);
 
         showToast(t("updates.installSuccess", "Installation started"), "success");
       } else {
@@ -203,12 +203,12 @@ export default function UpdateManagement() {
     try {
       await window.api.app.cancelUpdateDownload();
 
-      const version = updateInfo?.version ?? "unknown";
+      const version = updateInfo?.latestVersion ?? "unknown";
       window.api?.activityLog?.log({
         username: user?.username ?? "unknown",
         action: "activityLog.actions.updateDownloadCancelled",
         details: `Version: ${version}`,
-      }).catch(() => {});
+      }).catch((): undefined => undefined);
 
       showToast(t("updates.downloadCancelled", "Download cancelled"), "info");
 

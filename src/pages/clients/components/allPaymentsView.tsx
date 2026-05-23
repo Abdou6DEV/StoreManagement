@@ -607,7 +607,7 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
         username: user?.username ?? "unknown",
         action: "activityLog.actions.paymentMarkedAsPaid",
         details: detailsStr,
-      }).catch(() => {});
+      }).catch((): undefined => undefined);
       onRefresh();
       onClientsRefresh?.();
       showToast(
@@ -658,7 +658,7 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
         username: user?.username ?? "unknown",
         action: "activityLog.actions.paymentMarkedAsUnpaid",
         details: detailsStr,
-      }).catch(() => {});
+      }).catch((): undefined => undefined);
       onRefresh();
       onClientsRefresh?.();
       showToast(
@@ -726,7 +726,7 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
         username: user?.username ?? "unknown",
         action: "activityLog.actions.versementCancelled",
         details: detailsStr,
-      }).catch(() => {});
+      }).catch((): undefined => undefined);
       onRefresh();
       onClientsRefresh?.();
       showToast(
@@ -781,7 +781,7 @@ const AllPaymentsView: React.FC<AllPaymentsViewProps> = ({
         username: user?.username ?? "unknown",
         action: "activityLog.actions.paymentAmountUpdated",
         details: detailsStr,
-      }).catch(() => {});
+      }).catch((): undefined => undefined);
       setEditingPayment(null);
       onRefresh();
       onClientsRefresh?.();

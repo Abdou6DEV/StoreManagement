@@ -1649,7 +1649,7 @@ export const ReceiptConfig: React.FC<ReceiptConfigProps> = ({ subTabFromUrl, set
           username: user?.username ?? "unknown",
           action: "activityLog.actions.receiptConfigUpdated",
           details: changeLines.join("\n"),
-        }).catch(() => {});
+        }).catch((): undefined => undefined);
       }
       initialReceiptRef.current = {
         storeName,

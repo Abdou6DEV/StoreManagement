@@ -4,6 +4,7 @@ import { Wrench, BarChart3, FileText } from "lucide-react";
 import { Button } from "../../lib/components/button";
 import { Tooltip } from "../../lib/components/tooltip";
 import { useTranslation } from "react-i18next";
+import { useToast } from "../../lib/contexts/toastContext";
 import { useAuth } from "../../lib/contexts/authContext";
 import { useOverdueServices } from "../../lib/contexts/overdueServicesContext";
 import { useDueSoonServices } from "../../lib/contexts/dueSoonServicesContext";
@@ -36,6 +37,7 @@ interface ServiceAppointment {
 export default function ServicesPage() {
   const location = useLocation();
   const { t } = useTranslation();
+  const { showToast } = useToast();
   const { user } = useAuth();
   const { unseenOverdueServicesCount, markOverdueServicesAsSeen } = useOverdueServices();
   const { unseenDueSoonServicesCount, markDueSoonServicesAsSeen, dueSoonThresholdDays } = useDueSoonServices();
@@ -112,7 +114,6 @@ export default function ServicesPage() {
     };
     
     initializeDefaultDates();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Only run once on mount
 
   // Handle notification actions and initial search (e.g. from activity log service ID click)
@@ -473,10 +474,18 @@ export default function ServicesPage() {
         username: user?.username ?? "unknown",
         action: "activityLog.actions.serviceDeleted",
         details: `Service ID: ${serviceId}\nService: ${serviceName}\nClient: ${clientName}`,
-      }).catch(() => {});
+      }).catch((): undefined => undefined);
       loadServices();
+      showToast(
+        t("services.serviceDeletedSuccessfully", "Service deleted successfully"),
+        "success",
+      );
     } catch (error) {
       console.error("Error deleting service:", error);
+      showToast(
+        t("services.failedToDeleteService", "Failed to delete service"),
+        "error",
+      );
     } finally {
       setDeleteLoading(null);
     }

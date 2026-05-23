@@ -226,7 +226,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         username,
         action: "activityLog.actions.loggedOut",
         details: null,
-      }).catch(() => {});
+      }).catch((): undefined => undefined);
     }
     setIsAuthenticated(false);
     setUser(null);

@@ -900,9 +900,13 @@ export function setupOnlineHandlers(): void {
         let downloadedSize = 0;
 
         try {
-          while (true) {
+          let streamDone = false;
+          while (!streamDone) {
             const { done, value } = await reader.read();
-            if (done) break;
+            if (done) {
+              streamDone = true;
+              break;
+            }
             if (value && value.byteLength > 0) {
               const buf = Buffer.from(value);
               await writeStreamChunk(writeStream, buf);

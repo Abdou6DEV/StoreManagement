@@ -32,7 +32,6 @@ export function AnimatedHeight({
     const ro = new ResizeObserver(measure);
     ro.observe(el);
     return () => ro.disconnect();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- explicit deps for mode switches
   }, [reduceMotion, ...deps]);
 
   if (reduceMotion) {

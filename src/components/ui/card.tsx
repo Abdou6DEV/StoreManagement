@@ -5,5 +5,5 @@ export {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/lib/components/card";
+} from "../../lib/components/card";
 
