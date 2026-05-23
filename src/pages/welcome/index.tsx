@@ -1,11 +1,4 @@
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type KeyboardEvent,
-} from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { Trans, useTranslation } from "react-i18next";
 import {
   Code,
@@ -32,10 +25,7 @@ import {
   ABOUT_MAIN_FEATURE_DEFS,
   ABOUT_TECHNICAL_FEATURE_DEFS,
 } from "../../lib/about/featureDefinitions";
-import {
-  ABOUT_PRIVACY_POINT_KEYS,
-  ABOUT_TERMS_POINT_KEYS,
-} from "../../lib/about/legalCopy";
+import { ABOUT_PRIVACY_POINT_KEYS, ABOUT_TERMS_POINT_KEYS } from "../../lib/about/legalCopy";
 import { LOGO_ICON, LOGO_ICON_DARK } from "../../lib/assets";
 import { Button } from "../../lib/components/button";
 import { Input } from "../../lib/components/input";
@@ -90,36 +80,16 @@ const WELCOME_TECHNOLOGY_BRIDGE_HIGHLIGHTS = [
 ] as const;
 
 const WELCOME_SECTION_NAV_ITEMS = [
-  {
-    id: "get-started",
-    labelKey: "welcome.sectionNav.getStarted",
-    defaultLabel: "Get started",
-  },
-  {
-    id: "welcome-key-features",
-    labelKey: "welcome.sectionNav.keyFeatures",
-    defaultLabel: "Key features",
-  },
+  { id: "get-started", labelKey: "welcome.sectionNav.getStarted", defaultLabel: "Get started" },
+  { id: "welcome-key-features", labelKey: "welcome.sectionNav.keyFeatures", defaultLabel: "Key features" },
   {
     id: "welcome-technical-features",
     labelKey: "welcome.sectionNav.technical",
     defaultLabel: "Technical features",
   },
-  {
-    id: "welcome-pricing",
-    labelKey: "welcome.sectionNav.pricing",
-    defaultLabel: "Pricing",
-  },
-  {
-    id: "welcome-developer",
-    labelKey: "welcome.sectionNav.developer",
-    defaultLabel: "Developer",
-  },
-  {
-    id: "welcome-legal",
-    labelKey: "welcome.sectionNav.legal",
-    defaultLabel: "Legal",
-  },
+  { id: "welcome-pricing", labelKey: "welcome.sectionNav.pricing", defaultLabel: "Pricing" },
+  { id: "welcome-developer", labelKey: "welcome.sectionNav.developer", defaultLabel: "Developer" },
+  { id: "welcome-legal", labelKey: "welcome.sectionNav.legal", defaultLabel: "Legal" },
 ] as const;
 
 type WelcomeSectionId = (typeof WELCOME_SECTION_NAV_ITEMS)[number]["id"];
@@ -163,11 +133,7 @@ const WELCOME_GLOW_FADEIN_S = 0.48;
 const WELCOME_SECTION_NAV_IN_S = 0.45;
 const WELCOME_IN_EASE = "cubic-bezier(0.25, 0.46, 0.45, 0.94)";
 
-function welcomeSeqStyle(
-  reduceMotion: boolean,
-  kind: WelcomeInKind,
-  isRTL: boolean,
-): React.CSSProperties {
+function welcomeSeqStyle(reduceMotion: boolean, kind: WelcomeInKind, isRTL: boolean): React.CSSProperties {
   if (reduceMotion) return { opacity: 1 };
   const dur = `${SEQ_ANIM_S}s`;
   const name =
@@ -275,11 +241,7 @@ function SequentialIntroSlot({
   }
 
   return (
-    <div
-      ref={ref}
-      className={className}
-      style={welcomeSeqStyle(false, kind, isRTL)}
-    >
+    <div ref={ref} className={className} style={welcomeSeqStyle(false, kind, isRTL)}>
       {children}
     </div>
   );
@@ -301,12 +263,7 @@ function isConnectivityErrorText(message: string): boolean {
   );
 }
 
-type WelcomeRestorePhase =
-  | "idle"
-  | "linking"
-  | "downloading"
-  | "restoring"
-  | "ready";
+type WelcomeRestorePhase = "idle" | "linking" | "downloading" | "restoring" | "ready";
 
 function deviceLinkExistingErrorToastMessage(
   result: Extract<DeviceLinkExistingResult, { success: false }>,
@@ -402,30 +359,22 @@ export default function WelcomeSetup() {
   const [restorePhase, setRestorePhase] = useState<WelcomeRestorePhase>("idle");
   /** Set after cloud restore + DB apply succeed; prevents switching to trial on the same screen. */
   const [restoreCompleted, setRestoreCompleted] = useState(false);
-  const [linkedRestoreCustomerId, setLinkedRestoreCustomerId] = useState<
-    string | null
-  >(null);
+  const [linkedRestoreCustomerId, setLinkedRestoreCustomerId] = useState<string | null>(null);
   const [cloudTransferProgress, setCloudTransferProgress] =
     useState<CloudBackupTransferProgressPayload | null>(null);
   const [appVersion, setAppVersion] = useState<string>("1.0.0");
   const [online, setOnline] = useState(
     () => typeof navigator !== "undefined" && navigator.onLine,
   );
-  const [activeNavSectionId, setActiveNavSectionId] =
-    useState<WelcomeSectionId>(WELCOME_SECTION_NAV_ITEMS[0].id);
+  const [activeNavSectionId, setActiveNavSectionId] = useState<WelcomeSectionId>(
+    WELCOME_SECTION_NAV_ITEMS[0].id,
+  );
   const [reduceMotion, setReduceMotion] = useState(false);
   const [introStep, setIntroStep] = useState(0);
-  const [devicePrecheck, setDevicePrecheck] =
-    useState<WelcomeDevicePrecheck>("loading");
-  const [precheckCustomerId, setPrecheckCustomerId] = useState<string | null>(
-    null,
-  );
-  const [precheckCustomerName, setPrecheckCustomerName] = useState<
-    string | null
-  >(null);
-  const [precheckCustomerPhone, setPrecheckCustomerPhone] = useState<
-    string | null
-  >(null);
+  const [devicePrecheck, setDevicePrecheck] = useState<WelcomeDevicePrecheck>("loading");
+  const [precheckCustomerId, setPrecheckCustomerId] = useState<string | null>(null);
+  const [precheckCustomerName, setPrecheckCustomerName] = useState<string | null>(null);
+  const [precheckCustomerPhone, setPrecheckCustomerPhone] = useState<string | null>(null);
 
   const welcomeFullNameRef = useRef<HTMLInputElement>(null);
   const welcomePhoneRef = useRef<HTMLInputElement>(null);
@@ -458,10 +407,7 @@ export default function WelcomeSetup() {
       setDevicePrecheck("loading");
       try {
         const r = await window.api.online.deviceCheck();
-        if (
-          cancelled ||
-          (typeof navigator !== "undefined" && !navigator.onLine)
-        ) {
+        if (cancelled || (typeof navigator !== "undefined" && !navigator.onLine)) {
           setDevicePrecheck("new_device");
           setPrecheckCustomerId(null);
           setPrecheckCustomerName(null);
@@ -478,19 +424,13 @@ export default function WelcomeSetup() {
         }
 
         const cid =
-          typeof r.customerId === "string" && r.customerId.trim()
-            ? r.customerId.trim()
-            : null;
+          typeof r.customerId === "string" && r.customerId.trim() ? r.customerId.trim() : null;
         if (cid) {
           setPrecheckCustomerId(cid);
           const nm =
-            typeof r.customerName === "string" && r.customerName.trim()
-              ? r.customerName.trim()
-              : null;
+            typeof r.customerName === "string" && r.customerName.trim() ? r.customerName.trim() : null;
           const ph =
-            typeof r.customerPhone === "string" && r.customerPhone.trim()
-              ? r.customerPhone.trim()
-              : null;
+            typeof r.customerPhone === "string" && r.customerPhone.trim() ? r.customerPhone.trim() : null;
           setPrecheckCustomerName(nm);
           setPrecheckCustomerPhone(ph);
           setDevicePrecheck("existing_device");
@@ -697,10 +637,7 @@ export default function WelcomeSetup() {
     customerIdFromServer?: string | null,
     profile?: { name?: string | null; phone?: string | null },
   ) => {
-    await window.api.database.options.set(
-      ONBOARDING_INITIAL_WELCOME_DONE_KEY,
-      "1",
-    );
+    await window.api.database.options.set(ONBOARDING_INITIAL_WELCOME_DONE_KEY, "1");
     const cid = customerIdFromServer?.trim();
     if (cid) {
       await window.api.database.options.set(ONLINE_CUSTOMER_ID_OPTION_KEY, cid);
@@ -708,10 +645,7 @@ export default function WelcomeSetup() {
     if (typeof navigator !== "undefined" && navigator.onLine) {
       const check = await window.api.online.deviceCheck();
       if (!cid && check.success === true && check.customerId?.trim()) {
-        await window.api.database.options.set(
-          ONLINE_CUSTOMER_ID_OPTION_KEY,
-          check.customerId.trim(),
-        );
+        await window.api.database.options.set(ONLINE_CUSTOMER_ID_OPTION_KEY, check.customerId.trim());
       }
       await persistOnlineCustomerProfileFromDeviceCheck(check);
     }
@@ -722,9 +656,7 @@ export default function WelcomeSetup() {
   };
 
   const registeredIntroDescription = useMemo(() => {
-    const highlight = (
-      <span className="font-semibold text-green-700 not-italic" />
-    );
+    const highlight = <span className="font-semibold text-green-700 not-italic" />;
     if (precheckCustomerName && precheckCustomerPhone) {
       return (
         <Trans
@@ -762,10 +694,7 @@ export default function WelcomeSetup() {
     setBusy(true);
     try {
       showToast(
-        t(
-          "welcome.continueToAppToast",
-          "Continuing — you can sign in on the next screen.",
-        ),
+        t("welcome.continueToAppToast", "Continuing — you can sign in on the next screen."),
         "success",
       );
       await new Promise((r) => setTimeout(r, WELCOME_SUCCESS_TOAST_VISIBLE_MS));
@@ -792,13 +721,7 @@ export default function WelcomeSetup() {
     const name = fullName.trim();
     const ph = sanitizeWelcomePhoneInput(phone).trim();
     if (!name || !ph) {
-      showToast(
-        t(
-          "welcome.fillNamePhone",
-          "Please enter your full name and phone number.",
-        ),
-        "error",
-      );
+      showToast(t("welcome.fillNamePhone", "Please enter your full name and phone number."), "error");
       return;
     }
     if (!/\d/.test(ph)) {
@@ -819,17 +742,11 @@ export default function WelcomeSetup() {
         return;
       }
       showToast(
-        t(
-          "welcome.provisioningSuccessTrial",
-          "This device is registered. Continue to log in.",
-        ),
+        t("welcome.provisioningSuccessTrial", "This device is registered. Continue to log in."),
         "success",
       );
       await new Promise((r) => setTimeout(r, WELCOME_SUCCESS_TOAST_VISIBLE_MS));
-      await finishWelcomeAfterProvisioning(result.customerId ?? undefined, {
-        name,
-        phone: ph,
-      });
+      await finishWelcomeAfterProvisioning(result.customerId ?? undefined, { name, phone: ph });
     } catch {
       showToast(
         t(
@@ -849,10 +766,7 @@ export default function WelcomeSetup() {
     setBusy(true);
     try {
       showToast(
-        t(
-          "welcome.continueToAppToast",
-          "Continuing — you can sign in on the next screen.",
-        ),
+        t("welcome.continueToAppToast", "Continuing — you can sign in on the next screen."),
         "success",
       );
       await new Promise((r) => setTimeout(r, WELCOME_SUCCESS_TOAST_VISIBLE_MS));
@@ -870,13 +784,7 @@ export default function WelcomeSetup() {
     const ph = sanitizeWelcomePhoneInput(phone).trim();
     const cid = customerId.trim();
     if (!name || !ph) {
-      showToast(
-        t(
-          "welcome.fillNamePhone",
-          "Please enter your full name and phone number.",
-        ),
-        "error",
-      );
+      showToast(t("welcome.fillNamePhone", "Please enter your full name and phone number."), "error");
       return;
     }
     if (!/\d/.test(ph)) {
@@ -890,20 +798,13 @@ export default function WelcomeSetup() {
       return;
     }
     if (!cid) {
-      showToast(
-        t(
-          "welcome.customerIdRequired",
-          "Enter the customer ID your supplier sent you.",
-        ),
-        "error",
-      );
+      showToast(t("welcome.customerIdRequired", "Enter the customer ID your supplier sent you."), "error");
       return;
     }
     let restoreTargetIsEmpty = false;
     try {
       const coreEmpty = await window.api.onboarding.isCoreDatabaseEmpty();
-      restoreTargetIsEmpty =
-        coreEmpty.success === true && coreEmpty.isEmpty === true;
+      restoreTargetIsEmpty = coreEmpty.success === true && coreEmpty.isEmpty === true;
     } catch {
       restoreTargetIsEmpty = false;
     }
@@ -936,10 +837,7 @@ export default function WelcomeSetup() {
       setLinkedRestoreCustomerId(resolvedCustomerId);
 
       showToast(
-        t(
-          "welcome.restoreLinkSuccess",
-          "Shop verified. Downloading your cloud backup…",
-        ),
+        t("welcome.restoreLinkSuccess", "Shop verified. Downloading your cloud backup…"),
         "success",
       );
 
@@ -952,15 +850,11 @@ export default function WelcomeSetup() {
         speed: 0,
       });
 
-      const download =
-        await window.api.online.backupDownloadLatestToLocal(resolvedCustomerId);
+      const download = await window.api.online.backupDownloadLatestToLocal(resolvedCustomerId);
       if (download.success === false) {
         if (download.code === "not_found") {
           showToast(
-            t(
-              "welcome.restoreNoCloudBackup",
-              "No cloud backup was found for this customer yet.",
-            ),
+            t("welcome.restoreNoCloudBackup", "No cloud backup was found for this customer yet."),
             "error",
           );
         } else if (download.code === "missing_env") {
@@ -1003,13 +897,9 @@ export default function WelcomeSetup() {
             );
           } else {
             showToast(
-              t(
-                "welcome.restoreDownloadFailed",
-                "Could not download your cloud backup: {{message}}",
-                {
-                  message: download.error,
-                },
-              ),
+              t("welcome.restoreDownloadFailed", "Could not download your cloud backup: {{message}}", {
+                message: download.error,
+              }),
               "error",
             );
           }
@@ -1031,10 +921,7 @@ export default function WelcomeSetup() {
       const restored = await window.api.backup.restore(download.backupPath);
       if (!restored?.success) {
         showToast(
-          t(
-            "welcome.restoreApplyFailed",
-            "Download finished but restoring the database failed.",
-          ),
+          t("welcome.restoreApplyFailed", "Download finished but restoring the database failed."),
           "error",
         );
         setRestorePhase("idle");
@@ -1042,10 +929,7 @@ export default function WelcomeSetup() {
         return;
       }
 
-      await window.api.database.options.set(
-        ONLINE_CUSTOMER_ID_OPTION_KEY,
-        resolvedCustomerId,
-      );
+      await window.api.database.options.set(ONLINE_CUSTOMER_ID_OPTION_KEY, resolvedCustomerId);
       setRestoreCompleted(true);
       setRestorePhase("ready");
       setShowRestoreFlow(true);
@@ -1105,11 +989,7 @@ export default function WelcomeSetup() {
     }
 
     if (e.currentTarget === welcomePhoneRef.current) {
-      if (
-        showRestoreFlow &&
-        welcomeCustomerIdRef.current &&
-        !restoreCompleted
-      ) {
+      if (showRestoreFlow && welcomeCustomerIdRef.current && !restoreCompleted) {
         welcomeCustomerIdRef.current.focus();
         return;
       }
@@ -1267,15 +1147,10 @@ export default function WelcomeSetup() {
               />
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent
-            className={cn("mx-4 my-2 w-56", isRTL && "text-right")}
-          >
+          <DropdownMenuContent className={cn("mx-4 my-2 w-56", isRTL && "text-right")}>
             <DropdownMenuLabel className="flex items-center gap-2 font-semibold text-md">
               <User className="h-4 w-4" />
-              {t(
-                "navigation.welcomeToStoreManagement",
-                "Welcome to Store Management",
-              )}
+              {t("navigation.welcomeToStoreManagement", "Welcome to Store Management")}
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuLabel className="font-semibold text-md">
@@ -1435,9 +1310,7 @@ export default function WelcomeSetup() {
               <div
                 className={cn(
                   "pointer-events-none absolute inset-x-0 bottom-0 top-0 z-0 overflow-visible",
-                  !reduceMotion &&
-                    devicePrecheck !== "loading" &&
-                    "welcome-gs-glow-fadein",
+                  !reduceMotion && devicePrecheck !== "loading" && "welcome-gs-glow-fadein",
                 )}
                 aria-hidden
               >
@@ -1463,482 +1336,349 @@ export default function WelcomeSetup() {
                   ? "border-dashed border-border/70 bg-muted/20 p-8 shadow-none sm:p-10"
                   : cn(
                       "bg-card/90 p-5 shadow-xl shadow-black/5 sm:p-7",
-                      online
-                        ? "border-border/80"
-                        : "border-amber-500/45 dark:border-amber-500/35",
+                      online ? "border-border/80" : "border-amber-500/45 dark:border-amber-500/35",
                     ),
               )}
               aria-busy={busy || (online && devicePrecheck === "loading")}
             >
-              {devicePrecheck === "new_device" && !showRestoreFlow ? (
-                <div
-                  className={cn(
-                    "welcome-trial-ribbon",
-                    isRTL && "welcome-trial-ribbon--rtl",
-                  )}
-                  role="status"
-                  aria-label={t("welcome.trialBadge", "7-day free trial")}
-                >
-                  {t("welcome.trialBadge", "7-day free trial!")}
-                </div>
-              ) : null}
+            {devicePrecheck === "new_device" && !showRestoreFlow ? (
               <div
-                key={`gs-${String(online)}-${devicePrecheck}`}
-                className={cn(
-                  "min-h-0",
-                  !reduceMotion &&
-                    devicePrecheck !== "loading" &&
-                    "welcome-gs-body-fadeup",
-                )}
+                className={cn("welcome-trial-ribbon", isRTL && "welcome-trial-ribbon--rtl")}
+                role="status"
+                aria-label={t("welcome.trialBadge", "7-day free trial")}
               >
-                {!online ? (
-                  <div
-                    className="mb-6 flex gap-3 rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-start dark:bg-amber-500/15 sm:gap-4 sm:px-5 sm:py-4"
-                    role="alert"
-                  >
-                    <WifiOff
-                      className="mt-0.5 h-5 w-5 shrink-0 text-amber-700 dark:text-amber-400 sm:h-6 sm:w-6"
-                      aria-hidden
-                    />
-                    <div className="min-w-0 space-y-1">
-                      <p className="text-sm font-semibold text-foreground">
-                        {t(
-                          "welcome.offlineSetupTitle",
-                          "Internet connection required",
-                        )}
-                      </p>
-                      <p className="text-sm leading-relaxed text-muted-foreground">
-                        {t(
-                          "welcome.offlineSetupDescription",
-                          "Registering this device and starting your free trial (or linking an existing shop) requires an active internet connection. Connect to Wi‑Fi or Ethernet, then continue below when you are back online.",
-                        )}
-                      </p>
-                    </div>
-                  </div>
-                ) : null}
-
-                <div
-                  className={cn(
-                    "space-y-6 transition-opacity",
-                    !online && "pointer-events-none select-none opacity-50",
-                  )}
-                >
-                  {online && devicePrecheck === "loading" ? (
-                    <div className="flex min-h-[11rem] flex-col items-center justify-center gap-4 py-4 sm:min-h-[12rem]">
-                      <Loader2
-                        className="h-10 w-10 animate-spin text-primary"
-                        aria-hidden
-                      />
-                      <p className="max-w-sm text-center text-sm text-muted-foreground">
-                        {t(
-                          "welcome.devicePrecheckLoading",
-                          "Checking whether this device is already registered…",
-                        )}
-                      </p>
-                    </div>
-                  ) : online && devicePrecheck === "existing_device" ? (
-                    <div className="space-y-6 pt-6 text-center sm:pt-5">
-                      <header className="space-y-3">
-                        <h2 className="flex flex-wrap items-center justify-center gap-3 text-xl font-bold text-foreground sm:text-2xl">
-                          <Shield
-                            className="h-6 w-6 shrink-0 text-emerald-600"
-                            aria-hidden
-                          />
-                          {t(
-                            "welcome.registeredDeviceTitle",
-                            "This device is already registered",
-                          )}
-                        </h2>
-                        <p className="mx-auto max-w-xl text-sm leading-relaxed text-muted-foreground">
-                          {registeredIntroDescription}
-                        </p>
-                      </header>
-                      <div className="flex flex-col gap-3 pt-1">
-                        <Button
-                          type="button"
-                          className="min-h-[3rem] w-full border-transparent bg-emerald-600 text-white shadow-xs hover:bg-emerald-700 focus-visible:ring-emerald-500/35 dark:bg-emerald-600 dark:text-white dark:hover:bg-emerald-500"
-                          disabled={busy}
-                          onClick={() => void handleContinueRegisteredDevice()}
-                        >
-                          {busy ? (
-                            <span className="flex items-center justify-center">
-                              <span
-                                className="mr-2 h-5 w-5 shrink-0 animate-spin rounded-full border-b-2 border-white"
-                                aria-hidden
-                              />
-                              {t("welcome.continuing", "Continuing…")}
-                            </span>
-                          ) : (
-                            <span className="flex items-center justify-center gap-2">
-                              {t(
-                                "welcome.continueToApp",
-                                "Continue to the app",
-                              )}
-                              <ArrowRight
-                                className="h-5 w-5 shrink-0"
-                                aria-hidden
-                              />
-                            </span>
-                          )}
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <AnimatedHeight
-                      innerClassName="px-2"
-                      reduceMotion={reduceMotion}
-                      deps={[
-                        showRestoreFlow,
-                        restorePhase,
-                        restoreCompleted,
-                        cloudTransferProgress?.progress,
-                      ]}
-                    >
-                      {showRestoreFlow ? (
-                        <>
-                          <button
-                            type="button"
-                            onClick={exitRestoreFlow}
-                            disabled={restoreBackDisabled}
-                            className="mb-4 flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground disabled:pointer-events-none disabled:opacity-50 sm:mb-5"
-                          >
-                            <ArrowLeft
-                              className="h-4 w-4 shrink-0"
-                              aria-hidden
-                            />
-                            {t(
-                              "welcome.backToNewShopSetup",
-                              "Back to new shop setup",
-                            )}
-                          </button>
-
-                          <header className="space-y-3 text-center">
-                            <h2 className="flex flex-wrap items-center justify-center gap-3 text-xl font-bold text-foreground sm:text-2xl">
-                              <LifeBuoy
-                                className="h-6 w-6 shrink-0 text-blue-600 dark:text-blue-400"
-                                aria-hidden
-                              />
-                              {t(
-                                "welcome.restoreTitle",
-                                "Restore on a new computer",
-                              )}
-                            </h2>
-                            <p className="mx-auto max-w-xl text-sm leading-relaxed text-muted-foreground">
-                              {t(
-                                "welcome.restoreDescription",
-                                "Link this PC to your existing shop and download your latest cloud backup. This replaces data on this computer. A paid license is required.",
-                              )}
-                            </p>
-                          </header>
-
-                          <div className="space-y-6 text-start">
-                            <div className="grid gap-4 sm:grid-cols-2">
-                              <div className="space-y-2 sm:col-span-2">
-                                <label
-                                  htmlFor="welcome-full-name"
-                                  className="text-sm font-medium"
-                                >
-                                  {t("welcome.fullName", "Full name")}
-                                </label>
-                                <Input
-                                  ref={welcomeFullNameRef}
-                                  id="welcome-full-name"
-                                  value={fullName}
-                                  onChange={(e) => setFullName(e.target.value)}
-                                  onKeyDown={handleWelcomeFormKeyDown}
-                                  autoComplete="name"
-                                  placeholder={t(
-                                    "welcome.fullNamePlaceholder",
-                                    "First and last name",
-                                  )}
-                                  disabled={!online || restoreFieldsLocked}
-                                />
-                              </div>
-                              <div className="space-y-2 sm:col-span-2">
-                                <label
-                                  htmlFor="welcome-phone"
-                                  className="text-sm font-medium"
-                                >
-                                  {t("welcome.phone", "Phone number")}
-                                </label>
-                                <Input
-                                  ref={welcomePhoneRef}
-                                  id="welcome-phone"
-                                  value={phone}
-                                  onChange={(e) =>
-                                    setPhone(
-                                      sanitizeWelcomePhoneInput(e.target.value),
-                                    )
-                                  }
-                                  onKeyDown={handleWelcomeFormKeyDown}
-                                  autoComplete="tel"
-                                  inputMode="tel"
-                                  placeholder={t(
-                                    "welcome.phonePlaceholder",
-                                    "Your phone number",
-                                  )}
-                                  disabled={!online || restoreFieldsLocked}
-                                />
-                              </div>
-                            </div>
-
-                            <div className="space-y-2">
-                              <label
-                                htmlFor="welcome-customer-id"
-                                className="text-sm font-medium"
-                              >
-                                {t("welcome.customerId", "Customer ID")}
-                              </label>
-                              <Input
-                                ref={welcomeCustomerIdRef}
-                                id="welcome-customer-id"
-                                value={customerId}
-                                onChange={(e) => setCustomerId(e.target.value)}
-                                onKeyDown={handleWelcomeFormKeyDown}
-                                placeholder={t(
-                                  "welcome.customerIdPlaceholder",
-                                  "UUID from your supplier",
-                                )}
-                                className="font-mono text-sm"
-                                disabled={!online || restoreFieldsLocked}
-                              />
-                              <p className="text-xs text-muted-foreground">
-                                {t(
-                                  "welcome.customerIdHint",
-                                  "Must match the phone number we have on file for this ID.",
-                                )}
-                              </p>
-                            </div>
-
-                            <div className="flex flex-col gap-3 pt-1">
-                              {restoreCompleted || restorePhase === "ready" ? (
-                                <Button
-                                  ref={welcomePrimaryActionRef}
-                                  type="button"
-                                  className="min-h-[3rem] w-full border-transparent bg-green-600 text-white shadow-xs hover:bg-green-700 focus-visible:ring-green-500/35 dark:bg-green-600 dark:text-white dark:hover:bg-green-500"
-                                  disabled={!online || busy}
-                                  onClick={() =>
-                                    void handleContinueAfterRestore()
-                                  }
-                                >
-                                  {busy ? (
-                                    <span className="flex items-center justify-center">
-                                      <Loader2
-                                        className="mr-2 h-5 w-5 shrink-0 animate-spin"
-                                        aria-hidden
-                                      />
-                                      {t("welcome.continuing", "Continuing…")}
-                                    </span>
-                                  ) : (
-                                    <span className="inline-flex items-center justify-center">
-                                      {t("welcome.restoreContinue", "Continue")}
-                                      <ArrowRight
-                                        className="ms-2 h-4 w-4"
-                                        aria-hidden
-                                      />
-                                    </span>
-                                  )}
-                                </Button>
-                              ) : (
-                                <Button
-                                  ref={welcomePrimaryActionRef}
-                                  type="button"
-                                  className="min-h-[3rem] w-full border-transparent bg-blue-600 text-white shadow-xs hover:bg-blue-700 focus-visible:ring-blue-500/35 dark:bg-blue-600 dark:text-white dark:hover:bg-blue-500"
-                                  disabled={
-                                    !online || busy || restoreInProgress
-                                  }
-                                  onClick={() => void handleRestore()}
-                                >
-                                  {restorePhase === "linking" ? (
-                                    <span className="flex items-center justify-center">
-                                      <Loader2
-                                        className="mr-2 h-5 w-5 shrink-0 animate-spin"
-                                        aria-hidden
-                                      />
-                                      {t(
-                                        "welcome.linkingDevice",
-                                        "Linking device…",
-                                      )}
-                                    </span>
-                                  ) : restorePhase === "downloading" ? (
-                                    <span className="flex items-center justify-center">
-                                      <Loader2
-                                        className="mr-2 h-5 w-5 shrink-0 animate-spin"
-                                        aria-hidden
-                                      />
-                                      {t(
-                                        "welcome.restoreDownloading",
-                                        "Downloading backup…",
-                                      )}
-                                    </span>
-                                  ) : restorePhase === "restoring" ? (
-                                    <span className="flex items-center justify-center">
-                                      <Loader2
-                                        className="mr-2 h-5 w-5 shrink-0 animate-spin"
-                                        aria-hidden
-                                      />
-                                      {t(
-                                        "welcome.restoreApplying",
-                                        "Applying backup…",
-                                      )}
-                                    </span>
-                                  ) : (
-                                    t(
-                                      "welcome.restoreFromCloud",
-                                      "Restore data from cloud",
-                                    )
-                                  )}
-                                </Button>
-                              )}
-                              {(restorePhase === "downloading" ||
-                                restorePhase === "restoring") &&
-                              cloudTransferProgress ? (
-                                <div className="rounded-lg border border-border/70 bg-muted/20 px-4 py-3">
-                                  <p className="mb-3 text-sm font-medium text-foreground">
-                                    {restorePhase === "restoring"
-                                      ? t(
-                                          "welcome.restoreApplyingHint",
-                                          "Applying backup to this computer…",
-                                        )
-                                      : t(
-                                          "welcome.restoreDownloadingHint",
-                                          "Downloading your latest cloud backup…",
-                                        )}
-                                  </p>
-                                  <CloudBackupTransferProgressBar
-                                    progress={cloudTransferProgress}
-                                  />
-                                </div>
-                              ) : null}
-                            </div>
-                          </div>
-                        </>
-                      ) : (
-                        <>
-                          <header className="space-y-3 pt-6 text-center sm:pt-5">
-                            <h2 className="flex flex-wrap items-center justify-center gap-3 text-xl font-bold text-foreground sm:text-2xl">
-                              <Sparkles
-                                className="h-6 w-6 shrink-0 text-primary"
-                                aria-hidden
-                              />
-                              {t("welcome.setupTitle", "Get started with us")}
-                            </h2>
-                            <p className="mx-auto max-w-xl text-sm leading-relaxed text-muted-foreground">
-                              {t(
-                                "welcome.setupDescriptionTrial",
-                                "Tell us who you are so we can start your free trial on this computer. Add your full name and phone — we use them to connect this device to your account. Your login password is separate and is set on the next screen.",
-                              )}
-                            </p>
-                          </header>
-
-                          <div className="space-y-6 text-start">
-                            <div className="grid gap-4 sm:grid-cols-2">
-                              <div className="space-y-2 sm:col-span-2">
-                                <label
-                                  htmlFor="welcome-full-name-trial"
-                                  className="text-sm font-medium"
-                                >
-                                  {t("welcome.fullName", "Full name")}
-                                </label>
-                                <Input
-                                  ref={welcomeFullNameRef}
-                                  id="welcome-full-name-trial"
-                                  value={fullName}
-                                  onChange={(e) => setFullName(e.target.value)}
-                                  onKeyDown={handleWelcomeFormKeyDown}
-                                  autoComplete="name"
-                                  placeholder={t(
-                                    "welcome.fullNamePlaceholder",
-                                    "First and last name",
-                                  )}
-                                  disabled={!online || busy}
-                                />
-                              </div>
-                              <div className="space-y-2 sm:col-span-2">
-                                <label
-                                  htmlFor="welcome-phone-trial"
-                                  className="text-sm font-medium"
-                                >
-                                  {t("welcome.phone", "Phone number")}
-                                </label>
-                                <Input
-                                  ref={welcomePhoneRef}
-                                  id="welcome-phone-trial"
-                                  value={phone}
-                                  onChange={(e) =>
-                                    setPhone(
-                                      sanitizeWelcomePhoneInput(e.target.value),
-                                    )
-                                  }
-                                  onKeyDown={handleWelcomeFormKeyDown}
-                                  autoComplete="tel"
-                                  inputMode="tel"
-                                  placeholder={t(
-                                    "welcome.phonePlaceholder",
-                                    "Your phone number",
-                                  )}
-                                  disabled={!online || busy}
-                                />
-                              </div>
-                            </div>
-
-                            <div className="flex flex-col gap-3 pt-1">
-                              <Button
-                                ref={welcomePrimaryActionRef}
-                                type="button"
-                                className="min-h-[3rem] w-full border-transparent bg-green-600 text-white shadow-xs hover:bg-green-700 focus-visible:ring-green-500/35 dark:bg-green-600 dark:text-white dark:hover:bg-green-500"
-                                disabled={!online || busy}
-                                onClick={handleStartTrial}
-                              >
-                                {busy ? (
-                                  <span className="flex items-center justify-center">
-                                    <span
-                                      className="mr-2 h-5 w-5 shrink-0 animate-spin rounded-full border-b-2 border-white"
-                                      aria-hidden
-                                    />
-                                    {t(
-                                      "welcome.startingTrial",
-                                      "Registering device…",
-                                    )}
-                                  </span>
-                                ) : (
-                                  t(
-                                    "welcome.startTrial",
-                                    "Start free 7-day trial",
-                                  )
-                                )}
-                              </Button>
-
-                              <button
-                                type="button"
-                                onClick={() => setShowRestoreFlow(true)}
-                                disabled={!online || busy}
-                                className="w-full text-center text-sm text-muted-foreground underline transition-colors hover:text-foreground disabled:pointer-events-none disabled:opacity-50"
-                              >
-                                {t(
-                                  "welcome.restoreOnNewComputer",
-                                  "Restore shop on a new computer (existing account)",
-                                )}
-                              </button>
-                            </div>
-                          </div>
-                        </>
-                      )}
-                    </AnimatedHeight>
-                  )}
+                {t("welcome.trialBadge", "7-day free trial!")}
+              </div>
+            ) : null}
+            <div
+              key={`gs-${String(online)}-${devicePrecheck}`}
+              className={cn(
+                "min-h-0",
+                !reduceMotion && devicePrecheck !== "loading" && "welcome-gs-body-fadeup",
+              )}
+            >
+            {!online ? (
+              <div
+                className="mb-6 flex gap-3 rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-start dark:bg-amber-500/15 sm:gap-4 sm:px-5 sm:py-4"
+                role="alert"
+              >
+                <WifiOff
+                  className="mt-0.5 h-5 w-5 shrink-0 text-amber-700 dark:text-amber-400 sm:h-6 sm:w-6"
+                  aria-hidden
+                />
+                <div className="min-w-0 space-y-1">
+                  <p className="text-sm font-semibold text-foreground">
+                    {t("welcome.offlineSetupTitle", "Internet connection required")}
+                  </p>
+                  <p className="text-sm leading-relaxed text-muted-foreground">
+                    {t(
+                      "welcome.offlineSetupDescription",
+                      "Registering this device and starting your free trial (or linking an existing shop) requires an active internet connection. Connect to Wi‑Fi or Ethernet, then continue below when you are back online.",
+                    )}
+                  </p>
                 </div>
               </div>
-            </section>
+            ) : null}
+
+            <div
+              className={cn(
+                "space-y-6 transition-opacity",
+                !online && "pointer-events-none select-none opacity-50",
+              )}
+            >
+              {online && devicePrecheck === "loading" ? (
+                <div className="flex min-h-[11rem] flex-col items-center justify-center gap-4 py-4 sm:min-h-[12rem]">
+                  <Loader2 className="h-10 w-10 animate-spin text-primary" aria-hidden />
+                  <p className="max-w-sm text-center text-sm text-muted-foreground">
+                    {t("welcome.devicePrecheckLoading", "Checking whether this device is already registered…")}
+                  </p>
+                </div>
+              ) : online && devicePrecheck === "existing_device" ? (
+                <div className="space-y-6 pt-6 text-center sm:pt-5">
+                  <header className="space-y-3">
+                    <h2 className="flex flex-wrap items-center justify-center gap-3 text-xl font-bold text-foreground sm:text-2xl">
+                      <Shield className="h-6 w-6 shrink-0 text-emerald-600" aria-hidden />
+                      {t("welcome.registeredDeviceTitle", "This device is already registered")}
+                    </h2>
+                    <p className="mx-auto max-w-xl text-sm leading-relaxed text-muted-foreground">
+                      {registeredIntroDescription}
+                    </p>
+                  </header>
+                  <div className="flex flex-col gap-3 pt-1">
+                    <Button
+                      type="button"
+                      className="min-h-[3rem] w-full border-transparent bg-emerald-600 text-white shadow-xs hover:bg-emerald-700 focus-visible:ring-emerald-500/35 dark:bg-emerald-600 dark:text-white dark:hover:bg-emerald-500"
+                      disabled={busy}
+                      onClick={() => void handleContinueRegisteredDevice()}
+                    >
+                      {busy ? (
+                        <span className="flex items-center justify-center">
+                          <span
+                            className="mr-2 h-5 w-5 shrink-0 animate-spin rounded-full border-b-2 border-white"
+                            aria-hidden
+                          />
+                          {t("welcome.continuing", "Continuing…")}
+                        </span>
+                      ) : (
+                        <span className="flex items-center justify-center gap-2">
+                          {t("welcome.continueToApp", "Continue to the app")}
+                          <ArrowRight className="h-5 w-5 shrink-0" aria-hidden />
+                        </span>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <AnimatedHeight
+                  innerClassName="px-2"
+                  reduceMotion={reduceMotion}
+                  deps={[
+                    showRestoreFlow,
+                    restorePhase,
+                    restoreCompleted,
+                    cloudTransferProgress?.progress,
+                  ]}
+                >
+                  {showRestoreFlow ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={exitRestoreFlow}
+                    disabled={restoreBackDisabled}
+                    className="mb-4 flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground disabled:pointer-events-none disabled:opacity-50 sm:mb-5"
+                  >
+                    <ArrowLeft className="h-4 w-4 shrink-0" aria-hidden />
+                    {t("welcome.backToNewShopSetup", "Back to new shop setup")}
+                  </button>
+
+                  <header className="space-y-3 text-center">
+                    <h2 className="flex flex-wrap items-center justify-center gap-3 text-xl font-bold text-foreground sm:text-2xl">
+                      <LifeBuoy className="h-6 w-6 shrink-0 text-blue-600 dark:text-blue-400" aria-hidden />
+                      {t("welcome.restoreTitle", "Restore on a new computer")}
+                    </h2>
+                    <p className="mx-auto max-w-xl text-sm leading-relaxed text-muted-foreground">
+                      {t(
+                        "welcome.restoreDescription",
+                        "Link this PC to your existing shop and download your latest cloud backup. This replaces data on this computer. A paid license is required.",
+                      )}
+                    </p>
+                  </header>
+
+                  <div className="space-y-6 text-start">
+                    <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2 sm:col-span-2">
+                    <label htmlFor="welcome-full-name" className="text-sm font-medium">
+                      {t("welcome.fullName", "Full name")}
+                    </label>
+                    <Input
+                      ref={welcomeFullNameRef}
+                      id="welcome-full-name"
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      onKeyDown={handleWelcomeFormKeyDown}
+                      autoComplete="name"
+                      placeholder={t("welcome.fullNamePlaceholder", "First and last name")}
+                      disabled={!online || restoreFieldsLocked}
+                    />
+                  </div>
+                  <div className="space-y-2 sm:col-span-2">
+                    <label htmlFor="welcome-phone" className="text-sm font-medium">
+                      {t("welcome.phone", "Phone number")}
+                    </label>
+                    <Input
+                      ref={welcomePhoneRef}
+                      id="welcome-phone"
+                      value={phone}
+                      onChange={(e) => setPhone(sanitizeWelcomePhoneInput(e.target.value))}
+                      onKeyDown={handleWelcomeFormKeyDown}
+                      autoComplete="tel"
+                      inputMode="tel"
+                      placeholder={t("welcome.phonePlaceholder", "Your phone number")}
+                      disabled={!online || restoreFieldsLocked}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                    <label htmlFor="welcome-customer-id" className="text-sm font-medium">
+                      {t("welcome.customerId", "Customer ID")}
+                    </label>
+                    <Input
+                      ref={welcomeCustomerIdRef}
+                      id="welcome-customer-id"
+                      value={customerId}
+                      onChange={(e) => setCustomerId(e.target.value)}
+                      onKeyDown={handleWelcomeFormKeyDown}
+                      placeholder={t("welcome.customerIdPlaceholder", "UUID from your supplier")}
+                      className="font-mono text-sm"
+                      disabled={!online || restoreFieldsLocked}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      {t("welcome.customerIdHint", "Must match the phone number we have on file for this ID.")}
+                    </p>
+                  </div>
+
+                <div className="flex flex-col gap-3 pt-1">
+                  {restoreCompleted || restorePhase === "ready" ? (
+                    <Button
+                      ref={welcomePrimaryActionRef}
+                      type="button"
+                      className="min-h-[3rem] w-full border-transparent bg-green-600 text-white shadow-xs hover:bg-green-700 focus-visible:ring-green-500/35 dark:bg-green-600 dark:text-white dark:hover:bg-green-500"
+                      disabled={!online || busy}
+                      onClick={() => void handleContinueAfterRestore()}
+                    >
+                      {busy ? (
+                        <span className="flex items-center justify-center">
+                          <Loader2 className="mr-2 h-5 w-5 shrink-0 animate-spin" aria-hidden />
+                          {t("welcome.continuing", "Continuing…")}
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center justify-center">
+                          {t("welcome.restoreContinue", "Continue")}
+                          <ArrowRight className="ms-2 h-4 w-4" aria-hidden />
+                        </span>
+                      )}
+                    </Button>
+                  ) : (
+                    <Button
+                      ref={welcomePrimaryActionRef}
+                      type="button"
+                      className="min-h-[3rem] w-full border-transparent bg-blue-600 text-white shadow-xs hover:bg-blue-700 focus-visible:ring-blue-500/35 dark:bg-blue-600 dark:text-white dark:hover:bg-blue-500"
+                      disabled={!online || busy || restoreInProgress}
+                      onClick={() => void handleRestore()}
+                    >
+                      {restorePhase === "linking" ? (
+                        <span className="flex items-center justify-center">
+                          <Loader2 className="mr-2 h-5 w-5 shrink-0 animate-spin" aria-hidden />
+                          {t("welcome.linkingDevice", "Linking device…")}
+                        </span>
+                      ) : restorePhase === "downloading" ? (
+                        <span className="flex items-center justify-center">
+                          <Loader2 className="mr-2 h-5 w-5 shrink-0 animate-spin" aria-hidden />
+                          {t("welcome.restoreDownloading", "Downloading backup…")}
+                        </span>
+                      ) : restorePhase === "restoring" ? (
+                        <span className="flex items-center justify-center">
+                          <Loader2 className="mr-2 h-5 w-5 shrink-0 animate-spin" aria-hidden />
+                          {t("welcome.restoreApplying", "Applying backup…")}
+                        </span>
+                      ) : (
+                        t("welcome.restoreFromCloud", "Restore data from cloud")
+                      )}
+                    </Button>
+                  )}
+                  {(restorePhase === "downloading" || restorePhase === "restoring") &&
+                  cloudTransferProgress ? (
+                    <div className="rounded-lg border border-border/70 bg-muted/20 px-4 py-3">
+                      <p className="mb-3 text-sm font-medium text-foreground">
+                        {restorePhase === "restoring"
+                          ? t("welcome.restoreApplyingHint", "Applying backup to this computer…")
+                          : t("welcome.restoreDownloadingHint", "Downloading your latest cloud backup…")}
+                      </p>
+                      <CloudBackupTransferProgressBar progress={cloudTransferProgress} />
+                    </div>
+                  ) : null}
+                </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <header className="space-y-3 pt-6 text-center sm:pt-5">
+                    <h2 className="flex flex-wrap items-center justify-center gap-3 text-xl font-bold text-foreground sm:text-2xl">
+                      <Sparkles className="h-6 w-6 shrink-0 text-primary" aria-hidden />
+                      {t("welcome.setupTitle", "Get started with us")}
+                    </h2>
+                    <p className="mx-auto max-w-xl text-sm leading-relaxed text-muted-foreground">
+                      {t(
+                        "welcome.setupDescriptionTrial",
+                        "Tell us who you are so we can start your free trial on this computer. Add your full name and phone — we use them to connect this device to your account. Your login password is separate and is set on the next screen.",
+                      )}
+                    </p>
+                  </header>
+
+                  <div className="space-y-6 text-start">
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="space-y-2 sm:col-span-2">
+                        <label htmlFor="welcome-full-name-trial" className="text-sm font-medium">
+                          {t("welcome.fullName", "Full name")}
+                        </label>
+                        <Input
+                          ref={welcomeFullNameRef}
+                          id="welcome-full-name-trial"
+                          value={fullName}
+                          onChange={(e) => setFullName(e.target.value)}
+                          onKeyDown={handleWelcomeFormKeyDown}
+                          autoComplete="name"
+                          placeholder={t("welcome.fullNamePlaceholder", "First and last name")}
+                          disabled={!online || busy}
+                        />
+                      </div>
+                      <div className="space-y-2 sm:col-span-2">
+                        <label htmlFor="welcome-phone-trial" className="text-sm font-medium">
+                          {t("welcome.phone", "Phone number")}
+                        </label>
+                        <Input
+                          ref={welcomePhoneRef}
+                          id="welcome-phone-trial"
+                          value={phone}
+                          onChange={(e) => setPhone(sanitizeWelcomePhoneInput(e.target.value))}
+                          onKeyDown={handleWelcomeFormKeyDown}
+                          autoComplete="tel"
+                          inputMode="tel"
+                          placeholder={t("welcome.phonePlaceholder", "Your phone number")}
+                          disabled={!online || busy}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-3 pt-1">
+                      <Button
+                        ref={welcomePrimaryActionRef}
+                        type="button"
+                        className="min-h-[3rem] w-full border-transparent bg-green-600 text-white shadow-xs hover:bg-green-700 focus-visible:ring-green-500/35 dark:bg-green-600 dark:text-white dark:hover:bg-green-500"
+                        disabled={!online || busy}
+                        onClick={handleStartTrial}
+                      >
+                        {busy ? (
+                          <span className="flex items-center justify-center">
+                            <span
+                              className="mr-2 h-5 w-5 shrink-0 animate-spin rounded-full border-b-2 border-white"
+                              aria-hidden
+                            />
+                            {t("welcome.startingTrial", "Registering device…")}
+                          </span>
+                        ) : (
+                          t("welcome.startTrial", "Start free 7-day trial")
+                        )}
+                      </Button>
+
+                      <button
+                        type="button"
+                        onClick={() => setShowRestoreFlow(true)}
+                        disabled={!online || busy}
+                        className="w-full text-center text-sm text-muted-foreground underline transition-colors hover:text-foreground disabled:pointer-events-none disabled:opacity-50"
+                      >
+                        {t(
+                          "welcome.restoreOnNewComputer",
+                          "Restore shop on a new computer (existing account)",
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </>
+                  )}
+                </AnimatedHeight>
+              )}
+            </div>
+            </div>
+          </section>
           </SequentialIntroSlot>
         </div>
       </section>
 
       <section
         id="welcome-key-features"
-        className={cn(
-          "mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-16",
-          WELCOME_SECTION_SCROLL_MARGIN,
-        )}
+        className={cn("mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-16", WELCOME_SECTION_SCROLL_MARGIN)}
       >
         <SequentialIntroSlot
           stepIndex={SEQ.keyIntro}
@@ -2011,24 +1751,18 @@ export default function WelcomeSetup() {
             onStepComplete={advanceIntro}
             className="mt-10 grid grid-cols-1 gap-4 md:grid-cols-3"
           >
-            {WELCOME_TECHNOLOGY_BRIDGE_HIGHLIGHTS.map(
-              ({ icon: Icon, titleKey, descKey }) => (
-                <article
-                  key={titleKey}
-                  className="h-full rounded-2xl border border-border/60 bg-card/80 p-5"
-                >
-                  <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10">
-                    <Icon className="h-5 w-5 text-primary" aria-hidden />
-                  </div>
-                  <h3 className="font-semibold text-foreground">
-                    {t(titleKey)}
-                  </h3>
-                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                    {t(descKey)}
-                  </p>
-                </article>
-              ),
-            )}
+            {WELCOME_TECHNOLOGY_BRIDGE_HIGHLIGHTS.map(({ icon: Icon, titleKey, descKey }) => (
+              <article
+                key={titleKey}
+                className="h-full rounded-2xl border border-border/60 bg-card/80 p-5"
+              >
+                <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10">
+                  <Icon className="h-5 w-5 text-primary" aria-hidden />
+                </div>
+                <h3 className="font-semibold text-foreground">{t(titleKey)}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{t(descKey)}</p>
+              </article>
+            ))}
           </SequentialIntroSlot>
 
           <SequentialIntroSlot
@@ -2044,10 +1778,7 @@ export default function WelcomeSetup() {
             <FeaturesCarousel
               items={ABOUT_TECHNICAL_FEATURE_DEFS}
               isRTL={isRTL}
-              tabListAriaLabel={t(
-                "about.technical.title",
-                "Technical Features",
-              )}
+              tabListAriaLabel={t("about.technical.title", "Technical Features")}
             />
           </SequentialIntroSlot>
         </div>
@@ -2075,10 +1806,7 @@ export default function WelcomeSetup() {
 
       <section
         id="welcome-developer"
-        className={cn(
-          "mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-16",
-          WELCOME_SECTION_SCROLL_MARGIN,
-        )}
+        className={cn("mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-16", WELCOME_SECTION_SCROLL_MARGIN)}
       >
         <SequentialIntroSlot
           stepIndex={SEQ.devCard}
@@ -2100,38 +1828,24 @@ export default function WelcomeSetup() {
             <div className="space-y-4">
               <div className="flex items-center gap-3">
                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary/80">
-                  <span className="text-lg font-bold text-white dark:text-black">
-                    AK
-                  </span>
+                  <span className="text-lg font-bold text-white dark:text-black">AK</span>
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-foreground">
-                    Abdellah Kahia
-                  </h3>
-                  <p className="text-muted-foreground">
-                    {t("about.developer.role", "Lead Developer & Founder")}
-                  </p>
+                  <h3 className="text-lg font-bold text-foreground">Abdellah Kahia</h3>
+                  <p className="text-muted-foreground">{t("about.developer.role", "Lead Developer & Founder")}</p>
                 </div>
               </div>
               <div className="space-y-3 text-sm">
                 <div className="flex items-center gap-3">
                   <Mail className="h-4 w-4 shrink-0 text-primary" aria-hidden />
-                  <span className="break-all text-foreground">
-                    abdoukahia853@gmail.com
-                  </span>
+                  <span className="break-all text-foreground">abdoukahia853@gmail.com</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <Phone
-                    className="h-4 w-4 shrink-0 text-primary"
-                    aria-hidden
-                  />
+                  <Phone className="h-4 w-4 shrink-0 text-primary" aria-hidden />
                   <span className="text-foreground">+213 793 420 745</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <MapPin
-                    className="h-4 w-4 shrink-0 text-primary"
-                    aria-hidden
-                  />
+                  <MapPin className="h-4 w-4 shrink-0 text-primary" aria-hidden />
                   <span className="text-foreground">Annaba, Algeria</span>
                 </div>
               </div>
@@ -2177,15 +1891,10 @@ export default function WelcomeSetup() {
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 lg:gap-8">
               <article className="h-full rounded-2xl border border-border/70 bg-card/80 p-6 shadow-sm sm:p-8">
                 <h3 className="mb-4 flex items-center gap-3 text-xl font-bold text-foreground">
-                  <Shield
-                    className="h-5 w-5 shrink-0 text-primary"
-                    aria-hidden
-                  />
+                  <Shield className="h-5 w-5 shrink-0 text-primary" aria-hidden />
                   {t("about.privacy.title", "Privacy Policy")}
                 </h3>
-                <p className="mb-4 text-sm leading-relaxed text-muted-foreground">
-                  {t("about.privacy.intro")}
-                </p>
+                <p className="mb-4 text-sm leading-relaxed text-muted-foreground">{t("about.privacy.intro")}</p>
                 <ul className="list-disc space-y-3 ps-5 text-sm leading-relaxed text-muted-foreground">
                   {ABOUT_PRIVACY_POINT_KEYS.map((key) => (
                     <li key={key}>{t(key)}</li>
@@ -2195,15 +1904,10 @@ export default function WelcomeSetup() {
 
               <article className="h-full rounded-2xl border border-border/70 bg-card/80 p-6 shadow-sm sm:p-8">
                 <h3 className="mb-4 flex items-center gap-3 text-xl font-bold text-foreground">
-                  <FileText
-                    className="h-5 w-5 shrink-0 text-primary"
-                    aria-hidden
-                  />
+                  <FileText className="h-5 w-5 shrink-0 text-primary" aria-hidden />
                   {t("about.terms.title", "Terms of Service")}
                 </h3>
-                <p className="mb-4 text-sm leading-relaxed text-muted-foreground">
-                  {t("about.terms.intro")}
-                </p>
+                <p className="mb-4 text-sm leading-relaxed text-muted-foreground">{t("about.terms.intro")}</p>
                 <ul className="list-disc space-y-3 ps-5 text-sm leading-relaxed text-muted-foreground">
                   {ABOUT_TERMS_POINT_KEYS.map((key) => (
                     <li key={key}>{t(key)}</li>
@@ -2226,10 +1930,7 @@ export default function WelcomeSetup() {
       >
         <footer className="border-t border-border/60 px-4 py-8 text-center">
           <p className="text-sm text-muted-foreground">
-            {t(
-              "about.footer",
-              "© 2026 REDA TECH. All rights reserved. Built with ❤️ in Algeria.",
-            )}
+            {t("about.footer", "© 2026 REDA TECH. All rights reserved. Built with ❤️ in Algeria.")}
           </p>
         </footer>
       </SequentialIntroSlot>

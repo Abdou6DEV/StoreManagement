@@ -3,24 +3,15 @@ import fs from "fs";
 import path from "path";
 import { finished } from "node:stream/promises";
 import { getMachineGuid } from "../utils/validationKey";
-import {
-  getStoreOnlineConfig,
-  type StoreOnlineConfig,
-} from "../utils/onlineConfig";
+import { getStoreOnlineConfig, type StoreOnlineConfig } from "../utils/onlineConfig";
 import {
   clearStoredLicenseGrace,
   persistStoredLicenseGrace,
   readStoredLicenseGrace,
   type LicenseGraceSnapshot,
 } from "../utils/licenseGraceStore";
-import type {
-  DeviceRequestPayload,
-  DeviceRequestResult,
-} from "../types/deviceRequest";
-import type {
-  DeviceLinkExistingPayload,
-  DeviceLinkExistingResult,
-} from "../types/deviceLinkExisting";
+import type { DeviceRequestPayload, DeviceRequestResult } from "../types/deviceRequest";
+import type { DeviceLinkExistingPayload, DeviceLinkExistingResult } from "../types/deviceLinkExisting";
 import type { DeviceCheckResult } from "../types/deviceCheck";
 import type {
   CloudBackupDownloadResult,
@@ -71,10 +62,7 @@ function onlineAuthedHeaders(cfg: StoreOnlineConfig): Record<string, string> {
   };
 }
 
-function mapCloudBackupErrorCode(
-  error: string,
-  status: number,
-): CloudBackupErrorCode {
+function mapCloudBackupErrorCode(error: string, status: number): CloudBackupErrorCode {
   const normalized = error.trim().toLowerCase();
   if (normalized === "unauthorized") return "unauthorized";
   if (normalized === "file_too_large_free_tier") return "file_too_large";
@@ -150,10 +138,9 @@ async function isReadableSQLiteDatabase(filePath: string): Promise<boolean> {
       },
     });
     try {
-      const rows =
-        await testPrisma.$queryRawUnsafe<Array<Record<string, string>>>(
-          "PRAGMA quick_check",
-        );
+      const rows = await testPrisma.$queryRawUnsafe<Array<Record<string, string>>>(
+        "PRAGMA quick_check",
+      );
       const firstResult = rows[0] ? Object.values(rows[0])[0] : null;
       return firstResult === "ok";
     } finally {
@@ -178,10 +165,7 @@ function versionGateBlockFromMeta(
 ): CloudBackupDownloadToLocalResult | null {
   const gate = checkCloudBackupAppVersionGate(meta, installedAppVersion);
   if (!gate.blocked) return null;
-  return cloudBackupAppUpdateRequiredResult(
-    gate.cloudAppVersion,
-    gate.installedAppVersion,
-  );
+  return cloudBackupAppUpdateRequiredResult(gate.cloudAppVersion, gate.installedAppVersion);
 }
 
 function sendCloudBackupProgressThrottled(
@@ -222,18 +206,10 @@ export async function uploadCloudBackupLatest(
 ): Promise<CloudBackupUploadResult> {
   const backupPath = String(backupFilePath ?? "").trim();
   if (!backupPath) {
-    return {
-      success: false,
-      error: "Backup file path is required.",
-      code: "missing_file",
-    };
+    return { success: false, error: "Backup file path is required.", code: "missing_file" };
   }
   if (!fs.existsSync(backupPath)) {
-    return {
-      success: false,
-      error: "Backup file was not found.",
-      code: "missing_file",
-    };
+    return { success: false, error: "Backup file was not found.", code: "missing_file" };
   }
 
   const identity = await resolveCloudBackupIdentity();
@@ -245,8 +221,7 @@ export async function uploadCloudBackupLatest(
   if ("error" in cfg) {
     return {
       success: false,
-      error:
-        "Online backup is not configured (missing STORE_ONLINE_* env vars).",
+      error: "Online backup is not configured (missing STORE_ONLINE_* env vars).",
       code: "missing_env",
     };
   }
@@ -264,10 +239,7 @@ export async function uploadCloudBackupLatest(
       fs.readSync(fd, buf, 0, len, readOff);
       parts.push(buf);
       readOff += len;
-      const progressRead =
-        totalSize > 0
-          ? Math.min(35, Math.round((readOff / totalSize) * 35))
-          : 0;
+      const progressRead = totalSize > 0 ? Math.min(35, Math.round((readOff / totalSize) * 35)) : 0;
       send({
         phase: "upload",
         progress: progressRead,
@@ -290,11 +262,7 @@ export async function uploadCloudBackupLatest(
       ? uploadSource.trim()
       : "manual_upload";
   form.append("source", source);
-  form.append(
-    "file",
-    new Blob([fileBuffer], { type: "application/octet-stream" }),
-    path.basename(backupPath),
-  );
+  form.append("file", new Blob([fileBuffer], { type: "application/octet-stream" }), path.basename(backupPath));
 
   const networkStart = Date.now();
   const estimatedMs = Math.max(8000, (totalSize / (200 * 1024)) * 1000);
@@ -327,12 +295,7 @@ export async function uploadCloudBackupLatest(
       json = { raw: text };
     }
 
-    if (
-      !res.ok ||
-      (json &&
-        typeof json === "object" &&
-        (json as Record<string, unknown>).ok === false)
-    ) {
+    if (!res.ok || (json && typeof json === "object" && (json as Record<string, unknown>).ok === false)) {
       const error = readEdgeError(json, res.status);
       return {
         success: false,
@@ -351,11 +314,7 @@ export async function uploadCloudBackupLatest(
 
     const body = json as Record<string, unknown>;
     const meta = parseCloudBackupUploadMeta(body.meta);
-    if (
-      !meta ||
-      typeof body.db_path !== "string" ||
-      typeof body.meta_path !== "string"
-    ) {
+    if (!meta || typeof body.db_path !== "string" || typeof body.meta_path !== "string") {
       return {
         success: false,
         error: "Invalid cloud backup upload response",
@@ -388,10 +347,7 @@ export async function uploadCloudBackupLatest(
   }
 }
 
-async function writeStreamChunk(
-  writeStream: fs.WriteStream,
-  buf: Buffer,
-): Promise<void> {
+async function writeStreamChunk(writeStream: fs.WriteStream, buf: Buffer): Promise<void> {
   return new Promise((resolve, reject) => {
     let settled = false;
     const cleanup = () => {
@@ -438,8 +394,7 @@ async function requestCloudBackupDownloadSignedUrl(
   if ("error" in cfg) {
     return {
       success: false,
-      error:
-        "Online backup is not configured (missing STORE_ONLINE_* env vars).",
+      error: "Online backup is not configured (missing STORE_ONLINE_* env vars).",
       code: "missing_env",
     };
   }
@@ -465,12 +420,7 @@ async function requestCloudBackupDownloadSignedUrl(
       json = { raw: text };
     }
 
-    if (
-      !res.ok ||
-      (json &&
-        typeof json === "object" &&
-        (json as Record<string, unknown>).ok === false)
-    ) {
+    if (!res.ok || (json && typeof json === "object" && (json as Record<string, unknown>).ok === false)) {
       const edgeError = readEdgeError(json, res.status);
       return {
         success: false,
@@ -502,9 +452,7 @@ async function requestCloudBackupDownloadSignedUrl(
 
     const metaSignedUrlRaw = body.meta_signed_url;
     const metaSignedUrl =
-      typeof metaSignedUrlRaw === "string" && metaSignedUrlRaw.trim()
-        ? metaSignedUrlRaw.trim()
-        : null;
+      typeof metaSignedUrlRaw === "string" && metaSignedUrlRaw.trim() ? metaSignedUrlRaw.trim() : null;
 
     return {
       success: true,
@@ -531,8 +479,7 @@ async function resolveCloudBackupIdentity(
   if ("error" in cfg) {
     return {
       success: false,
-      error:
-        "Online backup is not configured (missing STORE_ONLINE_* env vars).",
+      error: "Online backup is not configured (missing STORE_ONLINE_* env vars).",
       code: "missing_env",
     };
   }
@@ -549,16 +496,13 @@ async function resolveCloudBackupIdentity(
   if (!customerId) {
     const check = await runDeviceCheckInternal();
     if (check.success === true && check.customerId?.trim()) {
-      customerId =
-        (await persistOnlineCustomerIdIfAbsent(check.customerId)) ??
-        check.customerId.trim();
+      customerId = (await persistOnlineCustomerIdIfAbsent(check.customerId)) ?? check.customerId.trim();
     }
   }
   if (!customerId) {
     return {
       success: false,
-      error:
-        "Customer ID is not recorded on this device. Complete welcome setup first.",
+      error: "Customer ID is not recorded on this device. Complete welcome setup first.",
       code: "missing_customer_id",
     };
   }
@@ -591,8 +535,7 @@ function parseDeviceCheckJson(json: unknown): {
   if ("trial_ends_at" in o) {
     if (o.trial_ends_at === null) trialEndsAt = null;
     else if (typeof o.trial_ends_at === "string") trialEndsAt = o.trial_ends_at;
-    else if (o.trial_ends_at !== undefined)
-      trialEndsAt = String(o.trial_ends_at);
+    else if (o.trial_ends_at !== undefined) trialEndsAt = String(o.trial_ends_at);
   }
 
   let expiresAt: string | null | undefined;
@@ -605,10 +548,8 @@ function parseDeviceCheckJson(json: unknown): {
   let customerId: string | null | undefined;
   if ("customer_id" in o) {
     if (o.customer_id === null) customerId = null;
-    else if (typeof o.customer_id === "string")
-      customerId = o.customer_id.trim() || null;
-    else if (o.customer_id !== undefined)
-      customerId = String(o.customer_id).trim() || null;
+    else if (typeof o.customer_id === "string") customerId = o.customer_id.trim() || null;
+    else if (o.customer_id !== undefined) customerId = String(o.customer_id).trim() || null;
   }
 
   let customerName: string | null | undefined;
@@ -624,11 +565,7 @@ function parseDeviceCheckJson(json: unknown): {
     if (customerName == null && typeof c.name === "string" && c.name.trim()) {
       customerName = c.name.trim();
     }
-    if (
-      customerPhone == null &&
-      typeof c.phone === "string" &&
-      c.phone.trim()
-    ) {
+    if (customerPhone == null && typeof c.phone === "string" && c.phone.trim()) {
       customerPhone = c.phone.trim();
     }
   }
@@ -648,8 +585,7 @@ async function runDeviceCheckInternal(): Promise<DeviceCheckResult> {
   if ("error" in cfg) {
     return {
       success: false,
-      error:
-        "Online provisioning is not configured (missing STORE_ONLINE_* env vars).",
+      error: "Online provisioning is not configured (missing STORE_ONLINE_* env vars).",
       code: "missing_env",
     };
   }
@@ -689,11 +625,7 @@ async function runDeviceCheckInternal(): Promise<DeviceCheckResult> {
       };
     }
 
-    if (
-      json &&
-      typeof json === "object" &&
-      (json as Record<string, unknown>).ok === false
-    ) {
+    if (json && typeof json === "object" && (json as Record<string, unknown>).ok === false) {
       return {
         success: false,
         error: readEdgeError(json, res.status),
@@ -740,10 +672,7 @@ export function setupOnlineHandlers(): void {
 
   ipcMain.handle(
     "online:deviceLinkExisting",
-    async (
-      _event,
-      payload: DeviceLinkExistingPayload,
-    ): Promise<DeviceLinkExistingResult> => {
+    async (_event, payload: DeviceLinkExistingPayload): Promise<DeviceLinkExistingResult> => {
       const customerId = (payload?.customerId ?? "").trim();
       const name = (payload?.name ?? "").trim();
       const phone = (payload?.phone ?? "").trim();
@@ -759,8 +688,7 @@ export function setupOnlineHandlers(): void {
       if ("error" in cfg) {
         return {
           success: false,
-          error:
-            "Online provisioning is not configured (missing STORE_ONLINE_* env vars).",
+          error: "Online provisioning is not configured (missing STORE_ONLINE_* env vars).",
           code: "missing_env",
         };
       }
@@ -803,11 +731,7 @@ export function setupOnlineHandlers(): void {
           };
         }
 
-        if (
-          json &&
-          typeof json === "object" &&
-          (json as Record<string, unknown>).ok === false
-        ) {
+        if (json && typeof json === "object" && (json as Record<string, unknown>).ok === false) {
           return {
             success: false,
             error: readEdgeError(json, res.status),
@@ -850,135 +774,108 @@ export function setupOnlineHandlers(): void {
     },
   );
 
-  ipcMain.handle(
-    "online:deviceRequest",
-    async (
-      _event,
-      payload: DeviceRequestPayload,
-    ): Promise<DeviceRequestResult> => {
-      const name = (payload?.name ?? "").trim();
-      const phone = (payload?.phone ?? "").trim();
-      const customerId = (payload?.customerId ?? "").trim() || undefined;
-      if (!name || !phone) {
-        return {
-          success: false,
-          error: "Name and phone are required.",
-          code: "invalid",
-        };
-      }
+  ipcMain.handle("online:deviceRequest", async (_event, payload: DeviceRequestPayload): Promise<DeviceRequestResult> => {
+    const name = (payload?.name ?? "").trim();
+    const phone = (payload?.phone ?? "").trim();
+    const customerId = (payload?.customerId ?? "").trim() || undefined;
+    if (!name || !phone) {
+      return { success: false, error: "Name and phone are required.", code: "invalid" };
+    }
 
-      const cfg = getStoreOnlineConfig();
-      if ("error" in cfg) {
-        return {
-          success: false,
-          error:
-            "Online provisioning is not configured (missing STORE_ONLINE_* env vars).",
-          code: "missing_env",
-        };
-      }
-
-      let deviceId: string;
-      try {
-        deviceId = getMachineGuid();
-      } catch (e) {
-        return { success: false, error: (e as Error).message, code: "invalid" };
-      }
-
-      const body: Record<string, string> = {
-        device_id: deviceId,
-        name,
-        phone,
+    const cfg = getStoreOnlineConfig();
+    if ("error" in cfg) {
+      return {
+        success: false,
+        error: "Online provisioning is not configured (missing STORE_ONLINE_* env vars).",
+        code: "missing_env",
       };
-      if (customerId) body.customer_id = customerId;
+    }
 
+    let deviceId: string;
+    try {
+      deviceId = getMachineGuid();
+    } catch (e) {
+      return { success: false, error: (e as Error).message, code: "invalid" };
+    }
+
+    const body: Record<string, string> = {
+      device_id: deviceId,
+      name,
+      phone,
+    };
+    if (customerId) body.customer_id = customerId;
+
+    try {
+      const res = await fetch(deviceRequestUrl(cfg.supabaseUrl), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-app-secret": cfg.appSecret,
+          Authorization: `Bearer ${cfg.anonKey}`,
+          apikey: cfg.anonKey,
+        },
+        body: JSON.stringify(body),
+      });
+
+      const text = await res.text();
+      let json: unknown;
       try {
-        const res = await fetch(deviceRequestUrl(cfg.supabaseUrl), {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-app-secret": cfg.appSecret,
-            Authorization: `Bearer ${cfg.anonKey}`,
-            apikey: cfg.anonKey,
-          },
-          body: JSON.stringify(body),
-        });
+        json = text ? JSON.parse(text) : null;
+      } catch {
+        json = { raw: text };
+      }
 
-        const text = await res.text();
-        let json: unknown;
-        try {
-          json = text ? JSON.parse(text) : null;
-        } catch {
-          json = { raw: text };
-        }
-
-        if (!res.ok) {
-          return {
-            success: false,
-            error: readEdgeError(json, res.status),
-            code: "http",
-          };
-        }
-
-        if (
-          json &&
-          typeof json === "object" &&
-          (json as Record<string, unknown>).ok === false
-        ) {
-          return {
-            success: false,
-            error: readEdgeError(json, res.status),
-            code: "edge",
-          };
-        }
-
-        let returnedCustomerId: string | null | undefined;
-        if (json && typeof json === "object") {
-          const c = (json as Record<string, unknown>).customer_id;
-          if (typeof c === "string" && c.trim()) returnedCustomerId = c.trim();
-        }
-
-        if (returnedCustomerId) {
-          await persistOnlineCustomerIdIfAbsent(returnedCustomerId);
-        }
-
-        return {
-          success: true,
-          customerId: returnedCustomerId ?? null,
-          raw: json,
-        };
-      } catch (e) {
+      if (!res.ok) {
         return {
           success: false,
-          error: (e as Error).message || "Network error",
-          code: "network",
+          error: readEdgeError(json, res.status),
+          code: "http",
         };
       }
-    },
-  );
 
-  ipcMain.handle(
-    "online:licenseGrace:read",
-    (): LicenseGraceSnapshot | null => {
-      return readStoredLicenseGrace();
-    },
-  );
+      if (json && typeof json === "object" && (json as Record<string, unknown>).ok === false) {
+        return {
+          success: false,
+          error: readEdgeError(json, res.status),
+          code: "edge",
+        };
+      }
+
+      let returnedCustomerId: string | null | undefined;
+      if (json && typeof json === "object") {
+        const c = (json as Record<string, unknown>).customer_id;
+        if (typeof c === "string" && c.trim()) returnedCustomerId = c.trim();
+      }
+
+      if (returnedCustomerId) {
+        await persistOnlineCustomerIdIfAbsent(returnedCustomerId);
+      }
+
+      return { success: true, customerId: returnedCustomerId ?? null, raw: json };
+    } catch (e) {
+      return {
+        success: false,
+        error: (e as Error).message || "Network error",
+        code: "network",
+      };
+    }
+  });
+
+  ipcMain.handle("online:licenseGrace:read", (): LicenseGraceSnapshot | null => {
+    return readStoredLicenseGrace();
+  });
 
   ipcMain.handle(
     "online:licenseGrace:persist",
     (
       _event,
-      payload:
-        | { trialEndsAt?: string | null; expiresAt?: string | null }
-        | undefined,
+      payload: { trialEndsAt?: string | null; expiresAt?: string | null } | undefined,
     ): { success: true } | { success: false; error: string } => {
       try {
         persistStoredLicenseGrace(payload?.trialEndsAt, payload?.expiresAt);
         return { success: true };
       } catch (e) {
-        return {
-          success: false,
-          error: (e as Error).message || "Failed to persist license grace.",
-        };
+        return { success: false, error: (e as Error).message || "Failed to persist license grace." };
       }
     },
   );
@@ -990,27 +887,17 @@ export function setupOnlineHandlers(): void {
 
   ipcMain.handle(
     "online:backupUploadLatest",
-    async (
-      event,
-      backupFilePath: string,
-      uploadSource?: string,
-    ): Promise<CloudBackupUploadResult> =>
+    async (event, backupFilePath: string, uploadSource?: string): Promise<CloudBackupUploadResult> =>
       uploadCloudBackupLatest(event, backupFilePath, uploadSource),
   );
 
-  ipcMain.handle(
-    "online:backupDownloadLatest",
-    async (): Promise<CloudBackupDownloadResult> => {
-      return requestCloudBackupDownloadSignedUrl();
-    },
-  );
+  ipcMain.handle("online:backupDownloadLatest", async (): Promise<CloudBackupDownloadResult> => {
+    return requestCloudBackupDownloadSignedUrl();
+  });
 
   ipcMain.handle(
     "online:backupDownloadLatestToLocal",
-    async (
-      event,
-      overrideCustomerId?: string,
-    ): Promise<CloudBackupDownloadToLocalResult> => {
+    async (event, overrideCustomerId?: string): Promise<CloudBackupDownloadToLocalResult> => {
       const signed = await requestCloudBackupDownloadSignedUrl(
         typeof overrideCustomerId === "string" ? overrideCustomerId : undefined,
       );
@@ -1034,14 +921,10 @@ export function setupOnlineHandlers(): void {
       }
 
       if (signed.metaSignedUrl?.trim()) {
-        const meta = await fetchCloudBackupMetaFromSignedUrl(
-          signed.metaSignedUrl.trim(),
-        );
+        const meta = await fetchCloudBackupMetaFromSignedUrl(signed.metaSignedUrl.trim());
         if (meta) {
           expectedSizeBytes =
-            Number.isFinite(meta.size_bytes) && meta.size_bytes > 0
-              ? meta.size_bytes
-              : null;
+            Number.isFinite(meta.size_bytes) && meta.size_bytes > 0 ? meta.size_bytes : null;
           const versionBlock = versionGateBlockFromMeta(meta, app.getVersion());
           if (versionBlock) {
             return versionBlock;
@@ -1064,8 +947,7 @@ export function setupOnlineHandlers(): void {
           };
         }
 
-        const totalSize =
-          parseInt(fileRes.headers.get("content-length") ?? "0", 10) || 0;
+        const totalSize = parseInt(fileRes.headers.get("content-length") ?? "0", 10) || 0;
         const body = fileRes.body;
         if (!body) {
           return {
@@ -1091,12 +973,7 @@ export function setupOnlineHandlers(): void {
               const buf = Buffer.from(value);
               await writeStreamChunk(writeStream, buf);
               downloadedSize += buf.length;
-              const progress =
-                totalSize > 0
-                  ? (downloadedSize / totalSize) * 100
-                  : downloadedSize > 0
-                    ? 5
-                    : 0;
+              const progress = totalSize > 0 ? (downloadedSize / totalSize) * 100 : downloadedSize > 0 ? 5 : 0;
               send({
                 phase: "download",
                 progress: Math.min(99, Math.round(progress)),
@@ -1115,9 +992,7 @@ export function setupOnlineHandlers(): void {
         writeStream.end();
         await finished(writeStream);
 
-        const sizeBytes = fs.existsSync(dest)
-          ? fs.statSync(dest).size
-          : downloadedSize;
+        const sizeBytes = fs.existsSync(dest) ? fs.statSync(dest).size : downloadedSize;
         if (expectedSizeBytes != null && sizeBytes !== expectedSizeBytes) {
           deleteCloudDownloadArtifacts(dest, metaDest);
           return {

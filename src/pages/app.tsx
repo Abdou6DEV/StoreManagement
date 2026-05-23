@@ -62,14 +62,11 @@ const WelcomeSetup = React.lazy(getLazyWelcome);
 
 export default function App() {
   const { i18n, t } = useTranslation();
-  const { isAuthenticated, loading, preloadComplete, markPreloadComplete } =
-    useAuth();
+  const { isAuthenticated, loading, preloadComplete, markPreloadComplete } = useAuth();
   const { isLicenseValid, isLoading: licenseLoading } = useLicense();
   const location = useLocation();
   const dir = i18n.language === "ar" ? "rtl" : "ltr";
-  const [initialWelcome, setInitialWelcome] = useState<
-    "loading" | "show" | "hide"
-  >("loading");
+  const [initialWelcome, setInitialWelcome] = useState<"loading" | "show" | "hide">("loading");
 
   // All hooks must be called in the same order every time
   useEffect(() => {
@@ -84,16 +81,11 @@ export default function App() {
     let cancelled = false;
     (async () => {
       try {
-        if (
-          typeof window === "undefined" ||
-          !window.api?.database?.options?.get
-        ) {
+        if (typeof window === "undefined" || !window.api?.database?.options?.get) {
           if (!cancelled) setInitialWelcome("hide");
           return;
         }
-        const [doneVal] = await Promise.all([
-          window.api.database.options.get(ONBOARDING_INITIAL_WELCOME_DONE_KEY),
-        ]);
+        const doneVal = await window.api.database.options.get(ONBOARDING_INITIAL_WELCOME_DONE_KEY);
         if (cancelled) return;
         const done = typeof doneVal === "string" && doneVal === "1";
         if (done) {
@@ -103,13 +95,9 @@ export default function App() {
 
         const coreEmpty = await window.api.onboarding?.isCoreDatabaseEmpty?.();
         if (cancelled) return;
-        const hasLocalShopData =
-          coreEmpty?.success === true ? coreEmpty.isEmpty !== true : true;
+        const hasLocalShopData = coreEmpty?.success === true ? coreEmpty.isEmpty !== true : true;
         if (hasLocalShopData) {
-          await window.api.database.options.set(
-            ONBOARDING_INITIAL_WELCOME_DONE_KEY,
-            "1",
-          );
+          await window.api.database.options.set(ONBOARDING_INITIAL_WELCOME_DONE_KEY, "1");
           if (!cancelled) setInitialWelcome("hide");
           return;
         }
@@ -126,11 +114,7 @@ export default function App() {
   useEffect(() => {
     const leaveWelcomeOnlyShell = () => setInitialWelcome("hide");
     window.addEventListener(INITIAL_WELCOME_DONE_EVENT, leaveWelcomeOnlyShell);
-    return () =>
-      window.removeEventListener(
-        INITIAL_WELCOME_DONE_EVENT,
-        leaveWelcomeOnlyShell,
-      );
+    return () => window.removeEventListener(INITIAL_WELCOME_DONE_EVENT, leaveWelcomeOnlyShell);
   }, []);
 
   if (initialWelcome === "loading") {
@@ -148,11 +132,7 @@ export default function App() {
 
   if (initialWelcome === "show") {
     return (
-      <div
-        dir={dir}
-        className="min-h-screen w-full bg-background"
-        style={{ direction: dir }}
-      >
+      <div dir={dir} className="min-h-screen w-full bg-background" style={{ direction: dir }}>
         <ToastProvider>
           <UpdateProvider>
             <Suspense
@@ -186,11 +166,7 @@ export default function App() {
   // Wrapper has bg-background + min-h-screen so no flash when swapping Login → Transition
   if (isAuthenticated && !preloadComplete) {
     return (
-      <div
-        dir={dir}
-        className="min-h-screen w-full h-full bg-background"
-        style={{ direction: dir }}
-      >
+      <div dir={dir} className="min-h-screen w-full h-full bg-background" style={{ direction: dir }}>
         <ToastProvider>
           <UpdateProvider>
             <LoginToPreloadTransition onPreloadComplete={markPreloadComplete} />
@@ -217,9 +193,7 @@ export default function App() {
         <div className="min-h-screen bg-background flex items-center justify-center p-4">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4" />
-            <p className="text-muted-foreground">
-              {t("license.checking", "Checking license…")}
-            </p>
+            <p className="text-muted-foreground">{t("license.checking", "Checking license…")}</p>
           </div>
         </div>
       );
@@ -253,141 +227,134 @@ export default function App() {
                 element={
                   <ProtectedRoute>
                     <BadgeMessageProvider>
-                      <StockProvider>
-                        <LowStockProvider>
-                          <OutOfStockProvider>
-                            <OverduePaymentsProvider>
-                              <DueSoonPaymentsProvider>
-                                <OverdueBillsProvider>
-                                  <DueSoonBillsProvider>
-                                    <OverdueServicesProvider>
-                                      <DueSoonServicesProvider>
-                                        <CashierHistoryProvider>
-                                          <CompletedServicesProvider>
-                                            <Layout>
-                                              <ScrollToTop />
-                                              <Routes>
-                                                <Route
-                                                  path="/"
-                                                  element={<MainMenu />}
-                                                />
-                                                <Route
-                                                  element={
-                                                    <main className="flex flex-1">
-                                                      <Sidebar />
-                                                      <div className="flex-1 pt-4 min-w-0">
-                                                        <PageTransition effect="fadeUp">
-                                                          <Outlet />
-                                                        </PageTransition>
-                                                      </div>
-                                                    </main>
-                                                  }
-                                                >
-                                                  {/* Permission-based routes */}
-                                                  <Route
-                                                    path="/dashboard"
-                                                    element={
-                                                      <PermissionRoute requiredPermission="dashboard">
-                                                        <Dashboard />
-                                                      </PermissionRoute>
-                                                    }
-                                                  />
-                                                  <Route
-                                                    path="/clients"
-                                                    element={
-                                                      <PermissionRoute requiredPermission="clients">
-                                                        <Clients />
-                                                      </PermissionRoute>
-                                                    }
-                                                  />
-                                                  <Route
-                                                    path="/stock"
-                                                    element={
-                                                      <PermissionRoute requiredPermission="stock">
-                                                        <Stock />
-                                                      </PermissionRoute>
-                                                    }
-                                                  />
-                                                  <Route
-                                                    path="/cashier"
-                                                    element={
-                                                      <PermissionRoute requiredPermission="cashier">
-                                                        <Cashier />
-                                                      </PermissionRoute>
-                                                    }
-                                                  />
-                                                  <Route
-                                                    path="/history"
-                                                    element={
-                                                      <PermissionRoute requiredPermission="history">
-                                                        <History />
-                                                      </PermissionRoute>
-                                                    }
-                                                  />
-                                                  <Route
-                                                    path="/bills"
-                                                    element={
-                                                      <PermissionRoute requiredPermission="bills">
-                                                        <Bills />
-                                                      </PermissionRoute>
-                                                    }
-                                                  />
-                                                  <Route
-                                                    path="/services"
-                                                    element={
-                                                      <PermissionRoute requiredPermission="services">
-                                                        <Services />
-                                                      </PermissionRoute>
-                                                    }
-                                                  />
-                                                  <Route
-                                                    path="/administrator"
-                                                    element={
-                                                      <PermissionRoute requiredPermission="administrator">
-                                                        <Administrator />
-                                                      </PermissionRoute>
-                                                    }
-                                                  />
-                                                  <Route
-                                                    path="/zakat"
-                                                    element={
-                                                      <PermissionRoute requiredPermission="zakat">
-                                                        <ZakatAlMal />
-                                                      </PermissionRoute>
-                                                    }
-                                                  />
-                                                  <Route
-                                                    path="/about"
-                                                    element={<About />}
-                                                  />
-                                                  <Route
-                                                    path="/*"
-                                                    element={
-                                                      <h1 className="">
-                                                        Soon..
-                                                      </h1>
-                                                    }
-                                                  />
-                                                </Route>
-                                              </Routes>
-                                            </Layout>
-                                          </CompletedServicesProvider>
-                                        </CashierHistoryProvider>
-                                      </DueSoonServicesProvider>
-                                    </OverdueServicesProvider>
-                                  </DueSoonBillsProvider>
-                                </OverdueBillsProvider>
-                              </DueSoonPaymentsProvider>
-                            </OverduePaymentsProvider>
-                          </OutOfStockProvider>
-                        </LowStockProvider>
-                      </StockProvider>
+                    <StockProvider>
+                      <LowStockProvider>
+                        <OutOfStockProvider>
+                        <OverduePaymentsProvider>
+                          <DueSoonPaymentsProvider>
+                          <OverdueBillsProvider>
+                          <DueSoonBillsProvider>
+                          <OverdueServicesProvider>
+                          <DueSoonServicesProvider>
+                          <CashierHistoryProvider>
+                          <CompletedServicesProvider>
+                        <Layout>
+                        <ScrollToTop />
+                        <Routes>
+                        <Route path="/" element={<MainMenu />} />
+                        <Route
+                          element={
+                            <main className="flex flex-1">
+                              <Sidebar />
+                              <div className="flex-1 pt-4 min-w-0">
+                                <PageTransition effect="fadeUp">
+                                  <Outlet />
+                                </PageTransition>
+                              </div>
+                            </main>
+                          }
+                        >
+                          {/* Permission-based routes */}
+                          <Route
+                            path="/dashboard"
+                            element={
+                              <PermissionRoute requiredPermission="dashboard">
+                                <Dashboard />
+                              </PermissionRoute>
+                            }
+                          />
+                          <Route
+                            path="/clients"
+                            element={
+                              <PermissionRoute requiredPermission="clients">
+                                <Clients />
+                              </PermissionRoute>
+                            }
+                          />
+                          <Route
+                            path="/stock"
+                            element={
+                              <PermissionRoute requiredPermission="stock">
+                                <Stock />
+                              </PermissionRoute>
+                            }
+                          />
+                          <Route
+                            path="/cashier"
+                            element={
+                              <PermissionRoute requiredPermission="cashier">
+                                <Cashier />
+                              </PermissionRoute>
+                            }
+                          />
+                          <Route
+                            path="/history"
+                            element={
+                              <PermissionRoute requiredPermission="history">
+                                <History />
+                              </PermissionRoute>
+                            }
+                          />
+                          <Route
+                            path="/bills"
+                            element={
+                              <PermissionRoute requiredPermission="bills">
+                                <Bills />
+                              </PermissionRoute>
+                            }
+                          />
+                          <Route
+                            path="/services"
+                            element={
+                              <PermissionRoute requiredPermission="services">
+                                <Services />
+                              </PermissionRoute>
+                            }
+                          />
+                          <Route
+                            path="/administrator"
+                            element={
+                              <PermissionRoute requiredPermission="administrator">
+                                <Administrator />
+                              </PermissionRoute>
+                            }
+                          />
+                          <Route
+                            path="/zakat"
+                            element={
+                              <PermissionRoute requiredPermission="zakat">
+                                <ZakatAlMal />
+                              </PermissionRoute>
+                            }
+                          />
+                          <Route
+                            path="/about"
+                            element={<About />}
+                          />
+                          <Route
+                            path="/*"
+                            element={<h1 className="">Soon..</h1>}
+                          />
+                        </Route>
+                        </Routes>
+                        </Layout>
+                        </CompletedServicesProvider>
+                        </CashierHistoryProvider>
+                        </DueSoonServicesProvider>
+                        </OverdueServicesProvider>
+                        </DueSoonBillsProvider>
+                        </OverdueBillsProvider>
+                        </DueSoonPaymentsProvider>
+                      </OverduePaymentsProvider>
+                      </OutOfStockProvider>
+                    </LowStockProvider>
+                  </StockProvider>
                     </BadgeMessageProvider>
-                  </ProtectedRoute>
-                }
-              />
-            </Routes>
-          </Suspense>
+                </ProtectedRoute>
+              }
+            />
+          </Routes>
+        </Suspense>
         </UpdateProvider>
       </ToastProvider>
     </div>
