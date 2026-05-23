@@ -3,7 +3,7 @@ import fs from "fs";
 import path from "path";
 import { prisma } from "../../lib/database/prismaClient";
 import logger from "../../lib/logger";
-import { getOption, setOption } from "../../lib/database/options";
+import { getOption } from "../../lib/database/options";
 import { createActivityLog } from "../../lib/database/activityLogs";
 import { ACTIVITY_LOG_LAST_USERNAME_KEY } from "../../lib/activityLog/constants";
 import {
