@@ -3,7 +3,11 @@ import fs from "fs";
 import path from "path";
 import { prisma } from "../../lib/database/prismaClient";
 import logger from "../../lib/logger";
-import { getOption, setOption } from "../../lib/database/options";
+import {
+  clearOptionsCache,
+  getOption,
+  setOption,
+} from "../../lib/database/options";
 import { createActivityLog } from "../../lib/database/activityLogs";
 import { ACTIVITY_LOG_LAST_USERNAME_KEY } from "../../lib/activityLog/constants";
 import {
@@ -739,7 +743,8 @@ const restoreBackup = async (backupPath: string) => {
     await prisma.option.deleteMany({
       where: { key: { in: [...LEGACY_LICENSE_OPTION_KEYS] } },
     });
-    
+    clearOptionsCache();
+
     logger.info("Database restored successfully", "Backup", {
       backupPath,
       targetPath,
