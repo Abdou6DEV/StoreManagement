@@ -680,25 +680,39 @@ const restoreBackup = async (backupPath: string) => {
 
     if (path.basename(backupPath) === CLOUD_LATEST_FROM_ONLINE_DB) {
       const metaPath = path.join(path.dirname(backupPath), CLOUD_LATEST_FROM_ONLINE_META);
-      if (fs.existsSync(metaPath)) {
-        try {
-          const raw = JSON.parse(fs.readFileSync(metaPath, "utf8")) as unknown;
-          const meta = parseCloudBackupUploadMeta(raw);
-          if (meta) {
-            const gate = checkCloudBackupAppVersionGate(meta, app.getVersion());
-            if (gate.blocked) {
-              return {
-                success: false,
-                error: `Cloud backup requires app version ${gate.cloudAppVersion} or newer (installed: ${gate.installedAppVersion}).`,
-                code: "app_update_required",
-                cloudAppVersion: gate.cloudAppVersion,
-                installedAppVersion: gate.installedAppVersion,
-              };
-            }
-          }
-        } catch {
-          /* invalid sidecar — allow restore */
+      if (!fs.existsSync(metaPath)) {
+        return {
+          success: false,
+          error: "Cloud backup metadata is missing; restore cannot be safely verified.",
+          code: "invalid_cloud_backup_metadata",
+        };
+      }
+      try {
+        const raw = JSON.parse(fs.readFileSync(metaPath, "utf8")) as unknown;
+        const meta = parseCloudBackupUploadMeta(raw);
+        if (!meta) {
+          return {
+            success: false,
+            error: "Cloud backup metadata is invalid; restore cannot be safely verified.",
+            code: "invalid_cloud_backup_metadata",
+          };
         }
+        const gate = checkCloudBackupAppVersionGate(meta, app.getVersion());
+        if (gate.blocked) {
+          return {
+            success: false,
+            error: `Cloud backup requires app version ${gate.cloudAppVersion} or newer (installed: ${gate.installedAppVersion}).`,
+            code: "app_update_required",
+            cloudAppVersion: gate.cloudAppVersion,
+            installedAppVersion: gate.installedAppVersion,
+          };
+        }
+      } catch {
+        return {
+          success: false,
+          error: "Cloud backup metadata is invalid; restore cannot be safely verified.",
+          code: "invalid_cloud_backup_metadata",
+        };
       }
     }
     

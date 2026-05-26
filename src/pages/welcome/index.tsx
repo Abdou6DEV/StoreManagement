@@ -406,7 +406,7 @@ export default function WelcomeSetup() {
 
       setDevicePrecheck("loading");
       try {
-        const r = await window.api.online.deviceCheck();
+        const r = await window.api.online.deviceCheck({ persistCustomerId: false });
         if (cancelled || (typeof navigator !== "undefined" && !navigator.onLine)) {
           setDevicePrecheck("new_device");
           setPrecheckCustomerId(null);
@@ -818,7 +818,6 @@ export default function WelcomeSetup() {
 
       const resolvedCustomerId = link.customerId ?? cid;
       setLinkedRestoreCustomerId(resolvedCustomerId);
-      await window.api.database.options.set(ONLINE_CUSTOMER_ID_OPTION_KEY, resolvedCustomerId);
 
       showToast(
         t("welcome.restoreLinkSuccess", "Shop verified. Downloading your cloud backup…"),
