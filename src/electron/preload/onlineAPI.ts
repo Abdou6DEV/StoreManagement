@@ -18,10 +18,6 @@ export const onlineAPI = {
     ipcRenderer.invoke("online:deviceLinkExisting", payload) as Promise<DeviceLinkExistingResult>,
   readLicenseGrace: () =>
     ipcRenderer.invoke("online:licenseGrace:read") as Promise<LicenseGraceSnapshot | null>,
-  persistLicenseGrace: (payload: { trialEndsAt?: string | null; expiresAt?: string | null }) =>
-    ipcRenderer.invoke("online:licenseGrace:persist", payload) as Promise<
-      { success: true } | { success: false; error: string }
-    >,
   clearLicenseGrace: () =>
     ipcRenderer.invoke("online:licenseGrace:clear") as Promise<{ success: true }>,
   backupUploadLatest: (backupFilePath: string, uploadSource?: string) =>
