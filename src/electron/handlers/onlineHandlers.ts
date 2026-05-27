@@ -704,8 +704,6 @@ export function setupOnlineHandlers(): void {
         const mode = typeof body.mode === "string" ? body.mode : null;
         const alreadyLinked = body.already_linked === true;
 
-        await persistOnlineCustomerIdIfAbsent(returnedCustomerId);
-
         return {
           success: true,
           customerId: returnedCustomerId,
