@@ -818,7 +818,6 @@ export default function WelcomeSetup() {
 
       const resolvedCustomerId = link.customerId ?? cid;
       setLinkedRestoreCustomerId(resolvedCustomerId);
-      await window.api.database.options.set(ONLINE_CUSTOMER_ID_OPTION_KEY, resolvedCustomerId);
 
       showToast(
         t("welcome.restoreLinkSuccess", "Shop verified. Downloading your cloud backup…"),
