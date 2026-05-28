@@ -92,6 +92,29 @@ function cloudBackupAppUpdateRequiredResult(
   };
 }
 
+function cloudBackupMetadataUnavailableResult(): CloudBackupDownloadToLocalResult {
+  return {
+    success: false,
+    error: "Cloud backup metadata could not be validated. Try downloading the backup again.",
+    code: "edge",
+  };
+}
+
+function safeUnlink(filePath: string): void {
+  try {
+    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+  } catch {
+    /* ignore cleanup failures */
+  }
+}
+
+function writeCloudBackupMetaAtomically(metaDest: string, meta: CloudBackupUploadMeta): void {
+  const tmp = `${metaDest}.tmp`;
+  safeUnlink(tmp);
+  fs.writeFileSync(tmp, JSON.stringify(meta), "utf8");
+  fs.renameSync(tmp, metaDest);
+}
+
 async function fetchCloudBackupMetaFromSignedUrl(
   metaSignedUrl: string,
 ): Promise<CloudBackupUploadMeta | null> {
@@ -610,8 +633,15 @@ async function runDeviceCheckInternal(): Promise<DeviceCheckResult> {
 export function setupOnlineHandlers(): void {
   ipcMain.handle("online:deviceCheck", async (): Promise<DeviceCheckResult> => {
     const result = await runDeviceCheckInternal();
-    if (result.success === true && result.customerId?.trim()) {
-      await persistOnlineCustomerIdIfAbsent(result.customerId);
+    if (result.success === true) {
+      if (result.customerId?.trim()) {
+        await persistOnlineCustomerIdIfAbsent(result.customerId);
+      }
+      if (result.allowed) {
+        persistStoredLicenseGrace(result.trialEndsAt, result.expiresAt);
+      } else {
+        clearStoredLicenseGrace();
+      }
     }
     return result;
   });
@@ -812,26 +842,6 @@ export function setupOnlineHandlers(): void {
   });
 
   ipcMain.handle(
-    "online:licenseGrace:persist",
-    (
-      _event,
-      payload: { trialEndsAt?: string | null; expiresAt?: string | null } | undefined,
-    ): { success: true } | { success: false; error: string } => {
-      try {
-        persistStoredLicenseGrace(payload?.trialEndsAt, payload?.expiresAt);
-        return { success: true };
-      } catch (e) {
-        return { success: false, error: (e as Error).message || "Failed to persist license grace." };
-      }
-    },
-  );
-
-  ipcMain.handle("online:licenseGrace:clear", (): { success: true } => {
-    clearStoredLicenseGrace();
-    return { success: true };
-  });
-
-  ipcMain.handle(
     "online:backupUploadLatest",
     async (event, backupFilePath: string, uploadSource?: string): Promise<CloudBackupUploadResult> =>
       uploadCloudBackupLatest(event, backupFilePath, uploadSource),
@@ -858,24 +868,30 @@ export function setupOnlineHandlers(): void {
 
       const dest = path.join(backupDir, CLOUD_LATEST_FROM_ONLINE_DB);
       const metaDest = path.join(backupDir, CLOUD_LATEST_FROM_ONLINE_META);
+      const tmpDest = `${dest}.tmp`;
       const send = sendCloudBackupProgressThrottled(event);
+      let metaToPersist: CloudBackupUploadMeta | null = null;
 
       if (signed.metaSignedUrl?.trim()) {
         const meta = await fetchCloudBackupMetaFromSignedUrl(signed.metaSignedUrl.trim());
-        if (meta) {
-          const versionBlock = versionGateBlockFromMeta(meta, app.getVersion());
-          if (versionBlock) {
-            return versionBlock;
-          }
-          try {
-            fs.writeFileSync(metaDest, JSON.stringify(meta), "utf8");
-          } catch {
-            /* non-fatal — restore can still proceed */
-          }
+        if (!meta) {
+          return cloudBackupMetadataUnavailableResult();
         }
+
+        const versionBlock = versionGateBlockFromMeta(meta, app.getVersion());
+        if (versionBlock) {
+          return versionBlock;
+        }
+        metaToPersist = meta;
       }
 
+      const oldMetaContent = fs.existsSync(metaDest) ? fs.readFileSync(metaDest, "utf8") : null;
+      let metadataChanged = false;
+      let downloadCommitted = false;
+
       try {
+        safeUnlink(tmpDest);
+
         const fileRes = await fetch(signed.dbSignedUrl);
         if (!fileRes.ok) {
           return {
@@ -896,7 +912,7 @@ export function setupOnlineHandlers(): void {
         }
 
         const reader = body.getReader();
-        const writeStream = fs.createWriteStream(dest);
+        const writeStream = fs.createWriteStream(tmpDest);
         let downloadedSize = 0;
 
         try {
@@ -923,16 +939,25 @@ export function setupOnlineHandlers(): void {
           }
         } catch (streamErr) {
           writeStream.destroy();
-          try {
-            if (fs.existsSync(dest)) fs.unlinkSync(dest);
-          } catch {
-            /* ignore */
-          }
+          safeUnlink(tmpDest);
           throw streamErr;
         }
 
         writeStream.end();
         await finished(writeStream);
+
+        if (metaToPersist) {
+          writeCloudBackupMetaAtomically(metaDest, metaToPersist);
+          metadataChanged = true;
+        } else {
+          if (fs.existsSync(metaDest)) {
+            safeUnlink(metaDest);
+            metadataChanged = true;
+          }
+        }
+
+        fs.renameSync(tmpDest, dest);
+        downloadCommitted = true;
 
         const sizeBytes = fs.existsSync(dest) ? fs.statSync(dest).size : downloadedSize;
         send({
@@ -949,10 +974,17 @@ export function setupOnlineHandlers(): void {
           sizeBytes,
         };
       } catch (e) {
-        try {
-          if (fs.existsSync(dest)) fs.unlinkSync(dest);
-        } catch {
-          /* ignore */
+        safeUnlink(tmpDest);
+        if (metadataChanged && !downloadCommitted) {
+          try {
+            if (oldMetaContent == null) {
+              safeUnlink(metaDest);
+            } else {
+              fs.writeFileSync(metaDest, oldMetaContent, "utf8");
+            }
+          } catch {
+            /* ignore rollback failures */
+          }
         }
         return {
           success: false,
