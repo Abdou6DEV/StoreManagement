@@ -95,8 +95,8 @@ function cloudBackupAppUpdateRequiredResult(
 function cloudBackupMetadataUnavailableResult(): CloudBackupDownloadToLocalResult {
   return {
     success: false,
-    error: "Cloud backup metadata could not be validated. Try downloading the backup again.",
-    code: "edge",
+    error: "metadata_unavailable",
+    code: "network",
   };
 }
 
