@@ -470,11 +470,6 @@ export type OnlineAPI = {
   deviceRequest: (payload: DeviceRequestPayload) => Promise<DeviceRequestResult>;
   deviceLinkExisting: (payload: DeviceLinkExistingPayload) => Promise<DeviceLinkExistingResult>;
   readLicenseGrace: () => Promise<LicenseGraceSnapshot | null>;
-  persistLicenseGrace: (payload: {
-    trialEndsAt?: string | null;
-    expiresAt?: string | null;
-  }) => Promise<{ success: true } | { success: false; error: string }>;
-  clearLicenseGrace: () => Promise<{ success: true }>;
   backupUploadLatest: (backupFilePath: string, uploadSource?: string) => Promise<CloudBackupUploadResult>;
   backupDownloadLatest: () => Promise<CloudBackupDownloadResult>;
   backupDownloadLatestToLocal: (customerId?: string) => Promise<CloudBackupDownloadToLocalResult>;

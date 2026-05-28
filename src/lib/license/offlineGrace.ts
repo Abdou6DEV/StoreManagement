@@ -36,23 +36,12 @@ export async function readLicenseGraceSnapshot(): Promise<LicenseGraceSnapshot |
   return window.api.online.readLicenseGrace();
 }
 
-export async function persistLicenseGraceFromAllowedCheck(
-  trialEndsAt?: string | null,
-  expiresAt?: string | null,
-): Promise<void> {
-  const result = await window.api.online.persistLicenseGrace({ trialEndsAt, expiresAt });
-  if (result.success === false) {
-    throw new Error(result.error);
-  }
-}
-
 export async function resolveLicenseValidityFromDeviceCheck(
   result: DeviceCheckResult,
 ): Promise<boolean> {
   if (result.success === true) {
     await persistOnlineCustomerProfileFromDeviceCheck(result);
     if (!result.allowed) return false;
-    await persistLicenseGraceFromAllowedCheck(result.trialEndsAt, result.expiresAt);
     return true;
   }
 
