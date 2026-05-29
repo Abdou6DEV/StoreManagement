@@ -588,7 +588,7 @@ async function runDeviceCheckInternal(): Promise<DeviceCheckResult> {
       };
     }
 
-    return {
+    const result: DeviceCheckResult = {
       success: true,
       allowed: parsed.allowed,
       trialEndsAt: parsed.trialEndsAt,
@@ -598,6 +598,14 @@ async function runDeviceCheckInternal(): Promise<DeviceCheckResult> {
       customerPhone: parsed.customerPhone,
       raw: json,
     };
+    if (result.allowed) {
+      try {
+        persistStoredLicenseGrace(result.trialEndsAt, result.expiresAt);
+      } catch (e) {
+        console.error("Failed to persist license grace after device-check:", e);
+      }
+    }
+    return result;
   } catch (e) {
     return {
       success: false,
@@ -810,21 +818,6 @@ export function setupOnlineHandlers(): void {
   ipcMain.handle("online:licenseGrace:read", (): LicenseGraceSnapshot | null => {
     return readStoredLicenseGrace();
   });
-
-  ipcMain.handle(
-    "online:licenseGrace:persist",
-    (
-      _event,
-      payload: { trialEndsAt?: string | null; expiresAt?: string | null } | undefined,
-    ): { success: true } | { success: false; error: string } => {
-      try {
-        persistStoredLicenseGrace(payload?.trialEndsAt, payload?.expiresAt);
-        return { success: true };
-      } catch (e) {
-        return { success: false, error: (e as Error).message || "Failed to persist license grace." };
-      }
-    },
-  );
 
   ipcMain.handle("online:licenseGrace:clear", (): { success: true } => {
     clearStoredLicenseGrace();
