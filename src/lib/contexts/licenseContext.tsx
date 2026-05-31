@@ -1,9 +1,11 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import type { DeviceCheckResult } from "../../electron/types/deviceCheck";
 import {
-  isOfflineLicenseAllowed,
+  isSessionLicenseAccessAllowed,
+  readLicenseDeadlines,
   readLicenseGraceSnapshot,
   resolveLicenseValidityFromDeviceCheck,
+  type LicenseGraceSnapshot,
 } from "../license/offlineGrace";
 import { LICENSE_RECHECK_AFTER_LOGIN_EVENT } from "../license/recheckEvents";
 
@@ -20,10 +22,13 @@ interface LicenseContextType {
 
 const LicenseContext = createContext<LicenseContextType | undefined>(undefined);
 
+const SESSION_LICENSE_NEAR_DEADLINE_MS = 2 * 60 * 60 * 1000;
+
 export function LicenseProvider({ children }: { children: React.ReactNode }) {
   const [isLicenseValid, setIsLicenseValid] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [lastDeviceCheckResult, setLastDeviceCheckResult] = useState<DeviceCheckResult | null>(null);
+  const [graceSnapshot, setGraceSnapshot] = useState<LicenseGraceSnapshot | null>(null);
 
   const applyDeviceCheckResult = useCallback(async (result: DeviceCheckResult) => {
     setLastDeviceCheckResult(result);
@@ -44,7 +49,8 @@ export function LicenseProvider({ children }: { children: React.ReactNode }) {
     } catch {
       try {
         const snapshot = await readLicenseGraceSnapshot();
-        const valid = isOfflineLicenseAllowed(snapshot);
+        setGraceSnapshot(snapshot);
+        const valid = isSessionLicenseAccessAllowed(null, snapshot);
         setIsLicenseValid(valid);
         return valid;
       } catch {
@@ -67,6 +73,61 @@ export function LicenseProvider({ children }: { children: React.ReactNode }) {
     window.addEventListener(LICENSE_RECHECK_AFTER_LOGIN_EVENT, onRecheck);
     return () => window.removeEventListener(LICENSE_RECHECK_AFTER_LOGIN_EVENT, onRecheck);
   }, [checkLicense]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void readLicenseGraceSnapshot().then((snapshot) => {
+      if (!cancelled) setGraceSnapshot(snapshot);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [lastDeviceCheckResult]);
+
+  useEffect(() => {
+    if (isLoading || !isLicenseValid) return;
+
+    let cancelled = false;
+
+    const enforceSessionLicense = async () => {
+      const snapshot = graceSnapshot ?? (await readLicenseGraceSnapshot());
+      if (cancelled) return;
+      if (graceSnapshot == null && snapshot != null) {
+        setGraceSnapshot(snapshot);
+      }
+      if (!isSessionLicenseAccessAllowed(lastDeviceCheckResult, snapshot, Date.now())) {
+        setIsLicenseValid(false);
+      }
+    };
+
+    void enforceSessionLicense();
+
+    const { trialEndsAtMs, expiresAtMs } = readLicenseDeadlines(
+      lastDeviceCheckResult,
+      graceSnapshot,
+    );
+    const deadlines = [trialEndsAtMs, expiresAtMs].filter(
+      (value): value is number => value != null && Number.isFinite(value),
+    );
+    const nearestDeadlineMs = deadlines.length > 0 ? Math.min(...deadlines) : null;
+    const msUntilDeadline =
+      nearestDeadlineMs != null ? nearestDeadlineMs - Date.now() : null;
+    const intervalMs =
+      msUntilDeadline != null &&
+      msUntilDeadline > 0 &&
+      msUntilDeadline <= SESSION_LICENSE_NEAR_DEADLINE_MS
+        ? 1000
+        : 60_000;
+
+    const timerId = window.setInterval(() => {
+      void enforceSessionLicense();
+    }, intervalMs);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(timerId);
+    };
+  }, [isLoading, isLicenseValid, lastDeviceCheckResult, graceSnapshot]);
 
   const value: LicenseContextType = {
     isLicenseValid,
