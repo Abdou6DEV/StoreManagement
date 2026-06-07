@@ -9,6 +9,7 @@
     "package": "npm run prisma:generate && electron-forge package",
     "make": "npm run prisma:generate && electron-forge make",
     "publish": "electron-forge publish",
+    "build:landing": "vite build --config vite.landing.config.mts && node -e \"require('fs').renameSync('docs/landing.html','docs/index.html')\"",
     "lint": "eslint . --ext .ts,.tsx",
     "format": "prettier --write .",
     "db:seed": "tsx prisma/seed/index.ts",

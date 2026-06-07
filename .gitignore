@@ -89,6 +89,9 @@ typings/
 # Vite
 .vite/
 
+# GitHub Pages build output (deployed via GitHub Actions)
+docs/
+
 # Electron-Forge
 out/
 

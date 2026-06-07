@@ -59,6 +59,7 @@ import type { DeviceLinkExistingResult } from "../../electron/types/deviceLinkEx
 import type { CloudBackupTransferProgressPayload } from "../../electron/types/cloudBackup";
 import { CloudBackupTransferProgressBar } from "../../lib/components/cloudBackupTransferProgress";
 import { AnimatedHeight } from "../../lib/components/animatedHeight";
+import { WelcomeMarketingDownloadCard } from "./WelcomeMarketingDownloadCard";
 
 /** Welcome-only highlights before the technical carousel (not duplicated in the carousel). */
 const WELCOME_TECHNOLOGY_BRIDGE_HIGHLIGHTS = [
@@ -344,7 +345,12 @@ function sanitizeWelcomePhoneInput(raw: string): string {
 /** Let the success toast render before leaving the welcome shell (ToastProvider unmounts with it). */
 const WELCOME_SUCCESS_TOAST_VISIBLE_MS = 2500;
 
-export default function WelcomeSetup() {
+type WelcomeSetupProps = {
+  /** GitHub Pages landing: same welcome UI with a download card instead of onboarding. */
+  marketingSite?: boolean;
+};
+
+export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProps) {
   const { t, i18n } = useTranslation();
   const { isDark } = useTheme();
   const { showToast } = useToast();
@@ -371,7 +377,9 @@ export default function WelcomeSetup() {
   );
   const [reduceMotion, setReduceMotion] = useState(false);
   const [introStep, setIntroStep] = useState(0);
-  const [devicePrecheck, setDevicePrecheck] = useState<WelcomeDevicePrecheck>("loading");
+  const [devicePrecheck, setDevicePrecheck] = useState<WelcomeDevicePrecheck>(
+    marketingSite ? "new_device" : "loading",
+  );
   const [precheckCustomerId, setPrecheckCustomerId] = useState<string | null>(null);
   const [precheckCustomerName, setPrecheckCustomerName] = useState<string | null>(null);
   const [precheckCustomerPhone, setPrecheckCustomerPhone] = useState<string | null>(null);
@@ -392,7 +400,22 @@ export default function WelcomeSetup() {
     };
   }, []);
 
+  const sectionNavItems = useMemo(() => {
+    if (!marketingSite) return WELCOME_SECTION_NAV_ITEMS;
+    return WELCOME_SECTION_NAV_ITEMS.map((item) =>
+      item.id === "get-started"
+        ? {
+            ...item,
+            labelKey: "welcome.sectionNav.download",
+            defaultLabel: "Download",
+          }
+        : item,
+    );
+  }, [marketingSite]);
+
   useEffect(() => {
+    if (marketingSite) return;
+
     let cancelled = false;
 
     const run = async () => {
@@ -454,7 +477,7 @@ export default function WelcomeSetup() {
     return () => {
       cancelled = true;
     };
-  }, [online]);
+  }, [online, marketingSite]);
 
   useEffect(() => {
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -564,7 +587,7 @@ export default function WelcomeSetup() {
   }, [reduceMotion]);
 
   useEffect(() => {
-    const sectionIds = WELCOME_SECTION_NAV_ITEMS.map((item) => item.id);
+    const sectionIds = sectionNavItems.map((item) => item.id);
 
     const updateActiveSection = () => {
       const getStartedEl = document.getElementById("get-started");
@@ -600,10 +623,38 @@ export default function WelcomeSetup() {
       window.removeEventListener("scroll", updateActiveSection);
       window.removeEventListener("resize", updateActiveSection);
     };
-  }, [introStep]);
+  }, [introStep, sectionNavItems]);
 
   useEffect(() => {
     let cancelled = false;
+
+    const loadVersionFromGitHub = async () => {
+      try {
+        const response = await fetch(
+          "https://api.github.com/repos/Abdou6DEV/StoreManagement/releases/latest",
+          {
+            headers: {
+              Accept: "application/vnd.github.v3+json",
+              "User-Agent": "REDA-TECH-Store-Management-Landing",
+            },
+          },
+        );
+        if (!response.ok) return;
+        const release = await response.json();
+        const v = String(release.tag_name ?? "").replace(/^v/i, "");
+        if (!cancelled && v) setAppVersion(v);
+      } catch {
+        /* keep default */
+      }
+    };
+
+    if (marketingSite) {
+      void loadVersionFromGitHub();
+      return () => {
+        cancelled = true;
+      };
+    }
+
     (async () => {
       try {
         const v = await window.api?.app?.getVersion();
@@ -615,7 +666,7 @@ export default function WelcomeSetup() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [marketingSite]);
 
   useEffect(() => {
     if (restorePhase !== "downloading") return;
@@ -939,8 +990,9 @@ export default function WelcomeSetup() {
   };
 
   /** Same moment the get-started green glow is in the tree: intro has reached the card and we are not in online-only loading. */
-  const mountWelcomeNavChrome =
-    introStep >= SEQ.card && !(online && devicePrecheck === "loading");
+  const mountWelcomeNavChrome = marketingSite
+    ? introStep >= SEQ.card
+    : introStep >= SEQ.card && !(online && devicePrecheck === "loading");
 
   const restoreInProgress =
     restorePhase === "linking" ||
@@ -1097,14 +1149,14 @@ export default function WelcomeSetup() {
       {mountWelcomeNavChrome ? (
         <>
           <WelcomeSectionNav
-            items={WELCOME_SECTION_NAV_ITEMS}
+            items={sectionNavItems}
             activeId={activeNavSectionId}
             onNavigate={scrollToWelcomeSection}
             isRTL={isRTL}
             className={cn("welcome-section-nav-in")}
           />
           <WelcomeJourneyNav
-            items={WELCOME_SECTION_NAV_ITEMS}
+            items={sectionNavItems}
             activeId={activeNavSectionId}
             onNavigate={scrollToWelcomeSection}
             onBackToTop={scrollToWelcomeTop}
@@ -1284,12 +1336,13 @@ export default function WelcomeSetup() {
             onStepComplete={advanceIntro}
             className={cn(
               "relative isolate mt-10 overflow-visible lg:mt-0",
-              online &&
+              !marketingSite &&
+                online &&
                 devicePrecheck === "existing_device" &&
                 "mt-28 sm:mt-36 lg:mt-28 xl:mt-36 2xl:mt-40",
             )}
           >
-            {!(online && devicePrecheck === "loading") ? (
+            {marketingSite || !(online && devicePrecheck === "loading") ? (
               <div
                 className={cn(
                   "pointer-events-none absolute inset-x-0 bottom-0 top-0 z-0 overflow-visible",
@@ -1315,16 +1368,18 @@ export default function WelcomeSetup() {
               id="get-started"
               className={cn(
                 "relative z-[1] overflow-visible rounded-3xl border backdrop-blur-sm",
-                online && devicePrecheck === "loading"
+                !marketingSite && online && devicePrecheck === "loading"
                   ? "border-dashed border-border/70 bg-muted/20 p-8 shadow-none sm:p-10"
                   : cn(
                       "bg-card/90 p-5 shadow-xl shadow-black/5 sm:p-7",
-                      online ? "border-border/80" : "border-amber-500/45 dark:border-amber-500/35",
+                      online || marketingSite
+                        ? "border-border/80"
+                        : "border-amber-500/45 dark:border-amber-500/35",
                     ),
               )}
-              aria-busy={busy || (online && devicePrecheck === "loading")}
+              aria-busy={!marketingSite && (busy || (online && devicePrecheck === "loading"))}
             >
-            {devicePrecheck === "new_device" && !showRestoreFlow ? (
+            {(marketingSite || (devicePrecheck === "new_device" && !showRestoreFlow)) ? (
               <div
                 className={cn("welcome-trial-ribbon", isRTL && "welcome-trial-ribbon--rtl")}
                 role="status"
@@ -1333,6 +1388,9 @@ export default function WelcomeSetup() {
                 {t("welcome.trialBadge", "7-day free trial!")}
               </div>
             ) : null}
+            {marketingSite ? (
+              <WelcomeMarketingDownloadCard isRTL={isRTL} reduceMotion={reduceMotion} />
+            ) : (
             <div
               key={`gs-${String(online)}-${devicePrecheck}`}
               className={cn(
@@ -1654,6 +1712,7 @@ export default function WelcomeSetup() {
               )}
             </div>
             </div>
+            )}
           </section>
           </SequentialIntroSlot>
         </div>
