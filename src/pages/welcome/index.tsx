@@ -1337,7 +1337,7 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
             className={cn(
               "relative isolate mt-10 overflow-visible",
               marketingSite
-                ? "mx-auto w-full max-w-lg lg:mt-10 lg:justify-self-center xl:mt-14"
+                ? "mx-auto w-full max-w-lg lg:mt-15 lg:justify-self-center xl:mt-18"
                 : "lg:mt-0",
               !marketingSite &&
                 online &&
