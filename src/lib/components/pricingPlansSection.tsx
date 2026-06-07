@@ -7,7 +7,7 @@ import { cn } from "../utils";
 const SUPPLIER_PHONE_DISPLAY = "0793420745";
 
 /** Must match `priceAmount` figures in locale files (DA); amounts are formatted here for stable first paint. */
-const MONTHLY_PRICE_DZD = 2500;
+const MONTHLY_PRICE_DZD = 1900;
 const YEARLY_PRICE_DZD = 15000;
 const LIFETIME_PRICE_DZD = 35000;
 
