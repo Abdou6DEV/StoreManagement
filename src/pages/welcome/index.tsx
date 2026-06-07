@@ -1335,7 +1335,10 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
             kind="fadeUp"
             onStepComplete={advanceIntro}
             className={cn(
-              "relative isolate mt-10 overflow-visible lg:mt-0",
+              "relative isolate mt-10 overflow-visible",
+              marketingSite
+                ? "mx-auto w-full max-w-lg lg:mt-10 lg:justify-self-center xl:mt-14"
+                : "lg:mt-0",
               !marketingSite &&
                 online &&
                 devicePrecheck === "existing_device" &&
