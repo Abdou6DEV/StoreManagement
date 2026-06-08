@@ -5,7 +5,7 @@ import { defineConfig } from "vite";
 
 export default defineConfig({
   plugins: [tailwindcss(), react()],
-  base: "/StoreManagement/",
+  base: "/",
   publicDir: "public",
   build: {
     outDir: "docs",
