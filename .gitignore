@@ -91,7 +91,7 @@ typings/
 
 # GitHub Pages build output (deployed via GitHub Actions)
 docs/
-
+!docs/index.html
 # Electron-Forge
 out/
 
