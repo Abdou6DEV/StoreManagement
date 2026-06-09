@@ -129,7 +129,7 @@ export function WelcomeMarketingDownloadCard({
               onClick={handleDownload}
             >
               <span className="flex items-center justify-center gap-2">
-                <FaWindows className="h-7 w-7 shrink-0" aria-hidden />
+                <FaWindows className="h-5 w-5 shrink-0" aria-hidden />
                 {t("welcome.downloadButton", "Download for Windows")}
               </span>
             </Button>
