@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Loader2, Sparkles } from "lucide-react";
+import { Loader2, Download } from "lucide-react";
 import { FaWindows } from "react-icons/fa";
 import { useTranslation } from "react-i18next";
 import { Button } from "../../lib/components/button";
@@ -90,7 +90,7 @@ export function WelcomeMarketingDownloadCard({
     >
       <header className="space-y-3 pt-6 text-center sm:pt-5">
         <h2 className="flex flex-wrap items-center justify-center gap-3 text-xl font-bold text-foreground sm:text-2xl">
-          <Sparkles className="h-6 w-6 shrink-0 text-primary" aria-hidden />
+          <Download className="h-6 w-6 shrink-0 text-primary" aria-hidden />
           {t("welcome.downloadTitle", "Download the app")}
         </h2>
         <p className="mx-auto max-w-xl text-sm leading-relaxed text-muted-foreground">
@@ -129,7 +129,7 @@ export function WelcomeMarketingDownloadCard({
               onClick={handleDownload}
             >
               <span className="flex items-center justify-center gap-2">
-                <FaWindows className="h-5 w-5 shrink-0" aria-hidden />
+                <FaWindows className="h-7 w-7 shrink-0" aria-hidden />
                 {t("welcome.downloadButton", "Download for Windows")}
               </span>
             </Button>
