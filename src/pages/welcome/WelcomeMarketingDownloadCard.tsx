@@ -157,7 +157,7 @@ export function WelcomeMarketingDownloadCard({
                 <span className="flex min-w-0 items-center justify-center gap-2">
                   <SiAnydesk className="h-5 w-5 shrink-0" aria-hidden />
                   <span className="whitespace-nowrap">
-                    {t("welcome.downloadAnyDesk", "Download AnyDesk")}
+                    {t("welcome.downloadanydeskButton", "Download AnyDesk")}
                   </span>
                 </span>
               </Button>
