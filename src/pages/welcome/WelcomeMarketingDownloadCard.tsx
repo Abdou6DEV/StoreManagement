@@ -142,7 +142,7 @@ export function WelcomeMarketingDownloadCard({
               >
                 <span className="flex min-w-0 items-center justify-center gap-2">
                   <FaWindows className="h-5 w-5 shrink-0" aria-hidden />
-                  <span className="truncate">
+                  <span className="min-w-0 truncate">
                     {t("welcome.downloadButton", "Download for Windows")}
                   </span>
                 </span>
@@ -154,9 +154,11 @@ export function WelcomeMarketingDownloadCard({
                 className="min-h-[3rem] w-full sm:flex-[3] sm:min-w-[44px] border-transparent bg-red-600 text-white shadow-xs hover:bg-red-700 focus-visible:ring-red-500/35 dark:bg-red-600 dark:text-white dark:hover:bg-red-500"
                 onClick={handleAnyDeskDownload}
               >
-                <span className="flex items-center justify-center gap-2">
-                  <SiAnydesk className="h-5 w-5 shrink-0" aria-hidden />                 
-                  {t("welcome.downloadButton", "Download for Windows")}
+                <span className="flex min-w-0 items-center justify-center gap-2">
+                  <SiAnydesk className="h-5 w-5 shrink-0" aria-hidden />
+                  <span className="truncate">
+                  {t("welcome.downloadButton", "Download AnyDesk")}
+                  </span>
                 </span>
               </Button>
             </div>
