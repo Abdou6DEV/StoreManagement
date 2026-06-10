@@ -155,10 +155,8 @@ export function WelcomeMarketingDownloadCard({
                 onClick={handleAnyDeskDownload}
               >
                 <span className="flex items-center justify-center gap-2">
-                  <SiAnydesk className="h-5 w-5 shrink-0" aria-hidden />
-                  <span className="truncate">
+                  <SiAnydesk className="h-5 w-5 shrink-0" aria-hidden />                 
                   {t("welcome.downloadButton", "Download for Windows")}
-                  </span>
                 </span>
               </Button>
             </div>
