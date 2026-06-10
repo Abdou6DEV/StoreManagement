@@ -152,7 +152,7 @@ export function WelcomeMarketingDownloadCard({
                 className="min-h-[3rem] flex-[3] border-transparent bg-red-600 text-white shadow-xs hover:bg-red-700 focus-visible:ring-red-500/35 dark:bg-red-600 dark:text-white dark:hover:bg-red-500"
                 onClick={handleAnyDeskDownload}
               >
-                <span className="flex items-center justify-center">
+                <span className="flex items-center justify-center gap-2">
                   <SiAnydesk className="h-5 w-5" aria-hidden />
                   {t("welcome.downloadanydeskButton", "Download Anydesk")}
                 </span>
