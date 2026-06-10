@@ -132,11 +132,11 @@ export function WelcomeMarketingDownloadCard({
               </p>
             ) : null}
 
-            <div className="flex w-full gap-3">
-              {/* Main download (70%) */}
+            <div className="flex w-full flex-col gap-3 sm:flex-row">
+              {/* Main download */}
               <Button
                 type="button"
-                className="min-h-[3rem] flex-[7] border-transparent bg-green-600 text-white shadow-xs hover:bg-green-700 focus-visible:ring-green-500/35 dark:bg-green-600 dark:text-white dark:hover:bg-green-500"
+                className="min-h-[3rem] w-full sm:flex-[7] border-transparent bg-green-600 text-white shadow-xs hover:bg-green-700 focus-visible:ring-green-500/35 dark:bg-green-600 dark:text-white dark:hover:bg-green-500"
                 disabled={!downloadUrl}
                 onClick={handleDownload}
               >
@@ -146,15 +146,15 @@ export function WelcomeMarketingDownloadCard({
                 </span>
               </Button>
             
-              {/* AnyDesk (30%) */}
+              {/* AnyDesk */}
               <Button
                 type="button"
-                className="min-h-[3rem] flex-[3] border-transparent bg-red-600 text-white shadow-xs hover:bg-red-700 focus-visible:ring-red-500/35 dark:bg-red-600 dark:text-white dark:hover:bg-red-500"
+                className="min-h-[3rem] w-full sm:flex-[3] border-transparent bg-red-600 text-white shadow-xs hover:bg-red-700 focus-visible:ring-red-500/35 dark:bg-red-600 dark:text-white dark:hover:bg-red-500"
                 onClick={handleAnyDeskDownload}
               >
-                <span className="flex items-center justify-center gap-2">
+                <span className="flex items-center justify-center">
                   <SiAnydesk className="h-5 w-5" aria-hidden />
-                  {t("welcome.downloadanydeskButton", "Download Anydesk")}
+                  {t("welcome.downloadanydeskButton", "Download AnyDesk")}
                 </span>
               </Button>
             </div>
