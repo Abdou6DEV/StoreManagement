@@ -151,7 +151,7 @@ export function FeaturesCarousel({
               <article
                 key={def.titleKey}
                 className={cn(
-                  "flex w-1/3 shrink-0 flex-col items-center px-3 text-center transition-all duration-500 ease-out motion-reduce:transition-none sm:px-4",
+                  "flex w-1/3 shrink-0 flex-col items-center px-2 text-center transition-all duration-500 ease-out motion-reduce:transition-none sm:px-3 lg:px-4",
                   isActive ? "scale-100 opacity-100" : "scale-90 opacity-40",
                   !isActive && count > 1 && "cursor-pointer hover:opacity-55",
                 )}
@@ -176,15 +176,15 @@ export function FeaturesCarousel({
               >
                 <div
                   className={cn(
-                    "mb-4 flex h-14 w-14 items-center justify-center rounded-2xl transition-colors duration-500 sm:mb-5",
+                    "mb-3 flex h-12 w-12 items-center justify-center rounded-2xl transition-colors duration-500 sm:mb-4 sm:h-14 sm:w-14 lg:mb-5",
                     isActive ? "bg-primary/10 text-primary" : "bg-muted/50 text-muted-foreground",
                   )}
                 >
-                  <Icon className="h-7 w-7" aria-hidden />
+                  <Icon className="h-6 w-6 sm:h-7 sm:w-7" aria-hidden />
                 </div>
                 <h3
                   className={cn(
-                    "text-lg font-semibold transition-colors duration-500 sm:text-xl",
+                    "text-base font-semibold transition-colors duration-500 sm:text-lg lg:text-xl",
                     isActive ? "text-foreground" : "text-muted-foreground",
                   )}
                 >
@@ -192,7 +192,7 @@ export function FeaturesCarousel({
                 </h3>
                 <p
                   className={cn(
-                    "mt-2 max-w-sm text-sm leading-relaxed transition-colors duration-500 sm:mt-3 sm:text-base",
+                    "mt-1.5 max-w-sm text-xs leading-relaxed transition-colors duration-500 sm:mt-2 sm:text-sm lg:mt-3 lg:text-base",
                     isActive ? "text-muted-foreground" : "text-muted-foreground/70",
                   )}
                 >
@@ -203,7 +203,7 @@ export function FeaturesCarousel({
           })}
         </div>
       </div>
-      <div className="mt-1.5 flex flex-wrap items-center justify-center gap-2"
+      <div className="mt-1.5 flex flex-wrap items-center justify-center gap-1.5 sm:gap-2"
         role="tablist"
         aria-label={tabListLabel}
       >
@@ -218,10 +218,10 @@ export function FeaturesCarousel({
               aria-label={t(def.titleKey)}
               onClick={() => selectFeature(i)}
               className={cn(
-                "h-2 shrink-0 rounded-full transition-all duration-300 ease-out motion-reduce:transition-none",
+                "h-1.5 shrink-0 rounded-full transition-all duration-300 ease-out motion-reduce:transition-none sm:h-2",
                 isActive
-                  ? "relative w-10 overflow-hidden bg-muted-foreground/25"
-                  : "w-2 bg-muted-foreground/30 hover:bg-muted-foreground/50",
+                  ? "relative w-8 overflow-hidden bg-muted-foreground/25 sm:w-10"
+                  : "w-1.5 bg-muted-foreground/30 hover:bg-muted-foreground/50 sm:w-2",
               )}
             >
               {isActive ? (
