@@ -1409,19 +1409,6 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
                 className={cn("welcome-trial-ribbon", isRTL && "welcome-trial-ribbon--rtl")}
                 role="status"
                 aria-label={t("welcome.trialBadge", "7-day free trial")}
-                style={{
-                  position: "absolute",
-                  top: "-8px",
-                  right: "10px",
-                  background: "linear-gradient(135deg, #10b981, #059669)",
-                  color: "white",
-                  fontSize: "11px",
-                  fontWeight: "bold",
-                  padding: "3px 10px",
-                  borderRadius: "20px",
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-                  zIndex: 2,
-                }}
               >
                 {t("welcome.trialBadge", "7-day free trial!")}
               </div>
