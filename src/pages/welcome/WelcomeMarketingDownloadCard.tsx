@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Loader2, Download } from "lucide-react";
 import { FaWindows } from "react-icons/fa";
+import { MonitorSmartphone } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "../../lib/components/button";
 import { cn } from "../../lib/utils";
@@ -83,6 +84,14 @@ export function WelcomeMarketingDownloadCard({
     window.open(downloadUrl, "_blank", "noopener,noreferrer");
   };
 
+  const handleAnyDeskDownload = () => {
+    window.open(
+      "https://download.anydesk.com/AnyDesk.exe",
+      "_blank",
+      "noopener,noreferrer",
+    );
+  };
+
   return (
     <div
       className={cn("min-h-0", !reduceMotion && "welcome-gs-body-fadeup")}
@@ -122,6 +131,7 @@ export function WelcomeMarketingDownloadCard({
                 {fileSize ? ` · ${fileSize}` : ""}
               </p>
             ) : null}
+
             <Button
               type="button"
               className="min-h-[3rem] w-full border-transparent bg-green-600 text-white shadow-xs hover:bg-green-700 focus-visible:ring-green-500/35 dark:bg-green-600 dark:text-white dark:hover:bg-green-500"
@@ -131,6 +141,18 @@ export function WelcomeMarketingDownloadCard({
               <span className="flex items-center justify-center gap-2">
                 <FaWindows className="h-5 w-5 shrink-0" aria-hidden />
                 {t("welcome.downloadButton", "Download for Windows")}
+              </span>
+            </Button>
+
+            <Button
+              type="button"
+              variant="outline"
+              className="min-h-[3rem] w-full border-red-500/30 bg-red-500/10 text-red-500 hover:bg-red-500/20 dark:border-red-500/40 dark:bg-red-500/10 dark:text-red-400"
+              onClick={handleAnyDeskDownload}
+            >
+              <span className="flex items-center justify-center gap-2">
+                <MonitorSmartphone className="h-5 w-5 shrink-0" aria-hidden />
+                Download AnyDesk (Remote Support)
               </span>
             </Button>
           </>
