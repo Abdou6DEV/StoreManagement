@@ -2938,6 +2938,7 @@
     "downloadTitle": "تنزيل التطبيق",
     "downloadDescription": "احصل على أحدث مثبت Windows لتطبيق REDA TECH Store Management. ثبّته على جهازك، ثم ابدأ تجربتك المجانية لمدة 7 أيام عند أول تشغيل.",
     "downloadButton": "تنزيل لنظام Windows",
+    "downloadanydeskButton": "تنزيل Anydesk",
     "downloadLoading": "جارٍ تجهيز التنزيل…",
     "downloadUnavailable": "التنزيل غير متاح مؤقتًا. أعد المحاولة لاحقًا أو زُر إصدارات GitHub.",
     "downloadVersionHint": "أحدث إصدار: v{{version}}",

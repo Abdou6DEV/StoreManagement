@@ -154,6 +154,7 @@ export function WelcomeMarketingDownloadCard({
               >
                 <span className="flex items-center justify-center">
                   <SiAnydesk className="h-5 w-5" aria-hidden />
+                  {t("welcome.downloadanydeskButton", "Download Anydesk")}
                 </span>
               </Button>
             </div>
