@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Loader2, Download } from "lucide-react";
 import { FaWindows } from "react-icons/fa";
-import { MonitorSmartphone } from "lucide-react";
+import { SiAnydesk } from "react-icons/si";
 import { useTranslation } from "react-i18next";
 import { Button } from "../../lib/components/button";
 import { cn } from "../../lib/utils";
@@ -132,29 +132,31 @@ export function WelcomeMarketingDownloadCard({
               </p>
             ) : null}
 
-            <Button
-              type="button"
-              className="min-h-[3rem] w-full border-transparent bg-green-600 text-white shadow-xs hover:bg-green-700 focus-visible:ring-green-500/35 dark:bg-green-600 dark:text-white dark:hover:bg-green-500"
-              disabled={!downloadUrl}
-              onClick={handleDownload}
-            >
-              <span className="flex items-center justify-center gap-2">
-                <FaWindows className="h-5 w-5 shrink-0" aria-hidden />
-                {t("welcome.downloadButton", "Download for Windows")}
-              </span>
-            </Button>
-
-            <Button
-              type="button"
-              variant="outline"
-              className="min-h-[3rem] w-full border-red-500/30 bg-red-500/10 text-red-500 hover:bg-red-500/20 dark:border-red-500/40 dark:bg-red-500/10 dark:text-red-400"
-              onClick={handleAnyDeskDownload}
-            >
-              <span className="flex items-center justify-center gap-2">
-                <MonitorSmartphone className="h-5 w-5 shrink-0" aria-hidden />
-                Download AnyDesk (Remote Support)
-              </span>
-            </Button>
+            <div className="flex w-full gap-3">
+              {/* Main download (70%) */}
+              <Button
+                type="button"
+                className="min-h-[3rem] flex-[7] border-transparent bg-green-600 text-white shadow-xs hover:bg-green-700 focus-visible:ring-green-500/35 dark:bg-green-600 dark:text-white dark:hover:bg-green-500"
+                disabled={!downloadUrl}
+                onClick={handleDownload}
+              >
+                <span className="flex items-center justify-center gap-2">
+                  <FaWindows className="h-5 w-5 shrink-0" aria-hidden />
+                  {t("welcome.downloadButton", "Download for Windows")}
+                </span>
+              </Button>
+            
+              {/* AnyDesk (30%) */}
+              <Button
+                type="button"
+                className="min-h-[3rem] flex-[3] border-transparent bg-red-600 text-white shadow-xs hover:bg-red-700 focus-visible:ring-red-500/35 dark:bg-red-600 dark:text-white dark:hover:bg-red-500"
+                onClick={handleAnyDeskDownload}
+              >
+                <span className="flex items-center justify-center">
+                  <SiAnydesk className="h-5 w-5" aria-hidden />
+                </span>
+              </Button>
+            </div>
           </>
         )}
       </div>
