@@ -1058,7 +1058,7 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
   return (
     <div
       dir={isRTL ? "rtl" : "ltr"}
-      className="welcome-intro-scope min-h-screen bg-background pb-16 text-foreground xl:pt-24"
+      className="welcome-intro-scope min-h-screen bg-background pb-12 text-foreground sm:pb-16 xl:pt-24"
       style={{ direction: isRTL ? "rtl" : "ltr" }}
     >
       <style>{`
@@ -1145,6 +1145,23 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
             transform: translate3d(0, 0, 0);
           }
         }
+        /* Mobile optimizations */
+        @media (max-width: 640px) {
+          .welcome-intro-scope input,
+          .welcome-intro-scope button {
+            font-size: 16px !important;
+          }
+          .welcome-intro-scope .welcome-trial-ribbon {
+            font-size: 12px;
+            padding: 4px 12px;
+            top: -10px;
+            right: 12px;
+          }
+          .welcome-intro-scope .welcome-trial-ribbon--rtl {
+            right: auto;
+            left: 12px;
+          }
+        }
       `}</style>
       {mountWelcomeNavChrome ? (
         <>
@@ -1175,6 +1192,7 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
             >
               <Settings
                 className={cn(
+                  "h-5 w-5 sm:h-6 sm:w-6",
                   "transition-transform duration-300",
                   dropdownOpen ? "rotate-90 scale-110" : "",
                   "hover:text-primary",
@@ -1182,7 +1200,7 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
               />
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent className={cn("mx-4 my-2 w-56", isRTL && "text-right")}>
+          <DropdownMenuContent className={cn("mx-2 my-2 w-52 sm:mx-4 sm:w-56", isRTL && "text-right")}>
             <DropdownMenuLabel className="flex items-center gap-2 font-semibold text-md">
               <User className="h-4 w-4" />
               {t("navigation.welcomeToStoreManagement", "Welcome to Store Management")}
@@ -1244,7 +1262,8 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
           WELCOME_SECTION_SCROLL_MARGIN,
         )}
       >
-        <div className="relative mx-auto max-w-6xl px-4 pb-14 pt-12 sm:px-6 sm:pb-16 sm:pt-16 lg:grid lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:items-start lg:gap-12 lg:pb-20 lg:pt-20">
+        {/* Mobile: reduced padding, stacked layout */}
+        <div className="relative mx-auto max-w-6xl px-4 pb-10 pt-8 sm:px-6 sm:pb-16 sm:pt-16 lg:grid lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:items-start lg:gap-12 lg:pb-20 lg:pt-20">
           <div className="text-center lg:text-start">
             <SequentialIntroSlot
               stepIndex={SEQ.logo}
@@ -1257,7 +1276,7 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
               <img
                 src={isDark ? LOGO_ICON : LOGO_ICON_DARK}
                 alt=""
-                className="mx-auto mb-6 h-28 w-28 object-contain select-none sm:h-32 sm:w-32 lg:mx-0"
+                className="mx-auto mb-5 h-20 w-20 object-contain select-none sm:mb-6 sm:h-28 sm:w-28 lg:mx-0"
               />
             </SequentialIntroSlot>
             <SequentialIntroSlot
@@ -1268,7 +1287,8 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
               kind="fadeUp"
               onStepComplete={advanceIntro}
             >
-              <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl lg:text-[2.5rem] lg:leading-tight">
+              {/* Mobile: smaller title font */}
+              <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl sm:text-4xl lg:text-[2.5rem] lg:leading-tight">
                 {t("welcome.title", "Welcome to REDA TECH Store Management")}
               </h1>
             </SequentialIntroSlot>
@@ -1280,7 +1300,7 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
               kind="fadeUp"
               onStepComplete={advanceIntro}
             >
-              <p className="mx-auto mt-4 max-w-xl text-base text-muted-foreground sm:text-lg lg:mx-0">
+              <p className="mx-auto mt-3 max-w-xl text-sm text-muted-foreground sm:mt-4 sm:text-base lg:mx-0">
                 {t(
                   "welcome.subtitle",
                   "Set up this computer for the first time. Choose a new shop trial or restore your data if you already use the app elsewhere.",
@@ -1295,7 +1315,7 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
               kind="fadeUp"
               onStepComplete={advanceIntro}
             >
-              <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-muted-foreground/90 lg:mx-0">
+              <p className="mx-auto mt-2 max-w-xl text-xs leading-relaxed text-muted-foreground/90 sm:mt-3 sm:text-sm lg:mx-0">
                 {t(
                   "about.subtitle",
                   "A comprehensive store management solution designed to streamline your business operations with modern technology and intuitive design.",
@@ -1310,17 +1330,18 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
               kind="fadeUp"
               onStepComplete={advanceIntro}
             >
-              <div className="mt-6 flex flex-wrap items-center justify-center gap-2 lg:justify-start">
-                <span className="rounded-full border border-border/70 bg-card/80 px-3 py-1 text-xs font-medium text-foreground backdrop-blur-sm">
+              {/* Mobile: wrap badges naturally, smaller padding */}
+              <div className="mt-5 flex flex-wrap items-center justify-center gap-1.5 sm:mt-6 sm:gap-2 lg:justify-start">
+                <span className="rounded-full border border-border/70 bg-card/80 px-2 py-0.5 text-[10px] font-medium text-foreground backdrop-blur-sm sm:px-3 sm:py-1 sm:text-xs">
                   {t("about.version", "Version")} v{appVersion}
                 </span>
-                <span className="rounded-full border border-border/70 bg-card/80 px-3 py-1 text-xs font-medium text-muted-foreground backdrop-blur-sm">
+                <span className="rounded-full border border-border/70 bg-card/80 px-2 py-0.5 text-[10px] font-medium text-muted-foreground backdrop-blur-sm sm:px-3 sm:py-1 sm:text-xs">
                   {t("about.platform", "Platform")}: Desktop
                 </span>
-                <span className="rounded-full border border-border/70 bg-card/80 px-3 py-1 text-xs font-medium text-muted-foreground backdrop-blur-sm">
-                  Electron + React + TypeScript
+                <span className="rounded-full border border-border/70 bg-card/80 px-2 py-0.5 text-[10px] font-medium text-muted-foreground backdrop-blur-sm sm:px-3 sm:py-1 sm:text-xs">
+                  Electron + React + TS
                 </span>
-                <span className="rounded-full border border-border/70 bg-card/80 px-3 py-1 text-xs font-medium text-muted-foreground backdrop-blur-sm">
+                <span className="rounded-full border border-border/70 bg-card/80 px-2 py-0.5 text-[10px] font-medium text-muted-foreground backdrop-blur-sm sm:px-3 sm:py-1 sm:text-xs">
                   {t("about.database", "Database")}: SQLite
                 </span>
               </div>
@@ -1335,14 +1356,14 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
             kind="fadeUp"
             onStepComplete={advanceIntro}
             className={cn(
-              "relative isolate mt-10 overflow-visible",
+              "relative isolate mt-8 overflow-visible sm:mt-10",
               marketingSite
                 ? "mx-auto w-full max-w-lg lg:mt-28 lg:justify-self-center xl:mt-28"
                 : "lg:mt-0",
               !marketingSite &&
                 online &&
                 devicePrecheck === "existing_device" &&
-                "mt-28 sm:mt-36 lg:mt-28 xl:mt-36 2xl:mt-40",
+                "mt-20 sm:mt-28 lg:mt-28 xl:mt-36 2xl:mt-40",
             )}
           >
             {marketingSite || !(online && devicePrecheck === "loading") ? (
@@ -1353,15 +1374,16 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
                 )}
                 aria-hidden
               >
+                {/* Mobile: smaller glow radii */}
                 <div
                   className={cn(
-                    "absolute -right-14 -top-10 z-0 h-52 w-52 rounded-full blur-3xl transition-colors duration-300 ease-in-out sm:h-60 sm:w-60 sm:-right-16 sm:-top-12",
+                    "absolute -right-10 -top-8 z-0 h-40 w-40 rounded-full blur-2xl transition-colors duration-300 ease-in-out sm:-right-14 sm:-top-10 sm:h-52 sm:w-52 sm:blur-3xl",
                     restoreGlowActive ? "bg-blue-500/30" : "bg-green-500/30",
                   )}
                 />
                 <div
                   className={cn(
-                    "absolute -bottom-10 -left-12 z-0 h-28 w-28 rounded-full blur-2xl transition-colors duration-300 ease-in-out sm:h-32 sm:w-32 sm:-bottom-12 sm:-left-14",
+                    "absolute -bottom-8 -left-10 z-0 h-24 w-24 rounded-full blur-xl transition-colors duration-300 ease-in-out sm:-bottom-10 sm:-left-12 sm:h-28 sm:w-28 sm:blur-2xl",
                     restoreGlowActive ? "bg-blue-500/20" : "bg-green-500/20",
                   )}
                 />
@@ -1370,11 +1392,11 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
             <section
               id="get-started"
               className={cn(
-                "relative z-[1] overflow-visible rounded-3xl border backdrop-blur-sm",
+                "relative z-[1] overflow-visible rounded-2xl border backdrop-blur-sm sm:rounded-3xl",
                 !marketingSite && online && devicePrecheck === "loading"
-                  ? "border-dashed border-border/70 bg-muted/20 p-8 shadow-none sm:p-10"
+                  ? "border-dashed border-border/70 bg-muted/20 p-5 shadow-none sm:p-8 sm:p-10"
                   : cn(
-                      "bg-card/90 p-5 shadow-xl shadow-black/5 sm:p-7",
+                      "bg-card/90 p-4 shadow-lg shadow-black/5 sm:p-5 sm:p-7",
                       online || marketingSite
                         ? "border-border/80"
                         : "border-amber-500/45 dark:border-amber-500/35",
@@ -1387,6 +1409,19 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
                 className={cn("welcome-trial-ribbon", isRTL && "welcome-trial-ribbon--rtl")}
                 role="status"
                 aria-label={t("welcome.trialBadge", "7-day free trial")}
+                style={{
+                  position: "absolute",
+                  top: "-8px",
+                  right: "10px",
+                  background: "linear-gradient(135deg, #10b981, #059669)",
+                  color: "white",
+                  fontSize: "11px",
+                  fontWeight: "bold",
+                  padding: "3px 10px",
+                  borderRadius: "20px",
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+                  zIndex: 2,
+                }}
               >
                 {t("welcome.trialBadge", "7-day free trial!")}
               </div>
@@ -1403,18 +1438,18 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
             >
             {!online ? (
               <div
-                className="mb-6 flex gap-3 rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-start dark:bg-amber-500/15 sm:gap-4 sm:px-5 sm:py-4"
+                className="mb-5 flex gap-3 rounded-xl border border-amber-500/40 bg-amber-500/10 px-3 py-3 text-start dark:bg-amber-500/15 sm:mb-6 sm:gap-4 sm:px-5 sm:py-4"
                 role="alert"
               >
                 <WifiOff
-                  className="mt-0.5 h-5 w-5 shrink-0 text-amber-700 dark:text-amber-400 sm:h-6 sm:w-6"
+                  className="mt-0.5 h-4 w-4 shrink-0 text-amber-700 dark:text-amber-400 sm:h-5 sm:w-5 sm:h-6 sm:w-6"
                   aria-hidden
                 />
                 <div className="min-w-0 space-y-1">
-                  <p className="text-sm font-semibold text-foreground">
+                  <p className="text-xs font-semibold text-foreground sm:text-sm">
                     {t("welcome.offlineSetupTitle", "Internet connection required")}
                   </p>
-                  <p className="text-sm leading-relaxed text-muted-foreground">
+                  <p className="text-xs leading-relaxed text-muted-foreground sm:text-sm">
                     {t(
                       "welcome.offlineSetupDescription",
                       "Registering this device and starting your free trial (or linking an existing shop) requires an active internet connection. Connect to Wi‑Fi or Ethernet, then continue below when you are back online.",
@@ -1426,47 +1461,47 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
 
             <div
               className={cn(
-                "space-y-6 transition-opacity",
+                "space-y-5 transition-opacity sm:space-y-6",
                 !online && "pointer-events-none select-none opacity-50",
               )}
             >
               {online && devicePrecheck === "loading" ? (
-                <div className="flex min-h-[11rem] flex-col items-center justify-center gap-4 py-4 sm:min-h-[12rem]">
-                  <Loader2 className="h-10 w-10 animate-spin text-primary" aria-hidden />
-                  <p className="max-w-sm text-center text-sm text-muted-foreground">
+                <div className="flex min-h-[10rem] flex-col items-center justify-center gap-3 py-3 sm:min-h-[11rem] sm:py-4">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary sm:h-10 sm:w-10" aria-hidden />
+                  <p className="max-w-sm text-center text-xs text-muted-foreground sm:text-sm">
                     {t("welcome.devicePrecheckLoading", "Checking whether this device is already registered…")}
                   </p>
                 </div>
               ) : online && devicePrecheck === "existing_device" ? (
-                <div className="space-y-6 pt-6 text-center sm:pt-5">
-                  <header className="space-y-3">
-                    <h2 className="flex flex-wrap items-center justify-center gap-3 text-xl font-bold text-foreground sm:text-2xl">
-                      <Shield className="h-6 w-6 shrink-0 text-emerald-600" aria-hidden />
+                <div className="space-y-5 pt-4 text-center sm:pt-6 sm:space-y-6">
+                  <header className="space-y-2 sm:space-y-3">
+                    <h2 className="flex flex-wrap items-center justify-center gap-2 text-lg font-bold text-foreground sm:text-xl sm:text-2xl">
+                      <Shield className="h-5 w-5 shrink-0 text-emerald-600 sm:h-6 sm:w-6" aria-hidden />
                       {t("welcome.registeredDeviceTitle", "This device is already registered")}
                     </h2>
-                    <p className="mx-auto max-w-xl text-sm leading-relaxed text-muted-foreground">
+                    <p className="mx-auto max-w-xl text-xs leading-relaxed text-muted-foreground sm:text-sm">
                       {registeredIntroDescription}
                     </p>
                   </header>
                   <div className="flex flex-col gap-3 pt-1">
                     <Button
                       type="button"
-                      className="min-h-[3rem] w-full border-transparent bg-emerald-600 text-white shadow-xs hover:bg-emerald-700 focus-visible:ring-emerald-500/35 dark:bg-emerald-600 dark:text-white dark:hover:bg-emerald-500"
+                      className="min-h-[2.75rem] w-full border-transparent bg-emerald-600 text-white shadow-xs hover:bg-emerald-700 focus-visible:ring-emerald-500/35 dark:bg-emerald-600 dark:text-white dark:hover:bg-emerald-500 sm:min-h-[3rem]"
                       disabled={busy}
                       onClick={() => void handleContinueRegisteredDevice()}
                     >
                       {busy ? (
-                        <span className="flex items-center justify-center">
+                        <span className="flex items-center justify-center text-sm sm:text-base">
                           <span
-                            className="mr-2 h-5 w-5 shrink-0 animate-spin rounded-full border-b-2 border-white"
+                            className="mr-2 h-4 w-4 shrink-0 animate-spin rounded-full border-b-2 border-white sm:h-5 sm:w-5"
                             aria-hidden
                           />
                           {t("welcome.continuing", "Continuing…")}
                         </span>
                       ) : (
-                        <span className="flex items-center justify-center gap-2">
+                        <span className="flex items-center justify-center gap-2 text-sm sm:text-base">
                           {t("welcome.continueToApp", "Continue to the app")}
-                          <ArrowRight className="h-5 w-5 shrink-0" aria-hidden />
+                          <ArrowRight className="h-4 w-4 shrink-0 sm:h-5 sm:w-5" aria-hidden />
                         </span>
                       )}
                     </Button>
@@ -1474,7 +1509,7 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
                 </div>
               ) : (
                 <AnimatedHeight
-                  innerClassName="px-2"
+                  innerClassName="px-1 sm:px-2"
                   reduceMotion={reduceMotion}
                   deps={[
                     showRestoreFlow,
@@ -1489,18 +1524,18 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
                     type="button"
                     onClick={exitRestoreFlow}
                     disabled={restoreBackDisabled}
-                    className="mb-4 flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground disabled:pointer-events-none disabled:opacity-50 sm:mb-5"
+                    className="mb-3 flex items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground disabled:pointer-events-none disabled:opacity-50 sm:mb-4 sm:gap-2 sm:text-sm"
                   >
-                    <ArrowLeft className="h-4 w-4 shrink-0" aria-hidden />
+                    <ArrowLeft className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" aria-hidden />
                     {t("welcome.backToNewShopSetup", "Back to new shop setup")}
                   </button>
 
-                  <header className="space-y-3 text-center">
-                    <h2 className="flex flex-wrap items-center justify-center gap-3 text-xl font-bold text-foreground sm:text-2xl">
-                      <LifeBuoy className="h-6 w-6 shrink-0 text-blue-600 dark:text-blue-400" aria-hidden />
+                  <header className="space-y-2 text-center sm:space-y-3">
+                    <h2 className="flex flex-wrap items-center justify-center gap-2 text-lg font-bold text-foreground sm:text-xl sm:text-2xl">
+                      <LifeBuoy className="h-5 w-5 shrink-0 text-blue-600 dark:text-blue-400 sm:h-6 sm:w-6" aria-hidden />
                       {t("welcome.restoreTitle", "Restore on a new computer")}
                     </h2>
-                    <p className="mx-auto max-w-xl text-sm leading-relaxed text-muted-foreground">
+                    <p className="mx-auto max-w-xl text-xs leading-relaxed text-muted-foreground sm:text-sm">
                       {t(
                         "welcome.restoreDescription",
                         "Link this PC to your existing shop and download your latest cloud backup. This replaces data on this computer. A paid license is required.",
@@ -1508,10 +1543,10 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
                     </p>
                   </header>
 
-                  <div className="space-y-6 text-start">
-                    <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-2 sm:col-span-2">
-                    <label htmlFor="welcome-full-name" className="text-sm font-medium">
+                  <div className="space-y-4 text-start sm:space-y-6">
+                    <div className="grid gap-3 sm:gap-4 sm:grid-cols-2">
+                  <div className="space-y-1.5 sm:space-y-2 sm:col-span-2">
+                    <label htmlFor="welcome-full-name" className="text-xs font-medium sm:text-sm">
                       {t("welcome.fullName", "Full name")}
                     </label>
                     <Input
@@ -1523,10 +1558,11 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
                       autoComplete="name"
                       placeholder={t("welcome.fullNamePlaceholder", "First and last name")}
                       disabled={!online || restoreFieldsLocked}
+                      className="text-sm sm:text-base"
                     />
                   </div>
-                  <div className="space-y-2 sm:col-span-2">
-                    <label htmlFor="welcome-phone" className="text-sm font-medium">
+                  <div className="space-y-1.5 sm:space-y-2 sm:col-span-2">
+                    <label htmlFor="welcome-phone" className="text-xs font-medium sm:text-sm">
                       {t("welcome.phone", "Phone number")}
                     </label>
                     <Input
@@ -1539,12 +1575,13 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
                       inputMode="tel"
                       placeholder={t("welcome.phonePlaceholder", "Your phone number")}
                       disabled={!online || restoreFieldsLocked}
+                      className="text-sm sm:text-base"
                     />
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                    <label htmlFor="welcome-customer-id" className="text-sm font-medium">
+                <div className="space-y-1.5 sm:space-y-2">
+                    <label htmlFor="welcome-customer-id" className="text-xs font-medium sm:text-sm">
                       {t("welcome.customerId", "Customer ID")}
                     </label>
                     <Input
@@ -1554,32 +1591,32 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
                       onChange={(e) => setCustomerId(e.target.value)}
                       onKeyDown={handleWelcomeFormKeyDown}
                       placeholder={t("welcome.customerIdPlaceholder", "UUID from your supplier")}
-                      className="font-mono text-sm"
+                      className="font-mono text-xs sm:text-sm"
                       disabled={!online || restoreFieldsLocked}
                     />
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-[10px] leading-tight text-muted-foreground sm:text-xs">
                       {t("welcome.customerIdHint", "Must match the phone number we have on file for this ID.")}
                     </p>
                   </div>
 
-                <div className="flex flex-col gap-3 pt-1">
+                <div className="flex flex-col gap-2 pt-1 sm:gap-3">
                   {restoreCompleted || restorePhase === "ready" ? (
                     <Button
                       ref={welcomePrimaryActionRef}
                       type="button"
-                      className="min-h-[3rem] w-full border-transparent bg-green-600 text-white shadow-xs hover:bg-green-700 focus-visible:ring-green-500/35 dark:bg-green-600 dark:text-white dark:hover:bg-green-500"
+                      className="min-h-[2.75rem] w-full border-transparent bg-green-600 text-white shadow-xs hover:bg-green-700 focus-visible:ring-green-500/35 dark:bg-green-600 dark:text-white dark:hover:bg-green-500 sm:min-h-[3rem]"
                       disabled={!online || busy}
                       onClick={() => void handleContinueAfterRestore()}
                     >
                       {busy ? (
-                        <span className="flex items-center justify-center">
-                          <Loader2 className="mr-2 h-5 w-5 shrink-0 animate-spin" aria-hidden />
+                        <span className="flex items-center justify-center text-sm sm:text-base">
+                          <Loader2 className="mr-2 h-4 w-4 shrink-0 animate-spin sm:h-5 sm:w-5" aria-hidden />
                           {t("welcome.continuing", "Continuing…")}
                         </span>
                       ) : (
-                        <span className="inline-flex items-center justify-center">
+                        <span className="inline-flex items-center justify-center text-sm sm:text-base">
                           {t("welcome.restoreContinue", "Continue")}
-                          <ArrowRight className="ms-2 h-4 w-4" aria-hidden />
+                          <ArrowRight className="ms-2 h-3.5 w-3.5 sm:h-4 sm:w-4" aria-hidden />
                         </span>
                       )}
                     </Button>
@@ -1587,34 +1624,34 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
                     <Button
                       ref={welcomePrimaryActionRef}
                       type="button"
-                      className="min-h-[3rem] w-full border-transparent bg-blue-600 text-white shadow-xs hover:bg-blue-700 focus-visible:ring-blue-500/35 dark:bg-blue-600 dark:text-white dark:hover:bg-blue-500"
+                      className="min-h-[2.75rem] w-full border-transparent bg-blue-600 text-white shadow-xs hover:bg-blue-700 focus-visible:ring-blue-500/35 dark:bg-blue-600 dark:text-white dark:hover:bg-blue-500 sm:min-h-[3rem]"
                       disabled={!online || busy || restoreInProgress}
                       onClick={() => void handleRestore()}
                     >
                       {restorePhase === "linking" ? (
-                        <span className="flex items-center justify-center">
-                          <Loader2 className="mr-2 h-5 w-5 shrink-0 animate-spin" aria-hidden />
+                        <span className="flex items-center justify-center text-sm sm:text-base">
+                          <Loader2 className="mr-2 h-4 w-4 shrink-0 animate-spin sm:h-5 sm:w-5" aria-hidden />
                           {t("welcome.linkingDevice", "Linking device…")}
                         </span>
                       ) : restorePhase === "downloading" ? (
-                        <span className="flex items-center justify-center">
-                          <Loader2 className="mr-2 h-5 w-5 shrink-0 animate-spin" aria-hidden />
+                        <span className="flex items-center justify-center text-sm sm:text-base">
+                          <Loader2 className="mr-2 h-4 w-4 shrink-0 animate-spin sm:h-5 sm:w-5" aria-hidden />
                           {t("welcome.restoreDownloading", "Downloading backup…")}
                         </span>
                       ) : restorePhase === "restoring" ? (
-                        <span className="flex items-center justify-center">
-                          <Loader2 className="mr-2 h-5 w-5 shrink-0 animate-spin" aria-hidden />
+                        <span className="flex items-center justify-center text-sm sm:text-base">
+                          <Loader2 className="mr-2 h-4 w-4 shrink-0 animate-spin sm:h-5 sm:w-5" aria-hidden />
                           {t("welcome.restoreApplying", "Applying backup…")}
                         </span>
                       ) : (
-                        t("welcome.restoreFromCloud", "Restore data from cloud")
+                        <span className="text-sm sm:text-base">{t("welcome.restoreFromCloud", "Restore data from cloud")}</span>
                       )}
                     </Button>
                   )}
                   {(restorePhase === "downloading" || restorePhase === "restoring") &&
                   cloudTransferProgress ? (
-                    <div className="rounded-lg border border-border/70 bg-muted/20 px-4 py-3">
-                      <p className="mb-3 text-sm font-medium text-foreground">
+                    <div className="rounded-lg border border-border/70 bg-muted/20 px-3 py-2 sm:px-4 sm:py-3">
+                      <p className="mb-2 text-xs font-medium text-foreground sm:mb-3 sm:text-sm">
                         {restorePhase === "restoring"
                           ? t("welcome.restoreApplyingHint", "Applying backup to this computer…")
                           : t("welcome.restoreDownloadingHint", "Downloading your latest cloud backup…")}
@@ -1627,12 +1664,12 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
                 </>
               ) : (
                 <>
-                  <header className="space-y-3 pt-6 text-center sm:pt-5">
-                    <h2 className="flex flex-wrap items-center justify-center gap-3 text-xl font-bold text-foreground sm:text-2xl">
-                      <Sparkles className="h-6 w-6 shrink-0 text-primary" aria-hidden />
+                  <header className="space-y-2 pt-4 text-center sm:pt-5 sm:space-y-3">
+                    <h2 className="flex flex-wrap items-center justify-center gap-2 text-lg font-bold text-foreground sm:text-xl sm:text-2xl">
+                      <Sparkles className="h-5 w-5 shrink-0 text-primary sm:h-6 sm:w-6" aria-hidden />
                       {t("welcome.setupTitle", "Get started with us")}
                     </h2>
-                    <p className="mx-auto max-w-xl text-sm leading-relaxed text-muted-foreground">
+                    <p className="mx-auto max-w-xl text-xs leading-relaxed text-muted-foreground sm:text-sm">
                       {t(
                         "welcome.setupDescriptionTrial",
                         "Tell us who you are so we can start your free trial on this computer. Add your full name and phone — we use them to connect this device to your account. Your login password is separate and is set on the next screen.",
@@ -1640,10 +1677,10 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
                     </p>
                   </header>
 
-                  <div className="space-y-6 text-start">
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      <div className="space-y-2 sm:col-span-2">
-                        <label htmlFor="welcome-full-name-trial" className="text-sm font-medium">
+                  <div className="space-y-4 text-start sm:space-y-6">
+                    <div className="grid gap-3 sm:gap-4 sm:grid-cols-2">
+                      <div className="space-y-1.5 sm:space-y-2 sm:col-span-2">
+                        <label htmlFor="welcome-full-name-trial" className="text-xs font-medium sm:text-sm">
                           {t("welcome.fullName", "Full name")}
                         </label>
                         <Input
@@ -1655,10 +1692,11 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
                           autoComplete="name"
                           placeholder={t("welcome.fullNamePlaceholder", "First and last name")}
                           disabled={!online || busy}
+                          className="text-sm sm:text-base"
                         />
                       </div>
-                      <div className="space-y-2 sm:col-span-2">
-                        <label htmlFor="welcome-phone-trial" className="text-sm font-medium">
+                      <div className="space-y-1.5 sm:space-y-2 sm:col-span-2">
+                        <label htmlFor="welcome-phone-trial" className="text-xs font-medium sm:text-sm">
                           {t("welcome.phone", "Phone number")}
                         </label>
                         <Input
@@ -1671,28 +1709,29 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
                           inputMode="tel"
                           placeholder={t("welcome.phonePlaceholder", "Your phone number")}
                           disabled={!online || busy}
+                          className="text-sm sm:text-base"
                         />
                       </div>
                     </div>
 
-                    <div className="flex flex-col gap-3 pt-1">
+                    <div className="flex flex-col gap-2 pt-1 sm:gap-3">
                       <Button
                         ref={welcomePrimaryActionRef}
                         type="button"
-                        className="min-h-[3rem] w-full border-transparent bg-green-600 text-white shadow-xs hover:bg-green-700 focus-visible:ring-green-500/35 dark:bg-green-600 dark:text-white dark:hover:bg-green-500"
+                        className="min-h-[2.75rem] w-full border-transparent bg-green-600 text-white shadow-xs hover:bg-green-700 focus-visible:ring-green-500/35 dark:bg-green-600 dark:text-white dark:hover:bg-green-500 sm:min-h-[3rem]"
                         disabled={!online || busy}
                         onClick={handleStartTrial}
                       >
                         {busy ? (
-                          <span className="flex items-center justify-center">
+                          <span className="flex items-center justify-center text-sm sm:text-base">
                             <span
-                              className="mr-2 h-5 w-5 shrink-0 animate-spin rounded-full border-b-2 border-white"
+                              className="mr-2 h-4 w-4 shrink-0 animate-spin rounded-full border-b-2 border-white sm:h-5 sm:w-5"
                               aria-hidden
                             />
                             {t("welcome.startingTrial", "Registering device…")}
                           </span>
                         ) : (
-                          t("welcome.startTrial", "Start free 7-day trial")
+                          <span className="text-sm sm:text-base">{t("welcome.startTrial", "Start free 7-day trial")}</span>
                         )}
                       </Button>
 
@@ -1700,7 +1739,7 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
                         type="button"
                         onClick={() => setShowRestoreFlow(true)}
                         disabled={!online || busy}
-                        className="w-full text-center text-sm text-muted-foreground underline transition-colors hover:text-foreground disabled:pointer-events-none disabled:opacity-50"
+                        className="w-full text-center text-xs text-muted-foreground underline transition-colors hover:text-foreground disabled:pointer-events-none disabled:opacity-50 sm:text-sm"
                       >
                         {t(
                           "welcome.restoreOnNewComputer",
@@ -1721,9 +1760,10 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
         </div>
       </section>
 
+      {/* Key Features section - mobile padding adjusted */}
       <section
         id="welcome-key-features"
-        className={cn("mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-16", WELCOME_SECTION_SCROLL_MARGIN)}
+        className={cn("mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-14 sm:py-16", WELCOME_SECTION_SCROLL_MARGIN)}
       >
         <SequentialIntroSlot
           stepIndex={SEQ.keyIntro}
@@ -1732,13 +1772,13 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
           isRTL={isRTL}
           kind="fadeUp"
           onStepComplete={advanceIntro}
-          className="mx-auto mb-11 max-w-2xl text-center sm:mb-12"
+          className="mx-auto mb-8 max-w-2xl text-center sm:mb-11 sm:mb-12"
         >
-          <h2 className="flex items-center justify-center gap-3 text-[1.75rem] font-bold text-foreground sm:text-3xl">
-            <Star className="h-8 w-8 shrink-0 text-primary" aria-hidden />
+          <h2 className="flex items-center justify-center gap-2 text-2xl font-bold text-foreground sm:gap-3 sm:text-[1.75rem] sm:text-3xl">
+            <Star className="h-6 w-6 shrink-0 text-primary sm:h-8 sm:w-8" aria-hidden />
             {t("about.features.title", "Key Features")}
           </h2>
-          <p className="mt-3 text-base text-muted-foreground sm:text-lg">
+          <p className="mt-2 text-sm text-muted-foreground sm:mt-3 sm:text-base sm:text-lg">
             {t(
               "about.subtitle",
               "A comprehensive store management solution designed to streamline your business operations with modern technology and intuitive design.",
@@ -1758,6 +1798,7 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
         </SequentialIntroSlot>
       </section>
 
+      {/* Technical Features section - mobile adjustments */}
       <section
         id="welcome-technical-features"
         className={cn(
@@ -1765,7 +1806,7 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
           WELCOME_SECTION_SCROLL_MARGIN,
         )}
       >
-        <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-16">
+        <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-14 sm:py-16">
           <SequentialIntroSlot
             stepIndex={SEQ.techIntro}
             introStep={introStep}
@@ -1775,11 +1816,11 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
             onStepComplete={advanceIntro}
             className="mx-auto max-w-3xl text-center"
           >
-            <h2 className="flex items-center justify-center gap-3 text-2xl font-bold text-foreground sm:text-3xl">
-              <Shield className="h-7 w-7 shrink-0 text-primary" aria-hidden />
+            <h2 className="flex items-center justify-center gap-2 text-xl font-bold text-foreground sm:gap-3 sm:text-2xl sm:text-3xl">
+              <Shield className="h-6 w-6 shrink-0 text-primary sm:h-7 sm:w-7" aria-hidden />
               {t("about.technical.title", "Technical Features")}
             </h2>
-            <p className="mt-3 text-base leading-relaxed text-muted-foreground sm:text-lg">
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground sm:mt-3 sm:text-base sm:text-lg">
               {t(
                 "welcome.technologyBridge.description",
                 "The features above cover day-to-day sales, stock, and clients. This is a desktop application: your shop data stays on this PC, keeps working when the connection is weak, and access stays controlled for each staff member.",
@@ -1787,6 +1828,7 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
             </p>
           </SequentialIntroSlot>
 
+          {/* Mobile: stack tiles vertically, then grid on tablet+ */}
           <SequentialIntroSlot
             stepIndex={SEQ.techTiles}
             introStep={introStep}
@@ -1794,18 +1836,18 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
             isRTL={isRTL}
             kind="fadeUp"
             onStepComplete={advanceIntro}
-            className="mt-10 grid grid-cols-1 gap-4 md:grid-cols-3"
+            className="mt-8 grid grid-cols-1 gap-3 sm:mt-10 sm:gap-4 md:grid-cols-3"
           >
             {WELCOME_TECHNOLOGY_BRIDGE_HIGHLIGHTS.map(({ icon: Icon, titleKey, descKey }) => (
               <article
                 key={titleKey}
-                className="h-full rounded-2xl border border-border/60 bg-card/80 p-5"
+                className="h-full rounded-xl border border-border/60 bg-card/80 p-4 sm:rounded-2xl sm:p-5"
               >
-                <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10">
-                  <Icon className="h-5 w-5 text-primary" aria-hidden />
+                <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 sm:mb-4 sm:h-11 sm:w-11 sm:rounded-xl">
+                  <Icon className="h-4 w-4 text-primary sm:h-5 sm:w-5" aria-hidden />
                 </div>
-                <h3 className="font-semibold text-foreground">{t(titleKey)}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{t(descKey)}</p>
+                <h3 className="text-sm font-semibold text-foreground sm:text-base">{t(titleKey)}</h3>
+                <p className="mt-1 text-xs leading-relaxed text-muted-foreground sm:mt-2 sm:text-sm">{t(descKey)}</p>
               </article>
             ))}
           </SequentialIntroSlot>
@@ -1818,7 +1860,7 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
             kind="fadeUp"
             onStepComplete={advanceIntro}
             defer
-            className="mt-12 sm:mt-14"
+            className="mt-8 sm:mt-12 sm:mt-14"
           >
             <FeaturesCarousel
               items={ABOUT_TECHNICAL_FEATURE_DEFS}
@@ -1829,6 +1871,7 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
         </div>
       </section>
 
+      {/* Pricing section */}
       <section
         className={cn(
           introStep >= SEQ.pricing && "border-y border-border/60",
@@ -1843,15 +1886,16 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
           kind="fadeUp"
           onStepComplete={advanceIntro}
           defer
-          className="mx-auto max-w-6xl px-4 pb-14 pt-4 sm:px-6 sm:pb-16 sm:pt-6 short:pb-8 short:pt-4 short:sm:pb-10 short:sm:pt-5"
+          className="mx-auto max-w-6xl px-4 pb-10 pt-2 sm:px-6 sm:pb-14 sm:pb-16 sm:pt-4 short:pb-8 short:pt-4 short:sm:pb-10 short:sm:pt-5"
         >
           <PricingPlansSection id="welcome-pricing" className="!mb-0" />
         </SequentialIntroSlot>
       </section>
 
+      {/* Developer section - mobile optimized */}
       <section
         id="welcome-developer"
-        className={cn("mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-16", WELCOME_SECTION_SCROLL_MARGIN)}
+        className={cn("mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-14 sm:py-16", WELCOME_SECTION_SCROLL_MARGIN)}
       >
         <SequentialIntroSlot
           stepIndex={SEQ.devCard}
@@ -1861,45 +1905,47 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
           kind="fadeUp"
           onStepComplete={advanceIntro}
           defer
-          className="overflow-hidden rounded-3xl border border-border/70 bg-card/80 shadow-lg"
+          className="overflow-hidden rounded-2xl border border-border/70 bg-card/80 shadow-lg sm:rounded-3xl"
         >
-          <div className="border-b border-border/60 bg-muted/25 px-6 py-8 sm:px-8">
-            <h2 className="flex items-center gap-3 text-xl font-bold text-foreground sm:text-2xl">
-              <Code className="h-6 w-6 shrink-0 text-primary" aria-hidden />
+          {/* Mobile: smaller padding */}
+          <div className="border-b border-border/60 bg-muted/25 px-4 py-5 sm:px-6 sm:py-6 sm:px-8 sm:py-8">
+            <h2 className="flex items-center gap-2 text-lg font-bold text-foreground sm:gap-3 sm:text-xl sm:text-2xl">
+              <Code className="h-5 w-5 shrink-0 text-primary sm:h-6 sm:w-6" aria-hidden />
               {t("about.developer.title", "Developer Information")}
             </h2>
           </div>
-          <div className="grid grid-cols-1 gap-8 p-6 sm:p-8 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-            <div className="space-y-4">
+          {/* Mobile: stack vertically */}
+          <div className="grid grid-cols-1 gap-6 p-4 sm:p-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:p-8">
+            <div className="space-y-3 sm:space-y-4">
               <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary/80">
-                  <span className="text-lg font-bold text-white dark:text-black">AK</span>
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary/80 sm:h-12 sm:w-12">
+                  <span className="text-base font-bold text-white dark:text-black sm:text-lg">AK</span>
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-foreground">Abdellah Kahia</h3>
-                  <p className="text-muted-foreground">{t("about.developer.role", "Lead Developer & Founder")}</p>
+                  <h3 className="text-base font-bold text-foreground sm:text-lg">Abdellah Kahia</h3>
+                  <p className="text-xs text-muted-foreground sm:text-sm">{t("about.developer.role", "Lead Developer & Founder")}</p>
                 </div>
               </div>
-              <div className="space-y-3 text-sm">
-                <div className="flex items-center gap-3">
-                  <Mail className="h-4 w-4 shrink-0 text-primary" aria-hidden />
-                  <span className="break-all text-foreground">abdoukahia853@gmail.com</span>
+              <div className="space-y-2 text-xs sm:space-y-3 sm:text-sm">
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <Mail className="h-3.5 w-3.5 shrink-0 text-primary sm:h-4 sm:w-4" aria-hidden />
+                  <span className="break-all text-foreground text-xs sm:text-sm">abdoukahia853@gmail.com</span>
                 </div>
-                <div className="flex items-center gap-3">
-                  <Phone className="h-4 w-4 shrink-0 text-primary" aria-hidden />
-                  <span className="text-foreground">+213 793 420 745</span>
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <Phone className="h-3.5 w-3.5 shrink-0 text-primary sm:h-4 sm:w-4" aria-hidden />
+                  <span className="text-foreground text-xs sm:text-sm">+213 793 420 745</span>
                 </div>
-                <div className="flex items-center gap-3">
-                  <MapPin className="h-4 w-4 shrink-0 text-primary" aria-hidden />
-                  <span className="text-foreground">Annaba, Algeria</span>
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <MapPin className="h-3.5 w-3.5 shrink-0 text-primary sm:h-4 sm:w-4" aria-hidden />
+                  <span className="text-foreground text-xs sm:text-sm">Annaba, Algeria</span>
                 </div>
               </div>
             </div>
-            <div className="rounded-2xl bg-muted/30 p-6">
-              <h4 className="mb-3 font-semibold text-foreground">
+            <div className="rounded-xl bg-muted/30 p-4 sm:rounded-2xl sm:p-6">
+              <h4 className="mb-2 text-sm font-semibold text-foreground sm:mb-3 sm:text-base">
                 {t("about.developer.bio", "About the Developer")}
               </h4>
-              <p className="text-sm leading-relaxed text-muted-foreground">
+              <p className="text-xs leading-relaxed text-muted-foreground sm:text-sm">
                 {t(
                   "about.developer.bioText",
                   "Passionate software developer with expertise in modern web technologies and desktop application development. Dedicated to creating efficient, user-friendly solutions that help businesses streamline their operations and achieve their goals.",
@@ -1910,6 +1956,7 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
         </SequentialIntroSlot>
       </section>
 
+      {/* Legal section */}
       <section
         id="welcome-legal"
         className={cn(
@@ -1917,7 +1964,7 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
           WELCOME_SECTION_SCROLL_MARGIN,
         )}
       >
-        <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-16">
+        <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-14 sm:py-16">
           <SequentialIntroSlot
             stepIndex={SEQ.legal}
             introStep={introStep}
@@ -1927,33 +1974,34 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
             onStepComplete={advanceIntro}
             defer
           >
-            <div className="mx-auto mb-10 max-w-2xl text-center sm:mb-12">
-              <h2 className="text-2xl font-bold text-foreground sm:text-3xl">
+            <div className="mx-auto mb-6 max-w-2xl text-center sm:mb-8 sm:mb-10 sm:mb-12">
+              <h2 className="text-xl font-bold text-foreground sm:text-2xl sm:text-3xl">
                 {t("welcome.sectionNav.legal", "Legal")}
               </h2>
             </div>
 
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 lg:gap-8">
-              <article className="h-full rounded-2xl border border-border/70 bg-card/80 p-6 shadow-sm sm:p-8">
-                <h3 className="mb-4 flex items-center gap-3 text-xl font-bold text-foreground">
-                  <Shield className="h-5 w-5 shrink-0 text-primary" aria-hidden />
+            {/* Mobile: stack vertically */}
+            <div className="grid grid-cols-1 gap-5 sm:gap-6 lg:grid-cols-2 lg:gap-8">
+              <article className="h-full rounded-xl border border-border/70 bg-card/80 p-5 shadow-sm sm:rounded-2xl sm:p-6 sm:p-8">
+                <h3 className="mb-3 flex items-center gap-2 text-lg font-bold text-foreground sm:mb-4 sm:gap-3 sm:text-xl">
+                  <Shield className="h-4 w-4 shrink-0 text-primary sm:h-5 sm:w-5" aria-hidden />
                   {t("about.privacy.title", "Privacy Policy")}
                 </h3>
-                <p className="mb-4 text-sm leading-relaxed text-muted-foreground">{t("about.privacy.intro")}</p>
-                <ul className="list-disc space-y-3 ps-5 text-sm leading-relaxed text-muted-foreground">
+                <p className="mb-3 text-xs leading-relaxed text-muted-foreground sm:mb-4 sm:text-sm">{t("about.privacy.intro")}</p>
+                <ul className="list-disc space-y-2 ps-4 text-xs leading-relaxed text-muted-foreground sm:space-y-3 sm:ps-5 sm:text-sm">
                   {ABOUT_PRIVACY_POINT_KEYS.map((key) => (
                     <li key={key}>{t(key)}</li>
                   ))}
                 </ul>
               </article>
 
-              <article className="h-full rounded-2xl border border-border/70 bg-card/80 p-6 shadow-sm sm:p-8">
-                <h3 className="mb-4 flex items-center gap-3 text-xl font-bold text-foreground">
-                  <FileText className="h-5 w-5 shrink-0 text-primary" aria-hidden />
+              <article className="h-full rounded-xl border border-border/70 bg-card/80 p-5 shadow-sm sm:rounded-2xl sm:p-6 sm:p-8">
+                <h3 className="mb-3 flex items-center gap-2 text-lg font-bold text-foreground sm:mb-4 sm:gap-3 sm:text-xl">
+                  <FileText className="h-4 w-4 shrink-0 text-primary sm:h-5 sm:w-5" aria-hidden />
                   {t("about.terms.title", "Terms of Service")}
                 </h3>
-                <p className="mb-4 text-sm leading-relaxed text-muted-foreground">{t("about.terms.intro")}</p>
-                <ul className="list-disc space-y-3 ps-5 text-sm leading-relaxed text-muted-foreground">
+                <p className="mb-3 text-xs leading-relaxed text-muted-foreground sm:mb-4 sm:text-sm">{t("about.terms.intro")}</p>
+                <ul className="list-disc space-y-2 ps-4 text-xs leading-relaxed text-muted-foreground sm:space-y-3 sm:ps-5 sm:text-sm">
                   {ABOUT_TERMS_POINT_KEYS.map((key) => (
                     <li key={key}>{t(key)}</li>
                   ))}
@@ -1964,6 +2012,7 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
         </div>
       </section>
 
+      {/* Footer */}
       <SequentialIntroSlot
         stepIndex={SEQ.footer}
         introStep={introStep}
@@ -1973,8 +2022,8 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
         onStepComplete={advanceIntro}
         defer
       >
-        <footer className="border-t border-border/60 px-4 py-8 text-center">
-          <p className="text-sm text-muted-foreground">
+        <footer className="border-t border-border/60 px-4 py-6 text-center sm:py-8">
+          <p className="text-xs text-muted-foreground sm:text-sm">
             {t("about.footer", "© 2026 REDA TECH. All rights reserved. Built with ❤️ in Algeria.")}
           </p>
         </footer>
