@@ -190,19 +190,11 @@ export function FeaturesCarousel({
                 >
                   {t(def.titleKey)}
                 </h3>
-                {/* Mobile: better text handling with smaller font and controlled width */}
                 <p
                   className={cn(
-                    "mt-2 max-w-[90%] text-[11px] leading-snug transition-colors duration-500 sm:mt-2.5 sm:max-w-sm sm:text-sm sm:leading-relaxed lg:mt-3 lg:max-w-sm lg:text-base",
+                    "mt-1.5 max-w-sm text-xs leading-relaxed transition-colors duration-500 sm:mt-2 sm:text-sm lg:mt-3 lg:text-base",
                     isActive ? "text-muted-foreground" : "text-muted-foreground/70",
                   )}
-                  style={{
-                    display: "-webkit-box",
-                    WebkitLineClamp: 3,
-                    WebkitBoxOrient: "vertical",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                  }}
                 >
                   {t(def.descKey)}
                 </p>
