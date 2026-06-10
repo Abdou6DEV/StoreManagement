@@ -133,28 +133,32 @@ export function WelcomeMarketingDownloadCard({
             ) : null}
 
             <div className="flex w-full flex-col gap-3 sm:flex-row">
-              {/* Main download */}
+              {/* Main download (70%) */}
               <Button
                 type="button"
-                className="min-h-[3rem] w-full sm:flex-[7] border-transparent bg-green-600 text-white shadow-xs hover:bg-green-700 focus-visible:ring-green-500/35 dark:bg-green-600 dark:text-white dark:hover:bg-green-500"
+                className="min-h-[3rem] w-full sm:flex-[7] min-w-0 border-transparent bg-green-600 text-white shadow-xs hover:bg-green-700 focus-visible:ring-green-500/35 dark:bg-green-600 dark:text-white dark:hover:bg-green-500"
                 disabled={!downloadUrl}
                 onClick={handleDownload}
               >
-                <span className="flex items-center justify-center gap-2">
+                <span className="flex min-w-0 items-center justify-center gap-2">
                   <FaWindows className="h-5 w-5 shrink-0" aria-hidden />
-                  {t("welcome.downloadButton", "Download for Windows")}
+                  <span className="truncate">
+                    {t("welcome.downloadButton", "Download for Windows")}
+                  </span>
                 </span>
               </Button>
             
-              {/* AnyDesk */}
+              {/* AnyDesk (30%) */}
               <Button
                 type="button"
-                className="min-h-[3rem] w-full sm:flex-[3] border-transparent bg-red-600 text-white shadow-xs hover:bg-red-700 focus-visible:ring-red-500/35 dark:bg-red-600 dark:text-white dark:hover:bg-red-500"
+                className="min-h-[3rem] w-full sm:flex-[3] sm:min-w-[44px] border-transparent bg-red-600 text-white shadow-xs hover:bg-red-700 focus-visible:ring-red-500/35 dark:bg-red-600 dark:text-white dark:hover:bg-red-500"
                 onClick={handleAnyDeskDownload}
               >
                 <span className="flex items-center justify-center">
-                  <SiAnydesk className="h-5 w-5" aria-hidden />
-                  {t("welcome.downloadanydeskButton", "Download AnyDesk")}
+                  <SiAnydesk className="h-5 w-5 shrink-0" aria-hidden />
+                  <span className="truncate">
+                  {t("welcome.downloadButton", "Download for Windows")}
+                  </span>
                 </span>
               </Button>
             </div>
