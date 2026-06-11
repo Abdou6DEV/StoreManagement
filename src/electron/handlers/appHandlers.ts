@@ -107,7 +107,6 @@ export function setupAppHandlers() {
         headers: {
           'User-Agent': `REDA-TECH-Store-Management/${currentVersion}`,
           'Accept': 'application/vnd.github.v3+json',
-          'Authorization': 'token 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'
         }
       });
       
@@ -204,7 +203,7 @@ export function setupAppHandlers() {
       const isApiUrl = url.includes('api.github.com');
       const headers = isApiUrl ? {
         'User-Agent': `REDA-TECH-Store-Management/${app.getVersion()}`,
-        'Authorization': 'token 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',
+        'Authorization': 'token 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',
         'Accept': 'application/octet-stream'
       } : {
         'User-Agent': `REDA-TECH-Store-Management/${app.getVersion()}`,
