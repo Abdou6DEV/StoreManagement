@@ -101,6 +101,14 @@ export async function persistLicenseGraceFromAllowedCheck(
   }
 }
 
+function canUseOfflineGraceForDeviceCheckFailure(result: DeviceCheckResult): boolean {
+  return result.success === false && (
+    result.code === "network" ||
+    result.code === "http" ||
+    result.code === "edge"
+  );
+}
+
 export async function resolveLicenseValidityFromDeviceCheck(
   result: DeviceCheckResult,
 ): Promise<boolean> {
@@ -112,7 +120,7 @@ export async function resolveLicenseValidityFromDeviceCheck(
     return isSessionLicenseAccessAllowed(result, snapshot);
   }
 
-  if (result.code === "network") {
+  if (canUseOfflineGraceForDeviceCheckFailure(result)) {
     const snapshot = await readLicenseGraceSnapshot();
     return isSessionLicenseAccessAllowed(null, snapshot);
   }

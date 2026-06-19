@@ -852,6 +852,23 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
       showToast(t("welcome.customerIdRequired", "Enter the customer ID your supplier sent you."), "error");
       return;
     }
+    let restoreTargetIsEmpty = false;
+    try {
+      const coreEmpty = await window.api.onboarding.isCoreDatabaseEmpty();
+      restoreTargetIsEmpty = coreEmpty.success === true && coreEmpty.isEmpty === true;
+    } catch {
+      restoreTargetIsEmpty = false;
+    }
+    if (!restoreTargetIsEmpty) {
+      showToast(
+        t(
+          "welcome.existingLocalDataBanner",
+          "We found shop data on this computer. Link your account below, or start a trial if this is a new shop. Cloud restore is hidden so your current data is not replaced.",
+        ),
+        "error",
+      );
+      return;
+    }
     setBusy(true);
     setRestorePhase("linking");
     setCloudTransferProgress(null);
@@ -869,7 +886,6 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
 
       const resolvedCustomerId = link.customerId ?? cid;
       setLinkedRestoreCustomerId(resolvedCustomerId);
-      await window.api.database.options.set(ONLINE_CUSTOMER_ID_OPTION_KEY, resolvedCustomerId);
 
       showToast(
         t("welcome.restoreLinkSuccess", "Shop verified. Downloading your cloud backup…"),
@@ -964,6 +980,7 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
         return;
       }
 
+      await window.api.database.options.set(ONLINE_CUSTOMER_ID_OPTION_KEY, resolvedCustomerId);
       setRestoreCompleted(true);
       setRestorePhase("ready");
       setShowRestoreFlow(true);

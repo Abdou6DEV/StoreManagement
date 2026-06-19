@@ -105,6 +105,60 @@ async function fetchCloudBackupMetaFromSignedUrl(
   }
 }
 
+function deleteCloudDownloadArtifacts(dbPath: string, metaPath: string): void {
+  for (const filePath of [dbPath, metaPath]) {
+    try {
+      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    } catch {
+      /* ignore cleanup failures */
+    }
+  }
+}
+
+async function isReadableSQLiteDatabase(filePath: string): Promise<boolean> {
+  let fd: number | null = null;
+  try {
+    if (!fs.existsSync(filePath)) return false;
+    const stats = fs.statSync(filePath);
+    if (stats.size < 100) return false;
+
+    fd = fs.openSync(filePath, "r");
+    const buffer = Buffer.alloc(16);
+    fs.readSync(fd, buffer, 0, 16, 0);
+    fs.closeSync(fd);
+    fd = null;
+    if (!buffer.toString("ascii").startsWith("SQLite format 3")) return false;
+
+    const { PrismaClient } = await import("@prisma/client");
+    const testPrisma = new PrismaClient({
+      datasources: {
+        db: {
+          url: `file:${filePath}`,
+        },
+      },
+    });
+    try {
+      const rows = await testPrisma.$queryRawUnsafe<Array<Record<string, string>>>(
+        "PRAGMA quick_check",
+      );
+      const firstResult = rows[0] ? Object.values(rows[0])[0] : null;
+      return firstResult === "ok";
+    } finally {
+      await testPrisma.$disconnect();
+    }
+  } catch {
+    return false;
+  } finally {
+    if (fd != null) {
+      try {
+        fs.closeSync(fd);
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+}
+
 function versionGateBlockFromMeta(
   meta: CloudBackupUploadMeta,
   installedAppVersion: string,
@@ -859,10 +913,18 @@ export function setupOnlineHandlers(): void {
       const dest = path.join(backupDir, CLOUD_LATEST_FROM_ONLINE_DB);
       const metaDest = path.join(backupDir, CLOUD_LATEST_FROM_ONLINE_META);
       const send = sendCloudBackupProgressThrottled(event);
+      let expectedSizeBytes: number | null = null;
+      try {
+        if (fs.existsSync(metaDest)) fs.unlinkSync(metaDest);
+      } catch {
+        /* stale metadata cleanup is best effort */
+      }
 
       if (signed.metaSignedUrl?.trim()) {
         const meta = await fetchCloudBackupMetaFromSignedUrl(signed.metaSignedUrl.trim());
         if (meta) {
+          expectedSizeBytes =
+            Number.isFinite(meta.size_bytes) && meta.size_bytes > 0 ? meta.size_bytes : null;
           const versionBlock = versionGateBlockFromMeta(meta, app.getVersion());
           if (versionBlock) {
             return versionBlock;
@@ -923,11 +985,7 @@ export function setupOnlineHandlers(): void {
           }
         } catch (streamErr) {
           writeStream.destroy();
-          try {
-            if (fs.existsSync(dest)) fs.unlinkSync(dest);
-          } catch {
-            /* ignore */
-          }
+          deleteCloudDownloadArtifacts(dest, metaDest);
           throw streamErr;
         }
 
@@ -935,6 +993,24 @@ export function setupOnlineHandlers(): void {
         await finished(writeStream);
 
         const sizeBytes = fs.existsSync(dest) ? fs.statSync(dest).size : downloadedSize;
+        if (expectedSizeBytes != null && sizeBytes !== expectedSizeBytes) {
+          deleteCloudDownloadArtifacts(dest, metaDest);
+          return {
+            success: false,
+            error: `Downloaded cloud backup size mismatch (expected ${expectedSizeBytes} bytes, got ${sizeBytes}).`,
+            code: "network",
+          };
+        }
+
+        if (!(await isReadableSQLiteDatabase(dest))) {
+          deleteCloudDownloadArtifacts(dest, metaDest);
+          return {
+            success: false,
+            error: "Downloaded cloud backup is not a valid SQLite database.",
+            code: "invalid",
+          };
+        }
+
         send({
           phase: "download",
           progress: 100,
@@ -949,11 +1025,7 @@ export function setupOnlineHandlers(): void {
           sizeBytes,
         };
       } catch (e) {
-        try {
-          if (fs.existsSync(dest)) fs.unlinkSync(dest);
-        } catch {
-          /* ignore */
-        }
+        deleteCloudDownloadArtifacts(dest, metaDest);
         return {
           success: false,
           error: (e as Error).message || "Network error",

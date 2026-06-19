@@ -3,7 +3,7 @@ import fs from "fs";
 import path from "path";
 import { prisma } from "../../lib/database/prismaClient";
 import logger from "../../lib/logger";
-import { getOption, setOption } from "../../lib/database/options";
+import { getOption } from "../../lib/database/options";
 import { createActivityLog } from "../../lib/database/activityLogs";
 import { ACTIVITY_LOG_LAST_USERNAME_KEY } from "../../lib/activityLog/constants";
 import {
@@ -844,6 +844,10 @@ export function setupBackupHandlers() {
   // Ensure daily backup (call when user reaches main app after login). Once per day; toast only when actually created.
   ipcMain.handle("backup:ensureDailyBackup", async () => {
     const tryBackup = async (isRetry: boolean): Promise<{ success: boolean; created?: boolean; skipped?: boolean; error?: string }> => {
+      if (await isDatabaseInUse()) {
+        logger.info("Daily automatic backup skipped - database in use, will retry next run", "Backup");
+        return { success: true, skipped: true };
+      }
       const result = await createAutoBackup();
       if (result.success && !result.skipped) {
         cleanOldAutoBackups();
