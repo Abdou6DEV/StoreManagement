@@ -78,3 +78,7 @@ export async function setOption(key: string, value: string): Promise<void> {
     throw error;
   }
 }
+
+export function clearOptionsCache(): void {
+  optionsCache.clear();
+}
