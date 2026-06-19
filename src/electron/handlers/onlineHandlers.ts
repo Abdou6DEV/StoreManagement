@@ -114,6 +114,73 @@ function versionGateBlockFromMeta(
   return cloudBackupAppUpdateRequiredResult(gate.cloudAppVersion, gate.installedAppVersion);
 }
 
+const LICENSE_GRACE_PROOF_TTL_MS = 60 * 1000;
+
+let lastAllowedLicenseGraceProof:
+  | {
+      capturedAtMs: number;
+      trialEndsAt?: string | null;
+      expiresAt?: string | null;
+    }
+  | null = null;
+
+function rememberLicenseGraceProof(result: DeviceCheckResult): void {
+  if (result.success === true && result.allowed) {
+    lastAllowedLicenseGraceProof = {
+      capturedAtMs: Date.now(),
+      trialEndsAt: result.trialEndsAt,
+      expiresAt: result.expiresAt,
+    };
+    return;
+  }
+  if (result.success === true) {
+    lastAllowedLicenseGraceProof = null;
+  }
+}
+
+function getBackupDir(): string {
+  return path.join(app.getPath("userData"), "backups");
+}
+
+function isPathInsideBackupDir(filePath: string): boolean {
+  const backupDir = path.resolve(getBackupDir());
+  const resolved = path.resolve(filePath);
+  const rel = path.relative(backupDir, resolved);
+  return rel !== "" && !rel.startsWith("..") && !path.isAbsolute(rel);
+}
+
+const CLOUD_UPLOAD_BACKUP_FILE_RE =
+  /^(?:auto|manual|cloud)_backup_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}\.db$/;
+
+function isUploadableBackupPath(filePath: string): boolean {
+  return isPathInsideBackupDir(filePath) && CLOUD_UPLOAD_BACKUP_FILE_RE.test(path.basename(filePath));
+}
+
+async function validateSqliteQuickCheck(filePath: string): Promise<boolean> {
+  let testPrisma: import("@prisma/client").PrismaClient | null = null;
+  try {
+    const { PrismaClient } = await import("@prisma/client");
+    testPrisma = new PrismaClient({
+      datasources: {
+        db: {
+          url: `file:${filePath}`,
+        },
+      },
+    });
+    await testPrisma.$connect();
+    const rows = await testPrisma.$queryRawUnsafe<Array<Record<string, unknown>>>(
+      "PRAGMA quick_check",
+    );
+    return rows.some((row) => Object.values(row).some((value) => value === "ok"));
+  } catch {
+    return false;
+  } finally {
+    if (testPrisma) {
+      await testPrisma.$disconnect().catch((): undefined => undefined);
+    }
+  }
+}
+
 function sendCloudBackupProgressThrottled(
   event: IpcMainInvokeEvent | null,
 ): (payload: CloudBackupTransferProgressPayload) => void {
@@ -157,6 +224,20 @@ export async function uploadCloudBackupLatest(
   if (!fs.existsSync(backupPath)) {
     return { success: false, error: "Backup file was not found.", code: "missing_file" };
   }
+  if (!isUploadableBackupPath(backupPath)) {
+    return {
+      success: false,
+      error: "Only backup snapshots from the app backup folder can be uploaded.",
+      code: "invalid",
+    };
+  }
+  if (!(await validateSqliteQuickCheck(backupPath))) {
+    return {
+      success: false,
+      error: "Backup file is not a valid SQLite database.",
+      code: "invalid",
+    };
+  }
 
   const identity = await resolveCloudBackupIdentity();
   if (identity.success === false) {
@@ -182,9 +263,12 @@ export async function uploadCloudBackupLatest(
     while (readOff < totalSize) {
       const len = Math.min(chunkSize, totalSize - readOff);
       const buf = Buffer.allocUnsafe(len);
-      fs.readSync(fd, buf, 0, len, readOff);
+      const bytesRead = fs.readSync(fd, buf, 0, len, readOff);
+      if (bytesRead !== len) {
+        throw new Error("Backup file changed while it was being read for upload.");
+      }
       parts.push(buf);
-      readOff += len;
+      readOff += bytesRead;
       const progressRead = totalSize > 0 ? Math.min(35, Math.round((readOff / totalSize) * 35)) : 0;
       send({
         phase: "upload",
@@ -608,13 +692,17 @@ async function runDeviceCheckInternal(): Promise<DeviceCheckResult> {
 }
 
 export function setupOnlineHandlers(): void {
-  ipcMain.handle("online:deviceCheck", async (): Promise<DeviceCheckResult> => {
-    const result = await runDeviceCheckInternal();
-    if (result.success === true && result.customerId?.trim()) {
-      await persistOnlineCustomerIdIfAbsent(result.customerId);
-    }
-    return result;
-  });
+  ipcMain.handle(
+    "online:deviceCheck",
+    async (_event, options?: { persistCustomerId?: boolean }): Promise<DeviceCheckResult> => {
+      const result = await runDeviceCheckInternal();
+      rememberLicenseGraceProof(result);
+      if (options?.persistCustomerId !== false && result.success === true && result.customerId?.trim()) {
+        await persistOnlineCustomerIdIfAbsent(result.customerId);
+      }
+      return result;
+    },
+  );
 
   ipcMain.handle(
     "online:deviceLinkExisting",
@@ -700,8 +788,6 @@ export function setupOnlineHandlers(): void {
             : customerId;
         const mode = typeof body.mode === "string" ? body.mode : null;
         const alreadyLinked = body.already_linked === true;
-
-        await persistOnlineCustomerIdIfAbsent(returnedCustomerId);
 
         return {
           success: true,
@@ -813,12 +899,17 @@ export function setupOnlineHandlers(): void {
 
   ipcMain.handle(
     "online:licenseGrace:persist",
-    (
-      _event,
-      payload: { trialEndsAt?: string | null; expiresAt?: string | null } | undefined,
-    ): { success: true } | { success: false; error: string } => {
+    (): { success: true } | { success: false; error: string } => {
       try {
-        persistStoredLicenseGrace(payload?.trialEndsAt, payload?.expiresAt);
+        const proof = lastAllowedLicenseGraceProof;
+        if (!proof || Date.now() - proof.capturedAtMs > LICENSE_GRACE_PROOF_TTL_MS) {
+          lastAllowedLicenseGraceProof = null;
+          return {
+            success: false,
+            error: "License grace can only be saved after a successful online license check.",
+          };
+        }
+        persistStoredLicenseGrace(proof.trialEndsAt, proof.expiresAt);
         return { success: true };
       } catch (e) {
         return { success: false, error: (e as Error).message || "Failed to persist license grace." };
@@ -859,20 +950,46 @@ export function setupOnlineHandlers(): void {
       const dest = path.join(backupDir, CLOUD_LATEST_FROM_ONLINE_DB);
       const metaDest = path.join(backupDir, CLOUD_LATEST_FROM_ONLINE_META);
       const send = sendCloudBackupProgressThrottled(event);
+      let verifiedMeta: CloudBackupUploadMeta | null = null;
 
-      if (signed.metaSignedUrl?.trim()) {
-        const meta = await fetchCloudBackupMetaFromSignedUrl(signed.metaSignedUrl.trim());
-        if (meta) {
-          const versionBlock = versionGateBlockFromMeta(meta, app.getVersion());
-          if (versionBlock) {
-            return versionBlock;
-          }
-          try {
-            fs.writeFileSync(metaDest, JSON.stringify(meta), "utf8");
-          } catch {
-            /* non-fatal — restore can still proceed */
-          }
-        }
+      try {
+        if (fs.existsSync(dest)) fs.unlinkSync(dest);
+        if (fs.existsSync(metaDest)) fs.unlinkSync(metaDest);
+      } catch {
+        /* stale cleanup is best effort; create/write below will report real failures */
+      }
+
+      const metaSignedUrl = signed.metaSignedUrl?.trim();
+      if (!metaSignedUrl) {
+        return {
+          success: false,
+          error: "Cloud backup metadata was not returned; restore cannot be safely verified.",
+          code: "edge",
+        };
+      }
+
+      const meta = await fetchCloudBackupMetaFromSignedUrl(metaSignedUrl);
+      if (!meta) {
+        return {
+          success: false,
+          error: "Cloud backup metadata could not be verified.",
+          code: "edge",
+        };
+      }
+
+      const versionBlock = versionGateBlockFromMeta(meta, app.getVersion());
+      if (versionBlock) {
+        return versionBlock;
+      }
+      try {
+        fs.writeFileSync(metaDest, JSON.stringify(meta), "utf8");
+        verifiedMeta = meta;
+      } catch (e) {
+        return {
+          success: false,
+          error: (e as Error).message || "Cloud backup metadata could not be saved.",
+          code: "edge",
+        };
       }
 
       try {
@@ -935,6 +1052,15 @@ export function setupOnlineHandlers(): void {
         await finished(writeStream);
 
         const sizeBytes = fs.existsSync(dest) ? fs.statSync(dest).size : downloadedSize;
+        if (totalSize > 0 && downloadedSize !== totalSize) {
+          throw new Error("Cloud backup download did not complete.");
+        }
+        if (verifiedMeta && sizeBytes !== verifiedMeta.size_bytes) {
+          throw new Error("Cloud backup size did not match verified metadata.");
+        }
+        if (!(await validateSqliteQuickCheck(dest))) {
+          throw new Error("Downloaded cloud backup is not a valid SQLite database.");
+        }
         send({
           phase: "download",
           progress: 100,

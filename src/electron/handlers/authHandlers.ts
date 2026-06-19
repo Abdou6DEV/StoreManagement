@@ -166,10 +166,10 @@ export const setupAuthHandlers = () => {
   });
 
   // Login with activation key (forgot username/password) — logs in as admin.
-  // If machineId is provided (from the login page display), use it so validation matches the GUID we showed.
-  ipcMain.handle("auth:loginByActivationKey", async (_, activationKey: string, machineIdFromFrontend?: string) => {
+  // Always validate against the main-process machine GUID; renderer-provided IDs are not trusted.
+  ipcMain.handle("auth:loginByActivationKey", async (_, activationKey: string) => {
     try {
-      const machineId = machineIdFromFrontend?.trim() || getMachineGuid();
+      const machineId = getMachineGuid();
       if (!validateKey(machineId, activationKey.trim())) {
         return {
           success: false,

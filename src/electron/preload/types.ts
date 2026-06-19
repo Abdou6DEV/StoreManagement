@@ -398,16 +398,6 @@ export type SystemAPI = {
     machineId?: string;
     error?: string;
   }>;
-  generateValidationKey: (machineId: string) => Promise<{
-    success: boolean;
-    validationKey?: string;
-    error?: string;
-  }>;
-  validateKey: (machineId: string, enteredKey: string) => Promise<{
-    success: boolean;
-    isValid?: boolean;
-    error?: string;
-  }>;
   on: (channel: string, callback: (event: any, ...args: any[]) => void) => void;
   off: (channel: string, callback: (event: any, ...args: any[]) => void) => void;
 };
@@ -466,7 +456,7 @@ export type LicenseGraceSnapshot = {
 };
 
 export type OnlineAPI = {
-  deviceCheck: () => Promise<DeviceCheckResult>;
+  deviceCheck: (options?: { persistCustomerId?: boolean }) => Promise<DeviceCheckResult>;
   deviceRequest: (payload: DeviceRequestPayload) => Promise<DeviceRequestResult>;
   deviceLinkExisting: (payload: DeviceLinkExistingPayload) => Promise<DeviceLinkExistingResult>;
   readLicenseGrace: () => Promise<LicenseGraceSnapshot | null>;

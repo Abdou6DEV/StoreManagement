@@ -11,7 +11,8 @@ import type {
 } from "../types/cloudBackup";
 
 export const onlineAPI = {
-  deviceCheck: () => ipcRenderer.invoke("online:deviceCheck") as Promise<DeviceCheckResult>,
+  deviceCheck: (options?: { persistCustomerId?: boolean }) =>
+    ipcRenderer.invoke("online:deviceCheck", options) as Promise<DeviceCheckResult>,
   deviceRequest: (payload: DeviceRequestPayload) =>
     ipcRenderer.invoke("online:deviceRequest", payload) as Promise<DeviceRequestResult>,
   deviceLinkExisting: (payload: DeviceLinkExistingPayload) =>
