@@ -4,10 +4,18 @@ import { Calendar, CalendarRange, Infinity, Check, MessageCircle } from "lucide-
 import { Button } from "./button";
 import { cn } from "../utils";
 
-const SUPPLIER_PHONE_DISPLAY = "+213793420745";
-
+const SUPPLIER_PHONE_DISPLAY = "0793 42 07 45";
+const SUPPLIER_PHONE = "+213793420745";
 const handleContactSupplier = () => {
-  window.api.app.openExternal(`https://wa.me/${SUPPLIER_PHONE_DISPLAY}`);
+  const url = `https://wa.me/${SUPPLIER_PHONE}`;
+
+  if (window.api?.app?.openExternal) {
+    // Electron
+    window.api.app.openExternal(url);
+  } else {
+    // Website
+    window.open(url, "_blank", "noopener,noreferrer");
+  }
 };
 
 /** Must match `priceAmount` figures in locale files (DA); amounts are formatted here for stable first paint. */
