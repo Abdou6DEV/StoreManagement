@@ -4,7 +4,11 @@ import { Calendar, CalendarRange, Infinity, Check, MessageCircle } from "lucide-
 import { Button } from "./button";
 import { cn } from "../utils";
 
-const SUPPLIER_PHONE_DISPLAY = "0793420745";
+const SUPPLIER_PHONE_DISPLAY = "+213793420745";
+
+const handleContactSupplier = () => {
+  window.api.app.openExternal(`https://wa.me/${SUPPLIER_PHONE_DISPLAY}`);
+};
 
 /** Must match `priceAmount` figures in locale files (DA); amounts are formatted here for stable first paint. */
 const MONTHLY_PRICE_DZD = 1900;
@@ -190,6 +194,7 @@ export function PricingPlansSection({
                 type="button"
                 variant="outline"
                 size="lg"
+                onClick={handleContactSupplier}
                 className={cn(
                   "h-auto min-h-8 w-full whitespace-normal rounded-lg py-2 text-xs font-semibold transition-all duration-200 active:scale-[0.99] sm:min-h-9 sm:rounded-xl sm:py-2.5 sm:text-sm md:min-h-10 md:py-3 short:lg:min-h-9 short:lg:py-2.5",
                   featured &&

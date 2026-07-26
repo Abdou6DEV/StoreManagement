@@ -2816,6 +2816,25 @@
     "setupTitle": "Commencez avec nous",
     "setupDescription": "Présentez-vous pour que nous puissions configurer votre boutique sur cet ordinateur. Indiquez votre nom complet et votre téléphone : nous en avons besoin pour lancer votre essai ou restaurer vos données, lier cet appareil à votre compte et vous joindre si besoin. Quelques secondes suffisent. Ces informations sont distinctes de votre mot de passe et sont traitées comme indiqué dans la section mentions légales ci-dessous.",
     "featuresHeading": "Ce que vous pouvez faire avec cette application",
+    "tutorials": {
+      "title": "Tutoriels vidéo",
+      "subtitle": "Nouveau sur l’application ? Regardez ces guides courts pour télécharger, installer et configurer votre boutique en quelques minutes.",
+      "playVideo": "Lire la vidéo : {{title}}",
+      "playVideoShort": "Lire la vidéo",
+      "watchOnYoutube": "Voir sur YouTube",
+      "items": {
+        "install": {
+          "badge": "Étape 1",
+          "title": "Téléchargement et installation",
+          "description": "Comment télécharger l’installateur Windows, lancer l’installation et ouvrir Store Management sur votre PC pour la première fois."
+        },
+        "setup": {
+          "badge": "Étape 2",
+          "title": "Première configuration et admin",
+          "description": "Remplissez l’écran d’accueil, démarrez votre essai et configurez les paramètres administrateur essentiels de votre boutique."
+        }
+      }
+    },
     "technologyBridge": {
       "title": "Pensé pour votre comptoir, sur cet ordinateur",
       "description": "Les fonctionnalités ci-dessus couvrent les ventes, le stock et la clientèle au quotidien. Il s’agit d’une application de bureau : les données de votre boutique restent sur ce PC, restent utilisables quand la connexion faiblit, et chaque accès du personnel est maîtrisé.",
@@ -2839,6 +2858,7 @@
       "overview": "Aperçu",
       "getStarted": "Commencer",
       "download": "Télécharger",
+      "tutorials": "Tutoriels",
       "keyFeatures": "Fonctionnalités clés",
       "platform": "Sur cet ordinateur",
       "technical": "Fonctionnalités techniques",
@@ -2861,8 +2881,9 @@
     "fullName": "Nom complet",
     "fullNamePlaceholder": "Prénom et nom",
     "phone": "Numéro de téléphone",
-    "phonePlaceholder": "Chiffres uniquement, ou + puis chiffres (indicatif)",
-    "phoneInvalid": "Saisissez un numéro avec des chiffres uniquement. Vous pouvez mettre un seul + au début pour l’indicatif pays.",
+    "phonePlaceholder": "06XXXXXXXX ou +213…",
+    "phoneHint": "Au moins 10 chiffres. Doit commencer par 213, 06, 07 ou 05.",
+    "phoneInvalid": "Saisissez un numéro algérien valide : au moins 10 chiffres, commençant par 213, 06, 07 ou 05.",
     "existingShopNewPc": "C’est un nouvel ordinateur pour ma boutique existante (j’utilise déjà Store Management)",
     "restoreOnNewComputer": "Restaurer la boutique sur un nouvel ordinateur (compte existant)",
     "backToNewShopSetup": "Retour à la configuration d’une nouvelle boutique",

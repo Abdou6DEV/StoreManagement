@@ -2900,6 +2900,25 @@
     "setupTitle": "Get started with us",
     "setupDescription": "Tell us who you are so we can set up your shop on this computer. Add your full name and phone — we use them to start your trial or restore your data, connect this device to your account, and reach you if you need help. It only takes a moment. Your details stay separate from your login password and are handled as described in the legal section below.",
     "featuresHeading": "What you can do with this app",
+    "tutorials": {
+      "title": "Video tutorials",
+      "subtitle": "New to the app? Watch these short guides to download, install, and configure your shop in a few minutes.",
+      "playVideo": "Play video: {{title}}",
+      "playVideoShort": "Play video",
+      "watchOnYoutube": "Watch on YouTube",
+      "items": {
+        "install": {
+          "badge": "Step 1",
+          "title": "Download & installation",
+          "description": "How to download the Windows installer, run setup, and launch Store Management on your PC for the first time."
+        },
+        "setup": {
+          "badge": "Step 2",
+          "title": "First-time setup & admin",
+          "description": "Complete the welcome form, start your trial, and configure essential administrator settings for your shop."
+        }
+      }
+    },
     "technologyBridge": {
       "title": "Built for your counter, on this computer",
       "description": "The features above cover day-to-day sales, stock, and clients. This is a desktop application: your shop data stays on this PC, keeps working when the connection is weak, and access stays controlled for each staff member.",
@@ -2923,6 +2942,7 @@
       "overview": "Overview",
       "getStarted": "Get started",
       "download": "Download",
+      "tutorials": "Tutorials",
       "keyFeatures": "Key features",
       "platform": "On your computer",
       "technical": "Technical features",
@@ -2945,8 +2965,9 @@
     "fullName": "Full name",
     "fullNamePlaceholder": "First and last name",
     "phone": "Phone number",
-    "phonePlaceholder": "Digits only, or + then digits (country code)",
-    "phoneInvalid": "Enter a phone number using digits only. You may add a single + at the beginning for a country code.",
+    "phonePlaceholder": "06XXXXXXXX or +213…",
+    "phoneHint": "At least 10 digits. Must start with 213, 06, 07, or 05.",
+    "phoneInvalid": "Enter a valid Algerian phone number: at least 10 digits, starting with 213, 06, 07, or 05.",
     "existingShopNewPc": "This is a new PC for my existing shop (I already use Store Management)",
     "restoreOnNewComputer": "Restore shop on a new computer (existing account)",
     "backToNewShopSetup": "Back to new shop setup",

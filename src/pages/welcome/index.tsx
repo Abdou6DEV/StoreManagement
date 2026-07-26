@@ -18,6 +18,7 @@ import {
   ArrowRight,
   ArrowLeft,
   Loader2,
+  PlayCircle,
 } from "lucide-react";
 import { useTheme } from "../../lib/hooks/useTheme";
 import { cn } from "../../lib/utils";
@@ -60,6 +61,8 @@ import type { CloudBackupTransferProgressPayload } from "../../electron/types/cl
 import { CloudBackupTransferProgressBar } from "../../lib/components/cloudBackupTransferProgress";
 import { AnimatedHeight } from "../../lib/components/animatedHeight";
 import { WelcomeMarketingDownloadCard } from "./WelcomeMarketingDownloadCard";
+import { WelcomeTutorialCard } from "./WelcomeTutorialCard";
+import { WELCOME_TUTORIALS } from "../../lib/welcome/welcomeTutorials";
 
 /** Welcome-only highlights before the technical carousel (not duplicated in the carousel). */
 const WELCOME_TECHNOLOGY_BRIDGE_HIGHLIGHTS = [
@@ -82,6 +85,7 @@ const WELCOME_TECHNOLOGY_BRIDGE_HIGHLIGHTS = [
 
 const WELCOME_SECTION_NAV_ITEMS = [
   { id: "get-started", labelKey: "welcome.sectionNav.getStarted", defaultLabel: "Get started" },
+  { id: "welcome-tutorials", labelKey: "welcome.sectionNav.tutorials", defaultLabel: "Tutorials" },
   { id: "welcome-key-features", labelKey: "welcome.sectionNav.keyFeatures", defaultLabel: "Key features" },
   {
     id: "welcome-technical-features",
@@ -113,18 +117,20 @@ const SEQ = {
   aboutLine: 3,
   badges: 4,
   card: 5,
-  keyIntro: 6,
-  keyCarousel: 7,
-  techIntro: 8,
-  techTiles: 9,
-  techCarousel: 10,
-  pricing: 11,
-  devCard: 12,
-  legal: 13,
-  footer: 14,
+  tutorialsIntro: 6,
+  tutorialsGrid: 7,
+  keyIntro: 8,
+  keyCarousel: 9,
+  techIntro: 10,
+  techTiles: 11,
+  techCarousel: 12,
+  pricing: 13,
+  devCard: 14,
+  legal: 15,
+  footer: 16,
 } as const;
 
-const INTRO_STEP_COUNT = 15;
+const INTRO_STEP_COUNT = 17;
 const SEQ_ANIM_S = 0.38;
 /** Delay before the get-started card green glow fades in (after the panel is on screen). */
 const WELCOME_GLOW_DELAY_S = 0.7;
@@ -342,6 +348,17 @@ function sanitizeWelcomePhoneInput(raw: string): string {
   return stripped.replace(/\D/g, "");
 }
 
+const WELCOME_PHONE_PREFIXES = ["213", "06", "07", "05"] as const;
+
+/** Algerian numbers: at least 10 digits, starting with 213, 06, 07, or 05. */
+function isValidWelcomePhone(raw: string): boolean {
+  const sanitized = sanitizeWelcomePhoneInput(raw).trim();
+  if (!sanitized) return false;
+  const digits = sanitized.startsWith("+") ? sanitized.slice(1) : sanitized;
+  if (!/^\d+$/.test(digits) || digits.length < 10) return false;
+  return WELCOME_PHONE_PREFIXES.some((prefix) => digits.startsWith(prefix));
+}
+
 /** Let the success toast render before leaving the welcome shell (ToastProvider unmounts with it). */
 const WELCOME_SUCCESS_TOAST_VISIBLE_MS = 2500;
 
@@ -412,6 +429,17 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
         : item,
     );
   }, [marketingSite]);
+
+  const welcomePhoneValid = useMemo(() => isValidWelcomePhone(phone), [phone]);
+  const welcomeSetupSubmitEnabled = useMemo(
+    () => fullName.trim().length > 0 && welcomePhoneValid,
+    [fullName, welcomePhoneValid],
+  );
+  const welcomeRestoreSubmitEnabled = useMemo(
+    () => fullName.trim().length > 0 && welcomePhoneValid && customerId.trim().length > 0,
+    [fullName, welcomePhoneValid, customerId],
+  );
+  const showWelcomePhoneError = phone.trim().length > 0 && !welcomePhoneValid;
 
   useEffect(() => {
     if (marketingSite) return;
@@ -775,11 +803,11 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
       showToast(t("welcome.fillNamePhone", "Please enter your full name and phone number."), "error");
       return;
     }
-    if (!/\d/.test(ph)) {
+    if (!isValidWelcomePhone(ph)) {
       showToast(
         t(
           "welcome.phoneInvalid",
-          "Enter a phone number using digits only. You may add a single + at the beginning for a country code.",
+          "Enter a valid Algerian phone number: at least 10 digits, starting with 213, 06, 07, or 05.",
         ),
         "error",
       );
@@ -838,11 +866,11 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
       showToast(t("welcome.fillNamePhone", "Please enter your full name and phone number."), "error");
       return;
     }
-    if (!/\d/.test(ph)) {
+    if (!isValidWelcomePhone(ph)) {
       showToast(
         t(
           "welcome.phoneInvalid",
-          "Enter a phone number using digits only. You may add a single + at the beginning for a country code.",
+          "Enter a valid Algerian phone number: at least 10 digits, starting with 213, 06, 07, or 05.",
         ),
         "error",
       );
@@ -1240,7 +1268,7 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
         id="welcome-hero"
         className={cn(
           "relative",
-          introStep >= SEQ.keyIntro && "border-b border-border/60",
+          introStep >= SEQ.tutorialsIntro && "border-b border-border/60",
           WELCOME_SECTION_SCROLL_MARGIN,
         )}
       >
@@ -1537,9 +1565,18 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
                       onKeyDown={handleWelcomeFormKeyDown}
                       autoComplete="tel"
                       inputMode="tel"
-                      placeholder={t("welcome.phonePlaceholder", "Your phone number")}
+                      placeholder={t("welcome.phonePlaceholder", "06XXXXXXXX or +213…")}
                       disabled={!online || restoreFieldsLocked}
+                      aria-invalid={showWelcomePhoneError}
                     />
+                    {showWelcomePhoneError ? (
+                      <p className="text-xs text-destructive">
+                        {t(
+                          "welcome.phoneInvalid",
+                          "Enter a valid Algerian phone number: at least 10 digits, starting with 213, 06, 07, or 05.",
+                        )}
+                      </p>
+                    ) : null}
                   </div>
                 </div>
 
@@ -1588,7 +1625,7 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
                       ref={welcomePrimaryActionRef}
                       type="button"
                       className="min-h-[3rem] w-full border-transparent bg-blue-600 text-white shadow-xs hover:bg-blue-700 focus-visible:ring-blue-500/35 dark:bg-blue-600 dark:text-white dark:hover:bg-blue-500"
-                      disabled={!online || busy || restoreInProgress}
+                      disabled={!online || busy || restoreInProgress || !welcomeRestoreSubmitEnabled}
                       onClick={() => void handleRestore()}
                     >
                       {restorePhase === "linking" ? (
@@ -1669,9 +1706,18 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
                           onKeyDown={handleWelcomeFormKeyDown}
                           autoComplete="tel"
                           inputMode="tel"
-                          placeholder={t("welcome.phonePlaceholder", "Your phone number")}
+                          placeholder={t("welcome.phonePlaceholder", "06XXXXXXXX or +213…")}
                           disabled={!online || busy}
+                          aria-invalid={showWelcomePhoneError}
                         />
+                        {showWelcomePhoneError ? (
+                          <p className="text-xs text-destructive">
+                            {t(
+                              "welcome.phoneInvalid",
+                              "Enter a valid Algerian phone number: at least 10 digits, starting with 213, 06, 07, or 05.",
+                            )}
+                          </p>
+                        ) : null}
                       </div>
                     </div>
 
@@ -1680,7 +1726,7 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
                         ref={welcomePrimaryActionRef}
                         type="button"
                         className="min-h-[3rem] w-full border-transparent bg-green-600 text-white shadow-xs hover:bg-green-700 focus-visible:ring-green-500/35 dark:bg-green-600 dark:text-white dark:hover:bg-green-500"
-                        disabled={!online || busy}
+                        disabled={!online || busy || !welcomeSetupSubmitEnabled}
                         onClick={handleStartTrial}
                       >
                         {busy ? (
@@ -1717,6 +1763,51 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
             </div>
             )}
           </section>
+          </SequentialIntroSlot>
+        </div>
+      </section>
+
+      <section
+        id="welcome-tutorials"
+        className={cn(
+          introStep >= SEQ.tutorialsIntro && "border-b border-border/60 bg-muted/15",
+          WELCOME_SECTION_SCROLL_MARGIN,
+        )}
+      >
+        <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-16">
+          <SequentialIntroSlot
+            stepIndex={SEQ.tutorialsIntro}
+            introStep={introStep}
+            reduceMotion={reduceMotion}
+            isRTL={isRTL}
+            kind="fadeUp"
+            onStepComplete={advanceIntro}
+            className="mx-auto mb-10 max-w-2xl text-center sm:mb-12"
+          >
+            <h2 className="flex items-center justify-center gap-3 text-[1.75rem] font-bold text-foreground sm:text-3xl">
+              <PlayCircle className="h-8 w-8 shrink-0 text-primary" aria-hidden />
+              {t("welcome.tutorials.title", "Video tutorials")}
+            </h2>
+            <p className="mt-3 text-base leading-relaxed text-muted-foreground sm:text-lg">
+              {t(
+                "welcome.tutorials.subtitle",
+                "New to the app? Watch these short guides to download, install, and configure your shop in a few minutes.",
+              )}
+            </p>
+          </SequentialIntroSlot>
+
+          <SequentialIntroSlot
+            stepIndex={SEQ.tutorialsGrid}
+            introStep={introStep}
+            reduceMotion={reduceMotion}
+            isRTL={isRTL}
+            kind="fadeUp"
+            onStepComplete={advanceIntro}
+            className="grid grid-cols-1 gap-6 lg:grid-cols-2 lg:gap-8"
+          >
+            {WELCOME_TUTORIALS.map((tutorial) => (
+              <WelcomeTutorialCard key={tutorial.youtubeId} tutorial={tutorial} isRTL={isRTL} />
+            ))}
           </SequentialIntroSlot>
         </div>
       </section>
