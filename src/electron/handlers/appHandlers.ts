@@ -140,13 +140,13 @@ export function setupAppHandlers() {
         asset.name.includes('REDA.TECH.Store.Management')
       );
       
-      const assetApiUrl = windowsAsset?.url || '';
+      const downloadUrl = windowsAsset?.browser_download_url || '';
       
       return {
         available: isUpdateAvailable,
         currentVersion,
         latestVersion,
-        downloadUrl: assetApiUrl, // Use API URL for private repos
+        downloadUrl: downloadUrl, // Use API URL for private repos
         releaseNotes: release.body || '',
         error: undefined
       };
@@ -172,7 +172,7 @@ export function setupAppHandlers() {
       if (!url) {
         throw new Error("No download URL provided");
       }
-      
+      console.log("[Download] URL:", url);
       // Clean up any existing download first
       if (currentDownloadAbortController) {
         try {
@@ -199,20 +199,17 @@ export function setupAppHandlers() {
       // Create abort controller for this download
       currentDownloadAbortController = new AbortController();
       
-      // Use API URL with authentication for private repos
-      const isApiUrl = url.includes('api.github.com');
-      const headers = isApiUrl ? {
-        'User-Agent': `REDA-TECH-Store-Management/${app.getVersion()}`,
-        'Authorization': 'token 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',
-        'Accept': 'application/octet-stream'
-      } : {
-        'User-Agent': `REDA-TECH-Store-Management/${app.getVersion()}`,
-        'Accept': 'application/octet-stream'
+      const headers = {
+        "User-Agent": `REDA-TECH-Store-Management/${app.getVersion()}`
       };
       
       const response = await fetch(url, { headers, signal: currentDownloadAbortController.signal });
-      
+      console.log("[Download] Status:", response.status);
+      console.log("[Download] Status text:", response.statusText);
+      console.log("[Download] Content-Type:", response.headers.get("content-type"));
+      console.log("[Download] Content-Length:", response.headers.get("content-length"));
       if (!response.ok) {
+        console.log("[Download] Error body:", await response.text());
         throw new Error(`Failed to download update: ${response.statusText}`);
       }
       
