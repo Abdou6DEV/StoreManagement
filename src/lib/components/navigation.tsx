@@ -21,7 +21,6 @@ import {
   Wrench,
   Info,
   Calculator,
-  Bell,
   ExternalLink,
 } from "lucide-react";
 import { ThemeToggleButton } from "./themeToggleButton";
@@ -37,6 +36,7 @@ import { PaidExpiryHeaderBanner } from "./paidExpiryHeaderBanner";
 import { useNavigate } from "react-router-dom";
 import { cn } from "../utils";
 import { useEffect, useRef } from "react";
+import { Bell } from "../../components/animate-ui/icons/bell";
 
 export default function Navigation() {
   const location = useLocation();
@@ -215,11 +215,12 @@ export default function Navigation() {
           <DropdownMenu onOpenChange={setNotificationsOpen}>
             <DropdownMenuTrigger asChild>
               <button className="relative rounded-xl outline-none ring-0 hover:bg-primary/10 transition-all duration-300 p-2 group">
-                <Bell
-                  className={`w-5 h-5 transition-all duration-300 group-hover:scale-110 ${
-                    notificationsOpen ? "scale-110" : ""
-                  } ${totalCount > 0 ? "bell-ring" : ""}`}
-                />
+              <Bell
+                size={22}
+                animate={totalCount > 0}
+                loop
+                loopDelay={2000}
+              />
                 {totalCount > 0 && (
                   <span className={`absolute grid h-5 place-items-center rounded-full bg-red-500 font-bold text-white leading-none ${totalCount > 99 ? "-top-1 -right-2 w-7 text-xs" : "-top-1 -right-0.5 w-5.5 text-xs"}`}>
                     <span className="tabular-nums">{totalCount > 99 ? "99+" : totalCount}</span>
