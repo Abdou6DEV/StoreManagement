@@ -499,7 +499,9 @@ export type ActivityLogAPI = {
   setRetentionDays: (days: number) => Promise<void>;
   cleanupOld: () => Promise<number>;
 };
-
+export interface AIAPI {
+  chat: (message: string) => Promise<string>;
+}
 export type API = {
   database: DatabaseAPI;
   app: AppAPI;
@@ -510,4 +512,5 @@ export type API = {
   activityLog: ActivityLogAPI;
   onboarding: OnboardingAPI;
   online: OnlineAPI;
+  ai: AIAPI;
 };

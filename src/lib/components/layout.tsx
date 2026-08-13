@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import Navigation from "./navigation";
 import { useLocation } from "react-router-dom";
+import ChatBox from "./ai/ChatBox";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(
@@ -65,6 +66,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       >
         {children}
       </main>
+      <ChatBox />
     </>
   );
 }

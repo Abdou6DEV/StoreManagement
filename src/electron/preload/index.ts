@@ -9,6 +9,7 @@ export { onlineAPI } from "./onlineAPI";
 export { aiAPI } from "./aiAPI";
 export type {
   API,
+  AIAPI,
   DatabaseAPI,
   AppAPI,
   LoggerAPI,
