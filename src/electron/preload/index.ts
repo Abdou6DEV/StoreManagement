@@ -6,6 +6,7 @@ export { systemAPI } from "./systemAPI";
 export { backupAPI } from "./backupAPI";
 export { activityLogAPI } from "./activityLogAPI";
 export { onlineAPI } from "./onlineAPI";
+export { aiAPI } from "./aiAPI";
 export type {
   API,
   DatabaseAPI,

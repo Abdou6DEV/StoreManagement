@@ -77,6 +77,7 @@ import {
   setupOnlineHandlers,
 } from "./handlers";
 import { setupAppHandlers } from "./handlers/appHandlers";
+import { setupAIHandlers } from "./handlers/aiHandlers";
 
 const createWindow = async () => {
   // Initialize Prisma client first
@@ -97,7 +98,7 @@ const createWindow = async () => {
   setupOnboardingHandlers();
   setupOnlineHandlers();
   setupAppHandlers();
-
+  setupAIHandlers();
   const { width, height, x, y } = screen.getPrimaryDisplay().workArea;
 
   // Get icon path (works in both dev and production)
