@@ -1,0 +1,1232 @@
+REDA TECH POS — AI ASSISTANT / CHATBOX IMPLEMENTATION
+=========================================================
+
+1. GOAL
+-------
+
+REDA TECH POS will have an integrated AI assistant called:
+
+    REDA TECH Assistant AI
+
+The assistant is primarily for the store owner/user.
+
+Its main purpose is to understand and answer questions about:
+- Products
+- Stock/inventory
+- Sales
+- Customers/clients
+- Payments
+- Purchases
+- Sellers/suppliers
+- Services
+- Expenses
+- Store statistics
+- Other information available inside REDA TECH POS
+
+The assistant should feel like an AI assistant specifically designed for
+the user's store, not a generic chatbot.
+
+
+2. CURRENT ARCHITECTURE
+-----------------------
+
+The application is an Electron + React + TypeScript desktop application.
+
+The intended AI flow is:
+
+    React ChatBox
+          |
+          | window.api.ai.chat(...)
+          v
+    Electron preload
+          |
+          v
+    Electron main process
+          |
+          v
+    AI handler
+          |
+          v
+    Gemini API
+          |
+          v
+    AI response
+          |
+          v
+    ChatBox displays response
+
+
+The important existing AI files are:
+
+    src/electron/handlers/aiHandlers.ts
+
+    src/electron/preload/aiAPI.ts
+
+    src/electron/preload/index.ts
+
+    src/electron/preload.ts
+
+The current exposed API is conceptually:
+
+    AIAPI {
+      chat: (message: string) => Promise<string>;
+    }
+
+The renderer accesses it through:
+
+    window.api.ai.chat(message)
+
+
+3. CHATBOX UI
+-------------
+
+The ChatBox component exists at:
+
+    src/lib/components/ai/ChatBox.tsx
+
+The ChatBox is integrated into the application's main Layout.
+
+Desired placement:
+
+    fixed bottom-right
+
+It should float above the application rather than change the page's normal
+layout.
+
+The current ChatBox UI is already working.
+
+Shadcn components were added specifically for the ChatBox/UI work:
+
+    src/lib/components/ui/button.tsx
+    src/lib/components/ui/textarea.tsx
+    src/lib/components/ui/scroll-area.tsx
+    src/lib/components/ui/tooltip.tsx
+
+The existing project already has many UI components, so new components
+should only be added when needed.
+
+
+4. CONVERSATION MEMORY
+----------------------
+
+Desired behavior:
+
+The AI should remember the exact conversation while the application is
+open.
+
+When the user closes the application, the conversation ends.
+
+When the user launches the application again, a new conversation starts.
+
+Example:
+
+    User:
+    How many iPhones do I have?
+
+    AI:
+    You currently have 17 iPhones.
+
+    User:
+    What about Samsung?
+
+The AI should understand that "Samsung" refers to the previous discussion
+and continue the conversation naturally.
+
+After closing the application:
+
+    App closes
+        ->
+    conversation is discarded
+
+After reopening:
+
+    New conversation
+        ->
+    no previous chat history
+
+
+5. HOW MEMORY SHOULD BE IMPLEMENTED
+------------------------------------
+
+Do NOT rely on Gemini magically remembering previous API requests.
+
+The application should manage the conversation history.
+
+For the first version, memory should exist only in application memory.
+
+Conceptually:
+
+    const messages = [
+      {
+        role: "user",
+        content: "How many iPhones do I have?"
+      },
+      {
+        role: "assistant",
+        content: "You have 17 iPhones."
+      }
+    ]
+
+
+Every new message should be added to the conversation.
+
+When sending a request to Gemini, the AI should receive the relevant
+conversation context.
+
+Conceptual flow:
+
+    User message
+         |
+         v
+    Add to conversation
+         |
+         v
+    Send instructions + conversation context
+         |
+         v
+    Gemini
+         |
+         v
+    Assistant response
+         |
+         v
+    Add response to conversation
+         |
+         v
+    Display response
+
+
+6. SYSTEM INSTRUCTIONS
+----------------------
+
+The assistant needs behavior instructions.
+
+These instructions define WHAT the assistant is and HOW it should behave.
+
+The instructions should establish the following identity:
+
+    You are REDA TECH Assistant AI, the AI assistant built into
+    REDA TECH POS.
+
+The assistant should understand that its primary context is:
+
+    - The user's store
+    - REDA TECH POS
+    - Store data
+    - Retail operations
+    - Algerian market context
+
+The assistant should prioritize useful store-related assistance.
+
+The system instructions should also tell it:
+
+    - Do not invent store data.
+    - Do not claim to have performed an action if it did not.
+    - Use application data/functions when factual store data is requested.
+    - Clearly state when information is unavailable.
+    - Ask for clarification when the request is ambiguous.
+    - Be concise but useful.
+    - Maintain context from the current conversation.
+    - Respond naturally rather than repeating its identity unnecessarily.
+
+
+7. INTRODUCTION / IDENTITY
+--------------------------
+
+The AI should be able to introduce itself naturally.
+
+For example:
+
+    "I'm REDA TECH Assistant AI, your assistant inside REDA TECH POS.
+    I can help you understand your store's products, stock, sales,
+    customers and other business data."
+
+It should NOT introduce itself at the beginning of every single response.
+
+The identity is primarily established through the system instructions.
+
+
+8. LANGUAGE SUPPORT
+-------------------
+
+The application supports:
+- Arabic
+- French
+- English
+
+The AI should support users speaking in different languages.
+
+It should normally answer in the same language used by the user.
+
+Examples:
+
+    User:
+    كم عندي من آيفون؟
+
+    AI:
+    لديك 17 جهاز آيفون في المخزون.
+
+    User:
+    Combien d'iPhone j'ai en stock ?
+
+    AI:
+    Vous avez actuellement 17 iPhone en stock.
+
+    User:
+    How many iPhones do I have?
+
+    AI:
+    You currently have 17 iPhones in stock.
+
+The AI should not require a language-selection button for normal chat.
+
+
+9. STORE DATA / FUNCTION CALLING
+--------------------------------
+
+One of the most important future features is allowing Gemini to access
+real REDA TECH POS data.
+
+The AI itself should NOT directly access the database.
+
+Instead:
+
+    Gemini
+       |
+       | requests a tool/function
+       v
+    Electron main process
+       |
+       | executes trusted application code
+       v
+    Database
+       |
+       v
+    Result returned to Gemini
+       |
+       v
+    Gemini explains result to user
+
+
+10. HOW GEMINI CHOOSES A FUNCTION
+---------------------------------
+
+Gemini will be given a list of available tools/functions.
+
+Each function should have:
+- A clear name
+- A clear description
+- Parameters
+- Parameter descriptions
+- Expected result
+
+For example:
+
+    get_products
+
+Description:
+
+    "Get products from the store inventory. Use this when the user asks
+     about products, stock quantities or product availability."
+
+If the user asks:
+
+    "How many iPhones do I have?"
+
+Gemini analyzes the request.
+
+It recognizes that this requires real inventory data.
+
+It chooses the appropriate tool, conceptually:
+
+    get_products(...)
+
+The Electron application receives the tool request.
+
+Electron executes the corresponding database function.
+
+The result could be:
+
+    [
+      {
+        name: "iPhone 15",
+        quantity: 7
+      },
+      {
+        name: "iPhone 14",
+        quantity: 10
+      }
+    ]
+
+The result is sent back to Gemini.
+
+Gemini then generates the natural-language response:
+
+    "You have 17 iPhones in stock."
+
+
+11. FUNCTION CALLING IS NOT AUTOMATIC DATABASE ACCESS
+------------------------------------------------------
+
+Gemini cannot simply see the entire database.
+
+It only receives information that the application provides.
+
+The application decides:
+- Which functions exist.
+- What each function can access.
+- What arguments are allowed.
+- Whether a function is safe to execute.
+- What result is returned.
+
+This is important for security and correctness.
+
+
+12. EXAMPLE TOOLS THAT MAY BE ADDED
+-----------------------------------
+
+Potential read-only tools:
+
+    get_products
+    search_products
+    get_low_stock_products
+    get_product_stock
+    get_sales
+    get_recent_sales
+    get_sales_by_date
+    get_sales_summary
+    get_clients
+    get_client_details
+    get_client_purchases
+    get_payments
+    get_pending_payments
+    get_suppliers
+    get_purchases
+    get_services
+    get_dashboard_statistics
+
+The exact tool list should be based on the existing application's actual
+database APIs and business logic.
+
+Do not create duplicate database logic if an existing application function
+already provides the required data.
+
+
+13. EXAMPLES OF NATURAL QUESTIONS
+---------------------------------
+
+The AI should understand natural variations such as:
+
+    "How many iPhones do I have?"
+
+    "How many iPhones are left?"
+
+    "Do I have any iPhone 15 Pro?"
+
+    "What's my stock for Samsung?"
+
+    "How much did I sell today?"
+
+    "What were my sales yesterday?"
+
+    "Who owes me money?"
+
+    "How much does Ahmed owe me?"
+
+    "Which products are low on stock?"
+
+    "What did I sell this month?"
+
+    "What's my best-selling product?"
+
+These may require different tools or combinations of tools.
+
+
+14. MULTI-STEP QUESTIONS
+------------------------
+
+The AI should eventually be able to combine multiple tools.
+
+Example:
+
+    "What was my best-selling phone this month and how much profit
+     did I make from it?"
+
+Possible reasoning:
+
+    1. Get sales for the requested period.
+    2. Determine the best-selling phone.
+    3. Retrieve purchase/selling prices if needed.
+    4. Calculate the relevant profit.
+    5. Explain the result.
+
+The AI should only state a calculation when the necessary data is actually
+available.
+
+
+15. FOLLOW-UP QUESTIONS
+-----------------------
+
+Conversation memory and tool calling must work together.
+
+Example:
+
+    User:
+    How many iPhones do I have?
+
+    AI:
+    You have 17 iPhones.
+
+    User:
+    How many of them are iPhone 15?
+
+The second message should use the previous context.
+
+The AI may then call the appropriate inventory/product function.
+
+Another example:
+
+    User:
+    How much did I sell yesterday?
+
+    AI:
+    You sold 85,000 DA yesterday.
+
+    User:
+    And this month?
+
+The AI should understand that "this month" refers to sales and perform a
+new appropriate data lookup.
+
+
+16. INTERNET / GOOGLE SEARCH
+----------------------------
+
+A future capability is allowing the AI to search the internet when current
+external information is required.
+
+Examples:
+
+    "What's the current price of an iPhone 15 in Algeria?"
+
+    "How much is a Samsung A56 in Algeria right now?"
+
+    "What is the current exchange rate?"
+
+    "What is the latest price of this product?"
+
+This is different from querying the store database.
+
+Store database:
+
+    "How many iPhone 15 units do I have?"
+
+Internet:
+
+    "What is the current market price of an iPhone 15 in Algeria?"
+
+
+17. AUTOMATIC INTERNET SEARCH
+----------------------------
+
+The preferred user experience is NOT to force the user to press an
+"Internet Search" button.
+
+Instead, the AI should decide when external search is useful.
+
+Conceptually:
+
+    User asks question
+          |
+          v
+    Gemini determines whether it needs external/current information
+          |
+       +--+--+
+       |     |
+      No    Yes
+       |     |
+       v     v
+    Answer  Search tool
+            |
+            v
+        Search result
+            |
+            v
+          Gemini
+            |
+            v
+          Answer
+
+The user should not need to understand which tool was used.
+
+
+18. IMPORTANT DISTINCTION: STORE DATA VS INTERNET
+-------------------------------------------------
+
+The AI should distinguish:
+
+A. Internal store information
+- Products
+- Stock
+- Sales
+- Customers
+- Payments
+- Purchases
+- Services
+- Store statistics
+
+Use application/database tools.
+
+B. External/current information
+- Market prices
+- Current public information
+- Current Algerian retail pricing
+- General web information
+- Other information unavailable inside REDA TECH POS
+
+Use an internet/search tool when implemented.
+
+
+19. OFF-TOPIC QUESTIONS
+-----------------------
+
+The AI will inevitably receive questions outside its purpose.
+
+Examples:
+
+    "Tell me a joke."
+
+    "Who won the football match?"
+
+    "Write me a poem."
+
+    "What's the weather?"
+
+    "Tell me a random fact."
+
+The assistant should not become completely useless, but it should maintain
+its role.
+
+Preferred behavior:
+
+    "I'm mainly designed to help you with your store and REDA TECH POS.
+     I can help with products, stock, sales, customers and business data.
+     What would you like to check?"
+
+For harmless casual conversation, a short response can be acceptable, but
+the assistant should redirect toward its main purpose when appropriate.
+
+It should not pretend that sports, entertainment, general research, etc.
+are core REDA TECH POS capabilities unless the required external tool has
+actually been implemented.
+
+
+20. BEHAVIOR RULES
+------------------
+
+The finalized system behavior should include rules such as:
+
+1. Identity
+   - You are REDA TECH Assistant AI.
+
+2. Purpose
+   - Help users with REDA TECH POS and store-related questions.
+
+3. Accuracy
+   - Never invent store data.
+
+4. Data access
+   - Use application tools for actual store information.
+
+5. Current information
+   - Use internet search when current external information is required
+     and the search capability is available.
+
+6. Language
+   - Respond naturally in Arabic, French or English.
+
+7. Context
+   - Remember the current conversation while the application is open.
+
+8. Clarification
+   - Ask a concise clarification question when the request cannot be
+     understood safely or accurately.
+
+9. Transparency
+   - Do not claim to have searched the web, queried the database, or
+     performed an action unless the application actually did so.
+
+10. Scope
+    - Keep the assistant primarily focused on the store and business.
+
+11. Numbers
+    - Prefer exact database results for store numbers.
+
+12. Algerian market
+    - Understand Algerian context, including DA/DZD and common local
+      retail terminology.
+
+13. No hallucinated products or prices
+    - External prices should be identified as external/current market
+      information and should not be confused with the user's own prices.
+
+
+21. ALGERIAN MARKET CONTEXT
+---------------------------
+
+The assistant is intended for Algerian businesses.
+
+It should naturally understand:
+- DA / DZD
+- Algerian retail terminology
+- Phone shops
+- Computer shops
+- Video game shops
+- Repair businesses
+- Local product naming conventions
+- Arabic/French mixed communication
+
+Examples of mixed language should be understood naturally:
+
+    "شحال عندي من iPhone 15?"
+
+    "Combien j'ai de Samsung A56?"
+
+    "How much did I sell aujourd'hui?"
+
+The AI should not require perfectly grammatical input.
+
+
+22. DATA SAFETY / READ VS WRITE OPERATIONS
+------------------------------------------
+
+The first implementation should prioritize READ operations.
+
+Examples:
+
+    get products
+    get stock
+    get sales
+    get clients
+    get payments
+    get statistics
+
+Write operations should NOT be added casually.
+
+Potential future write operations:
+
+    Add a product
+    Create a client
+    Record a payment
+    Change stock
+    Create a sale
+
+These require stronger confirmation rules.
+
+For example:
+
+    User:
+    Delete all products.
+
+The AI must NEVER execute such a dangerous operation merely because the
+language model requested it.
+
+Potential future write-operation flow:
+
+    User request
+        ->
+    AI identifies intended action
+        ->
+    Application validates parameters
+        ->
+    AI asks for confirmation
+        ->
+    User confirms
+        ->
+    Application performs action
+
+
+23. ERROR HANDLING
+------------------
+
+If Gemini fails:
+
+    "I couldn't reach the AI service right now. Please try again."
+
+If a database tool fails:
+
+    "I couldn't retrieve that store information right now."
+
+If no matching data exists:
+
+    "I couldn't find any matching products."
+
+Do not fabricate a result to hide an error.
+
+
+24. CHAT UI FUTURE IMPROVEMENTS
+-------------------------------
+
+The current ChatBox UI works, but can be improved.
+
+Potential improvements:
+
+- Better opening/closing animation
+- Minimize/maximize behavior
+- Message bubbles
+- User/AI avatars
+- Typing/loading indicator
+- Auto-scroll to newest message
+- Enter to send
+- Shift+Enter for newline
+- Disable send while request is running
+- Stop/cancel response if supported
+- Empty-state welcome message
+- Suggested questions
+- Better mobile/small-window behavior
+- RTL support for Arabic
+- Markdown rendering
+- Code/table formatting where useful
+- Copy response button
+- Clear conversation button
+- Conversation status indicator
+- Error states
+- Retry button
+
+
+25. WELCOME STATE
+-----------------
+
+When the ChatBox is opened with no messages, it can show:
+
+    REDA TECH Assistant AI
+
+    "How can I help you with your store?"
+
+Suggested prompts could include:
+
+    "How many products are low in stock?"
+
+    "How much did I sell today?"
+
+    "Who owes me money?"
+
+    "Show me my best-selling products."
+
+These are only UI suggestions; they should trigger the same chat/tool system.
+
+
+26. MARKDOWN / RESPONSE RENDERING
+---------------------------------
+
+Gemini responses may eventually contain:
+- Lists
+- Tables
+- Bold text
+- Numbers
+- Short explanations
+
+The ChatBox should eventually render safe Markdown rather than displaying
+everything as raw plain text.
+
+Avoid rendering unsafe arbitrary HTML.
+
+
+27. CONVERSATION CLEARING
+-------------------------
+
+The ChatBox should eventually have a "New chat" / "Clear conversation"
+action.
+
+When selected:
+
+    conversation history = []
+
+The AI then starts a fresh conversation without closing the application.
+
+This is optional for the first UI version but recommended.
+
+
+28. CURRENT IMPLEMENTATION VS FUTURE WORK
+------------------------------------------
+
+ALREADY DONE:
+
+- Gemini backend connection.
+- Electron AI handler.
+- Preload AI API.
+- window.api.ai exposure.
+- ChatBox component.
+- ChatBox bottom-right integration.
+- Shadcn UI components needed by the ChatBox.
+- Basic chat UI works.
+- Basic message -> Gemini -> response flow works.
+
+
+NOT YET FULLY IMPLEMENTED:
+
+- Proper conversation history/memory.
+- Final production system instructions.
+- Database tool/function calling.
+- Product/stock tools.
+- Sales tools.
+- Client/customer tools.
+- Payment tools.
+- Purchase/supplier tools.
+- Statistics tools.
+- Internet search.
+- Automatic search/tool selection.
+- Confirmation system for write operations.
+- Advanced error handling.
+- Persistent conversation history.
+- Advanced Markdown rendering.
+- Full Arabic RTL chat experience.
+- Production-grade AI testing.
+
+
+29. RECOMMENDED IMPLEMENTATION ORDER
+------------------------------------
+
+PHASE 1 — FINISH CHAT UI
+------------------------
+
+Focus only on the visual ChatBox.
+
+Implement/refine:
+
+1. Floating bottom-right layout.
+2. Open/close button.
+3. Header.
+4. Message list.
+5. User/assistant message styling.
+6. Input box.
+7. Send button.
+8. Loading state.
+9. Auto-scroll.
+10. Empty-state welcome screen.
+11. Clear/new-chat button.
+12. Arabic RTL support.
+13. Responsive sizing.
+
+Do not add complicated AI tools yet.
+
+
+PHASE 2 — CONVERSATION MEMORY
+-----------------------------
+
+Implement in-memory conversation history.
+
+Requirements:
+
+- New conversation when app starts.
+- Keep all messages while app is open.
+- Include relevant history in Gemini requests.
+- Clear history when requested.
+- Discard history when application closes.
+
+Do not persist the conversation yet.
+
+
+PHASE 3 — SYSTEM BEHAVIOR
+--------------------------
+
+Create the finalized REDA TECH Assistant system instructions.
+
+The instructions should establish:
+- Identity
+- Purpose
+- Language behavior
+- Store context
+- Accuracy rules
+- Scope
+- Off-topic behavior
+- Tool usage rules
+- No-hallucination rules
+
+
+PHASE 4 — STORE TOOLS
+---------------------
+
+Implement read-only tools first.
+
+Start with the most useful:
+
+1. Product search
+2. Product stock
+3. Low stock
+4. Sales summary
+5. Recent sales
+6. Client/customer information
+7. Outstanding payments
+8. Purchase/supplier information
+9. Dashboard statistics
+
+Expose them to Gemini using proper function/tool definitions.
+
+Use existing application/database logic wherever possible.
+
+
+PHASE 5 — TOOL CALLING LOOP
+---------------------------
+
+Implement the complete Gemini tool loop:
+
+    User message
+        |
+        v
+    Gemini
+        |
+        +---- normal response ----> User
+        |
+        +---- tool call
+                 |
+                 v
+          Electron executes tool
+                 |
+                 v
+          Tool result -> Gemini
+                 |
+                 v
+              Response
+                 |
+                 v
+                User
+
+The loop must support more than one tool call when necessary.
+
+
+PHASE 6 — INTERNET SEARCH
+-------------------------
+
+Add a search capability.
+
+The AI should automatically decide when it needs current external
+information.
+
+Example:
+
+    "How many iPhone 15 do I have?"
+
+    -> Store database tool
+
+    "What is the current iPhone 15 price in Algeria?"
+
+    -> Internet search tool
+
+
+PHASE 7 — WRITE ACTIONS
+-----------------------
+
+Only after read-only tools are stable.
+
+Potential actions:
+- Create/update product
+- Create client
+- Record payment
+- Other safe application actions
+
+Every meaningful write operation should have validation and, where
+appropriate, explicit user confirmation.
+
+
+30. IMPORTANT DESIGN PRINCIPLE
+------------------------------
+
+Do not try to make one enormous prompt containing every piece of store
+data.
+
+The AI should be given:
+
+    Short system instructions
+        +
+    Conversation history
+        +
+    Tool definitions
+        +
+    Tool results when required
+
+This is much better than sending the entire database or a huge
+documentation file to Gemini on every request.
+
+The large documentation/specification file is for developers and AI coding
+tools such as Cursor.
+
+It is NOT meant to be blindly sent to Gemini for every user message.
+
+
+31. WHAT GEMINI ACTUALLY KNOWS
+------------------------------
+
+Without tools, Gemini does NOT automatically know:
+
+    - How many products the store has.
+    - Today's sales.
+    - Who owes money.
+    - The user's inventory.
+    - The user's purchase prices.
+    - The user's customers.
+
+Those facts live in the application database.
+
+With tool calling:
+
+    User asks question
+        ->
+    Gemini decides which tool is needed
+        ->
+    Electron executes trusted code
+        ->
+    Result goes to Gemini
+        ->
+    Gemini explains the result
+
+
+32. EXAMPLE COMPLETE INTERACTION
+--------------------------------
+
+User:
+
+    "شحال عندي من iPhone 15؟"
+
+Gemini identifies:
+
+    This requires current store inventory data.
+
+Gemini requests:
+
+    get_product_stock({
+      query: "iPhone 15"
+    })
+
+Electron executes the database operation.
+
+Application returns:
+
+    {
+      product: "iPhone 15",
+      quantity: 8
+    }
+
+Gemini responds:
+
+    "عندك حالياً 8 وحدات من iPhone 15."
+
+
+33. EXAMPLE WITH FOLLOW-UP
+--------------------------
+
+User:
+
+    "شحال بعت اليوم؟"
+
+AI:
+
+    "بعت اليوم 125,000 DA."
+
+User:
+
+    "والأسبوع هذا؟"
+
+The conversation history tells Gemini that "this" refers to sales.
+
+Gemini requests the appropriate sales summary for the week.
+
+The application returns the real result.
+
+Gemini answers naturally.
+
+
+34. EXAMPLE WITH INTERNET + STORE DATA
+---------------------------------------
+
+User:
+
+    "عندي 5 iPhone 15، شوفلي السعر الحالي في الجزائر وإذا نبيعهم
+     بهذا السعر شحال نقدر ندخل؟"
+
+Possible process:
+
+    1. Store context already says quantity = 5.
+    2. Internet search obtains current external market price.
+    3. AI clearly identifies the price as external market information.
+    4. AI calculates estimated revenue.
+    5. AI explains that actual selling price may differ.
+
+The assistant must not confuse:
+- Store's actual selling price
+with
+- Current external market price.
+
+
+35. FINAL TARGET EXPERIENCE
+---------------------------
+
+The final user experience should feel like:
+
+    "A smart assistant that understands my store."
+
+The user should be able to speak naturally:
+
+    Arabic
+    French
+    English
+    Mixed Arabic/French/English
+
+They should not need to know:
+- Which database table contains the information.
+- Which function is required.
+- Whether a tool is being called.
+- Whether a search request is being made.
+
+The AI should decide the appropriate action while the application controls
+actual execution and data access.
+
+The overall architecture should remain:
+
+    CHATBOX
+       |
+       v
+    GEMINI
+       |
+       +------------------+
+       |                  |
+       v                  v
+    STORE TOOLS       WEB SEARCH
+       |                  |
+       v                  |
+    DATABASE              |
+       |                  |
+       +--------+---------+
+                |
+                v
+             GEMINI
+                |
+                v
+             CHATBOX
+
+
+36. KEY RULE FOR FUTURE DEVELOPMENT
+------------------------------------
+
+Do not implement everything at once.
+
+The safest progression is:
+
+    UI
+      ->
+    Conversation memory
+      ->
+    System behavior
+      ->
+    Read-only store tools
+      ->
+    Tool-calling loop
+      ->
+    Internet search
+      ->
+    Write actions with confirmation
+
+Each phase should be tested before moving to the next.
+
+The current working ChatBox UI should remain stable while backend AI
+capabilities are added incrementally.

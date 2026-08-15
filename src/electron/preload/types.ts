@@ -500,7 +500,8 @@ export type ActivityLogAPI = {
   cleanupOld: () => Promise<number>;
 };
 export interface AIAPI {
-  chat: (message: string) => Promise<string>;
+  chat: (message: string, userName?: string) => Promise<string>;
+  clearChat: () => Promise<void>;
 }
 export type API = {
   database: DatabaseAPI;
