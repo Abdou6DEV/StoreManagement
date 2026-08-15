@@ -1,362 +1,227 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import {
-  Bot,
-  ChevronDown,
-  MessageCircle,
   Minus,
   RotateCcw,
-  Send,
-  X,
 } from "lucide-react";
 
 import { Button } from "../ui/button";
-import { Textarea } from "../ui/textarea";
-import { useAuth } from "../../contexts/authContext";
-
-type Message = {
-  id: number;
-  role: "user" | "assistant";
-  content: string;
-};
-type AIModel = {
-  id: string;
-  provider: string;
-  capabilities: {
-    toolCalling: boolean;
-    webSearch: boolean;
-    generalChat: boolean;
-    storeData: boolean;
-  };
-  priority: number;
-};
-const SCROLL_THRESHOLD = 64;
+import { Thread } from "../assistant-ui/thread";
+import { useAIRuntime } from "./AIRuntimeProvider";
+import Orb from "../assistant-ui/orb";
 
 export default function ChatBox() {
-  const { user } = useAuth();
   const [open, setOpen] = useState(false);
-  const [message, setMessage] = useState("");
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [showScrollDown, setShowScrollDown] = useState(false);
-  const [models, setModels] = useState<AIModel[]>([]);
-  const [selectedModel, setSelectedModel] = useState<string | null>(null);
+  const [idle, setIdle] = useState(false);
+  const [hovered, setHovered] = useState(false);
 
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const isPinnedToBottomRef = useRef(true);
+  // Added: keeps the chat mounted while closing animation plays
+  const [showChat, setShowChat] = useState(false);
 
-  const isAtBottom = useCallback(() => {
-    const container = scrollContainerRef.current;
-    if (!container) return true;
-
-    const distanceFromBottom =
-      container.scrollHeight - container.scrollTop - container.clientHeight;
-
-    return distanceFromBottom <= SCROLL_THRESHOLD;
-  }, []);
-
-  const scrollToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
-    const container = scrollContainerRef.current;
-    if (!container) return;
-
-    container.scrollTo({
-      top: container.scrollHeight,
-      behavior,
-    });
-
-    isPinnedToBottomRef.current = true;
-    setShowScrollDown(false);
-  }, []);
-
-  const handleScroll = useCallback(() => {
-    const atBottom = isAtBottom();
-    isPinnedToBottomRef.current = atBottom;
-    setShowScrollDown(!atBottom);
-  }, [isAtBottom]);
+  const runtime = useAIRuntime();
 
   useEffect(() => {
-    if (!open) return;
-
-    requestAnimationFrame(() => {
-      scrollToBottom("auto");
-    });
-  }, [open, scrollToBottom]);
-
-  useEffect(() => {
-    if (!open || !isPinnedToBottomRef.current) return;
-
-    requestAnimationFrame(() => {
-      scrollToBottom(messages.length <= 1 ? "auto" : "smooth");
-    });
-  }, [messages, loading, open, scrollToBottom]);
-
-  useEffect(() => {
+    // Load available models once so the AI backend is initialized.
     const loadModels = async () => {
       try {
-        const availableModels = await window.api.ai.getAvailableModels();
-        setModels(availableModels);
+        await window.api.ai.getAvailableModels();
       } catch (error) {
         console.error("Failed to load AI models:", error);
       }
     };
-  
+
     loadModels();
   }, []);
 
-  const handleClearChat = async () => {
-    if (loading) return;
+  /*
+   * Hide the floating AI button after 3 seconds
+   * of inactivity.
+   */
+  useEffect(() => {
+    if (open || hovered) {
+      setIdle(false);
+      return;
+    }
 
+    const timer = window.setTimeout(() => {
+      setIdle(true);
+    }, 3000);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [open, hovered]);
+
+  const handleOpen = () => {
+    setHovered(false);
+    setIdle(false);
+
+    // Mount the chat first
+    setShowChat(true);
+
+    // Then trigger the opening animation
+    requestAnimationFrame(() => {
+      setOpen(true);
+    });
+  };
+
+  const handleClose = () => {
+    // Start closing animation
+    setOpen(false);
+
+    // Remove from DOM only after animation finishes
+    window.setTimeout(() => {
+      setShowChat(false);
+    }, 500);
+
+    setIdle(false);
+    setHovered(false);
+  };
+
+  const handleClearChat = async () => {
     try {
+      runtime.thread.reset();
       await window.api.ai.clearChat();
-      setMessages([]);
-      setMessage("");
-      isPinnedToBottomRef.current = true;
-      setShowScrollDown(false);
     } catch (error) {
       console.error("AI clear chat error:", error);
     }
   };
 
-  const handleSend = async () => {
-    const text = message.trim();
-
-    if (!text || loading) return;
-
-    isPinnedToBottomRef.current = true;
-    setShowScrollDown(false);
-
-    const userMessage: Message = {
-      id: Date.now(),
-      role: "user",
-      content: text,
-    };
-
-    setMessages((current) => [...current, userMessage]);
-    setMessage("");
-    setLoading(true);
-
-    try {
-      const response = await window.api.ai.chat(text, user?.username);
-
-      setMessages((current) => [
-        ...current,
-        {
-          id: Date.now() + 1,
-          role: "assistant",
-          content: response,
-        },
-      ]);
-    } catch (error) {
-      console.error("AI chat error:", error);
-
-      setMessages((current) => [
-        ...current,
-        {
-          id: Date.now() + 1,
-          role: "assistant",
-          content: "Sorry, I couldn't process your request.",
-        },
-      ]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (!open) {
-    return (
-      <div className="fixed bottom-6 right-6 z-[100]">
-        <Button
-          onClick={() => setOpen(true)}
-          size="icon"
-          className="h-14 w-14 rounded-full shadow-lg"
-          aria-label="Open REDA AI"
-        >
-          <Bot className="h-6 w-6" />
-        </Button>
-      </div>
-    );
-  }
+  /* ─────────────────────────────
+     Floating AI button
+  ───────────────────────────── */
 
   return (
-    <div className="fixed bottom-6 right-6 z-[100] flex h-[600px] w-[380px] flex-col overflow-hidden rounded-2xl border bg-background shadow-2xl">
-      {/* Header */}
-      <div className="flex shrink-0 items-center justify-between border-b px-4 py-3">
-        <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground">
-            <Bot className="h-5 w-5" />
-          </div>
-
-          <div>
-            <h3 className="text-sm font-semibold">REDA AI</h3>
-            <p className="text-xs text-muted-foreground">
-              Your store assistant
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-1">
-          {messages.length > 0 && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={handleClearChat}
-              disabled={loading}
-              aria-label="New chat"
-              title="New chat"
-            >
-              <RotateCcw className="h-4 w-4" />
-            </Button>
-          )}
-
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            onClick={() => setOpen(false)}
-            aria-label="Minimize"
+    <>
+      {/* Floating AI button */}
+      {!showChat && (
+        <div className="fixed bottom-6 right-6 z-[100]">
+          <button
+            onClick={handleOpen}
+            aria-label="Open REDA AI"
+            onMouseEnter={() => {
+              setHovered(true);
+              setIdle(false);
+            }}
+            onMouseLeave={() => {
+              setHovered(false);
+            }}
+            className={`
+              group relative h-16 w-16 overflow-hidden rounded-full
+              border border-border/50 bg-black
+              shadow-xl shadow-primary/20
+              transition-all duration-500 ease-out
+              hover:scale-105
+              hover:shadow-2xl hover:shadow-primary/30
+              ${
+                idle && !hovered
+                  ? "translate-y-[52px] opacity-30"
+                  : "translate-y-0 opacity-100"
+              }
+            `}
           >
-            <Minus className="h-4 w-4" />
-          </Button>
-
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            onClick={() => setOpen(false)}
-            aria-label="Close"
-          >
-            <X className="h-4 w-4" />
-          </Button>
+            <div className="absolute inset-0">
+              <Orb
+                hue={0}
+                hoverIntensity={0.8}
+                rotateOnHover
+                forceHoverState={false}
+                backgroundColor="#000000"
+              />
+            </div>
+          </button>
         </div>
-      </div>
-      
-      {/* Model Selector */}
-      <div className="shrink-0 border-b px-4 py-2">
-        <select
-          value={selectedModel ?? ""}
-          onChange={async (event) => {
-            const modelId = event.target.value || null;
-      
-            try {
-              await window.api.ai.setModel(modelId);
-              setSelectedModel(modelId);
-            } catch (error) {
-              console.error("Failed to select AI model:", error);
-            }
-          }}
-          disabled={loading}
-          className="w-full rounded-md border bg-background px-2 py-1.5 text-xs"
-        >
-          <option value="">Automatic</option>
-      
-          {models.map((model) => (
-            <option key={model.id} value={model.id}>
-              {model.provider === "google"
-                ? `Google — ${model.id}`
-                : `OpenRouter — ${model.id}`}
-            </option>
-          ))}
-        </select>
-      </div>
-      {/* Messages */}
+      )}
 
-      <div className="relative min-h-0 flex-1">
+      {/* Chat */}
+      {showChat && (
         <div
-          ref={scrollContainerRef}
-          onScroll={handleScroll}
-          className="h-full overflow-y-auto overscroll-contain scroll-smooth"
+          className={`
+            fixed bottom-6 right-6 z-[100]
+            flex h-[600px] w-[380px]
+            flex-col overflow-hidden
+            rounded-2xl border border-border/60
+            bg-background shadow-2xl
+            transition-all duration-500 ease-out
+            ${
+              open
+                ? "translate-y-0 scale-100 opacity-100"
+                : "translate-y-8 scale-95 opacity-0"
+            }
+          `}
         >
-          <div className="flex flex-col gap-4 p-4">
-            {messages.length === 0 ? (
-              <div className="flex min-h-[420px] flex-col items-center justify-center text-center">
-                <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
-                  <MessageCircle className="h-7 w-7 text-primary" />
+
+          {/* Header */}
+          <div className="flex shrink-0 items-center justify-between border-b border-border/60 bg-background/95 px-4 py-3 backdrop-blur">
+
+            <div className="flex min-w-0 items-center gap-3">
+
+              {/* REDA AI Orb Avatar */}
+              <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-xl border border-border/50 bg-black shadow-sm">
+                <Orb
+                  hue={0}
+                  hoverIntensity={0.5}
+                  rotateOnHover
+                  forceHoverState={false}
+                  backgroundColor="#000000"
+                />
+
+                {/* Online indicator */}
+                <span className="absolute bottom-0.5 right-0.5 z-10 h-2.5 w-2.5 rounded-full border-2 border-background bg-green-500" />
+              </div>
+
+              {/* Title */}
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <h3 className="truncate text-sm font-semibold tracking-tight">
+                    REDA AI
+                  </h3>
+
+                  <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wide text-primary">
+                    AI
+                  </span>
                 </div>
 
-                <h4 className="text-sm font-semibold">How can I help you?</h4>
-
-                <p className="mt-1 max-w-[260px] text-xs text-muted-foreground">
-                  Ask REDA AI about your store, products, sales, inventory, or
-                  anything else.
+                <p className="truncate text-[11px] text-muted-foreground">
+                  Your store assistant
                 </p>
               </div>
-            ) : (
-              messages.map((item) => (
-                <div
-                  key={item.id}
-                  className={`flex ${
-                    item.role === "user" ? "justify-end" : "justify-start"
-                  }`}
-                >
-                  <div
-                    className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm ${
-                      item.role === "user"
-                        ? "rounded-br-sm bg-primary text-primary-foreground"
-                        : "rounded-bl-sm bg-muted"
-                    }`}
-                  >
-                    {item.content}
-                  </div>
-                </div>
-              ))
-            )}
-            {loading && (
-              <div className="flex justify-start">
-                <div className="rounded-2xl rounded-bl-sm bg-muted px-3 py-2 text-sm text-muted-foreground">
-                  Thinking...
-                </div>
-              </div>
-            )}
+            </div>
+
+            {/* Header actions */}
+            <div className="flex shrink-0 items-center gap-0.5">
+
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                onClick={handleClearChat}
+                aria-label="New chat"
+                title="New chat"
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+              </Button>
+
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                onClick={handleClose}
+                aria-label="Minimize"
+                title="Minimize"
+              >
+                <Minus className="h-4 w-4" />
+              </Button>
+
+            </div>
           </div>
-        </div>
 
-        {showScrollDown && (
-          <div className="pointer-events-none absolute inset-x-0 bottom-3 flex justify-center">
-            <Button
-              size="icon"
-              variant="secondary"
-              className="pointer-events-auto h-8 w-8 rounded-full shadow-md"
-              onClick={() => scrollToBottom()}
-              aria-label="Scroll to bottom"
-            >
-              <ChevronDown className="h-4 w-4" />
-            </Button>
+          {/* Assistant UI */}
+          <div className="min-h-0 flex-1">
+            <Thread />
           </div>
-        )}
-      </div>
 
-      {/* Input */}
-      <div className="shrink-0 border-t p-3">
-        <div className="flex items-end gap-2">
-          <Textarea
-            value={message}
-            onChange={(event) => setMessage(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter" && !event.shiftKey) {
-                event.preventDefault();
-                handleSend();
-              }
-            }}
-            placeholder={loading ? "REDA AI is thinking..." : "Ask REDA AI..."}
-            className="min-h-[42px] max-h-32 resize-none"
-            rows={1}
-          />
-
-          <Button
-            size="icon"
-            className="shrink-0"
-            disabled={!message.trim() || loading}
-            onClick={handleSend}
-            aria-label="Send message"
-          >
-            <Send className="h-4 w-4" />
-          </Button>
         </div>
-
-        <p className="mt-2 text-center text-[10px] text-muted-foreground">
-          Enter to send · Shift + Enter for new line
-        </p>
-      </div>
-    </div>
+      )}
+    </>
   );
 }
