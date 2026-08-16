@@ -4,10 +4,14 @@ import {
   useLocalRuntime,
   type ChatModelAdapter,
 } from "@assistant-ui/react";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "../../contexts/authContext";
 import { createContext, useContext } from "react";
 
-const AIAdapter = (userName?: string): ChatModelAdapter => ({
+const AIAdapter = (
+  userName: string | undefined,
+  unavailableMessage: string
+): ChatModelAdapter => ({
   async run({ messages }) {
     const latestUserMessage = [...messages]
       .reverse()
@@ -56,7 +60,14 @@ const AIAdapter = (userName?: string): ChatModelAdapter => ({
       };
     } catch (error) {
       console.error("AI chat error:", error);
-      throw error;
+      return {
+        content: [
+          {
+            type: "text",
+            text: unavailableMessage,
+          },
+        ],
+      };
     }
   },
 });
@@ -73,9 +84,16 @@ export function AIRuntimeProvider({
   children: ReactNode;
 }) {
   const { user } = useAuth();
+  const { t } = useTranslation();
 
   const runtime = useLocalRuntime(
-    AIAdapter(user?.username),
+    AIAdapter(
+      user?.username,
+      t(
+        "ai.requestUnavailable",
+        "I can't complete this request right now. Please try again later."
+      )
+    ),
     {
       unstable_enableMessageQueue: true,
     }

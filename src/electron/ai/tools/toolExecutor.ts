@@ -94,6 +94,83 @@ export async function executeToolCalls(
   return results;
 }
 
+const JSON_SCHEMA_TYPES = new Set([
+  "string",
+  "number",
+  "integer",
+  "boolean",
+  "object",
+  "array",
+  "null",
+]);
+
+type ToolParamSchema = {
+  type?: unknown;
+  description?: string;
+  required?: boolean;
+};
+
+/**
+ * Groq and Mistral reject anything outside JSON Schema types.
+ * Registry values like "string | Date" or "any" must be mapped first.
+ */
+function toJsonSchemaType(rawType: unknown): string {
+  if (typeof rawType !== "string" || !rawType.trim()) {
+    return "string";
+  }
+
+  const normalized = rawType.trim().toLowerCase();
+
+  if (JSON_SCHEMA_TYPES.has(normalized)) {
+    return normalized;
+  }
+
+  if (normalized.includes("date") || normalized.includes("string")) {
+    return "string";
+  }
+
+  if (normalized.includes("number") || normalized.includes("int")) {
+    return "number";
+  }
+
+  if (
+    normalized === "any" ||
+    normalized === "record" ||
+    normalized === "json" ||
+    normalized === "object"
+  ) {
+    return "object";
+  }
+
+  return "string";
+}
+
+function isRequiredParam(param: ToolParamSchema): boolean {
+  return param.required !== false;
+}
+
+function buildJsonSchema(inputSchema: Record<string, ToolParamSchema>) {
+  const properties: Record<string, { type: string; description: string }> = {};
+  const required: string[] = [];
+
+  for (const [key, param] of Object.entries(inputSchema)) {
+    properties[key] = {
+      type: toJsonSchemaType(param.type),
+      description: param.description || "",
+    };
+
+    if (isRequiredParam(param)) {
+      required.push(key);
+    }
+  }
+
+  return {
+    type: "object" as const,
+    properties,
+    required,
+  };
+}
+
 /**
  * Get tools available to AI in format for function calling
  */
@@ -101,20 +178,7 @@ export function getToolsForAI() {
   return Object.values(AI_TOOLS_REGISTRY).map((tool) => ({
     name: tool.name,
     description: tool.description,
-    input_schema: {
-      type: "object",
-      properties: Object.entries(tool.input_schema).reduce(
-        (acc, [key, value]: [string, any]) => {
-          acc[key] = {
-            type: typeof value.type === "string" ? value.type : "string",
-            description: value.description || "",
-          };
-          return acc;
-        },
-        {} as Record<string, any>
-      ),
-      required: Object.keys(tool.input_schema),
-    },
+    input_schema: buildJsonSchema(tool.input_schema),
   }));
 }
 
@@ -133,8 +197,10 @@ export function validateToolCall(toolCall: AIToolCall): {
     return { valid: false, errors };
   }
 
-  // Check required inputs
-  const requiredInputs = Object.keys(tool.input_schema);
+  const requiredInputs = Object.entries(tool.input_schema)
+    .filter(([, param]) => (param as ToolParamSchema).required !== false)
+    .map(([key]) => key);
+
   for (const required of requiredInputs) {
     if (
       toolCall.input === undefined ||

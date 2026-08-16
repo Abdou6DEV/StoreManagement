@@ -1,7 +1,12 @@
 import { ipcMain } from "electron";
 import { buildSystemInstruction } from "../ai/systemInstructions";
+import { shouldAttachTools } from "../ai/shouldAttachTools";
 import { AI_MODELS } from "../../lib/ai/aiModels";
 import { executeToolCall, getToolsForAI } from "../ai/tools/toolExecutor";
+import {
+  compactToolResult,
+  getToolResultCharBudget,
+} from "../ai/tools/compactToolResult";
 import type { AIToolCall } from "../ai/tools/toolExecutor";
 
 type ChatMessage = {
@@ -9,9 +14,123 @@ type ChatMessage = {
   content: string;
 };
 
+type OpenAIToolCall = {
+  id: string;
+  type: "function";
+  function: {
+    name: string;
+    arguments: string;
+  };
+};
+
+type OpenAIChatMessage =
+  | ChatMessage
+  | {
+      role: "assistant";
+      content: string | null;
+      tool_calls: OpenAIToolCall[];
+    }
+  | {
+      role: "tool";
+      tool_call_id: string;
+      content: string;
+      name?: string;
+    };
+
 let conversationHistory: ChatMessage[] = [];
 let currentUserName: string | undefined;
 let selectedModelId: string | undefined;
+
+function modelTpm(modelId: string) {
+  return AI_MODELS.find((model) => model.id === modelId)?.tpm ?? null;
+}
+
+function modelSupportsToolCalling(modelId: string) {
+  return (
+    AI_MODELS.find((model) => model.id === modelId)?.capabilities.toolCalling ??
+    false
+  );
+}
+
+function systemInstructionForModel(modelId: string, userName?: string) {
+  return buildSystemInstruction(userName, {
+    canUseStoreTools: modelSupportsToolCalling(modelId),
+  });
+}
+
+function openAIToolOptions(messages: OpenAIChatMessage[], modelId: string) {
+  if (!modelSupportsToolCalling(modelId)) {
+    console.log(
+      `[AI] Tools not attached: ${modelId} does not support tool calling`
+    );
+    return {};
+  }
+
+  if (!shouldAttachTools(messages)) {
+    console.log("[AI] Tools not attached: message is not a store-data question");
+    return {};
+  }
+
+  return {
+    tools: toOpenAITools(),
+    tool_choice: "auto" as const,
+  };
+}
+
+function normalizeOpenAIToolCalls(toolCalls: any[]): OpenAIToolCall[] {
+  return toolCalls.map((toolCall, index) => {
+    const name = toolCall.function?.name ?? "unknown";
+    const args = toolCall.function?.arguments;
+
+    return {
+      id: toolCall.id || `call_${index}_${name}`,
+      type: "function",
+      function: {
+        name,
+        arguments:
+          typeof args === "string" ? args : JSON.stringify(args ?? {}),
+      },
+    };
+  });
+}
+
+function parseToolArguments(raw: string) {
+  try {
+    return JSON.parse(raw || "{}");
+  } catch {
+    return {};
+  }
+}
+
+function toOpenAIApiMessages(messages: OpenAIChatMessage[]) {
+  return messages.map((message) => {
+    if (message.role === "tool") {
+      return {
+        role: "tool" as const,
+        tool_call_id: message.tool_call_id,
+        name: message.name,
+        content: message.content,
+      };
+    }
+
+    if (
+      message.role === "assistant" &&
+      "tool_calls" in message &&
+      message.tool_calls
+    ) {
+      return {
+        role: "assistant" as const,
+        content: message.content,
+        tool_calls: message.tool_calls,
+      };
+    }
+
+    return {
+      role: message.role,
+      content: message.content ?? "",
+    };
+  });
+}
 
 function toGeminiContents(messages: ChatMessage[]) {
   return messages.map((message) => ({
@@ -25,14 +144,17 @@ function toGeminiTools() {
   const tools = getToolsForAI();
   return {
     functionDeclarations: tools.map((tool) => {
-      // Convert input_schema properties to Gemini format (uppercase types)
+      const schema = tool.input_schema;
       const geminiProperties: Record<string, any> = {};
-      Object.entries(tool.input_schema).forEach(([key, prop]: [string, any]) => {
-        geminiProperties[key] = {
-          type: (prop.type || "string").toUpperCase(),
-          description: prop.description || "",
-        };
-      });
+
+      Object.entries(schema.properties ?? {}).forEach(
+        ([key, prop]: [string, any]) => {
+          geminiProperties[key] = {
+            type: (prop.type || "string").toUpperCase(),
+            description: prop.description || "",
+          };
+        }
+      );
 
       return {
         name: tool.name,
@@ -40,7 +162,7 @@ function toGeminiTools() {
         parameters: {
           type: "OBJECT",
           properties: geminiProperties,
-          required: Object.keys(tool.input_schema), // All parameters are required
+          required: schema.required ?? [],
         },
       };
     }),
@@ -50,7 +172,8 @@ function toGeminiTools() {
 // Handle Gemini tool calls
 async function handleGeminiToolCalls(
   responseParts: any[],
-  messages: ChatMessage[]
+  messages: ChatMessage[],
+  maxResultChars: number
 ): Promise<{ hasToolCalls: boolean; finalText: string; updatedMessages: ChatMessage[] }> {
   let hasToolCalls = false;
   const assistantMessage = { role: "assistant" as const, content: "" };
@@ -79,15 +202,21 @@ async function handleGeminiToolCalls(
           input: toolInput,
         });
 
-        console.log(`[AI] Tool result: ${JSON.stringify(toolResult)}`);
+        const compacted = toolResult.success
+          ? compactToolResult(toolResult.result, maxResultChars)
+          : undefined;
 
-        // Add tool result to messages
+        console.log(
+          `[AI] Tool ${toolName} ${toolResult.success ? "succeeded" : "failed"}`
+        );
+
         updatedMessages.push({
           role: "user",
-          content: JSON.stringify({
-            toolName,
-            result: toolResult,
-          }),
+          content: JSON.stringify(
+            toolResult.success
+              ? { toolName, result: compacted }
+              : { toolName, error: toolResult.error }
+          ),
         });
       } catch (error) {
         console.error(`[AI] Tool execution error: ${error}`);
@@ -117,7 +246,7 @@ async function callGemini(
   apiKey: string,
   userName?: string
 ) {
-  let currentMessages = messages;
+  let currentMessages: ChatMessage[] = messages;
   let maxRetries = 5;
 
   while (maxRetries > 0) {
@@ -130,10 +259,13 @@ async function callGemini(
         },
         body: JSON.stringify({
           systemInstruction: {
-            parts: [{ text: buildSystemInstruction(userName) }],
+            parts: [{ text: systemInstructionForModel(modelId, userName) }],
           },
           contents: toGeminiContents(currentMessages),
-          tools: [toGeminiTools()],
+          ...(modelSupportsToolCalling(modelId) &&
+          shouldAttachTools(currentMessages)
+            ? { tools: [toGeminiTools()] }
+            : {}),
         }),
       }
     );
@@ -163,7 +295,8 @@ async function callGemini(
     // Handle tool calls
     const { hasToolCalls, finalText, updatedMessages } = await handleGeminiToolCalls(
       parts,
-      currentMessages
+      currentMessages,
+      getToolResultCharBudget(modelTpm(modelId))
     );
 
     if (!hasToolCalls) {
@@ -203,8 +336,13 @@ function toOpenAITools() {
 // Handle OpenAI-style tool calls (Mistral, Groq, OpenRouter)
 async function handleOpenAIToolCalls(
   message: any,
-  messages: ChatMessage[]
-): Promise<{ hasToolCalls: boolean; finalText: string; updatedMessages: ChatMessage[] }> {
+  messages: OpenAIChatMessage[],
+  maxResultChars: number
+): Promise<{
+  hasToolCalls: boolean;
+  finalText: string;
+  updatedMessages: OpenAIChatMessage[];
+}> {
   if (!message.tool_calls || message.tool_calls.length === 0) {
     return {
       hasToolCalls: false,
@@ -213,11 +351,19 @@ async function handleOpenAIToolCalls(
     };
   }
 
-  const updatedMessages = [...messages, { role: "assistant" as const, content: message.content ?? "" }];
+  const toolCalls = normalizeOpenAIToolCalls(message.tool_calls);
+  const updatedMessages: OpenAIChatMessage[] = [
+    ...messages,
+    {
+      role: "assistant",
+      content: message.content?.trim() ? message.content : null,
+      tool_calls: toolCalls,
+    },
+  ];
 
-  for (const toolCall of message.tool_calls) {
+  for (const toolCall of toolCalls) {
     const toolName = toolCall.function.name;
-    const toolInput = JSON.parse(toolCall.function.arguments || "{}");
+    const toolInput = parseToolArguments(toolCall.function.arguments);
 
     console.log(`[AI] Tool call requested: ${toolName}`);
 
@@ -227,19 +373,30 @@ async function handleOpenAIToolCalls(
         input: toolInput,
       });
 
-      console.log(`[AI] Tool result: ${JSON.stringify(toolResult)}`);
+      const compacted = toolResult.success
+        ? compactToolResult(toolResult.result, maxResultChars)
+        : undefined;
+
+      console.log(
+        `[AI] Tool ${toolName} ${toolResult.success ? "succeeded" : "failed"}`
+      );
 
       updatedMessages.push({
-        role: "user",
-        content: JSON.stringify({
-          toolName,
-          result: toolResult,
-        }),
+        role: "tool",
+        tool_call_id: toolCall.id,
+        name: toolName,
+        content: JSON.stringify(
+          toolResult.success
+            ? { toolName, result: compacted }
+            : { toolName, error: toolResult.error }
+        ),
       });
     } catch (error) {
       console.error(`[AI] Tool execution error: ${error}`);
       updatedMessages.push({
-        role: "user",
+        role: "tool",
+        tool_call_id: toolCall.id,
+        name: toolName,
         content: JSON.stringify({
           toolName,
           error: String(error),
@@ -261,7 +418,7 @@ async function callOpenRouter(
   apiKey: string,
   userName?: string
 ) {
-  let currentMessages = messages;
+  let currentMessages: OpenAIChatMessage[] = messages;
   let maxRetries = 5;
 
   while (maxRetries > 0) {
@@ -278,14 +435,11 @@ async function callOpenRouter(
         messages: [
           {
             role: "system",
-            content: buildSystemInstruction(userName),
+            content: systemInstructionForModel(modelId, userName),
           },
-          ...currentMessages.map((message) => ({
-            role: message.role,
-            content: message.content,
-          })),
+          ...toOpenAIApiMessages(currentMessages),
         ],
-        tools: toOpenAITools(),
+        ...openAIToolOptions(currentMessages, modelId),
       }),
     });
 
@@ -309,14 +463,15 @@ async function callOpenRouter(
     }
 
     // Check for regular text response
-    if (!message.tool_calls) {
+    if (!message.tool_calls?.length) {
       return message.content ?? "";
     }
 
     // Handle tool calls
     const { hasToolCalls, updatedMessages } = await handleOpenAIToolCalls(
       message,
-      currentMessages
+      currentMessages,
+      getToolResultCharBudget(modelTpm(modelId))
     );
 
     if (!hasToolCalls) {
@@ -336,7 +491,7 @@ async function callMistral(
   apiKey: string,
   userName?: string
 ) {
-  let currentMessages = messages;
+  let currentMessages: OpenAIChatMessage[] = messages;
   let maxRetries = 5;
 
   while (maxRetries > 0) {
@@ -353,14 +508,11 @@ async function callMistral(
           messages: [
             {
               role: "system",
-              content: buildSystemInstruction(userName),
+              content: systemInstructionForModel(modelId, userName),
             },
-            ...currentMessages.map((message) => ({
-              role: message.role,
-              content: message.content,
-            })),
+            ...toOpenAIApiMessages(currentMessages),
           ],
-          tools: toOpenAITools(),
+          ...openAIToolOptions(currentMessages, modelId),
         }),
       }
     );
@@ -385,14 +537,15 @@ async function callMistral(
     }
 
     // Check for regular text response
-    if (!message.tool_calls) {
+    if (!message.tool_calls?.length) {
       return message.content ?? "";
     }
 
     // Handle tool calls
     const { hasToolCalls, updatedMessages } = await handleOpenAIToolCalls(
       message,
-      currentMessages
+      currentMessages,
+      getToolResultCharBudget(modelTpm(modelId))
     );
 
     if (!hasToolCalls) {
@@ -412,7 +565,7 @@ async function callGroq(
   apiKey: string,
   userName?: string
 ) {
-  let currentMessages = messages;
+  let currentMessages: OpenAIChatMessage[] = messages;
   let maxRetries = 5;
 
   while (maxRetries > 0) {
@@ -429,14 +582,11 @@ async function callGroq(
           messages: [
             {
               role: "system",
-              content: buildSystemInstruction(userName),
+              content: systemInstructionForModel(modelId, userName),
             },
-            ...currentMessages.map((message) => ({
-              role: message.role,
-              content: message.content,
-            })),
+            ...toOpenAIApiMessages(currentMessages),
           ],
-          tools: toOpenAITools(),
+          ...openAIToolOptions(currentMessages, modelId),
         }),
       }
     );
@@ -461,14 +611,15 @@ async function callGroq(
     }
 
     // Check for regular text response
-    if (!message.tool_calls) {
+    if (!message.tool_calls?.length) {
       return message.content ?? "";
     }
 
     // Handle tool calls
     const { hasToolCalls, updatedMessages } = await handleOpenAIToolCalls(
       message,
-      currentMessages
+      currentMessages,
+      getToolResultCharBudget(modelTpm(modelId))
     );
 
     if (!hasToolCalls) {
@@ -482,21 +633,42 @@ async function callGroq(
 
   return "";
 }
-function isRetryableModelError(error: unknown) {
-  if (!(error instanceof Error)) return false;
+function unavailableReply(userMessage: string): string {
+  if (/[\u0600-\u06FF]/.test(userMessage)) {
+    return "ما قدرتش نكمّل الطلب دوكا. عاود حاول من بعد.";
+  }
 
-  const status = (error as Error & { status?: number }).status;
+  if (
+    /[àâäéèêëïîôùûüç]/i.test(userMessage) ||
+    /\b(bonjour|salut|merci|combien|s'il|est-ce|aujourd|vente|ventes|client|clients)\b/i.test(
+      userMessage
+    )
+  ) {
+    return "Je ne peux pas traiter cette demande pour le moment. Réessayez plus tard.";
+  }
 
-  return (
-    status === 429 ||
-    status === 500 ||
-    status === 502 ||
-    status === 503 ||
-    status === 504
-  );
+  return "I can't complete this request right now. Please try again later.";
 }
 
-async function callWithAutomaticModelSwitch(
+function modelsToTry(messages: ChatMessage[]) {
+  const needsStoreTools = shouldAttachTools(messages);
+  const byPriority = AI_MODELS.slice().sort((a, b) => a.priority - b.priority);
+  const eligible = needsStoreTools
+    ? byPriority.filter((model) => model.capabilities.toolCalling)
+    : byPriority;
+
+  if (!selectedModelId) {
+    return eligible;
+  }
+
+  const selected = eligible.find((model) => model.id === selectedModelId);
+  const rest = eligible.filter((model) => model.id !== selectedModelId);
+
+  return selected ? [selected, ...rest] : rest;
+}
+
+async function callModel(
+  model: (typeof AI_MODELS)[number],
   messages: ChatMessage[],
   userName?: string
 ) {
@@ -505,98 +677,71 @@ async function callWithAutomaticModelSwitch(
   const mistralKey = process.env.MISTRAL_API_KEY;
   const groqKey = process.env.GROQ_API_KEY;
 
-  const models = selectedModelId
-  ? AI_MODELS.filter((model) => model.id === selectedModelId)
-  : AI_MODELS.slice().sort((a, b) => a.priority - b.priority);
+  if (model.provider === "google") {
+    if (!geminiKey) {
+      throw new Error("GEMINI_API_KEY is not configured");
+    }
+    return callGemini(model.id, messages, geminiKey, userName);
+  }
 
-  let lastError: unknown;
+  if (model.provider === "mistral") {
+    if (!mistralKey) {
+      throw new Error("MISTRAL_API_KEY is not configured");
+    }
+    return callMistral(model.id, messages, mistralKey, userName);
+  }
+
+  if (model.provider === "openrouter") {
+    if (!openRouterKey) {
+      throw new Error("OPENROUTER_API_KEY is not configured");
+    }
+    return callOpenRouter(model.id, messages, openRouterKey, userName);
+  }
+
+  if (model.provider === "groq") {
+    if (!groqKey) {
+      throw new Error("GROQ_API_KEY is not configured");
+    }
+    return callGroq(model.id, messages, groqKey, userName);
+  }
+
+  throw new Error(`Unknown provider: ${model.provider}`);
+}
+
+async function callWithAutomaticModelSwitch(
+  messages: ChatMessage[],
+  userName?: string
+) {
+  const models = modelsToTry(messages);
+  const latestUserText =
+    [...messages].reverse().find((message) => message.role === "user")
+      ?.content ?? "";
 
   for (const model of models) {
     try {
-      console.log(
-        `[AI] 🔵 TRYING MODEL: ${model.provider}/${model.id}`
-      );
+      console.log(`[AI] TRYING MODEL: ${model.provider}/${model.id}`);
 
-      let reply: string;
+      const reply = await callModel(model, messages, userName);
 
-      if (model.provider === "google") {
-        if (!geminiKey) {
-          console.warn("[AI] GEMINI_API_KEY not configured. Skipping Gemini.");
-          continue;
-        }
-
-        reply = await callGemini(
-          model.id,
-          messages,
-          geminiKey,
-          userName
+      if (!reply?.trim()) {
+        console.warn(
+          `[AI] ${model.provider}/${model.id} returned an empty reply. Switching...`
         );
-      } else if (model.provider === "mistral") {
-        if (!mistralKey) {
-          console.warn("[AI] MISTRAL_API_KEY not configured. Skipping Mistral.");
-          continue;
-        }
-      
-        reply = await callMistral(
-          model.id,
-          messages,
-          mistralKey,
-          userName
-        );
-      } else if (model.provider === "openrouter") {
-        if (!openRouterKey) {
-          console.warn(
-            "[AI] OPENROUTER_API_KEY not configured. Skipping OpenRouter."
-          );
-          continue;
-        }
-
-        reply = await callOpenRouter(
-          model.id,
-          messages,
-          openRouterKey,
-          userName
-        );
-      } else if (model.provider === "groq") {
-        if (!groqKey) {
-          console.warn(
-            "[AI] GROQ_API_KEY not configured. Skipping Groq."
-          );
-          continue;
-        }
-      
-        reply = await callGroq(
-          model.id,
-          messages,
-          groqKey,
-          userName
-        );
-      } else {
-        console.warn(`[AI] Unknown provider:`);
         continue;
       }
 
-      console.log(
-        `[AI] ${model.provider}/${model.id} succeeded`
-      );
-
+      console.log(`[AI] ${model.provider}/${model.id} succeeded`);
       return reply;
     } catch (error) {
-      lastError = error;
-
-      if (isRetryableModelError(error)) {
-        console.warn(
-          `[AI] ${model.provider}/${model.id} unavailable. Switching...`
-        );
-
-        continue;
-      }
-
-      throw error;
+      console.warn(
+        `[AI] ${model.provider}/${model.id} failed. Switching...`,
+        error instanceof Error ? error.message : error
+      );
     }
   }
 
-  throw lastError ?? new Error("No AI model available");
+  console.error("[AI] All models failed");
+  return unavailableReply(latestUserText);
 }
 
 export function setupAIHandlers() {
@@ -684,8 +829,13 @@ export function setupAIHandlers() {
 
         return assistantReply;
       } catch (error) {
-        conversationHistory.pop();
-        throw error;
+        console.error("[AI] Chat failed after all models:", error);
+        const fallback = unavailableReply(message);
+        conversationHistory.push({
+          role: "assistant",
+          content: fallback,
+        });
+        return fallback;
       }
     }
   );

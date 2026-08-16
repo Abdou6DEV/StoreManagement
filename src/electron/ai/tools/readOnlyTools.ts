@@ -1340,8 +1340,8 @@ export const AI_TOOLS_REGISTRY = {
       "Get sales within a specific date range (e.g., today, this week, last month)",
     fn: tool_get_sales_by_date_range,
     input_schema: {
-      startDate: { type: "string | Date", description: "Start date (YYYY-MM-DD)" },
-      endDate: { type: "string | Date", description: "End date (YYYY-MM-DD)" },
+      startDate: { type: "string", description: "Start date (YYYY-MM-DD)" },
+      endDate: { type: "string", description: "End date (YYYY-MM-DD)" },
     },
   },
   get_sales_summary: {
@@ -1350,8 +1350,8 @@ export const AI_TOOLS_REGISTRY = {
       "Get summary statistics for sales in a date range (total, count, average, profit)",
     fn: tool_get_sales_summary,
     input_schema: {
-      startDate: { type: "string | Date", description: "Start date (YYYY-MM-DD)" },
-      endDate: { type: "string | Date", description: "End date (YYYY-MM-DD)" },
+      startDate: { type: "string", description: "Start date (YYYY-MM-DD)" },
+      endDate: { type: "string", description: "End date (YYYY-MM-DD)" },
     },
   },
   get_recent_sales: {
@@ -1359,9 +1359,9 @@ export const AI_TOOLS_REGISTRY = {
     description: "Get recent sales from the last N days (default: 7 days)",
     fn: tool_get_recent_sales,
     input_schema: {
-      limit: { type: "number", description: "Max results to return (default: 50)" },
-      offset: { type: "number", description: "Pagination offset (default: 0)" },
-      days: { type: "number", description: "Number of days to look back (default: 7)" },
+      limit: { type: "number", description: "Max results to return (default: 50)", required: false },
+      offset: { type: "number", description: "Pagination offset (default: 0)", required: false },
+      days: { type: "number", description: "Number of days to look back (default: 7)", required: false },
     },
   },
   get_sales_by_client: {
@@ -1386,7 +1386,7 @@ export const AI_TOOLS_REGISTRY = {
     fn: tool_search_sales,
     input_schema: {
       query: { type: "string", description: "Search query" },
-      filters: { type: "any", description: "Optional filters" },
+      filters: { type: "object", description: "Optional filters", required: false },
     },
   },
   get_product_sales_counts: {
@@ -1426,7 +1426,7 @@ export const AI_TOOLS_REGISTRY = {
       "Get products that haven't been sold in a specified period (default: 3 months)",
     fn: tool_get_unused_products,
     input_schema: {
-      periodMonths: { type: "number", description: "Period in months (default: 3)" },
+      periodMonths: { type: "number", description: "Period in months (default: 3)", required: false },
     },
   },
   get_low_stock_products: {
@@ -1434,7 +1434,7 @@ export const AI_TOOLS_REGISTRY = {
     description: "Get products with stock below a threshold (default: 5 units)",
     fn: tool_get_low_stock_products,
     input_schema: {
-      threshold: { type: "number", description: "Stock threshold (default: 5)" },
+      threshold: { type: "number", description: "Stock threshold (default: 5)", required: false },
     },
   },
   get_out_of_stock_products: {
@@ -1493,8 +1493,8 @@ export const AI_TOOLS_REGISTRY = {
     description: "Get payments within a date range",
     fn: tool_get_payments_by_date_range,
     input_schema: {
-      startDate: { type: "string | Date", description: "Start date (YYYY-MM-DD)" },
-      endDate: { type: "string | Date", description: "End date (YYYY-MM-DD)" },
+      startDate: { type: "string", description: "Start date (YYYY-MM-DD)" },
+      endDate: { type: "string", description: "End date (YYYY-MM-DD)" },
     },
   },
   get_overdue_payments: {
@@ -1553,8 +1553,8 @@ export const AI_TOOLS_REGISTRY = {
     description: "Get purchases within a date range",
     fn: tool_get_purchases_by_date_range,
     input_schema: {
-      startDate: { type: "string | Date", description: "Start date (YYYY-MM-DD)" },
-      endDate: { type: "string | Date", description: "End date (YYYY-MM-DD)" },
+      startDate: { type: "string", description: "Start date (YYYY-MM-DD)" },
+      endDate: { type: "string", description: "End date (YYYY-MM-DD)" },
     },
   },
   get_purchase_items_by_purchase: {
@@ -1620,7 +1620,7 @@ export const AI_TOOLS_REGISTRY = {
       "Get upcoming service appointments within N days (default: 7 days)",
     fn: tool_get_upcoming_service_appointments,
     input_schema: {
-      days: { type: "number", description: "Number of days ahead (default: 7)" },
+      days: { type: "number", description: "Number of days ahead (default: 7)", required: false },
     },
   },
   get_overdue_service_appointments: {
@@ -1740,12 +1740,12 @@ export const AI_TOOLS_REGISTRY = {
       "Get activity logs with optional filtering by user, date, or search term",
     fn: tool_get_activity_logs,
     input_schema: {
-      username: { type: "string", description: "Filter by username" },
-      dateFrom: { type: "string | Date", description: "Filter from date (YYYY-MM-DD)" },
-      dateTo: { type: "string | Date", description: "Filter to date (YYYY-MM-DD)" },
-      search: { type: "string", description: "Search in details and username" },
-      limit: { type: "number", description: "Max results to return" },
-      offset: { type: "number", description: "Pagination offset" },
+      username: { type: "string", description: "Filter by username", required: false },
+      dateFrom: { type: "string", description: "Filter from date (YYYY-MM-DD)", required: false },
+      dateTo: { type: "string", description: "Filter to date (YYYY-MM-DD)", required: false },
+      search: { type: "string", description: "Search in details and username", required: false },
+      limit: { type: "number", description: "Max results to return", required: false },
+      offset: { type: "number", description: "Pagination offset", required: false },
     },
   },
   get_activity_log_usernames: {

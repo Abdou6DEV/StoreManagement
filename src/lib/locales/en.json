@@ -2,6 +2,9 @@
   "app": {
     "initializing": "Starting application…"
   },
+  "ai": {
+    "requestUnavailable": "I can't complete this request right now. Please try again later."
+  },
   "dashboard": {
     "title": "Dashboard",
     "loading": "Loading Dashboard",

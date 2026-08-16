@@ -2,6 +2,9 @@
   "app": {
     "initializing": "Démarrage de l'application…"
   },
+  "ai": {
+    "requestUnavailable": "Je ne peux pas traiter cette demande pour le moment. Réessayez plus tard."
+  },
   "dashboard": {
     "title": "Tableau de bord",
     "loading": "Chargement du tableau de bord",
