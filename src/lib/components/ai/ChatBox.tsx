@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type PointerEvent } from "react";
 import { useLocation } from "react-router-dom";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { MessageSquarePlus, Minus, Move, SlidersHorizontal } from "lucide-react";
+import { MessageSquarePlus, Minus, SlidersHorizontal } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Thread } from "../assistant-ui/thread";
@@ -60,6 +60,10 @@ function loadSavedSize(): ChatSize {
     /* ignore */
   }
   return "default";
+}
+
+function grabHandleWidth(panelWidth: number): number {
+  return Math.round(Math.min(Math.max(panelWidth * 0.18, 40), 152));
 }
 
 function computePanelSize(preset: ChatSize): PanelSize {
@@ -342,6 +346,8 @@ export default function ChatBox() {
     localStorage.setItem(SIZE_KEY, value);
   };
 
+  const grabWidth = grabHandleWidth(panel.width);
+
   return (
     <>
       {isMainMenu && (
@@ -443,120 +449,142 @@ export default function ChatBox() {
         aria-hidden={!open}
         inert={!open || undefined}
       >
-        <div className="flex shrink-0 items-center justify-between border-b border-border/60 bg-background/95 px-4 py-3 backdrop-blur">
-          <div className="flex min-w-0 items-center gap-3">
-            <div className="relative h-10 w-10 shrink-0">
-              <span
-                aria-hidden
-                className="pointer-events-none absolute -inset-[3px] rounded-[14px] bg-primary/20 blur-[6px] animate-pulse"
-              />
-              <span
-                aria-hidden
-                className="pointer-events-none absolute -inset-px rounded-[13px] border border-primary/40"
-              />
-              <div className="relative h-10 w-10 overflow-hidden rounded-xl border border-border/50 bg-black shadow-sm">
-                <Orb
-                  hue={0}
-                  hoverIntensity={0.5}
-                  rotateOnHover
-                  forceHoverState={isRunning}
-                  backgroundColor="#000000"
-                />
-              </div>
-            </div>
-
-            <div className="min-w-0">
-              <div className="flex items-center gap-1.5">
-                <h3 className="truncate text-sm font-semibold tracking-tight">
-                  {t("ai.title", "REDA AI")}
-                </h3>
-                <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-[9px] font-medium tracking-wide text-primary uppercase">
-                  {t("ai.badge", "AI")}
-                </span>
-              </div>
-              <p className="truncate text-[11px] text-muted-foreground">
-                {t("ai.subtitle", "Your store assistant")}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex shrink-0 items-center gap-0.5">
-            <TooltipIconButton
-              tooltip={t("ai.moveHint", "Move chat / Double-click to reset")}
-              side="bottom"
-              className={`touch-none size-8 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground ${
-                dragging ? "cursor-grabbing" : "cursor-grab"
-              }`}
-              onPointerDown={handleDragStart}
-              onPointerMove={handleDragMove}
-              onPointerUp={handleDragEnd}
-              onPointerCancel={handleDragEnd}
-              onDoubleClick={handleResetPosition}
-            >
-              <Move className="h-4 w-4" />
-            </TooltipIconButton>
-
-            <TooltipIconButton
-              tooltip={t("ai.newChat", "New chat")}
-              side="bottom"
-              className="size-8 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
-              onClick={handleClearChat}
-            >
-              <MessageSquarePlus className="h-3.5 w-3.5" />
-            </TooltipIconButton>
-
-            <DropdownMenu open={prefsOpen} onOpenChange={setPrefsOpen}>
-              <TooltipProvider delayDuration={0}>
-                <Tooltip open={prefsOpen ? false : undefined}>
-                  <TooltipTrigger asChild>
-                    <DropdownMenuTrigger asChild>
-                      <button
-                        type="button"
-                        aria-label={t("ai.preferences", "Preferences")}
-                        className="inline-flex size-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
-                      >
-                        <SlidersHorizontal className="h-3.5 w-3.5" />
-                      </button>
-                    </DropdownMenuTrigger>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom">
-                    {t("ai.preferences", "Preferences")}
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-              <DropdownMenuContent
-                align="end"
-                className={`z-[120] w-48 ${i18n.language.startsWith("ar") ? "text-right" : ""}`}
-              >
-                <DropdownMenuLabel className="text-xs text-muted-foreground">
-                  {t("ai.chatSize", "Chat size")}
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuRadioGroup
-                  value={sizePreset}
-                  onValueChange={handleSizeChange}
+        <div className="relative shrink-0 border-b border-border/60 bg-background/95 backdrop-blur">
+          <TooltipProvider delayDuration={400}>
+            <Tooltip open={dragging ? false : undefined}>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  aria-label={t(
+                    "ai.moveHint",
+                    "Move chat / Double-click to reset",
+                  )}
+                  className={`group/pad absolute top-1 left-1/2 z-10 flex h-5 shrink-0 -translate-x-1/2 touch-none items-start justify-center ${
+                    dragging ? "cursor-grabbing" : "cursor-grab"
+                  }`}
+                  style={{ width: grabWidth }}
+                  onPointerDown={handleDragStart}
+                  onPointerMove={handleDragMove}
+                  onPointerUp={handleDragEnd}
+                  onPointerCancel={handleDragEnd}
+                  onDoubleClick={handleResetPosition}
                 >
-                  <DropdownMenuRadioItem value="default">
-                    {t("ai.sizeDefault", "Default")}
-                  </DropdownMenuRadioItem>
-                  <DropdownMenuRadioItem value="large">
-                    {t("ai.sizeLarge", "Large")}
-                  </DropdownMenuRadioItem>
-                  <DropdownMenuRadioItem value="half">
-                    {t("ai.sizeHalf", "Half screen")}
-                  </DropdownMenuRadioItem>
-                </DropdownMenuRadioGroup>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                  <span
+                    aria-hidden
+                    className={`block h-1 w-full rounded-full transition-colors ${
+                      dragging
+                        ? "bg-muted-foreground/70"
+                        : "bg-muted-foreground/35 group-hover/pad:bg-muted-foreground/55"
+                    }`}
+                  />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
+                {t("ai.moveHint", "Move chat / Double-click to reset")}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
 
-            <TooltipIconButton
-              tooltip={t("ai.minimize", "Minimize")}
-              side="bottom"
-              className="size-8 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
-              onClick={handleClose}
-            >
-              <Minus className="h-4 w-4" />
-            </TooltipIconButton>
+          <div className="flex items-center justify-between px-4 pt-4 pb-3 top-0">
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="relative h-10 w-10 shrink-0">
+                <span
+                  aria-hidden
+                  className="pointer-events-none absolute -inset-[3px] rounded-[14px] bg-primary/20 blur-[6px] animate-pulse"
+                />
+                <span
+                  aria-hidden
+                  className="pointer-events-none absolute -inset-px rounded-[13px] border border-primary/40"
+                />
+                <div className="relative h-10 w-10 overflow-hidden rounded-xl border border-border/50 bg-black shadow-sm">
+                  <Orb
+                    hue={0}
+                    hoverIntensity={0.5}
+                    rotateOnHover
+                    forceHoverState={isRunning}
+                    backgroundColor="#000000"
+                  />
+                </div>
+              </div>
+
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <h3 className="truncate text-sm font-semibold tracking-tight">
+                    {t("ai.title", "REDA AI")}
+                  </h3>
+                  <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-[9px] font-medium tracking-wide text-primary uppercase">
+                    {t("ai.badge", "AI")}
+                  </span>
+                </div>
+                <p className="truncate text-[11px] text-muted-foreground">
+                  {t("ai.subtitle", "Your store assistant")}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex shrink-0 items-center justify-end gap-0.5">
+              <TooltipIconButton
+                tooltip={t("ai.newChat", "New chat")}
+                side="bottom"
+                className="size-8 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+                onClick={handleClearChat}
+              >
+                <MessageSquarePlus className="h-3.5 w-3.5" />
+              </TooltipIconButton>
+
+              <DropdownMenu open={prefsOpen} onOpenChange={setPrefsOpen}>
+                <TooltipProvider delayDuration={0}>
+                  <Tooltip open={prefsOpen ? false : undefined}>
+                    <TooltipTrigger asChild>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          type="button"
+                          aria-label={t("ai.preferences", "Preferences")}
+                          className="inline-flex size-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+                        >
+                          <SlidersHorizontal className="h-3.5 w-3.5" />
+                        </button>
+                      </DropdownMenuTrigger>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom">
+                      {t("ai.preferences", "Preferences")}
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                <DropdownMenuContent
+                  align="end"
+                  className={`z-[120] w-48 ${i18n.language.startsWith("ar") ? "text-right" : ""}`}
+                >
+                  <DropdownMenuLabel className="text-xs text-muted-foreground">
+                    {t("ai.chatSize", "Chat size")}
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuRadioGroup
+                    value={sizePreset}
+                    onValueChange={handleSizeChange}
+                  >
+                    <DropdownMenuRadioItem value="default">
+                      {t("ai.sizeDefault", "Default")}
+                    </DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="large">
+                      {t("ai.sizeLarge", "Large")}
+                    </DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="half">
+                      {t("ai.sizeHalf", "Half screen")}
+                    </DropdownMenuRadioItem>
+                  </DropdownMenuRadioGroup>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              <TooltipIconButton
+                tooltip={t("ai.minimize", "Minimize")}
+                side="bottom"
+                className="size-8 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+                onClick={handleClose}
+              >
+                <Minus className="h-4 w-4" />
+              </TooltipIconButton>
+            </div>
           </div>
         </div>
 
