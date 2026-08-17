@@ -1,4 +1,5 @@
 import { ipcRenderer } from "electron";
+import type { AiChatResponse } from "../../lib/ai/aiChatTypes";
 
 export type AiWorkStatus = {
   phase: "thinking" | "tool" | "writing";
@@ -6,7 +7,7 @@ export type AiWorkStatus = {
 };
 
 export const aiAPI = {
-  chat: (message: string, userName?: string): Promise<string> =>
+  chat: (message: string, userName?: string): Promise<AiChatResponse> =>
     ipcRenderer.invoke("ai:chat", message, userName),
 
   clearChat: (): Promise<void> => ipcRenderer.invoke("ai:clear"),

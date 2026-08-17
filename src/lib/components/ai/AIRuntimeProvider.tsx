@@ -7,11 +7,14 @@ import {
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../contexts/authContext";
 import { createContext, useContext } from "react";
+import { formatStoreTableMarkdown } from "../../ai/formatStoreTable";
+import type { TFunction } from "i18next";
 
 const AIAdapter = (
   userName: string | undefined,
   unavailableMessage: string,
-  noMessage: string
+  noMessage: string,
+  t: TFunction
 ): ChatModelAdapter => ({
   async run({ messages }) {
     const latestUserMessage = [...messages]
@@ -50,12 +53,19 @@ const AIAdapter = (
         text,
         userName
       );
+      const payload =
+        typeof response === "string" ? { text: response } : response;
+      const tableMarkdown = payload.table
+        ? formatStoreTableMarkdown(payload.table, t)
+        : "";
 
       return {
         content: [
           {
             type: "text",
-            text: response,
+            text: tableMarkdown
+              ? `${payload.text}\n\n${tableMarkdown}`
+              : payload.text,
           },
         ],
       };
@@ -94,7 +104,8 @@ export function AIRuntimeProvider({
         "ai.requestUnavailable",
         "I can't complete this request right now. Please try again later."
       ),
-      t("ai.noMessage", "No message provided.")
+      t("ai.noMessage", "No message provided."),
+      t
     ),
     {
       unstable_enableMessageQueue: true,

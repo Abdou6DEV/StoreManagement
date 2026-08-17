@@ -8,6 +8,20 @@ import {
   getToolResultCharBudget,
 } from "../ai/tools/compactToolResult";
 import type { AIToolCall } from "../ai/tools/toolExecutor";
+import type { AiChatResponse } from "../../lib/ai/aiChatTypes";
+import { buildResultTable } from "../ai/buildResultTable";
+import {
+  formatCorrectionHint,
+  replyConflictsWithTotals,
+} from "../ai/verifyReplyNumbers";
+import {
+  isFollowUp,
+  mergeFollowUpInput,
+  snapshotStoreQuery,
+  unwrapFollowUpUserText,
+  withFollowUpContext,
+  type LastStoreQuery,
+} from "../ai/storeQueryMemory";
 
 type ChatMessage = {
   role: "user" | "assistant";
@@ -82,6 +96,8 @@ type WorkStatus = {
 let conversationHistory: ChatMessage[] = [];
 let currentUserName: string | undefined;
 let selectedModelId: string | undefined;
+let lastStoreQuery: LastStoreQuery | null = null;
+let reuseLastQuery = false;
 const skippedUntil = new Map<string, number>();
 let statusSink: ((status: WorkStatus) => void) | null = null;
 
@@ -399,10 +415,13 @@ async function runOneTool(
     };
   }
 
-  const input =
+  const rawInput =
     toolInput && typeof toolInput === "object" && !Array.isArray(toolInput)
-      ? toolInput
+      ? (toolInput as Record<string, unknown>)
       : {};
+  const input = reuseLastQuery
+    ? mergeFollowUpInput(toolName, rawInput, lastStoreQuery)
+    : rawInput;
 
   console.log(`[AI] Tool call requested: ${toolName}`);
   emitWorkStatus({ phase: "tool", toolName });
@@ -421,12 +440,14 @@ async function runOneTool(
   );
 
   if (toolResult.success) {
+    const response =
+      compacted && typeof compacted === "object" && !Array.isArray(compacted)
+        ? (compacted as Record<string, unknown>)
+        : { result: compacted };
+    lastStoreQuery = snapshotStoreQuery(toolName, input, response);
     return {
       name: toolName,
-      response:
-        compacted && typeof compacted === "object" && !Array.isArray(compacted)
-          ? (compacted as Record<string, unknown>)
-          : { result: compacted },
+      response,
     };
   }
 
@@ -583,7 +604,7 @@ async function callGemini(
           role: "user",
           parts: [
             {
-              text: "Answer the user using only the function results. Copy totals and breakdown. Do not invent numbers.",
+              text: "Answer the user using only the function results. Copy totals and breakdown. Do not invent numbers. If the user wrote Algerian Darija (including Latin/franco-arabe), reply in Algerian Darija using Arabic script only.",
             },
           ],
         },
@@ -906,8 +927,11 @@ async function callGroq(
 
   return { text: "", toolResults };
 }
+const LATIN_DARIJA =
+  /\b(wesh|wach|wash|labas|ch7al|chhal|9adeh|9adach|qdash|qadech|lyoum|lyum|bghit|3and|3ndi|3andek|wrili|wrini|sahbi|khoya|raki|rakom|dirli|goli|golia|winah|inchallah|inshallah)\b/i;
+
 function unavailableReply(userMessage: string): string {
-  if (/[\u0600-\u06FF]/.test(userMessage)) {
+  if (/[\u0600-\u06FF]/.test(userMessage) || LATIN_DARIJA.test(userMessage)) {
     return "ما قدرتش نكمّل الطلب دوكا. عاود حاول من بعد.";
   }
 
@@ -1001,7 +1025,7 @@ async function writeListWithStrongerModel(
     {
       role: "user",
       content:
-        "STORE_DATA below is already computed from the database. Amounts are DA. Write the user's answer as a clear list from STORE_DATA. Copy totals exactly. Do not invent or omit named rows that are present. At most 70 items. Same language as the user.\n\n" +
+        "STORE_DATA below is already computed from the database. Amounts are DA. Write the user's answer as a clear list from STORE_DATA. Copy totals exactly. Do not invent or omit named rows that are present. At most 70 items. Same language as the user. If they wrote Algerian Darija (Latin or Arabic script), write in Algerian Darija using Arabic script only — never Latin/franco-arabe, never فصحى.\n\n" +
         JSON.stringify(toolResults),
     },
   ];
@@ -1031,14 +1055,57 @@ async function writeListWithStrongerModel(
   return null;
 }
 
+async function rewriteWrongNumbers(
+  userText: string,
+  draft: string,
+  toolResults: unknown[],
+  userName?: string
+): Promise<string> {
+  if (!replyConflictsWithTotals(draft, toolResults)) return draft;
+
+  console.log("[AI] Reply numbers conflict with tool totals; rewriting once");
+  const models = AI_MODELS.filter(
+    (model) => !isModelSkipped(model.id)
+  ).sort((a, b) => a.priority - b.priority);
+
+  const messages: ChatMessage[] = [
+    { role: "user", content: userText },
+    { role: "user", content: formatCorrectionHint(toolResults) },
+  ];
+
+  for (const model of models) {
+    try {
+      const turn = await callModel(model, messages, userName, {
+        disableTools: true,
+      });
+      if (turn.text?.trim() && !replyConflictsWithTotals(turn.text, toolResults)) {
+        console.log(`[AI] Number rewrite succeeded with ${model.id}`);
+        return turn.text;
+      }
+    } catch (error) {
+      const status = (error as Error & { status?: number }).status;
+      if (status === 429 || status === 404) {
+        skipModel(model.id, status);
+      }
+      console.warn(
+        `[AI] Number rewrite ${model.id} failed`,
+        error instanceof Error ? error.message : error
+      );
+    }
+  }
+
+  return draft;
+}
+
 async function callWithAutomaticModelSwitch(
   messages: ChatMessage[],
   userName?: string
-) {
+): Promise<{ text: string; toolResults: unknown[] }> {
   const models = modelsToTry(messages);
-  const latestUserText =
+  const latestUserText = unwrapFollowUpUserText(
     [...messages].reverse().find((message) => message.role === "user")
-      ?.content ?? "";
+      ?.content ?? ""
+  );
 
   for (const model of models) {
     try {
@@ -1053,7 +1120,11 @@ async function callWithAutomaticModelSwitch(
         continue;
       }
 
-      if (shouldHandoffList(latestUserText, turn.toolResults, model)) {
+      const table = buildResultTable(turn.toolResults, latestUserText);
+      if (
+        !table &&
+        shouldHandoffList(latestUserText, turn.toolResults, model)
+      ) {
         const rows = turn.toolResults.reduce(
           (max: number, result) => Math.max(max, listedRowCount(result)),
           0
@@ -1068,7 +1139,7 @@ async function callWithAutomaticModelSwitch(
           userName
         );
         if (written?.trim()) {
-          return written;
+          return { text: written, toolResults: turn.toolResults };
         }
         console.warn(
           `[AI] List handoff failed; using ${model.id} reply`
@@ -1076,7 +1147,7 @@ async function callWithAutomaticModelSwitch(
       }
 
       console.log(`[AI] ${model.provider}/${model.id} succeeded`);
-      return turn.text;
+      return { text: turn.text, toolResults: turn.toolResults };
     } catch (error) {
       const status = (error as Error & { status?: number }).status;
       if (status === 429 || status === 404) {
@@ -1090,7 +1161,7 @@ async function callWithAutomaticModelSwitch(
   }
 
   console.error("[AI] All models failed");
-  return unavailableReply(latestUserText);
+  return { text: unavailableReply(latestUserText), toolResults: [] };
 }
 
 export function setupAIHandlers() {
@@ -1165,6 +1236,7 @@ export function setupAIHandlers() {
         content: message,
       });
       conversationHistory = windowConversation(conversationHistory);
+      reuseLastQuery = Boolean(lastStoreQuery && isFollowUp(message));
 
       const sender = event.sender;
       statusSink = (status) => {
@@ -1173,8 +1245,19 @@ export function setupAIHandlers() {
       emitWorkStatus({ phase: "thinking" });
 
       try {
-        const assistantReply = await callWithAutomaticModelSwitch(
+        const modelMessages = withFollowUpContext(
           conversationHistory,
+          lastStoreQuery,
+          message
+        );
+        const outcome = await callWithAutomaticModelSwitch(
+          modelMessages,
+          currentUserName
+        );
+        const assistantReply = await rewriteWrongNumbers(
+          message,
+          outcome.text,
+          outcome.toolResults,
           currentUserName
         );
 
@@ -1184,7 +1267,11 @@ export function setupAIHandlers() {
         });
         conversationHistory = windowConversation(conversationHistory);
 
-        return assistantReply;
+        const response: AiChatResponse = {
+          text: assistantReply,
+          table: buildResultTable(outcome.toolResults, message) ?? undefined,
+        };
+        return response;
       } catch (error) {
         console.error("[AI] Chat failed after all models:", error);
         const fallback = unavailableReply(message);
@@ -1193,8 +1280,9 @@ export function setupAIHandlers() {
           content: fallback,
         });
         conversationHistory = windowConversation(conversationHistory);
-        return fallback;
+        return { text: fallback } satisfies AiChatResponse;
       } finally {
+        reuseLastQuery = false;
         statusSink = null;
       }
     }
@@ -1203,6 +1291,8 @@ export function setupAIHandlers() {
   ipcMain.handle("ai:clear", async () => {
     conversationHistory = [];
     currentUserName = undefined;
+    lastStoreQuery = null;
+    reuseLastQuery = false;
   });
 
   ipcMain.handle("ai:list-models", async () => {

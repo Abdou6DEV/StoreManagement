@@ -500,7 +500,10 @@ export type ActivityLogAPI = {
   cleanupOld: () => Promise<number>;
 };
 export interface AIAPI {
-  chat: (message: string, userName?: string) => Promise<string>;
+  chat: (
+    message: string,
+    userName?: string
+  ) => Promise<import("../../lib/ai/aiChatTypes").AiChatResponse>;
   clearChat: () => Promise<void>;
   onStatus: (
     callback: (status: {

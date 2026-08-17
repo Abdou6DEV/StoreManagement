@@ -152,6 +152,17 @@ function isZakatQuery(q?: string): boolean {
   return text === "zakat" || text === "zakaat" || text.includes("زكاة");
 }
 
+function isOutstandingClientQuery(q?: string): boolean {
+  const text = q?.trim().toLowerCase() ?? "";
+  if (!text) return false;
+  return (
+    /^(credit|credits|crédit|crédits|unpaid|outstanding|owe|owes|debt|impay[ée]s?|creance|créance)$/i.test(
+      text
+    ) ||
+    /(رصيد|دين|سلفة|يسلف|مدين)/.test(text)
+  );
+}
+
 function todayYmd() {
   return localYmdFromDate(new Date());
 }
@@ -1415,16 +1426,19 @@ export async function tool_find(input: {
 
     if (type === "client") {
       const clients = await clientsDb.getAllClientsWithTotalPurchases();
-      const matched = (q
+      const outstandingOnly = isOutstandingClientQuery(q);
+      const filtered = outstandingOnly
         ? clients.filter(
-            (client) => matchesQ(client.name, q) || matchesQ(client.phone, q)
-          )
-        : clients.filter(
             (client) =>
               Number(client.totalCredit || 0) > 0 ||
               Number(client.totalVersement || 0) > 0
           )
-      ).map((client) => {
+        : q
+          ? clients.filter(
+              (client) => matchesQ(client.name, q) || matchesQ(client.phone, q)
+            )
+          : clients;
+      const matched = filtered.map((client) => {
         const clientsOweYou = Number(client.totalCredit || 0);
         const youOweClients = Number(client.totalVersement || 0);
         return {
@@ -1446,24 +1460,36 @@ export async function tool_find(input: {
         (sum, client) => sum + client.youOweClients,
         0
       );
+      const outstandingCount = matched.filter(
+        (client) => client.clientsOweYou > 0 || client.youOweClients > 0
+      ).length;
+      const sorted = outstandingOnly
+        ? matched
+            .slice()
+            .sort(
+              (a, b) =>
+                b.clientsOweYou +
+                b.youOweClients -
+                (a.clientsOweYou + a.youOweClients)
+            )
+        : matched
+            .slice()
+            .sort((a, b) => a.name.localeCompare(b.name));
       return ok({
         type: "client",
         q: q || null,
         totals: {
           matchCount: matched.length,
+          outstandingCount,
           clientsOweYou,
           youOweClients,
           totalCredit: clientsOweYou,
           totalVersement: youOweClients,
         },
-        matches: matched
-          .slice()
-          .sort(
-            (a, b) =>
-              b.clientsOweYou + b.youOweClients - (a.clientsOweYou + a.youOweClients)
-          )
-          .slice(0, SAMPLE_LIMIT),
-        rule: "CREDIT = clientsOweYou (they owe you). VERSEMENT = youOweClients (deposit you hold). Never mix or subtract them. Copy totals. Do not count matches.",
+        matches: sorted.slice(0, SAMPLE_LIMIT),
+        rule: outstandingOnly
+          ? "This is the CREDIT/VERSEMENT slice only. CREDIT = clientsOweYou. VERSEMENT = youOweClients. Copy totals.matchCount for how many of these clients. Never mix the two amounts."
+          : "Copy totals.matchCount for how many clients. That is all clients, not only credit. clientsOweYou / youOweClients are money, not a client count. For who owes you, call again with q=credit.",
       });
     }
 
@@ -1781,7 +1807,7 @@ export const AI_TOOLS_REGISTRY: Record<string, ToolDef> = {
   find: {
     name: "find",
     description:
-      "Look up products, clients, suppliers (sellers), or sales by name/brand/barcode/category. For products, returns in-stock rows to list (name, quantity). If q matches a stock category, only that category — not names that merely contain those letters. Use for listing stock, who owes you (CREDIT=clientsOweYou), deposits you hold (VERSEMENT=youOweClients), supplier phone, barcode lookup. Omit q for type=client to list outstanding CREDIT/VERSEMENT, or type=seller for all suppliers. Copy totals; for type=product list the matches array.",
+      "Look up products, clients, suppliers (sellers), or sales by name/brand/barcode/category. For products, returns in-stock rows to list (name, quantity). If q matches a stock category, only that category — not names that merely contain those letters. type=client with no q = ALL clients (totals.matchCount). type=client q=credit = CREDIT/VERSEMENT only (who owes you / deposits). q=name looks up one client. Omit q for type=seller to list all suppliers. Copy totals; for type=product list the matches array.",
     fn: tool_find,
     input_schema: {
       type: {
@@ -1792,7 +1818,7 @@ export const AI_TOOLS_REGISTRY: Record<string, ToolDef> = {
       q: {
         type: "string",
         description:
-          "Name, brand, barcode, category, client phone, sale text, or supplier. For products, a matching stock category is used instead of substring names. Omit for outstanding clients when type=client, or a full supplier list when type=seller.",
+          "Name, brand, barcode, category, client phone, sale text, or supplier. For type=client: omit for ALL clients; q=credit for outstanding CREDIT/VERSEMENT only. For products, a matching stock category is used instead of substring names. Omit for a full supplier list when type=seller.",
         required: false,
       },
     },
