@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import type { FileMessagePartComponent } from "@assistant-ui/react";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 
 const fileVariants = cva(
   "aui-file-root inline-flex items-center gap-3 rounded-lg transition-colors",
@@ -140,13 +141,14 @@ function FileName({
   children,
   ...props
 }: React.ComponentProps<"span">) {
+  const { t } = useTranslation();
   return (
     <span
       data-slot="file-name"
       className={cn("min-w-0 flex-1 truncate font-medium", className)}
       {...props}
     >
-      {children || "Unnamed file"}
+      {children || t("ai.unnamedFile", "Unnamed file")}
     </span>
   );
 }

@@ -34,7 +34,6 @@ import {
   ErrorPrimitive,
   groupPartByType,
   MessagePrimitive,
-  SuggestionPrimitive,
   ThreadPrimitive,
   type FileMessagePartComponent,
   type ImageMessagePartComponent,
@@ -65,6 +64,7 @@ import {
   type FC,
   type PropsWithChildren,
 } from "react";
+import { useTranslation } from "react-i18next";
 
 type AIModel = {
   id: string;
@@ -74,6 +74,7 @@ type AIModel = {
     webSearch: boolean;
     generalChat: boolean;
     storeData: boolean;
+    listWriter?: boolean;
   };
   priority: number;
 };
@@ -194,10 +195,11 @@ const ThreadMessage: FC = () => {
 };
 
 const ThreadScrollToBottom: FC = () => {
+  const { t } = useTranslation();
   return (
     <ThreadPrimitive.ScrollToBottom asChild>
       <TooltipIconButton
-        tooltip="Scroll to bottom"
+        tooltip={t("ai.scrollToBottom", "Scroll to bottom")}
         variant="outline"
         className="aui-thread-scroll-to-bottom dark:border-border dark:bg-background dark:hover:bg-accent absolute -top-12 z-[9999] self-center rounded-full p-4 disabled:invisible"
       >
@@ -208,53 +210,66 @@ const ThreadScrollToBottom: FC = () => {
 };
 
 const ThreadWelcome: FC = () => {
+  const { t } = useTranslation();
   return (
     <div className="aui-thread-welcome-root mb-6 flex flex-col items-center px-4 text-center">
-      <div
-        aria-hidden="true"
-         className="pointer-events-none absolute left-1/2 top-[calc(50%+40px)] h-24 w-[360px] -translate-x-1/2 -translate-y-1/2 rounded-[2rem] opacity-50 blur-[18px] [background:linear-gradient(90deg,#4285f4,#34a853,#fbbc05,#ea4335,#a142f4,#4285f4)]"
-      />
-
       <h1 className="aui-thread-welcome-message-inner fade-in slide-in-from-bottom-1 animate-in fill-mode-both text-2xl font-semibold duration-200">
-        How can I help you today?
+        {t("ai.welcomeTitle", "How can I help you today?")}
       </h1>
 
       <p className="mt-2 max-w-sm text-sm text-muted-foreground">
-        Ask me anything about your store, products, sales, inventory, or more.
+        {t(
+          "ai.welcomeSubtitle",
+          "Ask me anything about your store, products, sales, inventory, or more.",
+        )}
       </p>
     </div>
   );
 };
 
 const ThreadSuggestions: FC = () => {
-  return (
-    <div className="aui-thread-welcome-suggestions flex w-full flex-wrap items-center justify-center gap-2 px-4">
-      <ThreadPrimitive.Suggestions>
-        {() => <ThreadSuggestionItem />}
-      </ThreadPrimitive.Suggestions>
-    </div>
-  );
-};
+  const { t } = useTranslation();
+  const suggestions = [
+    t("ai.suggestions.sales", "How much did I sell today?"),
+    t("ai.suggestions.stock", "Which products are low on stock?"),
+    t("ai.suggestions.profit", "What’s my profit today?"),
+  ];
 
-const ThreadSuggestionItem: FC = () => {
   return (
-    <div className="aui-thread-welcome-suggestion-display fade-in slide-in-from-bottom-2 animate-in fill-mode-both duration-200">
-      <SuggestionPrimitive.Trigger send asChild>
-        <Button
-          variant="ghost"
-          className="aui-thread-welcome-suggestion text-foreground hover:bg-muted border-border/60 h-auto gap-1.5 rounded-full border px-3.5 py-1.5 text-sm font-normal whitespace-nowrap transition-colors"
+    <div className="aui-thread-welcome-suggestions flex w-full flex-wrap items-center justify-center gap-2 px-1">
+      {suggestions.map((prompt, index) => (
+        <ThreadPrimitive.Suggestion
+          key={prompt}
+          prompt={prompt}
+          method="replace"
+          autoSend
+          className={cn(
+            "aui-thread-welcome-suggestion text-foreground hover:bg-muted/80 border-border/60",
+            "h-auto rounded-full border bg-background/80 px-3.5 py-1.5 text-sm font-normal",
+            "shadow-sm backdrop-blur-sm whitespace-nowrap transition-colors",
+            "fade-in slide-in-from-bottom-2 animate-in fill-mode-both duration-300",
+          )}
+          style={{ animationDelay: `${index * 90}ms` }}
         >
-          <SuggestionPrimitive.Title className="aui-thread-welcome-suggestion-text-1" />
-          <SuggestionPrimitive.Description className="aui-thread-welcome-suggestion-text-2 empty:hidden" />
-        </Button>
-      </SuggestionPrimitive.Trigger>
+          {prompt}
+        </ThreadPrimitive.Suggestion>
+      ))}
     </div>
   );
 };
 
 const Composer: FC = () => {
+  const { t } = useTranslation();
+  const isEmpty = useAuiState(isNewChatView);
+
   return (
-    <ComposerPrimitive.Root className="aui-composer-root relative flex w-full flex-col">
+    <ComposerPrimitive.Root className="aui-composer-root relative z-0 flex w-full flex-col overflow-visible">
+      {isEmpty && (
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 -z-10 rounded-(--composer-radius) opacity-90 blur-[8px] [background:conic-gradient(from_0deg,#9c43fe,#c084fc,#8b5cf6,#60a5fa,#38bdf8,#4cc2e9,#6366f1,#101499,#9c43fe)]"
+        />
+      )}
       <ComposerPrimitive.AttachmentDropzone asChild>
         <div
           data-slot="aui_composer-shell"
@@ -262,12 +277,12 @@ const Composer: FC = () => {
         >
           <ComposerAttachments />
           <ComposerPrimitive.Input
-            placeholder="Send a message..."
+            placeholder={t("ai.placeholder", "Send a message...")}
             className="aui-composer-input caret-primary placeholder:text-muted-foreground/80 max-h-32 min-h-10 w-full resize-none bg-transparent px-2.5 py-1 text-base outline-none"
             rows={1}
             autoFocus
             enterKeyHint="send"
-            aria-label="Message input"
+            aria-label={t("ai.messageInput", "Message input")}
           />
           <ComposerAction />
         </div>
@@ -277,6 +292,7 @@ const Composer: FC = () => {
 };
 
 const ComposerAction: FC = () => {
+  const { t } = useTranslation();
   const [models, setModels] = useState<AIModel[]>([]);
   const [selectedModel, setSelectedModel] = useState<string | null>(null);
   const [modelOpen, setModelOpen] = useState(false);
@@ -314,7 +330,7 @@ const ComposerAction: FC = () => {
     ? selectedModelData.provider === "google"
       ? `Google — ${selectedModelData.id}`
       : `${selectedModelData.provider} — ${selectedModelData.id}`
-    : "Automatic";
+    : t("ai.automatic", "Automatic");
 
   return (
     <div className="aui-composer-action-wrapper flex w-full items-center justify-between">
@@ -336,7 +352,7 @@ const ComposerAction: FC = () => {
               "focus:outline-none focus:ring-1 focus:ring-primary/20",
               modelOpen && "bg-muted/70 text-foreground",
             )}
-            aria-label="Select AI model"
+            aria-label={t("ai.selectModel", "Select AI model")}
             aria-expanded={modelOpen}
           >
             <span className="truncate">
@@ -357,7 +373,7 @@ const ComposerAction: FC = () => {
               {/* Invisible click-away layer */}
               <button
                 type="button"
-                aria-label="Close model selector"
+                aria-label={t("ai.closeModelSelector", "Close model selector")}
                 className="fixed inset-0 z-[9998] cursor-default"
                 onClick={() => setModelOpen(false)}
               />
@@ -374,7 +390,7 @@ const ComposerAction: FC = () => {
               >
                 <div className="border-b border-border/50 px-3 py-2">
                   <p className="text-[10px] font-medium text-muted-foreground">
-                    AI MODEL
+                    {t("ai.modelHeading", "AI MODEL")}
                   </p>
                 </div>
 
@@ -395,10 +411,10 @@ const ComposerAction: FC = () => {
                   >
                     <div className="flex min-w-0 flex-col">
                       <span className="font-medium">
-                        Automatic
+                        {t("ai.automatic", "Automatic")}
                       </span>
                       <span className="text-[9px] text-muted-foreground">
-                        Let REDA AI choose
+                        {t("ai.automaticHint", "Let REDA AI choose")}
                       </span>
                     </div>
 
@@ -441,8 +457,8 @@ const ComposerAction: FC = () => {
 
                           <span className="text-[9px] text-muted-foreground">
                             {model.capabilities.webSearch
-                              ? "Web search available"
-                              : "General AI"}
+                              ? t("ai.webSearch", "Web search available")
+                              : t("ai.generalAi", "General AI")}
                           </span>
                         </div>
 
@@ -455,7 +471,7 @@ const ComposerAction: FC = () => {
 
                   {models.length === 0 && (
                     <div className="px-2.5 py-3 text-center text-[10px] text-muted-foreground">
-                      No models available
+                      {t("ai.noModels", "No models available")}
                     </div>
                   )}
                 </div>
@@ -469,13 +485,13 @@ const ComposerAction: FC = () => {
           <AuiIf condition={(s) => s.composer.dictation == null}>
             <ComposerPrimitive.Dictate asChild>
               <TooltipIconButton
-                tooltip="Voice input"
+                tooltip={t("ai.voiceInput", "Voice input")}
                 side="bottom"
                 type="button"
                 variant="ghost"
                 size="icon"
                 className="aui-composer-dictate size-7 rounded-full"
-                aria-label="Start voice input"
+                aria-label={t("ai.startVoice", "Start voice input")}
               >
                 <MicIcon className="aui-composer-dictate-icon size-4" />
               </TooltipIconButton>
@@ -485,13 +501,13 @@ const ComposerAction: FC = () => {
           <AuiIf condition={(s) => s.composer.dictation != null}>
             <ComposerPrimitive.StopDictation asChild>
               <TooltipIconButton
-                tooltip="Stop dictation"
+                tooltip={t("ai.stopDictation", "Stop dictation")}
                 side="bottom"
                 type="button"
                 variant="ghost"
                 size="icon"
                 className="aui-composer-stop-dictation text-destructive size-7 rounded-full"
-                aria-label="Stop dictation"
+                aria-label={t("ai.stopDictation", "Stop dictation")}
               >
                 <SquareIcon className="aui-composer-stop-dictation-icon size-3.5 animate-pulse fill-current" />
               </TooltipIconButton>
@@ -505,13 +521,13 @@ const ComposerAction: FC = () => {
         <AuiIf condition={(s) => !s.thread.isRunning}>
           <ComposerPrimitive.Send asChild>
             <TooltipIconButton
-              tooltip="Send message"
+              tooltip={t("ai.send", "Send message")}
               side="bottom"
               type="button"
               variant="default"
               size="icon"
               className="aui-composer-send size-7 rounded-full"
-              aria-label="Send message"
+              aria-label={t("ai.send", "Send message")}
             >
               <ArrowUpIcon className="aui-composer-send-icon size-4.5" />
             </TooltipIconButton>
@@ -525,7 +541,7 @@ const ComposerAction: FC = () => {
               variant="default"
               size="icon"
               className="aui-composer-cancel size-7 rounded-full"
-              aria-label="Stop generating"
+              aria-label={t("ai.stopGenerating", "Stop generating")}
             >
               <SquareIcon className="aui-composer-cancel-icon size-3.5 fill-current" />
             </Button>
@@ -547,6 +563,7 @@ const MessageError: FC = () => {
 };
 
 const AssistantMessage: FC = () => {
+  const { t } = useTranslation();
   const {
     ToolFallback: ToolFallbackComponent = ToolFallback,
     ToolGroup,
@@ -632,7 +649,7 @@ const AssistantMessage: FC = () => {
                   <span
                     data-slot="aui_assistant-message-indicator"
                     className="animate-pulse font-sans"
-                    aria-label="Assistant is working"
+                    aria-label={t("ai.working", "Assistant is working")}
                   >
                     {"●"}
                   </span>
@@ -657,6 +674,7 @@ const AssistantMessage: FC = () => {
 };
 
 const AssistantActionBar: FC = () => {
+  const { t } = useTranslation();
   return (
     <ActionBarPrimitive.Root
       hideWhenRunning
@@ -664,7 +682,7 @@ const AssistantActionBar: FC = () => {
       className="aui-assistant-action-bar-root text-muted-foreground animate-in fade-in col-start-3 row-start-2 -ms-1 flex gap-1 duration-200"
     >
       <ActionBarPrimitive.Copy asChild>
-        <TooltipIconButton tooltip="Copy">
+        <TooltipIconButton tooltip={t("common.copy", "Copy")}>
           <AuiIf condition={(s) => s.message.isCopied}>
             <CheckIcon className="animate-in zoom-in-50 fade-in duration-200 ease-out" />
           </AuiIf>
@@ -674,14 +692,14 @@ const AssistantActionBar: FC = () => {
         </TooltipIconButton>
       </ActionBarPrimitive.Copy>
       <ActionBarPrimitive.Reload asChild>
-        <TooltipIconButton tooltip="Refresh">
+        <TooltipIconButton tooltip={t("common.refresh", "Refresh")}>
           <RefreshCwIcon />
         </TooltipIconButton>
       </ActionBarPrimitive.Reload>
       <ActionBarMorePrimitive.Root>
         <ActionBarMorePrimitive.Trigger asChild>
           <TooltipIconButton
-            tooltip="More"
+            tooltip={t("ai.more", "More")}
             className="data-[state=open]:bg-accent"
           >
             <MoreHorizontalIcon />
@@ -696,7 +714,7 @@ const AssistantActionBar: FC = () => {
           <ActionBarPrimitive.ExportMarkdown asChild>
             <ActionBarMorePrimitive.Item className="aui-action-bar-more-item hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground flex cursor-pointer items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm outline-none select-none">
               <DownloadIcon className="size-4" />
-              Export as Markdown
+              {t("ai.exportMarkdown", "Export as Markdown")}
             </ActionBarMorePrimitive.Item>
           </ActionBarPrimitive.ExportMarkdown>
         </ActionBarMorePrimitive.Content>
@@ -746,6 +764,7 @@ const UserMessage: FC = () => {
 };
 
 const UserActionBar: FC = () => {
+  const { t } = useTranslation();
   return (
     <ActionBarPrimitive.Root
       hideWhenRunning
@@ -753,7 +772,7 @@ const UserActionBar: FC = () => {
       className="aui-user-action-bar-root flex flex-col items-end"
     >
       <ActionBarPrimitive.Edit asChild>
-        <TooltipIconButton tooltip="Edit" className="aui-user-action-edit">
+        <TooltipIconButton tooltip={t("ai.edit", "Edit")} className="aui-user-action-edit">
           <PencilIcon />
         </TooltipIconButton>
       </ActionBarPrimitive.Edit>
@@ -762,6 +781,7 @@ const UserActionBar: FC = () => {
 };
 
 const EditComposer: FC = () => {
+  const { t } = useTranslation();
   return (
     <MessagePrimitive.Root
       data-slot="aui_edit-composer-wrapper"
@@ -779,12 +799,12 @@ const EditComposer: FC = () => {
               size="sm"
               className="h-8 rounded-full px-3.5"
             >
-              Cancel
+              {t("common.cancel", "Cancel")}
             </Button>
           </ComposerPrimitive.Cancel>
           <ComposerPrimitive.Send asChild>
             <Button size="sm" className="h-8 rounded-full px-3.5">
-              Update
+              {t("ai.update", "Update")}
             </Button>
           </ComposerPrimitive.Send>
         </div>
@@ -797,6 +817,7 @@ const BranchPicker: FC<BranchPickerPrimitive.Root.Props> = ({
   className,
   ...rest
 }) => {
+  const { t } = useTranslation();
   return (
     <BranchPickerPrimitive.Root
       hideWhenSingleBranch
@@ -807,7 +828,7 @@ const BranchPicker: FC<BranchPickerPrimitive.Root.Props> = ({
       {...rest}
     >
       <BranchPickerPrimitive.Previous asChild>
-        <TooltipIconButton tooltip="Previous">
+        <TooltipIconButton tooltip={t("ai.previous", "Previous")}>
           <ChevronLeftIcon />
         </TooltipIconButton>
       </BranchPickerPrimitive.Previous>
@@ -815,7 +836,7 @@ const BranchPicker: FC<BranchPickerPrimitive.Root.Props> = ({
         <BranchPickerPrimitive.Number /> / <BranchPickerPrimitive.Count />
       </span>
       <BranchPickerPrimitive.Next asChild>
-        <TooltipIconButton tooltip="Next">
+        <TooltipIconButton tooltip={t("ai.next", "Next")}>
           <ChevronRightIcon />
         </TooltipIconButton>
       </BranchPickerPrimitive.Next>

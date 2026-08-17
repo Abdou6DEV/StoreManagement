@@ -10,7 +10,8 @@ import { createContext, useContext } from "react";
 
 const AIAdapter = (
   userName: string | undefined,
-  unavailableMessage: string
+  unavailableMessage: string,
+  noMessage: string
 ): ChatModelAdapter => ({
   async run({ messages }) {
     const latestUserMessage = [...messages]
@@ -22,7 +23,7 @@ const AIAdapter = (
         content: [
           {
             type: "text",
-            text: "No message provided.",
+            text: noMessage,
           },
         ],
       };
@@ -38,7 +39,7 @@ const AIAdapter = (
         content: [
           {
             type: "text",
-            text: "No message provided.",
+            text: noMessage,
           },
         ],
       };
@@ -92,7 +93,8 @@ export function AIRuntimeProvider({
       t(
         "ai.requestUnavailable",
         "I can't complete this request right now. Please try again later."
-      )
+      ),
+      t("ai.noMessage", "No message provided.")
     ),
     {
       unstable_enableMessageQueue: true,

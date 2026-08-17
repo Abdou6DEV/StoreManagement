@@ -10,7 +10,6 @@ import {
   FileText,
   Wrench,
   LogOut,
-  Info,
   Calculator,
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
@@ -30,6 +29,7 @@ import { useDueSoonServices } from "../contexts/dueSoonServicesContext";
 import { useCompletedServices } from "../contexts/completedServicesContext";
 import { useUpdateContext } from "../contexts/updateContext";
 import { BadgeNotification } from "./badgeNotification";
+import Orb from "./assistant-ui/orb";
 
 const menuItems = [
   { key: "title", path: "/", icon: Home, color: "text-primary" },
@@ -82,12 +82,6 @@ const menuItems = [
     icon: AdminIcon,
     color: "text-orange-500",
   },
-  {
-    key: "about",
-    path: "/about",
-    icon: Info,
-    color: "text-blue-500",
-  },
 ];
 
 export default function Sidebar() {
@@ -107,6 +101,7 @@ export default function Sidebar() {
   const savedCollapsedState = localStorage.getItem("sidebarCollapsed");
   const [collapsed, setCollapsed] = useState(savedCollapsedState === "true");
   const [showText, setShowText] = useState(!collapsed);
+  const [aiOpen, setAiOpen] = useState(false);
   const [isDisabled, setIsDisabled] = useState(false);
   const [enableBadge, setEnableBadge] = useState(false); // Start as false to prevent flash
   const [badgeLoaded, setBadgeLoaded] = useState(false);
@@ -269,6 +264,16 @@ export default function Sidebar() {
       }
     }
   }, [unseenOutOfStockCount, unseenLowStockCount, enableBadge, badgeLoaded, enableOutOfStockBadge, outOfStockBadgeLoaded]);
+
+  useEffect(() => {
+    const onOpenChange = (event: Event) => {
+      const open = (event as CustomEvent<{ open?: boolean }>).detail?.open;
+      if (typeof open === "boolean") setAiOpen(open);
+    };
+
+    window.addEventListener("ai-chat-open-change", onOpenChange);
+    return () => window.removeEventListener("ai-chat-open-change", onOpenChange);
+  }, []);
 
   // Filter menu items based on user permissions
   const filteredMenuItems = menuItems.filter((item) => {
@@ -446,6 +451,29 @@ export default function Sidebar() {
             {showText && <span>{t(`mainMenu.${item.key}`)}</span>}
           </Link>
         ))}
+
+        <button
+          type="button"
+          data-is-active={aiOpen}
+          className={cn(
+            "max-w-full gap-4 flex items-center rounded-xl py-2 hover:bg-secondary data-[is-active=true]:bg-secondary font-semibold data-[is-active=true]:font-bold",
+            collapsed ? "mx-1 justify-center" : "m-2 px-1",
+          )}
+          onClick={() => window.dispatchEvent(new CustomEvent("ai-chat-toggle"))}
+          aria-label={t("mainMenu.ai", "REDA AI")}
+          aria-pressed={aiOpen}
+        >
+          <div className="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border/50 bg-black">
+            <Orb
+              hue={0}
+              hoverIntensity={0.5}
+              rotateOnHover
+              forceHoverState={false}
+              backgroundColor="#000000"
+            />
+          </div>
+          {showText && <span>{t("mainMenu.ai", "REDA AI")}</span>}
+        </button>
 
         {/* Logout Button */}
         <button

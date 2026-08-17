@@ -18,6 +18,7 @@ export const aiAPI = {
         webSearch: boolean;
         generalChat: boolean;
         storeData: boolean;
+        listWriter?: boolean;
       };
       priority: number;
     }[]

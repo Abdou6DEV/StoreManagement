@@ -46,9 +46,17 @@ export async function executeToolCall(
     };
   }
 
+  const validation = validateToolCall({ toolName, input });
+  if (!validation.valid) {
+    return {
+      toolName,
+      success: false,
+      error: validation.errors.join("; "),
+    };
+  }
+
   try {
-    // Execute the tool function
-    const result = (await tool.fn(input)) as AIToolResult;
+    const result = (await tool.fn(input ?? {})) as AIToolResult;
 
     if (!result.success) {
       console.log(
@@ -108,6 +116,7 @@ type ToolParamSchema = {
   type?: unknown;
   description?: string;
   required?: boolean;
+  enum?: string[];
 };
 
 /**
@@ -150,7 +159,10 @@ function isRequiredParam(param: ToolParamSchema): boolean {
 }
 
 function buildJsonSchema(inputSchema: Record<string, ToolParamSchema>) {
-  const properties: Record<string, { type: string; description: string }> = {};
+  const properties: Record<
+    string,
+    { type: string; description: string; enum?: string[] }
+  > = {};
   const required: string[] = [];
 
   for (const [key, param] of Object.entries(inputSchema)) {
@@ -158,6 +170,10 @@ function buildJsonSchema(inputSchema: Record<string, ToolParamSchema>) {
       type: toJsonSchemaType(param.type),
       description: param.description || "",
     };
+
+    if (Array.isArray(param.enum) && param.enum.length > 0) {
+      properties[key].enum = param.enum;
+    }
 
     if (isRequiredParam(param)) {
       required.push(key);

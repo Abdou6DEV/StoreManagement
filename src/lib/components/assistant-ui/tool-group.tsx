@@ -17,6 +17,7 @@ import {
   CollapsibleTrigger,
 } from "@/lib/components/ui/collapsible";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 
 const ANIMATION_DURATION = 200;
 
@@ -101,7 +102,11 @@ function ToolGroupTrigger({
   count: number;
   active?: boolean;
 }) {
-  const label = `${count} tool ${count === 1 ? "call" : "calls"}`;
+  const { t } = useTranslation();
+  const label =
+    count === 1
+      ? t("ai.toolCall", "{{count}} tool call", { count })
+      : t("ai.toolCalls", "{{count}} tool calls", { count });
 
   return (
     <CollapsibleTrigger

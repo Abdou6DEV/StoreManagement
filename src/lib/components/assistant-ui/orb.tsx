@@ -1,5 +1,6 @@
 import { Mesh, Program, Renderer, Triangle, Vec3 } from "ogl";
 import { useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import "./Orb.css";
 
 interface OrbProps {
@@ -8,6 +9,7 @@ interface OrbProps {
   rotateOnHover?: boolean;
   forceHoverState?: boolean;
   backgroundColor?: string;
+  labelFontSize?: string;
 }
 
 export default function Orb({
@@ -16,8 +18,12 @@ export default function Orb({
   rotateOnHover = true,
   forceHoverState = false,
   backgroundColor = "#000000",
+  labelFontSize,
 }: OrbProps) {
+  const { t } = useTranslation();
   const ctnDom = useRef<HTMLDivElement | null>(null);
+  const forceHoverRef = useRef(forceHoverState);
+  forceHoverRef.current = forceHoverState;
 
   const vert = /* glsl */ `
     precision highp float;
@@ -521,39 +527,26 @@ export default function Orb({
     });
 
     const resize = (): void => {
-      const width =
-        container.clientWidth;
+      const width = container.clientWidth;
+      const height = container.clientHeight;
+      if (width === 0 || height === 0) return;
 
-      const height =
-        container.clientHeight;
+      const dpr = window.devicePixelRatio || 1;
 
-      const dpr =
-        window.devicePixelRatio || 1;
-
-      renderer.setSize(
-        width * dpr,
-        height * dpr
-      );
-
-      gl.canvas.style.width =
-        `${width}px`;
-
-      gl.canvas.style.height =
-        `${height}px`;
+      renderer.setSize(width * dpr, height * dpr);
+      gl.canvas.style.width = "100%";
+      gl.canvas.style.height = "100%";
 
       program.uniforms.iResolution.value.set(
         gl.canvas.width,
         gl.canvas.height,
-        gl.canvas.width /
-          gl.canvas.height
+        gl.canvas.width / gl.canvas.height
       );
     };
 
-    window.addEventListener(
-      "resize",
-      resize
-    );
-
+    const resizeObserver = new ResizeObserver(resize);
+    resizeObserver.observe(container);
+    window.addEventListener("resize", resize);
     resize();
 
     let targetHover = 0;
@@ -662,7 +655,7 @@ export default function Orb({
         );
 
       const effectiveHover =
-        forceHoverState
+        forceHoverRef.current
           ? 1
           : targetHover;
 
@@ -699,6 +692,7 @@ export default function Orb({
         rafId
       );
 
+      resizeObserver.disconnect();
       window.removeEventListener(
         "resize",
         resize
@@ -732,7 +726,6 @@ export default function Orb({
     hue,
     hoverIntensity,
     rotateOnHover,
-    forceHoverState,
     backgroundColor,
   ]);
 
@@ -746,8 +739,11 @@ export default function Orb({
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center"
       >
-        <span className="orb-ai-text">
-          AI
+        <span
+          className="orb-ai-text"
+          style={labelFontSize ? { fontSize: labelFontSize } : undefined}
+        >
+          {t("ai.badge", "AI")}
         </span>
       </div>
     </div>

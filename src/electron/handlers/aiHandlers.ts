@@ -14,6 +14,17 @@ type ChatMessage = {
   content: string;
 };
 
+type ModelTurn = {
+  text: string;
+  toolResults: unknown[];
+};
+
+type CallModelOptions = {
+  disableTools?: boolean;
+};
+
+const LIST_HANDOFF_MIN_ROWS = 8;
+
 type OpenAIToolCall = {
   id: string;
   type: "function";
@@ -40,6 +51,25 @@ type OpenAIChatMessage =
 let conversationHistory: ChatMessage[] = [];
 let currentUserName: string | undefined;
 let selectedModelId: string | undefined;
+const skippedUntil = new Map<string, number>();
+
+function isModelSkipped(modelId: string) {
+  const until = skippedUntil.get(modelId);
+  if (until == null) return false;
+  if (Date.now() >= until) {
+    skippedUntil.delete(modelId);
+    return false;
+  }
+  return true;
+}
+
+function skipModel(modelId: string, status?: number) {
+  const ms = status === 404 ? 24 * 60 * 60 * 1000 : 60 * 1000;
+  skippedUntil.set(modelId, Date.now() + ms);
+  console.log(
+    `[AI] Skipping ${modelId} for ${Math.round(ms / 1000)}s (status ${status ?? "n/a"})`
+  );
+}
 
 function modelTpm(modelId: string) {
   return AI_MODELS.find((model) => model.id === modelId)?.tpm ?? null;
@@ -58,7 +88,76 @@ function systemInstructionForModel(modelId: string, userName?: string) {
   });
 }
 
-function openAIToolOptions(messages: OpenAIChatMessage[], modelId: string) {
+function listedRowCount(data: unknown): number {
+  if (!data || typeof data !== "object") return 0;
+  const record = data as Record<string, unknown>;
+  let count = 0;
+
+  const countList = (value: unknown) => {
+    if (Array.isArray(value)) {
+      count = Math.max(count, value.length);
+      return;
+    }
+    if (!value || typeof value !== "object") return;
+    const wrap = value as Record<string, unknown>;
+    if (wrap.truncated === true && Array.isArray(wrap.items)) {
+      const total =
+        typeof wrap.total === "number" ? wrap.total : wrap.items.length;
+      count = Math.max(count, total);
+    }
+  };
+
+  for (const key of ["matches", "breakdown", "byCategory", "byType"]) {
+    countList(record[key]);
+  }
+  for (const value of Object.values(record)) {
+    countList(value);
+  }
+  return count;
+}
+
+function toolResultsNeedListWriter(results: unknown[]): boolean {
+  return results.some((result) => listedRowCount(result) >= LIST_HANDOFF_MIN_ROWS);
+}
+
+function isListRequest(text: string): boolean {
+  return (
+    /\b(list|lists|listing|show( me)?( all)?|display|enumerate|names? of|which ones|what are they)\b/i.test(
+      text
+    ) ||
+    /\b(liste|lister|affiche|afficher|montre|montrer|tous les|toutes les|lesquels|lesquelles)\b/i.test(
+      text
+    ) ||
+    /(قائمة|عرض|ورّي|وريلي|وريني|ليستي|ليست|كاملهم|كلهم)/i.test(text)
+  );
+}
+
+function isTotalsOnlyQuestion(text: string): boolean {
+  if (isListRequest(text)) return false;
+  return /\b(how many|how much|combien|total|revenue|profit|شحال|قداش|كم)\b/i.test(
+    text
+  );
+}
+
+function shouldHandoffList(
+  userText: string,
+  toolResults: unknown[],
+  model: (typeof AI_MODELS)[number]
+): boolean {
+  if (model.capabilities.listWriter) return false;
+  if (!toolResultsNeedListWriter(toolResults)) return false;
+  if (isTotalsOnlyQuestion(userText)) return false;
+  return true;
+}
+
+function openAIToolOptions(
+  messages: OpenAIChatMessage[],
+  modelId: string,
+  options?: CallModelOptions
+) {
+  if (options?.disableTools) {
+    return {};
+  }
   if (!modelSupportsToolCalling(modelId)) {
     console.log(
       `[AI] Tools not attached: ${modelId} does not support tool calling`
@@ -94,11 +193,35 @@ function normalizeOpenAIToolCalls(toolCalls: any[]): OpenAIToolCall[] {
   });
 }
 
-function parseToolArguments(raw: string) {
+function looksLikeJsonSchema(value: unknown): boolean {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return false;
+  }
+  const record = value as Record<string, unknown>;
+  return (
+    record.type === "object" &&
+    record.properties != null &&
+    record.required != null
+  );
+}
+
+function parseToolArguments(
+  raw: string
+): { ok: true; value: Record<string, unknown> } | { ok: false; error: string } {
   try {
-    return JSON.parse(raw || "{}");
+    const parsed = JSON.parse(raw || "{}");
+    if (looksLikeJsonSchema(parsed)) {
+      return {
+        ok: false,
+        error: "Invalid tool arguments: received a schema instead of values.",
+      };
+    }
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      return { ok: false, error: "Invalid tool arguments: expected an object." };
+    }
+    return { ok: true, value: parsed };
   } catch {
-    return {};
+    return { ok: false, error: "Invalid tool arguments JSON." };
   }
 }
 
@@ -132,14 +255,40 @@ function toOpenAIApiMessages(messages: OpenAIChatMessage[]) {
   });
 }
 
-function toGeminiContents(messages: ChatMessage[]) {
+type GeminiPart = {
+  text?: string;
+  thought?: boolean;
+  thoughtSignature?: string;
+  thought_signature?: string;
+  functionCall?: {
+    name: string;
+    args?: Record<string, unknown>;
+    thoughtSignature?: string;
+    thought_signature?: string;
+  };
+  functionResponse?: { name: string; response: Record<string, unknown> };
+};
+
+type GeminiContent = {
+  role: "user" | "model";
+  parts: GeminiPart[];
+};
+
+function toGeminiContents(messages: ChatMessage[]): GeminiContent[] {
   return messages.map((message) => ({
     role: message.role === "assistant" ? "model" : "user",
-    parts: [{ text: message.content }],
+    parts: [{ text: message.content ?? "" }],
   }));
 }
 
-// Convert tools to Gemini format
+function geminiInToolLoop(contents: GeminiContent[]) {
+  return contents.some((content) =>
+    content.parts.some(
+      (part) => "functionCall" in part || "functionResponse" in part
+    )
+  );
+}
+
 function toGeminiTools() {
   const tools = getToolsForAI();
   return {
@@ -152,6 +301,7 @@ function toGeminiTools() {
           geminiProperties[key] = {
             type: (prop.type || "string").toUpperCase(),
             description: prop.description || "",
+            ...(Array.isArray(prop.enum) ? { enum: prop.enum } : {}),
           };
         }
       );
@@ -169,74 +319,143 @@ function toGeminiTools() {
   };
 }
 
-// Handle Gemini tool calls
-async function handleGeminiToolCalls(
-  responseParts: any[],
-  messages: ChatMessage[],
-  maxResultChars: number
-): Promise<{ hasToolCalls: boolean; finalText: string; updatedMessages: ChatMessage[] }> {
-  let hasToolCalls = false;
-  const assistantMessage = { role: "assistant" as const, content: "" };
-  const updatedMessages = [...messages, assistantMessage];
-
-  for (const part of responseParts) {
-    if (part.functionCall) {
-      hasToolCalls = true;
-      const toolName = part.functionCall.name;
-      let toolInput = part.functionCall.args || {};
-
-      // Gemini sometimes sends the entire schema object instead of just parameters
-      // If the args has "properties" and "required" and "type", extract just "properties"
-      if (toolInput.properties && toolInput.required && toolInput.type === "object") {
-        console.log(
-          `[AI] Extracting properties from Gemini schema object`
-        );
-        toolInput = toolInput.properties;
-      }
-
-      console.log(`[AI] Tool call requested: ${toolName}`);
-
-      try {
-        const toolResult = await executeToolCall({
-          toolName,
-          input: toolInput,
-        });
-
-        const compacted = toolResult.success
-          ? compactToolResult(toolResult.result, maxResultChars)
-          : undefined;
-
-        console.log(
-          `[AI] Tool ${toolName} ${toolResult.success ? "succeeded" : "failed"}`
-        );
-
-        updatedMessages.push({
-          role: "user",
-          content: JSON.stringify(
-            toolResult.success
-              ? { toolName, result: compacted }
-              : { toolName, error: toolResult.error }
-          ),
-        });
-      } catch (error) {
-        console.error(`[AI] Tool execution error: ${error}`);
-        updatedMessages.push({
-          role: "user",
-          content: JSON.stringify({
-            toolName,
-            error: String(error),
-          }),
-        });
-      }
-    } else if (part.text) {
-      assistantMessage.content = part.text;
+function fallbackFromToolData(data: unknown): string {
+  if (!data || typeof data !== "object") {
+    return "";
+  }
+  const record = data as Record<string, unknown>;
+  const payload: Record<string, unknown> = {};
+  for (const key of [
+    "totals",
+    "breakdown",
+    "matchCount",
+    "totalQuantity",
+    "startLocal",
+    "endLocal",
+    "timezone",
+    "entity",
+    "kind",
+    "q",
+    "rule",
+  ]) {
+    if (key in record) {
+      payload[key] = record[key];
     }
+  }
+  return Object.keys(payload).length > 0 ? JSON.stringify(payload) : "";
+}
+
+async function runOneTool(
+  toolName: string,
+  toolInput: unknown,
+  maxResultChars: number
+): Promise<{ name: string; response: Record<string, unknown> }> {
+  if (looksLikeJsonSchema(toolInput)) {
+    return {
+      name: toolName,
+      response: {
+        error: "Invalid tool arguments: received a schema instead of values.",
+      },
+    };
+  }
+
+  const input =
+    toolInput && typeof toolInput === "object" && !Array.isArray(toolInput)
+      ? toolInput
+      : {};
+
+  console.log(`[AI] Tool call requested: ${toolName}`);
+
+  const toolResult = await executeToolCall({
+    toolName,
+    input,
+  });
+
+  const compacted = toolResult.success
+    ? compactToolResult(toolResult.result, maxResultChars)
+    : undefined;
+
+  console.log(
+    `[AI] Tool ${toolName} ${toolResult.success ? "succeeded" : "failed"}`
+  );
+
+  if (toolResult.success) {
+    return {
+      name: toolName,
+      response:
+        compacted && typeof compacted === "object" && !Array.isArray(compacted)
+          ? (compacted as Record<string, unknown>)
+          : { result: compacted },
+    };
   }
 
   return {
-    hasToolCalls,
-    finalText: assistantMessage.content,
-    updatedMessages,
+    name: toolName,
+    response: { error: toolResult.error || "Tool execution failed" },
+  };
+}
+
+async function handleGeminiToolCalls(
+  candidateContent: GeminiContent | undefined,
+  contents: GeminiContent[],
+  maxResultChars: number
+): Promise<{
+  hasToolCalls: boolean;
+  finalText: string;
+  updatedContents: GeminiContent[];
+  lastToolData: unknown;
+  toolResults: unknown[];
+}> {
+  const responseParts = candidateContent?.parts ?? [];
+  const functionCalls = responseParts.filter((part) => part.functionCall);
+  const text = responseParts
+    .filter((part) => part.text && !part.thought)
+    .map((part) => part.text)
+    .join("")
+    .trim();
+
+  if (functionCalls.length === 0) {
+    return {
+      hasToolCalls: false,
+      finalText: text,
+      updatedContents: contents,
+      lastToolData: undefined,
+      toolResults: [],
+    };
+  }
+
+  const responsePartsOut: GeminiPart[] = [];
+  const toolResults: unknown[] = [];
+  let lastToolData: unknown;
+
+  for (const part of functionCalls) {
+    const toolName = part.functionCall?.name;
+    if (!toolName) continue;
+    const executed = await runOneTool(
+      toolName,
+      part.functionCall?.args || {},
+      maxResultChars
+    );
+    lastToolData = executed.response;
+    toolResults.push(executed.response);
+    responsePartsOut.push({
+      functionResponse: {
+        name: executed.name,
+        response: executed.response,
+      },
+    });
+  }
+
+  return {
+    hasToolCalls: true,
+    finalText: "",
+    updatedContents: [
+      ...contents,
+      candidateContent as GeminiContent,
+      { role: "user", parts: responsePartsOut },
+    ],
+    lastToolData,
+    toolResults,
   };
 }
 
@@ -244,12 +463,22 @@ async function callGemini(
   modelId: string,
   messages: ChatMessage[],
   apiKey: string,
-  userName?: string
-) {
-  let currentMessages: ChatMessage[] = messages;
-  let maxRetries = 5;
+  userName?: string,
+  options?: CallModelOptions
+): Promise<ModelTurn> {
+  let currentContents = toGeminiContents(messages);
+  let maxRetries = 6;
+  let lastToolData: unknown;
+  let usedTools = false;
+  const toolResults: unknown[] = [];
+  const maxResultChars = getToolResultCharBudget(modelTpm(modelId));
 
   while (maxRetries > 0) {
+    const attachTools =
+      !options?.disableTools &&
+      modelSupportsToolCalling(modelId) &&
+      (geminiInToolLoop(currentContents) || shouldAttachTools(messages));
+
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${apiKey}`,
       {
@@ -261,54 +490,71 @@ async function callGemini(
           systemInstruction: {
             parts: [{ text: systemInstructionForModel(modelId, userName) }],
           },
-          contents: toGeminiContents(currentMessages),
-          ...(modelSupportsToolCalling(modelId) &&
-          shouldAttachTools(currentMessages)
-            ? { tools: [toGeminiTools()] }
-            : {}),
+          contents: currentContents,
+          ...(attachTools ? { tools: [toGeminiTools()] } : {}),
         }),
       }
     );
 
     if (!response.ok) {
       const errorText = await response.text();
-
       const error = new Error(
         `Gemini API error (${response.status}): ${errorText}`
       );
-
-      // Mark quota errors so the router can switch models.
       (error as Error & { status?: number }).status = response.status;
-
       throw error;
     }
 
     const data = await response.json();
-    const parts = data.candidates?.[0]?.content?.parts ?? [];
-
-    // Check if there are any text parts
-    const textPart = parts.find((p: any) => p.text);
-    if (textPart) {
-      return textPart.text;
-    }
-
-    // Handle tool calls
-    const { hasToolCalls, finalText, updatedMessages } = await handleGeminiToolCalls(
-      parts,
-      currentMessages,
-      getToolResultCharBudget(modelTpm(modelId))
+    const candidateContent = data.candidates?.[0]?.content as
+      | GeminiContent
+      | undefined;
+    const {
+      hasToolCalls,
+      finalText,
+      updatedContents,
+      lastToolData: roundData,
+      toolResults: roundResults,
+    } = await handleGeminiToolCalls(
+      candidateContent,
+      currentContents,
+      maxResultChars
     );
 
-    if (!hasToolCalls) {
-      return finalText || "";
+    if (hasToolCalls) {
+      usedTools = true;
+      lastToolData = roundData;
+      toolResults.push(...roundResults);
+      currentContents = updatedContents;
+      maxRetries--;
+      continue;
     }
 
-    // Tool was called, continue with updated messages
-    currentMessages = updatedMessages;
-    maxRetries--;
+    if (finalText) {
+      return { text: finalText, toolResults };
+    }
+
+    if (usedTools && lastToolData) {
+      currentContents = [
+        ...currentContents,
+        {
+          role: "user",
+          parts: [
+            {
+              text: "Answer the user using only the function results. Copy totals and breakdown. Do not invent numbers.",
+            },
+          ],
+        },
+      ];
+      usedTools = false;
+      maxRetries--;
+      continue;
+    }
+
+    return { text: fallbackFromToolData(lastToolData), toolResults };
   }
 
-  return "";
+  return { text: fallbackFromToolData(lastToolData), toolResults };
 }
 
 // Convert tools to OpenAI format (for Mistral, Groq, OpenRouter)
@@ -342,12 +588,14 @@ async function handleOpenAIToolCalls(
   hasToolCalls: boolean;
   finalText: string;
   updatedMessages: OpenAIChatMessage[];
+  toolResults: unknown[];
 }> {
   if (!message.tool_calls || message.tool_calls.length === 0) {
     return {
       hasToolCalls: false,
       finalText: message.content ?? "",
       updatedMessages: messages,
+      toolResults: [],
     };
   }
 
@@ -360,55 +608,32 @@ async function handleOpenAIToolCalls(
       tool_calls: toolCalls,
     },
   ];
+  const toolResults: unknown[] = [];
 
   for (const toolCall of toolCalls) {
     const toolName = toolCall.function.name;
-    const toolInput = parseToolArguments(toolCall.function.arguments);
-
-    console.log(`[AI] Tool call requested: ${toolName}`);
-
-    try {
-      const toolResult = await executeToolCall({
-        toolName,
-        input: toolInput,
-      });
-
-      const compacted = toolResult.success
-        ? compactToolResult(toolResult.result, maxResultChars)
-        : undefined;
-
-      console.log(
-        `[AI] Tool ${toolName} ${toolResult.success ? "succeeded" : "failed"}`
-      );
-
-      updatedMessages.push({
-        role: "tool",
-        tool_call_id: toolCall.id,
-        name: toolName,
-        content: JSON.stringify(
-          toolResult.success
-            ? { toolName, result: compacted }
-            : { toolName, error: toolResult.error }
-        ),
-      });
-    } catch (error) {
-      console.error(`[AI] Tool execution error: ${error}`);
-      updatedMessages.push({
-        role: "tool",
-        tool_call_id: toolCall.id,
-        name: toolName,
-        content: JSON.stringify({
-          toolName,
-          error: String(error),
-        }),
-      });
+    const parsed = parseToolArguments(toolCall.function.arguments);
+    let executed: { name: string; response: Record<string, unknown> };
+    if (parsed.ok === false) {
+      executed = { name: toolName, response: { error: parsed.error } };
+    } else {
+      executed = await runOneTool(toolName, parsed.value, maxResultChars);
     }
+    toolResults.push(executed.response);
+
+    updatedMessages.push({
+      role: "tool",
+      tool_call_id: toolCall.id,
+      name: toolName,
+      content: JSON.stringify(executed.response),
+    });
   }
 
   return {
     hasToolCalls: true,
     finalText: "",
     updatedMessages,
+    toolResults,
   };
 }
 
@@ -416,10 +641,12 @@ async function callOpenRouter(
   modelId: string,
   messages: ChatMessage[],
   apiKey: string,
-  userName?: string
-) {
+  userName?: string,
+  options?: CallModelOptions
+): Promise<ModelTurn> {
   let currentMessages: OpenAIChatMessage[] = messages;
   let maxRetries = 5;
+  const toolResults: unknown[] = [];
 
   while (maxRetries > 0) {
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
@@ -439,7 +666,7 @@ async function callOpenRouter(
           },
           ...toOpenAIApiMessages(currentMessages),
         ],
-        ...openAIToolOptions(currentMessages, modelId),
+        ...openAIToolOptions(currentMessages, modelId, options),
       }),
     });
 
@@ -459,40 +686,41 @@ async function callOpenRouter(
     const message = data.choices?.[0]?.message;
 
     if (!message) {
-      return "";
+      return { text: "", toolResults };
     }
 
-    // Check for regular text response
     if (!message.tool_calls?.length) {
-      return message.content ?? "";
+      return { text: message.content ?? "", toolResults };
     }
 
-    // Handle tool calls
-    const { hasToolCalls, updatedMessages } = await handleOpenAIToolCalls(
-      message,
-      currentMessages,
-      getToolResultCharBudget(modelTpm(modelId))
-    );
+    const { hasToolCalls, updatedMessages, toolResults: roundResults } =
+      await handleOpenAIToolCalls(
+        message,
+        currentMessages,
+        getToolResultCharBudget(modelTpm(modelId))
+      );
 
     if (!hasToolCalls) {
-      return message.content ?? "";
+      return { text: message.content ?? "", toolResults };
     }
 
-    // Tool was called, continue with updated messages
+    toolResults.push(...roundResults);
     currentMessages = updatedMessages;
     maxRetries--;
   }
 
-  return "";
+  return { text: "", toolResults };
 }
 async function callMistral(
   modelId: string,
   messages: ChatMessage[],
   apiKey: string,
-  userName?: string
-) {
+  userName?: string,
+  options?: CallModelOptions
+): Promise<ModelTurn> {
   let currentMessages: OpenAIChatMessage[] = messages;
   let maxRetries = 5;
+  const toolResults: unknown[] = [];
 
   while (maxRetries > 0) {
     const response = await fetch(
@@ -512,7 +740,7 @@ async function callMistral(
             },
             ...toOpenAIApiMessages(currentMessages),
           ],
-          ...openAIToolOptions(currentMessages, modelId),
+          ...openAIToolOptions(currentMessages, modelId, options),
         }),
       }
     );
@@ -533,40 +761,41 @@ async function callMistral(
     const message = data.choices?.[0]?.message;
 
     if (!message) {
-      return "";
+      return { text: "", toolResults };
     }
 
-    // Check for regular text response
     if (!message.tool_calls?.length) {
-      return message.content ?? "";
+      return { text: message.content ?? "", toolResults };
     }
 
-    // Handle tool calls
-    const { hasToolCalls, updatedMessages } = await handleOpenAIToolCalls(
-      message,
-      currentMessages,
-      getToolResultCharBudget(modelTpm(modelId))
-    );
+    const { hasToolCalls, updatedMessages, toolResults: roundResults } =
+      await handleOpenAIToolCalls(
+        message,
+        currentMessages,
+        getToolResultCharBudget(modelTpm(modelId))
+      );
 
     if (!hasToolCalls) {
-      return message.content ?? "";
+      return { text: message.content ?? "", toolResults };
     }
 
-    // Tool was called, continue with updated messages
+    toolResults.push(...roundResults);
     currentMessages = updatedMessages;
     maxRetries--;
   }
 
-  return "";
+  return { text: "", toolResults };
 }
 async function callGroq(
   modelId: string,
   messages: ChatMessage[],
   apiKey: string,
-  userName?: string
-) {
+  userName?: string,
+  options?: CallModelOptions
+): Promise<ModelTurn> {
   let currentMessages: OpenAIChatMessage[] = messages;
   let maxRetries = 5;
+  const toolResults: unknown[] = [];
 
   while (maxRetries > 0) {
     const response = await fetch(
@@ -586,7 +815,7 @@ async function callGroq(
             },
             ...toOpenAIApiMessages(currentMessages),
           ],
-          ...openAIToolOptions(currentMessages, modelId),
+          ...openAIToolOptions(currentMessages, modelId, options),
         }),
       }
     );
@@ -607,31 +836,30 @@ async function callGroq(
     const message = data.choices?.[0]?.message;
 
     if (!message) {
-      return "";
+      return { text: "", toolResults };
     }
 
-    // Check for regular text response
     if (!message.tool_calls?.length) {
-      return message.content ?? "";
+      return { text: message.content ?? "", toolResults };
     }
 
-    // Handle tool calls
-    const { hasToolCalls, updatedMessages } = await handleOpenAIToolCalls(
-      message,
-      currentMessages,
-      getToolResultCharBudget(modelTpm(modelId))
-    );
+    const { hasToolCalls, updatedMessages, toolResults: roundResults } =
+      await handleOpenAIToolCalls(
+        message,
+        currentMessages,
+        getToolResultCharBudget(modelTpm(modelId))
+      );
 
     if (!hasToolCalls) {
-      return message.content ?? "";
+      return { text: message.content ?? "", toolResults };
     }
 
-    // Tool was called, continue with updated messages
+    toolResults.push(...roundResults);
     currentMessages = updatedMessages;
     maxRetries--;
   }
 
-  return "";
+  return { text: "", toolResults };
 }
 function unavailableReply(userMessage: string): string {
   if (/[\u0600-\u06FF]/.test(userMessage)) {
@@ -656,13 +884,14 @@ function modelsToTry(messages: ChatMessage[]) {
   const eligible = needsStoreTools
     ? byPriority.filter((model) => model.capabilities.toolCalling)
     : byPriority;
+  const available = eligible.filter((model) => !isModelSkipped(model.id));
 
   if (!selectedModelId) {
-    return eligible;
+    return available;
   }
 
-  const selected = eligible.find((model) => model.id === selectedModelId);
-  const rest = eligible.filter((model) => model.id !== selectedModelId);
+  const selected = available.find((model) => model.id === selectedModelId);
+  const rest = available.filter((model) => model.id !== selectedModelId);
 
   return selected ? [selected, ...rest] : rest;
 }
@@ -670,8 +899,9 @@ function modelsToTry(messages: ChatMessage[]) {
 async function callModel(
   model: (typeof AI_MODELS)[number],
   messages: ChatMessage[],
-  userName?: string
-) {
+  userName?: string,
+  options?: CallModelOptions
+): Promise<ModelTurn> {
   const geminiKey = process.env.GEMINI_API_KEY;
   const openRouterKey = process.env.OPENROUTER_API_KEY;
   const mistralKey = process.env.MISTRAL_API_KEY;
@@ -681,31 +911,79 @@ async function callModel(
     if (!geminiKey) {
       throw new Error("GEMINI_API_KEY is not configured");
     }
-    return callGemini(model.id, messages, geminiKey, userName);
+    return callGemini(model.id, messages, geminiKey, userName, options);
   }
 
   if (model.provider === "mistral") {
     if (!mistralKey) {
       throw new Error("MISTRAL_API_KEY is not configured");
     }
-    return callMistral(model.id, messages, mistralKey, userName);
+    return callMistral(model.id, messages, mistralKey, userName, options);
   }
 
   if (model.provider === "openrouter") {
     if (!openRouterKey) {
       throw new Error("OPENROUTER_API_KEY is not configured");
     }
-    return callOpenRouter(model.id, messages, openRouterKey, userName);
+    return callOpenRouter(model.id, messages, openRouterKey, userName, options);
   }
 
   if (model.provider === "groq") {
     if (!groqKey) {
       throw new Error("GROQ_API_KEY is not configured");
     }
-    return callGroq(model.id, messages, groqKey, userName);
+    return callGroq(model.id, messages, groqKey, userName, options);
   }
 
-  throw new Error(`Unknown provider: ${model.provider}`);
+  throw new Error("Unknown AI provider");
+}
+
+async function writeListWithStrongerModel(
+  userQuestion: string,
+  toolResults: unknown[],
+  skipModelId: string,
+  userName?: string
+): Promise<string | null> {
+  const writers = AI_MODELS.filter(
+    (model) =>
+      model.capabilities.listWriter &&
+      model.id !== skipModelId &&
+      !isModelSkipped(model.id)
+  ).sort((a, b) => a.priority - b.priority);
+
+  const messages: ChatMessage[] = [
+    { role: "user", content: userQuestion },
+    {
+      role: "user",
+      content:
+        "STORE_DATA below is already computed from the database. Amounts are DA. Write the user's answer as a clear list from STORE_DATA. Copy totals exactly. Do not invent or omit named rows that are present. At most 70 items. Same language as the user.\n\n" +
+        JSON.stringify(toolResults),
+    },
+  ];
+
+  for (const model of writers) {
+    try {
+      console.log(`[AI] List writer trying ${model.provider}/${model.id}`);
+      const turn = await callModel(model, messages, userName, {
+        disableTools: true,
+      });
+      if (turn.text?.trim()) {
+        console.log(`[AI] List writer ${model.id} succeeded`);
+        return turn.text;
+      }
+    } catch (error) {
+      const status = (error as Error & { status?: number }).status;
+      if (status === 429 || status === 404) {
+        skipModel(model.id, status);
+      }
+      console.warn(
+        `[AI] List writer ${model.id} failed`,
+        error instanceof Error ? error.message : error
+      );
+    }
+  }
+
+  return null;
 }
 
 async function callWithAutomaticModelSwitch(
@@ -721,18 +999,44 @@ async function callWithAutomaticModelSwitch(
     try {
       console.log(`[AI] TRYING MODEL: ${model.provider}/${model.id}`);
 
-      const reply = await callModel(model, messages, userName);
+      const turn = await callModel(model, messages, userName);
 
-      if (!reply?.trim()) {
+      if (!turn.text?.trim()) {
         console.warn(
           `[AI] ${model.provider}/${model.id} returned an empty reply. Switching...`
         );
         continue;
       }
 
+      if (shouldHandoffList(latestUserText, turn.toolResults, model)) {
+        const rows = turn.toolResults.reduce(
+          (max: number, result) => Math.max(max, listedRowCount(result)),
+          0
+        );
+        console.log(
+          `[AI] List handoff from ${model.id} (${rows} rows) to a stronger writer`
+        );
+        const written = await writeListWithStrongerModel(
+          latestUserText,
+          turn.toolResults,
+          model.id,
+          userName
+        );
+        if (written?.trim()) {
+          return written;
+        }
+        console.warn(
+          `[AI] List handoff failed; using ${model.id} reply`
+        );
+      }
+
       console.log(`[AI] ${model.provider}/${model.id} succeeded`);
-      return reply;
+      return turn.text;
     } catch (error) {
+      const status = (error as Error & { status?: number }).status;
+      if (status === 429 || status === 404) {
+        skipModel(model.id, status);
+      }
       console.warn(
         `[AI] ${model.provider}/${model.id} failed. Switching...`,
         error instanceof Error ? error.message : error
