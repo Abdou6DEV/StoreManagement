@@ -61,6 +61,97 @@ function matchesQ(value: unknown, q?: string): boolean {
   return String(value ?? "").toLowerCase().includes(needle);
 }
 
+function stemLoose(value: string): string {
+  const text = value.trim().toLowerCase();
+  if (text.endsWith("ies") && text.length > 4) return `${text.slice(0, -3)}y`;
+  if (
+    text.endsWith("s") &&
+    !text.endsWith("ss") &&
+    !text.endsWith("us") &&
+    !text.endsWith("is") &&
+    text.length > 3
+  ) {
+    return text.slice(0, -1);
+  }
+  return text;
+}
+
+function tokensOf(value: unknown): string[] {
+  return String(value ?? "")
+    .toLowerCase()
+    .split(/[^a-z0-9\u00c0-\u024f\u0600-\u06ff]+/i)
+    .filter(Boolean);
+}
+
+function tokenEquals(token: string, queryToken: string): boolean {
+  const a = token.trim().toLowerCase();
+  const b = queryToken.trim().toLowerCase();
+  if (!a || !b) return false;
+  const aStem = stemLoose(a);
+  const bStem = stemLoose(b);
+  return (
+    a === b ||
+    aStem === bStem ||
+    a === bStem ||
+    aStem === b ||
+    a.startsWith(b)
+  );
+}
+
+function categoryMatchesQ(categoryName: unknown, q: string): boolean {
+  const queryTokens = tokensOf(q);
+  const categoryTokens = tokensOf(categoryName);
+  if (queryTokens.length === 0 || categoryTokens.length === 0) return false;
+  return queryTokens.every((queryToken) =>
+    categoryTokens.some((categoryToken) => tokenEquals(categoryToken, queryToken)),
+  );
+}
+
+function nameTokenMatchesQ(name: unknown, q: string): boolean {
+  const needle = q.trim().toLowerCase();
+  if (!needle) return false;
+  const nameText = String(name ?? "").trim().toLowerCase();
+  if (nameText === needle) return true;
+
+  const queryTokens = tokensOf(q);
+  const nameTokens = tokensOf(name);
+  if (queryTokens.length === 0 || nameTokens.length === 0) return false;
+
+  return queryTokens.every((queryToken) =>
+    nameTokens.some((token) => tokenEquals(token, queryToken)),
+  );
+}
+
+function productMatchesStockQ(
+  product: { name: string; codebar?: string | null; categoryName?: string },
+  q: string,
+  categoryHit: boolean,
+): boolean {
+  if (categoryHit) return categoryMatchesQ(product.categoryName, q);
+  if (categoryMatchesQ(product.categoryName, q)) return true;
+  if (nameTokenMatchesQ(product.name, q)) return true;
+  const barcode = String(product.codebar ?? "").toLowerCase();
+  const needle = q.trim().toLowerCase();
+  return barcode === needle || barcode.includes(needle);
+}
+
+function filterStockProducts<
+  T extends { name: string; codebar?: string | null; categoryName?: string },
+>(products: T[], q?: string): T[] {
+  if (!q?.trim()) return products;
+  const categoryHit = products.some((product) =>
+    categoryMatchesQ(product.categoryName, q),
+  );
+  return products.filter((product) =>
+    productMatchesStockQ(product, q, categoryHit),
+  );
+}
+
+function isZakatQuery(q?: string): boolean {
+  const text = q?.trim().toLowerCase() ?? "";
+  return text === "zakat" || text === "zakaat" || text.includes("زكاة");
+}
+
 function todayYmd() {
   return localYmdFromDate(new Date());
 }
@@ -570,12 +661,10 @@ async function reportSales(input: {
 
 async function reportStock(q?: string): Promise<AIToolResult> {
   const products = await productsDb.getAllProducts();
-  const matched = products.filter(
-    (product) =>
-      matchesQ(product.name, q) ||
-      matchesQ(product.codebar, q) ||
-      matchesQ(product.categoryName, q)
-  );
+  const zakatQuery = isZakatQuery(q);
+  const matched = zakatQuery
+    ? products
+    : filterStockProducts(products, q);
 
   const inventoryCost = matched.reduce(
     (sum, product) => sum + product.quantity * product.boughtPrice,
@@ -635,7 +724,9 @@ async function reportStock(q?: string): Promise<AIToolResult> {
       inventoryCost: roundDA(inventoryCost),
       inventoryRetail: roundDA(inventoryRetail),
       profitPotential: roundDA(inventoryRetail - inventoryCost),
-      zakatOnStock: roundDA(inventoryRetail * 0.025),
+      ...(zakatQuery
+        ? { zakatOnStock: roundDA(inventoryRetail * 0.025) }
+        : {}),
     },
     byCategory,
     matches: matched
@@ -643,7 +734,11 @@ async function reportStock(q?: string): Promise<AIToolResult> {
       .sort((a, b) => b.quantity - a.quantity)
       .slice(0, SAMPLE_LIMIT)
       .map(slimProduct),
-    rule: "Copy totals. byCategory is stock by category (same as Stock page). zakatOnStock is 2.5% of inventoryRetail (selling price). Cash and nisab are on the Zakat page, not in the store. Do not count matches.",
+    rule: zakatQuery
+      ? "Copy totals.zakatOnStock (2.5% of inventoryRetail). Cash and nisab are on the Zakat page, not in the store. Do not mention zakat on other stock answers."
+      : q
+        ? "Copy totals.totalQuantity for units in this filter. If q matches a stock category, only that category is included — not product names that merely contain those letters. List products with find type=product. Do not count matches. Do not mention zakat."
+        : "Copy totals. byCategory is stock by category (same as Stock page). Do not mention zakat unless the user asked. Do not count matches.",
   });
 }
 
@@ -1274,13 +1369,48 @@ export async function tool_find(input: {
           q,
           totals: {
             matchCount: 1,
+            inStockCount: byBarcode.quantity > 0 ? 1 : 0,
             totalQuantity: byBarcode.quantity,
           },
-          matches: [slimProduct(byBarcode)],
-          rule: "Copy totals. This was an exact barcode match.",
+          matches: [
+            {
+              name: byBarcode.name,
+              quantity: byBarcode.quantity,
+              sellingPrice: byBarcode.sellingPrice,
+              category: byBarcode.categoryName ?? null,
+            },
+          ],
+          rule: "List the match (name and quantity). This was an exact barcode match.",
         });
       }
-      return reportStock(q);
+      const products = await productsDb.getAllProducts();
+      const matched = filterStockProducts(products, q);
+      const inStock = matched.filter((product) => product.quantity > 0);
+      const rows = (inStock.length > 0 ? inStock : matched)
+        .slice()
+        .sort(
+          (a, b) =>
+            b.quantity - a.quantity || a.name.localeCompare(b.name),
+        );
+      return ok({
+        type: "product",
+        q,
+        totals: {
+          matchCount: matched.length,
+          inStockCount: inStock.length,
+          totalQuantity: matched.reduce(
+            (sum, product) => sum + product.quantity,
+            0,
+          ),
+        },
+        matches: rows.slice(0, SAMPLE_LIMIT).map((product) => ({
+          name: product.name,
+          quantity: product.quantity,
+          sellingPrice: product.sellingPrice,
+          category: product.categoryName ?? null,
+        })),
+        rule: "List each matches row: name and quantity. totals.totalQuantity is units in stock. Do not paste a category breakdown.",
+      });
     }
 
     if (type === "client") {
@@ -1607,7 +1737,7 @@ export const AI_TOOLS_REGISTRY: Record<string, ToolDef> = {
   report: {
     name: "report",
     description:
-      "Store numbers with server-side totals. Use for today/month/year, month-by-month, best sellers, stock (incl. by category and zakatOnStock), payments, purchases/suppliers, services, bills/expenses/salaries, activity. Sales totals include profit, billsPaid, and netProfit (profit minus bills paid when q is omitted, same as History; with q, billsPaid is 0 and netProfit equals profit). groupBy=product/client/seller returns top rows by revenue. Pass local YYYY-MM-DD from the system prompt. Bills amounts are already DA. Copy totals and breakdown; never add rows.",
+      "Store numbers with server-side totals. Use for today/month/year, month-by-month, best sellers, stock (incl. by category), payments, purchases/suppliers, services, bills/expenses/salaries, activity. For zakat on stock only: entity=stock, q=zakat → totals.zakatOnStock. Sales totals include profit, billsPaid, and netProfit (profit minus bills paid when q is omitted, same as History; with q, billsPaid is 0 and netProfit equals profit). groupBy=product/client/seller returns top rows by revenue. Pass local YYYY-MM-DD from the system prompt. Bills amounts are already DA. Copy totals and breakdown; never add rows.",
     fn: tool_report,
     input_schema: {
       entity: {
@@ -1643,7 +1773,7 @@ export const AI_TOOLS_REGISTRY: Record<string, ToolDef> = {
       q: {
         type: "string",
         description:
-          "Optional name/brand/barcode/employee/bill-type/supplier/service-type filter (e.g. samsung, abdellah, SALARY, repair, flash).",
+          "Optional filter: stock category, name, brand, barcode, employee, bill-type, supplier, or service-type (e.g. samsung, cable, abdellah, SALARY, repair). For stock, a matching category wins over names that only contain those letters. Use q=zakat only when the user asked about zakat.",
         required: false,
       },
     },
@@ -1651,7 +1781,7 @@ export const AI_TOOLS_REGISTRY: Record<string, ToolDef> = {
   find: {
     name: "find",
     description:
-      "Look up products, clients, suppliers (sellers), or sales by name/brand/barcode. Returns server totals. Use for Samsung stock, who owes you (CREDIT=clientsOweYou), deposits you hold (VERSEMENT=youOweClients), supplier phone, barcode lookup. Omit q for type=client to list outstanding CREDIT/VERSEMENT, or type=seller for all suppliers. Copy totals; do not count the matches array.",
+      "Look up products, clients, suppliers (sellers), or sales by name/brand/barcode/category. For products, returns in-stock rows to list (name, quantity). If q matches a stock category, only that category — not names that merely contain those letters. Use for listing stock, who owes you (CREDIT=clientsOweYou), deposits you hold (VERSEMENT=youOweClients), supplier phone, barcode lookup. Omit q for type=client to list outstanding CREDIT/VERSEMENT, or type=seller for all suppliers. Copy totals; for type=product list the matches array.",
     fn: tool_find,
     input_schema: {
       type: {
@@ -1662,7 +1792,7 @@ export const AI_TOOLS_REGISTRY: Record<string, ToolDef> = {
       q: {
         type: "string",
         description:
-          "Name, brand, barcode, phone, sale text, or supplier. Omit for outstanding clients when type=client, or a full supplier list when type=seller.",
+          "Name, brand, barcode, category, client phone, sale text, or supplier. For products, a matching stock category is used instead of substring names. Omit for outstanding clients when type=client, or a full supplier list when type=seller.",
         required: false,
       },
     },

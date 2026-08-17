@@ -30,6 +30,8 @@ import { useCompletedServices } from "../contexts/completedServicesContext";
 import { useUpdateContext } from "../contexts/updateContext";
 import { BadgeNotification } from "./badgeNotification";
 import Orb from "./assistant-ui/orb";
+import { useAuiState } from "@assistant-ui/react";
+import { getAiUnreadReply } from "./ai/aiUnread";
 
 const menuItems = [
   { key: "title", path: "/", icon: Home, color: "text-primary" },
@@ -102,6 +104,8 @@ export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(savedCollapsedState === "true");
   const [showText, setShowText] = useState(!collapsed);
   const [aiOpen, setAiOpen] = useState(false);
+  const [aiUnread, setAiUnread] = useState(getAiUnreadReply);
+  const isAiRunning = useAuiState((s) => s.thread.isRunning);
   const [isDisabled, setIsDisabled] = useState(false);
   const [enableBadge, setEnableBadge] = useState(false); // Start as false to prevent flash
   const [badgeLoaded, setBadgeLoaded] = useState(false);
@@ -273,6 +277,17 @@ export default function Sidebar() {
 
     window.addEventListener("ai-chat-open-change", onOpenChange);
     return () => window.removeEventListener("ai-chat-open-change", onOpenChange);
+  }, []);
+
+  useEffect(() => {
+    const onUnread = (event: Event) => {
+      const unread = (event as CustomEvent<{ unread?: boolean }>).detail
+        ?.unread;
+      if (typeof unread === "boolean") setAiUnread(unread);
+    };
+
+    window.addEventListener("ai-chat-unread-change", onUnread);
+    return () => window.removeEventListener("ai-chat-unread-change", onUnread);
   }, []);
 
   // Filter menu items based on user permissions
@@ -463,13 +478,19 @@ export default function Sidebar() {
           aria-label={t("mainMenu.ai", "REDA AI")}
           aria-pressed={aiOpen}
         >
-          <div className="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border/50 bg-black">
-            <Orb
-              hue={0}
-              hoverIntensity={0.5}
-              rotateOnHover
-              forceHoverState={false}
-              backgroundColor="#000000"
+          <div className="relative">
+            <div className="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border/50 bg-black">
+              <Orb
+                hue={0}
+                hoverIntensity={0.5}
+                rotateOnHover
+                forceHoverState={isAiRunning}
+                backgroundColor="#000000"
+              />
+            </div>
+            <BadgeNotification
+              count={aiUnread ? 1 : 0}
+              className="right-1 rtl:left-1 rtl:right-auto"
             />
           </div>
           {showText && <span>{t("mainMenu.ai", "REDA AI")}</span>}

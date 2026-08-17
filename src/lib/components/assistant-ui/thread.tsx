@@ -21,6 +21,7 @@ import {
   ToolGroupRoot,
   ToolGroupTrigger,
 } from "@/lib/components/assistant-ui/tool-group";
+import { WorkingStatus } from "@/lib/components/assistant-ui/working-status";
 import { TooltipIconButton } from "@/lib/components/assistant-ui/tooltip-icon-button";
 import { Button } from "@/lib/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -267,7 +268,7 @@ const Composer: FC = () => {
       {isEmpty && (
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0 -z-10 rounded-(--composer-radius) opacity-90 blur-[8px] [background:conic-gradient(from_0deg,#9c43fe,#c084fc,#8b5cf6,#60a5fa,#38bdf8,#4cc2e9,#6366f1,#101499,#9c43fe)]"
+          className="composer-welcome-glow pointer-events-none absolute inset-0 -z-10 rounded-(--composer-radius) opacity-90 blur-[8px] motion-reduce:animate-none"
         />
       )}
       <ComposerPrimitive.AttachmentDropzone asChild>
@@ -563,7 +564,6 @@ const MessageError: FC = () => {
 };
 
 const AssistantMessage: FC = () => {
-  const { t } = useTranslation();
   const {
     ToolFallback: ToolFallbackComponent = ToolFallback,
     ToolGroup,
@@ -645,15 +645,7 @@ const AssistantMessage: FC = () => {
                   </div>
                 );
               case "indicator":
-                return (
-                  <span
-                    data-slot="aui_assistant-message-indicator"
-                    className="animate-pulse font-sans"
-                    aria-label={t("ai.working", "Assistant is working")}
-                  >
-                    {"●"}
-                  </span>
-                );
+                return <WorkingStatus />;
               default:
                 return null;
             }

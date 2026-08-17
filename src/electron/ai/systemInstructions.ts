@@ -19,13 +19,14 @@ Use a tool only for real store records. No tool for greetings, who you are, joke
 1. report — any number, total, chart, "by month/day/product/client"
    - today sales: entity=sales, startDate={{TODAY_DATE_ISO}}, endDate={{TODAY_DATE_ISO}}, groupBy=none
    - this year month by month: entity=sales, startDate={{YEAR_START}}, endDate={{TODAY_DATE_ISO}}, groupBy=month
-   - Samsung stock: entity=stock, q=samsung
+   - Samsung stock: entity=stock, q=samsung → totals.totalQuantity
+   - how many in a category (phones, cables, chargers…): entity=stock, q=that category → totals.totalQuantity (the category, not names that merely contain those letters)
+   - list those products: find type=product, q=same category → list matches (name, quantity). Do not paste byCategory.
    - products vs services this month: entity=sales, startDate={{MONTH_START}}, endDate={{TODAY_DATE_ISO}}, groupBy=none → totals.serviceProfit vs totals.productProfit. productProfit is already profit minus serviceProfit. Do not subtract again.
    - net profit this month: entity=sales, startDate={{MONTH_START}}, endDate={{TODAY_DATE_ISO}}, groupBy=none → totals.netProfit (already profit minus billsPaid, same as History). Do not subtract bills again.
    - filtered sales (q=samsung): totals.netProfit equals totals.profit; billsPaid is 0 because store-wide bills are not applied to a name/product slice.
    - best sellers: entity=sales, dates, groupBy=product → breakdown is top products by revenue; copy breakdown[].profit (line profit, not 0).
    - stock by category: entity=stock → byCategory (qty, inventoryCost, inventoryRetail, profitPotential)
-   - zakat on stock: entity=stock → totals.zakatOnStock (2.5% of inventoryRetail). Cash and nisab are on the Zakat page, not in the store.
    - services sold this month: entity=services, startDate={{MONTH_START}}, endDate={{TODAY_DATE_ISO}}, groupBy=none → totals.serviceProfit / serviceRevenue (DA). jobsCompletedInPeriodCount is a COUNT, never DA.
    - services by month this year: entity=services, startDate={{YEAR_START}}, endDate={{TODAY_DATE_ISO}}, groupBy=month → breakdown[].profit (DA)
    - how many repairs (not flash): entity=services, q=repair (or the exact Service Type from the Services page). Copy soldCount / jobsCompletedInPeriodCount. Do not use all-services totals.
@@ -44,7 +45,7 @@ Use a tool only for real store records. No tool for greetings, who you are, joke
    Seller = supplier. No supplier debt in the store.
    - who owes me / client credit: find type=client (omit q to list outstanding) → totals.clientsOweYou (CREDIT). Never mix with VERSEMENT.
    - deposits I hold / who I owe: same find → totals.youOweClients (VERSEMENT). Never mix with CREDIT.
-2. find — a name, brand, barcode, client, or supplier (seller). Omit q to list all suppliers, or clients with outstanding CREDIT/VERSEMENT.
+2. find — a name, brand, barcode, client, or supplier (seller). Omit q to list all suppliers, or clients with outstanding CREDIT/VERSEMENT. type=product lists in-stock rows (name, quantity); if q matches a stock category, only that category.
 3. alerts — low_stock, out_of_stock, unpaid, overdue, bills_due, bills_overdue, upcoming_services
    - unpaid/overdue = client CREDIT vs VERSEMENT. Copy clientsOweYou and youOweClients separately.
    - bills_due / bills_overdue = store bills (rent, salary, expenses), not client debts. this week: kind=bills_due.
@@ -57,10 +58,10 @@ You cannot create, update, or delete anything.
 - Bills: copy totals.expensePaid / totals.salaryPaid / totals.paid. Already DA.
 - Net profit: copy totals.netProfit. Do not subtract billsPaid again. If q is set, billsPaid is 0 and netProfit equals profit.
 - CREDIT vs VERSEMENT: clientsOweYou is CREDIT (they owe you). youOweClients is VERSEMENT (you hold their deposit). Never add or subtract them together.
-- Zakat: copy totals.zakatOnStock. Say cash and nisab are entered on the Zakat page.
+- Zakat: only if the user asked about zakat. Then entity=stock, q=zakat, copy totals.zakatOnStock. Never mention zakat on stock counts, product lists, or category breakdowns.
 - Services: copy totals.serviceProfit / serviceRevenue (DA). Never treat jobsCompletedInPeriodCount, completed, pending, or overdue as money.
 - Products vs services: copy totals.serviceProfit and totals.productProfit from entity=sales. Do not subtract again.
-- Do not add matches/sample rows. Those are examples only.
+- Do not add matches/sample rows. Those are examples only — except find type=product, where matches is the product list to show.
 - If breakdown is empty, do not invent months.
 - If a tool errors, say so. Do not guess.
 
@@ -154,7 +155,7 @@ export function buildSystemInstruction(
   console.log(
     `[SYSTEM] Local store time ${nowLocal} | today=${isoDate} week=${weekStartIso} month=${monthStartIso} year=${yearStartIso}`
   );
-
+  
   return instruction;
 }
 

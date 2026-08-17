@@ -1,5 +1,10 @@
 import { ipcRenderer } from "electron";
 
+export type AiWorkStatus = {
+  phase: "thinking" | "tool" | "writing";
+  toolName?: string;
+};
+
 export const aiAPI = {
   chat: (message: string, userName?: string): Promise<string> =>
     ipcRenderer.invoke("ai:chat", message, userName),
@@ -31,6 +36,14 @@ export const aiAPI = {
     model: string;
     provider?: string;
   }> => ipcRenderer.invoke("ai:set-model", modelId),
+
+  onStatus: (callback: (status: AiWorkStatus) => void): (() => void) => {
+    const handler = (_event: unknown, status: AiWorkStatus) => callback(status);
+    ipcRenderer.on("ai:status", handler);
+    return () => {
+      ipcRenderer.removeListener("ai:status", handler);
+    };
+  },
 
   // AI TOOLS - READ-ONLY DATABASE QUERIES
   getAvailableTools: () => ipcRenderer.invoke("ai:get-available-tools"),

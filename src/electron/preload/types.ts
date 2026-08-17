@@ -502,6 +502,12 @@ export type ActivityLogAPI = {
 export interface AIAPI {
   chat: (message: string, userName?: string) => Promise<string>;
   clearChat: () => Promise<void>;
+  onStatus: (
+    callback: (status: {
+      phase: "thinking" | "tool" | "writing";
+      toolName?: string;
+    }) => void,
+  ) => () => void;
 }
 export type API = {
   database: DatabaseAPI;

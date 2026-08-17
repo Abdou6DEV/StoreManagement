@@ -80,6 +80,7 @@ const PRESERVE_KEYS = new Set([
   "breakdown",
   "byType",
   "byCategory",
+  "matches",
   "matchCount",
   "totalQuantity",
   "timezone",
@@ -100,8 +101,13 @@ const PRESERVE_KEYS = new Set([
 
 function capArrays(value: unknown, maxItems: number, key?: string): unknown {
   if (Array.isArray(value)) {
+    if (key === "matches") {
+      return value.slice(0, maxItems).map((item) => capArrays(item, maxItems));
+    }
+
     const keepAll =
-      (key === "breakdown" || key === "byType" || key === "byCategory") && value.length <= 40;
+      (key === "breakdown" || key === "byType" || key === "byCategory") &&
+      value.length <= 40;
     const items = (keepAll ? value : value.slice(0, maxItems)).map((item) =>
       capArrays(item, maxItems)
     );
@@ -131,16 +137,23 @@ function capArrays(value: unknown, maxItems: number, key?: string): unknown {
   return value;
 }
 
-function preservedCore(value: unknown): Record<string, unknown> | null {
+function preservedCore(
+  value: unknown,
+  matchLimit = 3,
+): Record<string, unknown> | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return null;
   }
 
+  const source = value as Record<string, unknown>;
   const core: Record<string, unknown> = {};
   for (const key of PRESERVE_KEYS) {
-    if (key in value) {
-      core[key] = (value as Record<string, unknown>)[key];
+    if (!(key in source)) continue;
+    if (key === "matches" && Array.isArray(source.matches)) {
+      core.matches = source.matches.slice(0, matchLimit);
+      continue;
     }
+    core[key] = source[key];
   }
   return Object.keys(core).length > 0 ? core : null;
 }
@@ -170,10 +183,13 @@ export function compactToolResult(data: unknown, maxChars: number): unknown {
   }
 
   if (core) {
+    const hasMatches = Array.isArray(core.matches) && core.matches.length > 0;
     return {
       ...core,
       truncated: true,
-      hint: "Sample omitted because it was too large. Use totals and breakdown only.",
+      hint: hasMatches
+        ? "List these matches rows. More were omitted because the result was too large. Copy totals for counts."
+        : "Sample omitted because it was too large. Use totals and breakdown only.",
     };
   }
 

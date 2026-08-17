@@ -14,6 +14,32 @@ type ChatMessage = {
   content: string;
 };
 
+const MAX_HISTORY_MESSAGES = 16;
+const MAX_HISTORY_CHARS = 12_000;
+const MAX_STORED_ASSISTANT_CHARS = 4_000;
+
+function messageChars(messages: ChatMessage[]) {
+  return messages.reduce((n, m) => n + m.content.length, 0);
+}
+
+function windowConversation(messages: ChatMessage[]): ChatMessage[] {
+  const clipped = messages.map((m) =>
+    m.role === "assistant" && m.content.length > MAX_STORED_ASSISTANT_CHARS
+      ? { ...m, content: `${m.content.slice(0, MAX_STORED_ASSISTANT_CHARS)}\n…` }
+      : m,
+  );
+
+  let windowed = clipped.slice(-MAX_HISTORY_MESSAGES);
+  while (windowed.length > 1 && messageChars(windowed) > MAX_HISTORY_CHARS) {
+    windowed = windowed.slice(1);
+  }
+  if (windowed[0]?.role === "assistant") {
+    windowed = windowed.slice(1);
+  }
+
+  return windowed.length > 0 ? windowed : clipped.slice(-1);
+}
+
 type ModelTurn = {
   text: string;
   toolResults: unknown[];
@@ -48,10 +74,24 @@ type OpenAIChatMessage =
       name?: string;
     };
 
+type WorkStatus = {
+  phase: "thinking" | "tool" | "writing";
+  toolName?: string;
+};
+
 let conversationHistory: ChatMessage[] = [];
 let currentUserName: string | undefined;
 let selectedModelId: string | undefined;
 const skippedUntil = new Map<string, number>();
+let statusSink: ((status: WorkStatus) => void) | null = null;
+
+function emitWorkStatus(status: WorkStatus) {
+  statusSink?.(status);
+}
+
+function emitWaitingOnModel(isFinalWrite = false) {
+  emitWorkStatus({ phase: isFinalWrite ? "writing" : "thinking" });
+}
 
 function isModelSkipped(modelId: string) {
   const until = skippedUntil.get(modelId);
@@ -365,6 +405,7 @@ async function runOneTool(
       : {};
 
   console.log(`[AI] Tool call requested: ${toolName}`);
+  emitWorkStatus({ phase: "tool", toolName });
 
   const toolResult = await executeToolCall({
     toolName,
@@ -474,6 +515,7 @@ async function callGemini(
   const maxResultChars = getToolResultCharBudget(modelTpm(modelId));
 
   while (maxRetries > 0) {
+    emitWaitingOnModel(!!options?.disableTools);
     const attachTools =
       !options?.disableTools &&
       modelSupportsToolCalling(modelId) &&
@@ -649,6 +691,7 @@ async function callOpenRouter(
   const toolResults: unknown[] = [];
 
   while (maxRetries > 0) {
+    emitWaitingOnModel(!!options?.disableTools);
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -723,6 +766,7 @@ async function callMistral(
   const toolResults: unknown[] = [];
 
   while (maxRetries > 0) {
+    emitWaitingOnModel(!!options?.disableTools);
     const response = await fetch(
       "https://api.mistral.ai/v1/chat/completions",
       {
@@ -798,6 +842,7 @@ async function callGroq(
   const toolResults: unknown[] = [];
 
   while (maxRetries > 0) {
+    emitWaitingOnModel(!!options?.disableTools);
     const response = await fetch(
       "https://api.groq.com/openai/v1/chat/completions",
       {
@@ -1106,7 +1151,7 @@ export function setupAIHandlers() {
   });
   ipcMain.handle(
     "ai:chat",
-    async (_event, message: string, userName?: string) => {
+    async (event, message: string, userName?: string) => {
       if (!message || typeof message !== "string") {
         throw new Error("Invalid message");
       }
@@ -1119,6 +1164,13 @@ export function setupAIHandlers() {
         role: "user",
         content: message,
       });
+      conversationHistory = windowConversation(conversationHistory);
+
+      const sender = event.sender;
+      statusSink = (status) => {
+        if (!sender.isDestroyed()) sender.send("ai:status", status);
+      };
+      emitWorkStatus({ phase: "thinking" });
 
       try {
         const assistantReply = await callWithAutomaticModelSwitch(
@@ -1130,6 +1182,7 @@ export function setupAIHandlers() {
           role: "assistant",
           content: assistantReply,
         });
+        conversationHistory = windowConversation(conversationHistory);
 
         return assistantReply;
       } catch (error) {
@@ -1139,7 +1192,10 @@ export function setupAIHandlers() {
           role: "assistant",
           content: fallback,
         });
+        conversationHistory = windowConversation(conversationHistory);
         return fallback;
+      } finally {
+        statusSink = null;
       }
     }
   );

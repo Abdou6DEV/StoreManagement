@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type PointerEvent } from "react";
 import { useLocation } from "react-router-dom";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { Minus, Move, RotateCcw } from "lucide-react";
+import { MessageSquarePlus, Minus, Move, SlidersHorizontal } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Thread } from "../assistant-ui/thread";
@@ -12,9 +12,21 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "../ui/tooltip";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "../dropdownMenu";
 import { useAIRuntime } from "./AIRuntimeProvider";
 import Orb from "../assistant-ui/orb";
 import { useAuth } from "../../contexts/authContext";
+import { useAuiState } from "@assistant-ui/react";
+import { BadgeNotification } from "../badgeNotification";
+import { setAiUnreadReply } from "./aiUnread";
 
 const spring = {
   type: "spring" as const,
@@ -27,12 +39,49 @@ const SIDEBAR_EXPANDED = 200;
 const SIDEBAR_COLLAPSED = 56;
 const SIDEBAR_TOP = 130;
 const PANEL_GAP = 8;
-const PANEL_WIDTH = 380;
-const PANEL_HEIGHT = 600;
 const EDGE = 8;
 const POSITION_KEY = "aiChatPosition";
+const SIZE_KEY = "aiChatSize";
 const WELCOME_DELAY_MS = 700;
 const WELCOME_DURATION_MS = 8000;
+
+type ChatSize = "default" | "large" | "half";
+type PanelSize = { width: number; height: number };
+
+function isChatSize(value: string): value is ChatSize {
+  return value === "default" || value === "large" || value === "half";
+}
+
+function loadSavedSize(): ChatSize {
+  try {
+    const raw = localStorage.getItem(SIZE_KEY);
+    if (raw && isChatSize(raw)) return raw;
+  } catch {
+    /* ignore */
+  }
+  return "default";
+}
+
+function computePanelSize(preset: ChatSize): PanelSize {
+  const maxW = Math.max(320, window.innerWidth - EDGE * 2);
+  const maxH = Math.max(360, window.innerHeight - EDGE * 2);
+  if (preset === "half") {
+    return {
+      width: Math.min(Math.floor(window.innerWidth / 2), maxW),
+      height: maxH,
+    };
+  }
+  if (preset === "large") {
+    return {
+      width: Math.min(480, maxW),
+      height: Math.min(720, maxH),
+    };
+  }
+  return {
+    width: Math.min(380, maxW),
+    height: Math.min(600, maxH),
+  };
+}
 
 function capitalizeName(name: string): string {
   if (!name) return name;
@@ -41,26 +90,40 @@ function capitalizeName(name: string): string {
 
 type PanelPos = { x: number; y: number };
 
-function clampPos(x: number, y: number): PanelPos {
-  const maxX = Math.max(EDGE, window.innerWidth - PANEL_WIDTH - EDGE);
-  const maxY = Math.max(EDGE, window.innerHeight - PANEL_HEIGHT - EDGE);
+function clampPos(
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+): PanelPos {
+  const maxX = Math.max(EDGE, window.innerWidth - width - EDGE);
+  const maxY = Math.max(EDGE, window.innerHeight - height - EDGE);
   return {
     x: Math.min(Math.max(EDGE, x), maxX),
     y: Math.min(Math.max(EDGE, y), maxY),
   };
 }
 
-function defaultPos(isMainMenu: boolean, sidebarCollapsed: boolean): PanelPos {
+function defaultPos(
+  isMainMenu: boolean,
+  sidebarCollapsed: boolean,
+  width: number,
+  height: number,
+): PanelPos {
   if (isMainMenu) {
     return clampPos(
-      window.innerWidth - PANEL_WIDTH - 24,
-      window.innerHeight - PANEL_HEIGHT - 24,
+      window.innerWidth - width - 24,
+      window.innerHeight - height - 24,
+      width,
+      height,
     );
   }
 
   return clampPos(
     (sidebarCollapsed ? SIDEBAR_COLLAPSED : SIDEBAR_EXPANDED) + PANEL_GAP,
     SIDEBAR_TOP,
+    width,
+    height,
   );
 }
 
@@ -79,19 +142,27 @@ function loadSavedPos(): PanelPos | null {
 }
 
 export default function ChatBox() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [showWelcome, setShowWelcome] = useState(false);
+  const [prefsOpen, setPrefsOpen] = useState(false);
+  const [unread, setUnread] = useState(false);
   const welcomeShownRef = useRef(false);
+  const wasRunningRef = useRef(false);
   const reduceMotion = useReducedMotion();
   const runtime = useAIRuntime();
+  const isRunning = useAuiState((s) => s.thread.isRunning);
   const move = reduceMotion ? { duration: 0 } : spring;
   const isMainMenu = useLocation().pathname === "/";
   const [sidebarCollapsed, setSidebarCollapsed] = useState(
     localStorage.getItem("sidebarCollapsed") === "true",
   );
   const [savedPos, setSavedPos] = useState<PanelPos | null>(loadSavedPos);
+  const [sizePreset, setSizePreset] = useState<ChatSize>(loadSavedSize);
+  const [panel, setPanel] = useState<PanelSize>(() =>
+    computePanelSize(loadSavedSize()),
+  );
   const [pos, setPos] = useState<PanelPos>({ x: 24, y: 130 });
   const [dragging, setDragging] = useState(false);
   const posRef = useRef(pos);
@@ -128,6 +199,22 @@ export default function ChatBox() {
   }, [open]);
 
   useEffect(() => {
+    if (open) {
+      setUnread(false);
+    } else if (wasRunningRef.current && !isRunning) {
+      setUnread(true);
+    }
+    wasRunningRef.current = isRunning;
+  }, [isRunning, open]);
+
+  useEffect(() => {
+    setAiUnreadReply(unread);
+    window.dispatchEvent(
+      new CustomEvent("ai-chat-unread-change", { detail: { unread } }),
+    );
+  }, [unread]);
+
+  useEffect(() => {
     const onSidebarChange = (event: Event) => {
       const collapsed = (event as CustomEvent<{ collapsed?: boolean }>).detail
         ?.collapsed;
@@ -141,24 +228,34 @@ export default function ChatBox() {
 
   useEffect(() => {
     if (!open) return;
-    const next = savedPos ?? defaultPos(isMainMenu, sidebarCollapsed);
-    setPos(clampPos(next.x, next.y));
-  }, [open, isMainMenu, sidebarCollapsed, savedPos]);
+    const next = savedPos ?? defaultPos(
+      isMainMenu,
+      sidebarCollapsed,
+      panel.width,
+      panel.height,
+    );
+    setPos(clampPos(next.x, next.y, panel.width, panel.height));
+  }, [open, isMainMenu, sidebarCollapsed, savedPos, panel.width, panel.height]);
 
   useEffect(() => {
-    const onResize = () => setPos((current) => clampPos(current.x, current.y));
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, []);
+    const syncPanel = () => {
+      const next = computePanelSize(sizePreset);
+      setPanel(next);
+      setPos((current) => clampPos(current.x, current.y, next.width, next.height));
+    };
+    syncPanel();
+    window.addEventListener("resize", syncPanel);
+    return () => window.removeEventListener("resize", syncPanel);
+  }, [sizePreset]);
 
   useEffect(() => {
-    if (open) {
+    if (open || !isMainMenu) {
       setShowWelcome(false);
-      welcomeShownRef.current = true;
+      if (open) welcomeShownRef.current = true;
       return;
     }
 
-    if (!isMainMenu || welcomeShownRef.current) return;
+    if (welcomeShownRef.current) return;
 
     const showTimer = window.setTimeout(() => {
       welcomeShownRef.current = true;
@@ -206,6 +303,8 @@ export default function ChatBox() {
       clampPos(
         dragRef.current.originX + event.clientX - dragRef.current.pointerX,
         dragRef.current.originY + event.clientY - dragRef.current.pointerY,
+        panel.width,
+        panel.height,
       ),
     );
   };
@@ -234,7 +333,13 @@ export default function ChatBox() {
     setDragging(false);
     localStorage.removeItem(POSITION_KEY);
     setSavedPos(null);
-    setPos(defaultPos(isMainMenu, sidebarCollapsed));
+    setPos(defaultPos(isMainMenu, sidebarCollapsed, panel.width, panel.height));
+  };
+
+  const handleSizeChange = (value: string) => {
+    if (!isChatSize(value)) return;
+    setSizePreset(value);
+    localStorage.setItem(SIZE_KEY, value);
   };
 
   return (
@@ -267,7 +372,7 @@ export default function ChatBox() {
                     ),
                   })}
                 </p>
-                <p className="mt-1 text-[12px] leading-relaxed text-background/70">
+                <p className="mt-1 text-[12px] font-medium leading-relaxed text-background/90">
                   {t(
                     "ai.loginAssist",
                     "I'm here if you need assistance with your store.",
@@ -286,23 +391,33 @@ export default function ChatBox() {
               <TooltipTrigger asChild>
                 <button
                   onClick={() => setOpen(true)}
-                  aria-label={t("ai.open", "Open REDA AI")}
+                  aria-label={
+                    isRunning
+                      ? t("ai.working", "Assistant is working")
+                      : t("ai.open", "Open REDA AI")
+                  }
                   tabIndex={open ? -1 : 0}
-                  className="group relative h-16 w-16 overflow-hidden rounded-full border border-border/50 bg-black shadow-xl shadow-primary/20 transition-all duration-500 ease-out hover:scale-105 hover:shadow-2xl hover:shadow-primary/30"
+                  className="group relative h-16 w-16 rounded-full border border-border/50 bg-black shadow-xl shadow-primary/20 transition-all duration-500 ease-out hover:scale-105 hover:shadow-2xl hover:shadow-primary/30"
                 >
-                  <div className="absolute inset-0">
+                  <div className="absolute inset-0 overflow-hidden rounded-full">
                     <Orb
                       hue={0}
                       hoverIntensity={0.8}
                       rotateOnHover
-                      forceHoverState={showWelcome}
+                      forceHoverState={showWelcome || isRunning}
                       backgroundColor="#000000"
                     />
                   </div>
+                  <BadgeNotification
+                    count={unread ? 1 : 0}
+                    className="top-0.5 right-0.5 translate-x-1/4 -translate-y-1/4 rtl:left-0.5 rtl:right-auto rtl:translate-x-[-25%]"
+                  />
                 </button>
               </TooltipTrigger>
               <TooltipContent side="left">
-                {t("ai.open", "Open REDA AI")}
+                {isRunning
+                  ? t("ai.working", "Assistant is working")
+                  : t("ai.open", "Open REDA AI")}
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
@@ -310,11 +425,13 @@ export default function ChatBox() {
       )}
 
       <motion.div
-        className="fixed z-[100] flex h-[600px] w-[380px] flex-col overflow-hidden rounded-2xl border border-border/60 bg-background shadow-2xl"
+        className="fixed z-[100] flex flex-col overflow-hidden rounded-2xl border border-border/60 bg-background shadow-2xl"
         initial={false}
         animate={{
           opacity: open ? 1 : 0,
           scale: open ? 1 : 0.96,
+          width: panel.width,
+          height: panel.height,
         }}
         transition={move}
         style={{
@@ -342,7 +459,7 @@ export default function ChatBox() {
                   hue={0}
                   hoverIntensity={0.5}
                   rotateOnHover
-                  forceHoverState={false}
+                  forceHoverState={isRunning}
                   backgroundColor="#000000"
                 />
               </div>
@@ -365,7 +482,7 @@ export default function ChatBox() {
 
           <div className="flex shrink-0 items-center gap-0.5">
             <TooltipIconButton
-              tooltip={t("ai.moveHint", "Move chat · Double-click to reset")}
+              tooltip={t("ai.moveHint", "Move chat / Double-click to reset")}
               side="bottom"
               className={`touch-none size-8 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground ${
                 dragging ? "cursor-grabbing" : "cursor-grab"
@@ -385,8 +502,52 @@ export default function ChatBox() {
               className="size-8 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
               onClick={handleClearChat}
             >
-              <RotateCcw className="h-3.5 w-3.5" />
+              <MessageSquarePlus className="h-3.5 w-3.5" />
             </TooltipIconButton>
+
+            <DropdownMenu open={prefsOpen} onOpenChange={setPrefsOpen}>
+              <TooltipProvider delayDuration={0}>
+                <Tooltip open={prefsOpen ? false : undefined}>
+                  <TooltipTrigger asChild>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        type="button"
+                        aria-label={t("ai.preferences", "Preferences")}
+                        className="inline-flex size-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+                      >
+                        <SlidersHorizontal className="h-3.5 w-3.5" />
+                      </button>
+                    </DropdownMenuTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">
+                    {t("ai.preferences", "Preferences")}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              <DropdownMenuContent
+                align="end"
+                className={`z-[120] w-48 ${i18n.language.startsWith("ar") ? "text-right" : ""}`}
+              >
+                <DropdownMenuLabel className="text-xs text-muted-foreground">
+                  {t("ai.chatSize", "Chat size")}
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuRadioGroup
+                  value={sizePreset}
+                  onValueChange={handleSizeChange}
+                >
+                  <DropdownMenuRadioItem value="default">
+                    {t("ai.sizeDefault", "Default")}
+                  </DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="large">
+                    {t("ai.sizeLarge", "Large")}
+                  </DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="half">
+                    {t("ai.sizeHalf", "Half screen")}
+                  </DropdownMenuRadioItem>
+                </DropdownMenuRadioGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
 
             <TooltipIconButton
               tooltip={t("ai.minimize", "Minimize")}

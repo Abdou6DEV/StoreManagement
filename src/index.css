@@ -757,7 +757,9 @@ input[type="date"].success {
 
 @media (prefers-reduced-motion: reduce) {
   .journey-explore-ring,
-  .journey-chevron-nudge {
+  .journey-chevron-nudge,
+  .composer-welcome-glow,
+  .working-status-spinner {
     animation: none;
   }
 
@@ -776,6 +778,69 @@ input[type="date"].success {
 
 .badge-datetime-alive {
   animation: badge-datetime-alive 5.5s ease-in-out infinite;
+}
+
+@property --composer-glow-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+@keyframes composer-glow-spin {
+  to {
+    --composer-glow-angle: 360deg;
+  }
+}
+
+.composer-welcome-glow {
+  background: conic-gradient(
+    from var(--composer-glow-angle),
+    #9c43fe,
+    #c084fc,
+    #8b5cf6,
+    #60a5fa,
+    #38bdf8,
+    #4cc2e9,
+    #6366f1,
+    #101499,
+    #9c43fe
+  );
+  animation: composer-glow-spin 10s linear infinite;
+}
+
+@property --working-spinner-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+@keyframes working-spinner-spin {
+  to {
+    --working-spinner-angle: 360deg;
+  }
+}
+
+.working-status-spinner {
+  width: 0.875rem;
+  height: 0.875rem;
+  flex-shrink: 0;
+  border-radius: 9999px;
+  background: conic-gradient(
+    from var(--working-spinner-angle),
+    #9c43fe,
+    #c084fc,
+    #8b5cf6,
+    #60a5fa,
+    #38bdf8,
+    #4cc2e9,
+    #6366f1,
+    #101499,
+    #9c43fe
+  );
+  mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 0);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 0);
+  filter: drop-shadow(0 0 3px rgb(156 67 254 / 0.4));
+  animation: working-spinner-spin 1s linear infinite;
 }
 
 /* Previous price on barcode label preview: one thin diagonal line (top-right to bottom-left) through value + DA */
