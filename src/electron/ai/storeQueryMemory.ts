@@ -8,15 +8,15 @@ export type LastStoreQuery = {
   q?: unknown;
   kind?: unknown;
   type?: unknown;
+  status?: unknown;
 };
 
 const FOLLOW_UP =
-  /\b((this|that)\b.{0,24}\bclient|this one|that one|the same|same thing|and yesterday|and today|last month|this month|by product|by client|by month|list them|show them|check|again|ce client|cette cliente|le m[eê]me|pareil|hier|par produit|v[eé]rifie|rev[eé]rifie)\b|(هذا|هاد|هذاك|نفس الشيء|تاني|عاود|تحقق|شيك|ورّيهم|وريهم|هاد الزبون|هذا الزبون|هادك)/i;
+  /^(this one|that one|the same|same thing|and yesterday|and today|yesterday|today|last month|this month|this year|last year|by product|by client|by month|list them|show them|again|ce client|cette cliente|le m[eê]me|pareil|hier|aujourd'?hui|par produit|par client|هذا|هاد|هذاك|نفس الشيء|تاني|عاود|ورّيهم|وريهم|هاد الزبون|هذا الزبون|هادك|البارح|اليوم|هاد الشهر)$/i;
 
 export function isFollowUp(text: string): boolean {
   const trimmed = text.trim();
-  if (!trimmed) return false;
-  if (trimmed.length <= 24 && FOLLOW_UP.test(trimmed)) return true;
+  if (!trimmed || trimmed.length > 48) return false;
   return FOLLOW_UP.test(trimmed);
 }
 
@@ -69,6 +69,7 @@ export function snapshotStoreQuery(
     q: result.q ?? input.q,
     kind: result.kind ?? input.kind,
     type: result.type ?? input.type,
+    status: result.status ?? input.status,
   };
 }
 

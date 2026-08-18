@@ -10,6 +10,8 @@ import {
   AIToolResult,
   getToolByName,
 } from "./readOnlyTools";
+import { toLocalYmd } from "./parseLocalDateRange";
+import { isClientStatus } from "./clientStatus";
 
 export interface AIToolCall {
   toolName: string;
@@ -155,7 +157,7 @@ function toJsonSchemaType(rawType: unknown): string {
 }
 
 function isRequiredParam(param: ToolParamSchema): boolean {
-  return param.required !== false;
+  return param.required === true;
 }
 
 function buildJsonSchema(inputSchema: Record<string, ToolParamSchema>) {
@@ -198,6 +200,115 @@ export function getToolsForAI() {
   }));
 }
 
+const REPORT_GROUPS: Record<string, string[]> = {
+  sales: ["none", "day", "month", "year", "product", "client"],
+  payments: ["none", "day", "month", "year", "client"],
+  purchases: ["none", "day", "month", "year", "product", "seller"],
+  stock: ["none"],
+  services: ["none", "day", "month", "year", "product", "client", "seller"],
+  bills: ["none", "day", "month", "year", "product", "client", "seller"],
+  activity: ["none"],
+};
+
+function valueTypeOk(expected: string, value: unknown): boolean {
+  if (value === null || value === undefined) return true;
+  if (expected === "number" || expected === "integer") {
+    return typeof value === "number" && Number.isFinite(value);
+  }
+  if (expected === "boolean") return typeof value === "boolean";
+  if (expected === "array") return Array.isArray(value);
+  if (expected === "object") {
+    return typeof value === "object" && !Array.isArray(value);
+  }
+  return typeof value === "string";
+}
+
+export function validateAgainstSchema(
+  toolName: string,
+  input: Record<string, unknown> | undefined,
+  inputSchema: Record<string, ToolParamSchema>
+): { valid: boolean; errors: string[] } {
+  const errors: string[] = [];
+  const raw = input ?? {};
+
+  if (input != null && (typeof input !== "object" || Array.isArray(input))) {
+    return { valid: false, errors: ["Tool input must be an object."] };
+  }
+
+  for (const [key, param] of Object.entries(inputSchema)) {
+    const value = raw[key];
+    if (isRequiredParam(param) && (value === undefined || value === null || value === "")) {
+      errors.push(`Missing required input: ${key}`);
+      continue;
+    }
+    if (value === undefined || value === null || value === "") continue;
+
+    const expected = toJsonSchemaType(param.type);
+    if (!valueTypeOk(expected, value)) {
+      errors.push(`${key} must be a ${expected}.`);
+      continue;
+    }
+
+    if (Array.isArray(param.enum) && param.enum.length > 0) {
+      if (!param.enum.includes(String(value))) {
+        errors.push(`${key} must be one of: ${param.enum.join(" | ")}`);
+      }
+    }
+  }
+
+  for (const key of Object.keys(raw)) {
+    if (!(key in inputSchema)) {
+      errors.push(`Unknown parameter: ${key}`);
+    }
+  }
+
+  const start = raw.startDate;
+  const end = raw.endDate;
+  if (start != null && start !== "") {
+    if (!toLocalYmd(start)) {
+      errors.push("startDate must be YYYY-MM-DD.");
+    }
+  }
+  if (end != null && end !== "") {
+    if (!toLocalYmd(end)) {
+      errors.push("endDate must be YYYY-MM-DD.");
+    }
+  }
+  if (start && end) {
+    const startYmd = toLocalYmd(start);
+    const endYmd = toLocalYmd(end);
+    if (startYmd && endYmd && startYmd > endYmd) {
+      errors.push(`startDate (${startYmd}) is after endDate (${endYmd}).`);
+    }
+  }
+
+  if (typeof raw.threshold === "number" && raw.threshold < 0) {
+    errors.push("threshold must be >= 0.");
+  }
+
+  if (toolName === "report") {
+    const entity = String(raw.entity ?? "").trim().toLowerCase();
+    const groupBy =
+      String(raw.groupBy ?? "none").trim().toLowerCase() || "none";
+    const allowed = REPORT_GROUPS[entity];
+    if (allowed && !allowed.includes(groupBy)) {
+      errors.push(
+        `groupBy=${groupBy} is not valid for ${entity}. Use ${allowed.join(" | ")}`
+      );
+    }
+  }
+
+  if (toolName === "find" && raw.status != null && raw.status !== "") {
+    if (!isClientStatus(raw.status)) {
+      errors.push("status must be all | owes_you | deposits.");
+    } else if (String(raw.type ?? "").trim().toLowerCase() !== "client") {
+      errors.push("status is only valid when type=client.");
+    }
+  }
+
+  return { valid: errors.length === 0, errors };
+}
+
 /**
  * Validate tool call matches schema
  */
@@ -205,29 +316,27 @@ export function validateToolCall(toolCall: AIToolCall): {
   valid: boolean;
   errors: string[];
 } {
-  const errors: string[] = [];
   const tool = getToolByName(toolCall.toolName);
 
   if (!tool) {
-    errors.push(`Unknown tool: ${toolCall.toolName}`);
-    return { valid: false, errors };
+    return {
+      valid: false,
+      errors: [`Unknown tool: ${toolCall.toolName}`],
+    };
   }
 
-  const requiredInputs = Object.entries(tool.input_schema)
-    .filter(([, param]) => (param as ToolParamSchema).required !== false)
-    .map(([key]) => key);
+  const input =
+    toolCall.input &&
+    typeof toolCall.input === "object" &&
+    !Array.isArray(toolCall.input)
+      ? (toolCall.input as Record<string, unknown>)
+      : toolCall.input === undefined
+        ? {}
+        : undefined;
 
-  for (const required of requiredInputs) {
-    if (
-      toolCall.input === undefined ||
-      toolCall.input[required] === undefined
-    ) {
-      errors.push(`Missing required input: ${required}`);
-    }
-  }
-
-  return {
-    valid: errors.length === 0,
-    errors,
-  };
+  return validateAgainstSchema(
+    toolCall.toolName,
+    input,
+    tool.input_schema as Record<string, ToolParamSchema>
+  );
 }

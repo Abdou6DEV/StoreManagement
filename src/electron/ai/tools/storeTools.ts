@@ -19,6 +19,8 @@ import {
   parseLocalDateRange,
   type LocalDateRange,
 } from "./parseLocalDateRange";
+import { resolveClientFind } from "./clientStatus";
+import { capList, listMeta, listMetaFromTotal } from "./listMeta";
 
 export interface AIToolInput {
   [key: string]: unknown;
@@ -44,8 +46,10 @@ type ToolDef = {
   input_schema: Record<string, ToolParam>;
 };
 
-const SAMPLE_LIMIT = 70;
-const BREAKDOWN_LIMIT = 40;
+/** TEMPORARY: return full lists. Flip to false to restore 70/40 caps. */
+const TEMP_SKIP_SAMPLE_LIMIT = true;
+const SAMPLE_LIMIT = TEMP_SKIP_SAMPLE_LIMIT ? Number.MAX_SAFE_INTEGER : 70;
+const BREAKDOWN_LIMIT = TEMP_SKIP_SAMPLE_LIMIT ? Number.MAX_SAFE_INTEGER : 40;
 
 function fail(error: string): AIToolResult {
   return { success: false, error };
@@ -150,17 +154,6 @@ function filterStockProducts<
 function isZakatQuery(q?: string): boolean {
   const text = q?.trim().toLowerCase() ?? "";
   return text === "zakat" || text === "zakaat" || text.includes("زكاة");
-}
-
-function isOutstandingClientQuery(q?: string): boolean {
-  const text = q?.trim().toLowerCase() ?? "";
-  if (!text) return false;
-  return (
-    /^(credit|credits|crédit|crédits|unpaid|outstanding|owe|owes|debt|impay[ée]s?|creance|créance)$/i.test(
-      text
-    ) ||
-    /(رصيد|دين|سلفة|يسلف|مدين)/.test(text)
-  );
 }
 
 function todayYmd() {
@@ -740,11 +733,16 @@ async function reportStock(q?: string): Promise<AIToolResult> {
         : {}),
     },
     byCategory,
-    matches: matched
-      .slice()
-      .sort((a, b) => b.quantity - a.quantity)
-      .slice(0, SAMPLE_LIMIT)
-      .map(slimProduct),
+    ...(() => {
+      const listed = capList(
+        matched
+          .slice()
+          .sort((a, b) => b.quantity - a.quantity)
+          .map(slimProduct),
+        SAMPLE_LIMIT
+      );
+      return { matches: listed.items, ...listMeta(listed) };
+    })(),
     rule: zakatQuery
       ? "Copy totals.zakatOnStock (2.5% of inventoryRetail). Cash and nisab are on the Zakat page, not in the store. Do not mention zakat on other stock answers."
       : q
@@ -1047,18 +1045,23 @@ async function reportServices(input: {
     },
     byType,
     breakdown: input.groupBy === "none" ? [] : breakdownFromMap(grouped, input.groupBy),
-    matches: soldRows
-      .slice()
-      .sort((a, b) => b.soldAt.getTime() - a.soldAt.getTime())
-      .slice(0, SAMPLE_LIMIT)
-      .map((row) => ({
-        name: row.name,
-        type: row.type,
-        client: row.client,
-        revenue: roundDA(row.revenue),
-        profit: roundDA(row.profit),
-        soldDate: localYmdFromDate(row.soldAt),
-      })),
+    ...(() => {
+      const listed = capList(
+        soldRows
+          .slice()
+          .sort((a, b) => b.soldAt.getTime() - a.soldAt.getTime())
+          .map((row) => ({
+            name: row.name,
+            type: row.type,
+            client: row.client,
+            revenue: roundDA(row.revenue),
+            profit: roundDA(row.profit),
+            soldDate: localYmdFromDate(row.soldAt),
+          })),
+        SAMPLE_LIMIT
+      );
+      return { matches: listed.items, ...listMeta(listed) };
+    })(),
     rule: "Money fields are DA from services SOLD on Cashier in this period. q filters Service Type (repair, flash, …) as on the Services page. byType is the split by that type. jobs*Count fields are COUNTS, not DA. Do not use completed counts as profit.",
   });
 }
@@ -1230,18 +1233,23 @@ async function reportBills(input: {
     totals,
     byType,
     breakdown,
-    matches: rows
-      .slice()
-      .sort((a, b) => b.periodDate.getTime() - a.periodDate.getTime())
-      .slice(0, SAMPLE_LIMIT)
-      .map((row) => ({
-        title: row.title,
-        type: row.type,
-        amountDA: row.amountDA,
-        kind: row.isSalary ? "salary" : "expense",
-        periodDate: localYmdFromDate(row.periodDate),
-        paidDate: localYmdFromDate(row.paidDate),
-      })),
+    ...(() => {
+      const listed = capList(
+        rows
+          .slice()
+          .sort((a, b) => b.periodDate.getTime() - a.periodDate.getTime())
+          .map((row) => ({
+            title: row.title,
+            type: row.type,
+            amountDA: row.amountDA,
+            kind: row.isSalary ? "salary" : "expense",
+            periodDate: localYmdFromDate(row.periodDate),
+            paidDate: localYmdFromDate(row.paidDate),
+          })),
+        SAMPLE_LIMIT
+      );
+      return { matches: listed.items, ...listMeta(listed) };
+    })(),
     rule: "Amounts are already DA. expenses = totals.expensePaid (non-salary). salaries = totals.salaryPaid. all bills = totals.paid. Copy totals; do not add matches.",
   });
 }
@@ -1262,7 +1270,7 @@ async function reportActivity(input: {
     dateFrom: range.startDate,
     dateTo: range.endDate,
     searchDetails: input.q?.trim() || undefined,
-    limit: 20,
+    limit: TEMP_SKIP_SAMPLE_LIMIT ? Number.MAX_SAFE_INTEGER : 20,
     offset: 0,
   });
 
@@ -1271,12 +1279,21 @@ async function reportActivity(input: {
     entity: "activity",
     q: input.q?.trim() || null,
     totals: { count: result.total },
-    matches: result.entries.slice(0, SAMPLE_LIMIT).map((entry) => ({
-      username: entry.username,
-      action: entry.action,
-      details: entry.details,
-      createdAt: entry.createdAt,
-    })),
+    ...(() => {
+      const listed = capList(
+        result.entries.map((entry) => ({
+          username: entry.username,
+          action: entry.action,
+          details: entry.details,
+          createdAt: entry.createdAt,
+        })),
+        SAMPLE_LIMIT
+      );
+      return {
+        matches: listed.items,
+        ...listMetaFromTotal(listed.returnedCount, Number(result.total) || listed.totalCount),
+      };
+    })(),
     rule: "Copy totals.count. Do not count matches.",
   });
 }
@@ -1364,6 +1381,7 @@ export async function tool_report(input: {
 export async function tool_find(input: {
   type?: string;
   q?: string;
+  status?: string;
 } = {}): Promise<AIToolResult> {
   try {
     const type = String(input.type ?? "").trim().toLowerCase();
@@ -1391,6 +1409,7 @@ export async function tool_find(input: {
               category: byBarcode.categoryName ?? null,
             },
           ],
+          ...listMetaFromTotal(1, 1),
           rule: "List the match (name and quantity). This was an exact barcode match.",
         });
       }
@@ -1403,6 +1422,15 @@ export async function tool_find(input: {
           (a, b) =>
             b.quantity - a.quantity || a.name.localeCompare(b.name),
         );
+      const listed = capList(
+        rows.map((product) => ({
+          name: product.name,
+          quantity: product.quantity,
+          sellingPrice: product.sellingPrice,
+          category: product.categoryName ?? null,
+        })),
+        SAMPLE_LIMIT
+      );
       return ok({
         type: "product",
         q,
@@ -1414,31 +1442,29 @@ export async function tool_find(input: {
             0,
           ),
         },
-        matches: rows.slice(0, SAMPLE_LIMIT).map((product) => ({
-          name: product.name,
-          quantity: product.quantity,
-          sellingPrice: product.sellingPrice,
-          category: product.categoryName ?? null,
-        })),
+        matches: listed.items,
+        ...listMeta(listed),
         rule: "List each matches row: name and quantity. totals.totalQuantity is units in stock. Do not paste a category breakdown.",
       });
     }
 
     if (type === "client") {
       const clients = await clientsDb.getAllClientsWithTotalPurchases();
-      const outstandingOnly = isOutstandingClientQuery(q);
-      const filtered = outstandingOnly
-        ? clients.filter(
-            (client) =>
-              Number(client.totalCredit || 0) > 0 ||
-              Number(client.totalVersement || 0) > 0
-          )
-        : q
-          ? clients.filter(
-              (client) => matchesQ(client.name, q) || matchesQ(client.phone, q)
-            )
-          : clients;
-      const matched = filtered.map((client) => {
+      const { status, q: nameQ } = resolveClientFind(input.q, input.status);
+      let filtered = clients;
+      if (status === "owes_you") {
+        filtered = filtered.filter((client) => Number(client.totalCredit || 0) > 0);
+      } else if (status === "deposits") {
+        filtered = filtered.filter(
+          (client) => Number(client.totalVersement || 0) > 0
+        );
+      }
+      if (nameQ) {
+        filtered = filtered.filter(
+          (client) => matchesQ(client.name, nameQ) || matchesQ(client.phone, nameQ)
+        );
+      }
+      const mapped = filtered.map((client) => {
         const clientsOweYou = Number(client.totalCredit || 0);
         const youOweClients = Number(client.totalVersement || 0);
         return {
@@ -1452,44 +1478,39 @@ export async function tool_find(input: {
           totalVersement: youOweClients,
         };
       });
-      const clientsOweYou = matched.reduce(
+      const clientsOweYou = mapped.reduce(
         (sum, client) => sum + client.clientsOweYou,
         0
       );
-      const youOweClients = matched.reduce(
+      const youOweClients = mapped.reduce(
         (sum, client) => sum + client.youOweClients,
         0
       );
-      const outstandingCount = matched.filter(
-        (client) => client.clientsOweYou > 0 || client.youOweClients > 0
-      ).length;
-      const sorted = outstandingOnly
-        ? matched
-            .slice()
-            .sort(
-              (a, b) =>
-                b.clientsOweYou +
-                b.youOweClients -
-                (a.clientsOweYou + a.youOweClients)
-            )
-        : matched
-            .slice()
-            .sort((a, b) => a.name.localeCompare(b.name));
+      const sorted = mapped.slice().sort((a, b) => {
+        if (status === "owes_you") return b.clientsOweYou - a.clientsOweYou;
+        if (status === "deposits") return b.youOweClients - a.youOweClients;
+        return a.name.localeCompare(b.name);
+      });
+      const listed = capList(sorted, SAMPLE_LIMIT);
       return ok({
         type: "client",
-        q: q || null,
+        status,
+        q: nameQ || null,
         totals: {
-          matchCount: matched.length,
-          outstandingCount,
+          matchCount: mapped.length,
           clientsOweYou,
           youOweClients,
           totalCredit: clientsOweYou,
           totalVersement: youOweClients,
         },
-        matches: sorted.slice(0, SAMPLE_LIMIT),
-        rule: outstandingOnly
-          ? "This is the CREDIT/VERSEMENT slice only. CREDIT = clientsOweYou. VERSEMENT = youOweClients. Copy totals.matchCount for how many of these clients. Never mix the two amounts."
-          : "Copy totals.matchCount for how many clients. That is all clients, not only credit. clientsOweYou / youOweClients are money, not a client count. For who owes you, call again with q=credit.",
+        matches: listed.items,
+        ...listMeta(listed),
+        rule:
+          status === "owes_you"
+            ? "CREDIT slice only. Copy totals.clientsOweYou and totals.matchCount. Do not mix with youOweClients."
+            : status === "deposits"
+              ? "VERSEMENT slice only. Copy totals.youOweClients and totals.matchCount. Do not mix with clientsOweYou."
+              : "Copy totals.matchCount for how many clients. That is all clients, not only credit. clientsOweYou / youOweClients are money, not a client count. For who owes you, use status=owes_you. For deposits, use status=deposits.",
       });
     }
 
@@ -1550,6 +1571,10 @@ export async function tool_find(input: {
         };
       });
 
+      const listed = capList(
+        rows.slice().sort((a, b) => b.purchaseAmount - a.purchaseAmount),
+        SAMPLE_LIMIT
+      );
       return ok({
         type: "seller",
         q: q || null,
@@ -1558,26 +1583,29 @@ export async function tool_find(input: {
           purchaseCount: rows.reduce((sum, row) => sum + row.purchaseCount, 0),
           purchaseAmount: rows.reduce((sum, row) => sum + row.purchaseAmount, 0),
         },
-        matches: rows
-          .slice()
-          .sort((a, b) => b.purchaseAmount - a.purchaseAmount)
-          .slice(0, SAMPLE_LIMIT),
+        matches: listed.items,
+        ...listMeta(listed),
         rule: "Sellers are suppliers. Copy totals. purchaseAmount is all-time DA. For a day/month/year use report entity=purchases with dates. There is no supplier debt in the store.",
       });
     }
 
     if (type === "sale") {
       const result = await salesDb.searchSales(q, 20, 0, 365);
-      return ok({
-        type: "sale",
-        q,
-        totals: { matchCount: result.totalCount },
-        matches: result.sales.slice(0, SAMPLE_LIMIT).map((sale: any) => ({
+      const listed = capList(
+        result.sales.map((sale: any) => ({
           id: sale.id,
           client: sale.client?.name ?? null,
           total: sale.totalAmountWithDiscount,
           createdAt: sale.createdAt,
         })),
+        SAMPLE_LIMIT
+      );
+      return ok({
+        type: "sale",
+        q,
+        totals: { matchCount: result.totalCount },
+        matches: listed.items,
+        ...listMetaFromTotal(listed.returnedCount, result.totalCount),
         rule: "Copy totals.matchCount. Do not add sample totals.",
       });
     }
@@ -1604,6 +1632,10 @@ export async function tool_alerts(input: {
       const matched = products.filter(
         (product) => product.quantity > 0 && product.quantity <= threshold
       );
+      const listed = capList(
+        matched.slice().sort((a, b) => a.quantity - b.quantity).map(slimProduct),
+        SAMPLE_LIMIT
+      );
       return ok({
         kind,
         threshold,
@@ -1611,10 +1643,8 @@ export async function tool_alerts(input: {
           matchCount: matched.length,
           totalQuantity: matched.reduce((sum, product) => sum + product.quantity, 0),
         },
-        matches: matched
-          .sort((a, b) => a.quantity - b.quantity)
-          .slice(0, SAMPLE_LIMIT)
-          .map(slimProduct),
+        matches: listed.items,
+        ...listMeta(listed),
         rule: "Copy totals.matchCount. Do not count matches.",
       });
     }
@@ -1622,10 +1652,12 @@ export async function tool_alerts(input: {
     if (kind === "out_of_stock") {
       const products = await productsDb.getAllProducts();
       const matched = products.filter((product) => product.quantity === 0);
+      const listed = capList(matched.map(slimProduct), SAMPLE_LIMIT);
       return ok({
         kind,
         totals: { matchCount: matched.length, totalQuantity: 0 },
-        matches: matched.slice(0, SAMPLE_LIMIT).map(slimProduct),
+        matches: listed.items,
+        ...listMeta(listed),
         rule: "Copy totals.matchCount.",
       });
     }
@@ -1651,17 +1683,8 @@ export async function tool_alerts(input: {
         (sum, payment) => sum + Number(payment.givenAmount || 0),
         0
       );
-      return ok({
-        kind,
-        totals: {
-          matchCount: matched.length,
-          creditCount: credits.length,
-          versementCount: versements.length,
-          clientsOweYou,
-          youOweClients,
-          amount: clientsOweYou + youOweClients,
-        },
-        matches: matched.slice(0, SAMPLE_LIMIT).map((payment) => ({
+      const listed = capList(
+        matched.map((payment) => ({
           id: payment.id,
           type: payment.type,
           meaning:
@@ -1673,6 +1696,20 @@ export async function tool_alerts(input: {
               : payment.givenAmount,
           dueDate: payment.dueDate,
         })),
+        SAMPLE_LIMIT
+      );
+      return ok({
+        kind,
+        totals: {
+          matchCount: matched.length,
+          creditCount: credits.length,
+          versementCount: versements.length,
+          clientsOweYou,
+          youOweClients,
+          amount: clientsOweYou + youOweClients,
+        },
+        matches: listed.items,
+        ...listMeta(listed),
         rule: "CREDIT = clientsOweYou (they owe you). VERSEMENT = youOweClients (deposit you hold). Never mix them. Copy totals. Do not add matches.",
       });
     }
@@ -1704,6 +1741,23 @@ export async function tool_alerts(input: {
         (sum, bill) => sum + centimesToDA(bill.amount),
         0
       );
+      const listed = capList(
+        matched
+          .slice()
+          .sort(
+            (a, b) =>
+              new Date(a.nextBillDate).getTime() - new Date(b.nextBillDate).getTime()
+          )
+          .map((bill) => ({
+            title: bill.title,
+            type: bill.type,
+            duration: bill.duration,
+            amount: centimesToDA(bill.amount),
+            nextBillDate: localYmdFromDate(new Date(bill.nextBillDate)),
+            billKind: isSalaryType(bill.type) ? "salary" : "expense",
+          })),
+        SAMPLE_LIMIT
+      );
       return ok({
         kind,
         days: kind === "bills_due" ? days : undefined,
@@ -1713,21 +1767,8 @@ export async function tool_alerts(input: {
           salaryCount: matched.filter((bill) => isSalaryType(bill.type)).length,
           expenseCount: matched.filter((bill) => !isSalaryType(bill.type)).length,
         },
-        matches: matched
-          .slice()
-          .sort(
-            (a, b) =>
-              new Date(a.nextBillDate).getTime() - new Date(b.nextBillDate).getTime()
-          )
-          .slice(0, SAMPLE_LIMIT)
-          .map((bill) => ({
-            title: bill.title,
-            type: bill.type,
-            duration: bill.duration,
-            amount: centimesToDA(bill.amount),
-            nextBillDate: localYmdFromDate(new Date(bill.nextBillDate)),
-            billKind: isSalaryType(bill.type) ? "salary" : "expense",
-          })),
+        matches: listed.items,
+        ...listMeta(listed),
         rule: "These are store bills (rent, salary, expenses), not client debts. amount is already DA. Copy totals. Do not add matches.",
       });
     }
@@ -1735,18 +1776,23 @@ export async function tool_alerts(input: {
     if (kind === "upcoming_services") {
       const upcoming = await serviceAppointmentsDb.getUpcomingServiceAppointments(7);
       const overdue = await serviceAppointmentsDb.getOverdueServiceAppointments();
+      const listed = capList(
+        upcoming.map((item: any) => ({
+          id: item.id,
+          name: item.name,
+          dueDate: item.dueDate,
+          client: item.client?.name ?? null,
+        })),
+        SAMPLE_LIMIT
+      );
       return ok({
         kind,
         totals: {
           upcomingCount: upcoming.length,
           overdueCount: overdue.length,
         },
-        matches: upcoming.slice(0, SAMPLE_LIMIT).map((item: any) => ({
-          id: item.id,
-          name: item.name,
-          dueDate: item.dueDate,
-          client: item.client?.name ?? null,
-        })),
+        matches: listed.items,
+        ...listMeta(listed),
         rule: "Copy totals.upcomingCount and totals.overdueCount.",
       });
     }
@@ -1769,6 +1815,7 @@ export const AI_TOOLS_REGISTRY: Record<string, ToolDef> = {
       entity: {
         type: "string",
         description: "sales | payments | purchases | stock | services | bills | activity",
+        required: true,
         enum: [
           "sales",
           "payments",
@@ -1807,19 +1854,27 @@ export const AI_TOOLS_REGISTRY: Record<string, ToolDef> = {
   find: {
     name: "find",
     description:
-      "Look up products, clients, suppliers (sellers), or sales by name/brand/barcode/category. For products, returns in-stock rows to list (name, quantity). If q matches a stock category, only that category — not names that merely contain those letters. type=client with no q = ALL clients (totals.matchCount). type=client q=credit = CREDIT/VERSEMENT only (who owes you / deposits). q=name looks up one client. Omit q for type=seller to list all suppliers. Copy totals; for type=product list the matches array.",
+      "Look up products, clients, suppliers (sellers), or sales by name/brand/barcode/category. For products, returns in-stock rows to list (name, quantity). If q matches a stock category, only that category — not names that merely contain those letters. type=client status=all = ALL clients (totals.matchCount). type=client status=owes_you = CREDIT only. type=client status=deposits = VERSEMENT only. q=name looks up one client. Omit q for type=seller to list all suppliers. Copy totals; for type=product list the matches array. If truncated is true, say returnedCount of totalCount.",
     fn: tool_find,
     input_schema: {
       type: {
         type: "string",
         description: "product | client | seller (supplier) | sale",
+        required: true,
         enum: ["product", "client", "seller", "sale"],
       },
       q: {
         type: "string",
         description:
-          "Name, brand, barcode, category, client phone, sale text, or supplier. For type=client: omit for ALL clients; q=credit for outstanding CREDIT/VERSEMENT only. For products, a matching stock category is used instead of substring names. Omit for a full supplier list when type=seller.",
+          "Name, brand, barcode, category, client phone, sale text, or supplier. For type=client: name/phone only — use status for CREDIT vs deposits. For products, a matching stock category is used instead of substring names. Omit for a full supplier list when type=seller.",
         required: false,
+      },
+      status: {
+        type: "string",
+        description:
+          "type=client only. all = every client. owes_you = CREDIT (they owe you). deposits = VERSEMENT (you hold their deposit). Never put credit or versement in q.",
+        required: false,
+        enum: ["all", "owes_you", "deposits"],
       },
     },
   },
@@ -1833,6 +1888,7 @@ export const AI_TOOLS_REGISTRY: Record<string, ToolDef> = {
         type: "string",
         description:
           "low_stock | out_of_stock | unpaid | overdue | bills_due | bills_overdue | upcoming_services",
+        required: true,
         enum: [
           "low_stock",
           "out_of_stock",

@@ -20,8 +20,16 @@ import {
   snapshotStoreQuery,
   unwrapFollowUpUserText,
   withFollowUpContext,
-  type LastStoreQuery,
 } from "../ai/storeQueryMemory";
+import {
+  aiRequest,
+  currentSession,
+  dropSession,
+  getOrCreateSession,
+  resetSessionChat,
+  runWithAiRequest,
+  type WorkStatus,
+} from "../ai/aiSession";
 
 type ChatMessage = {
   role: "user" | "assistant";
@@ -31,6 +39,9 @@ type ChatMessage = {
 const MAX_HISTORY_MESSAGES = 16;
 const MAX_HISTORY_CHARS = 12_000;
 const MAX_STORED_ASSISTANT_CHARS = 4_000;
+
+/** TEMPORARY: send full tool payloads. Flip to false to restore compacting. */
+const TEMP_SKIP_COMPACT = true;
 
 function messageChars(messages: ChatMessage[]) {
   return messages.reduce((n, m) => n + m.content.length, 0);
@@ -88,21 +99,11 @@ type OpenAIChatMessage =
       name?: string;
     };
 
-type WorkStatus = {
-  phase: "thinking" | "tool" | "writing";
-  toolName?: string;
-};
-
-let conversationHistory: ChatMessage[] = [];
-let currentUserName: string | undefined;
-let selectedModelId: string | undefined;
-let lastStoreQuery: LastStoreQuery | null = null;
-let reuseLastQuery = false;
 const skippedUntil = new Map<string, number>();
-let statusSink: ((status: WorkStatus) => void) | null = null;
+const watchedWebContents = new Set<number>();
 
 function emitWorkStatus(status: WorkStatus) {
-  statusSink?.(status);
+  aiRequest()?.statusSink?.(status);
 }
 
 function emitWaitingOnModel(isFinalWrite = false) {
@@ -419,8 +420,9 @@ async function runOneTool(
     toolInput && typeof toolInput === "object" && !Array.isArray(toolInput)
       ? (toolInput as Record<string, unknown>)
       : {};
-  const input = reuseLastQuery
-    ? mergeFollowUpInput(toolName, rawInput, lastStoreQuery)
+  const session = currentSession();
+  const input = session?.reuseLastQuery
+    ? mergeFollowUpInput(toolName, rawInput, session.lastStoreQuery)
     : rawInput;
 
   console.log(`[AI] Tool call requested: ${toolName}`);
@@ -432,7 +434,9 @@ async function runOneTool(
   });
 
   const compacted = toolResult.success
-    ? compactToolResult(toolResult.result, maxResultChars)
+    ? TEMP_SKIP_COMPACT
+      ? toolResult.result
+      : compactToolResult(toolResult.result, maxResultChars)
     : undefined;
 
   console.log(
@@ -444,7 +448,9 @@ async function runOneTool(
       compacted && typeof compacted === "object" && !Array.isArray(compacted)
         ? (compacted as Record<string, unknown>)
         : { result: compacted };
-    lastStoreQuery = snapshotStoreQuery(toolName, input, response);
+    if (session) {
+      session.lastStoreQuery = snapshotStoreQuery(toolName, input, response);
+    }
     return {
       name: toolName,
       response,
@@ -954,6 +960,7 @@ function modelsToTry(messages: ChatMessage[]) {
     ? byPriority.filter((model) => model.capabilities.toolCalling)
     : byPriority;
   const available = eligible.filter((model) => !isModelSkipped(model.id));
+  const selectedModelId = currentSession()?.selectedModelId;
 
   if (!selectedModelId) {
     return available;
@@ -1025,7 +1032,7 @@ async function writeListWithStrongerModel(
     {
       role: "user",
       content:
-        "STORE_DATA below is already computed from the database. Amounts are DA. Write the user's answer as a clear list from STORE_DATA. Copy totals exactly. Do not invent or omit named rows that are present. At most 70 items. Same language as the user. If they wrote Algerian Darija (Latin or Arabic script), write in Algerian Darija using Arabic script only — never Latin/franco-arabe, never فصحى.\n\n" +
+        "STORE_DATA below is already computed from the database. Amounts are DA. Write the user's answer as a clear list from STORE_DATA. Copy totals exactly. Do not invent or omit named rows that are present. At most 70 items. If truncated is true, say returnedCount of totalCount. Same language as the user. If they wrote Algerian Darija (Latin or Arabic script), write in Algerian Darija using Arabic script only — never Latin/franco-arabe, never فصحى.\n\n" +
         JSON.stringify(toolResults),
     },
   ];
@@ -1197,23 +1204,23 @@ export function setupAIHandlers() {
     }));
   });
   
-  ipcMain.handle("ai:set-model", async (_event, modelId: string | null) => {
+  ipcMain.handle("ai:set-model", async (event, modelId: string | null) => {
+    const session = getOrCreateSession(event.sender.id);
     if (modelId === null) {
-      selectedModelId = undefined;
+      session.selectedModelId = undefined;
       console.log("[AI] Model selection: automatic");
       return { success: true, model: "automatic" };
     }
-  
-    const model = AI_MODELS.find((model) => model.id === modelId);
-  
+
+    const model = AI_MODELS.find((entry) => entry.id === modelId);
+
     if (!model) {
       throw new Error(`Unknown AI model: ${modelId}`);
     }
-  
-    selectedModelId = modelId;
-  
+
+    session.selectedModelId = modelId;
     console.log(`[AI] Model selection: ${model.provider}/${model.id}`);
-  
+
     return {
       success: true,
       model: model.id,
@@ -1227,72 +1234,89 @@ export function setupAIHandlers() {
         throw new Error("Invalid message");
       }
 
+      const session = getOrCreateSession(event.sender.id);
+      const sender = event.sender;
+      const followUp = isFollowUp(message);
+
       if (typeof userName === "string" && userName.trim()) {
-        currentUserName = userName.trim();
+        session.currentUserName = userName.trim();
       }
 
-      conversationHistory.push({
+      session.conversationHistory.push({
         role: "user",
         content: message,
       });
-      conversationHistory = windowConversation(conversationHistory);
-      reuseLastQuery = Boolean(lastStoreQuery && isFollowUp(message));
+      session.conversationHistory = windowConversation(session.conversationHistory);
+      if (!followUp) {
+        session.lastStoreQuery = null;
+      }
+      session.reuseLastQuery = Boolean(session.lastStoreQuery && followUp);
 
-      const sender = event.sender;
-      statusSink = (status) => {
+      const statusSink = (status: WorkStatus) => {
         if (!sender.isDestroyed()) sender.send("ai:status", status);
       };
-      emitWorkStatus({ phase: "thinking" });
 
-      try {
-        const modelMessages = withFollowUpContext(
-          conversationHistory,
-          lastStoreQuery,
-          message
-        );
-        const outcome = await callWithAutomaticModelSwitch(
-          modelMessages,
-          currentUserName
-        );
-        const assistantReply = await rewriteWrongNumbers(
-          message,
-          outcome.text,
-          outcome.toolResults,
-          currentUserName
-        );
-
-        conversationHistory.push({
-          role: "assistant",
-          content: assistantReply,
+      if (!watchedWebContents.has(sender.id)) {
+        watchedWebContents.add(sender.id);
+        sender.once("destroyed", () => {
+          dropSession(sender.id);
+          watchedWebContents.delete(sender.id);
         });
-        conversationHistory = windowConversation(conversationHistory);
-
-        const response: AiChatResponse = {
-          text: assistantReply,
-          table: buildResultTable(outcome.toolResults, message) ?? undefined,
-        };
-        return response;
-      } catch (error) {
-        console.error("[AI] Chat failed after all models:", error);
-        const fallback = unavailableReply(message);
-        conversationHistory.push({
-          role: "assistant",
-          content: fallback,
-        });
-        conversationHistory = windowConversation(conversationHistory);
-        return { text: fallback } satisfies AiChatResponse;
-      } finally {
-        reuseLastQuery = false;
-        statusSink = null;
       }
+
+      return runWithAiRequest({ session, statusSink }, async () => {
+        emitWorkStatus({ phase: "thinking" });
+
+        try {
+          const modelMessages = withFollowUpContext(
+            session.conversationHistory,
+            session.lastStoreQuery,
+            message
+          );
+          const outcome = await callWithAutomaticModelSwitch(
+            modelMessages,
+            session.currentUserName
+          );
+          const assistantReply = await rewriteWrongNumbers(
+            message,
+            outcome.text,
+            outcome.toolResults,
+            session.currentUserName
+          );
+
+          session.conversationHistory.push({
+            role: "assistant",
+            content: assistantReply,
+          });
+          session.conversationHistory = windowConversation(
+            session.conversationHistory
+          );
+
+          const response: AiChatResponse = {
+            text: assistantReply,
+            table: buildResultTable(outcome.toolResults, message) ?? undefined,
+          };
+          return response;
+        } catch (error) {
+          console.error("[AI] Chat failed after all models:", error);
+          const fallback = unavailableReply(message);
+          session.conversationHistory.push({
+            role: "assistant",
+            content: fallback,
+          });
+          session.conversationHistory = windowConversation(
+            session.conversationHistory
+          );
+          return { text: fallback } satisfies AiChatResponse;
+        } finally {
+          session.reuseLastQuery = false;
+        }
+      });
     }
   );
 
-  ipcMain.handle("ai:clear", async () => {
-    conversationHistory = [];
-    currentUserName = undefined;
-    lastStoreQuery = null;
-    reuseLastQuery = false;
+  ipcMain.handle("ai:clear", async (event) => {
+    resetSessionChat(event.sender.id);
   });
 
   ipcMain.handle("ai:list-models", async () => {
