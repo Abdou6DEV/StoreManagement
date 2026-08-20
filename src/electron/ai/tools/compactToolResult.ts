@@ -92,6 +92,7 @@ const PRESERVE_KEYS = new Set([
   "kind",
   "q",
   "rule",
+  "ranking",
   "top",
   "topMatch",
   "type",

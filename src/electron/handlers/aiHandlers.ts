@@ -31,11 +31,17 @@ import {
   aiRequest,
   currentSession,
   dropSession,
+  enqueueAiSession,
   getOrCreateSession,
   resetSessionChat,
   runWithAiRequest,
   type WorkStatus,
 } from "../ai/aiSession";
+import { formatToolFallback } from "../ai/formatToolFallback";
+import {
+  fetchWithTimeout,
+  MODEL_FETCH_TIMEOUT_MS,
+} from "../ai/fetchWithTimeout";
 
 type ChatMessage = {
   role: "user" | "assistant";
@@ -391,34 +397,6 @@ function toGeminiTools() {
   };
 }
 
-function fallbackFromToolData(data: unknown): string {
-  if (!data || typeof data !== "object") {
-    return "";
-  }
-  const record = data as Record<string, unknown>;
-  const payload: Record<string, unknown> = {};
-  for (const key of [
-    "totals",
-    "breakdown",
-    "matchCount",
-    "totalQuantity",
-    "startLocal",
-    "endLocal",
-    "timezone",
-    "entity",
-    "kind",
-    "q",
-    "rule",
-    "top",
-    "topMatch",
-  ]) {
-    if (key in record) {
-      payload[key] = record[key];
-    }
-  }
-  return Object.keys(payload).length > 0 ? JSON.stringify(payload) : "";
-}
-
 async function runOneTool(
   toolName: string,
   toolInput: unknown,
@@ -438,7 +416,7 @@ async function runOneTool(
       ? (toolInput as Record<string, unknown>)
       : {};
   const session = currentSession();
-  let resolvedName = toolName;
+  const resolvedName = toolName;
   let input = session?.reuseLastQuery
     ? mergeFollowUpInput(toolName, rawInput, session.lastStoreQuery)
     : rawInput;
@@ -586,6 +564,10 @@ async function callGemini(
   let usedTools = false;
   const toolResults: unknown[] = [];
   const maxResultChars = getToolResultCharBudget(modelTpm(modelId));
+  const userText = unwrapFollowUpUserText(
+    [...messages].reverse().find((message) => message.role === "user")
+      ?.content ?? ""
+  );
 
   while (maxRetries > 0) {
     emitWaitingOnModel(!!options?.disableTools);
@@ -594,7 +576,7 @@ async function callGemini(
       modelSupportsToolCalling(modelId) &&
       (geminiInToolLoop(currentContents) || shouldAttachTools(messages));
 
-    const response = await fetch(
+    const response = await fetchWithTimeout(
       `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${apiKey}`,
       {
         method: "POST",
@@ -608,7 +590,8 @@ async function callGemini(
           contents: currentContents,
           ...(attachTools ? { tools: [toGeminiTools()] } : {}),
         }),
-      }
+      },
+      MODEL_FETCH_TIMEOUT_MS
     );
 
     if (!response.ok) {
@@ -666,10 +649,10 @@ async function callGemini(
       continue;
     }
 
-    return { text: fallbackFromToolData(lastToolData), toolResults };
+    return { text: formatToolFallback(lastToolData, userText), toolResults };
   }
 
-  return { text: fallbackFromToolData(lastToolData), toolResults };
+  return { text: formatToolFallback(lastToolData, userText), toolResults };
 }
 
 // Convert tools to OpenAI format (for Mistral, Groq, OpenRouter)
@@ -765,7 +748,7 @@ async function callOpenRouter(
 
   while (maxRetries > 0) {
     emitWaitingOnModel(!!options?.disableTools);
-    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    const response = await fetchWithTimeout("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -784,7 +767,7 @@ async function callOpenRouter(
         ],
         ...openAIToolOptions(currentMessages, modelId, options),
       }),
-    });
+    }, MODEL_FETCH_TIMEOUT_MS);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -840,7 +823,7 @@ async function callMistral(
 
   while (maxRetries > 0) {
     emitWaitingOnModel(!!options?.disableTools);
-    const response = await fetch(
+    const response = await fetchWithTimeout(
       "https://api.mistral.ai/v1/chat/completions",
       {
         method: "POST",
@@ -859,7 +842,8 @@ async function callMistral(
           ],
           ...openAIToolOptions(currentMessages, modelId, options),
         }),
-      }
+      },
+      MODEL_FETCH_TIMEOUT_MS
     );
 
     if (!response.ok) {
@@ -916,7 +900,7 @@ async function callGroq(
 
   while (maxRetries > 0) {
     emitWaitingOnModel(!!options?.disableTools);
-    const response = await fetch(
+    const response = await fetchWithTimeout(
       "https://api.groq.com/openai/v1/chat/completions",
       {
         method: "POST",
@@ -935,7 +919,8 @@ async function callGroq(
           ],
           ...openAIToolOptions(currentMessages, modelId, options),
         }),
-      }
+      },
+      MODEL_FETCH_TIMEOUT_MS
     );
 
     if (!response.ok) {
@@ -1017,7 +1002,7 @@ async function callNvidia(
 
   while (maxRetries > 0) {
     emitWaitingOnModel(!!options?.disableTools);
-    const response = await fetch(
+    const response = await fetchWithTimeout(
       "https://integrate.api.nvidia.com/v1/chat/completions",
       {
         method: "POST",
@@ -1037,7 +1022,8 @@ async function callNvidia(
           ],
           ...openAIToolOptions(currentMessages, modelId, options),
         }),
-      }
+      },
+      MODEL_FETCH_TIMEOUT_MS
     );
 
     if (!response.ok) {
@@ -1398,6 +1384,8 @@ export function setupAIHandlers() {
 
       const session = getOrCreateSession(event.sender.id);
       const sender = event.sender;
+
+      return enqueueAiSession(session.webContentsId, async () => {
       const followUp = isFollowUp(message);
 
       if (typeof userName === "string" && userName.trim()) {
@@ -1474,6 +1462,7 @@ export function setupAIHandlers() {
         } finally {
           session.reuseLastQuery = false;
         }
+      });
       });
     }
   );

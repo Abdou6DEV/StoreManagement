@@ -27,6 +27,7 @@ export type AiRequestContext = {
 };
 
 const sessions = new Map<number, AiSession>();
+const sessionRuns = new Map<number, Promise<unknown>>();
 const als = new AsyncLocalStorage<AiRequestContext>();
 
 export function getOrCreateSession(webContentsId: number): AiSession {
@@ -55,6 +56,38 @@ export function resetSessionChat(webContentsId: number) {
 
 export function dropSession(webContentsId: number) {
   sessions.delete(webContentsId);
+  sessionRuns.delete(webContentsId);
+}
+
+export function enqueueAiSession<T>(
+  webContentsId: number,
+  fn: () => Promise<T>
+): Promise<T> {
+  const previous = sessionRuns.get(webContentsId) ?? Promise.resolve();
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  sessionRuns.set(
+    webContentsId,
+    previous.then(
+      () => gate,
+      () => gate
+    )
+  );
+
+  return (async () => {
+    try {
+      await previous;
+    } catch {
+      // Previous request failed; still run this one.
+    }
+    try {
+      return await fn();
+    } finally {
+      release();
+    }
+  })();
 }
 
 export function runWithAiRequest<T>(

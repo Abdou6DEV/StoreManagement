@@ -255,25 +255,55 @@ function rangeMeta(startDate: Date, endDate: Date) {
   return localRangeMeta(startDate, endDate, peekStoreFirstRecordedYmd());
 }
 
+const RANK_BY_VALUES = [
+  "revenue",
+  "profit",
+  "quantity",
+  "amount",
+  "sellingPrice",
+] as const;
+
+type RankBy = (typeof RANK_BY_VALUES)[number];
+
 const SKIP_TOP_KEYS = new Set(["no-client", "unknown", "all"]);
 
-const RANKING_RULE =
-  "Ranking: who/which/best/most/top of a group → copy top. One most expensive sale/repair/bill/product → copy topMatch. Never use find or matches for ranking.";
+function parseRankBy(value: unknown): RankBy | null {
+  if (value == null || value === "") return null;
+  const normalized = String(value).trim();
+  return RANK_BY_VALUES.includes(normalized as RankBy)
+    ? (normalized as RankBy)
+    : null;
+}
 
-function rowRankAmount(row: Record<string, unknown>): number {
-  return Number(
-    row.revenue ??
-      row.paid ??
-      row.amount ??
-      row.serviceRevenue ??
-      row.sellingPrice ??
-      0
-  );
+function rowRankValue(row: Record<string, unknown>, rankBy: RankBy): number {
+  switch (rankBy) {
+    case "profit":
+      return Number(row.profit ?? 0);
+    case "quantity":
+      return Number(
+        row.quantity ?? row.count ?? row.totalQuantity ?? row.soldCount ?? 0
+      );
+    case "amount":
+      return Number(row.amount ?? row.paid ?? row.revenue ?? 0);
+    case "sellingPrice":
+      return Number(row.sellingPrice ?? 0);
+    case "revenue":
+    default:
+      return Number(
+        row.revenue ??
+          row.paid ??
+          row.amount ??
+          row.serviceRevenue ??
+          row.sellingPrice ??
+          0
+      );
+  }
 }
 
 function pickTopGroup(
   breakdown: unknown,
-  groupBy: string
+  groupBy: string,
+  rankBy: RankBy = "revenue"
 ): Record<string, unknown> | null {
   if (!Array.isArray(breakdown) || breakdown.length === 0) return null;
   if (!groupBy || groupBy === "none") return null;
@@ -282,7 +312,9 @@ function pickTopGroup(
       !!row && typeof row === "object" && !Array.isArray(row)
   );
   if (ranked.length === 0) return null;
-  ranked.sort((a, b) => rowRankAmount(b) - rowRankAmount(a));
+  ranked.sort(
+    (a, b) => rowRankValue(b, rankBy) - rowRankValue(a, rankBy)
+  );
   if (groupBy === "client" || groupBy === "seller") {
     return (
       ranked.find((row) => !SKIP_TOP_KEYS.has(String(row.key ?? ""))) ??
@@ -291,6 +323,9 @@ function pickTopGroup(
   }
   return ranked[0];
 }
+
+const RANKING_RULE =
+  "Ranking: copy top for ranking.rankBy (default revenue, not profit). One most expensive sale/repair/bill/product → copy topMatch. Never use find or matches for ranking.";
 
 function pickTopMatch<T>(rows: T[], amount: (row: T) => number): T | null {
   if (rows.length === 0) return null;
@@ -304,9 +339,12 @@ function withRanking<T extends Record<string, unknown>>(
   topMatch: unknown = null
 ): T {
   const groupBy = String(payload.groupBy ?? "none");
-  const top = pickTopGroup(payload.breakdown, groupBy);
+  const rankBy = parseRankBy(payload.rankBy) ?? "revenue";
+  const top = pickTopGroup(payload.breakdown, groupBy, rankBy);
   return {
     ...payload,
+    rankBy,
+    ranking: { rankBy, direction: "desc" },
     top,
     topMatch,
     rule: [payload.rule, RANKING_RULE].filter(Boolean).join(" "),
@@ -593,7 +631,8 @@ async function billsPaidInRangeDA(startDate: Date, endDate: Date): Promise<numbe
 
 function breakdownFromMap(
   grouped: Map<string, { revenue: number; count: number; profit: number }>,
-  groupBy: string
+  groupBy: string,
+  rankBy?: RankBy | null
 ) {
   const rows = Array.from(grouped.entries()).map(([key, value]) => ({
     key,
@@ -604,8 +643,13 @@ function breakdownFromMap(
   if (isTime) {
     return rows.sort((a, b) => a.key.localeCompare(b.key)).slice(-BREAKDOWN_LIMIT);
   }
+  const metric = parseRankBy(rankBy) ?? "revenue";
   return rows
-    .sort((a, b) => b.revenue - a.revenue || a.key.localeCompare(b.key))
+    .sort(
+      (a, b) =>
+        rowRankValue(b, metric) - rowRankValue(a, metric) ||
+        a.key.localeCompare(b.key)
+    )
     .slice(0, BREAKDOWN_LIMIT);
 }
 
@@ -623,6 +667,7 @@ async function reportSales(input: {
   q?: string;
   startDate?: unknown;
   endDate?: unknown;
+  rankBy?: RankBy | null;
 }): Promise<AIToolResult> {
   const range = await defaultRange(input.groupBy, input.startDate, input.endDate);
   if (range.ok === false) return fail(range.error);
@@ -674,6 +719,7 @@ async function reportSales(input: {
           ...meta,
           entity: "sales",
           groupBy: input.groupBy,
+          rankBy: input.rankBy ?? null,
           totals: withTicketMix(totals, mixTotals, billsPaidTotal),
           breakdown,
           rule: `${salesMixRule} bills/billsPaid are already DA. Do not add rows.`,
@@ -706,6 +752,7 @@ async function reportSales(input: {
           ...meta,
           entity: "sales",
           groupBy: "none",
+          rankBy: input.rankBy ?? null,
           totals: withTicketMix(
             {
               revenue: summary.totalRevenue,
@@ -767,7 +814,9 @@ async function reportSales(input: {
   }
 
   const breakdown =
-    input.groupBy === "none" ? [] : breakdownFromMap(grouped, input.groupBy);
+    input.groupBy === "none"
+      ? []
+      : breakdownFromMap(grouped, input.groupBy, input.rankBy);
   return ok(
     withRanking(
       {
@@ -775,6 +824,7 @@ async function reportSales(input: {
         entity: "sales",
         q: q || null,
         groupBy: input.groupBy,
+        rankBy: input.rankBy ?? null,
         totals: withTicketMix(
           totals,
           mix,
@@ -788,7 +838,10 @@ async function reportSales(input: {
   );
 }
 
-async function reportStock(q?: string): Promise<AIToolResult> {
+async function reportStock(
+  q?: string,
+  rankBy?: RankBy | null
+): Promise<AIToolResult> {
   const products = await productsDb.getAllProducts();
   const zakatQuery = isZakatQuery(q);
   const matched = zakatQuery
@@ -853,6 +906,7 @@ async function reportStock(q?: string): Promise<AIToolResult> {
       {
         entity: "stock",
         q: q || null,
+        rankBy: rankBy ?? null,
         totals: {
           matchCount: matched.length,
           totalQuantity: matched.reduce((sum, product) => sum + product.quantity, 0),
@@ -897,6 +951,7 @@ async function reportPayments(input: {
   q?: string;
   startDate?: unknown;
   endDate?: unknown;
+  rankBy?: RankBy | null;
 }): Promise<AIToolResult> {
   const range = await defaultRange(input.groupBy, input.startDate, input.endDate);
   if (range.ok === false) return fail(range.error);
@@ -932,7 +987,9 @@ async function reportPayments(input: {
   }
 
   const breakdown =
-    input.groupBy === "none" ? [] : breakdownFromMap(grouped, input.groupBy);
+    input.groupBy === "none"
+      ? []
+      : breakdownFromMap(grouped, input.groupBy, input.rankBy);
   const topPayment = pickTopMatch(matched, (payment) =>
     Number(payment.givenAmount || 0)
   );
@@ -944,6 +1001,7 @@ async function reportPayments(input: {
         entity: "payments",
         q: input.q?.trim() || null,
         groupBy: input.groupBy,
+        rankBy: input.rankBy ?? null,
         totals,
         breakdown,
         rule: "Copy totals. Do not add payment rows.",
@@ -964,6 +1022,7 @@ async function reportPurchases(input: {
   q?: string;
   startDate?: unknown;
   endDate?: unknown;
+  rankBy?: RankBy | null;
 }): Promise<AIToolResult> {
   const range = await defaultRange(input.groupBy, input.startDate, input.endDate);
   if (range.ok === false) return fail(range.error);
@@ -995,7 +1054,15 @@ async function reportPurchases(input: {
       key = purchase.seller?.name || "unknown";
     } else if (input.groupBy === "product") {
       for (const item of purchase.PurchaseItems) {
-        if (input.q && !matchesQ(item.product?.name, input.q)) continue;
+        if (
+          input.q &&
+          !matchesQ(purchase.seller?.name, input.q) &&
+          !matchesQ(purchase.seller?.phone, input.q) &&
+          !matchesQ(purchase.seller?.email, input.q) &&
+          !matchesQ(item.product?.name, input.q)
+        ) {
+          continue;
+        }
         const name = item.product?.name || "unknown";
         const current = grouped.get(name) ?? emptyTotals();
         addTotals(current, item.price * item.quantity, 0, item.quantity);
@@ -1011,8 +1078,12 @@ async function reportPurchases(input: {
   }
 
   const breakdown =
-    input.groupBy === "none" ? [] : breakdownFromMap(grouped, input.groupBy);
-  const topPurchase = pickTopMatch(matched, purchaseAmount);
+    input.groupBy === "none"
+      ? []
+      : breakdownFromMap(grouped, input.groupBy, input.rankBy);
+  const topPurchase = pickTopMatch(matched, (purchase) =>
+    purchaseAmount(purchase)
+  );
 
   return ok(
     withRanking(
@@ -1021,6 +1092,7 @@ async function reportPurchases(input: {
         entity: "purchases",
         q: input.q?.trim() || null,
         groupBy: input.groupBy,
+        rankBy: input.rankBy ?? null,
         totals,
         breakdown,
         rule: "Copy totals.amount (DA) and totals.count. groupBy=seller is by supplier name. Do not add purchase rows.",
@@ -1041,6 +1113,7 @@ async function reportServices(input: {
   q?: string;
   startDate?: unknown;
   endDate?: unknown;
+  rankBy?: RankBy | null;
 }): Promise<AIToolResult> {
   const range = await defaultRange(input.groupBy, input.startDate, input.endDate);
   if (range.ok === false) return fail(range.error);
@@ -1201,7 +1274,9 @@ async function reportServices(input: {
     .slice(0, BREAKDOWN_LIMIT);
 
   const breakdown =
-    input.groupBy === "none" ? [] : breakdownFromMap(grouped, input.groupBy);
+    input.groupBy === "none"
+      ? []
+      : breakdownFromMap(grouped, input.groupBy, input.rankBy);
   const topJob = pickTopMatch(soldRows, (row) => row.revenue);
 
   return ok(
@@ -1212,6 +1287,7 @@ async function reportServices(input: {
         currency: "DA",
         q: q || null,
         groupBy: input.groupBy,
+        rankBy: input.rankBy ?? null,
         totals: {
           soldCount: soldRows.length,
           serviceRevenue: rounded.serviceRevenue,
@@ -1272,6 +1348,7 @@ async function reportBills(input: {
   q?: string;
   startDate?: unknown;
   endDate?: unknown;
+  rankBy?: RankBy | null;
 }): Promise<AIToolResult> {
   const rangeOrAll = await billsRange(input.groupBy, input.startDate, input.endDate);
   if (!("allTime" in rangeOrAll) && rangeOrAll.ok === false) {
@@ -1425,6 +1502,7 @@ async function reportBills(input: {
         amountsAreDA: true,
         q: q || null,
         groupBy: input.groupBy,
+        rankBy: input.rankBy ?? null,
         totals,
         byType,
         breakdown,
@@ -1510,10 +1588,15 @@ export async function tool_report(input: {
   q?: string;
   startDate?: string;
   endDate?: string;
+  rankBy?: string;
 } = {}): Promise<AIToolResult> {
   try {
     const entity = String(input.entity ?? "").trim().toLowerCase();
     const groupBy = String(input.groupBy ?? "none").trim().toLowerCase() || "none";
+    const rankBy = parseRankBy(input.rankBy);
+    if (input.rankBy != null && String(input.rankBy).trim() !== "" && !rankBy) {
+      return fail(`rankBy must be ${RANK_BY_VALUES.join(" | ")}`);
+    }
     const allowedEntity = [
       "sales",
       "payments",
@@ -1558,16 +1641,17 @@ export async function tool_report(input: {
       );
     }
 
-    if (entity === "sales") return reportSales({ groupBy, q: input.q, startDate: input.startDate, endDate: input.endDate });
-    if (entity === "stock") return reportStock(input.q);
-    if (entity === "payments") return reportPayments({ groupBy, q: input.q, startDate: input.startDate, endDate: input.endDate });
-    if (entity === "purchases") return reportPurchases({ groupBy, q: input.q, startDate: input.startDate, endDate: input.endDate });
+    if (entity === "sales") return reportSales({ groupBy, q: input.q, startDate: input.startDate, endDate: input.endDate, rankBy });
+    if (entity === "stock") return reportStock(input.q, rankBy);
+    if (entity === "payments") return reportPayments({ groupBy, q: input.q, startDate: input.startDate, endDate: input.endDate, rankBy });
+    if (entity === "purchases") return reportPurchases({ groupBy, q: input.q, startDate: input.startDate, endDate: input.endDate, rankBy });
     if (entity === "services") {
       return reportServices({
         groupBy,
         q: input.q,
         startDate: input.startDate,
         endDate: input.endDate,
+        rankBy,
       });
     }
     if (entity === "bills") {
@@ -1576,6 +1660,7 @@ export async function tool_report(input: {
         q: input.q,
         startDate: input.startDate,
         endDate: input.endDate,
+        rankBy,
       });
     }
     return reportActivity({ q: input.q, startDate: input.startDate, endDate: input.endDate });
@@ -2021,7 +2106,7 @@ export const AI_TOOLS_REGISTRY: Record<string, ToolDef> = {
   report: {
     name: "report",
     description:
-      "Store numbers with server-side totals. Use for today/month/year, month-by-month, rankings (best/most/top/who/which), stock (incl. by category), payments, purchases/suppliers, services, bills/expenses/salaries, activity. Ranking: groupBy=product/client/seller → copy top (named client, not no-client). One most expensive sale/repair/bill/product → copy topMatch. If the user gave no period for a ranking, use all-time (first stored day through today), not this year. For zakat on stock only: entity=stock, q=zakat → totals.zakatOnStock. Sales totals include profit, billsPaid, and netProfit (profit minus bills paid when q is omitted, same as History; with q, billsPaid is 0 and netProfit equals profit). Pass local YYYY-MM-DD from the system prompt. Bills amounts are already DA. Copy totals, top, topMatch, and breakdown; never add rows.",
+      "Store numbers with server-side totals. Use for today/month/year, month-by-month, rankings (best/most/top/who/which), stock (incl. by category), payments, purchases/suppliers, services, bills/expenses/salaries, activity. Ranking: groupBy=product/client/seller → copy top. Use rankBy=revenue (default), profit, quantity, amount, or sellingPrice — do not treat top as profit unless rankBy=profit. One most expensive sale/repair/bill/product → copy topMatch. If the user gave no period for a ranking, use all-time (first stored day through today), not this year. For zakat on stock only: entity=stock, q=zakat → totals.zakatOnStock. Sales totals include profit, billsPaid, and netProfit (profit minus bills paid when q is omitted, same as History; with q, billsPaid is 0 and netProfit equals profit). Pass local YYYY-MM-DD from the system prompt. Bills amounts are already DA. Copy totals, ranking, top, topMatch, and breakdown; never add rows.",
     fn: tool_report,
     input_schema: {
       entity: {
@@ -2058,8 +2143,15 @@ export const AI_TOOLS_REGISTRY: Record<string, ToolDef> = {
       q: {
         type: "string",
         description:
-          "Optional filter: stock category, name, brand, barcode, employee, bill-type, supplier, or service-type (e.g. samsung, cable, abdellah, SALARY, repair). For stock, a matching category wins over names that only contain those letters. Use q=zakat only when the user asked about zakat.",
+          "Optional filter: stock category, name, brand, barcode, employee, bill-type, supplier, or service-type (e.g. samsung, cable, abdellah, SALARY, repair). For stock, a matching category wins over names that only contain those letters. Use q=zakat only when the user asked about zakat. For purchases, q can be a supplier name even with groupBy=product.",
         required: false,
+      },
+      rankBy: {
+        type: "string",
+        description:
+          "How to pick top: revenue (default, same as best/most/top), profit, quantity (units sold), amount (purchases/payments), sellingPrice. Omit unless the user asked for profit, units, or price.",
+        required: false,
+        enum: [...RANK_BY_VALUES],
       },
     },
   },
