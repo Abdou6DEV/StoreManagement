@@ -90,6 +90,21 @@ export const AI_MODELS = [
     priority: 6,
   },
   {
+    id: "deepseek-ai/deepseek-v4-flash-0731",
+    provider: "nvidia",
+    rpm: 40,
+    rpd: null,
+    tpm: null,
+    capabilities: {
+      toolCalling: true,
+      webSearch: false,
+      generalChat: true,
+      storeData: true,
+      listWriter: true,
+    },
+    priority: 7,
+  },
+  {
     id: "openrouter/free",
     provider: "openrouter",
     rpm: null,
@@ -102,7 +117,7 @@ export const AI_MODELS = [
       storeData: true,
       listWriter: true,
     },
-    priority: 7,
+    priority: 8,
   },
   {
     id: "llama-3.3-70b-versatile",
@@ -117,7 +132,7 @@ export const AI_MODELS = [
       storeData: true,
       listWriter: false,
     },
-    priority: 8,
+    priority: 9,
   },
   {
     id: "mistral-small-latest",
@@ -132,7 +147,7 @@ export const AI_MODELS = [
       storeData: true,
       listWriter: false,
     },
-    priority: 9,
+    priority: 10,
   },
 ] as const;
 

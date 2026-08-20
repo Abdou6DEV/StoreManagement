@@ -21,6 +21,7 @@ const AMOUNT_KEYS = new Set([
   "expensePaid",
   "salaryPaid",
   "amount",
+  "total",
   "givenAmount",
   "clientsOweYou",
   "youOweClients",
@@ -30,6 +31,8 @@ const AMOUNT_KEYS = new Set([
   "inventoryCost",
   "inventoryRetail",
   "zakatOnStock",
+  "sellingPrice",
+  "amountDA",
 ]);
 
 const ARABIC_DIGITS = "٠١٢٣٤٥٦٧٨٩";
@@ -61,8 +64,13 @@ function collectFromRecord(
   }
 }
 
+function asRecord(value: unknown): Record<string, unknown> | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  return value as Record<string, unknown>;
+}
+
 function listRows(result: Record<string, unknown>): Record<string, unknown>[] {
-  for (const key of ["breakdown", "byType", "byCategory"]) {
+  for (const key of ["breakdown", "byType", "byCategory", "matches"]) {
     const value = result[key];
     const list = Array.isArray(value)
       ? value
@@ -79,6 +87,12 @@ function listRows(result: Record<string, unknown>): Record<string, unknown>[] {
     }
   }
   return [];
+}
+
+function rankingRows(result: Record<string, unknown>): Record<string, unknown>[] {
+  return ["top", "topMatch"]
+    .map((key) => asRecord(result[key]))
+    .filter((row): row is Record<string, unknown> => row != null);
 }
 
 export function collectAuthoritativeNumbers(toolResults: unknown[]): {
@@ -100,7 +114,7 @@ export function collectAuthoritativeNumbers(toolResults: unknown[]): {
     }
     collectFromRecord(record, counts, amounts);
 
-    const rows = listRows(record);
+    const rows = [...listRows(record), ...rankingRows(record)];
     let maxCount: number | null = null;
     for (const row of rows) {
       collectFromRecord(row, counts, amounts);
@@ -165,6 +179,8 @@ export function replyConflictsWithTotals(
   toolResults: unknown[]
 ): boolean {
   if (!toolResults.length) return false;
+  if (isNameLookup(toolResults)) return false;
+
   const { primaryCount, counts, amounts } = collectAuthoritativeNumbers(toolResults);
   if (primaryCount == null) return false;
 
@@ -189,6 +205,21 @@ export function replyConflictsWithTotals(
   );
 }
 
+function isNameLookup(toolResults: unknown[]) {
+  return toolResults.some((result) => {
+    if (!result || typeof result !== "object" || Array.isArray(result)) {
+      return false;
+    }
+    const type = String((result as { type?: unknown }).type ?? "");
+    return (
+      type === "sale" ||
+      type === "client" ||
+      type === "product" ||
+      type === "seller"
+    );
+  });
+}
+
 export function formatCorrectionHint(toolResults: unknown[]): string {
   const { primaryCount, counts } = collectAuthoritativeNumbers(toolResults);
   const first = toolResults.find(
@@ -199,6 +230,8 @@ export function formatCorrectionHint(toolResults: unknown[]): string {
     "Your draft used the wrong numbers. Copy these authoritative values. Do not invent or recount.",
     primaryCount != null ? `PRIMARY_COUNT=${primaryCount}` : "",
     first?.totals ? `TOTALS=${JSON.stringify(first.totals)}` : "",
+    first?.top ? `TOP=${JSON.stringify(first.top)}` : "",
+    first?.topMatch ? `TOP_MATCH=${JSON.stringify(first.topMatch)}` : "",
     counts.length ? `KNOWN_COUNTS=${JSON.stringify(counts.slice(0, 12))}` : "",
     "Write the answer again in the same language as the user. If they wrote Algerian Darija, use Arabic script only.",
   ]

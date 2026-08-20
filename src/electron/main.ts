@@ -3,6 +3,7 @@ import path from "node:path";
 import fs from "node:fs";
 import { spawn } from "child_process";
 import { prismaPromise } from "../lib/database/prismaClient";
+import { getStoreFirstRecordedYmd } from "../lib/database/storeFirstDate";
 import { loadEnvFile } from "./utils/loadEnvFile";
 
 loadEnvFile();
@@ -84,6 +85,7 @@ const createWindow = async () => {
   try {
     await prismaPromise;
     console.log("Prisma client initialized successfully");
+    void getStoreFirstRecordedYmd();
   } catch (error) {
     console.error("Failed to initialize Prisma client:", error);
     // Don't prevent app from starting, but log the error

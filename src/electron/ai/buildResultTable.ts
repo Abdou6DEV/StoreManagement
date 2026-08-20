@@ -1,4 +1,8 @@
 import type { StoreResultTable } from "../../lib/ai/aiChatTypes";
+import {
+  isExplicitListQuestion,
+  shouldHideRankingTable,
+} from "./rankingIntent";
 
 const MAX_ROWS = 40;
 
@@ -24,25 +28,11 @@ const COLUMN_ORDER = [
   "youOweClients",
 ];
 
-const LIST_REQUEST =
-  /\b(list|lists|listing|show( me)?( all)?|display|who|which|top|most|best|names? of)\b/i;
-const LIST_REQUEST_FR =
-  /\b(liste|lister|affiche|afficher|montre|montrer|qui|quels?|quelles?|plus|meilleur)\b/i;
-const LIST_REQUEST_AR = /(قائمة|عرض|ورّي|وريلي|وريني|شكون|من هو|أكثر|اكثر|الأكثر)/;
-
 const TOTALS_ONLY =
   /\b(how many|how much|combien|total|revenue|profit|شحال|قداش|كم)\b/i;
 
-function isListRequest(text: string) {
-  return (
-    LIST_REQUEST.test(text) ||
-    LIST_REQUEST_FR.test(text) ||
-    LIST_REQUEST_AR.test(text)
-  );
-}
-
 function isTotalsOnlyQuestion(text: string) {
-  if (isListRequest(text)) return false;
+  if (isExplicitListQuestion(text)) return false;
   return TOTALS_ONLY.test(text);
 }
 
@@ -59,8 +49,7 @@ function unwrapList(value: unknown): unknown[] | null {
 }
 
 function pickList(
-  result: Record<string, unknown>,
-  userText: string
+  result: Record<string, unknown>
 ): { rows: unknown[]; source: string } | null {
   const ranked = unwrapList(result.breakdown);
   if (ranked && ranked.length >= 2) return { rows: ranked, source: "breakdown" };
@@ -74,11 +63,7 @@ function pickList(
   }
 
   const matches = unwrapList(result.matches);
-  const allowMatches =
-    result.type === "product" ||
-    typeof result.kind === "string" ||
-    isListRequest(userText);
-  if (matches && matches.length >= 2 && allowMatches) {
+  if (matches && matches.length >= 2) {
     return { rows: matches, source: "matches" };
   }
 
@@ -110,6 +95,8 @@ export function buildResultTable(
   toolResults: unknown[],
   userText: string
 ): StoreResultTable | null {
+  if (!isExplicitListQuestion(userText)) return null;
+  if (shouldHideRankingTable(userText)) return null;
   if (isTotalsOnlyQuestion(userText)) return null;
 
   for (const result of toolResults) {
@@ -117,7 +104,7 @@ export function buildResultTable(
     const record = result as Record<string, unknown>;
     if (record.error) continue;
 
-    const picked = pickList(record, userText);
+    const picked = pickList(record);
     if (!picked) continue;
 
     const objectRows = picked.rows.filter(

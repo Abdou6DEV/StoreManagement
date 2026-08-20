@@ -160,11 +160,26 @@ export function parseLocalDateBound(
   return { ok: true, date, ymd };
 }
 
-export function localRangeMeta(startDate: Date, endDate: Date) {
+export function localRangeMeta(
+  startDate: Date,
+  endDate: Date,
+  firstRecordedYmd?: string
+) {
+  const startYmd = localYmdFromDate(startDate);
+  const endYmd = localYmdFromDate(endDate);
+  const todayYmd = localYmdFromDate(new Date());
+  const allTime = Boolean(
+    firstRecordedYmd &&
+      startYmd === firstRecordedYmd &&
+      endYmd === todayYmd
+  );
   return {
     timezone: getStoreTimeZone(),
     timeline: "local store time (same as History and dashboard)",
     startLocal: formatLocalDateTime(startDate),
     endLocal: formatLocalDateTime(endDate),
+    ...(allTime
+      ? { period: "all-time", firstRecordedDay: firstRecordedYmd }
+      : {}),
   };
 }

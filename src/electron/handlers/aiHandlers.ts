@@ -10,6 +10,7 @@ import {
 import type { AIToolCall } from "../ai/tools/toolExecutor";
 import type { AiChatResponse } from "../../lib/ai/aiChatTypes";
 import { buildResultTable } from "../ai/buildResultTable";
+import { shouldHideRankingTable } from "../ai/rankingIntent";
 import {
   formatCorrectionHint,
   replyConflictsWithTotals,
@@ -21,6 +22,11 @@ import {
   unwrapFollowUpUserText,
   withFollowUpContext,
 } from "../ai/storeQueryMemory";
+import {
+  isTranslatedScript,
+  keepUserSpellingQ,
+  latinNameFromUser,
+} from "../ai/keepUserQuery";
 import {
   aiRequest,
   currentSession,
@@ -120,8 +126,16 @@ function isModelSkipped(modelId: string) {
   return true;
 }
 
+function isGoneStatus(status?: number) {
+  return status === 404 || status === 410;
+}
+
+function shouldSkipModel(status?: number) {
+  return status === 429 || isGoneStatus(status);
+}
+
 function skipModel(modelId: string, status?: number) {
-  const ms = status === 404 ? 24 * 60 * 60 * 1000 : 60 * 1000;
+  const ms = isGoneStatus(status) ? 24 * 60 * 60 * 1000 : 60 * 1000;
   skippedUntil.set(modelId, Date.now() + ms);
   console.log(
     `[AI] Skipping ${modelId} for ${Math.round(ms / 1000)}s (status ${status ?? "n/a"})`
@@ -202,6 +216,7 @@ function shouldHandoffList(
   model: (typeof AI_MODELS)[number]
 ): boolean {
   if (model.capabilities.listWriter) return false;
+  if (shouldHideRankingTable(userText)) return false;
   if (!toolResultsNeedListWriter(toolResults)) return false;
   if (isTotalsOnlyQuestion(userText)) return false;
   return true;
@@ -394,6 +409,8 @@ function fallbackFromToolData(data: unknown): string {
     "kind",
     "q",
     "rule",
+    "top",
+    "topMatch",
   ]) {
     if (key in record) {
       payload[key] = record[key];
@@ -421,15 +438,44 @@ async function runOneTool(
       ? (toolInput as Record<string, unknown>)
       : {};
   const session = currentSession();
-  const input = session?.reuseLastQuery
+  let resolvedName = toolName;
+  let input = session?.reuseLastQuery
     ? mergeFollowUpInput(toolName, rawInput, session.lastStoreQuery)
     : rawInput;
 
-  console.log(`[AI] Tool call requested: ${toolName}`);
-  emitWorkStatus({ phase: "tool", toolName });
+  if (typeof input.q === "string" && input.q.trim() && session) {
+    const userText = [...session.conversationHistory]
+      .reverse()
+      .find((message) => message.role === "user")?.content;
+    const latest = unwrapFollowUpUserText(userText ?? "");
+    const fromUser = latinNameFromUser(latest);
+    if (fromUser && !session.reuseLastQuery) session.lastLatinQ = fromUser;
+    let kept = keepUserSpellingQ(input.q, latest);
+    if (
+      kept === input.q.trim() &&
+      session.reuseLastQuery &&
+      session.lastLatinQ &&
+      isTranslatedScript(kept)
+    ) {
+      kept = session.lastLatinQ;
+    }
+    if (kept !== input.q.trim()) {
+      console.log(`[AI] q kept user spelling: ${JSON.stringify(input.q)} → ${JSON.stringify(kept)}`);
+      input = { ...input, q: kept };
+    } else if (
+      !session.reuseLastQuery &&
+      /[a-zA-Z]{3,}/.test(kept) &&
+      !/[\u0600-\u06FF]/.test(kept)
+    ) {
+      session.lastLatinQ = kept;
+    }
+  }
+
+  console.log(`[AI] Tool call requested: ${resolvedName}`);
+  emitWorkStatus({ phase: "tool", toolName: resolvedName });
 
   const toolResult = await executeToolCall({
-    toolName,
+    toolName: resolvedName,
     input,
   });
 
@@ -440,7 +486,7 @@ async function runOneTool(
     : undefined;
 
   console.log(
-    `[AI] Tool ${toolName} ${toolResult.success ? "succeeded" : "failed"}`
+    `[AI] Tool ${resolvedName} ${toolResult.success ? "succeeded" : "failed"}`
   );
 
   if (toolResult.success) {
@@ -449,7 +495,7 @@ async function runOneTool(
         ? (compacted as Record<string, unknown>)
         : { result: compacted };
     if (session) {
-      session.lastStoreQuery = snapshotStoreQuery(toolName, input, response);
+      session.lastStoreQuery = snapshotStoreQuery(resolvedName, input, response);
     }
     return {
       name: toolName,
@@ -933,6 +979,114 @@ async function callGroq(
 
   return { text: "", toolResults };
 }
+
+function nvidiaMessageText(message: {
+  content?: unknown;
+}): string {
+  const raw = message.content;
+  if (typeof raw === "string") return raw;
+  if (Array.isArray(raw)) {
+    return raw
+      .map((part) => {
+        if (typeof part === "string") return part;
+        if (
+          part &&
+          typeof part === "object" &&
+          "text" in part &&
+          typeof part.text === "string"
+        ) {
+          return part.text;
+        }
+        return "";
+      })
+      .join("");
+  }
+  return "";
+}
+
+async function callNvidia(
+  modelId: string,
+  messages: ChatMessage[],
+  apiKey: string,
+  userName?: string,
+  options?: CallModelOptions
+): Promise<ModelTurn> {
+  let currentMessages: OpenAIChatMessage[] = messages;
+  let maxRetries = 5;
+  const toolResults: unknown[] = [];
+
+  while (maxRetries > 0) {
+    emitWaitingOnModel(!!options?.disableTools);
+    const response = await fetch(
+      "https://integrate.api.nvidia.com/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: modelId,
+          max_tokens: 4096,
+          messages: [
+            {
+              role: "system",
+              content: systemInstructionForModel(modelId, userName),
+            },
+            ...toOpenAIApiMessages(currentMessages),
+          ],
+          ...openAIToolOptions(currentMessages, modelId, options),
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+
+      const error = new Error(
+        `NVIDIA API error (${response.status}): ${errorText}`
+      );
+
+      (error as Error & { status?: number }).status = response.status;
+
+      throw error;
+    }
+
+    const data = await response.json();
+    const message = data.choices?.[0]?.message;
+
+    if (!message) {
+      return { text: "", toolResults };
+    }
+
+    const text = nvidiaMessageText(message).replace(
+      /<think>[\s\S]*?<\/think>/gi,
+      ""
+    ).trim();
+
+    if (!message.tool_calls?.length) {
+      return { text, toolResults };
+    }
+
+    const { hasToolCalls, updatedMessages, toolResults: roundResults } =
+      await handleOpenAIToolCalls(
+        message,
+        currentMessages,
+        getToolResultCharBudget(modelTpm(modelId))
+      );
+
+    if (!hasToolCalls) {
+      return { text, toolResults };
+    }
+
+    toolResults.push(...roundResults);
+    currentMessages = updatedMessages;
+    maxRetries--;
+  }
+
+  return { text: "", toolResults };
+}
+
 const LATIN_DARIJA =
   /\b(wesh|wach|wash|labas|ch7al|chhal|9adeh|9adach|qdash|qadech|lyoum|lyum|bghit|3and|3ndi|3andek|wrili|wrini|sahbi|khoya|raki|rakom|dirli|goli|golia|winah|inchallah|inshallah)\b/i;
 
@@ -982,6 +1136,7 @@ async function callModel(
   const openRouterKey = process.env.OPENROUTER_API_KEY;
   const mistralKey = process.env.MISTRAL_API_KEY;
   const groqKey = process.env.GROQ_API_KEY;
+  const nvidiaKey = process.env.NVIDIA_API_KEY;
 
   if (model.provider === "google") {
     if (!geminiKey) {
@@ -1009,6 +1164,13 @@ async function callModel(
       throw new Error("GROQ_API_KEY is not configured");
     }
     return callGroq(model.id, messages, groqKey, userName, options);
+  }
+
+  if (model.provider === "nvidia") {
+    if (!nvidiaKey) {
+      throw new Error("NVIDIA_API_KEY is not configured");
+    }
+    return callNvidia(model.id, messages, nvidiaKey, userName, options);
   }
 
   throw new Error("Unknown AI provider");
@@ -1049,7 +1211,7 @@ async function writeListWithStrongerModel(
       }
     } catch (error) {
       const status = (error as Error & { status?: number }).status;
-      if (status === 429 || status === 404) {
+      if (shouldSkipModel(status)) {
         skipModel(model.id, status);
       }
       console.warn(
@@ -1091,7 +1253,7 @@ async function rewriteWrongNumbers(
       }
     } catch (error) {
       const status = (error as Error & { status?: number }).status;
-      if (status === 429 || status === 404) {
+      if (shouldSkipModel(status)) {
         skipModel(model.id, status);
       }
       console.warn(
@@ -1157,7 +1319,7 @@ async function callWithAutomaticModelSwitch(
       return { text: turn.text, toolResults: turn.toolResults };
     } catch (error) {
       const status = (error as Error & { status?: number }).status;
-      if (status === 429 || status === 404) {
+      if (shouldSkipModel(status)) {
         skipModel(model.id, status);
       }
       console.warn(
@@ -1249,6 +1411,7 @@ export function setupAIHandlers() {
       session.conversationHistory = windowConversation(session.conversationHistory);
       if (!followUp) {
         session.lastStoreQuery = null;
+        session.lastLatinQ = null;
       }
       session.reuseLastQuery = Boolean(session.lastStoreQuery && followUp);
 

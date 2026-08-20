@@ -13,6 +13,10 @@ import * as billsDb from "../../../lib/database/bills";
 import * as sellersDb from "../../../lib/database/sellers";
 import * as activityLogsDb from "../../../lib/database/activityLogs";
 import {
+  getStoreFirstRecordedYmd,
+  peekStoreFirstRecordedYmd,
+} from "../../../lib/database/storeFirstDate";
+import {
   getStoreTimeZone,
   localRangeMeta,
   localYmdFromDate,
@@ -202,11 +206,11 @@ function paymentAttributionDate(
   return new Date(payment.paidDate);
 }
 
-function billsRange(
+async function billsRange(
   groupBy: string,
   startDate?: unknown,
   endDate?: unknown
-): LocalDateRange | { ok: true; allTime: true } {
+): Promise<LocalDateRange | { ok: true; allTime: true }> {
   if (startDate == null && endDate == null) {
     if (groupBy === "month" || groupBy === "year") {
       return defaultRange(groupBy, startDate, endDate);
@@ -216,11 +220,17 @@ function billsRange(
   return defaultRange(groupBy, startDate, endDate);
 }
 
-function defaultRange(
+function isRankGroupBy(groupBy: string) {
+  return (
+    groupBy === "product" || groupBy === "client" || groupBy === "seller"
+  );
+}
+
+async function defaultRange(
   groupBy: string,
   startDate?: unknown,
   endDate?: unknown
-): LocalDateRange {
+): Promise<LocalDateRange> {
   if (startDate != null && endDate != null) {
     return parseLocalDateRange(startDate, endDate);
   }
@@ -232,10 +242,75 @@ function defaultRange(
   }
 
   const today = todayYmd();
+  if (isRankGroupBy(groupBy)) {
+    return parseLocalDateRange(await getStoreFirstRecordedYmd(), today);
+  }
   if (groupBy === "month" || groupBy === "year") {
     return parseLocalDateRange(yearStartYmd(), today);
   }
   return parseLocalDateRange(today, today);
+}
+
+function rangeMeta(startDate: Date, endDate: Date) {
+  return localRangeMeta(startDate, endDate, peekStoreFirstRecordedYmd());
+}
+
+const SKIP_TOP_KEYS = new Set(["no-client", "unknown", "all"]);
+
+const RANKING_RULE =
+  "Ranking: who/which/best/most/top of a group → copy top. One most expensive sale/repair/bill/product → copy topMatch. Never use find or matches for ranking.";
+
+function rowRankAmount(row: Record<string, unknown>): number {
+  return Number(
+    row.revenue ??
+      row.paid ??
+      row.amount ??
+      row.serviceRevenue ??
+      row.sellingPrice ??
+      0
+  );
+}
+
+function pickTopGroup(
+  breakdown: unknown,
+  groupBy: string
+): Record<string, unknown> | null {
+  if (!Array.isArray(breakdown) || breakdown.length === 0) return null;
+  if (!groupBy || groupBy === "none") return null;
+  const ranked = [...breakdown].filter(
+    (row): row is Record<string, unknown> =>
+      !!row && typeof row === "object" && !Array.isArray(row)
+  );
+  if (ranked.length === 0) return null;
+  ranked.sort((a, b) => rowRankAmount(b) - rowRankAmount(a));
+  if (groupBy === "client" || groupBy === "seller") {
+    return (
+      ranked.find((row) => !SKIP_TOP_KEYS.has(String(row.key ?? ""))) ??
+      ranked[0]
+    );
+  }
+  return ranked[0];
+}
+
+function pickTopMatch<T>(rows: T[], amount: (row: T) => number): T | null {
+  if (rows.length === 0) return null;
+  return rows.reduce((best, row) =>
+    amount(row) > amount(best) ? row : best
+  );
+}
+
+function withRanking<T extends Record<string, unknown>>(
+  payload: T,
+  topMatch: unknown = null
+): T {
+  const groupBy = String(payload.groupBy ?? "none");
+  const top = pickTopGroup(payload.breakdown, groupBy);
+  return {
+    ...payload,
+    top,
+    topMatch,
+    rule: [payload.rule, RANKING_RULE].filter(Boolean).join(" "),
+  };
 }
 
 function slimProduct(product: {
@@ -282,6 +357,20 @@ function saleRevenue(sale: any): number {
 
 function saleProfit(sale: any): number {
   return Number(sale.totalProfit || 0);
+}
+
+function saleTopMatch(
+  sale: any,
+  amounts?: { revenue: number; profit: number }
+) {
+  const revenue = amounts?.revenue ?? saleRevenue(sale);
+  const profit = amounts?.profit ?? saleProfit(sale);
+  return {
+    client: sale.client?.name || "no-client",
+    revenue: roundDA(revenue),
+    profit: roundDA(profit),
+    soldDate: localYmdFromDate(new Date(sale.createdAt)),
+  };
 }
 
 function periodKey(date: Date, groupBy: string): string {
@@ -430,6 +519,23 @@ function matchingSaleTicket(
   return { revenue, profit };
 }
 
+function pickSaleTopMatch(
+  sales: any[],
+  q?: string,
+  appointmentTypes?: Map<string, string>
+) {
+  let best: any = null;
+  let bestAmounts: { revenue: number; profit: number } | null = null;
+  for (const sale of sales) {
+    const amounts = matchingSaleTicket(sale, q, appointmentTypes);
+    if (!bestAmounts || amounts.revenue > bestAmounts.revenue) {
+      best = sale;
+      bestAmounts = amounts;
+    }
+  }
+  return best && bestAmounts ? saleTopMatch(best, bestAmounts) : null;
+}
+
 function addSaleItemsToMix(
   mix: LineMix,
   sale: any,
@@ -518,10 +624,10 @@ async function reportSales(input: {
   startDate?: unknown;
   endDate?: unknown;
 }): Promise<AIToolResult> {
-  const range = defaultRange(input.groupBy, input.startDate, input.endDate);
+  const range = await defaultRange(input.groupBy, input.startDate, input.endDate);
   if (range.ok === false) return fail(range.error);
 
-  const meta = localRangeMeta(range.startDate, range.endDate);
+  const meta = rangeMeta(range.startDate, range.endDate);
   const q = input.q?.trim();
   const salesMixRule = q
     ? "profit is ticket profit (DA). billsPaid is 0 on a filtered (q) slice, so netProfit equals profit — store-wide bills are not subtracted. Do not treat this as History net profit. serviceProfit is sold service lines. productProfit is already profit minus serviceProfit. Do not subtract again. Counts are not DA."
@@ -562,14 +668,21 @@ async function reportSales(input: {
         ),
       };
     });
-    return ok({
-      ...meta,
-      entity: "sales",
-      groupBy: input.groupBy,
-      totals: withTicketMix(totals, mixTotals, billsPaidTotal),
-      breakdown,
-      rule: `${salesMixRule} bills/billsPaid are already DA. Do not add rows.`,
-    });
+    return ok(
+      withRanking(
+        {
+          ...meta,
+          entity: "sales",
+          groupBy: input.groupBy,
+          totals: withTicketMix(totals, mixTotals, billsPaidTotal),
+          breakdown,
+          rule: `${salesMixRule} bills/billsPaid are already DA. Do not add rows.`,
+        },
+        pickSaleTopMatch(
+          (sales as any[]).filter((sale) => !isUnpaidVersement(sale))
+        )
+      )
+    );
   }
 
   const sales = (await salesDb.getSalesByDateRange(
@@ -587,22 +700,27 @@ async function reportSales(input: {
     ]);
     const mix = emptyMix();
     for (const sale of included) addSaleItemsToMix(mix, sale);
-    return ok({
-      ...meta,
-      entity: "sales",
-      groupBy: "none",
-      totals: withTicketMix(
+    return ok(
+      withRanking(
         {
-          revenue: summary.totalRevenue,
-          count: summary.totalSales,
-          profit: summary.totalProfit,
+          ...meta,
+          entity: "sales",
+          groupBy: "none",
+          totals: withTicketMix(
+            {
+              revenue: summary.totalRevenue,
+              count: summary.totalSales,
+              profit: summary.totalProfit,
+            },
+            mix,
+            billsPaid
+          ),
+          breakdown: [],
+          rule: `${salesMixRule} Copy totals.netProfit for net profit. Do not invent a monthly split.`,
         },
-        mix,
-        billsPaid
-      ),
-      breakdown: [],
-      rule: `${salesMixRule} Copy totals.netProfit for net profit. Do not invent a monthly split.`,
-    });
+        pickSaleTopMatch(included)
+      )
+    );
   }
 
   const totals = emptyTotals();
@@ -648,19 +766,26 @@ async function reportSales(input: {
     grouped.set(key, current);
   }
 
-  return ok({
-    ...meta,
-    entity: "sales",
-    q: q || null,
-    groupBy: input.groupBy,
-    totals: withTicketMix(
-      totals,
-      mix,
-      q ? 0 : await billsPaidInRangeDA(range.startDate, range.endDate)
-    ),
-    breakdown: input.groupBy === "none" ? [] : breakdownFromMap(grouped, input.groupBy),
-    rule: `${salesMixRule} Do not count sample rows.`,
-  });
+  const breakdown =
+    input.groupBy === "none" ? [] : breakdownFromMap(grouped, input.groupBy);
+  return ok(
+    withRanking(
+      {
+        ...meta,
+        entity: "sales",
+        q: q || null,
+        groupBy: input.groupBy,
+        totals: withTicketMix(
+          totals,
+          mix,
+          q ? 0 : await billsPaidInRangeDA(range.startDate, range.endDate)
+        ),
+        breakdown,
+        rule: `${salesMixRule} Do not count sample rows.`,
+      },
+      pickSaleTopMatch(included, q, appointmentTypes)
+    )
+  );
 }
 
 async function reportStock(q?: string): Promise<AIToolResult> {
@@ -719,36 +844,52 @@ async function reportStock(q?: string): Promise<AIToolResult> {
     }))
     .sort((a, b) => b.inventoryRetail - a.inventoryRetail);
 
-  return ok({
-    entity: "stock",
-    q: q || null,
-    totals: {
-      matchCount: matched.length,
-      totalQuantity: matched.reduce((sum, product) => sum + product.quantity, 0),
-      inventoryCost: roundDA(inventoryCost),
-      inventoryRetail: roundDA(inventoryRetail),
-      profitPotential: roundDA(inventoryRetail - inventoryCost),
-      ...(zakatQuery
-        ? { zakatOnStock: roundDA(inventoryRetail * 0.025) }
-        : {}),
-    },
-    byCategory,
-    ...(() => {
-      const listed = capList(
-        matched
-          .slice()
-          .sort((a, b) => b.quantity - a.quantity)
-          .map(slimProduct),
-        SAMPLE_LIMIT
-      );
-      return { matches: listed.items, ...listMeta(listed) };
-    })(),
-    rule: zakatQuery
-      ? "Copy totals.zakatOnStock (2.5% of inventoryRetail). Cash and nisab are on the Zakat page, not in the store. Do not mention zakat on other stock answers."
-      : q
-        ? "Copy totals.totalQuantity for units in this filter. If q matches a stock category, only that category is included — not product names that merely contain those letters. List products with find type=product. Do not count matches. Do not mention zakat."
-        : "Copy totals. byCategory is stock by category (same as Stock page). Do not mention zakat unless the user asked. Do not count matches.",
-  });
+  const inStock = matched.filter((product) => product.quantity > 0);
+  const pricePool = inStock.length > 0 ? inStock : matched;
+  const topPriced = pickTopMatch(pricePool, (product) => product.sellingPrice);
+
+  return ok(
+    withRanking(
+      {
+        entity: "stock",
+        q: q || null,
+        totals: {
+          matchCount: matched.length,
+          totalQuantity: matched.reduce((sum, product) => sum + product.quantity, 0),
+          inventoryCost: roundDA(inventoryCost),
+          inventoryRetail: roundDA(inventoryRetail),
+          profitPotential: roundDA(inventoryRetail - inventoryCost),
+          ...(zakatQuery
+            ? { zakatOnStock: roundDA(inventoryRetail * 0.025) }
+            : {}),
+        },
+        byCategory,
+        ...(() => {
+          const listed = capList(
+            matched
+              .slice()
+              .sort((a, b) => b.quantity - a.quantity)
+              .map(slimProduct),
+            SAMPLE_LIMIT
+          );
+          return { matches: listed.items, ...listMeta(listed) };
+        })(),
+        rule: zakatQuery
+          ? "Copy totals.zakatOnStock (2.5% of inventoryRetail). Cash and nisab are on the Zakat page, not in the store. Do not mention zakat on other stock answers."
+          : q
+            ? "Copy totals.totalQuantity for units in this filter. If q matches a stock category, only that category is included — not product names that merely contain those letters. List products with find type=product. Do not count matches. Do not mention zakat."
+            : "Copy totals. byCategory is stock by category (same as Stock page). Do not mention zakat unless the user asked. Do not count matches.",
+      },
+      topPriced
+        ? {
+            name: topPriced.name,
+            sellingPrice: topPriced.sellingPrice,
+            quantity: topPriced.quantity,
+            category: topPriced.categoryName ?? null,
+          }
+        : null
+    )
+  );
 }
 
 async function reportPayments(input: {
@@ -757,7 +898,7 @@ async function reportPayments(input: {
   startDate?: unknown;
   endDate?: unknown;
 }): Promise<AIToolResult> {
-  const range = defaultRange(input.groupBy, input.startDate, input.endDate);
+  const range = await defaultRange(input.groupBy, input.startDate, input.endDate);
   if (range.ok === false) return fail(range.error);
 
   const payments = (await paymentsDb.getPaymentsByDateRange(
@@ -790,15 +931,32 @@ async function reportPayments(input: {
     grouped.set(key, current);
   }
 
-  return ok({
-    ...localRangeMeta(range.startDate, range.endDate),
-    entity: "payments",
-    q: input.q?.trim() || null,
-    groupBy: input.groupBy,
-    totals,
-    breakdown: input.groupBy === "none" ? [] : breakdownFromMap(grouped, input.groupBy),
-    rule: "Copy totals. Do not add payment rows.",
-  });
+  const breakdown =
+    input.groupBy === "none" ? [] : breakdownFromMap(grouped, input.groupBy);
+  const topPayment = pickTopMatch(matched, (payment) =>
+    Number(payment.givenAmount || 0)
+  );
+
+  return ok(
+    withRanking(
+      {
+        ...rangeMeta(range.startDate, range.endDate),
+        entity: "payments",
+        q: input.q?.trim() || null,
+        groupBy: input.groupBy,
+        totals,
+        breakdown,
+        rule: "Copy totals. Do not add payment rows.",
+      },
+      topPayment
+        ? {
+            client: topPayment.client?.name ?? null,
+            amount: Number(topPayment.givenAmount || 0),
+            date: localYmdFromDate(new Date(topPayment.createdAt)),
+          }
+        : null
+    )
+  );
 }
 
 async function reportPurchases(input: {
@@ -807,7 +965,7 @@ async function reportPurchases(input: {
   startDate?: unknown;
   endDate?: unknown;
 }): Promise<AIToolResult> {
-  const range = defaultRange(input.groupBy, input.startDate, input.endDate);
+  const range = await defaultRange(input.groupBy, input.startDate, input.endDate);
   if (range.ok === false) return fail(range.error);
 
   const purchases = await purchasesDb.getPurchasesByDateRange(
@@ -852,15 +1010,30 @@ async function reportPurchases(input: {
     grouped.set(key, current);
   }
 
-  return ok({
-    ...localRangeMeta(range.startDate, range.endDate),
-    entity: "purchases",
-    q: input.q?.trim() || null,
-    groupBy: input.groupBy,
-    totals,
-    breakdown: input.groupBy === "none" ? [] : breakdownFromMap(grouped, input.groupBy),
-    rule: "Copy totals.amount (DA) and totals.count. groupBy=seller is by supplier name. Do not add purchase rows.",
-  });
+  const breakdown =
+    input.groupBy === "none" ? [] : breakdownFromMap(grouped, input.groupBy);
+  const topPurchase = pickTopMatch(matched, purchaseAmount);
+
+  return ok(
+    withRanking(
+      {
+        ...rangeMeta(range.startDate, range.endDate),
+        entity: "purchases",
+        q: input.q?.trim() || null,
+        groupBy: input.groupBy,
+        totals,
+        breakdown,
+        rule: "Copy totals.amount (DA) and totals.count. groupBy=seller is by supplier name. Do not add purchase rows.",
+      },
+      topPurchase
+        ? {
+            seller: topPurchase.seller?.name || "unknown",
+            amount: roundDA(purchaseAmount(topPurchase)),
+            date: localYmdFromDate(new Date(topPurchase.createdAt)),
+          }
+        : null
+    )
+  );
 }
 
 async function reportServices(input: {
@@ -869,10 +1042,10 @@ async function reportServices(input: {
   startDate?: unknown;
   endDate?: unknown;
 }): Promise<AIToolResult> {
-  const range = defaultRange(input.groupBy, input.startDate, input.endDate);
+  const range = await defaultRange(input.groupBy, input.startDate, input.endDate);
   if (range.ok === false) return fail(range.error);
 
-  const meta = localRangeMeta(range.startDate, range.endDate);
+  const meta = rangeMeta(range.startDate, range.endDate);
   const q = input.q?.trim();
   const { jobs, map: appointmentTypes } = await getAppointmentTypeMap();
   const sales = (await salesDb.getSalesByDateRange(
@@ -1027,43 +1200,61 @@ async function reportServices(input: {
     .sort((a, b) => b.serviceProfit - a.serviceProfit)
     .slice(0, BREAKDOWN_LIMIT);
 
-  return ok({
-    ...meta,
-    entity: "services",
-    currency: "DA",
-    q: q || null,
-    groupBy: input.groupBy,
-    totals: {
-      soldCount: soldRows.length,
-      serviceRevenue: rounded.serviceRevenue,
-      serviceProfit: rounded.serviceProfit,
-      serviceQuantity: rounded.serviceQuantity,
-      jobsPendingCount,
-      jobsOverdueCount,
-      jobsCompletedInPeriodCount,
-      jobsUnsoldCompletedInPeriodCount,
-    },
-    byType,
-    breakdown: input.groupBy === "none" ? [] : breakdownFromMap(grouped, input.groupBy),
-    ...(() => {
-      const listed = capList(
-        soldRows
-          .slice()
-          .sort((a, b) => b.soldAt.getTime() - a.soldAt.getTime())
-          .map((row) => ({
-            name: row.name,
-            type: row.type,
-            client: row.client,
-            revenue: roundDA(row.revenue),
-            profit: roundDA(row.profit),
-            soldDate: localYmdFromDate(row.soldAt),
-          })),
-        SAMPLE_LIMIT
-      );
-      return { matches: listed.items, ...listMeta(listed) };
-    })(),
-    rule: "Money fields are DA from services SOLD on Cashier in this period. q filters Service Type (repair, flash, …) as on the Services page. byType is the split by that type. jobs*Count fields are COUNTS, not DA. Do not use completed counts as profit.",
-  });
+  const breakdown =
+    input.groupBy === "none" ? [] : breakdownFromMap(grouped, input.groupBy);
+  const topJob = pickTopMatch(soldRows, (row) => row.revenue);
+
+  return ok(
+    withRanking(
+      {
+        ...meta,
+        entity: "services",
+        currency: "DA",
+        q: q || null,
+        groupBy: input.groupBy,
+        totals: {
+          soldCount: soldRows.length,
+          serviceRevenue: rounded.serviceRevenue,
+          serviceProfit: rounded.serviceProfit,
+          serviceQuantity: rounded.serviceQuantity,
+          jobsPendingCount,
+          jobsOverdueCount,
+          jobsCompletedInPeriodCount,
+          jobsUnsoldCompletedInPeriodCount,
+        },
+        byType,
+        breakdown,
+        ...(() => {
+          const listed = capList(
+            soldRows
+              .slice()
+              .sort((a, b) => b.soldAt.getTime() - a.soldAt.getTime())
+              .map((row) => ({
+                name: row.name,
+                type: row.type,
+                client: row.client,
+                revenue: roundDA(row.revenue),
+                profit: roundDA(row.profit),
+                soldDate: localYmdFromDate(row.soldAt),
+              })),
+            SAMPLE_LIMIT
+          );
+          return { matches: listed.items, ...listMeta(listed) };
+        })(),
+        rule: "Money fields are DA from services SOLD on Cashier in this period. q filters Service Type (repair, flash, …) as on the Services page. byType is the split by that type. jobs*Count fields are COUNTS, not DA. Do not use completed counts as profit.",
+      },
+      topJob
+        ? {
+            name: topJob.name,
+            type: topJob.type,
+            client: topJob.client,
+            revenue: roundDA(topJob.revenue),
+            profit: roundDA(topJob.profit),
+            soldDate: localYmdFromDate(topJob.soldAt),
+          }
+        : null
+    )
+  );
 }
 
 type BillPaymentRow = {
@@ -1082,7 +1273,7 @@ async function reportBills(input: {
   startDate?: unknown;
   endDate?: unknown;
 }): Promise<AIToolResult> {
-  const rangeOrAll = billsRange(input.groupBy, input.startDate, input.endDate);
+  const rangeOrAll = await billsRange(input.groupBy, input.startDate, input.endDate);
   if (!("allTime" in rangeOrAll) && rangeOrAll.ok === false) {
     return fail(rangeOrAll.error);
   }
@@ -1090,7 +1281,7 @@ async function reportBills(input: {
 
   const meta = bounded
     ? {
-        ...localRangeMeta(bounded.startDate, bounded.endDate),
+        ...rangeMeta(bounded.startDate, bounded.endDate),
         period: `${bounded.startYmd} to ${bounded.endYmd}`,
       }
     : {
@@ -1223,35 +1414,50 @@ async function reportBills(input: {
           .slice(0, BREAKDOWN_LIMIT);
   }
 
-  return ok({
-    ...meta,
-    entity: "bills",
-    currency: "DA",
-    amountsAreDA: true,
-    q: q || null,
-    groupBy: input.groupBy,
-    totals,
-    byType,
-    breakdown,
-    ...(() => {
-      const listed = capList(
-        rows
-          .slice()
-          .sort((a, b) => b.periodDate.getTime() - a.periodDate.getTime())
-          .map((row) => ({
-            title: row.title,
-            type: row.type,
-            amountDA: row.amountDA,
-            kind: row.isSalary ? "salary" : "expense",
-            periodDate: localYmdFromDate(row.periodDate),
-            paidDate: localYmdFromDate(row.paidDate),
-          })),
-        SAMPLE_LIMIT
-      );
-      return { matches: listed.items, ...listMeta(listed) };
-    })(),
-    rule: "Amounts are already DA. expenses = totals.expensePaid (non-salary). salaries = totals.salaryPaid. all bills = totals.paid. Copy totals; do not add matches.",
-  });
+  const topBill = pickTopMatch(rows, (row) => row.amountDA);
+
+  return ok(
+    withRanking(
+      {
+        ...meta,
+        entity: "bills",
+        currency: "DA",
+        amountsAreDA: true,
+        q: q || null,
+        groupBy: input.groupBy,
+        totals,
+        byType,
+        breakdown,
+        ...(() => {
+          const listed = capList(
+            rows
+              .slice()
+              .sort((a, b) => b.periodDate.getTime() - a.periodDate.getTime())
+              .map((row) => ({
+                title: row.title,
+                type: row.type,
+                amountDA: row.amountDA,
+                kind: row.isSalary ? "salary" : "expense",
+                periodDate: localYmdFromDate(row.periodDate),
+                paidDate: localYmdFromDate(row.paidDate),
+              })),
+            SAMPLE_LIMIT
+          );
+          return { matches: listed.items, ...listMeta(listed) };
+        })(),
+        rule: "Amounts are already DA. expenses = totals.expensePaid (non-salary). salaries = totals.salaryPaid. all bills = totals.paid. Copy totals; do not add matches.",
+      },
+      topBill
+        ? {
+            title: topBill.title,
+            type: topBill.type,
+            amountDA: topBill.amountDA,
+            kind: topBill.isSalary ? "salary" : "expense",
+            periodDate: localYmdFromDate(topBill.periodDate),
+          }
+        : null
+    )
+  );
 }
 
 async function reportActivity(input: {
@@ -1275,7 +1481,7 @@ async function reportActivity(input: {
   });
 
   return ok({
-    ...localRangeMeta(range.startDate, range.endDate),
+    ...rangeMeta(range.startDate, range.endDate),
     entity: "activity",
     q: input.q?.trim() || null,
     totals: { count: result.total },
@@ -1510,7 +1716,7 @@ export async function tool_find(input: {
             ? "CREDIT slice only. Copy totals.clientsOweYou and totals.matchCount. Do not mix with youOweClients."
             : status === "deposits"
               ? "VERSEMENT slice only. Copy totals.youOweClients and totals.matchCount. Do not mix with clientsOweYou."
-              : "Copy totals.matchCount for how many clients. That is all clients, not only credit. clientsOweYou / youOweClients are money, not a client count. For who owes you, use status=owes_you. For deposits, use status=deposits.",
+              : "Copy totals.matchCount for how many clients. That is all clients, not only credit. clientsOweYou / youOweClients are money, not a client count. This list is NOT a best-client ranking — use report entity=sales groupBy=client and copy top. For who owes you, use status=owes_you. For deposits, use status=deposits.",
       });
     }
 
@@ -1590,7 +1796,13 @@ export async function tool_find(input: {
     }
 
     if (type === "sale") {
-      const result = await salesDb.searchSales(q, 20, 0, 365);
+      const first = await getStoreFirstRecordedYmd();
+      const start = new Date(`${first}T00:00:00`);
+      const days = Math.max(
+        1,
+        Math.ceil((Date.now() - start.getTime()) / 86400000) + 2
+      );
+      const result = await salesDb.searchSales(q, 20, 0, days);
       const listed = capList(
         result.sales.map((sale: any) => ({
           id: sale.id,
@@ -1809,7 +2021,7 @@ export const AI_TOOLS_REGISTRY: Record<string, ToolDef> = {
   report: {
     name: "report",
     description:
-      "Store numbers with server-side totals. Use for today/month/year, month-by-month, best sellers, stock (incl. by category), payments, purchases/suppliers, services, bills/expenses/salaries, activity. For zakat on stock only: entity=stock, q=zakat → totals.zakatOnStock. Sales totals include profit, billsPaid, and netProfit (profit minus bills paid when q is omitted, same as History; with q, billsPaid is 0 and netProfit equals profit). groupBy=product/client/seller returns top rows by revenue. Pass local YYYY-MM-DD from the system prompt. Bills amounts are already DA. Copy totals and breakdown; never add rows.",
+      "Store numbers with server-side totals. Use for today/month/year, month-by-month, rankings (best/most/top/who/which), stock (incl. by category), payments, purchases/suppliers, services, bills/expenses/salaries, activity. Ranking: groupBy=product/client/seller → copy top (named client, not no-client). One most expensive sale/repair/bill/product → copy topMatch. If the user gave no period for a ranking, use all-time (first stored day through today), not this year. For zakat on stock only: entity=stock, q=zakat → totals.zakatOnStock. Sales totals include profit, billsPaid, and netProfit (profit minus bills paid when q is omitted, same as History; with q, billsPaid is 0 and netProfit equals profit). Pass local YYYY-MM-DD from the system prompt. Bills amounts are already DA. Copy totals, top, topMatch, and breakdown; never add rows.",
     fn: tool_report,
     input_schema: {
       entity: {
@@ -1839,7 +2051,7 @@ export const AI_TOOLS_REGISTRY: Record<string, ToolDef> = {
       groupBy: {
         type: "string",
         description:
-          "none = one total. month = by month. day = by day. product = best sellers, or for bills = by bill/employee name. client/seller = by customer/supplier, or for bills = by bill type.",
+          "none = one total (plus topMatch for the single biggest ticket). month = by month. day = by day. product = best sellers / service names, or for bills = by bill/employee name. client/seller = by customer/supplier, or for bills = by bill type. Rankings without a period are all-time.",
         required: false,
         enum: ["none", "day", "month", "year", "product", "client", "seller"],
       },
@@ -1854,7 +2066,7 @@ export const AI_TOOLS_REGISTRY: Record<string, ToolDef> = {
   find: {
     name: "find",
     description:
-      "Look up products, clients, suppliers (sellers), or sales by name/brand/barcode/category. For products, returns in-stock rows to list (name, quantity). If q matches a stock category, only that category — not names that merely contain those letters. type=client status=all = ALL clients (totals.matchCount). type=client status=owes_you = CREDIT only. type=client status=deposits = VERSEMENT only. q=name looks up one client. Omit q for type=seller to list all suppliers. Copy totals; for type=product list the matches array. If truncated is true, say returnedCount of totalCount.",
+      "Look up products, clients, suppliers (sellers), or sales by name/brand/barcode/category. Not for best/most/top/who rankings — use report and copy top or topMatch. For products, returns in-stock rows to list (name, quantity). If q matches a stock category, only that category — not names that merely contain those letters. type=client status=all = ALL clients (totals.matchCount). type=client status=owes_you = CREDIT only. type=client status=deposits = VERSEMENT only. q=name looks up one client. Omit q for type=seller to list all suppliers. Copy totals; for type=product list the matches array. If truncated is true, say returnedCount of totalCount.",
     fn: tool_find,
     input_schema: {
       type: {

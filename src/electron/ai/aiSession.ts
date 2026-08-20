@@ -18,6 +18,7 @@ export type AiSession = {
   selectedModelId?: string;
   lastStoreQuery: LastStoreQuery | null;
   reuseLastQuery: boolean;
+  lastLatinQ: string | null;
 };
 
 export type AiRequestContext = {
@@ -36,6 +37,7 @@ export function getOrCreateSession(webContentsId: number): AiSession {
       conversationHistory: [],
       lastStoreQuery: null,
       reuseLastQuery: false,
+      lastLatinQ: null,
     };
     sessions.set(webContentsId, session);
   }
@@ -48,6 +50,7 @@ export function resetSessionChat(webContentsId: number) {
   session.currentUserName = undefined;
   session.lastStoreQuery = null;
   session.reuseLastQuery = false;
+  session.lastLatinQ = null;
 }
 
 export function dropSession(webContentsId: number) {
