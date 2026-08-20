@@ -137,6 +137,26 @@ export async function getServiceAppointmentsByClient(clientId: string) {
   });
 }
 
+export async function getPendingServiceAppointments() {
+  return await prisma.serviceAppointment.findMany({
+    where: {
+      isCompleted: false,
+    },
+    include: {
+      client: {
+        select: {
+          id: true,
+          name: true,
+          phone: true,
+        },
+      },
+    },
+    orderBy: {
+      dueDate: "asc",
+    },
+  });
+}
+
 export async function getUpcomingServiceAppointments(days = 7) {
   const startDate = new Date();
   const endDate = new Date();

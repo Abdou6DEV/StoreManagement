@@ -91,6 +91,8 @@ const PRESERVE_KEYS = new Set([
   "groupBy",
   "kind",
   "q",
+  "matchedCategory",
+  "stockCategories",
   "rule",
   "ranking",
   "top",

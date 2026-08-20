@@ -25,6 +25,8 @@ function statusLabel(
         return t("ai.statusSearching", "Searching the store");
       case "alerts":
         return t("ai.statusCheckingAlerts", "Checking alerts");
+      case "restock":
+        return t("ai.statusPlanningRestock", "Planning restock");
       default:
         return t("ai.statusLookingUp", "Looking up store data");
     }

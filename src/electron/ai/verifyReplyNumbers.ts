@@ -11,6 +11,10 @@ const COUNT_KEYS = new Set([
   "versementCount",
   "paymentCount",
   "purchaseCount",
+  "buyQty",
+  "onHand",
+  "soldInPeriod",
+  "lineCount",
 ]);
 
 const AMOUNT_KEYS = new Set([
@@ -33,6 +37,11 @@ const AMOUNT_KEYS = new Set([
   "zakatOnStock",
   "sellingPrice",
   "amountDA",
+  "budget",
+  "spent",
+  "leftover",
+  "unitCost",
+  "lineCost",
 ]);
 
 const ARABIC_DIGITS = "٠١٢٣٤٥٦٧٨٩";

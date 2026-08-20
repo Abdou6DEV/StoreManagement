@@ -40,7 +40,7 @@ function latestRealUserMessage(messages: ChatMessage[]) {
 }
 
 /**
- * With only 3 tools, attach them for any real store question.
+ * Attach store tools for any real store question.
  * Skip greetings and "who are you".
  */
 export function shouldAttachTools(messages: ChatMessage[]): boolean {

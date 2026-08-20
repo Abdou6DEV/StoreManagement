@@ -1,10 +1,11 @@
 /**
  * Production store tools for the AI assistant.
- * Three read-only tools. The database computes totals; the model copies them.
+ * Read-only tools. The database computes totals; the model copies them.
  */
 
 import * as salesDb from "../../../lib/database/sales";
 import * as productsDb from "../../../lib/database/products";
+import { getOption } from "../../../lib/database/options";
 import * as clientsDb from "../../../lib/database/clients";
 import * as paymentsDb from "../../../lib/database/payments";
 import * as purchasesDb from "../../../lib/database/purchases";
@@ -12,6 +13,7 @@ import * as serviceAppointmentsDb from "../../../lib/database/serviceAppointment
 import * as billsDb from "../../../lib/database/bills";
 import * as sellersDb from "../../../lib/database/sellers";
 import * as activityLogsDb from "../../../lib/database/activityLogs";
+import { getAllCategories } from "../../../lib/database/categories";
 import {
   getStoreFirstRecordedYmd,
   peekStoreFirstRecordedYmd,
@@ -69,8 +71,16 @@ function matchesQ(value: unknown, q?: string): boolean {
   return String(value ?? "").toLowerCase().includes(needle);
 }
 
+function foldToken(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
 function stemLoose(value: string): string {
-  const text = value.trim().toLowerCase();
+  const text = foldToken(value);
   if (text.endsWith("ies") && text.length > 4) return `${text.slice(0, -3)}y`;
   if (
     text.endsWith("s") &&
@@ -92,8 +102,8 @@ function tokensOf(value: unknown): string[] {
 }
 
 function tokenEquals(token: string, queryToken: string): boolean {
-  const a = token.trim().toLowerCase();
-  const b = queryToken.trim().toLowerCase();
+  const a = foldToken(token);
+  const b = foldToken(queryToken);
   if (!a || !b) return false;
   const aStem = stemLoose(a);
   const bStem = stemLoose(b);
@@ -145,14 +155,69 @@ function productMatchesStockQ(
 
 function filterStockProducts<
   T extends { name: string; codebar?: string | null; categoryName?: string },
->(products: T[], q?: string): T[] {
+>(products: T[], q?: string, categoryHitOverride?: boolean): T[] {
   if (!q?.trim()) return products;
-  const categoryHit = products.some((product) =>
-    categoryMatchesQ(product.categoryName, q),
-  );
+  const categoryHit =
+    categoryHitOverride ??
+    products.some((product) => categoryMatchesQ(product.categoryName, q));
   return products.filter((product) =>
     productMatchesStockQ(product, q, categoryHit),
   );
+}
+
+function addCategoryName(names: string[], seen: Set<string>, value: unknown) {
+  const text = String(value ?? "").trim();
+  if (!text) return;
+  const key = foldToken(text);
+  if (seen.has(key)) return;
+  seen.add(key);
+  names.push(text);
+}
+
+function categoryNamesFromSaleItems(sales: any[]): string[] {
+  const names: string[] = [];
+  const seen = new Set<string>();
+  for (const sale of sales) {
+    for (const item of sale.saleItems ?? []) {
+      addCategoryName(names, seen, item.product?.categoryName);
+    }
+  }
+  return names;
+}
+
+async function resolveCategoryQ(
+  q: string | undefined,
+  extraNames: Iterable<unknown> = []
+): Promise<{
+  categoryHit: boolean;
+  matchedCategory: string | null;
+  stockCategories: string[];
+}> {
+  const stockCategories: string[] = [];
+  const seen = new Set<string>();
+  try {
+    for (const row of await getAllCategories()) {
+      addCategoryName(stockCategories, seen, row.name);
+    }
+  } catch {
+    // Product.categoryName still works if the Category table is empty.
+  }
+  for (const name of extraNames) addCategoryName(stockCategories, seen, name);
+
+  if (!q?.trim()) {
+    return { categoryHit: false, matchedCategory: null, stockCategories };
+  }
+  const matchedCategory =
+    stockCategories.find((name) => categoryMatchesQ(name, q)) ?? null;
+  return {
+    categoryHit: matchedCategory != null,
+    matchedCategory,
+    stockCategories,
+  };
+}
+
+function lineNameMatchesQ(name: unknown, q: string): boolean {
+  return nameTokenMatchesQ(name, q) || matchesQ(name, q);
 }
 
 function isZakatQuery(q?: string): boolean {
@@ -162,6 +227,12 @@ function isZakatQuery(q?: string): boolean {
 
 function todayYmd() {
   return localYmdFromDate(new Date());
+}
+
+function localYmdDaysAgo(days: number) {
+  const date = new Date();
+  date.setDate(date.getDate() - days);
+  return localYmdFromDate(date);
 }
 
 function yearStartYmd() {
@@ -371,15 +442,21 @@ function slimProduct(product: {
   };
 }
 
-function saleMatchesQ(sale: any, q?: string): boolean {
+function saleMatchesQ(sale: any, q?: string, categoryHit = false): boolean {
   if (!q?.trim()) return true;
+  if (categoryHit) {
+    return (sale.saleItems ?? []).some((item: any) =>
+      categoryMatchesQ(item.product?.categoryName, q)
+    );
+  }
   if (matchesQ(sale.client?.name, q)) return true;
   if (matchesQ(sale.id, q)) return true;
   return (sale.saleItems ?? []).some(
     (item: any) =>
-      matchesQ(item.product?.name, q) ||
-      matchesQ(item.manualProduct?.name, q) ||
-      matchesQ(item.service?.name, q)
+      lineNameMatchesQ(item.product?.name, q) ||
+      lineNameMatchesQ(item.manualProduct?.name, q) ||
+      lineNameMatchesQ(item.service?.name, q) ||
+      categoryMatchesQ(item.product?.categoryName, q)
   );
 }
 
@@ -528,28 +605,41 @@ function saleItemMatchesQ(
   sale: any,
   item: any,
   q?: string,
-  appointmentTypes?: Map<string, string>
+  appointmentTypes?: Map<string, string>,
+  categoryHit = false
 ): boolean {
   if (!q?.trim()) return true;
+  if (categoryHit) return categoryMatchesQ(item.product?.categoryName, q);
   if (matchesQ(sale.client?.name, q) || matchesQ(sale.id, q)) return true;
   const name =
     item.product?.name || item.manualProduct?.name || item.service?.name || "";
   const type = serviceLineType(item, appointmentTypes);
-  return matchesQ(name, q) || matchesQ(type, q);
+  return (
+    lineNameMatchesQ(name, q) ||
+    lineNameMatchesQ(type, q) ||
+    categoryMatchesQ(item.product?.categoryName, q)
+  );
 }
 
 function matchingSaleTicket(
   sale: any,
   q?: string,
-  appointmentTypes?: Map<string, string>
+  appointmentTypes?: Map<string, string>,
+  categoryHit = false
 ): { revenue: number; profit: number } {
-  if (!q?.trim() || matchesQ(sale.client?.name, q) || matchesQ(sale.id, q)) {
+  if (!q?.trim()) {
+    return { revenue: saleRevenue(sale), profit: saleProfit(sale) };
+  }
+  if (
+    !categoryHit &&
+    (matchesQ(sale.client?.name, q) || matchesQ(sale.id, q))
+  ) {
     return { revenue: saleRevenue(sale), profit: saleProfit(sale) };
   }
   let revenue = 0;
   let profit = 0;
   for (const item of sale.saleItems ?? []) {
-    if (!saleItemMatchesQ(sale, item, q, appointmentTypes)) continue;
+    if (!saleItemMatchesQ(sale, item, q, appointmentTypes, categoryHit)) continue;
     const lineRevenue = Number(item.price || 0) * Number(item.quantity || 0);
     revenue += lineRevenue;
     profit += lineRevenue - saleItemCost(item);
@@ -560,12 +650,13 @@ function matchingSaleTicket(
 function pickSaleTopMatch(
   sales: any[],
   q?: string,
-  appointmentTypes?: Map<string, string>
+  appointmentTypes?: Map<string, string>,
+  categoryHit = false
 ) {
   let best: any = null;
   let bestAmounts: { revenue: number; profit: number } | null = null;
   for (const sale of sales) {
-    const amounts = matchingSaleTicket(sale, q, appointmentTypes);
+    const amounts = matchingSaleTicket(sale, q, appointmentTypes, categoryHit);
     if (!bestAmounts || amounts.revenue > bestAmounts.revenue) {
       best = sale;
       bestAmounts = amounts;
@@ -578,10 +669,11 @@ function addSaleItemsToMix(
   mix: LineMix,
   sale: any,
   q?: string,
-  appointmentTypes?: Map<string, string>
+  appointmentTypes?: Map<string, string>,
+  categoryHit = false
 ) {
   for (const item of sale.saleItems ?? []) {
-    if (!saleItemMatchesQ(sale, item, q, appointmentTypes)) continue;
+    if (!saleItemMatchesQ(sale, item, q, appointmentTypes, categoryHit)) continue;
     const revenue = Number(item.price || 0) * Number(item.quantity || 0);
     const profit = revenue - saleItemCost(item);
     const qty = Number(item.quantity || 0);
@@ -735,8 +827,12 @@ async function reportSales(input: {
     range.startDate,
     range.endDate
   )) as any[];
+  const categoryQ = q
+    ? await resolveCategoryQ(q, categoryNamesFromSaleItems(sales))
+    : { categoryHit: false, matchedCategory: null, stockCategories: [] as string[] };
+  const categoryHit = categoryQ.categoryHit;
   const included = sales.filter(
-    (sale) => !isUnpaidVersement(sale) && saleMatchesQ(sale, q)
+    (sale) => !isUnpaidVersement(sale) && saleMatchesQ(sale, q, categoryHit)
   );
 
   if (!q && input.groupBy === "none") {
@@ -776,9 +872,14 @@ async function reportSales(input: {
   const appointmentTypes = q ? (await getAppointmentTypeMap()).map : undefined;
 
   for (const sale of included) {
-    const { revenue, profit } = matchingSaleTicket(sale, q, appointmentTypes);
+    const { revenue, profit } = matchingSaleTicket(
+      sale,
+      q,
+      appointmentTypes,
+      categoryHit
+    );
     addTotals(totals, revenue, profit, 1);
-    addSaleItemsToMix(mix, sale, q, appointmentTypes);
+    addSaleItemsToMix(mix, sale, q, appointmentTypes, categoryHit);
 
     let key = "all";
     if (input.groupBy === "product") {
@@ -788,7 +889,7 @@ async function reportSales(input: {
           item.manualProduct?.name ||
           item.service?.name ||
           "unknown";
-        if (!saleItemMatchesQ(sale, item, q, appointmentTypes)) {
+        if (!saleItemMatchesQ(sale, item, q, appointmentTypes, categoryHit)) {
           continue;
         }
         const current = grouped.get(name) ?? emptyTotals();
@@ -817,12 +918,27 @@ async function reportSales(input: {
     input.groupBy === "none"
       ? []
       : breakdownFromMap(grouped, input.groupBy, input.rankBy);
+  const qMeta =
+    q && categoryHit
+      ? { matchedCategory: categoryQ.matchedCategory }
+      : q && included.length === 0
+        ? {
+            matchedCategory: null,
+            stockCategories: categoryQ.stockCategories.slice(0, 40),
+          }
+        : {};
+  const qRule = categoryHit
+    ? `q matched stock category "${categoryQ.matchedCategory}" (plural/accent OK). Only that category's product lines. Copy matchedCategory. Do not list other categories.`
+    : q && included.length === 0
+      ? "q matched no stock category and no product/client name. If they meant a category, retry report with q set to the closest stockCategories name. Do not list stockCategories unless they asked which categories exist."
+      : "Do not count sample rows.";
   return ok(
     withRanking(
       {
         ...meta,
         entity: "sales",
         q: q || null,
+        ...qMeta,
         groupBy: input.groupBy,
         rankBy: input.rankBy ?? null,
         totals: withTicketMix(
@@ -831,9 +947,9 @@ async function reportSales(input: {
           q ? 0 : await billsPaidInRangeDA(range.startDate, range.endDate)
         ),
         breakdown,
-        rule: `${salesMixRule} Do not count sample rows.`,
+        rule: `${salesMixRule} ${qRule}`,
       },
-      pickSaleTopMatch(included, q, appointmentTypes)
+      pickSaleTopMatch(included, q, appointmentTypes, categoryHit)
     )
   );
 }
@@ -844,9 +960,15 @@ async function reportStock(
 ): Promise<AIToolResult> {
   const products = await productsDb.getAllProducts();
   const zakatQuery = isZakatQuery(q);
+  const categoryQ = q && !zakatQuery
+    ? await resolveCategoryQ(
+        q,
+        products.map((product) => product.categoryName)
+      )
+    : { categoryHit: false, matchedCategory: null, stockCategories: [] as string[] };
   const matched = zakatQuery
     ? products
-    : filterStockProducts(products, q);
+    : filterStockProducts(products, q, categoryQ.categoryHit);
 
   const inventoryCost = matched.reduce(
     (sum, product) => sum + product.quantity * product.boughtPrice,
@@ -906,6 +1028,14 @@ async function reportStock(
       {
         entity: "stock",
         q: q || null,
+        ...(q && categoryQ.categoryHit
+          ? { matchedCategory: categoryQ.matchedCategory }
+          : q && matched.length === 0
+            ? {
+                matchedCategory: null,
+                stockCategories: categoryQ.stockCategories.slice(0, 40),
+              }
+            : {}),
         rankBy: rankBy ?? null,
         totals: {
           matchCount: matched.length,
@@ -931,7 +1061,11 @@ async function reportStock(
         rule: zakatQuery
           ? "Copy totals.zakatOnStock (2.5% of inventoryRetail). Cash and nisab are on the Zakat page, not in the store. Do not mention zakat on other stock answers."
           : q
-            ? "Copy totals.totalQuantity for units in this filter. If q matches a stock category, only that category is included — not product names that merely contain those letters. List products with find type=product. Do not count matches. Do not mention zakat."
+            ? categoryQ.categoryHit
+              ? `Copy totals.totalQuantity for units in stock category "${categoryQ.matchedCategory}". Only that category — not names that merely contain those letters. Copy matchedCategory. List products with find type=product. Do not count matches. Do not mention zakat.`
+              : matched.length === 0
+                ? "q matched no stock category or product. If they meant a category, retry with q set to the closest stockCategories name. Do not list stockCategories unless they asked. Do not mention zakat."
+                : "Copy totals.totalQuantity for units in this filter. If q matches a stock category, only that category is included — not product names that merely contain those letters. List products with find type=product. Do not count matches. Do not mention zakat."
             : "Copy totals. byCategory is stock by category (same as Stock page). Do not mention zakat unless the user asked. Do not count matches.",
       },
       topPriced
@@ -1031,36 +1165,57 @@ async function reportPurchases(input: {
     range.startDate,
     range.endDate
   );
+  const extraCategories = purchases.flatMap((purchase) =>
+    purchase.PurchaseItems.map((item) => item.product?.categoryName)
+  );
+  const categoryQ = await resolveCategoryQ(input.q, extraCategories);
+  const categoryHit = categoryQ.categoryHit;
+  const sellerMatches = (purchase: (typeof purchases)[number]) =>
+    matchesQ(purchase.seller?.name, input.q) ||
+    matchesQ(purchase.seller?.phone, input.q) ||
+    matchesQ(purchase.seller?.email, input.q);
+  const itemMatches = (
+    purchase: (typeof purchases)[number],
+    item: (typeof purchases)[number]["PurchaseItems"][number]
+  ) => {
+    if (!input.q?.trim()) return true;
+    if (sellerMatches(purchase)) return true;
+    if (categoryHit) return categoryMatchesQ(item.product?.categoryName, input.q);
+    return (
+      lineNameMatchesQ(item.product?.name, input.q) ||
+      categoryMatchesQ(item.product?.categoryName, input.q)
+    );
+  };
   const matched = purchases.filter((purchase) => {
     if (!input.q?.trim()) return true;
-    if (matchesQ(purchase.seller?.name, input.q)) return true;
-    if (matchesQ(purchase.seller?.phone, input.q)) return true;
-    if (matchesQ(purchase.seller?.email, input.q)) return true;
-    return purchase.PurchaseItems.some((item) =>
-      matchesQ(item.product?.name, input.q)
-    );
+    if (sellerMatches(purchase)) return true;
+    return purchase.PurchaseItems.some((item) => itemMatches(purchase, item));
   });
+
+  const filteredAmount = (purchase: (typeof purchases)[number]) => {
+    if (!input.q?.trim() || sellerMatches(purchase)) {
+      return purchaseAmount(purchase);
+    }
+    return purchase.PurchaseItems.reduce((sum, item) => {
+      if (!itemMatches(purchase, item)) return sum;
+      return sum + item.price * item.quantity;
+    }, 0);
+  };
 
   const totals = {
     count: matched.length,
-    amount: matched.reduce((sum, purchase) => sum + purchaseAmount(purchase), 0),
+    amount: matched.reduce((sum, purchase) => sum + filteredAmount(purchase), 0),
   };
 
   const grouped = new Map<string, { revenue: number; count: number; profit: number }>();
   for (const purchase of matched) {
-    const amount = purchaseAmount(purchase);
+    const amount = filteredAmount(purchase);
     let key = "all";
     if (input.groupBy === "seller") {
       key = purchase.seller?.name || "unknown";
     } else if (input.groupBy === "product") {
       for (const item of purchase.PurchaseItems) {
-        if (
-          input.q &&
-          !matchesQ(purchase.seller?.name, input.q) &&
-          !matchesQ(purchase.seller?.phone, input.q) &&
-          !matchesQ(purchase.seller?.email, input.q) &&
-          !matchesQ(item.product?.name, input.q)
-        ) {
+        if (!itemMatches(purchase, item)) {
           continue;
         }
         const name = item.product?.name || "unknown";
@@ -1082,25 +1237,41 @@ async function reportPurchases(input: {
       ? []
       : breakdownFromMap(grouped, input.groupBy, input.rankBy);
   const topPurchase = pickTopMatch(matched, (purchase) =>
-    purchaseAmount(purchase)
+    filteredAmount(purchase)
   );
+  const q = input.q?.trim() || null;
+  const qMeta =
+    q && categoryHit
+      ? { matchedCategory: categoryQ.matchedCategory }
+      : q && matched.length === 0
+        ? {
+            matchedCategory: null,
+            stockCategories: categoryQ.stockCategories.slice(0, 40),
+          }
+        : {};
+  const qRule = categoryHit
+    ? `q matched stock category "${categoryQ.matchedCategory}". Product lines in that category only. Copy matchedCategory.`
+    : q && matched.length === 0
+      ? "q matched no supplier and no stock category. If they meant a category, retry with q set to the closest stockCategories name. Do not list stockCategories unless they asked."
+      : "Copy totals.amount (DA) and totals.count. groupBy=seller is by supplier name. Do not add purchase rows.";
 
   return ok(
     withRanking(
       {
         ...rangeMeta(range.startDate, range.endDate),
         entity: "purchases",
-        q: input.q?.trim() || null,
+        q,
+        ...qMeta,
         groupBy: input.groupBy,
         rankBy: input.rankBy ?? null,
         totals,
         breakdown,
-        rule: "Copy totals.amount (DA) and totals.count. groupBy=seller is by supplier name. Do not add purchase rows.",
+        rule: qRule,
       },
       topPurchase
         ? {
             seller: topPurchase.seller?.name || "unknown",
-            amount: roundDA(purchaseAmount(topPurchase)),
+            amount: roundDA(filteredAmount(topPurchase)),
             date: localYmdFromDate(new Date(topPurchase.createdAt)),
           }
         : null
@@ -1705,7 +1876,11 @@ export async function tool_find(input: {
         });
       }
       const products = await productsDb.getAllProducts();
-      const matched = filterStockProducts(products, q);
+      const categoryQ = await resolveCategoryQ(
+        q,
+        products.map((product) => product.categoryName)
+      );
+      const matched = filterStockProducts(products, q, categoryQ.categoryHit);
       const inStock = matched.filter((product) => product.quantity > 0);
       const rows = (inStock.length > 0 ? inStock : matched)
         .slice()
@@ -1725,6 +1900,14 @@ export async function tool_find(input: {
       return ok({
         type: "product",
         q,
+        ...(categoryQ.categoryHit
+          ? { matchedCategory: categoryQ.matchedCategory }
+          : matched.length === 0
+            ? {
+                matchedCategory: null,
+                stockCategories: categoryQ.stockCategories.slice(0, 40),
+              }
+            : {}),
         totals: {
           matchCount: matched.length,
           inStockCount: inStock.length,
@@ -1735,7 +1918,9 @@ export async function tool_find(input: {
         },
         matches: listed.items,
         ...listMeta(listed),
-        rule: "List each matches row: name and quantity. totals.totalQuantity is units in stock. Do not paste a category breakdown.",
+        rule: categoryQ.categoryHit
+          ? `List each matches row: name and quantity. q matched stock category "${categoryQ.matchedCategory}". totals.totalQuantity is units in that category. Do not paste a category breakdown.`
+          : "List each matches row: name and quantity. totals.totalQuantity is units in stock. Do not paste a category breakdown.",
       });
     }
 
@@ -1913,21 +2098,99 @@ export async function tool_find(input: {
   }
 }
 
+const ALERT_KINDS = [
+  "low_stock",
+  "out_of_stock",
+  "credits_due",
+  "credits_due_soon",
+  "credits_overdue",
+  "versements_due",
+  "versements_due_soon",
+  "versements_overdue",
+  "bills_due",
+  "bills_due_soon",
+  "bills_overdue",
+  "services_due",
+  "services_due_soon",
+  "services_overdue",
+] as const;
+
+const ALERT_KIND_ALIASES: Record<string, string> = {
+  credits_unpaid: "credits_due",
+  versements_unpaid: "versements_due",
+  upcoming_services: "services_due_soon",
+};
+
+type PaymentAlertType = "CREDIT" | "VERSEMENT";
+type PaymentAlertTiming = "due" | "due_soon" | "overdue";
+
+const PAYMENT_ALERTS: Record<
+  string,
+  { type: PaymentAlertType; timing: PaymentAlertTiming }
+> = {
+  credits_due: { type: "CREDIT", timing: "due" },
+  credits_due_soon: { type: "CREDIT", timing: "due_soon" },
+  credits_overdue: { type: "CREDIT", timing: "overdue" },
+  versements_due: { type: "VERSEMENT", timing: "due" },
+  versements_due_soon: { type: "VERSEMENT", timing: "due_soon" },
+  versements_overdue: { type: "VERSEMENT", timing: "overdue" },
+};
+
+const ALERT_KIND_LIST = ALERT_KINDS.join(" | ");
+
+function paymentDueTime(dueDate: unknown): number {
+  const due = new Date(dueDate as string | Date);
+  return due.getTime();
+}
+
+function paymentIsOverdue(dueDate: unknown, now: Date): boolean {
+  const time = paymentDueTime(dueDate);
+  return Number.isFinite(time) && time !== 0 && time < now.getTime();
+}
+
+function paymentIsDueSoon(dueDate: unknown, now: Date, days: number): boolean {
+  const time = paymentDueTime(dueDate);
+  if (!Number.isFinite(time) || time === 0) return false;
+  const diffDays = Math.ceil((time - now.getTime()) / (1000 * 60 * 60 * 24));
+  return diffDays > 0 && diffDays <= days;
+}
+
+function slimServiceAppointment(
+  item: {
+    id: string;
+    name: string;
+    dueDate: Date | string;
+    client?: { name?: string | null } | null;
+  },
+  now: Date
+) {
+  const dueTime = paymentDueTime(item.dueDate);
+  return {
+    id: item.id,
+    name: item.name,
+    dueDate: item.dueDate,
+    client: item.client?.name ?? null,
+    overdue: Number.isFinite(dueTime) && dueTime !== 0 && dueTime < now.getTime(),
+  };
+}
+
 export async function tool_alerts(input: {
   kind?: string;
   threshold?: number;
 } = {}): Promise<AIToolResult> {
   try {
-    const kind = String(input.kind ?? "").trim().toLowerCase();
+    const rawKind = String(input.kind ?? "").trim().toLowerCase();
+    const kind = ALERT_KIND_ALIASES[rawKind] ?? rawKind;
     const threshold =
       typeof input.threshold === "number" && input.threshold >= 0
         ? input.threshold
-        : 5;
+        : undefined;
 
     if (kind === "low_stock") {
+      const qtyThreshold = threshold ?? 5;
       const products = await productsDb.getAllProducts();
       const matched = products.filter(
-        (product) => product.quantity > 0 && product.quantity <= threshold
+        (product) => product.quantity > 0 && product.quantity <= qtyThreshold
       );
       const listed = capList(
         matched.slice().sort((a, b) => a.quantity - b.quantity).map(slimProduct),
@@ -1935,7 +2198,7 @@ export async function tool_alerts(input: {
       );
       return ok({
         kind,
-        threshold,
+        threshold: qtyThreshold,
         totals: {
           matchCount: matched.length,
           totalQuantity: matched.reduce((sum, product) => sum + product.quantity, 0),
@@ -1959,64 +2222,75 @@ export async function tool_alerts(input: {
       });
     }
 
-    if (kind === "unpaid" || kind === "overdue") {
+    const paymentAlert = PAYMENT_ALERTS[kind];
+    if (paymentAlert) {
+      const dueDays = threshold && threshold > 0 ? threshold : 2;
       const payments = (await paymentsDb.getAllPaymentsWithClientInfo()) as any[];
       const now = new Date();
       const matched = payments.filter((payment) => {
         if (payment.paidDate) return false;
-        if (kind === "overdue") {
-          return new Date(payment.dueDate).getTime() < now.getTime();
+        if (payment.type !== paymentAlert.type) return false;
+        if (paymentAlert.timing === "overdue") {
+          return paymentIsOverdue(payment.dueDate, now);
+        }
+        if (paymentAlert.timing === "due_soon") {
+          return paymentIsDueSoon(payment.dueDate, now, dueDays);
         }
         return true;
       });
-      const credits = matched.filter((payment) => payment.type === "CREDIT");
-      const versements = matched.filter((payment) => payment.type === "VERSEMENT");
-      const clientsOweYou = credits.reduce(
-        (sum, payment) =>
-          sum + Number(payment.remainingAmount ?? payment.givenAmount ?? 0),
-        0
-      );
-      const youOweClients = versements.reduce(
-        (sum, payment) => sum + Number(payment.givenAmount || 0),
-        0
-      );
+      const isCredit = paymentAlert.type === "CREDIT";
+      const amount = matched.reduce((sum, payment) => {
+        const value = isCredit
+          ? Number(payment.remainingAmount ?? payment.givenAmount ?? 0)
+          : Number(payment.givenAmount || 0);
+        return sum + value;
+      }, 0);
       const listed = capList(
         matched.map((payment) => ({
           id: payment.id,
           type: payment.type,
-          meaning:
-            payment.type === "CREDIT" ? "client_owes_you" : "you_hold_deposit",
+          meaning: isCredit ? "client_owes_you" : "you_hold_deposit",
           client: payment.client?.name ?? null,
-          amount:
-            payment.type === "CREDIT"
-              ? payment.remainingAmount ?? payment.givenAmount
-              : payment.givenAmount,
+          amount: isCredit
+            ? payment.remainingAmount ?? payment.givenAmount
+            : payment.givenAmount,
           dueDate: payment.dueDate,
         })),
         SAMPLE_LIMIT
       );
+      const overdueCount = matched.filter((payment) =>
+        paymentIsOverdue(payment.dueDate, now)
+      ).length;
+      const moneyField = isCredit ? "clientsOweYou" : "youOweClients";
       return ok({
         kind,
+        days: paymentAlert.timing === "due_soon" ? dueDays : undefined,
         totals: {
           matchCount: matched.length,
-          creditCount: credits.length,
-          versementCount: versements.length,
-          clientsOweYou,
-          youOweClients,
-          amount: clientsOweYou + youOweClients,
+          overdueCount,
+          [moneyField]: amount,
+          amount,
         },
         matches: listed.items,
         ...listMeta(listed),
-        rule: "CREDIT = clientsOweYou (they owe you). VERSEMENT = youOweClients (deposit you hold). Never mix them. Copy totals. Do not add matches.",
+        rule: isCredit
+          ? paymentAlert.timing === "due"
+            ? "All unpaid CREDIT, including overdue. Copy totals.matchCount and totals.overdueCount. clientsOweYou is money."
+            : "CREDIT only: they owe you. Copy totals.matchCount and totals.clientsOweYou. Do not mix with VERSEMENT."
+          : paymentAlert.timing === "due"
+            ? "All unpaid VERSEMENT, including overdue. Copy totals.matchCount and totals.overdueCount. youOweClients is money."
+            : "VERSEMENT only: deposit you hold. Copy totals.matchCount and totals.youOweClients. Do not mix with CREDIT.",
       });
     }
 
-    if (kind === "bills_due" || kind === "bills_overdue") {
+    if (
+      kind === "bills_due" ||
+      kind === "bills_due_soon" ||
+      kind === "bills_overdue"
+    ) {
       const days =
-        kind === "bills_due" &&
-        typeof input.threshold === "number" &&
-        input.threshold > 0
-          ? input.threshold
+        kind === "bills_due_soon" && threshold && threshold > 0
+          ? threshold
           : 7;
       const today = new Date();
       today.setHours(0, 0, 0, 0);
@@ -2031,7 +2305,8 @@ export async function tool_alerts(input: {
         due.setHours(0, 0, 0, 0);
         if (due.getTime() === 0) return false;
         if (kind === "bills_overdue") return due < today;
-        return due >= today && due <= soon;
+        if (kind === "bills_due_soon") return due >= today && due <= soon;
+        return true;
       });
 
       const amount = matched.reduce(
@@ -2055,50 +2330,230 @@ export async function tool_alerts(input: {
           })),
         SAMPLE_LIMIT
       );
+      const overdueCount = matched.filter((bill) => {
+        const due = new Date(bill.nextBillDate);
+        due.setHours(0, 0, 0, 0);
+        return due < today;
+      }).length;
       return ok({
         kind,
-        days: kind === "bills_due" ? days : undefined,
+        days: kind === "bills_due_soon" ? days : undefined,
         totals: {
           matchCount: matched.length,
+          overdueCount,
           amount: roundDA(amount),
           salaryCount: matched.filter((bill) => isSalaryType(bill.type)).length,
           expenseCount: matched.filter((bill) => !isSalaryType(bill.type)).length,
         },
         matches: listed.items,
         ...listMeta(listed),
-        rule: "These are store bills (rent, salary, expenses), not client debts. amount is already DA. Copy totals. Do not add matches.",
+        rule:
+          kind === "bills_due"
+            ? "All outstanding store bills (next date set), including overdue. Copy totals.matchCount and totals.overdueCount. Not client debts."
+            : "These are store bills (rent, salary, expenses), not client debts. amount is already DA. Copy totals. Do not add matches.",
       });
     }
 
-    if (kind === "upcoming_services") {
-      const upcoming = await serviceAppointmentsDb.getUpcomingServiceAppointments(7);
-      const overdue = await serviceAppointmentsDb.getOverdueServiceAppointments();
+    if (
+      kind === "services_due" ||
+      kind === "services_due_soon" ||
+      kind === "services_overdue"
+    ) {
+      const days = threshold && threshold > 0 ? threshold : 7;
+      const now = new Date();
+      const rows =
+        kind === "services_overdue"
+          ? await serviceAppointmentsDb.getOverdueServiceAppointments()
+          : kind === "services_due_soon"
+            ? await serviceAppointmentsDb.getUpcomingServiceAppointments(days)
+            : await serviceAppointmentsDb.getPendingServiceAppointments();
       const listed = capList(
-        upcoming.map((item: any) => ({
-          id: item.id,
-          name: item.name,
-          dueDate: item.dueDate,
-          client: item.client?.name ?? null,
-        })),
+        (rows as any[]).map((row) => slimServiceAppointment(row, now)),
         SAMPLE_LIMIT
       );
+      const overdueCount = (rows as any[]).filter((row) => {
+        const dueTime = paymentDueTime(row.dueDate);
+        return Number.isFinite(dueTime) && dueTime !== 0 && dueTime < now.getTime();
+      }).length;
       return ok({
         kind,
-        totals: {
-          upcomingCount: upcoming.length,
-          overdueCount: overdue.length,
-        },
+        days: kind === "services_due_soon" ? days : undefined,
+        totals: { matchCount: rows.length, overdueCount },
         matches: listed.items,
         ...listMeta(listed),
-        rule: "Copy totals.upcomingCount and totals.overdueCount.",
+        rule:
+          kind === "services_overdue"
+            ? "Unfinished appointments already late. Copy totals.matchCount. Not client credits, not store bills, not cashier sales."
+            : kind === "services_due_soon"
+              ? "Unfinished appointments due soon, not late. Copy totals.matchCount. Not overdue."
+              : "All unfinished appointments, including overdue. Copy totals.matchCount and totals.overdueCount. What's left to repair is this kind, not due_soon.",
       });
     }
 
-    return fail(
-      "kind is required: low_stock | out_of_stock | unpaid | overdue | bills_due | bills_overdue | upcoming_services"
-    );
+    return fail(`kind is required: ${ALERT_KIND_LIST}`);
   } catch (error) {
     return fail(`alerts failed: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+export async function tool_restock(input: {
+  budget?: unknown;
+  q?: string;
+  days?: number;
+} = {}): Promise<AIToolResult> {
+  try {
+    const budget = Number(input.budget);
+    if (!Number.isFinite(budget) || budget <= 0) {
+      return fail("budget is required (DA, a number greater than 0). If the user gave no budget, ask. Do not guess.");
+    }
+
+    const daysRaw = typeof input.days === "number" ? input.days : 30;
+    const days = Math.min(365, Math.max(1, Math.floor(daysRaw)));
+    const q = String(input.q ?? "").trim();
+
+    const thresholdRaw = Number(await getOption("lowStockThreshold"));
+    const lowStock =
+      Number.isFinite(thresholdRaw) && thresholdRaw >= 0 ? thresholdRaw : 5;
+
+    const allProducts = await productsDb.getAllProducts();
+    const categoryQ = q
+      ? await resolveCategoryQ(
+          q,
+          allProducts.map((product) => product.categoryName)
+        )
+      : { categoryHit: false, matchedCategory: null, stockCategories: [] as string[] };
+    const products = filterStockProducts(
+      allProducts,
+      q || undefined,
+      categoryQ.categoryHit
+    );
+    if (q && products.length === 0) {
+      return ok({
+        budget: roundDA(budget),
+        spent: 0,
+        leftover: roundDA(budget),
+        days,
+        q,
+        ...(categoryQ.categoryHit
+          ? { matchedCategory: categoryQ.matchedCategory }
+          : {
+              matchedCategory: null,
+              stockCategories: categoryQ.stockCategories.slice(0, 40),
+            }),
+        lowStockThreshold: lowStock,
+        totals: { lineCount: 0, buyQty: 0, catalogCount: 0 },
+        matches: [],
+        ...listMetaFromTotal(0, 0),
+        rule: "q matched no stock category or product. If they meant a category, retry with q set to the closest stockCategories name. Copy leftover = budget. Do not invent a buy list.",
+      });
+    }
+
+    const range = parseLocalDateRange(localYmdDaysAgo(days - 1), todayYmd());
+    if (range.ok === false) return fail(range.error);
+    const sales = (await salesDb.getSalesByDateRange(
+      range.startDate,
+      range.endDate
+    )) as any[];
+
+    const soldById = new Map<string, number>();
+    for (const sale of sales) {
+      for (const item of sale.saleItems ?? []) {
+        if (saleItemKind(item) !== "product") continue;
+        const id = String(item.productId ?? item.product?.id ?? "");
+        if (!id) continue;
+        soldById.set(id, (soldById.get(id) ?? 0) + Number(item.quantity || 0));
+      }
+    }
+
+    type RestockNeed = {
+      id: string;
+      name: string;
+      category: string;
+      onHand: number;
+      soldInPeriod: number;
+      unitCost: number;
+      need: number;
+    };
+
+    const needs: RestockNeed[] = [];
+    for (const product of products) {
+      const unitCost = Number(product.boughtPrice || 0);
+      if (!(unitCost > 0)) continue;
+      const onHand = Number(product.quantity || 0);
+      const soldInPeriod = soldById.get(product.id) ?? 0;
+      const target = Math.max(lowStock, soldInPeriod);
+      const need = Math.max(0, target - onHand);
+      if (need < 1) continue;
+      needs.push({
+        id: product.id,
+        name: product.name,
+        category: String(product.categoryName ?? "").trim() || "Uncategorized",
+        onHand,
+        soldInPeriod,
+        unitCost,
+        need,
+      });
+    }
+
+    needs.sort((a, b) => {
+      if ((a.onHand === 0) !== (b.onHand === 0)) return a.onHand === 0 ? -1 : 1;
+      const aLow = a.onHand > 0 && a.onHand <= lowStock;
+      const bLow = b.onHand > 0 && b.onHand <= lowStock;
+      if (aLow !== bLow) return aLow ? -1 : 1;
+      if (b.soldInPeriod !== a.soldInPeriod) return b.soldInPeriod - a.soldInPeriod;
+      return a.name.localeCompare(b.name);
+    });
+
+    let remaining = budget;
+    const lines: Array<{
+      name: string;
+      category: string;
+      buyQty: number;
+      unitCost: number;
+      lineCost: number;
+      onHand: number;
+      soldInPeriod: number;
+    }> = [];
+
+    for (const item of needs) {
+      const canBuy = Math.min(item.need, Math.floor(remaining / item.unitCost));
+      if (canBuy < 1) continue;
+      const lineCost = roundDA(canBuy * item.unitCost);
+      remaining = roundDA(remaining - lineCost);
+      lines.push({
+        name: item.name,
+        category: item.category,
+        buyQty: canBuy,
+        unitCost: roundDA(item.unitCost),
+        lineCost,
+        onHand: item.onHand,
+        soldInPeriod: item.soldInPeriod,
+      });
+    }
+
+    const spent = roundDA(budget - remaining);
+    const listed = capList(lines, SAMPLE_LIMIT);
+    return ok({
+      budget: roundDA(budget),
+      spent,
+      leftover: remaining,
+      days,
+      q: q || null,
+      ...(categoryQ.categoryHit
+        ? { matchedCategory: categoryQ.matchedCategory }
+        : {}),
+      lowStockThreshold: lowStock,
+      totals: {
+        lineCount: lines.length,
+        buyQty: lines.reduce((sum, line) => sum + line.buyQty, 0),
+        catalogCount: products.length,
+      },
+      matches: listed.items,
+      ...listMeta(listed),
+      rule: "A table of matches is shown (buyQty, name, unitCost, lineCost). Copy leftover. Do not retype every row. Suggestion from on-hand qty, sales in `days`, and last boughtPrice — not a supplier quote. Do not invent extra products. This does not create a purchase.",
+    });
+  } catch (error) {
+    return fail(`restock failed: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -2143,7 +2598,7 @@ export const AI_TOOLS_REGISTRY: Record<string, ToolDef> = {
       q: {
         type: "string",
         description:
-          "Optional filter: stock category, name, brand, barcode, employee, bill-type, supplier, or service-type (e.g. samsung, cable, abdellah, SALARY, repair). For stock, a matching category wins over names that only contain those letters. Use q=zakat only when the user asked about zakat. For purchases, q can be a supplier name even with groupBy=product.",
+          "Optional filter: stock category, name, brand, barcode, employee, bill-type, supplier, or service-type (e.g. samsung, phones, cable, abdellah, SALARY, repair). Pass the user's word as typed — plurals and accents are resolved to a stock category in this tool. Do not list categories first. If q matches a category, only that category's product lines (not names that merely contain those letters). Use q=zakat only when the user asked about zakat. For purchases, q can be a supplier name even with groupBy=product.",
         required: false,
       },
       rankBy: {
@@ -2158,7 +2613,7 @@ export const AI_TOOLS_REGISTRY: Record<string, ToolDef> = {
   find: {
     name: "find",
     description:
-      "Look up products, clients, suppliers (sellers), or sales by name/brand/barcode/category. Not for best/most/top/who rankings — use report and copy top or topMatch. For products, returns in-stock rows to list (name, quantity). If q matches a stock category, only that category — not names that merely contain those letters. type=client status=all = ALL clients (totals.matchCount). type=client status=owes_you = CREDIT only. type=client status=deposits = VERSEMENT only. q=name looks up one client. Omit q for type=seller to list all suppliers. Copy totals; for type=product list the matches array. If truncated is true, say returnedCount of totalCount.",
+      "Look up products, clients, suppliers (sellers), or sales by name/brand/barcode/category. Not for best/most/top/who rankings — use report and copy top or topMatch. For products, returns in-stock rows to list (name, quantity). If q matches a stock category, only that category — not names that merely contain those letters. type=client status=all = ALL clients (totals.matchCount). type=client status=owes_you = CREDIT only — only if they named CREDIT / who owes them. A status or amount with no domain, in any language, is not CREDIT. type=client status=deposits = VERSEMENT only. q=name looks up one client. Omit q for type=seller to list all suppliers. Copy totals; for type=product list the matches array. If truncated is true, say returnedCount of totalCount.",
     fn: tool_find,
     input_schema: {
       type: {
@@ -2176,7 +2631,7 @@ export const AI_TOOLS_REGISTRY: Record<string, ToolDef> = {
       status: {
         type: "string",
         description:
-          "type=client only. all = every client. owes_you = CREDIT (they owe you). deposits = VERSEMENT (you hold their deposit). Never put credit or versement in q.",
+          "type=client only. all = every client. owes_you = CREDIT (they owe you) — only when they named CREDIT / who owes me, not a status or amount with no domain. deposits = VERSEMENT (you hold their deposit). Never put credit or versement in q.",
         required: false,
         enum: ["all", "owes_you", "deposits"],
       },
@@ -2185,28 +2640,43 @@ export const AI_TOOLS_REGISTRY: Record<string, ToolDef> = {
   alerts: {
     name: "alerts",
     description:
-      "Low stock, out of stock, unpaid/overdue client CREDIT vs VERSEMENT, bills due soon or overdue, upcoming/overdue services. Returns server totals plus a short sample.",
+      "Stock, client payments, store bills, or service appointments. kind MUST name the domain. *_due = all still outstanding, including overdue. *_due_soon = coming up, not late. *_overdue = already late. What's left to repair → services_due. A status with no domain, in any language, is not enough — do not call. Never guess credits. Returns server totals plus a sample.",
     fn: tool_alerts,
     input_schema: {
       kind: {
         type: "string",
-        description:
-          "low_stock | out_of_stock | unpaid | overdue | bills_due | bills_overdue | upcoming_services",
+        description: ALERT_KIND_LIST,
         required: true,
-        enum: [
-          "low_stock",
-          "out_of_stock",
-          "unpaid",
-          "overdue",
-          "bills_due",
-          "bills_overdue",
-          "upcoming_services",
-        ],
+        enum: [...ALERT_KINDS],
       },
       threshold: {
         type: "number",
         description:
-          "low_stock: quantity threshold (default 5). bills_due: days ahead (default 7).",
+          "low_stock: quantity threshold (default 5). credits_due_soon/versements_due_soon: days ahead (default 2). bills_due_soon/services_due_soon: days ahead (default 7).",
+        required: false,
+      },
+    },
+  },
+  restock: {
+    name: "restock",
+    description:
+      "Restock buy list for a DA budget only. Requires budget. Optional q = stock category or product name (if q matches a category, only that category). Fills out-of-stock then low stock then what sold, using last boughtPrice. A results table is shown — do not retype every row. Copy leftover (and spent). Does not create a purchase. NEVER for what a client bought, supplier purchases, stock counts, or best sellers.",
+    fn: tool_restock,
+    input_schema: {
+      budget: {
+        type: "number",
+        description: "Money to spend in DA. Required. Do not call this tool without it.",
+        required: true,
+      },
+      q: {
+        type: "string",
+        description:
+          "Optional stock category or product name. A matching category wins over names that only contain those letters — same as stock.",
+        required: false,
+      },
+      days: {
+        type: "number",
+        description: "Sales lookback days to size restock (default 30, max 365).",
         required: false,
       },
     },

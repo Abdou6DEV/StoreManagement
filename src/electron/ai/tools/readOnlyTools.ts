@@ -6,4 +6,5 @@ export {
   tool_alerts,
   tool_find,
   tool_report,
+  tool_restock,
 } from "./storeTools";
