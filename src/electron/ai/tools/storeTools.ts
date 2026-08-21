@@ -306,7 +306,7 @@ async function defaultRange(
     return parseLocalDateRange(startDate, endDate);
   }
   if (startDate != null && endDate == null) {
-    return parseLocalDateRange(startDate, startDate);
+    return parseLocalDateRange(startDate, todayYmd());
   }
   if (endDate != null && startDate == null) {
     return parseLocalDateRange(endDate, endDate);
@@ -2580,12 +2580,14 @@ export const AI_TOOLS_REGISTRY: Record<string, ToolDef> = {
       },
       startDate: {
         type: "string",
-        description: "Local store date YYYY-MM-DD. Same day as endDate for one day.",
+        description:
+          "Local store date YYYY-MM-DD. If endDate is omitted, the range is startDate through today. For one day, pass the same date as endDate.",
         required: false,
       },
       endDate: {
         type: "string",
-        description: "Local store date YYYY-MM-DD, inclusive full local day.",
+        description:
+          "Local store date YYYY-MM-DD, inclusive full local day. Omit only when the period runs through today. For one day, copy startDate.",
         required: false,
       },
       groupBy: {

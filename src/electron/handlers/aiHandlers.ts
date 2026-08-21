@@ -460,7 +460,7 @@ async function runOneTool(
   const compacted = toolResult.success
     ? TEMP_SKIP_COMPACT
       ? toolResult.result
-      : compactToolResult(toolResult.result, maxResultChars)
+      : compactToolResult(toolResult.result, maxResultChars, resolvedName)
     : undefined;
 
   console.log(
