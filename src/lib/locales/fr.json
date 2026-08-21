@@ -81,7 +81,8 @@
         "paid": "Payé (DA)",
         "serviceRevenue": "Recette services (DA)",
         "serviceProfit": "Bénéfice services (DA)",
-        "sellingPrice": "Prix (DA)",
+        "sellingPrice": "Prix de vente (DA)",
+        "boughtPrice": "Prix d'achat (DA)",
         "clientsOweYou": "Ils vous doivent (DA)",
         "youOweClients": "Vous détenez (DA)"
       }

@@ -24,6 +24,7 @@ import {
 import { WorkingStatus } from "@/lib/components/assistant-ui/working-status";
 import { TooltipIconButton } from "@/lib/components/assistant-ui/tooltip-icon-button";
 import { Button } from "@/lib/components/ui/button";
+import { BidiText } from "@/lib/ai/bidiText";
 import { cn } from "@/lib/utils";
 import {
   ActionBarMorePrimitive,
@@ -38,6 +39,7 @@ import {
   ThreadPrimitive,
   type FileMessagePartComponent,
   type ImageMessagePartComponent,
+  type TextMessagePartComponent,
   type ToolCallMessagePartComponent,
   useAuiState,
 } from "@assistant-ui/react";
@@ -584,6 +586,7 @@ const AssistantMessage: FC = () => {
         data-slot="aui_assistant-message-content"
         className="text-foreground px-2 leading-relaxed wrap-break-word"
       >
+        <WorkingStatus />
         <MessagePrimitive.GroupedParts
           groupBy={groupPartByType({
             reasoning: ["group-chainOfThought", "group-reasoning"],
@@ -645,7 +648,7 @@ const AssistantMessage: FC = () => {
                   </div>
                 );
               case "indicator":
-                return <WorkingStatus />;
+                return null;
               default:
                 return null;
             }
@@ -715,6 +718,10 @@ const AssistantActionBar: FC = () => {
   );
 };
 
+const UserText: TextMessagePartComponent = ({ text }) => (
+  <BidiText className="whitespace-pre-wrap">{text}</BidiText>
+);
+
 const UserFilePart: FileMessagePartComponent = (part) => (
   <div data-slot="aui_user-message-file" className="py-1">
     <File {...part} />
@@ -739,7 +746,11 @@ const UserMessage: FC = () => {
       <div className="aui-user-message-content-wrapper relative col-start-2 min-w-0">
         <div className="aui-user-message-content peer bg-muted text-foreground rounded-xl px-4 py-2 wrap-break-word empty:hidden">
           <MessagePrimitive.Parts
-            components={{ File: UserFilePart, Image: UserImagePart }}
+            components={{
+              Text: UserText,
+              File: UserFilePart,
+              Image: UserImagePart,
+            }}
           />
         </div>
         <div className="aui-user-action-bar-wrapper absolute start-0 top-1/2 -translate-x-full -translate-y-1/2 pe-2 peer-empty:hidden rtl:translate-x-full">

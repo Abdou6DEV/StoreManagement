@@ -24,7 +24,8 @@ const COLUMN_DEFAULTS: Record<string, string> = {
   paid: "Paid (DA)",
   serviceRevenue: "Service revenue (DA)",
   serviceProfit: "Service profit (DA)",
-  sellingPrice: "Price (DA)",
+  sellingPrice: "Selling price (DA)",
+  boughtPrice: "Bought price (DA)",
   clientsOweYou: "They owe you (DA)",
   youOweClients: "You hold (DA)",
 };

@@ -81,7 +81,8 @@
         "paid": "المدفوع (دج)",
         "serviceRevenue": "إيراد الخدمات (دج)",
         "serviceProfit": "ربح الخدمات (دج)",
-        "sellingPrice": "السعر (دج)",
+        "sellingPrice": "سعر البيع (دج)",
+        "boughtPrice": "سعر الشراء (دج)",
         "clientsOweYou": "هم مدينون لك (دج)",
         "youOweClients": "أنت تحتفظ (دج)"
       }

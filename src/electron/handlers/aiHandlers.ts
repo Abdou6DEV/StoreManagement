@@ -42,6 +42,11 @@ import {
   fetchWithTimeout,
   MODEL_FETCH_TIMEOUT_MS,
 } from "../ai/fetchWithTimeout";
+import {
+  emitChatChunk,
+  isEventStream,
+  readSseJsonLines,
+} from "../ai/streamChat";
 
 type ChatMessage = {
   role: "user" | "assistant";
@@ -84,6 +89,11 @@ type ModelTurn = {
 
 type CallModelOptions = {
   disableTools?: boolean;
+  /**
+   * When false: no live UI chunks AND use non-streaming HTTP
+   * (list writer / number rewrite — large payloads time out on SSE).
+   */
+  streamChunks?: boolean;
 };
 
 const LIST_HANDOFF_MIN_ROWS = 8;
@@ -551,6 +561,82 @@ async function handleGeminiToolCalls(
   };
 }
 
+async function streamGeminiCandidate(
+  modelId: string,
+  apiKey: string,
+  currentContents: GeminiContent[],
+  userName: string | undefined,
+  attachTools: boolean,
+  publishChunks: boolean,
+  httpStream: boolean
+): Promise<GeminiContent | undefined> {
+  const url = httpStream
+    ? `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:streamGenerateContent?alt=sse&key=${apiKey}`
+    : `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${apiKey}`;
+
+  const response = await fetchWithTimeout(
+    url,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        systemInstruction: {
+          parts: [{ text: systemInstructionForModel(modelId, userName) }],
+        },
+        contents: currentContents,
+        ...(attachTools ? { tools: [toGeminiTools()] } : {}),
+      }),
+    },
+    MODEL_FETCH_TIMEOUT_MS
+  );
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    const error = new Error(
+      `Gemini API error (${response.status}): ${errorText}`
+    );
+    (error as Error & { status?: number }).status = response.status;
+    throw error;
+  }
+
+  const parts: GeminiPart[] = [];
+  let text = "";
+  let sawFunctionCall = false;
+
+  const ingest = (data: unknown) => {
+    const chunkParts =
+      (data as { candidates?: { content?: GeminiContent }[] })
+        .candidates?.[0]?.content?.parts ?? [];
+    for (const part of chunkParts) {
+      if (part.functionCall) {
+        sawFunctionCall = true;
+        parts.push(part);
+      } else if (part.text && !part.thought) {
+        text += part.text;
+      } else if (part.thought || part.thoughtSignature || part.thought_signature) {
+        parts.push(part);
+      }
+    }
+    // Only stream visible answer text. Never stream tool-call turns —
+    // those get replaced by a later write and look like a second reply.
+    if (publishChunks && !sawFunctionCall && text) emitChatChunk(text);
+  };
+
+  if (httpStream && isEventStream(response)) {
+    await readSseJsonLines(response, ingest);
+  } else {
+    ingest(await response.json());
+  }
+
+  const assembled: GeminiPart[] = [];
+  if (text) assembled.push({ text });
+  assembled.push(...parts);
+  if (assembled.length === 0) return undefined;
+  return { role: "model", parts: assembled };
+}
+
 async function callGemini(
   modelId: string,
   messages: ChatMessage[],
@@ -575,38 +661,29 @@ async function callGemini(
       !options?.disableTools &&
       modelSupportsToolCalling(modelId) &&
       (geminiInToolLoop(currentContents) || shouldAttachTools(messages));
-
-    const response = await fetchWithTimeout(
-      `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${apiKey}`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          systemInstruction: {
-            parts: [{ text: systemInstructionForModel(modelId, userName) }],
-          },
-          contents: currentContents,
-          ...(attachTools ? { tools: [toGeminiTools()] } : {}),
-        }),
-      },
-      MODEL_FETCH_TIMEOUT_MS
-    );
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      const error = new Error(
-        `Gemini API error (${response.status}): ${errorText}`
+    // Live UI chunks for normal replies. List writer / rewrite set streamChunks:false.
+    // Do NOT gate on attachTools — store questions often answer in text without a
+    // tool round, and that must still stream. Tool-call turns are filtered in ingest
+    // via sawFunctionCall / toolAcc.
+    const httpStream = options?.streamChunks !== false;
+    const publishChunks =
+      httpStream &&
+      !options?.disableTools &&
+      !(
+        toolResults.length > 0 &&
+        toolResultsNeedListWriter(toolResults) &&
+        !isTotalsOnlyQuestion(userText)
       );
-      (error as Error & { status?: number }).status = response.status;
-      throw error;
-    }
 
-    const data = await response.json();
-    const candidateContent = data.candidates?.[0]?.content as
-      | GeminiContent
-      | undefined;
+    const candidateContent = await streamGeminiCandidate(
+      modelId,
+      apiKey,
+      currentContents,
+      userName,
+      attachTools,
+      publishChunks,
+      httpStream
+    );
     const {
       hasToolCalls,
       finalText,
@@ -735,29 +812,76 @@ async function handleOpenAIToolCalls(
   };
 }
 
-async function callOpenRouter(
-  modelId: string,
-  messages: ChatMessage[],
-  apiKey: string,
-  userName?: string,
-  options?: CallModelOptions
-): Promise<ModelTurn> {
-  let currentMessages: OpenAIChatMessage[] = messages;
-  let maxRetries = 5;
-  const toolResults: unknown[] = [];
+type OpenAIStreamEndpoint = {
+  url: string;
+  errorName: string;
+  headers: Record<string, string>;
+  extraBody?: Record<string, unknown>;
+  visibleText?: (raw: string) => string;
+};
 
-  while (maxRetries > 0) {
-    emitWaitingOnModel(!!options?.disableTools);
-    const response = await fetchWithTimeout("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-        "HTTP-Referer": "https://redatechpos.com",
-        "X-Title": "REDA AI",
+function applyOpenAIDelta(
+  content: { value: string },
+  toolAcc: Map<number, { id: string; name: string; arguments: string }>,
+  delta: {
+    content?: unknown;
+    tool_calls?: Array<{
+      index?: number;
+      id?: string;
+      function?: { name?: string; arguments?: string };
+    }>;
+  }
+) {
+  if (typeof delta.content === "string") {
+    content.value += delta.content;
+  }
+  if (!Array.isArray(delta.tool_calls)) return;
+  for (const toolCall of delta.tool_calls) {
+    const index = typeof toolCall.index === "number" ? toolCall.index : 0;
+    const current = toolAcc.get(index) ?? { id: "", name: "", arguments: "" };
+    if (toolCall.id) current.id = toolCall.id;
+    if (toolCall.function?.name) current.name += toolCall.function.name;
+    if (toolCall.function?.arguments) {
+      current.arguments += toolCall.function.arguments;
+    }
+    toolAcc.set(index, current);
+  }
+}
+
+function openAIToolCallsFromAcc(
+  toolAcc: Map<number, { id: string; name: string; arguments: string }>
+): OpenAIToolCall[] {
+  return [...toolAcc.entries()]
+    .sort((a, b) => a[0] - b[0])
+    .map(([, toolCall], index) => ({
+      id: toolCall.id || `call_${index}_${toolCall.name}`,
+      type: "function" as const,
+      function: {
+        name: toolCall.name,
+        arguments: toolCall.arguments,
       },
+    }))
+    .filter((toolCall) => toolCall.function.name);
+}
+
+async function streamOpenAIMessage(
+  endpoint: OpenAIStreamEndpoint,
+  modelId: string,
+  currentMessages: OpenAIChatMessage[],
+  userName: string | undefined,
+  options?: CallModelOptions,
+  publishChunks = false,
+  httpStream = true
+): Promise<{ content: string; tool_calls?: OpenAIToolCall[] }> {
+  const visible = endpoint.visibleText ?? ((raw: string) => raw);
+  const response = await fetchWithTimeout(
+    endpoint.url,
+    {
+      method: "POST",
+      headers: endpoint.headers,
       body: JSON.stringify({
         model: modelId,
+        stream: httpStream,
         messages: [
           {
             role: "system",
@@ -765,42 +889,129 @@ async function callOpenRouter(
           },
           ...toOpenAIApiMessages(currentMessages),
         ],
+        ...endpoint.extraBody,
         ...openAIToolOptions(currentMessages, modelId, options),
       }),
-    }, MODEL_FETCH_TIMEOUT_MS);
+    },
+    MODEL_FETCH_TIMEOUT_MS
+  );
 
-    if (!response.ok) {
-      const errorText = await response.text();
+  if (!response.ok) {
+    const errorText = await response.text();
+    const error = new Error(
+      `${endpoint.errorName} API error (${response.status}): ${errorText}`
+    );
+    (error as Error & { status?: number }).status = response.status;
+    throw error;
+  }
 
-      const error = new Error(
-        `OpenRouter API error (${response.status}): ${errorText}`
+  const content = { value: "" };
+  const toolAcc = new Map<
+    number,
+    { id: string; name: string; arguments: string }
+  >();
+
+  const emitIfText = () => {
+    if (!publishChunks || toolAcc.size > 0) return;
+    const text = visible(content.value);
+    if (text) emitChatChunk(text);
+  };
+
+  if (httpStream && isEventStream(response)) {
+    await readSseJsonLines(response, (value) => {
+      const delta = (
+        value as {
+          choices?: { delta?: Parameters<typeof applyOpenAIDelta>[2] }[];
+        }
+      ).choices?.[0]?.delta;
+      if (!delta) return;
+      applyOpenAIDelta(content, toolAcc, delta);
+      emitIfText();
+    });
+  } else {
+    const data = await response.json();
+    const message = data.choices?.[0]?.message as
+      | { content?: unknown; tool_calls?: OpenAIToolCall[] }
+      | undefined;
+    if (message) {
+      content.value =
+        typeof message.content === "string"
+          ? message.content
+          : nvidiaMessageText(message);
+      if (message.tool_calls?.length) {
+        message.tool_calls.forEach((toolCall, index) => {
+          toolAcc.set(index, {
+            id: toolCall.id,
+            name: toolCall.function.name,
+            arguments: toolCall.function.arguments,
+          });
+        });
+      }
+      emitIfText();
+    }
+  }
+
+  const tool_calls = openAIToolCallsFromAcc(toolAcc);
+  return {
+    content: visible(content.value),
+    tool_calls: tool_calls.length > 0 ? tool_calls : undefined,
+  };
+}
+
+async function callOpenAICompatible(
+  endpoint: OpenAIStreamEndpoint,
+  modelId: string,
+  messages: ChatMessage[],
+  userName?: string,
+  options?: CallModelOptions
+): Promise<ModelTurn> {
+  let currentMessages: OpenAIChatMessage[] = messages;
+  let maxRetries = 5;
+  const toolResults: unknown[] = [];
+  const userText = unwrapFollowUpUserText(
+    [...messages].reverse().find((message) => message.role === "user")
+      ?.content ?? ""
+  );
+
+  while (maxRetries > 0) {
+    emitWaitingOnModel(!!options?.disableTools);
+    const httpStream = options?.streamChunks !== false;
+    // Same as Gemini: stream text whenever allowed; tool deltas skip emit via toolAcc.
+    const publishChunks =
+      httpStream &&
+      !options?.disableTools &&
+      !(
+        toolResults.length > 0 &&
+        toolResultsNeedListWriter(toolResults) &&
+        !isTotalsOnlyQuestion(userText)
       );
 
-      (error as Error & { status?: number }).status = response.status;
-
-      throw error;
-    }
-
-    const data = await response.json();
-    const message = data.choices?.[0]?.message;
-
-    if (!message) {
-      return { text: "", toolResults };
-    }
+    const message = await streamOpenAIMessage(
+      endpoint,
+      modelId,
+      currentMessages,
+      userName,
+      options,
+      publishChunks,
+      httpStream
+    );
 
     if (!message.tool_calls?.length) {
-      return { text: message.content ?? "", toolResults };
+      return { text: message.content, toolResults };
     }
 
     const { hasToolCalls, updatedMessages, toolResults: roundResults } =
       await handleOpenAIToolCalls(
-        message,
+        {
+          content: message.content,
+          tool_calls: message.tool_calls,
+        },
         currentMessages,
         getToolResultCharBudget(modelTpm(modelId))
       );
 
     if (!hasToolCalls) {
-      return { text: message.content ?? "", toolResults };
+      return { text: message.content, toolResults };
     }
 
     toolResults.push(...roundResults);
@@ -810,6 +1021,32 @@ async function callOpenRouter(
 
   return { text: "", toolResults };
 }
+
+async function callOpenRouter(
+  modelId: string,
+  messages: ChatMessage[],
+  apiKey: string,
+  userName?: string,
+  options?: CallModelOptions
+): Promise<ModelTurn> {
+  return callOpenAICompatible(
+    {
+      url: "https://openrouter.ai/api/v1/chat/completions",
+      errorName: "OpenRouter",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+        "HTTP-Referer": "https://redatechpos.com",
+        "X-Title": "REDA AI",
+      },
+    },
+    modelId,
+    messages,
+    userName,
+    options
+  );
+}
+
 async function callMistral(
   modelId: string,
   messages: ChatMessage[],
@@ -817,76 +1054,22 @@ async function callMistral(
   userName?: string,
   options?: CallModelOptions
 ): Promise<ModelTurn> {
-  let currentMessages: OpenAIChatMessage[] = messages;
-  let maxRetries = 5;
-  const toolResults: unknown[] = [];
-
-  while (maxRetries > 0) {
-    emitWaitingOnModel(!!options?.disableTools);
-    const response = await fetchWithTimeout(
-      "https://api.mistral.ai/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          model: modelId,
-          messages: [
-            {
-              role: "system",
-              content: systemInstructionForModel(modelId, userName),
-            },
-            ...toOpenAIApiMessages(currentMessages),
-          ],
-          ...openAIToolOptions(currentMessages, modelId, options),
-        }),
+  return callOpenAICompatible(
+    {
+      url: "https://api.mistral.ai/v1/chat/completions",
+      errorName: "Mistral",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
       },
-      MODEL_FETCH_TIMEOUT_MS
-    );
-
-    if (!response.ok) {
-      const errorText = await response.text();
-
-      const error = new Error(
-        `Mistral API error (${response.status}): ${errorText}`
-      );
-
-      (error as Error & { status?: number }).status = response.status;
-
-      throw error;
-    }
-
-    const data = await response.json();
-    const message = data.choices?.[0]?.message;
-
-    if (!message) {
-      return { text: "", toolResults };
-    }
-
-    if (!message.tool_calls?.length) {
-      return { text: message.content ?? "", toolResults };
-    }
-
-    const { hasToolCalls, updatedMessages, toolResults: roundResults } =
-      await handleOpenAIToolCalls(
-        message,
-        currentMessages,
-        getToolResultCharBudget(modelTpm(modelId))
-      );
-
-    if (!hasToolCalls) {
-      return { text: message.content ?? "", toolResults };
-    }
-
-    toolResults.push(...roundResults);
-    currentMessages = updatedMessages;
-    maxRetries--;
-  }
-
-  return { text: "", toolResults };
+    },
+    modelId,
+    messages,
+    userName,
+    options
+  );
 }
+
 async function callGroq(
   modelId: string,
   messages: ChatMessage[],
@@ -894,75 +1077,20 @@ async function callGroq(
   userName?: string,
   options?: CallModelOptions
 ): Promise<ModelTurn> {
-  let currentMessages: OpenAIChatMessage[] = messages;
-  let maxRetries = 5;
-  const toolResults: unknown[] = [];
-
-  while (maxRetries > 0) {
-    emitWaitingOnModel(!!options?.disableTools);
-    const response = await fetchWithTimeout(
-      "https://api.groq.com/openai/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          model: modelId,
-          messages: [
-            {
-              role: "system",
-              content: systemInstructionForModel(modelId, userName),
-            },
-            ...toOpenAIApiMessages(currentMessages),
-          ],
-          ...openAIToolOptions(currentMessages, modelId, options),
-        }),
+  return callOpenAICompatible(
+    {
+      url: "https://api.groq.com/openai/v1/chat/completions",
+      errorName: "Groq",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
       },
-      MODEL_FETCH_TIMEOUT_MS
-    );
-
-    if (!response.ok) {
-      const errorText = await response.text();
-
-      const error = new Error(
-        `Groq API error (${response.status}): ${errorText}`
-      );
-
-      (error as Error & { status?: number }).status = response.status;
-
-      throw error;
-    }
-
-    const data = await response.json();
-    const message = data.choices?.[0]?.message;
-
-    if (!message) {
-      return { text: "", toolResults };
-    }
-
-    if (!message.tool_calls?.length) {
-      return { text: message.content ?? "", toolResults };
-    }
-
-    const { hasToolCalls, updatedMessages, toolResults: roundResults } =
-      await handleOpenAIToolCalls(
-        message,
-        currentMessages,
-        getToolResultCharBudget(modelTpm(modelId))
-      );
-
-    if (!hasToolCalls) {
-      return { text: message.content ?? "", toolResults };
-    }
-
-    toolResults.push(...roundResults);
-    currentMessages = updatedMessages;
-    maxRetries--;
-  }
-
-  return { text: "", toolResults };
+    },
+    modelId,
+    messages,
+    userName,
+    options
+  );
 }
 
 function nvidiaMessageText(message: {
@@ -989,6 +1117,13 @@ function nvidiaMessageText(message: {
   return "";
 }
 
+function nvidiaVisibleText(raw: string) {
+  return raw
+    .replace(/<think>[\s\S]*?<\/think>/gi, "")
+    .replace(/<think>[\s\S]*$/i, "")
+    .trim();
+}
+
 async function callNvidia(
   modelId: string,
   messages: ChatMessage[],
@@ -996,81 +1131,22 @@ async function callNvidia(
   userName?: string,
   options?: CallModelOptions
 ): Promise<ModelTurn> {
-  let currentMessages: OpenAIChatMessage[] = messages;
-  let maxRetries = 5;
-  const toolResults: unknown[] = [];
-
-  while (maxRetries > 0) {
-    emitWaitingOnModel(!!options?.disableTools);
-    const response = await fetchWithTimeout(
-      "https://integrate.api.nvidia.com/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          model: modelId,
-          max_tokens: 4096,
-          messages: [
-            {
-              role: "system",
-              content: systemInstructionForModel(modelId, userName),
-            },
-            ...toOpenAIApiMessages(currentMessages),
-          ],
-          ...openAIToolOptions(currentMessages, modelId, options),
-        }),
+  return callOpenAICompatible(
+    {
+      url: "https://integrate.api.nvidia.com/v1/chat/completions",
+      errorName: "NVIDIA",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
       },
-      MODEL_FETCH_TIMEOUT_MS
-    );
-
-    if (!response.ok) {
-      const errorText = await response.text();
-
-      const error = new Error(
-        `NVIDIA API error (${response.status}): ${errorText}`
-      );
-
-      (error as Error & { status?: number }).status = response.status;
-
-      throw error;
-    }
-
-    const data = await response.json();
-    const message = data.choices?.[0]?.message;
-
-    if (!message) {
-      return { text: "", toolResults };
-    }
-
-    const text = nvidiaMessageText(message).replace(
-      /<think>[\s\S]*?<\/think>/gi,
-      ""
-    ).trim();
-
-    if (!message.tool_calls?.length) {
-      return { text, toolResults };
-    }
-
-    const { hasToolCalls, updatedMessages, toolResults: roundResults } =
-      await handleOpenAIToolCalls(
-        message,
-        currentMessages,
-        getToolResultCharBudget(modelTpm(modelId))
-      );
-
-    if (!hasToolCalls) {
-      return { text, toolResults };
-    }
-
-    toolResults.push(...roundResults);
-    currentMessages = updatedMessages;
-    maxRetries--;
-  }
-
-  return { text: "", toolResults };
+      extraBody: { max_tokens: 4096 },
+      visibleText: nvidiaVisibleText,
+    },
+    modelId,
+    messages,
+    userName,
+    options
+  );
 }
 
 const LATIN_DARIJA =
@@ -1190,6 +1266,7 @@ async function writeListWithStrongerModel(
       console.log(`[AI] List writer trying ${model.provider}/${model.id}`);
       const turn = await callModel(model, messages, userName, {
         disableTools: true,
+        streamChunks: false,
       });
       if (turn.text?.trim()) {
         console.log(`[AI] List writer ${model.id} succeeded`);
@@ -1232,6 +1309,7 @@ async function rewriteWrongNumbers(
     try {
       const turn = await callModel(model, messages, userName, {
         disableTools: true,
+        streamChunks: false,
       });
       if (turn.text?.trim() && !replyConflictsWithTotals(turn.text, toolResults)) {
         console.log(`[AI] Number rewrite succeeded with ${model.id}`);
@@ -1316,7 +1394,9 @@ async function callWithAutomaticModelSwitch(
   }
 
   console.error("[AI] All models failed");
-  return { text: unavailableReply(latestUserText), toolResults: [] };
+  const fallback = unavailableReply(latestUserText);
+  emitChatChunk(fallback);
+  return { text: fallback, toolResults: [] };
 }
 
 export function setupAIHandlers() {
@@ -1406,6 +1486,9 @@ export function setupAIHandlers() {
       const statusSink = (status: WorkStatus) => {
         if (!sender.isDestroyed()) sender.send("ai:status", status);
       };
+      const chunkSink = (text: string) => {
+        if (!sender.isDestroyed()) sender.send("ai:chat-chunk", text);
+      };
 
       if (!watchedWebContents.has(sender.id)) {
         watchedWebContents.add(sender.id);
@@ -1415,7 +1498,7 @@ export function setupAIHandlers() {
         });
       }
 
-      return runWithAiRequest({ session, statusSink }, async () => {
+      return runWithAiRequest({ session, statusSink, chunkSink }, async () => {
         emitWorkStatus({ phase: "thinking" });
 
         try {
@@ -1451,6 +1534,7 @@ export function setupAIHandlers() {
         } catch (error) {
           console.error("[AI] Chat failed after all models:", error);
           const fallback = unavailableReply(message);
+          emitChatChunk(fallback);
           session.conversationHistory.push({
             role: "assistant",
             content: fallback,

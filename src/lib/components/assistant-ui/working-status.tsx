@@ -3,6 +3,7 @@
 import { useEffect, useState, type FC } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useTranslation } from "react-i18next";
+import { useAuiState } from "@assistant-ui/react";
 import ShinyText from "../ui/shinyText";
 
 type WorkStatus = {
@@ -44,21 +45,33 @@ export const WorkingStatus: FC = () => {
   const { t, i18n } = useTranslation();
   const reduceMotion = useReducedMotion();
   const [status, setStatus] = useState<WorkStatus>({ phase: "thinking" });
+  const isRunning = useAuiState((s) => s.message.status?.type === "running");
+  const hasVisibleText = useAuiState((s) =>
+    s.message.parts.some(
+      (part) =>
+        part.type === "text" &&
+        "text" in part &&
+        Boolean(String(part.text ?? "").trim()),
+    ),
+  );
 
   useEffect(() => {
+    if (!isRunning) return;
     setStatus({ phase: "thinking" });
     return window.api.ai.onStatus?.((next) => setStatus(next));
-  }, []);
+  }, [isRunning]);
 
   const label = statusLabel(t, status);
   const isRtl = i18n.language.startsWith("ar");
+
+  if (!isRunning || hasVisibleText) return null;
 
   return (
     <span
       role="status"
       aria-live="polite"
       aria-label={label}
-      className="inline-flex items-center gap-2 text-sm leading-none"
+      className="inline-flex items-center gap-2 py-1 text-sm leading-none"
     >
       <span className="working-status-spinner" aria-hidden />
       <span className="relative inline-grid overflow-hidden leading-5">

@@ -29,6 +29,7 @@ const COLUMN_ORDER = [
   "serviceRevenue",
   "serviceProfit",
   "sellingPrice",
+  "boughtPrice",
   "clientsOweYou",
   "youOweClients",
 ];

@@ -3,6 +3,8 @@
 import { AuiIf, useAuiState, ThreadPrimitive } from "@assistant-ui/react";
 import { useCallback, useEffect, useRef, useState, type FC } from "react";
 
+import { BidiText } from "@/lib/ai/bidiText";
+
 const FollowupSuggestionsRow: FC = () => {
   const suggestions = useAuiState((s) => s.thread.suggestions);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -57,7 +59,7 @@ const FollowupSuggestionsRow: FC = () => {
             method="replace"
             autoSend
           >
-            {suggestion.prompt}
+            <BidiText>{suggestion.prompt}</BidiText>
           </ThreadPrimitive.Suggestion>
         ))}
       </div>

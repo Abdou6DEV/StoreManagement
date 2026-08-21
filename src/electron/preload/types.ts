@@ -511,6 +511,7 @@ export interface AIAPI {
       toolName?: string;
     }) => void,
   ) => () => void;
+  onChunk: (callback: (text: string) => void) => () => void;
 }
 export type API = {
   database: DatabaseAPI;

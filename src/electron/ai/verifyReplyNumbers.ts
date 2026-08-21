@@ -36,6 +36,7 @@ const AMOUNT_KEYS = new Set([
   "inventoryRetail",
   "zakatOnStock",
   "sellingPrice",
+  "boughtPrice",
   "amountDA",
   "budget",
   "spent",

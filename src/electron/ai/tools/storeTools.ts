@@ -1072,6 +1072,7 @@ async function reportStock(
         ? {
             name: topPriced.name,
             sellingPrice: topPriced.sellingPrice,
+            boughtPrice: topPriced.boughtPrice,
             quantity: topPriced.quantity,
             category: topPriced.categoryName ?? null,
           }
@@ -1863,16 +1864,9 @@ export async function tool_find(input: {
             inStockCount: byBarcode.quantity > 0 ? 1 : 0,
             totalQuantity: byBarcode.quantity,
           },
-          matches: [
-            {
-              name: byBarcode.name,
-              quantity: byBarcode.quantity,
-              sellingPrice: byBarcode.sellingPrice,
-              category: byBarcode.categoryName ?? null,
-            },
-          ],
+          matches: [slimProduct(byBarcode)],
           ...listMetaFromTotal(1, 1),
-          rule: "List the match (name and quantity). This was an exact barcode match.",
+          rule: "List the match (name, quantity, sellingPrice, boughtPrice). This was an exact barcode match.",
         });
       }
       const products = await productsDb.getAllProducts();
@@ -1888,15 +1882,7 @@ export async function tool_find(input: {
           (a, b) =>
             b.quantity - a.quantity || a.name.localeCompare(b.name),
         );
-      const listed = capList(
-        rows.map((product) => ({
-          name: product.name,
-          quantity: product.quantity,
-          sellingPrice: product.sellingPrice,
-          category: product.categoryName ?? null,
-        })),
-        SAMPLE_LIMIT
-      );
+      const listed = capList(rows.map(slimProduct), SAMPLE_LIMIT);
       return ok({
         type: "product",
         q,
@@ -1919,8 +1905,8 @@ export async function tool_find(input: {
         matches: listed.items,
         ...listMeta(listed),
         rule: categoryQ.categoryHit
-          ? `List each matches row: name and quantity. q matched stock category "${categoryQ.matchedCategory}". totals.totalQuantity is units in that category. Do not paste a category breakdown.`
-          : "List each matches row: name and quantity. totals.totalQuantity is units in stock. Do not paste a category breakdown.",
+          ? `List each matches row: name, quantity, sellingPrice, boughtPrice. q matched stock category "${categoryQ.matchedCategory}". totals.totalQuantity is units in that category. Do not paste a category breakdown.`
+          : "List each matches row: name, quantity, sellingPrice, boughtPrice. totals.totalQuantity is units in stock. Do not paste a category breakdown.",
       });
     }
 
@@ -2205,7 +2191,7 @@ export async function tool_alerts(input: {
         },
         matches: listed.items,
         ...listMeta(listed),
-        rule: "Copy totals.matchCount. Do not count matches.",
+        rule: "Copy totals.matchCount. Each match includes sellingPrice and boughtPrice. Do not count matches.",
       });
     }
 
@@ -2218,7 +2204,7 @@ export async function tool_alerts(input: {
         totals: { matchCount: matched.length, totalQuantity: 0 },
         matches: listed.items,
         ...listMeta(listed),
-        rule: "Copy totals.matchCount.",
+        rule: "Copy totals.matchCount. Each match includes sellingPrice and boughtPrice.",
       });
     }
 
@@ -2615,7 +2601,7 @@ export const AI_TOOLS_REGISTRY: Record<string, ToolDef> = {
   find: {
     name: "find",
     description:
-      "Look up products, clients, suppliers (sellers), or sales by name/brand/barcode/category. Not for best/most/top/who rankings — use report and copy top or topMatch. For products, returns in-stock rows to list (name, quantity). If q matches a stock category, only that category — not names that merely contain those letters. type=client status=all = ALL clients (totals.matchCount). type=client status=owes_you = CREDIT only — only if they named CREDIT / who owes them. A status or amount with no domain, in any language, is not CREDIT. type=client status=deposits = VERSEMENT only. q=name looks up one client. Omit q for type=seller to list all suppliers. Copy totals; for type=product list the matches array. If truncated is true, say returnedCount of totalCount.",
+      "Look up products, clients, suppliers (sellers), or sales by name/brand/barcode/category. Not for best/most/top/who rankings — use report and copy top or topMatch. For products, returns in-stock rows to list (name, quantity, sellingPrice, boughtPrice). If q matches a stock category, only that category — not names that merely contain those letters. type=client status=all = ALL clients (totals.matchCount). type=client status=owes_you = CREDIT only — only if they named CREDIT / who owes them. A status or amount with no domain, in any language, is not CREDIT. type=client status=deposits = VERSEMENT only. q=name looks up one client. Omit q for type=seller to list all suppliers. Copy totals; for type=product list the matches array. If truncated is true, say returnedCount of totalCount.",
     fn: tool_find,
     input_schema: {
       type: {

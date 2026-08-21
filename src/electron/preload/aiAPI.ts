@@ -46,6 +46,16 @@ export const aiAPI = {
     };
   },
 
+  onChunk: (callback: (text: string) => void): (() => void) => {
+    const handler = (_event: unknown, text: string) => {
+      if (typeof text === "string") callback(text);
+    };
+    ipcRenderer.on("ai:chat-chunk", handler);
+    return () => {
+      ipcRenderer.removeListener("ai:chat-chunk", handler);
+    };
+  },
+
   // AI TOOLS - READ-ONLY DATABASE QUERIES
   getAvailableTools: () => ipcRenderer.invoke("ai:get-available-tools"),
 

@@ -9,12 +9,17 @@ import {
   useIsMarkdownCodeBlock,
 } from "@assistant-ui/react-markdown";
 import remarkGfm from "remark-gfm";
-import { type FC, memo, useState } from "react";
+import { memo, useState, type FC, type ReactNode } from "react";
 import { CheckIcon, CopyIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { TooltipIconButton } from "@/lib/components/assistant-ui/tooltip-icon-button";
+import { BidiText } from "@/lib/ai/bidiText";
 import { cn } from "@/lib/utils";
+
+function withBidi(children: ReactNode) {
+  return <BidiText block>{children}</BidiText>;
+}
 
 const MarkdownTextImpl = () => {
   return (
@@ -23,6 +28,7 @@ const MarkdownTextImpl = () => {
       className="aui-md"
       components={defaultComponents}
       defer
+      smooth
     />
   );
 };
@@ -79,68 +85,82 @@ const useCopyToClipboard = ({
 };
 
 const defaultComponents = memoizeMarkdownComponents({
-  h1: ({ className, ...props }) => (
+  h1: ({ className, children, ...props }) => (
     <h1
       className={cn(
         "aui-md-h1 mt-5 mb-2 scroll-m-20 text-xl font-semibold first:mt-0 last:mb-0",
         className,
       )}
       {...props}
-    />
+    >
+      {withBidi(children)}
+    </h1>
   ),
-  h2: ({ className, ...props }) => (
+  h2: ({ className, children, ...props }) => (
     <h2
       className={cn(
         "aui-md-h2 mt-5 mb-2 scroll-m-20 text-lg font-semibold first:mt-0 last:mb-0",
         className,
       )}
       {...props}
-    />
+    >
+      {withBidi(children)}
+    </h2>
   ),
-  h3: ({ className, ...props }) => (
+  h3: ({ className, children, ...props }) => (
     <h3
       className={cn(
         "aui-md-h3 mt-4 mb-1.5 scroll-m-20 text-base font-semibold first:mt-0 last:mb-0",
         className,
       )}
       {...props}
-    />
+    >
+      {withBidi(children)}
+    </h3>
   ),
-  h4: ({ className, ...props }) => (
+  h4: ({ className, children, ...props }) => (
     <h4
       className={cn(
         "aui-md-h4 mt-3.5 mb-1 scroll-m-20 text-base font-medium first:mt-0 last:mb-0",
         className,
       )}
       {...props}
-    />
+    >
+      {withBidi(children)}
+    </h4>
   ),
-  h5: ({ className, ...props }) => (
+  h5: ({ className, children, ...props }) => (
     <h5
       className={cn(
         "aui-md-h5 mt-3 mb-1 text-sm font-semibold first:mt-0 last:mb-0",
         className,
       )}
       {...props}
-    />
+    >
+      {withBidi(children)}
+    </h5>
   ),
-  h6: ({ className, ...props }) => (
+  h6: ({ className, children, ...props }) => (
     <h6
       className={cn(
         "aui-md-h6 mt-3 mb-1 text-sm font-medium first:mt-0 last:mb-0",
         className,
       )}
       {...props}
-    />
+    >
+      {withBidi(children)}
+    </h6>
   ),
-  p: ({ className, ...props }) => (
+  p: ({ className, children, ...props }) => (
     <p
       className={cn(
         "aui-md-p my-3 leading-relaxed first:mt-0 last:mb-0",
         className,
       )}
       {...props}
-    />
+    >
+      {withBidi(children)}
+    </p>
   ),
   a: ({ className, ...props }) => (
     <a
@@ -151,14 +171,16 @@ const defaultComponents = memoizeMarkdownComponents({
       {...props}
     />
   ),
-  blockquote: ({ className, ...props }) => (
+  blockquote: ({ className, children, ...props }) => (
     <blockquote
       className={cn(
         "aui-md-blockquote border-muted-foreground/30 text-muted-foreground my-3 border-s-2 ps-4",
         className,
       )}
       {...props}
-    />
+    >
+      {withBidi(children)}
+    </blockquote>
   ),
   ul: ({ className, ...props }) => (
     <ul
@@ -195,23 +217,27 @@ const defaultComponents = memoizeMarkdownComponents({
       />
     </div>
   ),
-  th: ({ className, ...props }) => (
+  th: ({ className, children, ...props }) => (
     <th
       className={cn(
         "aui-md-th bg-muted px-3 py-1.5 text-start font-medium first:rounded-ss-lg last:rounded-se-lg [[align=center]]:text-center [[align=right]]:text-right",
         className,
       )}
       {...props}
-    />
+    >
+      {withBidi(children)}
+    </th>
   ),
-  td: ({ className, ...props }) => (
+  td: ({ className, children, ...props }) => (
     <td
       className={cn(
         "aui-md-td border-muted-foreground/20 border-s border-b px-3 py-1.5 text-start last:border-e [[align=center]]:text-center [[align=right]]:text-right",
         className,
       )}
       {...props}
-    />
+    >
+      {withBidi(children)}
+    </td>
   ),
   tr: ({ className, ...props }) => (
     <tr
@@ -222,8 +248,16 @@ const defaultComponents = memoizeMarkdownComponents({
       {...props}
     />
   ),
-  li: ({ className, ...props }) => (
-    <li className={cn("aui-md-li leading-relaxed", className)} {...props} />
+  li: ({ className, children, ...props }) => (
+    <li
+      className={cn(
+        "aui-md-li leading-relaxed [unicode-bidi:plaintext]",
+        className,
+      )}
+      {...props}
+    >
+      {withBidi(children)}
+    </li>
   ),
   strong: ({ className, ...props }) => (
     <strong
@@ -250,9 +284,10 @@ const defaultComponents = memoizeMarkdownComponents({
     const isCodeBlock = useIsMarkdownCodeBlock();
     return (
       <code
+        dir="ltr"
         className={cn(
           !isCodeBlock &&
-            "aui-md-inline-code bg-muted rounded-md px-1.5 py-0.5 font-mono text-[0.85em]",
+            "aui-md-inline-code bg-muted rounded-md px-1.5 py-0.5 font-mono text-[0.85em] [unicode-bidi:isolate]",
           className,
         )}
         {...props}

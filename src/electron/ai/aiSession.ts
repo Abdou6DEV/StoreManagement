@@ -24,6 +24,7 @@ export type AiSession = {
 export type AiRequestContext = {
   session: AiSession;
   statusSink: ((status: WorkStatus) => void) | null;
+  chunkSink?: ((text: string) => void) | null;
 };
 
 const sessions = new Map<number, AiSession>();
