@@ -58,6 +58,8 @@
     "next": "Suivant",
     "update": "Mettre à jour",
     "noMessage": "Aucun message fourni.",
+    "messageTooLong": "Message trop long. Veuillez le limiter à {{max}} caractères.",
+    "charCountLabel": "{{count}} sur {{max}} caractères",
     "table": {
       "truncated": "Affichage de {{shown}} sur {{total}}. Autres lignes omises.",
       "columns": {

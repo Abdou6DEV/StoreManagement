@@ -12,8 +12,11 @@ import {
   compactToolResult,
   getToolResultCharBudget,
 } from "../ai/tools/compactToolResult";
-import type { AIToolCall } from "../ai/tools/toolExecutor";
 import type { AiChatResponse } from "../../lib/ai/aiChatTypes";
+import {
+  AI_MESSAGE_TOO_LONG,
+  MAX_AI_MESSAGE_CHARS,
+} from "../../lib/ai/aiMessageLimits";
 import { buildResultTable } from "../ai/buildResultTable";
 import { shouldHideRankingTable } from "../ai/rankingIntent";
 import {
@@ -68,8 +71,6 @@ const MAX_HISTORY_MESSAGES = 16;
 const MAX_HISTORY_CHARS = 12_000;
 const MAX_STORED_ASSISTANT_CHARS = 4_000;
 
-/** TEMPORARY: send full tool payloads. Flip to false to restore compacting. */
-const TEMP_SKIP_COMPACT = true;
 
 function messageChars(messages: ChatMessage[]) {
   return messages.reduce((n, m) => n + m.content.length, 0);
@@ -489,9 +490,7 @@ async function runOneTool(
   });
 
   const compacted = toolResult.success
-    ? TEMP_SKIP_COMPACT
-      ? toolResult.result
-      : compactToolResult(toolResult.result, maxResultChars, resolvedName)
+    ? compactToolResult(toolResult.result, maxResultChars, resolvedName)
     : undefined;
 
   console.log(
@@ -1280,7 +1279,7 @@ async function writeListWithStrongerModel(
     {
       role: "user",
       content:
-        "STORE_DATA below is already computed from the database. Amounts are DA. Write the user's answer as a clear list from STORE_DATA. Copy totals exactly. Do not invent or omit named rows that are present. At most 70 items. If truncated is true, say returnedCount of totalCount. Same language as the user. If they wrote Algerian Darija (Latin or Arabic script), write in Algerian Darija using Arabic script only — never Latin/franco-arabe, never فصحى.\n\n" +
+        "STORE_DATA below is already computed from the database. Amounts are DA. Write the user's answer as a clear list from STORE_DATA. Copy totals exactly. Do not invent or omit named rows that are present. At most 150 items. If truncated is true, say returnedCount of totalCount. Same language as the user. If they wrote Algerian Darija (Latin or Arabic script), write in Algerian Darija using Arabic script only — never Latin/franco-arabe, never فصحى.\n\n" +
         JSON.stringify(toolResults),
     },
   ];
@@ -1495,6 +1494,9 @@ export function setupAIHandlers() {
       if (!message || typeof message !== "string") {
         throw new Error("Invalid message");
       }
+      if (message.length > MAX_AI_MESSAGE_CHARS) {
+        throw new Error(AI_MESSAGE_TOO_LONG);
+      }
 
       const session = getOrCreateSession(event.sender.id);
       const sender = event.sender;
@@ -1643,28 +1645,5 @@ export function setupAIHandlers() {
     }
 
     return await response.json();
-  });
-
-  // ============================================================================
-  // AI TOOLS - READ-ONLY DATABASE QUERIES
-  // ============================================================================
-
-  ipcMain.handle("ai:get-available-tools", async () => {
-    return getToolsForAI();
-  });
-
-  ipcMain.handle("ai:execute-tool", async (event, toolCall: AIToolCall) => {
-    if (!toolCall || !toolCall.toolName) {
-      throw new Error("Invalid tool call: missing toolName");
-    }
-
-    const session = getOrCreateSession(event.sender.id);
-    const result = await executeToolCall(toolCall, session.access);
-
-    if (!result.success) {
-      console.warn(`[AI] Tool execution failed: ${result.error}`);
-    }
-
-    return result;
   });
 }

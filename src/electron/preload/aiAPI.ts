@@ -60,17 +60,4 @@ export const aiAPI = {
       ipcRenderer.removeListener("ai:chat-chunk", handler);
     };
   },
-
-  // AI TOOLS - READ-ONLY DATABASE QUERIES
-  getAvailableTools: () => ipcRenderer.invoke("ai:get-available-tools"),
-
-  executeTool: (toolCall: {
-    toolName: string;
-    input?: any;
-  }): Promise<{
-    toolName: string;
-    success: boolean;
-    result?: any;
-    error?: string;
-  }> => ipcRenderer.invoke("ai:execute-tool", toolCall),
 };

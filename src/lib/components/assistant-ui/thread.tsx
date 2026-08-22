@@ -25,6 +25,7 @@ import { WorkingStatus } from "@/lib/components/assistant-ui/working-status";
 import { TooltipIconButton } from "@/lib/components/assistant-ui/tooltip-icon-button";
 import { Button } from "@/lib/components/ui/button";
 import { BidiText } from "@/lib/ai/bidiText";
+import { MAX_AI_MESSAGE_CHARS } from "@/lib/ai/aiMessageLimits";
 import { cn } from "@/lib/utils";
 import {
   ActionBarMorePrimitive,
@@ -292,6 +293,7 @@ const Composer: FC = () => {
             rows={1}
             autoFocus
             enterKeyHint="send"
+            maxLength={MAX_AI_MESSAGE_CHARS}
             aria-label={t("ai.messageInput", "Message input")}
           />
           <ComposerAction />
@@ -303,6 +305,7 @@ const Composer: FC = () => {
 
 const ComposerAction: FC = () => {
   const { t } = useTranslation();
+  const charCount = useAuiState((s) => s.composer.text.length);
   // Same gate as the login "dev admin" button: only unpackaged Vite/dev builds.
   const canChooseModel = import.meta.env.DEV && !import.meta.env.PROD;
   const [models, setModels] = useState<AIModel[]>([]);
@@ -520,7 +523,24 @@ const ComposerAction: FC = () => {
       </div>
 
       {/* RIGHT SIDE */}
-      <div className="flex items-center">
+      <div className="flex items-center gap-2">
+        <span
+          className={cn(
+            "tabular-nums text-xs font-medium",
+            charCount >= MAX_AI_MESSAGE_CHARS
+              ? "text-destructive"
+              : charCount >= MAX_AI_MESSAGE_CHARS * 0.85
+                ? "text-amber-600 dark:text-amber-400"
+                : "text-muted-foreground",
+          )}
+          aria-live="polite"
+          aria-label={t("ai.charCountLabel", "{{count}} of {{max}} characters", {
+            count: charCount,
+            max: MAX_AI_MESSAGE_CHARS,
+          })}
+        >
+          {charCount}/{MAX_AI_MESSAGE_CHARS}
+        </span>
         <AuiIf condition={(s) => !s.thread.isRunning}>
           <ComposerPrimitive.Send asChild>
             <TooltipIconButton
@@ -794,6 +814,8 @@ const EditComposer: FC = () => {
         <ComposerPrimitive.Input
           className="aui-edit-composer-input text-foreground min-h-14 w-full resize-none bg-transparent px-4 pt-3 pb-1 text-base outline-none"
           autoFocus
+          maxLength={MAX_AI_MESSAGE_CHARS}
+          aria-label={t("ai.messageInput", "Message input")}
         />
         <div className="aui-edit-composer-footer mx-2.5 mb-2.5 flex items-center gap-1.5 self-end">
           <ComposerPrimitive.Cancel asChild>

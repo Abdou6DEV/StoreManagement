@@ -58,6 +58,8 @@
     "next": "Next",
     "update": "Update",
     "noMessage": "No message provided.",
+    "messageTooLong": "Message is too long. Please keep it under {{max}} characters.",
+    "charCountLabel": "{{count}} of {{max}} characters",
     "table": {
       "truncated": "Showing {{shown}} of {{total}}. More rows omitted.",
       "columns": {

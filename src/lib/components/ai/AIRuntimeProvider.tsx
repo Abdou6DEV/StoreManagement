@@ -10,6 +10,10 @@ import { createContext, useContext, useEffect } from "react";
 import { formatStoreTableMarkdown } from "../../ai/formatStoreTable";
 import type { TFunction } from "i18next";
 import type { AiChatResponse } from "../../ai/aiChatTypes";
+import {
+  AI_MESSAGE_TOO_LONG,
+  MAX_AI_MESSAGE_CHARS,
+} from "../../ai/aiMessageLimits";
 
 type AdapterEvent =
   | { type: "chunk"; text: string }
@@ -72,6 +76,7 @@ const AIAdapter = (
   userName: string | undefined,
   unavailableMessage: string,
   noMessage: string,
+  tooLongMessage: string,
   t: TFunction
 ): ChatModelAdapter => ({
   async *run({ messages, abortSignal }) {
@@ -91,6 +96,11 @@ const AIAdapter = (
 
     if (!text.trim()) {
       yield textContent(noMessage, "complete");
+      return;
+    }
+
+    if (text.length > MAX_AI_MESSAGE_CHARS) {
+      yield textContent(tooLongMessage, "error");
       return;
     }
 
@@ -155,7 +165,16 @@ const AIAdapter = (
 
         if (event.type === "error") {
           console.error("AI chat error:", event.error);
-          yield textContent(unavailableMessage, "error");
+          const errText =
+            event.error instanceof Error
+              ? event.error.message
+              : String(event.error ?? "");
+          yield textContent(
+            errText.includes(AI_MESSAGE_TOO_LONG)
+              ? tooLongMessage
+              : unavailableMessage,
+            "error",
+          );
           return;
         }
 
@@ -201,6 +220,11 @@ export function AIRuntimeProvider({
         "I can't complete this request right now. Please try again later."
       ),
       t("ai.noMessage", "No message provided."),
+      t(
+        "ai.messageTooLong",
+        "Message is too long. Please keep it under {{max}} characters.",
+        { max: MAX_AI_MESSAGE_CHARS },
+      ),
       t
     ),
     {

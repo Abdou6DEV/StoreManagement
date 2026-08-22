@@ -58,6 +58,8 @@
     "next": "التالي",
     "update": "تحديث",
     "noMessage": "لم يتم توفير رسالة.",
+    "messageTooLong": "الرسالة طويلة جدًا. يرجى إبقاءها تحت {{max}} حرفًا.",
+    "charCountLabel": "{{count}} من {{max}} حرفًا",
     "table": {
       "truncated": "عرض {{shown}} من {{total}}. تم إخفاء بقية الصفوف.",
       "columns": {

@@ -53,10 +53,10 @@ type ToolDef = {
   input_schema: Record<string, ToolParam>;
 };
 
-/** TEMPORARY: return full lists. Flip to false to restore 70/40 caps. */
-const TEMP_SKIP_SAMPLE_LIMIT = true;
-const SAMPLE_LIMIT = TEMP_SKIP_SAMPLE_LIMIT ? Number.MAX_SAFE_INTEGER : 70;
-const BREAKDOWN_LIMIT = TEMP_SKIP_SAMPLE_LIMIT ? Number.MAX_SAFE_INTEGER : 40;
+/** Soft caps for tool list payloads (totals stay exact; samples may truncate). */
+const SAMPLE_LIMIT = 150;
+const BREAKDOWN_LIMIT = 80;
+const ACTIVITY_LOG_LIMIT = 40;
 
 function fail(error: string): AIToolResult {
   return { success: false, error };
@@ -1722,7 +1722,7 @@ async function reportActivity(input: {
     dateFrom: range.startDate,
     dateTo: range.endDate,
     searchDetails: input.q?.trim() || undefined,
-    limit: TEMP_SKIP_SAMPLE_LIMIT ? Number.MAX_SAFE_INTEGER : 20,
+    limit: ACTIVITY_LOG_LIMIT,
     offset: 0,
   });
 

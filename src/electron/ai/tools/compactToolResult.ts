@@ -14,7 +14,7 @@ const UTC_ISO =
   /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/;
 
 const RANKING_LIST_KEYS = new Set(["breakdown", "byType", "byCategory"]);
-const RANKING_KEEP_ALL_MAX = 40;
+const RANKING_KEEP_ALL_MAX = 80;
 
 function toLocalTimeline(value: unknown): unknown {
   if (value instanceof Date && !isNaN(value.getTime())) {
@@ -283,7 +283,7 @@ export function compactToolResult(
   const slim = slimValue(data);
   const keepFull = keepMatchesFull(slim, toolName);
   const core = preservedCore(slim, keepFull);
-  let maxItems = 70;
+  let maxItems = 150;
 
   while (maxItems >= 3) {
     const compacted = applyListMeta(capArrays(slim, maxItems, undefined, keepFull));
