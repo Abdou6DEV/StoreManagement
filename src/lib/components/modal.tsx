@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { cn } from "../utils";
 import { Button } from "./button";
 import { ConfirmDialog } from "./confirmDialog";
+import { closeAiChat } from "./ai/closeAiChat";
 import type { ModalSize, ModalType, ModalAction } from "../../types";
 
 const ModalCloseContext = React.createContext<{
@@ -124,7 +125,11 @@ function DialogModal({
   const [discardConfirmOpen, setDiscardConfirmOpen] = React.useState(false);
 
   React.useEffect(() => {
-    if (!open) setDiscardConfirmOpen(false);
+    if (!open) {
+      setDiscardConfirmOpen(false);
+      return;
+    }
+    closeAiChat();
   }, [open]);
 
   const performClose = React.useCallback(() => {
@@ -392,7 +397,11 @@ function OverlayModal({
   const [discardConfirmOpen, setDiscardConfirmOpen] = React.useState(false);
 
   React.useEffect(() => {
-    if (!open) setDiscardConfirmOpen(false);
+    if (!open) {
+      setDiscardConfirmOpen(false);
+      return;
+    }
+    closeAiChat();
   }, [open]);
 
   const performClose = React.useCallback(() => {

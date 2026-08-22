@@ -744,7 +744,7 @@ const UserMessage: FC = () => {
       <UserMessageAttachments />
 
       <div className="aui-user-message-content-wrapper relative col-start-2 min-w-0">
-        <div className="aui-user-message-content peer bg-muted text-foreground rounded-xl px-4 py-2 wrap-break-word empty:hidden">
+        <div className="aui-user-message-content peer rounded-xl bg-muted-foreground/7 px-4 py-2 text-foreground wrap-break-word empty:hidden dark:bg-muted-foreground/25">
           <MessagePrimitive.Parts
             components={{
               Text: UserText,

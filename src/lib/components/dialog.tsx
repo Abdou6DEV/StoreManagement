@@ -2,11 +2,28 @@ import * as React from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { XIcon } from "lucide-react";
 import { cn } from "../utils";
+import { closeAiChat } from "./ai/closeAiChat";
 
 function Dialog({
+  open,
+  onOpenChange,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Root>) {
-  return <DialogPrimitive.Root data-slot="dialog" {...props} />;
+  React.useEffect(() => {
+    if (open) closeAiChat();
+  }, [open]);
+
+  return (
+    <DialogPrimitive.Root
+      data-slot="dialog"
+      open={open}
+      onOpenChange={(next) => {
+        if (next) closeAiChat();
+        onOpenChange?.(next);
+      }}
+      {...props}
+    />
+  );
 }
 
 function DialogTrigger({

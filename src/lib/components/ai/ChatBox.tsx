@@ -22,6 +22,7 @@ import {
   DropdownMenuTrigger,
 } from "../dropdownMenu";
 import { useAIRuntime } from "./AIRuntimeProvider";
+import { AI_CHAT_CLOSE_EVENT } from "./closeAiChat";
 import Orb from "../assistant-ui/orb";
 import { useAuth } from "../../contexts/authContext";
 import { useAuiState } from "@assistant-ui/react";
@@ -192,8 +193,13 @@ export default function ChatBox() {
 
   useEffect(() => {
     const onToggle = () => setOpen((current) => !current);
+    const onClose = () => setOpen(false);
     window.addEventListener("ai-chat-toggle", onToggle);
-    return () => window.removeEventListener("ai-chat-toggle", onToggle);
+    window.addEventListener(AI_CHAT_CLOSE_EVENT, onClose);
+    return () => {
+      window.removeEventListener("ai-chat-toggle", onToggle);
+      window.removeEventListener(AI_CHAT_CLOSE_EVENT, onClose);
+    };
   }, []);
 
   useEffect(() => {
@@ -282,7 +288,7 @@ export default function ChatBox() {
 
   const handleClearChat = async () => {
     try {
-      runtime.thread.reset();
+      runtime?.thread.reset();
       await window.api.ai.clearChat();
     } catch (error) {
       console.error("AI clear chat error:", error);
