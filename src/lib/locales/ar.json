@@ -30,6 +30,7 @@
     "messageInput": "إدخال الرسالة",
     "scrollToBottom": "الانتقال إلى الأسفل",
     "selectModel": "اختيار نموذج الذكاء الاصطناعي",
+    "modelDisabled": "اختيار النموذج معطل",
     "closeModelSelector": "إغلاق قائمة النماذج",
     "modelHeading": "نموذج الذكاء الاصطناعي",
     "automatic": "تلقائي",

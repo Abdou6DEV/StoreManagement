@@ -7,10 +7,15 @@ export type AiWorkStatus = {
 };
 
 export const aiAPI = {
-  chat: (message: string, userName?: string): Promise<AiChatResponse> =>
-    ipcRenderer.invoke("ai:chat", message, userName),
+  chat: (
+    message: string,
+    userName?: string,
+    userId?: string
+  ): Promise<AiChatResponse> =>
+    ipcRenderer.invoke("ai:chat", message, userName, userId),
 
   clearChat: (): Promise<void> => ipcRenderer.invoke("ai:clear"),
+  cancelChat: (): Promise<void> => ipcRenderer.invoke("ai:cancel"),
   listModels: () =>
     ipcRenderer.invoke("ai:list-models"),
   listMistralModels: () =>

@@ -1,4 +1,9 @@
 import { peekStoreFirstRecordedYmd } from "../../lib/database/storeFirstDate";
+import {
+  buildAccessSection,
+  hasAnyAiStoreAccess,
+  type AiAccess,
+} from "./aiAccess";
 
 const BASE_INSTRUCTION = `You are REDA TECH Assistant AI, built into REDA TECH POS for store owners in Algeria (DA/DZD).
 
@@ -163,7 +168,7 @@ function weekStartYmd(today: Date) {
 
 export function buildSystemInstruction(
   userName?: string,
-  options?: { canUseStoreTools?: boolean }
+  options?: { canUseStoreTools?: boolean; access?: AiAccess | null }
 ) {
   const today = new Date();
   const yesterday = new Date(
@@ -197,8 +202,14 @@ export function buildSystemInstruction(
   const nowLocal = `${localDateTime(today)} ${timeZone}`;
 
   let instruction = `${BASE_INSTRUCTION}${buildUserSection(userName)}`;
+  if (options && "access" in options) {
+    instruction += buildAccessSection(options.access);
+  }
   if (options?.canUseStoreTools === false) {
-    instruction += buildNoStoreToolsSection();
+    const accessKnown = options && "access" in options;
+    if (!accessKnown || hasAnyAiStoreAccess(options.access)) {
+      instruction += buildNoStoreToolsSection();
+    }
   }
 
   instruction = instruction.replaceAll("{{TODAY_DATE}}", formattedDate);

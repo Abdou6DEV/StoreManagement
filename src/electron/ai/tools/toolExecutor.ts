@@ -5,6 +5,11 @@
  * This layer validates tool calls and prevents unauthorized access.
  */
 
+import { currentSession } from "../aiSession";
+import {
+  denyToolAccess,
+  type AiAccess,
+} from "../aiAccess";
 import {
   AI_TOOLS_REGISTRY,
   AIToolResult,
@@ -29,7 +34,8 @@ export interface AIToolExecutionResult {
  * Execute a single tool call safely
  */
 export async function executeToolCall(
-  toolCall: AIToolCall
+  toolCall: AIToolCall,
+  access: AiAccess | null | undefined = currentSession()?.access
 ): Promise<AIToolExecutionResult> {
   const { toolName, input } = toolCall;
 
@@ -45,6 +51,16 @@ export async function executeToolCall(
       toolName,
       success: false,
       error: `Unknown tool: ${toolName}. Use only registered read-only tools.`,
+    };
+  }
+
+  const denied = denyToolAccess(toolName, input, access);
+  if (denied) {
+    console.log(`[TOOL EXECUTOR] Tool ${toolName} denied: ${denied}`);
+    return {
+      toolName,
+      success: false,
+      error: denied,
     };
   }
 

@@ -27,6 +27,7 @@ import {
 } from "./parseLocalDateRange";
 import { resolveClientFind } from "./clientStatus";
 import { capList, listMeta, listMetaFromTotal } from "./listMeta";
+import { isZakatQuery } from "../isZakatQuery";
 
 export interface AIToolInput {
   [key: string]: unknown;
@@ -218,11 +219,6 @@ async function resolveCategoryQ(
 
 function lineNameMatchesQ(name: unknown, q: string): boolean {
   return nameTokenMatchesQ(name, q) || matchesQ(name, q);
-}
-
-function isZakatQuery(q?: string): boolean {
-  const text = q?.trim().toLowerCase() ?? "";
-  return text === "zakat" || text === "zakaat" || text.includes("زكاة");
 }
 
 function todayYmd() {

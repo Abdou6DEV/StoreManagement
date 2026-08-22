@@ -1,7 +1,12 @@
-import { aiRequest } from "./aiSession";
+import {
+  AiCancelledError,
+  aiRequest,
+  currentAbortSignal,
+  isAiCancelled,
+} from "./aiSession";
 
 export function emitChatChunk(text: string) {
-  if (!text) return;
+  if (!text || isAiCancelled()) return;
   aiRequest()?.chunkSink?.(text);
 }
 
@@ -42,8 +47,19 @@ export async function readSseJsonLines(
 
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
+  const signal = currentAbortSignal();
   let buffer = "";
   let stop = false;
+
+  const abortRead = () => {
+    stop = true;
+    void reader.cancel();
+  };
+  if (signal?.aborted) {
+    abortRead();
+    throw new AiCancelledError();
+  }
+  signal?.addEventListener("abort", abortRead, { once: true });
 
   const consumeLine = (line: string) => {
     const trimmed = line.trim();
@@ -65,6 +81,7 @@ export async function readSseJsonLines(
 
   try {
     while (!stop) {
+      if (signal?.aborted) throw new AiCancelledError();
       const { done, value } = await reader.read();
       if (done) break;
       buffer += decoder.decode(value, { stream: true }).replace(/\r\n/g, "\n");
@@ -76,8 +93,13 @@ export async function readSseJsonLines(
       }
     }
 
+    if (signal?.aborted) throw new AiCancelledError();
     if (!stop && buffer.trim()) consumeLine(buffer);
+  } catch (error) {
+    if (signal?.aborted || isAiCancelled()) throw new AiCancelledError();
+    throw error;
   } finally {
+    signal?.removeEventListener("abort", abortRead);
     try {
       await reader.cancel();
     } catch {

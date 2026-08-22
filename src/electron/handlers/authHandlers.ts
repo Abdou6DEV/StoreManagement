@@ -1,4 +1,4 @@
-import { app, ipcMain } from "electron";
+import { app, ipcMain, type IpcMainInvokeEvent } from "electron";
 import {
   users,
   CreateUserData,
@@ -8,10 +8,15 @@ import { getMachineGuid, validateKey } from "../utils/validationKey";
 import { createActivityLog } from "../../lib/database/activityLogs";
 import { ACTIVITY_LOG_LAST_USERNAME_KEY } from "../../lib/activityLog/constants";
 import { setOption } from "../../lib/database/options";
+import { bindSessionUser, clearSessionUser } from "../ai/aiSession";
 
 async function recordLoginActivity(username: string, action: string): Promise<void> {
   await createActivityLog({ username, action, details: null }).catch((): undefined => undefined);
   await setOption(ACTIVITY_LOG_LAST_USERNAME_KEY, username).catch((): undefined => undefined);
+}
+
+function bindLogin(event: IpcMainInvokeEvent, user: unknown) {
+  bindSessionUser(event.sender.id, user);
 }
 
 const defaultAdminPayload = () => ({
@@ -39,10 +44,11 @@ const defaultAdminPayload = () => ({
 
 export const setupAuthHandlers = () => {
   // Login handler
-  ipcMain.handle("auth:login", async (_, credentials: LoginCredentials) => {
+  ipcMain.handle("auth:login", async (event, credentials: LoginCredentials) => {
     try {
       const result = await users.login(credentials);
       if (result.success && result.user) {
+        bindLogin(event, result.user);
         void recordLoginActivity(result.user.username, "activityLog.actions.loggedIn");
       }
       return result;
@@ -66,10 +72,11 @@ export const setupAuthHandlers = () => {
 
   ipcMain.handle(
     "auth:completeInitialAdminSetup",
-    async (_, credentials: LoginCredentials) => {
+    async (event, credentials: LoginCredentials) => {
       try {
         const result = await users.completeInitialAdminSetup(credentials);
         if (result.success && result.user) {
+          bindLogin(event, result.user);
           void recordLoginActivity(result.user.username, "activityLog.actions.loggedIn");
         }
         return result;
@@ -88,7 +95,7 @@ export const setupAuthHandlers = () => {
    * - Packaged installers (end users)
    * - NODE_ENV=production (e.g. production-like runs)
    */
-  ipcMain.handle("auth:loginDevAsPrimaryAdmin", async () => {
+  ipcMain.handle("auth:loginDevAsPrimaryAdmin", async (event) => {
     try {
       if (app.isPackaged || process.env.NODE_ENV === "production") {
         return { success: false, error: "Not available" };
@@ -96,16 +103,20 @@ export const setupAuthHandlers = () => {
       const primaryAdmin = await users.getPrimaryAdmin();
       if (primaryAdmin) {
         const { password: _pw, ...userWithoutPassword } = primaryAdmin;
+        const user = { ...userWithoutPassword, id: "hardcoded-admin" };
+        bindLogin(event, user);
         void recordLoginActivity(primaryAdmin.username, "activityLog.actions.loggedIn");
         return {
           success: true,
-          user: { ...userWithoutPassword, id: "hardcoded-admin" },
+          user,
         };
       }
+      const user = defaultAdminPayload();
+      bindLogin(event, user);
       void recordLoginActivity("admin", "activityLog.actions.loggedIn");
       return {
         success: true,
-        user: defaultAdminPayload(),
+        user,
       };
     } catch (error) {
       console.error("auth:loginDevAsPrimaryAdmin error:", error);
@@ -167,7 +178,7 @@ export const setupAuthHandlers = () => {
 
   // Login with activation key (forgot username/password) — logs in as admin.
   // If machineId is provided (from the login page display), use it so validation matches the GUID we showed.
-  ipcMain.handle("auth:loginByActivationKey", async (_, activationKey: string, machineIdFromFrontend?: string) => {
+  ipcMain.handle("auth:loginByActivationKey", async (event, activationKey: string, machineIdFromFrontend?: string) => {
     try {
       const machineId = machineIdFromFrontend?.trim() || getMachineGuid();
       if (!validateKey(machineId, activationKey.trim())) {
@@ -180,16 +191,20 @@ export const setupAuthHandlers = () => {
       const username = primaryAdmin?.username ?? "admin";
       if (primaryAdmin) {
         const { password, ...userWithoutPassword } = primaryAdmin;
+        const user = { ...userWithoutPassword, id: "hardcoded-admin" };
+        bindLogin(event, user);
         void recordLoginActivity(username, "activityLog.actions.loggedInActivationKey");
         return {
           success: true,
-          user: { ...userWithoutPassword, id: "hardcoded-admin" },
+          user,
         };
       }
+      const user = defaultAdminPayload();
+      bindLogin(event, user);
       void recordLoginActivity("admin", "activityLog.actions.loggedInActivationKey");
       return {
         success: true,
-        user: defaultAdminPayload(),
+        user,
       };
     } catch (error) {
       console.error("Login by activation key error:", error);
@@ -420,5 +435,9 @@ export const setupAuthHandlers = () => {
         error: "Failed to delete user",
       };
     }
+  });
+
+  ipcMain.handle("auth:logout", async (event) => {
+    clearSessionUser(event.sender.id);
   });
 };

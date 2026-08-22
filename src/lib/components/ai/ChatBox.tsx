@@ -180,18 +180,6 @@ export default function ChatBox() {
   } | null>(null);
 
   useEffect(() => {
-    const loadModels = async () => {
-      try {
-        await window.api.ai.getAvailableModels();
-      } catch (error) {
-        console.error("Failed to load AI models:", error);
-      }
-    };
-
-    loadModels();
-  }, []);
-
-  useEffect(() => {
     const onToggle = () => setOpen((current) => !current);
     const onClose = () => setOpen(false);
     window.addEventListener("ai-chat-toggle", onToggle);
@@ -287,6 +275,7 @@ export default function ChatBox() {
   };
 
   const handleClearChat = async () => {
+    if (isRunning) return;
     try {
       runtime?.thread.reset();
       await window.api.ai.clearChat();
@@ -530,9 +519,15 @@ export default function ChatBox() {
 
             <div className="flex shrink-0 items-center justify-end gap-0.5">
               <TooltipIconButton
-                tooltip={t("ai.newChat", "New chat")}
+                tooltip={
+                  isRunning
+                    ? t("ai.working", "Assistant is working")
+                    : t("ai.newChat", "New chat")
+                }
                 side="bottom"
-                className="size-8 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+                disabled={isRunning}
+                aria-disabled={isRunning}
+                className="size-8 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-40"
                 onClick={handleClearChat}
               >
                 <MessageSquarePlus className="h-3.5 w-3.5" />

@@ -1,8 +1,13 @@
-import { ipcMain } from "electron";
+import { app, ipcMain } from "electron";
 import { buildSystemInstruction } from "../ai/systemInstructions";
 import { shouldAttachTools } from "../ai/shouldAttachTools";
 import { AI_MODELS } from "../../lib/ai/aiModels";
 import { executeToolCall, getToolsForAI } from "../ai/tools/toolExecutor";
+import {
+  hasAnyAiStoreAccess,
+  loadAiAccess,
+  AI_ACCESS_NONE,
+} from "../ai/aiAccess";
 import {
   compactToolResult,
   getToolResultCharBudget,
@@ -28,13 +33,19 @@ import {
   latinNameFromUser,
 } from "../ai/keepUserQuery";
 import {
+  abortSessionChat,
+  AiCancelledError,
+  beginSessionRequest,
   aiRequest,
   currentSession,
   dropSession,
   enqueueAiSession,
   getOrCreateSession,
+  isAiCancelled,
+  isAiCancelledError,
   resetSessionChat,
   runWithAiRequest,
+  throwIfAiCancelled,
   type WorkStatus,
 } from "../ai/aiSession";
 import { formatToolFallback } from "../ai/formatToolFallback";
@@ -125,6 +136,7 @@ const skippedUntil = new Map<string, number>();
 const watchedWebContents = new Set<number>();
 
 function emitWorkStatus(status: WorkStatus) {
+  if (isAiCancelled()) return;
   aiRequest()?.statusSink?.(status);
 }
 
@@ -170,8 +182,11 @@ function modelSupportsToolCalling(modelId: string) {
 }
 
 function systemInstructionForModel(modelId: string, userName?: string) {
+  const access = currentSession()?.access ?? null;
   return buildSystemInstruction(userName, {
-    canUseStoreTools: modelSupportsToolCalling(modelId),
+    canUseStoreTools:
+      modelSupportsToolCalling(modelId) && hasAnyAiStoreAccess(access),
+    access,
   });
 }
 
@@ -255,6 +270,11 @@ function openAIToolOptions(
 
   if (!shouldAttachTools(messages)) {
     console.log("[AI] Tools not attached: message is not a store-data question");
+    return {};
+  }
+
+  if (!hasAnyAiStoreAccess(currentSession()?.access)) {
+    console.log("[AI] Tools not attached: user has no store page access");
     return {};
   }
 
@@ -412,6 +432,7 @@ async function runOneTool(
   toolInput: unknown,
   maxResultChars: number
 ): Promise<{ name: string; response: Record<string, unknown> }> {
+  throwIfAiCancelled();
   if (looksLikeJsonSchema(toolInput)) {
     return {
       name: toolName,
@@ -656,10 +677,12 @@ async function callGemini(
   );
 
   while (maxRetries > 0) {
+    throwIfAiCancelled();
     emitWaitingOnModel(!!options?.disableTools);
     const attachTools =
       !options?.disableTools &&
       modelSupportsToolCalling(modelId) &&
+      hasAnyAiStoreAccess(currentSession()?.access) &&
       (geminiInToolLoop(currentContents) || shouldAttachTools(messages));
     // Live UI chunks for normal replies. List writer / rewrite set streamChunks:false.
     // Do NOT gate on attachTools — store questions often answer in text without a
@@ -974,6 +997,7 @@ async function callOpenAICompatible(
   );
 
   while (maxRetries > 0) {
+    throwIfAiCancelled();
     emitWaitingOnModel(!!options?.disableTools);
     const httpStream = options?.streamChunks !== false;
     // Same as Gemini: stream text whenever allowed; tool deltas skip emit via toolAcc.
@@ -1263,6 +1287,7 @@ async function writeListWithStrongerModel(
 
   for (const model of writers) {
     try {
+      throwIfAiCancelled();
       console.log(`[AI] List writer trying ${model.provider}/${model.id}`);
       const turn = await callModel(model, messages, userName, {
         disableTools: true,
@@ -1273,6 +1298,7 @@ async function writeListWithStrongerModel(
         return turn.text;
       }
     } catch (error) {
+      if (isAiCancelledError(error)) throw error;
       const status = (error as Error & { status?: number }).status;
       if (shouldSkipModel(status)) {
         skipModel(model.id, status);
@@ -1307,6 +1333,7 @@ async function rewriteWrongNumbers(
 
   for (const model of models) {
     try {
+      throwIfAiCancelled();
       const turn = await callModel(model, messages, userName, {
         disableTools: true,
         streamChunks: false,
@@ -1316,6 +1343,7 @@ async function rewriteWrongNumbers(
         return turn.text;
       }
     } catch (error) {
+      if (isAiCancelledError(error)) throw error;
       const status = (error as Error & { status?: number }).status;
       if (shouldSkipModel(status)) {
         skipModel(model.id, status);
@@ -1342,6 +1370,7 @@ async function callWithAutomaticModelSwitch(
 
   for (const model of models) {
     try {
+      throwIfAiCancelled();
       console.log(`[AI] TRYING MODEL: ${model.provider}/${model.id}`);
 
       const turn = await callModel(model, messages, userName);
@@ -1382,6 +1411,7 @@ async function callWithAutomaticModelSwitch(
       console.log(`[AI] ${model.provider}/${model.id} succeeded`);
       return { text: turn.text, toolResults: turn.toolResults };
     } catch (error) {
+      if (isAiCancelledError(error)) throw error;
       const status = (error as Error & { status?: number }).status;
       if (shouldSkipModel(status)) {
         skipModel(model.id, status);
@@ -1433,6 +1463,10 @@ export function setupAIHandlers() {
   });
   
   ipcMain.handle("ai:set-model", async (event, modelId: string | null) => {
+    if (app.isPackaged || process.env.NODE_ENV === "production") {
+      throw new Error("Model selection is only available in developer mode");
+    }
+
     const session = getOrCreateSession(event.sender.id);
     if (modelId === null) {
       session.selectedModelId = undefined;
@@ -1466,11 +1500,27 @@ export function setupAIHandlers() {
       const sender = event.sender;
 
       return enqueueAiSession(session.webContentsId, async () => {
+      const previousQuery = session.lastStoreQuery;
+      const previousLatin = session.lastLatinQ;
+      beginSessionRequest(session);
+
       const followUp = isFollowUp(message);
 
       if (typeof userName === "string" && userName.trim()) {
         session.currentUserName = userName.trim();
       }
+
+      if (session.currentUserId) {
+        session.access = await loadAiAccess(session.currentUserId);
+        if (session.access.username) {
+          session.currentUserName = session.access.username;
+        }
+      } else {
+        session.access = AI_ACCESS_NONE;
+      }
+      console.log(
+        `[AI] Store access user=${session.access.username || "none"} admin=${session.access.isAdmin} id=${session.currentUserId || "none"}`
+      );
 
       session.conversationHistory.push({
         role: "user",
@@ -1498,10 +1548,20 @@ export function setupAIHandlers() {
         });
       }
 
+      const undoCancelledTurn = () => {
+        const last = session.conversationHistory.at(-1);
+        if (last?.role === "user" && last.content === message) {
+          session.conversationHistory.pop();
+        }
+        session.lastStoreQuery = previousQuery;
+        session.lastLatinQ = previousLatin;
+      };
+
       return runWithAiRequest({ session, statusSink, chunkSink }, async () => {
         emitWorkStatus({ phase: "thinking" });
 
         try {
+          throwIfAiCancelled();
           const modelMessages = withFollowUpContext(
             session.conversationHistory,
             session.lastStoreQuery,
@@ -1511,12 +1571,14 @@ export function setupAIHandlers() {
             modelMessages,
             session.currentUserName
           );
+          throwIfAiCancelled();
           const assistantReply = await rewriteWrongNumbers(
             message,
             outcome.text,
             outcome.toolResults,
             session.currentUserName
           );
+          throwIfAiCancelled();
 
           session.conversationHistory.push({
             role: "assistant",
@@ -1532,6 +1594,11 @@ export function setupAIHandlers() {
           };
           return response;
         } catch (error) {
+          if (isAiCancelledError(error) || isAiCancelled()) {
+            undoCancelledTurn();
+            console.log("[AI] Chat cancelled");
+            throw isAiCancelledError(error) ? error : new AiCancelledError();
+          }
           console.error("[AI] Chat failed after all models:", error);
           const fallback = unavailableReply(message);
           emitChatChunk(fallback);
@@ -1545,6 +1612,7 @@ export function setupAIHandlers() {
           return { text: fallback } satisfies AiChatResponse;
         } finally {
           session.reuseLastQuery = false;
+          session.abortController = null;
         }
       });
       });
@@ -1553,6 +1621,10 @@ export function setupAIHandlers() {
 
   ipcMain.handle("ai:clear", async (event) => {
     resetSessionChat(event.sender.id);
+  });
+
+  ipcMain.handle("ai:cancel", async (event) => {
+    abortSessionChat(event.sender.id);
   });
 
   ipcMain.handle("ai:list-models", async () => {
@@ -1581,12 +1653,13 @@ export function setupAIHandlers() {
     return getToolsForAI();
   });
 
-  ipcMain.handle("ai:execute-tool", async (_event, toolCall: AIToolCall) => {
+  ipcMain.handle("ai:execute-tool", async (event, toolCall: AIToolCall) => {
     if (!toolCall || !toolCall.toolName) {
       throw new Error("Invalid tool call: missing toolName");
     }
 
-    const result = await executeToolCall(toolCall);
+    const session = getOrCreateSession(event.sender.id);
+    const result = await executeToolCall(toolCall, session.access);
 
     if (!result.success) {
       console.warn(`[AI] Tool execution failed: ${result.error}`);

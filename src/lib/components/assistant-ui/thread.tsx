@@ -191,8 +191,15 @@ const ThreadMessage: FC = () => {
     useContext(ThreadComponentsContext);
   const role = useAuiState((s) => s.message.role);
   const isEditing = useAuiState((s) => s.message.composer.isEditing);
+  const isCancelled = useAuiState(
+    (s) =>
+      s.message.role === "assistant" &&
+      s.message.status?.type === "incomplete" &&
+      s.message.status.reason === "cancelled",
+  );
 
   if (isEditing) return <EditComposer />;
+  if (isCancelled) return null;
   if (role === "user") return <UserMessage />;
   return <AssistantMessageComponent />;
 };
@@ -296,16 +303,18 @@ const Composer: FC = () => {
 
 const ComposerAction: FC = () => {
   const { t } = useTranslation();
+  // Same gate as the login "dev admin" button: only unpackaged Vite/dev builds.
+  const canChooseModel = import.meta.env.DEV && !import.meta.env.PROD;
   const [models, setModels] = useState<AIModel[]>([]);
   const [selectedModel, setSelectedModel] = useState<string | null>(null);
   const [modelOpen, setModelOpen] = useState(false);
 
   useEffect(() => {
+    if (!canChooseModel) return;
+
     const loadModels = async () => {
       try {
-        const availableModels =
-          await window.api.ai.getAvailableModels();
-
+        const availableModels = await window.api.ai.getAvailableModels();
         setModels(availableModels);
       } catch (error) {
         console.error("Failed to load AI models:", error);
@@ -313,9 +322,10 @@ const ComposerAction: FC = () => {
     };
 
     loadModels();
-  }, []);
+  }, [canChooseModel]);
 
   const handleModelChange = async (modelId: string | null) => {
+    if (!canChooseModel) return;
     try {
       await window.api.ai.setModel(modelId);
       setSelectedModel(modelId);
@@ -325,9 +335,7 @@ const ComposerAction: FC = () => {
     }
   };
 
-  const selectedModelData = models.find(
-    (model) => model.id === selectedModel
-  );
+  const selectedModelData = models.find((model) => model.id === selectedModel);
 
   const selectedModelName = selectedModelData
     ? selectedModelData.provider === "google"
@@ -337,43 +345,47 @@ const ComposerAction: FC = () => {
 
   return (
     <div className="aui-composer-action-wrapper flex w-full items-center justify-between">
-
       {/* LEFT SIDE */}
       <div className="flex min-w-0 items-center gap-1.5">
-
-        {/* MODEL POPOVER */}
+        {/* MODEL POPOVER — interactive in developer mode only */}
         <div className="relative">
           <button
             type="button"
-            onClick={() => setModelOpen((open) => !open)}
+            disabled={!canChooseModel}
+            aria-disabled={!canChooseModel}
+            onClick={() => {
+              if (!canChooseModel) return;
+              setModelOpen((open) => !open);
+            }}
             className={cn(
               "flex h-7 max-w-[150px] items-center gap-1.5 rounded-full",
               "border border-border/50 bg-muted/40 px-2.5",
               "text-[10px] font-medium text-muted-foreground",
               "transition-all duration-200",
-              "hover:bg-muted/70 hover:text-foreground",
-              "focus:outline-none focus:ring-1 focus:ring-primary/20",
-              modelOpen && "bg-muted/70 text-foreground",
+              canChooseModel &&
+                "hover:bg-muted/70 hover:text-foreground focus:outline-none focus:ring-1 focus:ring-primary/20",
+              canChooseModel && modelOpen && "bg-muted/70 text-foreground",
+              !canChooseModel && "disabled:pointer-events-none disabled:opacity-40",
             )}
             aria-label={t("ai.selectModel", "Select AI model")}
-            aria-expanded={modelOpen}
+            aria-expanded={canChooseModel ? modelOpen : false}
+            title={
+              canChooseModel
+                ? undefined
+                : t("ai.modelDisabled", "Model selection is disabled")
+            }
           >
-            <span className="truncate">
-              {selectedModelName}
-            </span>
-
+            <span className="truncate">{selectedModelName}</span>
             <ChevronUpIcon
               className={cn(
                 "size-3 shrink-0 transition-transform duration-200",
-                modelOpen && "rotate-180",
+                canChooseModel && modelOpen && "rotate-180",
               )}
             />
           </button>
 
-          {/* POPOVER */}
-          {modelOpen && (
+          {canChooseModel && modelOpen && (
             <>
-              {/* Invisible click-away layer */}
               <button
                 type="button"
                 aria-label={t("ai.closeModelSelector", "Close model selector")}
@@ -398,7 +410,6 @@ const ComposerAction: FC = () => {
                 </div>
 
                 <div className="max-h-[240px] overflow-y-auto p-1">
-                  {/* Automatic */}
                   <button
                     type="button"
                     onClick={() => handleModelChange(null)}
@@ -408,8 +419,7 @@ const ComposerAction: FC = () => {
                       "text-left text-[11px]",
                       "transition-colors duration-150",
                       "hover:bg-muted",
-                      !selectedModel &&
-                        "bg-primary/10 text-primary",
+                      !selectedModel && "bg-primary/10 text-primary",
                     )}
                   >
                     <div className="flex min-w-0 flex-col">
@@ -420,17 +430,13 @@ const ComposerAction: FC = () => {
                         {t("ai.automaticHint", "Let REDA AI choose")}
                       </span>
                     </div>
-
                     {!selectedModel && (
                       <CheckIcon className="size-3.5 shrink-0" />
                     )}
                   </button>
 
-                  {/* Models */}
                   {models.map((model) => {
-                    const isSelected =
-                      selectedModel === model.id;
-
+                    const isSelected = selectedModel === model.id;
                     const displayName =
                       model.provider === "google"
                         ? `Google — ${model.id}`
@@ -440,31 +446,26 @@ const ComposerAction: FC = () => {
                       <button
                         key={model.id}
                         type="button"
-                        onClick={() =>
-                          handleModelChange(model.id)
-                        }
+                        onClick={() => handleModelChange(model.id)}
                         className={cn(
                           "flex w-full items-center justify-between",
                           "rounded-lg px-2.5 py-2",
                           "text-left text-[11px]",
                           "transition-colors duration-150",
                           "hover:bg-muted",
-                          isSelected &&
-                            "bg-primary/10 text-primary",
+                          isSelected && "bg-primary/10 text-primary",
                         )}
                       >
                         <div className="flex min-w-0 flex-col">
                           <span className="truncate font-medium">
                             {displayName}
                           </span>
-
                           <span className="text-[9px] text-muted-foreground">
                             {model.capabilities.webSearch
                               ? t("ai.webSearch", "Web search available")
                               : t("ai.generalAi", "General AI")}
                           </span>
                         </div>
-
                         {isSelected && (
                           <CheckIcon className="size-3.5 shrink-0" />
                         )}
@@ -483,7 +484,6 @@ const ComposerAction: FC = () => {
           )}
         </div>
 
-        {/* DICTATION */}
         <AuiIf condition={(s) => s.thread.capabilities.dictation}>
           <AuiIf condition={(s) => s.composer.dictation == null}>
             <ComposerPrimitive.Dictate asChild>
@@ -580,11 +580,11 @@ const AssistantMessage: FC = () => {
     <MessagePrimitive.Root
       data-slot="aui_assistant-message-root"
       data-role="assistant"
-      className="fade-in slide-in-from-bottom-1 animate-in relative -mb-7.5 pb-7.5 duration-150 [contain-intrinsic-size:auto_200px] [content-visibility:auto]"
+      className="fade-in slide-in-from-bottom-1 animate-in relative flex -mb-7.5 flex-col items-start pb-7.5 duration-150 [contain-intrinsic-size:auto_200px] [content-visibility:auto]"
     >
       <div
         data-slot="aui_assistant-message-content"
-        className="text-foreground px-2 leading-relaxed wrap-break-word"
+        className="w-fit max-w-[85%] min-w-0 text-foreground px-2 leading-relaxed wrap-break-word"
       >
         <WorkingStatus />
         <MessagePrimitive.GroupedParts

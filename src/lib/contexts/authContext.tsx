@@ -212,6 +212,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, []);
 
   const abandonPendingLogin = useCallback(() => {
+    void window.api.auth.logout();
     setUser(null);
     setUserRole(null);
     setIsPreloading(false);
@@ -228,6 +229,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         details: null,
       }).catch((): undefined => undefined);
     }
+    void window.api.auth.logout();
     setIsAuthenticated(false);
     setUser(null);
     setUserRole(null);

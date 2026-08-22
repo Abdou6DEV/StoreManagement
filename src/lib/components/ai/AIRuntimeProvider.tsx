@@ -6,7 +6,7 @@ import {
 } from "@assistant-ui/react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../contexts/authContext";
-import { createContext, useContext } from "react";
+import { createContext, useContext, useEffect } from "react";
 import { formatStoreTableMarkdown } from "../../ai/formatStoreTable";
 import type { TFunction } from "i18next";
 import type { AiChatResponse } from "../../ai/aiChatTypes";
@@ -94,21 +94,30 @@ const AIAdapter = (
       return;
     }
 
+    if (abortSignal.aborted) {
+      yield textContent("", "cancelled");
+      return;
+    }
+
     const queue: AdapterEvent[] = [];
     let wake: (() => void) | null = null;
     let finished = false;
 
     const push = (event: AdapterEvent) => {
-      if (finished) return;
+      if (finished || abortSignal.aborted) return;
       queue.push(event);
       wake?.();
     };
 
     const stopChunk = window.api.ai.onChunk?.((chunk) => {
+      if (abortSignal.aborted) return;
       push({ type: "chunk", text: chunk });
     });
 
-    const onAbort = () => wake?.();
+    const onAbort = () => {
+      void window.api.ai.cancelChat?.();
+      wake?.();
+    };
     abortSignal.addEventListener("abort", onAbort);
 
     window.api.ai.chat(text, userName).then(
@@ -116,16 +125,15 @@ const AIAdapter = (
       (error) => push({ type: "error", error }),
     );
 
-    let latestText = "";
-
     try {
       while (!finished) {
+        if (abortSignal.aborted) {
+          finished = true;
+          yield textContent("", "cancelled");
+          return;
+        }
+
         if (queue.length === 0) {
-          if (abortSignal.aborted) {
-            finished = true;
-            yield textContent(latestText, "cancelled");
-            return;
-          }
           await new Promise<void>((resolve) => {
             wake = resolve;
           });
@@ -136,10 +144,8 @@ const AIAdapter = (
         const event = queue.shift()!;
 
         if (event.type === "chunk") {
-          if (event.text && event.text !== latestText) {
-            latestText = event.text;
-            yield textContent(latestText, "running");
-            // Let React paint before draining the next IPC event / done.
+          if (event.text) {
+            yield textContent(event.text, "running");
             await paintFrame();
           }
           continue;
@@ -155,11 +161,9 @@ const AIAdapter = (
 
         while (queue.length > 0) queue.shift();
 
-        const finalText = formatPayload(event.payload, latestText, t);
-        // One last running frame if the final payload grew (e.g. table).
-        if (finalText !== latestText) {
-          latestText = finalText;
-          yield textContent(latestText, "running");
+        const finalText = formatPayload(event.payload, "", t);
+        if (finalText) {
+          yield textContent(finalText, "running");
           await paintFrame();
         }
         yield textContent(finalText, "complete");
@@ -203,6 +207,10 @@ export function AIRuntimeProvider({
       unstable_enableMessageQueue: true,
     }
   );
+
+  useEffect(() => {
+    runtime.thread.reset();
+  }, [user?.id]);
 
   return (
     <AIRuntimeContext.Provider value={runtime}>

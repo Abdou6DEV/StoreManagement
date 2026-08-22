@@ -30,6 +30,7 @@
     "messageInput": "Saisie du message",
     "scrollToBottom": "Aller en bas",
     "selectModel": "Sélectionner le modèle IA",
+    "modelDisabled": "La sélection du modèle est désactivée",
     "closeModelSelector": "Fermer le sélecteur de modèle",
     "modelHeading": "MODÈLE IA",
     "automatic": "Automatique",

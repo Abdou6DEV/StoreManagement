@@ -467,6 +467,11 @@ export default function Sidebar() {
           </Link>
         ))}
 
+        <div
+          aria-hidden
+          className="pointer-events-none min-h-0 flex-1 max-h-16 short:max-h-0"
+        />
+
         <button
           type="button"
           data-is-active={aiOpen}

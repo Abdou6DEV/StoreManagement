@@ -30,6 +30,7 @@
     "messageInput": "Message input",
     "scrollToBottom": "Scroll to bottom",
     "selectModel": "Select AI model",
+    "modelDisabled": "Model selection is disabled",
     "closeModelSelector": "Close model selector",
     "modelHeading": "AI MODEL",
     "automatic": "Automatic",

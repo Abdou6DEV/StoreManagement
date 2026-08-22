@@ -102,6 +102,8 @@ export default function Login() {
   const { isDark } = useTheme();
 
   const isFirstAdminSetup = initialAdminSetupRequired === true;
+  const setupReady = initialAdminSetupRequired !== null;
+  const [entrance, setEntrance] = useState<"wait" | "play" | "done">("wait");
   const credentialsIncomplete =
     useActivationKey
       ? !activationKey.trim()
@@ -125,6 +127,27 @@ export default function Login() {
       cancelled = true;
     };
   }, [needsInitialAdminSetup]);
+
+  useEffect(() => {
+    if (!setupReady) {
+      setEntrance("wait");
+      return;
+    }
+    let cancelled = false;
+    const frame = requestAnimationFrame(() => {
+      if (!cancelled) setEntrance("play");
+    });
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(frame);
+    };
+  }, [setupReady]);
+
+  useEffect(() => {
+    if (entrance !== "play") return;
+    const timer = window.setTimeout(() => setEntrance("done"), 1100);
+    return () => window.clearTimeout(timer);
+  }, [entrance]);
 
   useEffect(() => {
     if (initialAdminSetupRequired === true) {
@@ -368,6 +391,37 @@ export default function Login() {
   };
 
   const isRTL = i18n.language === "ar";
+  const visibleAfterEnter =
+    successPhase !== "idle" || entrance === "done";
+  const logoEnterStyle = {
+    opacity: visibleAfterEnter ? 1 : undefined,
+    animation:
+      successPhase === "idle" && entrance === "play"
+        ? isRTL
+          ? "loginFadeInFromLeftRtl 0.5s ease-out forwards"
+          : "loginFadeInFromLeft 0.5s ease-out forwards"
+        : undefined,
+  };
+  const titleEnterStyle = {
+    opacity: visibleAfterEnter ? 1 : undefined,
+    animation:
+      successPhase === "fade_out"
+        ? "loginFadeOut 0.5s ease-out 0.35s forwards"
+        : successPhase === "idle" && entrance === "play"
+          ? isRTL
+            ? "loginFadeInFromLeftRtl 0.5s ease-out 0.35s forwards"
+            : "loginFadeInFromLeft 0.5s ease-out 0.35s forwards"
+          : undefined,
+  };
+  const formEnterStyle = {
+    opacity: visibleAfterEnter ? 1 : undefined,
+    animation:
+      successPhase === "fade_out"
+        ? "loginFadeOut 0.5s ease-out 0.35s forwards"
+        : successPhase === "idle" && entrance === "play"
+          ? "loginFadeIn 0.4s ease-out 0.7s forwards"
+          : undefined,
+  };
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -407,7 +461,10 @@ export default function Login() {
       `}</style>
 
       {/* Settings Button - Top Right */}
-      <div className={`fixed top-4 z-50 ${isRTL ? "left-4" : "right-4"}`}>
+      <div
+        className={`fixed top-4 z-50 ${isRTL ? "left-4" : "right-4"}`}
+        style={{ opacity: entrance === "wait" ? 0 : 1 }}
+      >
         <DropdownMenu onOpenChange={setDropdownOpen}>
           <DropdownMenuTrigger asChild>
             <button className="rounded-xl outline-none ring-0 hover:text-red-400 transition-all duration-300 p-1">
@@ -499,31 +556,13 @@ export default function Login() {
               src={isDark ? LOGO_ICON : LOGO_ICON_DARK}
               alt=""
               className="mx-auto h-50 w-50 object-contain select-none -mt-10 opacity-0"
-              style={{
-                opacity: successPhase === "green_hold" || successPhase === "fade_out" ? 1 : undefined,
-                animation:
-                  successPhase === "idle"
-                    ? isRTL
-                      ? "loginFadeInFromLeftRtl 0.5s ease-out forwards"
-                      : "loginFadeInFromLeft 0.5s ease-out forwards"
-                    : undefined,
-              }}
+              style={logoEnterStyle}
             />
           </div>
           {/* Message: normal fade out — 0.5s, 0.35s delay */}
           <div
             className="opacity-0 transition-opacity duration-500 ease-out"
-            style={{
-              opacity: successPhase === "green_hold" || successPhase === "fade_out" ? 1 : undefined,
-              animation:
-                successPhase === "idle"
-                  ? isRTL
-                    ? "loginFadeInFromLeftRtl 0.5s ease-out 0.35s forwards"
-                    : "loginFadeInFromLeft 0.5s ease-out 0.35s forwards"
-                  : successPhase === "fade_out"
-                    ? "loginFadeOut 0.5s ease-out 0.35s forwards"
-                    : undefined,
-            }}
+            style={titleEnterStyle}
           >
             <h2 className="text-3xl font-bold text-foreground mb-2 mt-0">
               {isFirstAdminSetup
@@ -550,22 +589,10 @@ export default function Login() {
         {/* Form: normal fade out — same time as message (0.35s delay, 0.5s duration) */}
         <div
           className="opacity-0 transition-opacity duration-500 ease-out"
-          style={{
-            opacity: successPhase === "green_hold" || successPhase === "fade_out" ? 1 : undefined,
-            animation:
-              successPhase === "idle"
-                ? "loginFadeIn 0.4s ease-out 0.7s forwards"
-                : successPhase === "fade_out"
-                  ? "loginFadeOut 0.5s ease-out 0.35s forwards"
-                  : undefined,
-          }}
+          style={formEnterStyle}
         >
         <div className="bg-card rounded-xl border border-border p-8 shadow-sm">
-          {initialAdminSetupRequired === null ? (
-            <p className="text-center text-muted-foreground py-10">
-              {t("login.loading", "Loading...")}
-            </p>
-          ) : (
+          {setupReady ? (
           <AnimatedHeight
             innerClassName="px-2"
             deps={[useActivationKey, isFirstAdminSetup, machineIdLoading, !!machineId]}
@@ -841,7 +868,7 @@ export default function Login() {
             ) : null}
           </form>
           </AnimatedHeight>
-          )}
+          ) : null}
 
         </div>
 

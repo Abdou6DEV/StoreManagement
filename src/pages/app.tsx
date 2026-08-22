@@ -1,5 +1,5 @@
 import React, { Suspense, useEffect, useState } from "react";
-import { Routes, Route, Outlet, useLocation, Navigate } from "react-router-dom";
+import { Routes, Route, Outlet, useLocation, useNavigate, Navigate } from "react-router-dom";
 import Layout from "../lib/components/layout";
 import ScrollToTop from "../lib/components/scrollToTop";
 import Sidebar from "../lib/components/sidebar";
@@ -66,6 +66,7 @@ export default function App() {
   const { isAuthenticated, loading, preloadComplete, markPreloadComplete } = useAuth();
   const { isLicenseValid, isLoading: licenseLoading } = useLicense();
   const location = useLocation();
+  const navigate = useNavigate();
   const dir = i18n.language === "ar" ? "rtl" : "ltr";
   const [initialWelcome, setInitialWelcome] = useState<"loading" | "show" | "hide">("loading");
 
@@ -119,7 +120,25 @@ export default function App() {
     return () => window.removeEventListener(INITIAL_WELCOME_DONE_EVENT, leaveWelcomeOnlyShell);
   }, []);
 
-  if (initialWelcome === "loading") {
+  useEffect(() => {
+    if (
+      initialWelcome !== "hide" ||
+      loading ||
+      isAuthenticated ||
+      location.pathname === "/login"
+    ) {
+      return;
+    }
+    navigate("/login", { replace: true });
+  }, [
+    initialWelcome,
+    loading,
+    isAuthenticated,
+    location.pathname,
+    navigate,
+  ]);
+
+  if (initialWelcome === "loading" || loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="text-center">
@@ -155,15 +174,6 @@ export default function App() {
     );
   }
 
-  // Show loading while checking authentication
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
-
   // Show login→preload transition (logo down) then preloading – exit when preload bar reaches 100%
   // Wrapper has bg-background + min-h-screen so no flash when swapping Login → Transition
   if (isAuthenticated && !preloadComplete) {
@@ -178,9 +188,17 @@ export default function App() {
     );
   }
 
-  // Redirect to login if not authenticated and trying to access protected routes
-  if (!isAuthenticated && location.pathname !== "/login") {
-    return <Navigate to="/login" replace />;
+  // Unauthenticated: keep Login mounted while the hash is synced to /login
+  if (!isAuthenticated) {
+    return (
+      <div dir={dir} className="min-h-screen w-full bg-background" style={{ direction: dir }}>
+        <ToastProvider>
+          <UpdateProvider>
+            <Login />
+          </UpdateProvider>
+        </ToastProvider>
+      </div>
+    );
   }
 
   // Redirect to main app if authenticated and on login page

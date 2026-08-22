@@ -7,6 +7,7 @@ const authAPI: AuthAPI = {
     ipcRenderer.invoke("auth:loginDevAsPrimaryAdmin"),
   loginByActivationKey: (activationKey, machineId?) =>
     ipcRenderer.invoke("auth:loginByActivationKey", activationKey, machineId),
+  logout: () => ipcRenderer.invoke("auth:logout"),
   needsInitialAdminSetup: () =>
     ipcRenderer.invoke("auth:needsInitialAdminSetup"),
   completeInitialAdminSetup: (credentials) =>

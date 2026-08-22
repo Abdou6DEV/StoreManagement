@@ -284,6 +284,7 @@ export type AuthAPI = {
     user?: Omit<User, "password">;
     error?: string;
   }>;
+  logout: () => Promise<void>;
   /** Unpackaged dev build only: session as primary ADMIN from DB without password. */
   loginDevAsPrimaryAdmin: () => Promise<{
     success: boolean;
@@ -502,9 +503,11 @@ export type ActivityLogAPI = {
 export interface AIAPI {
   chat: (
     message: string,
-    userName?: string
+    userName?: string,
+    userId?: string
   ) => Promise<import("../../lib/ai/aiChatTypes").AiChatResponse>;
   clearChat: () => Promise<void>;
+  cancelChat: () => Promise<void>;
   onStatus: (
     callback: (status: {
       phase: "thinking" | "tool" | "writing";
