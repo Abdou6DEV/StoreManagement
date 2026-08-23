@@ -1,5 +1,6 @@
 import { ipcRenderer } from "electron";
 import type { AiChatResponse } from "../../lib/ai/aiChatTypes";
+import type { AiQuotaSnapshot } from "../../lib/ai/aiQuota";
 
 export type AiWorkStatus = {
   phase: "thinking" | "tool" | "writing";
@@ -16,6 +17,21 @@ export const aiAPI = {
 
   clearChat: (): Promise<void> => ipcRenderer.invoke("ai:clear"),
   cancelChat: (): Promise<void> => ipcRenderer.invoke("ai:cancel"),
+
+  getQuota: (): Promise<AiQuotaSnapshot | null> =>
+    ipcRenderer.invoke("ai:getQuota"),
+
+  refreshQuota: (): Promise<AiQuotaSnapshot | null> =>
+    ipcRenderer.invoke("ai:refreshQuota"),
+
+  onQuota: (callback: (quota: AiQuotaSnapshot) => void): (() => void) => {
+    const handler = (_event: unknown, quota: AiQuotaSnapshot) => callback(quota);
+    ipcRenderer.on("ai:quota", handler);
+    return () => {
+      ipcRenderer.removeListener("ai:quota", handler);
+    };
+  },
+
   listModels: () =>
     ipcRenderer.invoke("ai:list-models"),
   listMistralModels: () =>

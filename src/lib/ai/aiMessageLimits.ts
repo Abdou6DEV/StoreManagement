@@ -3,30 +3,28 @@ export const MAX_AI_MESSAGE_CHARS = 500;
 
 export const AI_MESSAGE_TOO_LONG = "AI_MESSAGE_TOO_LONG";
 
-/** Min ms between consecutive sends (local anti-spam; kept when Supabase quota ships). */
-export const AI_SEND_COOLDOWN_MS = 2_500;
-
-/** Rolling window cap per chat session (local until Supabase owns minute quota). */
-export const AI_MAX_MESSAGES_PER_MINUTE = 10;
-
-export const AI_SEND_COOLDOWN = "AI_SEND_COOLDOWN";
-export const AI_RATE_LIMIT_MINUTE = "AI_RATE_LIMIT_MINUTE";
-
-const MINUTE_MS = 60_000;
+/** Thrown when ai-consume cannot be reached (offline / network). */
+export const AI_OFFLINE = "ai_offline";
 
 export function resolveAiChatErrorMessage(
   errText: string,
   messages: {
     tooLong: string;
     unavailable: string;
-    cooldown: string;
     rateLimitMinute: string;
+    rateLimitDay: string;
+    disabled: string;
+    notLicensed: string;
+    offline: string;
+    trialBlocked: string;
   },
 ): string {
   if (errText.includes(AI_MESSAGE_TOO_LONG)) return messages.tooLong;
-  if (errText.includes(AI_SEND_COOLDOWN)) return messages.cooldown;
-  if (errText.includes(AI_RATE_LIMIT_MINUTE)) return messages.rateLimitMinute;
+  if (errText.includes(AI_OFFLINE)) return messages.offline;
+  if (errText.includes("ai_disabled")) return messages.disabled;
+  if (errText.includes("ai_trial_blocked")) return messages.trialBlocked;
+  if (errText.includes("ai_not_licensed")) return messages.notLicensed;
+  if (errText.includes("rate_limit_minute")) return messages.rateLimitMinute;
+  if (errText.includes("rate_limit_day")) return messages.rateLimitDay;
   return messages.unavailable;
 }
-
-export { MINUTE_MS as AI_RATE_LIMIT_WINDOW_MS };

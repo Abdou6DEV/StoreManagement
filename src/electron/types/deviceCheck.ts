@@ -9,6 +9,8 @@ export type DeviceCheckResult =
       /** Optional; add to Edge `device-check` JSON when available. */
       customerName?: string | null;
       customerPhone?: string | null;
+      /** From Supabase `device-check` when `ai_enabled` column is present. */
+      aiEnabled?: boolean;
       raw?: unknown;
     }
   | {

@@ -56,10 +56,14 @@ import {
   fetchWithTimeout,
   MODEL_FETCH_TIMEOUT_MS,
 } from "../ai/fetchWithTimeout";
+import { runAiConsumeInternal, runAiQuotaPeekInternal } from "./onlineHandlers";
+import { AI_OFFLINE } from "../../lib/ai/aiMessageLimits";
 import {
-  checkAiSendRateLimit,
-  recordAiSend,
-} from "../ai/aiRateLimit";
+  applyAiQuotaFromConsume,
+  getCachedAiQuota,
+  setCachedAiQuota,
+} from "../ai/aiQuotaBridge";
+import { quotaFromConsumePayload } from "../../lib/ai/aiQuota";
 import {
   emitChatChunk,
   isEventStream,
@@ -1506,11 +1510,30 @@ export function setupAIHandlers() {
       const sender = event.sender;
 
       return enqueueAiSession(session.webContentsId, async () => {
-      const rateLimit = checkAiSendRateLimit(session);
-      if (!rateLimit.ok) {
-        throw new Error(rateLimit.code);
+      const entitlement = await runAiConsumeInternal();
+      if (!entitlement.success) {
+        if (
+          entitlement.entitlementError === "rate_limit_minute" ||
+          entitlement.entitlementError === "rate_limit_day"
+        ) {
+          const peek = await runAiQuotaPeekInternal();
+          if (peek.success) {
+            applyAiQuotaFromConsume(sender, peek);
+          }
+        }
+        if (
+          entitlement.code === "network" ||
+          entitlement.code === "missing_env"
+        ) {
+          throw new Error(AI_OFFLINE);
+        }
+        if (entitlement.entitlementError) {
+          throw new Error(entitlement.entitlementError);
+        }
+        throw new Error(entitlement.error || "ai_consume_failed");
       }
-      recordAiSend(session);
+
+      applyAiQuotaFromConsume(sender, entitlement);
 
       const previousQuery = session.lastStoreQuery;
       const previousLatin = session.lastLatinQ;
@@ -1633,6 +1656,19 @@ export function setupAIHandlers() {
 
   ipcMain.handle("ai:clear", async (event) => {
     resetSessionChat(event.sender.id);
+  });
+
+  ipcMain.handle("ai:getQuota", async () => getCachedAiQuota());
+
+  ipcMain.handle("ai:refreshQuota", async (event) => {
+    const peek = await runAiQuotaPeekInternal();
+    if (!peek.success) return getCachedAiQuota();
+    const snapshot = quotaFromConsumePayload({
+      remainingMinute: peek.remainingMinute,
+      remainingDay: peek.remainingDay,
+      limits: peek.limits,
+    });
+    return setCachedAiQuota(event.sender, snapshot);
   });
 
   ipcMain.handle("ai:cancel", async (event) => {

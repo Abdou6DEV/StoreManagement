@@ -21,6 +21,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../dropdownMenu";
+import { useAiQuota } from "../../contexts/aiQuotaContext";
 import { useAIRuntime } from "./AIRuntimeProvider";
 import { AI_CHAT_CLOSE_EVENT } from "./closeAiChat";
 import Orb from "../assistant-ui/orb";
@@ -163,6 +164,7 @@ export default function ChatBox() {
   const wasRunningRef = useRef(false);
   const reduceMotion = useReducedMotion();
   const runtime = useAIRuntime();
+  const refreshQuota = useAiQuota()?.refreshQuota;
   const isRunning = useAuiState((s) => s.thread.isRunning);
   const move = reduceMotion ? { duration: 0 } : spring;
   const isMainMenu = useLocation().pathname === "/";
@@ -184,6 +186,11 @@ export default function ChatBox() {
     originX: number;
     originY: number;
   } | null>(null);
+
+  useEffect(() => {
+    if (!open || !canUseAi || !refreshQuota) return;
+    void refreshQuota();
+  }, [open, canUseAi, refreshQuota]);
 
   useEffect(() => {
     const onToggle = () => setOpen((current) => !current);

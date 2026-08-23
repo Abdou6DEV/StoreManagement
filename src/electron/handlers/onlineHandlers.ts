@@ -14,6 +14,10 @@ import type { DeviceRequestPayload, DeviceRequestResult } from "../types/deviceR
 import type { DeviceLinkExistingPayload, DeviceLinkExistingResult } from "../types/deviceLinkExisting";
 import type { DeviceCheckResult } from "../types/deviceCheck";
 import type {
+  AiConsumeEntitlementError,
+  AiConsumeResult,
+} from "../types/aiConsume";
+import type {
   CloudBackupDownloadResult,
   CloudBackupDownloadToLocalResult,
   CloudBackupErrorCode,
@@ -40,6 +44,14 @@ function deviceRequestUrl(base: string): string {
 
 function deviceCheckUrl(base: string): string {
   return `${base}/functions/v1/device-check`;
+}
+
+function aiConsumeUrl(base: string): string {
+  return `${base}/functions/v1/ai-consume`;
+}
+
+function aiQuotaUrl(base: string): string {
+  return `${base}/functions/v1/ai-quota`;
 }
 
 function deviceLinkExistingUrl(base: string): string {
@@ -472,6 +484,7 @@ function parseDeviceCheckJson(json: unknown): {
   customerId?: string | null;
   customerName?: string | null;
   customerPhone?: string | null;
+  aiEnabled?: boolean;
 } | null {
   if (!json || typeof json !== "object") return null;
   const o = json as Record<string, unknown>;
@@ -516,6 +529,11 @@ function parseDeviceCheckJson(json: unknown): {
     }
   }
 
+  let aiEnabled: boolean | undefined;
+  if ("ai_enabled" in o) {
+    aiEnabled = o.ai_enabled === true;
+  }
+
   return {
     allowed: o.allowed,
     trialEndsAt,
@@ -523,6 +541,7 @@ function parseDeviceCheckJson(json: unknown): {
     customerId,
     customerName,
     customerPhone,
+    aiEnabled,
   };
 }
 
@@ -596,7 +615,220 @@ async function runDeviceCheckInternal(): Promise<DeviceCheckResult> {
       customerId: parsed.customerId,
       customerName: parsed.customerName,
       customerPhone: parsed.customerPhone,
+      aiEnabled: parsed.aiEnabled,
       raw: json,
+    };
+  } catch (e) {
+    return {
+      success: false,
+      error: (e as Error).message || "Network error",
+      code: "network",
+    };
+  }
+}
+
+const AI_CONSUME_ENTITLEMENT_ERRORS = new Set<AiConsumeEntitlementError>([
+  "device_not_found",
+  "ai_disabled",
+  "ai_trial_blocked",
+  "ai_not_licensed",
+  "rate_limit_minute",
+  "rate_limit_day",
+]);
+
+function parseAiConsumeEntitlementError(
+  value: unknown,
+): AiConsumeEntitlementError | undefined {
+  if (typeof value !== "string") return undefined;
+  return AI_CONSUME_ENTITLEMENT_ERRORS.has(value as AiConsumeEntitlementError)
+    ? (value as AiConsumeEntitlementError)
+    : undefined;
+}
+
+function parseAiConsumeSuccessJson(json: unknown): {
+  remainingMinute?: number | null;
+  remainingDay?: number | null;
+  limits?: { requests_per_minute: number; requests_per_day: number };
+} | null {
+  if (!json || typeof json !== "object") return null;
+  const o = json as Record<string, unknown>;
+  if (o.ok !== true) return null;
+
+  let remainingMinute: number | null | undefined;
+  if ("remaining_minute" in o) {
+    if (o.remaining_minute === null) remainingMinute = null;
+    else if (typeof o.remaining_minute === "number") {
+      remainingMinute = o.remaining_minute;
+    }
+  }
+
+  let remainingDay: number | null | undefined;
+  if ("remaining_day" in o) {
+    if (o.remaining_day === null) remainingDay = null;
+    else if (typeof o.remaining_day === "number") remainingDay = o.remaining_day;
+  }
+
+  let limits: { requests_per_minute: number; requests_per_day: number } | undefined;
+  if (o.limits && typeof o.limits === "object") {
+    const l = o.limits as Record<string, unknown>;
+    if (
+      typeof l.requests_per_minute === "number" &&
+      typeof l.requests_per_day === "number"
+    ) {
+      limits = {
+        requests_per_minute: l.requests_per_minute,
+        requests_per_day: l.requests_per_day,
+      };
+    }
+  }
+
+  return { remainingMinute, remainingDay, limits };
+}
+
+export async function runAiConsumeInternal(): Promise<AiConsumeResult> {
+  const cfg = getStoreOnlineConfig();
+  if ("error" in cfg) {
+    return {
+      success: false,
+      error: "Online provisioning is not configured (missing STORE_ONLINE_* env vars).",
+      code: "missing_env",
+    };
+  }
+
+  let deviceId: string;
+  try {
+    deviceId = getMachineGuid();
+  } catch (e) {
+    return { success: false, error: (e as Error).message, code: "invalid" };
+  }
+
+  try {
+    const res = await fetch(aiConsumeUrl(cfg.supabaseUrl), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-app-secret": cfg.appSecret,
+        Authorization: `Bearer ${cfg.anonKey}`,
+        apikey: cfg.anonKey,
+      },
+      body: JSON.stringify({ device_id: deviceId }),
+    });
+
+    const text = await res.text();
+    let json: unknown;
+    try {
+      json = text ? JSON.parse(text) : null;
+    } catch {
+      json = { raw: text };
+    }
+
+    if (!res.ok) {
+      return {
+        success: false,
+        error: readEdgeError(json, res.status),
+        code: "http",
+      };
+    }
+
+    if (json && typeof json === "object") {
+      const o = json as Record<string, unknown>;
+      if (o.ok === false) {
+        const entitlementError = parseAiConsumeEntitlementError(o.error);
+        return {
+          success: false,
+          error:
+            typeof o.error === "string" && o.error.trim()
+              ? o.error.trim()
+              : "AI entitlement rejected",
+          code: "entitlement",
+          entitlementError,
+        };
+      }
+    }
+
+    const parsed = parseAiConsumeSuccessJson(json);
+    if (!parsed) {
+      return {
+        success: false,
+        error: "Invalid ai-consume response",
+        code: "edge",
+      };
+    }
+
+    return {
+      success: true,
+      remainingMinute: parsed.remainingMinute,
+      remainingDay: parsed.remainingDay,
+      limits: parsed.limits,
+    };
+  } catch (e) {
+    return {
+      success: false,
+      error: (e as Error).message || "Network error",
+      code: "network",
+    };
+  }
+}
+
+export async function runAiQuotaPeekInternal(): Promise<AiConsumeResult> {
+  const cfg = getStoreOnlineConfig();
+  if ("error" in cfg) {
+    return {
+      success: false,
+      error: "Online provisioning is not configured (missing STORE_ONLINE_* env vars).",
+      code: "missing_env",
+    };
+  }
+
+  let deviceId: string;
+  try {
+    deviceId = getMachineGuid();
+  } catch (e) {
+    return { success: false, error: (e as Error).message, code: "invalid" };
+  }
+
+  try {
+    const res = await fetch(aiQuotaUrl(cfg.supabaseUrl), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-app-secret": cfg.appSecret,
+        Authorization: `Bearer ${cfg.anonKey}`,
+        apikey: cfg.anonKey,
+      },
+      body: JSON.stringify({ device_id: deviceId }),
+    });
+
+    const text = await res.text();
+    let json: unknown;
+    try {
+      json = text ? JSON.parse(text) : null;
+    } catch {
+      json = { raw: text };
+    }
+
+    if (!res.ok) {
+      return {
+        success: false,
+        error: readEdgeError(json, res.status),
+        code: "http",
+      };
+    }
+
+    const parsed = parseAiConsumeSuccessJson(json);
+    if (!parsed) {
+      return {
+        success: false,
+        error: "Invalid ai-quota response",
+        code: "edge",
+      };
+    }
+
+    return {
+      success: true,
+      remainingMinute: parsed.remainingMinute,
+      remainingDay: parsed.remainingDay,
+      limits: parsed.limits,
     };
   } catch (e) {
     return {

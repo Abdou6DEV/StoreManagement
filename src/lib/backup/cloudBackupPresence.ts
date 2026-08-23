@@ -7,6 +7,9 @@ export const CLOUD_BACKUP_LAST_CHECK_AVAILABLE_KEY = "backup.cloudLastCheckAvail
 /** Last manual "Check cloud backup" click (ms), for 1-minute button cooldown. */
 export const CLOUD_BACKUP_LAST_MANUAL_CHECK_AT_MS_KEY = "backup.cloudLastManualCheckAtMs";
 
+/** Last manual "Create & upload to cloud" click (ms), for 1-minute button cooldown. */
+export const CLOUD_BACKUP_LAST_MANUAL_UPLOAD_AT_MS_KEY = "backup.cloudLastManualUploadAtMs";
+
 /** `"1"` after the one-time silent presence probe on first Backup tab visit. */
 export const CLOUD_BACKUP_INITIAL_CHECK_DONE_KEY = "backup.cloudInitialCheckDone";
 
@@ -14,6 +17,7 @@ export type CloudBackupPresenceSnapshot = {
   lastCheckAtMs: number | null;
   available: boolean | null;
   lastManualCheckAtMs: number | null;
+  lastManualUploadAtMs: number | null;
   initialCheckDone: boolean;
 };
 
@@ -24,10 +28,11 @@ function parseOptionMs(value: string | null | undefined): number | null {
 }
 
 export async function loadCloudBackupPresenceFromOptions(): Promise<CloudBackupPresenceSnapshot> {
-  const [atMs, avail, manualAtMs, initialDone] = await Promise.all([
+  const [atMs, avail, manualAtMs, manualUploadAtMs, initialDone] = await Promise.all([
     window.api.database.options.get(CLOUD_BACKUP_LAST_CHECK_AT_MS_KEY),
     window.api.database.options.get(CLOUD_BACKUP_LAST_CHECK_AVAILABLE_KEY),
     window.api.database.options.get(CLOUD_BACKUP_LAST_MANUAL_CHECK_AT_MS_KEY),
+    window.api.database.options.get(CLOUD_BACKUP_LAST_MANUAL_UPLOAD_AT_MS_KEY),
     window.api.database.options.get(CLOUD_BACKUP_INITIAL_CHECK_DONE_KEY),
   ]);
   const trimmedAvail = avail?.trim();
@@ -37,6 +42,7 @@ export async function loadCloudBackupPresenceFromOptions(): Promise<CloudBackupP
     lastCheckAtMs: parseOptionMs(atMs),
     available,
     lastManualCheckAtMs: parseOptionMs(manualAtMs),
+    lastManualUploadAtMs: parseOptionMs(manualUploadAtMs),
     initialCheckDone: initialDone === "1" || initialDone?.trim().toLowerCase() === "true",
   };
 }
@@ -65,6 +71,15 @@ export async function persistCloudBackupPresence(
       window.api.database.options.set(
         CLOUD_BACKUP_LAST_MANUAL_CHECK_AT_MS_KEY,
         String(snapshot.lastManualCheckAtMs),
+      ),
+    );
+  }
+
+  if (snapshot.lastManualUploadAtMs != null) {
+    tasks.push(
+      window.api.database.options.set(
+        CLOUD_BACKUP_LAST_MANUAL_UPLOAD_AT_MS_KEY,
+        String(snapshot.lastManualUploadAtMs),
       ),
     );
   }

@@ -51,7 +51,7 @@ import { usePaidCloudBackupAccess } from "../../../lib/hooks/usePaidCloudBackupA
 import type { CloudBackupAccessBlockReason } from "../../../lib/license/paidCloudBackupAccess";
 
 const RESTORE_CONFIRM_WORD = "YES";
-const CLOUD_BACKUP_CHECK_COOLDOWN_MS = 60_000;
+const CLOUD_BACKUP_BUTTON_COOLDOWN_MS = 60_000;
 
 function InfoRow({
   label,
@@ -107,6 +107,7 @@ export function BackupManagement({ onOpenLicenseTab }: BackupManagementProps) {
   const [downloadingCloudBackup, setDownloadingCloudBackup] = useState(false);
   const [nowMs, setNowMs] = useState(() => Date.now());
   const [lastManualCloudBackupCheckMs, setLastManualCloudBackupCheckMs] = useState<number | null>(null);
+  const [lastManualCloudBackupUploadMs, setLastManualCloudBackupUploadMs] = useState<number | null>(null);
   const [lastRemoteBackupCheckMs, setLastRemoteBackupCheckMs] = useState<number | null>(null);
   const [remoteBackupKnownAvailable, setRemoteBackupKnownAvailable] = useState<boolean | null>(null);
   const [cloudTransferWarningOpen, setCloudTransferWarningOpen] = useState(false);
@@ -119,6 +120,7 @@ export function BackupManagement({ onOpenLicenseTab }: BackupManagementProps) {
     lastCheckAtMs: null,
     available: null,
     lastManualCheckAtMs: null,
+    lastManualUploadAtMs: null,
     initialCheckDone: false,
   });
   const initialCloudCheckStartedRef = useRef(false);
@@ -160,6 +162,7 @@ export function BackupManagement({ onOpenLicenseTab }: BackupManagementProps) {
     setLastRemoteBackupCheckMs(next.lastCheckAtMs);
     setRemoteBackupKnownAvailable(next.available);
     setLastManualCloudBackupCheckMs(next.lastManualCheckAtMs);
+    setLastManualCloudBackupUploadMs(next.lastManualUploadAtMs);
     await persistCloudBackupPresence(next);
   }, []);
 
@@ -170,6 +173,7 @@ export function BackupManagement({ onOpenLicenseTab }: BackupManagementProps) {
       setLastRemoteBackupCheckMs(saved.lastCheckAtMs);
       setRemoteBackupKnownAvailable(saved.available);
       setLastManualCloudBackupCheckMs(saved.lastManualCheckAtMs);
+      setLastManualCloudBackupUploadMs(saved.lastManualUploadAtMs);
       setCloudPresenceHydrated(true);
     })();
   }, []);
@@ -222,20 +226,33 @@ export function BackupManagement({ onOpenLicenseTab }: BackupManagementProps) {
   }, []);
 
   useEffect(() => {
-    if (lastManualCloudBackupCheckMs == null) return;
-    if (Date.now() >= lastManualCloudBackupCheckMs + CLOUD_BACKUP_CHECK_COOLDOWN_MS) return;
+    const checkActive =
+      lastManualCloudBackupCheckMs != null &&
+      Date.now() < lastManualCloudBackupCheckMs + CLOUD_BACKUP_BUTTON_COOLDOWN_MS;
+    const uploadActive =
+      lastManualCloudBackupUploadMs != null &&
+      Date.now() < lastManualCloudBackupUploadMs + CLOUD_BACKUP_BUTTON_COOLDOWN_MS;
+    if (!checkActive && !uploadActive) return;
     setNowMs(Date.now());
     const timer = window.setInterval(() => setNowMs(Date.now()), 1000);
     return () => window.clearInterval(timer);
-  }, [lastManualCloudBackupCheckMs]);
+  }, [lastManualCloudBackupCheckMs, lastManualCloudBackupUploadMs]);
 
   const cloudBackupCheckCooldownRemainingMs = useMemo(() => {
     if (lastManualCloudBackupCheckMs == null) return 0;
     return Math.max(
       0,
-      lastManualCloudBackupCheckMs + CLOUD_BACKUP_CHECK_COOLDOWN_MS - Date.now(),
+      lastManualCloudBackupCheckMs + CLOUD_BACKUP_BUTTON_COOLDOWN_MS - Date.now(),
     );
   }, [lastManualCloudBackupCheckMs, nowMs]);
+
+  const cloudBackupUploadCooldownRemainingMs = useMemo(() => {
+    if (lastManualCloudBackupUploadMs == null) return 0;
+    return Math.max(
+      0,
+      lastManualCloudBackupUploadMs + CLOUD_BACKUP_BUTTON_COOLDOWN_MS - Date.now(),
+    );
+  }, [lastManualCloudBackupUploadMs, nowMs]);
 
   useEffect(() => {
     const cleanup = window.api.online.onCloudBackupTransferProgress((data) => {
@@ -294,6 +311,14 @@ export function BackupManagement({ onOpenLicenseTab }: BackupManagementProps) {
   };
 
   const uploadToCloud = async () => {
+    const manualUploadAtMs = cloudPresenceRef.current.lastManualUploadAtMs;
+    if (
+      uploadingCloud ||
+      (manualUploadAtMs != null &&
+        Date.now() < manualUploadAtMs + CLOUD_BACKUP_BUTTON_COOLDOWN_MS)
+    ) {
+      return;
+    }
     cloudTransferPhaseRef.current = "upload";
     try {
       setUploadingCloud(true);
@@ -325,9 +350,11 @@ export function BackupManagement({ onOpenLicenseTab }: BackupManagementProps) {
         await window.api.backup.deleteCloudUploadStaging(created.backupPath);
         await loadBackups();
         showToast(t("admin.backup.cloudUploadSuccess", "Cloud backup uploaded successfully"), "success");
+        const uploadedAtMs = Date.now();
         await applyCloudPresence({
-          lastCheckAtMs: Date.now(),
+          lastCheckAtMs: uploadedAtMs,
           available: true,
+          lastManualUploadAtMs: uploadedAtMs,
         });
         return;
       }
@@ -394,7 +421,7 @@ export function BackupManagement({ onOpenLicenseTab }: BackupManagementProps) {
         !silent &&
         (checkingCloudPresence ||
           (manualCooldownAtMs != null &&
-            Date.now() < manualCooldownAtMs + CLOUD_BACKUP_CHECK_COOLDOWN_MS))
+            Date.now() < manualCooldownAtMs + CLOUD_BACKUP_BUTTON_COOLDOWN_MS))
       ) {
         return;
       }
@@ -1349,6 +1376,7 @@ export function BackupManagement({ onOpenLicenseTab }: BackupManagementProps) {
                       uploadingCloud ||
                       checkingCloudPresence ||
                       downloadingCloudBackup ||
+                      cloudBackupUploadCooldownRemainingMs > 0 ||
                       !!restoring
                     }
                   >
@@ -1359,7 +1387,11 @@ export function BackupManagement({ onOpenLicenseTab }: BackupManagementProps) {
                     )}
                     {uploadingCloud
                       ? t("admin.backup.uploadingToCloud", "Uploading to cloud...")
-                      : t("admin.backup.uploadToCloud", "Create & upload to cloud")}
+                      : cloudBackupUploadCooldownRemainingMs > 0
+                        ? t("admin.backup.uploadToCloudCooldown", "Create & upload to cloud ({{seconds}}s)", {
+                            seconds: Math.ceil(cloudBackupUploadCooldownRemainingMs / 1000),
+                          })
+                        : t("admin.backup.uploadToCloud", "Create & upload to cloud")}
                   </Button>
                 </div>
                 {(uploadingCloud || downloadingCloudBackup) && cloudTransferProgress ? (

@@ -15,6 +15,7 @@ import {
   resolveAiChatErrorMessage,
 } from "../../ai/aiMessageLimits";
 import { useAiChatGate } from "../../hooks/useAiChatGate";
+import { AiQuotaProvider } from "../../contexts/aiQuotaContext";
 
 type AdapterEvent =
   | { type: "chunk"; text: string }
@@ -80,8 +81,12 @@ const AIAdapter = (
   blockedMessage: string | null,
   chatErrorMessages: {
     unavailable: string;
-    cooldown: string;
     rateLimitMinute: string;
+    rateLimitDay: string;
+    disabled: string;
+    notLicensed: string;
+    offline: string;
+    trialBlocked: string;
   },
   t: TFunction
 ): ChatModelAdapter => ({
@@ -184,8 +189,12 @@ const AIAdapter = (
             resolveAiChatErrorMessage(errText, {
               tooLong: tooLongMessage,
               unavailable: chatErrorMessages.unavailable,
-              cooldown: chatErrorMessages.cooldown,
               rateLimitMinute: chatErrorMessages.rateLimitMinute,
+              rateLimitDay: chatErrorMessages.rateLimitDay,
+              disabled: chatErrorMessages.disabled,
+              notLicensed: chatErrorMessages.notLicensed,
+              offline: chatErrorMessages.offline,
+              trialBlocked: chatErrorMessages.trialBlocked,
             }),
             "error",
           );
@@ -233,12 +242,17 @@ export function AIRuntimeProvider({
           "ai.trialBlocked",
           "REDA AI is included with a paid subscription. During the free trial, AI chat is not available. Open the License tab to see your status or contact your provider.",
         )
-      : !canUseAi && blockReason === "offline"
+      : !canUseAi && blockReason === "disabled"
         ? t(
-            "ai.offlineBlocked",
-            "REDA AI requires an active internet connection. Connect to Wi‑Fi or Ethernet, then try again.",
+            "ai.disabled",
+            "AI chat is not enabled on this device. Contact your provider.",
           )
-        : null;
+        : !canUseAi && blockReason === "offline"
+          ? t(
+              "ai.offlineBlocked",
+              "REDA AI requires an active internet connection. Connect to Wi‑Fi or Ethernet, then try again.",
+            )
+          : null;
 
   const runtime = useLocalRuntime(
     AIAdapter(
@@ -255,13 +269,29 @@ export function AIRuntimeProvider({
           "ai.requestUnavailable",
           "I can't complete this request right now. Please try again later.",
         ),
-        cooldown: t(
-          "ai.sendCooldown",
-          "Please wait a moment before sending another message.",
-        ),
         rateLimitMinute: t(
           "ai.rateLimitMinute",
           "Too many messages. Please wait a minute and try again.",
+        ),
+        rateLimitDay: t(
+          "ai.rateLimitDay",
+          "Daily AI limit reached. Try again tomorrow.",
+        ),
+        disabled: t(
+          "ai.disabled",
+          "AI chat is not enabled on this device. Contact your provider.",
+        ),
+        notLicensed: t(
+          "ai.notLicensed",
+          "A valid paid subscription is required to use REDA AI.",
+        ),
+        offline: t(
+          "ai.offlineBlocked",
+          "REDA AI requires an active internet connection. Connect to Wi‑Fi or Ethernet, then try again.",
+        ),
+        trialBlocked: t(
+          "ai.trialBlocked",
+          "REDA AI is included with a paid subscription. During the free trial, AI chat is not available. Open the License tab to see your status or contact your provider.",
         ),
       },
       t
@@ -278,7 +308,7 @@ export function AIRuntimeProvider({
   return (
     <AIRuntimeContext.Provider value={runtime}>
       <AssistantRuntimeProvider runtime={runtime}>
-        {children}
+        <AiQuotaProvider>{children}</AiQuotaProvider>
       </AssistantRuntimeProvider>
     </AIRuntimeContext.Provider>
   );

@@ -25,7 +25,9 @@ import { WorkingStatus } from "@/lib/components/assistant-ui/working-status";
 import { TooltipIconButton } from "@/lib/components/assistant-ui/tooltip-icon-button";
 import { Button } from "@/lib/components/ui/button";
 import { BidiText } from "@/lib/ai/bidiText";
+import { AiQuotaRing } from "@/lib/components/ai/AiQuotaRing";
 import { MAX_AI_MESSAGE_CHARS } from "@/lib/ai/aiMessageLimits";
+import { useAiChatGate } from "@/lib/hooks/useAiChatGate";
 import { cn } from "@/lib/utils";
 import {
   ActionBarMorePrimitive,
@@ -34,7 +36,6 @@ import {
   type AssistantState,
   BranchPickerPrimitive,
   ComposerPrimitive,
-  ErrorPrimitive,
   groupPartByType,
   MessagePrimitive,
   ThreadPrimitive,
@@ -305,7 +306,7 @@ const Composer: FC = () => {
 
 const ComposerAction: FC = () => {
   const { t } = useTranslation();
-  const charCount = useAuiState((s) => s.composer.text.length);
+  const { canUseAi } = useAiChatGate();
   // Same gate as the login "dev admin" button: only unpackaged Vite/dev builds.
   const canChooseModel = import.meta.env.DEV && !import.meta.env.PROD;
   const [models, setModels] = useState<AIModel[]>([]);
@@ -524,23 +525,7 @@ const ComposerAction: FC = () => {
 
       {/* RIGHT SIDE */}
       <div className="flex items-center gap-2">
-        <span
-          className={cn(
-            "tabular-nums text-xs font-medium",
-            charCount >= MAX_AI_MESSAGE_CHARS
-              ? "text-destructive"
-              : charCount >= MAX_AI_MESSAGE_CHARS * 0.85
-                ? "text-amber-600 dark:text-amber-400"
-                : "text-muted-foreground",
-          )}
-          aria-live="polite"
-          aria-label={t("ai.charCountLabel", "{{count}} of {{max}} characters", {
-            count: charCount,
-            max: MAX_AI_MESSAGE_CHARS,
-          })}
-        >
-          {charCount}/{MAX_AI_MESSAGE_CHARS}
-        </span>
+        {canUseAi ? <AiQuotaRing /> : null}
         <AuiIf condition={(s) => !s.thread.isRunning}>
           <ComposerPrimitive.Send asChild>
             <TooltipIconButton
@@ -575,13 +560,21 @@ const ComposerAction: FC = () => {
   );
 };
 
-const MessageError: FC = () => {
+const AssistantText: FC = () => {
+  const isError = useAuiState(
+    (s) =>
+      s.message.status?.type === "incomplete" &&
+      s.message.status.reason === "error",
+  );
+
   return (
-    <MessagePrimitive.Error>
-      <ErrorPrimitive.Root className="aui-message-error-root border-destructive bg-destructive/10 text-destructive dark:bg-destructive/5 mt-2 rounded-md border p-3 text-sm dark:text-red-200">
-        <ErrorPrimitive.Message className="aui-message-error-message line-clamp-2" />
-      </ErrorPrimitive.Root>
-    </MessagePrimitive.Error>
+    <div
+      className={cn(
+        isError && "text-destructive dark:text-red-400 [&_.aui-md-p]:text-inherit",
+      )}
+    >
+      <MarkdownText />
+    </div>
   );
 };
 
@@ -648,7 +641,7 @@ const AssistantMessage: FC = () => {
                 );
               }
               case "text":
-                return <MarkdownText />;
+                return <AssistantText />;
               case "reasoning":
                 return <Reasoning {...part} />;
               case "tool-call":
@@ -674,7 +667,6 @@ const AssistantMessage: FC = () => {
             }
           }}
         </MessagePrimitive.GroupedParts>
-        <MessageError />
       </div>
 
       <div

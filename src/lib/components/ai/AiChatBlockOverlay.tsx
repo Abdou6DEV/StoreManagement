@@ -1,4 +1,4 @@
-import { Shield, WifiOff } from "lucide-react";
+import { Shield, Sparkles, WifiOff } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "../button";
 import type { AiChatBlockReason } from "../../hooks/useAiChatGate";
@@ -13,21 +13,29 @@ export function AiChatBlockOverlay({
   onOpenLicenseTab,
 }: AiChatBlockOverlayProps) {
   const { t } = useTranslation();
-  const isTrial = blockReason === "trial";
 
-  const title = isTrial
-    ? t("ai.unavailableTitle", "REDA AI unavailable")
-    : t("ai.offlineTitle", "Internet connection required");
+  const title =
+    blockReason === "trial"
+      ? t("ai.unavailableTitle", "REDA AI unavailable")
+      : blockReason === "disabled"
+        ? t("ai.disabledTitle", "REDA AI not enabled")
+        : t("ai.offlineTitle", "Internet connection required");
 
-  const message = isTrial
-    ? t(
-        "ai.trialBlocked",
-        "REDA AI is included with a paid subscription. During the free trial, AI chat is not available. Open the License tab to see your status or contact your provider.",
-      )
-    : t(
-        "ai.offlineBlocked",
-        "REDA AI requires an active internet connection. Connect to Wi‑Fi or Ethernet, then try again.",
-      );
+  const message =
+    blockReason === "trial"
+      ? t(
+          "ai.trialBlocked",
+          "REDA AI is included with a paid subscription. During the free trial, AI chat is not available. Open the License tab to see your status or contact your provider.",
+        )
+      : blockReason === "disabled"
+        ? t(
+            "ai.disabled",
+            "AI chat is not enabled on this device. Contact your provider.",
+          )
+        : t(
+            "ai.offlineBlocked",
+            "REDA AI requires an active internet connection. Connect to Wi‑Fi or Ethernet, then try again.",
+          );
 
   return (
     <div
@@ -37,8 +45,10 @@ export function AiChatBlockOverlay({
     >
       <div className="max-w-lg space-y-4 text-center">
         <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-muted ring-1 ring-border">
-          {isTrial ? (
+          {blockReason === "trial" ? (
             <Shield className="h-6 w-6 text-orange-600" aria-hidden />
+          ) : blockReason === "disabled" ? (
+            <Sparkles className="h-6 w-6 text-muted-foreground" aria-hidden />
           ) : (
             <WifiOff className="h-6 w-6 text-muted-foreground" aria-hidden />
           )}
@@ -50,7 +60,7 @@ export function AiChatBlockOverlay({
           {title}
         </h4>
         <p className="text-sm leading-relaxed text-muted-foreground">{message}</p>
-        {isTrial && onOpenLicenseTab ? (
+        {blockReason === "trial" && onOpenLicenseTab ? (
           <Button type="button" variant="outline" size="sm" onClick={onOpenLicenseTab}>
             {t("ai.openLicenseTab", "Open License tab")}
           </Button>
