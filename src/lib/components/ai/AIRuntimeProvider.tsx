@@ -11,9 +11,10 @@ import { formatStoreTableMarkdown } from "../../ai/formatStoreTable";
 import type { TFunction } from "i18next";
 import type { AiChatResponse } from "../../ai/aiChatTypes";
 import {
-  AI_MESSAGE_TOO_LONG,
   MAX_AI_MESSAGE_CHARS,
+  resolveAiChatErrorMessage,
 } from "../../ai/aiMessageLimits";
+import { useAiChatGate } from "../../hooks/useAiChatGate";
 
 type AdapterEvent =
   | { type: "chunk"; text: string }
@@ -74,9 +75,14 @@ function paintFrame() {
 
 const AIAdapter = (
   userName: string | undefined,
-  unavailableMessage: string,
   noMessage: string,
   tooLongMessage: string,
+  blockedMessage: string | null,
+  chatErrorMessages: {
+    unavailable: string;
+    cooldown: string;
+    rateLimitMinute: string;
+  },
   t: TFunction
 ): ChatModelAdapter => ({
   async *run({ messages, abortSignal }) {
@@ -106,6 +112,11 @@ const AIAdapter = (
 
     if (abortSignal.aborted) {
       yield textContent("", "cancelled");
+      return;
+    }
+
+    if (blockedMessage) {
+      yield textContent(blockedMessage, "error");
       return;
     }
 
@@ -170,9 +181,12 @@ const AIAdapter = (
               ? event.error.message
               : String(event.error ?? "");
           yield textContent(
-            errText.includes(AI_MESSAGE_TOO_LONG)
-              ? tooLongMessage
-              : unavailableMessage,
+            resolveAiChatErrorMessage(errText, {
+              tooLong: tooLongMessage,
+              unavailable: chatErrorMessages.unavailable,
+              cooldown: chatErrorMessages.cooldown,
+              rateLimitMinute: chatErrorMessages.rateLimitMinute,
+            }),
             "error",
           );
           return;
@@ -211,24 +225,49 @@ export function AIRuntimeProvider({
 }) {
   const { user } = useAuth();
   const { t } = useTranslation();
+  const { canUseAi, blockReason } = useAiChatGate();
+
+  const blockedMessage =
+    !canUseAi && blockReason === "trial"
+      ? t(
+          "ai.trialBlocked",
+          "REDA AI is included with a paid subscription. During the free trial, AI chat is not available. Open the License tab to see your status or contact your provider.",
+        )
+      : !canUseAi && blockReason === "offline"
+        ? t(
+            "ai.offlineBlocked",
+            "REDA AI requires an active internet connection. Connect to Wi‑Fi or Ethernet, then try again.",
+          )
+        : null;
 
   const runtime = useLocalRuntime(
     AIAdapter(
       user?.username,
-      t(
-        "ai.requestUnavailable",
-        "I can't complete this request right now. Please try again later."
-      ),
       t("ai.noMessage", "No message provided."),
       t(
         "ai.messageTooLong",
         "Message is too long. Please keep it under {{max}} characters.",
         { max: MAX_AI_MESSAGE_CHARS },
       ),
+      blockedMessage,
+      {
+        unavailable: t(
+          "ai.requestUnavailable",
+          "I can't complete this request right now. Please try again later.",
+        ),
+        cooldown: t(
+          "ai.sendCooldown",
+          "Please wait a moment before sending another message.",
+        ),
+        rateLimitMinute: t(
+          "ai.rateLimitMinute",
+          "Too many messages. Please wait a minute and try again.",
+        ),
+      },
       t
     ),
     {
-      unstable_enableMessageQueue: true,
+      unstable_enableMessageQueue: false,
     }
   );
 

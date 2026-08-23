@@ -1,5 +1,6 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import { accessFromUser, type AiAccess } from "./aiAccess";
+import { resetAiSendRateLimit } from "./aiRateLimit";
 import type { LastStoreQuery } from "./storeQueryMemory";
 
 export type SessionChatMessage = {
@@ -39,6 +40,8 @@ export type AiSession = {
   lastLatinQ: string | null;
   abortController: AbortController | null;
   access: AiAccess | null;
+  recentSendTimestampsMs: number[];
+  lastSendAtMs: number | null;
 };
 
 export type AiRequestContext = {
@@ -62,6 +65,8 @@ export function getOrCreateSession(webContentsId: number): AiSession {
       lastLatinQ: null,
       abortController: null,
       access: null,
+      recentSendTimestampsMs: [],
+      lastSendAtMs: null,
     };
     sessions.set(webContentsId, session);
   }
@@ -76,6 +81,7 @@ export function resetSessionChat(webContentsId: number) {
   session.lastStoreQuery = null;
   session.reuseLastQuery = false;
   session.lastLatinQ = null;
+  resetAiSendRateLimit(session);
 }
 
 export function bindSessionUser(webContentsId: number, user: unknown) {

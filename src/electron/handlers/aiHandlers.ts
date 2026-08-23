@@ -57,6 +57,10 @@ import {
   MODEL_FETCH_TIMEOUT_MS,
 } from "../ai/fetchWithTimeout";
 import {
+  checkAiSendRateLimit,
+  recordAiSend,
+} from "../ai/aiRateLimit";
+import {
   emitChatChunk,
   isEventStream,
   readSseJsonLines,
@@ -1502,6 +1506,12 @@ export function setupAIHandlers() {
       const sender = event.sender;
 
       return enqueueAiSession(session.webContentsId, async () => {
+      const rateLimit = checkAiSendRateLimit(session);
+      if (!rateLimit.ok) {
+        throw new Error(rateLimit.code);
+      }
+      recordAiSend(session);
+
       const previousQuery = session.lastStoreQuery;
       const previousLatin = session.lastLatinQ;
       beginSessionRequest(session);

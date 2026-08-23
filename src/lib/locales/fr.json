@@ -59,6 +59,13 @@
     "update": "Mettre à jour",
     "noMessage": "Aucun message fourni.",
     "messageTooLong": "Message trop long. Veuillez le limiter à {{max}} caractères.",
+    "unavailableTitle": "REDA AI indisponible",
+    "trialBlocked": "REDA AI est inclus dans un abonnement payant. Pendant l’essai gratuit, le chat IA n’est pas disponible. Ouvrez l’onglet Licence pour voir votre statut ou contactez votre fournisseur.",
+    "offlineTitle": "Connexion Internet requise",
+    "offlineBlocked": "REDA AI nécessite une connexion Internet active. Connectez-vous au Wi‑Fi ou à Ethernet, puis réessayez.",
+    "openLicenseTab": "Ouvrir l’onglet Licence",
+    "sendCooldown": "Veuillez patienter un instant avant d’envoyer un autre message.",
+    "rateLimitMinute": "Trop de messages. Veuillez attendre une minute et réessayer.",
     "charCountLabel": "{{count}} sur {{max}} caractères",
     "table": {
       "truncated": "Affichage de {{shown}} sur {{total}}. Autres lignes omises.",

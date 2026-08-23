@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState, type PointerEvent } from "react";
-import { useLocation } from "react-router-dom";
+import { useCallback, useEffect, useRef, useState, type PointerEvent } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { MessageSquarePlus, Minus, SlidersHorizontal } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -28,6 +28,9 @@ import { useAuth } from "../../contexts/authContext";
 import { useAuiState } from "@assistant-ui/react";
 import { BadgeNotification } from "../badgeNotification";
 import { setAiUnreadReply } from "./aiUnread";
+import { useAiChatGate } from "../../hooks/useAiChatGate";
+import { AiChatBlockOverlay } from "./AiChatBlockOverlay";
+import { cn } from "../../utils";
 
 const spring = {
   type: "spring" as const,
@@ -149,6 +152,9 @@ function loadSavedPos(): PanelPos | null {
 export default function ChatBox() {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const { canUseAi, blockReason } = useAiChatGate();
+  const chatGateActive = !canUseAi && blockReason != null;
   const [open, setOpen] = useState(false);
   const [showWelcome, setShowWelcome] = useState(false);
   const [prefsOpen, setPrefsOpen] = useState(false);
@@ -340,6 +346,10 @@ export default function ChatBox() {
     setSizePreset(value);
     localStorage.setItem(SIZE_KEY, value);
   };
+
+  const openLicenseTab = useCallback(() => {
+    navigate("/administrator?tab=license");
+  }, [navigate]);
 
   const grabWidth = grabHandleWidth(panel.width);
 
@@ -589,8 +599,22 @@ export default function ChatBox() {
           </div>
         </div>
 
-        <div className="min-h-0 flex-1">
-          <Thread />
+        <div className="relative min-h-0 flex-1">
+          <div
+            className={cn(
+              "h-full",
+              chatGateActive && "pointer-events-none select-none opacity-50",
+            )}
+            aria-hidden={chatGateActive ? true : undefined}
+          >
+            <Thread />
+          </div>
+          {chatGateActive && blockReason ? (
+            <AiChatBlockOverlay
+              blockReason={blockReason}
+              onOpenLicenseTab={blockReason === "trial" ? openLicenseTab : undefined}
+            />
+          ) : null}
         </div>
       </motion.div>
     </>

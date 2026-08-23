@@ -59,6 +59,13 @@
     "update": "Update",
     "noMessage": "No message provided.",
     "messageTooLong": "Message is too long. Please keep it under {{max}} characters.",
+    "unavailableTitle": "REDA AI unavailable",
+    "trialBlocked": "REDA AI is included with a paid subscription. During the free trial, AI chat is not available. Open the License tab to see your status or contact your provider.",
+    "offlineTitle": "Internet connection required",
+    "offlineBlocked": "REDA AI requires an active internet connection. Connect to Wi‑Fi or Ethernet, then try again.",
+    "openLicenseTab": "Open License tab",
+    "sendCooldown": "Please wait a moment before sending another message.",
+    "rateLimitMinute": "Too many messages. Please wait a minute and try again.",
     "charCountLabel": "{{count}} of {{max}} characters",
     "table": {
       "truncated": "Showing {{shown}} of {{total}}. More rows omitted.",
