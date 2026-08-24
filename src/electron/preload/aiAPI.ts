@@ -59,6 +59,11 @@ export const aiAPI = {
     provider?: string;
   }> => ipcRenderer.invoke("ai:set-model", modelId),
 
+  setWebSearch: (
+    enabled: boolean
+  ): Promise<{ success: boolean; webSearch: boolean }> =>
+    ipcRenderer.invoke("ai:set-web-search", enabled),
+
   onStatus: (callback: (status: AiWorkStatus) => void): (() => void) => {
     const handler = (_event: unknown, status: AiWorkStatus) => callback(status);
     ipcRenderer.on("ai:status", handler);

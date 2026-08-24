@@ -843,6 +843,11 @@ input[type="date"].success {
   animation: working-spinner-spin 1s linear infinite;
 }
 
+.ai-gradient-icon {
+  stroke: url(#ai-web-search-grad);
+  filter: drop-shadow(0 0 4px rgb(156 67 254 / 0.45));
+}
+
 /* Previous price on barcode label preview: one thin diagonal line (top-right to bottom-left) through value + DA */
 .barcode-preview-previous-price {
   position: relative;

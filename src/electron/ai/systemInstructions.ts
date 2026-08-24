@@ -146,6 +146,13 @@ function buildNoStoreToolsSection() {
 This model cannot query the store. Do not invent numbers. Tell the user to switch to Automatic or a model with store tools.`;
 }
 
+function buildWebSearchSection() {
+  return `
+
+## Web search
+Google Search is ON for this turn. Use it for current events, public web facts, news, prices, and anything not in this store. Store sales, stock, clients, bills, and services still come only from store tools — never invent store numbers from the web. Do not search for greetings or a clarifying question. Cite web sources briefly when you used search.`;
+}
+
 function pad2(value: number) {
   return String(value).padStart(2, "0");
 }
@@ -168,7 +175,11 @@ function weekStartYmd(today: Date) {
 
 export function buildSystemInstruction(
   userName?: string,
-  options?: { canUseStoreTools?: boolean; access?: AiAccess | null }
+  options?: {
+    canUseStoreTools?: boolean;
+    access?: AiAccess | null;
+    webSearch?: boolean;
+  }
 ) {
   const today = new Date();
   const yesterday = new Date(
@@ -210,6 +221,9 @@ export function buildSystemInstruction(
     if (!accessKnown || hasAnyAiStoreAccess(options.access)) {
       instruction += buildNoStoreToolsSection();
     }
+  }
+  if (options?.webSearch) {
+    instruction += buildWebSearchSection();
   }
 
   instruction = instruction.replaceAll("{{TODAY_DATE}}", formattedDate);

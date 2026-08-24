@@ -34,6 +34,7 @@ export type AiSession = {
   currentUserName?: string;
   currentUserId?: string;
   selectedModelId?: string;
+  webSearchEnabled?: boolean;
   lastStoreQuery: LastStoreQuery | null;
   reuseLastQuery: boolean;
   lastLatinQ: string | null;

@@ -54,6 +54,7 @@ import {
   ChevronUpIcon,
   CopyIcon,
   DownloadIcon,
+  Globe as GlobeIcon,
   MicIcon,
   MoreHorizontalIcon,
   PencilIcon,
@@ -304,6 +305,19 @@ const Composer: FC = () => {
   );
 };
 
+const WEB_SEARCH_KEY = "aiWebSearch";
+/** Flip to false when Google Search is available again. */
+const WEB_SEARCH_TEMPORARILY_DISABLED = true;
+
+function loadWebSearchEnabled(): boolean {
+  if (WEB_SEARCH_TEMPORARILY_DISABLED) return false;
+  try {
+    return localStorage.getItem(WEB_SEARCH_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
 const ComposerAction: FC = () => {
   const { t } = useTranslation();
   const { canUseAi } = useAiChatGate();
@@ -312,6 +326,7 @@ const ComposerAction: FC = () => {
   const [models, setModels] = useState<AIModel[]>([]);
   const [selectedModel, setSelectedModel] = useState<string | null>(null);
   const [modelOpen, setModelOpen] = useState(false);
+  const [webSearch, setWebSearch] = useState(loadWebSearchEnabled);
 
   useEffect(() => {
     if (!canChooseModel) return;
@@ -327,6 +342,23 @@ const ComposerAction: FC = () => {
 
     loadModels();
   }, [canChooseModel]);
+
+  useEffect(() => {
+    void window.api.ai.setWebSearch(
+      WEB_SEARCH_TEMPORARILY_DISABLED ? false : webSearch,
+    );
+  }, [webSearch]);
+
+  const handleWebSearchToggle = () => {
+    if (WEB_SEARCH_TEMPORARILY_DISABLED) return;
+    const next = !webSearch;
+    setWebSearch(next);
+    try {
+      localStorage.setItem(WEB_SEARCH_KEY, next ? "1" : "0");
+    } catch {
+      /* ignore */
+    }
+  };
 
   const handleModelChange = async (modelId: string | null) => {
     if (!canChooseModel) return;
@@ -487,6 +519,73 @@ const ComposerAction: FC = () => {
             </>
           )}
         </div>
+
+        <TooltipIconButton
+          tooltip={
+            WEB_SEARCH_TEMPORARILY_DISABLED
+              ? t(
+                  "ai.webSearchUnavailable",
+                  "Web search is temporarily unavailable",
+                )
+              : webSearch
+                ? t("ai.webSearchOn", "Web search on")
+                : t("ai.searchTheWeb", "Search the web")
+          }
+          side="top"
+          type="button"
+          variant="ghost"
+          size="icon"
+          disabled={WEB_SEARCH_TEMPORARILY_DISABLED}
+          aria-pressed={webSearch}
+          aria-label={
+            WEB_SEARCH_TEMPORARILY_DISABLED
+              ? t(
+                  "ai.webSearchUnavailable",
+                  "Web search is temporarily unavailable",
+                )
+              : webSearch
+                ? t("ai.webSearchOn", "Web search on")
+                : t("ai.searchTheWeb", "Search the web")
+          }
+          onClick={handleWebSearchToggle}
+          className={cn(
+            "relative size-7 rounded-full",
+            WEB_SEARCH_TEMPORARILY_DISABLED && "opacity-40",
+            webSearch && !WEB_SEARCH_TEMPORARILY_DISABLED && "hover:bg-transparent",
+          )}
+        >
+          <svg aria-hidden className="pointer-events-none absolute h-0 w-0">
+            <defs>
+              <linearGradient
+                id="ai-web-search-grad"
+                gradientUnits="userSpaceOnUse"
+                x1="2"
+                y1="2"
+                x2="22"
+                y2="22"
+              >
+                <stop offset="0%" stopColor="#9c43fe" />
+                <stop offset="25%" stopColor="#c084fc" />
+                <stop offset="50%" stopColor="#8b5cf6" />
+                <stop offset="75%" stopColor="#60a5fa" />
+                <stop offset="100%" stopColor="#38bdf8" />
+              </linearGradient>
+            </defs>
+          </svg>
+          <GlobeIcon
+            className={cn(
+              "size-5",
+              webSearch && !WEB_SEARCH_TEMPORARILY_DISABLED
+                ? "ai-gradient-icon"
+                : "text-muted-foreground/100",
+            )}
+            stroke={
+              webSearch && !WEB_SEARCH_TEMPORARILY_DISABLED
+                ? "url(#ai-web-search-grad)"
+                : "currentColor"
+            }
+          />
+        </TooltipIconButton>
 
         <AuiIf condition={(s) => s.thread.capabilities.dictation}>
           <AuiIf condition={(s) => s.composer.dictation == null}>

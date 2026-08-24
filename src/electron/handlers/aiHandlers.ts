@@ -114,6 +114,8 @@ type CallModelOptions = {
    * (list writer / number rewrite — large payloads time out on SSE).
    */
   streamChunks?: boolean;
+  /** Gemini Google Search grounding. Ignored when disableTools is true. */
+  webSearch?: boolean;
 };
 
 const LIST_HANDOFF_MIN_ROWS = 8;
@@ -190,13 +192,22 @@ function modelSupportsToolCalling(modelId: string) {
   );
 }
 
-function systemInstructionForModel(modelId: string, userName?: string) {
+function systemInstructionForModel(
+  modelId: string,
+  userName?: string,
+  webSearch = false
+) {
   const access = currentSession()?.access ?? null;
   return buildSystemInstruction(userName, {
     canUseStoreTools:
       modelSupportsToolCalling(modelId) && hasAnyAiStoreAccess(access),
     access,
+    webSearch,
   });
+}
+
+function wantWebSearch(options?: CallModelOptions) {
+  return options?.webSearch === true && options?.disableTools !== true;
 }
 
 function listedRowCount(data: unknown): number {
@@ -596,11 +607,16 @@ async function streamGeminiCandidate(
   userName: string | undefined,
   attachTools: boolean,
   publishChunks: boolean,
-  httpStream: boolean
+  httpStream: boolean,
+  webSearch: boolean
 ): Promise<GeminiContent | undefined> {
   const url = httpStream
     ? `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:streamGenerateContent?alt=sse&key=${apiKey}`
     : `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${apiKey}`;
+
+  const tools: Record<string, unknown>[] = [];
+  if (webSearch) tools.push({ googleSearch: {} });
+  if (attachTools) tools.push(toGeminiTools());
 
   const response = await fetchWithTimeout(
     url,
@@ -611,10 +627,12 @@ async function streamGeminiCandidate(
       },
       body: JSON.stringify({
         systemInstruction: {
-          parts: [{ text: systemInstructionForModel(modelId, userName) }],
+          parts: [
+            { text: systemInstructionForModel(modelId, userName, webSearch) },
+          ],
         },
         contents: currentContents,
-        ...(attachTools ? { tools: [toGeminiTools()] } : {}),
+        ...(tools.length > 0 ? { tools } : {}),
       }),
     },
     MODEL_FETCH_TIMEOUT_MS
@@ -691,6 +709,7 @@ async function callGemini(
       modelSupportsToolCalling(modelId) &&
       hasAnyAiStoreAccess(currentSession()?.access) &&
       (geminiInToolLoop(currentContents) || shouldAttachTools(messages));
+    const webSearch = wantWebSearch(options);
     // Live UI chunks for normal replies. List writer / rewrite set streamChunks:false.
     // Do NOT gate on attachTools — store questions often answer in text without a
     // tool round, and that must still stream. Tool-call turns are filtered in ingest
@@ -705,6 +724,12 @@ async function callGemini(
         !isTotalsOnlyQuestion(userText)
       );
 
+    if (webSearch || attachTools) {
+      console.log(
+        `[AI] Gemini tools: store=${attachTools} googleSearch=${webSearch}`
+      );
+    }
+
     const candidateContent = await streamGeminiCandidate(
       modelId,
       apiKey,
@@ -712,7 +737,8 @@ async function callGemini(
       userName,
       attachTools,
       publishChunks,
-      httpStream
+      httpStream,
+      webSearch
     );
     const {
       hasToolCalls,
@@ -1206,8 +1232,17 @@ function modelsToTry(messages: ChatMessage[]) {
   const eligible = needsStoreTools
     ? byPriority.filter((model) => model.capabilities.toolCalling)
     : byPriority;
-  const available = eligible.filter((model) => !isModelSkipped(model.id));
+  let available = eligible.filter((model) => !isModelSkipped(model.id));
   const selectedModelId = currentSession()?.selectedModelId;
+  const webSearch = currentSession()?.webSearchEnabled === true;
+
+  if (webSearch) {
+    const google = available.filter((model) => model.provider === "google");
+    const rest = available.filter((model) => model.provider !== "google");
+    const googleStrong = google.filter((model) => !model.id.includes("lite"));
+    const googleLite = google.filter((model) => model.id.includes("lite"));
+    available = [...googleStrong, ...googleLite, ...rest];
+  }
 
   if (!selectedModelId) {
     return available;
@@ -1380,7 +1415,9 @@ async function callWithAutomaticModelSwitch(
       throwIfAiCancelled();
       console.log(`[AI] TRYING MODEL: ${model.provider}/${model.id}`);
 
-      const turn = await callModel(model, messages, userName);
+      const turn = await callModel(model, messages, userName, {
+        webSearch: currentSession()?.webSearchEnabled === true,
+      });
 
       if (!turn.text?.trim()) {
         console.warn(
@@ -1496,6 +1533,14 @@ export function setupAIHandlers() {
       provider: model.provider,
     };
   });
+
+  ipcMain.handle("ai:set-web-search", async (event, enabled: unknown) => {
+    const session = getOrCreateSession(event.sender.id);
+    session.webSearchEnabled = enabled === true;
+    console.log(`[AI] Web search: ${session.webSearchEnabled ? "on" : "off"}`);
+    return { success: true, webSearch: session.webSearchEnabled };
+  });
+
   ipcMain.handle(
     "ai:chat",
     async (event, message: string, userName?: string) => {
