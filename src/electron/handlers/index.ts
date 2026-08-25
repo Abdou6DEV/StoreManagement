@@ -6,4 +6,5 @@ export { setupBackupHandlers, performDailyBackup } from "./backupHandlers";
 export { setupActivityLogHandlers } from "./activityLogHandlers";
 export { setupOnboardingHandlers } from "./onboardingHandlers";
 export { setupOnlineHandlers } from "./onlineHandlers";
+export { setupInvoiceScanHandlers } from "./invoiceScanHandlers";
 export { setupAIHandlers } from "./aiHandlers";

@@ -9,6 +9,11 @@ import type {
   CloudBackupTransferProgressPayload,
   CloudBackupUploadResult,
 } from "../types/cloudBackup";
+import type {
+  InvoiceScanCreateResult,
+  InvoiceScanDownloadResult,
+  InvoiceScanStatusResult,
+} from "../types/invoiceScan";
 
 export const onlineAPI = {
   deviceCheck: () => ipcRenderer.invoke("online:deviceCheck") as Promise<DeviceCheckResult>,
@@ -30,6 +35,15 @@ export const onlineAPI = {
     ipcRenderer.invoke("online:backupDownloadLatest") as Promise<CloudBackupDownloadResult>,
   backupDownloadLatestToLocal: (customerId?: string) =>
     ipcRenderer.invoke("online:backupDownloadLatestToLocal", customerId) as Promise<CloudBackupDownloadToLocalResult>,
+  invoiceScanCreateSession: () =>
+    ipcRenderer.invoke("online:invoiceScanCreateSession") as Promise<InvoiceScanCreateResult>,
+  invoiceScanGetStatus: (sessionId: string) =>
+    ipcRenderer.invoke("online:invoiceScanGetStatus", sessionId) as Promise<InvoiceScanStatusResult>,
+  invoiceScanDownloadAndCleanup: (sessionId: string) =>
+    ipcRenderer.invoke(
+      "online:invoiceScanDownloadAndCleanup",
+      sessionId,
+    ) as Promise<InvoiceScanDownloadResult>,
   onCloudBackupTransferProgress: (
     callback: (data: CloudBackupTransferProgressPayload) => void,
   ): (() => void) => {

@@ -454,7 +454,7 @@
           renderScreen();
           pollTimer = setInterval(function () {
             refreshSession();
-          }, 8000);
+          }, 10000);
         } catch (e) {
           killSession((e && e.code) || "expired");
         }

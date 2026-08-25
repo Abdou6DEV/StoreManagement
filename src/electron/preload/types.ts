@@ -19,6 +19,11 @@ import type {
   CloudBackupTransferProgressPayload,
   CloudBackupUploadResult,
 } from "../types/cloudBackup";
+import type {
+  InvoiceScanCreateResult,
+  InvoiceScanDownloadResult,
+  InvoiceScanStatusResult,
+} from "../types/invoiceScan";
 
 export type SaleWithDetails = Sale & {
   client?: Client;
@@ -479,6 +484,9 @@ export type OnlineAPI = {
   backupUploadLatest: (backupFilePath: string, uploadSource?: string) => Promise<CloudBackupUploadResult>;
   backupDownloadLatest: () => Promise<CloudBackupDownloadResult>;
   backupDownloadLatestToLocal: (customerId?: string) => Promise<CloudBackupDownloadToLocalResult>;
+  invoiceScanCreateSession: () => Promise<InvoiceScanCreateResult>;
+  invoiceScanGetStatus: (sessionId: string) => Promise<InvoiceScanStatusResult>;
+  invoiceScanDownloadAndCleanup: (sessionId: string) => Promise<InvoiceScanDownloadResult>;
   onCloudBackupTransferProgress: (callback: (data: CloudBackupTransferProgressPayload) => void) => () => void;
 };
 

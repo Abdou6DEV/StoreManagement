@@ -25,6 +25,9 @@ import ProductSelection from "./ProductSelection";
 import CategorySelection from "./CategorySelection";
 import SellerSelection from "./SellerSelection";
 import PendingProductsList from "./PendingProductsList";
+import InvoiceScanModal, {
+  InvoiceScanButton,
+} from "../invoiceScan/InvoiceScanModal";
 
 // Helper function for safe price calculations with proper rounding
 const safePrice = (value: number | string | undefined): number => {
@@ -104,6 +107,8 @@ export default function AddStockForm({
   const [pendingProducts, setPendingProducts] = useState<PendingProduct[]>([]);
   const [multiSellerId, setMultiSellerId] = useState("");
   const [multiSellerName, setMultiSellerName] = useState("");
+
+  const [invoiceScanOpen, setInvoiceScanOpen] = useState(false);
 
   const [showProductDropdown, setShowProductDropdown] = useState(false);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
@@ -2173,6 +2178,9 @@ export default function AddStockForm({
               setIsPurchaseMode={setIsPurchaseMode}
             />
           </div>
+
+          <InvoiceScanButton onClick={() => setInvoiceScanOpen(true)} />
+          <InvoiceScanModal open={invoiceScanOpen} onOpenChange={setInvoiceScanOpen} />
 
           {/* Main Form */}
           <form onSubmit={handleAddProduct} className="space-y-6">

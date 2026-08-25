@@ -76,6 +76,7 @@ import {
   setupActivityLogHandlers,
   setupOnboardingHandlers,
   setupOnlineHandlers,
+  setupInvoiceScanHandlers,
 } from "./handlers";
 import { setupAppHandlers } from "./handlers/appHandlers";
 import { setupAIHandlers } from "./handlers/aiHandlers";
@@ -99,6 +100,7 @@ const createWindow = async () => {
   setupActivityLogHandlers();
   setupOnboardingHandlers();
   setupOnlineHandlers();
+  setupInvoiceScanHandlers();
   setupAppHandlers();
   setupAIHandlers();
   const { width, height, x, y } = screen.getPrimaryDisplay().workArea;

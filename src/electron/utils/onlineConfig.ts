@@ -5,6 +5,10 @@
 /** Default project API host (no `/functions/...` path). Override with STORE_ONLINE_SUPABASE_URL if needed. */
 export const DEFAULT_STORE_SUPABASE_URL = "https://fayqqjnhqggmtcwaymwh.supabase.co";
 
+/** Phone capture page (custom domain). Override with STORE_INVOICE_SCAN_PAGE_URL. */
+export const DEFAULT_INVOICE_SCAN_PAGE_URL =
+  "https://www.redatechpos.com/scan.html";
+
 export type StoreOnlineConfig = {
   supabaseUrl: string;
   anonKey: string;
