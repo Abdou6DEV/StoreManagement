@@ -5,77 +5,132 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="referrer" content="no-referrer" />
     <meta name="robots" content="noindex" />
+    <link rel="icon" href="/myapp.ico" />
     <title>REDA TECH — Scan Supplier Receipt</title>
     <style>
       :root {
-        color-scheme: light;
-        --bg: #f4f1ea;
-        --card: #fffdf8;
-        --ink: #1c1915;
-        --muted: #6b6459;
-        --line: #e4ddd2;
-        --accent: #166534;
-        --danger: #b42318;
+        --bg: oklch(97.614% 0.00011 271.152);
+        --fg: oklch(0.145 0 0);
+        --muted: oklch(0.45 0 0);
+        --card: #fff;
+        --line: oklch(0.86 0 0);
+        --primary: oklch(0.205 0 0);
+        --primary-fg: oklch(0.985 0 0);
+        --danger: oklch(0.577 0.245 27.325);
+        --ok: #166534;
+        --radius: 0.625rem;
       }
       * { box-sizing: border-box; }
+      html, body { margin: 0; }
       body {
-        margin: 0;
         min-height: 100dvh;
-        font-family: system-ui, -apple-system, Segoe UI, sans-serif;
+        font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
         background: var(--bg);
-        color: var(--ink);
-        display: flex;
-        justify-content: center;
-        padding: 24px 16px 40px;
+        color: var(--fg);
       }
-      main {
+      .wrap {
         width: 100%;
         max-width: 420px;
+        margin: 0 auto;
+        padding: 16px 16px 40px;
       }
-      h1 { font-size: 1.15rem; margin: 0 0 4px; }
-      .brand { letter-spacing: 0.08em; font-size: 0.75rem; color: var(--muted); font-weight: 700; }
-      .sub { color: var(--muted); margin: 0 0 20px; font-size: 0.95rem; }
+      .langs {
+        display: flex;
+        justify-content: center;
+        gap: 6px;
+        margin-bottom: 20px;
+      }
+      .langs button {
+        border: 1px solid var(--line);
+        background: transparent;
+        color: var(--muted);
+        border-radius: 999px;
+        padding: 6px 12px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      .langs button.on {
+        background: var(--primary);
+        color: var(--primary-fg);
+        border-color: var(--primary);
+      }
+      .brand {
+        text-align: center;
+        margin-bottom: 20px;
+      }
+      .brand img {
+        width: 72px;
+        height: 72px;
+        object-fit: contain;
+        display: block;
+        margin: 0 auto 12px;
+      }
+      h1 {
+        font-size: 1.35rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        margin: 0 0 6px;
+      }
+      .sub {
+        color: var(--muted);
+        margin: 0;
+        font-size: 0.95rem;
+        line-height: 1.45;
+      }
       .card {
         background: var(--card);
         border: 1px solid var(--line);
-        border-radius: 16px;
+        border-radius: calc(var(--radius) + 6px);
         padding: 16px;
       }
-      button, label.btn {
+      button.btn, label.btn {
         display: block;
         width: 100%;
         border: 0;
-        border-radius: 12px;
+        border-radius: var(--radius);
         padding: 14px 16px;
         font-size: 1rem;
         font-weight: 650;
         cursor: pointer;
         text-align: center;
       }
-      .primary { background: var(--accent); color: white; }
-      .ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); margin-top: 10px; }
+      .primary { background: var(--primary); color: var(--primary-fg); }
+      .ghost {
+        background: transparent;
+        color: var(--fg);
+        border: 1px solid var(--line);
+        margin-top: 10px;
+      }
+      button.btn:disabled { opacity: 0.55; cursor: not-allowed; }
       input[type="file"] { display: none; }
       img.preview {
         width: 100%;
-        border-radius: 12px;
+        border-radius: var(--radius);
         margin-bottom: 12px;
-        background: #eee;
+        background: var(--bg);
         max-height: 360px;
         object-fit: contain;
       }
-      .msg { margin: 12px 0 0; font-size: 0.95rem; }
+      .msg { margin: 12px 0 0; font-size: 0.95rem; line-height: 1.4; }
       .err { color: var(--danger); }
-      .ok { color: var(--accent); font-weight: 650; }
-      .hidden { display: none; }
+      .ok { color: var(--ok); font-weight: 650; }
     </style>
   </head>
   <body>
-    <main>
-      <div class="brand">REDA TECH</div>
-      <h1>Scan Supplier Receipt</h1>
-      <p class="sub">Take or choose a photo, then send it to the desktop.</p>
+    <div class="wrap">
+      <div class="langs" id="langs">
+        <button type="button" data-lang="en">English</button>
+        <button type="button" data-lang="fr">Français</button>
+        <button type="button" data-lang="ar">العربية</button>
+      </div>
+      <div class="brand">
+        <img src="/myapp_black.ico" alt="REDA TECH" />
+        <h1 id="pageTitle">Scan Supplier Receipt</h1>
+        <p class="sub" id="pageSub">Take or choose a photo, then send it to the desktop.</p>
+      </div>
       <div class="card" id="panel"></div>
-    </main>
+    </div>
     <script>
       const SUPABASE_URL = "https://fayqqjnhqggmtcwaymwh.supabase.co";
       const ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZheXFxam5ocWdnbXRjd2F5bXdoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4NzgwNTksImV4cCI6MjA5MjQ1NDA1OX0.mdngMMIYglGTWGwECutQgWjdmwA8T-sjrCnrYctqgy4";
@@ -83,7 +138,74 @@
       const MAX_BYTES = 10 * 1024 * 1024;
       const sessionId = new URLSearchParams(location.search).get("s") || "";
       const panel = document.getElementById("panel");
+      const I18N = {
+        en: {
+          title: "Scan Supplier Receipt",
+          sub: "Take or choose a photo, then send it to the desktop.",
+          takePhoto: "Take Photo",
+          gallery: "Choose From Gallery",
+          send: "Send receipt",
+          retake: "Retake",
+          sending: "Sending…",
+          checking: "Checking link…",
+          tooLarge: "Image is too large (max 10 MB).",
+          success: "Receipt sent successfully.",
+          successSub: "You can close this page. The desktop will show the photo.",
+          invalid: "This link is invalid. Scan the QR code from REDA TECH again.",
+          expired: "QR code expired. Please try again from the desktop.",
+          unsupported: "This image type is not supported. Take a new photo or use JPEG/PNG.",
+          already: "This receipt was already sent. Scan a new QR code from the desktop.",
+          failed: "Receipt upload failed.",
+        },
+        fr: {
+          title: "Scanner un bon fournisseur",
+          sub: "Prenez ou choisissez une photo, puis envoyez-la vers l’ordinateur.",
+          takePhoto: "Prendre une photo",
+          gallery: "Choisir depuis la galerie",
+          send: "Envoyer le bon",
+          retake: "Reprendre",
+          sending: "Envoi…",
+          checking: "Vérification du lien…",
+          tooLarge: "L’image est trop grande (max 10 Mo).",
+          success: "Bon envoyé avec succès.",
+          successSub: "Vous pouvez fermer cette page. L’ordinateur affichera la photo.",
+          invalid: "Ce lien n’est pas valide. Scannez le QR code depuis REDA TECH.",
+          expired: "QR code expiré. Veuillez réessayer depuis l’ordinateur.",
+          unsupported: "Ce type d’image n’est pas pris en charge. Prenez une nouvelle photo ou utilisez JPEG/PNG.",
+          already: "Ce bon a déjà été envoyé. Scannez un nouveau QR code depuis l’ordinateur.",
+          failed: "Échec de l’envoi du bon.",
+        },
+        ar: {
+          title: "مسح وصل المورد",
+          sub: "التقط أو اختر صورة، ثم أرسلها إلى الكمبيوتر.",
+          takePhoto: "التقاط صورة",
+          gallery: "اختيار من المعرض",
+          send: "إرسال الوصل",
+          retake: "إعادة الالتقاط",
+          sending: "جاري الإرسال…",
+          checking: "جاري التحقق من الرابط…",
+          tooLarge: "الصورة كبيرة جداً (الحد الأقصى 10 ميغابايت).",
+          success: "تم إرسال الوصل بنجاح.",
+          successSub: "يمكنك إغلاق هذه الصفحة. سيظهر الكمبيوتر الصورة.",
+          invalid: "هذا الرابط غير صالح. امسح رمز QR من REDA TECH مرة أخرى.",
+          expired: "انتهت صلاحية رمز QR. حاول مرة أخرى من الكمبيوتر.",
+          unsupported: "نوع الصورة غير مدعوم. التقط صورة جديدة أو استخدم JPEG/PNG.",
+          already: "تم إرسال هذا الوصل مسبقاً. امسح رمز QR جديداً من الكمبيوتر.",
+          failed: "فشل إرسال الوصل.",
+        },
+      };
+
+      var lang = localStorage.getItem("reda-scan-lang") || "en";
+      if (!I18N[lang]) lang = "en";
       var previewObjectUrl = null;
+      var pendingFile = null;
+      var screen = "checking";
+      var deadCode = "";
+      var pollTimer = null;
+
+      function t(key) {
+        return (I18N[lang] || I18N.en)[key] || I18N.en[key] || key;
+      }
 
       function setHtml(html) {
         panel.innerHTML = html;
@@ -96,11 +218,24 @@
         }
       }
 
+      function applyLang() {
+        document.documentElement.lang = lang;
+        document.documentElement.dir = lang === "ar" ? "rtl" : "ltr";
+        document.title = "REDA TECH — " + t("title");
+        document.getElementById("pageTitle").textContent = t("title");
+        document.getElementById("pageSub").textContent = t("sub");
+        document.querySelectorAll("#langs button").forEach(function (btn) {
+          btn.classList.toggle("on", btn.getAttribute("data-lang") === lang);
+        });
+        renderScreen();
+      }
+
       function errorText(code) {
-        if (code === "expired") return "QR code expired. Please try again from the desktop.";
-        if (code === "unsupported_type") return "This image type is not supported. Take a new photo or use JPEG/PNG.";
-        if (code === "already_uploaded") return "This receipt was already sent.";
-        return "Receipt upload failed.";
+        if (code === "session_not_found") return t("invalid");
+        if (code === "expired" || code === "invalid_status") return t("expired");
+        if (code === "unsupported_type") return t("unsupported");
+        if (code === "already_uploaded") return t("already");
+        return t("failed");
       }
 
       async function edge(action, extra) {
@@ -162,48 +297,100 @@
         });
       }
 
-      function captureUi(previewUrl) {
-        setHtml(
-          (previewUrl ? '<img class="preview" alt="Preview" src="' + previewUrl + '" />' : "") +
-            '<label class="btn primary" for="cam">Take Photo</label>' +
-            '<input id="cam" type="file" accept="image/*" capture="environment" />' +
-            '<label class="btn ghost" for="gal">Choose From Gallery</label>' +
-            '<input id="gal" type="file" accept="image/*" />' +
-            (previewUrl
-              ? '<button class="primary" id="send" style="margin-top:12px">Send receipt</button><button class="ghost" id="retake">Retake</button>'
-              : "") +
-            '<p class="msg" id="status"></p>'
-        );
-        var status = document.getElementById("status");
+      function bindFileInputs() {
         function onFile(ev) {
           var file = ev.target.files && ev.target.files[0];
           ev.target.value = "";
           if (!file) return;
           if (file.size > MAX_BYTES) {
-            status.className = "msg err";
-            status.textContent = "Image is too large (max 10 MB).";
+            var status = document.getElementById("status");
+            if (status) {
+              status.className = "msg err";
+              status.textContent = t("tooLarge");
+            }
             return;
           }
           revokePreview();
           previewObjectUrl = URL.createObjectURL(file);
-          window.__pendingFile = file;
-          captureUi(previewObjectUrl);
+          pendingFile = file;
+          screen = "preview";
+          renderScreen();
         }
-        document.getElementById("cam").addEventListener("change", onFile);
-        document.getElementById("gal").addEventListener("change", onFile);
-        var send = document.getElementById("send");
-        var retake = document.getElementById("retake");
-        if (retake) {
-          retake.addEventListener("click", function () {
-            window.__pendingFile = null;
+        var cam = document.getElementById("cam");
+        var gal = document.getElementById("gal");
+        if (cam) cam.addEventListener("change", onFile);
+        if (gal) gal.addEventListener("change", onFile);
+      }
+
+      function renderScreen() {
+        if (screen === "checking") {
+          setHtml('<p class="msg">' + t("checking") + "</p>");
+          return;
+        }
+        if (screen === "dead") {
+          revokePreview();
+          pendingFile = null;
+          setHtml('<p class="err">' + errorText(deadCode) + "</p>");
+          return;
+        }
+        if (screen === "success") {
+          setHtml(
+            '<p class="ok">' + t("success") + '</p><p class="sub" style="margin-top:8px">' + t("successSub") + "</p>"
+          );
+          return;
+        }
+        if (screen === "preview") {
+          setHtml(
+            '<img class="preview" alt="" src="' + previewObjectUrl + '" />' +
+              '<button class="btn primary" id="send">' + t("send") + "</button>" +
+              '<button class="btn ghost" id="retake">' + t("retake") + "</button>" +
+              '<p class="msg" id="status"></p>'
+          );
+          document.getElementById("retake").addEventListener("click", function () {
+            pendingFile = null;
             revokePreview();
-            captureUi(null);
+            screen = "capture";
+            renderScreen();
           });
+          document.getElementById("send").addEventListener("click", function () {
+            upload(pendingFile, document.getElementById("status"), document.getElementById("send"));
+          });
+          return;
         }
-        if (send) {
-          send.addEventListener("click", function () {
-            upload(window.__pendingFile, status, send);
-          });
+        setHtml(
+          '<label class="btn primary" for="cam">' + t("takePhoto") + "</label>" +
+            '<input id="cam" type="file" accept="image/*" capture="environment" />' +
+            '<label class="btn ghost" for="gal">' + t("gallery") + "</label>" +
+            '<input id="gal" type="file" accept="image/*" />' +
+            '<p class="msg" id="status"></p>'
+        );
+        bindFileInputs();
+      }
+
+      function killSession(code) {
+        if (pollTimer) {
+          clearInterval(pollTimer);
+          pollTimer = null;
+        }
+        deadCode = code || "expired";
+        screen = "dead";
+        renderScreen();
+      }
+
+      async function refreshSession() {
+        if (screen === "success" || screen === "dead") return;
+        try {
+          await edge("check-session");
+        } catch (e) {
+          var code = e && e.code;
+          if (
+            code === "expired" ||
+            code === "already_uploaded" ||
+            code === "session_not_found" ||
+            code === "invalid_status"
+          ) {
+            killSession(code);
+          }
         }
       }
 
@@ -211,7 +398,7 @@
         if (!file) return;
         sendBtn.disabled = true;
         status.className = "msg";
-        status.textContent = "Sending…";
+        status.textContent = t("sending");
         try {
           var blob = await compress(file);
           var signed = await edge("get-upload-url", { mime_type: "image/jpeg" });
@@ -226,21 +413,52 @@
           });
           if (!put.ok) throw Object.assign(new Error("upload"), { code: "upload" });
           await edge("mark-uploaded", { original_filename: file.name || "invoice.jpg" });
+          if (pollTimer) {
+            clearInterval(pollTimer);
+            pollTimer = null;
+          }
           revokePreview();
-          setHtml('<p class="ok">Receipt sent successfully.</p><p class="sub">You can close this page. The desktop will show the photo.</p>');
+          pendingFile = null;
+          screen = "success";
+          renderScreen();
         } catch (e) {
           sendBtn.disabled = false;
+          if (e && (e.code === "expired" || e.code === "already_uploaded" || e.code === "session_not_found" || e.code === "invalid_status")) {
+            killSession(e.code);
+            return;
+          }
           status.className = "msg err";
-          if (e && e.code === "too_large") status.textContent = "Image is too large (max 10 MB).";
+          if (e && e.code === "too_large") status.textContent = t("tooLarge");
           else status.textContent = errorText(e && e.code);
         }
       }
 
-      if (!sessionId) {
-        setHtml('<p class="err">This link is invalid. Scan the QR code from REDA TECH again.</p>');
-      } else {
-        captureUi(null);
-      }
+      document.getElementById("langs").addEventListener("click", function (ev) {
+        var btn = ev.target.closest("button[data-lang]");
+        if (!btn) return;
+        lang = btn.getAttribute("data-lang");
+        localStorage.setItem("reda-scan-lang", lang);
+        applyLang();
+      });
+
+      applyLang();
+
+      (async function start() {
+        if (!sessionId) {
+          killSession("session_not_found");
+          return;
+        }
+        try {
+          await edge("check-session");
+          screen = "capture";
+          renderScreen();
+          pollTimer = setInterval(function () {
+            refreshSession();
+          }, 8000);
+        } catch (e) {
+          killSession((e && e.code) || "expired");
+        }
+      })();
     </script>
   </body>
 </html>
