@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="referrer" content="no-referrer" />
+    <meta name="robots" content="noindex" />
+    <title>REDA TECH — Scan Supplier Receipt</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f4f1ea;
+        --card: #fffdf8;
+        --ink: #1c1915;
+        --muted: #6b6459;
+        --line: #e4ddd2;
+        --accent: #166534;
+        --danger: #b42318;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100dvh;
+        font-family: system-ui, -apple-system, Segoe UI, sans-serif;
+        background: var(--bg);
+        color: var(--ink);
+        display: flex;
+        justify-content: center;
+        padding: 24px 16px 40px;
+      }
+      main {
+        width: 100%;
+        max-width: 420px;
+      }
+      h1 { font-size: 1.15rem; margin: 0 0 4px; }
+      .brand { letter-spacing: 0.08em; font-size: 0.75rem; color: var(--muted); font-weight: 700; }
+      .sub { color: var(--muted); margin: 0 0 20px; font-size: 0.95rem; }
+      .card {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 16px;
+      }
+      button, label.btn {
+        display: block;
+        width: 100%;
+        border: 0;
+        border-radius: 12px;
+        padding: 14px 16px;
+        font-size: 1rem;
+        font-weight: 650;
+        cursor: pointer;
+        text-align: center;
+      }
+      .primary { background: var(--accent); color: white; }
+      .ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); margin-top: 10px; }
+      input[type="file"] { display: none; }
+      img.preview {
+        width: 100%;
+        border-radius: 12px;
+        margin-bottom: 12px;
+        background: #eee;
+        max-height: 360px;
+        object-fit: contain;
+      }
+      .msg { margin: 12px 0 0; font-size: 0.95rem; }
+      .err { color: var(--danger); }
+      .ok { color: var(--accent); font-weight: 650; }
+      .hidden { display: none; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="brand">REDA TECH</div>
+      <h1>Scan Supplier Receipt</h1>
+      <p class="sub">Take or choose a photo, then send it to the desktop.</p>
+      <div class="card" id="panel"></div>
+    </main>
+    <script>
+      const SUPABASE_URL = "https://fayqqjnhqggmtcwaymwh.supabase.co";
+      const ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZheXFxam5ocWdnbXRjd2F5bXdoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4NzgwNTksImV4cCI6MjA5MjQ1NDA1OX0.mdngMMIYglGTWGwECutQgWjdmwA8T-sjrCnrYctqgy4";
+      const FN = SUPABASE_URL + "/functions/v1/invoice-scan";
+      const MAX_BYTES = 10 * 1024 * 1024;
+      const sessionId = new URLSearchParams(location.search).get("s") || "";
+      const panel = document.getElementById("panel");
+
+      function setHtml(html) {
+        panel.innerHTML = html;
+      }
+
+      function errorText(code) {
+        if (code === "expired") return "QR code expired. Please try again from the desktop.";
+        if (code === "unsupported_type") return "This image type is not supported. Take a new photo or use JPEG/PNG.";
+        if (code === "already_uploaded") return "This receipt was already sent.";
+        return "Receipt upload failed.";
+      }
+
+      async function edge(action, extra) {
+        const res = await fetch(FN, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            apikey: ANON_KEY,
+            Authorization: "Bearer " + ANON_KEY,
+          },
+          body: JSON.stringify(Object.assign({ action: action, session_id: sessionId }, extra || {})),
+        });
+        let json = {};
+        try { json = await res.json(); } catch (e) {}
+        if (!res.ok || json.ok === false) {
+          const err = new Error(json.error || "edge");
+          err.code = json.error || String(res.status);
+          throw err;
+        }
+        return json;
+      }
+
+      function compress(file) {
+        return new Promise(function (resolve, reject) {
+          if (file.size > MAX_BYTES) {
+            reject(Object.assign(new Error("too_large"), { code: "too_large" }));
+            return;
+          }
+          const url = URL.createObjectURL(file);
+          const img = new Image();
+          img.onload = function () {
+            URL.revokeObjectURL(url);
+            var max = 1600;
+            var w = img.width;
+            var h = img.height;
+            if (w > max || h > max) {
+              var scale = max / Math.max(w, h);
+              w = Math.round(w * scale);
+              h = Math.round(h * scale);
+            }
+            var canvas = document.createElement("canvas");
+            canvas.width = w;
+            canvas.height = h;
+            var ctx = canvas.getContext("2d");
+            ctx.drawImage(img, 0, 0, w, h);
+            canvas.toBlob(
+              function (blob) {
+                if (!blob) reject(new Error("compress"));
+                else resolve(blob);
+              },
+              "image/jpeg",
+              0.82
+            );
+          };
+          img.onerror = function () {
+            URL.revokeObjectURL(url);
+            reject(Object.assign(new Error("unsupported_type"), { code: "unsupported_type" }));
+          };
+          img.src = url;
+        });
+      }
+
+      function captureUi(previewUrl) {
+        setHtml(
+          (previewUrl ? '<img class="preview" alt="Preview" src="' + previewUrl + '" />' : "") +
+            '<label class="btn primary" for="cam">Take Photo</label>' +
+            '<input id="cam" type="file" accept="image/*" capture="environment" />' +
+            '<label class="btn ghost" for="gal">Choose From Gallery</label>' +
+            '<input id="gal" type="file" accept="image/*" />' +
+            (previewUrl
+              ? '<button class="primary" id="send" style="margin-top:12px">Send receipt</button><button class="ghost" id="retake">Retake</button>'
+              : "") +
+            '<p class="msg" id="status"></p>'
+        );
+        var status = document.getElementById("status");
+        function onFile(ev) {
+          var file = ev.target.files && ev.target.files[0];
+          ev.target.value = "";
+          if (!file) return;
+          if (file.size > MAX_BYTES) {
+            status.className = "msg err";
+            status.textContent = "Image is too large (max 10 MB).";
+            return;
+          }
+          var local = URL.createObjectURL(file);
+          window.__pendingFile = file;
+          captureUi(local);
+        }
+        document.getElementById("cam").addEventListener("change", onFile);
+        document.getElementById("gal").addEventListener("change", onFile);
+        var send = document.getElementById("send");
+        var retake = document.getElementById("retake");
+        if (retake) {
+          retake.addEventListener("click", function () {
+            window.__pendingFile = null;
+            captureUi(null);
+          });
+        }
+        if (send) {
+          send.addEventListener("click", function () {
+            upload(window.__pendingFile, status, send);
+          });
+        }
+      }
+
+      async function upload(file, status, sendBtn) {
+        if (!file) return;
+        sendBtn.disabled = true;
+        status.className = "msg";
+        status.textContent = "Sending…";
+        try {
+          var blob = await compress(file);
+          var signed = await edge("get-upload-url", { mime_type: "image/jpeg" });
+          var put = await fetch(signed.signed_url, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "image/jpeg",
+              Authorization: "Bearer " + signed.token,
+              "x-upsert": "false",
+            },
+            body: blob,
+          });
+          if (!put.ok) throw Object.assign(new Error("upload"), { code: "upload" });
+          await edge("mark-uploaded", { original_filename: file.name || "invoice.jpg" });
+          setHtml('<p class="ok">Receipt sent successfully.</p><p class="sub">You can close this page. The desktop will show the photo.</p>');
+        } catch (e) {
+          sendBtn.disabled = false;
+          status.className = "msg err";
+          if (e && e.code === "too_large") status.textContent = "Image is too large (max 10 MB).";
+          else status.textContent = errorText(e && e.code);
+        }
+      }
+
+      if (!sessionId) {
+        setHtml('<p class="err">This link is invalid. Scan the QR code from REDA TECH again.</p>');
+      } else {
+        captureUi(null);
+      }
+    </script>
+  </body>
+</html>
