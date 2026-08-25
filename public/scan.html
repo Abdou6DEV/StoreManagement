@@ -111,6 +111,7 @@
         background: var(--bg);
         max-height: 360px;
         object-fit: contain;
+        image-orientation: from-image;
       }
       .msg { margin: 12px 0 0; font-size: 0.95rem; line-height: 1.4; }
       .err { color: var(--danger); }
@@ -257,44 +258,153 @@
         return json;
       }
 
-      function compress(file) {
-        return new Promise(function (resolve, reject) {
-          if (file.size > MAX_BYTES) {
-            reject(Object.assign(new Error("too_large"), { code: "too_large" }));
-            return;
-          }
-          const url = URL.createObjectURL(file);
-          const img = new Image();
-          img.onload = function () {
-            URL.revokeObjectURL(url);
-            var max = 1600;
-            var w = img.width;
-            var h = img.height;
-            if (w > max || h > max) {
-              var scale = max / Math.max(w, h);
-              w = Math.round(w * scale);
-              h = Math.round(h * scale);
+      function readJpegOrientation(buffer) {
+        try {
+          var view = new DataView(buffer);
+          if (view.byteLength < 2 || view.getUint16(0, false) !== 0xffd8) return 1;
+          var offset = 2;
+          var length = view.byteLength;
+          while (offset + 4 < length) {
+            if (view.getUint8(offset) !== 0xff) break;
+            var marker = view.getUint8(offset + 1);
+            var size = view.getUint16(offset + 2, false);
+            if (marker === 0xe1 && offset + 10 < length) {
+              if (
+                view.getUint32(offset + 4, false) === 0x45786966 &&
+                view.getUint16(offset + 8, false) === 0
+              ) {
+                var tiff = offset + 10;
+                var little = view.getUint16(tiff, false) === 0x4949;
+                if (view.getUint16(tiff + 2, little) !== 0x002a) return 1;
+                var ifd0 = tiff + view.getUint32(tiff + 4, little);
+                if (ifd0 + 2 > length) return 1;
+                var entries = view.getUint16(ifd0, little);
+                for (var i = 0; i < entries; i++) {
+                  var entry = ifd0 + 2 + i * 12;
+                  if (entry + 12 > length) break;
+                  if (view.getUint16(entry, little) === 0x0112) {
+                    return view.getUint16(entry + 8, little) || 1;
+                  }
+                }
+              }
             }
-            var canvas = document.createElement("canvas");
-            canvas.width = w;
-            canvas.height = h;
-            var ctx = canvas.getContext("2d");
-            ctx.drawImage(img, 0, 0, w, h);
-            canvas.toBlob(
-              function (blob) {
-                if (!blob) reject(new Error("compress"));
-                else resolve(blob);
-              },
-              "image/jpeg",
-              0.82
-            );
+            if (marker === 0xda) break;
+            offset += 2 + size;
+          }
+        } catch (e) {}
+        return 1;
+      }
+
+      function applyExifTransform(ctx, orientation, width, height) {
+        switch (orientation) {
+          case 2:
+            ctx.setTransform(-1, 0, 0, 1, width, 0);
+            break;
+          case 3:
+            ctx.setTransform(-1, 0, 0, -1, width, height);
+            break;
+          case 4:
+            ctx.setTransform(1, 0, 0, -1, 0, height);
+            break;
+          case 5:
+            ctx.setTransform(0, 1, 1, 0, 0, 0);
+            break;
+          case 6:
+            ctx.setTransform(0, 1, -1, 0, height, 0);
+            break;
+          case 7:
+            ctx.setTransform(0, -1, -1, 0, height, width);
+            break;
+          case 8:
+            ctx.setTransform(0, -1, 1, 0, 0, width);
+            break;
+        }
+      }
+
+      function scaledSize(w, h, max) {
+        if (w > max || h > max) {
+          var scale = max / Math.max(w, h);
+          return { w: Math.round(w * scale), h: Math.round(h * scale) };
+        }
+        return { w: w, h: h };
+      }
+
+      function canvasToJpeg(canvas) {
+        return new Promise(function (resolve, reject) {
+          canvas.toBlob(
+            function (blob) {
+              if (!blob) reject(new Error("compress"));
+              else resolve(blob);
+            },
+            "image/jpeg",
+            0.82
+          );
+        });
+      }
+
+      function loadImageFromUrl(url) {
+        return new Promise(function (resolve, reject) {
+          var img = new Image();
+          img.onload = function () {
+            resolve(img);
           };
           img.onerror = function () {
-            URL.revokeObjectURL(url);
             reject(Object.assign(new Error("unsupported_type"), { code: "unsupported_type" }));
           };
           img.src = url;
         });
+      }
+
+      async function compress(file) {
+        if (file.size > MAX_BYTES) {
+          throw Object.assign(new Error("too_large"), { code: "too_large" });
+        }
+        var max = 1600;
+        if (typeof createImageBitmap === "function") {
+          try {
+            var bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });
+            var sized = scaledSize(bitmap.width, bitmap.height, max);
+            var canvas = document.createElement("canvas");
+            canvas.width = sized.w;
+            canvas.height = sized.h;
+            canvas.getContext("2d").drawImage(bitmap, 0, 0, sized.w, sized.h);
+            if (bitmap.close) bitmap.close();
+            return await canvasToJpeg(canvas);
+          } catch (e) {}
+        }
+
+        var buffer = file.arrayBuffer
+          ? await file.arrayBuffer()
+          : await new Promise(function (resolve, reject) {
+              var reader = new FileReader();
+              reader.onload = function () {
+                resolve(reader.result);
+              };
+              reader.onerror = reject;
+              reader.readAsArrayBuffer(file);
+            });
+        var orientation = readJpegOrientation(buffer);
+        var url = URL.createObjectURL(file);
+        try {
+          var img = await loadImageFromUrl(url);
+          var sized = scaledSize(img.width, img.height, max);
+          var w = sized.w;
+          var h = sized.h;
+          var canvas = document.createElement("canvas");
+          if (orientation > 4 && orientation < 9) {
+            canvas.width = h;
+            canvas.height = w;
+          } else {
+            canvas.width = w;
+            canvas.height = h;
+          }
+          var ctx = canvas.getContext("2d");
+          applyExifTransform(ctx, orientation, w, h);
+          ctx.drawImage(img, 0, 0, w, h);
+          return await canvasToJpeg(canvas);
+        } finally {
+          URL.revokeObjectURL(url);
+        }
       }
 
       function bindFileInputs() {
