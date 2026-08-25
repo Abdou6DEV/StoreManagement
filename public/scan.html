@@ -83,9 +83,17 @@
       const MAX_BYTES = 10 * 1024 * 1024;
       const sessionId = new URLSearchParams(location.search).get("s") || "";
       const panel = document.getElementById("panel");
+      var previewObjectUrl = null;
 
       function setHtml(html) {
         panel.innerHTML = html;
+      }
+
+      function revokePreview() {
+        if (previewObjectUrl) {
+          URL.revokeObjectURL(previewObjectUrl);
+          previewObjectUrl = null;
+        }
       }
 
       function errorText(code) {
@@ -108,9 +116,8 @@
         let json = {};
         try { json = await res.json(); } catch (e) {}
         if (!res.ok || json.ok === false) {
-          const err = new Error(json.error || "edge");
-          err.code = json.error || String(res.status);
-          throw err;
+          const code = json.code || json.error || String(res.status);
+          throw Object.assign(new Error(json.error || "edge"), { code: code });
         }
         return json;
       }
@@ -177,9 +184,10 @@
             status.textContent = "Image is too large (max 10 MB).";
             return;
           }
-          var local = URL.createObjectURL(file);
+          revokePreview();
+          previewObjectUrl = URL.createObjectURL(file);
           window.__pendingFile = file;
-          captureUi(local);
+          captureUi(previewObjectUrl);
         }
         document.getElementById("cam").addEventListener("change", onFile);
         document.getElementById("gal").addEventListener("change", onFile);
@@ -188,6 +196,7 @@
         if (retake) {
           retake.addEventListener("click", function () {
             window.__pendingFile = null;
+            revokePreview();
             captureUi(null);
           });
         }
@@ -217,6 +226,7 @@
           });
           if (!put.ok) throw Object.assign(new Error("upload"), { code: "upload" });
           await edge("mark-uploaded", { original_filename: file.name || "invoice.jpg" });
+          revokePreview();
           setHtml('<p class="ok">Receipt sent successfully.</p><p class="sub">You can close this page. The desktop will show the photo.</p>');
         } catch (e) {
           sendBtn.disabled = false;
