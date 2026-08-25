@@ -1,6 +1,7 @@
 import { ipcRenderer } from "electron";
 import type { AiChatResponse } from "../../lib/ai/aiChatTypes";
 import type { AiQuotaSnapshot } from "../../lib/ai/aiQuota";
+import type { ScanReceiptResult } from "../../lib/ai/scanReceiptTypes";
 
 export type AiWorkStatus = {
   phase: "thinking" | "tool" | "writing";
@@ -14,6 +15,9 @@ export const aiAPI = {
     userId?: string
   ): Promise<AiChatResponse> =>
     ipcRenderer.invoke("ai:chat", message, userName, userId),
+
+  scanReceipt: (localPath: string): Promise<ScanReceiptResult> =>
+    ipcRenderer.invoke("ai:scan-receipt", localPath) as Promise<ScanReceiptResult>,
 
   clearChat: (): Promise<void> => ipcRenderer.invoke("ai:clear"),
   cancelChat: (): Promise<void> => ipcRenderer.invoke("ai:cancel"),

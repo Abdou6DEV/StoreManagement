@@ -253,4 +253,24 @@ export function setupInvoiceScanHandlers(): void {
       }
     },
   );
+
+  ipcMain.handle(
+    "online:invoiceScanDeleteTemp",
+    async (_event, localPathRaw: unknown): Promise<{ success: boolean }> => {
+      const localPath = typeof localPathRaw === "string" ? localPathRaw.trim() : "";
+      if (!localPath) return { success: false };
+      try {
+        const tempRoot = path.resolve(app.getPath("temp"));
+        const resolved = path.resolve(localPath);
+        if (!resolved.startsWith(tempRoot)) return { success: false };
+        if (!path.basename(resolved).startsWith("reda-invoice-scan-")) {
+          return { success: false };
+        }
+        if (fs.existsSync(resolved)) fs.unlinkSync(resolved);
+        return { success: true };
+      } catch {
+        return { success: false };
+      }
+    },
+  );
 }

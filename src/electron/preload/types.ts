@@ -487,6 +487,7 @@ export type OnlineAPI = {
   invoiceScanCreateSession: () => Promise<InvoiceScanCreateResult>;
   invoiceScanGetStatus: (sessionId: string) => Promise<InvoiceScanStatusResult>;
   invoiceScanDownloadAndCleanup: (sessionId: string) => Promise<InvoiceScanDownloadResult>;
+  invoiceScanDeleteTemp: (localPath: string) => Promise<{ success: boolean }>;
   onCloudBackupTransferProgress: (callback: (data: CloudBackupTransferProgressPayload) => void) => () => void;
 };
 
@@ -514,6 +515,9 @@ export interface AIAPI {
     userName?: string,
     userId?: string
   ) => Promise<import("../../lib/ai/aiChatTypes").AiChatResponse>;
+  scanReceipt: (
+    localPath: string,
+  ) => Promise<import("../../lib/ai/scanReceiptTypes").ScanReceiptResult>;
   clearChat: () => Promise<void>;
   cancelChat: () => Promise<void>;
   onStatus: (

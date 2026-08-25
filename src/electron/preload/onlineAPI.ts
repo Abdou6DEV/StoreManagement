@@ -44,6 +44,10 @@ export const onlineAPI = {
       "online:invoiceScanDownloadAndCleanup",
       sessionId,
     ) as Promise<InvoiceScanDownloadResult>,
+  invoiceScanDeleteTemp: (localPath: string) =>
+    ipcRenderer.invoke("online:invoiceScanDeleteTemp", localPath) as Promise<{
+      success: boolean;
+    }>,
   onCloudBackupTransferProgress: (
     callback: (data: CloudBackupTransferProgressPayload) => void,
   ): (() => void) => {

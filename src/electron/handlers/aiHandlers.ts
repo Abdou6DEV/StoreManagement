@@ -1473,7 +1473,11 @@ async function callWithAutomaticModelSwitch(
   return { text: fallback, toolResults: [] };
 }
 
+import { registerAiScanReceiptHandler } from "./aiScanReceiptHandlers";
+
 export function setupAIHandlers() {
+  registerAiScanReceiptHandler();
+
   ipcMain.handle("ai:list-mistral-models", async () => {
     const apiKey = process.env.MISTRAL_API_KEY;
   
