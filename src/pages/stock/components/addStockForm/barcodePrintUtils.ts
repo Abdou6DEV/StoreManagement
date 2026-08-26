@@ -606,55 +606,63 @@ export const printBarcodeLabel = async (
   iframeDoc.write(printContent);
   iframeDoc.close();
 
-  iframe.onload = () => {
-    setTimeout(async () => {
-      try {
-        iframe.contentWindow?.postMessage('runNoBarcodeTwoLineUp', '*');
-        await new Promise((r) => setTimeout(r, 80));
-        const bodyContent = iframeDoc.body?.innerHTML || '';
-        if (!bodyContent || bodyContent.trim().length === 0) {
-          throw new Error('Iframe body is empty - cannot print');
-        }
+  await new Promise<void>((resolve, reject) => {
+    let started = false;
+    const cleanup = () => {
+      if (iframe.parentNode) document.body.removeChild(iframe);
+    };
 
-        if (window.api?.app?.printSilently) {
-          const iframeHTML = iframeDoc.documentElement.outerHTML;
-          if (!iframeHTML || iframeHTML.length < 100) {
-            throw new Error('Iframe HTML is invalid or too short');
+    const runPrint = () => {
+      if (started) return;
+      started = true;
+      setTimeout(async () => {
+        try {
+          iframe.contentWindow?.postMessage('runNoBarcodeTwoLineUp', '*');
+          await new Promise((r) => setTimeout(r, 80));
+          const bodyContent = iframeDoc.body?.innerHTML || '';
+          if (!bodyContent || bodyContent.trim().length === 0) {
+            cleanup();
+            reject(new Error('Iframe body is empty - cannot print'));
+            return;
           }
-          const optionKey = LABEL_PRINTER_OPTION_KEYS[labelSize];
-          const deviceName = (await window.api.database.options.get(optionKey)) || (await window.api.database.options.get("labelPrinterName")) || "";
-          window.api.app.printSilently(`<!DOCTYPE html>${iframeHTML}`, deviceName)
-            .then(() => {
-              if (iframe.parentNode) {
-                document.body.removeChild(iframe);
-              }
-            })
-            .catch((error: Error) => {
+
+          if (window.api?.app?.printSilently) {
+            const iframeHTML = iframeDoc.documentElement.outerHTML;
+            if (!iframeHTML || iframeHTML.length < 100) {
+              cleanup();
+              reject(new Error('Iframe HTML is invalid or too short'));
+              return;
+            }
+            const optionKey = LABEL_PRINTER_OPTION_KEYS[labelSize];
+            const deviceName = (await window.api.database.options.get(optionKey)) || (await window.api.database.options.get("labelPrinterName")) || "";
+            try {
+              await window.api.app.printSilently(`<!DOCTYPE html>${iframeHTML}`, deviceName);
+              cleanup();
+              resolve();
+            } catch (error) {
               console.error("Silent print failed, falling back to regular print:", error);
-              // Fallback to regular print
               iframe.contentWindow?.print();
               setTimeout(() => {
-                if (iframe.parentNode) {
-                  document.body.removeChild(iframe);
-                }
+                cleanup();
+                resolve();
               }, 100);
-            });
-        } else {
-          // Fallback to browser print
-          iframe.contentWindow?.print();
-          setTimeout(() => {
-            if (iframe.parentNode) {
-              document.body.removeChild(iframe);
             }
-          }, 100);
+          } else {
+            iframe.contentWindow?.print();
+            setTimeout(() => {
+              cleanup();
+              resolve();
+            }, 100);
+          }
+        } catch (error) {
+          console.error("Print error:", error);
+          cleanup();
+          reject(error);
         }
-      } catch (error) {
-        console.error("Print error:", error);
-        if (iframe.parentNode) {
-          document.body.removeChild(iframe);
-        }
-        throw error;
-      }
-    }, 200); // Delay to ensure CSS is loaded
-  };
+      }, 200);
+    };
+
+    iframe.onload = runPrint;
+    if (iframeDoc.readyState === "complete") runPrint();
+  });
 };

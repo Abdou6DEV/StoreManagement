@@ -14,10 +14,10 @@ import { rankNameMatches } from "../../../../lib/invoiceScan/fuzzyMatch";
 import type { WizardLine } from "./wizardTypes";
 
 const fieldClass =
-  "h-8 w-full px-2.5 py-1 rounded-md border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-green-500/50 focus:border-green-500 transition-all";
+  "w-full px-3 py-2 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-green-500/50 focus:border-green-500 transition-all";
 
-const compactNumberClass =
-  "h-8 w-full px-2.5 py-1 pr-8 rounded-md border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-green-500/50 focus:border-green-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-muted/50";
+const numberFieldClass =
+  "w-full px-3 py-2 pr-8 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-green-500/50 focus:border-green-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-muted/50";
 
 type Mode = "choose" | "preview" | "create" | "pick";
 
@@ -25,6 +25,8 @@ export default function ScanProductLine({
   line,
   products,
   categories,
+  expanded = true,
+  onOpen,
   onSkip,
   onChange,
   onConfirmExisting,
@@ -33,6 +35,8 @@ export default function ScanProductLine({
   line: WizardLine;
   products: Product[];
   categories: string[];
+  expanded?: boolean;
+  onOpen?: () => void;
   onSkip: () => void;
   onChange: () => void;
   onConfirmExisting: (
@@ -128,7 +132,18 @@ export default function ScanProductLine({
 
   if (line.skipped) {
     return (
-      <div className="rounded-md border border-border bg-card px-3 py-1.5 opacity-60">
+      <div
+        className="cursor-pointer rounded-md border border-border bg-card px-3 py-1.5 opacity-60"
+        onClick={onSkip}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onSkip();
+          }
+        }}
+        role="button"
+        tabIndex={0}
+      >
         <div className="flex items-center justify-between gap-2">
           <p className="min-w-0 truncate text-sm">
             <span className="font-medium">{line.aiName}</span>
@@ -141,7 +156,16 @@ export default function ScanProductLine({
               {t("stock.invoiceScan.skippedLine", "Skipped")}
             </span>
           </p>
-          <Button type="button" variant="ghost" size="sm" className="h-7 shrink-0" onClick={onSkip}>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-7 shrink-0"
+            onClick={(e) => {
+              e.stopPropagation();
+              onSkip();
+            }}
+          >
             {t("stock.invoiceScan.include", "Include")}
           </Button>
         </div>
@@ -150,8 +174,25 @@ export default function ScanProductLine({
   }
 
   if (line.confirmed) {
+    const reopen = () => {
+      setMode("choose");
+      setPreview(null);
+      onChange();
+      onOpen?.();
+    };
     return (
-      <div className="rounded-md border border-border bg-card px-3 py-1.5">
+      <div
+        className="cursor-pointer rounded-md border border-border bg-card px-3 py-1.5"
+        onClick={reopen}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            reopen();
+          }
+        }}
+        role="button"
+        tabIndex={0}
+      >
         <div className="flex items-center justify-between gap-2">
           <p className="flex min-w-0 flex-wrap items-center gap-x-1.5 text-sm leading-tight">
             <Check className="h-3.5 w-3.5 shrink-0 text-green-600" />
@@ -181,17 +222,13 @@ export default function ScanProductLine({
                 : t("stock.invoiceScan.existingProduct", "Existing")}
             </span>
           </p>
-          <div className="flex shrink-0 gap-0.5">
+          <div className="flex shrink-0 gap-0.5" onClick={(e) => e.stopPropagation()}>
             <Button
               type="button"
               variant="ghost"
               size="sm"
               className="h-7"
-              onClick={() => {
-                setMode("choose");
-                setPreview(null);
-                onChange();
-              }}
+              onClick={reopen}
             >
               {t("stock.invoiceScan.changeMatch", "Change")}
             </Button>
@@ -204,50 +241,72 @@ export default function ScanProductLine({
     );
   }
 
-  const showMatches = mode === "choose" || mode === "pick";
+  const showMatches = expanded && (mode === "choose" || mode === "pick");
+  const showPreview = expanded && mode === "preview" && preview;
+  const showCreate = expanded && mode === "create";
   const displayName = mode === "preview" && preview ? preview.name : line.aiName;
 
   return (
-    <div className="space-y-1.5 rounded-md border border-border bg-card px-3 py-1.5">
-      <div className="flex items-center justify-between gap-2">
-        <p className="min-w-0 truncate text-sm leading-tight">
+    <div
+      className={cn(
+        "rounded-lg border border-border bg-card",
+        expanded ? "space-y-3 px-4 py-3" : "cursor-pointer px-4 py-3",
+      )}
+      onClick={!expanded ? onOpen : undefined}
+      onKeyDown={
+        !expanded
+          ? (e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onOpen?.();
+              }
+            }
+          : undefined
+      }
+      role={!expanded ? "button" : undefined}
+      tabIndex={!expanded ? 0 : undefined}
+    >
+      <div
+        className={cn("flex items-center justify-between gap-3", expanded && "cursor-pointer")}
+        onClick={expanded ? onOpen : undefined}
+      >
+        <p className="min-w-0 flex-1 text-left text-sm">
           <span className="font-medium">{displayName}</span>
-          <span className="mx-1.5 text-muted-foreground">·</span>
+          <span className="mx-2 text-muted-foreground">·</span>
           {t("stock.quantity", "Quantity")}: {line.quantity}
-          {showMatches ? (
+          {showMatches || !expanded ? (
             <>
-              <span className="mx-1.5 text-muted-foreground">·</span>
+              <span className="mx-2 text-muted-foreground">·</span>
               {t("stock.boughtPrice", "Bought Price")}: {line.boughtPrice || "—"} {currency}
             </>
           ) : null}
-          {mode === "preview" && preview ? (
+          {showPreview && preview ? (
             <span className="text-muted-foreground">
-              <span className="mx-1.5">·</span>
+              <span className="mx-2">·</span>
               {preview.categoryName}
             </span>
           ) : null}
         </p>
-        <div className="flex shrink-0 gap-0.5">
-          {mode === "preview" || mode === "create" ? (
+        <div className="flex shrink-0 gap-1" onClick={(e) => e.stopPropagation()}>
+          {showPreview || showCreate ? (
             <Button
               type="button"
               variant="ghost"
               size="sm"
-              className="h-7"
               onClick={backToMatches}
             >
               {t("stock.invoiceScan.changeMatch", "Change")}
             </Button>
           ) : null}
-          <Button type="button" variant="ghost" size="sm" className="h-7" onClick={onSkip}>
+          <Button type="button" variant="ghost" size="sm" onClick={onSkip}>
             {t("stock.invoiceScan.skip", "Skip")}
           </Button>
         </div>
       </div>
 
-      {mode === "preview" && preview ? (
-        <div className="flex flex-wrap items-end gap-2 border-t border-border pt-1.5">
-          <div className="min-w-[7rem] flex-1 space-y-0.5">
+      {showPreview && preview ? (
+        <div className="flex flex-wrap items-end gap-3 border-t border-border pt-3">
+          <div className="min-w-[7rem] flex-1 space-y-1">
             <label className="text-xs text-muted-foreground">
               {t("stock.boughtPrice", "Bought Price")}
             </label>
@@ -255,10 +314,10 @@ export default function ScanProductLine({
               value={boughtPrice}
               onChange={(v: number | "") => setBoughtPrice(v)}
               placeholder={t("stock.boughtPrice", "Bought Price")}
-              className={compactNumberClass}
+              className={numberFieldClass}
             />
           </div>
-          <div className="min-w-[7rem] flex-1 space-y-0.5">
+          <div className="min-w-[7rem] flex-1 space-y-1">
             <label className="text-xs text-muted-foreground">
               {t("stock.sellingPrice", "Selling Price")}
             </label>
@@ -266,10 +325,10 @@ export default function ScanProductLine({
               value={sellingPrice}
               onChange={(v: number | "") => setSellingPrice(v)}
               placeholder={t("stock.sellingPrice", "Selling Price")}
-              className={compactNumberClass}
+              className={numberFieldClass}
             />
           </div>
-          <div className="min-w-[7rem] flex-1 space-y-0.5">
+          <div className="min-w-[7rem] flex-1 space-y-1">
             <label className="text-xs text-muted-foreground">{t("stock.codebar", "Codebar")}</label>
             <input
               type="text"
@@ -281,8 +340,7 @@ export default function ScanProductLine({
           </div>
           <Button
             type="button"
-            size="sm"
-            className="h-8 bg-green-600 text-white hover:bg-green-700"
+            className="bg-green-600 text-white hover:bg-green-700"
             onClick={confirmPreview}
             disabled={typeof boughtPrice !== "number" || boughtPrice <= 0}
           >
@@ -291,9 +349,9 @@ export default function ScanProductLine({
         </div>
       ) : null}
 
-      {mode === "create" ? (
-        <div className="flex flex-wrap items-end gap-2 border-t border-border pt-1.5">
-          <div className="min-w-[8rem] flex-[1.2] space-y-0.5">
+      {showCreate ? (
+        <div className="flex flex-wrap items-end gap-3 border-t border-border pt-3">
+          <div className="min-w-[8rem] flex-[1.2] space-y-1">
             <label className="text-xs text-muted-foreground">{t("stock.type", "Product Type")}</label>
             <div className="relative">
               <input
@@ -310,11 +368,11 @@ export default function ScanProductLine({
                 placeholder={t("stock.type", "Product Type")}
               />
               {showCategoryDropdown && filteredCategories.length > 0 ? (
-                <div className="absolute top-full right-0 left-0 z-50 mt-0.5 max-h-48 overflow-y-auto rounded-md border border-border bg-card shadow-lg">
+                <div className="absolute top-full right-0 left-0 z-50 mt-1 max-h-48 overflow-y-auto rounded-md border border-border bg-card shadow-lg">
                   {filteredCategories.map((category) => (
                     <div
                       key={category}
-                      className="cursor-pointer px-2.5 py-1 hover:bg-accent/50"
+                      className="cursor-pointer px-3 py-2 hover:bg-accent/50"
                       onClick={() => {
                         setCategoryName(category);
                         setShowCategoryDropdown(false);
@@ -327,7 +385,7 @@ export default function ScanProductLine({
               ) : null}
             </div>
           </div>
-          <div className="min-w-[7rem] flex-1 space-y-0.5">
+          <div className="min-w-[7rem] flex-1 space-y-1">
             <label className="text-xs text-muted-foreground">
               {t("stock.boughtPrice", "Bought Price")}
             </label>
@@ -335,10 +393,10 @@ export default function ScanProductLine({
               value={boughtPrice}
               onChange={(v: number | "") => setBoughtPrice(v)}
               placeholder={t("stock.boughtPrice", "Bought Price")}
-              className={compactNumberClass}
+              className={numberFieldClass}
             />
           </div>
-          <div className="min-w-[7rem] flex-1 space-y-0.5">
+          <div className="min-w-[7rem] flex-1 space-y-1">
             <label className="text-xs text-muted-foreground">
               {t("stock.sellingPrice", "Selling Price")}
             </label>
@@ -346,10 +404,10 @@ export default function ScanProductLine({
               value={sellingPrice}
               onChange={(v: number | "") => setSellingPrice(v)}
               placeholder={t("stock.sellingPrice", "Selling Price")}
-              className={compactNumberClass}
+              className={numberFieldClass}
             />
           </div>
-          <div className="min-w-[7rem] flex-1 space-y-0.5">
+          <div className="min-w-[7rem] flex-1 space-y-1">
             <label className="text-xs text-muted-foreground">{t("stock.codebar", "Codebar")}</label>
             <input
               type="text"
@@ -361,8 +419,7 @@ export default function ScanProductLine({
           </div>
           <Button
             type="button"
-            size="sm"
-            className="h-8 bg-green-600 text-white hover:bg-green-700"
+            className="bg-green-600 text-white hover:bg-green-700"
             onClick={confirmCreate}
             disabled={
               !categoryName.trim() ||
@@ -372,17 +429,17 @@ export default function ScanProductLine({
               boughtPrice <= 0
             }
           >
-            <Plus className="h-3.5 w-3.5" />
+            <Plus className="h-4 w-4" />
             {t("stock.invoiceScan.createProduct", "Create product")}
           </Button>
         </div>
       ) : null}
 
       {showMatches ? (
-        <div className="space-y-1 border-t border-border pt-1.5">
+        <div className="space-y-2 border-t border-border pt-3">
           {matches.length > 0 ? (
             <>
-              <p className="text-[11px] font-medium text-muted-foreground">
+              <p className="text-xs font-medium text-muted-foreground">
                 {t("stock.invoiceScan.possibleMatches", "Possible matches")}
               </p>
               <div className="overflow-hidden rounded-md border border-border">
@@ -391,7 +448,7 @@ export default function ScanProductLine({
                     key={product.id}
                     type="button"
                     className={cn(
-                      "flex w-full items-center gap-2 px-2.5 py-1 text-left text-sm hover:bg-accent/50",
+                      "flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm hover:bg-accent/50",
                       index > 0 ? "border-t border-border" : "",
                     )}
                     onClick={() => enterPreview(product)}
@@ -406,13 +463,13 @@ export default function ScanProductLine({
               </div>
             </>
           ) : (
-            <p className="text-xs text-muted-foreground">
+            <p className="text-sm text-muted-foreground">
               {t("stock.invoiceScan.noProductMatches", "No matching products.")}
             </p>
           )}
 
-          <div className="flex flex-wrap gap-1.5">
-            <Button type="button" variant="outline" size="sm" className="h-7" onClick={enterCreate}>
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" variant="outline" size="sm" onClick={enterCreate}>
               {t("stock.invoiceScan.addNewProduct", "Add new product")}
             </Button>
             <Popover
@@ -424,7 +481,7 @@ export default function ScanProductLine({
               }}
             >
               <PopoverTrigger asChild>
-                <Button type="button" variant="outline" size="sm" className="h-7">
+                <Button type="button" variant="outline" size="sm">
                   {t("stock.invoiceScan.pickProduct", "Pick product")}
                 </Button>
               </PopoverTrigger>
@@ -432,7 +489,7 @@ export default function ScanProductLine({
                 className="w-[min(360px,calc(100vw-2rem))] p-0"
                 align="start"
               >
-                <div className="p-1.5">
+                <div className="p-2">
                   <input
                     type="text"
                     value={pickSearch}
@@ -452,7 +509,7 @@ export default function ScanProductLine({
                       <button
                         key={product.id}
                         type="button"
-                        className="flex w-full items-center gap-2 px-2.5 py-1 text-left text-sm hover:bg-accent/50"
+                        className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm hover:bg-accent/50"
                         onClick={() => enterPreview(product)}
                       >
                         <span className="min-w-0 truncate font-medium">{product.name}</span>

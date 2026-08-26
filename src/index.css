@@ -761,7 +761,8 @@ input[type="date"].success {
   .journey-chevron-nudge,
   .composer-welcome-glow,
   .working-status-spinner,
-  .animate-scan {
+  .animate-scan,
+  .invoice-scan-ai-btn {
     animation: none;
   }
 
@@ -862,6 +863,37 @@ input[type="date"].success {
   }
   75% {
     top: calc(100% - 5px);
+  }
+}
+
+.invoice-scan-ai-btn {
+  background-image: linear-gradient(
+    135deg,
+    color-mix(in oklab, #ffffff 14%, var(--color-background)) 0%,
+    color-mix(in oklab, #c084fc 18%, var(--color-background)) 25%,
+    color-mix(in oklab, #8b5cf6 16%, var(--color-background)) 50%,
+    color-mix(in oklab, #60a5fa 16%, var(--color-background)) 75%,
+    color-mix(in oklab, #38bdf8 14%, var(--color-background)) 100%
+  );
+  background-size: 300% 300%;
+  animation: invoice-scan-ai-shift 8s ease-in-out infinite;
+}
+
+@keyframes invoice-scan-ai-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+  25% {
+    background-position: 50% 0%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  75% {
+    background-position: 50% 100%;
+  }
+  100% {
+    background-position: 0% 50%;
   }
 }
 

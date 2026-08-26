@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { Product } from "@prisma/client";
-import { Loader2 } from "lucide-react";
+import { Banknote, Boxes, Loader2, Package } from "lucide-react";
 import { Button } from "../../../../lib/components/button";
 import {
   Popover,
@@ -25,6 +25,7 @@ import { PriceConfirmationDialog } from "../priceConfirmationDialog";
 import { SellingPriceWarningDialog } from "../sellingPriceWarningDialog";
 import ScanProductLine from "./ScanProductLine";
 import type { WizardLine } from "./wizardTypes";
+import type { ScanLabelItem } from "./ScanPrintLabelsModal";
 
 type Seller = {
   id: string;
@@ -33,6 +34,8 @@ type Seller = {
 };
 
 type Step = "supplier" | "products" | "review";
+
+export type WizardStep = Step;
 
 const fieldClass =
   "w-full px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-green-500/50 focus:border-green-500 transition-all";
@@ -49,12 +52,23 @@ const unitPurchasePrice = (line: WizardLine) =>
     ? line.actualPurchasePrice
     : line.boughtPrice;
 
-function ReviewStat({ label, value }: { label: string; value: string }) {
+function ScanStat({
+  label,
+  value,
+  icon: Icon,
+}: {
+  label: string;
+  value: string;
+  icon: typeof Package;
+}) {
   return (
-    <span className="inline-flex items-baseline gap-1 whitespace-nowrap text-sm">
-      <span className="text-xs text-muted-foreground">{label}:</span>
-      <span className="font-semibold tabular-nums text-foreground">{value}</span>
-    </span>
+    <div className="rounded-lg border border-border bg-background px-3 py-3">
+      <div className="flex items-center gap-1.5 text-muted-foreground">
+        <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden />
+        <span className="text-[11px] leading-tight">{label}</span>
+      </div>
+      <p className="mt-1.5 text-xl font-semibold tabular-nums tracking-tight">{value}</p>
+    </div>
   );
 }
 
@@ -96,19 +110,22 @@ function buildInitialLines(extraction: ScanReceiptExtraction): WizardLine[] {
 
 export default function InvoiceScanWizard({
   extraction,
+  step,
+  onStepChange,
   onBack,
   onDone,
 }: {
   extraction: ScanReceiptExtraction;
+  step: Step;
+  onStepChange: (step: Step) => void;
   onBack: () => void;
-  onDone: () => void;
+  onDone: (labels: ScanLabelItem[]) => void;
 }) {
   const { t } = useTranslation();
   const { user } = useAuth();
   const { products, categories, refetchProducts, refetchCategories } = useStock();
   const { showToast } = useToast();
 
-  const [step, setStep] = useState<Step>("supplier");
   const [sellers, setSellers] = useState<Seller[]>([]);
   const [sellerId, setSellerId] = useState("");
   const [newSellerName, setNewSellerName] = useState("");
@@ -138,6 +155,24 @@ export default function InvoiceScanWizard({
   } | null>(null);
 
   const [sellWarnOpen, setSellWarnOpen] = useState(false);
+  const [openLineKey, setOpenLineKey] = useState<string | null>(
+    () => lines.find((line) => !line.confirmed && !line.skipped)?.key ?? lines[0]?.key ?? null,
+  );
+
+  useEffect(() => {
+    const pending = lines.filter((line) => !line.confirmed && !line.skipped);
+    if (pending.length === 0) {
+      if (openLineKey != null) setOpenLineKey(null);
+      return;
+    }
+    const open = lines.find((line) => line.key === openLineKey);
+    if (open && !open.confirmed && !open.skipped) return;
+    const idx = openLineKey ? lines.findIndex((line) => line.key === openLineKey) : -1;
+    const next =
+      (idx >= 0 ? lines.slice(idx + 1).find((line) => !line.confirmed && !line.skipped) : null) ??
+      pending[0];
+    if (next.key !== openLineKey) setOpenLineKey(next.key);
+  }, [lines, openLineKey]);
 
   useEffect(() => {
     void (async () => {
@@ -151,6 +186,18 @@ export default function InvoiceScanWizard({
   }, []);
 
   const aiSupplierName = extraction.supplierName?.trim() || "";
+  const scanStats = useMemo(() => {
+    const items = extraction.items;
+    return {
+      products: items.length,
+      quantities: items.reduce((sum, item) => sum + (item.quantity > 0 ? item.quantity : 0), 0),
+      total: items.reduce((sum, item) => {
+        const qty = item.quantity > 0 ? item.quantity : 0;
+        const price = item.boughtPrice != null && item.boughtPrice > 0 ? item.boughtPrice : 0;
+        return sum + qty * price;
+      }, 0),
+    };
+  }, [extraction.items]);
   const sellerMatches = useMemo(
     () => (aiSupplierName ? rankNameMatches(aiSupplierName, sellers, 5) : []),
     [aiSupplierName, sellers],
@@ -339,7 +386,7 @@ export default function InvoiceScanWizard({
         t("stock.invoiceScan.supplierRequired", "Please select or add a supplier."),
         "error",
       );
-      setStep("supplier");
+      onStepChange("supplier");
       return;
     }
     if (!productsStepValid) {
@@ -350,7 +397,7 @@ export default function InvoiceScanWizard({
         ),
         "error",
       );
-      setStep("products");
+      onStepChange("products");
       return;
     }
     const lossLines = activeLines.filter(
@@ -367,6 +414,7 @@ export default function InvoiceScanWizard({
     setSaving(true);
     try {
       const purchaseItems: Array<{ productId: string; quantity: number; price: number }> = [];
+      const createdByLineKey = new Map<string, { id: string; name: string; codebar: string }>();
 
       for (const line of activeLines.filter((l) => l.isNewProduct)) {
         await window.api.database.categories.ensure(line.categoryName);
@@ -381,6 +429,11 @@ export default function InvoiceScanWizard({
             photo: null,
           },
           username: user?.username ?? "unknown",
+        });
+        createdByLineKey.set(line.key, {
+          id: created.id,
+          name: created.name,
+          codebar: created.codebar ?? "",
         });
         purchaseItems.push({
           productId: created.id,
@@ -426,7 +479,35 @@ export default function InvoiceScanWizard({
         t("stock.purchaseCompletedSuccess", "Purchase completed successfully!"),
         "success",
       );
-      onDone();
+
+      const labels: ScanLabelItem[] = [];
+      for (const group of reviewGroups) {
+        const first = group[0];
+        if (!first) continue;
+        if (first.isNewProduct) {
+          const created = createdByLineKey.get(first.key);
+          if (!created) continue;
+          labels.push({
+            key: created.id,
+            productName: (created.name || first.productName).trim(),
+            sellingPrice: safePrice(first.sellingPrice),
+            codebar: (created.codebar || first.codebar || "").trim(),
+            quantity: first.quantity,
+          });
+          continue;
+        }
+        if (!first.existingProductId) continue;
+        const current = products.find((p) => p.id === first.existingProductId);
+        const last = group[group.length - 1];
+        labels.push({
+          key: first.existingProductId,
+          productName: (last.productName || current?.name || "").trim(),
+          sellingPrice: safePrice(last.sellingPrice),
+          codebar: (current?.codebar || last.codebar || "").trim(),
+          quantity: group.reduce((sum, line) => sum + line.quantity, 0),
+        });
+      }
+      onDone(labels);
     } catch (e) {
       showToast(
         t("stock.invoiceScan.saveFailed", "Could not save the stock purchase."),
@@ -441,148 +522,199 @@ export default function InvoiceScanWizard({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden">
-      <div className="flex shrink-0 flex-wrap gap-2 text-sm text-muted-foreground">
-        <span className={step === "supplier" ? "font-semibold text-foreground" : ""}>
-          1. {t("stock.invoiceScan.stepSupplier", "Supplier")}
-        </span>
-        <span>→</span>
-        <span className={step === "products" ? "font-semibold text-foreground" : ""}>
-          2. {t("stock.invoiceScan.stepProducts", "Products")}
-        </span>
-        <span>→</span>
-        <span className={step === "review" ? "font-semibold text-foreground" : ""}>
-          3. {t("stock.invoiceScan.stepReview", "Review")}
-        </span>
-      </div>
-
       {step === "supplier" ? (
         <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden">
-          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto pr-1">
-          <div className="rounded-lg border border-border bg-card px-4 py-3 text-sm">
-            {aiSupplierName ? (
-              sellerMatches.length > 0 ? (
-                <p>
-                  {t(
-                    "stock.invoiceScan.supplierSuggested",
-                    "Suggested from the receipt: {{name}}",
-                    { name: aiSupplierName },
-                  )}
-                </p>
-              ) : (
-                <p>
-                  <span className="font-medium">{aiSupplierName}</span>
-                  <span className="text-muted-foreground">
-                    {" — "}
+          <div className="min-h-0 flex-1 overflow-y-auto p-px pr-1">
+            <div className="grid gap-5 lg:grid-cols-2 lg:items-start">
+              <section className="space-y-4 rounded-xl border border-border bg-card p-5">
+                <div className="space-y-1">
+                  <h3 className="text-base font-semibold">
+                    {t("stock.invoiceScan.receiptSnapshot", "What the AI read")}
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
                     {t(
-                      "stock.invoiceScan.supplierNotFound",
-                      "No matching supplier was found. Choose one or add a new name.",
+                      "stock.invoiceScan.supplierPageHint",
+                      "Confirm the supplier and check that the receipt totals look right.",
                     )}
-                  </span>
-                </p>
-              )
-            ) : (
-              <p className="text-muted-foreground">
-                {t(
-                  "stock.invoiceScan.supplierNotRead",
-                  "The receipt did not include a supplier name. Choose one or add a new name.",
-                )}
-              </p>
-            )}
-          </div>
+                  </p>
+                </div>
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium">{t("stock.seller", "Seller")}</label>
-            <Popover open={sellerOpen} onOpenChange={setSellerOpen}>
-              <PopoverTrigger asChild>
-                <button
-                  type="button"
-                  className={`${fieldClass} text-left ${!sellerId ? "text-muted-foreground" : ""}`}
-                >
-                  {selectedSeller
-                    ? selectedSeller.name
-                    : t("stock.chooseSeller", "Choose seller")}
-                </button>
-              </PopoverTrigger>
-              <PopoverContent
-                className="w-[var(--radix-popover-trigger-width)] max-w-[calc(100vw-2rem)] p-0"
-                align="start"
-              >
-                <Command>
-                  <CommandInput
-                    placeholder={t("stock.searchSeller", "Search seller...")}
-                    className="h-9"
+                <div className="grid grid-cols-3 gap-3">
+                  <ScanStat
+                    icon={Package}
+                    label={t("stock.invoiceScan.productsScanned", "Products scanned")}
+                    value={String(scanStats.products)}
                   />
-                  <CommandList>
-                    <CommandEmpty>{t("stock.noSellerFound", "No seller found")}</CommandEmpty>
-                    {sellerMatches.length > 0 ? (
-                      <CommandGroup
-                        heading={t("stock.invoiceScan.possibleMatches", "Possible matches")}
-                      >
-                        {sellerMatches.map((seller) => (
-                          <CommandItem
-                            key={`suggest-${seller.id}`}
-                            value={`suggest ${seller.name}`}
-                            onSelect={() => {
-                              setSellerId(seller.id);
-                              setNewSellerName("");
-                              setSellerOpen(false);
-                            }}
-                          >
-                            <span className="flex flex-col">
-                              <span className="text-sm font-medium">{seller.name}</span>
-                              {seller.phone ? (
-                                <span className="text-xs text-muted-foreground">
-                                  {seller.phone}
-                                </span>
-                              ) : null}
-                            </span>
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
-                    ) : null}
-                    <CommandGroup heading={t("stock.invoiceScan.allSuppliers", "All suppliers")}>
-                      {sellers.map((seller) => (
-                        <CommandItem
-                          key={seller.id}
-                          value={seller.name}
-                          onSelect={() => {
-                            setSellerId(seller.id);
-                            setNewSellerName("");
-                            setSellerOpen(false);
-                          }}
-                        >
-                          <span className="flex flex-col">
-                            <span className="text-sm font-medium">{seller.name}</span>
-                            {seller.phone ? (
-                              <span className="text-xs text-muted-foreground">
-                                {seller.phone}
-                              </span>
-                            ) : null}
-                          </span>
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
-                  </CommandList>
-                </Command>
-              </PopoverContent>
-            </Popover>
-          </div>
+                  <ScanStat
+                    icon={Boxes}
+                    label={t("stock.invoiceScan.quantitiesScanned", "Quantities scanned")}
+                    value={String(scanStats.quantities)}
+                  />
+                  <ScanStat
+                    icon={Banknote}
+                    label={t("stock.invoiceScan.totalAmount", "Total amount")}
+                    value={money(scanStats.total)}
+                  />
+                </div>
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium">
-              {t("stock.invoiceScan.addSupplier", "Or type a new supplier name")}
-            </label>
-            <input
-              type="text"
-              value={newSellerName}
-              onChange={(e) => {
-                setNewSellerName(e.target.value);
-                if (e.target.value.trim()) setSellerId("");
-              }}
-              className={fieldClass}
-              placeholder={t("stock.seller", "Seller")}
-            />
-          </div>
+                {extraction.items.length > 0 ? (
+                  <div className="space-y-2">
+                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      {t("stock.invoiceScan.receiptLines", "Receipt lines")}
+                    </p>
+                    <ul className="max-h-[min(22rem,42dvh)] overflow-y-auto overscroll-contain rounded-lg border border-border divide-y divide-border py-1 scrollbar-themed">
+                      {extraction.items.map((item, i) => (
+                        <li
+                          key={`${item.name}-${i}`}
+                          className="flex items-baseline justify-between gap-3 px-3 py-2 text-sm scroll-my-1"
+                        >
+                          <span className="min-w-0 truncate font-medium">{item.name}</span>
+                          <span className="shrink-0 tabular-nums text-muted-foreground">
+                            {item.quantity}
+                            {" × "}
+                            {item.boughtPrice != null && item.boughtPrice > 0
+                              ? money(item.boughtPrice)
+                              : t("stock.invoiceScan.none", "none")}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
+              </section>
+
+              <section className="space-y-4 rounded-xl border border-border bg-card p-5">
+                <div className="space-y-1">
+                  <h3 className="text-base font-semibold">
+                    {t("stock.invoiceScan.chooseSupplierHeading", "Choose the supplier")}
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    {t(
+                      "stock.invoiceScan.chooseSupplierHint",
+                      "Select an existing supplier or add a new name.",
+                    )}
+                  </p>
+                </div>
+
+                {aiSupplierName ? (
+                  <div className="rounded-lg border border-border bg-background px-4 py-3">
+                    <p className="text-xs text-muted-foreground">
+                      {t("stock.invoiceScan.onTheReceipt", "On the receipt")}
+                    </p>
+                    <p className="mt-0.5 text-sm font-semibold">{aiSupplierName}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {sellerMatches.length > 0
+                        ? t("stock.invoiceScan.supplierMatched", "Found in your suppliers")
+                        : t(
+                            "stock.invoiceScan.supplierNotFound",
+                            "No matching supplier was found. Choose one or add a new name.",
+                          )}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="rounded-lg border border-border bg-background px-4 py-3 text-sm text-muted-foreground">
+                    {t(
+                      "stock.invoiceScan.supplierNotRead",
+                      "The receipt did not include a supplier name. Choose one or add a new name.",
+                    )}
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">{t("stock.seller", "Seller")}</label>
+                  <Popover open={sellerOpen} onOpenChange={setSellerOpen}>
+                    <PopoverTrigger asChild>
+                      <button
+                        type="button"
+                        className={`${fieldClass} text-left ${!sellerId ? "text-muted-foreground" : ""}`}
+                      >
+                        {selectedSeller
+                          ? selectedSeller.name
+                          : t("stock.chooseSeller", "Choose seller")}
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent
+                      className="w-[var(--radix-popover-trigger-width)] max-w-[calc(100vw-2rem)] p-0"
+                      align="start"
+                    >
+                      <Command>
+                        <CommandInput
+                          placeholder={t("stock.searchSeller", "Search seller...")}
+                          className="h-9"
+                        />
+                        <CommandList>
+                          <CommandEmpty>{t("stock.noSellerFound", "No seller found")}</CommandEmpty>
+                          {sellerMatches.length > 0 ? (
+                            <CommandGroup
+                              heading={t("stock.invoiceScan.possibleMatches", "Possible matches")}
+                            >
+                              {sellerMatches.map((seller) => (
+                                <CommandItem
+                                  key={`suggest-${seller.id}`}
+                                  value={`suggest ${seller.name}`}
+                                  onSelect={() => {
+                                    setSellerId(seller.id);
+                                    setNewSellerName("");
+                                    setSellerOpen(false);
+                                  }}
+                                >
+                                  <span className="flex flex-col">
+                                    <span className="text-sm font-medium">{seller.name}</span>
+                                    {seller.phone ? (
+                                      <span className="text-xs text-muted-foreground">
+                                        {seller.phone}
+                                      </span>
+                                    ) : null}
+                                  </span>
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          ) : null}
+                          <CommandGroup heading={t("stock.invoiceScan.allSuppliers", "All suppliers")}>
+                            {sellers.map((seller) => (
+                              <CommandItem
+                                key={seller.id}
+                                value={seller.name}
+                                onSelect={() => {
+                                  setSellerId(seller.id);
+                                  setNewSellerName("");
+                                  setSellerOpen(false);
+                                }}
+                              >
+                                <span className="flex flex-col">
+                                  <span className="text-sm font-medium">{seller.name}</span>
+                                  {seller.phone ? (
+                                    <span className="text-xs text-muted-foreground">
+                                      {seller.phone}
+                                    </span>
+                                  ) : null}
+                                </span>
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">
+                    {t("stock.invoiceScan.addSupplier", "Or type a new supplier name")}
+                  </label>
+                  <input
+                    type="text"
+                    value={newSellerName}
+                    onChange={(e) => {
+                      setNewSellerName(e.target.value);
+                      if (e.target.value.trim()) setSellerId("");
+                    }}
+                    className={fieldClass}
+                    placeholder={t("stock.seller", "Seller")}
+                  />
+                </div>
+              </section>
+            </div>
           </div>
 
           <div className="flex shrink-0 justify-between gap-2">
@@ -593,7 +725,7 @@ export default function InvoiceScanWizard({
               type="button"
               className="bg-green-600 text-white hover:bg-green-700"
               disabled={!supplierReady}
-              onClick={() => setStep("products")}
+              onClick={() => onStepChange("products")}
             >
               {t("stock.invoiceScan.next", "Next")}
             </Button>
@@ -603,19 +735,21 @@ export default function InvoiceScanWizard({
 
       {step === "products" ? (
         <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden">
-          <p className="shrink-0 text-sm text-muted-foreground">
+          <p className="shrink-0 text-sm leading-relaxed text-muted-foreground">
             {t(
               "stock.invoiceScan.productsHint",
-              "Match each scanned line, or create a new product.",
+              "Match one receipt line at a time: pick a suggested product, choose another from stock, or create a new one, then confirm. The next line opens automatically. Click a line to switch, or skip it if you do not want to add it.",
             )}
           </p>
-          <div className="scrollbar-themed min-h-0 flex-1 space-y-1.5 overflow-y-auto overscroll-contain pr-2 pb-2">
+          <div className="scrollbar-themed min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain pr-2 pb-2">
             {lines.map((line) => (
               <ScanProductLine
                 key={line.key}
                 line={line}
                 products={products}
                 categories={categories}
+                expanded={!line.confirmed && !line.skipped && openLineKey === line.key}
+                onOpen={() => setOpenLineKey(line.key)}
                 onSkip={() => updateLine(line.key, { skipped: !line.skipped, confirmed: false })}
                 onChange={() =>
                   updateLine(line.key, {
@@ -644,14 +778,14 @@ export default function InvoiceScanWizard({
             ))}
           </div>
           <div className="flex shrink-0 justify-between gap-2">
-            <Button type="button" variant="outline" onClick={() => setStep("supplier")}>
+            <Button type="button" variant="outline" onClick={() => onStepChange("supplier")}>
               {t("stock.invoiceScan.back", "Back")}
             </Button>
             <Button
               type="button"
               className="bg-green-600 text-white hover:bg-green-700"
               disabled={!productsStepValid}
-              onClick={() => setStep("review")}
+              onClick={() => onStepChange("review")}
             >
               {t("stock.invoiceScan.next", "Next")}
             </Button>
@@ -661,151 +795,85 @@ export default function InvoiceScanWizard({
 
       {step === "review" ? (
         <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden">
-          <div className="shrink-0 space-y-2">
+          <div className="shrink-0 space-y-1">
+            <h3 className="text-base font-semibold">
+              {t("stock.invoiceScan.reviewHeading", "Stock to add")}
+            </h3>
             <p className="text-sm text-muted-foreground">
-              {t(
-                "stock.invoiceScan.reviewHint",
-                "Check supplier and products before adding this purchase to stock.",
-              )}
+              {t("stock.invoiceScan.reviewHint", "This is what will be added to stock.")}
             </p>
-            <div className="rounded-md border border-border bg-card px-3 py-1.5">
-              <p className="text-xs text-muted-foreground">
+            <p className="text-sm">
+              <span className="text-muted-foreground">
                 {t("stock.invoiceScan.supplier", "Supplier")}
                 {": "}
-                <span className="text-sm font-semibold text-foreground">
-                  {selectedSeller?.name || newSellerName.trim()}
-                </span>
-              </p>
-            </div>
+              </span>
+              <span className="font-medium">
+                {selectedSeller?.name || newSellerName.trim()}
+              </span>
+            </p>
           </div>
 
-          <div className="scrollbar-themed min-h-0 flex-1 space-y-1.5 overflow-y-auto overscroll-contain pr-1">
-            {reviewGroups.map((group) => {
-              const first = group[0];
-              const combined = group.length > 1;
-              const catalog = products.find((p) => p.id === first.existingProductId);
-              const addQty = group.reduce((sum, line) => sum + line.quantity, 0);
-              const lineTotal = group.reduce(
-                (sum, line) => sum + line.quantity * unitPurchasePrice(line),
-                0,
-              );
-              const selling = group[group.length - 1].sellingPrice;
-              const stockBought = combined
-                ? safePrice(mergedCatalogBoughtPrice(group, catalog))
-                : first.boughtPrice;
-              const weighted = group.some((line) => line.priceStrategy === "weighted");
-              const keepNew = group.some((line) => line.priceStrategy === "new");
-              const showScannedAs =
-                !combined && first.aiName && first.aiName !== first.productName;
-              const showStockBought =
-                !first.isNewProduct &&
-                isPriceDifferent(first.boughtPrice, unitPurchasePrice(first));
+          <div className="min-h-0 flex-1 overflow-hidden rounded-xl border border-border">
+            <div className="scrollbar-themed h-full overflow-auto overscroll-contain">
+            <table className="w-full border-separate border-spacing-0 text-sm">
+              <thead className="sticky top-0 z-10 bg-muted text-xs font-medium text-muted-foreground">
+                <tr>
+                  <th className="px-4 py-2.5 text-start font-medium first:rounded-ss-xl">
+                    {t("stock.invoiceScan.productName", "Product name")}
+                  </th>
+                  <th className="px-4 py-2.5 text-end font-medium">
+                    {t("stock.quantity", "Quantity")}
+                  </th>
+                  <th className="px-4 py-2.5 text-end font-medium">
+                    {t("stock.boughtPrice", "Bought Price")}
+                  </th>
+                  <th className="px-4 py-2.5 text-end font-medium">
+                    {t("stock.invoiceScan.reviewColTotal", "Total")}
+                  </th>
+                  <th className="px-4 py-2.5 text-end font-medium last:rounded-se-xl">
+                    {t("stock.sellingPrice", "Selling Price")}
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {reviewGroups.map((group) => {
+                  const first = group[0];
+                  const addQty = group.reduce((sum, line) => sum + line.quantity, 0);
+                  const lineTotal = group.reduce(
+                    (sum, line) => sum + line.quantity * unitPurchasePrice(line),
+                    0,
+                  );
+                  const unitBought = addQty > 0 ? lineTotal / addQty : unitPurchasePrice(first);
+                  const selling = group[group.length - 1].sellingPrice;
 
-              return (
-                <div
-                  key={first.existingProductId || first.key}
-                  className="rounded-md border border-border bg-card px-3 py-1.5"
-                >
-                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                    <p className="min-w-0 truncate text-sm font-medium">{first.productName}</p>
-                    {first.categoryName ? (
-                      <span className="text-xs text-muted-foreground">{first.categoryName}</span>
-                    ) : null}
-                    <span
-                      className={
-                        first.isNewProduct
-                          ? "rounded-full bg-green-100 px-2 py-0.5 text-[11px] font-medium text-green-700"
-                          : "rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground"
-                      }
-                    >
-                      {first.isNewProduct
-                        ? t("stock.invoiceScan.newProduct", "New product")
-                        : t("stock.invoiceScan.existingProduct", "Existing")}
-                    </span>
-                    {weighted ? (
-                      <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[11px] font-medium text-blue-700">
-                        {t("stock.invoiceScan.weighted", "Weighted avg")}
-                      </span>
-                    ) : null}
-                    {keepNew ? (
-                      <span className="rounded-full bg-purple-100 px-2 py-0.5 text-[11px] font-medium text-purple-700">
-                        {t("stock.newPrice", "New Price")}
-                      </span>
-                    ) : null}
-                    {showScannedAs ? (
-                      <span className="text-xs text-muted-foreground">
-                        {t("stock.invoiceScan.scannedAs", "On the receipt: {{name}}", {
-                          name: first.aiName,
-                        })}
-                      </span>
-                    ) : null}
-                    <span className="ms-auto rounded-md bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-700">
-                      {t("stock.invoiceScan.lineTotal", "Line total")}: {money(lineTotal)}
-                    </span>
-                  </div>
-
-                  {combined ? (
-                    <div className="mt-1.5 space-y-1">
-                      {group.map((line) => (
-                        <div
-                          key={line.key}
-                          className="flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5 rounded border border-border/70 bg-background px-2 py-1"
-                        >
-                          <p className="min-w-0 flex-1 truncate text-sm">{line.aiName}</p>
-                          <p className="text-xs tabular-nums text-muted-foreground">
-                            {t("stock.quantity", "Quantity")}:{" "}
-                            <span className="font-semibold text-foreground">{line.quantity}</span>
-                            {" · "}
-                            {t("stock.boughtPrice", "Bought Price")}:{" "}
-                            <span className="font-semibold text-foreground">
-                              {money(unitPurchasePrice(line))}
-                            </span>
-                          </p>
-                        </div>
-                      ))}
-                      <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 rounded border border-green-200 bg-green-50 px-2 py-1 dark:border-green-900/50 dark:bg-green-950/30">
-                        <span className="text-[11px] font-medium uppercase tracking-wide text-green-800 dark:text-green-300">
-                          {t("stock.invoiceScan.stockAfterPurchase", "After this purchase")}
-                        </span>
-                        <ReviewStat
-                          label={t("stock.invoiceScan.qtyToAdd", "Quantity to add")}
-                          value={String(addQty)}
-                        />
-                        <ReviewStat
-                          label={t("stock.invoiceScan.stockBoughtPrice", "Stock bought price")}
-                          value={money(stockBought)}
-                        />
-                        <ReviewStat
-                          label={t("stock.sellingPrice", "Selling Price")}
-                          value={money(selling)}
-                        />
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5">
-                      <ReviewStat
-                        label={t("stock.quantity", "Quantity")}
-                        value={String(first.quantity)}
-                      />
-                      <ReviewStat
-                        label={t("stock.boughtPrice", "Bought Price")}
-                        value={money(unitPurchasePrice(first))}
-                      />
-                      <ReviewStat
-                        label={t("stock.sellingPrice", "Selling Price")}
-                        value={money(first.sellingPrice)}
-                      />
-                      {showStockBought ? (
-                        <ReviewStat
-                          label={t("stock.invoiceScan.stockBoughtPrice", "Stock bought price")}
-                          value={money(first.boughtPrice)}
-                        />
-                      ) : null}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+                  return (
+                    <tr key={first.existingProductId || first.key}>
+                      <td className="max-w-0 border-t border-border px-4 py-2.5">
+                        <span className="block truncate font-medium">{first.productName}</span>
+                        {first.isNewProduct ? (
+                          <span className="text-xs text-muted-foreground">
+                            {t("stock.invoiceScan.newProduct", "New product")}
+                          </span>
+                        ) : null}
+                      </td>
+                      <td className="border-t border-border px-4 py-2.5 text-end tabular-nums">
+                        {addQty}
+                      </td>
+                      <td className="border-t border-border px-4 py-2.5 text-end tabular-nums whitespace-nowrap">
+                        {money(unitBought)}
+                      </td>
+                      <td className="border-t border-border px-4 py-2.5 text-end tabular-nums font-medium whitespace-nowrap">
+                        {money(lineTotal)}
+                      </td>
+                      <td className="border-t border-border px-4 py-2.5 text-end tabular-nums whitespace-nowrap">
+                        {money(selling)}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            </div>
           </div>
 
           <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -816,12 +884,12 @@ export default function InvoiceScanWizard({
               <span className="text-lg font-semibold tabular-nums">{money(purchaseTotal)}</span>
             </p>
             <div className="flex justify-between gap-2 sm:justify-end">
-              <Button type="button" variant="outline" onClick={() => setStep("products")}>
+              <Button type="button" variant="outline" onClick={() => onStepChange("products")}>
                 {t("stock.invoiceScan.back", "Back")}
               </Button>
               <Button
                 type="button"
-                className="h-11 bg-green-600 px-5 text-base text-white hover:bg-green-700"
+                className="bg-green-600 text-white hover:bg-green-700"
                 disabled={saving}
                 onClick={() => void runSave()}
               >

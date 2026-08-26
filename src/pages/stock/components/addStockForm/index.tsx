@@ -2179,9 +2179,6 @@ export default function AddStockForm({
             />
           </div>
 
-          <InvoiceScanButton onClick={() => setInvoiceScanOpen(true)} />
-          <InvoiceScanModal open={invoiceScanOpen} onOpenChange={setInvoiceScanOpen} />
-
           {/* Main Form */}
           <form onSubmit={handleAddProduct} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -2414,7 +2411,7 @@ export default function AddStockForm({
 
             <hr />
 
-            <div className="flex gap-3">
+            <div className="flex gap-3 items-center">
               <Button
                 type="submit"
                 disabled={loading}
@@ -2470,8 +2467,13 @@ export default function AddStockForm({
               >
                 {t("stock.reset", "Reset")}
               </Button>
+
+              <div className="ml-auto">
+                <InvoiceScanButton onClick={() => setInvoiceScanOpen(true)} />
+              </div>
             </div>
           </form>
+          <InvoiceScanModal open={invoiceScanOpen} onOpenChange={setInvoiceScanOpen} />
 
           {/* Pending Products List (Multi Mode) */}
           {isMultiMode && pendingProducts.length > 0 && (
