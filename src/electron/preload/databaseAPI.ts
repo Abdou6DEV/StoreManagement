@@ -234,6 +234,8 @@ export const databaseAPI = {
         price: number;
       }>;
     }) => ipcRenderer.invoke("db:purchases:createWithItems", data),
+    applyInvoiceScan: (data: import("../../lib/invoiceScan/invoiceScanPurchase").InvoiceScanPurchaseInput) =>
+      ipcRenderer.invoke("db:purchases:applyInvoiceScan", data),
     updateWithItems: (
       purchaseId: string,
       data: {

@@ -21,6 +21,12 @@ import { useStock } from "../../../../lib/contexts/stockContext";
 import { useToast } from "../../../../lib/contexts/toastContext";
 import type { ScanReceiptExtraction } from "../../../../lib/ai/scanReceiptTypes";
 import { rankNameMatches } from "../../../../lib/invoiceScan/fuzzyMatch";
+import {
+  mergedCatalogBoughtPrice,
+  roundMoney,
+  unitPurchasePrice,
+  type InvoiceScanSaveErrorCode,
+} from "../../../../lib/invoiceScan/invoiceScanPurchase";
 import { PriceConfirmationDialog } from "../priceConfirmationDialog";
 import { SellingPriceWarningDialog } from "../sellingPriceWarningDialog";
 import ScanProductLine from "./ScanProductLine";
@@ -37,17 +43,58 @@ type Step = "supplier" | "products" | "review";
 const fieldClass =
   "w-full px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-green-500/50 focus:border-green-500 transition-all";
 
-const safePrice = (value: number | string | undefined): number => {
-  const num = Number(value || 0);
-  return Math.round(num * 100) / 100;
-};
+const safePrice = roundMoney;
 
 const isPriceDifferent = (a: number, b: number) => Math.abs(a - b) > 0.01;
 
-const unitPurchasePrice = (line: WizardLine) =>
-  line.actualPurchasePrice && line.actualPurchasePrice > 0
-    ? line.actualPurchasePrice
-    : line.boughtPrice;
+function saveErrorMessage(
+  t: (key: string, defaultValue: string, options?: { name?: string }) => string,
+  code: InvoiceScanSaveErrorCode,
+  name?: string,
+): string {
+  const label = name ?? "";
+  if (code === "duplicate_new_name") {
+    return t(
+      "stock.invoiceScan.duplicateNewName",
+      'Two new products are named "{{name}}". Rename one, skip a line, or match the second to an existing product.',
+      { name: label },
+    );
+  }
+  if (code === "name_exists") {
+    return t(
+      "stock.invoiceScan.nameExists",
+      'A product named "{{name}}" already exists. Match that line to the existing product instead of creating a new one.',
+      { name: label },
+    );
+  }
+  if (code === "duplicate_barcode") {
+    return t(
+      "stock.invoiceScan.duplicateBarcode",
+      "Two new products use barcode {{name}}. Use a unique barcode or leave it empty.",
+      { name: label },
+    );
+  }
+  if (code === "barcode_exists") {
+    return t(
+      "stock.invoiceScan.barcodeExists",
+      "Barcode {{name}} is already used by another product.",
+      { name: label },
+    );
+  }
+  if (code === "product_missing") {
+    return t(
+      "stock.invoiceScan.productMissing",
+      "A matched product is no longer in stock. Go back and match the lines again.",
+    );
+  }
+  if (code === "invalid") {
+    return t(
+      "stock.invoiceScan.saveInvalid",
+      "The purchase data is incomplete. Go back and confirm each product.",
+    );
+  }
+  return t("stock.invoiceScan.saveFailed", "Could not save the stock purchase.");
+}
 
 function ReviewStat({ label, value }: { label: string; value: string }) {
   return (
@@ -56,26 +103,6 @@ function ReviewStat({ label, value }: { label: string; value: string }) {
       <span className="font-semibold tabular-nums text-foreground">{value}</span>
     </span>
   );
-}
-
-function mergedCatalogBoughtPrice(
-  group: WizardLine[],
-  current: { quantity: number; boughtPrice: number } | undefined,
-): number {
-  const currentQty = current?.quantity || 0;
-  const catalogPrice = current?.boughtPrice ?? group[0]?.originalBoughtPrice ?? 0;
-  const addQty = group.reduce((sum, line) => sum + line.quantity, 0);
-  const incomingCost = group.reduce(
-    (sum, line) => sum + line.quantity * unitPurchasePrice(line),
-    0,
-  );
-  const replaceCatalog = group.every((line) => line.priceStrategy === "new");
-  if (replaceCatalog) {
-    return addQty > 0 ? incomingCost / addQty : unitPurchasePrice(group[group.length - 1]);
-  }
-  const totalQty = currentQty + addQty;
-  if (totalQty <= 0) return unitPurchasePrice(group[group.length - 1]);
-  return (currentQty * catalogPrice + incomingCost) / totalQty;
 }
 
 function buildInitialLines(extraction: ScanReceiptExtraction): WizardLine[] {
@@ -366,58 +393,43 @@ export default function InvoiceScanWizard({
   const saveAll = async (sid: string) => {
     setSaving(true);
     try {
-      const purchaseItems: Array<{ productId: string; quantity: number; price: number }> = [];
-
-      for (const line of activeLines.filter((l) => l.isNewProduct)) {
-        await window.api.database.categories.ensure(line.categoryName);
-        const created = await window.api.database.products.add({
-          product: {
+      const result = await window.api.database.purchases.applyInvoiceScan({
+        sellerId: sid,
+        username: user?.username ?? "unknown",
+        newProducts: activeLines
+          .filter((line) => line.isNewProduct)
+          .map((line) => ({
             name: line.productName.trim(),
             categoryName: line.categoryName.trim(),
             quantity: line.quantity,
             boughtPrice: safePrice(line.boughtPrice),
             sellingPrice: safePrice(line.sellingPrice),
             codebar: line.codebar,
-            photo: null,
-          },
-          username: user?.username ?? "unknown",
-        });
-        purchaseItems.push({
-          productId: created.id,
-          quantity: line.quantity,
-          price: line.actualPurchasePrice || line.boughtPrice,
-        });
-      }
-
-      for (const [productId, group] of existingLineGroups) {
-        const current = products.find((p) => p.id === productId);
-        const currentQty = current?.quantity || 0;
-        const addQty = group.reduce((sum, line) => sum + line.quantity, 0);
-        const last = group[group.length - 1];
-        await window.api.database.products.update(
+          })),
+        existingGroups: [...existingLineGroups.entries()].map(([productId, group]) => ({
           productId,
-          {
-            quantity: currentQty + addQty,
-            boughtPrice: safePrice(mergedCatalogBoughtPrice(group, current)),
-            sellingPrice: safePrice(last.sellingPrice),
-          },
-          user?.username ?? "unknown",
-          "activityLog.actions.quantityAdded",
-        );
-        for (const line of group) {
-          purchaseItems.push({
-            productId,
+          sellingPrice: group[group.length - 1].sellingPrice,
+          lines: group.map((line) => ({
             quantity: line.quantity,
-            price: unitPurchasePrice(line),
-          });
-        }
-      }
+            unitPrice: unitPurchasePrice(line),
+            priceStrategy: line.priceStrategy,
+          })),
+        })),
+      });
 
-      if (purchaseItems.length > 0) {
-        await window.api.database.purchases.createWithItems({
-          sellerId: sid,
-          items: purchaseItems,
-        });
+      if (result.success === false) {
+        showToast(saveErrorMessage(t, result.code, result.name), "error");
+        if (
+          result.code === "duplicate_new_name" ||
+          result.code === "name_exists" ||
+          result.code === "duplicate_barcode" ||
+          result.code === "barcode_exists" ||
+          result.code === "product_missing" ||
+          result.code === "invalid"
+        ) {
+          setStep("products");
+        }
+        return;
       }
 
       await refetchProducts();

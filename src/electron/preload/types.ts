@@ -200,6 +200,9 @@ export type DatabaseAPI = {
     getById: (id: string) => Promise<any>;
     getByProduct: (productId: string) => Promise<any[]>;
     getBySeller: (sellerId: string) => Promise<any[]>;
+    applyInvoiceScan: (
+      data: import("../../lib/invoiceScan/invoiceScanPurchase").InvoiceScanPurchaseInput
+    ) => Promise<import("../../lib/invoiceScan/invoiceScanPurchase").InvoiceScanSaveResult>;
   };
   manualProducts: {
     search: (
