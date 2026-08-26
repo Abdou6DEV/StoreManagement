@@ -77,6 +77,7 @@ import {
   deletePurchaseItem,
   getPurchaseItemsByPurchase,
 } from "../../lib/database/purchases";
+import { applyInvoiceScanPurchase } from "../../lib/database/invoiceScanPurchase";
 import {
   searchManualProducts,
   getAllManualProducts,
@@ -506,6 +507,10 @@ ipcMain.handle("db:products:deleteMultipleProducts", async (_, productIds: strin
 
   ipcMain.handle("db:purchases:createWithItems", async (_event, data) => {
     return await createPurchaseWithItems(data);
+  });
+
+  ipcMain.handle("db:purchases:applyInvoiceScan", async (_event, data) => {
+    return await applyInvoiceScanPurchase(data);
   });
 
   ipcMain.handle(

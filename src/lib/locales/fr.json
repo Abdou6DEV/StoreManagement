@@ -1060,7 +1060,13 @@
       "purchaseTotal": "Total de l'achat",
       "saving": "Enregistrement…",
       "confirm": "Confirmer et ajouter au stock",
-      "saveFailed": "Impossible d'enregistrer l'achat."
+      "saveFailed": "Impossible d'enregistrer l'achat.",
+      "duplicateNewName": "Deux nouveaux produits s'appellent « {{name}} ». Renommez-en un, ignorez une ligne, ou associez le second à un produit existant.",
+      "nameExists": "Un produit nommé « {{name}} » existe déjà. Associez cette ligne au produit existant au lieu d'en créer un nouveau.",
+      "duplicateBarcode": "Deux nouveaux produits utilisent le code-barres {{name}}. Utilisez un code unique ou laissez le champ vide.",
+      "barcodeExists": "Le code-barres {{name}} est déjà utilisé par un autre produit.",
+      "productMissing": "Un produit associé n'est plus en stock. Revenez en arrière et associez les lignes à nouveau.",
+      "saveInvalid": "Les données de l'achat sont incomplètes. Revenez en arrière et confirmez chaque produit."
     },
     "addButton": "Ajouter le produit",
     "adding": "Ajout...",

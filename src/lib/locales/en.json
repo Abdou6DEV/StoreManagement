@@ -1696,7 +1696,13 @@
       "purchaseTotal": "Purchase total",
       "saving": "Saving…",
       "confirm": "Confirm & add stock",
-      "saveFailed": "Could not save the stock purchase."
+      "saveFailed": "Could not save the stock purchase.",
+      "duplicateNewName": "Two new products are named \"{{name}}\". Rename one, skip a line, or match the second to an existing product.",
+      "nameExists": "A product named \"{{name}}\" already exists. Match that line to the existing product instead of creating a new one.",
+      "duplicateBarcode": "Two new products use barcode {{name}}. Use a unique barcode or leave it empty.",
+      "barcodeExists": "Barcode {{name}} is already used by another product.",
+      "productMissing": "A matched product is no longer in stock. Go back and match the lines again.",
+      "saveInvalid": "The purchase data is incomplete. Go back and confirm each product."
     },
     "addButton": "Add Product",
     "editTitle": "Edit Product",
