@@ -14,7 +14,10 @@ import { rankNameMatches } from "../../../../lib/invoiceScan/fuzzyMatch";
 import type { WizardLine } from "./wizardTypes";
 
 const fieldClass =
-  "w-full px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-green-500/50 focus:border-green-500 transition-all";
+  "h-8 w-full px-2.5 py-1 rounded-md border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-green-500/50 focus:border-green-500 transition-all";
+
+const compactNumberClass =
+  "h-8 w-full px-2.5 py-1 pr-8 rounded-md border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-green-500/50 focus:border-green-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-muted/50";
 
 type Mode = "choose" | "preview" | "create" | "pick";
 
@@ -125,21 +128,20 @@ export default function ScanProductLine({
 
   if (line.skipped) {
     return (
-      <div className="rounded-lg border border-border bg-card p-4 opacity-60">
-        <div className="flex items-start justify-between gap-2">
-          <div>
-            <p className="text-sm font-medium">
-              {line.aiName}
-              <span className="mx-2">·</span>
-              {t("stock.quantity", "Quantity")}: {line.quantity}
-              <span className="mx-2">·</span>
-              {t("stock.boughtPrice", "Bought Price")}: {line.boughtPrice || "—"} {currency}
-            </p>
-            <p className="mt-1 text-xs text-muted-foreground">
+      <div className="rounded-md border border-border bg-card px-3 py-1.5 opacity-60">
+        <div className="flex items-center justify-between gap-2">
+          <p className="min-w-0 truncate text-sm">
+            <span className="font-medium">{line.aiName}</span>
+            <span className="mx-1.5 text-muted-foreground">·</span>
+            {t("stock.quantity", "Quantity")}: {line.quantity}
+            <span className="mx-1.5 text-muted-foreground">·</span>
+            {t("stock.boughtPrice", "Bought Price")}: {line.boughtPrice || "—"} {currency}
+            <span className="mx-1.5 text-muted-foreground">·</span>
+            <span className="text-muted-foreground">
               {t("stock.invoiceScan.skippedLine", "Skipped")}
-            </p>
-          </div>
-          <Button type="button" variant="ghost" size="sm" onClick={onSkip}>
+            </span>
+          </p>
+          <Button type="button" variant="ghost" size="sm" className="h-7 shrink-0" onClick={onSkip}>
             {t("stock.invoiceScan.include", "Include")}
           </Button>
         </div>
@@ -149,36 +151,42 @@ export default function ScanProductLine({
 
   if (line.confirmed) {
     return (
-      <div className="rounded-lg border border-border bg-card p-4">
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <p className="flex flex-wrap items-center gap-x-2 text-sm font-medium">
-              <Check className="h-4 w-4 text-green-600" />
-              <span>{line.productName}</span>
-              <span>·</span>
-              <span>
-                {t("stock.quantity", "Quantity")}: {line.quantity}
-              </span>
-              <span>·</span>
-              <span>
-                {t("stock.boughtPrice", "Bought Price")}: {line.boughtPrice} {currency}
-              </span>
-            </p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              {line.categoryName}
-              {" · "}
+      <div className="rounded-md border border-border bg-card px-3 py-1.5">
+        <div className="flex items-center justify-between gap-2">
+          <p className="flex min-w-0 flex-wrap items-center gap-x-1.5 text-sm leading-tight">
+            <Check className="h-3.5 w-3.5 shrink-0 text-green-600" />
+            <span className="font-medium">{line.productName}</span>
+            <span className="text-muted-foreground">·</span>
+            <span>
+              {t("stock.quantity", "Quantity")}: {line.quantity}
+            </span>
+            <span className="text-muted-foreground">·</span>
+            <span>
+              {t("stock.boughtPrice", "Bought Price")}: {line.boughtPrice} {currency}
+            </span>
+            <span className="text-muted-foreground">·</span>
+            <span>
+              {t("stock.sellingPrice", "Selling Price")}: {line.sellingPrice} {currency}
+            </span>
+            {line.categoryName ? (
+              <>
+                <span className="text-muted-foreground">·</span>
+                <span className="text-muted-foreground">{line.categoryName}</span>
+              </>
+            ) : null}
+            <span className="text-muted-foreground">·</span>
+            <span className="text-muted-foreground">
               {line.isNewProduct
                 ? t("stock.invoiceScan.newProduct", "New product")
                 : t("stock.invoiceScan.existingProduct", "Existing")}
-              {" · "}
-              {t("stock.sellingPrice", "Selling Price")}: {line.sellingPrice} {currency}
-            </p>
-          </div>
-          <div className="flex shrink-0 gap-1">
+            </span>
+          </p>
+          <div className="flex shrink-0 gap-0.5">
             <Button
               type="button"
               variant="ghost"
               size="sm"
+              className="h-7"
               onClick={() => {
                 setMode("choose");
                 setPreview(null);
@@ -187,7 +195,7 @@ export default function ScanProductLine({
             >
               {t("stock.invoiceScan.changeMatch", "Change")}
             </Button>
-            <Button type="button" variant="ghost" size="sm" onClick={onSkip}>
+            <Button type="button" variant="ghost" size="sm" className="h-7" onClick={onSkip}>
               {t("stock.invoiceScan.skip", "Skip")}
             </Button>
           </div>
@@ -200,86 +208,93 @@ export default function ScanProductLine({
   const displayName = mode === "preview" && preview ? preview.name : line.aiName;
 
   return (
-    <div className="space-y-3 rounded-lg border border-border bg-card p-4">
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <p className="text-sm font-medium">
-            {displayName}
-            <span className="mx-2">·</span>
-            {t("stock.quantity", "Quantity")}: {line.quantity}
-            {showMatches ? (
-              <>
-                <span className="mx-2">·</span>
-                {t("stock.boughtPrice", "Bought Price")}: {line.boughtPrice || "—"} {currency}
-              </>
-            ) : null}
-            {mode === "preview" && preview ? (
-              <span className="text-muted-foreground">
-                <span className="mx-2">·</span>
-                {preview.categoryName}
-              </span>
-            ) : null}
-          </p>
-        </div>
-        <div className="flex shrink-0 gap-1">
+    <div className="space-y-1.5 rounded-md border border-border bg-card px-3 py-1.5">
+      <div className="flex items-center justify-between gap-2">
+        <p className="min-w-0 truncate text-sm leading-tight">
+          <span className="font-medium">{displayName}</span>
+          <span className="mx-1.5 text-muted-foreground">·</span>
+          {t("stock.quantity", "Quantity")}: {line.quantity}
+          {showMatches ? (
+            <>
+              <span className="mx-1.5 text-muted-foreground">·</span>
+              {t("stock.boughtPrice", "Bought Price")}: {line.boughtPrice || "—"} {currency}
+            </>
+          ) : null}
+          {mode === "preview" && preview ? (
+            <span className="text-muted-foreground">
+              <span className="mx-1.5">·</span>
+              {preview.categoryName}
+            </span>
+          ) : null}
+        </p>
+        <div className="flex shrink-0 gap-0.5">
           {mode === "preview" || mode === "create" ? (
-            <Button type="button" variant="ghost" size="sm" onClick={backToMatches}>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-7"
+              onClick={backToMatches}
+            >
               {t("stock.invoiceScan.changeMatch", "Change")}
             </Button>
           ) : null}
-          <Button type="button" variant="ghost" size="sm" onClick={onSkip}>
+          <Button type="button" variant="ghost" size="sm" className="h-7" onClick={onSkip}>
             {t("stock.invoiceScan.skip", "Skip")}
           </Button>
         </div>
       </div>
 
       {mode === "preview" && preview ? (
-        <div className="space-y-3 border-t border-border pt-3">
-          <div className="grid gap-3 sm:grid-cols-3">
-            <div className="space-y-2">
-              <label className="text-sm">{t("stock.boughtPrice", "Bought Price")}</label>
-              <StyledNumberInput
-                value={boughtPrice}
-                onChange={(v: number | "") => setBoughtPrice(v)}
-                placeholder={t("stock.boughtPrice", "Bought Price")}
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm">{t("stock.sellingPrice", "Selling Price")}</label>
-              <StyledNumberInput
-                value={sellingPrice}
-                onChange={(v: number | "") => setSellingPrice(v)}
-                placeholder={t("stock.sellingPrice", "Selling Price")}
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm">{t("stock.codebar", "Codebar")}</label>
-              <input
-                type="text"
-                value={codebar}
-                onChange={(e) => setCodebar(e.target.value)}
-                className={fieldClass}
-                placeholder={t("stock.codebar", "Codebar")}
-              />
-            </div>
+        <div className="flex flex-wrap items-end gap-2 border-t border-border pt-1.5">
+          <div className="min-w-[7rem] flex-1 space-y-0.5">
+            <label className="text-xs text-muted-foreground">
+              {t("stock.boughtPrice", "Bought Price")}
+            </label>
+            <StyledNumberInput
+              value={boughtPrice}
+              onChange={(v: number | "") => setBoughtPrice(v)}
+              placeholder={t("stock.boughtPrice", "Bought Price")}
+              className={compactNumberClass}
+            />
           </div>
-          <div className="flex justify-end">
-            <Button
-              type="button"
-              className="bg-green-600 text-white hover:bg-green-700"
-              onClick={confirmPreview}
-              disabled={typeof boughtPrice !== "number" || boughtPrice <= 0}
-            >
-              {t("cashier.confirm", "Confirm")}
-            </Button>
+          <div className="min-w-[7rem] flex-1 space-y-0.5">
+            <label className="text-xs text-muted-foreground">
+              {t("stock.sellingPrice", "Selling Price")}
+            </label>
+            <StyledNumberInput
+              value={sellingPrice}
+              onChange={(v: number | "") => setSellingPrice(v)}
+              placeholder={t("stock.sellingPrice", "Selling Price")}
+              className={compactNumberClass}
+            />
           </div>
+          <div className="min-w-[7rem] flex-1 space-y-0.5">
+            <label className="text-xs text-muted-foreground">{t("stock.codebar", "Codebar")}</label>
+            <input
+              type="text"
+              value={codebar}
+              onChange={(e) => setCodebar(e.target.value)}
+              className={fieldClass}
+              placeholder={t("stock.codebar", "Codebar")}
+            />
+          </div>
+          <Button
+            type="button"
+            size="sm"
+            className="h-8 bg-green-600 text-white hover:bg-green-700"
+            onClick={confirmPreview}
+            disabled={typeof boughtPrice !== "number" || boughtPrice <= 0}
+          >
+            {t("cashier.confirm", "Confirm")}
+          </Button>
         </div>
       ) : null}
 
       {mode === "create" ? (
-        <div className="space-y-3 border-t border-border pt-3">
-          <div className="space-y-2">
-            <label className="text-sm">{t("stock.type", "Product Type")}</label>
+        <div className="flex flex-wrap items-end gap-2 border-t border-border pt-1.5">
+          <div className="min-w-[8rem] flex-[1.2] space-y-0.5">
+            <label className="text-xs text-muted-foreground">{t("stock.type", "Product Type")}</label>
             <div className="relative">
               <input
                 type="text"
@@ -295,108 +310,109 @@ export default function ScanProductLine({
                 placeholder={t("stock.type", "Product Type")}
               />
               {showCategoryDropdown && filteredCategories.length > 0 ? (
-                <div className="absolute top-full right-0 left-0 z-50 mt-1 max-h-60 overflow-y-auto rounded-lg border border-border bg-card shadow-lg">
+                <div className="absolute top-full right-0 left-0 z-50 mt-0.5 max-h-48 overflow-y-auto rounded-md border border-border bg-card shadow-lg">
                   {filteredCategories.map((category) => (
                     <div
                       key={category}
-                      className="cursor-pointer px-4 py-2 hover:bg-accent/50"
+                      className="cursor-pointer px-2.5 py-1 hover:bg-accent/50"
                       onClick={() => {
                         setCategoryName(category);
                         setShowCategoryDropdown(false);
                       }}
                     >
-                      <span className="text-sm font-medium">{category}</span>
+                      <span className="text-sm">{category}</span>
                     </div>
                   ))}
                 </div>
               ) : null}
             </div>
           </div>
-          <div className="grid gap-3 sm:grid-cols-3">
-            <div className="space-y-2">
-              <label className="text-sm">{t("stock.boughtPrice", "Bought Price")}</label>
-              <StyledNumberInput
-                value={boughtPrice}
-                onChange={(v: number | "") => setBoughtPrice(v)}
-                placeholder={t("stock.boughtPrice", "Bought Price")}
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm">{t("stock.sellingPrice", "Selling Price")}</label>
-              <StyledNumberInput
-                value={sellingPrice}
-                onChange={(v: number | "") => setSellingPrice(v)}
-                placeholder={t("stock.sellingPrice", "Selling Price")}
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm">{t("stock.codebar", "Codebar")}</label>
-              <input
-                type="text"
-                value={codebar}
-                onChange={(e) => setCodebar(e.target.value)}
-                className={fieldClass}
-                placeholder={t("stock.codebar", "Codebar")}
-              />
-            </div>
+          <div className="min-w-[7rem] flex-1 space-y-0.5">
+            <label className="text-xs text-muted-foreground">
+              {t("stock.boughtPrice", "Bought Price")}
+            </label>
+            <StyledNumberInput
+              value={boughtPrice}
+              onChange={(v: number | "") => setBoughtPrice(v)}
+              placeholder={t("stock.boughtPrice", "Bought Price")}
+              className={compactNumberClass}
+            />
           </div>
-          <div className="flex justify-end">
-            <Button
-              type="button"
-              className="bg-green-600 text-white hover:bg-green-700"
-              onClick={confirmCreate}
-              disabled={
-                !categoryName.trim() ||
-                typeof sellingPrice !== "number" ||
-                sellingPrice <= 0 ||
-                typeof boughtPrice !== "number" ||
-                boughtPrice <= 0
-              }
-            >
-              <Plus className="h-4 w-4" />
-              {t("stock.invoiceScan.createProduct", "Create product")}
-            </Button>
+          <div className="min-w-[7rem] flex-1 space-y-0.5">
+            <label className="text-xs text-muted-foreground">
+              {t("stock.sellingPrice", "Selling Price")}
+            </label>
+            <StyledNumberInput
+              value={sellingPrice}
+              onChange={(v: number | "") => setSellingPrice(v)}
+              placeholder={t("stock.sellingPrice", "Selling Price")}
+              className={compactNumberClass}
+            />
           </div>
+          <div className="min-w-[7rem] flex-1 space-y-0.5">
+            <label className="text-xs text-muted-foreground">{t("stock.codebar", "Codebar")}</label>
+            <input
+              type="text"
+              value={codebar}
+              onChange={(e) => setCodebar(e.target.value)}
+              className={fieldClass}
+              placeholder={t("stock.codebar", "Codebar")}
+            />
+          </div>
+          <Button
+            type="button"
+            size="sm"
+            className="h-8 bg-green-600 text-white hover:bg-green-700"
+            onClick={confirmCreate}
+            disabled={
+              !categoryName.trim() ||
+              typeof sellingPrice !== "number" ||
+              sellingPrice <= 0 ||
+              typeof boughtPrice !== "number" ||
+              boughtPrice <= 0
+            }
+          >
+            <Plus className="h-3.5 w-3.5" />
+            {t("stock.invoiceScan.createProduct", "Create product")}
+          </Button>
         </div>
       ) : null}
 
       {showMatches ? (
-        <div className="space-y-2 border-t border-border pt-3">
+        <div className="space-y-1 border-t border-border pt-1.5">
           {matches.length > 0 ? (
             <>
-              <p className="text-xs font-medium text-muted-foreground">
+              <p className="text-[11px] font-medium text-muted-foreground">
                 {t("stock.invoiceScan.possibleMatches", "Possible matches")}
               </p>
-              <div className="overflow-hidden rounded-lg border border-border">
+              <div className="overflow-hidden rounded-md border border-border">
                 {matches.map((product, index) => (
                   <button
                     key={product.id}
                     type="button"
                     className={cn(
-                      "flex w-full flex-col px-4 py-2 text-left hover:bg-accent/50",
+                      "flex w-full items-center gap-2 px-2.5 py-1 text-left text-sm hover:bg-accent/50",
                       index > 0 ? "border-t border-border" : "",
                     )}
                     onClick={() => enterPreview(product)}
                   >
-                    <span className="text-sm font-medium">{product.name}</span>
-                    <span className="text-xs text-muted-foreground">
+                    <span className="min-w-0 truncate font-medium">{product.name}</span>
+                    <span className="ml-auto shrink-0 text-xs text-muted-foreground">
                       {product.categoryName}
-                      {typeof product.quantity === "number"
-                        ? ` · ${product.quantity}`
-                        : ""}
+                      {typeof product.quantity === "number" ? ` · ${product.quantity}` : ""}
                     </span>
                   </button>
                 ))}
               </div>
             </>
           ) : (
-            <p className="text-sm text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
               {t("stock.invoiceScan.noProductMatches", "No matching products.")}
             </p>
           )}
 
-          <div className="flex flex-wrap gap-2 pt-1">
-            <Button type="button" variant="outline" size="sm" onClick={enterCreate}>
+          <div className="flex flex-wrap gap-1.5">
+            <Button type="button" variant="outline" size="sm" className="h-7" onClick={enterCreate}>
               {t("stock.invoiceScan.addNewProduct", "Add new product")}
             </Button>
             <Popover
@@ -408,7 +424,7 @@ export default function ScanProductLine({
               }}
             >
               <PopoverTrigger asChild>
-                <Button type="button" variant="outline" size="sm">
+                <Button type="button" variant="outline" size="sm" className="h-7">
                   {t("stock.invoiceScan.pickProduct", "Pick product")}
                 </Button>
               </PopoverTrigger>
@@ -416,7 +432,7 @@ export default function ScanProductLine({
                 className="w-[min(360px,calc(100vw-2rem))] p-0"
                 align="start"
               >
-                <div className="p-2">
+                <div className="p-1.5">
                   <input
                     type="text"
                     value={pickSearch}
@@ -428,7 +444,7 @@ export default function ScanProductLine({
                 </div>
                 <div className="scrollbar-themed max-h-80 overflow-y-auto">
                   {pickResults.length === 0 ? (
-                    <p className="px-4 py-6 text-center text-sm text-muted-foreground">
+                    <p className="px-3 py-4 text-center text-sm text-muted-foreground">
                       {t("stock.noProduct", "No product found")}
                     </p>
                   ) : (
@@ -436,11 +452,11 @@ export default function ScanProductLine({
                       <button
                         key={product.id}
                         type="button"
-                        className="flex w-full flex-col px-4 py-2 text-left hover:bg-accent/50"
+                        className="flex w-full items-center gap-2 px-2.5 py-1 text-left text-sm hover:bg-accent/50"
                         onClick={() => enterPreview(product)}
                       >
-                        <span className="text-sm font-medium">{product.name}</span>
-                        <span className="text-xs text-muted-foreground">
+                        <span className="min-w-0 truncate font-medium">{product.name}</span>
+                        <span className="ml-auto shrink-0 text-xs text-muted-foreground">
                           {product.categoryName}
                         </span>
                       </button>

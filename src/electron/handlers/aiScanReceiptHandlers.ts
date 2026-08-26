@@ -2,6 +2,7 @@ import fs from "fs";
 import { ipcMain, type WebContents } from "electron";
 import { AI_MODELS } from "../../lib/ai/aiModels";
 import { AI_OFFLINE } from "../../lib/ai/aiMessageLimits";
+import { AI_SCAN_DAY_POINTS } from "../../lib/ai/aiPoints";
 import type { ScanReceiptResult } from "../../lib/ai/scanReceiptTypes";
 import { applyAiQuotaFromConsume } from "../ai/aiQuotaBridge";
 import {
@@ -274,11 +275,36 @@ export function registerAiScanReceiptHandler(): void {
         };
       }
 
-      const entitlement = await runAiConsumeInternal();
-      if (entitlement.success === false) {
-        return mapConsumeFailure(entitlement, event.sender);
+      const peek = await runAiQuotaPeekInternal();
+      if (peek.success === false) {
+        return mapConsumeFailure(peek, event.sender);
       }
-      applyAiQuotaFromConsume(event.sender, entitlement);
+      if (peek.remainingMinute === 0) {
+        return mapConsumeFailure(
+          {
+            success: false,
+            error: "rate_limit_minute",
+            code: "entitlement",
+            entitlementError: "rate_limit_minute",
+          },
+          event.sender,
+        );
+      }
+      if (
+        peek.remainingDay != null &&
+        peek.remainingDay < AI_SCAN_DAY_POINTS
+      ) {
+        return mapConsumeFailure(
+          {
+            success: false,
+            error: "rate_limit_day",
+            code: "entitlement",
+            entitlementError: "rate_limit_day",
+          },
+          event.sender,
+        );
+      }
+      applyAiQuotaFromConsume(event.sender, peek);
 
       const models = visionGeminiModels();
       let lastError = "model_failed";
@@ -304,7 +330,20 @@ export function registerAiScanReceiptHandler(): void {
               continue;
             }
           }
-          return normalizeExtraction(parsed);
+          const extracted = normalizeExtraction(parsed);
+          if (!extracted.success) {
+            lastError = extracted.error || "unreadable";
+            continue;
+          }
+          const charged = await runAiConsumeInternal({
+            dayCost: AI_SCAN_DAY_POINTS,
+            minuteCost: 1,
+          });
+          if (charged.success === false) {
+            return mapConsumeFailure(charged, event.sender);
+          }
+          applyAiQuotaFromConsume(event.sender, charged);
+          return extracted;
         } catch (e) {
           lastError = e instanceof Error ? e.message : String(e);
           continue;

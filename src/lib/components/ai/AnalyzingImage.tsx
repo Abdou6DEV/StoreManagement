@@ -5,6 +5,30 @@ import { useReducedMotion } from "motion/react";
 import { cn } from "../../utils";
 import ShinyText from "../ui/shinyText";
 
+const scanEase = "ease-[cubic-bezier(0.175,0.885,0.32,1.275)]";
+
+/** Horizontal scanner bars from the barcode loader, tinted with AI purple. */
+export function AnalyzingImageScanBars() {
+  return (
+    <>
+      <div
+        className={cn(
+          "pointer-events-none absolute top-0 left-0 z-0 h-[6px] w-full rounded bg-[#9c43fe91] blur-[10px]",
+          "animate-scan motion-reduce:animate-none transition-all duration-1000",
+          scanEase,
+        )}
+      />
+      <div
+        className={cn(
+          "pointer-events-none absolute top-0 left-0 z-[1] h-[5px] w-full rounded bg-[#9c43fe] opacity-90",
+          "animate-scan motion-reduce:animate-none transition-all duration-1000",
+          scanEase,
+        )}
+      />
+    </>
+  );
+}
+
 export function AnalyzingImage({ className, ...props }: ComponentProps<"div">) {
   const { t, i18n } = useTranslation();
   const reduceMotion = useReducedMotion();
@@ -24,7 +48,7 @@ export function AnalyzingImage({ className, ...props }: ComponentProps<"div">) {
         aria-hidden
       >
         <ImageIcon className="absolute inset-0 m-auto size-5 text-muted-foreground/45" />
-        <span className="analyzing-image-frame-bar motion-reduce:hidden" />
+        <AnalyzingImageScanBars />
       </div>
       <ShinyText
         text={label}

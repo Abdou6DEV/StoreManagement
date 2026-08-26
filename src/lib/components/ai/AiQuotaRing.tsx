@@ -33,7 +33,7 @@ export function AiQuotaRing({ className }: { className?: string }) {
 
   const unavailableLabel = t(
     "ai.quotaUnavailable",
-    "Message limit unavailable",
+    "Points limit unavailable",
   );
 
   if (!progress) {
@@ -75,8 +75,8 @@ export function AiQuotaRing({ className }: { className?: string }) {
   const remaining = Math.max(progress.max - progress.used, 0);
   const tooltipLabel =
     remaining === 0
-      ? t("ai.quotaNoneLeft", "No messages left today")
-      : t("ai.quotaRemaining", "{{count}} messages left today", {
+      ? t("ai.quotaNoneLeft", "No points left today")
+      : t("ai.quotaRemaining", "{{count}} points left today", {
           count: remaining,
         });
 

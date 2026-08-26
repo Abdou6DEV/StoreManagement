@@ -685,7 +685,16 @@ function parseAiConsumeSuccessJson(json: unknown): {
   return { remainingMinute, remainingDay, limits };
 }
 
-export async function runAiConsumeInternal(): Promise<AiConsumeResult> {
+export type AiConsumeOptions = {
+  /** Whole points added to ai_usage_daily.count. Default 1. */
+  dayCost?: number;
+  /** Added to ai_usage_minute.count. 0 = day-only settle (no extra minute hit). Default 1. */
+  minuteCost?: number;
+};
+
+export async function runAiConsumeInternal(
+  options?: AiConsumeOptions,
+): Promise<AiConsumeResult> {
   const cfg = getStoreOnlineConfig();
   if ("error" in cfg) {
     return {
@@ -711,7 +720,11 @@ export async function runAiConsumeInternal(): Promise<AiConsumeResult> {
         Authorization: `Bearer ${cfg.anonKey}`,
         apikey: cfg.anonKey,
       },
-      body: JSON.stringify({ device_id: deviceId }),
+      body: JSON.stringify({
+        device_id: deviceId,
+        cost: Math.max(1, Math.floor(options?.dayCost ?? 1)),
+        minute_cost: Math.max(0, Math.floor(options?.minuteCost ?? 1)),
+      }),
     });
 
     const text = await res.text();

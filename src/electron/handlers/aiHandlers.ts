@@ -64,6 +64,7 @@ import {
   setCachedAiQuota,
 } from "../ai/aiQuotaBridge";
 import { quotaFromConsumePayload } from "../../lib/ai/aiQuota";
+import { chatDayPointsFromTokens } from "../../lib/ai/aiPoints";
 import {
   emitChatChunk,
   isEventStream,
@@ -105,6 +106,7 @@ function windowConversation(messages: ChatMessage[]): ChatMessage[] {
 type ModelTurn = {
   text: string;
   toolResults: unknown[];
+  tokensUsed?: number;
 };
 
 type CallModelOptions = {
@@ -600,6 +602,21 @@ async function handleGeminiToolCalls(
   };
 }
 
+function tokensFromGeminiPayload(data: unknown): number {
+  if (!data || typeof data !== "object") return 0;
+  const rec = data as Record<string, unknown>;
+  const usage = rec.usageMetadata ?? rec.usage_metadata;
+  if (!usage || typeof usage !== "object") return 0;
+  const u = usage as Record<string, unknown>;
+  if (typeof u.totalTokenCount === "number" && Number.isFinite(u.totalTokenCount)) {
+    return Math.max(0, Math.floor(u.totalTokenCount));
+  }
+  const prompt = typeof u.promptTokenCount === "number" ? u.promptTokenCount : 0;
+  const candidates =
+    typeof u.candidatesTokenCount === "number" ? u.candidatesTokenCount : 0;
+  return Math.max(0, Math.floor(prompt + candidates));
+}
+
 async function streamGeminiCandidate(
   modelId: string,
   apiKey: string,
@@ -609,7 +626,7 @@ async function streamGeminiCandidate(
   publishChunks: boolean,
   httpStream: boolean,
   webSearch: boolean
-): Promise<GeminiContent | undefined> {
+): Promise<{ content?: GeminiContent; tokens: number }> {
   const url = httpStream
     ? `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:streamGenerateContent?alt=sse&key=${apiKey}`
     : `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${apiKey}`;
@@ -650,8 +667,11 @@ async function streamGeminiCandidate(
   const parts: GeminiPart[] = [];
   let text = "";
   let sawFunctionCall = false;
+  let tokens = 0;
 
   const ingest = (data: unknown) => {
+    const counted = tokensFromGeminiPayload(data);
+    if (counted > tokens) tokens = counted;
     const chunkParts =
       (data as { candidates?: { content?: GeminiContent }[] })
         .candidates?.[0]?.content?.parts ?? [];
@@ -679,8 +699,8 @@ async function streamGeminiCandidate(
   const assembled: GeminiPart[] = [];
   if (text) assembled.push({ text });
   assembled.push(...parts);
-  if (assembled.length === 0) return undefined;
-  return { role: "model", parts: assembled };
+  if (assembled.length === 0) return { tokens };
+  return { content: { role: "model", parts: assembled }, tokens };
 }
 
 async function callGemini(
@@ -695,6 +715,7 @@ async function callGemini(
   let lastToolData: unknown;
   let usedTools = false;
   const toolResults: unknown[] = [];
+  let tokensUsed = 0;
   const maxResultChars = getToolResultCharBudget(modelTpm(modelId));
   const userText = unwrapFollowUpUserText(
     [...messages].reverse().find((message) => message.role === "user")
@@ -730,7 +751,7 @@ async function callGemini(
       );
     }
 
-    const candidateContent = await streamGeminiCandidate(
+    const streamed = await streamGeminiCandidate(
       modelId,
       apiKey,
       currentContents,
@@ -740,6 +761,7 @@ async function callGemini(
       httpStream,
       webSearch
     );
+    tokensUsed += streamed.tokens;
     const {
       hasToolCalls,
       finalText,
@@ -747,7 +769,7 @@ async function callGemini(
       lastToolData: roundData,
       toolResults: roundResults,
     } = await handleGeminiToolCalls(
-      candidateContent,
+      streamed.content,
       currentContents,
       maxResultChars
     );
@@ -762,7 +784,7 @@ async function callGemini(
     }
 
     if (finalText) {
-      return { text: finalText, toolResults };
+      return { text: finalText, toolResults, tokensUsed };
     }
 
     if (usedTools && lastToolData) {
@@ -782,10 +804,10 @@ async function callGemini(
       continue;
     }
 
-    return { text: formatToolFallback(lastToolData, userText), toolResults };
+    return { text: formatToolFallback(lastToolData, userText), toolResults, tokensUsed };
   }
 
-  return { text: formatToolFallback(lastToolData, userText), toolResults };
+  return { text: formatToolFallback(lastToolData, userText), toolResults, tokensUsed };
 }
 
 // Convert tools to OpenAI format (for Mistral, Groq, OpenRouter)
@@ -1403,7 +1425,7 @@ async function rewriteWrongNumbers(
 async function callWithAutomaticModelSwitch(
   messages: ChatMessage[],
   userName?: string
-): Promise<{ text: string; toolResults: unknown[] }> {
+): Promise<{ text: string; toolResults: unknown[]; tokensUsed?: number }> {
   const models = modelsToTry(messages);
   const latestUserText = unwrapFollowUpUserText(
     [...messages].reverse().find((message) => message.role === "user")
@@ -1445,7 +1467,11 @@ async function callWithAutomaticModelSwitch(
           userName
         );
         if (written?.trim()) {
-          return { text: written, toolResults: turn.toolResults };
+          return {
+            text: written,
+            toolResults: turn.toolResults,
+            tokensUsed: turn.tokensUsed,
+          };
         }
         console.warn(
           `[AI] List handoff failed; using ${model.id} reply`
@@ -1453,7 +1479,11 @@ async function callWithAutomaticModelSwitch(
       }
 
       console.log(`[AI] ${model.provider}/${model.id} succeeded`);
-      return { text: turn.text, toolResults: turn.toolResults };
+      return {
+        text: turn.text,
+        toolResults: turn.toolResults,
+        tokensUsed: turn.tokensUsed,
+      };
     } catch (error) {
       if (isAiCancelledError(error)) throw error;
       const status = (error as Error & { status?: number }).status;
@@ -1656,6 +1686,18 @@ export function setupAIHandlers() {
             session.currentUserName
           );
           throwIfAiCancelled();
+          const extraPoints = chatDayPointsFromTokens(outcome.tokensUsed ?? 0) - 1;
+          if (extraPoints > 0) {
+            const extra = await runAiConsumeInternal({
+              dayCost: extraPoints,
+              minuteCost: 0,
+            });
+            if (extra.success) {
+              applyAiQuotaFromConsume(sender, extra);
+            } else {
+              console.warn("[AI] extra daily points failed", extra.error);
+            }
+          }
           const assistantReply = await rewriteWrongNumbers(
             message,
             outcome.text,

@@ -271,11 +271,11 @@ export function AIRuntimeProvider({
         ),
         rateLimitMinute: t(
           "ai.rateLimitMinute",
-          "Too many messages. Please wait a minute and try again.",
+          "Too many AI requests. Please wait a minute and try again.",
         ),
         rateLimitDay: t(
           "ai.rateLimitDay",
-          "Daily AI limit reached. Try again tomorrow.",
+          "Daily AI points limit reached. Try again tomorrow.",
         ),
         disabled: t(
           "ai.disabled",

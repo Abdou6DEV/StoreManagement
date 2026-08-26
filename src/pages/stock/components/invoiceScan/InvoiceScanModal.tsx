@@ -11,7 +11,7 @@ import {
 import { Button } from "../../../../lib/components/button";
 import { cn } from "../../../../lib/utils";
 import type { ScanReceiptExtraction } from "../../../../lib/ai/scanReceiptTypes";
-import { AnalyzingImage } from "../../../../lib/components/ai/AnalyzingImage";
+import { AnalyzingImage, AnalyzingImageScanBars } from "../../../../lib/components/ai/AnalyzingImage";
 import InvoiceScanWizard from "./InvoiceScanWizard";
 
 type Phase =
@@ -233,7 +233,7 @@ export default function InvoiceScanModal({
         setError(
           t(
             "stock.invoiceScan.quota",
-            "AI quota reached. Try again in a minute or tomorrow.",
+            "Not enough AI points. Try again in a minute or tomorrow.",
           ),
         );
       } else if (result.code === "offline" || result.code === "ai_disabled") {
@@ -318,8 +318,8 @@ export default function InvoiceScanModal({
               />
             ) : null}
             <div className="absolute inset-0 bg-background/25" />
-            <div className="analyzing-image-sweep" />
-            <div className="absolute inset-0 flex items-center justify-center p-4">
+            <AnalyzingImageScanBars />
+            <div className="absolute inset-0 flex items-end justify-center p-4">
               <div className="rounded-2xl border border-border/60 bg-background/80 px-4 py-3 shadow-lg backdrop-blur-md">
                 <AnalyzingImage />
               </div>

@@ -51,12 +51,10 @@ const unitPurchasePrice = (line: WizardLine) =>
 
 function ReviewStat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="min-w-[8.5rem] flex-1 rounded-lg bg-muted/60 px-3 py-2.5">
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="mt-1 text-lg font-semibold tabular-nums leading-tight text-foreground">
-        {value}
-      </p>
-    </div>
+    <span className="inline-flex items-baseline gap-1 whitespace-nowrap text-sm">
+      <span className="text-xs text-muted-foreground">{label}:</span>
+      <span className="font-semibold tabular-nums text-foreground">{value}</span>
+    </span>
   );
 }
 
@@ -611,7 +609,7 @@ export default function InvoiceScanWizard({
               "Match each scanned line, or create a new product.",
             )}
           </p>
-          <div className="scrollbar-themed min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain pr-2 pb-2">
+          <div className="scrollbar-themed min-h-0 flex-1 space-y-1.5 overflow-y-auto overscroll-contain pr-2 pb-2">
             {lines.map((line) => (
               <ScanProductLine
                 key={line.key}
@@ -663,24 +661,25 @@ export default function InvoiceScanWizard({
 
       {step === "review" ? (
         <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden">
-          <div className="shrink-0 space-y-3">
-            <p className="text-base text-muted-foreground">
+          <div className="shrink-0 space-y-2">
+            <p className="text-sm text-muted-foreground">
               {t(
                 "stock.invoiceScan.reviewHint",
                 "Check supplier and products before adding this purchase to stock.",
               )}
             </p>
-            <div className="rounded-xl border border-border bg-card px-5 py-4">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            <div className="rounded-md border border-border bg-card px-3 py-1.5">
+              <p className="text-xs text-muted-foreground">
                 {t("stock.invoiceScan.supplier", "Supplier")}
-              </p>
-              <p className="mt-1 text-xl font-semibold">
-                {selectedSeller?.name || newSellerName.trim()}
+                {": "}
+                <span className="text-sm font-semibold text-foreground">
+                  {selectedSeller?.name || newSellerName.trim()}
+                </span>
               </p>
             </div>
           </div>
 
-          <div className="scrollbar-themed min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain pr-1">
+          <div className="scrollbar-themed min-h-0 flex-1 space-y-1.5 overflow-y-auto overscroll-contain pr-1">
             {reviewGroups.map((group) => {
               const first = group[0];
               const combined = group.length > 1;
@@ -698,63 +697,62 @@ export default function InvoiceScanWizard({
               const keepNew = group.some((line) => line.priceStrategy === "new");
               const showScannedAs =
                 !combined && first.aiName && first.aiName !== first.productName;
+              const showStockBought =
+                !first.isNewProduct &&
+                isPriceDifferent(first.boughtPrice, unitPurchasePrice(first));
 
               return (
                 <div
                   key={first.existingProductId || first.key}
-                  className="rounded-xl border border-border bg-card p-4 sm:p-5"
+                  className="rounded-md border border-border bg-card px-3 py-1.5"
                 >
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="text-lg font-semibold leading-snug">{first.productName}</p>
-                      {first.categoryName ? (
-                        <p className="mt-0.5 text-sm text-muted-foreground">{first.categoryName}</p>
-                      ) : null}
-                      {showScannedAs ? (
-                        <p className="mt-1 text-sm text-muted-foreground">
-                          {t("stock.invoiceScan.scannedAs", "On the receipt: {{name}}", {
-                            name: first.aiName,
-                          })}
-                        </p>
-                      ) : null}
-                    </div>
-                    <div className="flex flex-wrap gap-1.5">
-                      <span
-                        className={
-                          first.isNewProduct
-                            ? "rounded-full bg-green-100 px-2.5 py-1 text-xs font-medium text-green-700"
-                            : "rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground"
-                        }
-                      >
-                        {first.isNewProduct
-                          ? t("stock.invoiceScan.newProduct", "New product")
-                          : t("stock.invoiceScan.existingProduct", "Existing")}
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                    <p className="min-w-0 truncate text-sm font-medium">{first.productName}</p>
+                    {first.categoryName ? (
+                      <span className="text-xs text-muted-foreground">{first.categoryName}</span>
+                    ) : null}
+                    <span
+                      className={
+                        first.isNewProduct
+                          ? "rounded-full bg-green-100 px-2 py-0.5 text-[11px] font-medium text-green-700"
+                          : "rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground"
+                      }
+                    >
+                      {first.isNewProduct
+                        ? t("stock.invoiceScan.newProduct", "New product")
+                        : t("stock.invoiceScan.existingProduct", "Existing")}
+                    </span>
+                    {weighted ? (
+                      <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[11px] font-medium text-blue-700">
+                        {t("stock.invoiceScan.weighted", "Weighted avg")}
                       </span>
-                      {weighted ? (
-                        <span className="rounded-full bg-blue-100 px-2.5 py-1 text-xs font-medium text-blue-700">
-                          {t("stock.invoiceScan.weighted", "Weighted avg")}
-                        </span>
-                      ) : null}
-                      {keepNew ? (
-                        <span className="rounded-full bg-purple-100 px-2.5 py-1 text-xs font-medium text-purple-700">
-                          {t("stock.newPrice", "New Price")}
-                        </span>
-                      ) : null}
-                    </div>
+                    ) : null}
+                    {keepNew ? (
+                      <span className="rounded-full bg-purple-100 px-2 py-0.5 text-[11px] font-medium text-purple-700">
+                        {t("stock.newPrice", "New Price")}
+                      </span>
+                    ) : null}
+                    {showScannedAs ? (
+                      <span className="text-xs text-muted-foreground">
+                        {t("stock.invoiceScan.scannedAs", "On the receipt: {{name}}", {
+                          name: first.aiName,
+                        })}
+                      </span>
+                    ) : null}
+                    <span className="ms-auto rounded-md bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-700">
+                      {t("stock.invoiceScan.lineTotal", "Line total")}: {money(lineTotal)}
+                    </span>
                   </div>
 
                   {combined ? (
-                    <div className="mt-4 space-y-2">
-                      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                        {t("stock.invoiceScan.receiptLines", "Receipt lines")}
-                      </p>
+                    <div className="mt-1.5 space-y-1">
                       {group.map((line) => (
                         <div
                           key={line.key}
-                          className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border/70 bg-background px-3 py-2.5"
+                          className="flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5 rounded border border-border/70 bg-background px-2 py-1"
                         >
-                          <p className="min-w-0 flex-1 text-sm font-medium">{line.aiName}</p>
-                          <p className="text-sm tabular-nums text-muted-foreground">
+                          <p className="min-w-0 flex-1 truncate text-sm">{line.aiName}</p>
+                          <p className="text-xs tabular-nums text-muted-foreground">
                             {t("stock.quantity", "Quantity")}:{" "}
                             <span className="font-semibold text-foreground">{line.quantity}</span>
                             {" · "}
@@ -765,62 +763,46 @@ export default function InvoiceScanWizard({
                           </p>
                         </div>
                       ))}
-                      <div className="rounded-lg border border-green-200 bg-green-50 px-3 py-3 dark:border-green-900/50 dark:bg-green-950/30">
-                        <p className="text-xs font-medium uppercase tracking-wide text-green-800 dark:text-green-300">
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 rounded border border-green-200 bg-green-50 px-2 py-1 dark:border-green-900/50 dark:bg-green-950/30">
+                        <span className="text-[11px] font-medium uppercase tracking-wide text-green-800 dark:text-green-300">
                           {t("stock.invoiceScan.stockAfterPurchase", "After this purchase")}
-                        </p>
-                        <div className="mt-2 flex flex-wrap gap-2">
-                          <ReviewStat
-                            label={t("stock.invoiceScan.qtyToAdd", "Quantity to add")}
-                            value={String(addQty)}
-                          />
-                          <ReviewStat
-                            label={t(
-                              "stock.invoiceScan.stockBoughtPrice",
-                              "Stock bought price",
-                            )}
-                            value={money(stockBought)}
-                          />
-                          <ReviewStat
-                            label={t("stock.sellingPrice", "Selling Price")}
-                            value={money(selling)}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="mt-4 space-y-2">
-                      <div className="flex flex-wrap gap-2">
+                        </span>
                         <ReviewStat
-                          label={t("stock.quantity", "Quantity")}
-                          value={String(first.quantity)}
+                          label={t("stock.invoiceScan.qtyToAdd", "Quantity to add")}
+                          value={String(addQty)}
                         />
                         <ReviewStat
-                          label={t("stock.boughtPrice", "Bought Price")}
-                          value={money(unitPurchasePrice(first))}
+                          label={t("stock.invoiceScan.stockBoughtPrice", "Stock bought price")}
+                          value={money(stockBought)}
                         />
                         <ReviewStat
                           label={t("stock.sellingPrice", "Selling Price")}
-                          value={money(first.sellingPrice)}
+                          value={money(selling)}
                         />
                       </div>
-                      {!first.isNewProduct &&
-                      isPriceDifferent(first.boughtPrice, unitPurchasePrice(first)) ? (
-                        <p className="text-sm text-muted-foreground">
-                          {t("stock.invoiceScan.stockBoughtPrice", "Stock bought price")}:{" "}
-                          <span className="font-semibold text-foreground">
-                            {money(first.boughtPrice)}
-                          </span>
-                        </p>
+                    </div>
+                  ) : (
+                    <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5">
+                      <ReviewStat
+                        label={t("stock.quantity", "Quantity")}
+                        value={String(first.quantity)}
+                      />
+                      <ReviewStat
+                        label={t("stock.boughtPrice", "Bought Price")}
+                        value={money(unitPurchasePrice(first))}
+                      />
+                      <ReviewStat
+                        label={t("stock.sellingPrice", "Selling Price")}
+                        value={money(first.sellingPrice)}
+                      />
+                      {showStockBought ? (
+                        <ReviewStat
+                          label={t("stock.invoiceScan.stockBoughtPrice", "Stock bought price")}
+                          value={money(first.boughtPrice)}
+                        />
                       ) : null}
                     </div>
                   )}
-
-                  <div className="mt-3 flex justify-end">
-                    <span className="rounded-md bg-green-100 px-2.5 py-1 text-sm font-semibold text-green-700">
-                      {t("stock.invoiceScan.lineTotal", "Line total")}: {money(lineTotal)}
-                    </span>
-                  </div>
                 </div>
               );
             })}
