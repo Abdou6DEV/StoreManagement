@@ -48,7 +48,7 @@ const FLOW_STEPS: FlowStep[] = [
 ];
 
 const indicatorClass =
-  "data-[state=active]:border-green-600 data-[state=completed]:border-green-600 data-[state=active]:bg-green-600 data-[state=completed]:bg-green-600 data-[state=active]:text-white data-[state=completed]:text-white";
+  "bg-muted-foreground text-secondary data-[state=active]:border-green-600 data-[state=completed]:border-green-600 data-[state=active]:bg-green-600 data-[state=completed]:bg-green-600 data-[state=active]:text-white data-[state=completed]:text-white";
 
 const separatorClass =
   "data-[state=active]:bg-green-600 data-[state=completed]:bg-green-600";

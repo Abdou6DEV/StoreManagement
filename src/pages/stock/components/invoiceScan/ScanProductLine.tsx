@@ -67,6 +67,11 @@ export default function ScanProductLine({
   const [pickOpen, setPickOpen] = useState(false);
   const [pickSearch, setPickSearch] = useState("");
 
+  const receiptBoughtPrice =
+    line.actualPurchasePrice && line.actualPurchasePrice > 0
+      ? line.actualPurchasePrice
+      : line.boughtPrice;
+
   const matches = useMemo(
     () => rankNameMatches(line.aiName, products, 5),
     [line.aiName, products],
@@ -87,7 +92,7 @@ export default function ScanProductLine({
   const enterPreview = (product: Product) => {
     setPreview(product);
     setSellingPrice(product.sellingPrice || "");
-    setBoughtPrice(line.boughtPrice || "");
+    setBoughtPrice(receiptBoughtPrice || "");
     setCodebar(product.codebar || "");
     setMode("preview");
     setPickOpen(false);
@@ -98,7 +103,7 @@ export default function ScanProductLine({
     setNewName(line.aiName);
     setCategoryName("");
     setSellingPrice("");
-    setBoughtPrice(line.boughtPrice || "");
+    setBoughtPrice(receiptBoughtPrice || "");
     setCodebar("");
     setMode("create");
     setPickOpen(false);
@@ -113,13 +118,13 @@ export default function ScanProductLine({
   const confirmPreview = () => {
     if (!preview) return;
     const selling = typeof sellingPrice === "number" ? sellingPrice : 0;
-    const bought = typeof boughtPrice === "number" ? boughtPrice : line.boughtPrice;
+    const bought = typeof boughtPrice === "number" ? boughtPrice : receiptBoughtPrice;
     onConfirmExisting(preview, selling, codebar.trim(), bought);
   };
 
   const confirmCreate = () => {
     const selling = typeof sellingPrice === "number" ? sellingPrice : 0;
-    const bought = typeof boughtPrice === "number" ? boughtPrice : line.boughtPrice;
+    const bought = typeof boughtPrice === "number" ? boughtPrice : receiptBoughtPrice;
     if (!newName.trim() || !categoryName.trim() || selling <= 0 || bought <= 0) return;
     onConfirmNew({
       name: newName.trim(),
@@ -150,7 +155,7 @@ export default function ScanProductLine({
             <span className="mx-1.5 text-muted-foreground">·</span>
             {t("stock.quantity", "Quantity")}: {line.quantity}
             <span className="mx-1.5 text-muted-foreground">·</span>
-            {t("stock.boughtPrice", "Bought Price")}: {line.boughtPrice || "—"} {currency}
+            {t("stock.boughtPrice", "Bought Price")}: {receiptBoughtPrice || "—"} {currency}
             <span className="mx-1.5 text-muted-foreground">·</span>
             <span className="text-muted-foreground">
               {t("stock.invoiceScan.skippedLine", "Skipped")}
@@ -177,6 +182,7 @@ export default function ScanProductLine({
     const reopen = () => {
       setMode("choose");
       setPreview(null);
+      setBoughtPrice(receiptBoughtPrice || "");
       onChange();
       onOpen?.();
     };
@@ -277,7 +283,7 @@ export default function ScanProductLine({
           {showMatches || !expanded ? (
             <>
               <span className="mx-2 text-muted-foreground">·</span>
-              {t("stock.boughtPrice", "Bought Price")}: {line.boughtPrice || "—"} {currency}
+              {t("stock.boughtPrice", "Bought Price")}: {receiptBoughtPrice || "—"} {currency}
             </>
           ) : null}
           {showPreview && preview ? (

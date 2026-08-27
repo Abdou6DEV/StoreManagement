@@ -7,6 +7,7 @@ import { Checkbox } from "../../../../lib/components/checkbox";
 import { Tooltip } from "../../../../lib/components/tooltip";
 import StyledNumberInput from "../../../../lib/components/inputNumber";
 import { useToast } from "../../../../lib/contexts/toastContext";
+import { cn } from "../../../../lib/utils";
 import { printBarcodeLabel, type LabelSize } from "../addStockForm/barcodePrintUtils";
 
 export type ScanLabelItem = {
@@ -21,6 +22,9 @@ const SHOW_BARCODE_CACHE_KEY = "barcodePreview_showBarcode";
 const SHOW_STORE_NAME_CACHE_KEY = "barcodePreview_showStoreName";
 const LABEL_SIZE_CACHE_KEY = "barcodePreview_labelSize";
 const VALID_LABEL_SIZES: LabelSize[] = ["20x40", "35x45", "25x50"];
+
+const compactNumberClass =
+  "h-8 w-full rounded-md border border-border bg-card px-2 py-1 text-sm tabular-nums focus:outline-none focus:ring-1 focus:ring-green-500/50 focus:border-green-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-muted/50";
 
 type Row = ScanLabelItem & {
   selected: boolean;
@@ -121,6 +125,16 @@ export default function ScanPrintLabelsModal({
     );
   };
 
+  const resetCopiesToAddedQty = () => {
+    setRows((current) =>
+      current.map((row) => ({ ...row, copies: Math.max(1, row.quantity) })),
+    );
+  };
+
+  const copiesDifferFromAddedQty = rows.some(
+    (row) => (typeof row.copies === "number" ? row.copies : 0) !== Math.max(1, row.quantity),
+  );
+
   const handleShowBarcodeChange = (checked: boolean) => {
     setShowBarcode(checked);
     localStorage.setItem(SHOW_BARCODE_CACHE_KEY, String(checked));
@@ -180,180 +194,196 @@ export default function ScanPrintLabelsModal({
         "stock.invoiceScan.printLabelsHint",
         "Stock was added. Choose which labels to print, then skip or print.",
       )}
-      size="lg"
+      size="xl"
       showFooter={false}
       preventClose={printing}
     >
-      <div className="space-y-4">
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-          {anyBarcode ? (
-            <Checkbox
-              checked={showBarcode}
-              onChange={handleShowBarcodeChange}
-              label={t("stock.showBarcode", "Show Barcode")}
-              color="green"
-            />
-          ) : (
-            <Tooltip
-              content={t(
-                "stock.invoiceScan.noBarcodeOnLabel",
-                "No barcode — name and price only",
-              )}
-              position="top"
-            >
-              <span className="inline-flex">
-                <Checkbox
-                  checked={false}
-                  onChange={() => undefined}
+      <div className="flex min-h-0 flex-col gap-4">
+        <div className="grid min-h-0 grid-cols-1 gap-4 lg:h-[min(28rem,52dvh)] lg:grid-cols-[18.75rem_minmax(0,1fr)]">
+          <div className="flex flex-col gap-4 rounded-xl border border-border bg-muted/20 p-4">
+            <section className="space-y-2">
+              <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                {t("stock.invoiceScan.labelContent", "On the label")}
+              </h3>
+              <div className="space-y-2">
+                <OptionCheck
+                  enabled={anyBarcode}
+                  checked={showBarcode}
+                  onChange={handleShowBarcodeChange}
                   label={t("stock.showBarcode", "Show Barcode")}
-                  color="green"
-                  disabled
+                  disabledReason={t(
+                    "stock.invoiceScan.noBarcodeOnLabel",
+                    "No barcode — name and price only",
+                  )}
                 />
-              </span>
-            </Tooltip>
-          )}
-          {hasStoreName ? (
-            <Checkbox
-              checked={showStoreName}
-              onChange={handleShowStoreNameChange}
-              label={t("stock.showStoreNameOnLabel", "Show store name on label")}
-              color="green"
-            />
-          ) : (
-            <Tooltip
-              content={t(
-                "stock.storeNameRequiredForLabelTooltip",
-                "Enter the store name in Admin → Receipt & Service Ticket to show it on labels.",
-              )}
-              position="top"
-            >
-              <span className="inline-flex">
-                <Checkbox
-                  checked={false}
-                  onChange={() => undefined}
+                <OptionCheck
+                  enabled={hasStoreName}
+                  checked={showStoreName}
+                  onChange={handleShowStoreNameChange}
                   label={t("stock.showStoreNameOnLabel", "Show store name on label")}
-                  color="green"
-                  disabled
+                  disabledReason={t(
+                    "stock.storeNameRequiredForLabelTooltip",
+                    "Enter the store name in Admin → Receipt & Service Ticket to show it on labels.",
+                  )}
                 />
-              </span>
-            </Tooltip>
-          )}
-        </div>
+              </div>
+            </section>
 
-        <div className="space-y-2">
-          <p className="text-sm font-medium">{t("stock.labelSize", "Label size")}</p>
-          <div className="flex flex-wrap gap-3">
-            {VALID_LABEL_SIZES.map((size) => (
-              <Checkbox
-                key={size}
-                checked={labelSize === size}
-                onChange={(checked) => checked && handleLabelSizeChange(size)}
-                label={`${size.replace("x", "×")} mm`}
-                color="green"
-              />
-            ))}
-          </div>
-        </div>
-
-        <div className="flex flex-wrap items-end gap-2">
-          <div className="space-y-1">
-            <label className="text-xs text-muted-foreground">
-              {t("stock.invoiceScan.copiesForAll", "Copies for all selected")}
-            </label>
-            <div className="w-24">
-              <StyledNumberInput
-                value={bulkCopies}
-                onChange={setBulkCopies}
-                min={1}
-                max={999}
-              />
-            </div>
-          </div>
-          <Button type="button" variant="outline" onClick={applyCopiesToSelected}>
-            {t("stock.invoiceScan.applyCopies", "Apply")}
-          </Button>
-          <div className="ms-auto flex gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() =>
-                setRows((current) => current.map((row) => ({ ...row, selected: true })))
-              }
-            >
-              {t("stock.selectAll", "Select All")}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled={selectedRows.length === 0}
-              onClick={() =>
-                setRows((current) => current.map((row) => ({ ...row, selected: false })))
-              }
-            >
-              {t("stock.deselectAll", "Deselect All")}
-            </Button>
-          </div>
-        </div>
-
-        <div className="max-h-[min(22rem,42dvh)] overflow-auto rounded-xl border border-border">
-          <table className="w-full border-separate border-spacing-0 text-sm">
-            <thead className="sticky top-0 z-10 bg-muted text-xs font-medium text-muted-foreground">
-              <tr>
-                <th className="w-10 px-3 py-2.5 text-start font-medium">
+            <section className="space-y-2">
+              <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                {t("stock.labelSize", "Label size")}
+              </h3>
+              <div className="flex flex-col gap-2">
+                {VALID_LABEL_SIZES.map((size) => (
                   <Checkbox
-                    checked={allSelected}
-                    onChange={(checked) =>
-                      setRows((current) => current.map((row) => ({ ...row, selected: checked })))
-                    }
+                    key={size}
+                    checked={labelSize === size}
+                    onChange={(checked) => checked && handleLabelSizeChange(size)}
+                    label={`${size.replace("x", "×")} mm`}
                     color="green"
                   />
-                </th>
-                <th className="px-3 py-2.5 text-start font-medium">
-                  {t("stock.invoiceScan.productName", "Product name")}
-                </th>
-                <th className="px-3 py-2.5 text-end font-medium">
-                  {t("stock.invoiceScan.printCopies", "Labels")}
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row) => (
-                <tr key={row.key}>
-                  <td className="border-t border-border px-3 py-2">
-                    <Checkbox
-                      checked={row.selected}
-                      onChange={(checked) => updateRow(row.key, { selected: checked })}
-                      color="green"
-                    />
-                  </td>
-                  <td className="border-t border-border px-3 py-2">
-                    <span className="block truncate font-medium">{row.productName}</span>
-                    {!row.codebar.trim() ? (
-                      <span className="text-xs text-muted-foreground">
-                        {t("stock.invoiceScan.noBarcodeOnLabel", "No barcode — name and price only")}
-                      </span>
-                    ) : null}
-                  </td>
-                  <td className="border-t border-border px-3 py-2">
-                    <div className="ms-auto w-24">
-                      <StyledNumberInput
-                        value={row.copies}
-                        onChange={(copies) => updateRow(row.key, { copies })}
-                        min={1}
-                        max={999}
-                        disabled={!row.selected}
+                ))}
+              </div>
+            </section>
+
+            <section className="mt-auto space-y-2 border-t border-border pt-4">
+              <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                {t("stock.invoiceScan.copiesForAll", "Copies for all selected")}
+              </h3>
+              <div className="flex items-center gap-2">
+                <div className="w-20">
+                  <StyledNumberInput
+                    value={bulkCopies}
+                    onChange={setBulkCopies}
+                    min={1}
+                    max={999}
+                    className={compactNumberClass}
+                  />
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={selectedRows.length === 0}
+                  onClick={applyCopiesToSelected}
+                >
+                  {t("stock.invoiceScan.applyCopies", "Apply")}
+                </Button>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-8 px-2 text-muted-foreground"
+                disabled={!copiesDifferFromAddedQty}
+                onClick={resetCopiesToAddedQty}
+              >
+                {t("stock.invoiceScan.resetCopies", "Reset to added qty")}
+              </Button>
+              <p className="text-xs text-muted-foreground">
+                {t("stock.invoiceScan.labelsToPrint", "{{count}} labels to print", {
+                  count: totalLabels,
+                })}
+              </p>
+            </section>
+          </div>
+
+          <div className="flex min-h-0 min-w-0 flex-col overflow-hidden rounded-xl border border-border">
+            <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border px-3 py-2">
+              <h3 className="text-sm font-medium">
+                {t("stock.invoiceScan.printLabelsProducts", "Products")}
+              </h3>
+              <span className="text-xs tabular-nums text-muted-foreground">
+                {selectedRows.length}/{rows.length}
+              </span>
+            </div>
+            <div className="min-h-0 flex-1 overflow-auto">
+              <table className="w-full border-separate border-spacing-0 text-sm">
+                <thead className="sticky top-0 z-10 bg-muted text-xs font-medium text-muted-foreground">
+                  <tr>
+                    <th className="w-10 px-2.5 py-1.5 text-start font-medium">
+                      <Checkbox
+                        checked={allSelected}
+                        onChange={(checked) =>
+                          setRows((current) =>
+                            current.map((row) => ({ ...row, selected: checked })),
+                          )
+                        }
+                        color="green"
                       />
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                    </th>
+                    <th className="px-2.5 py-1.5 text-start font-medium">
+                      {t("stock.invoiceScan.productName", "Product name")}
+                    </th>
+                    <th className="w-16 px-2.5 py-1.5 text-end font-medium">
+                      {t("stock.quantity", "Quantity")}
+                    </th>
+                    <th className="w-24 px-2.5 py-1.5 text-end font-medium">
+                      {t("stock.invoiceScan.printCopies", "Labels")}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((row) => {
+                    const nameCell = (
+                      <span
+                        className={cn(
+                          "block truncate font-medium",
+                          !row.selected && "text-muted-foreground",
+                        )}
+                      >
+                        {row.productName}
+                      </span>
+                    );
+                    return (
+                      <tr key={row.key} className={!row.selected ? "opacity-60" : undefined}>
+                        <td className="border-t border-border px-2.5 py-1">
+                          <Checkbox
+                            checked={row.selected}
+                            onChange={(checked) => updateRow(row.key, { selected: checked })}
+                            color="green"
+                          />
+                        </td>
+                        <td className="border-t border-border px-2.5 py-1">
+                          {!row.codebar.trim() ? (
+                            <Tooltip
+                              content={t(
+                                "stock.invoiceScan.noBarcodeOnLabel",
+                                "No barcode — name and price only",
+                              )}
+                              position="top"
+                            >
+                              {nameCell}
+                            </Tooltip>
+                          ) : (
+                            nameCell
+                          )}
+                        </td>
+                        <td className="border-t border-border px-2.5 py-1 text-end tabular-nums text-muted-foreground">
+                          {row.quantity}
+                        </td>
+                        <td className="border-t border-border px-2.5 py-1">
+                          <div className="ms-auto w-[4.5rem]">
+                            <StyledNumberInput
+                              value={row.copies}
+                              onChange={(copies: number | "") => updateRow(row.key, { copies })}
+                              min={1}
+                              max={999}
+                              disabled={!row.selected}
+                              className={compactNumberClass}
+                            />
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
 
-        <div className="flex justify-end gap-2">
+        <div className="flex shrink-0 justify-end gap-2">
           <Button type="button" variant="outline" disabled={printing} onClick={onDone}>
             {t("stock.invoiceScan.skipLabels", "Skip")}
           </Button>
@@ -375,5 +405,35 @@ export default function ScanPrintLabelsModal({
         </div>
       </div>
     </Modal>
+  );
+}
+
+function OptionCheck({
+  enabled,
+  checked,
+  onChange,
+  label,
+  disabledReason,
+}: {
+  enabled: boolean;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  label: string;
+  disabledReason: string;
+}) {
+  const box = (
+    <Checkbox
+      checked={enabled ? checked : false}
+      onChange={enabled ? onChange : () => undefined}
+      label={label}
+      color="green"
+      disabled={!enabled}
+    />
+  );
+  if (enabled) return box;
+  return (
+    <Tooltip content={disabledReason} position="top">
+      <span className="inline-flex">{box}</span>
+    </Tooltip>
   );
 }

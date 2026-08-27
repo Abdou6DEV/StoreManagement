@@ -420,7 +420,6 @@ input[type="date"]:disabled {
 
 /* Date picker calendar popup styling */
 input[type="date"]::-webkit-calendar-picker-indicator {
-  filter: invert(0);
   cursor: pointer;
   opacity: 0.7;
   transition: opacity 0.2s ease;
@@ -430,11 +429,15 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   margin: 0;
   width: 20px;
   height: 20px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='18' rx='2' ry='2'%3E%3C/rect%3E%3Cline x1='16' y1='2' x2='16' y2='6'%3E%3C/line%3E%3Cline x1='8' y1='2' x2='8' y2='6'%3E%3C/line%3E%3Cline x1='3' y1='10' x2='21' y2='10'%3E%3C/line%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 16px;
 }
 
 .dark input[type="date"]::-webkit-calendar-picker-indicator {
-  filter: invert(1);
   opacity: 0.8;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='18' rx='2' ry='2'%3E%3C/rect%3E%3Cline x1='16' y1='2' x2='16' y2='6'%3E%3C/line%3E%3Cline x1='8' y1='2' x2='8' y2='6'%3E%3C/line%3E%3Cline x1='3' y1='10' x2='21' y2='10'%3E%3C/line%3E%3C/svg%3E");
 }
 
 input[type="date"]::-webkit-calendar-picker-indicator:hover {
@@ -475,18 +478,6 @@ input[type="date"]::-webkit-clear-button {
 /* Date picker popup container */
 input[type="date"]::-webkit-calendar-picker-indicator:focus {
   outline: none;
-}
-
-/* Custom date picker popup (when supported) */
-input[type="date"]::-webkit-calendar-picker-indicator {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='18' rx='2' ry='2'%3E%3C/rect%3E%3Cline x1='16' y1='2' x2='16' y2='6'%3E%3C/line%3E%3Cline x1='8' y1='2' x2='8' y2='6'%3E%3C/line%3E%3Cline x1='3' y1='10' x2='21' y2='10'%3E%3C/line%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: center;
-  background-size: 16px;
-}
-
-.dark input[type="date"]::-webkit-calendar-picker-indicator {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='18' rx='2' ry='2'%3E%3C/rect%3E%3Cline x1='16' y1='2' x2='16' y2='6'%3E%3C/line%3E%3Cline x1='8' y1='2' x2='8' y2='6'%3E%3C/line%3E%3Cline x1='3' y1='10' x2='21' y2='10'%3E%3C/line%3E%3C/svg%3E");
 }
 
 /* Firefox date input styling */
@@ -867,6 +858,7 @@ input[type="date"].success {
 }
 
 .invoice-scan-ai-btn {
+  background-color: transparent;
   background-image: linear-gradient(
     135deg,
     color-mix(in oklab, #ffffff 14%, var(--color-background)) 0%,
@@ -874,6 +866,20 @@ input[type="date"].success {
     color-mix(in oklab, #8b5cf6 16%, var(--color-background)) 50%,
     color-mix(in oklab, #60a5fa 16%, var(--color-background)) 75%,
     color-mix(in oklab, #38bdf8 14%, var(--color-background)) 100%
+  );
+  background-size: 300% 300%;
+  animation: invoice-scan-ai-shift 8s ease-in-out infinite;
+}
+
+.dark .invoice-scan-ai-btn {
+  border-color: color-mix(in oklab, #8b5cf6 42%, var(--color-border));
+  background-image: linear-gradient(
+    135deg,
+    color-mix(in oklab, #c4b5fd 32%, var(--color-card)) 0%,
+    color-mix(in oklab, #c084fc 40%, var(--color-card)) 25%,
+    color-mix(in oklab, #8b5cf6 38%, var(--color-card)) 50%,
+    color-mix(in oklab, #60a5fa 38%, var(--color-card)) 75%,
+    color-mix(in oklab, #38bdf8 34%, var(--color-card)) 100%
   );
   background-size: 300% 300%;
   animation: invoice-scan-ai-shift 8s ease-in-out infinite;

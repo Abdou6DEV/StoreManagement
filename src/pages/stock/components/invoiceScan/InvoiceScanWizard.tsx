@@ -217,6 +217,16 @@ export default function InvoiceScanWizard({
     setLines((prev) => prev.map((l) => (l.key === key ? { ...l, ...patch } : l)));
   };
 
+  const reopenLine = (line: WizardLine): Partial<WizardLine> => ({
+    confirmed: false,
+    existingProductId: undefined,
+    isNewProduct: false,
+    boughtPrice: unitPurchasePrice(line),
+    priceStrategy: undefined,
+    actualPurchasePrice: undefined,
+    originalBoughtPrice: undefined,
+  });
+
   const commitExisting = (
     line: WizardLine,
     product: Product,
@@ -750,14 +760,10 @@ export default function InvoiceScanWizard({
                 categories={categories}
                 expanded={!line.confirmed && !line.skipped && openLineKey === line.key}
                 onOpen={() => setOpenLineKey(line.key)}
-                onSkip={() => updateLine(line.key, { skipped: !line.skipped, confirmed: false })}
-                onChange={() =>
-                  updateLine(line.key, {
-                    confirmed: false,
-                    existingProductId: undefined,
-                    isNewProduct: false,
-                  })
+                onSkip={() =>
+                  updateLine(line.key, { ...reopenLine(line), skipped: !line.skipped })
                 }
+                onChange={() => updateLine(line.key, reopenLine(line))}
                 onConfirmExisting={(product, sellingPrice, codebar, boughtPrice) => {
                   void requestExistingConfirm(line, product, sellingPrice, codebar, boughtPrice);
                 }}
