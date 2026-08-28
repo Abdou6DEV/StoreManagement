@@ -16,6 +16,7 @@ import { printReceiptDirectly } from "../receiptModal";
 import { NoPrinterModal } from "../../../../lib/components/noPrinterModal";
 import type { CartItem } from "../../../../types";
 import SupplierReturnFlow, {
+  getNormalProductReturnCandidates,
   type SupplierReturnCandidate,
 } from "../../../../lib/components/supplierReturnFlow";
 
@@ -230,24 +231,8 @@ const HistoryBrowser: React.FC<HistoryBrowserProps> = ({
     setShowDeleteConfirm(true);
   };
 
-  const computeDeletedNormalProductsForDeleteSale = (s: Sale | null): SupplierReturnCandidate[] => {
-    if (!s) return [];
-    const map = new Map<string, SupplierReturnCandidate>();
-    s.saleItems.forEach((si) => {
-      const pid = si.product?.id;
-      if (!pid) return;
-      const prev = map.get(pid);
-      map.set(pid, {
-        productId: pid,
-        name: si.product?.name ?? prev?.name ?? "?",
-        deletedQty: (prev?.deletedQty ?? 0) + si.quantity,
-      });
-    });
-    return Array.from(map.values()).filter((c) => c.deletedQty > 0);
-  };
-
   const confirmDeleteSale = async (): Promise<boolean> => {
-    if (!saleToDelete) return;
+    if (!saleToDelete) return false;
 
     setIsDeleting(true);
     try {
@@ -289,7 +274,7 @@ const HistoryBrowser: React.FC<HistoryBrowserProps> = ({
   };
 
   const startDeleteWithSupplierReturnFlow = async () => {
-    const candidates = computeDeletedNormalProductsForDeleteSale(saleToDelete);
+    const candidates = getNormalProductReturnCandidates(saleToDelete?.saleItems);
     const ok = await confirmDeleteSale();
     if (!ok) return;
     if (candidates.length === 0) return;

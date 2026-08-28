@@ -278,6 +278,13 @@ export default function AddStockForm({
   const [showDiscardAddStockConfirm, setShowDiscardAddStockConfirm] =
     useState(false);
 
+  const canAddProduct =
+    form.name.trim().length > 0 &&
+    form.categoryName.trim().length > 0 &&
+    Number(form.quantity) > 0 &&
+    Number(form.boughtPrice) > 0 &&
+    Number(form.sellingPrice) > 0;
+
   const isAddStockDirty = React.useMemo(() => {
     if (pendingProducts.length > 0) return true;
     if (multiSellerId.trim() !== "") return true;
@@ -437,6 +444,17 @@ export default function AddStockForm({
         t(
           "stock.boughtPriceRequired",
           "Bought price is required and must be greater than 0"
+        ),
+        "error"
+      );
+      return;
+    }
+
+    if (!form.sellingPrice || Number(form.sellingPrice) <= 0) {
+      showToast(
+        t(
+          "stock.sellingPriceRequired",
+          "Selling price is required and must be greater than 0"
         ),
         "error"
       );
@@ -2412,25 +2430,41 @@ export default function AddStockForm({
             <hr />
 
             <div className="flex gap-3 items-center">
-              <Button
-                type="submit"
-                disabled={loading}
-                className="bg-green-600 hover:bg-green-700 text-white"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                    {t("stock.adding", "Adding...")}
-                  </>
-                ) : (
-                  <>
-                    <Package className="w-4 h-4 mr-2" />
-                    {isMultiMode
+              <Tooltip
+                content={
+                  canAddProduct
+                    ? isMultiMode
                       ? t("stock.addToList", "Add to List")
-                      : t("stock.addButton", "Add Product")}
-                  </>
-                )}
-              </Button>
+                      : t("stock.addButton", "Add Product")
+                    : t(
+                        "stock.fillRequiredFields",
+                        "Fill all required fields to add a product",
+                      )
+                }
+                position="top"
+              >
+                <span className="inline-flex">
+                  <Button
+                    type="submit"
+                    disabled={loading || !canAddProduct}
+                    className="bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                        {t("stock.adding", "Adding...")}
+                      </>
+                    ) : (
+                      <>
+                        <Package className="w-4 h-4 mr-2" />
+                        {isMultiMode
+                          ? t("stock.addToList", "Add to List")
+                          : t("stock.addButton", "Add Product")}
+                      </>
+                    )}
+                  </Button>
+                </span>
+              </Tooltip>
 
               <Tooltip
                 content={

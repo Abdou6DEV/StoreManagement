@@ -112,7 +112,19 @@ export const databaseAPI = {
       id: string,
       data: {
         clientId?: string;
-        items: { productId: string; quantity: number; price: number }[];
+        items: {
+          productId?: string;
+          quantity: number;
+          price: number;
+          boughtPrice?: number;
+          manualProductName?: string;
+          manualProductType?: string;
+          manualProductCostPrice?: number;
+          serviceName?: string;
+          serviceDescription?: string;
+          serviceCostPrice?: number;
+          serviceAppointmentId?: string;
+        }[];
         discount?: number;
       }
     ) => ipcRenderer.invoke("db:sales:update", { id, data }),

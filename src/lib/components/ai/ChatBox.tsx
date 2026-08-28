@@ -166,6 +166,28 @@ export default function ChatBox() {
   const runtime = useAIRuntime();
   const refreshQuota = useAiQuota()?.refreshQuota;
   const isRunning = useAuiState((s) => s.thread.isRunning);
+  const isWelcomeChat = useAuiState((s) => s.thread.messages.length === 0);
+  const newChatDisabled = isRunning || isWelcomeChat || chatGateActive;
+  const newChatTooltip = isRunning
+    ? t("ai.working", "Assistant is working")
+    : chatGateActive
+      ? blockReason === "offline"
+        ? t(
+            "ai.offlineBlocked",
+            "REDA AI requires an active internet connection. Connect to Wi‑Fi or Ethernet, then try again.",
+          )
+        : blockReason === "trial"
+          ? t(
+              "ai.trialBlocked",
+              "REDA AI is included with a paid subscription. During the free trial, AI chat is not available. Open the License tab to see your status or contact your provider.",
+            )
+          : t(
+              "ai.disabled",
+              "This is a premium feature. Contact your provider to enable REDA AI.",
+            )
+      : isWelcomeChat
+        ? t("ai.newChatAlready", "Already a new chat")
+        : t("ai.newChat", "New chat");
   const move = reduceMotion ? { duration: 0 } : spring;
   const isMainMenu = useLocation().pathname === "/";
   const [sidebarCollapsed, setSidebarCollapsed] = useState(
@@ -288,7 +310,7 @@ export default function ChatBox() {
   };
 
   const handleClearChat = async () => {
-    if (isRunning) return;
+    if (isRunning || isWelcomeChat || chatGateActive) return;
     try {
       runtime?.thread.reset();
       await window.api.ai.clearChat();
@@ -536,14 +558,10 @@ export default function ChatBox() {
 
             <div className="flex shrink-0 items-center justify-end gap-0.5">
               <TooltipIconButton
-                tooltip={
-                  isRunning
-                    ? t("ai.working", "Assistant is working")
-                    : t("ai.newChat", "New chat")
-                }
+                tooltip={newChatTooltip}
                 side="bottom"
-                disabled={isRunning}
-                aria-disabled={isRunning}
+                disabled={newChatDisabled}
+                aria-disabled={newChatDisabled}
                 className="size-8 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-40"
                 onClick={handleClearChat}
               >

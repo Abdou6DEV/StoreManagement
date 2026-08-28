@@ -13,6 +13,7 @@ import { useAuth } from "../../../../lib/contexts/authContext";
 import { useStock } from "../../../../lib/contexts/stockContext";
 import { printReceiptDirectly } from "../../../cashier/components/receiptModal";
 import SupplierReturnFlow, {
+  getNormalProductReturnCandidates,
   type SupplierReturnCandidate,
 } from "../../../../lib/components/supplierReturnFlow";
 
@@ -198,7 +199,7 @@ export default function SalesSection({
   };
 
   const confirmDeleteSale = async (): Promise<boolean> => {
-    if (!saleToDelete) return;
+    if (!saleToDelete) return false;
     
     setIsDeleting(true);
     try {
@@ -232,35 +233,14 @@ export default function SalesSection({
     }
   };
 
-  const computeDeletedNormalProductsForDeleteSale = (s: SaleForHistory | null): SupplierReturnCandidate[] => {
-    if (!s) return [];
-    const map = new Map<string, SupplierReturnCandidate>();
-    s.saleItems.forEach((si) => {
-      // In details history, product objects may not include `id`.
-      // Try `saleItem.productId` first, then `product.id`, finally fall back to name-key.
-      const name = si.product?.name ?? "?";
-      const key =
-        (si as unknown as { productId?: string | null }).productId ||
-        (si.product as unknown as { id?: string | null } | null)?.id ||
-        `name:${name}`;
-      const prev = map.get(key);
-      map.set(key, {
-        productId: key,
-        name: name ?? prev?.name ?? "?",
-        deletedQty: (prev?.deletedQty ?? 0) + si.quantity,
-      });
-    });
-    return Array.from(map.values()).filter((c) => c.deletedQty > 0);
-  };
-
   const startDeleteWithSupplierReturnFlow = async () => {
-    const candidates = computeDeletedNormalProductsForDeleteSale(saleToDelete);
+    if (!saleToDelete) return;
+    const saleId = saleToDelete.id;
+    const candidates = getNormalProductReturnCandidates(saleToDelete.saleItems);
     const ok = await confirmDeleteSale();
     if (!ok) return;
     if (candidates.length === 0) {
-      if (pendingPostDeleteSaleId) {
-        await runPostDeleteEffects(pendingPostDeleteSaleId);
-      }
+      await runPostDeleteEffects(saleId);
       return;
     }
     setSupplierReturnCandidates(candidates);

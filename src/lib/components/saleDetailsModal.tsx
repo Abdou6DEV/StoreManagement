@@ -26,6 +26,7 @@ import { useStock } from "../contexts/stockContext";
 import { useAuth } from "../contexts/authContext";
 import { ConfirmDialog } from "./confirmDialog";
 import SupplierReturnFlow, {
+  getNormalProductReturnCandidates,
   type SupplierReturnCandidate,
 } from "./supplierReturnFlow";
 
@@ -116,20 +117,7 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
   }, [currentSale, sale, editedCart, isNormalProductId]);
 
   const computeDeletedNormalProductsForDeleteSale = useCallback((): SupplierReturnCandidate[] => {
-    const displaySale = currentSale || sale;
-    if (!displaySale) return [];
-    const map = new Map<string, SupplierReturnCandidate>();
-    displaySale.saleItems.forEach((si) => {
-      const pid = si.product?.id;
-      if (!pid) return;
-      const prev = map.get(pid);
-      map.set(pid, {
-        productId: pid,
-        name: si.product?.name ?? prev?.name ?? "?",
-        deletedQty: (prev?.deletedQty ?? 0) + si.quantity,
-      });
-    });
-    return Array.from(map.values()).filter((c) => c.deletedQty > 0);
+    return getNormalProductReturnCandidates((currentSale || sale)?.saleItems);
   }, [currentSale, sale]);
 
   const startSupplierReturnUi = useCallback((candidates: SupplierReturnCandidate[]) => {
@@ -236,9 +224,9 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
           isService: !!item.service,
           manualProductType: item.manualProduct?.type,
           description: item.service?.description,
-          serviceAppointmentId: item.service?.serviceAppointmentId,
+          serviceAppointmentId: item.service?.serviceAppointmentId ?? undefined,
           serviceCostPrice: item.service ? (item.boughtPrice || item.service?.costPrice) : undefined,
-          boughtPrice: item.product ? item.boughtPrice : undefined,
+          boughtPrice: item.product ? item.boughtPrice ?? undefined : undefined,
         })),
       );
       setEditedDiscount(saleToUse.discount);

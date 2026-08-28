@@ -9,6 +9,9 @@ import {
   DialogTitle,
 } from "../../../../lib/components/dialog";
 import { Button } from "../../../../lib/components/button";
+import { ConfirmDialog } from "../../../../lib/components/confirmDialog";
+import { Tooltip } from "../../../../lib/components/tooltip";
+import { useAiChatGate } from "../../../../lib/hooks/useAiChatGate";
 import {
   Stepper,
   StepperContent,
@@ -80,12 +83,16 @@ export default function InvoiceScanModal({
   const [wizardStep, setWizardStep] = useState<WizardStep>("supplier");
   const [farthest, setFarthest] = useState<FlowStep>("scan");
   const [printItems, setPrintItems] = useState<ScanLabelItem[] | null>(null);
+  const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false);
   const sessionIdRef = useRef<string | null>(null);
   const expiresAtRef = useRef<number | null>(null);
   const localPathRef = useRef<string | null>(null);
   const qrWatchingRef = useRef(false);
+  const allowCloseRef = useRef(false);
+  const leaveConfirmOpenRef = useRef(false);
   const tRef = useRef(t);
   tRef.current = t;
+  leaveConfirmOpenRef.current = leaveConfirmOpen;
 
   const deleteTemp = (path: string | null) => {
     if (!path) return;
@@ -115,6 +122,8 @@ export default function InvoiceScanModal({
       setSecondsLeft(null);
       setWizardStep("supplier");
       setFarthest("scan");
+      setLeaveConfirmOpen(false);
+      allowCloseRef.current = false;
       return;
     }
 
@@ -357,9 +366,39 @@ export default function InvoiceScanModal({
     return t("stock.invoiceScan.stepReview", "Confirm");
   };
 
+  const requestClose = () => {
+    if (leaveConfirmOpenRef.current) return;
+    setLeaveConfirmOpen(true);
+  };
+
+  const closeScan = () => {
+    allowCloseRef.current = true;
+    setLeaveConfirmOpen(false);
+    onOpenChange(false);
+  };
+
+  const handleDialogOpenChange = (next: boolean) => {
+    if (next) {
+      onOpenChange(true);
+      return;
+    }
+    if (allowCloseRef.current) {
+      allowCloseRef.current = false;
+      onOpenChange(false);
+      return;
+    }
+    requestClose();
+  };
+
+  const blockDismiss = (event: Event) => {
+    if (allowCloseRef.current) return;
+    event.preventDefault();
+    requestClose();
+  };
+
   return (
     <>
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleDialogOpenChange}>
       <DialogContent
         className={cn(
           "flex flex-col overflow-hidden",
@@ -370,6 +409,9 @@ export default function InvoiceScanModal({
           "p-4 sm:p-6",
         )}
         showCloseButton
+        onEscapeKeyDown={blockDismiss}
+        onPointerDownOutside={blockDismiss}
+        onInteractOutside={blockDismiss}
       >
         <DialogHeader className="shrink-0">
           <DialogTitle className="flex items-center gap-2 pe-8">
@@ -443,7 +485,7 @@ export default function InvoiceScanModal({
                   <Button type="button" onClick={() => setRunId((n) => n + 1)}>
                     {t("stock.invoiceScan.retry", "Try again")}
                   </Button>
-                  <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                  <Button type="button" variant="outline" onClick={requestClose}>
                     {t("stock.invoiceScan.close", "Close")}
                   </Button>
                 </div>
@@ -456,7 +498,7 @@ export default function InvoiceScanModal({
                   className="min-h-0 flex-1 w-full rounded-md object-contain bg-muted"
                 />
                 <div className="flex shrink-0 justify-end gap-2">
-                  <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                  <Button type="button" variant="outline" onClick={requestClose}>
                     {t("stock.invoiceScan.close", "Close")}
                   </Button>
                   <Button type="button" variant="outline" onClick={() => void runAi()} className="invoice-scan-ai-btn">
@@ -544,7 +586,7 @@ export default function InvoiceScanModal({
             )}
             {phase === "qr" || phase === "loading" || phase === "downloading" ? (
               <div className="flex shrink-0 justify-end gap-2 pt-3">
-                <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                <Button type="button" variant="outline" onClick={requestClose}>
                   {t("stock.invoiceScan.close", "Close")}
                 </Button>
               </div>
@@ -562,7 +604,7 @@ export default function InvoiceScanModal({
                   <Button type="button" onClick={() => void runAi()}>
                     {t("stock.invoiceScan.retryAi", "Try AI again")}
                   </Button>
-                  <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                  <Button type="button" variant="outline" onClick={requestClose}>
                     {t("stock.invoiceScan.close", "Close")}
                   </Button>
                 </div>
@@ -597,7 +639,7 @@ export default function InvoiceScanModal({
                 deleteTemp(localPathRef.current);
                 localPathRef.current = null;
                 setLocalPath(null);
-                onOpenChange(false);
+                closeScan();
                 if (labels.length === 0) return;
                 void hasAnyLabelPrinter()
                   .then((ok) => {
@@ -611,6 +653,19 @@ export default function InvoiceScanModal({
         </Stepper>
       </DialogContent>
     </Dialog>
+    <ConfirmDialog
+      open={leaveConfirmOpen}
+      onOpenChange={setLeaveConfirmOpen}
+      variant="warning"
+      title={t("stock.invoiceScan.leaveTitle", "Leave receipt scan?")}
+      message={t(
+        "stock.invoiceScan.leaveMessage",
+        "If you close now, the scan will be cancelled and any progress will be lost.",
+      )}
+      confirmText={t("stock.invoiceScan.leaveConfirm", "Leave")}
+      cancelText={t("stock.invoiceScan.stay", "Stay")}
+      onConfirm={closeScan}
+    />
     <ScanPrintLabelsModal
       open={printItems != null}
       items={printItems ?? []}
@@ -622,10 +677,49 @@ export default function InvoiceScanModal({
 
 export function InvoiceScanButton({ onClick }: { onClick: () => void }) {
   const { t } = useTranslation();
-  return (
-    <Button type="button" variant="outline" onClick={onClick} className="invoice-scan-ai-btn">
+  const { canUseAi, blockReason } = useAiChatGate();
+  const locked = !canUseAi;
+  const lockMessage =
+    blockReason === "offline"
+      ? t(
+          "ai.offlineBlocked",
+          "REDA AI requires an active internet connection. Connect to Wi‑Fi or Ethernet, then try again.",
+        )
+      : blockReason === "trial"
+        ? t(
+            "ai.trialBlocked",
+            "REDA AI is included with a paid subscription. During the free trial, AI chat is not available. Open the License tab to see your status or contact your provider.",
+          )
+        : t(
+            "ai.disabled",
+            "This is a premium feature. Contact your provider to enable REDA AI.",
+          );
+
+  const button = (
+    <Button
+      type="button"
+      variant="outline"
+      onClick={locked ? undefined : onClick}
+      disabled={locked}
+      className={cn("invoice-scan-ai-btn", locked && "animate-none")}
+    >
       <Sparkles className="h-4 w-4 text-[#8b5cf6]" />
       {t("stock.invoiceScan.button", "Scan Receipt with REDA AI")}
+      {locked && blockReason !== "offline" ? (
+        <span className="rounded-full bg-[#8b5cf6]/10 px-1.5 py-0.5 text-[9px] font-medium tracking-wide text-[#8b5cf6] uppercase">
+          {t("stock.invoiceScan.premiumBadge", "Premium")}
+        </span>
+      ) : null}
     </Button>
+  );
+
+  if (!locked) return button;
+
+  return (
+    <Tooltip content={lockMessage} position="top">
+      <span className="inline-flex">
+        {button}
+      </span>
+    </Tooltip>
   );
 }

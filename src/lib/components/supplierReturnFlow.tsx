@@ -26,6 +26,36 @@ export type SupplierReturnCandidate = {
   deletedQty: number;
 };
 
+type SaleItemForReturnCandidates = {
+  quantity: number;
+  product?: { id?: string; name?: string } | null;
+  productId?: string | null;
+  service?: unknown | null;
+  serviceId?: string | null;
+  manualProduct?: unknown | null;
+  manualProductId?: string | null;
+};
+
+/** Stock products only — skip services and manual items (they cannot be returned to a supplier). */
+export function getNormalProductReturnCandidates(
+  saleItems: SaleItemForReturnCandidates[] | undefined | null,
+): SupplierReturnCandidate[] {
+  if (!saleItems?.length) return [];
+  const map = new Map<string, SupplierReturnCandidate>();
+  for (const si of saleItems) {
+    if (si.service || si.serviceId || si.manualProduct || si.manualProductId) continue;
+    const pid = si.product?.id || si.productId;
+    if (!pid) continue;
+    const prev = map.get(pid);
+    map.set(pid, {
+      productId: pid,
+      name: si.product?.name ?? prev?.name ?? "?",
+      deletedQty: (prev?.deletedQty ?? 0) + si.quantity,
+    });
+  }
+  return Array.from(map.values()).filter((c) => c.deletedQty > 0);
+}
+
 type SupplierOption = {
   sellerId: string;
   sellerName: string;

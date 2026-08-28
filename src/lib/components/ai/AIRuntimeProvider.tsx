@@ -245,7 +245,7 @@ export function AIRuntimeProvider({
       : !canUseAi && blockReason === "disabled"
         ? t(
             "ai.disabled",
-            "AI chat is not enabled on this device. Contact your provider.",
+            "This is a premium feature. Contact your provider to enable REDA AI.",
           )
         : !canUseAi && blockReason === "offline"
           ? t(
@@ -279,7 +279,7 @@ export function AIRuntimeProvider({
         ),
         disabled: t(
           "ai.disabled",
-          "AI chat is not enabled on this device. Contact your provider.",
+          "This is a premium feature. Contact your provider to enable REDA AI.",
         ),
         notLicensed: t(
           "ai.notLicensed",

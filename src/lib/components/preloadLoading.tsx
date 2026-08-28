@@ -4,6 +4,7 @@ import { Loader2, Download, Wifi, WifiOff, CheckCircle } from "lucide-react";
 import { useUpdateChecker } from "../hooks/useUpdateChecker";
 import { useTheme } from "../hooks/useTheme";
 import { LOGO_ICON, LOGO_ICON_DARK } from "../assets";
+import { Typing } from "./ui/typing";
 
 interface PreloadLoadingProps {
   onComplete?: () => void;
@@ -193,45 +194,11 @@ export default function PreloadLoading({ onComplete, hideLogo, isPreloading, pre
           </p>
         </div>
 
-        {/* Red jumping dots */}
         {!displayComplete && (
-          <>
-            <div className="flex gap-2 mb-6">
-              <div
-                className="w-2 h-2 rounded-full bg-red-500"
-                style={{
-                  animation: "preloadBounce 0.9s infinite",
-                  animationDelay: "0ms",
-                }}
-              />
-              <div
-                className="w-2 h-2 rounded-full bg-red-500"
-                style={{
-                  animation: "preloadBounce 0.9s infinite",
-                  animationDelay: "150ms",
-                }}
-              />
-              <div
-                className="w-2 h-2 rounded-full bg-red-500"
-                style={{
-                  animation: "preloadBounce 0.9s infinite",
-                  animationDelay: "300ms",
-                }}
-              />
-            </div>
-            <style>{`
-              @keyframes preloadBounce {
-                0%, 100% {
-                  transform: translateY(0);
-                  animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
-                }
-                50% {
-                  transform: translateY(-100%);
-                  animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
-                }
-              }
-            `}</style>
-          </>
+          <Typing
+            className="mb-6 h-2 w-8 text-red-500"
+            label={t("loading.loadingPrefix", "Loading")}
+          />
         )}
 
         {/* Progress bar + percentage – green when complete */}
