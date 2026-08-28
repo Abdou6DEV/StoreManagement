@@ -90,9 +90,11 @@ export default function InvoiceScanModal({
   const qrWatchingRef = useRef(false);
   const allowCloseRef = useRef(false);
   const leaveConfirmOpenRef = useRef(false);
+  const openRef = useRef(open);
   const tRef = useRef(t);
   tRef.current = t;
   leaveConfirmOpenRef.current = leaveConfirmOpen;
+  openRef.current = open;
 
   const deleteTemp = (path: string | null) => {
     if (!path) return;
@@ -123,9 +125,12 @@ export default function InvoiceScanModal({
       setWizardStep("supplier");
       setFarthest("scan");
       setLeaveConfirmOpen(false);
-      allowCloseRef.current = false;
+      // Keep allowCloseRef until the next open. Resetting it here lets a late
+      // Radix onOpenChange(false) treat a finished save as a user dismiss.
       return;
     }
+
+    allowCloseRef.current = false;
 
     let cancelled = false;
     let pollTimer: ReturnType<typeof setInterval> | null = null;
@@ -367,12 +372,15 @@ export default function InvoiceScanModal({
   };
 
   const requestClose = () => {
+    if (allowCloseRef.current) return;
+    if (!openRef.current) return;
     if (leaveConfirmOpenRef.current) return;
     setLeaveConfirmOpen(true);
   };
 
   const closeScan = () => {
     allowCloseRef.current = true;
+    openRef.current = false;
     setLeaveConfirmOpen(false);
     onOpenChange(false);
   };
@@ -382,8 +390,7 @@ export default function InvoiceScanModal({
       onOpenChange(true);
       return;
     }
-    if (allowCloseRef.current) {
-      allowCloseRef.current = false;
+    if (allowCloseRef.current || !openRef.current) {
       onOpenChange(false);
       return;
     }
@@ -391,7 +398,7 @@ export default function InvoiceScanModal({
   };
 
   const blockDismiss = (event: Event) => {
-    if (allowCloseRef.current) return;
+    if (allowCloseRef.current || !openRef.current) return;
     event.preventDefault();
     requestClose();
   };
