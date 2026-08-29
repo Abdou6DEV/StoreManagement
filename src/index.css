@@ -753,6 +753,8 @@ input[type="date"].success {
   .composer-welcome-glow,
   .working-status-spinner,
   .animate-scan,
+  .premium-gradient-bg,
+  .premium-price-chip,
   .invoice-scan-ai-btn {
     animation: none;
   }
@@ -857,6 +859,7 @@ input[type="date"].success {
   }
 }
 
+.premium-gradient-bg,
 .invoice-scan-ai-btn {
   background-color: transparent;
   background-image: linear-gradient(
@@ -871,6 +874,7 @@ input[type="date"].success {
   animation: invoice-scan-ai-shift 8s ease-in-out infinite;
 }
 
+.dark .premium-gradient-bg,
 .dark .invoice-scan-ai-btn {
   border-color: color-mix(in oklab, #8b5cf6 42%, var(--color-border));
   background-image: linear-gradient(
@@ -900,6 +904,93 @@ input[type="date"].success {
   }
   100% {
     background-position: 0% 50%;
+  }
+}
+
+.premium-price-chip {
+  background-color: transparent;
+  background-image: linear-gradient(
+    135deg,
+    color-mix(in oklab, #ffffff 22%, var(--color-card)) 0%,
+    color-mix(in oklab, #ddd6fe 55%, var(--color-card)) 22%,
+    color-mix(in oklab, #c084fc 45%, var(--color-card)) 48%,
+    color-mix(in oklab, #8b5cf6 42%, var(--color-card)) 72%,
+    color-mix(in oklab, #60a5fa 38%, var(--color-card)) 100%
+  );
+  background-size: 320% 320%;
+  animation: invoice-scan-ai-shift 8s ease-in-out infinite;
+  border: 1.5px solid color-mix(in oklab, #8b5cf6 55%, transparent);
+  box-shadow:
+    0 12px 28px -14px rgb(139 92 246 / 0.55),
+    inset 0 1px 0 rgb(255 255 255 / 0.72);
+}
+
+.dark .premium-price-chip {
+  background-image: linear-gradient(
+    135deg,
+    color-mix(in oklab, #4c1d95 55%, var(--color-card)) 0%,
+    color-mix(in oklab, #7c3aed 62%, var(--color-card)) 28%,
+    color-mix(in oklab, #8b5cf6 58%, var(--color-card)) 52%,
+    color-mix(in oklab, #6366f1 52%, var(--color-card)) 76%,
+    color-mix(in oklab, #38bdf8 45%, var(--color-card)) 100%
+  );
+  border-color: color-mix(in oklab, #a78bfa 55%, transparent);
+  box-shadow:
+    0 14px 32px -14px rgb(91 33 182 / 0.65),
+    inset 0 1px 0 rgb(255 255 255 / 0.12);
+}
+
+.pricing-section-premium {
+  border-color: color-mix(in oklab, #8b5cf6 35%, var(--color-border));
+}
+
+.pricing-section-standard {
+  background: linear-gradient(
+    145deg,
+    var(--color-card) 0%,
+    color-mix(in oklab, var(--color-muted) 38%, var(--color-card)) 42%,
+    color-mix(in oklab, var(--color-muted) 22%, var(--color-card)) 100%
+  );
+}
+
+.dark .pricing-section-standard {
+  background: linear-gradient(
+    145deg,
+    var(--color-card) 0%,
+    color-mix(in oklab, var(--color-muted) 28%, var(--color-card)) 48%,
+    color-mix(in oklab, var(--color-background) 35%, var(--color-card)) 100%
+  );
+}
+
+.standard-price-chip {
+  border: 1.5px solid color-mix(in oklab, var(--color-border) 90%, transparent);
+  background: linear-gradient(
+    135deg,
+    color-mix(in oklab, #ffffff 16%, var(--color-card)) 0%,
+    color-mix(in oklab, var(--color-muted) 52%, var(--color-card)) 42%,
+    color-mix(in oklab, var(--color-muted) 38%, var(--color-card)) 100%
+  );
+  box-shadow:
+    0 10px 26px -14px rgb(0 0 0 / 0.1),
+    inset 0 1px 0 rgb(255 255 255 / 0.68);
+}
+
+.dark .standard-price-chip {
+  background: linear-gradient(
+    135deg,
+    color-mix(in oklab, var(--color-muted) 40%, var(--color-card)) 0%,
+    color-mix(in oklab, var(--color-muted) 55%, var(--color-card)) 50%,
+    color-mix(in oklab, var(--color-background) 30%, var(--color-card)) 100%
+  );
+  border-color: color-mix(in oklab, var(--color-border) 95%, transparent);
+  box-shadow:
+    0 12px 28px -14px rgb(0 0 0 / 0.35),
+    inset 0 1px 0 rgb(255 255 255 / 0.08);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pricing-tier-surface {
+    transition: none !important;
   }
 }
 
@@ -1018,6 +1109,15 @@ input[type="date"].success {
 
 .dark .pricing-yearly-ribbon {
   background: #b91c1c;
+  border-bottom-color: rgb(0 0 0 / 0.45);
+}
+
+.pricing-yearly-ribbon--premium {
+  background: #8b5cf6;
+}
+
+.dark .pricing-yearly-ribbon--premium {
+  background: #7c3aed;
   border-bottom-color: rgb(0 0 0 / 0.45);
 }
 

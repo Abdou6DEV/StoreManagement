@@ -919,44 +919,108 @@
   },
   "pricing": {
     "kicker": "Licences",
+    "modalTitle": "Formules de licence",
     "title": "Choisissez votre licence",
-    "subtitle": "Mensuelle, annuelle ou à vie — tous les forfaits incluent l'application complète. Prix en dinars algériens (DA) ; contactez votre fournisseur pour acheter et activer.",
+    "subtitle": "Standard ou Premium — mensuelle, annuelle ou à vie. Tous les forfaits incluent l'application bureau complète. Premium ajoute REDA AI, la numérisation de reçus et la sauvegarde en ligne. Prix en dinars algériens (DA) ; contactez votre fournisseur pour acheter et activer.",
     "popular": "Recommandé",
+    "premiumBadge": "Premium",
+    "tierToggleLabel": "Formule de licence",
+    "tierStandard": "Standard",
+    "tierPremium": "Premium",
+    "saveVsMonthly": "Économisez {{amount}} DA vs 12 mois au mensuel ({{percent}} % de moins)",
+    "whatsIncluded": "Ce qui est inclus",
     "contactSupplier": "Contacter le fournisseur",
-    "supplierPhoneLabel": "Tél. {{phone}}",
+    "supplierPhoneLabel": "Tél.",
+    "tiers": {
+      "standard": {
+        "title": "Standard",
+        "subtitle": "Application POS complète et sauvegarde locale."
+      },
+      "premium": {
+        "title": "Premium",
+        "subtitle": "Tout le Standard, plus REDA AI, le scanner de reçus et la sauvegarde en ligne."
+      }
+    },
     "mailSubject": {
-      "monthly": "REDA TECH Store Management — Demande de licence mensuelle",
-      "yearly": "REDA TECH Store Management — Demande de licence annuelle",
-      "lifetime": "REDA TECH Store Management — Demande de licence à vie"
+      "standard": {
+        "monthly": "REDA TECH Store Management — Demande de licence Standard mensuelle",
+        "yearly": "REDA TECH Store Management — Demande de licence Standard annuelle",
+        "lifetime": "REDA TECH Store Management — Demande de licence Standard à vie"
+      },
+      "premium": {
+        "monthly": "REDA TECH Store Management — Demande de licence Premium mensuelle",
+        "yearly": "REDA TECH Store Management — Demande de licence Premium annuelle",
+        "lifetime": "REDA TECH Store Management — Demande de licence Premium à vie"
+      }
     },
     "plans": {
-      "monthly": {
-        "name": "Mensuelle",
-        "priceAmount": "2 500 DA",
-        "pricePeriod": "par mois",
-        "tagline": "Abonnement flexible, renouvelé chaque mois.",
-        "feature1": "Application bureau complète et mises à jour pendant l'abonnement",
-        "feature2": "Idéal pour une utilisation courte ou saisonnière",
-        "feature3": "Changez ou mettez à niveau avec votre fournisseur à tout moment"
+      "standard": {
+        "monthly": {
+          "name": "Mensuelle",
+          "priceAmount": "1 000 DA",
+          "pricePeriod": "par mois",
+          "commitment": "Renouvellement mensuel",
+          "tagline": "Abonnement flexible — payez au fil du mois.",
+          "feature1": "POS bureau complet — ventes, stock, clients et rapports",
+          "feature2": "Sauvegarde locale sur cet ordinateur",
+          "feature3": "Renouvelez ou arrêtez chaque mois avec votre fournisseur"
+        },
+        "yearly": {
+          "name": "Annuelle",
+          "priceAmount": "10 000 DA",
+          "pricePeriod": "par an",
+          "commitment": "Un paiement par an",
+          "tagline": "Meilleur équilibre coût / engagement pour la plupart des commerces.",
+          "feature1": "Tout le forfait Mensuel",
+          "feature2": "Économisez ~17 % vs douze paiements mensuels",
+          "feature3": "Une seule facture par an — moins d'administratif",
+          "feature4": "Recommandé pour les commerces actifs au quotidien"
+        },
+        "lifetime": {
+          "name": "À vie",
+          "priceAmount": "20 000 DA",
+          "pricePeriod": "paiement unique",
+          "commitment": "Paiement unique · sans renouvellement",
+          "tagline": "Payez une fois pour une utilisation à long terme.",
+          "feature1": "Tout le forfait Annuel",
+          "feature2": "Paiement unique d'avance",
+          "feature3": "Coût le plus bas sur plusieurs années d'utilisation",
+          "feature4": "Conditions de licence et mises à jour selon accord fournisseur"
+        }
       },
-      "yearly": {
-        "name": "Annuelle",
-        "priceAmount": "15 000 DA",
-        "pricePeriod": "par an",
-        "saveVsMonthly": "Économisez {{amount}} DA vs 12 mois au mensuel ({{percent}} % de moins)",
-        "tagline": "Un paiement par an, bon équilibre coût et engagement.",
-        "feature1": "Tout le forfait Mensuel avec facturation annuelle",
-        "feature2": "Coût total souvent inférieur à douze mois séparés",
-        "feature3": "Canal privilégié pour renouvellement et support auprès du fournisseur"
-      },
-      "lifetime": {
-        "name": "À vie",
-        "priceAmount": "35 000 DA",
-        "pricePeriod": "paiement unique",
-        "tagline": "Licence unique pour les commerces sur le long terme.",
-        "feature1": "Paiement unique selon les conditions convenues avec le fournisseur",
-        "feature2": "Adaptée aux entreprises établies sur plusieurs années",
-        "feature3": "Conditions et politique de mises à jour selon accord avec le fournisseur"
+      "premium": {
+        "monthly": {
+          "name": "Mensuelle",
+          "priceAmount": "1 900 DA",
+          "pricePeriod": "par mois",
+          "commitment": "Premium · renouvellement mensuel",
+          "tagline": "Tous les outils Premium avec facturation mensuelle flexible.",
+          "feature1": "Tout le Standard Mensuel",
+          "feature2": "Assistant boutique REDA AI",
+          "feature3": "Scanner de reçus + sauvegarde cloud en ligne"
+        },
+        "yearly": {
+          "name": "Annuelle",
+          "priceAmount": "15 000 DA",
+          "pricePeriod": "par an",
+          "commitment": "Premium · facturation annuelle",
+          "tagline": "Premium pour une année — meilleur rapport qualité-prix.",
+          "feature1": "Tout le Premium Mensuel",
+          "feature2": "Économisez ~34 % vs 12 mois Premium au mensuel",
+          "feature3": "Un seul renouvellement annuel pour l'IA et le cloud",
+          "feature4": "REDA AI, scanner et sauvegarde cloud inclus"
+        },
+        "lifetime": {
+          "name": "À vie",
+          "priceAmount": "35 000 DA",
+          "pricePeriod": "paiement unique",
+          "commitment": "Premium · paiement unique",
+          "tagline": "Premium une fois — pour les commerces engagés sur le long terme.",
+          "feature1": "Standard + Premium pour la durée de votre licence",
+          "feature2": "REDA AI, scanner de reçus et sauvegarde cloud",
+          "feature3": "Aucun renouvellement d'abonnement après activation",
+          "feature4": "Conditions de licence et mises à jour selon accord fournisseur"
+        }
       }
     }
   },
@@ -2213,9 +2277,11 @@
     "backup.autoCloudBackupOn": "Activé",
     "backup.autoCloudBackupOff": "Désactivé",
     "backup.cloudBackupUnavailableTitle": "Sauvegarde en ligne indisponible",
-    "backup.cloudBackupUnavailableTrial": "La sauvegarde en ligne est incluse dans un abonnement payant. Pendant l’essai gratuit, utilisez uniquement les sauvegardes locales. Ouvrez l’onglet Licence pour voir votre statut ou contactez votre fournisseur.",
+    "backup.cloudBackupUnavailableTrial": "La sauvegarde en ligne est une fonctionnalité Premium incluse dans un abonnement payant. Pendant l’essai gratuit, utilisez uniquement les sauvegardes locales. Ouvrez l’onglet Licence pour voir votre statut ou contactez votre fournisseur.",
     "backup.cloudBackupUnavailableNotLicensed": "La sauvegarde en ligne nécessite une licence payante active. Connectez-vous et vérifiez votre licence dans l’onglet Licence.",
     "backup.cloudBackupUnavailableExpired": "Votre abonnement payant est terminé. Renouvelez votre licence pour réutiliser la sauvegarde en ligne.",
+    "backup.cloudBackupUnavailablePremium": "La sauvegarde en ligne est une fonctionnalité Premium. Contactez votre fournisseur pour activer Premium sur votre compte.",
+    "backup.cloudBackupUnavailableOffline": "La sauvegarde en ligne nécessite une connexion Internet active. Connectez-vous au Wi‑Fi ou à Ethernet, puis réessayez.",
     "backup.cloudBackupUnavailableUnknown": "La sauvegarde en ligne sera disponible après vérification de votre licence. Ouvrez l’onglet Licence et lancez une vérification en ligne.",
     "backup.cloudBackupOpenLicenseTab": "Ouvrir l’onglet Licence",
     "backup.cloudAccessChecking": "Vérification de l’accès à la sauvegarde en ligne…",
@@ -2442,6 +2508,11 @@
       "allowedNo": "Non autorisé",
       "unavailable": "Indisponible",
       "trialModeBadge": "Essai gratuit",
+      "premiumBadge": "Premium",
+      "upgradeToPremium": "Passer à Premium",
+      "upgradeToPremiumHint": "Débloquez REDA AI, la sauvegarde en ligne, et plus encore.",
+      "seePlans": "Voir les tarifs",
+      "seePlansHint": "Comparez les options Standard et Premium.",
       "trialSection": "Essai",
       "trialEnds": "Fin de l'essai",
       "trialRemaining": "Temps restant",
@@ -3188,7 +3259,11 @@
     "restoreOnNewComputer": "Restaurer la boutique sur un nouvel ordinateur (compte existant)",
     "backToNewShopSetup": "Retour à la configuration d’une nouvelle boutique",
     "restoreTitle": "Restaurer sur un nouvel ordinateur",
-    "restoreDescription": "Associez ce PC à votre boutique existante et téléchargez votre dernière sauvegarde cloud. Les données locales sur cet ordinateur seront remplacées. Une licence payante est requise.",
+    "restoreDescription": "Associez ce PC à votre boutique existante et téléchargez votre dernière sauvegarde cloud. Les données locales sur cet ordinateur seront remplacées. Une licence payante avec Premium est requise.",
+    "restorePremiumRequired": "La restauration cloud nécessite Premium. Contactez votre fournisseur pour activer Premium sur votre compte.",
+    "restoreTrialBlocked": "La restauration cloud n’est pas disponible pendant l’essai gratuit. Contactez votre fournisseur pour une licence payante avec Premium.",
+    "restoreSubscriptionExpired": "Votre abonnement payant est terminé. Renouvelez votre licence pour restaurer depuis le cloud.",
+    "restoreNotLicensed": "La restauration cloud nécessite une licence payante active. Contactez votre fournisseur.",
     "setupDescriptionTrial": "Indiquez qui vous êtes pour démarrer votre essai gratuit sur cet ordinateur. Nom complet et téléphone — ils servent à connecter cet appareil à votre compte. Votre mot de passe de connexion est défini à l’écran suivant.",
     "customerId": "Identifiant client",
     "customerIdPlaceholder": "UUID fourni par votre fournisseur",

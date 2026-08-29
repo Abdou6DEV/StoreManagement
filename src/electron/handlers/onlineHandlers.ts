@@ -13,6 +13,7 @@ import {
 import type { DeviceRequestPayload, DeviceRequestResult } from "../types/deviceRequest";
 import type { DeviceLinkExistingPayload, DeviceLinkExistingResult } from "../types/deviceLinkExisting";
 import type { DeviceCheckResult } from "../types/deviceCheck";
+import { resolvePaidCloudBackupAccess } from "../../lib/license/paidCloudBackupAccess";
 import type {
   AiConsumeEntitlementError,
   AiConsumeResult,
@@ -27,7 +28,7 @@ import type {
 } from "../types/cloudBackup";
 import {
   getStoredOnlineCustomerId,
-  persistOnlineCustomerIdIfAbsent,
+  syncOnlineCustomerIdFromServer,
 } from "../../lib/onboarding/onlineCustomerId";
 import {
   CLOUD_LATEST_FROM_ONLINE_DB,
@@ -157,11 +158,74 @@ function sendCloudBackupProgressThrottled(
   };
 }
 
+async function assertCloudBackupAccessAllowed(): Promise<
+  | { success: false; error: string; code: CloudBackupErrorCode }
+  | null
+> {
+  const check = await runDeviceCheckInternal();
+  const snapshot = readStoredLicenseGrace();
+  const isOnline = !(check.success === false && check.code === "network");
+  const access = resolvePaidCloudBackupAccess({
+    effectiveCheckResult: check,
+    snapshot,
+    isLicenseValid: check.success === true && check.allowed === true,
+    nowMs: Date.now(),
+    isOnline,
+    aiEnabled: check.success === true ? check.aiEnabled : undefined,
+  });
+
+  if (access.hasPaidCloudBackupAccess) {
+    return null;
+  }
+
+  switch (access.blockReason) {
+    case "offline":
+      return {
+        success: false,
+        error: "Online backup requires an active internet connection.",
+        code: "network",
+      };
+    case "trial":
+      return {
+        success: false,
+        error: "Online backup is not available during the free trial.",
+        code: "unauthorized",
+      };
+    case "disabled":
+      return {
+        success: false,
+        error: "Premium is required for online backup.",
+        code: "unauthorized",
+      };
+    case "subscription_expired":
+      return {
+        success: false,
+        error: "Your paid subscription has ended.",
+        code: "unauthorized",
+      };
+    case "not_licensed":
+      return {
+        success: false,
+        error: "This device is not activated for paid cloud backup yet.",
+        code: "unauthorized",
+      };
+    default:
+      return {
+        success: false,
+        error: "Online backup is not available for this device.",
+        code: "unauthorized",
+      };
+  }
+}
+
 export async function uploadCloudBackupLatest(
   event: IpcMainInvokeEvent | null,
   backupFilePath: string,
   uploadSource?: string,
 ): Promise<CloudBackupUploadResult> {
+  const denied = await assertCloudBackupAccessAllowed();
+  if (denied) return denied;
+
   const backupPath = String(backupFilePath ?? "").trim();
   if (!backupPath) {
     return { success: false, error: "Backup file path is required.", code: "missing_file" };
@@ -343,6 +407,9 @@ async function writeStreamChunk(writeStream: fs.WriteStream, buf: Buffer): Promi
 async function requestCloudBackupDownloadSignedUrl(
   overrideCustomerId?: string,
 ): Promise<CloudBackupDownloadResult> {
+  const denied = await assertCloudBackupAccessAllowed();
+  if (denied) return denied;
+
   const identity = await resolveCloudBackupIdentity(overrideCustomerId);
   if (identity.success === false) {
     return { success: false, error: identity.error, code: identity.code };
@@ -449,23 +516,29 @@ async function resolveCloudBackupIdentity(
     return { success: false, error: (e as Error).message, code: "invalid" };
   }
 
-  let customerId =
-    (overrideCustomerId ?? "").trim() || (await getStoredOnlineCustomerId());
-  if (!customerId) {
-    const check = await runDeviceCheckInternal();
-    if (check.success === true && check.customerId?.trim()) {
-      customerId = (await persistOnlineCustomerIdIfAbsent(check.customerId)) ?? check.customerId.trim();
-    }
-  }
-  if (!customerId) {
-    return {
-      success: false,
-      error: "Customer ID is not recorded on this device. Complete welcome setup first.",
-      code: "missing_customer_id",
-    };
+  const override = (overrideCustomerId ?? "").trim();
+  if (override) {
+    return { success: true, deviceId, customerId: override };
   }
 
-  return { success: true, deviceId, customerId };
+  const check = await runDeviceCheckInternal();
+  if (check.success === true && check.customerId?.trim()) {
+    const customerId = await syncOnlineCustomerIdFromServer(check.customerId);
+    if (customerId) {
+      return { success: true, deviceId, customerId };
+    }
+  }
+
+  const stored = await getStoredOnlineCustomerId();
+  if (stored) {
+    return { success: true, deviceId, customerId: stored };
+  }
+
+  return {
+    success: false,
+    error: "Customer ID is not recorded on this device. Complete welcome setup first.",
+    code: "missing_customer_id",
+  };
 }
 
 function readEdgeError(body: unknown, status: number): string {
@@ -856,7 +929,7 @@ export function setupOnlineHandlers(): void {
   ipcMain.handle("online:deviceCheck", async (): Promise<DeviceCheckResult> => {
     const result = await runDeviceCheckInternal();
     if (result.success === true && result.customerId?.trim()) {
-      await persistOnlineCustomerIdIfAbsent(result.customerId);
+      await syncOnlineCustomerIdFromServer(result.customerId);
     }
     return result;
   });
@@ -946,7 +1019,7 @@ export function setupOnlineHandlers(): void {
         const mode = typeof body.mode === "string" ? body.mode : null;
         const alreadyLinked = body.already_linked === true;
 
-        await persistOnlineCustomerIdIfAbsent(returnedCustomerId);
+        await syncOnlineCustomerIdFromServer(returnedCustomerId);
 
         return {
           success: true,
@@ -1039,7 +1112,7 @@ export function setupOnlineHandlers(): void {
       }
 
       if (returnedCustomerId) {
-        await persistOnlineCustomerIdIfAbsent(returnedCustomerId);
+        await syncOnlineCustomerIdFromServer(returnedCustomerId);
       }
 
       return { success: true, customerId: returnedCustomerId ?? null, raw: json };

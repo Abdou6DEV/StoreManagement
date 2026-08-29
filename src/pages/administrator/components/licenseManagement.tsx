@@ -8,11 +8,13 @@ import {
   Copy,
   Globe,
   HardDrive,
+  Layers,
   Loader2,
   RefreshCw,
   Shield,
   ShieldCheck,
   ShieldOff,
+  Sparkles,
   Wifi,
   WifiOff,
 } from "lucide-react";
@@ -23,7 +25,9 @@ import { Badge } from "../../../lib/components/badge";
 import { Alert, AlertDescription } from "../../../lib/components/alert";
 import { useToast } from "../../../lib/contexts/toastContext";
 import { useLicense } from "../../../lib/contexts/licenseContext";
+import { cn } from "../../../lib/utils";
 import { ONLINE_CUSTOMER_ID_OPTION_KEY } from "../../../lib/onboarding/constants";
+import { readCustomerIdFromDeviceCheck } from "../../../lib/onboarding/deviceCheckCustomerId";
 import { loadOnlineCustomerProfile } from "../../../lib/onboarding/onlineCustomerProfile";
 import {
   getEffectiveOfflineDeadlineMs,
@@ -35,17 +39,14 @@ import {
   loadLicenseLastOnlineCheckAtMs,
   persistLicenseLastOnlineCheckAtMs,
 } from "../../../lib/license/adminLicenseOptions";
+import { PricingPlansModal } from "../../../lib/components/pricingPlansSection";
 
 type AccessMode = "licensed_online" | "licensed_offline" | "not_licensed" | "unknown";
 
 const ONLINE_CHECK_COOLDOWN_MS = 60_000;
 
 function readCustomerIdFromCheck(result: DeviceCheckResult | null): string | null {
-  if (!result || result.success !== true || !result.raw || typeof result.raw !== "object") {
-    return null;
-  }
-  const customerId = (result.raw as Record<string, unknown>).customer_id;
-  return typeof customerId === "string" && customerId.trim() ? customerId.trim() : null;
+  return readCustomerIdFromDeviceCheck(result);
 }
 
 function formatDateTime(valueMs: number | null | undefined, locale: string): string {
@@ -116,6 +117,7 @@ export function LicenseManagement() {
   const [storedCustomerPhone, setStoredCustomerPhone] = useState<string | null>(null);
   const [copiedDeviceId, setCopiedDeviceId] = useState(false);
   const [copiedCustomerId, setCopiedCustomerId] = useState(false);
+  const [pricingModalOpen, setPricingModalOpen] = useState(false);
 
   const locale = i18n.language === "ar" ? "ar" : i18n.language === "fr" ? "fr" : "en";
 
@@ -287,6 +289,13 @@ export function LicenseManagement() {
       ? formatRemaining(subscriptionEndsAtMs, nowMs, t)
       : t("admin.license.notApplicable", "Not applicable");
 
+  const premiumKnown =
+    effectiveCheckResult?.success === true &&
+    typeof effectiveCheckResult.aiEnabled === "boolean";
+  const hasPremium = premiumKnown && effectiveCheckResult.aiEnabled === true;
+  const showUpgradeToPremium = !isTrialActive && !hasPremium;
+  const pricingInitialTier = hasPremium || showUpgradeToPremium ? "premium" : "standard";
+
   const copyDeviceId = async () => {
     if (!deviceId) return;
     try {
@@ -399,12 +408,12 @@ export function LicenseManagement() {
 
       <Card className="overflow-hidden border-border shadow-sm">
         <CardContent className="p-0">
-          <div className="flex flex-col gap-4 bg-gradient-to-br from-orange-500/10 via-background to-background p-6 md:flex-row md:items-center md:justify-between">
+          <div className="bg-gradient-to-br from-orange-500/10 via-background to-background p-6">
             <div className="flex items-start gap-4">
               <div className="rounded-2xl bg-card p-3 shadow-sm ring-1 ring-border">
                 <StatusIcon className="h-7 w-7 text-orange-600" />
               </div>
-              <div>
+              <div className="min-w-0 flex-1">
                 <div className="mb-2 flex flex-wrap items-center gap-2">
                   <Badge variant="outline" className={statusMeta.badgeClass}>
                     {statusMeta.badge}
@@ -427,14 +436,58 @@ export function LicenseManagement() {
                       {t("admin.license.trialModeBadge", "Free trial")}
                     </Badge>
                   ) : null}
+                  {hasPremium ? (
+                    <Badge
+                      variant="outline"
+                      className="premium-gradient-bg gap-1 border-[#8b5cf6]/35 text-[#8b5cf6]"
+                    >
+                      <Sparkles className="h-3.5 w-3.5" aria-hidden />
+                      {t("admin.license.premiumBadge", "Premium")}
+                    </Badge>
+                  ) : null}
                 </div>
                 <h3 className="text-lg font-semibold text-foreground">{statusMeta.title}</h3>
                 <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{statusMeta.description}</p>
               </div>
             </div>
           </div>
+          <div className="flex flex-col gap-2 border-t border-border/60 bg-muted/15 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+            <p className="hidden text-xs text-muted-foreground sm:block">
+              {showUpgradeToPremium
+                ? t("admin.license.upgradeToPremiumHint", "Unlock REDA AI, online backup, and more.")
+                : t("admin.license.seePlansHint", "Compare Standard and Premium pricing options.")}
+            </p>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setPricingModalOpen(true)}
+              className={cn(
+                "w-full shrink-0 gap-1.5 sm:ml-auto sm:w-auto",
+                showUpgradeToPremium && "premium-gradient-bg border-[#8b5cf6]/35",
+              )}
+            >
+              {showUpgradeToPremium ? (
+                <>
+                  <Sparkles className="h-3.5 w-3.5 text-[#8b5cf6]" aria-hidden />
+                  {t("admin.license.upgradeToPremium", "Upgrade to Premium")}
+                </>
+              ) : (
+                <>
+                  <Layers className="h-3.5 w-3.5" aria-hidden />
+                  {t("admin.license.seePlans", "See pricing plans")}
+                </>
+              )}
+            </Button>
+          </div>
         </CardContent>
       </Card>
+
+      <PricingPlansModal
+        open={pricingModalOpen}
+        onOpenChange={setPricingModalOpen}
+        initialTier={pricingInitialTier}
+      />
 
       {checkError ? (
         <Alert variant="destructive">

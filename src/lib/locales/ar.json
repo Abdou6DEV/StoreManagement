@@ -234,7 +234,6 @@
     "unpaidVersementPayments": "دفعات الدفع غير المدفوعة",
     "activeClients": "العملاء النشطون",
     "inactiveClients": "العملاء غير النشطين",
-   
     "credits": "الديون",
     "creditSales": "مبيعات بالدين",
     "normalSales": "مبيعات عادية",
@@ -439,7 +438,6 @@
     "apply": "تطبيق",
     "clear": "مسح",
     "activeFilter": "الفلتر النشط",
-
     "metrics": "المقاييس",
     "totalRevenue": "إجمالي الإيرادات",
     "totalProfit": "إجمالي الربح",
@@ -451,7 +449,6 @@
     "profitInPeriod": "الربح في الفترة المحددة",
     "purchasesInPeriod": "المشتريات في الفترة المحددة",
     "salesInPeriod": "المبيعات في الفترة المحددة",
-
     "chart": "الرسم البياني",
     "revenueChart": "رسم بياني للإيرادات",
     "profitChart": "رسم بياني للأرباح",
@@ -480,7 +477,6 @@
     "payments": "المدفوعات",
     "today": "اليوم",
     "yesterday": "أمس",
-
     "allTransactions": "جميع المعاملات المعالجة",
     "totalPayments": "إجمالي المدفوعات",
     "paymentsInPeriod": "المدفوعات في الفترة المحددة",
@@ -489,7 +485,6 @@
     "perPayment": "لكل دفعة",
     "totalPaidAmount": "إجمالي المبلغ المدفوع",
     "paidAmountInPeriod": "المبلغ المدفوع في الفترة المحددة",
-
     "allPayments": "جميع المدفوعات المعالجة",
     "paid": "مدفوع",
     "overdue": "متأخر",
@@ -528,7 +523,6 @@
     "noSalesFoundForPeriod": "لم يتم العثور على مبيعات لهذه الفترة",
     "noPaymentsFoundForPeriod": "لم يتم العثور على مدفوعات لهذه الفترة",
     "noPurchasesFoundForPeriod": "لم يتم العثور على مشتريات لهذه الفترة",
-
     "loadingPeriodData": "جاري تحميل بيانات الفترة...",
     "selectPeriodHint": "انقر نقرًا مزدوجًا على صف في تبويب التاريخ العام لعرض المعلومات التفصيلية لتلك الفترة",
     "relatedToSale": "مرتبط بالبيع",
@@ -926,44 +920,108 @@
   },
   "pricing": {
     "kicker": "التراخيص",
+    "modalTitle": "خطط الترخيص",
     "title": "اختر ترخيصك",
-    "subtitle": "شهري، سنوي، أو مدى الحياة — كل الخطط تشمل التطبيق كاملاً. الأسعار بالدينار الجزائري (د.ج)؛ تواصل مع المورّد للشراء والتفعيل.",
+    "subtitle": "Standard أو Premium — شهري، سنوي، أو مدى الحياة. كل الخطط تشمل تطبيق سطح المكتب كاملاً. Premium يضيف REDA AI ومسح الفواتير والنسخ الاحتياطي عبر الإنترنت. الأسعار بالدينار الجزائري (د.ج)؛ تواصل مع المورّد للشراء والتفعيل.",
     "popular": "موصى به",
+    "premiumBadge": "Premium",
+    "tierToggleLabel": "نوع الترخيص",
+    "tierStandard": "Standard",
+    "tierPremium": "Premium",
+    "saveVsMonthly": "وفر {{amount}} د.ج مقارنة بـ 12 دفعة شهرية (خصم {{percent}}٪)",
+    "whatsIncluded": "ما الذي يشمله",
     "contactSupplier": "اتصل بالمورّد",
-    "supplierPhoneLabel": "الهاتف: {{phone}}",
+    "supplierPhoneLabel": "الهاتف:",
+    "tiers": {
+      "standard": {
+        "title": "Standard",
+        "subtitle": "تطبيق نقطة البيع كامل والنسخ الاحتياطي المحلي."
+      },
+      "premium": {
+        "title": "Premium",
+        "subtitle": "كل مزايا Standard، بالإضافة إلى REDA AI ومسح الفواتير والنسخ الاحتياطي عبر الإنترنت."
+      }
+    },
     "mailSubject": {
-      "monthly": "REDA TECH Store Management — استفسار ترخيص شهري",
-      "yearly": "REDA TECH Store Management — استفسار ترخيص سنوي",
-      "lifetime": "REDA TECH Store Management — استفسار ترخيص مدى الحياة"
+      "standard": {
+        "monthly": "REDA TECH Store Management — استفسار ترخيص Standard شهري",
+        "yearly": "REDA TECH Store Management — استفسار ترخيص Standard سنوي",
+        "lifetime": "REDA TECH Store Management — استفسار ترخيص Standard مدى الحياة"
+      },
+      "premium": {
+        "monthly": "REDA TECH Store Management — استفسار ترخيص Premium شهري",
+        "yearly": "REDA TECH Store Management — استفسار ترخيص Premium سنوي",
+        "lifetime": "REDA TECH Store Management — استفسار ترخيص Premium مدى الحياة"
+      }
     },
     "plans": {
-      "monthly": {
-        "name": "شهري",
-        "priceAmount": "2 500 د.ج",
-        "pricePeriod": "في الشهر",
-        "tagline": "اشتراك مرن يتجدد كل شهر.",
-        "feature1": "تطبيق سطح المكتب كامل والتحديثات طيلة الاشتراك",
-        "feature2": "مناسب للاستخدام قصير المدى أو الموسمي",
-        "feature3": "يمكنك تغيير أو ترقية الخطة مع المورّد في أي وقت"
+      "standard": {
+        "monthly": {
+          "name": "شهري",
+          "priceAmount": "1 000 د.ج",
+          "pricePeriod": "في الشهر",
+          "commitment": "تجديد شهري",
+          "tagline": "اشتراك مرن — ادفع حسب استخدامك.",
+          "feature1": "نقطة بيع كاملة — مبيعات، مخزون، عملاء وتقارير",
+          "feature2": "نسخ احتياطي محلي على هذا الجهاز",
+          "feature3": "جدّد أو أوقف كل شهر مع المورّد"
+        },
+        "yearly": {
+          "name": "سنوي",
+          "priceAmount": "10 000 د.ج",
+          "pricePeriod": "في السنة",
+          "tagline": "أفضل توازن بين التكلفة والالتزام لمعظم المتاجر.",
+          "feature1": "كل مزايا الشهري",
+          "feature2": "وفر ~17٪ مقارنة بـ 12 دفعة شهرية",
+          "feature3": "فاتورة واحدة سنوياً — إدارة أقل",
+          "commitment": "دفعة واحدة في السنة",
+          "feature4": "موصى به للمتاجر النشطة يومياً"
+        },
+        "lifetime": {
+          "name": "مدى الحياة",
+          "priceAmount": "20 000 د.ج",
+          "pricePeriod": "دفعة واحدة",
+          "tagline": "ادفع مرة واحدة للاستخدام طويل الأمد.",
+          "feature1": "كل مزايا السنوي",
+          "feature2": "دفعة واحدة مقدّمة",
+          "feature3": "أقل تكلفة على مدى سنوات من الاستخدام",
+          "commitment": "دفعة واحدة · بدون تجديد",
+          "feature4": "شروط الترخيص والتحديثات حسب اتفاق المورّد"
+        }
       },
-      "yearly": {
-        "name": "سنوي",
-        "priceAmount": "15 000 د.ج",
-        "pricePeriod": "في السنة",
-        "saveVsMonthly": "وفر {{amount}} د.ج مقارنة بـ 12 دفعة شهرية (خصم {{percent}}٪)",
-        "tagline": "دفعة واحدة سنوياً، توازن جيد بين التكلفة والالتزام.",
-        "feature1": "كل مزايا الشهري مع فوترة سنوية",
-        "feature2": "غالباً أقل تكلفة إجمالية من اثني عشر تجديداً شهرياً",
-        "feature3": "قناة أوضح للتجديد والدعم مع المورّد"
-      },
-      "lifetime": {
-        "name": "مدى الحياة",
-        "priceAmount": "35 000 د.ج",
-        "pricePeriod": "دفعة واحدة",
-        "tagline": "ترخيص لمرة واحدة للمتاجر على المدى الطويل.",
-        "feature1": "ادفع مرة واحدة واستخدم التطبيق وفق اتفاقك مع المورّد",
-        "feature2": "الأنسب للأعمال الراسخة التي تخطط لسنوات",
-        "feature3": "الشروط وسياسة التحديثات بحسب الاتفاق مع المورّد"
+      "premium": {
+        "monthly": {
+          "name": "شهري",
+          "priceAmount": "1 900 د.ج",
+          "pricePeriod": "في الشهر",
+          "tagline": "كل أدوات Premium مع فوترة شهرية مرنة.",
+          "feature1": "كل مزايا Standard الشهري",
+          "feature2": "مساعد REDA AI للمتجر",
+          "feature3": "مسح الفواتير + النسخ الاحتياطي السحابي",
+          "commitment": "Premium · تجديد شهري"
+        },
+        "yearly": {
+          "name": "سنوي",
+          "priceAmount": "15 000 د.ج",
+          "pricePeriod": "في السنة",
+          "tagline": "Premium لسنة كاملة — أفضل قيمة للمتاجر النامية.",
+          "feature1": "كل مزايا Premium الشهري",
+          "feature2": "وفر ~34٪ مقارنة بـ 12 شهر Premium",
+          "feature3": "تجديد سنوي واحد للـ AI والنسخ السحابي",
+          "commitment": "Premium · فوترة سنوية",
+          "feature4": "REDA AI والمسح والنسخ السحابي مشمولة"
+        },
+        "lifetime": {
+          "name": "مدى الحياة",
+          "priceAmount": "35 000 د.ج",
+          "pricePeriod": "دفعة واحدة",
+          "tagline": "Premium لمرة واحدة — للمتاجر الملتزمة على المدى الطويل.",
+          "feature1": "Standard + Premium طوال مدة الترخيص",
+          "feature2": "REDA AI ومسح الفواتير والنسخ السحابي",
+          "feature3": "بدون تجديد اشتراك بعد التفعيل",
+          "commitment": "Premium · دفعة واحدة",
+          "feature4": "شروط الترخيص والتحديثات حسب اتفاق المورّد"
+        }
       }
     }
   },
@@ -1087,7 +1145,6 @@
     "receiptPrinterNotSetMessage": "يجب تعيين طابعة الإيصالات في صفحة الإدارة لطباعة الإيصالات. انتقل إلى الإدارة → تكوين الطباعة → تكوين الطابعات واختر طابعة الإيصالات.",
     "preview": "معاينة",
     "previewError": "فشل في فتح نافذة المعاينة",
-
     "close": "إغلاق",
     "calculator": "آلة حاسبة",
     "clientAdded": "تمت إضافة العميل بنجاح",
@@ -1428,7 +1485,6 @@
     "prev": "السابق",
     "next": "التالي",
     "page": "صفحة",
-   
     "edit": "تعديل",
     "profit": "الربح",
     "totalBought": "إجمالي الشراء",
@@ -1461,9 +1517,7 @@
     "cleanupUnused": "تنظيف غير المستخدمة",
     "cleanupUnusedProducts": "تنظيف المنتجات غير المستخدمة",
     "cleanupUnusedDescription": "سيؤدي هذا إلى حذف المنتجات نهائياً التي لديها كمية صفر ولا يوجد لها تاريخ مبيعات. لا يمكن التراجع عن هذا الإجراء.",
-    
     "foundUnusedProducts": "تم العثور على {{count}} منتج غير مستخدم يمكن حذفه بأمان:",
- 
     "noUnusedProductsDescription": "جميع المنتجات إما لديها مخزون أو تاريخ مبيعات.",
     "cleaningUp": "جاري التنظيف...",
     "cleanupNow": "تنظيف الآن",
@@ -1472,7 +1526,6 @@
     "cleanUnusedProductsDesc": "إزالة المنتجات التي لم يتم بيعها ولديها كمية صفر",
     "selectPeriod": "اختر الفترة",
     "unusedProductsFound": "المنتجات غير المستخدمة الموجودة",
-
     "warning": "تحذير",
     "deleteWarning": "لا يمكن التراجع عن هذا الإجراء. سيتم حذف المنتجات ذات الكمية الصفر فقط.",
     "loadingUnusedProducts": "جاري تحميل المنتجات غير المستخدمة...",
@@ -1540,7 +1593,6 @@
     "totalSales": "إجمالي المبيعات",
     "totalQuantitySold": "إجمالي الكمية",
     "profitPerUnit": "الربح لكل وحدة",
-
     "profitAnalysis": "تحليل الربح",
     "potentialProfit": "الربح المحتمل",
     "actualProfit": "الربح الفعلي",
@@ -1719,7 +1771,6 @@
     "paymentsDesc": "عرض جميع الديون والدفعيات لهذا العميل",
     "paymentsLoading": "جاري تحميل المدفوعات...",
     "paymentsError": "فشل في جلب المدفوعات",
- 
     "paymentType": "النوع",
     "paymentType_credit": "دين",
     "paymentType_versement": "دفعة",
@@ -1727,14 +1778,12 @@
     "paymentDueDate": "تاريخ الاستحقاق",
     "paymentPaidDate": "تاريخ الدفع",
     "paymentCreatedAt": "تاريخ الإنشاء",
-    
     "markAsUnpaid": "تحديد كغير مدفوع",
     "paymentMarkedAsPaid": "تم تحديد المدفوع كمدفوع",
     "paymentMarkError": "فشل في تحديد المدفوع كمدفوع",
     "paymentMarkedAsUnpaid": "تم تحديد المدفوع كغير مدفوع",
     "paymentUnmarkError": "فشل في تحديد المدفوع كغير مدفوع",
     "clientDetails": "تفاصيل العميل",
-  
     "noPhone": "لا يوجد هاتف",
     "totalSpent": "إجمالي المنفق",
     "totalCredits": "إجمالي الديون",
@@ -1746,7 +1795,6 @@
     "salesHistory": "تاريخ المبيعات",
     "totalSales": "إجمالي المبيعات",
     "saleId": "معرف البيع",
-  
     "total": "الإجمالي",
     "noSales": "لا توجد مبيعات",
     "noSalesDesc": "هذا العميل لم يقم بأي مشتريات بعد",
@@ -1754,7 +1802,6 @@
     "showLess": "عرض أقل",
     "more": "أكثر",
     "paymentsHistory": "تاريخ المدفوعات",
-  
     "noPayments": "لا توجد مدفوعات",
     "noPaymentsDesc": "هذا العميل ليس لديه تاريخ مدفوعات بعد",
     "servicesHistory": "تاريخ الخدمات",
@@ -1794,7 +1841,6 @@
     "searchPayments": "البحث باسم العميل أو رقم الهاتف...",
     "status": "الحالة",
     "allStatus": "جميع الحالات",
-  
     "unpaid": "غير مدفوع",
     "type": "النوع",
     "allTypes": "جميع الأنواع",
@@ -1953,34 +1999,34 @@
     "loadError": "فشل في تحميل الإعدادات",
     "saved": "تم حفظ الإعدادات بنجاح!",
     "saveError": "فشل في حفظ الإعدادات",
-      "receiptSaved": "تم حفظ إعدادات الإيصال بنجاح!",
-      "receiptSaveError": "فشل في حفظ إعدادات الإيصال",
-      "receiptLanguage": "لغة الإيصال",
-      "chooseReceiptLanguage": "اختر اللغة لطباعة الإيصالات",
-      "french": "Français",
-      "english": "English",
-      "arabic": "العربية",
-      "categoriesRequiringInfo": "الفئات التي تتطلب معلومات إضافية",
-      "categoriesRequiringInfoDesc": "اختر الفئات التي تتطلب معلومات إضافية قبل تسجيل البيع وطباعة الإيصال",
-      "selectCategories": "اختر الفئات",
-      "selectedCategories": "الفئات المختارة",
-      "categoryInfoRequired": "معلومات إضافية مطلوبة لهذه الفئة",
-      "selected": "مختارة",
-      "noCategoriesAvailable": "لا توجد فئات متاحة",
-      "storeLogo": "شعار المتجر",
-      "storeLogoDesc": "قم بتحميل شعار لعرضه على الإيصالات (سيتم تحويله إلى أبيض وأسود)",
-      "logoSize": "حجم الشعار",
-      "logoSizeDesc": "اضبط حجم الشعار على الإيصالات والتذاكر المطبوعة",
-      "removeLogo": "إزالة الشعار",
-      "logoProcessed": "تم معالجة الشعار وهو جاهز للطباعة",
-      "logoProcessError": "فشل في معالجة الشعار",
-      "logoReadError": "فشل في قراءة ملف الشعار",
-      "logoUploadError": "فشل في تحميل الشعار",
-      "processingLogo": "جاري معالجة الشعار...",
-      "clickToUpload": "انقر للتحميل",
-      "orDragDrop": "أو اسحب وأفلت",
-      "logoFormatHint": "PNG, JPG, GIF (سيتم تحويله إلى أبيض وأسود)",
-      "invalidImageFile": "يرجى اختيار ملف صورة صالح",
+    "receiptSaved": "تم حفظ إعدادات الإيصال بنجاح!",
+    "receiptSaveError": "فشل في حفظ إعدادات الإيصال",
+    "receiptLanguage": "لغة الإيصال",
+    "chooseReceiptLanguage": "اختر اللغة لطباعة الإيصالات",
+    "french": "Français",
+    "english": "English",
+    "arabic": "العربية",
+    "categoriesRequiringInfo": "الفئات التي تتطلب معلومات إضافية",
+    "categoriesRequiringInfoDesc": "اختر الفئات التي تتطلب معلومات إضافية قبل تسجيل البيع وطباعة الإيصال",
+    "selectCategories": "اختر الفئات",
+    "selectedCategories": "الفئات المختارة",
+    "categoryInfoRequired": "معلومات إضافية مطلوبة لهذه الفئة",
+    "selected": "مختارة",
+    "noCategoriesAvailable": "لا توجد فئات متاحة",
+    "storeLogo": "شعار المتجر",
+    "storeLogoDesc": "قم بتحميل شعار لعرضه على الإيصالات (سيتم تحويله إلى أبيض وأسود)",
+    "logoSize": "حجم الشعار",
+    "logoSizeDesc": "اضبط حجم الشعار على الإيصالات والتذاكر المطبوعة",
+    "removeLogo": "إزالة الشعار",
+    "logoProcessed": "تم معالجة الشعار وهو جاهز للطباعة",
+    "logoProcessError": "فشل في معالجة الشعار",
+    "logoReadError": "فشل في قراءة ملف الشعار",
+    "logoUploadError": "فشل في تحميل الشعار",
+    "processingLogo": "جاري معالجة الشعار...",
+    "clickToUpload": "انقر للتحميل",
+    "orDragDrop": "أو اسحب وأفلت",
+    "logoFormatHint": "PNG, JPG, GIF (سيتم تحويله إلى أبيض وأسود)",
+    "invalidImageFile": "يرجى اختيار ملف صورة صالح",
     "backup.title": "إدارة النسخ الاحتياطي لقاعدة البيانات",
     "backup.description": "إدارة نسخك الاحتياطية لقاعدة البيانات. يقوم النظام بإنشاء نسخ احتياطية يومية تلقائياً ويحتفظ بأحدث نسختين.",
     "backup.descriptionPage": "أدناه ثلاث مجموعات: تلقائية (يومية على هذا الجهاز)، سحابية (لقطة ثم رفع)، ويدوية (نسخ محلية تنشئها). استخدم «تحديث» لإعادة تحميل القوائم.",
@@ -2103,9 +2149,11 @@
     "backup.autoCloudBackupOn": "مفعّل",
     "backup.autoCloudBackupOff": "معطّل",
     "backup.cloudBackupUnavailableTitle": "النسخ الاحتياطي عبر الإنترنت غير متاح",
-    "backup.cloudBackupUnavailableTrial": "النسخ الاحتياطي عبر الإنترنت مضمّن في الاشتراك المدفوع. أثناء التجربة المجانية، استخدم النسخ المحلية فقط. افتح تبويب الترخيص لمعرفة حالتك أو تواصل مع المزوّد.",
+    "backup.cloudBackupUnavailableTrial": "النسخ الاحتياطي عبر الإنترنت ميزة Premium مضمّنة في الاشتراك المدفوع. أثناء التجربة المجانية، استخدم النسخ المحلية فقط. افتح تبويب الترخيص لمعرفة حالتك أو تواصل مع المزوّد.",
     "backup.cloudBackupUnavailableNotLicensed": "يتطلب النسخ الاحتياطي عبر الإنترنت ترخيصًا مدفوعًا نشطًا. سجّل الدخول وتحقق من الترخيص في تبويب الترخيص.",
     "backup.cloudBackupUnavailableExpired": "انتهى اشتراكك المدفوع. جدّد الترخيص لاستخدام النسخ الاحتياطي عبر الإنترنت مجددًا.",
+    "backup.cloudBackupUnavailablePremium": "النسخ الاحتياطي عبر الإنترنت ميزة Premium. تواصل مع مزود الخدمة لتفعيل Premium على حسابك.",
+    "backup.cloudBackupUnavailableOffline": "يتطلب النسخ الاحتياطي عبر الإنترنت اتصالًا نشطًا بالإنترنت. اتصل بالواي‑فاي أو Ethernet ثم أعد المحاولة.",
     "backup.cloudBackupUnavailableUnknown": "سيتوفر النسخ الاحتياطي عبر الإنترنت بعد التحقق من الترخيص. افتح تبويب الترخيص ونفّذ فحصًا عبر الإنترنت.",
     "backup.cloudBackupOpenLicenseTab": "فتح تبويب الترخيص",
     "backup.cloudAccessChecking": "جارٍ التحقق من الوصول إلى النسخ الاحتياطي عبر الإنترنت…",
@@ -2160,7 +2208,7 @@
     "backup.disconnectingFromDatabase": "جاري قطع الاتصال من قاعدة البيانات...",
     "backup.restoringBackupFile": "جاري استعادة ملف النسخة الاحتياطية...",
     "storeSettings": "إعدادات المتجر",
-    "stockManagement": "إدارة المخزون", 
+    "stockManagement": "إدارة المخزون",
     "paymentNotifications": "إشعارات المدفوعات",
     "billsNotifications": "إشعارات الفواتير",
     "servicesNotifications": "إشعارات الخدمات",
@@ -2178,10 +2226,6 @@
     "enableOverdueBadgeDesc": "إظهار شارة الإشعار على عنصر قائمة العملاء عند وجود ائتمانات ودفعات متأخرة",
     "enableDueSoonPaymentsBadge": "تفعيل شارة إشعار المدفوعات المستحقة قريباً",
     "enableDueSoonBadgeDesc": "إظهار شارة الإشعار على عنصر قائمة العملاء عند وجود ائتمانات ودفعات مستحقة قريباً",
-   
- 
-    
-   
     "enableOverdueServicesBadge": "تفعيل شارة إشعار الخدمات المتأخرة",
     "enableOverdueServicesBadgeDesc": "إظهار شارة الإشعار على عنصر قائمة الخدمات عند وجود خدمات متأخرة",
     "enableDueSoonServicesBadge": "تفعيل شارة إشعار الخدمات المستحقة قريباً",
@@ -2202,7 +2246,6 @@
     "enableDueSoonBillsBadgeDesc": "إظهار شارة الإشعار على عنصر قائمة الفواتير عند وجود فواتير مستحقة قريباً",
     "dueSoonBillsThreshold": "حد الفواتير المستحقة قريباً (أيام)",
     "dueSoonBillsThresholdDesc": "عدد الأيام قبل تاريخ الاستحقاق لإظهار إشعار 'مستحقة قريباً' للفواتير",
-
     "days": "أيام",
     "save": "حفظ الإعدادات",
     "saving": "جارٍ الحفظ...",
@@ -2335,6 +2378,11 @@
       "allowedNo": "غير مسموح",
       "unavailable": "غير متاح",
       "trialModeBadge": "تجربة مجانية",
+      "premiumBadge": "Premium",
+      "upgradeToPremium": "الترقية إلى Premium",
+      "upgradeToPremiumHint": "فعّل REDA AI والنسخ الاحتياطي عبر الإنترنت والمزيد.",
+      "seePlans": "عرض خطط الأسعار",
+      "seePlansHint": "قارن بين خيارات Standard و Premium.",
       "trialSection": "التجربة",
       "trialEnds": "انتهاء التجربة",
       "trialRemaining": "الوقت المتبقي",
@@ -2365,11 +2413,11 @@
       "currentVersion": "الإصدار الحالي",
       "latestVersion": "أحدث إصدار",
       "complete": "مكتمل",
-        "downloadAndInstall": "تحميل وتثبيت",
-        "downloadUpdate": "تحميل التحديث",
-        "installUpdate": "تثبيت التحديث",
-        "cancelDownload": "إلغاء التحميل",
-        "remaining": "متبقي",
+      "downloadAndInstall": "تحميل وتثبيت",
+      "downloadUpdate": "تحميل التحديث",
+      "installUpdate": "تثبيت التحديث",
+      "cancelDownload": "إلغاء التحميل",
+      "remaining": "متبقي",
       "hideDetails": "إخفاء التفاصيل",
       "showDetails": "إظهار التفاصيل",
       "updateDetails": "تفاصيل التحديث",
@@ -2492,7 +2540,6 @@
     "items": "عنصر"
   },
   "bills": {
-   
     "addBill": "إضافة فاتورة",
     "deleteBill": "حذف الفاتورة",
     "markAsPaid": "تحديد كمدفوعة",
@@ -2523,7 +2570,6 @@
     "active": "نشطة",
     "notActive": "غير نشطة",
     "monthly": "شهرية",
- 
     "electricity": "الكهرباء",
     "water": "الماء",
     "internet": "الإنترنت",
@@ -2552,19 +2598,12 @@
     "allPayments": "جميع المدفوعات",
     "allPaymentsView": "عرض جميع المدفوعات",
     "backToBills": "العودة إلى الفواتير",
-   
     "title": "العنوان",
     "type": "النوع",
-  
     "description": "الوصف",
- 
-  
     "enterDescriptionOptional": "أدخل الوصف (اختياري)",
- 
     "annually": "سنوياً",
-   
     "updating": "جاري التحديث...",
-
     "viewAllPaymentsTooltip": "عرض تاريخ جميع المدفوعات",
     "backToBillsTooltip": "العودة إلى عرض إدارة الفواتير",
     "filterByType": "تصفية حسب النوع",
@@ -2716,13 +2755,10 @@
     "addAppointmentDesc": "إنشاء طلب خدمة جديد",
     "allStatus": "جميع الحالات",
     "allDates": "جميع التواريخ",
- 
     "selectItemsPerPage": "اختر عدد العناصر في الصفحة",
     "searchServiceNameOrType": "البحث باسم الخدمة أو النوع...",
     "searchServiceNameTypeOrDevice": "البحث باسم الخدمة أو النوع أو الجهاز...",
- 
     "name": "اسم الخدمة",
-
     "noDescription": "لا يوجد اسم جهاز",
     "noNotes": "لا توجد مشاكل",
     "enterDescriptionOptional": "أدخل اسم الجهاز (اختياري)",
@@ -2749,7 +2785,6 @@
     "actions": "الإجراءات",
     "service": "الخدمة",
     "pending": "في الانتظار",
-    
     "upcoming": "قادم",
     "allAppointments": "جميع المواعيد",
     "totalAppointments": "إجمالي المواعيد",
@@ -2781,10 +2816,8 @@
     "viewServiceTypesTooltip": "عرض جميع أنواع الخدمات",
     "noClient": "لا يوجد عميل مخصص",
     "serviceTypesStats": "إحصائيات أنواع الخدمات",
-   
     "completedServices": "مكتملة",
     "totalRevenue": "إجمالي الإيرادات",
-   
     "byServiceType": "حسب نوع الخدمة",
     "total": "الإجمالي",
     "revenue": "الإيرادات",
@@ -2837,7 +2870,6 @@
     "editTooltip": "تعديل الخدمة",
     "deleteTooltip": "حذف الخدمة",
     "viewSaleTooltip": "عرض البيع",
-
     "overdue": "متأخر",
     "dueSoon": "قريب الاستحقاق",
     "deleteConfirm": "هل أنت متأكد من حذف طلب الخدمة هذا؟ لا يمكن التراجع عن هذا الإجراء.",
@@ -3250,7 +3282,11 @@
     "restoreOnNewComputer": "استعادة المتجر على جهاز جديد (حساب موجود)",
     "backToNewShopSetup": "العودة إلى إعداد متجر جديد",
     "restoreTitle": "الاستعادة على جهاز جديد",
-    "restoreDescription": "اربط هذا الجهاز بمتجرك الحالي وحمّل أحدث نسخة احتياطية من السحابة. سيستبدل ذلك البيانات على هذا الجهاز. يلزم ترخيص مدفوع.",
+    "restoreDescription": "اربط هذا الجهاز بمتجرك الحالي وحمّل أحدث نسخة احتياطية من السحابة. سيستبدل ذلك البيانات على هذا الجهاز. يلزم ترخيص مدفوع مع Premium.",
+    "restorePremiumRequired": "تتطلب الاستعادة من السحابة Premium. تواصل مع مزود الخدمة لتفعيل Premium على حسابك.",
+    "restoreTrialBlocked": "الاستعادة من السحابة غير متاحة أثناء التجربة المجانية. تواصل مع مزود الخدمة للحصول على ترخيص مدفوع مع Premium.",
+    "restoreSubscriptionExpired": "انتهى اشتراكك المدفوع. جدّد الترخيص للاستعادة من السحابة.",
+    "restoreNotLicensed": "تتطلب الاستعادة من السحابة ترخيصًا مدفوعًا نشطًا. تواصل مع مزود الخدمة.",
     "setupDescriptionTrial": "أخبرنا من أنت لبدء التجربة المجانية على هذا الجهاز. الاسم الكامل ورقم الهاتف — لربط الجهاز بحسابك. كلمة مرور تسجيل الدخول تُحدَّد في الشاشة التالية.",
     "customerId": "معرّف العميل",
     "customerIdPlaceholder": "المعرّف الذي أرسله لك المورّد",

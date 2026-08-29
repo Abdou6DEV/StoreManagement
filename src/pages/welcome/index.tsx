@@ -57,6 +57,7 @@ import {
 } from "../../lib/onboarding/onlineCustomerProfile";
 import type { DeviceRequestResult } from "../../electron/types/deviceRequest";
 import type { DeviceLinkExistingResult } from "../../electron/types/deviceLinkExisting";
+import { resolvePaidCloudBackupAccess } from "../../lib/license/paidCloudBackupAccess";
 import type { CloudBackupTransferProgressPayload } from "../../electron/types/cloudBackup";
 import { CloudBackupTransferProgressBar } from "../../lib/components/cloudBackupTransferProgress";
 import { AnimatedHeight } from "../../lib/components/animatedHeight";
@@ -899,6 +900,61 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
       setLinkedRestoreCustomerId(resolvedCustomerId);
       await window.api.database.options.set(ONLINE_CUSTOMER_ID_OPTION_KEY, resolvedCustomerId);
 
+      const deviceCheck = await window.api.online.deviceCheck();
+      const cloudAccess = resolvePaidCloudBackupAccess({
+        effectiveCheckResult: deviceCheck,
+        snapshot: null,
+        isLicenseValid: deviceCheck.success === true && deviceCheck.allowed === true,
+        nowMs: Date.now(),
+        isOnline: typeof navigator !== "undefined" && navigator.onLine,
+        aiEnabled: deviceCheck.success === true ? deviceCheck.aiEnabled : undefined,
+      });
+      if (!cloudAccess.hasPaidCloudBackupAccess) {
+        if (cloudAccess.blockReason === "disabled") {
+          showToast(
+            t(
+              "welcome.restorePremiumRequired",
+              "Cloud restore requires Premium. Contact your provider to enable Premium on your account.",
+            ),
+            "error",
+          );
+        } else if (cloudAccess.blockReason === "trial") {
+          showToast(
+            t(
+              "welcome.restoreTrialBlocked",
+              "Cloud restore is not available during the free trial. Contact your provider for a paid license with Premium.",
+            ),
+            "error",
+          );
+        } else if (cloudAccess.blockReason === "offline") {
+          showToast(
+            t(
+              "welcome.serverUnreachable",
+              "We could not reach our servers. Check your internet connection and try again. If this continues, wait a few minutes or contact support.",
+            ),
+            "error",
+          );
+        } else if (cloudAccess.blockReason === "subscription_expired") {
+          showToast(
+            t(
+              "welcome.restoreSubscriptionExpired",
+              "Your paid subscription has ended. Renew your license to restore from the cloud.",
+            ),
+            "error",
+          );
+        } else {
+          showToast(
+            t(
+              "welcome.restoreNotLicensed",
+              "Cloud restore requires an active paid license. Contact your provider.",
+            ),
+            "error",
+          );
+        }
+        setRestorePhase("idle");
+        return;
+      }
+
       showToast(
         t("welcome.restoreLinkSuccess", "Shop verified. Downloading your cloud backup…"),
         "success",
@@ -1531,7 +1587,7 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
                     <p className="mx-auto max-w-xl text-sm leading-relaxed text-muted-foreground">
                       {t(
                         "welcome.restoreDescription",
-                        "Link this PC to your existing shop and download your latest cloud backup. This replaces data on this computer. A paid license is required.",
+                        "Link this PC to your existing shop and download your latest cloud backup. This replaces data on this computer. A paid license with Premium is required.",
                       )}
                     </p>
                   </header>

@@ -21,6 +21,7 @@ import {
   WifiOff,
   Trash2,
   Shield,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "../../../lib/components/button";
 import { Switch } from "../../../lib/components/switch";
@@ -49,6 +50,8 @@ import { ONLINE_CUSTOMER_ID_OPTION_KEY } from "../../../lib/onboarding/constants
 import type { CloudBackupTransferProgressPayload } from "../../../electron/types/cloudBackup";
 import { usePaidCloudBackupAccess } from "../../../lib/hooks/usePaidCloudBackupAccess";
 import type { CloudBackupAccessBlockReason } from "../../../lib/license/paidCloudBackupAccess";
+import { useLicense } from "../../../lib/contexts/licenseContext";
+import { readCustomerIdFromDeviceCheck } from "../../../lib/onboarding/deviceCheckCustomerId";
 
 const RESTORE_CONFIRM_WORD = "YES";
 const CLOUD_BACKUP_BUTTON_COOLDOWN_MS = 60_000;
@@ -81,6 +84,7 @@ export function BackupManagement({ onOpenLicenseTab }: BackupManagementProps) {
   const { logout, user } = useAuth();
   const navigate = useNavigate();
   const { hasPaidCloudBackupAccess, blockReason, isAccessResolved } = usePaidCloudBackupAccess();
+  const { lastDeviceCheckResult } = useLicense();
   const cloudBackupGateActive = isAccessResolved && !hasPaidCloudBackupAccess;
   const [backups, setBackups] = useState<BackupFile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -126,6 +130,11 @@ export function BackupManagement({ onOpenLicenseTab }: BackupManagementProps) {
   const initialCloudCheckStartedRef = useRef(false);
   const [cloudPresenceHydrated, setCloudPresenceHydrated] = useState(false);
 
+  const displayedCustomerId = useMemo(
+    () => readCustomerIdFromDeviceCheck(lastDeviceCheckResult) ?? storedCustomerId,
+    [lastDeviceCheckResult, storedCustomerId],
+  );
+
   const loadStoredCustomerId = useCallback(async () => {
     try {
       let v = await window.api.database.options.get(ONLINE_CUSTOMER_ID_OPTION_KEY);
@@ -151,7 +160,7 @@ export function BackupManagement({ onOpenLicenseTab }: BackupManagementProps) {
 
   useEffect(() => {
     void loadStoredCustomerId();
-  }, [loadStoredCustomerId]);
+  }, [loadStoredCustomerId, lastDeviceCheckResult]);
 
   const applyCloudPresence = useCallback(async (patch: Partial<CloudBackupPresenceSnapshot>) => {
     const next: CloudBackupPresenceSnapshot = {
@@ -655,9 +664,9 @@ export function BackupManagement({ onOpenLicenseTab }: BackupManagementProps) {
   };
 
   const copyCustomerId = async () => {
-    if (!storedCustomerId) return;
+    if (!displayedCustomerId) return;
     try {
-      await navigator.clipboard.writeText(storedCustomerId);
+      await navigator.clipboard.writeText(displayedCustomerId);
       setCopiedCustomerId(true);
       showToast(t("admin.backup.customerIdCopied", "Customer ID copied"), "success");
       window.setTimeout(() => setCopiedCustomerId(false), 2000);
@@ -997,10 +1006,20 @@ export function BackupManagement({ onOpenLicenseTab }: BackupManagementProps) {
       ? blockReason ?? "unknown"
       : null;
     switch (reason) {
+      case "offline":
+        return t(
+          "admin.backup.cloudBackupUnavailableOffline",
+          "Online backup requires an active internet connection. Connect to Wi‑Fi or Ethernet, then try again.",
+        );
       case "trial":
         return t(
           "admin.backup.cloudBackupUnavailableTrial",
-          "Online backup is included with a paid subscription. During the free trial, use local backups only. Open the License tab to see your status or contact your provider.",
+          "Online backup is a Premium feature included with a paid subscription. During the free trial, use local backups only. Open the License tab to see your status or contact your provider.",
+        );
+      case "disabled":
+        return t(
+          "admin.backup.cloudBackupUnavailablePremium",
+          "Online backup is a Premium feature. Contact your provider to enable Premium on your account.",
         );
       case "subscription_expired":
         return t(
@@ -1264,9 +1283,9 @@ export function BackupManagement({ onOpenLicenseTab }: BackupManagementProps) {
                   <InfoRow
                     label={t("admin.backup.hubCustomerId", "Customer ID")}
                     value={
-                      storedCustomerId ? (
+                      displayedCustomerId ? (
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className="font-mono text-xs sm:text-sm">{storedCustomerId}</span>
+                          <span className="font-mono text-xs sm:text-sm">{displayedCustomerId}</span>
                           <Button type="button" size="sm" variant="outline" onClick={() => void copyCustomerId()}>
                             {copiedCustomerId ? (
                               <Check className="mr-1 h-3.5 w-3.5" aria-hidden />
@@ -1474,8 +1493,21 @@ export function BackupManagement({ onOpenLicenseTab }: BackupManagementProps) {
               aria-labelledby="cloud-backup-unavailable-title"
             >
               <div className="max-w-lg space-y-4 text-center">
-                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-muted ring-1 ring-border">
-                  <Shield className="h-6 w-6 text-orange-600" aria-hidden />
+                <div
+                  className={cn(
+                    "mx-auto flex h-12 w-12 items-center justify-center rounded-full ring-1",
+                    blockReason === "disabled"
+                      ? "bg-[#8b5cf6]/10 ring-[#8b5cf6]/25"
+                      : "bg-muted ring-border",
+                  )}
+                >
+                  {blockReason === "offline" ? (
+                    <WifiOff className="h-6 w-6 text-muted-foreground" aria-hidden />
+                  ) : blockReason === "disabled" ? (
+                    <Sparkles className="h-6 w-6 text-[#8b5cf6]" aria-hidden />
+                  ) : (
+                    <Shield className="h-6 w-6 text-orange-600" aria-hidden />
+                  )}
                 </div>
                 <h4
                   id="cloud-backup-unavailable-title"

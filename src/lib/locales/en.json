@@ -1306,44 +1306,108 @@
   },
   "pricing": {
     "kicker": "Licensing",
+    "modalTitle": "License plans",
     "title": "Choose your license",
-    "subtitle": "Monthly, yearly, or lifetime — all plans include the full app. Prices in Algerian dinars (DA); contact your supplier to purchase and activate.",
+    "subtitle": "Standard or Premium — monthly, yearly, or lifetime. All plans include the full desktop app. Premium adds REDA AI, receipt scanning, and online backup. Prices in Algerian dinars (DA); contact your supplier to purchase and activate.",
     "popular": "Recommended",
+    "premiumBadge": "Premium",
+    "tierToggleLabel": "License tier",
+    "tierStandard": "Standard",
+    "tierPremium": "Premium",
+    "saveVsMonthly": "Save {{amount}} DA vs 12× monthly ({{percent}}% off)",
+    "whatsIncluded": "What's included",
     "contactSupplier": "Contact supplier",
-    "supplierPhoneLabel": "Tel. {{phone}}",
+    "supplierPhoneLabel": "Tel.",
+    "tiers": {
+      "standard": {
+        "title": "Standard",
+        "subtitle": "Full POS app and local backup."
+      },
+      "premium": {
+        "title": "Premium",
+        "subtitle": "Everything in Standard, plus REDA AI, receipt scanner, and cloud backup."
+      }
+    },
     "mailSubject": {
-      "monthly": "REDA TECH Store Management — Monthly license inquiry",
-      "yearly": "REDA TECH Store Management — Yearly license inquiry",
-      "lifetime": "REDA TECH Store Management — Lifetime license inquiry"
+      "standard": {
+        "monthly": "REDA TECH Store Management — Standard monthly license inquiry",
+        "yearly": "REDA TECH Store Management — Standard yearly license inquiry",
+        "lifetime": "REDA TECH Store Management — Standard lifetime license inquiry"
+      },
+      "premium": {
+        "monthly": "REDA TECH Store Management — Premium monthly license inquiry",
+        "yearly": "REDA TECH Store Management — Premium yearly license inquiry",
+        "lifetime": "REDA TECH Store Management — Premium lifetime license inquiry"
+      }
     },
     "plans": {
-      "monthly": {
-        "name": "Monthly",
-        "priceAmount": "2 500 DA",
-        "pricePeriod": "Per Month",
-        "tagline": "Flexible subscription, renew each month.",
-        "feature1": "Full desktop app and updates while subscribed",
-        "feature2": "Ideal for short-term or seasonal use",
-        "feature3": "Switch or upgrade plan with your supplier anytime"
+      "standard": {
+        "monthly": {
+          "name": "Monthly",
+          "priceAmount": "1 000 DA",
+          "pricePeriod": "Per month",
+          "commitment": "Renews monthly",
+          "tagline": "Flexible subscription — pay as you go.",
+          "feature1": "Full desktop POS — sales, stock, clients & reports",
+          "feature2": "Local backup on this computer",
+          "feature3": "Renew or stop each month with your supplier"
+        },
+        "yearly": {
+          "name": "Yearly",
+          "priceAmount": "10 000 DA",
+          "pricePeriod": "Per year",
+          "commitment": "One payment per year",
+          "tagline": "Best balance of cost and commitment for most shops.",
+          "feature1": "Everything in Monthly",
+          "feature2": "Save ~17% vs paying month by month",
+          "feature3": "One invoice per year — less admin",
+          "feature4": "Recommended for active day-to-day shops"
+        },
+        "lifetime": {
+          "name": "Lifetime",
+          "priceAmount": "20 000 DA",
+          "pricePeriod": "One-time payment",
+          "commitment": "One-time · no renewals",
+          "tagline": "Pay once for long-term ownership.",
+          "feature1": "Everything in Yearly",
+          "feature2": "Single upfront payment",
+          "feature3": "Lowest cost over many years of use",
+          "feature4": "License terms & updates per supplier agreement"
+        }
       },
-      "yearly": {
-        "name": "Yearly",
-        "priceAmount": "15 000 DA",
-        "pricePeriod": "Per Year",
-        "saveVsMonthly": "Save {{amount}} DA vs 12× monthly ({{percent}}% off)",
-        "tagline": "One payment per year, best balance of cost and commitment.",
-        "feature1": "Everything in Monthly with annual billing",
-        "feature2": "Typically lower total cost than twelve monthly renewals",
-        "feature3": "Priority channel for renewal and support with supplier"
-      },
-      "lifetime": {
-        "name": "Lifetime",
-        "priceAmount": "35 000 DA",
-        "pricePeriod": "One-time payment",
-        "tagline": "One-time license for long-term shops.",
-        "feature1": "Pay once, use the licensed app per your agreement",
-        "feature2": "Best for established businesses planning years ahead",
-        "feature3": "Terms and update policy as agreed with your supplier"
+      "premium": {
+        "monthly": {
+          "name": "Monthly",
+          "priceAmount": "1 900 DA",
+          "pricePeriod": "Per month",
+          "commitment": "Premium · renews monthly",
+          "tagline": "All Premium tools with flexible monthly billing.",
+          "feature1": "Everything in Standard Monthly",
+          "feature2": "REDA AI shop assistant",
+          "feature3": "Receipt scanner + online cloud backup"
+        },
+        "yearly": {
+          "name": "Yearly",
+          "priceAmount": "15 000 DA",
+          "pricePeriod": "Per year",
+          "commitment": "Premium · billed yearly",
+          "tagline": "Premium for a full year — best value for growing shops.",
+          "feature1": "Everything in Premium Monthly",
+          "feature2": "Save ~34% vs 12 monthly Premium payments",
+          "feature3": "One yearly renewal for AI & cloud backup",
+          "feature4": "REDA AI, scanner & cloud backup included"
+        },
+        "lifetime": {
+          "name": "Lifetime",
+          "priceAmount": "35 000 DA",
+          "pricePeriod": "One-time payment",
+          "commitment": "Premium · one-time",
+          "tagline": "Premium once — for shops committed long term.",
+          "feature1": "Standard + Premium for the life of your license",
+          "feature2": "REDA AI, receipt scanner & cloud backup",
+          "feature3": "No subscription renewals after activation",
+          "feature4": "License terms & updates per supplier agreement"
+        }
       }
     }
   },
@@ -2437,9 +2501,11 @@
     "backup.autoCloudBackupOn": "Enabled",
     "backup.autoCloudBackupOff": "Disabled",
     "backup.cloudBackupUnavailableTitle": "Online backup unavailable",
-    "backup.cloudBackupUnavailableTrial": "Online backup is included with a paid subscription. During the free trial, use local backups only. Open the License tab to see your status or contact your provider.",
+    "backup.cloudBackupUnavailableTrial": "Online backup is a Premium feature included with a paid subscription. During the free trial, use local backups only. Open the License tab to see your status or contact your provider.",
     "backup.cloudBackupUnavailableNotLicensed": "Online backup requires an active paid license. Sign in and verify your license on the License tab.",
     "backup.cloudBackupUnavailableExpired": "Your paid subscription has ended. Renew your license to use online backup again.",
+    "backup.cloudBackupUnavailablePremium": "Online backup is a Premium feature. Contact your provider to enable Premium on your account.",
+    "backup.cloudBackupUnavailableOffline": "Online backup requires an active internet connection. Connect to Wi‑Fi or Ethernet, then try again.",
     "backup.cloudBackupUnavailableUnknown": "Online backup will be available after your license is verified. Open the License tab and run an online check.",
     "backup.cloudBackupOpenLicenseTab": "Open License tab",
     "backup.cloudAccessChecking": "Checking online backup access…",
@@ -2738,6 +2804,11 @@
       "allowedNo": "Not allowed",
       "unavailable": "Unavailable",
       "trialModeBadge": "Free trial",
+      "premiumBadge": "Premium",
+      "upgradeToPremium": "Upgrade to Premium",
+      "upgradeToPremiumHint": "Unlock REDA AI, online backup, and more.",
+      "seePlans": "See pricing plans",
+      "seePlansHint": "Compare Standard and Premium pricing options.",
       "trialSection": "Trial",
       "trialEnds": "Trial ends",
       "trialRemaining": "Time left",
@@ -3273,7 +3344,11 @@
     "restoreOnNewComputer": "Restore shop on a new computer (existing account)",
     "backToNewShopSetup": "Back to new shop setup",
     "restoreTitle": "Restore on a new computer",
-    "restoreDescription": "Link this PC to your existing shop and download your latest cloud backup. This replaces data on this computer. A paid license is required.",
+    "restoreDescription": "Link this PC to your existing shop and download your latest cloud backup. This replaces data on this computer. A paid license with Premium is required.",
+    "restorePremiumRequired": "Cloud restore requires Premium. Contact your provider to enable Premium on your account.",
+    "restoreTrialBlocked": "Cloud restore is not available during the free trial. Contact your provider for a paid license with Premium.",
+    "restoreSubscriptionExpired": "Your paid subscription has ended. Renew your license to restore from the cloud.",
+    "restoreNotLicensed": "Cloud restore requires an active paid license. Contact your provider.",
     "setupDescriptionTrial": "Tell us who you are so we can start your free trial on this computer. Add your full name and phone — we use them to connect this device to your account. Your login password is separate and is set on the next screen.",
     "customerId": "Customer ID",
     "customerIdPlaceholder": "UUID from your supplier",

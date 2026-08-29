@@ -11,6 +11,19 @@ export function usePaidCloudBackupAccess() {
   const [snapshot, setSnapshot] = useState<LicenseGraceSnapshot | null>(null);
   const [snapshotLoaded, setSnapshotLoaded] = useState(false);
   const [nowMs, setNowMs] = useState(() => Date.now());
+  const [isOnline, setIsOnline] = useState(
+    () => typeof navigator !== "undefined" && navigator.onLine,
+  );
+
+  useEffect(() => {
+    const syncOnline = () => setIsOnline(navigator.onLine);
+    window.addEventListener("online", syncOnline);
+    window.addEventListener("offline", syncOnline);
+    return () => {
+      window.removeEventListener("online", syncOnline);
+      window.removeEventListener("offline", syncOnline);
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -34,6 +47,11 @@ export function usePaidCloudBackupAccess() {
     return () => window.clearInterval(timer);
   }, []);
 
+  const aiEnabled =
+    lastDeviceCheckResult?.success === true
+      ? lastDeviceCheckResult.aiEnabled
+      : undefined;
+
   const isAccessResolved =
     !licenseLoading && (snapshotLoaded || lastDeviceCheckResult != null);
 
@@ -44,8 +62,10 @@ export function usePaidCloudBackupAccess() {
         snapshot,
         isLicenseValid,
         nowMs,
+        isOnline,
+        aiEnabled,
       }),
-    [lastDeviceCheckResult, snapshot, isLicenseValid, nowMs],
+    [lastDeviceCheckResult, snapshot, isLicenseValid, nowMs, isOnline, aiEnabled],
   );
 
   return {

@@ -1,24 +1,24 @@
-export type AiChatBlockReason = "offline" | "trial" | "disabled";
+import {
+  resolvePremiumAccess,
+  type PremiumAccess,
+  type PremiumBlockReason,
+} from "./premiumAccess";
+
+export type AiChatBlockReason = PremiumBlockReason;
 
 export type AiChatAccess = {
   canUseAi: boolean;
   blockReason: AiChatBlockReason | null;
 };
 
+/** `aiEnabled` from device-check = Premium enabled on the server (`allowed_devices.ai_enabled`). */
 export function resolveAiChatAccess(params: {
   isOnline: boolean;
   isTrialActive: boolean;
-  /** From last successful device-check; when `false`, block paid users without AI. */
   aiEnabled?: boolean;
 }): AiChatAccess {
-  if (!params.isOnline) {
-    return { canUseAi: false, blockReason: "offline" };
-  }
-  if (params.isTrialActive) {
-    return { canUseAi: false, blockReason: "trial" };
-  }
-  if (params.aiEnabled === false) {
-    return { canUseAi: false, blockReason: "disabled" };
-  }
-  return { canUseAi: true, blockReason: null };
+  const access = resolvePremiumAccess(params);
+  return { canUseAi: access.canUsePremium, blockReason: access.blockReason };
 }
+
+export { resolvePremiumAccess, type PremiumAccess, type PremiumBlockReason } from "./premiumAccess";

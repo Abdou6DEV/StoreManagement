@@ -1,9 +1,12 @@
 import type { DeviceCheckResult } from "../../electron/types/deviceCheck";
 import type { LicenseGraceSnapshot } from "./offlineGrace";
 import { isOfflineLicenseAllowed } from "./offlineGrace";
+import { resolvePremiumAccess } from "./premiumAccess";
 
 export type CloudBackupAccessBlockReason =
+  | "offline"
   | "trial"
+  | "disabled"
   | "not_licensed"
   | "subscription_expired"
   | "unknown";
@@ -18,8 +21,14 @@ export function resolvePaidCloudBackupAccess(params: {
   snapshot: LicenseGraceSnapshot | null;
   isLicenseValid: boolean;
   nowMs: number;
+  isOnline: boolean;
+  aiEnabled?: boolean;
 }): PaidCloudBackupAccess {
-  const { effectiveCheckResult, snapshot, isLicenseValid, nowMs } = params;
+  const { effectiveCheckResult, snapshot, isLicenseValid, nowMs, isOnline, aiEnabled } = params;
+
+  if (!isOnline) {
+    return { hasPaidCloudBackupAccess: false, blockReason: "offline" };
+  }
 
   let trialEndsAtMs: number | null = null;
   let expiresAtMs: number | null = null;
@@ -45,7 +54,8 @@ export function resolvePaidCloudBackupAccess(params: {
   const isTrialActive =
     trialEndsAtMs != null && Number.isFinite(trialEndsAtMs) && nowMs < trialEndsAtMs;
 
-  if (isTrialActive) {
+  const premium = resolvePremiumAccess({ isOnline, isTrialActive, aiEnabled });
+  if (!premium.canUsePremium && premium.blockReason === "trial") {
     return { hasPaidCloudBackupAccess: false, blockReason: "trial" };
   }
 
@@ -79,10 +89,16 @@ export function resolvePaidCloudBackupAccess(params: {
   }
 
   if (expiresAtMs != null) {
-    if (nowMs < expiresAtMs) {
-      return { hasPaidCloudBackupAccess: true, blockReason: null };
+    if (nowMs >= expiresAtMs) {
+      return { hasPaidCloudBackupAccess: false, blockReason: "subscription_expired" };
     }
-    return { hasPaidCloudBackupAccess: false, blockReason: "subscription_expired" };
+  }
+
+  if (!premium.canUsePremium) {
+    return {
+      hasPaidCloudBackupAccess: false,
+      blockReason: premium.blockReason ?? "disabled",
+    };
   }
 
   return { hasPaidCloudBackupAccess: true, blockReason: null };
