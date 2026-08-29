@@ -15,6 +15,23 @@ export type InvoiceScanCreateResult =
     }
   | { success: false; error: string; code: string };
 
+export type InvoiceScanStartResult =
+  | {
+      success: true;
+      kind: "qr";
+      sessionId: string;
+      scanUrl: string;
+      qrDataUrl: string;
+      expiresAt: string;
+    }
+  | {
+      success: true;
+      kind: "photo";
+      localPath: string;
+      dataUrl: string;
+    }
+  | { success: false; error: string; code: string };
+
 export type InvoiceScanStatusResult =
   | { success: true; status: InvoiceScanStatus; expiresAt: string | null }
   | { success: false; error: string; code: string };

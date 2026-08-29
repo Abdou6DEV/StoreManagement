@@ -12,6 +12,7 @@ import type {
 import type {
   InvoiceScanCreateResult,
   InvoiceScanDownloadResult,
+  InvoiceScanStartResult,
   InvoiceScanStatusResult,
 } from "../types/invoiceScan";
 
@@ -37,6 +38,8 @@ export const onlineAPI = {
     ipcRenderer.invoke("online:backupDownloadLatestToLocal", customerId) as Promise<CloudBackupDownloadToLocalResult>,
   invoiceScanCreateSession: () =>
     ipcRenderer.invoke("online:invoiceScanCreateSession") as Promise<InvoiceScanCreateResult>,
+  invoiceScanStartSession: (forceNew?: boolean) =>
+    ipcRenderer.invoke("online:invoiceScanStartSession", forceNew === true) as Promise<InvoiceScanStartResult>,
   invoiceScanGetStatus: (sessionId: string) =>
     ipcRenderer.invoke("online:invoiceScanGetStatus", sessionId) as Promise<InvoiceScanStatusResult>,
   invoiceScanDownloadAndCleanup: (sessionId: string) =>

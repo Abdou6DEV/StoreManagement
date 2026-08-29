@@ -22,6 +22,7 @@ import type {
 import type {
   InvoiceScanCreateResult,
   InvoiceScanDownloadResult,
+  InvoiceScanStartResult,
   InvoiceScanStatusResult,
 } from "../types/invoiceScan";
 
@@ -485,6 +486,7 @@ export type OnlineAPI = {
   backupDownloadLatest: () => Promise<CloudBackupDownloadResult>;
   backupDownloadLatestToLocal: (customerId?: string) => Promise<CloudBackupDownloadToLocalResult>;
   invoiceScanCreateSession: () => Promise<InvoiceScanCreateResult>;
+  invoiceScanStartSession: (forceNew?: boolean) => Promise<InvoiceScanStartResult>;
   invoiceScanGetStatus: (sessionId: string) => Promise<InvoiceScanStatusResult>;
   invoiceScanDownloadAndCleanup: (sessionId: string) => Promise<InvoiceScanDownloadResult>;
   invoiceScanDeleteTemp: (localPath: string) => Promise<{ success: boolean }>;

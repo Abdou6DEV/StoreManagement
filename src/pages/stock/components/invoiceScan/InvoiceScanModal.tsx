@@ -1,6 +1,17 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Loader2, Sparkles } from "lucide-react";
+import type { TFunction } from "i18next";
+import {
+  CloudOff,
+  ImageOff,
+  Loader2,
+  QrCode,
+  Sparkles,
+  TimerOff,
+  WifiOff,
+  Zap,
+  type LucideIcon,
+} from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -26,10 +37,22 @@ import { cn } from "../../../../lib/utils";
 import type { ScanReceiptExtraction } from "../../../../lib/ai/scanReceiptTypes";
 import { AnalyzingImage, AnalyzingImageScanBars } from "../../../../lib/components/ai/AnalyzingImage";
 import InvoiceScanWizard, { type WizardStep } from "./InvoiceScanWizard";
+import { ScanFlowError, type ScanErrorTone } from "./ScanFlowError";
 import ScanPrintLabelsModal, {
   hasAnyLabelPrinter,
   type ScanLabelItem,
 } from "./ScanPrintLabelsModal";
+
+type ScanErrorKind =
+  | "expired"
+  | "unreadable"
+  | "quota"
+  | "ai_blocked"
+  | "download_failed"
+  | "upload_failed"
+  | "config_missing"
+  | "missing_file"
+  | "generic";
 
 type Phase =
   | "loading"
@@ -56,6 +79,225 @@ const indicatorClass =
 const separatorClass =
   "data-[state=active]:bg-green-600 data-[state=completed]:bg-green-600";
 
+function scanErrorCopy(
+  kind: ScanErrorKind,
+  t: TFunction,
+): {
+  icon: LucideIcon;
+  tone: ScanErrorTone;
+  title: string;
+  description: string;
+  tips: string[];
+  subtitle: string;
+} {
+  if (kind === "expired") {
+    return {
+      icon: TimerOff,
+      tone: "warning",
+      title: t("stock.invoiceScan.errorExpiredTitle", "QR code expired"),
+      description: t(
+        "stock.invoiceScan.errorExpiredDesc",
+        "The time to send the photo ran out. For security, each QR code is valid only for a short moment.",
+      ),
+      tips: [
+        t(
+          "stock.invoiceScan.errorExpiredTip1",
+          "Scan the new QR code with your phone as soon as it appears.",
+        ),
+        t(
+          "stock.invoiceScan.errorExpiredTip2",
+          "Photograph the receipt and send it before the timer reaches zero.",
+        ),
+        t(
+          "stock.invoiceScan.errorExpiredTip3",
+          "Keep this window open while you take the photo.",
+        ),
+      ],
+      subtitle: t(
+        "stock.invoiceScan.errorExpiredSubtitle",
+        "Generate a new code to continue.",
+      ),
+    };
+  }
+  if (kind === "unreadable") {
+    return {
+      icon: ImageOff,
+      tone: "danger",
+      title: t(
+        "stock.invoiceScan.errorUnreadableTitle",
+        "This photo is not a readable receipt",
+      ),
+      description: t(
+        "stock.invoiceScan.errorUnreadableDesc",
+        "REDA AI found no supplier or product lines. The image may not be a receipt, or it may be too dark, cropped, or blurry.",
+      ),
+      tips: [
+        t(
+          "stock.invoiceScan.errorUnreadableTip1",
+          "Photograph a supplier receipt or invoice — not a random picture.",
+        ),
+        t(
+          "stock.invoiceScan.errorUnreadableTip2",
+          "Use good light and keep the whole ticket in frame, without glare.",
+        ),
+        t(
+          "stock.invoiceScan.errorUnreadableTip3",
+          "Hold the phone steady so text is sharp and readable.",
+        ),
+      ],
+      subtitle: t(
+        "stock.invoiceScan.errorUnreadableSubtitle",
+        "Send a clear photo of a supplier receipt.",
+      ),
+    };
+  }
+  if (kind === "quota") {
+    return {
+      icon: Zap,
+      tone: "warning",
+      title: t("stock.invoiceScan.errorQuotaTitle", "Not enough AI points"),
+      description: t(
+        "stock.invoiceScan.errorQuotaDesc",
+        "This device has used its AI allowance for now. Receipt scanning will be available again after the limit resets.",
+      ),
+      tips: [
+        t(
+          "stock.invoiceScan.errorQuotaTip1",
+          "Try again in a minute, or wait until tomorrow if the daily limit is reached.",
+        ),
+      ],
+      subtitle: t(
+        "stock.invoiceScan.errorQuotaSubtitle",
+        "Wait a moment, then try again.",
+      ),
+    };
+  }
+  if (kind === "ai_blocked") {
+    return {
+      icon: WifiOff,
+      tone: "muted",
+      title: t("stock.invoiceScan.errorAiBlockedTitle", "AI scanning unavailable"),
+      description: t(
+        "stock.invoiceScan.errorAiBlockedDesc",
+        "REDA AI cannot run on this device right now. Check the internet connection or the license.",
+      ),
+      tips: [
+        t(
+          "stock.invoiceScan.errorAiBlockedTip1",
+          "Connect to Wi‑Fi or Ethernet, then try again.",
+        ),
+      ],
+      subtitle: t(
+        "stock.invoiceScan.errorAiBlockedSubtitle",
+        "AI scanning is not available on this device.",
+      ),
+    };
+  }
+  if (kind === "download_failed") {
+    return {
+      icon: CloudOff,
+      tone: "danger",
+      title: t("stock.invoiceScan.errorDownloadTitle", "Could not receive the photo"),
+      description: t(
+        "stock.invoiceScan.errorDownloadDesc",
+        "The receipt photo was sent, but this computer could not download it. The connection may have dropped.",
+      ),
+      tips: [
+        t(
+          "stock.invoiceScan.errorDownloadTip1",
+          "Check your internet connection, then generate a new QR code and send the photo again.",
+        ),
+      ],
+      subtitle: t(
+        "stock.invoiceScan.errorDownloadSubtitle",
+        "Try sending the photo again.",
+      ),
+    };
+  }
+  if (kind === "upload_failed") {
+    return {
+      icon: CloudOff,
+      tone: "danger",
+      title: t("stock.invoiceScan.errorUploadTitle", "Could not start the scan"),
+      description: t(
+        "stock.invoiceScan.errorUploadDesc",
+        "The scan session could not be created. The computer may be offline, or the online service is unavailable.",
+      ),
+      tips: [
+        t(
+          "stock.invoiceScan.errorUploadTip1",
+          "Check the internet connection, then try again.",
+        ),
+      ],
+      subtitle: t(
+        "stock.invoiceScan.errorUploadSubtitle",
+        "Try again in a moment.",
+      ),
+    };
+  }
+  if (kind === "config_missing") {
+    return {
+      icon: CloudOff,
+      tone: "muted",
+      title: t("stock.invoiceScan.errorConfigTitle", "Online scanning is not set up"),
+      description: t(
+        "stock.invoiceScan.errorConfigDesc",
+        "This installation is missing the settings needed to receive photos from a phone.",
+      ),
+      tips: [
+        t(
+          "stock.invoiceScan.errorConfigTip1",
+          "Contact your provider to enable online receipt scanning.",
+        ),
+      ],
+      subtitle: t(
+        "stock.invoiceScan.errorConfigSubtitle",
+        "Online scanning is not configured.",
+      ),
+    };
+  }
+  if (kind === "missing_file") {
+    return {
+      icon: ImageOff,
+      tone: "danger",
+      title: t("stock.invoiceScan.errorMissingFileTitle", "Receipt image not found"),
+      description: t(
+        "stock.invoiceScan.errorMissingFileDesc",
+        "The photo is no longer on this computer. Start a new scan and send the receipt again.",
+      ),
+      tips: [
+        t(
+          "stock.invoiceScan.errorMissingFileTip1",
+          "Generate a new QR code and photograph the receipt once more.",
+        ),
+      ],
+      subtitle: t(
+        "stock.invoiceScan.errorMissingFileSubtitle",
+        "Start a new scan to continue.",
+      ),
+    };
+  }
+  return {
+    icon: QrCode,
+    tone: "muted",
+    title: t("stock.invoiceScan.errorGenericTitle", "Scan could not continue"),
+    description: t(
+      "stock.invoiceScan.errorGenericDesc",
+      "Something went wrong while preparing the receipt scan. You can try again.",
+    ),
+    tips: [
+      t(
+        "stock.invoiceScan.errorGenericTip1",
+        "Check the internet connection, then generate a new QR code.",
+      ),
+    ],
+    subtitle: t(
+      "stock.invoiceScan.errorGenericSubtitle",
+      "Please try again.",
+    ),
+  };
+}
+
 function flowFromPhase(phase: Phase, wizardStep: WizardStep, hasImage: boolean): FlowStep {
   if (phase === "wizard") return wizardStep;
   if (phase === "ai") return "analyze";
@@ -77,7 +319,7 @@ export default function InvoiceScanModal({
   const [imageDataUrl, setImageDataUrl] = useState<string | null>(null);
   const [localPath, setLocalPath] = useState<string | null>(null);
   const [extraction, setExtraction] = useState<ScanReceiptExtraction | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [errorKind, setErrorKind] = useState<ScanErrorKind | null>(null);
   const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
   const [runId, setRunId] = useState(0);
   const [wizardStep, setWizardStep] = useState<WizardStep>("supplier");
@@ -88,11 +330,10 @@ export default function InvoiceScanModal({
   const expiresAtRef = useRef<number | null>(null);
   const localPathRef = useRef<string | null>(null);
   const qrWatchingRef = useRef(false);
+  const forceNewRef = useRef(false);
   const allowCloseRef = useRef(false);
   const leaveConfirmOpenRef = useRef(false);
   const openRef = useRef(open);
-  const tRef = useRef(t);
-  tRef.current = t;
   leaveConfirmOpenRef.current = leaveConfirmOpen;
   openRef.current = open;
 
@@ -120,7 +361,7 @@ export default function InvoiceScanModal({
       setImageDataUrl(null);
       setLocalPath(null);
       setExtraction(null);
-      setError(null);
+      setErrorKind(null);
       setSecondsLeft(null);
       setWizardStep("supplier");
       setFarthest("scan");
@@ -150,20 +391,22 @@ export default function InvoiceScanModal({
       }
     };
 
-    const showError = (message: string) => {
+    const showError = (kind: ScanErrorKind) => {
       if (cancelled) return;
       stopQrWatch();
-      setError(message);
+      setErrorKind(kind);
       setPhase("error");
     };
 
-    const failQr = (message: string) => {
+    const failQr = (kind: ScanErrorKind) => {
       if (!qrWatchingRef.current) return;
-      showError(message);
+      showError(kind);
     };
 
+    let removeOnlineListener: (() => void) | null = null;
+
     const start = async () => {
-      setError(null);
+      setErrorKind(null);
       setImageDataUrl(null);
       setLocalPath(null);
       localPathRef.current = null;
@@ -171,49 +414,79 @@ export default function InvoiceScanModal({
       setWizardStep("supplier");
       setFarthest("scan");
       setPhase("loading");
-      const created = await window.api.online.invoiceScanCreateSession();
+      const forceNew = forceNewRef.current;
+      forceNewRef.current = false;
+      const started = await window.api.online.invoiceScanStartSession(forceNew);
       if (cancelled) return;
-      if (created.success === false) {
-        const code = created.code;
+      if (started.success === false) {
+        const code = started.code;
         if (code === "missing_env") {
-          showError(
-            tRef.current(
-              "stock.invoiceScan.configMissing",
-              "Online scanning is not configured.",
-            ),
-          );
+          showError("config_missing");
           return;
         }
-        const err = created.error;
+        const err = started.error;
         if (err === "ai_disabled" || err === "ai_trial_blocked" || err === "ai_not_licensed") {
-          showError(
-            tRef.current(
-              "stock.invoiceScan.aiBlocked",
-              "AI scanning is not available on this device.",
-            ),
-          );
+          showError("ai_blocked");
           return;
         }
-        showError(err || tRef.current("stock.invoiceScan.uploadFailed", "Receipt upload failed."));
+        if (code === "download") {
+          showError("download_failed");
+          return;
+        }
+        showError("upload_failed");
         return;
       }
 
-      sessionIdRef.current = created.sessionId;
-      expiresAtRef.current = new Date(created.expiresAt).getTime();
+      if (started.kind === "photo") {
+        setImageDataUrl(started.dataUrl);
+        setLocalPath(started.localPath);
+        localPathRef.current = started.localPath;
+        setPhase("received");
+        return;
+      }
+
+      sessionIdRef.current = started.sessionId;
+      expiresAtRef.current = new Date(started.expiresAt).getTime();
       qrWatchingRef.current = true;
-      setQrDataUrl(created.qrDataUrl);
-      setScanUrl(created.scanUrl);
+      setQrDataUrl(started.qrDataUrl);
+      setScanUrl(started.scanUrl);
       setPhase("qr");
 
+      const receiveUploaded = async (id: string) => {
+        stopQrWatch();
+        setPhase("downloading");
+        const downloaded = await window.api.online.invoiceScanDownloadAndCleanup(id);
+        if (cancelled) return;
+        if (downloaded.success === false) {
+          setErrorKind("download_failed");
+          setPhase("error");
+          return;
+        }
+        setImageDataUrl(downloaded.dataUrl);
+        setLocalPath(downloaded.localPath);
+        localPathRef.current = downloaded.localPath;
+        setPhase("received");
+      };
+
+      let expiryCheckStarted = false;
       const tick = () => {
         if (!qrWatchingRef.current || !expiresAtRef.current) return;
         const left = Math.max(0, Math.ceil((expiresAtRef.current - Date.now()) / 1000));
         setSecondsLeft(left);
-        if (left <= 0) {
-          failQr(
-            tRef.current("stock.invoiceScan.expired", "QR code expired. Please try again."),
-          );
-        }
+        if (left > 0) return;
+        if (expiryCheckStarted) return;
+        expiryCheckStarted = true;
+        void (async () => {
+          const id = sessionIdRef.current;
+          if (!id || cancelled || !qrWatchingRef.current) return;
+          const status = await window.api.online.invoiceScanGetStatus(id);
+          if (cancelled || !qrWatchingRef.current) return;
+          if (status.success && status.status === "uploaded") {
+            await receiveUploaded(id);
+            return;
+          }
+          failQr("expired");
+        })();
       };
       tick();
       tickTimer = setInterval(tick, 1000);
@@ -228,44 +501,27 @@ export default function InvoiceScanModal({
           if (cancelled || !qrWatchingRef.current) return;
           if (status.success === false) {
             if (status.code === "expired" || status.error === "expired") {
-              failQr(
-                tRef.current(
-                  "stock.invoiceScan.expired",
-                  "QR code expired. Please try again.",
-                ),
-              );
+              failQr("expired");
             }
             return;
           }
           if (status.status === "expired") {
-            failQr(
-              tRef.current("stock.invoiceScan.expired", "QR code expired. Please try again."),
-            );
+            failQr("expired");
             return;
           }
           if (status.status !== "uploaded") return;
-          stopQrWatch();
-          setPhase("downloading");
-          const downloaded = await window.api.online.invoiceScanDownloadAndCleanup(id);
-          if (cancelled) return;
-          if (downloaded.success === false) {
-            setError(
-              tRef.current(
-                "stock.invoiceScan.downloadFailed",
-                "Could not receive the receipt. Please try again.",
-              ),
-            );
-            setPhase("error");
-            return;
-          }
-          setImageDataUrl(downloaded.dataUrl);
-          setLocalPath(downloaded.localPath);
-          localPathRef.current = downloaded.localPath;
-          setPhase("received");
+          await receiveUploaded(id);
         } finally {
           isPolling = false;
         }
       };
+
+      const onOnline = () => {
+        if (!qrWatchingRef.current || cancelled) return;
+        void poll();
+      };
+      window.addEventListener("online", onOnline);
+      removeOnlineListener = () => window.removeEventListener("online", onOnline);
 
       void poll();
       pollTimer = setInterval(() => {
@@ -278,48 +534,44 @@ export default function InvoiceScanModal({
     return () => {
       cancelled = true;
       qrWatchingRef.current = false;
+      removeOnlineListener?.();
       if (pollTimer) clearInterval(pollTimer);
       if (tickTimer) clearInterval(tickTimer);
     };
   }, [open, runId]);
 
+  const restartScan = (forceNew: boolean) => {
+    deleteTemp(localPathRef.current);
+    localPathRef.current = null;
+    setLocalPath(null);
+    setImageDataUrl(null);
+    setExtraction(null);
+    setErrorKind(null);
+    forceNewRef.current = forceNew;
+    setRunId((n) => n + 1);
+  };
+
   const runAi = async () => {
     if (!localPath) {
-      setError(t("stock.invoiceScan.missingFile", "Receipt image not found."));
+      setErrorKind("missing_file");
       setPhase("error");
       return;
     }
     setPhase("ai");
     reach("analyze");
-    setError(null);
+    setErrorKind(null);
     const result = await window.api.ai.scanReceipt(localPath);
     if (result.success === false) {
       if (result.code === "quota") {
-        setError(
-          t(
-            "stock.invoiceScan.quota",
-            "Not enough AI points. Try again in a minute or tomorrow.",
-          ),
-        );
+        setErrorKind("quota");
       } else if (result.code === "offline" || result.code === "ai_disabled") {
-        setError(
-          t("stock.invoiceScan.aiBlocked", "AI scanning is not available on this device."),
-        );
-      } else if (result.code === "unreadable") {
-        setError(
-          t(
-            "stock.invoiceScan.unreadable",
-            "Could not read the receipt. Please try another photo.",
-          ),
-        );
+        setErrorKind("ai_blocked");
+      } else if (result.code === "missing_file") {
+        setErrorKind("missing_file");
+      } else if (result.code === "missing_env") {
+        setErrorKind("config_missing");
       } else {
-        setError(
-          result.error ||
-            t(
-              "stock.invoiceScan.unreadable",
-              "Could not read the receipt. Please try another photo.",
-            ),
-        );
+        setErrorKind("unreadable");
       }
       setPhase("error");
       return;
@@ -329,6 +581,8 @@ export default function InvoiceScanModal({
     reach("supplier");
     setPhase("wizard");
   };
+
+  const errorCopy = errorKind ? scanErrorCopy(errorKind, t) : null;
 
   const hasImage = !!(localPath && imageDataUrl);
   const flowStep = flowFromPhase(phase, wizardStep, hasImage);
@@ -429,13 +683,15 @@ export default function InvoiceScanModal({
             </span>
           </DialogTitle>
           <DialogDescription>
-            {phase === "wizard"
-              ? t("stock.invoiceScan.wizardDesc", "Match supplier and products, then confirm.")
-              : phase === "ai"
-                ? t("stock.invoiceScan.reading", "Reading the receipt…")
-                : phase === "received"
-                  ? t("stock.invoiceScan.received", "Receipt received")
-                  : t("stock.invoiceScan.scanQr", "Scan this QR code with your phone.")}
+            {phase === "error" && errorCopy
+              ? errorCopy.subtitle
+              : phase === "wizard"
+                ? t("stock.invoiceScan.wizardDesc", "Match supplier and products, then confirm.")
+                : phase === "ai"
+                  ? t("stock.invoiceScan.reading", "Reading the receipt…")
+                  : phase === "received"
+                    ? t("stock.invoiceScan.received", "Receipt received")
+                    : t("stock.invoiceScan.scanQr", "Scan this QR code with your phone.")}
           </DialogDescription>
         </DialogHeader>
 
@@ -485,18 +741,28 @@ export default function InvoiceScanModal({
             value="scan"
             className="flex min-h-0 flex-1 flex-col overflow-hidden"
           >
-            {phase === "error" && !hasImage ? (
-              <div className="space-y-3">
-                <p className="text-sm text-destructive">{error}</p>
-                <div className="flex justify-end gap-2">
-                  <Button type="button" onClick={() => setRunId((n) => n + 1)}>
-                    {t("stock.invoiceScan.retry", "Try again")}
+            {phase === "error" && !hasImage && errorCopy ? (
+              <ScanFlowError
+                icon={errorCopy.icon}
+                tone={errorCopy.tone}
+                title={errorCopy.title}
+                description={errorCopy.description}
+                tips={errorCopy.tips}
+              >
+                <Button type="button" variant="outline" onClick={requestClose}>
+                  {t("stock.invoiceScan.close", "Close")}
+                </Button>
+                {errorKind === "config_missing" ? null : (
+                  <Button
+                    type="button"
+                    onClick={() => restartScan(errorKind === "expired")}
+                  >
+                    {errorKind === "expired"
+                      ? t("stock.invoiceScan.newQr", "New QR code")
+                      : t("stock.invoiceScan.retry", "Try again")}
                   </Button>
-                  <Button type="button" variant="outline" onClick={requestClose}>
-                    {t("stock.invoiceScan.close", "Close")}
-                  </Button>
-                </div>
-              </div>
+                )}
+              </ScanFlowError>
             ) : phase === "received" && imageDataUrl ? (
               <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden">
                 <img
@@ -507,6 +773,9 @@ export default function InvoiceScanModal({
                 <div className="flex shrink-0 justify-end gap-2">
                   <Button type="button" variant="outline" onClick={requestClose}>
                     {t("stock.invoiceScan.close", "Close")}
+                  </Button>
+                  <Button type="button" variant="outline" onClick={() => restartScan(true)}>
+                    {t("stock.invoiceScan.newPhoto", "Take another photo")}
                   </Button>
                   <Button type="button" variant="outline" onClick={() => void runAi()} className="invoice-scan-ai-btn">
                     <Sparkles className="h-4 w-4 text-[#8b5cf6]" />
@@ -604,18 +873,46 @@ export default function InvoiceScanModal({
             value="analyze"
             className="flex min-h-0 flex-1 flex-col overflow-hidden"
           >
-            {phase === "error" && hasImage ? (
-              <div className="space-y-3">
-                <p className="text-sm text-destructive">{error}</p>
-                <div className="flex justify-end gap-2">
-                  <Button type="button" onClick={() => void runAi()}>
+            {phase === "error" && hasImage && errorCopy ? (
+              <ScanFlowError
+                icon={errorCopy.icon}
+                tone={errorCopy.tone}
+                title={errorCopy.title}
+                description={errorCopy.description}
+                tips={errorCopy.tips}
+                previewSrc={errorKind === "unreadable" ? imageDataUrl : null}
+              >
+                <Button type="button" variant="outline" onClick={requestClose}>
+                  {t("stock.invoiceScan.close", "Close")}
+                </Button>
+                {errorKind === "unreadable" || errorKind === "quota" || errorKind === "ai_blocked" ? (
+                  <Button
+                    type="button"
+                    variant={errorKind === "unreadable" ? "outline" : "default"}
+                    onClick={() => void runAi()}
+                    className={errorKind === "unreadable" ? "invoice-scan-ai-btn" : undefined}
+                  >
+                    {errorKind === "unreadable" ? (
+                      <Sparkles className="h-4 w-4 text-[#8b5cf6]" />
+                    ) : null}
                     {t("stock.invoiceScan.retryAi", "Try AI again")}
                   </Button>
-                  <Button type="button" variant="outline" onClick={requestClose}>
-                    {t("stock.invoiceScan.close", "Close")}
+                ) : null}
+                {errorKind === "unreadable" ? (
+                  <Button type="button" onClick={() => restartScan(true)}>
+                    {t("stock.invoiceScan.newPhoto", "Take another photo")}
                   </Button>
-                </div>
-              </div>
+                ) : errorKind !== "config_missing" &&
+                  errorKind !== "quota" &&
+                  errorKind !== "ai_blocked" ? (
+                  <Button
+                    type="button"
+                    onClick={() => restartScan(errorKind === "expired")}
+                  >
+                    {t("stock.invoiceScan.retry", "Try again")}
+                  </Button>
+                ) : null}
+              </ScanFlowError>
             ) : (
               <div className="relative min-h-0 flex-1 overflow-hidden rounded-md bg-muted">
                 {imageDataUrl ? (

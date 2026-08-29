@@ -308,6 +308,7 @@ export function registerAiScanReceiptHandler(): void {
 
       const models = visionGeminiModels();
       let lastError = "model_failed";
+      let lastCode: Extract<ScanReceiptResult, { success: false }>["code"] = "model";
 
       for (const modelId of models) {
         try {
@@ -315,6 +316,7 @@ export function registerAiScanReceiptHandler(): void {
           const text = extractTextFromGemini(json);
           if (!text) {
             lastError = "empty_response";
+            lastCode = "model";
             continue;
           }
           let parsed: unknown;
@@ -327,12 +329,17 @@ export function registerAiScanReceiptHandler(): void {
               parsed = JSON.parse(text.slice(start, end + 1));
             } else {
               lastError = "bad_json";
+              lastCode = "parse";
               continue;
             }
           }
           const extracted = normalizeExtraction(parsed);
           if (!extracted.success) {
+            if (extracted.code === "unreadable") {
+              return extracted;
+            }
             lastError = extracted.error || "unreadable";
+            lastCode = extracted.code;
             continue;
           }
           const charged = await runAiConsumeInternal({
@@ -346,6 +353,7 @@ export function registerAiScanReceiptHandler(): void {
           return extracted;
         } catch (e) {
           lastError = e instanceof Error ? e.message : String(e);
+          lastCode = "model";
           continue;
         }
       }
@@ -353,7 +361,7 @@ export function registerAiScanReceiptHandler(): void {
       return {
         success: false,
         error: lastError || "Could not read the receipt.",
-        code: "model",
+        code: lastCode,
       };
     },
   );
