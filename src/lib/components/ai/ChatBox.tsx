@@ -31,6 +31,7 @@ import { BadgeNotification } from "../badgeNotification";
 import { setAiUnreadReply } from "./aiUnread";
 import { useAiChatGate } from "../../hooks/useAiChatGate";
 import { AiChatBlockOverlay } from "./AiChatBlockOverlay";
+import { Button } from "../button";
 import { cn } from "../../utils";
 
 const spring = {
@@ -557,16 +558,38 @@ export default function ChatBox() {
             </div>
 
             <div className="flex shrink-0 items-center justify-end gap-0.5">
-              <TooltipIconButton
-                tooltip={newChatTooltip}
-                side="bottom"
-                disabled={newChatDisabled}
-                aria-disabled={newChatDisabled}
-                className="size-8 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-40"
-                onClick={handleClearChat}
-              >
-                <MessageSquarePlus className="h-3.5 w-3.5" />
-              </TooltipIconButton>
+              {newChatDisabled ? (
+                <TooltipProvider delayDuration={0}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="inline-flex">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          disabled
+                          aria-disabled
+                          aria-label={newChatTooltip}
+                          className="size-8 rounded-lg text-muted-foreground opacity-40"
+                          onClick={handleClearChat}
+                        >
+                          <MessageSquarePlus className="h-3.5 w-3.5" />
+                        </Button>
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom">{newChatTooltip}</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              ) : (
+                <TooltipIconButton
+                  tooltip={newChatTooltip}
+                  side="bottom"
+                  className="size-8 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+                  onClick={handleClearChat}
+                >
+                  <MessageSquarePlus className="h-3.5 w-3.5" />
+                </TooltipIconButton>
+              )}
 
               <DropdownMenu open={prefsOpen} onOpenChange={setPrefsOpen}>
                 <TooltipProvider delayDuration={0}>
