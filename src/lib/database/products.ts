@@ -255,6 +255,7 @@ export async function updateProductWithPurchase(
   },
   updateBoughtPrice = false,
   newSellingPrice?: number,
+  photo?: string | null,
 ) {
   return await prisma.$transaction(async (tx) => {
     const updateData: any = {
@@ -290,6 +291,10 @@ export async function updateProductWithPurchase(
     // Always update the selling price with the new one if provided
     if (newSellingPrice !== undefined) {
       updateData.sellingPrice = newSellingPrice;
+    }
+
+    if (photo !== undefined) {
+      updateData.photo = photo;
     }
 
     // Update product

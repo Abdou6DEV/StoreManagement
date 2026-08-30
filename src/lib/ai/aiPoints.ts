@@ -4,6 +4,9 @@ export const AI_TOKENS_PER_POINT = 8000;
 /** Successful receipt scan. Charged on ai_usage_daily only (plus 1 toward the minute cap). */
 export const AI_SCAN_DAY_POINTS = 10;
 
+/** Successful product image search (Serper Images). */
+export const AI_FIND_IMAGE_DAY_POINTS = 2;
+
 export function chatDayPointsFromTokens(tokens: number): number {
   if (!Number.isFinite(tokens) || tokens <= 0) return 1;
   return Math.max(1, Math.floor(tokens / AI_TOKENS_PER_POINT));

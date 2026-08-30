@@ -31,6 +31,7 @@ export const databaseAPI = {
       purchaseData: { sellerId?: string; quantity: number; price: number };
       updateBoughtPrice?: boolean;
       newSellingPrice?: number;
+      photo?: string | null;
       username?: string;
     }) => ipcRenderer.invoke("db:products:updateWithPurchase", data),
     generateUniqueBarcode: () => ipcRenderer.invoke("db:products:generateUniqueBarcode"),

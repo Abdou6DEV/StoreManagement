@@ -228,6 +228,7 @@ export function setupDatabaseHandlers() {
         purchaseData,
         updateBoughtPrice,
         newSellingPrice,
+        photo,
         username,
       } = payload ?? {};
       const updated = await updateProductWithPurchase(
@@ -235,7 +236,8 @@ export function setupDatabaseHandlers() {
         additionalQuantity,
         purchaseData,
         updateBoughtPrice || false,
-        newSellingPrice
+        newSellingPrice,
+        photo,
       );
       const logUsername = typeof username === "string" ? username : "unknown";
       try {

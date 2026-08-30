@@ -4,7 +4,7 @@ import StyledNumberInput from "../../../lib/components/inputNumber";
 import { Button } from "../../../lib/components/button";
 import { Save, X, Loader2, Package, QrCode, Eye, Printer } from "lucide-react";
 import { useStock } from "../../../lib/contexts/stockContext";
-import { ImageUpload } from "../../../lib/components/imageUpload";
+import { ProductPhotoPicker } from "./findImage/ProductPhotoPicker";
 import { useToast } from "../../../lib/contexts/toastContext";
 import { useAuth } from "../../../lib/contexts/authContext";
 import { BarcodePreviewModal } from "./addStockForm/BarcodePreviewModal";
@@ -327,13 +327,12 @@ export default function EditStockForm({
             <label className="text-sm font-medium text-foreground">
               {t("stock.photo", "Product Photo")}
             </label>
-            <ImageUpload
+            <ProductPhotoPicker
               value={form.photo}
               onChange={(value) => handleEditFormChange("photo", value)}
+              productName={form.name}
+              categoryName={form.categoryName}
               placeholder={t("stock.uploadPhoto")}
-              maxWidth={200}
-              maxHeight={200}
-              quality={0.8}
             />
           </div>
         </div>

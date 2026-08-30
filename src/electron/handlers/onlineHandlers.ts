@@ -13,7 +13,9 @@ import {
 import type { DeviceRequestPayload, DeviceRequestResult } from "../types/deviceRequest";
 import type { DeviceLinkExistingPayload, DeviceLinkExistingResult } from "../types/deviceLinkExisting";
 import type { DeviceCheckResult } from "../types/deviceCheck";
+import { AI_OFFLINE } from "../../lib/ai/aiMessageLimits";
 import { resolvePaidCloudBackupAccess } from "../../lib/license/paidCloudBackupAccess";
+import { resolvePremiumAccess } from "../../lib/license/premiumAccess";
 import type {
   AiConsumeEntitlementError,
   AiConsumeResult,
@@ -216,6 +218,46 @@ async function assertCloudBackupAccessAllowed(): Promise<
         code: "unauthorized",
       };
   }
+}
+
+export type AiPremiumAccessBlock = {
+  error: string;
+  code: "offline" | "ai_disabled";
+};
+
+/** Fresh device-check + trial gate before paid external AI calls (Serper, etc.). */
+export async function assertAiPremiumAccessInternal(): Promise<AiPremiumAccessBlock | null> {
+  const check = await runDeviceCheckInternal();
+  const snapshot = readStoredLicenseGrace();
+  const nowMs = Date.now();
+  const isOnline = !(check.success === false && check.code === "network");
+
+  let trialEndsAtMs: number | null = null;
+  if (check.success === true && check.trialEndsAt) {
+    const parsed = Date.parse(check.trialEndsAt);
+    if (Number.isFinite(parsed)) trialEndsAtMs = parsed;
+  }
+  if (trialEndsAtMs == null && snapshot?.trialEndsAtMs != null) {
+    trialEndsAtMs = snapshot.trialEndsAtMs;
+  }
+  const isTrialActive =
+    trialEndsAtMs != null && Number.isFinite(trialEndsAtMs) && nowMs < trialEndsAtMs;
+
+  const access = resolvePremiumAccess({
+    isOnline,
+    isTrialActive,
+    aiEnabled: check.success === true ? check.aiEnabled : undefined,
+  });
+
+  if (access.canUsePremium) return null;
+
+  if (access.blockReason === "offline") {
+    return { error: AI_OFFLINE, code: "offline" };
+  }
+  if (access.blockReason === "trial") {
+    return { error: "ai_trial_blocked", code: "ai_disabled" };
+  }
+  return { error: "ai_disabled", code: "ai_disabled" };
 }
 
 export async function uploadCloudBackupLatest(

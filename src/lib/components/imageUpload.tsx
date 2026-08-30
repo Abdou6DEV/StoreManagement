@@ -3,6 +3,8 @@ import { Image as ImageIcon, X } from "lucide-react";
 import { cn } from "../utils";
 import { useTranslation } from "react-i18next";
 import rendererLogger from "../logger/rendererLogger";
+import { resizeFileToProductPhoto, PRODUCT_PHOTO_RESIZE_OPTIONS } from "../utils/resizeProductPhoto";
+import { ProductPhotoImage } from "./productPhotoImage";
 
 interface ImageUploadProps {
   value: string | null;
@@ -21,89 +23,28 @@ export function ImageUpload({
   placeholder,
   className,
   disabled = false,
-  maxWidth = 200,
-  maxHeight = 200,
-  quality = 0.8,
+  maxWidth = PRODUCT_PHOTO_RESIZE_OPTIONS.maxWidth,
+  maxHeight = PRODUCT_PHOTO_RESIZE_OPTIONS.maxHeight,
+  quality = PRODUCT_PHOTO_RESIZE_OPTIONS.quality,
 }: ImageUploadProps) {
   const { t } = useTranslation();
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const resizeImage = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const canvas = document.createElement("canvas");
-      const ctx = canvas.getContext("2d");
-      const img = new Image();
-
-      img.onload = () => {
-        // Calculate new dimensions while maintaining aspect ratio
-        let { width, height } = img;
-
-        // Calculate aspect ratio
-        const aspectRatio = width / height;
-
-        // Check if image needs resizing
-        const needsResize = width > maxWidth || height > maxHeight;
-
-        if (needsResize) {
-          if (width > height) {
-            // Landscape image
-            if (width > maxWidth) {
-              width = maxWidth;
-              height = width / aspectRatio;
-            }
-            // Check if height still exceeds maxHeight after width adjustment
-            if (height > maxHeight) {
-              height = maxHeight;
-              width = height * aspectRatio;
-            }
-          } else {
-            // Portrait or square image
-            if (height > maxHeight) {
-              height = maxHeight;
-              width = height * aspectRatio;
-            }
-            // Check if width still exceeds maxWidth after height adjustment
-            if (width > maxWidth) {
-              width = maxWidth;
-              height = width / aspectRatio;
-            }
-          }
-        }
-
-        // Set canvas dimensions
-        canvas.width = width;
-        canvas.height = height;
-
-        // Draw and resize image
-        ctx?.drawImage(img, 0, 0, width, height);
-
-        // Convert to base64 with specified quality
-        const resizedDataUrl = canvas.toDataURL("image/jpeg", quality);
-        resolve(resizedDataUrl);
-      };
-
-      img.onerror = () => {
-        reject(new Error("Failed to load image"));
-      };
-
-      img.src = URL.createObjectURL(file);
-    });
-  };
-
   const handleFileSelect = async (file: File) => {
     if (!file) return;
 
-    // Validate file type
     if (!file.type.startsWith("image/")) {
       alert(t("imageUpload.selectImageFile"));
       return;
     }
 
-    // File size validation removed since we resize images anyway
-
     try {
-      const resizedImage = await resizeImage(file);
+      const resizedImage = await resizeFileToProductPhoto(file, {
+        maxWidth,
+        maxHeight,
+        quality,
+      });
       onChange(resizedImage);
     } catch (error) {
       rendererLogger.error("Error resizing image", "ImageUpload", error);
@@ -162,11 +103,7 @@ export function ImageUpload({
 
       {value ? (
         <div className="relative group">
-          <img
-            src={value}
-            alt="Product"
-            className="w-full h-32 object-cover rounded-lg border border-border"
-          />
+          <ProductPhotoImage src={value} alt={t("stock.photo", "Product Photo")} variant="picker" />
           <button
             type="button"
             onClick={handleRemoveImage}

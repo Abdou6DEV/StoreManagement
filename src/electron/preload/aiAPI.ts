@@ -2,6 +2,12 @@ import { ipcRenderer } from "electron";
 import type { AiChatResponse } from "../../lib/ai/aiChatTypes";
 import type { AiQuotaSnapshot } from "../../lib/ai/aiQuota";
 import type { ScanReceiptResult } from "../../lib/ai/scanReceiptTypes";
+import type {
+  DownloadProductImageRequest,
+  DownloadProductImageResult,
+  FindProductImageRequest,
+  FindProductImageResult,
+} from "../../lib/ai/findImageTypes";
 
 export type AiWorkStatus = {
   phase: "thinking" | "tool" | "writing";
@@ -18,6 +24,19 @@ export const aiAPI = {
 
   scanReceipt: (localPath: string): Promise<ScanReceiptResult> =>
     ipcRenderer.invoke("ai:scan-receipt", localPath) as Promise<ScanReceiptResult>,
+
+  findProductImage: (
+    request: FindProductImageRequest,
+  ): Promise<FindProductImageResult> =>
+    ipcRenderer.invoke("ai:find-product-image", request) as Promise<FindProductImageResult>,
+
+  downloadProductImage: (
+    request: DownloadProductImageRequest,
+  ): Promise<DownloadProductImageResult> =>
+    ipcRenderer.invoke(
+      "ai:download-product-image",
+      request,
+    ) as Promise<DownloadProductImageResult>,
 
   clearChat: (): Promise<void> => ipcRenderer.invoke("ai:clear"),
   cancelChat: (): Promise<void> => ipcRenderer.invoke("ai:cancel"),

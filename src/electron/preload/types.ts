@@ -78,6 +78,7 @@ export type DatabaseAPI = {
       };
       updateBoughtPrice?: boolean;
       newSellingPrice?: number;
+      photo?: string | null;
     }) => Promise<any>;
     generateUniqueBarcode: () => Promise<string>;
   };
@@ -520,6 +521,12 @@ export interface AIAPI {
   scanReceipt: (
     localPath: string,
   ) => Promise<import("../../lib/ai/scanReceiptTypes").ScanReceiptResult>;
+  findProductImage: (
+    request: import("../../lib/ai/findImageTypes").FindProductImageRequest,
+  ) => Promise<import("../../lib/ai/findImageTypes").FindProductImageResult>;
+  downloadProductImage: (
+    request: import("../../lib/ai/findImageTypes").DownloadProductImageRequest,
+  ) => Promise<import("../../lib/ai/findImageTypes").DownloadProductImageResult>;
   clearChat: () => Promise<void>;
   cancelChat: () => Promise<void>;
   onStatus: (

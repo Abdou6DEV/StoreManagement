@@ -5,7 +5,7 @@ import { Product } from "@prisma/client";
 import StyledNumberInput from "../../../../lib/components/inputNumber";
 import { Button } from "../../../../lib/components/button";
 import { AlertTriangle, Loader2, Package, ChevronUp, QrCode, Eye, Printer } from "lucide-react";
-import { ImageUpload } from "../../../../lib/components/imageUpload";
+import { ProductPhotoPicker } from "../findImage/ProductPhotoPicker";
 // Barcode generation is now handled by the database layer
 import type { AddStockFormState } from "../../../../types";
 import { useToast } from "../../../../lib/contexts/toastContext";
@@ -52,6 +52,17 @@ const calculateWeightedAverage = (
   
   const totalValue = (currentQuantity * currentPrice) + (newQuantity * newPrice);
   return Math.round((totalValue / totalQuantity) * 100) / 100;
+};
+
+/** Include photo in update payloads only when the user changed or added one. */
+const photoPatchIfChanged = (
+  nextPhoto: string | null | undefined,
+  currentPhoto: string | null | undefined,
+): { photo?: string | null } => {
+  const normalizedNext = nextPhoto ?? null;
+  const normalizedCurrent = currentPhoto ?? null;
+  if (normalizedNext === normalizedCurrent) return {};
+  return { photo: normalizedNext };
 };
 
 const initialForm: AddStockFormState = {
@@ -708,6 +719,7 @@ export default function AddStockForm({
                       purchaseData: purchaseData,
                       updateBoughtPrice: true,
                       newSellingPrice: safePrice(form.sellingPrice),
+                      ...photoPatchIfChanged(form.photo, existingProduct.photo),
                       username: user?.username ?? "unknown",
                     });
                     showToast(
@@ -725,6 +737,7 @@ export default function AddStockForm({
                       purchaseData: purchaseData,
                       updateBoughtPrice: false,
                       newSellingPrice: safePrice(form.sellingPrice),
+                      ...photoPatchIfChanged(form.photo, existingProduct.photo),
                       username: user?.username ?? "unknown",
                     });
                     showToast(
@@ -748,6 +761,7 @@ export default function AddStockForm({
                       quantity: existingProduct.quantity + quantity,
                       boughtPrice: weightedPrice,
                       sellingPrice: safePrice(form.sellingPrice),
+                      ...photoPatchIfChanged(form.photo, existingProduct.photo),
                     }, user?.username ?? "unknown", "activityLog.actions.quantityAdded");
                     showToast(
                       t(
@@ -761,6 +775,7 @@ export default function AddStockForm({
                       quantity: existingProduct.quantity + quantity,
                       boughtPrice: boughtPrice,
                       sellingPrice: safePrice(form.sellingPrice),
+                      ...photoPatchIfChanged(form.photo, existingProduct.photo),
                     }, user?.username ?? "unknown", "activityLog.actions.quantityAdded");
                     showToast(
                       t(
@@ -840,6 +855,7 @@ export default function AddStockForm({
               purchaseData: purchaseData,
               updateBoughtPrice: false,
               newSellingPrice: safePrice(form.sellingPrice),
+              ...photoPatchIfChanged(form.photo, existingProduct.photo),
               username: user?.username ?? "unknown",
             });
             showToast(
@@ -850,6 +866,7 @@ export default function AddStockForm({
             await window.api.database.products.update(existingProduct.id, {
               quantity: existingProduct.quantity + quantity,
               sellingPrice: safePrice(form.sellingPrice),
+              ...photoPatchIfChanged(form.photo, existingProduct.photo),
             }, user?.username ?? "unknown", "activityLog.actions.quantityAdded");
             showToast(
               t("stock.inventoryUpdatedSuccess", "Inventory updated successfully!"),
@@ -1012,6 +1029,7 @@ export default function AddStockForm({
                 quantity: currentQuantity + existingProduct.quantity,
                 boughtPrice: existingProduct.boughtPrice, // Use the calculated price from pending list
                 sellingPrice: safePrice(existingProduct.sellingPrice),
+                ...photoPatchIfChanged(existingProduct.photo, currentProduct?.photo),
               },
               user?.username ?? "unknown",
               "activityLog.actions.quantityAdded"
@@ -1195,6 +1213,10 @@ export default function AddStockForm({
             purchaseData: purchaseData,
             updateBoughtPrice: true,
             newSellingPrice: safePrice(form.sellingPrice),
+            ...photoPatchIfChanged(
+              form.photo,
+              products.find((p) => p.id === priceConfirmationData.productId)?.photo,
+            ),
             username: user?.username ?? "unknown",
           });
 
@@ -1220,6 +1242,7 @@ export default function AddStockForm({
               quantity: currentProduct.quantity + priceConfirmationData.quantity,
               boughtPrice: weightedPrice,
               sellingPrice: safePrice(form.sellingPrice),
+              ...photoPatchIfChanged(form.photo, currentProduct.photo),
             }, user?.username ?? "unknown", "activityLog.actions.quantityAdded");
           }
 
@@ -1323,6 +1346,10 @@ export default function AddStockForm({
             purchaseData: purchaseData,
             updateBoughtPrice: false, // false = keep NEW price, true = calculate weighted average
             newSellingPrice: safePrice(form.sellingPrice),
+            ...photoPatchIfChanged(
+              form.photo,
+              products.find((p) => p.id === priceConfirmationData.productId)?.photo,
+            ),
             username: user?.username ?? "unknown",
           });
 
@@ -1338,6 +1365,7 @@ export default function AddStockForm({
               quantity: currentProduct.quantity + priceConfirmationData.quantity,
               boughtPrice: priceConfirmationData.newPrice,
               sellingPrice: safePrice(form.sellingPrice),
+              ...photoPatchIfChanged(form.photo, currentProduct.photo),
             }, user?.username ?? "unknown", "activityLog.actions.quantityAdded");
           }
 
@@ -1580,6 +1608,7 @@ export default function AddStockForm({
                       purchaseData: purchaseData,
                       updateBoughtPrice: true,
                       newSellingPrice: safePrice(form.sellingPrice),
+                      ...photoPatchIfChanged(form.photo, existingProduct.photo),
                       username: user?.username ?? "unknown",
                     });
                     showToast(
@@ -1597,6 +1626,7 @@ export default function AddStockForm({
                       purchaseData: purchaseData,
                       updateBoughtPrice: false,
                       newSellingPrice: safePrice(form.sellingPrice),
+                      ...photoPatchIfChanged(form.photo, existingProduct.photo),
                       username: user?.username ?? "unknown",
                     });
                     showToast(
@@ -1620,6 +1650,7 @@ export default function AddStockForm({
                       quantity: existingProduct.quantity + quantity,
                       boughtPrice: weightedPrice,
                       sellingPrice: safePrice(form.sellingPrice),
+                      ...photoPatchIfChanged(form.photo, existingProduct.photo),
                     }, user?.username ?? "unknown", "activityLog.actions.quantityAdded");
                     showToast(
                       t(
@@ -1633,6 +1664,7 @@ export default function AddStockForm({
                       quantity: existingProduct.quantity + quantity,
                       boughtPrice: boughtPrice,
                       sellingPrice: safePrice(form.sellingPrice),
+                      ...photoPatchIfChanged(form.photo, existingProduct.photo),
                     }, user?.username ?? "unknown", "activityLog.actions.quantityAdded");
                     showToast(
                       t(
@@ -1712,6 +1744,7 @@ export default function AddStockForm({
               purchaseData: purchaseData,
               updateBoughtPrice: false,
               newSellingPrice: safePrice(form.sellingPrice),
+              ...photoPatchIfChanged(form.photo, existingProduct.photo),
               username: user?.username ?? "unknown",
             });
             showToast(
@@ -1722,6 +1755,7 @@ export default function AddStockForm({
             await window.api.database.products.update(existingProduct.id, {
               quantity: existingProduct.quantity + quantity,
               sellingPrice: safePrice(form.sellingPrice),
+              ...photoPatchIfChanged(form.photo, existingProduct.photo),
             }, user?.username ?? "unknown", "activityLog.actions.quantityAdded");
             showToast(
               t("stock.inventoryUpdatedSuccess", "Inventory updated successfully!"),
@@ -1863,6 +1897,7 @@ export default function AddStockForm({
                 quantity: currentQuantity + existingProduct.quantity,
                 boughtPrice: existingProduct.boughtPrice, // Use the calculated price from pending list
                 sellingPrice: safePrice(existingProduct.sellingPrice),
+                ...photoPatchIfChanged(existingProduct.photo, currentProduct?.photo),
               },
               user?.username ?? "unknown",
               "activityLog.actions.quantityAdded"
@@ -2393,13 +2428,12 @@ export default function AddStockForm({
 
               <div className="space-y-2">
                 <label>{t("stock.photo", "Product Photo")}</label>
-                <ImageUpload
+                <ProductPhotoPicker
                   value={form.photo}
                   onChange={(value) => handleFormChange("photo", value)}
+                  productName={form.name}
+                  categoryName={form.categoryName}
                   placeholder={t("stock.uploadPhoto")}
-                  maxWidth={200}
-                  maxHeight={200}
-                  quality={0.8}
                 />
               </div>
             </div>

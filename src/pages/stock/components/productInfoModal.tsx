@@ -4,6 +4,7 @@ import { Info, Package, ShoppingCart, ChevronDown } from "lucide-react";
 import { Modal } from "../../../lib/components/modal";
 import { Client, Sale, SaleItem } from "@prisma/client";
 import { ProductAvatar } from "../../../lib/components/productAvatar";
+import { ProductPhotoImage } from "../../../lib/components/productPhotoImage";
 
 interface ProductInfoModalProps {
   open: boolean;
@@ -155,21 +156,15 @@ export const ProductInfoModal = ({
             </div>
 
             {/* Product Photo */}
-            <div className="flex-shrink-0 flex items-center justify-center">
+            <div className="flex flex-shrink-0 items-center justify-center">
               {productData.photo ? (
-                <div className="relative w-64 h-64 rounded-lg overflow-hidden border border-border shadow-lg">
-                  <img
-                    src={productData.photo}
-                    alt={productData.name}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.style.display = "none";
-                    }}
-                  />
-                </div>
+                <ProductPhotoImage
+                  src={productData.photo}
+                  alt={productData.name}
+                  variant="detail"
+                />
               ) : (
-                <div className="w-64 h-64 flex items-center justify-center bg-muted/30 rounded-lg border border-border shadow-lg">
+                <div className="flex h-64 w-64 items-center justify-center rounded-lg border border-border bg-muted/30 shadow-lg">
                   <ProductAvatar name={productData.name} size="5xl" />
                 </div>
               )}
