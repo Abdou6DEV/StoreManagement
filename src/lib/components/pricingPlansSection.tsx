@@ -13,7 +13,6 @@ import {
 import { Button } from "./button";
 import { Dialog, DialogClose, DialogContent, DialogTitle } from "./dialog";
 import { ToggleGroup, ToggleGroupItem } from "./toggleGroup";
-import { AnimatedHeight } from "./animatedHeight";
 import { cn } from "../utils";
 
 const SUPPLIER_PHONE_DISPLAY = "0793 42 07 45";

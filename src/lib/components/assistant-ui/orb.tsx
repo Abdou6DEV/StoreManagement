@@ -1,7 +1,7 @@
 import { Mesh, Program, Renderer, Triangle, Vec3 } from "ogl";
 import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import "./Orb.css";
+import "./orb.css";
 
 interface OrbProps {
   hue?: number;
