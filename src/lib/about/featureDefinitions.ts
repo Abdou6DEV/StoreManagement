@@ -26,16 +26,51 @@ import {
   Wifi,
   Code,
   RefreshCw,
+  Sparkles,
+  ScanLine,
+  Images,
+  Cloud,
 } from "lucide-react";
 
 export type AboutFeatureDef = {
   icon: LucideIcon;
   titleKey: string;
   descKey: string;
+  /** When true, UI shows a Premium badge (license-gated capability). */
+  premium?: boolean;
 };
+
+/** Premium capabilities shown first in Key Features (welcome + About). */
+export const ABOUT_PREMIUM_FEATURE_DEFS: AboutFeatureDef[] = [
+  {
+    icon: Sparkles,
+    titleKey: "welcome.premium.features.assistant.title",
+    descKey: "welcome.premium.features.assistant.description",
+    premium: true,
+  },
+  {
+    icon: ScanLine,
+    titleKey: "welcome.premium.features.receiptScan.title",
+    descKey: "welcome.premium.features.receiptScan.description",
+    premium: true,
+  },
+  {
+    icon: Images,
+    titleKey: "welcome.premium.features.findImage.title",
+    descKey: "welcome.premium.features.findImage.description",
+    premium: true,
+  },
+  {
+    icon: Cloud,
+    titleKey: "welcome.premium.features.cloudBackup.title",
+    descKey: "welcome.premium.features.cloudBackup.description",
+    premium: true,
+  },
+];
 
 /** Same list as About page → Key Features (business capabilities). */
 export const ABOUT_MAIN_FEATURE_DEFS: AboutFeatureDef[] = [
+  ...ABOUT_PREMIUM_FEATURE_DEFS,
   { icon: ShoppingCart, titleKey: "about.features.cashier", descKey: "about.features.cashierDesc" },
   { icon: BarChart3, titleKey: "about.features.dashboard", descKey: "about.features.dashboardDesc" },
   { icon: PackageSearch, titleKey: "about.features.inventory", descKey: "about.features.inventoryDesc" },

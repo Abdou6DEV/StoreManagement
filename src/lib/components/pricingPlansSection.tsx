@@ -13,12 +13,14 @@ import {
 import { Button } from "./button";
 import { Dialog, DialogClose, DialogContent, DialogTitle } from "./dialog";
 import { ToggleGroup, ToggleGroupItem } from "./toggleGroup";
+import { AnimatedHeight } from "./animatedHeight";
 import { cn } from "../utils";
 
 const SUPPLIER_PHONE_DISPLAY = "0793 42 07 45";
 const SUPPLIER_PHONE = "+213793420745";
 
-const TIER_EASE = [0.32, 0.72, 0, 1] as const;
+/** Snappy ease — avoids the soft “float” that flickers on stacked mobile cards. */
+const TIER_EASE = [0.22, 1, 0.36, 1] as const;
 
 const handleContactSupplier = () => {
   const url = `https://wa.me/${SUPPLIER_PHONE}`;
@@ -140,7 +142,7 @@ export function PricingPlansSection({
   }, [initialTier]);
 
   const tierTransition = {
-    duration: reduceMotion ? 0 : 0.5,
+    duration: reduceMotion ? 0 : 0.22,
     ease: TIER_EASE,
   };
 
@@ -171,7 +173,7 @@ export function PricingPlansSection({
         "pricing-plans-section relative overflow-hidden rounded-2xl sm:rounded-3xl",
         "border",
         sectionPadding,
-        "pricing-tier-surface transition-[border-color,box-shadow] duration-500",
+        "pricing-tier-surface transition-[border-color,box-shadow] duration-200",
         isPremium
           ? "border-violet-300/30 shadow-md shadow-violet-500/10 dark:border-violet-800/35"
           : "border-border/80 shadow-md shadow-black/[0.06] dark:shadow-black/25",
@@ -204,9 +206,9 @@ export function PricingPlansSection({
           animate={{ opacity: isPremium ? 0 : 1 }}
           transition={tierTransition}
         >
-          <div className="absolute -right-16 -top-12 h-36 w-36 rounded-full bg-muted/35 blur-3xl sm:-right-20 sm:-top-16 sm:h-48 sm:w-48 lg:h-60 lg:w-60 lg:h-72 lg:w-72" />
-          <div className="absolute -bottom-20 -left-12 h-36 w-36 rounded-full bg-foreground/[0.04] blur-3xl sm:-bottom-24 sm:-left-16 sm:h-48 sm:w-48 lg:h-56 lg:w-56 lg:h-64 lg:w-64" />
-          <div className="absolute left-1/2 top-1/3 h-28 w-28 -translate-x-1/2 rounded-full bg-muted/25 blur-3xl sm:h-32 sm:w-32 lg:h-40 lg:w-40 lg:h-48 lg:w-48" />
+          <div className="absolute -right-16 -top-12 h-36 w-36 rounded-full bg-foreground/[0.05] blur-3xl sm:-right-20 sm:-top-16 sm:h-48 sm:w-48 lg:h-60 lg:w-60 lg:h-72 lg:w-72" />
+          <div className="absolute -bottom-20 -left-12 h-36 w-36 rounded-full bg-foreground/[0.07] blur-3xl sm:-bottom-24 sm:-left-16 sm:h-48 sm:w-48 lg:h-56 lg:w-56 lg:h-64 lg:w-64" />
+          <div className="absolute left-1/2 top-1/3 h-28 w-28 -translate-x-1/2 rounded-full bg-foreground/[0.04] blur-3xl sm:h-32 sm:w-32 lg:h-40 lg:w-40 lg:h-48 lg:w-48" />
         </motion.div>
 
         <motion.div
@@ -226,9 +228,9 @@ export function PricingPlansSection({
           animate={
             reduceMotion
               ? { x: "-120%", opacity: 0 }
-              : { x: ["-120%", "220%"], opacity: [0, 0.55, 0] }
+              : { x: ["-120%", "220%"], opacity: [0, 0.4, 0] }
           }
-          transition={{ duration: 0.75, ease: TIER_EASE }}
+          transition={{ duration: 0.42, ease: TIER_EASE }}
           key={tierId}
         />
       </div>
@@ -362,7 +364,7 @@ export function PricingPlansSection({
                         "hover:-translate-y-0.5 hover:border-violet-300/50 hover:shadow-md hover:shadow-violet-100/15 dark:hover:border-violet-900/45 dark:hover:shadow-black/25",
                       )
                     : cn(
-                        "border-border/70 bg-gradient-to-b from-card/98 to-muted/30 backdrop-blur-[2px]",
+                        "border-border/70 bg-gradient-to-b from-card/95 to-foreground/[0.045] backdrop-blur-[2px]",
                         "dark:border-border/55 dark:from-card/98 dark:to-muted/15",
                         "hover:-translate-y-0.5 hover:border-foreground/15 hover:shadow-md hover:shadow-black/[0.07] dark:hover:border-foreground/20 dark:hover:shadow-black/30",
                       ),

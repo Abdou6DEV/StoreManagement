@@ -661,6 +661,8 @@
     "copyright": "© 2026 Reda Tech. Tous droits réservés.",
     "devLogIn": "Dev : connexion admin principal",
     "devLogInHint": "Build de développement uniquement : ouvre une session comme le premier utilisateur ADMIN en base (sans mot de passe).",
+    "devOpenWelcome": "Dev : ouvrir la page d'accueil",
+    "devOpenWelcomeHint": "Build de développement uniquement : ouvre la page d'accueil / onboarding sans se connecter.",
     "devLogInFailed": "Échec de la connexion dev",
     "createAdminTitle": "Créer le compte administrateur",
     "createAdminSubtitle": "Choisissez le nom d'utilisateur et le mot de passe de l'administrateur principal. Vous pourrez ajouter d'autres comptes ensuite.",
@@ -997,7 +999,9 @@
           "tagline": "Tous les outils Premium avec facturation mensuelle flexible.",
           "feature1": "Tout le Standard Mensuel",
           "feature2": "Assistant boutique REDA AI",
-          "feature3": "Scanner de reçus + sauvegarde cloud en ligne"
+          "feature3": "Scanner de reçus",
+          "feature4": "Recherche de photos produits",
+          "feature5": "Sauvegarde cloud en ligne"
         },
         "yearly": {
           "name": "Annuelle",
@@ -3268,12 +3272,38 @@
         }
       }
     },
+    "premium": {
+      "title": "Travaillez plus intelligemment avec REDA AI",
+      "subtitle": "Premium ajoute un assistant IA, le scan de reçus, la recherche de photos produits et la sauvegarde cloud — en plus du POS complet.",
+      "trialNote": "Les fonctionnalités Premium nécessitent une licence payante et ne sont pas disponibles pendant l’essai gratuit de 7 jours.",
+      "seePlans": "Voir les offres Premium",
+      "features": {
+        "assistant": {
+          "title": "Assistant boutique REDA AI",
+          "description": "Posez des questions sur les ventes, le stock, les bénéfices et les alertes — directement dans l’application.",
+          "example": "Exemple : « Combien ai-je vendu aujourd’hui ? »"
+        },
+        "receiptScan": {
+          "title": "Scan de reçus",
+          "description": "Photographiez un bon de livraison fournisseur et laissez REDA AI extraire les produits pour le stock."
+        },
+        "findImage": {
+          "title": "Recherche de photos produits",
+          "description": "REDA AI cherche des images produits sur le web lors de l’ajout ou la modification d’articles."
+        },
+        "cloudBackup": {
+          "title": "Sauvegarde cloud et restauration",
+          "description": "Envoyez vos sauvegardes en ligne et restaurez votre boutique sur un nouvel ordinateur."
+        }
+      }
+    },
     "sectionNav": {
       "ariaLabel": "Sections de la page d’accueil",
       "overview": "Aperçu",
       "getStarted": "Commencer",
       "download": "Télécharger",
       "tutorials": "Tutoriels",
+      "premium": "Nouveauté",
       "keyFeatures": "Fonctionnalités clés",
       "platform": "Sur cet ordinateur",
       "technical": "Fonctionnalités techniques",

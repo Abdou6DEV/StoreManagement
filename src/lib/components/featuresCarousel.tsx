@@ -4,6 +4,8 @@ import type { AboutFeatureDef } from "../about/featureDefinitions";
 import { cn } from "../utils";
 
 const DEFAULT_AUTO_ADVANCE_MS = 6500;
+/** Tailwind `md` — below this, show one full-width feature (readable copy). */
+const DESKTOP_CAROUSEL_MQ = "(min-width: 768px)";
 
 export type FeaturesCarouselProps = {
   items: AboutFeatureDef[];
@@ -25,6 +27,7 @@ export function FeaturesCarousel({
   const [autoplayEpoch, setAutoplayEpoch] = useState(0);
   const [chargeProgress, setChargeProgress] = useState(0);
   const [reduceMotion, setReduceMotion] = useState(false);
+  const [perView, setPerView] = useState(1);
   const [slideShiftPx, setSlideShiftPx] = useState(0);
   const viewportRef = useRef<HTMLDivElement>(null);
   const chargeElapsedRef = useRef(0);
@@ -39,19 +42,29 @@ export function FeaturesCarousel({
     if (!viewport || count === 0) return;
 
     const viewportWidth = viewport.offsetWidth;
-    const perView = 3;
     const slideWidth = viewportWidth / perView;
-    const shift = slideWidth - index * slideWidth;
+    // 3-up: center active in the middle slot. 1-up: full-bleed active card.
+    const shift =
+      perView === 1 ? -index * slideWidth : slideWidth - index * slideWidth;
 
     setSlideShiftPx(isRTL ? -shift : shift);
-  }, [count, index, isRTL]);
+  }, [count, index, isRTL, perView]);
 
   useEffect(() => {
-    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const update = () => setReduceMotion(mq.matches);
-    update();
-    mq.addEventListener("change", update);
-    return () => mq.removeEventListener("change", update);
+    const mqReduce = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const mqDesktop = window.matchMedia(DESKTOP_CAROUSEL_MQ);
+
+    const updateReduce = () => setReduceMotion(mqReduce.matches);
+    const updatePerView = () => setPerView(mqDesktop.matches ? 3 : 1);
+
+    updateReduce();
+    updatePerView();
+    mqReduce.addEventListener("change", updateReduce);
+    mqDesktop.addEventListener("change", updatePerView);
+    return () => {
+      mqReduce.removeEventListener("change", updateReduce);
+      mqDesktop.removeEventListener("change", updatePerView);
+    };
   }, []);
 
   useEffect(() => {
@@ -131,6 +144,7 @@ export function FeaturesCarousel({
   };
 
   const tabListLabel = tabListAriaLabel ?? t("about.features.title", "Key Features");
+  const singleSlide = perView === 1;
 
   return (
     <div className={cn("mx-auto w-full max-w-6xl", className)}>
@@ -146,23 +160,31 @@ export function FeaturesCarousel({
             const Icon = def.icon;
             const isActive = featureIndex === index;
             const goToFeature = () => selectFeature(featureIndex);
+            const isPremium = Boolean(def.premium);
 
             return (
               <article
                 key={def.titleKey}
                 className={cn(
-                  "flex w-1/3 shrink-0 flex-col items-center px-2 text-center transition-all duration-500 ease-out motion-reduce:transition-none sm:px-3 lg:px-4",
-                  isActive ? "scale-100 opacity-100" : "scale-90 opacity-40",
-                  !isActive && count > 1 && "cursor-pointer hover:opacity-55",
+                  "flex shrink-0 flex-col items-center text-center transition-all duration-500 ease-out motion-reduce:transition-none",
+                  singleSlide
+                    ? "w-full px-4 sm:px-6"
+                    : "w-1/3 px-2 sm:px-3 lg:px-4",
+                  isActive
+                    ? "scale-100 opacity-100"
+                    : singleSlide
+                      ? "scale-100 opacity-0"
+                      : "scale-90 opacity-40",
+                  !isActive && count > 1 && !singleSlide && "cursor-pointer hover:opacity-55",
                 )}
                 aria-hidden={!isActive}
                 onMouseEnter={isActive ? () => setActiveFeatureHold(true) : undefined}
                 onMouseLeave={isActive ? () => setActiveFeatureHold(false) : undefined}
                 onFocus={isActive ? () => setActiveFeatureHold(true) : undefined}
                 onBlur={isActive ? () => setActiveFeatureHold(false) : undefined}
-                onClick={!isActive && count > 1 ? goToFeature : undefined}
+                onClick={!isActive && count > 1 && !singleSlide ? goToFeature : undefined}
                 onKeyDown={
-                  !isActive && count > 1
+                  !isActive && count > 1 && !singleSlide
                     ? (e) => {
                         if (e.key === "Enter" || e.key === " ") {
                           e.preventDefault();
@@ -171,13 +193,31 @@ export function FeaturesCarousel({
                       }
                     : undefined
                 }
-                role={!isActive && count > 1 ? "button" : undefined}
-                tabIndex={!isActive && count > 1 ? 0 : undefined}
+                role={!isActive && count > 1 && !singleSlide ? "button" : undefined}
+                tabIndex={!isActive && count > 1 && !singleSlide ? 0 : undefined}
               >
+                {isPremium ? (
+                  <span
+                    className={cn(
+                      "mb-2 inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] sm:text-[11px]",
+                      isActive
+                        ? "border-violet-400/45 bg-violet-500/15 text-violet-700 dark:border-violet-400/35 dark:text-violet-200"
+                        : "border-violet-400/25 bg-violet-500/10 text-violet-600/80 dark:text-violet-300/75",
+                    )}
+                  >
+                    {t("pricing.premiumBadge", "Premium")}
+                  </span>
+                ) : null}
                 <div
                   className={cn(
                     "mb-3 flex h-12 w-12 items-center justify-center rounded-2xl transition-colors duration-500 sm:mb-4 sm:h-14 sm:w-14 lg:mb-5",
-                    isActive ? "bg-primary/10 text-primary" : "bg-muted/50 text-muted-foreground",
+                    isPremium
+                      ? isActive
+                        ? "bg-violet-500/15 text-violet-700 dark:text-violet-300"
+                        : "bg-violet-500/10 text-violet-600/70 dark:text-violet-400/65"
+                      : isActive
+                        ? "bg-primary/10 text-primary"
+                        : "bg-muted/50 text-muted-foreground",
                   )}
                 >
                   <Icon className="h-6 w-6 sm:h-7 sm:w-7" aria-hidden />
@@ -192,7 +232,10 @@ export function FeaturesCarousel({
                 </h3>
                 <p
                   className={cn(
-                    "mt-1.5 max-w-sm text-xs leading-relaxed transition-colors duration-500 sm:mt-2 sm:text-sm lg:mt-3 lg:text-base",
+                    "mt-1.5 leading-relaxed transition-colors duration-500 sm:mt-2 lg:mt-3",
+                    singleSlide
+                      ? "max-w-md text-sm sm:text-base"
+                      : "max-w-sm text-xs sm:text-sm lg:text-base",
                     isActive ? "text-muted-foreground" : "text-muted-foreground/70",
                   )}
                 >
@@ -203,7 +246,8 @@ export function FeaturesCarousel({
           })}
         </div>
       </div>
-      <div className="mt-1.5 flex flex-wrap items-center justify-center gap-1.5 sm:gap-2"
+      <div
+        className="mt-1.5 flex flex-wrap items-center justify-center gap-1.5 sm:gap-2"
         role="tablist"
         aria-label={tabListLabel}
       >

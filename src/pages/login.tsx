@@ -15,6 +15,7 @@ import {
   DropdownMenuTrigger,
 } from "../lib/components/dropdownMenu";
 import { useTranslation } from "react-i18next";
+import { DEV_OPEN_WELCOME_EVENT } from "../lib/onboarding/constants";
 import { LOGO_ICON, LOGO_ICON_DARK } from "../lib/assets";
 import { AnimatedHeight } from "../lib/components/animatedHeight";
 
@@ -240,6 +241,10 @@ export default function Login() {
 
   // Production builds: Vite sets DEV=false, PROD=true — button and IPC path are inert.
   const showDevLoginButton = import.meta.env.DEV && !import.meta.env.PROD;
+
+  const handleDevOpenWelcome = () => {
+    window.dispatchEvent(new CustomEvent(DEV_OPEN_WELCOME_EVENT));
+  };
 
   const handleDevLogin = async () => {
     setError(null);
@@ -854,7 +859,7 @@ export default function Login() {
             {showDevLoginButton &&
             !useActivationKey &&
             initialAdminSetupRequired === false ? (
-              <div className="pt-4 border-t border-border">
+              <div className="pt-4 border-t border-border space-y-2">
                 <button
                   type="button"
                   onClick={handleDevLogin}
@@ -863,6 +868,15 @@ export default function Login() {
                   className="w-full text-xs font-medium text-amber-700/90 dark:text-amber-400/90 py-2.5 px-3 rounded-lg border border-dashed border-amber-600/35 dark:border-amber-500/35 bg-amber-500/5 hover:bg-amber-500/10 transition-colors disabled:opacity-50 disabled:pointer-events-none"
                 >
                   {t("login.devLogIn")}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDevOpenWelcome}
+                  disabled={isLoading || successPhase !== "idle"}
+                  title={t("login.devOpenWelcomeHint")}
+                  className="w-full text-xs font-medium text-amber-700/90 dark:text-amber-400/90 py-2.5 px-3 rounded-lg border border-dashed border-amber-600/35 dark:border-amber-500/35 bg-amber-500/5 hover:bg-amber-500/10 transition-colors disabled:opacity-50 disabled:pointer-events-none"
+                >
+                  {t("login.devOpenWelcome")}
                 </button>
               </div>
             ) : null}

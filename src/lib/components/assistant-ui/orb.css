@@ -47,44 +47,7 @@
     background-clip: text;
     color: transparent;
   
-    animation:
-      orb-ai-gradient 5s ease-in-out infinite,
-      orb-ai-hue 9s linear infinite;
-  
-  }
-  
-  .orb-ai-text::after {
-    content: "AI";
-  
-    position: absolute;
-    inset: 0;
-  
-    font: inherit;
-    letter-spacing: inherit;
-  
-    background: linear-gradient(
-      135deg,
-      #a855f7,
-      #6366f1,
-      #38bdf8,
-      #a855f7
-    );
-  
-    background-size: 300% 300%;
-  
-    -webkit-background-clip: text;
-    background-clip: text;
-  
-    color: transparent;
-  
-    opacity: 0.3;
-  
-    filter: blur(0.12em);
-  
-    z-index: -1;
-  
-    animation:
-      orb-ai-gradient 5s ease-in-out infinite reverse;
+    animation: orb-ai-gradient 5s ease-in-out infinite;
   }
   
   @keyframes orb-ai-gradient {
@@ -106,31 +69,5 @@
   
     100% {
       background-position: 0% 50%;
-    }
-  }
-  
-  @keyframes orb-ai-hue {
-    0% {
-      filter:
-        drop-shadow(0 0 5px rgba(139, 92, 246, 0.6))
-        drop-shadow(0 0 10px rgba(96, 165, 250, 0.3));
-    }
-  
-    33% {
-      filter:
-        drop-shadow(0 0 6px rgba(96, 165, 250, 0.65))
-        drop-shadow(0 0 12px rgba(56, 189, 248, 0.35));
-    }
-  
-    66% {
-      filter:
-        drop-shadow(0 0 6px rgba(168, 85, 247, 0.65))
-        drop-shadow(0 0 12px rgba(129, 140, 248, 0.35));
-    }
-  
-    100% {
-      filter:
-        drop-shadow(0 0 5px rgba(139, 92, 246, 0.6))
-        drop-shadow(0 0 10px rgba(96, 165, 250, 0.3));
     }
   }

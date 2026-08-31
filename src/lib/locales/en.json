@@ -1050,6 +1050,8 @@
     "devLogIn": "Dev: log in as primary admin",
     "devLogInHint": "Development build only: opens a session as the first ADMIN user in your database (no password).",
     "devLogInFailed": "Dev login failed",
+    "devOpenWelcome": "Dev: open welcome page",
+    "devOpenWelcomeHint": "Development build only: opens the welcome / onboarding page without signing in.",
     "createAdminTitle": "Create administrator account",
     "createAdminSubtitle": "Choose the username and password for the main administrator. You can add more accounts later.",
     "confirmPassword": "Confirm password",
@@ -1384,7 +1386,9 @@
           "tagline": "All Premium tools with flexible monthly billing.",
           "feature1": "Everything in Standard Monthly",
           "feature2": "REDA AI shop assistant",
-          "feature3": "Receipt scanner + online cloud backup"
+          "feature3": "Receipt scanner",
+          "feature4": "Product photo search",
+          "feature5": "Online cloud backup"
         },
         "yearly": {
           "name": "Yearly",
@@ -3353,12 +3357,38 @@
         }
       }
     },
+    "premium": {
+      "title": "Work smarter with REDA AI",
+      "subtitle": "Premium adds an AI shop assistant, receipt scanning, product photo search, and cloud backup — on top of the full desktop POS.",
+      "trialNote": "Premium features require a paid license and are not available during the free 7-day trial.",
+      "seePlans": "See Premium plans",
+      "features": {
+        "assistant": {
+          "title": "REDA AI shop assistant",
+          "description": "Ask about sales, stock, profit, and alerts in plain language — right inside the app.",
+          "example": "Example: “How much did I sell today?”"
+        },
+        "receiptScan": {
+          "title": "Receipt scanner",
+          "description": "Photograph a supplier delivery note and let REDA AI extract products to add to stock."
+        },
+        "findImage": {
+          "title": "Product photo search",
+          "description": "REDA AI searches the web for product images when you add or edit items in stock."
+        },
+        "cloudBackup": {
+          "title": "Cloud backup & restore",
+          "description": "Upload backups online and restore your shop on a new computer when you replace a counter PC."
+        }
+      }
+    },
     "sectionNav": {
       "ariaLabel": "Welcome page sections",
       "overview": "Overview",
       "getStarted": "Get started",
       "download": "Download",
       "tutorials": "Tutorials",
+      "premium": "What's new",
       "keyFeatures": "Key features",
       "platform": "On your computer",
       "technical": "Technical features",

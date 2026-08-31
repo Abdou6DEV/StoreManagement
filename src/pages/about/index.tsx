@@ -8,6 +8,7 @@ import {
   ABOUT_TECHNICAL_FEATURE_DEFS,
 } from "../../lib/about/featureDefinitions";
 import { ABOUT_PRIVACY_POINT_KEYS, ABOUT_TERMS_POINT_KEYS } from "../../lib/about/legalCopy";
+import { cn } from "../../lib/utils";
 
 export default function AboutPage() {
   const { t } = useTranslation();
@@ -33,6 +34,7 @@ export default function AboutPage() {
     icon: def.icon,
     title: t(def.titleKey),
     description: t(def.descKey),
+    premium: Boolean(def.premium),
   }));
 
   const technicalFeatures = ABOUT_TECHNICAL_FEATURE_DEFS.map((def) => ({
@@ -108,10 +110,27 @@ export default function AboutPage() {
             {features.map((feature, index) => (
               <div key={index} className="bg-muted/30 rounded-xl p-6 hover:bg-muted/50 transition-colors duration-300">
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                    <feature.icon className="w-5 h-5 text-primary dark:text-primary" />
+                  <div
+                    className={cn(
+                      "w-10 h-10 rounded-lg flex items-center justify-center",
+                      feature.premium ? "bg-violet-500/15 text-violet-700 dark:text-violet-300" : "bg-primary/10",
+                    )}
+                  >
+                    <feature.icon
+                      className={cn(
+                        "w-5 h-5",
+                        feature.premium ? "text-violet-700 dark:text-violet-300" : "text-primary dark:text-primary",
+                      )}
+                    />
                   </div>
-                  <h3 className="font-semibold text-foreground">{feature.title}</h3>
+                  <div className="min-w-0 flex-1">
+                    {feature.premium ? (
+                      <span className="mb-1 inline-flex items-center rounded-full border border-violet-400/40 bg-violet-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-violet-700 dark:text-violet-200">
+                        {t("pricing.premiumBadge", "Premium")}
+                      </span>
+                    ) : null}
+                    <h3 className="font-semibold text-foreground">{feature.title}</h3>
+                  </div>
                 </div>
                 <p className="text-sm text-muted-foreground">{feature.description}</p>
               </div>

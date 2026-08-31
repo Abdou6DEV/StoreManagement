@@ -29,6 +29,7 @@ import { useAuth } from "../lib/contexts/authContext";
 import { useLicense } from "../lib/contexts/licenseContext";
 import { BadgeMessageProvider } from "../lib/contexts/badgeMessageContext";
 import {
+  DEV_OPEN_WELCOME_EVENT,
   INITIAL_WELCOME_DONE_EVENT,
   ONBOARDING_INITIAL_WELCOME_DONE_KEY,
   ONLINE_CUSTOMER_ID_OPTION_KEY,
@@ -119,6 +120,13 @@ export default function App() {
     const leaveWelcomeOnlyShell = () => setInitialWelcome("hide");
     window.addEventListener(INITIAL_WELCOME_DONE_EVENT, leaveWelcomeOnlyShell);
     return () => window.removeEventListener(INITIAL_WELCOME_DONE_EVENT, leaveWelcomeOnlyShell);
+  }, []);
+
+  useEffect(() => {
+    if (!import.meta.env.DEV || import.meta.env.PROD) return;
+    const openWelcomeShell = () => setInitialWelcome("show");
+    window.addEventListener(DEV_OPEN_WELCOME_EVENT, openWelcomeShell);
+    return () => window.removeEventListener(DEV_OPEN_WELCOME_EVENT, openWelcomeShell);
   }, []);
 
   useEffect(() => {

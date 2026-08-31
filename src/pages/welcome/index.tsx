@@ -45,7 +45,7 @@ import { useToast } from "../../lib/contexts/toastContext";
 import { FeaturesCarousel } from "../../lib/components/featuresCarousel";
 import { WelcomeSectionNav } from "../../lib/components/welcomeSectionNav";
 import { WelcomeJourneyNav } from "../../lib/components/welcomeJourneyNav";
-import { PricingPlansSection } from "../../lib/components/pricingPlansSection";
+import { PricingPlansSection, type PricingTierId } from "../../lib/components/pricingPlansSection";
 import {
   INITIAL_WELCOME_DONE_EVENT,
   ONBOARDING_INITIAL_WELCOME_DONE_KEY,
@@ -62,6 +62,7 @@ import type { CloudBackupTransferProgressPayload } from "../../electron/types/cl
 import { CloudBackupTransferProgressBar } from "../../lib/components/cloudBackupTransferProgress";
 import { AnimatedHeight } from "../../lib/components/animatedHeight";
 import { WelcomeMarketingDownloadCard } from "./WelcomeMarketingDownloadCard";
+import { WelcomePremiumSection } from "./WelcomePremiumSection";
 import { WelcomeTutorialCard } from "./WelcomeTutorialCard";
 import { WELCOME_TUTORIALS } from "../../lib/welcome/welcomeTutorials";
 
@@ -87,6 +88,11 @@ const WELCOME_TECHNOLOGY_BRIDGE_HIGHLIGHTS = [
 const WELCOME_SECTION_NAV_ITEMS = [
   { id: "get-started", labelKey: "welcome.sectionNav.getStarted", defaultLabel: "Get started" },
   { id: "welcome-tutorials", labelKey: "welcome.sectionNav.tutorials", defaultLabel: "Tutorials" },
+  {
+    id: "welcome-premium",
+    labelKey: "welcome.sectionNav.premium",
+    defaultLabel: "What's new",
+  },
   { id: "welcome-key-features", labelKey: "welcome.sectionNav.keyFeatures", defaultLabel: "Key features" },
   {
     id: "welcome-technical-features",
@@ -103,6 +109,8 @@ type WelcomeSectionId = (typeof WELCOME_SECTION_NAV_ITEMS)[number]["id"];
 const WELCOME_SECTION_SCROLL_MARGIN = "scroll-mt-20 lg:scroll-mt-24";
 const WELCOME_SECTION_NAV_ANCHOR_PX = 96;
 const WELCOME_PRICING_SCROLL_EXTRA_UP_PX = 20;
+/** Nudge Premium section slightly up so the orb/hero sits under the top nav, not clipped. */
+const WELCOME_PREMIUM_SCROLL_EXTRA_UP_PX = 24;
 const WELCOME_TECHNICAL_SCROLL_EXTRA_DOWN_PX = 110;
 const WELCOME_LEGAL_SCROLL_EXTRA_DOWN_PX = 90;
 
@@ -120,18 +128,19 @@ const SEQ = {
   card: 5,
   tutorialsIntro: 6,
   tutorialsGrid: 7,
-  keyIntro: 8,
-  keyCarousel: 9,
-  techIntro: 10,
-  techTiles: 11,
-  techCarousel: 12,
-  pricing: 13,
-  devCard: 14,
-  legal: 15,
-  footer: 16,
+  premiumSection: 8,
+  keyIntro: 9,
+  keyCarousel: 10,
+  techIntro: 11,
+  techTiles: 12,
+  techCarousel: 13,
+  pricing: 14,
+  devCard: 15,
+  legal: 16,
+  footer: 17,
 } as const;
 
-const INTRO_STEP_COUNT = 17;
+const INTRO_STEP_COUNT = 18;
 const SEQ_ANIM_S = 0.38;
 /** Delay before the get-started card green glow fades in (after the panel is on screen). */
 const WELCOME_GLOW_DELAY_S = 0.7;
@@ -393,6 +402,7 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
   const [activeNavSectionId, setActiveNavSectionId] = useState<WelcomeSectionId>(
     WELCOME_SECTION_NAV_ITEMS[0].id,
   );
+  const [pricingTier, setPricingTier] = useState<PricingTierId>("standard");
   const [reduceMotion, setReduceMotion] = useState(false);
   const [introStep, setIntroStep] = useState(0);
   const [devicePrecheck, setDevicePrecheck] = useState<WelcomeDevicePrecheck>(
@@ -415,6 +425,13 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
     return () => {
       window.removeEventListener("online", goOnline);
       window.removeEventListener("offline", goOffline);
+    };
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.classList.add("welcome-page-scroll");
+    return () => {
+      document.documentElement.classList.remove("welcome-page-scroll");
     };
   }, []);
 
@@ -544,11 +561,9 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
       if (!element) return;
 
       if (sectionId === "get-started") {
-        const rect = element.getBoundingClientRect();
-        const top = window.scrollY + rect.top - WELCOME_SECTION_NAV_ANCHOR_PX;
-
+        // Full page top — get-started lives in the hero; anchoring the card leaves the logo/title clipped.
         window.scrollTo({
-          top: Math.max(0, top),
+          top: 0,
           behavior: reduceMotion ? "auto" : "smooth",
         });
         return;
@@ -562,6 +577,22 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
           rect.height / 2 -
           window.innerHeight / 2 -
           WELCOME_PRICING_SCROLL_EXTRA_UP_PX;
+
+        window.scrollTo({
+          top: Math.max(0, top),
+          behavior: reduceMotion ? "auto" : "smooth",
+        });
+        return;
+      }
+
+      if (sectionId === "welcome-premium") {
+        const rect = element.getBoundingClientRect();
+        const top =
+          window.scrollY +
+          rect.top +
+          rect.height / 2 -
+          window.innerHeight / 2 -
+          WELCOME_PREMIUM_SCROLL_EXTRA_UP_PX;
 
         window.scrollTo({
           top: Math.max(0, top),
@@ -1142,7 +1173,7 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
   return (
     <div
       dir={isRTL ? "rtl" : "ltr"}
-      className="welcome-intro-scope min-h-screen bg-background pb-16 text-foreground xl:pt-24"
+      className="welcome-intro-scope min-h-screen overflow-x-hidden bg-background pb-16 text-foreground xl:pt-24"
       style={{ direction: isRTL ? "rtl" : "ltr" }}
     >
       <style>{`
@@ -1250,7 +1281,7 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
         </>
       ) : null}
       <div className={cn("fixed top-4 z-50", isRTL ? "left-4" : "right-4")}>
-        <DropdownMenu onOpenChange={setDropdownOpen}>
+        <DropdownMenu modal={false} onOpenChange={setDropdownOpen}>
           <DropdownMenuTrigger asChild>
             <button
               type="button"
@@ -1869,6 +1900,35 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
       </section>
 
       <section
+        id="welcome-premium"
+        className={cn(
+          "relative overflow-hidden",
+          introStep >= SEQ.premiumSection && "shadow-[inset_0_1px_0_0_rgba(167,139,250,0.12)]",
+          WELCOME_SECTION_SCROLL_MARGIN,
+        )}
+      >
+        <SequentialIntroSlot
+          stepIndex={SEQ.premiumSection}
+          introStep={introStep}
+          reduceMotion={reduceMotion}
+          isRTL={isRTL}
+          kind="fadeUp"
+          onStepComplete={advanceIntro}
+          defer
+        >
+          <WelcomePremiumSection
+            isRTL={isRTL}
+            reduceMotion={reduceMotion}
+            nebulaActive={introStep >= SEQ.premiumSection}
+            onScrollToPricing={() => {
+              setPricingTier("premium");
+              scrollToWelcomeSection("welcome-pricing");
+            }}
+          />
+        </SequentialIntroSlot>
+      </section>
+
+      <section
         id="welcome-key-features"
         className={cn("mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-16", WELCOME_SECTION_SCROLL_MARGIN)}
       >
@@ -1992,7 +2052,11 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
           defer
           className="mx-auto max-w-6xl px-4 pb-14 pt-4 sm:px-6 sm:pb-16 sm:pt-6 short:pb-8 short:pt-4 short:sm:pb-10 short:sm:pt-5"
         >
-          <PricingPlansSection id="welcome-pricing" className="!mb-0" />
+          <PricingPlansSection
+            id="welcome-pricing"
+            className="!mb-0"
+            initialTier={pricingTier}
+          />
         </SequentialIntroSlot>
       </section>
 
