@@ -25,7 +25,7 @@
     "suggestions": {
       "sales": "Combien ai-je vendu aujourd’hui ?",
       "stock": "Quels produits ont un stock faible ?",
-      "profit": "Quel est mon bénéfice aujourd’hui ?"
+      "profit": "Quel est mon bénéfice ce mois-ci ?"
     },
     "placeholder": "Envoyez un message…",
     "messageInput": "Saisie du message",
@@ -2414,6 +2414,8 @@
     "cashierSalesHistoryDaysDesc": "Nombre de jours précédents que la page de caisse peut récupérer les ventes (affecte les performances). Ne s'applique que lorsque l'historique est activé.",
     "enableCompletedServicesBadge": "Activer le Badge des Services Terminés",
     "enableCompletedServicesBadgeDesc": "Afficher le badge de notification sur l'élément de menu caisse lorsqu'il y a des services terminés",
+    "enableProductCardImageSlide": "Glissement des images des cartes produit",
+    "enableProductCardImageSlideDesc": "Lorsque activé, les cartes produit avec image masquent les détails et les affichent au survol. Lorsque désactivé, toutes les cartes affichent toujours les détails comme les cartes avec avatar.",
     "dueSoonThreshold": "Seuil d'échéance proche (Jours)",
     "dueSoonThresholdDesc": "Nombre de jours avant la date d'échéance pour considérer un paiement comme 'à échéance proche'",
     "days": "jours",

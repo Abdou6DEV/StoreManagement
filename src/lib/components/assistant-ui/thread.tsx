@@ -245,7 +245,7 @@ const ThreadSuggestions: FC = () => {
   const suggestions = [
     t("ai.suggestions.sales", "How much did I sell today?"),
     t("ai.suggestions.stock", "Which products are low on stock?"),
-    t("ai.suggestions.profit", "What’s my profit today?"),
+    t("ai.suggestions.profit", "What's my profit this month?"),
   ];
 
   return (

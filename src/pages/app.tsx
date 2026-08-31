@@ -13,6 +13,7 @@ import { DueSoonBillsProvider } from "../lib/contexts/dueSoonBillsContext";
 import { OverdueServicesProvider } from "../lib/contexts/overdueServicesContext";
 import { DueSoonServicesProvider } from "../lib/contexts/dueSoonServicesContext";
 import { CashierHistoryProvider } from "../lib/contexts/cashierHistoryContext";
+import { ProductCardImageSlideProvider } from "../lib/contexts/productCardImageSlideContext";
 import { CompletedServicesProvider } from "../lib/contexts/completedServicesContext";
 import { useTranslation } from "react-i18next";
 import { ToastProvider } from "../lib/contexts/toastContext";
@@ -257,6 +258,7 @@ export default function App() {
                           <OverdueServicesProvider>
                           <DueSoonServicesProvider>
                           <CashierHistoryProvider>
+                          <ProductCardImageSlideProvider>
                           <CompletedServicesProvider>
                         <Layout>
                         <ScrollToTop />
@@ -359,6 +361,7 @@ export default function App() {
                         </Routes>
                         </Layout>
                         </CompletedServicesProvider>
+                        </ProductCardImageSlideProvider>
                         </CashierHistoryProvider>
                         </DueSoonServicesProvider>
                         </OverdueServicesProvider>

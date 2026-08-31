@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 import { Calendar, TrendingUp, TrendingDown } from "lucide-react";
 import type { SelectedPeriod } from "../../../../types";
 import { formatCurrency } from "../generalHistory/generalHistoryUtils";
+import { AnimatedNumber } from "../../../../lib/components/animatedNumber";
 
 /** Same display rules as the main period title (localized date / month / year). */
 function formatPeriodDisplayName(period: SelectedPeriod): string {
@@ -155,9 +156,11 @@ export default function DetailsHistoryHeader({
             {t("dashboard.revenue")}
           </span>
           <div className="flex flex-wrap items-baseline justify-center gap-x-2 gap-y-0">
-            <span className="text-3xl font-bold text-primary leading-none">
-              {formatCurrency(safeSalesTotal)}
-            </span>
+            <AnimatedNumber
+              value={safeSalesTotal}
+              className="text-3xl font-bold text-primary leading-none"
+              format={(amount) => formatCurrency(amount)}
+            />
             <span className="text-sm text-muted-foreground whitespace-nowrap leading-none">
               {salesCount.toLocaleString()} {t("history.sales")}
             </span>
@@ -173,9 +176,11 @@ export default function DetailsHistoryHeader({
           <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
             {t("dashboard.profit")}
           </span>
-          <span className="text-3xl font-bold text-green-600 dark:text-green-400">
-            {formatCurrency(safeProfit)}
-          </span>
+          <AnimatedNumber
+            value={safeProfit}
+            className="text-3xl font-bold text-green-600 dark:text-green-400"
+            format={(amount) => formatCurrency(amount)}
+          />
           <GrowthBadge
             rate={profitGrowthRate}
             unavailable={!growthBaselineAvailable}
@@ -188,9 +193,11 @@ export default function DetailsHistoryHeader({
             {t("history.totalBillsPayments")}
           </span>
           <div className="flex flex-wrap items-baseline justify-center gap-x-2 gap-y-0">
-            <span className="text-3xl font-bold text-purple-600 dark:text-purple-400 leading-none">
-              {formatCurrency(safeBillsTotal)}
-            </span>
+            <AnimatedNumber
+              value={safeBillsTotal}
+              className="text-3xl font-bold text-purple-600 dark:text-purple-400 leading-none"
+              format={(amount) => formatCurrency(amount)}
+            />
             <span className="text-sm text-muted-foreground whitespace-nowrap leading-none">
               {billsPaymentsCount.toLocaleString()} {t("history.payments")}
             </span>
@@ -202,9 +209,11 @@ export default function DetailsHistoryHeader({
             {t("history.totalPurchases")}
           </span>
           <div className="flex flex-wrap items-baseline justify-center gap-x-2 gap-y-0">
-            <span className="text-3xl font-bold text-orange-600 dark:text-orange-400 leading-none">
-              {formatCurrency(safePurchasesTotal)}
-            </span>
+            <AnimatedNumber
+              value={safePurchasesTotal}
+              className="text-3xl font-bold text-orange-600 dark:text-orange-400 leading-none"
+              format={(amount) => formatCurrency(amount)}
+            />
             <span className="text-sm text-muted-foreground whitespace-nowrap leading-none">
               {purchasesCount.toLocaleString()} {t("history.purchases")}
             </span>

@@ -12,6 +12,7 @@ import { Button } from "../../../../lib/components/button";
 import { useAuth } from "../../../../lib/contexts/authContext";
 import { useNavigate } from "react-router-dom";
 import { DashboardStaggerItem } from "../dashboardStagger";
+import { AnimatedNumber } from "../../../../lib/components/animatedNumber";
 
 function dateMatchesOverviewPeriod(
   period: "today" | "thisMonth" | "thisYear" | "overall",
@@ -216,6 +217,7 @@ export function ChartBarInteractive({ chartData, chartLoading }: ChartBarInterac
   }, [timePeriod, chartData.overall, i18n.language]);
 
   const formatCurrency = (amount: number) => `${amount.toLocaleString()} ${t("currency")}`;
+  const overviewNumbersReady = !dashboardLoading;
 
   const filterSaleByPeriod = React.useCallback(
     (createdAt: string | Date) => {
@@ -704,18 +706,24 @@ export function ChartBarInteractive({ chartData, chartLoading }: ChartBarInterac
             <span className="text-sm md:text-base font-medium text-muted-foreground uppercase tracking-wide leading-none">
               {t("dashboard.revenue")}
             </span>
-            <span className="text-3xl md:text-4xl font-bold tabular-nums text-primary leading-none">
-              {formatCurrency(overviewTotals.revenue)}
-            </span>
+            <AnimatedNumber
+              value={overviewNumbersReady ? overviewTotals.revenue : 0}
+              enabled={overviewNumbersReady}
+              className="text-3xl md:text-4xl font-bold tabular-nums text-primary leading-none"
+              format={(amount) => formatCurrency(amount)}
+            />
           </div>
 
           <div className="flex flex-col items-center gap-0.5 text-center">
             <span className="text-sm md:text-base font-medium text-muted-foreground uppercase tracking-wide leading-none">
               {profitLabel}
             </span>
-            <span className="text-3xl md:text-4xl font-bold tabular-nums text-green-600 leading-none">
-              {formatCurrency(adjustedProfit)}
-            </span>
+            <AnimatedNumber
+              value={overviewNumbersReady ? adjustedProfit : 0}
+              enabled={overviewNumbersReady}
+              className="text-3xl md:text-4xl font-bold tabular-nums text-green-600 leading-none"
+              format={(amount) => formatCurrency(amount)}
+            />
 
             {vsAverage.percentage > 0 && timePeriod !== "overall" && (
               <div
@@ -743,9 +751,12 @@ export function ChartBarInteractive({ chartData, chartLoading }: ChartBarInterac
             <span className="text-sm md:text-base font-medium text-muted-foreground uppercase tracking-wide leading-none">
               {t("dashboard.itemsSold")}
             </span>
-            <span className="text-3xl md:text-4xl font-bold tabular-nums text-orange-600 leading-none">
-              {overviewTotals.itemsSold.toLocaleString()}
-            </span>
+            <AnimatedNumber
+              value={overviewNumbersReady ? overviewTotals.itemsSold : 0}
+              enabled={overviewNumbersReady}
+              locale={i18n.language}
+              className="text-3xl md:text-4xl font-bold tabular-nums text-orange-600 leading-none"
+            />
           </div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-4">
@@ -753,17 +764,23 @@ export function ChartBarInteractive({ chartData, chartLoading }: ChartBarInterac
             <span className="text-sm md:text-base font-medium text-muted-foreground uppercase tracking-wide leading-none">
               {t("dashboard.billsAndExpenses")}
             </span>
-            <span className="text-3xl md:text-4xl font-bold tabular-nums text-purple-600 dark:text-purple-400 leading-none">
-              {formatCurrency(billPaymentsTotal)}
-            </span>
+            <AnimatedNumber
+              value={overviewNumbersReady ? billPaymentsTotal : 0}
+              enabled={overviewNumbersReady}
+              className="text-3xl md:text-4xl font-bold tabular-nums text-purple-600 dark:text-purple-400 leading-none"
+              format={(amount) => formatCurrency(amount)}
+            />
           </div>
           <div className="flex flex-col items-center gap-0.5 text-center">
             <span className="text-sm md:text-base font-medium text-muted-foreground uppercase tracking-wide leading-none">
               {t("history.purchases")}
             </span>
-            <span className="text-3xl md:text-4xl font-bold tabular-nums text-orange-600 dark:text-orange-400 leading-none">
-              {formatCurrency(overviewTotals.purchases)}
-            </span>
+            <AnimatedNumber
+              value={overviewNumbersReady ? overviewTotals.purchases : 0}
+              enabled={overviewNumbersReady}
+              className="text-3xl md:text-4xl font-bold tabular-nums text-orange-600 dark:text-orange-400 leading-none"
+              format={(amount) => formatCurrency(amount)}
+            />
           </div>
         </div>
         </div>

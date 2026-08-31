@@ -6,6 +6,7 @@ import { useRef, useEffect, useState, useMemo, memo, useCallback, Suspense, lazy
 import { ProductAvatar } from "../../../lib/components/productAvatar";
 import { ProductPhotoImage } from "../../../lib/components/productPhotoImage";
 import { useLowStock } from "../../../lib/contexts/lowStockContext";
+import { useProductCardImageSlide } from "../../../lib/contexts/productCardImageSlideContext";
 // Lazy load the ProductInfoModal to improve initial bundle size
 const ProductInfoModal = lazy(() => import("../../stock/components/productInfoModal").then(module => ({ default: module.ProductInfoModal })));
 
@@ -28,6 +29,7 @@ const ProductCard = memo(function ProductCard({
 }) {
   const { t } = useTranslation();
   const { lowStockThreshold } = useLowStock();
+  const { isEnabled: imageSlideEnabled } = useProductCardImageSlide();
   const nameRef = useRef<HTMLDivElement>(null);
   const [isTextTruncated, setIsTextTruncated] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
@@ -108,8 +110,8 @@ const ProductCard = memo(function ProductCard({
   }, [getCartQuantity, product.id]);
 
   const hasPhoto = Boolean(product.photo && !photoBroken);
-  const showInfoPanel = !hasPhoto || isInCartValue;
-  const showPriceOverlay = hasPhoto && !isInCartValue;
+  const showInfoPanel = !hasPhoto || isInCartValue || !imageSlideEnabled;
+  const showPriceOverlay = hasPhoto && !isInCartValue && imageSlideEnabled;
 
   const priceLine = (
     <span className="whitespace-nowrap text-sm font-semibold text-green-600">

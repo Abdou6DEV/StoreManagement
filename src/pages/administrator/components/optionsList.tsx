@@ -21,6 +21,7 @@ import {
   Square,
   ChevronDown,
   X,
+  Image,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -35,7 +36,7 @@ const OPTION_KEYS = [
   "enableDueSoonBillsBadge", "enableOverdueServicesBadge", "enableDueSoonServicesBadge",
   "dueSoonThresholdDays", "dueSoonBillsThresholdDays", "dueSoonServicesThresholdDays",
   "cashierSalesHistoryDays", "enableCashierHistory", "enableCompletedServicesBadge",
-  "categoriesRequiringInfo",
+  "categoriesRequiringInfo", "enableProductCardImageSlide",
 ] as const;
 
 export const OptionsList: React.FC = () => {
@@ -59,6 +60,7 @@ export const OptionsList: React.FC = () => {
   const [cashierSalesHistoryDays, setCashierSalesHistoryDays] = useState(7);
   const [enableCashierHistory, setEnableCashierHistory] = useState(true);
   const [enableCompletedServicesBadge, setEnableCompletedServicesBadge] = useState(true);
+  const [enableProductCardImageSlide, setEnableProductCardImageSlide] = useState(true);
   const [categoriesRequiringInfo, setCategoriesRequiringInfo] = useState<string[]>([]);
   const [allCategories, setAllCategories] = useState<Array<{name: string}>>([]);
   const [loading, setLoading] = useState(true);
@@ -82,10 +84,11 @@ export const OptionsList: React.FC = () => {
       window.api.database.options.get("cashierSalesHistoryDays"),
       window.api.database.options.get("enableCashierHistory"),
       window.api.database.options.get("enableCompletedServicesBadge"),
+      window.api.database.options.get("enableProductCardImageSlide"),
       window.api.database.options.get("categoriesRequiringInfo"),
       window.api.database.categories.getAll(),
     ])
-      .then(([lowStockVal, enableBadgeVal, enableOutOfStockBadgeVal, enableOverdueVal, enableDueSoonVal, enableOverdueBillsVal, enableDueSoonBillsVal, enableOverdueServicesVal, enableDueSoonServicesVal, dueSoonThresholdVal, dueSoonBillsThresholdVal, dueSoonServicesThresholdVal, cashierSalesHistoryDaysVal, enableCashierHistoryVal, enableCompletedServicesBadgeVal, categoriesRequiringInfoVal, categoriesData]) => {
+      .then(([lowStockVal, enableBadgeVal, enableOutOfStockBadgeVal, enableOverdueVal, enableDueSoonVal, enableOverdueBillsVal, enableDueSoonBillsVal, enableOverdueServicesVal, enableDueSoonServicesVal, dueSoonThresholdVal, dueSoonBillsThresholdVal, dueSoonServicesThresholdVal, cashierSalesHistoryDaysVal, enableCashierHistoryVal, enableCompletedServicesBadgeVal, enableProductCardImageSlideVal, categoriesRequiringInfoVal, categoriesData]) => {
         setLowStock(lowStockVal ? Number(lowStockVal) : 0);
         setEnableLowStockBadge(enableBadgeVal !== "false"); // Default to true if not set
         setEnableOutOfStockBadge(enableOutOfStockBadgeVal !== "false"); // Default to true if not set
@@ -101,6 +104,7 @@ export const OptionsList: React.FC = () => {
         setCashierSalesHistoryDays(cashierSalesHistoryDaysVal ? Number(cashierSalesHistoryDaysVal) : 7); // Default to 7 days
         setEnableCashierHistory(enableCashierHistoryVal !== "false"); // Default to true if not set
         setEnableCompletedServicesBadge(enableCompletedServicesBadgeVal !== "false"); // Default to true if not set
+        setEnableProductCardImageSlide(enableProductCardImageSlideVal !== "false"); // Default to true if not set
         setCategoriesRequiringInfo(categoriesRequiringInfoVal ? JSON.parse(categoriesRequiringInfoVal) : []);
         setAllCategories(categoriesData || []);
         initialValuesRef.current = {
@@ -119,6 +123,7 @@ export const OptionsList: React.FC = () => {
           cashierSalesHistoryDays: String(cashierSalesHistoryDaysVal ?? 7),
           enableCashierHistory: enableCashierHistoryVal !== "false" ? "true" : "false",
           enableCompletedServicesBadge: enableCompletedServicesBadgeVal !== "false" ? "true" : "false",
+          enableProductCardImageSlide: enableProductCardImageSlideVal !== "false" ? "true" : "false",
           categoriesRequiringInfo: categoriesRequiringInfoVal ?? "[]",
         };
         setLoading(false);
@@ -149,6 +154,7 @@ export const OptionsList: React.FC = () => {
         cashierSalesHistoryDays: String(cashierSalesHistoryDays),
         enableCashierHistory: String(enableCashierHistory),
         enableCompletedServicesBadge: String(enableCompletedServicesBadge),
+        enableProductCardImageSlide: String(enableProductCardImageSlide),
         categoriesRequiringInfo: JSON.stringify(categoriesRequiringInfo),
       };
       await Promise.all([
@@ -167,6 +173,7 @@ export const OptionsList: React.FC = () => {
         window.api.database.options.set("cashierSalesHistoryDays", newValues.cashierSalesHistoryDays),
         window.api.database.options.set("enableCashierHistory", newValues.enableCashierHistory),
         window.api.database.options.set("enableCompletedServicesBadge", newValues.enableCompletedServicesBadge),
+        window.api.database.options.set("enableProductCardImageSlide", newValues.enableProductCardImageSlide),
         window.api.database.options.set("categoriesRequiringInfo", newValues.categoriesRequiringInfo),
       ]);
 
@@ -736,6 +743,41 @@ export const OptionsList: React.FC = () => {
                   />
                   <span className="text-sm text-muted-foreground">
                     {t("admin.days", "days")}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Product Card Image Slide Setting */}
+            <div className="flex flex-col md:flex-row items-start md:items-center gap-4 bg-muted/40 border border-border rounded-lg p-6">
+              <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg flex items-center justify-center">
+                <Image className="w-6 h-6 text-orange-600" />
+              </div>
+              <div className="flex-1 w-full">
+                <label
+                  className="block text-base font-semibold mb-2"
+                  htmlFor="enableProductCardImageSlide"
+                >
+                  {t("admin.enableProductCardImageSlide", "Product Card Image Slide")}
+                </label>
+                <p className="text-sm text-muted-foreground mb-3">
+                  {t(
+                    "admin.enableProductCardImageSlideDesc",
+                    "When enabled, product cards with images hide details and reveal them on hover. When disabled, all product cards always show details like avatar cards.",
+                  )}
+                </p>
+                <div className="flex items-center gap-3">
+                  <Switch
+                    id="enableProductCardImageSlide"
+                    checked={enableProductCardImageSlide}
+                    onCheckedChange={setEnableProductCardImageSlide}
+                    disabled={loading || saving}
+                    aria-label={t("admin.enableProductCardImageSlide", "Product Card Image Slide")}
+                  />
+                  <span className="text-sm font-medium">
+                    {enableProductCardImageSlide
+                      ? t("admin.enabled", "Enabled")
+                      : t("admin.disabled", "Disabled")}
                   </span>
                 </div>
               </div>

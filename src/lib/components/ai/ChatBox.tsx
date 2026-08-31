@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type PointerEvent } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type PointerEvent } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { MessageSquarePlus, Minus, SlidersHorizontal } from "lucide-react";
@@ -31,15 +31,7 @@ import { BadgeNotification } from "../badgeNotification";
 import { setAiUnreadReply } from "./aiUnread";
 import { useAiChatGate } from "../../hooks/useAiChatGate";
 import { AiChatBlockOverlay } from "./AiChatBlockOverlay";
-import { Button } from "../button";
 import { cn } from "../../utils";
-
-const spring = {
-  type: "spring" as const,
-  stiffness: 460,
-  damping: 38,
-  mass: 0.7,
-};
 
 const SIDEBAR_EXPANDED = 200;
 const SIDEBAR_COLLAPSED = 56;
@@ -50,6 +42,25 @@ const POSITION_KEY = "aiChatPosition";
 const SIZE_KEY = "aiChatSize";
 const WELCOME_DELAY_MS = 700;
 const WELCOME_DURATION_MS = 8000;
+
+/** Fast ease-out — opacity/transform only, no spring overshoot. */
+const SNAPPY_EASE = [0.22, 1, 0.36, 1] as const;
+
+function panelMotionTransition(reduceMotion: boolean | null, opening: boolean) {
+  if (reduceMotion) return { duration: 0 };
+  return {
+    duration: opening ? 0.2 : 0.14,
+    ease: SNAPPY_EASE,
+  };
+}
+
+function fabMotionTransition(reduceMotion: boolean | null, hiding: boolean) {
+  if (reduceMotion) return { duration: 0 };
+  return {
+    duration: hiding ? 0.12 : 0.18,
+    ease: SNAPPY_EASE,
+  };
+}
 
 type ChatSize = "default" | "large" | "half";
 type PanelSize = { width: number; height: number };
@@ -99,6 +110,63 @@ function capitalizeName(name: string): string {
 }
 
 type PanelPos = { x: number; y: number };
+type PanelContext = "main" | "app";
+type SavedPositions = { main: PanelPos | null; app: PanelPos | null };
+
+function panelContext(isMainMenu: boolean): PanelContext {
+  return isMainMenu ? "main" : "app";
+}
+
+function isPanelPos(value: unknown): value is PanelPos {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    typeof (value as PanelPos).x === "number" &&
+    typeof (value as PanelPos).y === "number"
+  );
+}
+
+function loadSavedPositions(): SavedPositions {
+  try {
+    const raw = localStorage.getItem(POSITION_KEY);
+    if (!raw) return { main: null, app: null };
+    const parsed = JSON.parse(raw) as unknown;
+    if (typeof parsed === "object" && parsed !== null) {
+      const record = parsed as Record<string, unknown>;
+      if ("main" in record || "app" in record) {
+        return {
+          main: isPanelPos(record.main) ? record.main : null,
+          app: isPanelPos(record.app) ? record.app : null,
+        };
+      }
+      if (isPanelPos(parsed)) {
+        // Legacy single position: treat as in-app (sidebar) placement.
+        return { main: null, app: parsed };
+      }
+    }
+  } catch {
+    /* ignore */
+  }
+  return { main: null, app: null };
+}
+
+function savedPosForContext(
+  positions: SavedPositions,
+  isMainMenu: boolean,
+): PanelPos | null {
+  return isMainMenu ? positions.main : positions.app;
+}
+
+function resolvePanelPos(
+  isMainMenu: boolean,
+  sidebarCollapsed: boolean,
+  panel: PanelSize,
+  savedPositions: SavedPositions,
+): PanelPos {
+  const saved = savedPosForContext(savedPositions, isMainMenu);
+  const next = saved ?? defaultPos(isMainMenu, sidebarCollapsed, panel.width, panel.height);
+  return clampPos(next.x, next.y, panel.width, panel.height);
+}
 
 function clampPos(
   x: number,
@@ -135,20 +203,6 @@ function defaultPos(
     width,
     height,
   );
-}
-
-function loadSavedPos(): PanelPos | null {
-  try {
-    const raw = localStorage.getItem(POSITION_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as PanelPos;
-    if (typeof parsed?.x === "number" && typeof parsed?.y === "number") {
-      return parsed;
-    }
-  } catch {
-    /* ignore */
-  }
-  return null;
 }
 
 export default function ChatBox() {
@@ -189,17 +243,27 @@ export default function ChatBox() {
       : isWelcomeChat
         ? t("ai.newChatAlready", "Already a new chat")
         : t("ai.newChat", "New chat");
-  const move = reduceMotion ? { duration: 0 } : spring;
   const isMainMenu = useLocation().pathname === "/";
   const [sidebarCollapsed, setSidebarCollapsed] = useState(
     localStorage.getItem("sidebarCollapsed") === "true",
   );
-  const [savedPos, setSavedPos] = useState<PanelPos | null>(loadSavedPos);
+  const [savedPositions, setSavedPositions] = useState<SavedPositions>(loadSavedPositions);
   const [sizePreset, setSizePreset] = useState<ChatSize>(loadSavedSize);
   const [panel, setPanel] = useState<PanelSize>(() =>
     computePanelSize(loadSavedSize()),
   );
-  const [pos, setPos] = useState<PanelPos>({ x: 24, y: 130 });
+  const [pos, setPos] = useState<PanelPos>(() => {
+    const isMain =
+      typeof window !== "undefined" && window.location.pathname === "/";
+    const collapsed = localStorage.getItem("sidebarCollapsed") === "true";
+    const initialPanel = computePanelSize(loadSavedSize());
+    return resolvePanelPos(
+      isMain,
+      collapsed,
+      initialPanel,
+      loadSavedPositions(),
+    );
+  });
   const [dragging, setDragging] = useState(false);
   const posRef = useRef(pos);
   posRef.current = pos;
@@ -260,16 +324,17 @@ export default function ChatBox() {
       window.removeEventListener("sidebarStateChanged", onSidebarChange);
   }, []);
 
-  useEffect(() => {
-    if (!open) return;
-    const next = savedPos ?? defaultPos(
-      isMainMenu,
-      sidebarCollapsed,
-      panel.width,
-      panel.height,
-    );
-    setPos(clampPos(next.x, next.y, panel.width, panel.height));
-  }, [open, isMainMenu, sidebarCollapsed, savedPos, panel.width, panel.height]);
+  useLayoutEffect(() => {
+    setPos((current) => {
+      const next = resolvePanelPos(
+        isMainMenu,
+        sidebarCollapsed,
+        panel,
+        savedPositions,
+      );
+      return current.x === next.x && current.y === next.y ? current : next;
+    });
+  }, [open, isMainMenu, sidebarCollapsed, savedPositions, panel.width, panel.height]);
 
   useEffect(() => {
     const syncPanel = () => {
@@ -359,15 +424,29 @@ export default function ChatBox() {
       return;
     }
 
-    localStorage.setItem(POSITION_KEY, JSON.stringify(current));
-    setSavedPos(current);
+    localStorage.setItem(
+      POSITION_KEY,
+      JSON.stringify({
+        ...savedPositions,
+        [panelContext(isMainMenu)]: current,
+      }),
+    );
+    setSavedPositions((prev) => ({
+      ...prev,
+      [panelContext(isMainMenu)]: current,
+    }));
   };
 
   const handleResetPosition = () => {
     dragRef.current = null;
     setDragging(false);
-    localStorage.removeItem(POSITION_KEY);
-    setSavedPos(null);
+    const context = panelContext(isMainMenu);
+    const nextSaved: SavedPositions = {
+      ...savedPositions,
+      [context]: null,
+    };
+    localStorage.setItem(POSITION_KEY, JSON.stringify(nextSaved));
+    setSavedPositions(nextSaved);
     setPos(defaultPos(isMainMenu, sidebarCollapsed, panel.width, panel.height));
   };
 
@@ -391,19 +470,22 @@ export default function ChatBox() {
           initial={false}
           animate={{
             opacity: open ? 0 : 1,
-            y: open ? 12 : 0,
-            scale: open ? 0.72 : 1,
+            scale: open ? 0.88 : 1,
           }}
-          transition={move}
-          style={{ pointerEvents: open ? "none" : "auto" }}
+          transition={fabMotionTransition(reduceMotion, open)}
+          style={{ pointerEvents: open ? "none" : "auto", willChange: "transform, opacity" }}
         >
           <AnimatePresence>
             {showWelcome && (
               <motion.div
-                initial={reduceMotion ? false : { opacity: 0, x: 12 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={reduceMotion ? { opacity: 0 } : { opacity: 0, x: 8 }}
-                transition={move}
+                initial={reduceMotion ? false : { opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 4 }}
+                transition={
+                  reduceMotion
+                    ? { duration: 0 }
+                    : { duration: 0.16, ease: SNAPPY_EASE }
+                }
                 className="absolute right-full bottom-1 mr-3 w-[230px] rounded-2xl bg-foreground px-3.5 py-3 text-start text-background shadow-lg"
               >
                 <p className="text-sm font-semibold tracking-tight">
@@ -468,18 +550,20 @@ export default function ChatBox() {
       <motion.div
         className="fixed z-[100] flex flex-col overflow-hidden rounded-2xl border border-border/60 bg-background shadow-2xl"
         initial={false}
+        layout={false}
         animate={{
           opacity: open ? 1 : 0,
-          scale: open ? 1 : 0.96,
-          width: panel.width,
-          height: panel.height,
+          scale: open ? 1 : 0.98,
         }}
-        transition={move}
+        transition={panelMotionTransition(reduceMotion, open)}
         style={{
           top: pos.y,
           left: pos.x,
+          width: panel.width,
+          height: panel.height,
           transformOrigin: isMainMenu ? "bottom right" : "left center",
           pointerEvents: open ? "auto" : "none",
+          willChange: open ? "transform, opacity" : "auto",
         }}
         aria-hidden={!open}
         inert={!open || undefined}
@@ -558,38 +642,16 @@ export default function ChatBox() {
             </div>
 
             <div className="flex shrink-0 items-center justify-end gap-0.5">
-              {newChatDisabled ? (
-                <TooltipProvider delayDuration={0}>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span className="inline-flex">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          disabled
-                          aria-disabled
-                          aria-label={newChatTooltip}
-                          className="size-8 rounded-lg text-muted-foreground opacity-40"
-                          onClick={handleClearChat}
-                        >
-                          <MessageSquarePlus className="h-3.5 w-3.5" />
-                        </Button>
-                      </span>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom">{newChatTooltip}</TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              ) : (
-                <TooltipIconButton
-                  tooltip={newChatTooltip}
-                  side="bottom"
-                  className="size-8 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
-                  onClick={handleClearChat}
-                >
-                  <MessageSquarePlus className="h-3.5 w-3.5" />
-                </TooltipIconButton>
-              )}
+              <TooltipIconButton
+                tooltip={newChatTooltip}
+                side="bottom"
+                disabled={newChatDisabled}
+                aria-disabled={newChatDisabled}
+                className="size-8 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-40"
+                onClick={handleClearChat}
+              >
+                <MessageSquarePlus className="h-3.5 w-3.5" />
+              </TooltipIconButton>
 
               <DropdownMenu open={prefsOpen} onOpenChange={setPrefsOpen}>
                 <TooltipProvider delayDuration={0}>

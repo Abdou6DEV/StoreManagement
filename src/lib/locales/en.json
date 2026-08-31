@@ -25,7 +25,7 @@
     "suggestions": {
       "sales": "How much did I sell today?",
       "stock": "Which products are low on stock?",
-      "profit": "What’s my profit today?"
+      "profit": "What's my profit this month?"
     },
     "placeholder": "Send a message...",
     "messageInput": "Message input",
@@ -2638,6 +2638,8 @@
     "cashierSalesHistoryDaysDesc": "Number of previous days the cashier page can fetch sales from (affects performance). Only applies when history is enabled.",
     "enableCompletedServicesBadge": "Enable Completed Services Badge",
     "enableCompletedServicesBadgeDesc": "Show notification badge on cashier menu item when there are completed services",
+    "enableProductCardImageSlide": "Product Card Image Slide",
+    "enableProductCardImageSlideDesc": "When enabled, product cards with images hide details and reveal them on hover. When disabled, all product cards always show details like avatar cards.",
     "dueSoonThreshold": "Due Soon Threshold (Days)",
     "dueSoonThresholdDesc": "Number of days before due date to consider a payment as 'due soon'",
 
