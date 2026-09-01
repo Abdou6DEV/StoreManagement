@@ -531,7 +531,7 @@ export default function Orb({
       const height = container.clientHeight;
       if (width === 0 || height === 0) return;
 
-      const dpr = window.devicePixelRatio || 1;
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
 
       renderer.setSize(width * dpr, height * dpr);
       gl.canvas.style.width = "100%";
@@ -552,6 +552,8 @@ export default function Orb({
     let targetHover = 0;
     let lastTime = 0;
     let currentRot = 0;
+    let inView = true;
+    let tabVisible = document.visibilityState !== "hidden";
 
     const rotationSpeed = 0.3;
 
@@ -624,15 +626,24 @@ export default function Orb({
       handleMouseLeave
     );
 
-    let rafId: number;
+    let rafId = 0;
+
+    const stopLoop = (): void => {
+      if (rafId === 0) return;
+      cancelAnimationFrame(rafId);
+      rafId = 0;
+    };
+
+    const startLoop = (): void => {
+      if (rafId !== 0 || !inView || !tabVisible) return;
+      rafId = requestAnimationFrame(update);
+    };
 
     const update = (
       t: number
     ): void => {
-      rafId =
-        requestAnimationFrame(
-          update
-        );
+      rafId = 0;
+      if (!inView || !tabVisible) return;
 
       const dt =
         (t - lastTime) *
@@ -680,17 +691,34 @@ export default function Orb({
       renderer.render({
         scene: mesh,
       });
+
+      rafId = requestAnimationFrame(update);
     };
 
-    rafId =
-      requestAnimationFrame(
-        update
-      );
+    const intersectionObserver = new IntersectionObserver(
+      ([entry]) => {
+        inView = entry.isIntersecting && entry.intersectionRatio > 0;
+        if (inView && tabVisible) startLoop();
+        else stopLoop();
+      },
+      { threshold: [0, 0.01] },
+    );
+    intersectionObserver.observe(container);
+
+    const onVisibilityChange = (): void => {
+      tabVisible = document.visibilityState !== "hidden";
+      if (tabVisible && inView) startLoop();
+      else stopLoop();
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
+    startLoop();
 
     return () => {
-      cancelAnimationFrame(
-        rafId
-      );
+      stopLoop();
+
+      intersectionObserver.disconnect();
+      document.removeEventListener("visibilitychange", onVisibilityChange);
 
       resizeObserver.disconnect();
       window.removeEventListener(

@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Check, ChevronDown, ChevronUp } from "lucide-react";
 import { cn } from "../utils";
+import { coalesceOnAnimationFrame } from "../utils/rafCoalesce";
 import type { WelcomeSectionNavItem } from "./welcomeSectionNav";
 
 const PAGE_END_THRESHOLD_PX = 120;
@@ -89,12 +90,15 @@ export function WelcomeJourneyNav({
       );
     };
 
+    const { schedule, cancel } = coalesceOnAnimationFrame(updateScrollState);
+
     updateScrollState();
-    window.addEventListener("scroll", updateScrollState, { passive: true });
-    window.addEventListener("resize", updateScrollState);
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", schedule);
     return () => {
-      window.removeEventListener("scroll", updateScrollState);
-      window.removeEventListener("resize", updateScrollState);
+      cancel();
+      window.removeEventListener("scroll", schedule);
+      window.removeEventListener("resize", schedule);
     };
   }, []);
 

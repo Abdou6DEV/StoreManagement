@@ -65,7 +65,20 @@ export function NebulaBackground({ className, paused = false }: NebulaBackground
     let raf = 0;
     let width = 0;
     let height = 0;
+    let inView = true;
+    let tabVisible = document.visibilityState !== "hidden";
     const start = performance.now();
+
+    const stopLoop = () => {
+      if (raf === 0) return;
+      cancelAnimationFrame(raf);
+      raf = 0;
+    };
+
+    const startLoop = () => {
+      if (raf !== 0 || !inView || !tabVisible) return;
+      raf = requestAnimationFrame(draw);
+    };
 
     const resize = () => {
       const parent = canvas.parentElement;
@@ -93,9 +106,8 @@ export function NebulaBackground({ className, paused = false }: NebulaBackground
     resize();
 
     const draw = (now: number) => {
-      raf = requestAnimationFrame(draw);
-
-      if (width === 0 || height === 0) return;
+      raf = 0;
+      if (!inView || !tabVisible || width === 0 || height === 0) return;
 
       const time = (now - start) * 0.001;
       const minDim = Math.min(width, height);
@@ -136,12 +148,33 @@ export function NebulaBackground({ className, paused = false }: NebulaBackground
         ctx.arc(star.x * width, star.y * height, star.size, 0, Math.PI * 2);
         ctx.fill();
       }
+
+      raf = requestAnimationFrame(draw);
     };
 
-    raf = requestAnimationFrame(draw);
+    const intersectionObserver = new IntersectionObserver(
+      ([entry]) => {
+        inView = entry.isIntersecting && entry.intersectionRatio > 0;
+        if (inView && tabVisible) startLoop();
+        else stopLoop();
+      },
+      { threshold: [0, 0.01] },
+    );
+    intersectionObserver.observe(canvas);
+
+    const onVisibilityChange = () => {
+      tabVisible = document.visibilityState !== "hidden";
+      if (tabVisible && inView) startLoop();
+      else stopLoop();
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
+    startLoop();
 
     return () => {
-      cancelAnimationFrame(raf);
+      stopLoop();
+      intersectionObserver.disconnect();
+      document.removeEventListener("visibilitychange", onVisibilityChange);
       ro.disconnect();
       window.removeEventListener("resize", resize);
     };

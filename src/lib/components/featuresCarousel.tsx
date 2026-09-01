@@ -35,6 +35,7 @@ export function FeaturesCarousel({
   const interactionHoldRef = useRef(false);
   const attentionHoldRef = useRef(false);
   const inViewRef = useRef(true);
+  const tickControlRef = useRef<{ start: () => void; stop: () => void } | null>(null);
   const count = items.length;
 
   const updateSlideShift = useCallback(() => {
@@ -77,8 +78,14 @@ export function FeaturesCarousel({
   }, [updateSlideShift]);
 
   const syncAttentionHold = useCallback(() => {
+    const wasHeld = attentionHoldRef.current;
     attentionHoldRef.current =
       document.visibilityState === "hidden" || !inViewRef.current;
+    if (!wasHeld && attentionHoldRef.current) {
+      tickControlRef.current?.stop();
+    } else if (wasHeld && !attentionHoldRef.current && !interactionHoldRef.current) {
+      tickControlRef.current?.start();
+    }
   }, []);
 
   useEffect(() => {
@@ -111,11 +118,17 @@ export function FeaturesCarousel({
     chargeElapsedRef.current = 0;
     lastTickAtRef.current = performance.now();
 
+    const isHeld = () => interactionHoldRef.current || attentionHoldRef.current;
+
     const tick = (now: number) => {
-      if (!interactionHoldRef.current && !attentionHoldRef.current) {
-        const delta = now - lastTickAtRef.current;
-        chargeElapsedRef.current = Math.min(autoAdvanceMs, chargeElapsedRef.current + delta);
+      frameId = 0;
+      if (isHeld()) {
+        lastTickAtRef.current = now;
+        return;
       }
+
+      const delta = now - lastTickAtRef.current;
+      chargeElapsedRef.current = Math.min(autoAdvanceMs, chargeElapsedRef.current + delta);
       lastTickAtRef.current = now;
 
       const progress = chargeElapsedRef.current / autoAdvanceMs;
@@ -129,13 +142,37 @@ export function FeaturesCarousel({
       frameId = requestAnimationFrame(tick);
     };
 
+    const startTick = () => {
+      if (frameId !== 0 || isHeld()) return;
+      lastTickAtRef.current = performance.now();
+      frameId = requestAnimationFrame(tick);
+    };
+
+    const stopTick = () => {
+      if (frameId === 0) return;
+      cancelAnimationFrame(frameId);
+      frameId = 0;
+    };
+
+    tickControlRef.current = { start: startTick, stop: stopTick };
+
     setChargeProgress(reduceMotion ? 1 : 0);
-    frameId = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frameId);
+    startTick();
+
+    return () => {
+      stopTick();
+      tickControlRef.current = null;
+    };
   }, [reduceMotion, count, index, autoplayEpoch, autoAdvanceMs]);
 
   const setActiveFeatureHold = (held: boolean) => {
+    const wasHeld = interactionHoldRef.current;
     interactionHoldRef.current = held;
+    if (!wasHeld && held) {
+      tickControlRef.current?.stop();
+    } else if (wasHeld && !held && !attentionHoldRef.current) {
+      tickControlRef.current?.start();
+    }
   };
 
   const selectFeature = (featureIndex: number) => {

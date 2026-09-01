@@ -65,6 +65,7 @@ import { WelcomeMarketingDownloadCard } from "./WelcomeMarketingDownloadCard";
 import { WelcomePremiumSection } from "./WelcomePremiumSection";
 import { WelcomeTutorialCard } from "./WelcomeTutorialCard";
 import { WELCOME_TUTORIALS } from "../../lib/welcome/welcomeTutorials";
+import { coalesceOnAnimationFrame } from "../../lib/utils/rafCoalesce";
 
 /** Welcome-only highlights before the technical carousel (not duplicated in the carousel). */
 const WELCOME_TECHNOLOGY_BRIDGE_HIGHLIGHTS = [
@@ -142,6 +143,8 @@ const SEQ = {
 
 const INTRO_STEP_COUNT = 18;
 const SEQ_ANIM_S = 0.38;
+/** If animationend never fires (e.g. iOS Safari), still advance — same visuals, no stuck sections. */
+const INTRO_STEP_ANIMATION_FALLBACK_MS = Math.ceil(SEQ_ANIM_S * 1000) + 450;
 /** Delay before the get-started card green glow fades in (after the panel is on screen). */
 const WELCOME_GLOW_DELAY_S = 0.7;
 /** Duration of the green glow opacity fade-in. */
@@ -222,15 +225,26 @@ function SequentialIntroSlot({
 
     const node = ref.current;
     if (!node) return;
-    const onEnd = (e: AnimationEvent) => {
-      if (e.target !== node) return;
-      if (!String(e.animationName || "").includes("welcomeIn")) return;
+
+    const completeStep = () => {
       if (completedRef.current) return;
       completedRef.current = true;
       onStepComplete();
     };
+
+    const onEnd = (e: AnimationEvent) => {
+      if (e.target !== node) return;
+      if (!String(e.animationName || "").includes("welcomeIn")) return;
+      completeStep();
+    };
+
+    const fallbackId = window.setTimeout(completeStep, INTRO_STEP_ANIMATION_FALLBACK_MS);
     node.addEventListener("animationend", onEnd);
-    return () => node.removeEventListener("animationend", onEnd);
+    return () => {
+      window.clearTimeout(fallbackId);
+      node.removeEventListener("animationend", onEnd);
+      completedRef.current = false;
+    };
   }, [active, reduceMotion, onStepComplete, advanceIntroAfterMs]);
 
   if (reduceMotion) {
@@ -556,7 +570,7 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
   }, []);
 
   const scrollToWelcomeSection = useCallback(
-    (sectionId: WelcomeSectionId) => {
+    (sectionId: string) => {
       const element = document.getElementById(sectionId);
       if (!element) return;
 
@@ -676,12 +690,15 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
       setActiveNavSectionId(bestId);
     };
 
+    const { schedule, cancel } = coalesceOnAnimationFrame(updateActiveSection);
+
     updateActiveSection();
-    window.addEventListener("scroll", updateActiveSection, { passive: true });
-    window.addEventListener("resize", updateActiveSection);
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", schedule);
     return () => {
-      window.removeEventListener("scroll", updateActiveSection);
-      window.removeEventListener("resize", updateActiveSection);
+      cancel();
+      window.removeEventListener("scroll", schedule);
+      window.removeEventListener("resize", schedule);
     };
   }, [introStep, sectionNavItems]);
 

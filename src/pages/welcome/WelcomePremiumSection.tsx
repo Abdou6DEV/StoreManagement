@@ -165,16 +165,13 @@ export function WelcomePremiumSection({
         </div>
 
         <div className="mt-14 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:gap-5">
-          {WELCOME_PREMIUM_FEATURE_DEFS.map(({ icon: Icon, titleKey, descKey, exampleKey }) => (
+          {WELCOME_PREMIUM_FEATURE_DEFS.map(({ icon: Icon, titleKey, descKey}) => (
             <article key={titleKey} className="welcome-premium-card group p-5 text-start sm:p-6">
               <div className="welcome-premium-card-icon mb-4 flex h-12 w-12 items-center justify-center rounded-xl">
                 <Icon className="h-5 w-5 text-violet-100" aria-hidden />
               </div>
               <h3 className="text-base font-semibold text-white">{t(titleKey)}</h3>
               <p className="mt-2 text-sm leading-relaxed text-violet-100/72">{t(descKey)}</p>
-              {exampleKey ? (
-                <p className="mt-3 text-xs font-medium text-violet-300/70">{t(exampleKey)}</p>
-              ) : null}
             </article>
           ))}
         </div>
