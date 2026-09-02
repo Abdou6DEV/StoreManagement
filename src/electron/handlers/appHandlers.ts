@@ -4,6 +4,12 @@ import fs from "fs";
 import { exec, spawn } from "child_process";
 import { promisify } from "util";
 import { platform } from "process";
+import {
+  clearPendingUpdate,
+  persistPendingUpdate,
+  readValidPendingUpdate,
+  type PendingUpdate,
+} from "../utils/pendingUpdateStore";
 
 const execAsync = promisify(exec);
 
@@ -603,6 +609,7 @@ export function setupAppHandlers() {
 
         // Handle EXE update (installer)
         await handleExeUpdate(updatePath);
+        clearPendingUpdate();
         
         // Quit the app immediately after launching installer
         // The installer needs the app to be closed to replace files
@@ -815,5 +822,34 @@ export function setupAppHandlers() {
         reject(error);
       }
     });
+  });
+
+  ipcMain.handle("app:pendingUpdate:read", (): PendingUpdate | null => {
+    return readValidPendingUpdate();
+  });
+
+  ipcMain.handle(
+    "app:pendingUpdate:persist",
+    (
+      _event,
+      payload: { version?: string; path?: string } | undefined,
+    ): { success: true } | { success: false; error: string } => {
+      try {
+        const version = typeof payload?.version === "string" ? payload.version : "";
+        const installerPath = typeof payload?.path === "string" ? payload.path : "";
+        persistPendingUpdate(version, installerPath);
+        return { success: true };
+      } catch (e) {
+        return {
+          success: false,
+          error: (e as Error).message || "Failed to persist pending update.",
+        };
+      }
+    },
+  );
+
+  ipcMain.handle("app:pendingUpdate:clear", (): { success: true } => {
+    clearPendingUpdate();
+    return { success: true };
   });
 }

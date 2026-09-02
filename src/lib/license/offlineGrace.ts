@@ -8,6 +8,7 @@ export type LicenseGraceSnapshot = {
   graceUntilMs: number;
   trialEndsAtMs?: number;
   expiresAtMs?: number;
+  aiEnabled?: boolean;
 };
 
 export function getEffectiveOfflineDeadlineMs(
@@ -94,8 +95,9 @@ export async function readLicenseGraceSnapshot(): Promise<LicenseGraceSnapshot |
 export async function persistLicenseGraceFromAllowedCheck(
   trialEndsAt?: string | null,
   expiresAt?: string | null,
+  aiEnabled?: boolean,
 ): Promise<void> {
-  const result = await window.api.online.persistLicenseGrace({ trialEndsAt, expiresAt });
+  const result = await window.api.online.persistLicenseGrace({ trialEndsAt, expiresAt, aiEnabled });
   if (result.success === false) {
     throw new Error(result.error);
   }
@@ -107,7 +109,11 @@ export async function resolveLicenseValidityFromDeviceCheck(
   if (result.success === true) {
     await persistOnlineCustomerProfileFromDeviceCheck(result);
     if (!result.allowed) return false;
-    await persistLicenseGraceFromAllowedCheck(result.trialEndsAt, result.expiresAt);
+    await persistLicenseGraceFromAllowedCheck(
+      result.trialEndsAt,
+      result.expiresAt,
+      result.aiEnabled,
+    );
     const snapshot = await readLicenseGraceSnapshot();
     return isSessionLicenseAccessAllowed(result, snapshot);
   }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Download,
@@ -8,12 +8,11 @@ import {
   Loader2,
   ArrowDown,
   Play,
-  Shield,
-  Clock,
+  RefreshCw,
   Info,
-  X,
   XCircle,
-  AlertTriangle
+  AlertTriangle,
+  Wifi,
 } from "lucide-react";
 import { useUpdateChecker } from "../../../lib/hooks/useUpdateChecker";
 import { useToast } from "../../../lib/contexts/toastContext";
@@ -27,17 +26,54 @@ import {
   DialogTitle,
 } from "../../../lib/components/dialog";
 import { Button } from "../../../lib/components/button";
+import { Card, CardContent, CardHeader, CardTitle } from "../../../lib/components/card";
+import { Badge } from "../../../lib/components/badge";
+import { Alert, AlertDescription } from "../../../lib/components/alert";
+import { Switch } from "../../../lib/components/switch";
+import { cn } from "../../../lib/utils";
+import {
+  downloadAppUpdate,
+  installDownloadedUpdate,
+} from "../../../lib/updates/updateActions";
+import {
+  AUTO_DOWNLOAD_UPDATES_OPTION_KEY,
+  isAutoDownloadUpdatesEnabledOptionValue,
+} from "../../../lib/updates/constants";
+
+const UPDATE_CHECK_COOLDOWN_MS = 5 * 60 * 1000;
+
+function InfoRow({
+  label,
+  value,
+  hint,
+}: {
+  label: string;
+  value: React.ReactNode;
+  hint?: string;
+}) {
+  return (
+    <div className="flex flex-col gap-1 rounded-lg border border-border/70 bg-muted/20 px-4 py-3">
+      <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</span>
+      <div className="break-all text-sm font-semibold text-foreground">{value}</div>
+      {hint ? <span className="text-xs text-muted-foreground">{hint}</span> : null}
+    </div>
+  );
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes === 0) return "0 B";
+  const k = 1024;
+  const sizes = ["B", "KB", "MB", "GB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return `${parseFloat((bytes / k ** i).toFixed(1))} ${sizes[i]}`;
+}
 
 export default function UpdateManagement() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { showToast } = useToast();
   const { user } = useAuth();
-  const { 
-    state,
-    clearError,
-    setDownloadState
-  } = useUpdateChecker();
-  
+  const { state, clearError, setDownloadState, checkForUpdates } = useUpdateChecker();
+
   const {
     isChecking,
     updateInfo,
@@ -49,154 +85,257 @@ export default function UpdateManagement() {
     totalSize,
     isInstalling,
     isDownloaded,
-    downloadPath
+    downloadPath,
+    lastChecked,
   } = state;
-  
-  const [showDetails, setShowDetails] = useState(false);
+
+  const [showReleaseNotes, setShowReleaseNotes] = useState(false);
   const [showWarningDialog, setShowWarningDialog] = useState(false);
+  const [isOnline, setIsOnline] = useState(() => navigator.onLine);
+  const [nowMs, setNowMs] = useState(() => Date.now());
+  const [autoDownloadEnabled, setAutoDownloadEnabled] = useState(true);
+  const [savingAutoDownload, setSavingAutoDownload] = useState(false);
 
-  // Updates are checked automatically in preload, no need to check again here
-
-  // Listen for download progress updates
   useEffect(() => {
-    const handleDownloadProgress = (data: { progress: number; downloaded: number; total: number; speed: number }) => {
-      setDownloadState({
-        downloadProgress: data.progress,
-        downloadedSize: data.downloaded,
-        totalSize: data.total,
-        downloadSpeed: data.speed || 0
-      });
+    const syncOnline = () => setIsOnline(navigator.onLine);
+    window.addEventListener("online", syncOnline);
+    window.addEventListener("offline", syncOnline);
+    return () => {
+      window.removeEventListener("online", syncOnline);
+      window.removeEventListener("offline", syncOnline);
     };
+  }, []);
 
-    // Listen for download progress events using the proper API
-    if (window.api?.app?.onDownloadProgress) {
-      window.api.app.onDownloadProgress(handleDownloadProgress);
-      
-      return () => {
-        if (window.api?.app?.removeDownloadProgressListener) {
-          window.api.app.removeDownloadProgressListener(handleDownloadProgress);
-        }
+  useEffect(() => {
+    void (async () => {
+      try {
+        const raw = await window.api.database.options.get(AUTO_DOWNLOAD_UPDATES_OPTION_KEY);
+        setAutoDownloadEnabled(isAutoDownloadUpdatesEnabledOptionValue(raw));
+      } catch {
+        setAutoDownloadEnabled(true);
+      }
+    })();
+  }, []);
+
+  const handleAutoDownloadChange = async (checked: boolean) => {
+    setSavingAutoDownload(true);
+    try {
+      await window.api.database.options.set(AUTO_DOWNLOAD_UPDATES_OPTION_KEY, checked ? "1" : "0");
+      setAutoDownloadEnabled(checked);
+    } catch {
+      showToast(
+        t("admin.updates.autoDownloadSaveFailed", "Could not save automatic download setting."),
+        "error",
+      );
+    } finally {
+      setSavingAutoDownload(false);
+    }
+  };
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNowMs(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  const checkCooldownRemainingMs = useMemo(() => {
+    if (lastChecked == null) return 0;
+    return Math.max(0, lastChecked + UPDATE_CHECK_COOLDOWN_MS - nowMs);
+  }, [lastChecked, nowMs]);
+
+  const locale = i18n.language === "ar" ? "ar" : i18n.language === "fr" ? "fr" : "en";
+
+  const lastCheckLabel = useMemo(() => {
+    if (lastChecked == null) {
+      return t("admin.updates.hubNotCheckedYet", "Not checked yet");
+    }
+    return new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" }).format(
+      new Date(lastChecked),
+    );
+  }, [lastChecked, locale, t]);
+
+  const isUpToDate =
+    updateInfo != null &&
+    !updateInfo.available &&
+    updateInfo.latestVersion !== "" &&
+    updateInfo.currentVersion === updateInfo.latestVersion;
+
+  const hasUpdateAvailable = updateInfo?.available === true;
+
+  const isNetworkError =
+    error != null &&
+    (error.includes("fetch") ||
+      error.includes("network") ||
+      error.includes("Failed to fetch") ||
+      error.toLowerCase().includes("internet"));
+
+  const statusBadge = useMemo(() => {
+    if (!isOnline) {
+      return {
+        className: "border-border text-muted-foreground",
+        label: t("admin.updates.hubOffline", "Offline — connect to check for updates"),
       };
     }
-  }, [setDownloadState]);
+    if (isChecking) {
+      return {
+        className: "border-amber-500/40 bg-amber-500/10 text-amber-800 dark:text-amber-200",
+        label: t("admin.updates.hubChecking", "Checking for updates…"),
+      };
+    }
+    if (isDownloading) {
+      return {
+        className: "border-amber-500/40 bg-amber-500/10 text-amber-800 dark:text-amber-200",
+        label: t("admin.updates.hubDownloading", "Downloading update…"),
+      };
+    }
+    if (isInstalling) {
+      return {
+        className: "border-amber-500/40 bg-amber-500/10 text-amber-800 dark:text-amber-200",
+        label: t("admin.updates.hubInstalling", "Installing update…"),
+      };
+    }
+    if (isDownloaded) {
+      return {
+        className: "border-blue-700/40 bg-blue-700/10 text-blue-800 dark:text-blue-200",
+        label: t("admin.updates.hubReadyToInstall", "Download complete — ready to install"),
+      };
+    }
+    if (error && isNetworkError) {
+      return {
+        className: "border-border text-muted-foreground",
+        label: t("admin.updates.hubCheckFailedOffline", "Could not reach update server"),
+      };
+    }
+    if (error) {
+      return {
+        className: "border-red-500/40 bg-red-500/10 text-red-800 dark:text-red-200",
+        label: t("admin.updates.hubCheckFailed", "Update check failed"),
+      };
+    }
+    if (hasUpdateAvailable) {
+      return {
+        className: "border-emerald-500/40 bg-emerald-500/10 text-emerald-800 dark:text-emerald-200",
+        label: t("admin.updates.hubUpdateAvailable", "New update available"),
+      };
+    }
+    if (isUpToDate) {
+      return {
+        className: "border-emerald-500/40 bg-emerald-500/10 text-emerald-800 dark:text-emerald-200",
+        label: t("admin.updates.hubUpToDate", "Up to date"),
+      };
+    }
+    return {
+      className: "border-border text-muted-foreground",
+      label: t("admin.updates.hubUnknown", "Not checked against server"),
+    };
+  }, [
+    error,
+    hasUpdateAvailable,
+    isChecking,
+    isDownloaded,
+    isDownloading,
+    isInstalling,
+    isNetworkError,
+    isOnline,
+    isUpToDate,
+    t,
+  ]);
 
-  // Helper function to format bytes
-  const formatBytes = (bytes: number): string => {
-    if (bytes === 0) return '0 B';
-    const k = 1024;
-    const sizes = ['B', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
-  };
+  const statusDescription = useMemo(() => {
+    if (!isOnline && !isDownloaded) {
+      return t(
+        "admin.updates.hubOfflineDescription",
+        "Connect to the internet to check for updates or download a new version. If you already downloaded an update, you can still install it offline.",
+      );
+    }
+    if (isChecking) {
+      return t("admin.updates.hubCheckingDescription", "Looking for the latest release on the update server.");
+    }
+    if (isDownloading) {
+      return t(
+        "admin.updates.hubDownloadingDescription",
+        "Keep the app open and stay connected until the download finishes.",
+      );
+    }
+    if (isDownloaded) {
+      return t(
+        "admin.updates.hubReadyDescription",
+        "The installer is on this computer. Install when you are ready — the app will restart afterward.",
+      );
+    }
+    if (hasUpdateAvailable) {
+      return t(
+        "admin.updates.hubUpdateAvailableDescription",
+        "A newer version is available. Download it when you are ready, then install from this page.",
+      );
+    }
+    if (isUpToDate) {
+      return t(
+        "admin.updates.hubUpToDateDescription",
+        "You are running the latest version. Check again later for new releases.",
+      );
+    }
+    if (error && isNetworkError) {
+      return t(
+        "admin.updates.hubNetworkErrorDescription",
+        "The update server could not be reached. Check your connection and try again.",
+      );
+    }
+    if (error) {
+      return error;
+    }
+    return t(
+      "admin.updates.hubDefaultDescription",
+      "Use Check for updates to compare this app with the latest release.",
+    );
+  }, [
+    error,
+    hasUpdateAvailable,
+    isChecking,
+    isDownloaded,
+    isDownloading,
+    isNetworkError,
+    isOnline,
+    isUpToDate,
+    t,
+  ]);
+
+  const handleManualCheck = useCallback(async () => {
+    if (!isOnline || isChecking || checkCooldownRemainingMs > 0) return;
+    try {
+      await checkForUpdates();
+    } catch {
+      showToast(t("admin.updates.checkFailedToast", "Could not check for updates"), "error");
+    }
+  }, [checkCooldownRemainingMs, checkForUpdates, isChecking, isOnline, showToast, t]);
 
   const handleDownloadClick = () => {
     setShowWarningDialog(true);
+  };
+
+  const handleInstallUpdate = async (pathOverride?: string) => {
+    const pathToInstall = pathOverride || downloadPath;
+    if (!pathToInstall) return;
+    await installDownloadedUpdate({
+      pathToInstall,
+      username: user?.username ?? "unknown",
+      setDownloadState,
+      showToast,
+      t,
+    });
   };
 
   const handleConfirmDownload = async () => {
     setShowWarningDialog(false);
     if (!updateInfo?.downloadUrl) return;
 
-    const version = updateInfo?.latestVersion ?? "unknown";
-    setDownloadState({
-      isDownloading: true,
-      downloadProgress: 0,
-      downloadSpeed: 0,
-      downloadedSize: 0,
-      totalSize: 0,
-      isDownloaded: false,
-      isPaused: false
-    });
-
-    window.api?.activityLog?.log({
+    await downloadAppUpdate({
+      downloadUrl: updateInfo.downloadUrl,
+      version: updateInfo?.latestVersion ?? "unknown",
       username: user?.username ?? "unknown",
-      action: "activityLog.actions.updateDownloadStarted",
-      details: `Version: ${version}`,
-    }).catch((): undefined => undefined);
-
-    try {
-      const result = await window.api.app.downloadUpdate(updateInfo.downloadUrl);
-
-      if (result.success) {
-        setDownloadState({
-          downloadProgress: 100,
-          isDownloaded: true,
-          downloadPath: result.path,
-          isDownloading: false
-        });
-
-        window.api?.activityLog?.log({
-          username: user?.username ?? "unknown",
-          action: "activityLog.actions.updateDownloadCompleted",
-          details: `Version: ${version}\nPath: ${result.path ?? ""}`,
-        }).catch((): undefined => undefined);
-
-        showToast(t("updates.downloadSuccess", "Download completed successfully!"), "success");
-      } else {
-        throw new Error(result.error || "Download failed");
-      }
-    } catch (error) {
-      // Don't show error if download was intentionally cancelled or aborted
-      const err = error instanceof Error ? error : { message: String(error), type: 'unknown' };
-      if (err.message?.includes('aborted') || 
-          err.message?.includes('cancelled') || 
-          err.message?.includes('interrupted') ||
-          (err as { type?: string }).type === 'aborted') {
-        // Just reset the state silently
-        setDownloadState({ 
-          isDownloading: false,
-          isPaused: false,
-          downloadProgress: 0,
-          downloadedSize: 0,
-          totalSize: 0,
-          downloadSpeed: 0,
-          isDownloaded: false,
-          downloadPath: ''
-        });
-        return;
-      }
-      
-      // Show error for actual failures
-      showToast(t("updates.downloadFailed", "Download failed"), "error");
-      
-      // Reset download state
-      setDownloadState({ 
-        isDownloading: false,
-        isPaused: false,
-        downloadProgress: 0,
-        downloadedSize: 0,
-        totalSize: 0,
-        downloadSpeed: 0,
-        isDownloaded: false,
-        downloadPath: ''
-      });
-    }
-  };
-
-  const handleInstallUpdate = async () => {
-    if (!downloadPath) return;
-
-    setDownloadState({ isInstalling: true });
-
-    try {
-      const result = await window.api.app.installUpdate(downloadPath);
-
-      if (result.success) {
-        window.api?.activityLog?.log({
-          username: user?.username ?? "unknown",
-          action: "activityLog.actions.updateInstallStarted",
-          details: `Path: ${downloadPath}`,
-        }).catch((): undefined => undefined);
-
-        showToast(t("updates.installSuccess", "Installation started"), "success");
-      } else {
-        throw new Error(result.error || "Installation failed");
-      }
-    } catch (error) {
-      showToast(t("updates.installFailed", "Installation failed"), "error");
-    } finally {
-      setDownloadState({ isInstalling: false });
-    }
+      setDownloadState,
+      showToast,
+      t,
+    });
   };
 
   const handleCancelDownload = async () => {
@@ -204,14 +343,18 @@ export default function UpdateManagement() {
       await window.api.app.cancelUpdateDownload();
 
       const version = updateInfo?.latestVersion ?? "unknown";
-      window.api?.activityLog?.log({
-        username: user?.username ?? "unknown",
-        action: "activityLog.actions.updateDownloadCancelled",
-        details: `Version: ${version}`,
-      }).catch((): undefined => undefined);
+      window.api?.activityLog
+        ?.log({
+          username: user?.username ?? "unknown",
+          action: "activityLog.actions.updateDownloadCancelled",
+          details: `Version: ${version}`,
+        })
+        .catch((): undefined => undefined);
 
       showToast(t("updates.downloadCancelled", "Download cancelled"), "info");
-
+    } catch {
+      showToast(t("updates.downloadCancelled", "Download cancelled"), "info");
+    } finally {
       setDownloadState({
         isDownloading: false,
         downloadProgress: 0,
@@ -219,336 +362,347 @@ export default function UpdateManagement() {
         totalSize: 0,
         downloadSpeed: 0,
         isDownloaded: false,
-        downloadPath: ''
+        downloadPath: "",
       });
-    } catch (error) {
-      showToast(t("updates.downloadCancelled", "Download cancelled"), "info");
-      setDownloadState({
-        isDownloading: false,
-        downloadProgress: 0,
-        downloadedSize: 0,
-        totalSize: 0,
-        downloadSpeed: 0,
-        isDownloaded: false,
-        downloadPath: ''
-      });
-    }
-  };
-
-  const getStatusIcon = () => {
-    if (isChecking || isDownloading) {
-      return <Loader2 className="w-8 h-8 text-primary animate-spin" />;
-    }
-    
-    if (error) {
-      return <WifiOff className="w-8 h-8 text-red-500" />;
-    }
-    
-    if (updateInfo?.available) {
-      return <Download className="w-8 h-8 text-green-500" />;
-    }
-    
-    if (updateInfo?.currentVersion === updateInfo?.latestVersion) {
-      return <CheckCircle className="w-8 h-8 text-green-500" />;
-    }
-    
-    return <CheckCircle className="w-8 h-8 text-green-500" />;
-  };
-
-  const getStatusMessage = () => {
-    if (isChecking) {
-      return t("updates.checking");
-    }
-    
-    if (isDownloading) {
-      return t("updates.downloading", "Downloading update...");
-    }
-    
-    if (isDownloaded) {
-      return t("updates.downloaded", "Download completed! Ready to install.");
-    }
-    
-    if (isInstalling) {
-      return t("updates.installing", "Installing update...");
-    }
-    
-    if (error) {
-      if (error.includes("fetch") || error.includes("network")) {
-        return t("updates.noInternet");
+      // Re-apply any previously persisted pending install (this download was never saved).
+      if (window.api?.app?.readPendingUpdate) {
+        void window.api.app.readPendingUpdate().then((pending) => {
+          if (pending) {
+            setDownloadState({
+              isDownloaded: true,
+              downloadPath: pending.path,
+            });
+          }
+        });
       }
-      return t("updates.checkFailed", { error });
     }
-    
-    if (updateInfo?.available) {
-      return t("updates.updateAvailable", { version: updateInfo.latestVersion });
-    }
-    
-    if (updateInfo?.currentVersion === updateInfo?.latestVersion) {
-      return t("updates.upToDate");
-    }
-    
-    return t("updates.noReleases");
   };
 
-  const getStatusColor = () => {
-    if (isChecking || isDownloading) {
-      return "text-primary";
-    }
-    
-    if (isDownloaded) {
-      return "text-blue-500";
-    }
-    
-    if (isInstalling) {
-      return "text-orange-500";
-    }
-    
-    if (error) {
-      return "text-red-500";
-    }
-    
-    if (updateInfo?.available) {
-      return "text-green-500";
-    }
-    
-    if (updateInfo?.currentVersion === updateInfo?.latestVersion) {
-      return "text-green-500";
-    }
-    
-    return "text-blue-500";
-  };
+  const currentVersionLabel =
+    updateInfo?.currentVersion != null && updateInfo.currentVersion !== ""
+      ? `v${updateInfo.currentVersion}`
+      : "—";
+
+  const latestVersionLabel =
+    updateInfo?.latestVersion != null && updateInfo.latestVersion !== ""
+      ? `v${updateInfo.latestVersion}`
+      : t("admin.updates.hubLatestUnknown", "Unknown until checked online");
+
+  const remainingLabel =
+    totalSize > 0 && downloadedSize > 0 && downloadSpeed > 0
+      ? (() => {
+          const remainingSeconds = Math.ceil((totalSize - downloadedSize) / downloadSpeed);
+          if (remainingSeconds < 60) {
+            return `${remainingSeconds}s ${t("admin.updatesContent.remaining", "remaining")}`;
+          }
+          if (remainingSeconds < 3600) {
+            const minutes = Math.floor(remainingSeconds / 60);
+            const seconds = remainingSeconds % 60;
+            return `${minutes}m ${seconds}s ${t("admin.updatesContent.remaining", "remaining")}`;
+          }
+          const hours = Math.floor(remainingSeconds / 3600);
+          const minutes = Math.floor((remainingSeconds % 3600) / 60);
+          return `${hours}h ${minutes}m ${t("admin.updatesContent.remaining", "remaining")}`;
+        })()
+      : null;
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-foreground flex items-center gap-3">
-            <Shield className="w-6 h-6 text-orange-500" />
+          <h2 className="flex items-center gap-2 text-2xl font-bold tracking-tight text-foreground">
+            <Download className="h-7 w-7 text-orange-600" aria-hidden />
             {t("admin.updatesContent.title", "System Updates")}
           </h2>
-          <p className="text-muted-foreground mt-1">
-            {t("admin.updatesContent.subtitle", "Keep your application up to date with the latest features and security patches")}
+          <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
+            {t(
+              "admin.updatesContent.subtitle",
+              "Keep your application up to date with the latest features and security patches",
+            )}
           </p>
         </div>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => void handleManualCheck()}
+          disabled={!isOnline || isChecking || checkCooldownRemainingMs > 0 || isDownloading}
+          className="shrink-0"
+        >
+          {isChecking ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
+          ) : (
+            <RefreshCw className="mr-2 h-4 w-4" aria-hidden />
+          )}
+          {checkCooldownRemainingMs > 0
+            ? t("admin.updates.checkCooldown", "Check for updates ({{seconds}}s)", {
+                seconds: Math.ceil(checkCooldownRemainingMs / 1000),
+              })
+            : t("admin.updates.checkForUpdates", "Check for updates")}
+        </Button>
       </div>
 
-      {/* Main Status Card */}
-      <div className="bg-card border border-border rounded-xl shadow-sm p-8">
-        <div className="text-center">
-          {/* Status Icon */}
-          <div className="flex justify-center mb-6">
-            {getStatusIcon()}
-          </div>
-
-          {/* Status Message */}
-          <h3 className={`text-xl font-semibold mb-4 ${getStatusColor()}`}>
-            {getStatusMessage()}
-          </h3>
-
-          {/* Current Version Info */}
-          {updateInfo && (
-            <div className="bg-muted/50 rounded-lg p-4 mb-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                <div className="flex items-center justify-center gap-2">
-                  <Clock className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-muted-foreground">{t("admin.updatesContent.currentVersion", "Current Version")}:</span>
-                  <span className="font-medium text-foreground">v{updateInfo.currentVersion}</span>
+      <Card className="overflow-hidden border-border shadow-sm">
+        <CardContent className="p-0">
+          <div className="bg-gradient-to-br from-orange-500/10 via-background to-background p-6">
+            <div className="flex items-start gap-4">
+              <div className="rounded-2xl bg-card p-3 shadow-sm ring-1 ring-border">
+                <Download className="h-7 w-7 text-orange-600" aria-hidden />
+              </div>
+              <div className="min-w-0 flex-1 space-y-4">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge variant="outline" className={cn("font-normal", statusBadge.className)}>
+                    {statusBadge.label}
+                  </Badge>
+                  <Badge variant="outline" className="border-border">
+                    {isOnline ? (
+                      <span className="inline-flex items-center gap-1">
+                        <Wifi className="h-3.5 w-3.5" aria-hidden />
+                        {t("admin.updates.hubOnline", "Online")}
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1">
+                        <WifiOff className="h-3.5 w-3.5" aria-hidden />
+                        {t("admin.updates.hubOfflineBadge", "Offline")}
+                      </span>
+                    )}
+                  </Badge>
                 </div>
-                {updateInfo.latestVersion && updateInfo.latestVersion !== updateInfo.currentVersion && (
-                  <div className="flex items-center justify-center gap-2">
-                    <ArrowDown className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-muted-foreground">{t("admin.updatesContent.latestVersion", "Latest Version")}:</span>
-                    <span className="font-medium text-foreground">v{updateInfo.latestVersion}</span>
+
+                <div>
+                  <h3 className="text-lg font-semibold text-foreground">
+                    {t("admin.updates.hubTitle", "App updates")}
+                  </h3>
+                  <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{statusDescription}</p>
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <InfoRow
+                    label={t("admin.updatesContent.currentVersion", "Current version")}
+                    value={currentVersionLabel}
+                  />
+                  <InfoRow
+                    label={t("admin.updatesContent.latestVersion", "Latest version")}
+                    value={
+                      hasUpdateAvailable ? (
+                        <span className="inline-flex items-center gap-1.5">
+                          <ArrowDown className="h-4 w-4 text-emerald-600" aria-hidden />
+                          {latestVersionLabel}
+                        </span>
+                      ) : (
+                        latestVersionLabel
+                      )
+                    }
+                    hint={
+                      hasUpdateAvailable
+                        ? t("admin.updates.hubNewerAvailable", "A newer release is ready to download.")
+                        : undefined
+                    }
+                  />
+                  <InfoRow
+                    label={t("admin.updates.hubLastCheck", "Last update check")}
+                    value={lastCheckLabel}
+                    hint={t(
+                      "admin.updates.hubLastCheckHint",
+                      "Updated when the app starts or when you check for updates.",
+                    )}
+                  />
+                </div>
+
+                <div className="flex flex-col gap-3 rounded-lg border border-border/70 bg-muted/20 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0 space-y-1">
+                    <label
+                      htmlFor="auto-download-updates"
+                      className="text-sm font-medium text-foreground"
+                    >
+                      {t("admin.updates.autoDownloadLabel", "Automatic download")}
+                    </label>
+                    <p className="text-xs text-muted-foreground">
+                      {t(
+                        "admin.updates.autoDownloadDesc",
+                        "When enabled, available updates start downloading automatically after you log in.",
+                      )}
+                    </p>
                   </div>
-                )}
-              </div>
-            </div>
-          )}
+                  <div className="flex shrink-0 items-center gap-3">
+                    <Switch
+                      id="auto-download-updates"
+                      checked={autoDownloadEnabled}
+                      onCheckedChange={(checked) => void handleAutoDownloadChange(checked)}
+                      disabled={savingAutoDownload}
+                      aria-label={t("admin.updates.autoDownloadLabel", "Automatic download")}
+                    />
+                    <span className="text-sm font-medium text-muted-foreground">
+                      {autoDownloadEnabled
+                        ? t("admin.updates.autoDownloadOn", "Enabled")
+                        : t("admin.updates.autoDownloadOff", "Disabled")}
+                    </span>
+                  </div>
+                </div>
 
-          {/* Download Progress */}
-          {isDownloading && (
-            <div className="mb-6">
-              <div className="w-full bg-muted rounded-full h-3 mb-3">
-                <div 
-                  className="bg-primary h-3 rounded-full transition-all duration-300"
-                  style={{ width: `${downloadProgress}%` }}
-                />
-              </div>
-              <div className="flex justify-between items-center text-sm text-muted-foreground mb-2">
-                <span>{Math.round(downloadProgress)}% {t("admin.updatesContent.complete", "complete")}</span>
-                <span>
-                  {downloadSpeed > 0 && `${formatBytes(downloadSpeed)}/s`}
-                </span>
-              </div>
-              <div className="flex justify-between items-center text-xs text-muted-foreground">
-                <span>
-                  {formatBytes(downloadedSize)} / {formatBytes(totalSize)}
-                </span>
-                <span>
-                  {totalSize > 0 && downloadedSize > 0 && downloadSpeed > 0 && 
-                    (() => {
-                      const remainingBytes = totalSize - downloadedSize;
-                      const remainingSeconds = Math.ceil(remainingBytes / downloadSpeed);
-                      
-                      if (remainingSeconds < 60) {
-                        return `${remainingSeconds}s ${t("admin.updatesContent.remaining", "remaining")}`;
-                      } else if (remainingSeconds < 3600) {
-                        const minutes = Math.floor(remainingSeconds / 60);
-                        const seconds = remainingSeconds % 60;
-                        return `${minutes}m ${seconds}s ${t("admin.updatesContent.remaining", "remaining")}`;
-                      } else {
-                        const hours = Math.floor(remainingSeconds / 3600);
-                        const minutes = Math.floor((remainingSeconds % 3600) / 60);
-                        return `${hours}h ${minutes}m ${t("admin.updatesContent.remaining", "remaining")}`;
-                      }
-                    })()
-                  }
-                </span>
-              </div>
-            </div>
-          )}
+                {isDownloading ? (
+                  <div className="rounded-lg border border-border/70 bg-muted/20 px-4 py-3">
+                    <div className="mb-2 flex items-center justify-between text-sm">
+                      <span className="font-medium text-foreground">
+                        {Math.round(downloadProgress)}% {t("admin.updatesContent.complete", "complete")}
+                      </span>
+                      {downloadSpeed > 0 ? (
+                        <span className="text-muted-foreground">{formatBytes(downloadSpeed)}/s</span>
+                      ) : null}
+                    </div>
+                    <div className="mb-2 h-2 w-full overflow-hidden rounded-full bg-muted">
+                      <div
+                        className="h-full rounded-full bg-primary transition-all duration-300"
+                        style={{ width: `${downloadProgress}%` }}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <span>
+                        {formatBytes(downloadedSize)} / {formatBytes(totalSize)}
+                      </span>
+                      {remainingLabel}
+                    </div>
+                  </div>
+                ) : null}
 
-          {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            {updateInfo?.available && !isDownloading && !isInstalling && !isDownloaded && (
-              <button
-                onClick={handleDownloadClick}
-                className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-              >
-                <Download className="w-4 h-4" />
-                {t("admin.updatesContent.downloadUpdate", "Download Update")}
-              </button>
-            )}
-            
-            {isDownloading && (
-              <button
-                onClick={handleCancelDownload}
-                className="flex items-center gap-2 px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-              >
-                <XCircle className="w-4 h-4" />
-                {t("admin.updatesContent.cancelDownload", "Cancel Download")}
-              </button>
-            )}
-            
-            {isDownloaded && !isInstalling && (
-              <button
-                onClick={handleInstallUpdate}
-                className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                <Play className="w-4 h-4" />
-                {t("admin.updatesContent.installUpdate", "Install Update")}
-              </button>
-            )}
-            
-            {updateInfo?.available && (
-              <button
-                onClick={() => setShowDetails(!showDetails)}
-                className="flex items-center gap-2 px-6 py-3 bg-muted text-foreground rounded-lg hover:bg-muted/80 transition-colors"
-              >
-                <Info className="w-4 h-4" />
-                {showDetails ? t("admin.updatesContent.hideDetails", "Hide Details") : t("admin.updatesContent.showDetails", "Show Details")}
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {hasUpdateAvailable && !isDownloading && !isInstalling && !isDownloaded ? (
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={handleDownloadClick}
+                      disabled={!isOnline}
+                      className="gap-1.5 bg-orange-500 text-white hover:bg-orange-600"
+                    >
+                      <Download className="h-4 w-4" aria-hidden />
+                      {t("admin.updatesContent.downloadUpdate", "Download update")}
+                    </Button>
+                  ) : null}
 
-      {/* Update Details */}
-      {showDetails && updateInfo?.available && (
-        <div className="bg-card border border-border rounded-xl shadow-sm p-6">
-          <h4 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
-            <Info className="w-5 h-5 text-primary" />
-            {t("admin.updatesContent.updateDetails", "Update Details")}
-          </h4>
-          
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">
-                  {t("admin.updatesContent.currentVersion", "Current Version")}
-                </label>
-                <p className="text-foreground font-mono">v{updateInfo.currentVersion}</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">
-                  {t("admin.updatesContent.latestVersion", "Latest Version")}
-                </label>
-                <p className="text-foreground font-mono">v{updateInfo.latestVersion}</p>
-              </div>
-            </div>
-            
-            {updateInfo.releaseNotes && (
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">
-                  {t("admin.updatesContent.releaseNotes", "Release Notes")}
-                </label>
-                <div className="mt-2 p-4 bg-muted/50 rounded-lg">
-                  <pre className="text-sm text-foreground whitespace-pre-wrap">
-                    {updateInfo.releaseNotes}
-                  </pre>
+                  {isDownloading ? (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => void handleCancelDownload()}
+                      className="gap-1.5 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                    >
+                      <XCircle className="h-4 w-4" aria-hidden />
+                      {t("admin.updatesContent.cancelDownload", "Cancel download")}
+                    </Button>
+                  ) : null}
+
+                  {isDownloaded && !isInstalling ? (
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => void handleInstallUpdate()}
+                      className="gap-1.5 bg-blue-700 text-white hover:bg-blue-800"
+                    >
+                      <Play className="h-4 w-4" aria-hidden />
+                      {t("admin.updatesContent.installUpdate", "Install update")}
+                    </Button>
+                  ) : null}
+
+                  {hasUpdateAvailable && updateInfo?.releaseNotes ? (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setShowReleaseNotes((v) => !v)}
+                      className="gap-1.5"
+                    >
+                      <Info className="h-4 w-4" aria-hidden />
+                      {showReleaseNotes
+                        ? t("admin.updatesContent.hideDetails", "Hide release notes")
+                        : t("admin.updatesContent.showDetails", "Show release notes")}
+                    </Button>
+                  ) : null}
                 </div>
               </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Error Details */}
-      {error && (
-        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-6">
-          <div className="flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
-            <div className="flex-1">
-              <h4 className="font-medium text-red-800 dark:text-red-200 mb-2">
-                {t("admin.updatesContent.errorTitle", "Update Check Failed")}
-              </h4>
-              <p className="text-sm text-red-700 dark:text-red-300 mb-3">
-                {error}
-              </p>
-              <button
-                onClick={clearError}
-                className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-200"
-              >
-                <X className="w-4 h-4" />
-                {t("admin.updatesContent.dismissError", "Dismiss")}
-              </button>
             </div>
           </div>
-        </div>
-      )}
 
-      {/* Info Card */}
-      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6">
-        <div className="flex items-start gap-3">
-          <Info className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
-          <div>
-            <h4 className="font-medium text-blue-800 dark:text-blue-200 mb-2">
-                {t("admin.updatesContent.infoTitle", "About Updates")}
-            </h4>
-            <ul className="text-sm text-blue-700 dark:text-blue-300 space-y-1">
-              <li>• {t("admin.updatesContent.info1", "Updates include new features, bug fixes, and security improvements")}</li>
-              <li>• {t("admin.updatesContent.info2", "Your data and settings will be preserved during updates")}</li>
-              <li>• {t("admin.updatesContent.info3", "The app will restart automatically after installation")}</li>
-              <li>• {t("admin.updatesContent.info4", "Make sure to backup your data before major updates")}</li>
+          {!isOnline && hasUpdateAvailable && !isDownloaded ? (
+            <div className="border-t border-border/60 bg-muted/15 px-6 py-3">
+              <p className="text-xs text-muted-foreground">
+                {t(
+                  "admin.updates.hubOfflineDownloadHint",
+                  "Connect to the internet to download the available update.",
+                )}
+              </p>
+            </div>
+          ) : null}
+        </CardContent>
+      </Card>
+
+      {showReleaseNotes && updateInfo?.releaseNotes ? (
+        <Card className="border-border shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Info className="h-4 w-4 text-orange-600" aria-hidden />
+              {t("admin.updatesContent.releaseNotes", "Release notes")}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <pre className="whitespace-pre-wrap rounded-lg border border-border/70 bg-muted/20 p-4 text-sm text-foreground">
+              {updateInfo.releaseNotes}
+            </pre>
+          </CardContent>
+        </Card>
+      ) : null}
+
+      {error && !isNetworkError ? (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" aria-hidden />
+          <AlertDescription className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <span>{error}</span>
+            <Button type="button" variant="outline" size="sm" onClick={clearError} className="shrink-0">
+              {t("admin.updatesContent.dismissError", "Dismiss")}
+            </Button>
+          </AlertDescription>
+        </Alert>
+      ) : null}
+
+      <Card className="border-border shadow-sm">
+        <CardContent className="p-4">
+          <div className="flex items-start gap-3">
+            <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+            <ul className="space-y-1 text-sm text-muted-foreground">
+              <li>
+                {t(
+                  "admin.updatesContent.info1",
+                  "Updates include new features, bug fixes, and security improvements",
+                )}
+              </li>
+              <li>
+                {t(
+                  "admin.updatesContent.info2",
+                  "Your data and settings will be preserved during updates",
+                )}
+              </li>
+              <li>
+                {t("admin.updatesContent.info3", "The app will restart automatically after installation")}
+              </li>
+              <li>
+                {t("admin.updatesContent.info4", "Make sure to backup your data before major updates")}
+              </li>
             </ul>
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
-      {/* Warning Dialog */}
       <Dialog open={showWarningDialog} onOpenChange={setShowWarningDialog}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-orange-600">
-              <AlertTriangle className="w-5 h-5" />
+              <AlertTriangle className="h-5 w-5" aria-hidden />
               {t("updates.downloadWarningTitle", "Important: Before Downloading Update")}
             </DialogTitle>
-            <DialogDescription className="text-muted-foreground pt-2">
+            <DialogDescription className="pt-2 text-muted-foreground">
               {t("updates.downloadWarningDesc", "Please ensure the following before starting the update:")}
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="space-y-2 py-4">
             <p className="text-sm font-medium text-foreground">
               {t("updates.downloadWarning1", "• Do NOT close the application during download")}
@@ -570,26 +724,21 @@ export default function UpdateManagement() {
             </p>
           </div>
 
-          <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-3 mt-2">
+          <div className="mt-2 rounded-lg border border-orange-200 bg-orange-50 p-3 dark:border-orange-800 dark:bg-orange-900/20">
             <p className="text-sm text-orange-800 dark:text-orange-200">
-              <AlertTriangle className="w-4 h-4 inline mr-1" />
-              {t("updates.downloadWarningNote", "Any interruption during the download process may cause the update to fail.")}
+              <AlertTriangle className="mr-1 inline h-4 w-4" aria-hidden />
+              {t(
+                "updates.downloadWarningNote",
+                "Any interruption during the download process may cause the update to fail.",
+              )}
             </p>
           </div>
 
           <DialogFooter className="gap-2">
-            <Button
-              variant="outline"
-              onClick={() => setShowWarningDialog(false)}
-              className="flex-1 sm:flex-none"
-            >
+            <Button variant="outline" onClick={() => setShowWarningDialog(false)} className="flex-1 sm:flex-none">
               {t("updates.downloadWarningCancel", "Cancel")}
             </Button>
-            <Button
-              variant="default"
-              onClick={handleConfirmDownload}
-              className="flex-1 sm:flex-none bg-primary hover:bg-primary/90"
-            >
+            <Button onClick={() => void handleConfirmDownload()} className="flex-1 sm:flex-none">
               {t("updates.downloadWarningConfirm", "I understand, proceed with download")}
             </Button>
           </DialogFooter>

@@ -23,7 +23,17 @@ import { useDueSoonBills } from "../../lib/contexts/dueSoonBillsContext";
 import { useOverdueServices } from "../../lib/contexts/overdueServicesContext";
 import { useDueSoonServices } from "../../lib/contexts/dueSoonServicesContext";
 import { useCompletedServices } from "../../lib/contexts/completedServicesContext";
-import { useUpdateContext } from "../../lib/contexts/updateContext";
+import { useUpdateContext, getGlobalUpdateState } from "../../lib/contexts/updateContext";
+import { useToast } from "../../lib/contexts/toastContext";
+import { downloadAppUpdate } from "../../lib/updates/updateActions";
+import {
+  AUTO_DOWNLOAD_UPDATES_OPTION_KEY,
+  isAutoDownloadUpdatesEnabledOptionValue,
+} from "../../lib/updates/constants";
+import {
+  POST_LOGIN_BACKUP_ENSURE_DELAY_MS,
+  TOAST_AUTO_DISMISS_MS,
+} from "../../lib/toast/postLoginToast";
 import { UpdateModal } from "./components/updateModal";
 import "../../lib/i18n";
 
@@ -34,7 +44,8 @@ const staggerStyle = (index: number): CSSProperties =>
 
 export default function MainMenu() {
   const { t } = useTranslation();
-  const { isAdmin, canAccessPage } = useAuth();
+  const { isAdmin, canAccessPage, user } = useAuth();
+  const { showToast, waitForToastQuiet } = useToast();
   const { unseenLowStockCount } = useLowStock();
   const { unseenOutOfStockCount } = useOutOfStock();
   const { unseenOverdueCreditsCount, unseenOverdueVersementsCount } = useOverduePayments();
@@ -44,13 +55,14 @@ export default function MainMenu() {
   const { unseenOverdueServicesCount, enableBadge: enableOverdueServicesBadge, badgeLoaded: overdueServicesBadgeLoaded } = useOverdueServices();
   const { unseenDueSoonServicesCount, enableBadge: enableDueSoonServicesBadge, badgeLoaded: dueSoonServicesBadgeLoaded } = useDueSoonServices();
   const { completedServicesCount } = useCompletedServices();
-  const { state: updateState } = useUpdateContext();
+  const { state: updateState, setDownloadState } = useUpdateContext();
   const [enableBadge, setEnableBadge] = useState(false); // Start as false to prevent flash
   const [badgeLoaded, setBadgeLoaded] = useState(false);
   const [enableOutOfStockBadge, setEnableOutOfStockBadge] = useState(false); // Start as false to prevent flash
   const [outOfStockBadgeLoaded, setOutOfStockBadgeLoaded] = useState(false);
   const [shouldAnimate, setShouldAnimate] = useState(false);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
+  const [downloadStartedAutomatically, setDownloadStartedAutomatically] = useState(false);
 
   useEffect(() => {
     const loadBadgeSetting = () => {
@@ -83,25 +95,106 @@ export default function MainMenu() {
     return () => clearTimeout(timer);
   }, []);
 
-  // Show update modal once per login session when entering main menu and update is available
+  // Start auto-download (if enabled) before showing the modal so Update Now never flashes.
+  // Show update modal once per version per login session (download or install reminder).
+  // Do not reopen when a download finishes mid-session — sticky toast covers that.
   useEffect(() => {
-    if (updateState.updateInfo?.available && updateState.updateInfo?.latestVersion) {
-      // Check if we've already shown the modal in this session
-      const shownVersionKey = `updateModalShown_${updateState.updateInfo.latestVersion}`;
-      const hasBeenShown = sessionStorage.getItem(shownVersionKey);
-      
-      if (!hasBeenShown) {
-        // Small delay to let the page load first
-        const timer = setTimeout(() => {
-          setShowUpdateModal(true);
-          // Mark this version as shown for this session
-          sessionStorage.setItem(shownVersionKey, "true");
-        }, 500);
+    let cancelled = false;
+    let modalTimer: ReturnType<typeof setTimeout> | undefined;
+    let toastTimer: ReturnType<typeof setTimeout> | undefined;
 
-        return () => clearTimeout(timer);
+    const run = async () => {
+      const latestVersion = updateState.updateInfo?.latestVersion;
+      const shouldShow =
+        Boolean(latestVersion) &&
+        (updateState.updateInfo?.available === true || updateState.isDownloaded === true);
+
+      if (!shouldShow || !latestVersion) return;
+
+      const shownVersionKey = `updateModalShown_${latestVersion}`;
+      if (sessionStorage.getItem(shownVersionKey)) return;
+
+      let startedAutomatically = updateState.isDownloading === true;
+
+      if (
+        updateState.updateInfo?.available === true &&
+        !updateState.isDownloaded &&
+        !updateState.isDownloading &&
+        !updateState.isInstalling &&
+        updateState.updateInfo.downloadUrl &&
+        navigator.onLine
+      ) {
+        const autoKey = `updateAutoDownload_${latestVersion}`;
+        if (!sessionStorage.getItem(autoKey)) {
+          try {
+            const raw = await window.api.database.options.get(AUTO_DOWNLOAD_UPDATES_OPTION_KEY);
+            if (cancelled) return;
+            if (isAutoDownloadUpdatesEnabledOptionValue(raw)) {
+              sessionStorage.setItem(autoKey, "1");
+              startedAutomatically = true;
+              // Sets isDownloading synchronously before the network call.
+              void downloadAppUpdate({
+                downloadUrl: updateState.updateInfo.downloadUrl,
+                version: latestVersion,
+                username: user?.username ?? "unknown",
+                setDownloadState,
+                showToast,
+                t,
+              });
+              // Daily backup toast also kicks off ~3s after login — wait until that
+              // (and any follow-up auto-dismiss toast) clears before showing this one.
+              toastTimer = setTimeout(() => {
+                void (async () => {
+                  await waitForToastQuiet({
+                    timeoutMs: TOAST_AUTO_DISMISS_MS * 2 + 2000,
+                  });
+                  if (cancelled) return;
+                  await new Promise<void>((resolve) => {
+                    window.setTimeout(resolve, 500);
+                  });
+                  if (cancelled) return;
+                  // Skip if download already finished/failed — avoid stacking on Install toast.
+                  if (!getGlobalUpdateState().isDownloading) return;
+                  showToast(t("updates.downloading", "Downloading update..."), "info");
+                })();
+              }, POST_LOGIN_BACKUP_ENSURE_DELAY_MS + 800);
+            }
+          } catch {
+            /* ignore option read errors — fall back to manual download button */
+          }
+        } else {
+          startedAutomatically = true;
+        }
       }
-    }
-  }, [updateState.updateInfo?.available, updateState.updateInfo?.latestVersion]);
+
+      if (cancelled) return;
+
+      setDownloadStartedAutomatically(startedAutomatically);
+      modalTimer = setTimeout(() => {
+        if (cancelled) return;
+        setShowUpdateModal(true);
+        sessionStorage.setItem(shownVersionKey, "true");
+      }, 500);
+    };
+
+    void run();
+
+    return () => {
+      cancelled = true;
+      if (modalTimer) clearTimeout(modalTimer);
+      if (toastTimer) clearTimeout(toastTimer);
+    };
+  }, [
+    setDownloadState,
+    showToast,
+    t,
+    updateState.isDownloaded,
+    updateState.updateInfo?.available,
+    updateState.updateInfo?.downloadUrl,
+    updateState.updateInfo?.latestVersion,
+    user?.username,
+    waitForToastQuiet,
+  ]);
 
   const allMenuItems = [
     {
@@ -180,9 +273,10 @@ export default function MainMenu() {
 
   return (
     <>
-      <UpdateModal 
-        open={showUpdateModal} 
-        onOpenChange={setShowUpdateModal} 
+      <UpdateModal
+        open={showUpdateModal}
+        onOpenChange={setShowUpdateModal}
+        downloadStartedAutomatically={downloadStartedAutomatically}
       />
       <main className="py-4 px-4 md:px-12 ml-20 flex-1 rounded-xl">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">

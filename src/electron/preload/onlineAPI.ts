@@ -24,7 +24,11 @@ export const onlineAPI = {
     ipcRenderer.invoke("online:deviceLinkExisting", payload) as Promise<DeviceLinkExistingResult>,
   readLicenseGrace: () =>
     ipcRenderer.invoke("online:licenseGrace:read") as Promise<LicenseGraceSnapshot | null>,
-  persistLicenseGrace: (payload: { trialEndsAt?: string | null; expiresAt?: string | null }) =>
+  persistLicenseGrace: (payload: {
+    trialEndsAt?: string | null;
+    expiresAt?: string | null;
+    aiEnabled?: boolean;
+  }) =>
     ipcRenderer.invoke("online:licenseGrace:persist", payload) as Promise<
       { success: true } | { success: false; error: string }
     >,

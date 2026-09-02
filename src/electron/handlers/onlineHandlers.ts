@@ -1175,10 +1175,12 @@ export function setupOnlineHandlers(): void {
     "online:licenseGrace:persist",
     (
       _event,
-      payload: { trialEndsAt?: string | null; expiresAt?: string | null } | undefined,
+      payload:
+        | { trialEndsAt?: string | null; expiresAt?: string | null; aiEnabled?: boolean }
+        | undefined,
     ): { success: true } | { success: false; error: string } => {
       try {
-        persistStoredLicenseGrace(payload?.trialEndsAt, payload?.expiresAt);
+        persistStoredLicenseGrace(payload?.trialEndsAt, payload?.expiresAt, payload?.aiEnabled);
         return { success: true };
       } catch (e) {
         return { success: false, error: (e as Error).message || "Failed to persist license grace." };

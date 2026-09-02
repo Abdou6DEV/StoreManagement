@@ -8,8 +8,21 @@ import React, {
 } from "react";
 import { useTranslation } from "react-i18next";
 import { ToastType, Toast } from "../../types";
-import { CheckCircle, XCircle, Info, X } from "lucide-react";
+import { CheckCircle, XCircle, Info, X, Play } from "lucide-react";
 import { playToastSound } from "../utils/soundUtils";
+
+export type ToastAction = {
+  label: string;
+  onClick: () => void;
+  variant?: "default" | "outline" | "primary";
+};
+
+export type ShowToastOptions = {
+  sticky?: boolean;
+  actions?: ToastAction[];
+  /** Override the default type icon (e.g. install-ready sticky toast). */
+  icon?: "install";
+};
 
 /** Toasts when a daily local backup is created or auto-uploaded to cloud (IPC from main). */
 function BackupToastListener(): React.ReactElement | null {
@@ -51,7 +64,12 @@ function BackupToastListener(): React.ReactElement | null {
 }
 
 interface ToastContextProps {
-  showToast: (message: string, type?: ToastType) => void;
+  showToast: (message: string, type?: ToastType, options?: ShowToastOptions) => void;
+  /**
+   * Resolves when no auto-dismiss toasts are visible (sticky action toasts are ignored),
+   * or when `timeoutMs` elapses — whichever comes first.
+   */
+  waitForToastQuiet: (options?: { timeoutMs?: number; pollMs?: number }) => Promise<void>;
 }
 
 const ToastContext = createContext<ToastContextProps | undefined>(undefined);
@@ -62,9 +80,12 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const toastsRef = useRef<Toast[]>([]);
   const timeoutRefs = useRef<{ [id: number]: NodeJS.Timeout }>({});
   const pauseTimes = useRef<{ [id: number]: number }>({});
   const startTimes = useRef<{ [id: number]: number }>({});
+
+  toastsRef.current = toasts;
 
   const removeToast = useCallback((id: number) => {
     setToasts((toasts) => toasts.filter((t) => t.id !== id));
@@ -77,18 +98,44 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({
   }, []);
 
   const showToast = useCallback(
-    (message: string, type: ToastType = "success") => {
+    (message: string, type: ToastType = "success", options?: ShowToastOptions) => {
       const id = ++toastId;
+      const sticky = options?.sticky === true;
+      const actions = options?.actions;
+      const icon = options?.icon;
       const startTime = Date.now();
       startTimes.current[id] = startTime;
       
       // Play sound for the toast
       playToastSound(type);
       
-      setToasts((toasts) => [...toasts, { id, message, type }]);
-      timeoutRefs.current[id] = setTimeout(() => removeToast(id), 4000);
+      setToasts((toasts) => [...toasts, { id, message, type, sticky, actions, icon }]);
+      if (!sticky) {
+        timeoutRefs.current[id] = setTimeout(() => removeToast(id), 4000);
+      }
     },
     [removeToast],
+  );
+
+  const waitForToastQuiet = useCallback(
+    (options?: { timeoutMs?: number; pollMs?: number }) => {
+      const timeoutMs = options?.timeoutMs ?? 12_000;
+      const pollMs = options?.pollMs ?? 200;
+      const startedAt = Date.now();
+
+      return new Promise<void>((resolve) => {
+        const tick = () => {
+          const hasAutoDismissToast = toastsRef.current.some((toast) => toast.sticky !== true);
+          if (!hasAutoDismissToast || Date.now() - startedAt >= timeoutMs) {
+            resolve();
+            return;
+          }
+          window.setTimeout(tick, pollMs);
+        };
+        tick();
+      });
+    },
+    [],
   );
 
   useEffect(() => {
@@ -97,7 +144,10 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({
     };
   }, []);
 
-  const getToastIcon = (type: ToastType) => {
+  const getToastIcon = (type: ToastType, icon?: Toast["icon"]) => {
+    if (icon === "install") {
+      return <Play className="w-5 h-5" />;
+    }
     switch (type) {
       case "success":
         return <CheckCircle className="w-5 h-5" />;
@@ -141,7 +191,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   return (
-    <ToastContext.Provider value={{ showToast }}>
+    <ToastContext.Provider value={{ showToast, waitForToastQuiet }}>
       {children}
       <BackupToastListener />
       {/* Toasts rendered here for global access */}
@@ -149,14 +199,21 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({
         <div className="fixed z-[60] flex flex-col gap-3 p-4 top-4 right-4 max-w-sm w-full">
           {toasts.map((toast) => {
           const styles = getToastStyles(toast.type);
+          const isSticky = toast.sticky === true;
+          const hasActions = Boolean(toast.actions && toast.actions.length > 0);
           return (
             <div
               key={toast.id}
-              className={`relative rounded-xl ${styles.bg} ${styles.shadow} text-card-foreground animate-slide-in-right transition-all duration-300 hover:shadow-md group overflow-hidden`}
+              className={`relative rounded-xl border border-border/80 ${styles.bg} text-card-foreground animate-slide-in-right transition-all duration-300 group overflow-hidden ${
+                hasActions
+                  ? "shadow-lg shadow-black/10 ring-1 ring-black/5 dark:shadow-black/40 dark:ring-white/10"
+                  : `${styles.shadow} hover:shadow-md`
+              }`}
               role="alert"
               tabIndex={0}
               data-toast-id={toast.id}
               onMouseEnter={(e) => {
+                if (isSticky) return;
                 const progressBar = e.currentTarget.querySelector('.toast-progress') as HTMLElement;
                 if (progressBar) {
                   progressBar.style.animationPlayState = 'paused';
@@ -168,6 +225,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({
                 }
               }}
               onMouseLeave={(e) => {
+                if (isSticky) return;
                 const progressBar = e.currentTarget.querySelector('.toast-progress') as HTMLElement;
                 if (progressBar) {
                   progressBar.style.animationPlayState = 'running';
@@ -185,22 +243,42 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({
               }}
             >
               {/* Simple progress bar at bottom */}
-              <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-muted rounded-b-xl overflow-hidden">
-                <div 
-                  className={`h-[3px] bg-gradient-to-r ${styles.progress} opacity-80 toast-progress`}
-                  style={{
-                    animation: 'toast-progress-shrink 4s linear forwards'
-                  }}
-                />
-              </div>
+              {!isSticky ? (
+                <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-muted rounded-b-xl overflow-hidden">
+                  <div 
+                    className={`h-[3px] bg-gradient-to-r ${styles.progress} opacity-80 toast-progress`}
+                    style={{
+                      animation: 'toast-progress-shrink 4s linear forwards'
+                    }}
+                  />
+                </div>
+              ) : null}
               
               {/* Content */}
-              <div className="relative flex items-start gap-3 p-4">
-                <div className={`flex-shrink-0 mt-0.5 ${styles.icon}`}>
-                  {getToastIcon(toast.type)}
+              <div className={`relative flex items-start gap-3 ${hasActions ? "p-4 pb-3" : "p-4"}`}>
+                <div
+                  className={`flex-shrink-0 ${
+                    toast.icon === "install"
+                      ? "text-blue-700"
+                      : styles.icon
+                  } ${
+                    hasActions
+                      ? `mt-0 flex h-9 w-9 items-center justify-center rounded-full ${
+                          toast.icon === "install"
+                            ? "bg-blue-700/10"
+                            : toast.type === "error"
+                              ? "bg-destructive/10"
+                              : toast.type === "info"
+                                ? "bg-primary/10"
+                                : "bg-green-500/10"
+                        }`
+                      : "mt-0.5"
+                  }`}
+                >
+                  {getToastIcon(toast.type, toast.icon)}
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className={`text-sm font-medium leading-relaxed ${styles.text} break-words`}>
+                <div className="min-w-0 flex-1">
+                  <p className={`text-sm font-medium leading-relaxed ${styles.text} break-words text-pretty ${hasActions ? "pt-1.5" : ""}`}>
                     {toast.message}
                   </p>
                 </div>
@@ -212,6 +290,29 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({
                   <X className="w-4 h-4" />
                 </button>
               </div>
+              {hasActions ? (
+                <div className="flex items-center justify-end gap-2 border-t border-border/70 bg-muted/30 px-3 py-2.5">
+                  {toast.actions!.map((action) => (
+                    <button
+                      key={action.label}
+                      type="button"
+                      onClick={() => {
+                        action.onClick();
+                        removeToast(toast.id);
+                      }}
+                      className={
+                        action.variant === "primary"
+                          ? "inline-flex h-8 items-center justify-center rounded-md bg-blue-700 px-3 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-blue-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/40"
+                          : action.variant === "outline"
+                            ? "inline-flex h-8 items-center justify-center rounded-md border border-border bg-background px-3 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+                            : "inline-flex h-8 items-center justify-center rounded-md bg-muted px-3 text-xs font-medium text-foreground transition-colors hover:bg-muted/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+                      }
+                    >
+                      {action.label}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
             </div>
           );
         })}

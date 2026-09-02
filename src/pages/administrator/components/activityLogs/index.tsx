@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
-  RefreshCw,
   Search,
   User,
   Calendar,
@@ -159,12 +158,11 @@ export default function ActivityLogs() {
 
   const [entries, setEntries] = useState<Array<{ id: string; username: string; action: string; details: string | null; createdAt: Date }>>([]);
   const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [usernames, setUsernames] = useState<string[]>([]);
   const [retentionDays, setRetentionDays] = useState(90);
   const [retentionInput, setRetentionInput] = useState("90");
   const [savingRetention, setSavingRetention] = useState(false);
-  const [cleaning, setCleaning] = useState(false);
 
   const [page, setPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
@@ -410,10 +408,12 @@ export default function ActivityLogs() {
   useEffect(() => {
     if (didInitialCleanupRef.current) return;
     didInitialCleanupRef.current = true;
-    if (!window.api?.activityLog?.cleanupOld) return;
+    if (!window.api?.activityLog?.cleanupOld) {
+      setHasInitialized(true);
+      return;
+    }
     let cancelled = false;
     (async () => {
-      setCleaning(true);
       try {
         const count = await window.api.activityLog.cleanupOld();
         const currentUser = userRef.current;
@@ -426,23 +426,20 @@ export default function ActivityLogs() {
         }
       } catch {
         showToast(t("activityLog.errorCleanup", "Cleanup failed"), "error");
-      } finally {
-        if (!cancelled) setCleaning(false);
       }
       if (cancelled) return;
       await loadRetention();
       await loadUsernames();
-      await loadLogs();
       setHasInitialized(true);
     })();
     return () => {
       cancelled = true;
     };
-  }, [loadRetention, loadUsernames, loadLogs, showToast, t]);
+  }, [loadRetention, loadUsernames, showToast, t]);
 
   useEffect(() => {
     if (!hasInitialized) return;
-    loadLogs();
+    void loadLogs();
   }, [hasInitialized, loadLogs]);
 
   const handleSaveRetention = async () => {
@@ -469,6 +466,12 @@ export default function ActivityLogs() {
   };
 
   const totalPages = Math.max(1, Math.ceil(total / itemsPerPage));
+  // Keep table area height stable (header + one page of rows) so loader ↔ data does not reflow the page.
+  const TABLE_HEADER_PX = 45;
+  const TABLE_ROW_PX = 44;
+  const tableMinHeightPx = TABLE_HEADER_PX + itemsPerPage * TABLE_ROW_PX;
+  const showInitialTableLoader = loading && entries.length === 0;
+  const showTableRefreshOverlay = loading && entries.length > 0;
 
   return (
     <div className="space-y-6" dir={isRTL ? "rtl" : "ltr"}>
@@ -494,15 +497,6 @@ export default function ActivityLogs() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {cleaning && (
-            <div className="flex items-center gap-2 rounded-md border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
-              <RefreshCw className="h-4 w-4 animate-spin" />
-              <span>
-                {t("activityLog.cleanupOnEntryMessage", "Removing logs older than retention period. Please wait…")}
-              </span>
-            </div>
-          )}
-
           {/* All filters inline, same height */}
           <div className="flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-2 shrink-0">
@@ -597,116 +591,158 @@ export default function ActivityLogs() {
             </div>
           </div>
 
-          {/* Table */}
-          {loading && entries.length === 0 ? (
-            <div className="flex items-center justify-center py-12">
-              <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
-            </div>
-          ) : entries.length === 0 ? (
-            <p className="text-center text-muted-foreground py-12">
-              {t("activityLog.noEntries", "No activity log entries match your filters.")}
-            </p>
-          ) : (
-            <>
-              <div className="rounded-md border overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="sticky top-0 bg-muted/95 backdrop-blur supports-[backdrop-filter]:bg-muted/80">
-                    <tr className="border-b">
-                      <th className="text-left font-medium p-3 w-[160px]">{t("activityLog.time", "Time")}</th>
-                      <th className="text-left font-medium p-3 w-[120px]">{t("activityLog.user", "User")}</th>
-                      <th className="text-left font-medium p-3 w-[180px]">{t("activityLog.action", "Action")}</th>
-                      <th className="text-left font-medium p-3">{t("activityLog.details", "Details")}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {entries.map((entry) => (
-                      <tr key={entry.id} className="border-b last:border-0 hover:bg-muted/50">
-                        <td className="p-2 text-muted-foreground whitespace-nowrap">
-                          {formatLogTime(entry.createdAt)}
-                        </td>
-                        <td className="p-2 font-medium">{entry.username}</td>
-                        <td className="p-2">{t(getActionKey(entry.action), entry.action)}</td>
-                        <td className="p-2 text-muted-foreground max-w-md align-top select-text">
-                          {(() => {
-                            const text = translateDetails(entry.details);
-                            const isLong = text.length > DETAILS_PREVIEW_LENGTH;
-                            const isExpanded = expandedDetails.has(entry.id);
-                            const preview = isLong && !isExpanded
-                              ? text.slice(0, DETAILS_PREVIEW_LENGTH).trim() + "…"
-                              : text;
-                            const saleId = extractSaleIdFromDetails(entry.details);
-                            const serviceId = extractServiceIdFromDetails(entry.details);
-                            const showSaleLink = saleId && isSaleLogAction(entry.action);
-                            const showServiceLink = serviceId && isServiceLogAction(entry.action);
-                            const linkId = showSaleLink ? saleId : showServiceLink ? serviceId : null;
-                            const handleLinkClick = showSaleLink
-                              ? () => handleSaleIdClick(saleId!)
-                              : showServiceLink
-                                ? () => handleServiceIdClick(serviceId!)
-                                : undefined;
-                            const renderContent = (content: string) => {
-                              if (!linkId || !handleLinkClick) return content;
-                              const i = content.indexOf(linkId);
-                              if (i === -1) return content;
-                              const before = content.slice(0, i);
-                              const after = content.slice(i + linkId.length);
-                              return (
-                                <>
-                                  {before}
-                                  <Button
-                                    type="button"
-                                    variant="link"
-                                    size="sm"
-                                    className="h-auto p-0 text-primary underline hover:no-underline font-mono text-inherit"
-                                    onClick={handleLinkClick}
-                                    disabled={Boolean(showSaleLink) && loadingSale}
-                                  >
-                                    {linkId}
-                                  </Button>
-                                  {after}
-                                </>
-                              );
-                            };
-                            const displayText = isExpanded ? text : preview;
-                            return (
-                              <div className="flex items-start gap-2 min-w-0 select-text">
-                                <span className={cn("break-words min-w-0 flex-1 select-text", !isExpanded && isLong && "line-clamp-1")}>
-                                  {isExpanded ? (
-                                    <span className="whitespace-pre-wrap block">{renderContent(text)}</span>
-                                  ) : (
-                                    <span title={text}>{renderContent(preview)}</span>
-                                  )}
-                                </span>
-                                {isLong && (
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-7 px-2 text-xs text-primary hover:text-primary shrink-0"
-                                    onClick={() => toggleDetails(entry.id)}
-                                  >
-                                    {isExpanded ? (
-                                      <>
-                                        <ChevronUp className="h-3 w-3 mr-1" />
-                                        {t("activityLog.hide", "Hide")}
-                                      </>
-                                    ) : (
-                                      <>
-                                        <ChevronDown className="h-3 w-3 mr-1" />
-                                        {t("activityLog.viewFull", "View full")}
-                                      </>
-                                    )}
-                                  </Button>
-                                )}
-                              </div>
-                            );
-                          })()}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+          {/* Table — reserved height from the start so loading does not flicker the layout */}
+          <div
+            className="relative rounded-md border overflow-x-auto"
+            style={{ minHeight: tableMinHeightPx }}
+            aria-busy={loading}
+          >
+            {showInitialTableLoader ? (
+              <div
+                className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-card text-center px-4"
+                role="status"
+                aria-live="polite"
+              >
+                <div
+                  className="mb-1 size-12 shrink-0 rounded-full border-[3px] border-orange-500/20 border-t-orange-500 animate-spin motion-reduce:animate-none"
+                  aria-hidden
+                />
+                <h3 className="text-xl font-semibold text-foreground">
+                  {t("activityLog.loadingTitle", "Loading activity logs...")}
+                </h3>
+                <p className="text-base text-muted-foreground max-w-md">
+                  {t(
+                    "activityLog.loadingDesc",
+                    "Please wait while activity logs are loaded.",
+                  )}
+                </p>
               </div>
+            ) : null}
+
+            {showTableRefreshOverlay ? (
+              <div
+                className="absolute inset-0 z-10 flex items-center justify-center bg-background/55"
+                role="status"
+                aria-live="polite"
+              >
+                <div
+                  className="size-10 shrink-0 rounded-full border-[3px] border-orange-500/20 border-t-orange-500 animate-spin motion-reduce:animate-none"
+                  aria-hidden
+                />
+              </div>
+            ) : null}
+
+            <table className="w-full text-sm">
+              <thead className="sticky top-0 bg-muted/95 backdrop-blur supports-[backdrop-filter]:bg-muted/80">
+                <tr className="border-b">
+                  <th className="text-left font-medium p-3 w-[160px]">{t("activityLog.time", "Time")}</th>
+                  <th className="text-left font-medium p-3 w-[120px]">{t("activityLog.user", "User")}</th>
+                  <th className="text-left font-medium p-3 w-[180px]">{t("activityLog.action", "Action")}</th>
+                  <th className="text-left font-medium p-3">{t("activityLog.details", "Details")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {!showInitialTableLoader && entries.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={4}
+                      className="p-0 text-center text-muted-foreground align-middle"
+                      style={{ height: itemsPerPage * TABLE_ROW_PX }}
+                    >
+                      {t("activityLog.noEntries", "No activity log entries match your filters.")}
+                    </td>
+                  </tr>
+                ) : (
+                  entries.map((entry) => (
+                    <tr key={entry.id} className="border-b last:border-0 hover:bg-muted/50">
+                      <td className="p-2 text-muted-foreground whitespace-nowrap">
+                        {formatLogTime(entry.createdAt)}
+                      </td>
+                      <td className="p-2 font-medium">{entry.username}</td>
+                      <td className="p-2">{t(getActionKey(entry.action), entry.action)}</td>
+                      <td className="p-2 text-muted-foreground max-w-md align-top select-text">
+                        {(() => {
+                          const text = translateDetails(entry.details);
+                          const isLong = text.length > DETAILS_PREVIEW_LENGTH;
+                          const isExpanded = expandedDetails.has(entry.id);
+                          const preview = isLong && !isExpanded
+                            ? text.slice(0, DETAILS_PREVIEW_LENGTH).trim() + "…"
+                            : text;
+                          const saleId = extractSaleIdFromDetails(entry.details);
+                          const serviceId = extractServiceIdFromDetails(entry.details);
+                          const showSaleLink = saleId && isSaleLogAction(entry.action);
+                          const showServiceLink = serviceId && isServiceLogAction(entry.action);
+                          const linkId = showSaleLink ? saleId : showServiceLink ? serviceId : null;
+                          const handleLinkClick = showSaleLink
+                            ? () => handleSaleIdClick(saleId!)
+                            : showServiceLink
+                              ? () => handleServiceIdClick(serviceId!)
+                              : undefined;
+                          const renderContent = (content: string) => {
+                            if (!linkId || !handleLinkClick) return content;
+                            const i = content.indexOf(linkId);
+                            if (i === -1) return content;
+                            const before = content.slice(0, i);
+                            const after = content.slice(i + linkId.length);
+                            return (
+                              <>
+                                {before}
+                                <Button
+                                  type="button"
+                                  variant="link"
+                                  size="sm"
+                                  className="h-auto p-0 text-primary underline hover:no-underline font-mono text-inherit"
+                                  onClick={handleLinkClick}
+                                  disabled={Boolean(showSaleLink) && loadingSale}
+                                >
+                                  {linkId}
+                                </Button>
+                                {after}
+                              </>
+                            );
+                          };
+                          return (
+                            <div className="flex items-start gap-2 min-w-0 select-text">
+                              <span className={cn("break-words min-w-0 flex-1 select-text", !isExpanded && isLong && "line-clamp-1")}>
+                                {isExpanded ? (
+                                  <span className="whitespace-pre-wrap block">{renderContent(text)}</span>
+                                ) : (
+                                  <span title={text}>{renderContent(preview)}</span>
+                                )}
+                              </span>
+                              {isLong && (
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-7 px-2 text-xs text-primary hover:text-primary shrink-0"
+                                  onClick={() => toggleDetails(entry.id)}
+                                >
+                                  {isExpanded ? (
+                                    <>
+                                      <ChevronUp className="h-3 w-3 mr-1" />
+                                      {t("activityLog.hide", "Hide")}
+                                    </>
+                                  ) : (
+                                    <>
+                                      <ChevronDown className="h-3 w-3 mr-1" />
+                                      {t("activityLog.viewFull", "View full")}
+                                    </>
+                                  )}
+                                </Button>
+                              )}
+                            </div>
+                          );
+                        })()}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="min-h-[52px]">
               {totalPages > 1 && (() => {
                 const renderPageNumbers = () => {
                   const items = [];
@@ -753,7 +789,7 @@ export default function ActivityLogs() {
                 const isLastPage = page === totalPages;
                 const hasNoData = total === 0;
                 return (
-                  <Pagination className="mt-6">
+                  <Pagination className="mt-4">
                     <PaginationContent>
                       <PaginationItem>
                         {isFirstPage || hasNoData || loading ? (
@@ -790,8 +826,7 @@ export default function ActivityLogs() {
                   </Pagination>
                 );
               })()}
-            </>
-          )}
+          </div>
         </CardContent>
       </Card>
 

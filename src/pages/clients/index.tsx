@@ -813,6 +813,7 @@ export default function Clients() {
                 <>
                   <ClientsTable
                     loading={loading}
+                    itemsPerPage={itemsPerPage}
                     clients={paginatedClients}
                     onEdit={handleEdit}
                     onDelete={handleDelete}

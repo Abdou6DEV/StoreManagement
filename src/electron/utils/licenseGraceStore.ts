@@ -18,6 +18,7 @@ export type StoredLicenseGrace = {
   graceUntilMs: number;
   trialEndsAtMs?: number;
   expiresAtMs?: number;
+  aiEnabled?: boolean;
 };
 
 export type LicenseGraceSnapshot = Omit<StoredLicenseGrace, "deviceId">;
@@ -70,6 +71,7 @@ export function readStoredLicenseGrace(): LicenseGraceSnapshot | null {
 export function persistStoredLicenseGrace(
   trialEndsAt?: string | null,
   expiresAt?: string | null,
+  aiEnabled?: boolean,
 ): void {
   const deviceId = readDeviceId();
   if (!deviceId) {
@@ -86,6 +88,7 @@ export function persistStoredLicenseGrace(
     trialEndsAtMs:
       trialEndsAtMs != null && trialEndsAtMs > nowMs ? trialEndsAtMs : undefined,
     expiresAtMs,
+    ...(typeof aiEnabled === "boolean" ? { aiEnabled } : {}),
   };
 
   const filePath = licenseGraceFilePath();

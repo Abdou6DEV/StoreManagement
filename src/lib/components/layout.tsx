@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import Navigation from "./navigation";
 import { useLocation } from "react-router-dom";
 import ChatBox from "./ai/ChatBox";
+import { POST_LOGIN_BACKUP_ENSURE_DELAY_MS } from "../toast/postLoginToast";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(
@@ -18,7 +19,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           window.dispatchEvent(new CustomEvent("backup:created"));
         }
       });
-    }, 3000);
+    }, POST_LOGIN_BACKUP_ENSURE_DELAY_MS);
     return () => clearTimeout(timer);
   }, []);
 

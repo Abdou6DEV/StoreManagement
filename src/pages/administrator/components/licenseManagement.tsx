@@ -289,10 +289,14 @@ export function LicenseManagement() {
       ? formatRemaining(subscriptionEndsAtMs, nowMs, t)
       : t("admin.license.notApplicable", "Not applicable");
 
-  const premiumKnown =
-    effectiveCheckResult?.success === true &&
-    typeof effectiveCheckResult.aiEnabled === "boolean";
-  const hasPremium = premiumKnown && effectiveCheckResult.aiEnabled === true;
+  const aiEnabled =
+    effectiveCheckResult?.success === true && typeof effectiveCheckResult.aiEnabled === "boolean"
+      ? effectiveCheckResult.aiEnabled
+      : typeof snapshot?.aiEnabled === "boolean"
+        ? snapshot.aiEnabled
+        : undefined;
+  const premiumKnown = typeof aiEnabled === "boolean";
+  const hasPremium = premiumKnown && aiEnabled === true;
   const showUpgradeToPremium = !isTrialActive && !hasPremium;
   const pricingInitialTier = hasPremium || showUpgradeToPremium ? "premium" : "standard";
 

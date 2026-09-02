@@ -217,6 +217,13 @@ export interface Toast {
   id: number;
   message: string;
   type: ToastType;
+  sticky?: boolean;
+  icon?: "install";
+  actions?: Array<{
+    label: string;
+    onClick: () => void;
+    variant?: "default" | "outline" | "primary";
+  }>;
 }
 
 export interface ModalAction {

@@ -258,6 +258,16 @@ export type AppAPI = {
     success: boolean;
     error: string | null;
   }>;
+  readPendingUpdate: () => Promise<{
+    version: string;
+    path: string;
+    downloadedAtMs: number;
+  } | null>;
+  persistPendingUpdate: (payload: {
+    version: string;
+    path: string;
+  }) => Promise<{ success: true } | { success: false; error: string }>;
+  clearPendingUpdate: () => Promise<{ success: true }>;
 };
 
 export type LoggerAPI = {
@@ -471,6 +481,7 @@ export type LicenseGraceSnapshot = {
   graceUntilMs: number;
   trialEndsAtMs?: number;
   expiresAtMs?: number;
+  aiEnabled?: boolean;
 };
 
 export type OnlineAPI = {
@@ -481,6 +492,7 @@ export type OnlineAPI = {
   persistLicenseGrace: (payload: {
     trialEndsAt?: string | null;
     expiresAt?: string | null;
+    aiEnabled?: boolean;
   }) => Promise<{ success: true } | { success: false; error: string }>;
   clearLicenseGrace: () => Promise<{ success: true }>;
   backupUploadLatest: (backupFilePath: string, uploadSource?: string) => Promise<CloudBackupUploadResult>;

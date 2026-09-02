@@ -47,6 +47,19 @@ interface UpdateProviderProps {
   children: ReactNode;
 }
 
+function compareVersions(version1: string, version2: string): number {
+  const v1Parts = version1.split('.').map(Number);
+  const v2Parts = version2.split('.').map(Number);
+
+  for (let i = 0; i < Math.max(v1Parts.length, v2Parts.length); i++) {
+    const v1Part = v1Parts[i] || 0;
+    const v2Part = v2Parts[i] || 0;
+    if (v1Part < v2Part) return -1;
+    if (v1Part > v2Part) return 1;
+  }
+  return 0;
+}
+
 // Global state that persists across provider instances
 let globalUpdateState: UpdateState = {
   isChecking: false,
@@ -65,11 +78,91 @@ let globalUpdateState: UpdateState = {
 };
 
 let globalStateListeners: Array<(state: UpdateState) => void> = [];
+let pendingRestoreStarted = false;
 
 const notifyListeners = (newState: UpdateState) => {
   globalUpdateState = newState;
   globalStateListeners.forEach(listener => listener(newState));
 };
+
+/** Live update state (survives provider remounts) — for timers outside React render. */
+export function getGlobalUpdateState(): UpdateState {
+  return globalUpdateState;
+}
+
+async function applyPendingUpdateState(updateInfo: UpdateInfo | null): Promise<void> {
+  if (typeof window === 'undefined' || !window.api?.app?.readPendingUpdate) return;
+
+  try {
+    const pending = await window.api.app.readPendingUpdate();
+    if (!pending) {
+      if (globalUpdateState.isDownloaded && !globalUpdateState.isDownloading) {
+        notifyListeners({
+          ...globalUpdateState,
+          isDownloaded: false,
+          downloadPath: '',
+        });
+      }
+      return;
+    }
+
+    const latest = updateInfo?.latestVersion?.trim() || '';
+    if (latest && compareVersions(pending.version, latest) < 0) {
+      await window.api.app.clearPendingUpdate();
+      notifyListeners({
+        ...globalUpdateState,
+        isDownloaded: false,
+        downloadPath: '',
+      });
+      return;
+    }
+
+    let currentVersion =
+      updateInfo?.currentVersion?.trim() ||
+      globalUpdateState.updateInfo?.currentVersion?.trim() ||
+      '';
+    if (!currentVersion && window.api.app.getVersion) {
+      try {
+        currentVersion = await window.api.app.getVersion();
+      } catch {
+        currentVersion = '';
+      }
+    }
+    if (currentVersion && compareVersions(pending.version, currentVersion) <= 0) {
+      await window.api.app.clearPendingUpdate();
+      notifyListeners({
+        ...globalUpdateState,
+        isDownloaded: false,
+        downloadPath: '',
+      });
+      return;
+    }
+
+    const nextInfo: UpdateInfo =
+      updateInfo ??
+      {
+        available: true,
+        currentVersion,
+        latestVersion: pending.version,
+        downloadUrl: '',
+        releaseNotes: globalUpdateState.updateInfo?.releaseNotes,
+      };
+
+    notifyListeners({
+      ...globalUpdateState,
+      updateInfo: {
+        ...nextInfo,
+        available: true,
+        currentVersion: nextInfo.currentVersion || currentVersion,
+        latestVersion: nextInfo.latestVersion || pending.version,
+      },
+      isDownloaded: true,
+      downloadPath: pending.path,
+    });
+  } catch {
+    /* ignore restore errors */
+  }
+}
 
 export const UpdateProvider: React.FC<UpdateProviderProps> = ({ children }) => {
   const [state, setState] = useState<UpdateState>(globalUpdateState);
@@ -78,9 +171,41 @@ export const UpdateProvider: React.FC<UpdateProviderProps> = ({ children }) => {
   React.useEffect(() => {
     const listener = (newState: UpdateState) => setState(newState);
     globalStateListeners.push(listener);
-    
+
     return () => {
       globalStateListeners = globalStateListeners.filter(l => l !== listener);
+    };
+  }, []);
+
+  // Restore pending downloaded installer once on mount
+  React.useEffect(() => {
+    if (pendingRestoreStarted) return;
+    pendingRestoreStarted = true;
+    void applyPendingUpdateState(globalUpdateState.updateInfo);
+  }, []);
+
+  // Global download progress (Updates page + login modal)
+  React.useEffect(() => {
+    if (typeof window === "undefined" || !window.api?.app?.onDownloadProgress) return;
+
+    const handleDownloadProgress = (data: {
+      progress: number;
+      downloaded: number;
+      total: number;
+      speed: number;
+    }) => {
+      notifyListeners({
+        ...globalUpdateState,
+        downloadProgress: data.progress,
+        downloadedSize: data.downloaded,
+        totalSize: data.total,
+        downloadSpeed: data.speed || 0,
+      });
+    };
+
+    window.api.app.onDownloadProgress(handleDownloadProgress);
+    return () => {
+      window.api?.app?.removeDownloadProgressListener?.(handleDownloadProgress);
     };
   }, []);
 
@@ -88,6 +213,7 @@ export const UpdateProvider: React.FC<UpdateProviderProps> = ({ children }) => {
     // If we already checked recently (within 5 minutes), return cached result
     const now = Date.now();
     if (globalUpdateState.updateInfo && globalUpdateState.lastChecked && (now - globalUpdateState.lastChecked) < 5 * 60 * 1000) {
+      await applyPendingUpdateState(globalUpdateState.updateInfo);
       return globalUpdateState.updateInfo;
     }
 
@@ -116,8 +242,10 @@ export const UpdateProvider: React.FC<UpdateProviderProps> = ({ children }) => {
         error: updateInfo.error || null,
         lastChecked: now
       });
+
+      await applyPendingUpdateState(updateInfo);
       
-      return updateInfo;
+      return globalUpdateState.updateInfo ?? updateInfo;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       notifyListeners({ 
@@ -125,6 +253,8 @@ export const UpdateProvider: React.FC<UpdateProviderProps> = ({ children }) => {
         isChecking: false, 
         error: errorMessage 
       });
+
+      await applyPendingUpdateState(null);
       
       const errorResult = {
         available: false,

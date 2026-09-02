@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router-dom";
 import { FileText, Printer, Users, Settings, Database, Download, Shield } from "lucide-react";
@@ -11,6 +11,14 @@ import UpdateManagement from "./components/updateManagement";
 import { LicenseManagement } from "./components/licenseManagement";
 import { useUpdateContext } from "../../lib/contexts/updateContext";
 import { FadeUp } from "../../lib/components/fadeUp";
+import { cn } from "../../lib/utils";
+
+const BACKUP_ENTER_ANIM_CLASSES = [
+  "animate-in",
+  "fade-in",
+  "slide-in-from-bottom-2",
+  "duration-200",
+] as const;
 
 export default function AdministratorPage() {
   const { t, i18n } = useTranslation();
@@ -34,7 +42,25 @@ export default function AdministratorPage() {
       ? tabFromUrl
       : "settings",
   );
+  // Keep Backup mounted after first visit so re-entering the tab does not flash empty/loading UI.
+  const [backupTabVisited, setBackupTabVisited] = useState(activeTab === "backup");
+  const backupSectionRef = useRef<HTMLElement | null>(null);
+  const backupEnterAnimSeenRef = useRef(false);
   const { state: updateState } = useUpdateContext();
+
+  // Same enter motion as FadeUp, without remounting BackupManagement.
+  useEffect(() => {
+    if (activeTab !== "backup") return;
+    const el = backupSectionRef.current;
+    if (!el) return;
+    if (!backupEnterAnimSeenRef.current) {
+      backupEnterAnimSeenRef.current = true;
+      return;
+    }
+    el.classList.remove(...BACKUP_ENTER_ANIM_CLASSES);
+    void el.offsetWidth;
+    el.classList.add(...BACKUP_ENTER_ANIM_CLASSES);
+  }, [activeTab]);
 
   const validTabs = [
     "settings",
@@ -51,6 +77,7 @@ export default function AdministratorPage() {
   const selectTab = useCallback(
     (tab: AdminTab) => {
       setActiveTab(tab);
+      if (tab === "backup") setBackupTabVisited(true);
       const next: Record<string, string> = { tab };
       if (tab === "receipt" && subTabFromUrl === "configurePrinters") {
         next.subTab = "configurePrinters";
@@ -64,6 +91,7 @@ export default function AdministratorPage() {
   useEffect(() => {
     if (tabFromUrl && validTabs.includes(tabFromUrl)) {
       setActiveTab(tabFromUrl);
+      if (tabFromUrl === "backup") setBackupTabVisited(true);
     }
   }, [tabFromUrl]);
 
@@ -172,49 +200,56 @@ export default function AdministratorPage() {
         </button>
       </div>
 
-      <FadeUp
-        contentKey={`${activeTab}:${subTabFromUrl ?? ""}`}
-        className={activeTab === "backup" ? "animate-none" : undefined}
-      >
-        {activeTab === "settings" && <OptionsList />}
+      {backupTabVisited ? (
+        <section
+          ref={backupSectionRef}
+          className={cn(
+            "bg-card border border-border rounded-xl shadow-sm p-6",
+            "animate-in fade-in slide-in-from-bottom-2 duration-200",
+            activeTab !== "backup" && "hidden",
+          )}
+          aria-hidden={activeTab !== "backup"}
+        >
+          <BackupManagement onOpenLicenseTab={() => selectTab("license")} />
+        </section>
+      ) : null}
 
-        {activeTab === "receipt" && (
-          <ReceiptConfig
-            subTabFromUrl={subTabFromUrl}
-            setSearchParams={setSearchParams}
-          />
-        )}
+      {activeTab !== "backup" ? (
+        <FadeUp contentKey={`${activeTab}:${subTabFromUrl ?? ""}`}>
+          {activeTab === "settings" && <OptionsList />}
 
-        {activeTab === "accounts" && (
-          <section className="bg-card border border-border rounded-xl shadow-sm p-6">
-            <AccountsManagement />
-          </section>
-        )}
+          {activeTab === "receipt" && (
+            <ReceiptConfig
+              subTabFromUrl={subTabFromUrl}
+              setSearchParams={setSearchParams}
+            />
+          )}
 
-        {activeTab === "logs" && (
-          <section className="bg-card border border-border rounded-xl shadow-sm p-6">
-            <ActivityLogs />
-          </section>
-        )}
+          {activeTab === "accounts" && (
+            <section className="bg-card border border-border rounded-xl shadow-sm p-6">
+              <AccountsManagement />
+            </section>
+          )}
 
-        {activeTab === "backup" && (
-          <section className="bg-card border border-border rounded-xl shadow-sm p-6">
-            <BackupManagement onOpenLicenseTab={() => selectTab("license")} />
-          </section>
-        )}
+          {activeTab === "logs" && (
+            <section className="bg-card border border-border rounded-xl shadow-sm p-6">
+              <ActivityLogs />
+            </section>
+          )}
 
-        {activeTab === "updates" && (
-          <section className="bg-card border border-border rounded-xl shadow-sm p-6">
-            <UpdateManagement />
-          </section>
-        )}
+          {activeTab === "updates" && (
+            <section className="bg-card border border-border rounded-xl shadow-sm p-6">
+              <UpdateManagement />
+            </section>
+          )}
 
-        {activeTab === "license" && (
-          <section className="bg-card border border-border rounded-xl shadow-sm p-6">
-            <LicenseManagement />
-          </section>
-        )}
-      </FadeUp>
+          {activeTab === "license" && (
+            <section className="bg-card border border-border rounded-xl shadow-sm p-6">
+              <LicenseManagement />
+            </section>
+          )}
+        </FadeUp>
+      ) : null}
     </main>
   );
 }

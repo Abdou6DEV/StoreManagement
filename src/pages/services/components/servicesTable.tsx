@@ -301,52 +301,54 @@ const ServicesTable: React.FC<ServicesTableProps> = ({
   const isFirstPage = currentPage === 1;
   const isLastPage = currentPage === totalPages;
   const hasNoData = services.length === 0;
-
-  if (loading) {
-    return (
-      <div
-        className="flex flex-col items-center justify-center py-12 gap-3 text-center"
-        role="status"
-        aria-live="polite"
-        aria-busy="true"
-      >
-        <div
-          className="mb-1 size-12 shrink-0 rounded-full border-[3px] border-cyan-500/20 border-t-cyan-500 animate-spin motion-reduce:animate-none"
-          aria-hidden
-        />
-        <h3 className="text-xl font-semibold text-foreground">
-          {t("services.loadingTitle", "Loading services...")}
-        </h3>
-        <p className="text-base text-muted-foreground max-w-md">
-          {t(
-            "services.loadingDesc",
-            "Please wait while your service requests are loaded.",
-          )}
-        </p>
-      </div>
-    );
-  }
-
-  if (services.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center py-12 gap-3 text-center">
-        <Wrench className="w-12 h-12 text-cyan-500 mb-1" />
-        <h3 className="text-xl font-semibold text-foreground">
-          {t("services.emptyTitle", "No services found")}
-        </h3>
-        <p className="text-base text-muted-foreground max-w-md">
-          {t(
-            "services.emptyDesc",
-            "You have not added any services yet. Add a service to get started.",
-          )}
-        </p>
-      </div>
-    );
-  }
+  const TABLE_HEADER_PX = 45;
+  const TABLE_ROW_PX = 48;
+  const tableMinHeightPx = TABLE_HEADER_PX + itemsPerPage * TABLE_ROW_PX;
+  const showInitialTableLoader = loading && services.length === 0;
+  const showTableRefreshOverlay = loading && services.length > 0;
 
   return (
     <>
-      <div className="overflow-auto rounded-lg border border-muted">
+      <div
+        className="relative overflow-auto rounded-lg border border-muted"
+        style={{ minHeight: tableMinHeightPx }}
+        aria-busy={loading}
+      >
+        {showInitialTableLoader ? (
+          <div
+            className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-card text-center px-4"
+            role="status"
+            aria-live="polite"
+          >
+            <div
+              className="mb-1 size-12 shrink-0 rounded-full border-[3px] border-cyan-500/20 border-t-cyan-500 animate-spin motion-reduce:animate-none"
+              aria-hidden
+            />
+            <h3 className="text-xl font-semibold text-foreground">
+              {t("services.loadingTitle", "Loading services...")}
+            </h3>
+            <p className="text-base text-muted-foreground max-w-md">
+              {t(
+                "services.loadingDesc",
+                "Please wait while your service requests are loaded.",
+              )}
+            </p>
+          </div>
+        ) : null}
+
+        {showTableRefreshOverlay ? (
+          <div
+            className="absolute inset-0 z-10 flex items-center justify-center bg-background/55"
+            role="status"
+            aria-live="polite"
+          >
+            <div
+              className="size-10 shrink-0 rounded-full border-[3px] border-cyan-500/20 border-t-cyan-500 animate-spin motion-reduce:animate-none"
+              aria-hidden
+            />
+          </div>
+        ) : null}
+
         <table
           className={`min-w-full text-sm ${isRTL ? "text-right" : "text-left"}`}
         >
@@ -379,7 +381,29 @@ const ServicesTable: React.FC<ServicesTableProps> = ({
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {services.map((service) => {
+            {!showInitialTableLoader && services.length === 0 ? (
+              <tr>
+                <td
+                  colSpan={8}
+                  className="p-0 text-center align-middle"
+                  style={{ height: itemsPerPage * TABLE_ROW_PX }}
+                >
+                  <div className="flex flex-col items-center justify-center gap-3 px-4 text-center">
+                    <Wrench className="w-12 h-12 text-cyan-500 mb-1" />
+                    <h3 className="text-xl font-semibold text-foreground">
+                      {t("services.emptyTitle", "No services found")}
+                    </h3>
+                    <p className="text-base text-muted-foreground max-w-md">
+                      {t(
+                        "services.emptyDesc",
+                        "You have not added any services yet. Add a service to get started.",
+                      )}
+                    </p>
+                  </div>
+                </td>
+              </tr>
+            ) : (
+            services.map((service) => {
               const isNewlyOverdue = newlyOverdueServicesIds.has(service.id);
               const isNewlyDueSoon = newlyDueSoonServicesIds.has(service.id);
               const shouldHighlight = isNewlyOverdue || isNewlyDueSoon;
@@ -583,13 +607,14 @@ const ServicesTable: React.FC<ServicesTableProps> = ({
                   </td>
                 </tr>
               );
-            })}
+            })
+            )}
           </tbody>
         </table>
       </div>
 
       {/* Pagination Controls */}
-      {services.length > 0 && (
+      {!loading && services.length > 0 && (
         <div className="flex justify-center mt-6">
           <Pagination>
             <PaginationContent>
