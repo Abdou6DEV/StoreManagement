@@ -1420,10 +1420,10 @@ export default function AddServiceForm({
                   </PopoverTrigger>
                   <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 z-50">
                     <Command shouldFilter={false}>
-                      <div className="flex items-center border-b">
+                      <div className="flex w-full items-center border-b [&>[data-slot=command-input-wrapper]]:min-w-0 [&>[data-slot=command-input-wrapper]]:flex-1 [&>[data-slot=command-input-wrapper]]:border-b-0">
                         <CommandInput
                           placeholder={t("services.searchClient", "Search for client")}
-                          className="h-9 flex-1 border-0"
+                          className="h-9 border-0"
                           value={clientSearch}
                           onValueChange={setClientSearch}
                         />
@@ -1431,7 +1431,7 @@ export default function AddServiceForm({
                           type="button"
                           variant="ghost"
                           size="sm"
-                          className="h-9 w-9 p-0 mr-1"
+                          className="h-9 w-9 shrink-0 p-0 mr-1"
                           onClick={(e) => {
                             e.stopPropagation();
                             setClientPopoverOpen(false);
