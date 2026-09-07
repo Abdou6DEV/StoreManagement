@@ -932,7 +932,7 @@
     "kicker": "التراخيص",
     "modalTitle": "خطط الترخيص",
     "title": "اختر ترخيصك",
-    "subtitle": "Standard أو Premium — شهري، سنوي، أو مدى الحياة. كل الخطط تشمل تطبيق سطح المكتب كاملاً. Premium يضيف REDA AI ومسح الفواتير والنسخ الاحتياطي عبر الإنترنت. الأسعار بالدينار الجزائري (د.ج)؛ تواصل مع المورّد للشراء والتفعيل.",
+    "subtitle": "اختر ترخيص Standard (شهري، سنوي، أو مدى الحياة)، ثم أضف Premium اختياريًا لـ REDA AI ومسح الفواتير والنسخ السحابي. Premium إضافة فوق Standard — وليست خطة منفصلة. الأسعار بالدينار الجزائري (د.ج)؛ تواصل مع المورّد للشراء والتفعيل.",
     "popular": "موصى به",
     "premiumBadge": "Premium",
     "tierToggleLabel": "نوع الترخيص",
@@ -949,7 +949,29 @@
       },
       "premium": {
         "title": "Premium",
-        "subtitle": "كل مزايا Standard، بالإضافة إلى REDA AI ومسح الفواتير والنسخ الاحتياطي عبر الإنترنت."
+        "subtitle": "تُضاف فوق أي ترخيص Standard. تشمل REDA AI ومسح الفواتير والبحث عن صور المنتجات والنسخ السحابي."
+      }
+    },
+    "addon": {
+      "premium": {
+        "badge": "إضافة",
+        "requiresStandard": "متاحة كإضافة لأي ترخيص Standard.",
+        "lifetimeNote": "مع Standard مدى الحياة ({{base}} د.ج دفعة واحدة): أضف إضافة Premium شهرية أو سنوية.",
+        "feature1": "مساعد REDA AI للمتجر",
+        "feature2": "مسح الفواتير",
+        "feature3": "البحث عن صور المنتجات",
+        "feature4": "النسخ الاحتياطي السحابي",
+        "feature5": "يُفعَّل على ترخيص Standard الحالي",
+        "monthly": {
+          "name": "شهري",
+          "priceAmount": "+ 1 500 د.ج",
+          "pricePeriod": "إضافة / شهر"
+        },
+        "yearly": {
+          "name": "سنوي",
+          "priceAmount": "+ 10 000 د.ج",
+          "pricePeriod": "إضافة / سنة"
+        }
       }
     },
     "mailSubject": {
@@ -959,9 +981,18 @@
         "lifetime": "REDA TECH Store Management — استفسار ترخيص Standard مدى الحياة"
       },
       "premium": {
-        "monthly": "REDA TECH Store Management — استفسار ترخيص Premium شهري",
-        "yearly": "REDA TECH Store Management — استفسار ترخيص Premium سنوي",
-        "lifetime": "REDA TECH Store Management — استفسار ترخيص Premium مدى الحياة"
+        "monthly": "REDA TECH Store Management — استفسار إضافة Premium (شهرية)",
+        "yearly": "REDA TECH Store Management — استفسار إضافة Premium (سنوية)"
+      }
+    },
+    "whatsapp": {
+      "standard": {
+        "monthly": "مرحبا، أنا مهتم بترخيص Reda Tech POS من نوع Standard الشهري (1 000 د.ج/شهر). هل يمكنكم إخباري كيف أشتريه وأفعّله؟",
+        "yearly": "مرحبا، أنا مهتم بترخيص Reda Tech POS من نوع Standard السنوي (10 000 د.ج/سنة). هل يمكنكم إخباري كيف أشتريه وأفعّله؟",
+        "lifetime": "مرحبا، أنا مهتم بترخيص Reda Tech POS من نوع Standard مدى الحياة (20 000 د.ج دفعة واحدة). هل يمكنكم إخباري كيف أشتريه وأفعّله؟"
+      },
+      "addon": {
+        "premium": "مرحبا، أنا مهتم بعرض Premium لـ Reda Tech POS. هل يمكنكم إخباري كيف أفعّله؟"
       }
     },
     "plans": {
@@ -996,42 +1027,6 @@
           "feature2": "دفعة واحدة مقدّمة",
           "feature3": "أقل تكلفة على مدى سنوات من الاستخدام",
           "commitment": "دفعة واحدة · بدون تجديد",
-          "feature4": "شروط الترخيص والتحديثات حسب اتفاق المورّد"
-        }
-      },
-      "premium": {
-        "monthly": {
-          "name": "شهري",
-          "priceAmount": "1 900 د.ج",
-          "pricePeriod": "في الشهر",
-          "tagline": "كل أدوات Premium مع فوترة شهرية مرنة.",
-          "feature1": "كل مزايا Standard الشهري",
-          "feature2": "مساعد REDA AI للمتجر",
-          "feature3": "مسح الفواتير",
-          "feature4": "البحث عن صور المنتجات",
-          "feature5": "النسخ الاحتياطي السحابي",
-          "commitment": "Premium · تجديد شهري"
-        },
-        "yearly": {
-          "name": "سنوي",
-          "priceAmount": "15 000 د.ج",
-          "pricePeriod": "في السنة",
-          "tagline": "Premium لسنة كاملة — أفضل قيمة للمتاجر النامية.",
-          "feature1": "كل مزايا Premium الشهري",
-          "feature2": "وفر ~34٪ مقارنة بـ 12 شهر Premium",
-          "feature3": "تجديد سنوي واحد للـ AI والنسخ السحابي",
-          "commitment": "Premium · فوترة سنوية",
-          "feature4": "REDA AI والمسح والنسخ السحابي مشمولة"
-        },
-        "lifetime": {
-          "name": "مدى الحياة",
-          "priceAmount": "35 000 د.ج",
-          "pricePeriod": "دفعة واحدة",
-          "tagline": "Premium لمرة واحدة — للمتاجر الملتزمة على المدى الطويل.",
-          "feature1": "Standard + Premium طوال مدة الترخيص",
-          "feature2": "REDA AI ومسح الفواتير والنسخ السحابي",
-          "feature3": "بدون تجديد اشتراك بعد التفعيل",
-          "commitment": "Premium · دفعة واحدة",
           "feature4": "شروط الترخيص والتحديثات حسب اتفاق المورّد"
         }
       }
@@ -2436,9 +2431,9 @@
       "trialModeBadge": "تجربة مجانية",
       "premiumBadge": "Premium",
       "upgradeToPremium": "الترقية إلى Premium",
-      "upgradeToPremiumHint": "فعّل REDA AI والنسخ الاحتياطي عبر الإنترنت والمزيد.",
+      "upgradeToPremiumHint": "أضف Premium على ترخيص Standard لـ REDA AI والنسخ الاحتياطي عبر الإنترنت والمزيد.",
       "seePlans": "عرض خطط الأسعار",
-      "seePlansHint": "قارن بين خيارات Standard و Premium.",
+      "seePlansHint": "قارن تراخيص Standard وإضافة Premium.",
       "trialSection": "التجربة",
       "trialEnds": "انتهاء التجربة",
       "trialRemaining": "الوقت المتبقي",
@@ -3295,8 +3290,9 @@
     "reduceInventoryError": "تعذّر تحديث المخزون لـ {{name}}"
   },
   "welcome": {
-    "title": "مرحبًا بك في REDA TECH لإدارة المتجر",
+    "title": "مرحبًا بك في REDA TECH POS",
     "subtitle": "تهيئة هذا الجهاز لأول مرة. اختر تجربة مجانية لمتجر جديد أو استعد بياناتك إن كنت تستخدم التطبيق على جهاز آخر.",
+    "subtitleMarketing": "نقطة بيع مكتبية لمتجرك — مبيعات، مخزون، عملاء وتقارير على Windows.",
     "subtitleExistingShop": "اربط هذا الجهاز بحساب متجرك. بياناتك الحالية على هذا الجهاز ستُحفظ.",
     "existingLocalDataBanner": "وُجدت بيانات متجر على هذا الجهاز. اربط حسابك أدناه، أو ابدأ تجربة إن كان متجرًا جديدًا. استعادة السحابة مخفية حتى لا تُستبدل بياناتك الحالية.",
     "linkExistingAccount": "لديّ معرّف عميل (الإبقاء على بياناتي)",
@@ -3416,7 +3412,7 @@
     "customerIdPlaceholder": "المعرّف الذي أرسله لك المورّد",
     "customerIdHint": "يجب أن يطابق الهاتف المسجّل لدينا لهذا المعرّف.",
     "downloadTitle": "تنزيل التطبيق",
-    "downloadDescription": "احصل على أحدث مثبت Windows لتطبيق REDA TECH Store Management. ثبّته على جهازك، ثم ابدأ تجربتك المجانية لمدة 7 أيام عند أول تشغيل.",
+    "downloadDescription": "احصل على أحدث مثبت Windows لتطبيق REDA TECH POS. ثبّته على جهازك، ثم ابدأ تجربتك المجانية لمدة 7 أيام عند أول تشغيل.",
     "downloadButton": "تنزيل لنظام Windows",
     "downloadanydeskButton": "تنزيل Anydesk",
     "downloadLoading": "جارٍ تجهيز التنزيل…",

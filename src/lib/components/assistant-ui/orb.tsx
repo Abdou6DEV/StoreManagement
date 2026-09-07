@@ -551,11 +551,16 @@ export default function Orb({
 
     let targetHover = 0;
     let lastTime = 0;
+    let elapsed = 0;
     let currentRot = 0;
     let inView = true;
     let tabVisible = document.visibilityState !== "hidden";
 
     const rotationSpeed = 0.3;
+    // Keep shader time bounded — large absolute timestamps lose float precision
+    // and break noise/gradients (banded colors) and hover UV warps ("insane" ring).
+    const TIME_WRAP_SECONDS = 1800;
+    const TWO_PI = Math.PI * 2;
 
     const handleMouseMove = (
       e: MouseEvent
@@ -632,6 +637,7 @@ export default function Orb({
       if (rafId === 0) return;
       cancelAnimationFrame(rafId);
       rafId = 0;
+      lastTime = 0;
     };
 
     const startLoop = (): void => {
@@ -645,14 +651,19 @@ export default function Orb({
       rafId = 0;
       if (!inView || !tabVisible) return;
 
+      // Clamp dt so tab-sleep / pause resumes don't spike rotation or time.
       const dt =
-        (t - lastTime) *
-        0.001;
+        lastTime === 0
+          ? 0
+          : Math.min((t - lastTime) * 0.001, 0.05);
 
       lastTime = t;
+      elapsed += dt;
+      if (elapsed > TIME_WRAP_SECONDS) {
+        elapsed %= TIME_WRAP_SECONDS;
+      }
 
-      program.uniforms.iTime.value =
-        t * 0.001;
+      program.uniforms.iTime.value = elapsed;
 
       program.uniforms.hue.value =
         hue;
@@ -683,6 +694,9 @@ export default function Orb({
         currentRot +=
           dt *
           rotationSpeed;
+        if (currentRot > TWO_PI) {
+          currentRot %= TWO_PI;
+        }
       }
 
       program.uniforms.rot.value =

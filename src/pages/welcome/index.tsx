@@ -1401,7 +1401,7 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
               onStepComplete={advanceIntro}
             >
               <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl lg:text-[2.5rem] lg:leading-tight">
-                {t("welcome.title", "Welcome to REDA TECH Store Management")}
+                {t("welcome.title", "Welcome to REDA TECH POS")}
               </h1>
             </SequentialIntroSlot>
             <SequentialIntroSlot
@@ -1413,10 +1413,15 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
               onStepComplete={advanceIntro}
             >
               <p className="mx-auto mt-4 max-w-xl text-base text-muted-foreground sm:text-lg lg:mx-0">
-                {t(
-                  "welcome.subtitle",
-                  "Set up this computer for the first time. Choose a new shop trial or restore your data if you already use the app elsewhere.",
-                )}
+                {marketingSite
+                  ? t(
+                      "welcome.subtitleMarketing",
+                      "A desktop POS for your shop — sales, stock, clients, and reports on Windows.",
+                    )
+                  : t(
+                      "welcome.subtitle",
+                      "Set up this computer for the first time. Choose a new shop trial or restore your data if you already use the app elsewhere.",
+                    )}
               </p>
             </SequentialIntroSlot>
             <SequentialIntroSlot
@@ -1426,13 +1431,16 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
               isRTL={isRTL}
               kind="fadeUp"
               onStepComplete={advanceIntro}
+              advanceIntroAfterMs={marketingSite ? 0 : undefined}
             >
-              <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-muted-foreground/90 lg:mx-0">
-                {t(
-                  "about.subtitle",
-                  "A comprehensive store management solution designed to streamline your business operations with modern technology and intuitive design.",
-                )}
-              </p>
+              {marketingSite ? null : (
+                <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-muted-foreground/90 lg:mx-0">
+                  {t(
+                    "about.subtitle",
+                    "A comprehensive store management solution designed to streamline your business operations with modern technology and intuitive design.",
+                  )}
+                </p>
+              )}
             </SequentialIntroSlot>
             <SequentialIntroSlot
               stepIndex={SEQ.badges}

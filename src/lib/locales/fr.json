@@ -931,7 +931,7 @@
     "kicker": "Licences",
     "modalTitle": "Formules de licence",
     "title": "Choisissez votre licence",
-    "subtitle": "Standard ou Premium — mensuelle, annuelle ou à vie. Tous les forfaits incluent l'application bureau complète. Premium ajoute REDA AI, la numérisation de reçus et la sauvegarde en ligne. Prix en dinars algériens (DA) ; contactez votre fournisseur pour acheter et activer.",
+    "subtitle": "Choisissez une licence Standard (mensuelle, annuelle ou à vie), puis ajoutez éventuellement Premium pour REDA AI, la numérisation de reçus et la sauvegarde cloud. Premium est un module complémentaire au Standard — pas une formule séparée. Prix en dinars algériens (DA) ; contactez votre fournisseur pour acheter et activer.",
     "popular": "Recommandé",
     "premiumBadge": "Premium",
     "tierToggleLabel": "Formule de licence",
@@ -948,7 +948,29 @@
       },
       "premium": {
         "title": "Premium",
-        "subtitle": "Tout le Standard, plus REDA AI, le scanner de reçus et la sauvegarde en ligne."
+        "subtitle": "À ajouter sur toute licence Standard. Inclut REDA AI, le scanner de reçus, la recherche de photos et la sauvegarde cloud."
+      }
+    },
+    "addon": {
+      "premium": {
+        "badge": "Module complémentaire",
+        "requiresStandard": "Disponible en module complémentaire sur toute licence Standard.",
+        "lifetimeNote": "Avec Standard à vie ({{base}} DA en une fois) : ajoutez un module Premium mensuel ou annuel.",
+        "feature1": "Assistant boutique REDA AI",
+        "feature2": "Scanner de reçus",
+        "feature3": "Recherche de photos produits",
+        "feature4": "Sauvegarde cloud en ligne",
+        "feature5": "S'active sur votre licence Standard existante",
+        "monthly": {
+          "name": "Mensuel",
+          "priceAmount": "+ 1 500 DA",
+          "pricePeriod": "Module / mois"
+        },
+        "yearly": {
+          "name": "Annuel",
+          "priceAmount": "+ 10 000 DA",
+          "pricePeriod": "Module / an"
+        }
       }
     },
     "mailSubject": {
@@ -958,9 +980,18 @@
         "lifetime": "REDA TECH Store Management — Demande de licence Standard à vie"
       },
       "premium": {
-        "monthly": "REDA TECH Store Management — Demande de licence Premium mensuelle",
-        "yearly": "REDA TECH Store Management — Demande de licence Premium annuelle",
-        "lifetime": "REDA TECH Store Management — Demande de licence Premium à vie"
+        "monthly": "REDA TECH Store Management — Demande module Premium (mensuel)",
+        "yearly": "REDA TECH Store Management — Demande module Premium (annuel)"
+      }
+    },
+    "whatsapp": {
+      "standard": {
+        "monthly": "Bonjour, je suis intéressé(e) par la licence Standard mensuelle de Reda Tech POS (1 000 DA/mois). Pouvez-vous m'indiquer comment l'acheter et l'activer ?",
+        "yearly": "Bonjour, je suis intéressé(e) par la licence Standard annuelle de Reda Tech POS (10 000 DA/an). Pouvez-vous m'indiquer comment l'acheter et l'activer ?",
+        "lifetime": "Bonjour, je suis intéressé(e) par la licence Standard à vie de Reda Tech POS (20 000 DA en une fois). Pouvez-vous m'indiquer comment l'acheter et l'activer ?"
+      },
+      "addon": {
+        "premium": "Bonjour, je suis intéressé(e) par l'offre Premium de Reda Tech POS. Pouvez-vous m'indiquer comment l'activer ?"
       }
     },
     "plans": {
@@ -995,42 +1026,6 @@
           "feature1": "Tout le forfait Annuel",
           "feature2": "Paiement unique d'avance",
           "feature3": "Coût le plus bas sur plusieurs années d'utilisation",
-          "feature4": "Conditions de licence et mises à jour selon accord fournisseur"
-        }
-      },
-      "premium": {
-        "monthly": {
-          "name": "Mensuelle",
-          "priceAmount": "1 900 DA",
-          "pricePeriod": "par mois",
-          "commitment": "Premium · renouvellement mensuel",
-          "tagline": "Tous les outils Premium avec facturation mensuelle flexible.",
-          "feature1": "Tout le Standard Mensuel",
-          "feature2": "Assistant boutique REDA AI",
-          "feature3": "Scanner de reçus",
-          "feature4": "Recherche de photos produits",
-          "feature5": "Sauvegarde cloud en ligne"
-        },
-        "yearly": {
-          "name": "Annuelle",
-          "priceAmount": "15 000 DA",
-          "pricePeriod": "par an",
-          "commitment": "Premium · facturation annuelle",
-          "tagline": "Premium pour une année — meilleur rapport qualité-prix.",
-          "feature1": "Tout le Premium Mensuel",
-          "feature2": "Économisez ~34 % vs 12 mois Premium au mensuel",
-          "feature3": "Un seul renouvellement annuel pour l'IA et le cloud",
-          "feature4": "REDA AI, scanner et sauvegarde cloud inclus"
-        },
-        "lifetime": {
-          "name": "À vie",
-          "priceAmount": "35 000 DA",
-          "pricePeriod": "paiement unique",
-          "commitment": "Premium · paiement unique",
-          "tagline": "Premium une fois — pour les commerces engagés sur le long terme.",
-          "feature1": "Standard + Premium pour la durée de votre licence",
-          "feature2": "REDA AI, scanner de reçus et sauvegarde cloud",
-          "feature3": "Aucun renouvellement d'abonnement après activation",
           "feature4": "Conditions de licence et mises à jour selon accord fournisseur"
         }
       }
@@ -2566,9 +2561,9 @@
       "trialModeBadge": "Essai gratuit",
       "premiumBadge": "Premium",
       "upgradeToPremium": "Passer à Premium",
-      "upgradeToPremiumHint": "Débloquez REDA AI, la sauvegarde en ligne, et plus encore.",
+      "upgradeToPremiumHint": "Ajoutez Premium sur votre licence Standard pour REDA AI, la sauvegarde en ligne, et plus encore.",
       "seePlans": "Voir les tarifs",
-      "seePlansHint": "Comparez les options Standard et Premium.",
+      "seePlansHint": "Comparez les licences Standard et le module Premium.",
       "trialSection": "Essai",
       "trialEnds": "Fin de l'essai",
       "trialRemaining": "Temps restant",
@@ -3271,8 +3266,9 @@
     "reduceInventoryError": "Impossible de mettre à jour le stock pour {{name}}"
   },
   "welcome": {
-    "title": "Bienvenue dans REDA TECH Store Management",
+    "title": "Bienvenue dans REDA TECH POS",
     "subtitle": "Configurez cet ordinateur pour la première fois. Choisissez un essai pour une nouvelle boutique ou restaurez vos données si vous utilisez déjà l’application ailleurs.",
+    "subtitleMarketing": "Un POS de bureau pour votre boutique — ventes, stock, clients et rapports sur Windows.",
     "subtitleExistingShop": "Liez cet ordinateur au compte de votre boutique. Les données déjà sur ce PC seront conservées.",
     "existingLocalDataBanner": "Des données de boutique sont présentes sur cet ordinateur. Liez votre compte ci-dessous, ou démarrez un essai s’il s’agit d’un nouveau magasin. La restauration cloud est masquée pour ne pas écraser vos données actuelles.",
     "linkExistingAccount": "J’ai déjà un identifiant client (garder mes données)",
@@ -3392,7 +3388,7 @@
     "customerIdPlaceholder": "UUID fourni par votre fournisseur",
     "customerIdHint": "Doit correspondre au numéro enregistré pour cet identifiant.",
     "downloadTitle": "Télécharger l'application",
-    "downloadDescription": "Obtenez le dernier installateur Windows pour REDA TECH Store Management. Installez-le sur votre PC, puis démarrez votre essai gratuit de 7 jours au premier lancement.",
+    "downloadDescription": "Obtenez le dernier installateur Windows pour REDA TECH POS. Installez-le sur votre PC, puis démarrez votre essai gratuit de 7 jours au premier lancement.",
     "downloadButton": "Télécharger pour Windows",
     "downloadanydeskButton": "Télécharger Anydesk",
     "downloadLoading": "Préparation du téléchargement…",

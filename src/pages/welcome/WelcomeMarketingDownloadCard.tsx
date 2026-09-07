@@ -105,7 +105,7 @@ export function WelcomeMarketingDownloadCard({
         <p className="mx-auto max-w-xl text-sm leading-relaxed text-muted-foreground">
           {t(
             "welcome.downloadDescription",
-            "Get the latest Windows installer for REDA TECH Store Management. Install it on your PC, then start your free 7-day trial on first launch.",
+            "Get the latest Windows installer for REDA TECH POS. Install it on your PC, then start your free 7-day trial on first launch.",
           )}
         </p>
       </header>

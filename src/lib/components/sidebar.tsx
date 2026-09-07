@@ -463,7 +463,9 @@ export default function Sidebar() {
                 <BadgeNotification count={1} variant="orange" />
               )}
             </div>
-            {showText && <span>{t(`mainMenu.${item.key}`)}</span>}
+            {showText && (
+              <span className="truncate">{t(`mainMenu.${item.key}`)}</span>
+            )}
           </Link>
         ))}
 
@@ -475,30 +477,31 @@ export default function Sidebar() {
         <button
           type="button"
           data-is-active={aiOpen}
-          className={cn(
-            "max-w-full gap-4 flex items-center rounded-xl py-2 hover:bg-secondary data-[is-active=true]:bg-secondary font-semibold data-[is-active=true]:font-bold",
-            collapsed ? "mx-1 justify-center" : "m-2 px-1",
-          )}
+          className="max-w-full flex w-full items-center gap-2 py-2 font-semibold data-[is-active=true]:font-bold"
           onClick={() => window.dispatchEvent(new CustomEvent("ai-chat-toggle"))}
           aria-label={t("mainMenu.ai", "REDA AI")}
           aria-pressed={aiOpen}
         >
-          <div className="relative">
-            <div className="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border/50 bg-black">
-              <Orb
-                hue={0}
-                hoverIntensity={0.5}
-                rotateOnHover
-                forceHoverState={isAiRunning}
-                backgroundColor="#000000"
+          <div className="flex w-14 shrink-0 items-center justify-center">
+            <div className="relative">
+              <div className="relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-border/50 bg-black">
+                <Orb
+                  hue={0}
+                  hoverIntensity={0.5}
+                  rotateOnHover
+                  forceHoverState={isAiRunning}
+                  backgroundColor="#000000"
+                />
+              </div>
+              <BadgeNotification
+                count={aiUnread ? 1 : 0}
+                className="right-1 rtl:left-1 rtl:right-auto"
               />
             </div>
-            <BadgeNotification
-              count={aiUnread ? 1 : 0}
-              className="right-1 rtl:left-1 rtl:right-auto"
-            />
           </div>
-          {showText && <span>{t("mainMenu.ai", "REDA AI")}</span>}
+          {showText && (
+            <span className="truncate">{t("mainMenu.ai", "REDA AI")}</span>
+          )}
         </button>
 
         {/* Logout Button */}
@@ -507,7 +510,7 @@ export default function Sidebar() {
           onClick={logout}
         >
           <LogOut className="text-red-500" />
-          {showText && <span>Logout</span>}
+          {showText && <span className="truncate">Logout</span>}
         </button>
 
         <button

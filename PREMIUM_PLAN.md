@@ -177,10 +177,10 @@ Website (`landing.tsx`) uses the same `WelcomeSetup` component — updating welc
 ### 3.2 Pricing plans
 
 - [ ] Update `pricingPlansSection.tsx`:
-  - Base license cards (Monthly / Yearly / Lifetime) — full POS app
-  - Premium add-on band below — list all Premium features
-- [ ] Fix price constant mismatch if needed (TS `1900` vs locale `2500`)
-- [ ] i18n: `pricing.premium.*` in en / fr / ar
+  - Base Standard cards (Monthly / Yearly / Lifetime)
+  - Premium **add-on** band (+1 500 / mo, +10 000 / yr) — not a standalone plan
+- [x] Premium treated as add-on on Standard (UI + copy); license still `ai_enabled` flag
+- [ ] i18n: `pricing.addon.premium.*` in en / fr / ar
 - [ ] Update `licenseGate` page if it embeds pricing
 
 **Phase 3 done when:** welcome + website show Premium section and updated pricing with all shipped features.

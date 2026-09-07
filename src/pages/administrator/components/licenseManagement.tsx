@@ -298,7 +298,8 @@ export function LicenseManagement() {
   const premiumKnown = typeof aiEnabled === "boolean";
   const hasPremium = premiumKnown && aiEnabled === true;
   const showUpgradeToPremium = !isTrialActive && !hasPremium;
-  const pricingInitialTier = hasPremium || showUpgradeToPremium ? "premium" : "standard";
+  // Only scroll the modal to Premium when opened via the upgrade CTA.
+  const pricingInitialTier = showUpgradeToPremium ? "premium" : "standard";
 
   const copyDeviceId = async () => {
     if (!deviceId) return;

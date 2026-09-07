@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { ChartLine } from "lucide-react";
 import { cn } from "../utils";
+import { Typing } from "./ui/typing";
 
 interface LoadingStateProps {
   title?: string;
@@ -8,6 +9,7 @@ interface LoadingStateProps {
   icon?: React.ComponentType<{ className?: string }>;
   iconColor?: string;
   iconSize?: string;
+  /** Text color class for dots; `bg-*` is mapped to `text-*`. */
   dotColor?: string;
   dotSize?: string;
   minHeight?: string;
@@ -24,8 +26,7 @@ export function LoadingState({
   icon: Icon = ChartLine,
   iconColor = "text-green-500",
   iconSize = "w-20 h-20",
-  dotColor = "bg-green-500",
-  dotSize = "w-2 h-2",
+  dotColor = "text-green-500",
   minHeight = "min-h-[60vh]",
   className,
   showDots = true,
@@ -34,6 +35,9 @@ export function LoadingState({
   descriptionClassName,
 }: LoadingStateProps) {
   const { t } = useTranslation();
+  const typingColor = dotColor.startsWith("bg-")
+    ? dotColor.replace(/^bg-/, "text-")
+    : dotColor;
 
   return (
     <div className={cn("flex flex-col items-center justify-center gap-6", minHeight, className)}>
@@ -58,47 +62,13 @@ export function LoadingState({
         </div>
       )}
       
-      {/* Loading Dots Animation */}
+      {/* Same 3-dot animation as preload */}
       {showDots && (
-        <>
-          <div className="flex gap-2">
-            <div 
-              className={cn(dotSize, dotColor, "rounded-full")}
-              style={{ 
-                animation: 'higherBounce 0.9s infinite',
-                animationDelay: '0ms',
-              }}
-            ></div>
-            <div 
-              className={cn(dotSize, dotColor, "rounded-full")}
-              style={{ 
-                animation: 'higherBounce 0.9s infinite',
-                animationDelay: '150ms',
-              }}
-            ></div>
-            <div 
-              className={cn(dotSize, dotColor, "rounded-full")}
-              style={{ 
-                animation: 'higherBounce 0.9s infinite',
-                animationDelay: '300ms',
-              }}
-            ></div>
-          </div>
-          <style>{`
-            @keyframes higherBounce {
-              0%, 100% {
-                transform: translateY(0);
-                animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
-              }
-              50% {
-                transform: translateY(-100%);
-                animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
-              }
-            }
-          `}</style>
-        </>
+        <Typing
+          className={cn("h-2 w-8", typingColor)}
+          label={title || t("dashboard.loading", "Loading")}
+        />
       )}
     </div>
   );
 }
-

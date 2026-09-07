@@ -1320,7 +1320,7 @@
     "kicker": "Licensing",
     "modalTitle": "License plans",
     "title": "Choose your license",
-    "subtitle": "Standard or Premium — monthly, yearly, or lifetime. All plans include the full desktop app. Premium adds REDA AI, receipt scanning, and online backup. Prices in Algerian dinars (DA); contact your supplier to purchase and activate.",
+    "subtitle": "Choose a Standard license (monthly, yearly, or lifetime), then optionally add Premium for REDA AI, receipt scanning, and cloud backup. Premium is an add-on on top of Standard — not a separate plan. Prices in Algerian dinars (DA); contact your supplier to purchase and activate.",
     "popular": "Recommended",
     "premiumBadge": "Premium",
     "tierToggleLabel": "License tier",
@@ -1337,7 +1337,29 @@
       },
       "premium": {
         "title": "Premium",
-        "subtitle": "Everything in Standard, plus REDA AI, receipt scanner, and cloud backup."
+        "subtitle": "Add on top of any Standard license. Includes REDA AI, receipt scanner, product photo search, and cloud backup."
+      }
+    },
+    "addon": {
+      "premium": {
+        "badge": "Add-on",
+        "requiresStandard": "Available as an add-on to any Standard license.",
+        "lifetimeNote": "With Standard Lifetime ({{base}} DA one-time): add a Premium monthly or yearly add-on.",
+        "feature1": "REDA AI shop assistant",
+        "feature2": "Receipt scanner",
+        "feature3": "Product photo search",
+        "feature4": "Online cloud backup",
+        "feature5": "Activates on your existing Standard license",
+        "monthly": {
+          "name": "Monthly",
+          "priceAmount": "+ 1 500 DA",
+          "pricePeriod": "Add-on / month"
+        },
+        "yearly": {
+          "name": "Yearly",
+          "priceAmount": "+ 10 000 DA",
+          "pricePeriod": "Add-on / year"
+        }
       }
     },
     "mailSubject": {
@@ -1347,9 +1369,18 @@
         "lifetime": "REDA TECH Store Management — Standard lifetime license inquiry"
       },
       "premium": {
-        "monthly": "REDA TECH Store Management — Premium monthly license inquiry",
-        "yearly": "REDA TECH Store Management — Premium yearly license inquiry",
-        "lifetime": "REDA TECH Store Management — Premium lifetime license inquiry"
+        "monthly": "REDA TECH Store Management — Premium add-on (monthly) inquiry",
+        "yearly": "REDA TECH Store Management — Premium add-on (yearly) inquiry"
+      }
+    },
+    "whatsapp": {
+      "standard": {
+        "monthly": "Hello, I'm interested in the Reda Tech POS Standard Monthly license (1 000 DA/month). Please tell me how to purchase and activate it.",
+        "yearly": "Hello, I'm interested in the Reda Tech POS Standard Yearly license (10 000 DA/year). Please tell me how to purchase and activate it.",
+        "lifetime": "Hello, I'm interested in the Reda Tech POS Standard Lifetime license (20 000 DA one-time). Please tell me how to purchase and activate it."
+      },
+      "addon": {
+        "premium": "Hello, I'm interested in the Reda Tech POS Premium offer. Please tell me how to activate it."
       }
     },
     "plans": {
@@ -1384,42 +1415,6 @@
           "feature1": "Everything in Yearly",
           "feature2": "Single upfront payment",
           "feature3": "Lowest cost over many years of use",
-          "feature4": "License terms & updates per supplier agreement"
-        }
-      },
-      "premium": {
-        "monthly": {
-          "name": "Monthly",
-          "priceAmount": "1 900 DA",
-          "pricePeriod": "Per month",
-          "commitment": "Premium · renews monthly",
-          "tagline": "All Premium tools with flexible monthly billing.",
-          "feature1": "Everything in Standard Monthly",
-          "feature2": "REDA AI shop assistant",
-          "feature3": "Receipt scanner",
-          "feature4": "Product photo search",
-          "feature5": "Online cloud backup"
-        },
-        "yearly": {
-          "name": "Yearly",
-          "priceAmount": "15 000 DA",
-          "pricePeriod": "Per year",
-          "commitment": "Premium · billed yearly",
-          "tagline": "Premium for a full year — best value for growing shops.",
-          "feature1": "Everything in Premium Monthly",
-          "feature2": "Save ~34% vs 12 monthly Premium payments",
-          "feature3": "One yearly renewal for AI & cloud backup",
-          "feature4": "REDA AI, scanner & cloud backup included"
-        },
-        "lifetime": {
-          "name": "Lifetime",
-          "priceAmount": "35 000 DA",
-          "pricePeriod": "One-time payment",
-          "commitment": "Premium · one-time",
-          "tagline": "Premium once — for shops committed long term.",
-          "feature1": "Standard + Premium for the life of your license",
-          "feature2": "REDA AI, receipt scanner & cloud backup",
-          "feature3": "No subscription renewals after activation",
           "feature4": "License terms & updates per supplier agreement"
         }
       }
@@ -2864,9 +2859,9 @@
       "trialModeBadge": "Free trial",
       "premiumBadge": "Premium",
       "upgradeToPremium": "Upgrade to Premium",
-      "upgradeToPremiumHint": "Unlock REDA AI, online backup, and more.",
+      "upgradeToPremiumHint": "Add Premium on your Standard license for REDA AI, online backup, and more.",
       "seePlans": "See pricing plans",
-      "seePlansHint": "Compare Standard and Premium pricing options.",
+      "seePlansHint": "Compare Standard licenses and the Premium add-on.",
       "trialSection": "Trial",
       "trialEnds": "Trial ends",
       "trialRemaining": "Time left",
@@ -3360,8 +3355,9 @@
   },
   "admin.logs": "Logs",
   "welcome": {
-    "title": "Welcome to REDA TECH Store Management",
+    "title": "Welcome to REDA TECH POS",
     "subtitle": "Set up this computer for the first time. Choose a new shop trial or restore your data if you already use the app elsewhere.",
+    "subtitleMarketing": "A desktop POS for your shop — sales, stock, clients, and reports on Windows.",
     "subtitleExistingShop": "Link this computer to your shop account. Your existing data on this PC will be kept.",
     "existingLocalDataBanner": "We found shop data on this computer. Link your account below, or start a trial if this is a new shop. Cloud restore is hidden so your current data is not replaced.",
     "linkExistingAccount": "I already have a Customer ID (keep my data)",
@@ -3481,7 +3477,7 @@
     "customerIdPlaceholder": "UUID from your supplier",
     "customerIdHint": "Must match the phone number we have on file for this ID.",
     "downloadTitle": "Download the app",
-    "downloadDescription": "Get the latest Windows installer for REDA TECH Store Management. Install it on your PC, then start your free 7-day trial on first launch.",
+    "downloadDescription": "Get the latest Windows installer for REDA TECH POS. Install it on your PC, then start your free 7-day trial on first launch.",
     "downloadButton": "Download for Windows",
     "downloadLoading": "Preparing download…",
     "downloadUnavailable": "Download is temporarily unavailable. Try again later or visit GitHub Releases.",
