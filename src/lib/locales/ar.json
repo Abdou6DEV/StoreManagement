@@ -1447,6 +1447,7 @@
       "reviewHint": "هذا ما سيُضاف إلى المخزون.",
       "reviewColTotal": "الإجمالي",
       "scannedAs": "على الوصل: {{name}}",
+      "matchedTo": "مطابق لـ",
       "receiptLines": "أسطر الوصل",
       "stockAfterPurchase": "بعد هذا الشراء",
       "qtyToAdd": "الكمية المراد إضافتها",

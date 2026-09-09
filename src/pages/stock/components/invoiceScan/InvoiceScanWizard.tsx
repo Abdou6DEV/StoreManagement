@@ -233,15 +233,17 @@ export default function InvoiceScanWizard({
     sellingPrice: number,
     codebar: string,
     boughtPrice: number,
+    quantity: number,
     strategy?: "weighted" | "new",
     catalogBought?: number,
   ) => {
+    const qty = quantity > 0 ? Math.max(1, Math.round(quantity)) : line.quantity;
     const bought = boughtPrice > 0 ? boughtPrice : product.boughtPrice;
     const weighted =
       strategy === "weighted" && catalogBought != null
         ? Math.round(
-            ((product.quantity * catalogBought + line.quantity * bought) /
-              (product.quantity + line.quantity)) *
+            ((product.quantity * catalogBought + qty * bought) /
+              (product.quantity + qty)) *
               100,
           ) / 100
         : bought;
@@ -251,6 +253,7 @@ export default function InvoiceScanWizard({
       existingProductId: product.id,
       productName: product.name,
       categoryName: product.categoryName,
+      quantity: qty,
       sellingPrice: sellingPrice > 0 ? sellingPrice : product.sellingPrice,
       boughtPrice: strategy === "weighted" ? weighted : bought,
       actualPurchasePrice: bought,
@@ -266,10 +269,12 @@ export default function InvoiceScanWizard({
     sellingPrice: number,
     codebar: string,
     boughtPrice: number,
+    quantity: number,
   ) => {
+    const qty = quantity > 0 ? Math.max(1, Math.round(quantity)) : line.quantity;
     const bought = boughtPrice > 0 ? boughtPrice : product.boughtPrice;
     if (!isPriceDifferent(bought, product.boughtPrice)) {
-      commitExisting(line, product, sellingPrice, codebar, bought);
+      commitExisting(line, product, sellingPrice, codebar, bought, qty);
       return;
     }
     let history:
@@ -295,7 +300,7 @@ export default function InvoiceScanWizard({
       newSellingPrice: sellingPrice > 0 ? sellingPrice : product.sellingPrice,
       previousSellingPrice: product.sellingPrice,
       currentQuantity: product.quantity,
-      newQuantity: line.quantity,
+      newQuantity: qty,
       sellerName: selectedSeller?.name ?? newSellerName.trim() ?? null,
       codebar,
       purchaseHistory: history,
@@ -314,6 +319,7 @@ export default function InvoiceScanWizard({
       priceData.newSellingPrice,
       priceData.codebar,
       priceData.newPrice,
+      priceData.newQuantity,
       "weighted",
       priceData.previousPrice,
     );
@@ -332,6 +338,7 @@ export default function InvoiceScanWizard({
       priceData.newSellingPrice,
       priceData.codebar,
       priceData.newPrice,
+      priceData.newQuantity,
       "new",
     );
     setPriceOpen(false);
@@ -764,16 +771,25 @@ export default function InvoiceScanWizard({
                   updateLine(line.key, { ...reopenLine(line), skipped: !line.skipped })
                 }
                 onChange={() => updateLine(line.key, reopenLine(line))}
-                onConfirmExisting={(product, sellingPrice, codebar, boughtPrice) => {
-                  void requestExistingConfirm(line, product, sellingPrice, codebar, boughtPrice);
+                onConfirmExisting={(product, sellingPrice, codebar, boughtPrice, quantity) => {
+                  void requestExistingConfirm(
+                    line,
+                    product,
+                    sellingPrice,
+                    codebar,
+                    boughtPrice,
+                    quantity,
+                  );
                 }}
                 onConfirmNew={(data) => {
                   updateLine(line.key, {
                     confirmed: true,
                     isNewProduct: true,
                     existingProductId: undefined,
+                    aiName: data.name,
                     productName: data.name,
                     categoryName: data.categoryName,
+                    quantity: data.quantity,
                     sellingPrice: data.sellingPrice,
                     boughtPrice: data.boughtPrice,
                     codebar: data.codebar,

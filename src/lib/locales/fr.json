@@ -1192,6 +1192,7 @@
       "reviewHint": "Voici ce qui sera ajouté au stock.",
       "reviewColTotal": "Total",
       "scannedAs": "Sur le bon : {{name}}",
+      "matchedTo": "Associé à",
       "receiptLines": "Lignes du bon",
       "stockAfterPurchase": "Après cet achat",
       "qtyToAdd": "Quantité à ajouter",

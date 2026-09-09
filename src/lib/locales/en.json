@@ -1830,6 +1830,7 @@
       "reviewHint": "This is what will be added to stock.",
       "reviewColTotal": "Total",
       "scannedAs": "On the receipt: {{name}}",
+      "matchedTo": "Matched to",
       "receiptLines": "Receipt lines",
       "stockAfterPurchase": "After this purchase",
       "qtyToAdd": "Quantity to add",

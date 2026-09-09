@@ -44,6 +44,7 @@ export default function ScanProductLine({
     sellingPrice: number,
     codebar: string,
     boughtPrice: number,
+    quantity: number,
   ) => void;
   onConfirmNew: (data: {
     name: string;
@@ -51,6 +52,7 @@ export default function ScanProductLine({
     sellingPrice: number;
     codebar: string;
     boughtPrice: number;
+    quantity: number;
   }) => void;
 }) {
   const { t } = useTranslation();
@@ -60,8 +62,9 @@ export default function ScanProductLine({
   const [preview, setPreview] = useState<Product | null>(null);
   const [sellingPrice, setSellingPrice] = useState<number | "">("");
   const [boughtPrice, setBoughtPrice] = useState<number | "">(line.boughtPrice || "");
+  const [quantity, setQuantity] = useState<number | "">(line.quantity || 1);
   const [codebar, setCodebar] = useState("");
-  const [newName, setNewName] = useState(line.aiName);
+  const [editName, setEditName] = useState(line.aiName);
   const [categoryName, setCategoryName] = useState("");
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   const [pickOpen, setPickOpen] = useState(false);
@@ -89,10 +92,14 @@ export default function ScanProductLine({
     return categories.filter((c) => c.toLowerCase().includes(q)).slice(0, 8);
   }, [categories, categoryName]);
 
+  const resolvedQty =
+    typeof quantity === "number" && quantity > 0 ? Math.max(1, Math.round(quantity)) : 0;
+
   const enterPreview = (product: Product) => {
     setPreview(product);
     setSellingPrice(product.sellingPrice || "");
     setBoughtPrice(receiptBoughtPrice || "");
+    setQuantity(line.quantity || 1);
     setCodebar(product.codebar || "");
     setMode("preview");
     setPickOpen(false);
@@ -100,10 +107,11 @@ export default function ScanProductLine({
 
   const enterCreate = () => {
     setPreview(null);
-    setNewName(line.aiName);
+    setEditName(line.aiName);
     setCategoryName("");
     setSellingPrice("");
     setBoughtPrice(receiptBoughtPrice || "");
+    setQuantity(line.quantity || 1);
     setCodebar("");
     setMode("create");
     setPickOpen(false);
@@ -116,22 +124,26 @@ export default function ScanProductLine({
   };
 
   const confirmPreview = () => {
-    if (!preview) return;
+    if (!preview || resolvedQty <= 0) return;
     const selling = typeof sellingPrice === "number" ? sellingPrice : 0;
     const bought = typeof boughtPrice === "number" ? boughtPrice : receiptBoughtPrice;
-    onConfirmExisting(preview, selling, codebar.trim(), bought);
+    onConfirmExisting(preview, selling, codebar.trim(), bought, resolvedQty);
   };
 
   const confirmCreate = () => {
+    const name = editName.trim();
     const selling = typeof sellingPrice === "number" ? sellingPrice : 0;
     const bought = typeof boughtPrice === "number" ? boughtPrice : receiptBoughtPrice;
-    if (!newName.trim() || !categoryName.trim() || selling <= 0 || bought <= 0) return;
+    if (!name || !categoryName.trim() || selling <= 0 || bought <= 0 || resolvedQty <= 0) {
+      return;
+    }
     onConfirmNew({
-      name: newName.trim(),
+      name,
       categoryName: categoryName.trim(),
       sellingPrice: selling,
       codebar: codebar.trim(),
       boughtPrice: bought,
+      quantity: resolvedQty,
     });
   };
 
@@ -183,6 +195,8 @@ export default function ScanProductLine({
       setMode("choose");
       setPreview(null);
       setBoughtPrice(receiptBoughtPrice || "");
+      setQuantity(line.quantity || 1);
+      setEditName(line.aiName);
       onChange();
       onOpen?.();
     };
@@ -295,12 +309,7 @@ export default function ScanProductLine({
         </p>
         <div className="flex shrink-0 gap-1" onClick={(e) => e.stopPropagation()}>
           {showPreview || showCreate ? (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={backToMatches}
-            >
+            <Button type="button" variant="ghost" size="sm" onClick={backToMatches}>
               {t("stock.invoiceScan.changeMatch", "Change")}
             </Button>
           ) : null}
@@ -312,6 +321,18 @@ export default function ScanProductLine({
 
       {showPreview && preview ? (
         <div className="flex flex-wrap items-end gap-3 border-t border-border pt-3">
+          <div className="min-w-[6.5rem] w-28 space-y-1">
+            <label className="text-xs text-muted-foreground">
+              {t("stock.quantity", "Quantity")}
+            </label>
+            <StyledNumberInput
+              value={quantity}
+              onChange={(v: number | "") => setQuantity(v)}
+              min={1}
+              placeholder={t("stock.quantity", "Quantity")}
+              className={numberFieldClass}
+            />
+          </div>
           <div className="min-w-[7rem] flex-1 space-y-1">
             <label className="text-xs text-muted-foreground">
               {t("stock.boughtPrice", "Bought Price")}
@@ -348,7 +369,9 @@ export default function ScanProductLine({
             type="button"
             className="bg-green-600 text-white hover:bg-green-700"
             onClick={confirmPreview}
-            disabled={typeof boughtPrice !== "number" || boughtPrice <= 0}
+            disabled={
+              typeof boughtPrice !== "number" || boughtPrice <= 0 || resolvedQty <= 0
+            }
           >
             {t("cashier.confirm", "Confirm")}
           </Button>
@@ -357,6 +380,30 @@ export default function ScanProductLine({
 
       {showCreate ? (
         <div className="flex flex-wrap items-end gap-3 border-t border-border pt-3">
+          <div className="min-w-[10rem] flex-[1.4] space-y-1">
+            <label className="text-xs text-muted-foreground">
+              {t("stock.invoiceScan.productName", "Product name")}
+            </label>
+            <input
+              type="text"
+              value={editName}
+              onChange={(e) => setEditName(e.target.value)}
+              className={fieldClass}
+              placeholder={t("stock.invoiceScan.productName", "Product name")}
+            />
+          </div>
+          <div className="min-w-[6.5rem] w-28 space-y-1">
+            <label className="text-xs text-muted-foreground">
+              {t("stock.quantity", "Quantity")}
+            </label>
+            <StyledNumberInput
+              value={quantity}
+              onChange={(v: number | "") => setQuantity(v)}
+              min={1}
+              placeholder={t("stock.quantity", "Quantity")}
+              className={numberFieldClass}
+            />
+          </div>
           <div className="min-w-[8rem] flex-[1.2] space-y-1">
             <label className="text-xs text-muted-foreground">{t("stock.type", "Product Type")}</label>
             <div className="relative">
@@ -428,11 +475,13 @@ export default function ScanProductLine({
             className="bg-green-600 text-white hover:bg-green-700"
             onClick={confirmCreate}
             disabled={
+              !editName.trim() ||
               !categoryName.trim() ||
               typeof sellingPrice !== "number" ||
               sellingPrice <= 0 ||
               typeof boughtPrice !== "number" ||
-              boughtPrice <= 0
+              boughtPrice <= 0 ||
+              resolvedQty <= 0
             }
           >
             <Plus className="h-4 w-4" />
@@ -454,13 +503,13 @@ export default function ScanProductLine({
                     key={product.id}
                     type="button"
                     className={cn(
-                      "flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm hover:bg-accent/50",
+                      "flex w-full items-baseline gap-2 px-3 py-2.5 text-left text-sm hover:bg-accent/50",
                       index > 0 ? "border-t border-border" : "",
                     )}
                     onClick={() => enterPreview(product)}
                   >
                     <span className="min-w-0 truncate font-medium">{product.name}</span>
-                    <span className="ml-auto shrink-0 text-xs text-muted-foreground">
+                    <span className="shrink-0 text-sm text-foreground/70">
                       {product.categoryName}
                       {typeof product.quantity === "number" ? ` · ${product.quantity}` : ""}
                     </span>
@@ -474,8 +523,13 @@ export default function ScanProductLine({
             </p>
           )}
 
-          <div className="flex flex-wrap gap-2">
-            <Button type="button" variant="outline" size="sm" onClick={enterCreate}>
+          <div className="flex flex-wrap justify-end gap-2">
+            <Button
+              type="button"
+              size="sm"
+              className="bg-green-600 text-white hover:bg-green-700"
+              onClick={enterCreate}
+            >
               {t("stock.invoiceScan.addNewProduct", "Add new product")}
             </Button>
             <Popover
@@ -487,13 +541,17 @@ export default function ScanProductLine({
               }}
             >
               <PopoverTrigger asChild>
-                <Button type="button" variant="outline" size="sm">
+                <Button
+                  type="button"
+                  size="sm"
+                  className="bg-green-600 text-white hover:bg-green-700"
+                >
                   {t("stock.invoiceScan.pickProduct", "Pick product")}
                 </Button>
               </PopoverTrigger>
               <PopoverContent
                 className="w-[min(360px,calc(100vw-2rem))] p-0"
-                align="start"
+                align="end"
               >
                 <div className="p-2">
                   <input
@@ -515,11 +573,11 @@ export default function ScanProductLine({
                       <button
                         key={product.id}
                         type="button"
-                        className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm hover:bg-accent/50"
+                        className="flex w-full items-baseline gap-2 px-3 py-2.5 text-left text-sm hover:bg-accent/50"
                         onClick={() => enterPreview(product)}
                       >
                         <span className="min-w-0 truncate font-medium">{product.name}</span>
-                        <span className="ml-auto shrink-0 text-xs text-muted-foreground">
+                        <span className="shrink-0 text-sm text-foreground/70">
                           {product.categoryName}
                         </span>
                       </button>
