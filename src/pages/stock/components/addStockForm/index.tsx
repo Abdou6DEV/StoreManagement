@@ -288,6 +288,7 @@ export default function AddStockForm({
   const [showBarcodePreview, setShowBarcodePreview] = useState(false);
   const [showDiscardAddStockConfirm, setShowDiscardAddStockConfirm] =
     useState(false);
+  const [showNoSupplierConfirm, setShowNoSupplierConfirm] = useState(false);
 
   const canAddProduct =
     form.name.trim().length > 0 &&
@@ -299,6 +300,7 @@ export default function AddStockForm({
   const isAddStockDirty = React.useMemo(() => {
     if (pendingProducts.length > 0) return true;
     if (multiSellerId.trim() !== "") return true;
+    if (multiSellerName.trim() !== "") return true;
     const f = form;
     if (f.name.trim()) return true;
     if (f.categoryName.trim()) return true;
@@ -312,7 +314,7 @@ export default function AddStockForm({
     if (f.sellerId.trim()) return true;
     if (f.photo) return true;
     return false;
-  }, [form, pendingProducts, multiSellerId]);
+  }, [form, pendingProducts, multiSellerId, multiSellerName]);
 
   // For infinite scroll in product dropdown
   const PAGE_SIZE = 50;
@@ -925,207 +927,85 @@ export default function AddStockForm({
     }
   };
 
+  const resolveMultiSellerId = async (): Promise<string | undefined> => {
+    if (multiSellerId) {
+      const selected = sellers.find((s) => s.id === multiSellerId);
+      if (selected) return selected.id;
+    }
+
+    const sellerName = multiSellerName.trim();
+    if (!sellerName) return undefined;
+
+    const existing = sellers.find(
+      (s) => s.name.toLowerCase() === sellerName.toLowerCase(),
+    );
+    if (existing) return existing.id;
+
+    try {
+      const newSeller = await window.api.database.sellers.create({
+        name: sellerName,
+      });
+      window.api?.activityLog
+        ?.log({
+          username: user?.username ?? "unknown",
+          action: "activityLog.actions.supplierAdded",
+          details: `From stock form (multi):\nSupplier: ${sellerName}`,
+        })
+        .catch((): undefined => undefined);
+
+      setSellers((prev) => [...prev, newSeller]);
+      setFilteredSellers((prev) => [...prev, newSeller]);
+      setMultiSellerId(newSeller.id);
+
+      showToast(
+        t("stock.sellerCreated", "New seller created successfully"),
+        "success",
+      );
+      return newSeller.id;
+    } catch (error) {
+      rendererLogger.error("Failed to create seller", "AddStockForm", error);
+      showToast(
+        t("stock.sellerCreateError", "Failed to create seller"),
+        "error",
+      );
+      throw error;
+    }
+  };
+
   const handleFinishPurchase = async () => {
     if (pendingProducts.length === 0) {
       showToast(
         t("stock.noPendingProducts", "No products in purchase list"),
-        "error"
+        "error",
       );
       return;
     }
 
-    // Validate seller selection - must have an existing seller selected
-    if (!multiSellerId) {
-      showToast(
-        t("stock.existingSellerRequired", "Please select an existing seller for the purchase"),
-        "error"
-      );
-      return;
-    }
-
-    // Verify the seller still exists
-    const selectedSeller = sellers.find(s => s.id === multiSellerId);
-    if (!selectedSeller) {
-      showToast(
-        t("stock.sellerNotFound", "The selected seller no longer exists. Please select another seller."),
-        "error"
-      );
-      return;
-    }
-
-    // Validate that all products have required data
     const invalidProducts = pendingProducts.filter(
       (p) =>
         !p.name.trim() ||
         !p.categoryName.trim() ||
         p.quantity <= 0 ||
-        p.boughtPrice <= 0
+        p.boughtPrice <= 0,
     );
-
-    // Do not block finishing with a loss warning; the warning is handled at add-to-list time
 
     if (invalidProducts.length > 0) {
       showToast(
         t(
           "stock.invalidProductsInList",
-          "Some products in the list have invalid data"
+          "Some products in the list have invalid data",
         ),
-        "error"
+        "error",
       );
       return;
     }
 
-    setFinishingPurchase(true);
-    try {
-      // Create new products first
-      const newProducts = pendingProducts.filter((p) => p.isNewProduct);
-      const existingProducts = pendingProducts.filter((p) => !p.isNewProduct);
-
-      const purchaseItems: Array<{
-        productId: string;
-        quantity: number;
-        price: number;
-      }> = [];
-
-      // Create new products and collect their IDs
-      for (const newProduct of newProducts) {
-        await window.api.database.categories.ensure(newProduct.categoryName);
-
-        const productData = {
-          name: newProduct.name,
-          categoryName: newProduct.categoryName,
-          quantity: newProduct.quantity, // Set initial quantity directly
-          boughtPrice: safePrice(newProduct.boughtPrice),
-          sellingPrice: safePrice(newProduct.sellingPrice),
-          codebar: newProduct.codebar,
-          photo: newProduct.photo,
-        };
-
-        const createdProduct = await window.api.database.products.add({
-          product: productData,
-          username: user?.username ?? "unknown",
-        });
-        purchaseItems.push({
-          productId: createdProduct.id,
-          quantity: newProduct.quantity,
-          price: newProduct.boughtPrice,
-        });
-      }
-
-      // Process existing products with their chosen price strategies
-      for (const existingProduct of existingProducts) {
-        if (existingProduct.existingProductId) {
-          try {
-            // Get current product data
-            const currentProduct = products.find(
-              (p) => p.id === existingProduct.existingProductId
-            );
-            const currentQuantity = currentProduct?.quantity || 0;
-
-            // Update the product with new quantity and price
-            await window.api.database.products.update(
-              existingProduct.existingProductId,
-              {
-                quantity: currentQuantity + existingProduct.quantity,
-                boughtPrice: existingProduct.boughtPrice, // Use the calculated price from pending list
-                sellingPrice: safePrice(existingProduct.sellingPrice),
-                ...photoPatchIfChanged(existingProduct.photo, currentProduct?.photo),
-              },
-              user?.username ?? "unknown",
-              "activityLog.actions.quantityAdded"
-            );
-
-            // Create the purchase record separately
-            const purchaseData = {
-              sellerId: multiSellerId || undefined,
-              quantity: existingProduct.quantity,
-              price:
-                existingProduct.actualPurchasePrice ||
-                existingProduct.boughtPrice, // Use the actual price paid
-            };
-
-            // Add to purchase items for record keeping
-            purchaseItems.push({
-              productId: existingProduct.existingProductId,
-              quantity: existingProduct.quantity,
-              price: purchaseData.price,
-            });
-          } catch (productError) {
-            rendererLogger.error(
-              `Failed to update product ${existingProduct.name}`,
-              "AddStockForm",
-              productError
-            );
-            showToast(
-              t(
-                "stock.productUpdateError",
-                `Failed to update product: ${existingProduct.name}`
-              ),
-              "error"
-            );
-            throw productError; // Re-throw to stop the entire process
-          }
-        }
-      }
-
-      // Create the multi-product purchase only if purchase mode is enabled
-      if (isPurchaseMode && purchaseItems.length > 0) {
-        try {
-          await window.api.database.purchases.createWithItems({
-            sellerId: multiSellerId || undefined,
-            items: purchaseItems,
-          });
-
-          showToast(
-            t(
-              "stock.purchaseCompletedSuccess",
-              "Purchase completed successfully!"
-            ),
-            "success"
-          );
-        } catch (purchaseError) {
-          rendererLogger.error(
-            "Failed to create purchase record",
-            "AddStockForm",
-            purchaseError
-          );
-          showToast(
-            t(
-              "stock.purchaseRecordError",
-              "Products updated but purchase record failed"
-            ),
-            "error"
-          );
-        }
-      } else if (!isPurchaseMode) {
-        showToast(
-          t(
-            "stock.inventoryUpdatedSuccess",
-            "Inventory updated successfully!"
-          ),
-          "success"
-        );
-      } else {
-        showToast(
-          t("stock.noPurchaseItems", "No purchase items to record"),
-          "error"
-        );
-      }
-
-      // Reset everything
-      setPendingProducts([]);
-      setMultiSellerId("");
-      setForm(initialForm);
-      refetchProducts();
-      refetchCategories();
-    } catch (error) {
-      showToast(
-        t("stock.purchaseCompletedError", "Failed to complete purchase"),
-        "error"
-      );
-    } finally {
-      setFinishingPurchase(false);
+    if (!multiSellerId && !multiSellerName.trim()) {
+      setShowNoSupplierConfirm(true);
+      return;
     }
+
+    await handleFinishPurchaseInternal();
   };
 
   const removePendingProduct = (id: string) => {
@@ -1845,6 +1725,13 @@ export default function AddStockForm({
 
     setFinishingPurchase(true);
     try {
+      let sellerIdToUse: string | undefined;
+      try {
+        sellerIdToUse = await resolveMultiSellerId();
+      } catch {
+        return;
+      }
+
       // Create new products first
       const newProducts = pendingProducts.filter((p) => p.isNewProduct);
       const existingProducts = pendingProducts.filter((p) => !p.isNewProduct);
@@ -1905,7 +1792,7 @@ export default function AddStockForm({
 
             // Create the purchase record separately
             const purchaseData = {
-              sellerId: multiSellerId || undefined,
+              sellerId: sellerIdToUse,
               quantity: existingProduct.quantity,
               price:
                 existingProduct.actualPurchasePrice ||
@@ -1940,7 +1827,7 @@ export default function AddStockForm({
       if (isPurchaseMode && purchaseItems.length > 0) {
         try {
           await window.api.database.purchases.createWithItems({
-            sellerId: multiSellerId || undefined,
+            sellerId: sellerIdToUse,
             items: purchaseItems,
           });
 
@@ -1983,6 +1870,7 @@ export default function AddStockForm({
       // Reset everything
       setPendingProducts([]);
       setMultiSellerId("");
+      setMultiSellerName("");
       setForm(initialForm);
       refetchProducts();
       refetchCategories();
@@ -2218,17 +2106,18 @@ export default function AddStockForm({
       {openPanel === "add" && (
         <div className="p-6 space-y-6">
           {/* Mode Toggle */}
-          <ModeToggle
-            isMultiMode={isMultiMode}
-            setIsMultiMode={setIsMultiMode}
-            onModeChange={handleModeChange}
-          />
-          
-          {/* Purchase Toggle */}
-          <div className="-mt-2">
+          <div className="overflow-hidden rounded-lg border border-border bg-muted/30 divide-y divide-border">
+            <ModeToggle
+              isMultiMode={isMultiMode}
+              setIsMultiMode={setIsMultiMode}
+              onModeChange={handleModeChange}
+              bare
+              disabled={pendingProducts.length > 0}
+            />
             <PurchaseToggle
               isPurchaseMode={isPurchaseMode}
               setIsPurchaseMode={setIsPurchaseMode}
+              bare
             />
           </div>
 
@@ -2529,6 +2418,7 @@ export default function AddStockForm({
                   if (isMultiMode) {
                     setPendingProducts([]);
                     setMultiSellerId("");
+                    setMultiSellerName("");
                   }
                 }}
                 className="text-muted-foreground"
@@ -2623,6 +2513,23 @@ export default function AddStockForm({
         onConfirm={() => {
           resetAllState();
           setOpenPanel(null);
+        }}
+      />
+
+      <ConfirmDialog
+        open={showNoSupplierConfirm}
+        onOpenChange={setShowNoSupplierConfirm}
+        title={t("stock.noSupplierConfirmTitle", "No supplier selected")}
+        message={t(
+          "stock.noSupplierConfirmMessage",
+          "You are about to add these products without choosing or creating a supplier. Continue anyway?",
+        )}
+        cancelText={t("common.no", "No")}
+        confirmText={t("common.yes", "Yes")}
+        variant="warning"
+        loading={finishingPurchase}
+        onConfirm={async () => {
+          await handleFinishPurchaseInternal();
         }}
       />
     </section>

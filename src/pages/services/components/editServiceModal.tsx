@@ -7,6 +7,7 @@ import { DatePicker } from "../../../lib/components/datePicker";
 import { useToast } from "../../../lib/contexts/toastContext";
 import { useAuth } from "../../../lib/contexts/authContext";
 import { Tooltip } from "../../../lib/components/tooltip";
+import { SegmentedToggle } from "../../../lib/components/segmentedToggle";
 import { generateReceiptBarcode } from "../../../lib/utils/barcodeVisual";
 import { printServiceLabel } from "../utils/serviceLabelPrintUtils";
 import { ServiceLabelPrintModal } from "./ServiceLabelPrintModal";
@@ -718,7 +719,7 @@ export default function EditServiceModal({
       <div className="p-6">
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Service Name */}
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">
@@ -808,46 +809,21 @@ export default function EditServiceModal({
               />
             </div>
 
-            {/* Payment Status */}
+            {/* Payment status — last, normal width */}
             <div className="space-y-2">
-              <div className="flex gap-4">
-                <label className="flex items-center space-x-2 cursor-pointer">
-                  <button
-                    type="button"
-                    onClick={() => setIsPaid(true)}
-                    className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
-                      isPaid
-                        ? 'bg-cyan-600 border-cyan-600 text-white'
-                        : 'border-gray-300 hover:border-cyan-400 dark:border-gray-600 dark:hover:border-cyan-500'
-                    }`}
-                  >
-                    {isPaid && (
-                      <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                      </svg>
-                    )}
-                  </button>
-                  <span className="text-sm">{t("services.payed", "Payed")}</span>
-                </label>
-                <label className="flex items-center space-x-2 cursor-pointer">
-                  <button
-                    type="button"
-                    onClick={() => setIsPaid(false)}
-                    className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
-                      !isPaid
-                        ? 'bg-cyan-600 border-cyan-600 text-white'
-                        : 'border-gray-300 hover:border-cyan-400 dark:border-gray-600 dark:hover:border-cyan-500'
-                    }`}
-                  >
-                    {!isPaid && (
-                      <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                      </svg>
-                    )}
-                  </button>
-                  <span className="text-sm">{t("services.notPayed", "Not Payed")}</span>
-                </label>
-              </div>
+              <label className="text-sm font-medium text-foreground">
+                {t("services.paymentStatus", "Payment status")}
+              </label>
+              <SegmentedToggle
+                aria-label={t("services.paymentStatus", "Payment status")}
+                accent="cyan"
+                value={isPaid ? "paid" : "unpaid"}
+                onChange={(v) => setIsPaid(v === "paid")}
+                options={[
+                  { value: "paid", label: t("services.payed", "Payed") },
+                  { value: "unpaid", label: t("services.notPayed", "Not Payed") },
+                ]}
+              />
             </div>
           </div>
 

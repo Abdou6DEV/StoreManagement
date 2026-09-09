@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { ChevronDown, ChevronUp, Wrench, Loader2, Check, User, Plus, Users, Printer } from "lucide-react";
+import { ChevronDown, ChevronUp, Wrench, Loader2, Check, User, Plus, Users, Printer, Eye, EyeOff } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "../../../lib/components/button";
 import { DatePicker } from "../../../lib/components/datePicker";
@@ -14,6 +14,7 @@ import { printServiceLabel } from "../utils/serviceLabelPrintUtils";
 import { ServiceLabelPrintModal } from "./ServiceLabelPrintModal";
 import { NoPrinterModal } from "../../../lib/components/noPrinterModal";
 import { Tooltip } from "../../../lib/components/tooltip";
+import { SegmentedToggle } from "../../../lib/components/segmentedToggle";
 
 interface Client {
   id: string;
@@ -1305,8 +1306,8 @@ export default function AddServiceForm({
       </header>
       {openPanel === "add" && (
         <form onSubmit={handleAddService} className="p-6 space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-            <Legend>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
+            <Legend className="md:col-span-2 xl:col-span-2">
               <label>{t("services.serviceName", "Service Name")}</label>
               <div className="relative">
                 <input
@@ -1497,7 +1498,7 @@ export default function AddServiceForm({
             </Legend>
             <Legend>
               <label>{t("services.costPrice", "Cost Price")} ({t("common.currency", "DA")})</label>
-              <div className="flex items-center gap-2">
+              <div className="relative">
                 <input
                   ref={costPriceRef}
                   data-field="service-cost-price"
@@ -1508,47 +1509,41 @@ export default function AddServiceForm({
                   value={form.costPrice}
                   onChange={(e) => handleFormChange("costPrice", e.target.value)}
                   onKeyDown={(e) => handleFieldKeyDown(e, "costPrice")}
-                  className={`flex-1 px-4 py-3 rounded-lg border bg-card text-sm focus:outline-none focus:ring-1 transition-all ${
+                  className={`w-full px-4 py-3 pr-11 rounded-lg border bg-card text-sm focus:outline-none focus:ring-1 transition-all ${
                     form.servicePrice && form.costPrice && parseFloat(form.costPrice) > parseFloat(form.servicePrice)
                       ? "border-red-500 focus:ring-red-500/50 focus:border-red-500"
                       : "border-border focus:ring-cyan-500/50 focus:border-cyan-500"
                   }`}
                 />
-                <label className="flex items-center space-x-2 cursor-pointer text-sm text-muted-foreground whitespace-nowrap">
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setHideCostPrice(!hideCostPrice);
-                    }}
-                    onMouseDown={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                    }}
-                    className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
-                      hideCostPrice
-                        ? 'bg-cyan-600 border-cyan-600 text-white'
-                        : 'border-gray-300 hover:border-cyan-400 dark:border-gray-600 dark:hover:border-cyan-500'
-                    }`}
-                  >
-                    {hideCostPrice && (
-                      <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                      </svg>
-                    )}
-                  </button>
-                  <span 
-                    className="text-xs select-none"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setHideCostPrice(!hideCostPrice);
-                    }}
-                  >
-                    {t("services.hideCostPrice", "Hide")}
-                  </span>
-                </label>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setHideCostPrice(!hideCostPrice);
+                  }}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }}
+                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground transition-colors hover:text-cyan-600"
+                  title={
+                    hideCostPrice
+                      ? t("services.showCostPrice", "Show cost price")
+                      : t("services.hideCostPrice", "Hide")
+                  }
+                  aria-label={
+                    hideCostPrice
+                      ? t("services.showCostPrice", "Show cost price")
+                      : t("services.hideCostPrice", "Hide")
+                  }
+                >
+                  {hideCostPrice ? (
+                    <Eye className="h-4 w-4" />
+                  ) : (
+                    <EyeOff className="h-4 w-4" />
+                  )}
+                </button>
               </div>
               {form.servicePrice && form.costPrice && parseFloat(form.costPrice) > parseFloat(form.servicePrice) && (
                 <p className="text-xs text-red-500 mt-1">
@@ -1597,44 +1592,17 @@ export default function AddServiceForm({
               />
             </Legend>
             <Legend>
-              <div className="flex gap-4">
-                <label className="flex items-center space-x-2 cursor-pointer">
-                  <button
-                    type="button"
-                    onClick={() => setIsPaid(true)}
-                    className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
-                      isPaid
-                        ? 'bg-cyan-600 border-cyan-600 text-white'
-                        : 'border-gray-300 hover:border-cyan-400 dark:border-gray-600 dark:hover:border-cyan-500'
-                    }`}
-                  >
-                    {isPaid && (
-                      <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                      </svg>
-                    )}
-                  </button>
-                  <span className="text-sm">{t("services.payed", "Payed")}</span>
-                </label>
-                <label className="flex items-center space-x-2 cursor-pointer">
-                  <button
-                    type="button"
-                    onClick={() => setIsPaid(false)}
-                    className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
-                      !isPaid
-                        ? 'bg-cyan-600 border-cyan-600 text-white'
-                        : 'border-gray-300 hover:border-cyan-400 dark:border-gray-600 dark:hover:border-cyan-500'
-                    }`}
-                  >
-                    {!isPaid && (
-                      <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                      </svg>
-                    )}
-                  </button>
-                  <span className="text-sm">{t("services.notPayed", "Not Payed")}</span>
-                </label>
-              </div>
+              <label>{t("services.paymentStatus", "Payment status")}</label>
+              <SegmentedToggle
+                aria-label={t("services.paymentStatus", "Payment status")}
+                accent="cyan"
+                value={isPaid ? "paid" : "unpaid"}
+                onChange={(v) => setIsPaid(v === "paid")}
+                options={[
+                  { value: "paid", label: t("services.payed", "Payed") },
+                  { value: "unpaid", label: t("services.notPayed", "Not Payed") },
+                ]}
+              />
             </Legend>
           </div>
           <hr />
@@ -1729,9 +1697,15 @@ export default function AddServiceForm({
   );
 }
 
-function Legend({ children }: { children: React.ReactNode }) {
+function Legend({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
   return (
-    <legend className="space-y-2 text-sm [&>label]:font-medium">
+    <legend className={cn("space-y-2 text-sm [&>label]:font-medium", className)}>
       {children}
     </legend>
   );

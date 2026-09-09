@@ -7,9 +7,10 @@ export type FuzzyCandidate = {
 /** Ignore tiny fragments like "1" from "1+" that falsely match inside "J102A". */
 const MIN_TOKEN_LEN = 2;
 const MIN_CONTAINS_LEN = 3;
-const MIN_PARTIAL_TOKEN_LEN = 4;
+/** Allow short model codes like "r50" ↔ "r50i". */
+const MIN_PARTIAL_TOKEN_LEN = 3;
 /** Drop weak one-token / partial noise from suggestions. */
-const MIN_SCORE = 220;
+const MIN_SCORE = 180;
 /**
  * Exact (1000) and whole-phrase contains (~700+) count as “really strong”.
  * When the best hit is this strong, weaker suggestions are hidden.
@@ -34,6 +35,11 @@ function tokens(text: string): string[] {
     .filter((t) => t.length >= MIN_TOKEN_LEN);
 }
 
+/** Alphanumeric model-like tokens (e.g. r50, a14, j102a). */
+function isModelish(token: string): boolean {
+  return /[a-z\u0600-\u06ff]/i.test(token) && /\d/.test(token);
+}
+
 /** True only when the shorter string is a whole word/phrase inside the longer one. */
 function isPhraseOrTokenContains(a: string, b: string): boolean {
   const shorter = a.length <= b.length ? a : b;
@@ -44,13 +50,14 @@ function isPhraseOrTokenContains(a: string, b: string): boolean {
   return ` ${longer} `.includes(` ${shorter} `);
 }
 
+/** Prefix overlap on the shorter side (no substring noise). */
 function tokenPartialHit(queryToken: string, nameTokens: string[]): boolean {
-  if (queryToken.length < MIN_PARTIAL_TOKEN_LEN) return false;
-  return nameTokens.some(
-    (nt) =>
-      nt.length >= MIN_PARTIAL_TOKEN_LEN &&
-      (nt === queryToken || nt.startsWith(queryToken) || queryToken.startsWith(nt)),
-  );
+  return nameTokens.some((nt) => {
+    const shorter = queryToken.length <= nt.length ? queryToken : nt;
+    const longer = queryToken.length <= nt.length ? nt : queryToken;
+    if (shorter.length < MIN_PARTIAL_TOKEN_LEN) return false;
+    return longer.startsWith(shorter);
+  });
 }
 
 /**
@@ -86,9 +93,13 @@ export function rankNameMatches<T extends { id: string; name: string }>(
 
       let exactHits = 0;
       let partialHits = 0;
+      let modelPartialHits = 0;
       for (const t of qTokens) {
         if (nameTokenSet.has(t)) exactHits += 1;
-        else if (tokenPartialHit(t, nameTokenList)) partialHits += 1;
+        else if (tokenPartialHit(t, nameTokenList)) {
+          partialHits += 1;
+          if (isModelish(t)) modelPartialHits += 1;
+        }
       }
 
       const hit = exactHits + partialHits * 0.5;
@@ -96,9 +107,13 @@ export function rankNameMatches<T extends { id: string; name: string }>(
       if (exactHits === 0 && partialHits < 2) continue;
       if (hit <= 0) continue;
 
-      const coverage = hit / qTokens.length;
+      // Extra invoice words shouldn't bury a solid product-name overlap.
+      const queryCoverage = hit / qTokens.length;
+      const nameCoverage = hit / nameTokenList.length;
+      const coverage = Math.max(queryCoverage, nameCoverage);
+
       // One shared word on a long query is OK only if that word is substantial
-      // (e.g. brand "hoco"), not a short stub.
+      // (length-based, no brand dictionary).
       const strongExactCount = qTokens.filter(
         (t) => t.length >= 4 && nameTokenSet.has(t),
       ).length;
@@ -109,6 +124,11 @@ export function rankNameMatches<T extends { id: string; name: string }>(
       score = Math.round(
         400 * coverage + exactHits * 40 + partialHits * 10 + strongExactCount * 50,
       );
+
+      // Long shared token + model/prefix overlap (e.g. anker + r50↔r50i)
+      if (strongExactCount >= 1 && partialHits >= 1) {
+        score += modelPartialHits >= 1 ? 60 : 40;
+      }
     }
 
     if (score >= MIN_SCORE) scored.push({ ...item, score });

@@ -379,96 +379,98 @@ export default function ScanProductLine({
       ) : null}
 
       {showCreate ? (
-        <div className="flex flex-wrap items-end gap-3 border-t border-border pt-3">
-          <div className="min-w-[10rem] flex-[1.4] space-y-1">
-            <label className="text-xs text-muted-foreground">
-              {t("stock.invoiceScan.productName", "Product name")}
-            </label>
-            <input
-              type="text"
-              value={editName}
-              onChange={(e) => setEditName(e.target.value)}
-              className={fieldClass}
-              placeholder={t("stock.invoiceScan.productName", "Product name")}
-            />
-          </div>
-          <div className="min-w-[6.5rem] w-28 space-y-1">
-            <label className="text-xs text-muted-foreground">
-              {t("stock.quantity", "Quantity")}
-            </label>
-            <StyledNumberInput
-              value={quantity}
-              onChange={(v: number | "") => setQuantity(v)}
-              min={1}
-              placeholder={t("stock.quantity", "Quantity")}
-              className={numberFieldClass}
-            />
-          </div>
-          <div className="min-w-[8rem] flex-[1.2] space-y-1">
-            <label className="text-xs text-muted-foreground">{t("stock.type", "Product Type")}</label>
-            <div className="relative">
+        <div className="space-y-3 border-t border-border pt-3">
+          <div className="grid grid-cols-3 items-end gap-3">
+            <div className="min-w-0 space-y-1">
+              <label className="text-xs text-muted-foreground">
+                {t("stock.invoiceScan.productName", "Product name")}
+              </label>
               <input
                 type="text"
-                value={categoryName}
-                onChange={(e) => {
-                  setCategoryName(e.target.value);
-                  setShowCategoryDropdown(true);
-                }}
-                onFocus={() => {
-                  if (categoryName.trim()) setShowCategoryDropdown(true);
-                }}
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
                 className={fieldClass}
-                placeholder={t("stock.type", "Product Type")}
+                placeholder={t("stock.invoiceScan.productName", "Product name")}
               />
-              {showCategoryDropdown && filteredCategories.length > 0 ? (
-                <div className="absolute top-full right-0 left-0 z-50 mt-1 max-h-48 overflow-y-auto rounded-md border border-border bg-card shadow-lg">
-                  {filteredCategories.map((category) => (
-                    <div
-                      key={category}
-                      className="cursor-pointer px-3 py-2 hover:bg-accent/50"
-                      onClick={() => {
-                        setCategoryName(category);
-                        setShowCategoryDropdown(false);
-                      }}
-                    >
-                      <span className="text-sm">{category}</span>
-                    </div>
-                  ))}
-                </div>
-              ) : null}
             </div>
-          </div>
-          <div className="min-w-[7rem] flex-1 space-y-1">
-            <label className="text-xs text-muted-foreground">
-              {t("stock.boughtPrice", "Bought Price")}
-            </label>
-            <StyledNumberInput
-              value={boughtPrice}
-              onChange={(v: number | "") => setBoughtPrice(v)}
-              placeholder={t("stock.boughtPrice", "Bought Price")}
-              className={numberFieldClass}
-            />
-          </div>
-          <div className="min-w-[7rem] flex-1 space-y-1">
-            <label className="text-xs text-muted-foreground">
-              {t("stock.sellingPrice", "Selling Price")}
-            </label>
-            <StyledNumberInput
-              value={sellingPrice}
-              onChange={(v: number | "") => setSellingPrice(v)}
-              placeholder={t("stock.sellingPrice", "Selling Price")}
-              className={numberFieldClass}
-            />
-          </div>
-          <div className="min-w-[7rem] flex-1 space-y-1">
-            <label className="text-xs text-muted-foreground">{t("stock.codebar", "Codebar")}</label>
-            <input
-              type="text"
-              value={codebar}
-              onChange={(e) => setCodebar(e.target.value)}
-              className={fieldClass}
-              placeholder={t("stock.codebar", "Codebar")}
-            />
+            <div className="min-w-0 space-y-1">
+              <label className="text-xs text-muted-foreground">
+                {t("stock.quantity", "Quantity")}
+              </label>
+              <StyledNumberInput
+                value={quantity}
+                onChange={(v: number | "") => setQuantity(v)}
+                min={1}
+                placeholder={t("stock.quantity", "Quantity")}
+                className={numberFieldClass}
+              />
+            </div>
+            <div className="min-w-0 space-y-1">
+              <label className="text-xs text-muted-foreground">{t("stock.type", "Product Type")}</label>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={categoryName}
+                  onChange={(e) => {
+                    setCategoryName(e.target.value);
+                    setShowCategoryDropdown(true);
+                  }}
+                  onFocus={() => {
+                    if (categoryName.trim()) setShowCategoryDropdown(true);
+                  }}
+                  className={fieldClass}
+                  placeholder={t("stock.type", "Product Type")}
+                />
+                {showCategoryDropdown && filteredCategories.length > 0 ? (
+                  <div className="absolute top-full right-0 left-0 z-50 mt-1 max-h-48 overflow-y-auto rounded-md border border-border bg-card shadow-lg">
+                    {filteredCategories.map((category) => (
+                      <div
+                        key={category}
+                        className="cursor-pointer px-3 py-2 hover:bg-accent/50"
+                        onClick={() => {
+                          setCategoryName(category);
+                          setShowCategoryDropdown(false);
+                        }}
+                      >
+                        <span className="text-sm">{category}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            </div>
+            <div className="min-w-0 space-y-1">
+              <label className="text-xs text-muted-foreground">
+                {t("stock.boughtPrice", "Bought Price")}
+              </label>
+              <StyledNumberInput
+                value={boughtPrice}
+                onChange={(v: number | "") => setBoughtPrice(v)}
+                placeholder={t("stock.boughtPrice", "Bought Price")}
+                className={numberFieldClass}
+              />
+            </div>
+            <div className="min-w-0 space-y-1">
+              <label className="text-xs text-muted-foreground">
+                {t("stock.sellingPrice", "Selling Price")}
+              </label>
+              <StyledNumberInput
+                value={sellingPrice}
+                onChange={(v: number | "") => setSellingPrice(v)}
+                placeholder={t("stock.sellingPrice", "Selling Price")}
+                className={numberFieldClass}
+              />
+            </div>
+            <div className="min-w-0 space-y-1">
+              <label className="text-xs text-muted-foreground">{t("stock.codebar", "Codebar")}</label>
+              <input
+                type="text"
+                value={codebar}
+                onChange={(e) => setCodebar(e.target.value)}
+                className={fieldClass}
+                placeholder={t("stock.codebar", "Codebar")}
+              />
+            </div>
           </div>
           <Button
             type="button"

@@ -36,6 +36,9 @@ interface SellerSelectionProps {
   onFormChange: (key: string, value: any) => void;
   onNextField?: () => void;
   onFieldFocus?: () => void;
+  /** Optional label override (defaults to stock.seller). */
+  label?: string;
+  hideLabel?: boolean;
 }
 
 export default function SellerSelection({
@@ -51,6 +54,8 @@ export default function SellerSelection({
   onFormChange,
   onNextField,
   onFieldFocus,
+  label,
+  hideLabel = false,
 }: SellerSelectionProps) {
   const { t } = useTranslation();
   
@@ -183,7 +188,9 @@ export default function SellerSelection({
 
   return (
     <div className="space-y-2">
-      <label>{t("stock.seller")}</label>
+      {!hideLabel ? (
+        <label>{label ?? t("stock.seller")}</label>
+      ) : null}
       <div className="relative">
                  <input
            data-field="seller-name"
