@@ -47,7 +47,7 @@ export function SegmentedToggle<T extends string>({
     <div
       className={cn(
         "inline-flex h-11 shrink-0 items-stretch rounded-lg border border-border bg-background p-0.5",
-        fullWidth && "flex w-full",
+        fullWidth ? "flex w-full" : "w-fit max-w-full",
         disabled && "opacity-60",
         className,
       )}

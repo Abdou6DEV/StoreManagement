@@ -1306,8 +1306,8 @@ export default function AddServiceForm({
       </header>
       {openPanel === "add" && (
         <form onSubmit={handleAddService} className="p-6 space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
-            <Legend className="md:col-span-2 xl:col-span-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            <Legend>
               <label>{t("services.serviceName", "Service Name")}</label>
               <div className="relative">
                 <input
@@ -1399,7 +1399,7 @@ export default function AddServiceForm({
             </Legend>
             <Legend>
               <label>{t("services.client", "Client")} <span className="text-muted-foreground text-xs">({t("common.optional", "Optional")})</span></label>
-              <div className="flex gap-2">
+              <div className="flex min-w-0 gap-2">
                 <Popover
                   open={clientPopoverOpen}
                   onOpenChange={(open) => {
@@ -1411,12 +1411,14 @@ export default function AddServiceForm({
                     <Button
                       ref={clientButtonRef}
                       variant="outline"
-                      className="flex-1 justify-start px-4 py-3 h-12 text-sm"
+                      className="h-12 min-w-0 flex-1 justify-start px-4 py-3 text-sm"
                       aria-label={t("services.client", "Client")}
                       onKeyDown={(e) => handleFieldKeyDown(e, "client")}
                     >
-                      {selectedClient ? selectedClient.name : t("services.searchClient", "Search for client")}
-                      <ChevronDown className="ml-auto w-4 h-4" />
+                      <span className="truncate">
+                        {selectedClient ? selectedClient.name : t("services.searchClient", "Search for client")}
+                      </span>
+                      <ChevronDown className="ml-auto h-4 w-4 shrink-0" />
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 z-50">
@@ -1477,7 +1479,7 @@ export default function AddServiceForm({
                 <Button
                   type="button"
                   variant="outline"
-                  className="h-12 px-3 flex items-center justify-center gap-1"
+                  className="h-12 shrink-0 px-3 flex items-center justify-center gap-1"
                   onClick={() => setShowAddClientModal(true)}
                   title={t("cashier.addNewClient", "Add New Client")}
                 >
@@ -1591,7 +1593,7 @@ export default function AddServiceForm({
                 className="w-full px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all"
               />
             </Legend>
-            <Legend>
+            <Legend className="items-start">
               <label>{t("services.paymentStatus", "Payment status")}</label>
               <SegmentedToggle
                 aria-label={t("services.paymentStatus", "Payment status")}
@@ -1705,9 +1707,9 @@ function Legend({
   className?: string;
 }) {
   return (
-    <legend className={cn("space-y-2 text-sm [&>label]:font-medium", className)}>
+    <div className={cn("flex min-w-0 flex-col gap-2 text-sm [&>label]:font-medium", className)}>
       {children}
-    </legend>
+    </div>
   );
 }
 

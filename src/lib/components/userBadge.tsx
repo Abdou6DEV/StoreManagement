@@ -216,7 +216,7 @@ export function UserBadge({
     if (!currentMessage) return null;
     const { content, style = "default" } = currentMessage;
     const messageWrapClass =
-      "flex items-start gap-1.5 w-[180px] min-w-[180px] font-semibold text-base text-left whitespace-normal break-words leading-tight";
+      "flex items-start gap-1.5 w-[260px] min-w-[260px] font-semibold text-base text-left whitespace-normal break-words leading-tight";
     const textClass = "min-w-0 flex-1 line-clamp-2";
     if (style === "welcome") {
       return (
@@ -270,7 +270,7 @@ export function UserBadge({
       >
         <User className={cn("shrink-0", config.icon, iconColors)} strokeWidth={2} />
       </div>
-      <div className="flex w-[181px] shrink-0 items-center overflow-hidden">
+      <div className="flex w-[261px] shrink-0 items-center overflow-hidden">
         <div
           className={cn(
             "w-px shrink-0 bg-border origin-center transition-transform duration-700 ease-in-out",
@@ -285,7 +285,7 @@ export function UserBadge({
         />
         <div
           className={cn(
-            "w-[180px] shrink-0 overflow-hidden flex items-center",
+            "w-[260px] shrink-0 overflow-hidden flex items-center",
             size === "sm" && "h-8",
             size === "md" && "h-10",
             size === "lg" && "h-12"
@@ -293,7 +293,7 @@ export function UserBadge({
         >
           <div
             className={cn(
-              "w-[180px] flex flex-col items-start justify-center gap-0.5 pl-3 flex-shrink-0",
+              "w-[260px] flex flex-col items-start justify-center gap-0.5 pl-3 flex-shrink-0",
               size === "sm" && "min-h-[2rem]",
               size === "md" && "min-h-[2.5rem]",
               size === "lg" && "min-h-[3rem]",
@@ -310,7 +310,7 @@ export function UserBadge({
             {isMessageMode && currentMessage ? (
               renderMessageContent()
             ) : badgePhase === "datetime" ? (
-              <span className="flex flex-col w-[180px] min-w-[180px] text-foreground [line-height:1.15] badge-datetime-alive">
+              <span className="flex flex-col w-[260px] min-w-[260px] text-foreground [line-height:1.15] badge-datetime-alive">
                 <div className="flex items-center gap-2 text-sm font-medium [line-height:1.15]">
                   <Calendar className="w-4 h-4 text-primary shrink-0" />
                   <span>{formatBadgeDate(currentDateTime, i18n.language)}</span>
@@ -322,7 +322,7 @@ export function UserBadge({
               </span>
             ) : (
               <>
-                <span className={cn("font-medium truncate max-w-[140px]", config.name)}>
+                <span className={cn("font-medium truncate max-w-[220px]", config.name)}>
                   {capitalizeFirst(user.username || t("userBadge.user", "User"))}
                 </span>
                 {showRole && (

@@ -505,15 +505,24 @@ export default function ScanProductLine({
                     key={product.id}
                     type="button"
                     className={cn(
-                      "flex w-full items-baseline gap-2 px-3 py-2.5 text-left text-sm hover:bg-accent/50",
+                      "flex w-full items-baseline justify-between gap-3 px-3 py-2.5 text-left text-sm hover:bg-accent/50",
                       index > 0 ? "border-t border-border" : "",
                     )}
                     onClick={() => enterPreview(product)}
                   >
                     <span className="min-w-0 truncate font-medium">{product.name}</span>
-                    <span className="shrink-0 text-sm text-foreground/70">
-                      {product.categoryName}
-                      {typeof product.quantity === "number" ? ` · ${product.quantity}` : ""}
+                    <span className="shrink-0 text-right text-sm text-foreground/70">
+                      {[
+                        product.categoryName,
+                        typeof product.quantity === "number"
+                          ? `${t("stock.quantity", "Quantity")}: ${product.quantity}`
+                          : null,
+                        typeof product.boughtPrice === "number"
+                          ? `${t("stock.boughtPrice", "Bought Price")}: ${product.boughtPrice} ${currency}`
+                          : null,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")}
                     </span>
                   </button>
                 ))}
@@ -575,12 +584,22 @@ export default function ScanProductLine({
                       <button
                         key={product.id}
                         type="button"
-                        className="flex w-full items-baseline gap-2 px-3 py-2.5 text-left text-sm hover:bg-accent/50"
+                        className="flex w-full items-baseline justify-between gap-3 px-3 py-2.5 text-left text-sm hover:bg-accent/50"
                         onClick={() => enterPreview(product)}
                       >
                         <span className="min-w-0 truncate font-medium">{product.name}</span>
-                        <span className="shrink-0 text-sm text-foreground/70">
-                          {product.categoryName}
+                        <span className="shrink-0 text-right text-sm text-foreground/70">
+                          {[
+                            product.categoryName,
+                            typeof product.quantity === "number"
+                              ? `${t("stock.quantity", "Quantity")}: ${product.quantity}`
+                              : null,
+                            typeof product.boughtPrice === "number"
+                              ? `${t("stock.boughtPrice", "Bought Price")}: ${product.boughtPrice} ${currency}`
+                              : null,
+                          ]
+                            .filter(Boolean)
+                            .join(" · ")}
                         </span>
                       </button>
                     ))

@@ -101,7 +101,7 @@ export default function Sidebar() {
   const { completedServicesCount, isBadgeEnabled: enableCompletedServicesBadge } = useCompletedServices();
   const { state: updateState } = useUpdateContext();
   const savedCollapsedState = localStorage.getItem("sidebarCollapsed");
-  const [collapsed, setCollapsed] = useState(savedCollapsedState === "true");
+  const [collapsed, setCollapsed] = useState(savedCollapsedState !== "false");
   const [showText, setShowText] = useState(!collapsed);
   const [aiOpen, setAiOpen] = useState(false);
   const [aiUnread, setAiUnread] = useState(getAiUnreadReply);
