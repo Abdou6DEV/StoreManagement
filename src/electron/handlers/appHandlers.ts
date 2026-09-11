@@ -122,6 +122,12 @@ export function setupAppHandlers() {
         separator?: string;
         dir?: "ltr" | "rtl";
         visible?: boolean;
+        statusUser?: string;
+        statusUserRole?: "admin" | "user" | "";
+        statusLicense?: string;
+        statusLicenseKind?: "trial" | "premium" | "standard" | "";
+        statusOnline?: string;
+        statusOnlineKind?: "online" | "offline" | "";
       },
     ) => {
       const win = browserWindowFromEventSender(event.sender);

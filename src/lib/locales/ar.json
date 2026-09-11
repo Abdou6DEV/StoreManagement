@@ -589,7 +589,12 @@
     "appName": "Reda Tech POS",
     "separator": "—",
     "login": "تسجيل الدخول",
-    "welcome": "مرحباً"
+    "welcome": "البدء",
+    "freeTrial": "تجربة مجانية",
+    "standardLicense": "رخصة قياسية",
+    "premiumLicense": "رخصة مميزة",
+    "online": "متصل",
+    "offline": "غير متصل"
   },
   "navigation": {
     "preferences": "التفضيلات",

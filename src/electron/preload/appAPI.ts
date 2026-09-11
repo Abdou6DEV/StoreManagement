@@ -14,6 +14,12 @@ export const appAPI = {
     separator?: string;
     dir?: "ltr" | "rtl";
     visible?: boolean;
+    statusUser?: string;
+    statusUserRole?: "admin" | "user" | "";
+    statusLicense?: string;
+    statusLicenseKind?: "trial" | "premium" | "standard" | "";
+    statusOnline?: string;
+    statusOnlineKind?: "online" | "offline" | "";
   }) => ipcRenderer.invoke("app:setTitleBarContent", payload),
   onTitleBarUpdate: (
     callback: (payload: {
@@ -23,6 +29,12 @@ export const appAPI = {
       separator?: string;
       dir?: "ltr" | "rtl";
       visible?: boolean;
+      statusUser?: string;
+      statusUserRole?: "admin" | "user" | "";
+      statusLicense?: string;
+      statusLicenseKind?: "trial" | "premium" | "standard" | "";
+      statusOnline?: string;
+      statusOnlineKind?: "online" | "offline" | "";
     }) => void,
   ) => {
     const handler = (
@@ -34,6 +46,12 @@ export const appAPI = {
         separator?: string;
         dir?: "ltr" | "rtl";
         visible?: boolean;
+        statusUser?: string;
+        statusUserRole?: "admin" | "user" | "";
+        statusLicense?: string;
+        statusLicenseKind?: "trial" | "premium" | "standard" | "";
+        statusOnline?: string;
+        statusOnlineKind?: "online" | "offline" | "";
       },
     ) => {
       callback(payload ?? {});

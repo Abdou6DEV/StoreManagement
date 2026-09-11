@@ -251,6 +251,12 @@ export type AppAPI = {
     separator?: string;
     dir?: "ltr" | "rtl";
     visible?: boolean;
+    statusUser?: string;
+    statusUserRole?: "admin" | "user" | "";
+    statusLicense?: string;
+    statusLicenseKind?: "trial" | "premium" | "standard" | "";
+    statusOnline?: string;
+    statusOnlineKind?: "online" | "offline" | "";
   }) => Promise<{ success: boolean }>;
   onTitleBarUpdate: (
     callback: (payload: {
@@ -260,6 +266,12 @@ export type AppAPI = {
       separator?: string;
       dir?: "ltr" | "rtl";
       visible?: boolean;
+      statusUser?: string;
+      statusUserRole?: "admin" | "user" | "";
+      statusLicense?: string;
+      statusLicenseKind?: "trial" | "premium" | "standard" | "";
+      statusOnline?: string;
+      statusOnlineKind?: "online" | "offline" | "";
     }) => void,
   ) => () => void;
   isFullScreen: () => Promise<boolean>;
