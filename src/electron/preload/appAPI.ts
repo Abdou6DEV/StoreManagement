@@ -2,6 +2,60 @@ import { ipcRenderer } from "electron";
 
 export const appAPI = {
   getVersion: () => ipcRenderer.invoke("app:getVersion"),
+  setTitleBarOverlay: (options: {
+    color?: string;
+    symbolColor?: string;
+    height?: number;
+  }) => ipcRenderer.invoke("app:setTitleBarOverlay", options),
+  setTitleBarContent: (payload: {
+    theme?: "light" | "dark";
+    appName?: string;
+    pageTitle?: string;
+    separator?: string;
+    dir?: "ltr" | "rtl";
+    visible?: boolean;
+  }) => ipcRenderer.invoke("app:setTitleBarContent", payload),
+  onTitleBarUpdate: (
+    callback: (payload: {
+      theme?: "light" | "dark";
+      appName?: string;
+      pageTitle?: string;
+      separator?: string;
+      dir?: "ltr" | "rtl";
+      visible?: boolean;
+    }) => void,
+  ) => {
+    const handler = (
+      _event: Electron.IpcRendererEvent,
+      payload: {
+        theme?: "light" | "dark";
+        appName?: string;
+        pageTitle?: string;
+        separator?: string;
+        dir?: "ltr" | "rtl";
+        visible?: boolean;
+      },
+    ) => {
+      callback(payload ?? {});
+    };
+    ipcRenderer.on("titlebar:update", handler);
+    return () => {
+      ipcRenderer.removeListener("titlebar:update", handler);
+    };
+  },
+  isFullScreen: () =>
+    ipcRenderer.invoke("app:isFullScreen") as Promise<boolean>,
+  toggleFullScreen: () =>
+    ipcRenderer.invoke("app:toggleFullScreen") as Promise<boolean>,
+  onFullscreenChanged: (callback: (isFullScreen: boolean) => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, isFullScreen: boolean) => {
+      callback(Boolean(isFullScreen));
+    };
+    ipcRenderer.on("app:fullscreen-changed", handler);
+    return () => {
+      ipcRenderer.removeListener("app:fullscreen-changed", handler);
+    };
+  },
   openExternal: (url: string) => ipcRenderer.invoke("app:openExternal", url),
   checkForUpdates: () => ipcRenderer.invoke("app:checkForUpdates"),
   downloadUpdate: (url: string) => ipcRenderer.invoke("app:downloadUpdate", url),

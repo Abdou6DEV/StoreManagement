@@ -66,6 +66,12 @@ import { WelcomePremiumSection } from "./WelcomePremiumSection";
 import { WelcomeTutorialCard } from "./WelcomeTutorialCard";
 import { WELCOME_TUTORIALS } from "../../lib/welcome/welcomeTutorials";
 import { coalesceOnAnimationFrame } from "../../lib/utils/rafCoalesce";
+import {
+  getAppClientHeight,
+  getAppElementScrollTop,
+  scrollAppTo,
+  subscribeAppScroll,
+} from "../../lib/utils/appContentRoot";
 
 /** Welcome-only highlights before the technical carousel (not duplicated in the carousel). */
 const WELCOME_TECHNOLOGY_BRIDGE_HIGHLIGHTS = [
@@ -576,72 +582,49 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
 
       if (sectionId === "get-started") {
         // Full page top — get-started lives in the hero; anchoring the card leaves the logo/title clipped.
-        window.scrollTo({
-          top: 0,
-          behavior: reduceMotion ? "auto" : "smooth",
-        });
+        scrollAppTo(0, reduceMotion ? "auto" : "smooth");
         return;
       }
 
       if (sectionId === "welcome-pricing") {
-        const rect = element.getBoundingClientRect();
         const top =
-          window.scrollY +
-          rect.top +
-          rect.height / 2 -
-          window.innerHeight / 2 -
+          getAppElementScrollTop(element) +
+          element.getBoundingClientRect().height / 2 -
+          getAppClientHeight() / 2 -
           WELCOME_PRICING_SCROLL_EXTRA_UP_PX;
 
-        window.scrollTo({
-          top: Math.max(0, top),
-          behavior: reduceMotion ? "auto" : "smooth",
-        });
+        scrollAppTo(Math.max(0, top), reduceMotion ? "auto" : "smooth");
         return;
       }
 
       if (sectionId === "welcome-premium") {
-        const rect = element.getBoundingClientRect();
         const top =
-          window.scrollY +
-          rect.top +
-          rect.height / 2 -
-          window.innerHeight / 2 -
+          getAppElementScrollTop(element) +
+          element.getBoundingClientRect().height / 2 -
+          getAppClientHeight() / 2 -
           WELCOME_PREMIUM_SCROLL_EXTRA_UP_PX;
 
-        window.scrollTo({
-          top: Math.max(0, top),
-          behavior: reduceMotion ? "auto" : "smooth",
-        });
+        scrollAppTo(Math.max(0, top), reduceMotion ? "auto" : "smooth");
         return;
       }
 
       if (sectionId === "welcome-technical-features") {
-        const rect = element.getBoundingClientRect();
         const top =
-          window.scrollY +
-          rect.top -
+          getAppElementScrollTop(element) -
           WELCOME_SECTION_NAV_ANCHOR_PX +
           WELCOME_TECHNICAL_SCROLL_EXTRA_DOWN_PX;
 
-        window.scrollTo({
-          top: Math.max(0, top),
-          behavior: reduceMotion ? "auto" : "smooth",
-        });
+        scrollAppTo(Math.max(0, top), reduceMotion ? "auto" : "smooth");
         return;
       }
 
       if (sectionId === "welcome-legal") {
-        const rect = element.getBoundingClientRect();
         const top =
-          window.scrollY +
-          rect.top -
+          getAppElementScrollTop(element) -
           WELCOME_SECTION_NAV_ANCHOR_PX +
           WELCOME_LEGAL_SCROLL_EXTRA_DOWN_PX;
 
-        window.scrollTo({
-          top: Math.max(0, top),
-          behavior: reduceMotion ? "auto" : "smooth",
-        });
+        scrollAppTo(Math.max(0, top), reduceMotion ? "auto" : "smooth");
         return;
       }
 
@@ -654,10 +637,7 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
   );
 
   const scrollToWelcomeTop = useCallback(() => {
-    window.scrollTo({
-      top: 0,
-      behavior: reduceMotion ? "auto" : "smooth",
-    });
+    scrollAppTo(0, reduceMotion ? "auto" : "smooth");
   }, [reduceMotion]);
 
   useEffect(() => {
@@ -693,12 +673,10 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
     const { schedule, cancel } = coalesceOnAnimationFrame(updateActiveSection);
 
     updateActiveSection();
-    window.addEventListener("scroll", schedule, { passive: true });
-    window.addEventListener("resize", schedule);
+    const unsubscribe = subscribeAppScroll(schedule);
     return () => {
       cancel();
-      window.removeEventListener("scroll", schedule);
-      window.removeEventListener("resize", schedule);
+      unsubscribe();
     };
   }, [introStep, sectionNavItems]);
 

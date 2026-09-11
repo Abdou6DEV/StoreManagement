@@ -24,6 +24,22 @@ function applyThemeClass(theme: Theme) {
   document.documentElement.classList.toggle("dark", theme === "dark");
 }
 
+function syncElectronTitleBar(theme: Theme) {
+  const setContent = window.api?.app?.setTitleBarContent;
+  if (setContent) {
+    void setContent({ theme });
+  }
+
+  const setOverlay = window.api?.app?.setTitleBarOverlay;
+  if (!setOverlay) return;
+
+  void setOverlay({
+    color: "#00000000",
+    symbolColor: theme === "dark" ? "#F2F2F4" : "#1C1C1E",
+    height: 32,
+  });
+}
+
 interface ThemeProviderProps {
   children: ReactNode;
 }
@@ -42,6 +58,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   useEffect(() => {
     applyThemeClass(theme);
     localStorage.setItem("theme", theme);
+    syncElectronTitleBar(theme);
   }, [theme]);
 
   // Listen for system theme changes

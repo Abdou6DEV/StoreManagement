@@ -57,7 +57,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       {/* === Main Content === */}
       <main
-        className={`px-2 md:px-4 py-8 md:py-12 min-h-screen overflow-y-auto ${
+        className={`px-2 md:px-4 py-8 md:py-12 min-h-screen ${
           animateMargin ? "transition-[margin-left] duration-500 ease-in-out" : ""
         }`}
         style={{

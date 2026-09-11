@@ -977,6 +977,12 @@
     "manual": "manual",
     "services": "services"
   },
+  "titleBar": {
+    "appName": "Reda Tech POS",
+    "separator": "—",
+    "login": "Sign In",
+    "welcome": "Welcome"
+  },
   "navigation": {
     "preferences": "Preferences",
     "theme": "Theme",

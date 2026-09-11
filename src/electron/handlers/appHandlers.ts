@@ -10,6 +10,11 @@ import {
   readValidPendingUpdate,
   type PendingUpdate,
 } from "../utils/pendingUpdateStore";
+import {
+  browserWindowFromEventSender,
+  getAppWebContents,
+  sendToApp,
+} from "../utils/appWebContents";
 
 const execAsync = promisify(exec);
 
@@ -81,6 +86,65 @@ export function setupAppHandlers() {
   // Get app version
   ipcMain.handle("app:getVersion", () => {
     return app.getVersion();
+  });
+
+  ipcMain.handle(
+    "app:setTitleBarOverlay",
+    (
+      event,
+      options: { color?: string; symbolColor?: string; height?: number },
+    ) => {
+      if (process.platform !== "win32") return { success: false };
+      const win = browserWindowFromEventSender(event.sender);
+      if (!win || win.isDestroyed()) return { success: false };
+      try {
+        win.setTitleBarOverlay({
+          color: options?.color ?? "#00000000",
+          symbolColor: options?.symbolColor ?? "#1C1C1E",
+          height: options?.height ?? 32,
+        });
+        return { success: true };
+      } catch (e) {
+        console.warn("[app:setTitleBarOverlay]", e);
+        return { success: false };
+      }
+    },
+  );
+
+  ipcMain.handle(
+    "app:setTitleBarContent",
+    (
+      event,
+      payload: {
+        theme?: "light" | "dark";
+        appName?: string;
+        pageTitle?: string;
+        separator?: string;
+        dir?: "ltr" | "rtl";
+        visible?: boolean;
+      },
+    ) => {
+      const win = browserWindowFromEventSender(event.sender);
+      if (!win || win.isDestroyed() || win.webContents.isDestroyed()) {
+        return { success: false };
+      }
+      win.webContents.send("titlebar:update", payload ?? {});
+      return { success: true };
+    },
+  );
+
+  ipcMain.handle("app:isFullScreen", (event) => {
+    const win = browserWindowFromEventSender(event.sender);
+    return Boolean(win && !win.isDestroyed() && win.isFullScreen());
+  });
+
+  ipcMain.handle("app:toggleFullScreen", (event) => {
+    const win = browserWindowFromEventSender(event.sender);
+    if (!win || win.isDestroyed()) return false;
+    const next = !win.isFullScreen();
+    win.setFullScreen(next);
+    sendToApp(win, "app:fullscreen-changed", next);
+    return next;
   });
 
   /** Open mailto / https in the system browser or default mail client without navigating the app window. */
@@ -734,7 +798,7 @@ export function setupAppHandlers() {
     try {
       const win = BrowserWindow.getFocusedWindow() || BrowserWindow.getAllWindows()[0];
       if (win && !win.isDestroyed()) {
-        const wc = win.webContents;
+        const wc = getAppWebContents(win);
         const getPrinters = (wc as unknown as { getPrinters?: () => { name: string; displayName?: string; status?: number }[] }).getPrinters;
         const getPrintersAsync = (wc as unknown as { getPrintersAsync?: () => Promise<{ name: string; displayName?: string; status?: number }[]> }).getPrintersAsync;
         if (typeof getPrintersAsync === "function") {

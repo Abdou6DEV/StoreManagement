@@ -585,6 +585,12 @@
       "help": "الحصول على المساعدة والتوثيق"
     }
   },
+  "titleBar": {
+    "appName": "Reda Tech POS",
+    "separator": "—",
+    "login": "تسجيل الدخول",
+    "welcome": "مرحباً"
+  },
   "navigation": {
     "preferences": "التفضيلات",
     "theme": "السمة",

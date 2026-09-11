@@ -17,6 +17,13 @@ interface FullscreenToggleButtonProps {
   showText?: boolean;
 }
 
+async function readIsFullscreen(): Promise<boolean> {
+  if (window.api?.app?.isFullScreen) {
+    return Boolean(await window.api.app.isFullScreen());
+  }
+  return Boolean(document.fullscreenElement);
+}
+
 export const FullscreenToggleButton: React.FC<FullscreenToggleButtonProps> = ({
   className,
   variant = "ghost",
@@ -28,22 +35,37 @@ export const FullscreenToggleButton: React.FC<FullscreenToggleButtonProps> = ({
   );
   const { t } = useTranslation();
 
-  // Listen for fullscreen changes
   useEffect(() => {
-    const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
-    };
+    void readIsFullscreen().then(setIsFullscreen);
 
-    document.addEventListener("fullscreenchange", handleFullscreenChange);
-    return () =>
-      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+    const handleHtmlFullscreenChange = () => {
+      void readIsFullscreen().then(setIsFullscreen);
+    };
+    document.addEventListener("fullscreenchange", handleHtmlFullscreenChange);
+
+    const unsubscribe = window.api?.app?.onFullscreenChanged?.((next) => {
+      setIsFullscreen(next);
+    });
+
+    return () => {
+      document.removeEventListener(
+        "fullscreenchange",
+        handleHtmlFullscreenChange,
+      );
+      unsubscribe?.();
+    };
   }, []);
 
   const toggleFullscreen = () => {
+    if (window.api?.app?.toggleFullScreen) {
+      void window.api.app.toggleFullScreen().then(setIsFullscreen);
+      return;
+    }
+
     if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen();
+      void document.documentElement.requestFullscreen();
     } else {
-      document.exitFullscreen();
+      void document.exitFullscreen();
     }
   };
 

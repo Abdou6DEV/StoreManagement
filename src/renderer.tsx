@@ -8,6 +8,7 @@ import { AuthProvider } from "./lib/contexts/authContext";
 import { LicenseProvider } from "./lib/contexts/licenseContext";
 import { ToastProvider } from "./lib/contexts/toastContext";
 import { AIRuntimeProvider } from "./lib/components/ai/AIRuntimeProvider";
+import ElectronTitleBarCenter from "./lib/components/electronTitleBarCenter";
 import App from "./pages/app";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
@@ -17,6 +18,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
         <AuthProvider>
           <ToastProvider>
             <HashRouter>
+              <ElectronTitleBarCenter />
               <AIRuntimeProvider>
                 <App />
               </AIRuntimeProvider>

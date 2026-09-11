@@ -3,6 +3,12 @@ import { useTranslation } from "react-i18next";
 import { Check, ChevronDown, ChevronUp } from "lucide-react";
 import { cn } from "../utils";
 import { coalesceOnAnimationFrame } from "../utils/rafCoalesce";
+import {
+  getAppClientHeight,
+  getAppScrollHeight,
+  getAppScrollY,
+  subscribeAppScroll,
+} from "../utils/appContentRoot";
 import type { WelcomeSectionNavItem } from "./welcomeSectionNav";
 
 const PAGE_END_THRESHOLD_PX = 120;
@@ -83,22 +89,20 @@ export function WelcomeJourneyNav({
 
   useEffect(() => {
     const updateScrollState = () => {
-      const doc = document.documentElement;
-      setIsNearPageTop(window.scrollY <= PAGE_TOP_THRESHOLD_PX);
+      setIsNearPageTop(getAppScrollY() <= PAGE_TOP_THRESHOLD_PX);
       setIsNearPageEnd(
-        window.scrollY + window.innerHeight >= doc.scrollHeight - PAGE_END_THRESHOLD_PX,
+        getAppScrollY() + getAppClientHeight() >=
+          getAppScrollHeight() - PAGE_END_THRESHOLD_PX,
       );
     };
 
     const { schedule, cancel } = coalesceOnAnimationFrame(updateScrollState);
 
     updateScrollState();
-    window.addEventListener("scroll", schedule, { passive: true });
-    window.addEventListener("resize", schedule);
+    const unsubscribe = subscribeAppScroll(schedule);
     return () => {
       cancel();
-      window.removeEventListener("scroll", schedule);
-      window.removeEventListener("resize", schedule);
+      unsubscribe();
     };
   }, []);
 

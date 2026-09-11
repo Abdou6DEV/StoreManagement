@@ -1,4 +1,5 @@
-import { ipcMain, app, dialog, BrowserWindow } from "electron";
+import { ipcMain, app, dialog } from "electron";
+import { broadcastToAllApps } from "../utils/appWebContents";
 import fs from "fs";
 import path from "path";
 import { prisma } from "../../lib/database/prismaClient";
@@ -23,6 +24,12 @@ import {
   clearStoredLicenseGrace,
   LEGACY_LICENSE_OPTION_KEYS,
 } from "../utils/licenseGraceStore";
+
+function errorMessage(error: unknown): string {
+  if (error instanceof Error && error.message) return error.message;
+  if (typeof error === "string" && error) return error;
+  return "Unknown error";
+}
 
 // Backup directory path
 const getBackupDir = () => {
@@ -199,7 +206,7 @@ const createAutoBackup = async (date: Date = new Date()) => {
     logger.error("Backup creation failed", "Backup", error);
     return {
       success: false,
-      error: error.message
+      error: errorMessage(error)
     };
   }
 };
@@ -282,7 +289,7 @@ const createManualBackup = async (date: Date = new Date()) => {
     logger.error("Manual backup creation failed", "Backup", error);
     return {
       success: false,
-      error: error.message
+      error: errorMessage(error)
     };
   }
 };
@@ -358,7 +365,7 @@ const createCloudBackup = async (date: Date = new Date()) => {
     logger.error("Cloud backup creation failed", "Backup", error);
     return {
       success: false,
-      error: (error as Error).message,
+      error: errorMessage(error),
     };
   }
 };
@@ -443,7 +450,7 @@ const createManualBackupToPath = async (customPath: string, date: Date = new Dat
     logger.error("Manual backup to custom path failed", "Backup", error);
     return {
       success: false,
-      error: error.message
+      error: errorMessage(error)
     };
   }
 };
@@ -558,7 +565,7 @@ function deleteCloudUploadStagingFile(backupPath: string): { success: boolean; e
     }
     return { success: true };
   } catch (e) {
-    return { success: false, error: (e as Error).message };
+    return { success: false, error: errorMessage(e) };
   }
 }
 
@@ -585,7 +592,7 @@ function deleteListedBackupFile(backupPath: string): { success: boolean; error?:
     }
     return { success: true };
   } catch (e) {
-    return { success: false, error: (e as Error).message };
+    return { success: false, error: errorMessage(e) };
   }
 }
 
@@ -630,7 +637,7 @@ const listBackups = () => {
     logger.error("Failed to list backups", "Backup", error);
     return {
       success: false,
-      error: error.message,
+      error: errorMessage(error),
     };
   }
 };
@@ -732,7 +739,9 @@ const restoreBackup = async (backupPath: string) => {
       // Test a simple query to ensure database is working
       await prisma.$queryRaw`SELECT 1`;
     } catch (connectError) {
-      throw new Error(`Database connection failed after restore: ${connectError.message}`);
+      throw new Error(
+        `Database connection failed after restore: ${errorMessage(connectError)}`,
+      );
     }
 
     clearStoredLicenseGrace();
@@ -776,7 +785,7 @@ const restoreBackup = async (backupPath: string) => {
     
     return {
       success: false,
-      error: error.message,
+      error: errorMessage(error),
       safetyBackup: tempBackupPath
     };
   }
@@ -790,25 +799,19 @@ const isDatabaseInUse = async (): Promise<boolean> => {
     return false; // Database is available
   } catch (error) {
     // If we get a "database is locked" error, it's in use
-    return error.message.includes('database is locked') || 
-           error.message.includes('SQLITE_BUSY');
+    const message = errorMessage(error);
+    return (
+      message.includes("database is locked") || message.includes("SQLITE_BUSY")
+    );
   }
 };
 
 function notifyAutoBackupSuccess() {
-  BrowserWindow.getAllWindows().forEach((win) => {
-    if (win.webContents && !win.isDestroyed()) {
-      win.webContents.send("backup:autoBackupSuccess");
-    }
-  });
+  broadcastToAllApps("backup:autoBackupSuccess");
 }
 
 function notifyAutoCloudUploadSuccess() {
-  BrowserWindow.getAllWindows().forEach((win) => {
-    if (win.webContents && !win.isDestroyed()) {
-      win.webContents.send("backup:autoCloudUploadSuccess");
-    }
-  });
+  broadcastToAllApps("backup:autoCloudUploadSuccess");
 }
 
 async function maybeRunAutoCloudUpload(backupPath: string | undefined): Promise<void> {
@@ -990,7 +993,7 @@ export function setupBackupHandlers() {
       logger.error("Manual cleanup failed", "Backup", error);
       return {
         success: false,
-        error: error.message
+        error: errorMessage(error)
       };
     }
   });
@@ -1020,7 +1023,7 @@ export function setupBackupHandlers() {
       logger.error("File dialog failed", "Backup", error);
       return {
         success: false,
-        error: error.message
+        error: errorMessage(error)
       };
     }
   });
@@ -1053,7 +1056,7 @@ export function setupBackupHandlers() {
       logger.error("Restore file dialog failed", "Backup", error);
       return {
         success: false,
-        error: error.message
+        error: errorMessage(error)
       };
     }
   });
@@ -1081,11 +1084,7 @@ export const performDailyBackup = async () => {
         cleanOldAutoBackups();
         void maybeRunAutoCloudUpload(result.backupPath);
         // Notify renderer to show success toast
-        BrowserWindow.getAllWindows().forEach((win) => {
-          if (win.webContents && !win.isDestroyed()) {
-            win.webContents.send("backup:autoBackupSuccess");
-          }
-        });
+        notifyAutoBackupSuccess();
       }
     } else {
       logger.error("Daily automatic backup failed", "Backup", { error: result.error });
@@ -1093,6 +1092,6 @@ export const performDailyBackup = async () => {
     return result;
   } catch (error) {
     logger.error("Daily automatic backup error", "Backup", error);
-    return { success: false, error: (error as Error).message };
+    return { success: false, error: errorMessage(error) };
   }
 };

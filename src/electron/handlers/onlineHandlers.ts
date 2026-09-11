@@ -1,4 +1,5 @@
-import { app, BrowserWindow, ipcMain, type IpcMainInvokeEvent } from "electron";
+import { app, ipcMain, type IpcMainInvokeEvent } from "electron";
+import { broadcastToAllApps } from "../utils/appWebContents";
 import fs from "fs";
 import path from "path";
 import { finished } from "node:stream/promises";
@@ -149,11 +150,7 @@ function sendCloudBackupProgressThrottled(
     if (event && !event.sender.isDestroyed()) {
       event.sender.send("cloud-backup-transfer-progress", out);
     } else if (!event) {
-      BrowserWindow.getAllWindows().forEach((win) => {
-        if (!win.isDestroyed()) {
-          win.webContents.send("cloud-backup-transfer-progress", out);
-        }
-      });
+      broadcastToAllApps("cloud-backup-transfer-progress", out);
     }
     lastTime = now;
     lastDownloaded = payload.downloaded;

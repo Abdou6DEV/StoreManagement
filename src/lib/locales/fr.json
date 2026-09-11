@@ -584,6 +584,12 @@
       "help": "Obtenir de l'aide et de la documentation"
     }
   },
+  "titleBar": {
+    "appName": "Reda Tech POS",
+    "separator": "—",
+    "login": "Connexion",
+    "welcome": "Bienvenue"
+  },
   "navigation": {
     "preferences": "Préférences",
     "theme": "Thème",

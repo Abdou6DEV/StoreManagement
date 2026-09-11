@@ -1,10 +1,16 @@
-import { app, BrowserWindow, screen } from "electron";
+import { app, BrowserWindow, WebContentsView, screen } from "electron";
 import path from "node:path";
 import fs from "node:fs";
 import { spawn } from "child_process";
 import { prismaPromise } from "../lib/database/prismaClient";
 import { getStoreFirstRecordedYmd } from "../lib/database/storeFirstDate";
 import { loadEnvFile } from "./utils/loadEnvFile";
+import {
+  registerAppWebContents,
+  sendToApp,
+} from "./utils/appWebContents";
+
+const TITLEBAR_HEIGHT = 32;
 
 loadEnvFile();
 
@@ -125,7 +131,8 @@ const createWindow = async () => {
 
   // If no icon found, undefined will make Electron use default icon (no error thrown)
 
-  // Create the browser window.
+  // Title bar = window webContents; React app = inset WebContentsView below it.
+  const preloadPath = path.join(__dirname, "preload.js");
   const mainWindow = new BrowserWindow({
     x,
     y,
@@ -136,23 +143,80 @@ const createWindow = async () => {
     maximizable: true,
     fullscreenable: true,
     icon: iconPath,
+    titleBarStyle: "hidden",
+    ...(process.platform === "win32"
+      ? {
+          titleBarOverlay: {
+            color: "#00000000",
+            symbolColor: "#1C1C1E",
+            height: TITLEBAR_HEIGHT,
+          },
+        }
+      : {}),
     webPreferences: {
-      preload: path.join(__dirname, "preload.js"),
+      preload: preloadPath,
       contextIsolation: true,
     },
   });
 
-  // and load the index.html of the app.
+  const rendererDir = path.join(
+    __dirname,
+    `../renderer/${MAIN_WINDOW_VITE_NAME}`,
+  );
+
   if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
-    mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
-  } else {
-    mainWindow.loadFile(
-      path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`),
+    void mainWindow.loadURL(
+      `${MAIN_WINDOW_VITE_DEV_SERVER_URL}/titlebar.html`,
     );
+  } else {
+    void mainWindow.loadFile(path.join(rendererDir, "titlebar.html"));
   }
 
-  // Open the DevTools.
-  // mainWindow.webContents.openDevTools();
+  const appView = new WebContentsView({
+    webPreferences: {
+      preload: preloadPath,
+      contextIsolation: true,
+    },
+  });
+  mainWindow.contentView.addChildView(appView);
+  registerAppWebContents(mainWindow, appView.webContents);
+
+  const layoutShell = () => {
+    if (mainWindow.isDestroyed()) return;
+    const [cw, ch] = mainWindow.getContentSize();
+    const bar = mainWindow.isFullScreen() ? 0 : TITLEBAR_HEIGHT;
+    appView.setBounds({
+      x: 0,
+      y: bar,
+      width: cw,
+      height: Math.max(0, ch - bar),
+    });
+    if (!mainWindow.webContents.isDestroyed()) {
+      mainWindow.webContents.send("titlebar:update", { visible: bar > 0 });
+    }
+  };
+
+  if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
+    void appView.webContents.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
+  } else {
+    void appView.webContents.loadFile(path.join(rendererDir, "index.html"));
+  }
+
+  layoutShell();
+  mainWindow.on("resize", layoutShell);
+
+  const sendFullscreenState = (isFullScreen: boolean) => {
+    layoutShell();
+    sendToApp(mainWindow, "app:fullscreen-changed", isFullScreen);
+  };
+  mainWindow.on("enter-full-screen", () => sendFullscreenState(true));
+  mainWindow.on("leave-full-screen", () => sendFullscreenState(false));
+  appView.webContents.on("did-finish-load", () => {
+    layoutShell();
+    if (!mainWindow.isDestroyed()) {
+      sendFullscreenState(mainWindow.isFullScreen());
+    }
+  });
 };
 
 app.on("ready", () => {

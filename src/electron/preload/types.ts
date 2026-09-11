@@ -239,6 +239,34 @@ export type DatabaseAPI = {
 
 export type AppAPI = {
   getVersion: () => Promise<string>;
+  setTitleBarOverlay: (options: {
+    color?: string;
+    symbolColor?: string;
+    height?: number;
+  }) => Promise<{ success: boolean }>;
+  setTitleBarContent: (payload: {
+    theme?: "light" | "dark";
+    appName?: string;
+    pageTitle?: string;
+    separator?: string;
+    dir?: "ltr" | "rtl";
+    visible?: boolean;
+  }) => Promise<{ success: boolean }>;
+  onTitleBarUpdate: (
+    callback: (payload: {
+      theme?: "light" | "dark";
+      appName?: string;
+      pageTitle?: string;
+      separator?: string;
+      dir?: "ltr" | "rtl";
+      visible?: boolean;
+    }) => void,
+  ) => () => void;
+  isFullScreen: () => Promise<boolean>;
+  toggleFullScreen: () => Promise<boolean>;
+  onFullscreenChanged: (
+    callback: (isFullScreen: boolean) => void,
+  ) => () => void;
   checkForUpdates: () => Promise<{
     available: boolean;
     currentVersion: string;
