@@ -1,4 +1,10 @@
-import { app, BrowserWindow, WebContentsView, screen } from "electron";
+import {
+  app,
+  BrowserWindow,
+  WebContentsView,
+  screen,
+  type WebContents,
+} from "electron";
 import path from "node:path";
 import fs from "node:fs";
 import { spawn } from "child_process";
@@ -132,12 +138,17 @@ const createWindow = async () => {
   // If no icon found, undefined will make Electron use default icon (no error thrown)
 
   // Title bar = window webContents; React app = inset WebContentsView below it.
+  // OS taskbar title + default DevTools follow the *window* webContents (title bar),
+  // so we pin the display title and route DevTools to the app view explicitly.
+  // Display-only — do not use package productName / app.getName() here.
+  const appTitle = "Reda Tech POS";
   const preloadPath = path.join(__dirname, "preload.js");
   const mainWindow = new BrowserWindow({
     x,
     y,
     width,
     height,
+    title: appTitle,
     autoHideMenuBar: true,
     resizable: true,
     maximizable: true,
@@ -158,6 +169,12 @@ const createWindow = async () => {
       contextIsolation: true,
     },
   });
+
+  // Prevent titlebar.html <title> from overwriting the taskbar / window title.
+  mainWindow.on("page-title-updated", (event) => {
+    event.preventDefault();
+  });
+  mainWindow.setTitle(appTitle);
 
   const rendererDir = path.join(
     __dirname,
@@ -180,6 +197,29 @@ const createWindow = async () => {
   });
   mainWindow.contentView.addChildView(appView);
   registerAppWebContents(mainWindow, appView.webContents);
+
+  const toggleAppDevTools = () => {
+    if (!appView.webContents.isDestroyed()) {
+      appView.webContents.toggleDevTools();
+    }
+  };
+
+  // Default Electron DevTools binds to the window webContents (title bar).
+  // Re-route common shortcuts to the React app WebContentsView instead.
+  const wireDevToolsShortcut = (wc: WebContents) => {
+    wc.on("before-input-event", (event, input) => {
+      if (input.type !== "keyDown") return;
+      const key = input.key.toLowerCase();
+      const isDevToolsChord =
+        (input.control || input.meta) && !input.alt && key === "i";
+      const isF12 = key === "f12";
+      if (!isDevToolsChord && !isF12) return;
+      event.preventDefault();
+      toggleAppDevTools();
+    });
+  };
+  wireDevToolsShortcut(mainWindow.webContents);
+  wireDevToolsShortcut(appView.webContents);
 
   const layoutShell = () => {
     if (mainWindow.isDestroyed()) return;

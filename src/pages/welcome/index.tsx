@@ -1,11 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { Trans, useTranslation } from "react-i18next";
 import {
-  Code,
   FileText,
-  Mail,
-  MapPin,
-  Phone,
   Settings,
   Shield,
   Sparkles,
@@ -107,7 +103,6 @@ const WELCOME_SECTION_NAV_ITEMS = [
     defaultLabel: "Technical features",
   },
   { id: "welcome-pricing", labelKey: "welcome.sectionNav.pricing", defaultLabel: "Pricing" },
-  { id: "welcome-developer", labelKey: "welcome.sectionNav.developer", defaultLabel: "Developer" },
   { id: "welcome-legal", labelKey: "welcome.sectionNav.legal", defaultLabel: "Legal" },
 ] as const;
 
@@ -142,12 +137,11 @@ const SEQ = {
   techTiles: 12,
   techCarousel: 13,
   pricing: 14,
-  devCard: 15,
-  legal: 16,
-  footer: 17,
+  legal: 15,
+  footer: 16,
 } as const;
 
-const INTRO_STEP_COUNT = 18;
+const INTRO_STEP_COUNT = 17;
 const SEQ_ANIM_S = 0.38;
 /** If animationend never fires (e.g. iOS Safari), still advance — same visuals, no stuck sections. */
 const INTRO_STEP_ANIMATION_FALLBACK_MS = Math.ceil(SEQ_ANIM_S * 1000) + 450;
@@ -2060,67 +2054,6 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
             className="!mb-0"
             initialTier={pricingTier}
           />
-        </SequentialIntroSlot>
-      </section>
-
-      <section
-        id="welcome-developer"
-        className={cn("mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-16", WELCOME_SECTION_SCROLL_MARGIN)}
-      >
-        <SequentialIntroSlot
-          stepIndex={SEQ.devCard}
-          introStep={introStep}
-          reduceMotion={reduceMotion}
-          isRTL={isRTL}
-          kind="fadeUp"
-          onStepComplete={advanceIntro}
-          defer
-          className="overflow-hidden rounded-3xl border border-border/70 bg-card/80 shadow-lg"
-        >
-          <div className="border-b border-border/60 bg-muted/25 px-6 py-8 sm:px-8">
-            <h2 className="flex items-center gap-3 text-xl font-bold text-foreground sm:text-2xl">
-              <Code className="h-6 w-6 shrink-0 text-primary" aria-hidden />
-              {t("about.developer.title", "Developer Information")}
-            </h2>
-          </div>
-          <div className="grid grid-cols-1 gap-8 p-6 sm:p-8 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-            <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary/80">
-                  <span className="text-lg font-bold text-white dark:text-black">AK</span>
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-foreground">Abdellah Kahia</h3>
-                  <p className="text-muted-foreground">{t("about.developer.role", "Lead Developer & Founder")}</p>
-                </div>
-              </div>
-              <div className="space-y-3 text-sm">
-                <div className="flex items-center gap-3">
-                  <Mail className="h-4 w-4 shrink-0 text-primary" aria-hidden />
-                  <span className="break-all text-foreground">abdoukahia853@gmail.com</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Phone className="h-4 w-4 shrink-0 text-primary" aria-hidden />
-                  <span className="text-foreground">+213 793 420 745</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <MapPin className="h-4 w-4 shrink-0 text-primary" aria-hidden />
-                  <span className="text-foreground">Annaba, Algeria</span>
-                </div>
-              </div>
-            </div>
-            <div className="rounded-2xl bg-muted/30 p-6">
-              <h4 className="mb-3 font-semibold text-foreground">
-                {t("about.developer.bio", "About the Developer")}
-              </h4>
-              <p className="text-sm leading-relaxed text-muted-foreground">
-                {t(
-                  "about.developer.bioText",
-                  "Passionate software developer with expertise in modern web technologies and desktop application development. Dedicated to creating efficient, user-friendly solutions that help businesses streamline their operations and achieve their goals.",
-                )}
-              </p>
-            </div>
-          </div>
         </SequentialIntroSlot>
       </section>
 

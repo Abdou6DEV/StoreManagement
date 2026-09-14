@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "../../lib/hooks/useTheme";
 import { LOGO_ICON, LOGO_ICON_DARK } from "../../lib/assets";
-import { Mail, Phone, MapPin, Code, Shield, FileText, Star } from "lucide-react";
+import { Code, Shield, FileText, Star } from "lucide-react";
 import {
   ABOUT_MAIN_FEATURE_DEFS,
   ABOUT_TECHNICAL_FEATURE_DEFS,
@@ -156,47 +156,6 @@ export default function AboutPage() {
                 </div>
               </div>
             ))}
-          </div>
-        </div>
-
-        {/* Developer Information */}
-        <div className="bg-card rounded-2xl border border-border shadow-lg p-8 mb-8">
-          <h2 className="text-2xl font-bold text-foreground mb-6 flex items-center gap-3">
-            <Code className="w-6 h-6 text-primary dark:text-primary" />
-            {t("about.developer.title", "Developer Information")}
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-primary to-primary/80 rounded-full flex items-center justify-center">
-                  <span className="text-white dark:text-black font-bold text-lg">AK</span>
-                </div>
-                <div>
-                  <h3 className="font-bold text-foreground text-lg">Abdellah Kahia</h3>
-                  <p className="text-muted-foreground">{t("about.developer.role", "Lead Developer & Founder")}</p>
-                </div>
-              </div>
-              <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <Mail className="w-4 h-4 text-primary dark:text-primary" />
-                  <span className="text-foreground">abdoukahia853@gmail.com</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Phone className="w-4 h-4 text-primary dark:text-primary" />
-                  <span className="text-foreground">+213 793 420 745</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <MapPin className="w-4 h-4 text-primary dark:text-primary" />
-                  <span className="text-foreground">Annaba, Algeria</span>
-                </div>
-              </div>
-            </div>
-            <div className="bg-muted/30 rounded-xl p-6">
-              <h4 className="font-semibold text-foreground mb-3">{t("about.developer.bio", "About the Developer")}</h4>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                {t("about.developer.bioText", "Passionate software developer with expertise in modern web technologies and desktop application development. Dedicated to creating efficient, user-friendly solutions that help businesses streamline their operations and achieve their goals.")}
-              </p>
-            </div>
           </div>
         </div>
 
