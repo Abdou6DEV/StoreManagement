@@ -1,5 +1,6 @@
 import { Purchase } from "@prisma/client";
 import { prisma } from "./prismaClient";
+import { toMoneyInt, toQtyInt } from "../moneyInt";
 
 // Updated for new PurchaseItems structure
 
@@ -78,8 +79,8 @@ export async function createPurchaseWithItems(
       PurchaseItems: {
         create: data.items.map((item) => ({
           productId: item.productId,
-          quantity: item.quantity,
-          price: item.price,
+          quantity: toQtyInt(item.quantity),
+          price: toMoneyInt(item.price),
         })),
       },
     },

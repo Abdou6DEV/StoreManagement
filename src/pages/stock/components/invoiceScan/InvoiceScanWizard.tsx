@@ -21,6 +21,11 @@ import { useStock } from "../../../../lib/contexts/stockContext";
 import { useToast } from "../../../../lib/contexts/toastContext";
 import type { ScanReceiptExtraction } from "../../../../lib/ai/scanReceiptTypes";
 import { rankNameMatches } from "../../../../lib/invoiceScan/fuzzyMatch";
+import {
+  mergedCatalogBoughtPrice,
+  toMoneyInt,
+  unitPurchasePrice,
+} from "../../../../lib/invoiceScan/scanPrices";
 import { PriceConfirmationDialog } from "../priceConfirmationDialog";
 import { SellingPriceWarningDialog } from "../sellingPriceWarningDialog";
 import ScanProductLine from "./ScanProductLine";
@@ -40,17 +45,9 @@ export type WizardStep = Step;
 const fieldClass =
   "w-full px-4 py-3 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-1 focus:ring-green-500/50 focus:border-green-500 transition-all";
 
-const safePrice = (value: number | string | undefined): number => {
-  const num = Number(value || 0);
-  return Math.round(num * 100) / 100;
-};
+const safePrice = toMoneyInt;
 
 const isPriceDifferent = (a: number, b: number) => Math.abs(a - b) > 0.01;
-
-const unitPurchasePrice = (line: WizardLine) =>
-  line.actualPurchasePrice && line.actualPurchasePrice > 0
-    ? line.actualPurchasePrice
-    : line.boughtPrice;
 
 function ScanStat({
   label,
@@ -70,26 +67,6 @@ function ScanStat({
       <p className="mt-1.5 text-xl font-semibold tabular-nums tracking-tight">{value}</p>
     </div>
   );
-}
-
-function mergedCatalogBoughtPrice(
-  group: WizardLine[],
-  current: { quantity: number; boughtPrice: number } | undefined,
-): number {
-  const currentQty = current?.quantity || 0;
-  const catalogPrice = current?.boughtPrice ?? group[0]?.originalBoughtPrice ?? 0;
-  const addQty = group.reduce((sum, line) => sum + line.quantity, 0);
-  const incomingCost = group.reduce(
-    (sum, line) => sum + line.quantity * unitPurchasePrice(line),
-    0,
-  );
-  const replaceCatalog = group.every((line) => line.priceStrategy === "new");
-  if (replaceCatalog) {
-    return addQty > 0 ? incomingCost / addQty : unitPurchasePrice(group[group.length - 1]);
-  }
-  const totalQty = currentQty + addQty;
-  if (totalQty <= 0) return unitPurchasePrice(group[group.length - 1]);
-  return (currentQty * catalogPrice + incomingCost) / totalQty;
 }
 
 function buildInitialLines(extraction: ScanReceiptExtraction): WizardLine[] {
@@ -238,14 +215,13 @@ export default function InvoiceScanWizard({
     catalogBought?: number,
   ) => {
     const qty = quantity > 0 ? Math.max(1, Math.round(quantity)) : line.quantity;
-    const bought = boughtPrice > 0 ? boughtPrice : product.boughtPrice;
+    const bought = toMoneyInt(boughtPrice > 0 ? boughtPrice : product.boughtPrice);
     const weighted =
       strategy === "weighted" && catalogBought != null
-        ? Math.round(
-            ((product.quantity * catalogBought + qty * bought) /
-              (product.quantity + qty)) *
-              100,
-          ) / 100
+        ? toMoneyInt(
+            (product.quantity * catalogBought + qty * bought) /
+              (product.quantity + qty),
+          )
         : bought;
     updateLine(line.key, {
       confirmed: true,
@@ -254,7 +230,7 @@ export default function InvoiceScanWizard({
       productName: product.name,
       categoryName: product.categoryName,
       quantity: qty,
-      sellingPrice: sellingPrice > 0 ? sellingPrice : product.sellingPrice,
+      sellingPrice: safePrice(sellingPrice > 0 ? sellingPrice : product.sellingPrice),
       boughtPrice: strategy === "weighted" ? weighted : bought,
       actualPurchasePrice: bought,
       originalBoughtPrice: product.boughtPrice,
@@ -439,7 +415,7 @@ export default function InvoiceScanWizard({
           product: {
             name: line.productName.trim(),
             categoryName: line.categoryName.trim(),
-            quantity: line.quantity,
+            quantity: Math.max(1, Math.round(line.quantity)),
             boughtPrice: safePrice(line.boughtPrice),
             sellingPrice: safePrice(line.sellingPrice),
             codebar: line.codebar,
@@ -454,8 +430,8 @@ export default function InvoiceScanWizard({
         });
         purchaseItems.push({
           productId: created.id,
-          quantity: line.quantity,
-          price: line.actualPurchasePrice || line.boughtPrice,
+          quantity: Math.max(1, Math.round(line.quantity)),
+          price: safePrice(unitPurchasePrice(line)),
         });
       }
 
@@ -468,7 +444,7 @@ export default function InvoiceScanWizard({
           productId,
           {
             quantity: currentQty + addQty,
-            boughtPrice: safePrice(mergedCatalogBoughtPrice(group, current)),
+            boughtPrice: mergedCatalogBoughtPrice(group, current),
             sellingPrice: safePrice(last.sellingPrice),
           },
           user?.username ?? "unknown",
@@ -477,8 +453,8 @@ export default function InvoiceScanWizard({
         for (const line of group) {
           purchaseItems.push({
             productId,
-            quantity: line.quantity,
-            price: unitPurchasePrice(line),
+            quantity: Math.max(1, Math.round(line.quantity)),
+            price: safePrice(unitPurchasePrice(line)),
           });
         }
       }

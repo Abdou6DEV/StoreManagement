@@ -1,5 +1,6 @@
 import { Product } from "@prisma/client";
 import { prisma } from "./prismaClient";
+import { toMoneyInt, toQtyInt } from "../moneyInt";
 
 export async function getAllProducts() {
   return await prisma.product.findMany();
@@ -78,6 +79,9 @@ export async function addProduct(product: Product) {
   // Set empty barcodes to null to avoid unique constraint issues
   const productData = {
     ...product,
+    quantity: toQtyInt(product.quantity),
+    boughtPrice: toMoneyInt(product.boughtPrice),
+    sellingPrice: toMoneyInt(product.sellingPrice),
     codebar: product.codebar && product.codebar.trim() !== '' ? product.codebar : null
   };
   
@@ -130,6 +134,16 @@ export async function cleanupUnusedProducts() {
 export async function updateProduct(id: string, data: any) {
   const { categoryName, ...rest } = data;
   const updateData: any = { ...rest };
+
+  if (rest.quantity != null) {
+    updateData.quantity = toQtyInt(rest.quantity);
+  }
+  if (rest.boughtPrice != null) {
+    updateData.boughtPrice = toMoneyInt(rest.boughtPrice);
+  }
+  if (rest.sellingPrice != null) {
+    updateData.sellingPrice = toMoneyInt(rest.sellingPrice);
+  }
 
   // Check barcode uniqueness if provided and not empty
   if (data.codebar && data.codebar.trim() !== '') {
@@ -214,8 +228,13 @@ export async function createProductWithPurchase(
     }
     
     // Set empty barcodes to null to avoid unique constraint issues
+    const qty = toQtyInt(purchaseData.quantity);
+    const price = toMoneyInt(purchaseData.price);
     const processedProductData = {
       ...productData,
+      quantity: toQtyInt(productData.quantity),
+      boughtPrice: toMoneyInt(productData.boughtPrice),
+      sellingPrice: toMoneyInt(productData.sellingPrice),
       codebar: productData.codebar && productData.codebar.trim() !== '' ? productData.codebar : null
     };
     
@@ -236,8 +255,8 @@ export async function createProductWithPurchase(
       data: {
         productId: product.id,
         purchaseId: purchase.id,
-        quantity: purchaseData.quantity,
-        price: purchaseData.price,
+        quantity: qty,
+        price,
       },
     });
 
@@ -258,9 +277,12 @@ export async function updateProductWithPurchase(
   photo?: string | null,
 ) {
   return await prisma.$transaction(async (tx) => {
+    const addQty = toQtyInt(additionalQuantity);
+    const purchaseQty = toQtyInt(purchaseData.quantity);
+    const purchasePrice = toMoneyInt(purchaseData.price);
     const updateData: any = {
       quantity: {
-        increment: additionalQuantity,
+        increment: addQty,
       },
     };
 
@@ -276,21 +298,19 @@ export async function updateProductWithPurchase(
         });
 
         if (product) {
-          const totalQuantity = product.quantity + additionalQuantity;
-          const totalValue = (product.boughtPrice * product.quantity) + (purchaseData.price * additionalQuantity);
-          const weightedAveragePrice = Math.round(totalValue / totalQuantity);
-          
-          updateData.boughtPrice = weightedAveragePrice;
+          const totalQuantity = product.quantity + addQty;
+          const totalValue = (product.boughtPrice * product.quantity) + (purchasePrice * addQty);
+          updateData.boughtPrice = toMoneyInt(totalValue / totalQuantity);
         }
       } else {
         // Keep the NEW price (not the old one!)
-        updateData.boughtPrice = purchaseData.price;
+        updateData.boughtPrice = purchasePrice;
       }
     }
 
     // Always update the selling price with the new one if provided
     if (newSellingPrice !== undefined) {
-      updateData.sellingPrice = newSellingPrice;
+      updateData.sellingPrice = toMoneyInt(newSellingPrice);
     }
 
     if (photo !== undefined) {
@@ -315,8 +335,8 @@ export async function updateProductWithPurchase(
       data: {
         productId: productId,
         purchaseId: purchase.id,
-        quantity: purchaseData.quantity,
-        price: purchaseData.price,
+        quantity: purchaseQty,
+        price: purchasePrice,
       },
     });
 
