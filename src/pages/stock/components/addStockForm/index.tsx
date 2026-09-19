@@ -28,12 +28,10 @@ import PendingProductsList from "./PendingProductsList";
 import InvoiceScanModal, {
   InvoiceScanButton,
 } from "../invoiceScan/InvoiceScanModal";
+import { toMoneyInt } from "../../../../lib/moneyInt";
 
-// Helper function for safe price calculations with proper rounding
-const safePrice = (value: number | string | undefined): number => {
-  const num = Number(value || 0);
-  return Math.round(num * 100) / 100; // Rounds to 2 decimal places without string conversion
-};
+// Prisma money columns are Int (whole DA).
+const safePrice = toMoneyInt;
 
 // Helper function for safe price comparison with tolerance
 const isPriceDifferent = (price1: number, price2: number): boolean => {
@@ -48,10 +46,10 @@ const calculateWeightedAverage = (
   newPrice: number
 ): number => {
   const totalQuantity = currentQuantity + newQuantity;
-  if (totalQuantity <= 0) return newPrice;
+  if (totalQuantity <= 0) return toMoneyInt(newPrice);
   
   const totalValue = (currentQuantity * currentPrice) + (newQuantity * newPrice);
-  return Math.round((totalValue / totalQuantity) * 100) / 100;
+  return toMoneyInt(totalValue / totalQuantity);
 };
 
 /** Include photo in update payloads only when the user changed or added one. */
