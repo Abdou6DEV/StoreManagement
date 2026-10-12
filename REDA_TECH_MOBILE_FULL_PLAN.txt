@@ -1,0 +1,573 @@
+REDA TECH POS — MOBILE PWA / CLOUD SYNC — FULL IMPLEMENTATION PLAN
+===============================================================
+Corrected against the live desktop app (v6.1.1) and live control Supabase
+project fayqqjnhqggmtcwaymwh. Two-project Free-tier split is intentional.
+
+PURPOSE
+-------
+Add a mobile web/PWA in the same StoreManagement repository without breaking
+the existing Electron desktop app.
+
+V1 mobile is READ-ONLY.
+
+Build identity, tenant, cloud mirror, sync metadata, and API boundaries so
+two-way POS writes can be added later without replacing the foundation.
+
+DO NOT implement two-way mobile writes in V1.
+
+
+DECISIONS THAT ARE LOCKED
+-------------------------
+- TWO Supabase projects: keep licensing on the existing Free project; put POS
+  mirror data on a second Free project so V1 does not blow the current project's
+  Edge/DB quota. Paying is not required yet.
+- Pairing authorizes the PHONE. Login authorizes the USER. A shop has multiple
+  local users besides admin.
+- Persist pairing (device credential). Do NOT persist the user session. Every
+  app open requires username/password again.
+- QR UX is not important. One pairing token is enough, however it is entered.
+- V1 does not clone every desktop module. Sync only what the first read-only
+  screens need, plus users so login works.
+
+
+1. CURRENT SYSTEM AUDIT — WHAT EXISTS TODAY
+--------------------------------------------
+
+Repository:
+- GitHub: Abdou6DEV/StoreManagement
+- Electron + React + TypeScript desktop POS
+- Prisma 6.14, SQLite, no customer_id on business tables
+- Package version 6.1.1
+- Landing site is a separate Vite config + GitHub Pages
+- Locales: ar, fr, en (new UI copy needs translations)
+
+Desktop entities:
+- User, UserPermissions, Category, Product, ManualProduct, Service
+- Sale, SaleItem, Client, Option, Payment, Seller, Purchase, PurchaseItem
+- Bill, BillPayment, ServiceAppointment, ActivityLog
+
+Important current behavior:
+- Users are LOCAL SQLite accounts. Passwords are bcrypt hashes.
+- Roles: ADMIN and USER. Permissions live in UserPermissions.
+- Desktop AuthContext does NOT persist login between launches.
+- Desktop login is Electron IPC + local Prisma.
+- Machine GUID is the desktop device identity for licensing.
+- customer_id comes from Supabase device-check and is stored locally as an Option.
+- Online handlers already call: device-check, device-request,
+  device-link-existing, ai-consume, ai-quota, backup-upload-latest,
+  backup-download-latest. Invoice-scan is a separate handler.
+- Online calls use STORE_ONLINE_* and x-app-secret.
+- Money is integer centimes (DA * 100).
+- Category primary key is NAME, not a UUID.
+- Most other business rows use UUIDs.
+- Product.photo is a local PC path (useless on the phone).
+- Deleting a Client cascades sales in Prisma.
+- Cloud backup uploads a database FILE to Storage bucket "backups".
+  That is NOT the mobile data model.
+- Desktop screens: dashboard, clients, stock, cashier, history, bills,
+  services, administrator, zakat, about.
+
+CURRENT CONTROL SUPABASE (keep as licensing)
+Project ref: fayqqjnhqggmtcwaymwh
+Org: Reda Tech Store Manager, Free, eu-west-1
+customer_id type: UUID (never treat it as an integer)
+
+Public tables:
+- ai_settings, ai_usage_daily, ai_usage_minute
+- allowed_devices, customers, device_requests, invoice_scan_sessions
+RLS is enabled on all of them with NO policies (Data API locked for anon).
+allowed_devices.customer_id -> customers.id
+
+Storage: backups (private), invoice-scans (private).
+
+Edge Functions (verify_jwt false, protected by x-app-secret):
+- device-check, device-request, device-link-existing
+- ai-consume, ai-quota
+- backup-upload-latest, backup-download-latest
+- invoice-scan
+
+The mobile browser MUST NOT receive the service-role key or x-app-secret.
+
+Close before a browser client exists on this project:
+- anon can execute SECURITY DEFINER RPCs ai_get_usage, ai_increment_usage,
+  rls_auto_enable. Revoke EXECUTE from anon/authenticated.
+
+
+2. FINAL HIGH-LEVEL ARCHITECTURE
+--------------------------------
+
+TWO Supabase projects. One shared mobile project for all shops.
+Do NOT create one database per customer.
+
+A) EXISTING PROJECT — REDA TECH CONTROL / LICENSING
+   Stay on Free. Do not dump POS rows here.
+
+   Responsibilities:
+   - customers, allowed_devices, desktop licensing, trial
+   - PC device authorization, device linking
+   - AI entitlement/quota
+   - existing cloud backup files
+   - mobile entitlement (enabled, device limit)
+   - pairing tokens
+   - mobile_devices (which phones belong to which customer_id)
+
+B) NEW PROJECT — MOBILE POS MIRROR
+   Second Free project. This is where business rows live so the control
+   project's quota stays small.
+
+   Responsibilities:
+   - tenant-scoped products, categories, clients, sales, payments, repairs
+   - synced users + permissions (hashes never leave the server / Edge)
+   - dashboard aggregates
+   - sync metadata
+   - mobile Auth / sessions for the PWA (this project's JWT)
+
+WHY TWO PROJECTS
+- Control project already runs several Edge Functions on Free.
+- POS mirror + sync + mobile auth would consume the same 500 MB / Edge
+  invocation budget.
+- A second Free project splits quota. No paid plan required for V1.
+- Cost of a second project on this org is $0. Limit is two Free projects.
+
+CROSS-PROJECT GLUE (this is the real design work)
+Supabase JWTs from project A do NOT work on project B.
+
+Flow:
+1. Desktop talks to CONTROL with existing x-app-secret (unchanged).
+2. Desktop talks to MOBILE with a NEW desktop-only secret
+   (STORE_MOBILE_*). Never put that in the PWA.
+3. PWA talks to CONTROL only to complete pairing (public, no x-app-secret).
+4. Pairing-complete on CONTROL validates the token, then the CONTROL
+   function (service-role, server-side) calls the MOBILE project to create
+   the shop's device identity / Auth user / session there.
+5. PWA then uses ONLY the MOBILE project session for reads.
+6. customer_id in that session is server-assigned. The browser never chooses it.
+
+FREE-TIER PAUSE
+A Free project can pause after ~7 days of inactivity.
+If nobody opens the PWA, desktop incremental sync to the mobile project
+is enough to keep it awake. If sync is idle too, add a cheap desktop ping.
+If the mobile project is paused, pairing and reads fail until restored.
+
+
+3. CUSTOMER ID VS DEVICE ID
+----------------------------
+
+customer_id (uuid):
+- identifies the store/business
+- is the tenant key on every mobile business row
+- is already returned by device-check today
+
+device_id:
+- one physical authorized device
+- desktop keeps the machine GUID
+- each phone gets its own mobile device_id at pairing
+- used for revoke, limits, audit
+- must NOT identify the shop's data
+
+Example:
+Customer <uuid>
+  Desktop A -> existing allowed_devices.device_id
+  Phone A   -> mobile_devices.device_id
+  Phone B   -> mobile_devices.device_id
+
+Revoking Phone B drops that phone only. Shop data stays. Other devices stay.
+
+
+4. MOBILE ENTITLEMENT (CONTROL PROJECT)
+---------------------------------------
+
+customer_mobile_settings
+- customer_id uuid PK/FK
+- mobile_enabled
+- mobile_device_limit
+- created_at / updated_at
+
+mobile_devices
+- id
+- customer_id uuid
+- device_id
+- device_name
+- platform
+- paired_at / last_seen_at
+- active
+- revoked_at
+
+mobile_pairing_tokens
+- token (single-use)
+- customer_id
+- requesting desktop device_id
+- expires_at
+- used_at
+
+Backend must enforce:
+- mobile_enabled
+- mobile_device_limit
+- one phone device_id cannot belong to two customers
+- revoked devices cannot authenticate
+- pairing tokens expire and are single-use
+- desktop license/trial must be valid to create a pairing token
+- expired/disabled license: new pairing blocked; existing mobile sessions
+  must fail device-check (same truth as desktop device-check)
+
+Do not reuse device-link-existing. That copies a paid desktop license
+to another PC.
+
+
+5. PAIRING, THEN LOGIN EVERY TIME
+---------------------------------
+
+Pairing = this phone is allowed for this customer_id.
+Login = which SQLite user is using it (permissions).
+
+PAIRING (once per phone, until revoked or storage cleared)
+1. Admin enables mobile for that customer (control project).
+2. Desktop, already licensed, has customer_id from device-check.
+3. Desktop creates a short-lived one-time pairing token on CONTROL.
+4. Phone opens the PWA and submits that token (paste, QR, whatever).
+5. CONTROL validates token, license, mobile_enabled, device limit.
+6. CONTROL asks MOBILE (server-to-server) to register the device and
+   issue a device credential/session bootstrap for the MOBILE project.
+7. PWA stores only the DEVICE pairing credential.
+8. Desktop starts (or continues) cloud sync for that customer_id,
+   USERS FIRST.
+
+LOGIN (every time the PWA is opened)
+1. PWA checks stored device pairing against CONTROL/MOBILE device-check.
+   Revoked / disabled / expired license → clear pairing, show pair again.
+2. If pairing is valid, show username/password. Never skip this.
+3. PWA sends credentials over HTTPS to a MOBILE Edge Function.
+4. Function verifies bcrypt against the synced user row for that
+   customer_id, checks isActive + permissions, checks device still active.
+5. Function returns a short-lived user access token bound to:
+   customer_id, mobile_device_id, user_id, role, permissions.
+6. Closing the app / next visit: pairing remains, user token does NOT.
+   Password again.
+
+MUST NOT:
+- persist user login in localStorage as authorization
+- expose bcrypt hashes to the browser
+- send SQLite or x-app-secret to the phone
+- let the browser pick customer_id
+- use desktop activation-key login on mobile
+- show a working login screen before users for that tenant have synced
+
+SYNC ORDER (the bug the original plan got wrong)
+Pairing may complete first.
+Login MUST wait until User + UserPermissions for that customer_id exist
+in the mobile project. Desktop should upload users immediately when
+mobile is enabled / pairing is created, before other entities if needed.
+Password changes on desktop must sync before that user can log in on
+the phone.
+
+
+6. MOBILE WEBSITE / REPO LAYOUT
+-------------------------------
+
+Same GitHub repo.
+
+StoreManagement/
+    src/                  <- Electron desktop (unchanged ownership)
+    prisma/               <- desktop SQLite
+    mobile/               <- NEW PWA, own Vite app
+    ...
+
+Do NOT put mobile source inside src/.
+Mobile must not import Electron, Prisma runtime, SQLite, Node APIs,
+preload, or desktop-only deps.
+
+npm run make = desktop only.
+Mobile has npm run mobile:build.
+
+GitHub Pages already deploys the landing site from docs/.
+Extend that workflow later to also emit /mobile/.
+SPA fallback on Pages is required for client-side routes.
+QR / marketing button on redatechpos.com is not a V1 blocker.
+
+
+7. MOBILE CLOUD DATA MODEL (MOBILE PROJECT)
+-------------------------------------------
+
+Do NOT copy the SQLite file into Supabase.
+Do NOT use the backups bucket as the mobile database.
+
+Proper Postgres, every business table:
+- customer_id uuid NOT NULL
+- source_id (desktop primary key: uuid OR category name)
+- source_updated_at
+- sync_version
+- deleted_at (soft delete for sync; desktop still hard-deletes locally
+  and must enqueue DELETE)
+
+UNIQUE (customer_id, source_id) per entity.
+Do NOT invent a different mobile id for the same desktop row.
+
+Category is special: desktop PK is name, so source_id is the category name.
+
+V1 TABLES (sync these)
+- pos_users (id, customer_id, username, password_hash, role, is_active, ...)
+  RLS: PWA must NOT select password_hash. Only Edge Functions using
+  service-role verify passwords.
+- pos_user_permissions
+- pos_categories
+- pos_products (no local filesystem photo in V1; skip photo or leave null)
+- pos_manual_products (needed if sale items reference them)
+- pos_services (needed if sale items / repairs reference them)
+- pos_clients
+- pos_sales
+- pos_sale_items
+- pos_payments (CREDIT / VERSEMENT, including pendingSaleItems for
+  versement — that field is real desktop behavior)
+- pos_service_appointments
+- pos_dashboard_daily (aggregates: sales count, revenue, profit, etc.
+  per customer_id per local day — so the PWA does not download all sales)
+
+V1 DO NOT SYNC
+- ActivityLog
+- AI tables / quota
+- printer / Electron / filesystem Options
+- product photos
+- Seller / Purchase / PurchaseItem
+- Bill / BillPayment
+- full historic dump beyond a recent window (e.g. last 90 days of sales)
+  plus aggregates for older totals
+
+Add those tables later without changing tenant architecture.
+
+Indexes at minimum:
+(customer_id), (customer_id, source_updated_at),
+products (customer_id, name), (customer_id, codebar),
+clients (customer_id, name), (customer_id, phone),
+sales (customer_id, created_at)
+
+
+8. SYNC ARCHITECTURE
+--------------------
+
+V1:
+
+Desktop SQLite  --incremental outbox-->  Mobile Supabase  --read-->  PWA
+
+SQLite remains operational source of truth.
+Mobile DB is a mirror.
+PWA is read-only.
+
+Desktop SyncOutbox:
+- entity_type, entity_id, operation (CREATE/UPDATE/DELETE)
+- changed_at, sync_version, retry_count, last_error, synced_at
+
+Local transaction ALWAYS commits first. Sync is secondary.
+Never roll back a local sale because cloud is down.
+Batch/debounce. Background. Show last sync time / errors in desktop settings.
+Initial sync is resumable and must not freeze the POS UI.
+
+USERS AND PERMISSIONS ARE FIRST-CLASS OUTBOX ENTITIES.
+
+When mobile is enabled, enqueue users immediately, then catalogue data,
+then recent sales/payments/repairs, then backfill.
+
+Desktop talks to MOBILE project with STORE_MOBILE_* (secret + URL).
+Idempotent upserts on (customer_id, source_id, sync_version).
+
+PWA V1 refresh: pull-to-refresh / open fetch. Realtime is not required.
+Cache last successful read; label it stale when offline.
+Do not implement mobile write outbox in V1, but keep IDs/tenants clean
+so it can be added.
+
+Backup restore on desktop rewrites SQLite. That must trigger a full
+resync (or wipe+replace that tenant's mirror). Otherwise the phone lies.
+
+Conflict resolution is NOT in V1. Future writes need operation_id
+idempotency. Sales should stay events; stock should become movements
+rather than last-write-wins quantity. Do not implement that now.
+
+
+9. SECURITY
+-----------
+
+PWA
+ -> mobile project anon key + user/device tokens
+ -> RLS + Edge Functions
+ -> Postgres
+
+Never in the PWA:
+- service-role (either project)
+- STORE_ONLINE_APP_SECRET
+- STORE_MOBILE secret
+- password hashes
+
+RLS on every mobile business table:
+- jwt customer_id matches row customer_id
+- device still active
+- mobile_enabled (checked at login/device-check, not only UI)
+
+Authorize with app_metadata / server-issued claims, never user_metadata.
+
+pos_users.password_hash: revoke SELECT from authenticated/anon.
+Only a security-definer Edge path may read it.
+
+Tenant tests before production:
+- shop A cannot read shop B
+- revoked phone cannot read
+- mobile_enabled false cannot read
+- expired license cannot pair; existing sessions fail check
+- limit reached cannot pair
+- expired/used pairing token rejected
+
+
+10. EDGE FUNCTIONS
+------------------
+
+CONTROL (existing project)
+- mobile-pairing-create     desktop + x-app-secret
+- mobile-pairing-complete   PWA, no x-app-secret
+- mobile-device-check       PWA (is this phone still allowed?)
+- mobile-device-revoke      desktop admin
+- mobile-device-list        desktop admin
+- extend device-check JSON with mobile_enabled, mobile_device_limit,
+  mobile_paired_count (desktop settings)
+
+MOBILE (new project)
+- mobile-login              username/password + device credential
+- (optional) mobile-sync-ingest if you do not want the desktop to
+  write rows with a restricted service-role; otherwise desktop uses
+  service-role only inside Electron, never in the renderer/PWA
+
+CORS: allow the GitHub Pages / custom-domain origin for PWA functions.
+
+
+11. DESKTOP UI
+--------------
+
+Admin/Settings → Mobile App
+- enabled / disabled (from control)
+- device limit
+- paired phones: name, last seen, revoke
+- generate pairing token (display/copy; QR optional)
+- last sync time, sync errors, initial sync progress
+
+Does not create a second desktop identity. Reuse device-check customer_id.
+
+
+12. V1 MOBILE SCREENS
+---------------------
+
+Not a copy of the desktop UI.
+
+V1:
+- pairing
+- login every visit
+- dashboard (from aggregates + due counts)
+- products / stock search (barcode field is data; camera later)
+- clients
+- recent sales / credits / versements
+- repairs due / overdue
+
+Respect UserPermissions the same way as desktop:
+cashier, stock, clients, bills, history, dashboard, services, zakat,
+user management, settings.
+Hide pages in UI AND refuse them on the API for future writes.
+V1 has no bills/zakat pages; unused permissions just hide nothing extra.
+
+ar / fr / en. New strings need translations. RTL for Arabic.
+
+Skip V1: photos, AI, purchases, bills, zakat page, two-way writes,
+printer, activity log.
+
+
+13. FUTURE FULL POS (NOT V1)
+----------------------------
+
+Desktop SQLite <--> Mobile Supabase <--> PWA
+
+Then: mobile outbox, operation_id idempotency, mobile sales/clients/
+payments/stock/repairs, then offline queue and conflict rules.
+
+V1 only needs the schema/IDs/tenant/auth to not be thrown away.
+
+
+14. IMPLEMENTATION ORDER
+------------------------
+
+PHASE 0
+Confirm this document against code. No feature UI yet.
+
+PHASE 1 — CONTROL
+customer_mobile_settings, mobile_devices, pairing tokens,
+pairing/revoke/check functions, device-check entitlement fields.
+Revoke dangerous anon RPCs on the control project.
+
+PHASE 2 — MOBILE PROJECT
+Create the second Free project.
+Tenant schema, indexes, RLS, pos_users without hash exposure,
+dashboard aggregate table.
+Server-to-server pairing handshake from CONTROL.
+
+PHASE 3 — DESKTOP SYNC
+STORE_MOBILE_* in Electron only.
+Outbox. Users first. Then V1 entities. Retry. Sync status.
+Resync after backup restore.
+
+PHASE 4 — DESKTOP MOBILE SETTINGS
+Enable, limit, token, device list, revoke, sync status.
+
+PHASE 5 — PWA SHELL
+mobile/ Vite app. Pairing. Device credential persist.
+Login every visit. API layer. No Prisma.
+
+PHASE 6 — READ-ONLY SCREENS
+Dashboard, stock, clients, recent sales, repairs due.
+
+PHASE 7
+Tenant isolation tests, revoke tests, sync retry, iPhone/Android,
+Pages deploy, npm run make still desktop-only.
+
+PHASE 8 — later
+Writes, operation ids, two-way, offline POS.
+
+
+15. IMPLEMENTATION RULES
+------------------------
+
+1. Do not rewrite the desktop database. SQLite stays.
+2. Do not put POS mirror tables on the control project.
+3. Do not put mobile code inside src/ or import it into Electron.
+4. Do not expose service-role or either app secret to the PWA.
+5. customer_id (uuid) is the tenant. device_id is not.
+6. Do not copy the SQLite backup into the mobile DB.
+7. No two-way writes in V1.
+8. Persist device pairing only. Login every time.
+9. Users/permissions must sync before login can succeed.
+10. Browser never chooses customer_id.
+11. Local desktop commits do not depend on cloud success.
+12. Keep desktop UUIDs; categories use name as source_id.
+13. Sync is async/batched/idempotent.
+14. Backup restore ⇒ full tenant resync.
+15. Test desktop login, licensing, backup, AI, and npm run make
+    after every phase.
+
+
+16. TEST PLAN
+-------------
+
+Desktop: login, device-check, backup, AI, make/package unchanged.
+
+Pairing: valid token works; expired/reused fails; disabled mobile fails;
+limit reached fails; revoked device fails; paused mobile project fails
+loudly.
+
+Login: multiple users on one phone; wrong password; inactive user;
+admin vs USER permissions; login required again after reload;
+login blocked until users synced.
+
+Sync: users first; product update; sale; client; payment; repair;
+delete; retry offline; resync after backup restore.
+
+Security: A cannot read B; hash not in browser network payloads
+except as the user's typed password to login; secrets not in the
+PWA bundle.
+
+
+DO NOT START BY BUILDING MOBILE SCREENS.
+First: control entitlement + pairing, mobile project schema/RLS,
+user sync, then login, then read APIs, then UI.
