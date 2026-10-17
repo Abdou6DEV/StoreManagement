@@ -584,11 +584,11 @@ export default function ScanProductLine({
                       <button
                         key={product.id}
                         type="button"
-                        className="flex w-full items-baseline justify-between gap-3 px-3 py-2.5 text-left text-sm hover:bg-accent/50"
+                        className="flex w-full flex-col items-start gap-1 px-3 py-2.5 text-left text-sm hover:bg-accent/50"
                         onClick={() => enterPreview(product)}
                       >
-                        <span className="min-w-0 truncate font-medium">{product.name}</span>
-                        <span className="shrink-0 text-right text-sm text-foreground/70">
+                        <span className="w-full break-words font-medium">{product.name}</span>
+                        <span className="w-full break-words text-xs text-foreground/70">
                           {[
                             product.categoryName,
                             typeof product.quantity === "number"

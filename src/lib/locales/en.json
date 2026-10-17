@@ -803,7 +803,7 @@
     "payed": "Payed",
     "notPayed": "Not Payed",
     "paymentStatus": "Payment status",
-    "hideCostPrice": "Hide cost price",
+    "hideCostPrice": "Hide",
     "showCostPrice": "Show cost price",
     "addServiceAndPrintTicket": "Add Service and Print Service Ticket",
     "fillRequiredFields": "Please fill all required fields (Name, Type, Service Price)",
@@ -1219,6 +1219,7 @@
         "point3": "Uphold integrity and ethical standards"
       }
     }
+
   },
   "about": {
     "title": "About REDA TECH Store Management",
@@ -3551,5 +3552,3 @@
     "restoreNextStep": "Next step: device link + cloud restore over IPC."
   }
 }
-
-

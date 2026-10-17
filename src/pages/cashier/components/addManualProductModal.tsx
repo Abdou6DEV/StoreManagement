@@ -46,7 +46,13 @@ export default function AddManualProductModal({
   const { t } = useTranslation();
   const { showToast } = useToast();
   const { user } = useAuth();
-  const [manualProduct, setManualProduct] = useState({
+  const [manualProduct, setManualProduct] = useState<{
+    name: string;
+    type: string;
+    sold: number | "";
+    costPrice: number | "";
+    barcode: string;
+  }>({
     name: "",
     type: "",
     sold: 0,
@@ -367,7 +373,7 @@ export default function AddManualProductModal({
       return;
     }
 
-    if (!manualProduct.costPrice || Number(manualProduct.costPrice) < 0) {
+    if (manualProduct.costPrice === "" || Number(manualProduct.costPrice) < 0) {
       showToast(
         t("cashier.costPriceRequired", "Cost price is required and must be 0 or greater"),
         "error"
@@ -664,7 +670,7 @@ export default function AddManualProductModal({
                   onChange={(val: number | "") =>
                     setManualProduct((p) => ({
                       ...p,
-                      costPrice: val === "" ? 0 : safePrice(val),
+                      costPrice: val === "" ? "" : safePrice(val),
                     }))
                   }
                   onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -725,7 +731,7 @@ export default function AddManualProductModal({
                   onChange={(val: number | "") =>
                     setManualProduct((p) => ({
                       ...p,
-                      sold: val === "" ? 0 : safePrice(val),
+                      sold: val === "" ? "" : safePrice(val),
                     }))
                   }
                   onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {

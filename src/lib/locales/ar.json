@@ -2879,7 +2879,7 @@
     "serviceType": "نوع الخدمة",
     "description": "اسم الجهاز",
     "costPrice": "سعر التكلفة",
-    "hideCostPrice": "إخفاء سعر التكلفة",
+    "hideCostPrice": "إخفاء",
     "showCostPrice": "إظهار سعر التكلفة",
     "servicePrice": "سعر الخدمة",
     "client": "العميل",

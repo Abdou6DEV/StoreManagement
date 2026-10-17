@@ -2063,7 +2063,7 @@
     "serviceType": "Type de service",
     "description": "Nom de l'appareil",
     "costPrice": "Prix de revient",
-    "hideCostPrice": "Masquer le prix de revient",
+    "hideCostPrice": "Masquer",
     "showCostPrice": "Afficher le prix de revient",
     "servicePrice": "Prix du service",
     "client": "Client",

@@ -55,8 +55,8 @@ export default function AddServiceModal({
   const [service, setService] = useState<{
     name: string;
     description: string;
-    price: number;
-    costPrice: number;
+    price: number | "";
+    costPrice: number | "";
   }>({
     name: "",
     description: "",
@@ -346,11 +346,11 @@ export default function AddServiceModal({
     onAdd({
       id: `service-${Date.now()}`,
       name: service.name,
-      price: service.price,
+      price: Number(service.price),
       qty: 1,
       isService: true,
       description: service.description || undefined,
-      serviceCostPrice: service.costPrice,
+      serviceCostPrice: Number(service.costPrice),
     });
 
     // Reset form
@@ -484,7 +484,7 @@ export default function AddServiceModal({
                 onChange={(val: number | "") =>
                   setService((p) => ({
                     ...p,
-                    costPrice: val === "" ? 0 : val,
+                    costPrice: val,
                   }))
                 }
                 min={0}
@@ -538,7 +538,7 @@ export default function AddServiceModal({
                 onChange={(val: number | "") =>
                   setService((p) => ({
                     ...p,
-                    price: val === "" ? 0 : val,
+                    price: val,
                   }))
                 }
                 min={0}
