@@ -1,7 +1,8 @@
 REDA TECH POS — MOBILE PWA / CLOUD SYNC — FULL IMPLEMENTATION PLAN
 ===============================================================
-Corrected against the live desktop app (v6.1.1) and live Supabase
-project fayqqjnhqggmtcwaymwh. ONE project: Free quotas are org-wide.
+Corrected against the live desktop app (v6.1.1) and the live LICENSING
+Supabase project fayqqjnhqggmtcwaymwh. The mobile PWA uses a SEPARATE
+Supabase organization/project (see section 2).
 
 PURPOSE
 -------
@@ -18,10 +19,15 @@ DO NOT implement two-way mobile writes in V1.
 
 DECISIONS THAT ARE LOCKED
 -------------------------
-- ONE Supabase project (the existing one). Free Edge/egress/storage/MAU quotas
-  are per ORGANIZATION, summed across projects. A second project does not
-  double those limits and only adds JWT glue. Stay on Free; paying is not
-  required yet. Keep POS mirror in a `pos_*` schema/tables on the same DB.
+- TWO Supabase projects in TWO organizations:
+  1) LICENSING project (existing, fayqqjnhqggmtcwaymwh): licensing, trial,
+     customers, device authorization, AI, backups. Stays the source of truth
+     for who is a paying customer. The PWA never talks to it.
+  2) MOBILE project (NEW, its own organization): everything the PWA touches:
+     pos_* mirror, mobile devices, pairing tokens, mobile login. Its Free
+     quotas (Edge, egress, storage, 500 MB DB) are separate from licensing.
+  customer_id (uuid from licensing) is the tenant key in both.
+  Stay on Free for now.
 - Pairing authorizes the PHONE. Login authorizes the USER. A shop has multiple
   local users besides admin.
 - Persist pairing (device credential). Do NOT persist the user session. Every
@@ -92,74 +98,105 @@ Edge Functions (verify_jwt false, protected by x-app-secret):
 
 The mobile browser MUST NOT receive the service-role key or x-app-secret.
 
-Close before a browser client exists on this project:
-- anon can execute SECURITY DEFINER RPCs ai_get_usage, ai_increment_usage,
-  rls_auto_enable. Revoke EXECUTE from anon/authenticated.
+Hardening on the LICENSING project (good hygiene even though the PWA will
+not use it; verify the existing Edge Functions still work afterwards):
+- anon/authenticated can execute SECURITY DEFINER RPCs ai_get_usage,
+  ai_increment_usage, rls_auto_enable. Revoke EXECUTE from them.
+- sync_allowed_device_customer_fields and
+  sync_customer_fields_to_allowed_devices have a mutable search_path; set it.
 
 
 2. FINAL HIGH-LEVEL ARCHITECTURE
 --------------------------------
 
-ONE Supabase project. One shared database for all shops.
+TWO Supabase projects, each in its own organization.
+One shared database per project for ALL shops (tenant column customer_id).
 Do NOT create one database per customer.
-Do NOT create a second project to "split Free quota".
 
-Same project, two concerns (tables stay separate):
-
-A) CONTROL (already exists)
+A) LICENSING project (existing, fayqqjnhqggmtcwaymwh) - mostly unchanged
    - customers, allowed_devices, desktop licensing, trial
    - PC device authorization, device linking
    - AI entitlement/quota
    - existing cloud backup files
-   - mobile entitlement (enabled, device limit)
-   - pairing tokens
+   - mobile entitlement per customer: mobile_enabled, mobile_device_limit
+     (customer_mobile_settings), returned by device-check
+   It stays the single truth for "is this shop licensed / allowed mobile".
+
+B) MOBILE project (new, separate organization)
    - mobile_devices (which phones belong to which customer_id)
-
-B) POS MIRROR (new tables on this same project, pos_* prefix)
-   - tenant-scoped products, categories, clients, sales, payments, repairs
+   - mobile_pairing_tokens
+   - pos_* mirror: products, categories, clients, sales, payments, repairs
    - synced users + permissions (hashes never leave the server / Edge)
-   - dashboard aggregates
-   - sync metadata
+   - dashboard aggregates, sync metadata
+   - mobile Edge Functions (section 10)
+   The PWA talks ONLY to the mobile project.
 
-WHY NOT TWO PROJECTS
-Supabase Free is organization-based billing. Quotas are summed across
-every project in the org:
+WHY TWO PROJECTS
+- Mobile traffic (sync + PWA reads) cannot use up licensing quotas or
+  pause/lock-out licensing, which every desktop depends on.
+- Free quotas are per organization, so the mobile org gets its own
+  Edge/egress/storage budget and its own 500 MB database.
+- The PWA's keys and tokens live in a project that holds no licenses,
+  backups, or AI data.
 
-- Edge Function invocations: 500,000 / month for the WHOLE org
-- Egress: 5 GB for the WHOLE org
-- File storage: 1 GB for the WHOLE org
-- Auth MAU / Realtime: org-wide
-- Database size: 500 MB PER PROJECT (the only per-project exception)
+COSTS AND RISKS OF TWO PROJECTS
+- The two projects do not share users or database access. Any
+  cross-check goes through Edge Functions (see IDENTITY FLOW).
+- Each Free project can pause after ~7 days of inactivity and each has its
+  own limits. Keep the V1 mirror small (aggregates + recent rows).
+- A Free organization allows a limited number of active projects; confirm
+  the new org's limits when creating it.
+- Two sets of keys/secrets to manage; never mix them up in .env files.
 
-A second project does NOT give extra Edge invocations. Licensing + mobile
-sync + login would still share the same 500k. It would add:
-- a second 500 MB disk
-- a second idle-pause risk
-- JWT that cannot cross projects
-
-Current DB is ~13 MB. Keep V1 mirror small (aggregates + recent rows).
-If this one 500 MB disk fills later, then consider a second project or Pro.
-Do not pay yet.
-
-IDENTITY FLOW (one project, no JWT bridge)
-1. Desktop talks to the existing project with x-app-secret (unchanged).
-2. Desktop sync/ingest uses the same secret or a dedicated Edge Function.
-   Never put that secret in the PWA.
-3. PWA pairing-complete has no x-app-secret; the function validates the
-   token and records mobile_devices.
-4. PWA login is an Edge Function on this same project. It checks the existing
-   desktop-style username/password against the synced bcrypt hash.
-5. The browser never chooses customer_id. The server binds the resulting
+IDENTITY FLOW (two projects)
+1. Desktop keeps talking to the LICENSING project with x-app-secret
+   (unchanged) for device-check, backups, AI.
+2. Desktop talks to the MOBILE project for pairing/sync with its own,
+   separate mobile secret/credential. Never put either secret in the PWA.
+3. Licensing truth reaches the mobile project server-to-server only:
+   mobile Edge Functions verify the desktop's license by calling the
+   licensing device-check (or a dedicated licensing function) using a
+   secret stored ONLY in the mobile project's Edge Function secrets. The
+   desktop and PWA never relay license claims. Fail closed if licensing is
+   unreachable (cache a short-lived positive result to limit calls).
+4. PWA pairing-complete has no desktop secret; the function validates the
+   one-time token and records mobile_devices in the mobile project.
+5. PWA login is an Edge Function on the MOBILE project. It checks the
+   existing desktop-style username/password against the synced bcrypt hash.
+6. The browser never chooses customer_id. The server binds the resulting
    session to the verified user, customer, and paired phone.
-6. Before implementation, define how the session is authenticated for reads:
-   either a Supabase-trusted signed JWT for RLS, or an opaque session
-   credential that every read Edge Function validates. Do not assume that an
-   arbitrary token returned by an Edge Function is accepted by Supabase RLS.
+7. SESSION METHOD (DECIDED): opaque server-side session ("Option B").
+   - mobile-login creates a random, unguessable session code (at least 32
+     bytes from a secure random source) and returns it once. No JWT.
+   - Only a HASH of the code is stored in a mobile_sessions table with:
+     customer_id, mobile_device_id, user_id, created_at, expires_at,
+     last_used_at, revoked_at.
+   - The PWA keeps the code in memory only (not localStorage), sends it on
+     every request, and loses it on close/reload, so login is required again.
+   - The PWA NEVER queries pos_* tables directly. All reads go through
+     mobile-* read Edge Functions. RLS stays on with no policies for
+     anon/authenticated, so the Data API cannot read those tables.
+   - On EVERY read, the function: hashes the code, finds the session, checks
+     not expired/revoked, checks the phone is active and not revoked, the
+     user is active, mobile_enabled and license are still valid (short cache
+     allowed), then loads the user's CURRENT permissions and filters data by
+     the session's customer_id. Never trust customer_id or permissions sent
+     by the browser.
+   - Short lifetime (e.g. 30-60 min idle/absolute cap), logout revokes it,
+     and revoking a phone or deactivating/changing a user kills their
+     sessions immediately.
+   - Rate-limit mobile-login per username + phone + IP and lock out after
+     repeated failures. Use constant-time-style, generic error messages.
+   - Trade-off accepted: more Edge Function calls than direct reads, so keep
+     responses small and use pagination/aggregates.
+   - Revisit signed JWT + RLS only if usage outgrows this approach.
 
 FREE-TIER PAUSE
-A Free project can pause after ~7 days of inactivity.
-Desktops already hit device-check; that keeps this project awake.
-If every shop is offline for a week, unpause in the dashboard.
+Each Free project can pause after ~7 days of inactivity.
+Desktops hit the licensing device-check, which keeps THAT project awake,
+but NOT the mobile project. Sync and PWA use keep the mobile project awake;
+if a shop is idle for a week the phone may fail until unpaused. Show a
+clear error, and consider a lightweight scheduled ping or Pro later.
 
 
 3. CUSTOMER ID VS DEVICE ID
@@ -186,15 +223,18 @@ Customer <uuid>
 Revoking Phone B drops that phone only. Shop data stays. Other devices stay.
 
 
-4. MOBILE ENTITLEMENT (SAME PROJECT, CONTROL TABLES)
+4. MOBILE ENTITLEMENT AND DEVICE TABLES (SPLIT ACROSS THE TWO PROJECTS)
 ---------------------------------------
 
+LICENSING project (admin-controlled entitlement):
 customer_mobile_settings
 - customer_id uuid PK/FK
 - mobile_enabled
 - mobile_device_limit
 - created_at / updated_at
+Returned by device-check; the mobile project reads it server-to-server.
 
+MOBILE project (created there, never in licensing):
 mobile_devices
 - id
 - customer_id uuid
@@ -252,9 +292,10 @@ LOGIN (every time the PWA is opened)
    customer_id, checks isActive + permissions, checks device still active.
    This is the existing desktop username/password login, not email login and
    not a Supabase Auth account.
-5. Function returns a short-lived user session credential bound to:
-   customer_id, mobile_device_id, user_id, role, permissions.
-   Its verification method must be defined as in the identity flow above.
+5. Function creates an opaque session (see IDENTITY FLOW step 7) bound to
+   customer_id, mobile_device_id and user_id, and returns the random code.
+   Role and permissions are NOT baked into the code; they are loaded from
+   the synced rows on every request.
 6. Closing the app / next visit: pairing remains, user token does NOT.
    Password again.
 
@@ -294,12 +335,18 @@ npm run make = desktop only.
 Mobile has npm run mobile:build.
 
 GitHub Pages already deploys the landing site from docs/.
-Extend that workflow later to also emit /mobile/.
-SPA fallback on Pages is required for client-side routes.
+The landing build (vite.landing.config.mts) uses emptyOutDir: true, so it
+wipes docs/. Fix before deploying /mobile/: in the Pages workflow, build the
+landing site FIRST, then build the mobile app into docs/mobile (its own Vite
+config with emptyOutDir limited to that folder and base "/mobile/"). Do not
+commit mobile output into docs/ by hand.
+Pages has no SPA rewrites: use hash routing (/mobile/#/login) or a 404.html
+fallback so refreshing a route does not show "not found".
+Add mobile/** to the workflow's paths filter so mobile changes redeploy.
 QR / marketing button on redatechpos.com is not a V1 blocker.
 
 
-7. MOBILE CLOUD DATA MODEL (pos_* ON THE SAME PROJECT)
+7. MOBILE CLOUD DATA MODEL (pos_* ON THE MOBILE PROJECT)
 -----------------------------------------------------
 
 Do NOT copy the SQLite file into Supabase.
@@ -320,8 +367,8 @@ Category is special: desktop PK is name, so source_id is the category name.
 
 V1 TABLES (sync these)
 - pos_users (id, customer_id, username, password_hash, role, is_active, ...)
-  RLS: PWA must NOT select password_hash. Only Edge Functions using
-  service-role verify passwords.
+  RLS enabled with no policies for anon/authenticated; only Edge Functions
+  using the service role read it to verify passwords.
 - pos_user_permissions
 - pos_categories
 - pos_products (no local filesystem photo in V1; skip photo or leave null)
@@ -360,7 +407,7 @@ sales (customer_id, created_at)
 
 V1:
 
-Desktop SQLite  --incremental outbox-->  same Supabase (pos_*)  --read-->  PWA
+Desktop SQLite  --incremental outbox-->  MOBILE Supabase (pos_*)  --read-->  PWA
 
 SQLite remains operational source of truth.
 Mobile DB is a mirror.
@@ -380,8 +427,12 @@ USERS AND PERMISSIONS ARE FIRST-CLASS OUTBOX ENTITIES.
 When mobile is enabled, enqueue users immediately, then catalogue data,
 then recent sales/payments/repairs, then backfill.
 
-Desktop talks to this project with existing STORE_ONLINE_* / x-app-secret
-(or a dedicated sync Edge Function). Never put that secret in the PWA.
+Desktop talks to the MOBILE project with NEW, separate settings (e.g.
+STORE_MOBILE_SUPABASE_URL / _ANON_KEY / _APP_SECRET), only from the Electron
+main process, via mobile-sync-ingest. Do not reuse STORE_ONLINE_* values and
+never put any desktop secret in the PWA. As with the licensing secret, treat a
+secret shipped with the desktop app as extractable: the mobile project must
+also validate the desktop device/license server-side (see IDENTITY FLOW).
 Idempotent upserts on (customer_id, source_id, sync_version).
 
 PWA V1 refresh: pull-to-refresh / open fetch. Realtime is not required.
@@ -401,24 +452,23 @@ rather than last-write-wins quantity. Do not implement that now.
 -----------
 
 PWA
- -> project anon key + user/device tokens
- -> RLS + Edge Functions
- -> Postgres
+ -> mobile project publishable key + device credential + session code
+ -> mobile-* Edge Functions (validate session, filter by customer_id,
+    enforce permissions)
+ -> Postgres (service role used inside functions only)
 
 Never in the PWA:
 - service-role
-- STORE_ONLINE_APP_SECRET / x-app-secret
+- STORE_ONLINE_APP_SECRET / x-app-secret (licensing)
+- the mobile desktop secret, or any licensing-project key
 - password hashes
 
-RLS on every mobile business table:
-- jwt customer_id matches row customer_id
-- device still active
-- mobile_enabled (checked at login/device-check, not only UI)
+Database tables (pos_*, mobile_*): RLS enabled, NO policies for
+anon/authenticated, so the Data API cannot read them directly. Access is
+only through the Edge Functions above, which must always filter by the
+session's server-side customer_id and check the user's current permissions.
 
-Authorize with app_metadata / server-issued claims, never user_metadata.
-
-pos_users.password_hash: revoke SELECT from authenticated/anon.
-Only a security-definer Edge path may read it.
+pos_users.password_hash is never returned by any function.
 
 Tenant tests before production:
 - shop A cannot read shop B
@@ -429,22 +479,30 @@ Tenant tests before production:
 - expired/used pairing token rejected
 
 
-10. EDGE FUNCTIONS (SAME PROJECT)
----------------------------------
+10. EDGE FUNCTIONS
+------------------
 
-All on fayqqjnhqggmtcwaymwh. Invocations count against the org 500k.
+All mobile-* functions live on the MOBILE project and count against the
+mobile organization's quotas. They reach licensing only server-to-server.
 
-- mobile-pairing-create     desktop + x-app-secret
-- mobile-pairing-complete   PWA, no x-app-secret
+- mobile-pairing-create     desktop + mobile secret; verifies the desktop's
+                            license/mobile entitlement via licensing
+- mobile-pairing-complete   PWA, no desktop secret
 - mobile-device-check       PWA (is this phone still allowed?)
 - mobile-device-revoke      desktop admin
 - mobile-device-list        desktop admin
 - mobile-login              desktop-style username/password + device credential;
-                            verify bcrypt server-side, never expose password_hash
-- mobile-sync-ingest        desktop + x-app-secret (preferred over
+                            verify bcrypt server-side, never expose password_hash;
+                            creates the opaque session
+- mobile-logout             PWA; revokes the session
+- mobile-read-*             PWA + session code: dashboard, products, clients,
+                            sales, repairs (validate session on every call,
+                            enforce current permissions, filter by customer_id)
+- mobile-sync-ingest        desktop + mobile secret (preferred over
                             giving the renderer any extra keys)
-- extend device-check JSON with mobile_enabled, mobile_device_limit,
-  mobile_paired_count (desktop settings)
+On the LICENSING project (small change only):
+- extend device-check JSON with mobile_enabled, mobile_device_limit
+  (paired count comes from the mobile project)
 
 CORS: allow the GitHub Pages / custom-domain origin for PWA functions.
 
@@ -491,7 +549,7 @@ printer, activity log.
 13. FUTURE FULL POS (NOT V1)
 ----------------------------
 
-Desktop SQLite <--> same Supabase pos_* <--> PWA
+Desktop SQLite <--> MOBILE Supabase pos_* <--> PWA
 
 Then: mobile outbox, operation_id idempotency, mobile sales/clients/
 payments/stock/repairs, then offline queue and conflict rules.
@@ -505,17 +563,20 @@ V1 only needs the schema/IDs/tenant/auth to not be thrown away.
 PHASE 0
 Confirm this document against code. No feature UI yet.
 
-PHASE 1 — CONTROL
-customer_mobile_settings, mobile_devices, pairing tokens,
-pairing/revoke/check functions, device-check entitlement fields.
-Revoke dangerous anon RPCs on the control project.
+PHASE 1 — PROJECTS AND CONTROL
+Create the new mobile Supabase organization/project (keys kept separate).
+Licensing: customer_mobile_settings + device-check entitlement fields;
+revoke dangerous anon RPCs and fix mutable search_path there.
+Mobile: mobile_devices, pairing tokens, pairing/revoke/check functions,
+server-to-server license verification against licensing.
+Session method is decided: opaque server-side session (IDENTITY FLOW step 7).
 
-PHASE 2 — POS MIRROR TABLES ON THIS PROJECT
-Tenant schema (pos_*), indexes, RLS, pos_users without hash exposure,
-dashboard aggregate table. No second Supabase project.
+PHASE 2 — POS MIRROR TABLES ON THE MOBILE PROJECT
+Tenant schema (pos_*), indexes, mobile_sessions, RLS on with no policies, pos_users without hash exposure,
+dashboard aggregate table.
 
 PHASE 3 — DESKTOP SYNC
-Reuse STORE_ONLINE_* / x-app-secret in Electron only, via
+New STORE_MOBILE_* settings in Electron main only, via
 mobile-sync-ingest. Outbox. Users first. Then V1 entities. Retry.
 Sync status. Resync after backup restore.
 
@@ -541,9 +602,10 @@ Writes, operation ids, two-way, offline POS.
 ------------------------
 
 1. Do not rewrite the desktop database. SQLite stays.
-2. Do not create a second Supabase project for Free "quota splitting".
-   Put pos_* tables on the existing project. Isolate with RLS, not a
-   second billable endpoint.
+2. Keep licensing and mobile in separate Supabase projects/organizations.
+   Put pos_* tables and mobile devices only on the mobile project; the PWA
+   never contacts the licensing project. Isolate shops with tenant checks
+   and tenant checks inside the mobile Edge Functions (RLS is on with no policies).
 3. Do not put mobile code inside src/ or import it into Electron.
 4. Do not expose service-role or x-app-secret to the PWA.
 5. customer_id (uuid) is the tenant. device_id is not.
@@ -582,5 +644,5 @@ PWA bundle.
 
 
 DO NOT START BY BUILDING MOBILE SCREENS.
-First: entitlement + pairing tables, pos_* schema/RLS on this project,
+First: mobile project + entitlement/pairing tables, pos_* schema/RLS,
 user sync, then login, then read APIs, then UI.
