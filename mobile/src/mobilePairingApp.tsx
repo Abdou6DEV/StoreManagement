@@ -1,5 +1,5 @@
 import { BrowserQRCodeReader } from "@zxing/browser";
-import { AlertCircle, Camera, Check, Languages, LoaderCircle, ScanLine, ShieldCheck, Smartphone, X } from "lucide-react";
+import { AlertCircle, Camera, Check, LoaderCircle, ScanLine, Smartphone, X } from "lucide-react";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 
 type Language = "en" | "fr" | "ar";
@@ -23,8 +23,6 @@ type Copy = {
   invalidCode: string;
   pairFailed: string;
   tryAgain: string;
-  secureNote: string;
-  language: string;
   checkingSavedDevice: string;
 };
 
@@ -49,8 +47,6 @@ const COPY: Record<Language, Copy> = {
     invalidCode: "That code is invalid or has expired. Create a fresh QR code on the desktop.",
     pairFailed: "Could not pair this phone. Check your connection and try again.",
     tryAgain: "Try again",
-    secureNote: "Pairing is one-time. Your phone credential stays on this device.",
-    language: "Language",
     checkingSavedDevice: "Checking this phone…",
   },
   fr: {
@@ -73,8 +69,6 @@ const COPY: Record<Language, Copy> = {
     invalidCode: "Ce code est invalide ou expiré. Créez un nouveau QR code sur l’ordinateur.",
     pairFailed: "Impossible d’associer ce téléphone. Vérifiez la connexion et réessayez.",
     tryAgain: "Réessayer",
-    secureNote: "L’association est unique. L’identifiant du téléphone reste sur cet appareil.",
-    language: "Langue",
     checkingSavedDevice: "Vérification du téléphone…",
   },
   ar: {
@@ -97,8 +91,6 @@ const COPY: Record<Language, Copy> = {
     invalidCode: "الرمز غير صالح أو انتهت صلاحيته. أنشئ رمز QR جديداً من الكمبيوتر.",
     pairFailed: "تعذر ربط الهاتف. تحقق من الاتصال ثم حاول مجدداً.",
     tryAgain: "حاول مجدداً",
-    secureNote: "الربط لمرة واحدة. يبقى اعتماد الهاتف على هذا الجهاز فقط.",
-    language: "اللغة",
     checkingSavedDevice: "جارٍ التحقق من الهاتف…",
   },
 };
@@ -244,48 +236,24 @@ export function MobilePairingApp() {
 
   return (
     <main className="mobile-shell" dir={direction}>
-      <header className="topbar">
-        <a className="brand" href="/mobile/" aria-label="REDA TECH Mobile home">
-          <span className="brand-mark">R</span>
-          <span>REDA TECH</span>
-        </a>
-        <label className="language-control">
-          <Languages size={16} aria-hidden="true" />
-          <span className="sr-only">{copy.language}</span>
-          <select value={language} onChange={(event) => changeLanguage(event.target.value as Language)}>
-            <option value="en">EN</option>
-            <option value="fr">FR</option>
-            <option value="ar">عربي</option>
-          </select>
-        </label>
-      </header>
-
-      <section className="pairing-layout">
-        <div className="intro-column">
-          <p className="eyebrow"><span className="live-dot" />{copy.eyebrow}</p>
-          <h1>{paired ? copy.paired : copy.title}</h1>
-          <p className="intro-copy">{paired ? copy.pairedDetail : copy.subtitle}</p>
-          <div className="security-note">
-            <ShieldCheck size={18} aria-hidden="true" />
-            <span>{copy.secureNote}</span>
-          </div>
-        </div>
-
-        <section className="pair-panel" aria-label={copy.scan}>
+      <div className="langs" role="group" aria-label="Language">
+        <button type="button" className={language === "en" ? "on" : ""} onClick={() => changeLanguage("en")}>English</button>
+        <button type="button" className={language === "fr" ? "on" : ""} onClick={() => changeLanguage("fr")}>Français</button>
+        <button type="button" className={language === "ar" ? "on" : ""} onClick={() => changeLanguage("ar")}>العربية</button>
+      </div>
+      <div className="brand">
+        <img src={`${import.meta.env.BASE_URL}myapp_black.ico`} alt="REDA TECH" />
+        <h1>{paired ? copy.paired : copy.title}</h1>
+        <p className="sub">{paired ? copy.pairedDetail : copy.subtitle}</p>
+      </div>
+      <section className="card" aria-label={copy.scan}>
           {checkingSavedDevice ? (
-            <div className="center-state"><LoaderCircle className="spin" /><span>{copy.checkingSavedDevice}</span></div>
+            <p className="msg"><LoaderCircle className="spin" size={18} /> {copy.checkingSavedDevice}</p>
           ) : paired ? (
-            <div className="paired-state">
-              <span className="success-mark"><Check size={30} /></span>
-              <h2>{copy.paired}</h2>
-              <p>{copy.pairedDetail}</p>
-            </div>
+            <p className="msg ok"><Check size={18} /> {copy.pairedDetail}</p>
           ) : (
             <>
-              <div className="panel-heading">
-                <span className="panel-icon"><ScanLine size={19} /></span>
-                <div><h2>{copy.scan}</h2><p>{copy.cameraHelp}</p></div>
-              </div>
+              <p className="sub scan-help"><ScanLine size={17} /> {copy.cameraHelp}</p>
               {cameraActive ? (
                 <div className="camera-stage">
                   <video ref={videoRef} muted playsInline />
@@ -293,11 +261,11 @@ export function MobilePairingApp() {
                   <button className="camera-close" type="button" onClick={() => setCameraActive(false)} aria-label={copy.stopCamera}><X size={18} /></button>
                 </div>
               ) : (
-                <button className="camera-button" type="button" onClick={() => { setError(null); setCameraActive(true); }}>
-                  <Camera size={19} />{copy.startCamera}
+                <button className="btn primary" type="button" onClick={() => { setError(null); setCameraActive(true); }}>
+                  <Camera size={18} /> {copy.startCamera}
                 </button>
               )}
-              <div className="divider"><span>{copy.enterCode}</span></div>
+              <p className="sub code-label">{copy.enterCode}</p>
               <form className="code-form" onSubmit={submitPairing}>
                 <input
                   autoComplete="off"
@@ -308,17 +276,15 @@ export function MobilePairingApp() {
                   placeholder={copy.codePlaceholder}
                   aria-label={copy.codePlaceholder}
                 />
-                <button type="submit" disabled={!pairingCode.trim() || busy}>
+                <button className="btn primary" type="submit" disabled={!pairingCode.trim() || busy}>
                   {busy ? <LoaderCircle className="spin" size={18} /> : <Smartphone size={18} />}
                   {busy ? copy.pairing : copy.pairPhone}
                 </button>
               </form>
-              {error ? <p className="error-message" role="alert"><AlertCircle size={17} />{error}</p> : null}
+              {error ? <p className="msg err" role="alert"><AlertCircle size={17} /> {error}</p> : null}
             </>
           )}
-        </section>
       </section>
-      <footer className="page-footer"><span>STORE MANAGEMENT</span><span>·</span><span>REDA TECH</span></footer>
     </main>
   );
 }
