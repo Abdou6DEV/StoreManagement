@@ -1,6 +1,6 @@
 import { BrowserQRCodeReader } from "@zxing/browser";
-import { AlertCircle, Camera, Check, LoaderCircle, ScanLine, Smartphone, X } from "lucide-react";
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { AlertCircle, Camera, Check, LoaderCircle, RefreshCw, ScanLine, Smartphone, X } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 type Language = "en" | "fr" | "ar";
 type Copy = {
@@ -11,9 +11,6 @@ type Copy = {
   cameraHelp: string;
   startCamera: string;
   stopCamera: string;
-  enterCode: string;
-  codePlaceholder: string;
-  pairPhone: string;
   pairing: string;
   paired: string;
   pairedDetail: string;
@@ -22,6 +19,7 @@ type Copy = {
   cameraDenied: string;
   invalidCode: string;
   pairFailed: string;
+  revoked: string;
   tryAgain: string;
   checkingSavedDevice: string;
 };
@@ -35,17 +33,15 @@ const COPY: Record<Language, Copy> = {
     cameraHelp: "Allow camera access, then hold the QR code inside the frame.",
     startCamera: "Open camera",
     stopCamera: "Stop camera",
-    enterCode: "Or enter the code",
-    codePlaceholder: "Paste pairing code",
-    pairPhone: "Pair phone",
     pairing: "Pairing phone…",
     paired: "Phone paired",
     pairedDetail: "This phone is now linked to your store.",
     alreadyPaired: "This phone is already paired",
     checkAgain: "Check connection",
-    cameraDenied: "Camera access is unavailable. You can paste the pairing code instead.",
+    cameraDenied: "Camera access is unavailable. Allow camera access and try again.",
     invalidCode: "That code is invalid or has expired. Create a fresh QR code on the desktop.",
     pairFailed: "Could not pair this phone. Check your connection and try again.",
+    revoked: "This phone was removed from the shop. Scan a new QR code to pair it again.",
     tryAgain: "Try again",
     checkingSavedDevice: "Checking this phone…",
   },
@@ -57,17 +53,15 @@ const COPY: Record<Language, Copy> = {
     cameraHelp: "Autorisez l’accès à la caméra, puis placez le QR code dans le cadre.",
     startCamera: "Ouvrir la caméra",
     stopCamera: "Arrêter la caméra",
-    enterCode: "Ou saisir le code",
-    codePlaceholder: "Coller le code d’association",
-    pairPhone: "Associer le téléphone",
     pairing: "Association en cours…",
     paired: "Téléphone associé",
     pairedDetail: "Ce téléphone est maintenant relié à votre magasin.",
     alreadyPaired: "Ce téléphone est déjà associé",
     checkAgain: "Vérifier la connexion",
-    cameraDenied: "La caméra est indisponible. Vous pouvez saisir le code manuellement.",
+    cameraDenied: "La caméra est indisponible. Autorisez son accès puis réessayez.",
     invalidCode: "Ce code est invalide ou expiré. Créez un nouveau QR code sur l’ordinateur.",
     pairFailed: "Impossible d’associer ce téléphone. Vérifiez la connexion et réessayez.",
+    revoked: "Ce téléphone a été retiré de la boutique. Scannez un nouveau QR code pour l’associer à nouveau.",
     tryAgain: "Réessayer",
     checkingSavedDevice: "Vérification du téléphone…",
   },
@@ -79,17 +73,15 @@ const COPY: Record<Language, Copy> = {
     cameraHelp: "اسمح باستخدام الكاميرا ثم ضع رمز QR داخل الإطار.",
     startCamera: "فتح الكاميرا",
     stopCamera: "إيقاف الكاميرا",
-    enterCode: "أو أدخل الرمز",
-    codePlaceholder: "ألصق رمز الربط",
-    pairPhone: "ربط الهاتف",
     pairing: "جارٍ ربط الهاتف…",
     paired: "تم ربط الهاتف",
     pairedDetail: "أصبح هذا الهاتف مرتبطاً بمتجرك.",
     alreadyPaired: "هذا الهاتف مرتبط بالفعل",
     checkAgain: "التحقق من الاتصال",
-    cameraDenied: "الكاميرا غير متاحة. يمكنك إدخال رمز الربط يدوياً.",
+    cameraDenied: "الكاميرا غير متاحة. اسمح باستخدام الكاميرا ثم حاول مجدداً.",
     invalidCode: "الرمز غير صالح أو انتهت صلاحيته. أنشئ رمز QR جديداً من الكمبيوتر.",
     pairFailed: "تعذر ربط الهاتف. تحقق من الاتصال ثم حاول مجدداً.",
+    revoked: "تمت إزالة هذا الهاتف من المتجر. امسح رمز QR جديداً لإعادة ربطه.",
     tryAgain: "حاول مجدداً",
     checkingSavedDevice: "جارٍ التحقق من الهاتف…",
   },
@@ -131,82 +123,51 @@ async function postFunction<T>(name: string, body: unknown): Promise<T> {
 
 export function MobilePairingApp() {
   const [language, setLanguage] = useState<Language>(getInitialLanguage);
-  const [pairingCode, setPairingCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [cameraActive, setCameraActive] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [paired, setPaired] = useState(false);
   const [checkingSavedDevice, setCheckingSavedDevice] = useState(true);
+  const [checkingDevice, setCheckingDevice] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const scannerRef = useRef<BrowserQRCodeReader | null>(null);
   const stopScannerRef = useRef<(() => void) | null>(null);
   const copy = COPY[language];
   const direction = language === "ar" ? "rtl" : "ltr";
 
-  useEffect(() => {
-    let cancelled = false;
+  const checkSavedDevice = useCallback(async () => {
     const credential = localStorage.getItem(DEVICE_CREDENTIAL_KEY);
     if (!credential) {
       setCheckingSavedDevice(false);
       return;
     }
-    void postFunction<DeviceCheckResponse>("mobile-device-check", { device_credential: credential })
-      .then((result) => {
-        if (!cancelled && result.ok && result.allowed) setPaired(true);
-        if (!result?.allowed) localStorage.removeItem(DEVICE_CREDENTIAL_KEY);
-      })
-      .catch(() => {
-        if (!cancelled) setError(copy.pairFailed);
-      })
-      .finally(() => {
-        if (!cancelled) setCheckingSavedDevice(false);
+    setCheckingDevice(true);
+    try {
+      const result = await postFunction<DeviceCheckResponse>("mobile-device-check", {
+        device_credential: credential,
       });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!cameraActive || !videoRef.current) return;
-    let cancelled = false;
-    const reader = new BrowserQRCodeReader();
-    scannerRef.current = reader;
-    void reader.decodeFromVideoDevice(undefined, videoRef.current, (result, _scanError, controls) => {
-      stopScannerRef.current = () => controls.stop();
-      if (result && !cancelled) {
-        setPairingCode(result.getText().trim());
-        setCameraActive(false);
-        controls.stop();
+      if (result.ok && result.allowed) {
+        setPaired(true);
+      } else {
+        localStorage.removeItem(DEVICE_CREDENTIAL_KEY);
+        setPaired(false);
+        setError(copy.revoked);
       }
-    }).catch(() => {
-      if (!cancelled) {
-        setCameraActive(false);
-        setError(copy.cameraDenied);
-      }
-    });
-    return () => {
-      cancelled = true;
-      stopScannerRef.current?.();
-      stopScannerRef.current = null;
-      scannerRef.current = null;
-    };
-  }, [cameraActive, copy.cameraDenied]);
+    } catch {
+      setError(copy.pairFailed);
+    } finally {
+      setCheckingSavedDevice(false);
+      setCheckingDevice(false);
+    }
+  }, [copy.pairFailed, copy.revoked]);
 
-  const changeLanguage = (next: Language) => {
-    localStorage.setItem("reda-mobile-language", next);
-    setLanguage(next);
-  };
-
-  const submitPairing = async (event: FormEvent) => {
-    event.preventDefault();
-    const token = pairingCode.trim();
+  const submitPairing = useCallback(async (token: string) => {
     if (!token || busy) return;
     setBusy(true);
     setError(null);
     try {
       const result = await postFunction<PairResponse>("mobile-pairing-complete", {
         pairing_token: token,
-        device_name: `${navigator.platform || "Mobile"} phone`,
         platform: /iPad|iPhone|iPod/.test(navigator.userAgent)
           ? "ios"
           : /Android/i.test(navigator.userAgent)
@@ -221,7 +182,7 @@ export function MobilePairingApp() {
       }
       localStorage.setItem(DEVICE_CREDENTIAL_KEY, result.device_credential);
       setPaired(true);
-      setPairingCode("");
+      setError(null);
     } catch (cause) {
       setError(
         cause instanceof Error &&
@@ -232,6 +193,42 @@ export function MobilePairingApp() {
     } finally {
       setBusy(false);
     }
+  }, [busy, copy.invalidCode, copy.pairFailed]);
+
+  useEffect(() => {
+    void checkSavedDevice();
+  }, [checkSavedDevice]);
+
+  useEffect(() => {
+    if (!cameraActive || !videoRef.current) return;
+    let cancelled = false;
+    const reader = new BrowserQRCodeReader();
+    scannerRef.current = reader;
+    void reader.decodeFromVideoDevice(undefined, videoRef.current, (result, _scanError, controls) => {
+      stopScannerRef.current = () => controls.stop();
+      if (result && !cancelled) {
+        const scannedToken = result.getText().trim();
+        setCameraActive(false);
+        controls.stop();
+        void submitPairing(scannedToken);
+      }
+    }).catch(() => {
+      if (!cancelled) {
+        setCameraActive(false);
+        setError(copy.cameraDenied);
+      }
+    });
+    return () => {
+      cancelled = true;
+      stopScannerRef.current?.();
+      stopScannerRef.current = null;
+      scannerRef.current = null;
+    };
+  }, [cameraActive, copy.cameraDenied, submitPairing]);
+
+  const changeLanguage = (next: Language) => {
+    localStorage.setItem("reda-mobile-language", next);
+    setLanguage(next);
   };
 
   return (
@@ -250,7 +247,18 @@ export function MobilePairingApp() {
           {checkingSavedDevice ? (
             <p className="msg"><LoaderCircle className="spin" size={18} /> {copy.checkingSavedDevice}</p>
           ) : paired ? (
-            <p className="msg ok"><Check size={18} /> {copy.pairedDetail}</p>
+            <>
+              <p className="msg ok"><Check size={18} /> {copy.pairedDetail}</p>
+              <button
+                className="btn secondary"
+                type="button"
+                disabled={checkingDevice}
+                onClick={() => void checkSavedDevice()}
+              >
+                {checkingDevice ? <LoaderCircle className="spin" size={18} /> : <RefreshCw size={18} />}
+                {copy.checkAgain}
+              </button>
+            </>
           ) : (
             <>
               <p className="sub scan-help"><ScanLine size={17} /> {copy.cameraHelp}</p>
@@ -261,26 +269,11 @@ export function MobilePairingApp() {
                   <button className="camera-close" type="button" onClick={() => setCameraActive(false)} aria-label={copy.stopCamera}><X size={18} /></button>
                 </div>
               ) : (
-                <button className="btn primary" type="button" onClick={() => { setError(null); setCameraActive(true); }}>
-                  <Camera size={18} /> {copy.startCamera}
+                <button className="btn primary" type="button" disabled={busy} onClick={() => { setError(null); setCameraActive(true); }}>
+                  {busy ? <LoaderCircle className="spin" size={18} /> : <Camera size={18} />}
+                  {busy ? copy.pairing : copy.startCamera}
                 </button>
               )}
-              <p className="sub code-label">{copy.enterCode}</p>
-              <form className="code-form" onSubmit={submitPairing}>
-                <input
-                  autoComplete="off"
-                  autoCapitalize="none"
-                  spellCheck={false}
-                  value={pairingCode}
-                  onChange={(event) => setPairingCode(event.target.value)}
-                  placeholder={copy.codePlaceholder}
-                  aria-label={copy.codePlaceholder}
-                />
-                <button className="btn primary" type="submit" disabled={!pairingCode.trim() || busy}>
-                  {busy ? <LoaderCircle className="spin" size={18} /> : <Smartphone size={18} />}
-                  {busy ? copy.pairing : copy.pairPhone}
-                </button>
-              </form>
               {error ? <p className="msg err" role="alert"><AlertCircle size={17} /> {error}</p> : null}
             </>
           )}

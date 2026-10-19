@@ -33,6 +33,7 @@ h1 { margin: 0 0 6px; font-size: 1.35rem; font-weight: 700; }
 .card { padding: 16px; border: 1px solid var(--line); border-radius: calc(var(--radius) + 6px); background: var(--card); }
 .btn { display: flex; width: 100%; min-height: 48px; justify-content: center; align-items: center; gap: 8px; padding: 14px 16px; border: 0; border-radius: var(--radius); font-size: 1rem; font-weight: 650; text-align: center; cursor: pointer; }
 .primary { color: var(--primary-fg); background: var(--primary); }
+.secondary { margin-top: 10px; border: 1px solid var(--line); color: var(--fg); background: transparent; }
 .btn:disabled { opacity: .55; cursor: not-allowed; }
 .scan-help { display: flex; align-items: flex-start; gap: 8px; }
 .scan-help svg { flex: none; margin-top: 2px; }

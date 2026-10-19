@@ -11,6 +11,10 @@ export type DeviceCheckResult =
       customerPhone?: string | null;
       /** From Supabase `device-check` when `ai_enabled` column is present. */
       aiEnabled?: boolean;
+      /** Mobile pairing entitlement returned by newer licensing Edge Functions. */
+      mobileEnabled?: boolean;
+      /** Maximum paired phones for this customer, when provided by licensing. */
+      mobileDeviceLimit?: number;
       raw?: unknown;
     }
   | {

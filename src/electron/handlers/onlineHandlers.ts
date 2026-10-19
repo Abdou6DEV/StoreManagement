@@ -5,6 +5,7 @@ import path from "path";
 import { finished } from "node:stream/promises";
 import { getMachineGuid } from "../utils/validationKey";
 import { getStoreOnlineConfig, type StoreOnlineConfig } from "../utils/onlineConfig";
+import { getStoreMobileConfig } from "../utils/mobileConfig";
 import {
   clearStoredLicenseGrace,
   persistStoredLicenseGrace,
@@ -14,6 +15,11 @@ import {
 import type { DeviceRequestPayload, DeviceRequestResult } from "../types/deviceRequest";
 import type { DeviceLinkExistingPayload, DeviceLinkExistingResult } from "../types/deviceLinkExisting";
 import type { DeviceCheckResult } from "../types/deviceCheck";
+import type {
+  MobileDeviceListResult,
+  MobileDeviceRevokeResult,
+  MobilePairingCreateResult,
+} from "../types/mobilePairing";
 import { AI_OFFLINE } from "../../lib/ai/aiMessageLimits";
 import { resolvePaidCloudBackupAccess } from "../../lib/license/paidCloudBackupAccess";
 import { resolvePremiumAccess } from "../../lib/license/premiumAccess";
@@ -597,6 +603,8 @@ function parseDeviceCheckJson(json: unknown): {
   customerName?: string | null;
   customerPhone?: string | null;
   aiEnabled?: boolean;
+  mobileEnabled?: boolean;
+  mobileDeviceLimit?: number;
 } | null {
   if (!json || typeof json !== "object") return null;
   const o = json as Record<string, unknown>;
@@ -646,6 +654,15 @@ function parseDeviceCheckJson(json: unknown): {
     aiEnabled = o.ai_enabled === true;
   }
 
+  const mobileEnabled =
+    "mobile_enabled" in o ? o.mobile_enabled === true : undefined;
+  const mobileDeviceLimit =
+    typeof o.mobile_device_limit === "number" &&
+    Number.isInteger(o.mobile_device_limit) &&
+    o.mobile_device_limit >= 0
+      ? o.mobile_device_limit
+      : undefined;
+
   return {
     allowed: o.allowed,
     trialEndsAt,
@@ -654,6 +671,8 @@ function parseDeviceCheckJson(json: unknown): {
     customerName,
     customerPhone,
     aiEnabled,
+    mobileEnabled,
+    mobileDeviceLimit,
   };
 }
 
@@ -728,6 +747,8 @@ async function runDeviceCheckInternal(): Promise<DeviceCheckResult> {
       customerName: parsed.customerName,
       customerPhone: parsed.customerPhone,
       aiEnabled: parsed.aiEnabled,
+      mobileEnabled: parsed.mobileEnabled,
+      mobileDeviceLimit: parsed.mobileDeviceLimit,
       raw: json,
     };
   } catch (e) {
@@ -972,6 +993,228 @@ export function setupOnlineHandlers(): void {
     }
     return result;
   });
+
+  ipcMain.handle(
+    "online:mobilePairingCreate",
+    async (_event, requestedDeviceName: string): Promise<MobilePairingCreateResult> => {
+      const deviceName = (requestedDeviceName ?? "").trim();
+      if (!deviceName || deviceName.length > 60) {
+        return {
+          success: false,
+          error: "Enter a name for this phone (1 to 60 characters).",
+          code: "invalid",
+        };
+      }
+      const check = await runDeviceCheckInternal();
+      if (check.success === false) {
+        return { success: false, error: check.error, code: check.code };
+      }
+      if (!check.allowed || !check.customerId) {
+        return {
+          success: false,
+          error: "This desktop is not licensed for mobile pairing.",
+          code: "not_licensed",
+        };
+      }
+      if (!check.mobileEnabled || (check.mobileDeviceLimit ?? 0) < 1) {
+        return {
+          success: false,
+          error: "Mobile access is turned off for this shop.",
+          code: "mobile_disabled",
+        };
+      }
+
+      const cfg = getStoreMobileConfig();
+      if ("error" in cfg) {
+        return {
+          success: false,
+          error:
+            "Mobile pairing needs STORE_MOBILE_APP_SECRET in the app .env file. Use the same value as MOBILE_DESKTOP_SECRET in Mobile Supabase, then restart the app.",
+          code: "missing_env",
+        };
+      }
+
+      let deviceId: string;
+      try {
+        deviceId = getMachineGuid();
+      } catch (e) {
+        return { success: false, error: (e as Error).message, code: "invalid" };
+      }
+
+      try {
+        const response = await fetch(
+          `${cfg.supabaseUrl}/functions/v1/mobile-pairing-create`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              apikey: cfg.publishableKey,
+              "x-mobile-desktop-secret": cfg.desktopSecret,
+            },
+            body: JSON.stringify({ device_id: deviceId, device_name: deviceName }),
+          },
+        );
+        const responseText = await response.text();
+        let body: unknown;
+        try {
+          body = responseText ? JSON.parse(responseText) : null;
+        } catch {
+          body = null;
+        }
+
+        if (!response.ok) {
+          const error = readEdgeError(body, response.status);
+          const code = error === "mobile_not_enabled" ? "mobile_disabled" : "http";
+          return { success: false, error, code };
+        }
+
+        if (!body || typeof body !== "object") {
+          return {
+            success: false,
+            error: "Invalid mobile pairing response.",
+            code: "edge",
+          };
+        }
+        const result = body as Record<string, unknown>;
+        if (
+          result.ok !== true ||
+          typeof result.pairing_token !== "string" ||
+          typeof result.expires_at !== "string"
+        ) {
+          return {
+            success: false,
+            error: readEdgeError(body, response.status),
+            code: "edge",
+          };
+        }
+
+        return {
+          success: true,
+          token: result.pairing_token,
+          expiresAt: result.expires_at,
+        };
+      } catch (e) {
+        return {
+          success: false,
+          error: (e as Error).message || "Network error",
+          code: "network",
+        };
+      }
+    },
+  );
+
+  ipcMain.handle("online:mobileDeviceList", async (): Promise<MobileDeviceListResult> => {
+    const cfg = getStoreMobileConfig();
+    if ("error" in cfg) {
+      return {
+        success: false,
+        error:
+          "Mobile pairing needs STORE_MOBILE_APP_SECRET in the app .env file. Use the same value as MOBILE_DESKTOP_SECRET in Mobile Supabase, then restart the app.",
+      };
+    }
+
+    let deviceId: string;
+    try {
+      deviceId = getMachineGuid();
+    } catch (e) {
+      return { success: false, error: (e as Error).message };
+    }
+
+    try {
+      const response = await fetch(`${cfg.supabaseUrl}/functions/v1/mobile-device-list`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: cfg.publishableKey,
+          "x-mobile-desktop-secret": cfg.desktopSecret,
+        },
+        body: JSON.stringify({ device_id: deviceId }),
+      });
+      const text = await response.text();
+      let body: unknown;
+      try {
+        body = text ? JSON.parse(text) : null;
+      } catch {
+        body = null;
+      }
+      if (!response.ok) {
+        return { success: false, error: readEdgeError(body, response.status) };
+      }
+      const rows = body && typeof body === "object" ? (body as Record<string, unknown>).devices : null;
+      if (!Array.isArray(rows)) {
+        return { success: false, error: "Invalid mobile device list response." };
+      }
+      const devices = rows.flatMap((row) => {
+        if (!row || typeof row !== "object") return [];
+        const r = row as Record<string, unknown>;
+        if (typeof r.id !== "string" || typeof r.paired_at !== "string") return [];
+        return [
+          {
+            id: r.id,
+            deviceName: typeof r.device_name === "string" ? r.device_name : "",
+            platform: typeof r.platform === "string" ? r.platform : "",
+            pairedAt: r.paired_at,
+            lastSeenAt: typeof r.last_seen_at === "string" ? r.last_seen_at : null,
+            active: r.active === true,
+            revokedAt: typeof r.revoked_at === "string" ? r.revoked_at : null,
+          },
+        ];
+      });
+      return { success: true, devices };
+    } catch (e) {
+      return { success: false, error: (e as Error).message || "Network error" };
+    }
+  });
+
+  ipcMain.handle(
+    "online:mobileDeviceRevoke",
+    async (_event, requestedDeviceId: string): Promise<MobileDeviceRevokeResult> => {
+      const mobileDeviceId = (requestedDeviceId ?? "").trim();
+      if (!mobileDeviceId) return { success: false, error: "Mobile device ID is required." };
+
+      const cfg = getStoreMobileConfig();
+      if ("error" in cfg) {
+        return {
+          success: false,
+          error:
+            "Mobile pairing needs STORE_MOBILE_APP_SECRET in the app .env file. Use the same value as MOBILE_DESKTOP_SECRET in Mobile Supabase, then restart the app.",
+        };
+      }
+
+      let desktopDeviceId: string;
+      try {
+        desktopDeviceId = getMachineGuid();
+      } catch (e) {
+        return { success: false, error: (e as Error).message };
+      }
+
+      try {
+        const response = await fetch(`${cfg.supabaseUrl}/functions/v1/mobile-device-revoke`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            apikey: cfg.publishableKey,
+            "x-mobile-desktop-secret": cfg.desktopSecret,
+          },
+          body: JSON.stringify({
+            desktop_device_id: desktopDeviceId,
+            mobile_device_id: mobileDeviceId,
+          }),
+        });
+        const text = await response.text();
+        let body: unknown;
+        try {
+          body = text ? JSON.parse(text) : null;
+        } catch {
+          body = null;
+        }
+        if (!response.ok) return { success: false, error: readEdgeError(body, response.status) };
+        return { success: true };
+      } catch (e) {
+        return { success: false, error: (e as Error).message || "Network error" };
+      }
+    },
+  );
 
   ipcMain.handle(
     "online:deviceLinkExisting",

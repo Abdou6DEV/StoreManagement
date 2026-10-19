@@ -14,6 +14,11 @@ import type { DeviceRequestPayload, DeviceRequestResult } from "../types/deviceR
 import type { DeviceLinkExistingPayload, DeviceLinkExistingResult } from "../types/deviceLinkExisting";
 import type { DeviceCheckResult } from "../types/deviceCheck";
 import type {
+  MobileDeviceListResult,
+  MobileDeviceRevokeResult,
+  MobilePairingCreateResult,
+} from "../types/mobilePairing";
+import type {
   CloudBackupDownloadResult,
   CloudBackupDownloadToLocalResult,
   CloudBackupTransferProgressPayload,
@@ -526,6 +531,9 @@ export type LicenseGraceSnapshot = {
 
 export type OnlineAPI = {
   deviceCheck: () => Promise<DeviceCheckResult>;
+  mobilePairingCreate: (deviceName: string) => Promise<MobilePairingCreateResult>;
+  mobileDeviceList: () => Promise<MobileDeviceListResult>;
+  mobileDeviceRevoke: (deviceId: string) => Promise<MobileDeviceRevokeResult>;
   deviceRequest: (payload: DeviceRequestPayload) => Promise<DeviceRequestResult>;
   deviceLinkExisting: (payload: DeviceLinkExistingPayload) => Promise<DeviceLinkExistingResult>;
   readLicenseGrace: () => Promise<LicenseGraceSnapshot | null>;

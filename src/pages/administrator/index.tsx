@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router-dom";
-import { FileText, Printer, Users, Settings, Database, Download, Shield } from "lucide-react";
+import { FileText, Printer, Users, Settings, Database, Download, Shield, Smartphone } from "lucide-react";
 import ActivityLogs from "./components/activityLogs";
 import { OptionsList } from "./components/optionsList";
 import { ReceiptConfig } from "./components/receiptConfig";
@@ -9,6 +9,7 @@ import { BackupManagement } from "./components/backupManagement";
 import AccountsManagement from "./components/accountsManagement";
 import UpdateManagement from "./components/updateManagement";
 import { LicenseManagement } from "./components/licenseManagement";
+import { MobileAppManagement } from "./components/mobileAppManagement";
 import { useUpdateContext } from "../../lib/contexts/updateContext";
 import { FadeUp } from "../../lib/components/fadeUp";
 import { cn } from "../../lib/utils";
@@ -31,14 +32,15 @@ export default function AdministratorPage() {
     | "accounts"
     | "backup"
     | "license"
+    | "mobile"
     | "updates"
     | null;
   const subTabFromUrl = searchParams.get("subTab") as string | null;
   const [activeTab, setActiveTab] = useState<
-    "settings" | "receipt" | "logs" | "accounts" | "backup" | "license" | "updates"
+    "settings" | "receipt" | "logs" | "accounts" | "backup" | "license" | "mobile" | "updates"
   >(
     tabFromUrl &&
-      ["settings", "receipt", "logs", "accounts", "backup", "license", "updates"].includes(tabFromUrl)
+      ["settings", "receipt", "logs", "accounts", "backup", "license", "mobile", "updates"].includes(tabFromUrl)
       ? tabFromUrl
       : "settings",
   );
@@ -69,6 +71,7 @@ export default function AdministratorPage() {
     "accounts",
     "backup",
     "license",
+    "mobile",
     "updates",
   ] as const;
 
@@ -198,6 +201,19 @@ export default function AdministratorPage() {
             {t("admin.licenseTab", "License")}
           </div>
         </button>
+        <button
+          onClick={() => selectTab("mobile")}
+          className={`px-4 py-2 font-medium transition-colors ${
+            activeTab === "mobile"
+              ? "border-b-2 border-orange-500 text-orange-600"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <Smartphone className="w-4 h-4" />
+            {t("admin.mobileApp.tab")}
+          </div>
+        </button>
       </div>
 
       {backupTabVisited ? (
@@ -246,6 +262,12 @@ export default function AdministratorPage() {
           {activeTab === "license" && (
             <section className="bg-card border border-border rounded-xl shadow-sm p-6">
               <LicenseManagement />
+            </section>
+          )}
+
+          {activeTab === "mobile" && (
+            <section className="bg-card border border-border rounded-xl shadow-sm p-6">
+              <MobileAppManagement />
             </section>
           )}
         </FadeUp>

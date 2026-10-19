@@ -2,6 +2,11 @@ import { ipcRenderer } from "electron";
 import type { DeviceRequestPayload, DeviceRequestResult } from "../types/deviceRequest";
 import type { DeviceLinkExistingPayload, DeviceLinkExistingResult } from "../types/deviceLinkExisting";
 import type { DeviceCheckResult } from "../types/deviceCheck";
+import type {
+  MobileDeviceListResult,
+  MobileDeviceRevokeResult,
+  MobilePairingCreateResult,
+} from "../types/mobilePairing";
 import type { LicenseGraceSnapshot } from "./types";
 import type {
   CloudBackupDownloadResult,
@@ -18,6 +23,12 @@ import type {
 
 export const onlineAPI = {
   deviceCheck: () => ipcRenderer.invoke("online:deviceCheck") as Promise<DeviceCheckResult>,
+  mobilePairingCreate: (deviceName: string) =>
+    ipcRenderer.invoke("online:mobilePairingCreate", deviceName) as Promise<MobilePairingCreateResult>,
+  mobileDeviceList: () =>
+    ipcRenderer.invoke("online:mobileDeviceList") as Promise<MobileDeviceListResult>,
+  mobileDeviceRevoke: (deviceId: string) =>
+    ipcRenderer.invoke("online:mobileDeviceRevoke", deviceId) as Promise<MobileDeviceRevokeResult>,
   deviceRequest: (payload: DeviceRequestPayload) =>
     ipcRenderer.invoke("online:deviceRequest", payload) as Promise<DeviceRequestResult>,
   deviceLinkExisting: (payload: DeviceLinkExistingPayload) =>
