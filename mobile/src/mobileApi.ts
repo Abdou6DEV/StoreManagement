@@ -212,7 +212,7 @@ export async function logoutMobile(sessionCode: string): Promise<void> {
   if (!response.ok) {
     throw new MobileApiError("logout_failed", response.status);
   }
-  const result: unknown = await response.json().catch(() => null);
+  const result: unknown = await response.json().catch((): null => null);
   if (!isRecord(result) || result.ok !== true) {
     throw new MobileApiError("logout_failed", response.status);
   }

@@ -117,7 +117,7 @@ async function postFunction<T>(name: string, body: unknown): Promise<T> {
     },
     body: JSON.stringify(body),
   });
-  const result = await response.json().catch(() => null) as T | null;
+  const result = await response.json().catch((): null => null) as T | null;
   if (!response.ok || !result) {
     const functionError =
       result && typeof result === "object" && "error" in result && typeof result.error === "string"
