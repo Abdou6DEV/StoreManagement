@@ -24,6 +24,8 @@ export type MobileUser = {
 
 export type MobileBundle = {
   dashboard_daily: MobileRow[];
+  categories_available: boolean;
+  categories: MobileRow[];
   products: MobileRow[];
   clients: MobileRow[];
   payments: MobileRow[];
@@ -31,6 +33,9 @@ export type MobileBundle = {
   bills: MobileRow[];
   bill_payments: MobileRow[];
   services: MobileRow[];
+  sales: MobileRow[];
+  sale_items: MobileRow[];
+  sales_history_available: boolean;
 };
 
 export type MobileSessionResponse = {
@@ -113,8 +118,13 @@ function validateSessionResponse(value: unknown): MobileSessionResponse {
     role: value.user.role,
     permissions: value.user.permissions,
   };
+  const categoriesAvailable = Array.isArray(value.data.categories);
+  const salesHistoryAvailable =
+    Array.isArray(value.data.sales) && Array.isArray(value.data.sale_items);
   const data: MobileBundle = {
     dashboard_daily: rows(value.data.dashboard_daily),
+    categories_available: categoriesAvailable,
+    categories: rows(categoriesAvailable ? value.data.categories : []),
     products: rows(value.data.products),
     clients: rows(value.data.clients),
     payments: rows(value.data.payments),
@@ -122,6 +132,11 @@ function validateSessionResponse(value: unknown): MobileSessionResponse {
     bills: rows(value.data.bills),
     bill_payments: rows(value.data.bill_payments),
     services: rows(value.data.services),
+    sales: rows(Array.isArray(value.data.sales) ? value.data.sales : []),
+    sale_items: rows(
+      Array.isArray(value.data.sale_items) ? value.data.sale_items : [],
+    ),
+    sales_history_available: salesHistoryAvailable,
   };
   if (
     (value.session_code !== undefined && typeof value.session_code !== "string") ||

@@ -68,6 +68,11 @@ type Copy = {
   welcome: string;
   noPermission: string;
   salesHistoryNote: string;
+  salesHistoryUnavailable: string;
+  categories: string;
+  categoriesUnavailable: string;
+  saleItems: string;
+  sale: string;
   recentDays: string;
   revenue: string;
   sales: string;
@@ -111,7 +116,14 @@ const COPY: Record<MobileLanguage, Copy> = {
     welcome: "Choose a section to view your store.",
     noPermission: "You don't have permission to view this section.",
     salesHistoryNote:
-      "The API provides payment records, but does not return sales or sale items yet.",
+      "Sales, items, and payments are shown as read-only records.",
+    salesHistoryUnavailable:
+      "Sales history is not available from this server yet. Payments remain available.",
+    categories: "Categories",
+    categoriesUnavailable:
+      "Categories are not available from this server yet.",
+    saleItems: "Sale items",
+    sale: "Sale",
     recentDays: "Daily summary",
     revenue: "Revenue",
     sales: "Sales",
@@ -166,6 +178,9 @@ const COPY: Record<MobileLanguage, Copy> = {
       updated_at: "Updated",
       description: "Description",
       category_name: "Category",
+      total_amount_with_discount: "Total after discount",
+      total_profit: "Profit",
+      source_created_at: "Created",
       customer_name: "Client",
       client_name: "Client",
       device_name: "Device",
@@ -205,7 +220,14 @@ const COPY: Record<MobileLanguage, Copy> = {
     welcome: "Choisissez une section de votre magasin.",
     noPermission: "Vous n’avez pas accès à cette section.",
     salesHistoryNote:
-      "L’API fournit les paiements, mais pas encore les ventes ni leurs articles.",
+      "Les ventes, articles et paiements sont affichés en lecture seule.",
+    salesHistoryUnavailable:
+      "L’historique des ventes n’est pas encore disponible sur ce serveur. Les paiements restent accessibles.",
+    categories: "Catégories",
+    categoriesUnavailable:
+      "Les catégories ne sont pas encore disponibles sur ce serveur.",
+    saleItems: "Articles vendus",
+    sale: "Vente",
     recentDays: "Résumé quotidien",
     revenue: "Chiffre d’affaires",
     sales: "Ventes",
@@ -260,6 +282,9 @@ const COPY: Record<MobileLanguage, Copy> = {
       updated_at: "Modifié",
       description: "Description",
       category_name: "Catégorie",
+      total_amount_with_discount: "Total après remise",
+      total_profit: "Bénéfice",
+      source_created_at: "Créé",
       customer_name: "Client",
       client_name: "Client",
       device_name: "Appareil",
@@ -298,7 +323,13 @@ const COPY: Record<MobileLanguage, Copy> = {
     lastUpdated: "آخر تحديث",
     welcome: "اختر قسماً لعرض بيانات متجرك.",
     noPermission: "ليست لديك صلاحية لعرض هذا القسم.",
-    salesHistoryNote: "توفر الواجهة سجلات الدفع، لكنها لا تعرض المبيعات أو عناصرها بعد.",
+    salesHistoryNote: "تُعرض المبيعات والعناصر والمدفوعات للقراءة فقط.",
+    salesHistoryUnavailable:
+      "سجل المبيعات غير متاح على هذا الخادم بعد. تبقى المدفوعات متاحة.",
+    categories: "الفئات",
+    categoriesUnavailable: "الفئات غير متاحة على هذا الخادم بعد.",
+    saleItems: "عناصر المبيعات",
+    sale: "بيع",
     recentDays: "الملخص اليومي",
     revenue: "الإيرادات",
     sales: "المبيعات",
@@ -353,6 +384,9 @@ const COPY: Record<MobileLanguage, Copy> = {
       updated_at: "تاريخ التحديث",
       description: "الوصف",
       category_name: "الفئة",
+      total_amount_with_discount: "الإجمالي بعد الخصم",
+      total_profit: "الربح",
+      source_created_at: "تاريخ الإنشاء",
       customer_name: "العميل",
       client_name: "العميل",
       device_name: "الجهاز",
@@ -618,15 +652,55 @@ function SectionContent({
     return <Dashboard rows={data.dashboard_daily} language={language} copy={copy} />;
   }
   if (section === "stock") {
-    return <RecordList rows={data.products} language={language} copy={copy} query={query} />;
+    return (
+      <>
+        <section className="mobile-subsection">
+          <h2>{copy.categories}</h2>
+          {!data.categories_available ? (
+            <div className="mobile-notice">
+              <AlertCircle size={18} />
+              <span>{copy.categoriesUnavailable}</span>
+            </div>
+          ) : null}
+          <RecordList rows={data.categories} language={language} copy={copy} query={query} />
+        </section>
+        <section className="mobile-subsection">
+          <h2>{copy.stock}</h2>
+          <RecordList rows={data.products} language={language} copy={copy} query={query} />
+        </section>
+      </>
+    );
   }
   if (section === "clients") {
     return <RecordList rows={data.clients} language={language} copy={copy} query={query} />;
   }
   if (section === "history") {
+    const saleRows = data.sales.map((row, index) => ({
+      ...row,
+      name: `${copy.sale} ${index + 1}`,
+    }));
+    const saleItemRows = data.sale_items.map((row, index) => ({
+      ...row,
+      name: `${copy.saleItems} ${index + 1}`,
+    }));
     return (
       <>
-        <div className="mobile-notice"><AlertCircle size={18} /><span>{copy.salesHistoryNote}</span></div>
+        <div className="mobile-notice">
+          <AlertCircle size={18} />
+          <span>
+            {data.sales_history_available
+              ? copy.salesHistoryNote
+              : copy.salesHistoryUnavailable}
+          </span>
+        </div>
+        <section className="mobile-subsection">
+          <h2>{copy.sales}</h2>
+          <RecordList rows={saleRows} language={language} copy={copy} query={query} />
+        </section>
+        <section className="mobile-subsection">
+          <h2>{copy.saleItems}</h2>
+          <RecordList rows={saleItemRows} language={language} copy={copy} query={query} />
+        </section>
         <section className="mobile-subsection">
           <h2>{copy.paymentRecords}</h2>
           <RecordList rows={data.payments} language={language} copy={copy} query={query} />
