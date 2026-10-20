@@ -117,6 +117,9 @@ async function readBundle(
   customerId: string,
   permissions: PermissionSet,
 ) {
+  const dashboardCutoff = new Date();
+  dashboardCutoff.setUTCDate(dashboardCutoff.getUTCDate() - 364);
+  const dashboardStartDay = dashboardCutoff.toISOString().slice(0, 10);
   const [
     daily,
     categories,
@@ -134,8 +137,8 @@ async function readBundle(
       ? db.from("pos_dashboard_daily").select(
         "local_day,sales_count,revenue,profit,total_items,bill_payments",
       )
-        .eq("customer_id", customerId).order("local_day", { ascending: false })
-        .limit(120)
+        .eq("customer_id", customerId).gte("local_day", dashboardStartDay)
+        .order("local_day", { ascending: false }).limit(365)
       : Promise.resolve({ data: [], error: null }),
     permissions.can_access_stock
       ? readRows(db, "pos_categories", customerId, "name", 2000)

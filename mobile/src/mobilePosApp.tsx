@@ -595,11 +595,11 @@ function Dashboard({
   language: MobileLanguage;
   copy: Copy;
 }) {
-  const recent = [...rows].sort((a, b) =>
+  const history = [...rows].sort((a, b) =>
     String(b.local_day ?? "").localeCompare(String(a.local_day ?? "")),
-  ).slice(0, 7);
-  if (recent.length === 0) return <p className="mobile-empty">{copy.empty}</p>;
-  const totals = recent.reduce<{ revenue: number; sales: number; profit: number; items: number }>(
+  ).slice(0, 365);
+  if (history.length === 0) return <p className="mobile-empty">{copy.empty}</p>;
+  const totals = history.slice(0, 7).reduce<{ revenue: number; sales: number; profit: number; items: number }>(
     (result, row) => ({
       revenue: result.revenue + (Number(row.revenue) || 0),
       sales: result.sales + (Number(row.sales_count) || 0),
@@ -629,7 +629,7 @@ function Dashboard({
       </div>
       <section className="mobile-subsection">
         <h2>{copy.recentDays}</h2>
-        <RecordList rows={recent} language={language} copy={copy} query="" />
+        <RecordList rows={history} language={language} copy={copy} query="" />
       </section>
     </>
   );
