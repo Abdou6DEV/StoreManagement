@@ -1,6 +1,7 @@
 import path from "path";
 import { app } from "electron";
 import logger from "../logger";
+import { notifyMobileSyncChange } from "../../electron/utils/mobileSyncEvents";
 
 const isDev = process.env.NODE_ENV === "development";
 const dbPath = isDev
@@ -8,10 +9,36 @@ const dbPath = isDev
   : path.join(app.getPath("userData"), "store_management.db");
 
 // Global variables for Prisma
-let PrismaClientClass: typeof import("@prisma/client").PrismaClient | null = null;
 let prismaClientInstance: import("@prisma/client").PrismaClient | null = null;
+let trackedPrismaClient:
+  | ReturnType<import("@prisma/client").PrismaClient["$extends"]>
+  | null = null;
 let isInitialized = false;
 let initializationPromise: Promise<import("@prisma/client").PrismaClient> | null = null;
+
+const MOBILE_SYNC_MODELS = new Set([
+  "User",
+  "UserPermissions",
+  "Category",
+  "Product",
+  "Client",
+  "Service",
+  "ServiceAppointment",
+  "Sale",
+  "SaleItem",
+  "Payment",
+  "Bill",
+  "BillPayment",
+]);
+const MOBILE_SYNC_MUTATIONS = new Set([
+  "create",
+  "createMany",
+  "update",
+  "updateMany",
+  "upsert",
+  "delete",
+  "deleteMany",
+]);
 
 // Manual table creation as fallback
 async function createTablesManually(client: any) {
@@ -545,13 +572,14 @@ async function initializePrismaClient() {
       const moduleName = "@prisma/client";
       // eslint-disable-next-line @typescript-eslint/no-var-requires
       const prismaModule = require(moduleName);
-      PrismaClientClass = prismaModule.PrismaClient;
+      const PrismaClientConstructor: typeof import("@prisma/client").PrismaClient =
+        prismaModule.PrismaClient;
       
       // Create the instance
       const databaseUrl = `file:${dbPath}`;
       console.log("🔍 Database URL:", databaseUrl);
       
-      prismaClientInstance = new PrismaClientClass({
+      prismaClientInstance = new PrismaClientConstructor({
         datasources: {
           db: {
             url: databaseUrl,
@@ -566,6 +594,30 @@ async function initializePrismaClient() {
       // Initialize the database schema if needed
       console.log("🔍 Initializing database...");
       await initializeDatabase();
+      trackedPrismaClient = prismaClientInstance.$extends({
+        name: "mobile-sync-change-tracking",
+        query: {
+          $allModels: {
+            async $allOperations({ model, operation, args, query }) {
+              const result = await query(args);
+              const normalizedModel = model
+                ? `${model.charAt(0).toUpperCase()}${model.slice(1)}`
+                : "";
+              if (
+                MOBILE_SYNC_MODELS.has(normalizedModel) &&
+                MOBILE_SYNC_MUTATIONS.has(operation)
+              ) {
+                notifyMobileSyncChange({
+                  model: normalizedModel,
+                  action: operation,
+                  transactional: true,
+                });
+              }
+              return result;
+            },
+          },
+        },
+      });
       console.log("✅ Database initialization complete");
       
       isInitialized = true;
@@ -588,7 +640,7 @@ export const getPrisma = () => {
   if (!prismaClientInstance || !isInitialized) {
     throw new Error("Prisma client not initialized yet. Use await prismaPromise first.");
   }
-  return prismaClientInstance;
+  return prisma;
 };
 
 // For backward compatibility, export prisma as a getter
@@ -597,7 +649,7 @@ export const prisma = new Proxy({} as import("@prisma/client").PrismaClient, {
     if (!prismaClientInstance || !isInitialized) {
       throw new Error("Prisma client not initialized yet. Use await prismaPromise first.");
     }
-    return (prismaClientInstance as import("@prisma/client").PrismaClient)[prop as keyof import("@prisma/client").PrismaClient];
+    return Reflect.get(trackedPrismaClient ?? prismaClientInstance, prop);
   }
 });
 

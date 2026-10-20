@@ -4,6 +4,7 @@ import fs from "fs";
 import path from "path";
 import { prisma } from "../../lib/database/prismaClient";
 import logger from "../../lib/logger";
+import { notifyMobileSyncChange } from "../utils/mobileSyncEvents";
 import { getOption, setOption } from "../../lib/database/options";
 import { createActivityLog } from "../../lib/database/activityLogs";
 import { ACTIVITY_LOG_LAST_USERNAME_KEY } from "../../lib/activityLog/constants";
@@ -753,6 +754,11 @@ const restoreBackup = async (backupPath: string) => {
       backupPath,
       targetPath,
       safetyBackup: tempBackupPath
+    });
+    notifyMobileSyncChange({
+      model: "Database",
+      action: "restore",
+      transactional: false,
     });
     
     return {

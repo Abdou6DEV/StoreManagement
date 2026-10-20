@@ -19,6 +19,10 @@ import type {
   MobilePairingCreateResult,
 } from "../types/mobilePairing";
 import type {
+  MobileSyncNowResult,
+  MobileSyncStatus,
+} from "../types/mobileSync";
+import type {
   CloudBackupDownloadResult,
   CloudBackupDownloadToLocalResult,
   CloudBackupTransferProgressPayload,
@@ -534,6 +538,11 @@ export type OnlineAPI = {
   mobilePairingCreate: (deviceName: string) => Promise<MobilePairingCreateResult>;
   mobileDeviceList: () => Promise<MobileDeviceListResult>;
   mobileDeviceRevoke: (deviceId: string) => Promise<MobileDeviceRevokeResult>;
+  mobileSyncStatus: () => Promise<MobileSyncStatus>;
+  mobileSyncNow: () => Promise<MobileSyncNowResult>;
+  onMobileSyncStatusChanged: (
+    callback: (status: MobileSyncStatus) => void,
+  ) => () => void;
   deviceRequest: (payload: DeviceRequestPayload) => Promise<DeviceRequestResult>;
   deviceLinkExisting: (payload: DeviceLinkExistingPayload) => Promise<DeviceLinkExistingResult>;
   readLicenseGrace: () => Promise<LicenseGraceSnapshot | null>;

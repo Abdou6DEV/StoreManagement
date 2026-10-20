@@ -7,6 +7,10 @@ import type {
   MobileDeviceRevokeResult,
   MobilePairingCreateResult,
 } from "../types/mobilePairing";
+import type {
+  MobileSyncNowResult,
+  MobileSyncStatus,
+} from "../types/mobileSync";
 import type { LicenseGraceSnapshot } from "./types";
 import type {
   CloudBackupDownloadResult,
@@ -29,6 +33,17 @@ export const onlineAPI = {
     ipcRenderer.invoke("online:mobileDeviceList") as Promise<MobileDeviceListResult>,
   mobileDeviceRevoke: (deviceId: string) =>
     ipcRenderer.invoke("online:mobileDeviceRevoke", deviceId) as Promise<MobileDeviceRevokeResult>,
+  mobileSyncStatus: () =>
+    ipcRenderer.invoke("online:mobileSyncStatus") as Promise<MobileSyncStatus>,
+  mobileSyncNow: () =>
+    ipcRenderer.invoke("online:mobileSyncNow") as Promise<MobileSyncNowResult>,
+  onMobileSyncStatusChanged: (callback: (status: MobileSyncStatus) => void) => {
+    const handler = (_event: unknown, status: MobileSyncStatus) => callback(status);
+    ipcRenderer.on("online:mobileSyncStatusChanged", handler);
+    return () => {
+      ipcRenderer.removeListener("online:mobileSyncStatusChanged", handler);
+    };
+  },
   deviceRequest: (payload: DeviceRequestPayload) =>
     ipcRenderer.invoke("online:deviceRequest", payload) as Promise<DeviceRequestResult>,
   deviceLinkExisting: (payload: DeviceLinkExistingPayload) =>

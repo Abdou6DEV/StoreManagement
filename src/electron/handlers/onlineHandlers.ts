@@ -5,7 +5,15 @@ import path from "path";
 import { finished } from "node:stream/promises";
 import { getMachineGuid } from "../utils/validationKey";
 import { getStoreOnlineConfig, type StoreOnlineConfig } from "../utils/onlineConfig";
-import { getStoreMobileConfig } from "../utils/mobileConfig";
+import {
+  getStoreMobileConfig,
+  type StoreMobileConfig,
+} from "../utils/mobileConfig";
+import { onMobileSyncChange } from "../utils/mobileSyncEvents";
+import { prisma, prismaPromise } from "../../lib/database/prismaClient";
+import { buildMobileSyncSnapshot } from "../utils/mobileSnapshot";
+import type { MobileSyncNowResult, MobileSyncStatus } from "../types/mobileSync";
+import { getOption, setOption } from "../../lib/database/options";
 import {
   clearStoredLicenseGrace,
   persistStoredLicenseGrace,
@@ -23,6 +31,7 @@ import type {
 import { AI_OFFLINE } from "../../lib/ai/aiMessageLimits";
 import { resolvePaidCloudBackupAccess } from "../../lib/license/paidCloudBackupAccess";
 import { resolvePremiumAccess } from "../../lib/license/premiumAccess";
+import logger from "../../lib/logger";
 import type {
   AiConsumeEntitlementError,
   AiConsumeResult,
@@ -74,6 +83,246 @@ function backupUploadUrl(base: string): string {
 
 function backupDownloadUrl(base: string): string {
   return `${base}/functions/v1/backup-download-latest`;
+}
+
+function mobileSyncIngestUrl(base: string): string {
+  return `${base}/functions/v1/mobile-sync-ingest`;
+}
+
+const MOBILE_SYNC_DEBOUNCE_MS = 2_000;
+const MOBILE_SYNC_TRANSACTION_DEBOUNCE_MS = 5_000;
+const MOBILE_SYNC_INITIAL_RETRY_MS = 5_000;
+const MOBILE_SYNC_MAX_RETRY_MS = 5 * 60_000;
+const MOBILE_SYNC_LAST_SUCCESS_OPTION = "mobile_sync_last_success_at";
+
+let mobileSyncTimer: ReturnType<typeof setTimeout> | null = null;
+let mobileSyncInFlight: Promise<boolean> | null = null;
+let mobileSyncPending = false;
+let mobileSyncInProgress = false;
+let mobileSyncRetryAttempt = 0;
+let mobileSyncEligible: boolean | null = null;
+let mobileSyncLastSuccessAt: string | null = null;
+let mobileSyncLastError: string | null = null;
+
+function getMobileSyncStatus(): MobileSyncStatus {
+  return {
+    inProgress: mobileSyncInProgress,
+    pending: mobileSyncPending || mobileSyncTimer !== null,
+    lastSuccessAt: mobileSyncLastSuccessAt,
+    lastError: mobileSyncLastError,
+  };
+}
+
+function publishMobileSyncStatus(): void {
+  broadcastToAllApps("online:mobileSyncStatusChanged", getMobileSyncStatus());
+}
+
+function scheduleMobileSnapshotSync(delayMs = MOBILE_SYNC_DEBOUNCE_MS): void {
+  if (mobileSyncEligible === false) {
+    mobileSyncPending = false;
+    publishMobileSyncStatus();
+    return;
+  }
+  mobileSyncPending = true;
+  if (mobileSyncTimer) clearTimeout(mobileSyncTimer);
+  mobileSyncTimer = setTimeout(() => {
+    mobileSyncTimer = null;
+    void syncMobileSnapshotNow();
+  }, delayMs);
+  publishMobileSyncStatus();
+}
+
+async function uploadMobileSnapshot(
+  config: StoreMobileConfig,
+  deviceId: string,
+  customerId: string,
+): Promise<void> {
+  await prismaPromise;
+  const snapshot = await buildMobileSyncSnapshot(prisma, customerId);
+  const snapshotLimits: Record<string, number> = {
+    users: 10_000,
+    permissions: 10_000,
+    categories: 10_000,
+    products: 10_000,
+    clients: 10_000,
+    services: 10_000,
+    service_appointments: 10_000,
+    sales: 10_000,
+    sale_items: 10_000,
+    payments: 10_000,
+    bills: 10_000,
+    bill_payments: 10_000,
+    dashboard_daily: 5_000,
+  };
+  for (const [table, rows] of Object.entries(snapshot)) {
+    if (rows.length > snapshotLimits[table]) {
+      throw new Error(`The initial mobile sync exceeds the supported ${table} record limit.`);
+    }
+  }
+
+  const response = await fetch(mobileSyncIngestUrl(config.supabaseUrl), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      apikey: config.publishableKey,
+      "x-mobile-desktop-secret": config.desktopSecret,
+    },
+    body: JSON.stringify({ device_id: deviceId, snapshot }),
+    signal: AbortSignal.timeout(120_000),
+  });
+
+  const responseText = await response.text();
+  let payload: unknown;
+  try {
+    payload = responseText ? JSON.parse(responseText) : null;
+  } catch {
+    payload = null;
+  }
+  if (!response.ok || !payload || typeof payload !== "object") {
+    throw new Error("The mobile data sync request failed.");
+  }
+
+  const result = payload as Record<string, unknown>;
+  const counts =
+    result.counts && typeof result.counts === "object"
+      ? (result.counts as Record<string, unknown>)
+      : null;
+  if (result.ok !== true || typeof result.synced_at !== "string" || !counts) {
+    throw new Error("The mobile data sync was not confirmed by the server.");
+  }
+
+  const expectedCounts: Record<string, number> = {
+    users: snapshot.users.length,
+    permissions: snapshot.permissions.length,
+    categories: snapshot.categories.length,
+    products: snapshot.products.length,
+    clients: snapshot.clients.length,
+    services: snapshot.services.length,
+    service_appointments: snapshot.service_appointments.length,
+    sales: snapshot.sales.length,
+    sale_items: snapshot.sale_items.length,
+    payments: snapshot.payments.length,
+    bills: snapshot.bills.length,
+    bill_payments: snapshot.bill_payments.length,
+  };
+  for (const [table, expected] of Object.entries(expectedCounts)) {
+    if (counts[table] !== expected) {
+      throw new Error("The mobile data sync did not confirm every desktop record.");
+    }
+  }
+  if (
+    counts.dashboard_daily !== undefined &&
+    counts.dashboard_daily !== snapshot.dashboard_daily.length
+  ) {
+    throw new Error("The mobile data sync did not confirm dashboard aggregates.");
+  }
+  if (expectedCounts.users < 1) {
+    throw new Error("No desktop users were confirmed in the mobile data sync.");
+  }
+}
+
+async function syncCurrentMobileSnapshot(): Promise<boolean> {
+  const check = await runDeviceCheckInternal();
+  if (!check.success) throw new Error("Could not verify mobile sync authorization.");
+  if (
+    !check.allowed ||
+    !check.customerId ||
+    !check.mobileEnabled ||
+    (check.mobileDeviceLimit ?? 0) < 1
+  ) {
+    mobileSyncEligible = false;
+    mobileSyncPending = false;
+    mobileSyncLastError = null;
+    return false;
+  }
+  mobileSyncEligible = true;
+
+  const config = getStoreMobileConfig();
+  if ("error" in config) throw new Error(config.error);
+  const deviceId = getMachineGuid();
+  const customerId = await syncOnlineCustomerIdFromServer(check.customerId);
+  if (!customerId || customerId !== check.customerId) {
+    throw new Error("The licensed shop identity could not be confirmed for mobile sync.");
+  }
+  await uploadMobileSnapshot(config, deviceId, customerId);
+  return true;
+}
+
+async function syncMobileSnapshotNow(
+  upload: () => Promise<boolean> = syncCurrentMobileSnapshot,
+): Promise<boolean> {
+  if (mobileSyncTimer) {
+    clearTimeout(mobileSyncTimer);
+    mobileSyncTimer = null;
+  }
+  if (mobileSyncInFlight) {
+    mobileSyncPending = true;
+    const previousResult = await mobileSyncInFlight;
+    if (!previousResult) return false;
+    return syncMobileSnapshotNow(upload);
+  }
+
+  mobileSyncPending = false;
+  mobileSyncInProgress = true;
+  publishMobileSyncStatus();
+  const operation = (async (): Promise<boolean> => {
+    try {
+      const synced = await upload();
+      mobileSyncPending = false;
+      if (synced) {
+        const lastSuccessAt = new Date().toISOString();
+        await setOption(MOBILE_SYNC_LAST_SUCCESS_OPTION, lastSuccessAt);
+        mobileSyncLastSuccessAt = lastSuccessAt;
+        mobileSyncLastError = null;
+        mobileSyncRetryAttempt = 0;
+      }
+      return synced;
+    } catch {
+      mobileSyncPending = true;
+      mobileSyncRetryAttempt += 1;
+      mobileSyncLastError = "Mobile sync failed. It will retry automatically.";
+      logger.warn("Mobile data sync failed; retry scheduled.", "Mobile Sync");
+      const delay = Math.min(
+        MOBILE_SYNC_INITIAL_RETRY_MS *
+          2 ** Math.min(mobileSyncRetryAttempt - 1, 10),
+        MOBILE_SYNC_MAX_RETRY_MS,
+      );
+      scheduleMobileSnapshotSync(delay);
+      return false;
+    }
+  })();
+
+  mobileSyncInFlight = operation;
+  const result = await operation;
+  mobileSyncInFlight = null;
+  mobileSyncInProgress = false;
+  publishMobileSyncStatus();
+  if (mobileSyncPending && !mobileSyncTimer) {
+    scheduleMobileSnapshotSync(MOBILE_SYNC_DEBOUNCE_MS);
+  }
+  return result;
+}
+
+function updateMobileSyncEligibility(check: DeviceCheckResult): void {
+  if (!check.success) {
+    mobileSyncEligible = null;
+    scheduleMobileSnapshotSync(MOBILE_SYNC_INITIAL_RETRY_MS);
+    return;
+  }
+  mobileSyncEligible =
+    check.allowed === true &&
+    check.mobileEnabled === true &&
+    (check.mobileDeviceLimit ?? 0) > 0;
+  if (mobileSyncEligible) {
+    scheduleMobileSnapshotSync(0);
+  } else {
+    mobileSyncPending = false;
+    if (mobileSyncTimer) {
+      clearTimeout(mobileSyncTimer);
+      mobileSyncTimer = null;
+    }
+    publishMobileSyncStatus();
+  }
 }
 
 function onlineAuthedHeaders(cfg: StoreOnlineConfig): Record<string, string> {
@@ -986,13 +1235,51 @@ export async function runAiQuotaPeekInternal(): Promise<AiConsumeResult> {
 }
 
 export function setupOnlineHandlers(): void {
+  void getOption(MOBILE_SYNC_LAST_SUCCESS_OPTION).then((lastSuccessAt) => {
+    if (lastSuccessAt && Number.isFinite(Date.parse(lastSuccessAt))) {
+      mobileSyncLastSuccessAt = lastSuccessAt;
+      publishMobileSyncStatus();
+    }
+  });
+  onMobileSyncChange((change) => {
+    scheduleMobileSnapshotSync(
+      change.transactional
+        ? MOBILE_SYNC_TRANSACTION_DEBOUNCE_MS
+        : MOBILE_SYNC_DEBOUNCE_MS,
+    );
+  });
+  void runDeviceCheckInternal().then(updateMobileSyncEligibility).catch(() => {
+    scheduleMobileSnapshotSync(MOBILE_SYNC_INITIAL_RETRY_MS);
+  });
+
   ipcMain.handle("online:deviceCheck", async (): Promise<DeviceCheckResult> => {
     const result = await runDeviceCheckInternal();
+    updateMobileSyncEligibility(result);
     if (result.success === true && result.customerId?.trim()) {
       await syncOnlineCustomerIdFromServer(result.customerId);
     }
     return result;
   });
+
+  ipcMain.handle("online:mobileSyncStatus", (): MobileSyncStatus => {
+    return getMobileSyncStatus();
+  });
+
+  ipcMain.handle(
+    "online:mobileSyncNow",
+    async (): Promise<MobileSyncNowResult> => {
+      const success = await syncMobileSnapshotNow();
+      const status = getMobileSyncStatus();
+      if (success) return { success: true, status };
+      return {
+        success: false,
+        error:
+          status.lastError ??
+          "Mobile access is not enabled for this shop. Check the mobile license first.",
+        status,
+      };
+    },
+  );
 
   ipcMain.handle(
     "online:mobilePairingCreate",
@@ -1023,6 +1310,8 @@ export function setupOnlineHandlers(): void {
           code: "mobile_disabled",
         };
       }
+      mobileSyncEligible = true;
+      const customerId = check.customerId;
 
       const cfg = getStoreMobileConfig();
       if ("error" in cfg) {
@@ -1039,6 +1328,21 @@ export function setupOnlineHandlers(): void {
         deviceId = getMachineGuid();
       } catch (e) {
         return { success: false, error: (e as Error).message, code: "invalid" };
+      }
+
+      try {
+        const synced = await syncMobileSnapshotNow(async () => {
+          await uploadMobileSnapshot(cfg, deviceId, customerId);
+          return true;
+        });
+        if (!synced) throw new Error("The initial mobile snapshot was not confirmed.");
+      } catch {
+        return {
+          success: false,
+          error:
+            "Initial mobile data sync failed or was not confirmed. No pairing QR was issued. Check the connection and retry.",
+          code: "edge",
+        };
       }
 
       try {
@@ -1093,10 +1397,10 @@ export function setupOnlineHandlers(): void {
           token: result.pairing_token,
           expiresAt: result.expires_at,
         };
-      } catch (e) {
+      } catch {
         return {
           success: false,
-          error: (e as Error).message || "Network error",
+          error: "Could not create the mobile pairing code. Check the connection and retry.",
           code: "network",
         };
       }
