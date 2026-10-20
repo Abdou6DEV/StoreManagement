@@ -1,13 +1,24 @@
-import { corsHeaders, json, mobileAdminClient, randomToken, sha256Hex, checkLicensingDesktop } from "../_shared/licensing.ts";
+import {
+  checkLicensingDesktop,
+  corsHeaders,
+  json,
+  mobileAdminClient,
+  randomToken,
+  sha256Hex,
+} from "../_shared/licensing.ts";
 
 Deno.serve(async (req) => {
   const cors = corsHeaders(req);
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
-  if (req.method !== "POST") return json(405, { ok: false, error: "method_not_allowed" }, cors);
+  if (req.method !== "POST") {
+    return json(405, { ok: false, error: "method_not_allowed" }, cors);
+  }
 
   const expected = Deno.env.get("MOBILE_DESKTOP_SECRET") ?? "";
   const provided = req.headers.get("x-mobile-desktop-secret") ?? "";
-  if (!expected || provided !== expected) return json(401, { ok: false, error: "unauthorized" }, cors);
+  if (!expected || provided !== expected) {
+    return json(401, { ok: false, error: "unauthorized" }, cors);
+  }
 
   let body: { device_id?: string; device_name?: string };
   try {
@@ -17,7 +28,10 @@ Deno.serve(async (req) => {
   }
   const desktopDeviceId = (body.device_id ?? "").trim();
   const deviceName = (body.device_name ?? "").trim();
-  if (!desktopDeviceId || desktopDeviceId.length > 256 || !deviceName || deviceName.length > 60) {
+  if (
+    !desktopDeviceId || desktopDeviceId.length > 256 || !deviceName ||
+    deviceName.length > 60
+  ) {
     return json(400, { ok: false, error: "device_id_required" }, cors);
   }
 
@@ -37,8 +51,19 @@ Deno.serve(async (req) => {
 
   const token = randomToken();
   const tokenHash = await sha256Hex(token);
-  const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
+  const now = new Date();
+  const nowIso = now.toISOString();
+  const expiresAt = new Date(now.getTime() + 5 * 60 * 1000).toISOString();
   const db = mobileAdminClient();
+
+  const { error: cleanupError } = await db
+    .from("mobile_pairing_tokens")
+    .delete()
+    .or(`used_at.not.is.null,expires_at.lt.${nowIso}`);
+  if (cleanupError) {
+    console.error("stale mobile pairing token cleanup failed", cleanupError);
+    return json(500, { ok: false, error: "pairing_token_create_failed" }, cors);
+  }
 
   const { error } = await db.from("mobile_pairing_tokens").insert({
     token_hash: tokenHash,
@@ -52,5 +77,9 @@ Deno.serve(async (req) => {
     return json(500, { ok: false, error: "pairing_token_create_failed" }, cors);
   }
 
-  return json(200, { ok: true, pairing_token: token, expires_at: expiresAt }, cors);
+  return json(
+    200,
+    { ok: true, pairing_token: token, expires_at: expiresAt },
+    cors,
+  );
 });
