@@ -13,9 +13,10 @@ createRoot(root).render(
 );
 
 if (import.meta.env.PROD && "serviceWorker" in navigator) {
+  const baseUrl = new URL(import.meta.env.BASE_URL, window.location.origin);
   navigator.serviceWorker
-    .register(new URL("sw.js", import.meta.env.BASE_URL), {
-      scope: import.meta.env.BASE_URL,
+    .register(new URL("sw.js", baseUrl), {
+      scope: baseUrl.pathname,
     })
     .catch((error: unknown) => {
       console.error("Mobile service worker registration failed", error);
