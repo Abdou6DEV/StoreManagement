@@ -16,6 +16,7 @@ import { Pie, PieChart, Tooltip, ResponsiveContainer, Line, LineChart, XAxis, YA
 import { Tooltip as UITooltip } from "../../../lib/components/tooltip"
 import { useDashboardLoading } from "../../../lib/contexts/dashboardContext"
 import { useTheme } from "../../../lib/hooks/useTheme"
+import { DashboardPanel } from "../../../lib/components/dashboardPresentation";
 
 interface ServiceStats {
   totalServices: number
@@ -485,7 +486,7 @@ export function ServiceStatsCard() {
 
   if (loading) {
     return (
-      <div className="w-full p-8 bg-card rounded-xl shadow-md border flex flex-col space-y-3 hover:shadow-lg transition-shadow duration-300 relative min-h-[280px]">
+      <DashboardPanel stats>
         <div className="flex items-center gap-2 mb-4">
           <Wrench className="h-6 w-6 text-primary" />
           <h2 className="text-xl font-semibold text-foreground">
@@ -508,7 +509,7 @@ export function ServiceStatsCard() {
 
         {/* Skeleton for charts */}
         <div className="h-64 w-full bg-muted-foreground/20 rounded animate-pulse" />
-      </div>
+      </DashboardPanel>
     )
   }
 
@@ -517,7 +518,7 @@ export function ServiceStatsCard() {
   const lineColor = isDark ? "#10b981" : "#059669";
 
   return (
-    <div className="w-full p-8 bg-card rounded-xl shadow-md border flex flex-col space-y-3 hover:shadow-lg transition-shadow duration-300 relative min-h-[280px]">
+    <DashboardPanel stats>
       <div className="flex items-center gap-2 mb-4">
         <Wrench className="h-6 w-6 text-primary" />
         <h2 className="text-xl font-semibold text-foreground">
@@ -1263,7 +1264,6 @@ export function ServiceStatsCard() {
           </span>
         </div>
       </div>
-    </div>
+    </DashboardPanel>
   )
 }
-

@@ -13,6 +13,10 @@ import { useAuth } from "../../../../lib/contexts/authContext";
 import { useNavigate } from "react-router-dom";
 import { DashboardStaggerItem } from "../dashboardStagger";
 import { AnimatedNumber } from "../../../../lib/components/animatedNumber";
+import {
+  DashboardMetric,
+  DashboardPanel,
+} from "../../../../lib/components/dashboardPresentation";
 
 function dateMatchesOverviewPeriod(
   period: "today" | "thisMonth" | "thisYear" | "overall",
@@ -595,7 +599,7 @@ export function ChartBarInteractive({ chartData, chartLoading }: ChartBarInterac
   }
 
   return (
-    <div className="w-full p-8 bg-card rounded-xl shadow-md border flex flex-col hover:shadow-lg transition-shadow duration-300 relative">
+    <DashboardPanel>
       <DashboardStaggerItem step={0} className="mb-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="flex items-start gap-4">
@@ -702,22 +706,16 @@ export function ChartBarInteractive({ chartData, chartLoading }: ChartBarInterac
       <DashboardStaggerItem step={1} className="mb-6">
         <div className="flex flex-col">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-          <div className="flex flex-col items-center gap-0.5 text-center">
-            <span className="text-sm md:text-base font-medium text-muted-foreground uppercase tracking-wide leading-none">
-              {t("dashboard.revenue")}
-            </span>
+          <DashboardMetric label={t("dashboard.revenue")}>
             <AnimatedNumber
               value={overviewNumbersReady ? overviewTotals.revenue : 0}
               enabled={overviewNumbersReady}
               className="text-3xl md:text-4xl font-bold tabular-nums text-primary leading-none"
               format={(amount) => formatCurrency(amount)}
             />
-          </div>
+          </DashboardMetric>
 
-          <div className="flex flex-col items-center gap-0.5 text-center">
-            <span className="text-sm md:text-base font-medium text-muted-foreground uppercase tracking-wide leading-none">
-              {profitLabel}
-            </span>
+          <DashboardMetric label={profitLabel}>
             <AnimatedNumber
               value={overviewNumbersReady ? adjustedProfit : 0}
               enabled={overviewNumbersReady}
@@ -745,43 +743,34 @@ export function ChartBarInteractive({ chartData, chartLoading }: ChartBarInterac
                 </span>
               </div>
             )}
-          </div>
+          </DashboardMetric>
 
-          <div className="flex flex-col items-center gap-0.5 text-center">
-            <span className="text-sm md:text-base font-medium text-muted-foreground uppercase tracking-wide leading-none">
-              {t("dashboard.itemsSold")}
-            </span>
+          <DashboardMetric label={t("dashboard.itemsSold")}>
             <AnimatedNumber
               value={overviewNumbersReady ? overviewTotals.itemsSold : 0}
               enabled={overviewNumbersReady}
               locale={i18n.language}
               className="text-3xl md:text-4xl font-bold tabular-nums text-orange-600 leading-none"
             />
-          </div>
+          </DashboardMetric>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-4">
-          <div className="flex flex-col items-center gap-0.5 text-center">
-            <span className="text-sm md:text-base font-medium text-muted-foreground uppercase tracking-wide leading-none">
-              {t("dashboard.billsAndExpenses")}
-            </span>
+          <DashboardMetric label={t("dashboard.billsAndExpenses")}>
             <AnimatedNumber
               value={overviewNumbersReady ? billPaymentsTotal : 0}
               enabled={overviewNumbersReady}
               className="text-3xl md:text-4xl font-bold tabular-nums text-purple-600 dark:text-purple-400 leading-none"
               format={(amount) => formatCurrency(amount)}
             />
-          </div>
-          <div className="flex flex-col items-center gap-0.5 text-center">
-            <span className="text-sm md:text-base font-medium text-muted-foreground uppercase tracking-wide leading-none">
-              {t("history.purchases")}
-            </span>
+          </DashboardMetric>
+          <DashboardMetric label={t("history.purchases")}>
             <AnimatedNumber
               value={overviewNumbersReady ? overviewTotals.purchases : 0}
               enabled={overviewNumbersReady}
               className="text-3xl md:text-4xl font-bold tabular-nums text-orange-600 dark:text-orange-400 leading-none"
               format={(amount) => formatCurrency(amount)}
             />
-          </div>
+          </DashboardMetric>
         </div>
         </div>
       </DashboardStaggerItem>
@@ -833,6 +822,6 @@ export function ChartBarInteractive({ chartData, chartLoading }: ChartBarInterac
           </span>
         </div>
       </DashboardStaggerItem>
-    </div>
+    </DashboardPanel>
   );
 }

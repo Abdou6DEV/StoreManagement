@@ -7,6 +7,7 @@ import { TrendingUp, PackageIcon, PieChart as PieChartIcon } from "lucide-react"
 import { Pie, PieChart, Tooltip, ResponsiveContainer } from "recharts"
 import { Tooltip as UITooltip } from "../../../lib/components/tooltip"
 import { useSales, useProducts, useLowStockThreshold, useDashboardLoading } from "../../../lib/contexts/dashboardContext"
+import { DashboardPanel } from "../../../lib/components/dashboardPresentation";
 
 // Using div elements with card styling like other components in the project
 
@@ -320,7 +321,7 @@ export function StockStatsCard() {
 
   if (loading) {
     return (
-      <div className="w-full p-8 bg-card rounded-xl shadow-md border flex flex-col space-y-3 hover:shadow-lg transition-shadow duration-300 relative min-h-[280px]">
+      <DashboardPanel stats>
         <div className="flex items-center gap-2 mb-4">
           <PackageIcon className="h-6 w-6 text-primary" />
           <h2 className="text-xl font-semibold text-foreground">
@@ -370,12 +371,12 @@ export function StockStatsCard() {
             <div className="h-48 w-full bg-muted-foreground/20 rounded animate-pulse" />
           </div>
         </div>
-      </div>
+      </DashboardPanel>
     )
   }
 
   return (
-    <div className="w-full p-8 bg-card rounded-xl shadow-md border flex flex-col space-y-3 hover:shadow-lg transition-shadow duration-300 relative min-h-[280px]">
+    <DashboardPanel stats>
       <div className="flex items-center gap-2 mb-4">
         <PackageIcon className="h-6 w-6 text-primary" />
         <h2 className="text-xl font-semibold text-foreground">
@@ -745,6 +746,6 @@ export function StockStatsCard() {
           </span>
         </div>
       </div>
-    </div>
+    </DashboardPanel>
   )
 }

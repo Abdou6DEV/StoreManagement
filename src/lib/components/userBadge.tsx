@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
-import { User, Crown, Sparkles, CheckCircle, Info, Calendar, Clock } from "lucide-react";
+import { Crown, Sparkles, CheckCircle, Info, Calendar, Clock } from "lucide-react";
 import { cn } from "../utils";
 import { useAuth } from "../contexts/authContext";
 import { useBadgeMessage } from "../contexts/badgeMessageContext";
 import { useTranslation } from "react-i18next";
+import { UserBadgeAvatar } from "./sharedPresentation";
 
 const SHOW_TEXT_AFTER_NAV_MS = 4000;
 const WELCOME_SHOW_MS = 6500;
@@ -192,9 +193,9 @@ export function UserBadge({
   if (!user) return null;
 
   const sizeConfig = {
-    sm: { avatar: "w-9 h-19", icon: "w-6 h-6", name: "text-sm", gap: "gap-2", px: "px-2.5 py-1.5" },
-    md: { avatar: "w-11 h-11", icon: "w-8 h-8", name: "text-sm", gap: "gap-3", px: "px-3 py-2" },
-    lg: { avatar: "w-12 h-12", icon: "w-8 h-8", name: "text-base", gap: "gap-3", px: "px-4 py-2.5" },
+    sm: { name: "text-sm", gap: "gap-2", px: "px-2.5 py-1.5" },
+    md: { name: "text-sm", gap: "gap-3", px: "px-3 py-2" },
+    lg: { name: "text-base", gap: "gap-3", px: "px-4 py-2.5" },
   };
 
   const config = sizeConfig[size];
@@ -203,14 +204,6 @@ export function UserBadge({
   const roleLabel = isAdminRole
     ? t("userBadge.admin", "Admin")
     : t("userBadge.user", "User");
-
-  const avatarColors = isAdminRole
-    ? "bg-orange-500/15 dark:bg-orange-500/20"
-    : "bg-primary/15 text-primary";
-
-  const iconColors = isAdminRole
-    ? "text-orange-500 dark:text-orange-400"
-    : "text-primary";
 
   const renderMessageContent = () => {
     if (!currentMessage) return null;
@@ -261,15 +254,7 @@ export function UserBadge({
         className
       )}
     >
-      <div
-        className={cn(
-          "flex shrink-0 items-center justify-center rounded-full",
-          avatarColors,
-          config.avatar
-        )}
-      >
-        <User className={cn("shrink-0", config.icon, iconColors)} strokeWidth={2} />
-      </div>
+      <UserBadgeAvatar isAdmin={isAdminRole} size={size} />
       <div className="flex w-[261px] shrink-0 items-center overflow-hidden">
         <div
           className={cn(

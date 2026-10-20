@@ -15,6 +15,7 @@ import {
 import { ClientStatsRadialActiveInactive } from "./clientStatsRadialActiveInactive";
 import { ClientStatsRadialCreditVsNormalSales } from "./clientStatsRadialCreditVsNormalSales";
 import { ClientStatsRadialPaidVsUnpaidCredits } from "./clientStatsRadialPaidVsUnpaidCredits";
+import { DashboardPanel } from "../../../lib/components/dashboardPresentation";
 
 type ViewMode = "radials" | "topClients";
 
@@ -236,7 +237,7 @@ export function ClientStatsCard() {
 
   if (loading) {
     return (
-      <div className="w-full p-8 bg-card rounded-xl shadow-md border flex flex-col space-y-3 hover:shadow-lg transition-shadow duration-300 relative min-h-[280px]">
+      <DashboardPanel stats>
         <div className="flex items-center gap-2 mb-4">
           <Users className="h-6 w-6 text-primary" />
           <h2 className="text-xl font-semibold text-foreground">
@@ -248,12 +249,12 @@ export function ClientStatsCard() {
             <div key={i} className="h-16 bg-muted rounded-lg" />
           ))}
         </div>
-      </div>
+      </DashboardPanel>
     );
   }
 
   return (
-    <div className="w-full p-8 bg-card rounded-xl shadow-md border flex flex-col space-y-3 hover:shadow-lg transition-shadow duration-300 relative min-h-[280px]">
+    <DashboardPanel stats>
       <div className="flex items-center gap-2 mb-4">
         <Users className="h-6 w-6 text-primary" />
         <h2 className="text-xl font-semibold text-foreground">
@@ -546,6 +547,6 @@ export function ClientStatsCard() {
           )}
         </span>
       </div>
-    </div>
+    </DashboardPanel>
   );
 }

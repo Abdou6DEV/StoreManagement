@@ -1,15 +1,3 @@
-import {
-  ChartLine,
-  Users,
-  ShoppingCart,
-  PackageSearch,
-  Settings as AdminIcon,
-  History,
-  FileText,
-  Wrench,
-  Info,
-  Calculator,
-} from "lucide-react";
 import { Link } from "react-router-dom";
 import React, { type CSSProperties, useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
@@ -34,6 +22,10 @@ import {
   POST_LOGIN_BACKUP_ENSURE_DELAY_MS,
   TOAST_AUTO_DISMISS_MS,
 } from "../../lib/toast/postLoginToast";
+import {
+  MenuCardContent,
+  type PresentationPage,
+} from "../../lib/components/sharedPresentation";
 import { UpdateModal } from "./components/updateModal";
 import "../../lib/i18n";
 
@@ -196,67 +188,17 @@ export default function MainMenu() {
     waitForToastQuiet,
   ]);
 
-  const allMenuItems = [
-    {
-      key: "cashier",
-      icon: ShoppingCart,
-      color: "text-yellow-500",
-      adminOnly: false,
-    },
-    {
-      key: "dashboard",
-      icon: ChartLine,
-      color: "text-green-500",
-      adminOnly: true,
-    },
-    {
-      key: "stock",
-      icon: PackageSearch,
-      color: "text-green-600",
-      adminOnly: true,
-    },
-    {
-      key: "clients",
-      icon: Users,
-      color: "text-red-500",
-      adminOnly: true,
-    },
-    {
-      key: "history",
-      icon: History,
-      color: "text-blue-500",
-      adminOnly: true,
-    },
-    {
-      key: "bills",
-      icon: FileText,
-      color: "text-purple-500",
-      adminOnly: true,
-    },
-    {
-      key: "services",
-      icon: Wrench,
-      color: "text-cyan-500",
-      adminOnly: true,
-    },
-    {
-      key: "zakat",
-      icon: Calculator,
-      color: "text-emerald-500",
-      adminOnly: true,
-    },
-    {
-      key: "administrator",
-      icon: AdminIcon,
-      color: "text-orange-500",
-      adminOnly: true,
-    },
-    {
-      key: "about",
-      icon: Info,
-      color: "text-blue-500",
-      adminOnly: false,
-    },
+  const allMenuItems: Array<{ key: PresentationPage; adminOnly: boolean }> = [
+    { key: "cashier", adminOnly: false },
+    { key: "dashboard", adminOnly: true },
+    { key: "stock", adminOnly: true },
+    { key: "clients", adminOnly: true },
+    { key: "history", adminOnly: true },
+    { key: "bills", adminOnly: true },
+    { key: "services", adminOnly: true },
+    { key: "zakat", adminOnly: true },
+    { key: "administrator", adminOnly: true },
+    { key: "about", adminOnly: false },
   ];
 
   // Filter menu items based on user permissions
@@ -288,14 +230,10 @@ export default function MainMenu() {
             style={staggerStyle(index)}
             key={item.key}
           >
-            <div className="flex items-center gap-4 mb-3">
-              <item.icon
-                size={40}
-                className={`${item.color} transition-colors duration-300 group-hover:text-red-400`}
-              />
-              <h2 className="font-bold capitalize text-lg transition-colors duration-300 group-hover:text-primary">
-                {t(`mainMenu.${item.key}`)}
-              </h2>
+            <MenuCardContent
+              page={item.key}
+              title={t(`mainMenu.${item.key}`)}
+            />
               {/* Stock Badges - Positioned inside container with border sharing */}
               {item.key === "stock" && ((unseenLowStockCount > 0 && enableBadge && badgeLoaded) || (unseenOutOfStockCount > 0 && enableOutOfStockBadge && outOfStockBadgeLoaded)) && (
                 <div className={`absolute top-0 right-0 rtl:right-auto rtl:left-0 flex flex-col transition-transform duration-500 ease-out ${shouldAnimate ? 'translate-y-0' : '-translate-y-[150%]'}`}>
@@ -438,7 +376,6 @@ export default function MainMenu() {
                   </div>
                 </div>
               )}
-            </div>
             <p className="text-muted-foreground text-sm flex-grow transition-colors duration-300 group-hover:text-foreground">
               {t(`mainMenu.${item.key}Desc`)}
             </p>

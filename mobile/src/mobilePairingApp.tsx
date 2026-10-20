@@ -1,7 +1,6 @@
 import type { BrowserQRCodeReader } from "@zxing/browser";
 import { AlertCircle, Camera, LoaderCircle, ScanLine, WifiOff, X } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { MobilePosApp } from "./mobilePosApp";
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import {
   MOBILE_DEVICE_CREDENTIAL_KEY,
   MOBILE_PUBLISHABLE_KEY,
@@ -9,8 +8,14 @@ import {
 } from "./mobileApi";
 import type { MobileLanguage } from "./mobileApi";
 
+const MobilePosApp = lazy(() =>
+  import("./mobilePosApp").then((module) => ({ default: module.MobilePosApp })),
+);
+
 type Language = MobileLanguage;
 type Copy = {
+  checkingSavedDevice: string;
+  checkingSavedDeviceHelp: string;
   eyebrow: string;
   title: string;
   subtitle: string;
@@ -29,11 +34,12 @@ type Copy = {
   offline: string;
   revoked: string;
   tryAgain: string;
-  checkingSavedDevice: string;
 };
 
 const COPY: Record<Language, Copy> = {
   en: {
+    checkingSavedDevice: "Checking this phone…",
+    checkingSavedDeviceHelp: "Preparing your REDA TECH mobile workspace.",
     eyebrow: "REDA TECH · MOBILE",
     title: "Pair this phone",
     subtitle: "Scan the one-time QR code shown in your store app.",
@@ -52,9 +58,10 @@ const COPY: Record<Language, Copy> = {
     offline: "You are offline. Connect to the internet to verify this phone.",
     revoked: "This phone was removed from the shop. Scan a new QR code to pair it again.",
     tryAgain: "Try again",
-    checkingSavedDevice: "Checking this phone…",
   },
   fr: {
+    checkingSavedDevice: "Vérification de ce téléphone…",
+    checkingSavedDeviceHelp: "Préparation de votre espace mobile REDA TECH.",
     eyebrow: "REDA TECH · MOBILE",
     title: "Associer ce téléphone",
     subtitle: "Scannez le QR code à usage unique affiché dans l’application du magasin.",
@@ -73,9 +80,10 @@ const COPY: Record<Language, Copy> = {
     offline: "Vous êtes hors ligne. Connectez-vous pour vérifier ce téléphone.",
     revoked: "Ce téléphone a été retiré de la boutique. Scannez un nouveau QR code pour l’associer à nouveau.",
     tryAgain: "Réessayer",
-    checkingSavedDevice: "Vérification du téléphone…",
   },
   ar: {
+    checkingSavedDevice: "جارٍ التحقق من هذا الهاتف…",
+    checkingSavedDeviceHelp: "جارٍ تجهيز مساحة ريدا تيك على الهاتف.",
     eyebrow: "REDA TECH · تطبيق الهاتف",
     title: "اربط هذا الهاتف",
     subtitle: "امسح رمز QR لمرة واحدة الظاهر في تطبيق المتجر.",
@@ -94,7 +102,6 @@ const COPY: Record<Language, Copy> = {
     offline: "أنت غير متصل. اتصل بالإنترنت للتحقق من هذا الهاتف.",
     revoked: "تمت إزالة هذا الهاتف من المتجر. امسح رمز QR جديداً لإعادة ربطه.",
     tryAgain: "حاول مجدداً",
-    checkingSavedDevice: "جارٍ التحقق من الهاتف…",
   },
 };
 
@@ -261,18 +268,36 @@ export function MobilePairingApp() {
     };
   }, [cameraActive, copy.cameraDenied, submitPairing]);
 
+  const loadingScreen = (
+    <main className="mobile-shell mobile-initial-loading" dir={direction}>
+      <div className="mobile-loading-brand">
+        <img src={`${import.meta.env.BASE_URL}myapp_black.ico`} alt="REDA TECH" />
+        <p className="mobile-eyebrow">{copy.eyebrow}</p>
+        <h1>{copy.checkingSavedDevice}</h1>
+        <p className="sub">{copy.checkingSavedDeviceHelp}</p>
+        <span className="brand-loader" role="status" aria-label={copy.checkingSavedDevice}>
+          <LoaderCircle className="spin" size={24} />
+        </span>
+      </div>
+    </main>
+  );
+
+  if (checkingSavedDevice) return loadingScreen;
+
   if (paired) {
     return (
-      <MobilePosApp
-        language={language}
-        onLanguageChange={setLanguage}
-        onDeviceInvalid={() => {
-          localStorage.removeItem(MOBILE_DEVICE_CREDENTIAL_KEY);
-          setHasSavedCredential(false);
-          setPaired(false);
-          setError(copy.revoked);
-        }}
-      />
+      <Suspense fallback={loadingScreen}>
+        <MobilePosApp
+          language={language}
+          onLanguageChange={setLanguage}
+          onDeviceInvalid={() => {
+            localStorage.removeItem(MOBILE_DEVICE_CREDENTIAL_KEY);
+            setHasSavedCredential(false);
+            setPaired(false);
+            setError(copy.revoked);
+          }}
+        />
+      </Suspense>
     );
   }
 

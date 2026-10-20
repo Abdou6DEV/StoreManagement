@@ -17,6 +17,7 @@ import {
 import { TrendingDown, TrendingUp } from "lucide-react";
 import { useTheme } from "../../../../lib/hooks/useTheme";
 import { ChartContainerProps } from "./types";
+import { DASHBOARD_CHART_COLORS } from "../../../../lib/components/dashboardPresentation";
 
 /**
  * Step multipliers so `top = 4 * step` stays readable (3.75 -> 37 500 when top = 150 000).
@@ -124,18 +125,22 @@ export function ChartContainer({
 
   const barGreenGradientStops = isDark
     ? [
-        { offset: "0%", color: "#34d399", opacity: 0.85 },
-        { offset: "100%", color: "#059669", opacity: 1 },
+        { offset: "0%", color: DASHBOARD_CHART_COLORS.dark.barStart, opacity: 0.85 },
+        { offset: "100%", color: DASHBOARD_CHART_COLORS.dark.barEnd, opacity: 1 },
       ]
     : [
-        { offset: "0%", color: "#22c55e", opacity: 0.85 },
-        { offset: "100%", color: "#16a34a", opacity: 1 },
+        { offset: "0%", color: DASHBOARD_CHART_COLORS.light.barStart, opacity: 0.85 },
+        { offset: "100%", color: DASHBOARD_CHART_COLORS.light.barEnd, opacity: 1 },
       ];
 
-  const gridColor = isDark ? "#2a2a33" : "#eef2f7";
+  const gridColor = isDark
+    ? DASHBOARD_CHART_COLORS.dark.grid
+    : DASHBOARD_CHART_COLORS.light.grid;
   // Slightly lighter axis/grid tone (keep text readable).
   const axisColor = isDark ? "rgba(148, 147, 147, 0.7)" : "rgba(85, 85, 85, 0.48)";
-  const lineStroke = isDark ? "#34d399" : "#16a34a";
+  const lineStroke = isDark
+    ? DASHBOARD_CHART_COLORS.dark.line
+    : DASHBOARD_CHART_COLORS.light.line;
 
   const getDataKey = () => {
     switch (chartType) {
@@ -213,7 +218,9 @@ export function ChartContainer({
     return sum / nonZeroValues.length;
   }, [dataForScale, dataKey]);
 
-  const lineGreen = isDark ? "#34d399" : "#16a34a";
+  const lineGreen = isDark
+    ? DASHBOARD_CHART_COLORS.dark.line
+    : DASHBOARD_CHART_COLORS.light.line;
   const lineRed = isDark ? "#fb7185" : "#dc2626";
 
   const gridTicks = useMemo(() => {

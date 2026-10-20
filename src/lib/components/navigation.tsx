@@ -8,19 +8,9 @@ import {
   DropdownMenuTrigger,
 } from "./dropdownMenu";
 import {
-  Home,
-  ChartLine,
-  Users,
-  ShoppingCart,
-  PackageSearch,
   Settings,
   User,
   LogOut,
-  History,
-  FileText,
-  Wrench,
-  Info,
-  Calculator,
   ExternalLink,
 } from "lucide-react";
 import { ThemeToggleButton } from "./themeToggleButton";
@@ -37,6 +27,11 @@ import { useNavigate } from "react-router-dom";
 import { cn } from "../utils";
 import { useEffect, useRef } from "react";
 import { Bell } from "../../components/animate-ui/icons/bell";
+import {
+  PAGE_PRESENTATION,
+  PageIcon,
+  type PresentationPage,
+} from "./sharedPresentation";
 
 export default function Navigation() {
   const location = useLocation();
@@ -179,27 +174,18 @@ export default function Navigation() {
         <h1 className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-3xl font-bold flex items-center justify-center gap-3 pointer-events-none">
           {location.pathname === "/" ? (
             <>
-              <Home className="w-8 h-8 text-primary shrink-0" />
+              <PageIcon page="home" className="w-8 h-8" />
               {t("mainMenu.title")}
             </>
           ) : (
             (() => {
               const path = location.pathname.slice(1).split("/")[0];
-              const iconMap: Record<string, React.ReactNode> = {
-                dashboard: <ChartLine className="w-8 h-8 text-green-500 shrink-0" />,
-                clients: <Users className="w-8 h-8 text-red-500 shrink-0" />,
-                cashier: <ShoppingCart className="w-8 h-8 text-yellow-500 shrink-0" />,
-                stock: <PackageSearch className="w-8 h-8 text-green-600 shrink-0" />,
-                history: <History className="w-8 h-8 text-blue-500 shrink-0" />,
-                bills: <FileText className="w-8 h-8 text-purple-500 shrink-0" />,
-                services: <Wrench className="w-8 h-8 text-cyan-500 shrink-0" />,
-                zakat: <Calculator className="w-8 h-8 text-emerald-500 shrink-0" />,
-                administrator: <Settings className="w-8 h-8 text-orange-500 shrink-0" />,
-                about: <Info className="w-8 h-8 text-blue-500 shrink-0" />,
-              };
+              const page = path in PAGE_PRESENTATION
+                ? path as PresentationPage
+                : null;
               return (
                 <>
-                  {iconMap[path] || null}
+                  {page ? <PageIcon page={page} className="w-8 h-8" /> : null}
                   {t(`mainMenu.${path}`)}
                 </>
               );

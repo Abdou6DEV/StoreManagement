@@ -1,21 +1,26 @@
 import {
   AlertCircle,
-  ArrowLeft,
-  Boxes,
-  BriefcaseBusiness,
-  ChevronRight,
-  ClipboardList,
-  CreditCard,
-  LayoutDashboard,
+  Eye,
+  EyeOff,
   LoaderCircle,
+  Lock,
   LogOut,
   Menu,
   RefreshCw,
   Search,
-  Users,
+  Settings,
+  User,
   Wifi,
   WifiOff,
 } from "lucide-react";
+import { Card } from "../../src/lib/components/card";
+import {
+  MenuCardContent,
+  PAGE_PRESENTATION,
+  PageIcon,
+  UserBadgeAvatar,
+} from "../../src/lib/components/sharedPresentation";
+import { LOGO_ICON_DARK } from "../../src/lib/assets";
 import { useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import {
@@ -31,6 +36,7 @@ import type {
   MobileRow,
   MobileUser,
 } from "./mobileApi";
+import { MobileDashboard } from "./components/MobileDashboard";
 
 type Section =
   | "menu"
@@ -82,6 +88,47 @@ type Copy = {
   serviceCatalog: string;
   billPayments: string;
   paymentRecords: string;
+  settings: string;
+  showPassword: string;
+  hidePassword: string;
+  overviewPeriod: string;
+  today: string;
+  thisMonth: string;
+  thisYear: string;
+  last365Days: string;
+  inventory: string;
+  totalQuantity: string;
+  stockCost: string;
+  products: string;
+  outOfStock: string;
+  clientsCount: string;
+  serviceAppointments: string;
+  completed: string;
+  pending: string;
+  overdue: string;
+  searchRecords: string;
+  categoryFilter: string;
+  allCategories: string;
+  sortBy: string;
+  recentFirst: string;
+  oldestFirst: string;
+  nameAZ: string;
+  nameZA: string;
+  listView: string;
+  cardView: string;
+  chartStyle: string;
+  netProfit: string;
+  barChart: string;
+  lineChart: string;
+  active: string;
+  notActive: string;
+  dueSoon: string;
+  page: string;
+  of: string;
+  previous: string;
+  next: string;
+  noCategories: string;
+  allRecords: string;
   yes: string;
   no: string;
   errors: Record<string, string>;
@@ -133,6 +180,47 @@ const COPY: Record<MobileLanguage, Copy> = {
     serviceCatalog: "Service catalog",
     billPayments: "Bill payments",
     paymentRecords: "Payment records",
+    settings: "Settings",
+    showPassword: "Show password",
+    hidePassword: "Hide password",
+    overviewPeriod: "Summary period",
+    today: "Today",
+    thisMonth: "This month",
+    thisYear: "This year",
+    last365Days: "Last 365 days",
+    inventory: "Inventory",
+    totalQuantity: "Total quantity",
+    stockCost: "Stock cost",
+    products: "Products",
+    outOfStock: "Out of stock",
+    clientsCount: "Clients",
+    serviceAppointments: "Service appointments",
+    completed: "Completed",
+    pending: "Pending",
+    overdue: "Overdue",
+    searchRecords: "Search records",
+    categoryFilter: "Category",
+    allCategories: "All categories",
+    sortBy: "Sort by",
+    recentFirst: "Newest first",
+    oldestFirst: "Oldest first",
+    nameAZ: "Name A–Z",
+    nameZA: "Name Z–A",
+    listView: "Compact list",
+    cardView: "Cards",
+    chartStyle: "Chart style",
+    netProfit: "Net profit",
+    barChart: "Bars",
+    lineChart: "Line",
+    active: "Active",
+    notActive: "Not active",
+    dueSoon: "Due soon",
+    page: "Page",
+    of: "of",
+    previous: "Previous",
+    next: "Next",
+    noCategories: "No categories available.",
+    allRecords: "All",
     yes: "Yes",
     no: "No",
     errors: {
@@ -191,6 +279,17 @@ const COPY: Record<MobileLanguage, Copy> = {
       total_items: "Items",
       local_day: "Date",
       bill_payments: "Bill payments",
+      service_type: "Service type",
+      is_completed: "Completed",
+      duration: "Frequency",
+      type: "Type",
+      notes: "Notes",
+      bought_price: "Purchase price",
+      selling_price: "Sale price",
+      cost_price: "Cost",
+      service_price: "Service price",
+      given_amount: "Paid",
+      credit_amount: "Credit",
     },
   },
   fr: {
@@ -237,6 +336,47 @@ const COPY: Record<MobileLanguage, Copy> = {
     serviceCatalog: "Catalogue des services",
     billPayments: "Paiements de factures",
     paymentRecords: "Paiements",
+    settings: "Paramètres",
+    showPassword: "Afficher le mot de passe",
+    hidePassword: "Masquer le mot de passe",
+    overviewPeriod: "Période du résumé",
+    today: "Aujourd’hui",
+    thisMonth: "Ce mois",
+    thisYear: "Cette année",
+    last365Days: "365 derniers jours",
+    inventory: "Stock",
+    totalQuantity: "Quantité totale",
+    stockCost: "Coût du stock",
+    products: "Produits",
+    outOfStock: "Rupture de stock",
+    clientsCount: "Clients",
+    serviceAppointments: "Rendez-vous de service",
+    completed: "Terminé",
+    pending: "En attente",
+    overdue: "En retard",
+    searchRecords: "Rechercher des enregistrements",
+    categoryFilter: "Catégorie",
+    allCategories: "Toutes les catégories",
+    sortBy: "Trier par",
+    recentFirst: "Plus récent",
+    oldestFirst: "Plus ancien",
+    nameAZ: "Nom A–Z",
+    nameZA: "Nom Z–A",
+    listView: "Liste compacte",
+    cardView: "Cartes",
+    chartStyle: "Type de graphique",
+    netProfit: "Bénéfice net",
+    barChart: "Barres",
+    lineChart: "Ligne",
+    active: "Actif",
+    notActive: "Inactif",
+    dueSoon: "Bientôt dû",
+    page: "Page",
+    of: "sur",
+    previous: "Précédent",
+    next: "Suivant",
+    noCategories: "Aucune catégorie disponible.",
+    allRecords: "Tous",
     yes: "Oui",
     no: "Non",
     errors: {
@@ -295,6 +435,17 @@ const COPY: Record<MobileLanguage, Copy> = {
       total_items: "Articles",
       local_day: "Date",
       bill_payments: "Paiements de factures",
+      service_type: "Type de service",
+      is_completed: "Terminé",
+      duration: "Fréquence",
+      type: "Type",
+      notes: "Notes",
+      bought_price: "Prix d’achat",
+      selling_price: "Prix de vente",
+      cost_price: "Coût",
+      service_price: "Prix du service",
+      given_amount: "Payé",
+      credit_amount: "Crédit",
     },
   },
   ar: {
@@ -339,6 +490,47 @@ const COPY: Record<MobileLanguage, Copy> = {
     serviceCatalog: "قائمة الخدمات",
     billPayments: "دفعات الفواتير",
     paymentRecords: "سجلات الدفع",
+    settings: "الإعدادات",
+    showPassword: "إظهار كلمة المرور",
+    hidePassword: "إخفاء كلمة المرور",
+    overviewPeriod: "فترة الملخص",
+    today: "اليوم",
+    thisMonth: "هذا الشهر",
+    thisYear: "هذه السنة",
+    last365Days: "آخر 365 يوماً",
+    inventory: "المخزون",
+    totalQuantity: "الكمية الإجمالية",
+    stockCost: "تكلفة المخزون",
+    products: "المنتجات",
+    outOfStock: "نفد المخزون",
+    clientsCount: "العملاء",
+    serviceAppointments: "مواعيد الخدمة",
+    completed: "مكتمل",
+    pending: "قيد الانتظار",
+    overdue: "متأخر",
+    searchRecords: "بحث في السجلات",
+    categoryFilter: "الفئة",
+    allCategories: "كل الفئات",
+    sortBy: "ترتيب حسب",
+    recentFirst: "الأحدث أولاً",
+    oldestFirst: "الأقدم أولاً",
+    nameAZ: "الاسم أ–ي",
+    nameZA: "الاسم ي–أ",
+    listView: "قائمة مختصرة",
+    cardView: "بطاقات",
+    chartStyle: "نوع المخطط",
+    netProfit: "الربح الصافي",
+    barChart: "أعمدة",
+    lineChart: "خط",
+    active: "نشط",
+    notActive: "غير نشط",
+    dueSoon: "قريب الاستحقاق",
+    page: "صفحة",
+    of: "من",
+    previous: "السابق",
+    next: "التالي",
+    noCategories: "لا توجد فئات متاحة.",
+    allRecords: "الكل",
     yes: "نعم",
     no: "لا",
     errors: {
@@ -397,21 +589,31 @@ const COPY: Record<MobileLanguage, Copy> = {
       total_items: "العناصر",
       local_day: "التاريخ",
       bill_payments: "دفعات الفواتير",
+      service_type: "نوع الخدمة",
+      is_completed: "مكتمل",
+      duration: "التكرار",
+      type: "النوع",
+      notes: "ملاحظات",
+      bought_price: "سعر الشراء",
+      selling_price: "سعر البيع",
+      cost_price: "التكلفة",
+      service_price: "سعر الخدمة",
+      given_amount: "المدفوع",
+      credit_amount: "الدين",
     },
   },
 };
 
 const SECTIONS: Array<{
   id: Exclude<Section, "menu">;
-  icon: typeof LayoutDashboard;
   permission: keyof MobilePermissions;
 }> = [
-  { id: "dashboard", icon: LayoutDashboard, permission: "can_access_dashboard" },
-  { id: "stock", icon: Boxes, permission: "can_access_stock" },
-  { id: "history", icon: ClipboardList, permission: "can_access_history" },
-  { id: "services", icon: BriefcaseBusiness, permission: "can_access_services" },
-  { id: "bills", icon: CreditCard, permission: "can_access_bills" },
-  { id: "clients", icon: Users, permission: "can_access_clients" },
+  { id: "dashboard", permission: "can_access_dashboard" },
+  { id: "stock", permission: "can_access_stock" },
+  { id: "history", permission: "can_access_history" },
+  { id: "services", permission: "can_access_services" },
+  { id: "bills", permission: "can_access_bills" },
+  { id: "clients", permission: "can_access_clients" },
 ];
 
 function errorMessage(error: unknown, copy: Copy): string {
@@ -455,7 +657,7 @@ function fieldLabel(key: string, copy: Copy): string {
 function safeFields(row: MobileRow): Array<[string, unknown]> {
   return Object.entries(row)
     .filter(([key]) => !/(password|hash|secret|token)/i.test(key))
-    .filter(([key]) => !/^(id|source_id|customer_id|sync_version|source_updated_at|deleted_at)$/i.test(key))
+    .filter(([key]) => !/(^id$|_id$|_source_id$|^customer_id$|sync_version|source_updated_at|deleted_at)/i.test(key))
     .filter(([, value]) => value == null || ["string", "number", "boolean"].includes(typeof value))
     .filter(([, value]) => value !== null && value !== "");
 }
@@ -465,6 +667,21 @@ function searchable(row: MobileRow): string {
     .map(([, value]) => String(value ?? ""))
     .join(" ")
     .toLocaleLowerCase();
+}
+
+function recordStatus(row: MobileRow, copy: Copy): string | null {
+  if (typeof row.is_completed === "boolean") {
+    if (row.is_completed) return copy.completed;
+    const dueDate = typeof row.due_date === "string" ? Date.parse(row.due_date) : NaN;
+    return Number.isFinite(dueDate) && dueDate < Date.now() ? copy.overdue : copy.pending;
+  }
+  if (row.duration === "NO_NEXT") return copy.notActive;
+  if (typeof row.next_bill_date !== "string") return null;
+  const nextBillDate = Date.parse(row.next_bill_date);
+  if (!Number.isFinite(nextBillDate)) return null;
+  if (nextBillDate < Date.now()) return copy.overdue;
+  if (nextBillDate - Date.now() <= 7 * 24 * 60 * 60 * 1000) return copy.dueSoon;
+  return copy.active;
 }
 
 function formatTime(value: Date, language: MobileLanguage): string {
@@ -477,14 +694,19 @@ function formatTime(value: Date, language: MobileLanguage): string {
 function LoginScreen({
   copy,
   onLogin,
+  language,
+  onLanguageChange,
 }: {
   copy: Copy;
   onLogin: (username: string, password: string) => Promise<void>;
+  language: MobileLanguage;
+  onLanguageChange: (language: MobileLanguage) => void;
 }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -501,36 +723,67 @@ function LoginScreen({
   };
 
   return (
-    <section className="mobile-login card">
-      <div className="mobile-login-icon"><Users size={24} /></div>
-      <h2>{copy.loginTitle}</h2>
-      <p className="sub">{copy.loginHelp}</p>
-      <form className="mobile-login-form" onSubmit={(event) => void submit(event)}>
-        <label>
-          <span>{copy.username}</span>
-          <input
-            autoComplete="username"
-            required
-            value={username}
-            onChange={(event) => setUsername(event.target.value)}
-          />
-        </label>
-        <label>
-          <span>{copy.password}</span>
-          <input
-            type="password"
-            autoComplete="current-password"
-            required
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-          />
-        </label>
-        {error ? <p className="msg err" role="alert"><AlertCircle size={17} />{error}</p> : null}
-        <button className="btn primary" type="submit" disabled={busy}>
-          {busy ? <LoaderCircle className="spin" size={18} /> : null}
-          {busy ? copy.signingIn : copy.login}
-        </button>
-      </form>
+    <section className="mobile-login-screen">
+      <div className="mobile-login-brand">
+        <img src={LOGO_ICON_DARK} alt="REDA TECH" />
+        <p className="mobile-eyebrow">{copy.appName}</p>
+        <h1>{copy.loginTitle}</h1>
+        <p className="sub">{copy.loginHelp}</p>
+      </div>
+      <div className="langs" role="group" aria-label="Language">
+        {(["en", "fr", "ar"] as const).map((item) => (
+          <button
+            key={item}
+            type="button"
+            className={language === item ? "on" : ""}
+            onClick={() => onLanguageChange(item)}
+          >
+            {item === "en" ? "English" : item === "fr" ? "Français" : "العربية"}
+          </button>
+        ))}
+      </div>
+      <Card className="mobile-login">
+        <form className="mobile-login-form" onSubmit={(event) => void submit(event)}>
+          <label>
+            <span>{copy.username}</span>
+            <div className="mobile-input-wrap">
+              <User size={18} aria-hidden="true" />
+              <input
+                autoComplete="username"
+                required
+                value={username}
+                onChange={(event) => setUsername(event.target.value)}
+              />
+            </div>
+          </label>
+          <label>
+            <span>{copy.password}</span>
+            <div className="mobile-input-wrap">
+              <Lock size={18} aria-hidden="true" />
+              <input
+                type={showPassword ? "text" : "password"}
+                autoComplete="current-password"
+                required
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+              />
+              <button
+                type="button"
+                className="password-toggle"
+                aria-label={showPassword ? copy.hidePassword : copy.showPassword}
+                onClick={() => setShowPassword((current) => !current)}
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
+          </label>
+          {error ? <p className="msg err" role="alert"><AlertCircle size={17} />{error}</p> : null}
+          <button className="btn primary" type="submit" disabled={busy}>
+            {busy ? <LoaderCircle className="spin" size={18} /> : null}
+            {busy ? copy.signingIn : copy.login}
+          </button>
+        </form>
+      </Card>
     </section>
   );
 }
@@ -541,97 +794,98 @@ function RecordList({
   copy,
   query,
   emptyLabel,
+  rowLimit = 20,
+  moneyDivisor = 1,
 }: {
   rows: MobileRow[];
   language: MobileLanguage;
   copy: Copy;
   query: string;
   emptyLabel?: string;
+  rowLimit?: number;
+  moneyDivisor?: number;
 }) {
+  const [sort, setSort] = useState<"recent" | "oldest" | "az" | "za">("recent");
+  const [page, setPage] = useState(1);
   const filteredRows = useMemo(() => {
     const term = query.trim().toLocaleLowerCase();
-    return term ? rows.filter((row) => searchable(row).includes(term)) : rows;
-  }, [query, rows]);
+    const filtered = term ? rows.filter((row) => searchable(row).includes(term)) : rows;
+    return [...filtered].sort((a, b) => {
+      if (sort === "az" || sort === "za") {
+        const left = String(a.name ?? a.title ?? a.local_day ?? "");
+        const right = String(b.name ?? b.title ?? b.local_day ?? "");
+        return sort === "az" ? left.localeCompare(right) : right.localeCompare(left);
+      }
+      const left = String(a.source_created_at ?? a.created_at ?? a.due_date ?? a.paid_date ?? a.local_day ?? "");
+      const right = String(b.source_created_at ?? b.created_at ?? b.due_date ?? b.paid_date ?? b.local_day ?? "");
+      return sort === "recent" ? right.localeCompare(left) : left.localeCompare(right);
+    });
+  }, [query, rows, sort]);
+  const pageCount = Math.max(1, Math.ceil(filteredRows.length / rowLimit));
+  const currentPage = Math.min(page, pageCount);
+  const visibleRows = filteredRows.slice((currentPage - 1) * rowLimit, currentPage * rowLimit);
+  const tableColumns = useMemo(
+    () => Array.from(new Set(filteredRows.flatMap((row) => safeFields(row).map(([key]) => key)))),
+    [filteredRows],
+  );
 
   if (filteredRows.length === 0) {
     return <p className="mobile-empty">{emptyLabel ?? copy.empty}</p>;
   }
 
   return (
-    <div className="mobile-record-list">
-      {filteredRows.map((row, index) => {
-        const fields = safeFields(row).slice(0, 5);
-        const titleField =
-          fields.find(([key]) => /^(name|title|service_name|client_name|customer_name|reference|barcode|username)$/i.test(key)) ??
-          fields[0];
-        const title = titleField
-          ? safeValue(titleField[1], language, copy)
-          : `#${index + 1}`;
-        const details = fields.filter(([key]) => key !== titleField?.[0]).slice(0, 3);
-        return (
-          <article className="mobile-record" key={String(row.source_id ?? row.id ?? index)}>
-            <h3>{title}</h3>
-            <dl>
-              {details.map(([key, value]) => (
-                <div key={key}>
-                  <dt>{fieldLabel(key, copy)}</dt>
-                  <dd>{safeValue(value, language, copy)}</dd>
-                </div>
-              ))}
-            </dl>
-          </article>
-        );
-      })}
-    </div>
-  );
-}
-
-function Dashboard({
-  rows,
-  language,
-  copy,
-}: {
-  rows: MobileRow[];
-  language: MobileLanguage;
-  copy: Copy;
-}) {
-  const history = [...rows].sort((a, b) =>
-    String(b.local_day ?? "").localeCompare(String(a.local_day ?? "")),
-  ).slice(0, 365);
-  if (history.length === 0) return <p className="mobile-empty">{copy.empty}</p>;
-  const totals = history.slice(0, 7).reduce<{ revenue: number; sales: number; profit: number; items: number }>(
-    (result, row) => ({
-      revenue: result.revenue + (Number(row.revenue) || 0),
-      sales: result.sales + (Number(row.sales_count) || 0),
-      profit: result.profit + (Number(row.profit) || 0),
-      items: result.items + (Number(row.total_items) || 0),
-    }),
-    { revenue: 0, sales: 0, profit: 0, items: 0 },
-  );
-  const metrics = [
-    [copy.revenue, totals.revenue],
-    [copy.sales, totals.sales],
-    [copy.profit, totals.profit],
-    [copy.items, totals.items],
-  ] as const;
-
-  return (
-    <>
-      <div className="mobile-metrics">
-        {metrics.map(([label, value]) => (
-          <article className="mobile-metric" key={label}>
-            <span>{label}</span>
-            <strong>{new Intl.NumberFormat(language === "ar" ? "ar" : language, {
-              maximumFractionDigits: 2,
-            }).format(value)}</strong>
-          </article>
-        ))}
+    <div className="mobile-records">
+      <div className="mobile-record-controls">
+        <label className="mobile-select-control">
+          <span>{copy.sortBy}</span>
+          <select value={sort} onChange={(event) => { setSort(event.target.value as typeof sort); setPage(1); }}>
+            <option value="recent">{copy.recentFirst}</option>
+            <option value="oldest">{copy.oldestFirst}</option>
+            <option value="az">{copy.nameAZ}</option>
+            <option value="za">{copy.nameZA}</option>
+          </select>
+        </label>
       </div>
-      <section className="mobile-subsection">
-        <h2>{copy.recentDays}</h2>
-        <RecordList rows={history} language={language} copy={copy} query="" />
-      </section>
-    </>
+      <div className="mobile-record-table-wrap">
+        <table className="mobile-record-table">
+          <thead>
+            <tr>{tableColumns.map((key) => <th key={key}>{fieldLabel(key, copy)}</th>)}</tr>
+          </thead>
+          <tbody>
+            {visibleRows.map((row, index) => {
+              const fields = new Map(safeFields(row));
+              return (
+                <tr key={String(row.source_id ?? row.id ?? index)}>
+                  {tableColumns.map((key) => {
+                    const value = fields.get(key);
+                    const status = recordStatus(row, copy);
+                    return (
+                      <td key={key} data-label={fieldLabel(key, copy)}>
+                        {typeof value === "number" && key === "amount" && moneyDivisor !== 1
+                          ? `${new Intl.NumberFormat(language, { maximumFractionDigits: 2 }).format(value / moneyDivisor)} DA`
+                          : safeValue(value, language, copy)}
+                        {key === "is_completed" && status ? (
+                          <span className={`record-status ${status === copy.completed ? "done" : status === copy.overdue ? "late" : "waiting"}`}>
+                            {status}
+                          </span>
+                        ) : null}
+                      </td>
+                    );
+                  })}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      {pageCount > 1 ? (
+        <div className="mobile-pagination">
+          <button type="button" disabled={currentPage === 1} onClick={() => setPage((current) => Math.max(1, current - 1))}>{copy.previous}</button>
+          <span>{copy.page} {currentPage} {copy.of} {pageCount}</span>
+          <button type="button" disabled={currentPage === pageCount} onClick={() => setPage((current) => Math.min(pageCount, current + 1))}>{copy.next}</button>
+        </div>
+      ) : null}
+    </div>
   );
 }
 
@@ -641,17 +895,57 @@ function SectionContent({
   language,
   copy,
   query,
+  permissions,
 }: {
   section: Exclude<Section, "menu">;
   data: MobileBundle;
   language: MobileLanguage;
   copy: Copy;
   query: string;
+  permissions: MobilePermissions;
 }) {
+  const [categoryFilter, setCategoryFilter] = useState("");
+  const [serviceFilter, setServiceFilter] = useState<"all" | "pending" | "completed" | "overdue">("all");
   if (section === "dashboard") {
-    return <Dashboard rows={data.dashboard_daily} language={language} copy={copy} />;
+    return (
+      <MobileDashboard
+        data={data}
+        permissions={permissions}
+        language={language}
+        labels={{
+          dashboard: copy.dashboard,
+          overviewPeriod: copy.overviewPeriod,
+          today: copy.today,
+          thisMonth: copy.thisMonth,
+          thisYear: copy.thisYear,
+          last365Days: copy.last365Days,
+          revenue: copy.revenue,
+          profit: copy.profit,
+          items: copy.items,
+          products: copy.products,
+          inventory: copy.inventory,
+          totalQuantity: copy.totalQuantity,
+          stockCost: copy.stockCost,
+          outOfStock: copy.outOfStock,
+          clientsCount: copy.clientsCount,
+          serviceAppointments: copy.serviceAppointments,
+          completed: copy.completed,
+          overdue: copy.overdue,
+          chartStyle: copy.chartStyle,
+          barChart: copy.barChart,
+          lineChart: copy.lineChart,
+          recentDays: copy.recentDays,
+          empty: copy.empty,
+          billPayments: copy.billPayments,
+          netProfit: copy.netProfit,
+        }}
+      />
+    );
   }
   if (section === "stock") {
+    const products = categoryFilter
+      ? data.products.filter((row) => row.category_name === categoryFilter)
+      : data.products;
     return (
       <>
         <section className="mobile-subsection">
@@ -662,11 +956,22 @@ function SectionContent({
               <span>{copy.categoriesUnavailable}</span>
             </div>
           ) : null}
-          <RecordList rows={data.categories} language={language} copy={copy} query={query} />
+          {data.categories_available && data.categories.length > 0 ? (
+            <label className="mobile-select-control filter-control">
+              <span>{copy.categoryFilter}</span>
+              <select value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)}>
+                <option value="">{copy.allCategories}</option>
+                {data.categories.map((category) => (
+                  <option key={String(category.source_id)} value={String(category.name)}>{String(category.name)}</option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+          <RecordList rows={data.categories} language={language} copy={copy} query={query} emptyLabel={copy.noCategories} />
         </section>
         <section className="mobile-subsection">
           <h2>{copy.stock}</h2>
-          <RecordList rows={data.products} language={language} copy={copy} query={query} />
+          <RecordList rows={products} language={language} copy={copy} query={query} />
         </section>
       </>
     );
@@ -709,11 +1014,28 @@ function SectionContent({
     );
   }
   if (section === "services") {
+    const appointments = data.service_appointments.filter((row) => {
+      if (serviceFilter === "completed") return row.is_completed === true;
+      if (serviceFilter === "pending") return row.is_completed === false;
+      if (serviceFilter === "overdue") {
+        return row.is_completed !== true && typeof row.due_date === "string" && Date.parse(row.due_date) < Date.now();
+      }
+      return true;
+    });
     return (
       <>
         <section className="mobile-subsection">
           <h2>{copy.appointments}</h2>
-          <RecordList rows={data.service_appointments} language={language} copy={copy} query={query} />
+          <label className="mobile-select-control filter-control">
+            <span>{copy.sortBy}</span>
+            <select value={serviceFilter} onChange={(event) => setServiceFilter(event.target.value as typeof serviceFilter)}>
+              <option value="all">{copy.allRecords}</option>
+              <option value="pending">{copy.pending}</option>
+              <option value="completed">{copy.completed}</option>
+              <option value="overdue">{copy.overdue}</option>
+            </select>
+          </label>
+          <RecordList rows={appointments} language={language} copy={copy} query={query} />
         </section>
         <section className="mobile-subsection">
           <h2>{copy.serviceCatalog}</h2>
@@ -726,11 +1048,11 @@ function SectionContent({
     <>
       <section className="mobile-subsection">
         <h2>{copy.bills}</h2>
-        <RecordList rows={data.bills} language={language} copy={copy} query={query} />
+        <RecordList rows={data.bills} language={language} copy={copy} query={query} moneyDivisor={100} />
       </section>
       <section className="mobile-subsection">
         <h2>{copy.billPayments}</h2>
-        <RecordList rows={data.bill_payments} language={language} copy={copy} query={query} />
+        <RecordList rows={data.bill_payments} language={language} copy={copy} query={query} moneyDivisor={100} />
       </section>
     </>
   );
@@ -756,6 +1078,7 @@ export function MobilePosApp({
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [online, setOnline] = useState(navigator.onLine);
   const [stale, setStale] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const direction = language === "ar" ? "rtl" : "ltr";
   const allowedSections = SECTIONS.filter((item) => user?.permissions[item.permission]);
   const primarySections = allowedSections.filter((item) =>
@@ -763,6 +1086,7 @@ export function MobilePosApp({
   );
   const title = section === "menu" ? copy.menu : copy[section];
   const activeSection = SECTIONS.find((item) => item.id === section);
+  const activePage = activeSection?.id ?? "home";
   const needsSearch = section === "stock" || section === "history" || section === "services" || section === "bills" || section === "clients";
 
   useEffect(() => {
@@ -853,12 +1177,14 @@ export function MobilePosApp({
     setStale(false);
     setSection("menu");
     setQuery("");
+    setSettingsOpen(false);
   };
 
   const selectSection = (next: Section) => {
     if (next !== "menu" && !allowedSections.some((item) => item.id === next)) return;
     setSection(next);
     setQuery("");
+    setSettingsOpen(false);
   };
 
   const changeLanguage = (next: MobileLanguage) => {
@@ -868,48 +1194,67 @@ export function MobilePosApp({
 
   return (
     <main className="mobile-shell mobile-app" dir={direction}>
-      <header className="mobile-app-header">
-        <div className="mobile-app-brand">
-          <img src={`${import.meta.env.BASE_URL}myapp_black.ico`} alt="" />
-          <div><strong>{copy.appName}</strong><span>{user?.username ?? copy.loginTitle}</span></div>
-        </div>
-        <div className="mobile-app-tools">
-          <span className={`connection-state ${online ? "is-online" : "is-offline"}`} aria-label={online ? "Online" : "Offline"}>
-            {online ? <Wifi size={17} /> : <WifiOff size={17} />}
-          </span>
-          {user ? (
-            <button type="button" className="icon-button" aria-label={copy.logout} title={copy.logout} onClick={() => void signOut()}>
-              <LogOut size={18} />
+      {user ? (
+        <>
+          <header className="mobile-app-header">
+            <div className="mobile-user-badge" title={user.username}>
+              <UserBadgeAvatar
+                className="mobile-user-badge-avatar"
+                isAdmin={user.role.toUpperCase() === "ADMIN"}
+                size="sm"
+              />
+              <span>{user.username}<small>{user.role}</small></span>
+            </div>
+            <h1>
+              <PageIcon page={activePage} className="mobile-header-page-icon" aria-hidden="true" />
+              <span>{title}</span>
+            </h1>
+            <button
+              type="button"
+              className={`icon-button settings-button ${settingsOpen ? "active" : ""}`}
+              aria-label={copy.settings}
+              aria-expanded={settingsOpen}
+              onClick={() => setSettingsOpen((current) => !current)}
+            >
+              <Settings size={19} />
             </button>
+          </header>
+          {settingsOpen ? (
+            <Card className="mobile-settings" aria-label={copy.settings}>
+              <div className="mobile-settings-heading">
+                <h2>{copy.settings}</h2>
+                <span className={`connection-state ${online ? "is-online" : "is-offline"}`}>
+                  {online ? <Wifi size={16} /> : <WifiOff size={16} />}
+                </span>
+              </div>
+              <p className="mobile-settings-user"><User size={16} />{user.username}</p>
+              <div className="mobile-settings-languages" role="group" aria-label="Language">
+                {(["en", "fr", "ar"] as const).map((item) => (
+                  <button key={item} type="button" className={language === item ? "on" : ""} onClick={() => changeLanguage(item)}>
+                    {item === "en" ? "English" : item === "fr" ? "Français" : "العربية"}
+                  </button>
+                ))}
+              </div>
+              {lastUpdated ? <p className="last-updated">{copy.lastUpdated}: {formatTime(lastUpdated, language)}</p> : null}
+              <div className="mobile-settings-actions">
+                <button type="button" className="btn secondary" disabled={refreshing || !online} onClick={() => void refresh()}>
+                  {refreshing ? <LoaderCircle className="spin" size={17} /> : <RefreshCw size={17} />}
+                  {refreshing ? copy.refreshing : copy.refresh}
+                </button>
+                <button type="button" className="btn logout-button" onClick={() => void signOut()}>
+                  <LogOut size={17} />{copy.logout}
+                </button>
+              </div>
+            </Card>
           ) : null}
-        </div>
-      </header>
-
-      <div className="langs" role="group" aria-label="Language">
-        <button type="button" className={language === "en" ? "on" : ""} onClick={() => changeLanguage("en")}>English</button>
-        <button type="button" className={language === "fr" ? "on" : ""} onClick={() => changeLanguage("fr")}>Français</button>
-        <button type="button" className={language === "ar" ? "on" : ""} onClick={() => changeLanguage("ar")}>العربية</button>
-      </div>
-
+        </>
+      ) : null}
       {notice ? <div className="mobile-state-banner error-banner" role="alert"><AlertCircle size={17} />{notice}</div> : null}
 
       {!user ? (
-        <LoginScreen copy={copy} onLogin={signIn} />
+        <LoginScreen copy={copy} onLogin={signIn} language={language} onLanguageChange={changeLanguage} />
       ) : (
         <>
-          <div className="mobile-page-heading">
-            <button type="button" className="icon-button back-button" aria-label={copy.menu} onClick={() => selectSection("menu")}>
-              <ArrowLeft size={19} />
-            </button>
-            <div>
-              <p>{copy.appName}</p>
-              <h1>{title}</h1>
-            </div>
-            <button type="button" className="icon-button refresh-button" aria-label={refreshing ? copy.refreshing : copy.refresh} disabled={refreshing || !online} onClick={() => void refresh()}>
-              {refreshing ? <LoaderCircle className="spin" size={18} /> : <RefreshCw size={18} />}
-            </button>
-          </div>
-
           {!online ? <div className="mobile-state-banner offline-banner"><WifiOff size={17} />{copy.offline}</div> : null}
           {stale && online ? <div className="mobile-state-banner stale-banner"><AlertCircle size={17} />{copy.stale}</div> : null}
           {lastUpdated ? <p className="last-updated">{copy.lastUpdated}: {formatTime(lastUpdated, language)}</p> : null}
@@ -918,11 +1263,9 @@ export function MobilePosApp({
             <section className="mobile-menu-view">
               <p className="sub">{copy.welcome}</p>
               <div className="mobile-menu-grid">
-                {allowedSections.map(({ id, icon: Icon }) => (
-                  <button type="button" className="mobile-menu-tile" key={id} onClick={() => selectSection(id)}>
-                    <span className="menu-tile-icon"><Icon size={22} /></span>
-                    <span>{copy[id]}</span>
-                    <ChevronRight size={18} />
+                {allowedSections.map(({ id }) => (
+                  <button type="button" className="mobile-menu-tile group" key={id} onClick={() => selectSection(id)}>
+                    <MenuCardContent page={id} title={copy[id]} compact />
                   </button>
                 ))}
               </div>
@@ -935,21 +1278,54 @@ export function MobilePosApp({
               {needsSearch ? (
                 <label className="mobile-search">
                   <Search size={18} />
-                  <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={copy.search} aria-label={copy.search} />
+                  <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={copy.searchRecords} aria-label={copy.searchRecords} />
                 </label>
               ) : null}
               {!data ? (
                 <p className="mobile-empty"><LoaderCircle className="spin" size={18} />{copy.loading}</p>
               ) : (
-                <SectionContent section={section as Exclude<Section, "menu">} data={data} language={language} copy={copy} query={query} />
+                section === "dashboard" ? (
+                  <SectionContent
+                    section="dashboard"
+                    data={data}
+                    language={language}
+                    copy={copy}
+                    query={query}
+                    permissions={user.permissions}
+                  />
+                ) : (
+                  <Card className="mobile-page-panel">
+                    <div className="mobile-panel-heading">
+                      <PageIcon page={activePage} size={28} />
+                      <h2>{title}</h2>
+                    </div>
+                    <SectionContent
+                      section={section as Exclude<Section, "menu">}
+                      data={data}
+                      language={language}
+                      copy={copy}
+                      query={query}
+                      permissions={user.permissions}
+                    />
+                  </Card>
+                )
               )}
             </>
           )}
 
-          <nav className="mobile-bottom-nav" aria-label={copy.menu}>
-            {primarySections.map(({ id, icon: Icon }) => (
-              <button type="button" className={section === id ? "selected" : ""} key={id} onClick={() => selectSection(id)}>
-                <Icon size={20} /><span>{copy[id]}</span>
+          <nav
+            className="mobile-bottom-nav"
+            aria-label={copy.menu}
+            style={{ gridTemplateColumns: `repeat(${primarySections.length + 1}, minmax(0, 1fr))` }}
+          >
+            {primarySections.map(({ id }) => (
+              <button
+                type="button"
+                className={section === id ? `selected ${PAGE_PRESENTATION[id].color}` : ""}
+                key={id}
+                onClick={() => selectSection(id)}
+              >
+                <PageIcon page={id} size={20} /><span>{copy[id]}</span>
               </button>
             ))}
             <button type="button" className={section === "menu" ? "selected" : ""} onClick={() => selectSection("menu")}>
