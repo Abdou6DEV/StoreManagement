@@ -734,3 +734,141 @@ button:focus-visible, select:focus-visible, input:focus-visible {
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
+
+
+/* Mobile dashboard readability pass: keep this as the final, authoritative
+   responsive layer so older duplicate rules above cannot shrink dashboard UI. */
+.mobile-shell {
+  width: min(100%, 720px);
+  padding-inline: clamp(14px, 4vw, 22px);
+  padding-bottom: calc(104px + env(safe-area-inset-bottom));
+}
+
+.dashboard-overview {
+  min-width: 0;
+  padding: clamp(16px, 4.5vw, 22px);
+  margin-bottom: 20px;
+}
+
+.dashboard-overview-heading,
+.dashboard-chart-controls {
+  min-width: 0;
+  gap: 12px;
+}
+
+.dashboard-overview-heading h2,
+.mobile-dashboard-chart-section h3 {
+  line-height: 1.35;
+}
+
+.mobile-metrics {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 12px;
+}
+
+.mobile-metric {
+  min-width: 0;
+  min-height: 104px;
+  gap: 10px;
+  padding: 14px;
+}
+
+.mobile-metric span {
+  font-size: .84rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.mobile-metric strong {
+  font-size: clamp(1rem, 4.5vw, 1.3rem);
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+
+.dashboard-mobile-chart {
+  height: clamp(330px, 92vw, 390px);
+  min-width: 0;
+  padding: 14px 4px 8px 0;
+  overflow: visible;
+}
+
+.dashboard-mobile-chart .recharts-wrapper,
+.dashboard-mobile-chart .recharts-surface {
+  overflow: visible;
+}
+
+.dashboard-mobile-chart .recharts-cartesian-axis-tick-value {
+  font-size: 10px;
+}
+
+.dashboard-mobile-chart.dashboard-period-month .recharts-xAxis .recharts-cartesian-axis-tick-value,
+.dashboard-mobile-chart.dashboard-period-365 .recharts-xAxis .recharts-cartesian-axis-tick-value {
+  font-size: 9px;
+}
+
+.mobile-dashboard-chart-section {
+  min-width: 0;
+  padding: 16px;
+  border-radius: 12px;
+}
+
+.mobile-dashboard-chart-section h3 {
+  margin-bottom: 12px;
+  font-size: 1rem;
+}
+
+.mobile-dashboard-pie-chart {
+  height: 220px !important;
+  min-height: 220px;
+}
+
+.mobile-dashboard-chart-section .truncate {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-overflow: clip;
+}
+
+.mobile-dashboard-chart-section .text-xs {
+  line-height: 1.4;
+}
+
+.mobile-dashboard-toggle {
+  gap: 4px;
+  padding: 4px;
+  border-radius: 11px;
+}
+
+.mobile-dashboard-toggle button {
+  min-height: 44px;
+  padding: 8px 10px;
+  font-size: .84rem;
+  line-height: 1.3;
+}
+
+.mobile-select-control select {
+  min-height: 44px;
+  padding-block: 9px;
+  font-size: .9rem;
+}
+
+.mobile-bottom-nav {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+@media (max-width: 380px) {
+  .mobile-shell { padding-inline: 12px; }
+  .dashboard-overview { padding: 14px; }
+  .mobile-metrics { gap: 9px; }
+  .mobile-metric { min-height: 96px; padding: 11px; }
+  .mobile-metric span { font-size: .8rem; }
+  .mobile-metric strong { font-size: 1rem; }
+  .mobile-dashboard-chart-section { padding: 12px; }
+  .dashboard-mobile-chart { height: 340px; }
+}
+
+@media (min-width: 560px) {
+  .mobile-shell { padding-inline: 22px; }
+  .dashboard-mobile-chart { height: 390px; }
+  .mobile-dashboard-pie-chart { height: 240px !important; min-height: 240px; }
+}

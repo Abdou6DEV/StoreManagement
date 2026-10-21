@@ -387,7 +387,7 @@ export function MobileDashboard({
                 {chartStyle === "bar" ? (
                     <BarChart
                     data={chartData}
-                    margin={{ top: 16, right: 8, bottom: 8, left: 8 }}
+                    margin={{ top: 16, right: 12, bottom: 8, left: 2 }}
                   >
                     <defs>
                       <linearGradient id="mobile-dashboard-profit-gradient" x1="0" y1="0" x2="0" y2="1">
@@ -408,14 +408,14 @@ export function MobileDashboard({
                       dataKey="period"
                       tickLine={false}
                       axisLine={false}
-                      interval={0}
-                      angle={period === "month" ? -60 : period === "365" ? -45 : 0}
+                      interval={period === "month" ? 1 : period === "365" ? 6 : 0}
+                      angle={period === "month" ? -45 : period === "365" ? -35 : 0}
                       textAnchor={period === "month" || period === "365" ? "end" : "middle"}
-                      height={period === "month" ? 82 : period === "365" ? 56 : 30}
-                      tickMargin={period === "month" ? 18 : period === "365" ? 12 : 8}
-                      tick={{ fontSize: period === "month" ? 7 : period === "365" ? 8 : 10 }}
+                      height={period === "month" ? 72 : period === "365" ? 52 : 34}
+                      tickMargin={period === "month" ? 12 : period === "365" ? 10 : 8}
+                      tick={{ fontSize: period === "month" ? 9 : period === "365" ? 9 : 11 }}
                     />
-                    <YAxis tickLine={false} axisLine={false} width={60} tickMargin={6} domain={profitDomain} />
+                    <YAxis tickLine={false} axisLine={false} width={76} tickMargin={8} tick={{ fontSize: 10 }} domain={profitDomain} />
                     {nonzeroProfits.length > 0 ? <ReferenceLine y={averageProfit} stroke="#64748b" strokeDasharray="4 4" /> : null}
                     <Tooltip
                       formatter={(value: unknown) => money(Number(Array.isArray(value) ? value[0] : value) || 0)}
@@ -441,7 +441,7 @@ export function MobileDashboard({
                 ) : (
                   <RechartsLineChart
                     data={chartData}
-                    margin={{ top: 16, right: 8, bottom: 8, left: 8 }}
+                    margin={{ top: 16, right: 12, bottom: 8, left: 2 }}
                   >
                     <defs>
                       <linearGradient id="mobile-dashboard-line-average-gradient" x1="0" y1="0" x2="0" y2="1">
@@ -460,14 +460,14 @@ export function MobileDashboard({
                       dataKey="period"
                       tickLine={false}
                       axisLine={false}
-                      interval={0}
-                      angle={period === "month" ? -60 : period === "365" ? -45 : 0}
+                      interval={period === "month" ? 1 : period === "365" ? 6 : 0}
+                      angle={period === "month" ? -45 : period === "365" ? -35 : 0}
                       textAnchor={period === "month" || period === "365" ? "end" : "middle"}
-                      height={period === "month" ? 82 : period === "365" ? 56 : 30}
-                      tickMargin={period === "month" ? 18 : period === "365" ? 12 : 8}
-                      tick={{ fontSize: period === "month" ? 7 : period === "365" ? 8 : 10 }}
+                      height={period === "month" ? 72 : period === "365" ? 52 : 34}
+                      tickMargin={period === "month" ? 12 : period === "365" ? 10 : 8}
+                      tick={{ fontSize: period === "month" ? 9 : period === "365" ? 9 : 11 }}
                     />
-                    <YAxis tickLine={false} axisLine={false} width={60} tickMargin={6} domain={profitDomain} />
+                    <YAxis tickLine={false} axisLine={false} width={76} tickMargin={8} tick={{ fontSize: 10 }} domain={profitDomain} />
                     {nonzeroProfits.length > 0 ? <ReferenceLine y={averageProfit} stroke="#64748b" strokeDasharray="4 4" /> : null}
                     <Tooltip
                       formatter={(value: unknown) => money(Number(Array.isArray(value) ? value[0] : value) || 0)}
