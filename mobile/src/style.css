@@ -886,7 +886,4 @@ button:focus-visible, select:focus-visible, input:focus-visible {
 .dashboard-overview .dashboard-mobile-chart {
   flex: 1 1 auto;
 }
-.dashboard-mobile-chart .recharts-wrapper {
-  width: 100% !important;
-  max-width: 100%;
-}
+/* Let ResponsiveContainer control the generated Recharts wrapper dimensions. */
