@@ -190,6 +190,11 @@ button:focus-visible, select:focus-visible, input:focus-visible {
   letter-spacing: -0.035em;
 }
 
+.mobile-loading-brand h1, .mobile-login-brand p {
+  margin: 8px 0;
+  letter-spacing: -0.035em;
+}
+
 .mobile-eyebrow {
   margin: 12px 0 0;
   color: #ef4444;
