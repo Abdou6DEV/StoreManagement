@@ -1237,19 +1237,17 @@ export function MobilePosApp({
         </>
       ) : (
         <>
-          <header className="mobile-app-header mobile-login-header">
-            <button
-              type="button"
-              className={`icon-button settings-button ${settingsOpen ? "active" : ""}`}
-              aria-label={copy.settings}
-              aria-expanded={settingsOpen}
-              onClick={() => setSettingsOpen((current) => !current)}
-            >
-              <Settings size={19} />
-            </button>
-          </header>
+          <button
+            type="button"
+            className={`icon-button settings-button mobile-login-settings-trigger ${settingsOpen ? "active" : ""}`}
+            aria-label={copy.settings}
+            aria-expanded={settingsOpen}
+            onClick={() => setSettingsOpen((current) => !current)}
+          >
+            <Settings size={19} />
+          </button>
           {settingsOpen ? (
-            <Card className="mobile-settings" aria-label={copy.settings}>
+            <Card className="mobile-settings mobile-login-settings" aria-label={copy.settings}>
               <div className="mobile-settings-heading">
                 <h2>{copy.settings}</h2>
                 <span className={`connection-state ${online ? "is-online" : "is-offline"}`}>
