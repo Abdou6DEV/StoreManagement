@@ -1,4 +1,5 @@
 import type { BrowserQRCodeReader } from "@zxing/browser";
+import { Typing } from "../../src/lib/components/ui/typing";
 import { AlertCircle, Camera, LoaderCircle, ScanLine, WifiOff, X } from "lucide-react";
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -272,12 +273,10 @@ export function MobilePairingApp() {
     <main className="mobile-shell mobile-initial-loading" dir={direction}>
       <div className="mobile-loading-brand">
         <img src={`${import.meta.env.BASE_URL}myapp_black.ico`} alt="REDA TECH" />
-        <p className="mobile-eyebrow">{copy.eyebrow}</p>
-        <h1>{copy.checkingSavedDevice}</h1>
-        <p className="sub">{copy.checkingSavedDeviceHelp}</p>
-        <span className="brand-loader" role="status" aria-label={copy.checkingSavedDevice}>
-          <LoaderCircle className="spin" size={24} />
-        </span>
+        <Typing
+          className="mt-4 h-2 w-8 text-muted-foreground"
+          label={copy.checkingSavedDevice}
+        />
       </div>
     </main>
   );
