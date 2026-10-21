@@ -726,21 +726,8 @@ function LoginScreen({
     <section className="mobile-login-screen">
       <div className="mobile-login-brand">
         <img src={LOGO_ICON_DARK} alt="REDA TECH" />
-        <p className="mobile-eyebrow">{copy.appName}</p>
         <h1>{copy.loginTitle}</h1>
         <p className="sub">{copy.loginHelp}</p>
-      </div>
-      <div className="langs" role="group" aria-label="Language">
-        {(["en", "fr", "ar"] as const).map((item) => (
-          <button
-            key={item}
-            type="button"
-            className={language === item ? "on" : ""}
-            onClick={() => onLanguageChange(item)}
-          >
-            {item === "en" ? "English" : item === "fr" ? "Français" : "العربية"}
-          </button>
-        ))}
       </div>
       <Card className="mobile-login">
         <form className="mobile-login-form" onSubmit={(event) => void submit(event)}>

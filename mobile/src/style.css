@@ -220,6 +220,7 @@ button:focus-visible, select:focus-visible, input:focus-visible {
 .mobile-login.card { margin: 0; padding: clamp(18px, 6vw, 30px); }
 .mobile-login-form { gap: 17px; margin: 0; }
 .mobile-login-form label { gap: 7px; font-size: .88rem; }
+
 .mobile-input-wrap {
   display: flex;
   min-height: 48px;
@@ -231,22 +232,30 @@ button:focus-visible, select:focus-visible, input:focus-visible {
   color: var(--mobile-muted);
   background: white;
 }
+
 .mobile-input-wrap:focus-within {
-  border-color: #ef4444;
-  box-shadow: 0 0 0 3px rgb(239 68 68 / 12%);
+  border-color: var(--line);
+  box-shadow: none;
 }
+
 .mobile-input-wrap input {
   min-width: 0;
   min-height: 44px;
   flex: 1;
   padding: 8px 0;
-  border: 0;
-  outline: 0;
+  border: none;
+  outline: none;
   background: transparent;
   color: var(--fg);
   box-shadow: none;
 }
-.mobile-input-wrap input:focus { box-shadow: none; }
+
+.mobile-input-wrap input:focus {
+  border: none;
+  outline: none;
+  box-shadow: none;
+}
+
 .password-toggle {
   display: grid;
   width: 38px;
