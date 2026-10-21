@@ -3,9 +3,6 @@ import {
   BarChart3,
   ChartColumnIncreasing,
   LineChart as LineChartIcon,
-  PackageIcon,
-  Users,
-  Wrench,
 } from "lucide-react";
 import {
   Bar,
@@ -28,9 +25,28 @@ import type {
   MobileLanguage,
   MobilePermissions,
 } from "../mobileApi";
+import {
+  MobileClientStats,
+  MobileServiceStats,
+  MobileStockStats,
+} from "./MobileDashboardStats";
 
 type Period = "today" | "month" | "year" | "365";
 type ChartStyle = "bar" | "line";
+type DashboardChartPoint = {
+  period: string;
+  profits: number;
+  billPayments: number;
+  future?: boolean;
+};
+
+function localDay(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+function monthKey(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+}
 
 export type MobileDashboardLabels = {
   dashboard: string;
@@ -82,13 +98,16 @@ export function MobileDashboard({
     [data.dashboard_daily],
   );
   const now = new Date();
-  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  const today = localDay(now);
+  const rollingStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12);
+  rollingStart.setDate(rollingStart.getDate() - 364);
+  const rollingStartDay = localDay(rollingStart);
   const selectedDays = days.filter((row) => {
     const day = String(row.local_day);
     if (period === "today") return day === today;
     if (period === "month") return day.slice(0, 7) === today.slice(0, 7);
     if (period === "year") return day.slice(0, 4) === today.slice(0, 4);
-    return true;
+    return day >= rollingStartDay && day <= today;
   });
   const totals = selectedDays.reduce<{ revenue: number; profit: number; items: number }>(
     (result, row) => ({
@@ -103,7 +122,21 @@ export function MobileDashboard({
       (sum, row) => sum + (Number(row.bill_payments) || 0),
       0,
     ) / 100;
-  const netProfitActive = subtractBillPayments && selectedBillPayments > 0;
+  const todaySummary = selectedDays[0];
+  const todayHasSalesWithoutHourlyRows =
+    period === "today" &&
+    (Number(todaySummary?.sales_count) || 0) > 0 &&
+    data.sales.length === 0;
+  const hourlySalesAvailable =
+    permissions.can_access_history &&
+    data.sales_history_available &&
+    data.sales.length < 5000 &&
+    !todayHasSalesWithoutHourlyRows;
+  const hourlyBillsAvailable =
+    permissions.can_access_bills && data.bill_payments.length < 3000;
+  const canSubtractBillPayments =
+    selectedBillPayments > 0 && (period !== "today" || hourlyBillsAvailable);
+  const netProfitActive = subtractBillPayments && canSubtractBillPayments;
   const adjustedProfit = netProfitActive
     ? totals.profit - selectedBillPayments
     : totals.profit;
@@ -122,51 +155,84 @@ export function MobileDashboard({
         : period === "year"
           ? labels.thisYear
           : labels.last365Days;
-  const chartData = selectedDays.map((row) => ({
-    ...row,
-    profit: (Number(row.profit) || 0) -
-      (netProfitActive ? (Number(row.bill_payments) || 0) / 100 : 0),
-    dayLabel: new Intl.DateTimeFormat(language, {
-      day: "numeric",
-      month: "short",
-    }).format(new Date(`${String(row.local_day)}T12:00:00`)),
+  const dailyByDay = new Map(days.map((row) => [String(row.local_day), row]));
+  const chartPoints: DashboardChartPoint[] = [];
+  if (period === "today") {
+    if (hourlySalesAvailable) {
+      const hourlyProfits = new Map<number, number>();
+      for (const sale of data.sales) {
+        const createdAt = new Date(String(sale.source_created_at ?? ""));
+        if (!Number.isFinite(createdAt.getTime()) || localDay(createdAt) !== today) continue;
+        const hour = createdAt.getHours();
+        hourlyProfits.set(hour, (hourlyProfits.get(hour) ?? 0) + (Number(sale.total_profit) || 0));
+      }
+      const hourlyBills = new Map<number, number>();
+      if (hourlyBillsAvailable) {
+        for (const payment of data.bill_payments) {
+          const paidAt = new Date(String(payment.paid_date ?? ""));
+          if (!Number.isFinite(paidAt.getTime()) || localDay(paidAt) !== today) continue;
+          const hour = paidAt.getHours();
+          hourlyBills.set(hour, (hourlyBills.get(hour) ?? 0) + (Number(payment.amount) || 0) / 100);
+        }
+      }
+      for (let hour = 0; hour <= now.getHours(); hour += 1) {
+        chartPoints.push({
+          period: `${String(hour).padStart(2, "0")}:00`,
+          profits: hourlyProfits.get(hour) ?? 0,
+          billPayments: hourlyBills.get(hour) ?? 0,
+        });
+      }
+    }
+  } else if (period === "month") {
+    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1, 12);
+    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    for (let dayNumber = 1; dayNumber <= daysInMonth; dayNumber += 1) {
+      const date = new Date(firstDay.getFullYear(), firstDay.getMonth(), dayNumber, 12);
+      const day = localDay(date);
+      const row = dailyByDay.get(day);
+      const future = date > new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12);
+      chartPoints.push({
+        period: `${dayNumber} ${new Intl.DateTimeFormat(language, { month: "short" }).format(date)}`,
+        profits: future ? 0 : Number(row?.profit) || 0,
+        billPayments: future ? 0 : (Number(row?.bill_payments) || 0) / 100,
+        future,
+      });
+    }
+  } else if (period === "year") {
+    for (let month = 0; month < 12; month += 1) {
+      const future = month > now.getMonth();
+      const key = `${now.getFullYear()}-${String(month + 1).padStart(2, "0")}`;
+      const monthRows = future ? [] : days.filter((row) => String(row.local_day).startsWith(key));
+      chartPoints.push({
+        period: new Intl.DateTimeFormat(language, { month: "short" }).format(
+          new Date(now.getFullYear(), month, 1, 12),
+        ),
+        profits: monthRows.reduce((sum, row) => sum + (Number(row.profit) || 0), 0),
+        billPayments: monthRows.reduce((sum, row) => sum + (Number(row.bill_payments) || 0), 0) / 100,
+        future,
+      });
+    }
+  } else {
+    const firstMonth = new Date(rollingStart.getFullYear(), rollingStart.getMonth(), 1, 12);
+    for (
+      let date = firstMonth;
+      date <= now;
+      date = new Date(date.getFullYear(), date.getMonth() + 1, 1, 12)
+    ) {
+      const key = monthKey(date);
+      const monthRows = selectedDays.filter((row) => String(row.local_day).startsWith(key));
+      chartPoints.push({
+        period: new Intl.DateTimeFormat(language, { month: "short", year: "2-digit" }).format(date),
+        profits: monthRows.reduce((sum, row) => sum + (Number(row.profit) || 0), 0),
+        billPayments: monthRows.reduce((sum, row) => sum + (Number(row.bill_payments) || 0), 0) / 100,
+      });
+    }
+  }
+  const chartData = chartPoints.map(({ profits, billPayments, ...point }) => ({
+    ...point,
+    profit: profits - (netProfitActive ? billPayments : 0),
   }));
 
-  const productStatsComplete =
-    permissions.can_access_stock && data.products.length < 2000;
-  const clientStatsComplete =
-    permissions.can_access_clients && data.clients.length < 2000;
-  const serviceStatsComplete =
-    permissions.can_access_services && data.service_appointments.length < 1000;
-  const inventoryValue = data.products.reduce(
-    (sum, row) =>
-      sum +
-      (Number(row.selling_price) || 0) * (Number(row.quantity) || 0),
-    0,
-  );
-  const inventoryCost = data.products.reduce(
-    (sum, row) =>
-      sum + (Number(row.bought_price) || 0) * (Number(row.quantity) || 0),
-    0,
-  );
-  const totalQuantity = data.products.reduce(
-    (sum, row) => sum + (Number(row.quantity) || 0),
-    0,
-  );
-  const productsOutOfStock = data.products.filter(
-    (row) => Number(row.quantity) === 0,
-  ).length;
-  const appointments = data.service_appointments;
-  const completedCount = appointments.filter(
-    (row) => row.is_completed === true,
-  ).length;
-  const overdueCount = appointments.filter(
-    (row) =>
-      row.is_completed !== true &&
-      typeof row.due_date === "string" &&
-      Number.isFinite(Date.parse(row.due_date)) &&
-      Date.parse(row.due_date) < Date.now(),
-  ).length;
   const summaryMoney = (value: number) => days.length > 0 ? money(value) : "—";
   const summaryNumber = (value: number) => days.length > 0 ? number(value) : "—";
 
@@ -257,7 +323,7 @@ export function MobileDashboard({
             </div>
           </div>
 
-          {selectedBillPayments > 0 ? (
+          {canSubtractBillPayments ? (
             <button
               type="button"
               className={`dashboard-net-toggle ${subtractBillPayments ? "selected" : ""}`}
@@ -273,20 +339,28 @@ export function MobileDashboard({
           ) : null}
 
           {chartData.length === 0 ? (
-            <p className="mobile-empty">{labels.empty}</p>
+            <p className="mobile-empty">
+              {period === "today" && !hourlySalesAvailable
+                ? language === "fr"
+                  ? "Le détail horaire nécessite l’accès à l’historique des ventes."
+                  : language === "ar"
+                    ? "يتطلب العرض بالساعة صلاحية سجل المبيعات."
+                    : "Hourly breakdown requires sales-history access."
+                : labels.empty}
+            </p>
           ) : (
             <div className="mobile-chart dashboard-mobile-chart" role="img" aria-label={`${labels.recentDays}, ${rangeTitle}`}>
               <ResponsiveContainer
                 width="100%"
                 height="100%"
                 minWidth={0}
-                minHeight={220}
-                initialDimension={{ width: 360, height: 250 }}
+                minHeight={240}
+                initialDimension={{ width: 390, height: 330 }}
               >
                 {chartStyle === "bar" ? (
                   <BarChart
                     data={chartData}
-                    margin={{ top: 12, right: 4, bottom: 2, left: -18 }}
+                    margin={{ top: 16, right: 12, bottom: 8, left: 8 }}
                   >
                     <defs>
                       <linearGradient id="mobile-dashboard-profit-gradient" x1="0" y1="0" x2="0" y2="1">
@@ -299,10 +373,10 @@ export function MobileDashboard({
                       vertical={false}
                       stroke={DASHBOARD_CHART_COLORS.light.grid}
                     />
-                    <XAxis dataKey="dayLabel" tickLine={false} axisLine={false} minTickGap={18} />
-                    <YAxis tickLine={false} axisLine={false} width={48} />
+                    <XAxis dataKey="period" tickLine={false} axisLine={false} interval="preserveStartEnd" minTickGap={8} />
+                    <YAxis tickLine={false} axisLine={false} width={60} tickMargin={8} />
                     <Tooltip
-                      formatter={(value: number | string | undefined) => money(Number(value) || 0)}
+                      formatter={(value: unknown) => money(Number(Array.isArray(value) ? value[0] : value) || 0)}
                       labelFormatter={(label) => String(label)}
                       contentStyle={{ borderRadius: 12, borderColor: "var(--border)" }}
                     />
@@ -316,17 +390,17 @@ export function MobileDashboard({
                 ) : (
                   <RechartsLineChart
                     data={chartData}
-                    margin={{ top: 12, right: 4, bottom: 2, left: -18 }}
+                    margin={{ top: 16, right: 12, bottom: 8, left: 8 }}
                   >
                     <CartesianGrid
                       strokeDasharray="3 3"
                       vertical={false}
                       stroke={DASHBOARD_CHART_COLORS.light.grid}
                     />
-                    <XAxis dataKey="dayLabel" tickLine={false} axisLine={false} minTickGap={18} />
-                    <YAxis tickLine={false} axisLine={false} width={48} />
+                    <XAxis dataKey="period" tickLine={false} axisLine={false} interval="preserveStartEnd" minTickGap={8} />
+                    <YAxis tickLine={false} axisLine={false} width={60} tickMargin={8} />
                     <Tooltip
-                      formatter={(value: number | string | undefined) => money(Number(value) || 0)}
+                      formatter={(value: unknown) => money(Number(Array.isArray(value) ? value[0] : value) || 0)}
                       labelFormatter={(label) => String(label)}
                       contentStyle={{ borderRadius: 12, borderColor: "var(--border)" }}
                     />
@@ -346,80 +420,14 @@ export function MobileDashboard({
         </section>
       </DashboardPanel>
 
-      {productStatsComplete ? (
-        <DashboardPanel stats className="dashboard-overview !min-h-0 !space-y-4 !p-4 sm:!p-6">
-          <div className="flex items-center gap-2">
-            <PackageIcon className="h-6 w-6 text-primary" />
-            <h2 className="text-xl font-semibold text-foreground">{labels.inventory}</h2>
-          </div>
-          <div className="grid grid-cols-2 gap-5">
-            <DashboardMetric label={labels.products} labelClassName="!text-xs">
-              <strong className="text-2xl font-bold tabular-nums text-foreground">
-                {number(data.products.length)}
-              </strong>
-            </DashboardMetric>
-            <DashboardMetric label={labels.totalQuantity} labelClassName="!text-xs">
-              <strong className="text-2xl font-bold tabular-nums text-foreground">
-                {number(totalQuantity)}
-              </strong>
-            </DashboardMetric>
-            <DashboardMetric label={labels.stockCost} labelClassName="!text-xs">
-              <strong className="text-xl font-bold tabular-nums text-foreground">
-                {money(inventoryCost)}
-              </strong>
-            </DashboardMetric>
-            <DashboardMetric label={labels.inventory} labelClassName="!text-xs">
-              <strong className="text-xl font-bold tabular-nums text-foreground">
-                {money(inventoryValue)}
-              </strong>
-            </DashboardMetric>
-            <DashboardMetric label={labels.outOfStock} labelClassName="!text-xs">
-              <strong className="text-2xl font-bold tabular-nums text-foreground">
-                {number(productsOutOfStock)}
-              </strong>
-            </DashboardMetric>
-          </div>
-        </DashboardPanel>
+      {permissions.can_access_stock ? (
+        <MobileStockStats data={data} permissions={permissions} language={language} />
       ) : null}
-
-      {clientStatsComplete ? (
-        <DashboardPanel stats className="dashboard-overview !min-h-0 !space-y-4 !p-4 sm:!p-6">
-          <div className="flex items-center gap-2">
-            <Users className="h-6 w-6 text-primary" />
-            <h2 className="text-xl font-semibold text-foreground">{labels.clientsCount}</h2>
-          </div>
-          <DashboardMetric label={labels.clientsCount} labelClassName="!text-xs">
-            <strong className="text-2xl font-bold tabular-nums text-foreground">
-              {number(data.clients.length)}
-            </strong>
-          </DashboardMetric>
-        </DashboardPanel>
+      {permissions.can_access_clients ? (
+        <MobileClientStats data={data} permissions={permissions} language={language} />
       ) : null}
-
-      {serviceStatsComplete ? (
-        <DashboardPanel stats className="dashboard-overview !min-h-0 !space-y-4 !p-4 sm:!p-6">
-          <div className="flex items-center gap-2">
-            <Wrench className="h-6 w-6 text-primary" />
-            <h2 className="text-xl font-semibold text-foreground">{labels.serviceAppointments}</h2>
-          </div>
-          <div className="grid grid-cols-2 gap-5">
-            <DashboardMetric label={labels.serviceAppointments} labelClassName="!text-xs">
-              <strong className="text-2xl font-bold tabular-nums text-foreground">
-                {number(appointments.length)}
-              </strong>
-            </DashboardMetric>
-            <DashboardMetric label={labels.completed} labelClassName="!text-xs">
-              <strong className="text-2xl font-bold tabular-nums text-foreground">
-                {number(completedCount)}
-              </strong>
-            </DashboardMetric>
-            <DashboardMetric label={labels.overdue} labelClassName="!text-xs">
-              <strong className="text-2xl font-bold tabular-nums text-foreground">
-                {number(overdueCount)}
-              </strong>
-            </DashboardMetric>
-          </div>
-        </DashboardPanel>
+      {permissions.can_access_services ? (
+        <MobileServiceStats data={data} language={language} />
       ) : null}
     </div>
   );

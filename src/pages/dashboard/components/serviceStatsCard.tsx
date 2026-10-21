@@ -16,7 +16,10 @@ import { Pie, PieChart, Tooltip, ResponsiveContainer, Line, LineChart, XAxis, YA
 import { Tooltip as UITooltip } from "../../../lib/components/tooltip"
 import { useDashboardLoading } from "../../../lib/contexts/dashboardContext"
 import { useTheme } from "../../../lib/hooks/useTheme"
-import { DashboardPanel } from "../../../lib/components/dashboardPresentation";
+import {
+  DASHBOARD_SERIES_COLORS,
+  DashboardPanel,
+} from "../../../lib/components/dashboardPresentation";
 
 interface ServiceStats {
   totalServices: number
@@ -80,16 +83,7 @@ interface ServiceStats {
 type ViewMode = 'types' | 'names' | 'trends'
 
 // Define vibrant chart colors
-const chartColors = [
-  "#3b82f6", // Blue
-  "#10b981", // Green
-  "#f59e0b", // Amber
-  "#ef4444", // Red
-  "#8b5cf6", // Purple
-  "#06b6d4", // Cyan
-  "#84cc16", // Lime
-  "#f97316", // Orange
-]
+const chartColors = DASHBOARD_SERIES_COLORS;
 
 /** Recharts `Pie` sector typings omit DOM events; call preventDefault only when it exists. */
 function preventPiePointerDefault(e: unknown) {

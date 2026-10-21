@@ -7,7 +7,10 @@ import { TrendingUp, PackageIcon, PieChart as PieChartIcon } from "lucide-react"
 import { Pie, PieChart, Tooltip, ResponsiveContainer } from "recharts"
 import { Tooltip as UITooltip } from "../../../lib/components/tooltip"
 import { useSales, useProducts, useLowStockThreshold, useDashboardLoading } from "../../../lib/contexts/dashboardContext"
-import { DashboardPanel } from "../../../lib/components/dashboardPresentation";
+import {
+  DASHBOARD_SERIES_COLORS,
+  DashboardPanel,
+} from "../../../lib/components/dashboardPresentation";
 
 // Using div elements with card styling like other components in the project
 
@@ -53,16 +56,7 @@ const STOCK_STATS_NUMBER_LOCALE = "fr-FR"
 // Using CSS variables for chart colors defined in chartConfig
 
 // Define vibrant chart colors
-const chartColors = [
-  "#3b82f6", // Blue
-  "#10b981", // Green
-  "#f59e0b", // Amber
-  "#ef4444", // Red
-  "#8b5cf6", // Purple
-  "#06b6d4", // Cyan
-  "#84cc16", // Lime
-  "#f97316", // Orange
-]
+const chartColors = DASHBOARD_SERIES_COLORS;
 
 /** Recharts `Pie` sector typings omit DOM events; call preventDefault only when it exists. */
 function preventPiePointerDefault(e: unknown) {
