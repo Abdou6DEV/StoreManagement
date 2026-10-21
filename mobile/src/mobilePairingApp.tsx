@@ -273,7 +273,7 @@ export function MobilePairingApp() {
       <div className="mobile-loading-brand">
         <img src={`${import.meta.env.BASE_URL}myapp_black.ico`} alt="REDA TECH" />
         <style>{`@keyframes mobile-loading-typing { 0%, 100% { transform: translateY(0); opacity: 0.5; } 50% { transform: translateY(-50%); opacity: 1; } }`}</style>
-        <span role="status" className="mt-4 inline-flex h-2 w-8 items-center gap-[12%] text-muted-foreground">
+        <span role="status" className="mt-5 inline-flex h-3 w-12 items-center gap-[12%] text-[#ef4444]">
           {Array.from({ length: 3 }, (_, index) => (
             <span
               key={index}

@@ -179,6 +179,11 @@ button:focus-visible, select:focus-visible, input:focus-visible {
   object-fit: contain;
 }
 
+.mobile-initial-loading .mobile-loading-brand img {
+  width: 144px;
+  height: 144px;
+}
+
 .mobile-loading-brand h1, .mobile-login-brand h1 {
   margin: 8px 0;
   font-size: clamp(1.35rem, 5vw, 1.8rem);
