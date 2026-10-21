@@ -264,7 +264,7 @@ export function MobileDashboard({
   const summaryNumber = (value: number) => days.length > 0 ? number(value) : "—";
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-0">
       <DashboardPanel className="dashboard-overview !min-h-0 !gap-4 !p-4">
         <div className="flex flex-col gap-3">
           <div className="flex items-start gap-3">
@@ -387,7 +387,7 @@ export function MobileDashboard({
                 {chartStyle === "bar" ? (
                     <BarChart
                     data={chartData}
-                    margin={{ top: 16, right: 12, bottom: 8, left: 2 }}
+                    margin={{ top: 16, right: 1, bottom: 1, left: 1 }}
                   >
                     <defs>
                       <linearGradient id="mobile-dashboard-profit-gradient" x1="0" y1="0" x2="0" y2="1">
@@ -451,7 +451,7 @@ export function MobileDashboard({
                 ) : (
                   <RechartsLineChart
                     data={chartData}
-                    margin={{ top: 16, right: 12, bottom: 8, left: 2 }}
+                    margin={{ top: 16, right: 1, bottom: 1, left: 1 }}
                   >
                     <defs>
                       <linearGradient id="mobile-dashboard-line-average-gradient" x1="0" y1="0" x2="0" y2="1">
