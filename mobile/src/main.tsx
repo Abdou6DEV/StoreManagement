@@ -1,9 +1,9 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
 import { MobilePairingApp } from "./mobilePairingApp";
-import "../src/lib/i18n";
-import { ThemeProvider } from "../src/lib/contexts/themeContext";
-import { TooltipProvider } from "../src/lib/contexts/tooltipContext";
+import "../../src/lib/i18n";
+import { ThemeProvider } from "../../src/lib/contexts/themeContext";
+import { TooltipProvider } from "../../src/lib/contexts/tooltipContext";
 import "./style.css";
 
 const root = document.getElementById("root");
