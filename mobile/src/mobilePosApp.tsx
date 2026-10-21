@@ -14,6 +14,7 @@ import {
   WifiOff,
 } from "lucide-react";
 import { Card } from "../../src/lib/components/card";
+import { PreferencesMenu } from "../../src/lib/components/preferencesMenu";
 import {
   MenuCardContent,
   PAGE_PRESENTATION,
@@ -1237,32 +1238,7 @@ export function MobilePosApp({
         </>
       ) : (
         <>
-          <button
-            type="button"
-            className={`icon-button settings-button mobile-login-settings-trigger ${settingsOpen ? "active" : ""}`}
-            aria-label={copy.settings}
-            aria-expanded={settingsOpen}
-            onClick={() => setSettingsOpen((current) => !current)}
-          >
-            <Settings size={19} />
-          </button>
-          {settingsOpen ? (
-            <Card className="mobile-settings mobile-login-settings" aria-label={copy.settings}>
-              <div className="mobile-settings-heading">
-                <h2>{copy.settings}</h2>
-                <span className={`connection-state ${online ? "is-online" : "is-offline"}`}>
-                  {online ? <Wifi size={16} /> : <WifiOff size={16} />}
-                </span>
-              </div>
-              <div className="mobile-settings-languages" role="group" aria-label="Language">
-                {(["en", "fr", "ar"] as const).map((item) => (
-                  <button key={item} type="button" className={language === item ? "on" : ""} onClick={() => changeLanguage(item)}>
-                    {item === "en" ? "English" : item === "fr" ? "Français" : "العربية"}
-                  </button>
-                ))}
-              </div>
-            </Card>
-          ) : null}
+          <PreferencesMenu language={language} onLanguageChange={changeLanguage} className="mobile-login-preferences" forceRight />
         </>
       )}
       {notice ? <div className="mobile-state-banner error-banner" role="alert"><AlertCircle size={17} />{notice}</div> : null}

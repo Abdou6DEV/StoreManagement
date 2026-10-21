@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useMemo, useRef, useState, type Keyboard
 import { Trans, useTranslation } from "react-i18next";
 import {
   FileText,
-  Settings,
   Shield,
   Sparkles,
   Star,
@@ -18,6 +17,7 @@ import {
 } from "lucide-react";
 import { useTheme } from "../../lib/hooks/useTheme";
 import { cn } from "../../lib/utils";
+import { PreferencesMenu } from "../../lib/components/preferencesMenu";
 import {
   ABOUT_MAIN_FEATURE_DEFS,
   ABOUT_TECHNICAL_FEATURE_DEFS,
@@ -26,17 +26,6 @@ import { ABOUT_PRIVACY_POINT_KEYS, ABOUT_TERMS_POINT_KEYS } from "../../lib/abou
 import { LOGO_ICON, LOGO_ICON_DARK } from "../../lib/assets";
 import { Button } from "../../lib/components/button";
 import { Input } from "../../lib/components/input";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "../../lib/components/dropdownMenu";
-import { ThemeToggleButton } from "../../lib/components/themeToggleButton";
-import { FullscreenToggleButton } from "../../lib/components/fullscreenToggleButton";
-import { TooltipToggleButton } from "../../lib/components/tooltipToggleButton";
 import { useToast } from "../../lib/contexts/toastContext";
 import { FeaturesCarousel } from "../../lib/components/featuresCarousel";
 import { WelcomeSectionNav } from "../../lib/components/welcomeSectionNav";
@@ -401,7 +390,6 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
   const [phone, setPhone] = useState("");
   const [showRestoreFlow, setShowRestoreFlow] = useState(false);
   const [customerId, setCustomerId] = useState("");
-  const [dropdownOpen, setDropdownOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [restorePhase, setRestorePhase] = useState<WelcomeRestorePhase>("idle");
   /** Set after cloud restore + DB apply succeed; prevents switching to trial on the same screen. */
@@ -1269,76 +1257,7 @@ export default function WelcomeSetup({ marketingSite = false }: WelcomeSetupProp
           />
         </>
       ) : null}
-      <div className={cn("fixed top-4 z-50", isRTL ? "left-4" : "right-4")}>
-        <DropdownMenu modal={false} onOpenChange={setDropdownOpen}>
-          <DropdownMenuTrigger asChild>
-            <button
-              type="button"
-              className="rounded-xl p-1 outline-none ring-0 transition-all duration-300 hover:text-primary"
-              aria-label={t("navigation.preferences", "Preferences")}
-            >
-              <Settings
-                className={cn(
-                  "transition-transform duration-300",
-                  dropdownOpen ? "rotate-90 scale-110" : "",
-                  "hover:text-primary",
-                )}
-              />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent className={cn("mx-4 my-2 w-56", isRTL && "text-right")}>
-            <DropdownMenuLabel className="flex items-center gap-2 font-semibold text-md">
-              <User className="h-4 w-4" />
-              {t("navigation.welcomeToStoreManagement", "Welcome to Store Management")}
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuLabel className="font-semibold text-md">
-              {t("navigation.preferences", "Preferences")}
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <ThemeToggleButton variant="ghost" showText />
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <TooltipToggleButton variant="ghost" showText />
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <FullscreenToggleButton variant="ghost" showText />
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuLabel className="font-semibold text-md">
-              {t("navigation.language", "Language")}
-            </DropdownMenuLabel>
-            <DropdownMenuItem
-              onClick={(e) => {
-                e.preventDefault();
-                i18n.changeLanguage("en");
-              }}
-              disabled={i18n.language === "en"}
-            >
-              {t("navigation.english", "English")}
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={(e) => {
-                e.preventDefault();
-                i18n.changeLanguage("fr");
-              }}
-              disabled={i18n.language === "fr"}
-            >
-              {t("navigation.french", "French")}
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={(e) => {
-                e.preventDefault();
-                i18n.changeLanguage("ar");
-              }}
-              disabled={i18n.language === "ar"}
-            >
-              {t("navigation.arabic", "Arabic")}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+      <PreferencesMenu isRTL={isRTL} />
 
       <section
         id="welcome-hero"

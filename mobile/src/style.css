@@ -3,7 +3,14 @@
 @source "../../src/lib/components/card.tsx";
 @source "../../src/lib/components/sharedPresentation.tsx";
 @source "../../src/lib/components/dashboardPresentation.tsx";
+@source "../../src/lib/components/preferencesMenu.tsx";
+@source "../../src/lib/components/dropdownMenu.tsx";
+@source "../../src/lib/components/themeToggleButton.tsx";
+@source "../../src/lib/components/tooltipToggleButton.tsx";
+@source "../../src/lib/components/fullscreenToggleButton.tsx";
+@source "../../src/lib/components/button.tsx";
 
+html.dark { color-scheme: dark; }
 :root {
   color-scheme: light;
   --bg: var(--background);
@@ -571,17 +578,11 @@ button:focus-visible, select:focus-visible, input:focus-visible {
   box-shadow: 0 4px 6px -1px rgb(0 0 0 / 10%), 0 2px 4px -2px rgb(0 0 0 / 10%);
   backdrop-filter: none;
 }
-.mobile-login-settings-trigger {
-  position: fixed;
+.mobile-login-preferences {
   top: calc(12px + env(safe-area-inset-top));
   right: 12px;
-  z-index: 10;
-}
-.mobile-login-settings {
-  position: fixed;
-  top: calc(60px + env(safe-area-inset-top));
-  right: 12px;
-  z-index: 10;
+  left: auto;
+  z-index: 50;
 }
 .mobile-user-badge {
   max-width: 25vw;
