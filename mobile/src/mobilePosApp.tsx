@@ -1235,7 +1235,38 @@ export function MobilePosApp({
             </Card>
           ) : null}
         </>
-      ) : null}
+      ) : (
+        <>
+          <header className="mobile-app-header mobile-login-header">
+            <button
+              type="button"
+              className={`icon-button settings-button ${settingsOpen ? "active" : ""}`}
+              aria-label={copy.settings}
+              aria-expanded={settingsOpen}
+              onClick={() => setSettingsOpen((current) => !current)}
+            >
+              <Settings size={19} />
+            </button>
+          </header>
+          {settingsOpen ? (
+            <Card className="mobile-settings" aria-label={copy.settings}>
+              <div className="mobile-settings-heading">
+                <h2>{copy.settings}</h2>
+                <span className={`connection-state ${online ? "is-online" : "is-offline"}`}>
+                  {online ? <Wifi size={16} /> : <WifiOff size={16} />}
+                </span>
+              </div>
+              <div className="mobile-settings-languages" role="group" aria-label="Language">
+                {(["en", "fr", "ar"] as const).map((item) => (
+                  <button key={item} type="button" className={language === item ? "on" : ""} onClick={() => changeLanguage(item)}>
+                    {item === "en" ? "English" : item === "fr" ? "Français" : "العربية"}
+                  </button>
+                ))}
+              </div>
+            </Card>
+          ) : null}
+        </>
+      )}
       {notice ? <div className="mobile-state-banner error-banner" role="alert"><AlertCircle size={17} />{notice}</div> : null}
 
       {!user ? (
