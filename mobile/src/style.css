@@ -191,7 +191,7 @@ button:focus-visible, select:focus-visible, input:focus-visible {
 }
 
 .mobile-loading-brand h1, .mobile-login-brand p {
-  margin: 8px 0;
+  margin: 0;
   letter-spacing: -0.035em;
 }
 

@@ -139,7 +139,7 @@ const COPY: Record<MobileLanguage, Copy> = {
   en: {
     appName: "REDA TECH",
     loginTitle: "Sign in to your store",
-    loginHelp: "Use your desktop POS username and password.",
+    loginHelp: "Use your username and password.",
     username: "Username",
     password: "Password",
     login: "Sign in",
@@ -295,7 +295,7 @@ const COPY: Record<MobileLanguage, Copy> = {
   fr: {
     appName: "REDA TECH",
     loginTitle: "Connexion à votre magasin",
-    loginHelp: "Utilisez le nom d’utilisateur et le mot de passe du POS.",
+    loginHelp: "Utilisez le nom d’utilisateur et le mot de passe.",
     username: "Nom d’utilisateur",
     password: "Mot de passe",
     login: "Se connecter",
