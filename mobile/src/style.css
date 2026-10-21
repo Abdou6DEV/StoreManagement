@@ -571,6 +571,12 @@ button:focus-visible, select:focus-visible, input:focus-visible {
   box-shadow: 0 4px 6px -1px rgb(0 0 0 / 10%), 0 2px 4px -2px rgb(0 0 0 / 10%);
   backdrop-filter: none;
 }
+.mobile-login-header {
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: end;
+  margin-bottom: 14px;
+}
+.mobile-login-header .settings-button { justify-self: end; }
 .mobile-user-badge {
   max-width: 25vw;
   min-height: 48px;
