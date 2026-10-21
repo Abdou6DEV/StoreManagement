@@ -190,8 +190,10 @@ button:focus-visible, select:focus-visible, input:focus-visible {
   letter-spacing: -0.035em;
 }
 
-.mobile-loading-brand h1, .mobile-login-brand p {
-  margin: 0;
+.mobile-login-brand p {
+  align-content: center;
+  justify-items: center;
+  text-align: center;
   letter-spacing: -0.035em;
 }
 
