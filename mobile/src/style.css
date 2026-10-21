@@ -787,10 +787,10 @@ button:focus-visible, select:focus-visible, input:focus-visible {
 }
 
 .dashboard-mobile-chart {
-  width: calc(100% + 2 * clamp(16px, 4.5vw, 22px));
+  width: calc(100% + clamp(32px, 9vw, 44px));
   max-width: calc(100vw - 28px);
   box-sizing: border-box;
-  margin-inline: calc(-1 * clamp(16px, 4.5vw, 22px));
+  margin-inline: clamp(-22px, -4.5vw, -16px);
   height: clamp(330px, 92vw, 390px);
   min-width: 0;
   padding: 14px 4px 8px 0;
