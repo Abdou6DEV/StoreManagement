@@ -795,13 +795,16 @@ button:focus-visible, select:focus-visible, input:focus-visible {
   padding: 12px 0 8px;
   height: clamp(340px, 94vw, 400px);
   background: transparent;
-  overflow: hidden;
+  overflow: visible;
   -webkit-tap-highlight-color: transparent;
 }
 
-.dashboard-mobile-chart .recharts-wrapper,
+.dashboard-mobile-chart .recharts-wrapper {
+  background: transparent;
+  -webkit-tap-highlight-color: transparent;
+}
+
 .dashboard-mobile-chart .recharts-surface {
-  max-width: 100%;
   background: transparent;
   -webkit-tap-highlight-color: transparent;
 }
@@ -897,7 +900,6 @@ button:focus-visible, select:focus-visible, input:focus-visible {
 .dashboard-overview > section {
   min-width: 0;
   max-width: 100%;
-  overflow: hidden;
 }
 .dashboard-overview .dashboard-mobile-chart {
   display: block;
