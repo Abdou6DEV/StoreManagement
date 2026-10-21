@@ -787,19 +787,34 @@ button:focus-visible, select:focus-visible, input:focus-visible {
 }
 
 .dashboard-mobile-chart {
-  width: calc(100% + clamp(32px, 9vw, 44px));
-  max-width: calc(100vw - 28px);
-  box-sizing: border-box;
-  margin-inline: clamp(-22px, -4.5vw, -16px);
-  height: clamp(330px, 92vw, 390px);
+  width: 100%;
+  max-width: 100%;
   min-width: 0;
-  padding: 14px 4px 8px 0;
-  overflow: visible;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 12px 0 8px;
+  height: clamp(340px, 94vw, 400px);
+  background: transparent;
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .dashboard-mobile-chart .recharts-wrapper,
 .dashboard-mobile-chart .recharts-surface {
-  overflow: visible;
+  max-width: 100%;
+  background: transparent;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.dashboard-mobile-chart .recharts-wrapper:focus,
+.dashboard-mobile-chart .recharts-surface:focus,
+.dashboard-mobile-chart .recharts-wrapper *:focus {
+  outline: none !important;
+}
+
+.dashboard-mobile-chart .recharts-cartesian-axis-line,
+.dashboard-mobile-chart .recharts-cartesian-axis-tick-line {
+  stroke: var(--line);
 }
 
 .dashboard-mobile-chart .recharts-cartesian-axis-tick-value {
@@ -882,8 +897,11 @@ button:focus-visible, select:focus-visible, input:focus-visible {
 .dashboard-overview > section {
   min-width: 0;
   max-width: 100%;
+  overflow: hidden;
 }
 .dashboard-overview .dashboard-mobile-chart {
-  flex: 1 1 auto;
+  display: block;
+  width: 100%;
+  max-width: 100%;
 }
 /* Let ResponsiveContainer control the generated Recharts wrapper dimensions. */

@@ -179,7 +179,7 @@ export function MobileDashboard({
       }
       for (let hour = 0; hour <= now.getHours(); hour += 1) {
         chartPoints.push({
-          period: String(hour).padStart(2, "0"),
+          period: `${String(hour).padStart(2, "0")}:00`,
           profits: hourlyProfits.get(hour) ?? 0,
           billPayments: hourlyBills.get(hour) ?? 0,
         });
@@ -206,7 +206,7 @@ export function MobileDashboard({
       const key = `${now.getFullYear()}-${String(month + 1).padStart(2, "0")}`;
       const monthRows = future ? [] : days.filter((row) => String(row.local_day).startsWith(key));
       chartPoints.push({
-        period: new Date(now.getFullYear(), month, 1, 12).toLocaleString("en-US", { month: "short" }).toLowerCase(),
+        period: new Date(now.getFullYear(), month, 1, 12).toLocaleString(language, { month: "short" }).replace(/\.$/, ""),
         profits: monthRows.reduce((sum, row) => sum + (Number(row.profit) || 0), 0),
         billPayments: monthRows.reduce((sum, row) => sum + (Number(row.bill_payments) || 0), 0) / 100,
         future,
@@ -222,7 +222,7 @@ export function MobileDashboard({
       const key = monthKey(date);
       const monthRows = selectedDays.filter((row) => String(row.local_day).startsWith(key));
       chartPoints.push({
-        period: date.toLocaleString("en-US", { month: "short" }).toLowerCase(),
+        period: date.toLocaleString(language, { month: "short" }).replace(/\.$/, ""),
         profits: monthRows.reduce((sum, row) => sum + (Number(row.profit) || 0), 0),
         billPayments: monthRows.reduce((sum, row) => sum + (Number(row.bill_payments) || 0), 0) / 100,
       });
@@ -406,26 +406,36 @@ export function MobileDashboard({
                     />
                     <XAxis
                       dataKey="period"
-                      tickLine={false}
-                      axisLine={false}
-                      interval={period === "month" ? 1 : period === "365" ? 1 : 0}
-                      angle={0}
-                      textAnchor="middle"
-                      height={34}
+                      tickLine={{ stroke: "var(--line)", strokeWidth: 1 }}
+                      axisLine={{ stroke: "var(--line)", strokeWidth: 1 }}
+                      interval={0}
+                      angle={period === "month" || period === "today" ? -45 : 0}
+                      textAnchor={period === "month" || period === "today" ? "end" : "middle"}
+                      height={period === "month" || period === "today" ? 54 : 34}
                       tickMargin={8}
-                      tick={{ fontSize: 10 }}
+                      tick={{ fontSize: period === "month" || period === "today" ? 8 : 10 }}
                     />
-                    <YAxis tickLine={false} axisLine={false} width={76} tickMargin={8} tick={{ fontSize: 10 }} domain={profitDomain} />
+                    <YAxis
+                      tickLine={{ stroke: "var(--line)", strokeWidth: 1 }}
+                      axisLine={{ stroke: "var(--line)", strokeWidth: 1 }}
+                      width={58}
+                      tickMargin={6}
+                      tick={{ fontSize: 9 }}
+                      tickFormatter={(value: number) => new Intl.NumberFormat(language, { notation: "compact", maximumFractionDigits: 1 }).format(Number(value))}
+                      domain={profitDomain}
+                    />
                     {nonzeroProfits.length > 0 ? <ReferenceLine y={averageProfit} stroke="#64748b" strokeDasharray="4 4" /> : null}
                     <Tooltip
                       formatter={(value: unknown) => money(Number(Array.isArray(value) ? value[0] : value) || 0)}
                       labelFormatter={(label) => String(label)}
                       contentStyle={{ borderRadius: 12, borderColor: "var(--border)" }}
+                      cursor={false}
                     />
                     <Bar
                       dataKey="profit"
                       radius={[5, 5, 0, 0]}
                       maxBarSize={34}
+                      activeBar={false}
                     >
                       {chartData.map((point) => (
                         <Cell
@@ -458,21 +468,30 @@ export function MobileDashboard({
                     />
                     <XAxis
                       dataKey="period"
-                      tickLine={false}
-                      axisLine={false}
-                      interval={period === "month" ? 1 : period === "365" ? 1 : 0}
-                      angle={0}
-                      textAnchor="middle"
-                      height={34}
+                      tickLine={{ stroke: "var(--line)", strokeWidth: 1 }}
+                      axisLine={{ stroke: "var(--line)", strokeWidth: 1 }}
+                      interval={0}
+                      angle={period === "month" || period === "today" ? -45 : 0}
+                      textAnchor={period === "month" || period === "today" ? "end" : "middle"}
+                      height={period === "month" || period === "today" ? 54 : 34}
                       tickMargin={8}
-                      tick={{ fontSize: 10 }}
+                      tick={{ fontSize: period === "month" || period === "today" ? 8 : 10 }}
                     />
-                    <YAxis tickLine={false} axisLine={false} width={76} tickMargin={8} tick={{ fontSize: 10 }} domain={profitDomain} />
+                    <YAxis
+                      tickLine={{ stroke: "var(--line)", strokeWidth: 1 }}
+                      axisLine={{ stroke: "var(--line)", strokeWidth: 1 }}
+                      width={58}
+                      tickMargin={6}
+                      tick={{ fontSize: 9 }}
+                      tickFormatter={(value: number) => new Intl.NumberFormat(language, { notation: "compact", maximumFractionDigits: 1 }).format(Number(value))}
+                      domain={profitDomain}
+                    />
                     {nonzeroProfits.length > 0 ? <ReferenceLine y={averageProfit} stroke="#64748b" strokeDasharray="4 4" /> : null}
                     <Tooltip
                       formatter={(value: unknown) => money(Number(Array.isArray(value) ? value[0] : value) || 0)}
                       labelFormatter={(label) => String(label)}
                       contentStyle={{ borderRadius: 12, borderColor: "var(--border)" }}
+                      cursor={false}
                     />
                     <Line
                       type="monotone"
@@ -484,7 +503,7 @@ export function MobileDashboard({
                         if (payload?.future || typeof payload?.profit !== "number") return null;
                         return <circle cx={cx} cy={cy} r={3} fill={isAboveAverage(payload.profit) ? greenProfit : redProfit} stroke="var(--card)" strokeWidth={1} />;
                       }}
-                      activeDot={{ r: 4 }}
+                      activeDot={{ r: 4, strokeWidth: 0 }}
                     />
                   </RechartsLineChart>
                 )}
