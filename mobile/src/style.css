@@ -787,6 +787,10 @@ button:focus-visible, select:focus-visible, input:focus-visible {
 }
 
 .dashboard-mobile-chart {
+  width: calc(100% + 2 * clamp(16px, 4.5vw, 22px));
+  max-width: calc(100vw - 28px);
+  box-sizing: border-box;
+  margin-inline: calc(-1 * clamp(16px, 4.5vw, 22px));
   height: clamp(330px, 92vw, 390px);
   min-width: 0;
   padding: 14px 4px 8px 0;
@@ -871,4 +875,18 @@ button:focus-visible, select:focus-visible, input:focus-visible {
   .mobile-shell { padding-inline: 22px; }
   .dashboard-mobile-chart { height: 390px; }
   .mobile-dashboard-pie-chart { height: 240px !important; min-height: 240px; }
+}
+
+
+/* Keep the overview chart responsive without allowing it to widen past the card/screen. */
+.dashboard-overview > section {
+  min-width: 0;
+  max-width: 100%;
+}
+.dashboard-overview .dashboard-mobile-chart {
+  flex: 1 1 auto;
+}
+.dashboard-mobile-chart .recharts-wrapper {
+  width: 100% !important;
+  max-width: 100%;
 }

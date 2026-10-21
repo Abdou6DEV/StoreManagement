@@ -194,7 +194,7 @@ export function MobileDashboard({
       const row = dailyByDay.get(day);
       const future = date > new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12);
       chartPoints.push({
-        period: `${String(dayNumber).padStart(2, "0")}/${String(date.getMonth() + 1).padStart(2, "0")}`,
+        period: String(dayNumber).padStart(2, "0"),
         profits: future ? 0 : Number(row?.profit) || 0,
         billPayments: future ? 0 : (Number(row?.bill_payments) || 0) / 100,
         future,
@@ -206,7 +206,7 @@ export function MobileDashboard({
       const key = `${now.getFullYear()}-${String(month + 1).padStart(2, "0")}`;
       const monthRows = future ? [] : days.filter((row) => String(row.local_day).startsWith(key));
       chartPoints.push({
-        period: String(month + 1).padStart(2, "0"),
+        period: new Date(now.getFullYear(), month, 1, 12).toLocaleString("en-US", { month: "short" }).toLowerCase(),
         profits: monthRows.reduce((sum, row) => sum + (Number(row.profit) || 0), 0),
         billPayments: monthRows.reduce((sum, row) => sum + (Number(row.bill_payments) || 0), 0) / 100,
         future,
@@ -222,7 +222,7 @@ export function MobileDashboard({
       const key = monthKey(date);
       const monthRows = selectedDays.filter((row) => String(row.local_day).startsWith(key));
       chartPoints.push({
-        period: `${String(date.getMonth() + 1).padStart(2, "0")}/${String(date.getFullYear()).slice(-2)}`,
+        period: date.toLocaleString("en-US", { month: "short" }).toLowerCase(),
         profits: monthRows.reduce((sum, row) => sum + (Number(row.profit) || 0), 0),
         billPayments: monthRows.reduce((sum, row) => sum + (Number(row.bill_payments) || 0), 0) / 100,
       });
@@ -408,12 +408,12 @@ export function MobileDashboard({
                       dataKey="period"
                       tickLine={false}
                       axisLine={false}
-                      interval={period === "month" ? 1 : period === "365" ? 6 : 0}
-                      angle={period === "month" ? -45 : period === "365" ? -35 : 0}
-                      textAnchor={period === "month" || period === "365" ? "end" : "middle"}
-                      height={period === "month" ? 72 : period === "365" ? 52 : 34}
-                      tickMargin={period === "month" ? 12 : period === "365" ? 10 : 8}
-                      tick={{ fontSize: period === "month" ? 9 : period === "365" ? 9 : 11 }}
+                      interval={period === "month" ? 1 : period === "365" ? 1 : 0}
+                      angle={0}
+                      textAnchor="middle"
+                      height={34}
+                      tickMargin={8}
+                      tick={{ fontSize: 10 }}
                     />
                     <YAxis tickLine={false} axisLine={false} width={76} tickMargin={8} tick={{ fontSize: 10 }} domain={profitDomain} />
                     {nonzeroProfits.length > 0 ? <ReferenceLine y={averageProfit} stroke="#64748b" strokeDasharray="4 4" /> : null}
@@ -460,12 +460,12 @@ export function MobileDashboard({
                       dataKey="period"
                       tickLine={false}
                       axisLine={false}
-                      interval={period === "month" ? 1 : period === "365" ? 6 : 0}
-                      angle={period === "month" ? -45 : period === "365" ? -35 : 0}
-                      textAnchor={period === "month" || period === "365" ? "end" : "middle"}
-                      height={period === "month" ? 72 : period === "365" ? 52 : 34}
-                      tickMargin={period === "month" ? 12 : period === "365" ? 10 : 8}
-                      tick={{ fontSize: period === "month" ? 9 : period === "365" ? 9 : 11 }}
+                      interval={period === "month" ? 1 : period === "365" ? 1 : 0}
+                      angle={0}
+                      textAnchor="middle"
+                      height={34}
+                      tickMargin={8}
+                      tick={{ fontSize: 10 }}
                     />
                     <YAxis tickLine={false} axisLine={false} width={76} tickMargin={8} tick={{ fontSize: 10 }} domain={profitDomain} />
                     {nonzeroProfits.length > 0 ? <ReferenceLine y={averageProfit} stroke="#64748b" strokeDasharray="4 4" /> : null}
