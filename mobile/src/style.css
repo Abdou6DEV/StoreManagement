@@ -440,7 +440,10 @@ button:focus-visible, select:focus-visible, input:focus-visible {
 .dashboard-switch.on { background: #16a34a; }
 .dashboard-switch.on::after { transform: translateX(14px); }
 .mobile-chart { width: 100%; height: 250px; padding: 12px 8px 8px; }
-.dashboard-mobile-chart { height: 330px; padding-inline: 4px; }
+.dashboard-mobile-chart { height: 350px; padding-inline: 4px; }
+.dashboard-mobile-chart .recharts-xAxis .recharts-cartesian-axis-tick-value { font-size: 9px; }
+.dashboard-mobile-chart.dashboard-period-month .recharts-xAxis .recharts-cartesian-axis-tick-value { font-size: 7px; }
+.dashboard-mobile-chart.dashboard-period-365 .recharts-xAxis .recharts-cartesian-axis-tick-value { font-size: 8px; }
 .mobile-chart .recharts-text { fill: var(--mobile-muted); font-size: 10px; }
 .dashboard-summary-list {
   display: grid;
@@ -461,6 +464,14 @@ button:focus-visible, select:focus-visible, input:focus-visible {
 .mobile-view-toggle { display: flex; padding: 3px; border: 1px solid var(--line); border-radius: 9px; background: #fff; }
 .mobile-view-toggle button { display: grid; width: 36px; height: 34px; place-items: center; border: 0; border-radius: 6px; color: var(--mobile-muted); background: transparent; }
 .mobile-view-toggle button.selected { color: #b91c1c; background: #fef2f2; }
+.mobile-dashboard-toggle { display: grid; width: 100%; min-width: 0; gap: 3px; padding: 3px; border: 1px solid var(--line); border-radius: 9px; background: #fff; }
+.mobile-dashboard-toggle[data-columns="2"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.mobile-dashboard-toggle[data-columns="3"] { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.mobile-dashboard-toggle button { display: flex; min-width: 0; min-height: 38px; align-items: center; justify-content: center; padding: 6px 7px; border: 0; border-radius: 6px; color: var(--mobile-muted); background: transparent; font-size: .75rem; font-weight: 600; line-height: 1.2; text-align: center; white-space: normal; overflow-wrap: anywhere; }
+.mobile-dashboard-toggle button.selected { color: #b91c1c; background: #fef2f2; }
+.mobile-dashboard-toggle button:disabled { opacity: .45; }
+.mobile-dashboard-chart-section { min-width: 0; overflow: hidden; padding: 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--card); }
+.mobile-dashboard-pie-chart { width: 100%; overflow: hidden; }
 .mobile-record-list { grid-template-columns: 1fr; gap: 10px; }
 .mobile-record {
   padding: 14px;
@@ -681,6 +692,7 @@ button:focus-visible, select:focus-visible, input:focus-visible {
 .mobile-metric strong { font-size: 1.15rem; }
 .metric-green, .metric-green-dark, .metric-blue, .metric-purple, .metric-cyan, .metric-orange, .metric-red { border-top: 1px solid oklch(0.8 0 0); }
 .mobile-chart { padding: 12px 8px 8px; }
+.dashboard-mobile-chart { height: 350px; }
 .dashboard-summary-list > div { border-color: oklch(0.8 0 0); }
 
 .mobile-bottom-nav {

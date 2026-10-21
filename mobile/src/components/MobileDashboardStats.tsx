@@ -1,10 +1,7 @@
 import { useMemo, useState } from "react";
 import {
-  CartesianGrid,
   Cell,
   Label,
-  Line,
-  LineChart,
   Pie,
   PieChart,
   PolarRadiusAxis,
@@ -12,8 +9,6 @@ import {
   RadialBarChart,
   ResponsiveContainer,
   Tooltip,
-  XAxis,
-  YAxis,
 } from "recharts";
 import {
   DashboardMetric,
@@ -140,18 +135,15 @@ function PieBreakdown({
   data,
   legendData,
   language,
-  piePercentageTotal,
   legendPercentageTotal,
 }: {
   title: string;
   data: Slice[];
   legendData?: Slice[];
   language: MobileLanguage;
-  piePercentageTotal?: number;
   legendPercentageTotal?: number;
 }) {
   const dataTotal = data.reduce((sum, row) => sum + row.value, 0);
-  const pieTotal = piePercentageTotal ?? dataTotal;
   const legendTotal = legendPercentageTotal ?? dataTotal;
   const legendRows = legendData ?? data;
   if (!data.length) return null;
@@ -159,7 +151,7 @@ function PieBreakdown({
     <section className="mobile-dashboard-chart-section">
       <h3 className="mb-2 text-base font-semibold text-foreground">{title}</h3>
       <div className="grid min-w-0 gap-3 sm:grid-cols-2 sm:items-center">
-        <div className="h-[230px] min-w-0">
+        <div className="mobile-dashboard-pie-chart h-[190px] min-w-0">
           <ResponsiveContainer width="100%" height="100%" minWidth={0}>
             <PieChart>
               <Tooltip formatter={(entry: unknown) => number(Number(Array.isArray(entry) ? entry[0] : entry) || 0, language)} />
@@ -168,12 +160,8 @@ function PieBreakdown({
                 dataKey="value"
                 nameKey="name"
                 innerRadius="45%"
-                outerRadius="70%"
+                outerRadius="60%"
                 paddingAngle={1}
-                label={({ payload }) => {
-                  const row = payload as Slice | undefined;
-                  return row && pieTotal > 0 ? `${(row.value / pieTotal * 100).toFixed(1)}%` : "";
-                }}
               >
                 {data.map((row, index) => <Cell key={row.key ?? `${row.name}-${index}`} fill={row.fill} />)}
               </Pie>
@@ -362,8 +350,7 @@ export function MobileStockStats({
             { label: copy.noBarcode, value: stats.withoutBarcode },
             { label: copy.worstSelling, value: itemsComplete ? stats.worstSelling : "—" },
           ]} />
-          <DataNotice>{copy.lowStockUnavailable}</DataNotice>
-          <div className="mobile-view-toggle" role="group">
+          <div className="mobile-dashboard-toggle" data-columns="2" role="group">
             <button type="button" className={view === "categories" ? "selected" : ""} onClick={() => setView("categories")}>{copy.categories}</button>
             <button type="button" className={view === "products" ? "selected" : ""} onClick={() => setView("products")}>{copy.products}</button>
           </div>
@@ -372,7 +359,6 @@ export function MobileStockStats({
               title={view === "categories" ? copy.categories : copy.products}
               data={chartRows}
               language={language}
-              piePercentageTotal={view === "categories" ? undefined : topCategories.reduce((sum, row) => sum + row.value, 0)}
               legendPercentageTotal={topCategories.reduce((sum, row) => sum + row.value, 0)}
             />
           ) : <DataNotice>{copy.distributionNote}</DataNotice>}
@@ -509,14 +495,6 @@ export function MobileClientStats({
   );
 }
 
-type ServiceTrend = { period: string; completed: number; revenue: number; profit: number };
-
-function serviceDate(service: MobileRow): Date | null {
-  return service.completed_at
-    ? timestamp(service, "completed_at")
-    : timestamp(service, "source_created_at");
-}
-
 export function MobileServiceStats({
   data,
   language,
@@ -525,8 +503,7 @@ export function MobileServiceStats({
   language: MobileLanguage;
 }) {
   const copy = COPY[language];
-  const [view, setView] = useState<"types" | "names" | "trends">("names");
-  const [trendRange, setTrendRange] = useState<"six" | "twelve" | "all">("six");
+  const [view, setView] = useState<"types" | "names">("names");
   const services = data.service_appointments;
   const now = new Date();
   const complete = services.length < 1000;
@@ -582,49 +559,6 @@ export function MobileServiceStats({
       return summarizeGroup(key, name, rows, index, `${type} | `);
     });
 
-  const buildTrends = (months: number): ServiceTrend[] => {
-    const trends: ServiceTrend[] = [];
-    for (let offset = months - 1; offset >= 0; offset -= 1) {
-      const date = new Date(now.getFullYear(), now.getMonth() - offset, 1, 12);
-      const periodRows = services.filter((service) => {
-        const dateForService = serviceDate(service);
-        return dateForService && dateForService.getFullYear() === date.getFullYear() && dateForService.getMonth() === date.getMonth();
-      });
-      const done = periodRows.filter((service) => service.is_completed === true);
-      const revenue = done.reduce((sum, service) => sum + value(service, "service_price"), 0);
-      const cost = done.reduce((sum, service) => sum + value(service, "cost_price"), 0);
-      trends.push({
-        period: new Intl.DateTimeFormat(language, { month: "short" }).format(date),
-        completed: done.length,
-        revenue,
-        profit: revenue - cost,
-      });
-    }
-    return trends;
-  };
-  const sixMonthTrends = buildTrends(6);
-  const twelveMonthTrends = buildTrends(12);
-  const meaningfulValue = (row: ServiceTrend) => row.revenue > 0 || row.profit > 0 || row.completed > 0;
-  const meaningfulSixMonthCount = sixMonthTrends.filter(meaningfulValue).length;
-  const meaningfulTwelveMonthCount = twelveMonthTrends.filter(meaningfulValue).length;
-  const disableLongTrends = meaningfulTwelveMonthCount <= 1;
-  const effectiveTrendRange = disableLongTrends ? "six" : trendRange;
-  const allTimeTrends = (() => {
-    const dates = services.map(serviceDate).filter((date): date is Date => date !== null);
-    const startYear = dates.length ? Math.min(...dates.map((date) => date.getFullYear())) : now.getFullYear();
-    return Array.from({ length: now.getFullYear() - startYear + 1 }, (_, index) => startYear + index).map((year) => {
-      const periodRows = services.filter((service) => serviceDate(service)?.getFullYear() === year);
-      const done = periodRows.filter((service) => service.is_completed === true);
-      const revenue = done.reduce((sum, service) => sum + value(service, "service_price"), 0);
-      const cost = done.reduce((sum, service) => sum + value(service, "cost_price"), 0);
-      return { period: String(year), completed: done.length, revenue, profit: revenue - cost };
-    });
-  })();
-  const trendData = effectiveTrendRange === "six"
-    ? meaningfulSixMonthCount === 1 ? sixMonthTrends.filter(meaningfulValue) : sixMonthTrends
-    : effectiveTrendRange === "twelve" ? twelveMonthTrends : allTimeTrends;
-  const hasTrendData = trendData.some(meaningfulValue);
-
   return (
     <DashboardPanel stats className="dashboard-overview !min-h-0 !space-y-4 !p-4 sm:!p-6">
       <h2 className="text-lg font-semibold text-foreground">{copy.services}</h2>
@@ -641,47 +575,12 @@ export function MobileServiceStats({
             { label: copy.turnaround, value: `${averageTurnaround} ${copy.days}` },
             { label: copy.completionRate, value: `${services.length ? (completed.length / services.length * 100).toFixed(1) : "0.0"}%` },
           ]} />
-          <div className="mobile-view-toggle" role="group">
+          <div className="mobile-dashboard-toggle" data-columns="2" role="group">
             <button type="button" className={view === "types" ? "selected" : ""} onClick={() => setView("types")}>{copy.serviceTypes}</button>
             <button type="button" className={view === "names" ? "selected" : ""} onClick={() => setView("names")}>{copy.serviceNames}</button>
-            <button type="button" className={view === "trends" ? "selected" : ""} onClick={() => setView("trends")}>{copy.trends}</button>
           </div>
           {view === "types" ? <PieBreakdown title={copy.serviceTypes} data={typeRows} legendData={typeRows.slice(0, 5)} language={language} legendPercentageTotal={services.length} /> : null}
           {view === "names" ? <PieBreakdown title={copy.serviceNames} data={nameRows} legendData={nameRows.slice(0, 5)} language={language} legendPercentageTotal={services.length} /> : null}
-          {view === "trends" ? (
-            <>
-              <div className="mobile-view-toggle" role="group">
-                <button type="button" className={effectiveTrendRange === "six" ? "selected" : ""} onClick={() => setTrendRange("six")}>{meaningfulSixMonthCount === 1 ? copy.currentMonthOnly : copy.sixMonths}</button>
-                <button type="button" className={effectiveTrendRange === "twelve" ? "selected" : ""} disabled={disableLongTrends} onClick={() => setTrendRange("twelve")}>{copy.twelveMonths}</button>
-                <button type="button" className={effectiveTrendRange === "all" ? "selected" : ""} disabled={disableLongTrends} onClick={() => setTrendRange("all")}>{copy.allTime}</button>
-              </div>
-              {!hasTrendData ? <DataNotice>{copy.chartEmpty}</DataNotice> : null}
-              {hasTrendData ? <div className="h-[280px] min-w-0">
-                <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-                  <LineChart data={trendData} margin={{ top: 12, right: 12, bottom: 8, left: 8 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
-                    <XAxis dataKey="period" tickLine={false} axisLine={false} interval="preserveStartEnd" minTickGap={12} />
-                    <YAxis tickLine={false} axisLine={false} width={60} tickMargin={8} />
-                    <Tooltip content={({ active, payload, label }) => {
-                      if (!active || !payload?.length) return null;
-                      const row = payload[0]?.payload as ServiceTrend | undefined;
-                      if (!row) return null;
-                      return (
-                        <div className="rounded-lg border border-border bg-card p-3 text-sm shadow-lg">
-                          <strong>{String(label ?? row.period)}</strong>
-                          <p className="mt-1 text-muted-foreground">{copy.monthlyCompleted}: <strong className="text-foreground">{number(row.completed, language)}</strong></p>
-                          <p className="text-muted-foreground">{copy.monthlyRevenue}: <strong className="text-foreground">{money(row.revenue, language)}</strong></p>
-                          <p className="text-muted-foreground">{copy.monthlyProfit}: <strong className="text-foreground">{money(row.profit, language)}</strong></p>
-                        </div>
-                      );
-                    }} />
-                    <Line dataKey="revenue" name={copy.monthlyRevenue} stroke="#2563eb" strokeWidth={2} dot={false} />
-                    <Line dataKey="profit" name={copy.monthlyProfit} stroke="#059669" strokeWidth={2} dot={false} />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div> : null}
-            </>
-          ) : null}
         </>
       )}
     </DashboardPanel>

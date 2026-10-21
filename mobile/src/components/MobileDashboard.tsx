@@ -8,8 +8,10 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
+  Cell,
   Line,
   LineChart as RechartsLineChart,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -177,7 +179,7 @@ export function MobileDashboard({
       }
       for (let hour = 0; hour <= now.getHours(); hour += 1) {
         chartPoints.push({
-          period: `${String(hour).padStart(2, "0")}:00`,
+          period: String(hour).padStart(2, "0"),
           profits: hourlyProfits.get(hour) ?? 0,
           billPayments: hourlyBills.get(hour) ?? 0,
         });
@@ -192,7 +194,7 @@ export function MobileDashboard({
       const row = dailyByDay.get(day);
       const future = date > new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12);
       chartPoints.push({
-        period: `${dayNumber} ${new Intl.DateTimeFormat(language, { month: "short" }).format(date)}`,
+        period: `${String(dayNumber).padStart(2, "0")}/${String(date.getMonth() + 1).padStart(2, "0")}`,
         profits: future ? 0 : Number(row?.profit) || 0,
         billPayments: future ? 0 : (Number(row?.bill_payments) || 0) / 100,
         future,
@@ -204,9 +206,7 @@ export function MobileDashboard({
       const key = `${now.getFullYear()}-${String(month + 1).padStart(2, "0")}`;
       const monthRows = future ? [] : days.filter((row) => String(row.local_day).startsWith(key));
       chartPoints.push({
-        period: new Intl.DateTimeFormat(language, { month: "short" }).format(
-          new Date(now.getFullYear(), month, 1, 12),
-        ),
+        period: String(month + 1).padStart(2, "0"),
         profits: monthRows.reduce((sum, row) => sum + (Number(row.profit) || 0), 0),
         billPayments: monthRows.reduce((sum, row) => sum + (Number(row.bill_payments) || 0), 0) / 100,
         future,
@@ -222,7 +222,7 @@ export function MobileDashboard({
       const key = monthKey(date);
       const monthRows = selectedDays.filter((row) => String(row.local_day).startsWith(key));
       chartPoints.push({
-        period: new Intl.DateTimeFormat(language, { month: "short", year: "2-digit" }).format(date),
+        period: `${String(date.getMonth() + 1).padStart(2, "0")}/${String(date.getFullYear()).slice(-2)}`,
         profits: monthRows.reduce((sum, row) => sum + (Number(row.profit) || 0), 0),
         billPayments: monthRows.reduce((sum, row) => sum + (Number(row.bill_payments) || 0), 0) / 100,
       });
@@ -232,14 +232,41 @@ export function MobileDashboard({
     ...point,
     profit: profits - (netProfitActive ? billPayments : 0),
   }));
+  const actualProfits = chartData
+    .filter((point) => !point.future)
+    .map((point) => point.profit);
+  const nonzeroProfits = actualProfits.filter((profit) => profit !== 0);
+  const averageProfit = nonzeroProfits.length
+    ? nonzeroProfits.reduce((sum, profit) => sum + profit, 0) / nonzeroProfits.length
+    : 0;
+  const profitMinimum = Math.min(0, ...actualProfits);
+  const profitMaximum = Math.max(0, ...actualProfits);
+  const profitPadding = Math.max((profitMaximum - profitMinimum) * 0.1, 1);
+  const profitDomain: [number, number] = [
+    profitMinimum < 0 ? profitMinimum - profitPadding : 0,
+    profitMaximum > 0 ? profitMaximum + profitPadding : 1,
+  ];
+  const averageOffset = Math.max(
+    0,
+    Math.min(
+      100,
+      ((profitDomain[1] - averageProfit) / (profitDomain[1] - profitDomain[0])) * 100,
+    ),
+  );
+  const profitLineData = chartData.map((point) =>
+    point.future ? { ...point, profit: null } : point,
+  );
+  const isAboveAverage = (profit: number) => profit >= averageProfit;
+  const redProfit = "#dc2626";
+  const greenProfit = DASHBOARD_CHART_COLORS.light.barEnd;
 
   const summaryMoney = (value: number) => days.length > 0 ? money(value) : "—";
   const summaryNumber = (value: number) => days.length > 0 ? number(value) : "—";
 
   return (
-    <div className="space-y-6">
-      <DashboardPanel className="dashboard-overview !min-h-0 !gap-6 !p-4 sm:!p-6">
-        <div className="flex flex-col gap-4">
+    <div className="space-y-4">
+      <DashboardPanel className="dashboard-overview !min-h-0 !gap-4 !p-4">
+        <div className="flex flex-col gap-3">
           <div className="flex items-start gap-3">
             <BarChart3 className="mt-1 h-6 w-6 shrink-0 text-primary" />
             <div className="min-w-0">
@@ -263,9 +290,9 @@ export function MobileDashboard({
           </label>
         </div>
 
-        <div className="grid grid-cols-2 gap-5 sm:grid-cols-3">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
           <DashboardMetric label={labels.revenue} labelClassName="!text-xs">
-            <strong className="text-2xl font-bold tabular-nums leading-tight text-primary sm:text-3xl">
+            <strong className="text-xl font-bold tabular-nums leading-tight text-primary sm:text-2xl">
               {summaryMoney(totals.revenue)}
             </strong>
           </DashboardMetric>
@@ -273,17 +300,17 @@ export function MobileDashboard({
             label={netProfitActive ? labels.netProfit : labels.profit}
             labelClassName="!text-xs"
           >
-            <strong className="text-2xl font-bold tabular-nums leading-tight text-green-600 sm:text-3xl">
+            <strong className="text-xl font-bold tabular-nums leading-tight text-green-600 sm:text-2xl">
               {summaryMoney(adjustedProfit)}
             </strong>
           </DashboardMetric>
           <DashboardMetric label={labels.items} labelClassName="!text-xs">
-            <strong className="text-2xl font-bold tabular-nums leading-tight text-orange-600 sm:text-3xl">
+            <strong className="text-xl font-bold tabular-nums leading-tight text-orange-600 sm:text-2xl">
               {summaryNumber(totals.items)}
             </strong>
           </DashboardMetric>
           <DashboardMetric label={labels.billPayments} labelClassName="!text-xs">
-            <strong className="text-2xl font-bold tabular-nums leading-tight text-purple-600 sm:text-3xl">
+            <strong className="text-xl font-bold tabular-nums leading-tight text-purple-600 sm:text-2xl">
               {summaryMoney(selectedBillPayments)}
             </strong>
           </DashboardMetric>
@@ -349,7 +376,7 @@ export function MobileDashboard({
                 : labels.empty}
             </p>
           ) : (
-            <div className="mobile-chart dashboard-mobile-chart" role="img" aria-label={`${labels.recentDays}, ${rangeTitle}`}>
+            <div className={`mobile-chart dashboard-mobile-chart dashboard-period-${period}`} role="img" aria-label={`${labels.recentDays}, ${rangeTitle}`}>
               <ResponsiveContainer
                 width="100%"
                 height="100%"
@@ -358,14 +385,18 @@ export function MobileDashboard({
                 initialDimension={{ width: 390, height: 330 }}
               >
                 {chartStyle === "bar" ? (
-                  <BarChart
+                    <BarChart
                     data={chartData}
-                    margin={{ top: 16, right: 12, bottom: 8, left: 8 }}
+                    margin={{ top: 16, right: 8, bottom: 8, left: 8 }}
                   >
                     <defs>
                       <linearGradient id="mobile-dashboard-profit-gradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#f87171" stopOpacity={0.85} />
+                        <stop offset="100%" stopColor={redProfit} />
+                      </linearGradient>
+                      <linearGradient id="mobile-dashboard-profit-green-gradient" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="0%" stopColor={DASHBOARD_CHART_COLORS.light.barStart} stopOpacity={0.85} />
-                        <stop offset="100%" stopColor={DASHBOARD_CHART_COLORS.light.barEnd} />
+                        <stop offset="100%" stopColor={greenProfit} />
                       </linearGradient>
                     </defs>
                     <CartesianGrid
@@ -373,8 +404,19 @@ export function MobileDashboard({
                       vertical={false}
                       stroke={DASHBOARD_CHART_COLORS.light.grid}
                     />
-                    <XAxis dataKey="period" tickLine={false} axisLine={false} interval="preserveStartEnd" minTickGap={8} />
-                    <YAxis tickLine={false} axisLine={false} width={60} tickMargin={8} />
+                    <XAxis
+                      dataKey="period"
+                      tickLine={false}
+                      axisLine={false}
+                      interval={0}
+                      angle={period === "month" ? -60 : period === "365" ? -45 : 0}
+                      textAnchor={period === "month" || period === "365" ? "end" : "middle"}
+                      height={period === "month" ? 82 : period === "365" ? 56 : 30}
+                      tickMargin={period === "month" ? 18 : period === "365" ? 12 : 8}
+                      tick={{ fontSize: period === "month" ? 7 : period === "365" ? 8 : 10 }}
+                    />
+                    <YAxis tickLine={false} axisLine={false} width={60} tickMargin={6} domain={profitDomain} />
+                    {nonzeroProfits.length > 0 ? <ReferenceLine y={averageProfit} stroke="#64748b" strokeDasharray="4 4" /> : null}
                     <Tooltip
                       formatter={(value: unknown) => money(Number(Array.isArray(value) ? value[0] : value) || 0)}
                       labelFormatter={(label) => String(label)}
@@ -382,23 +424,51 @@ export function MobileDashboard({
                     />
                     <Bar
                       dataKey="profit"
-                      fill="url(#mobile-dashboard-profit-gradient)"
                       radius={[5, 5, 0, 0]}
-                      maxBarSize={30}
-                    />
+                      maxBarSize={34}
+                    >
+                      {chartData.map((point) => (
+                        <Cell
+                          key={point.period}
+                          fill={isAboveAverage(point.profit)
+                            ? "url(#mobile-dashboard-profit-green-gradient)"
+                            : "url(#mobile-dashboard-profit-gradient)"}
+                          fillOpacity={point.future || point.profit === 0 ? 0.2 : 1}
+                        />
+                      ))}
+                    </Bar>
                   </BarChart>
                 ) : (
                   <RechartsLineChart
                     data={chartData}
-                    margin={{ top: 16, right: 12, bottom: 8, left: 8 }}
+                    margin={{ top: 16, right: 8, bottom: 8, left: 8 }}
                   >
+                    <defs>
+                      <linearGradient id="mobile-dashboard-line-average-gradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor={greenProfit} />
+                        <stop offset={`${averageOffset}%`} stopColor={greenProfit} />
+                        <stop offset={`${Math.min(100, averageOffset + 4)}%`} stopColor={redProfit} />
+                        <stop offset="100%" stopColor={redProfit} />
+                      </linearGradient>
+                    </defs>
                     <CartesianGrid
                       strokeDasharray="3 3"
                       vertical={false}
                       stroke={DASHBOARD_CHART_COLORS.light.grid}
                     />
-                    <XAxis dataKey="period" tickLine={false} axisLine={false} interval="preserveStartEnd" minTickGap={8} />
-                    <YAxis tickLine={false} axisLine={false} width={60} tickMargin={8} />
+                    <XAxis
+                      dataKey="period"
+                      tickLine={false}
+                      axisLine={false}
+                      interval={0}
+                      angle={period === "month" ? -60 : period === "365" ? -45 : 0}
+                      textAnchor={period === "month" || period === "365" ? "end" : "middle"}
+                      height={period === "month" ? 82 : period === "365" ? 56 : 30}
+                      tickMargin={period === "month" ? 18 : period === "365" ? 12 : 8}
+                      tick={{ fontSize: period === "month" ? 7 : period === "365" ? 8 : 10 }}
+                    />
+                    <YAxis tickLine={false} axisLine={false} width={60} tickMargin={6} domain={profitDomain} />
+                    {nonzeroProfits.length > 0 ? <ReferenceLine y={averageProfit} stroke="#64748b" strokeDasharray="4 4" /> : null}
                     <Tooltip
                       formatter={(value: unknown) => money(Number(Array.isArray(value) ? value[0] : value) || 0)}
                       labelFormatter={(label) => String(label)}
@@ -406,10 +476,14 @@ export function MobileDashboard({
                     />
                     <Line
                       type="monotone"
+                      data={profitLineData}
                       dataKey="profit"
-                      stroke={DASHBOARD_CHART_COLORS.light.line}
+                      stroke="url(#mobile-dashboard-line-average-gradient)"
                       strokeWidth={2.5}
-                      dot={false}
+                      dot={({ cx, cy, payload }) => {
+                        if (payload?.future || typeof payload?.profit !== "number") return null;
+                        return <circle cx={cx} cy={cy} r={3} fill={isAboveAverage(payload.profit) ? greenProfit : redProfit} stroke="var(--card)" strokeWidth={1} />;
+                      }}
                       activeDot={{ r: 4 }}
                     />
                   </RechartsLineChart>
