@@ -234,8 +234,8 @@ button:focus-visible, select:focus-visible, input:focus-visible {
 }
 
 .mobile-input-wrap:focus-within {
-  border-color: var(--line);
-  box-shadow: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgb(0 0 0 / 10%);
 }
 
 .mobile-input-wrap input {
@@ -541,6 +541,13 @@ button:focus-visible, select:focus-visible, input:focus-visible {
 }
 .mobile-login-form input:focus,
 .mobile-search input:focus { border-color: transparent; box-shadow: 0 0 0 2px oklch(0.708 0 0); }
+.mobile-login-form .mobile-input-wrap input,
+.mobile-login-form .mobile-input-wrap input:focus {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
 .mobile-login-form .btn.primary { border-radius: .5rem; }
 
 .mobile-app-header {
