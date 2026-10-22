@@ -267,6 +267,27 @@ export function MobileDashboard({
       </g>
     );
   };
+  const tooltipDateLabel = (point: { period?: string }, fallback: unknown) => {
+    if (period === "month") {
+      const day = Number(point.period);
+      if (Number.isInteger(day) && day >= 1 && day <= 31) {
+        return new Date(now.getFullYear(), now.getMonth(), day, 12).toLocaleDateString("en-GB", {
+          day: "2-digit",
+          month: "long",
+        });
+      }
+    }
+    if (period === "year") {
+      const monthIndex = chartData.findIndex((entry) => entry.period === point.period);
+      if (monthIndex >= 0) {
+        return new Date(now.getFullYear(), monthIndex, 1, 12).toLocaleDateString("en-GB", {
+          month: "long",
+          year: "numeric",
+        });
+      }
+    }
+    return String(fallback ?? "");
+  };
 
   return (
     <div className="space-y-0">
@@ -441,7 +462,7 @@ export function MobileDashboard({
                         ];
                         return (
                           <div style={{ borderRadius: 12, border: "1px solid var(--border)", background: "var(--card)", padding: "10px 12px", boxShadow: "0 4px 12px rgba(0,0,0,0.12)" }}>
-                            <p style={{ marginBottom: 6, color: "var(--foreground)", fontWeight: 600 }}>{String(props.label ?? "")}</p>
+                            <p style={{ marginBottom: 6, color: "var(--foreground)", fontWeight: 600 }}>{tooltipDateLabel(point, props.label)}</p>
                             {rows.map((row) => (
                               <div key={row.label} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, fontSize: 12, lineHeight: 1.8 }}>
                                 <span style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "var(--muted-foreground)" }}>
@@ -525,7 +546,7 @@ export function MobileDashboard({
                         ];
                         return (
                           <div style={{ borderRadius: 12, border: "1px solid var(--border)", background: "var(--card)", padding: "10px 12px", boxShadow: "0 4px 12px rgba(0,0,0,0.12)" }}>
-                            <p style={{ marginBottom: 6, color: "var(--foreground)", fontWeight: 600 }}>{String(props.label ?? "")}</p>
+                            <p style={{ marginBottom: 6, color: "var(--foreground)", fontWeight: 600 }}>{tooltipDateLabel(point, props.label)}</p>
                             {rows.map((row) => (
                               <div key={row.label} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, fontSize: 12, lineHeight: 1.8 }}>
                                 <span style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "var(--muted-foreground)" }}>
