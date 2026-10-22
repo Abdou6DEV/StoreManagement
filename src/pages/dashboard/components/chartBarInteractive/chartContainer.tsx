@@ -276,8 +276,8 @@ export function ChartContainer({
   const DailyTick = ({ x, y, payload }: any) => {
     const raw: string = payload?.value ?? "";
     const parts = raw.split(" ");
-    const day = (parts[0] ?? "").padStart(2, "0");
-    const month = parts.slice(1).join(" ").slice(0, 3).toLocaleLowerCase();
+    const day = parts[0] ?? "";
+    const month = parts.slice(1).join(" ");
 
     const point = (currentPeriod?.data ?? []).find((d: any) => d?.period === raw);
     const value = point?.[dataKey] ?? 0;
