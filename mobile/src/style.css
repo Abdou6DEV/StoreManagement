@@ -943,13 +943,6 @@ button:focus-visible, select:focus-visible, input:focus-visible {
   min-width: 0;
   max-width: 100%;
 }
-.dashboard-overview .dashboard-mobile-chart {
-  display: block;
-  width: 100%;
-  max-width: 100%;
-  padding-right: 6px;
-  box-sizing: border-box;
-}
 /* Let ResponsiveContainer control the generated Recharts wrapper dimensions. */
 
 /* Stretch the overview chart to the card edges without overflowing its 16px padding. */
@@ -962,7 +955,7 @@ button:focus-visible, select:focus-visible, input:focus-visible {
   width: calc(100% + 32px);
   max-width: none;
   margin-inline: -16px;
-  padding: 0;
+  padding: 0 12px 0 0;
   height: clamp(280px, 76vw, 330px);
   border: 0;
   border-radius: 0;
