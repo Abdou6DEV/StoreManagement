@@ -440,7 +440,7 @@ export function MobileDashboard({
                 {chartStyle === "bar" ? (
                     <BarChart
                     data={chartData}
-                    margin={{ top: 16, right: 1, bottom: 1, left: 1 }}
+                    margin={{ top: 16, right: 14, bottom: 1, left: 1 }}
                   >
                     <defs>
                       <linearGradient id="mobile-dashboard-profit-gradient" x1="0" y1="0" x2="0" y2="1">
@@ -461,7 +461,8 @@ export function MobileDashboard({
                       dataKey="period"
                       tickLine={{ stroke: "var(--line)", strokeWidth: 1 }}
                       axisLine={{ stroke: "var(--line)", strokeWidth: 1 }}
-                      interval={period === "month" ? "preserveStartEnd" : period === "year" ? 0 : "preserveStartEnd"}
+                      ticks={period === "month" ? chartData.filter((_, index) => index % 2 === 0 || index === chartData.length - 1).map((point) => point.period) : undefined}
+                      interval={period === "month" || period === "year" ? 0 : "preserveStartEnd"}
                       angle={period === "month" ? 0 : period === "today" ? -45 : 0}
                       textAnchor={period === "month" ? "middle" : period === "today" ? "end" : "middle"}
                       height={period === "month" ? 36 : period === "today" ? 54 : 34}
@@ -527,7 +528,7 @@ export function MobileDashboard({
                 ) : (
                   <RechartsLineChart
                     data={chartData}
-                    margin={{ top: 16, right: 1, bottom: 1, left: 1 }}
+                    margin={{ top: 16, right: 14, bottom: 1, left: 1 }}
                   >
                     <defs>
                       <linearGradient id="mobile-dashboard-line-average-gradient" x1="0" y1="0" x2="0" y2="1">
@@ -546,7 +547,8 @@ export function MobileDashboard({
                       dataKey="period"
                       tickLine={{ stroke: "var(--line)", strokeWidth: 1 }}
                       axisLine={{ stroke: "var(--line)", strokeWidth: 1 }}
-                      interval={period === "month" ? "preserveStartEnd" : period === "year" ? 0 : "preserveStartEnd"}
+                      ticks={period === "month" ? chartData.filter((_, index) => index % 2 === 0 || index === chartData.length - 1).map((point) => point.period) : undefined}
+                      interval={period === "month" || period === "year" ? 0 : "preserveStartEnd"}
                       angle={period === "month" ? 0 : period === "today" ? -45 : 0}
                       textAnchor={period === "month" ? "middle" : period === "today" ? "end" : "middle"}
                       height={period === "month" ? 36 : period === "today" ? 54 : 34}
