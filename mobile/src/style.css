@@ -956,7 +956,7 @@ button:focus-visible, select:focus-visible, input:focus-visible {
   max-width: none;
   margin-inline: -16px;
   padding: 0 12px 0 0;
-  height: clamp(280px, 76vw, 330px);
+  height: clamp(240px, 64vw, 285px);
   border: 0;
   border-radius: 0;
   box-shadow: none;
