@@ -338,7 +338,7 @@ button:focus-visible, select:focus-visible, input:focus-visible {
 html.dark .mobile-settings-connection.is-online { color: #4ade80; }
 html.dark .mobile-settings-connection.is-offline { color: #fdba74; }
 .mobile-settings-extra .last-updated { margin: 0; text-align: start; }
-.mobile-settings-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 5px; }
+.mobile-settings-actions { display: grid; grid-template-columns: 1fr; gap: 8px; margin-top: 5px; }
 .mobile-settings-action {
   min-height: 44px;
   justify-content: center;

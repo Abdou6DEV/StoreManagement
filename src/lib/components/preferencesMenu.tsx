@@ -23,6 +23,7 @@ type PreferencesMenuProps = {
   className?: string;
   forceRight?: boolean;
   placement?: "fixed" | "anchor";
+  showTooltipToggle?: boolean;
   children?: ReactNode;
 };
 
@@ -33,6 +34,7 @@ export function PreferencesMenu({
   className,
   forceRight = false,
   placement = "fixed",
+  showTooltipToggle = true,
   children,
 }: PreferencesMenuProps) {
   const { t, i18n } = useTranslation();
@@ -93,9 +95,11 @@ export function PreferencesMenu({
           <DropdownMenuItem asChild>
             <ThemeToggleButton variant="ghost" showText />
           </DropdownMenuItem>
-          <DropdownMenuItem asChild>
-            <TooltipToggleButton variant="ghost" showText />
-          </DropdownMenuItem>
+          {showTooltipToggle ? (
+            <DropdownMenuItem asChild>
+              <TooltipToggleButton variant="ghost" showText />
+            </DropdownMenuItem>
+          ) : null}
           <DropdownMenuItem asChild>
             <FullscreenToggleButton variant="ghost" showText />
           </DropdownMenuItem>

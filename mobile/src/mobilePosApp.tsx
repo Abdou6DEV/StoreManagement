@@ -6,10 +6,8 @@ import {
   Lock,
   LogOut,
   Menu,
-  RefreshCw,
   Search,
   User,
-  Wifi,
   WifiOff,
 } from "lucide-react";
 import { Card } from "../../src/lib/components/card";
@@ -21,14 +19,14 @@ import {
   PageIcon,
   UserBadgeAvatar,
 } from "../../src/lib/components/sharedPresentation";
-import { LOGO_ICON_DARK } from "../../src/lib/assets";
+import { LOGO_ICON, LOGO_ICON_DARK } from "../../src/lib/assets";
+import { useTheme } from "../../src/lib/contexts/themeContext";
 import { useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import {
   loginMobile,
   logoutMobile,
   MobileApiError,
-  refreshMobile,
 } from "./mobileApi";
 import type {
   MobileBundle,
@@ -630,9 +628,6 @@ function errorMessage(error: unknown, copy: Copy): string {
   return copy.errors[code] ?? copy.errors.request_failed;
 }
 
-function errorCode(error: unknown): string | null {
-  return error instanceof MobileApiError ? error.code : null;
-}
 
 function safeValue(value: unknown, language: MobileLanguage, copy: Copy): string {
   if (value == null || value === "") return "—";
@@ -711,6 +706,7 @@ function LoginScreen({
   language: MobileLanguage;
   onLanguageChange: (language: MobileLanguage) => void;
 }) {
+  const { theme } = useTheme();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -734,7 +730,7 @@ function LoginScreen({
   return (
     <section className="mobile-login-screen">
       <div className="mobile-login-brand">
-        <img src={LOGO_ICON_DARK} alt="REDA TECH" />
+        <img src={theme === "dark" ? LOGO_ICON : LOGO_ICON_DARK} alt="REDA TECH" />
         <h1>{copy.loginTitle}</h1>
         <p className="sub">{copy.loginHelp}</p>
       </div>
@@ -1069,7 +1065,6 @@ export function MobilePosApp({
   const [data, setData] = useState<MobileBundle | null>(null);
   const [section, setSection] = useState<Section>("menu");
   const [query, setQuery] = useState("");
-  const [refreshing, setRefreshing] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [online, setOnline] = useState(navigator.onLine);
@@ -1128,35 +1123,6 @@ export function MobilePosApp({
     setSection("menu");
   };
 
-  const refresh = async () => {
-    if (!sessionCode) return;
-    setRefreshing(true);
-    setNotice(null);
-    try {
-      applyResponse(await refreshMobile(sessionCode));
-    } catch (error) {
-      const code = errorCode(error);
-      if (code === "device_revoked" || code === "mobile_access_disabled") {
-        setSessionCode(null);
-        setUser(null);
-        setData(null);
-        onDeviceInvalid();
-        return;
-      }
-      if (code === "session_expired" || code === "user_inactive") {
-        setSessionCode(null);
-        setUser(null);
-        setData(null);
-        setNotice(errorMessage(error, copy));
-      } else {
-        setStale(true);
-        setNotice(errorMessage(error, copy));
-      }
-    } finally {
-      setRefreshing(false);
-    }
-  };
-
   const signOut = async () => {
     if (sessionCode) {
       try {
@@ -1206,39 +1172,11 @@ export function MobilePosApp({
               language={language}
               onLanguageChange={changeLanguage}
               placement="anchor"
+              showTooltipToggle={false}
               className="mobile-preferences-header"
             >
               <div className="mobile-settings-extra">
-                <p className="mobile-settings-user"><User size={16} />{user.username}</p>
-                <div
-                  className={`mobile-settings-connection ${online ? "is-online" : "is-offline"}`}
-                  role="status"
-                  aria-label={online ? copy.onlineStatus : copy.offlineStatus}
-                >
-                  {online ? <Wifi size={16} /> : <WifiOff size={16} />}
-                  <span>{online ? copy.onlineStatus : copy.offlineStatus}</span>
-                </div>
-                {lastUpdated ? (
-                  <p className="last-updated">
-                    {copy.lastUpdated}: {formatTime(lastUpdated, language)}
-                  </p>
-                ) : null}
                 <div className="mobile-settings-actions">
-                  <DropdownMenuItem
-                    asChild
-                    disabled={refreshing || !online}
-                    onSelect={(event) => event.preventDefault()}
-                  >
-                    <button
-                      type="button"
-                      className="mobile-settings-action"
-                      disabled={refreshing || !online}
-                      onClick={() => void refresh()}
-                    >
-                      {refreshing ? <LoaderCircle className="spin" size={17} /> : <RefreshCw size={17} />}
-                      {refreshing ? copy.refreshing : copy.refresh}
-                    </button>
-                  </DropdownMenuItem>
                   <DropdownMenuItem asChild onSelect={(event) => event.preventDefault()}>
                     <button type="button" className="mobile-settings-action logout-button" onClick={() => void signOut()}>
                       <LogOut size={17} />{copy.logout}
@@ -1251,7 +1189,7 @@ export function MobilePosApp({
         </>
       ) : (
         <>
-          <PreferencesMenu language={language} onLanguageChange={changeLanguage} className="mobile-login-preferences" forceRight />
+          <PreferencesMenu language={language} onLanguageChange={changeLanguage} className="mobile-login-preferences" forceRight showTooltipToggle={false} />
         </>
       )}
       {notice ? <div className="mobile-state-banner error-banner" role="alert"><AlertCircle size={17} />{notice}</div> : null}

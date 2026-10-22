@@ -7,6 +7,8 @@ import {
   MOBILE_SUPABASE_URL,
 } from "./mobileApi";
 import type { MobileLanguage } from "./mobileApi";
+import { LOGO_ICON, LOGO_ICON_DARK } from "../../src/lib/assets";
+import { useTheme } from "../../src/lib/contexts/themeContext";
 
 const MobilePosApp = lazy(() =>
   import("./mobilePosApp").then((module) => ({ default: module.MobilePosApp })),
@@ -140,6 +142,7 @@ async function postFunction<T>(name: string, body: unknown): Promise<T> {
 }
 
 export function MobilePairingApp() {
+  const { theme } = useTheme();
   const [language, setLanguage] = useState<Language>(getInitialLanguage);
   const [busy, setBusy] = useState(false);
   const [cameraActive, setCameraActive] = useState(false);
@@ -275,7 +278,7 @@ export function MobilePairingApp() {
   const loadingScreen = (
     <main className="mobile-shell mobile-initial-loading" dir={direction}>
       <div className="mobile-loading-brand">
-        <img src={`${import.meta.env.BASE_URL}myapp_black.ico`} alt="REDA TECH" />
+        <img src={theme === "dark" ? LOGO_ICON : LOGO_ICON_DARK} alt="REDA TECH" />
         <h1>{copy.loading}</h1>
         <style>{`@keyframes mobile-loading-typing { 0%, 100% { transform: translateY(0); opacity: 0.5; } 50% { transform: translateY(-50%); opacity: 1; } }`}</style>
         <span role="status" className="mt-5 inline-flex h-3 w-12 items-center gap-[12%] text-[#ef4444]">
@@ -325,7 +328,7 @@ export function MobilePairingApp() {
         <button type="button" className={language === "ar" ? "on" : ""} onClick={() => changeLanguage("ar")}>العربية</button>
       </div>
       <div className="brand">
-        <img src={`${import.meta.env.BASE_URL}myapp_black.ico`} alt="REDA TECH" />
+        <img src={theme === "dark" ? LOGO_ICON : LOGO_ICON_DARK} alt="REDA TECH" />
         <h1>{copy.title}</h1>
         <p className="sub">{copy.subtitle}</p>
       </div>
