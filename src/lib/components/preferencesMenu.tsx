@@ -1,5 +1,5 @@
 import { Settings, User } from "lucide-react";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "../utils";
 import {
@@ -22,6 +22,8 @@ type PreferencesMenuProps = {
   onLanguageChange?: (language: PreferencesLanguage) => void;
   className?: string;
   forceRight?: boolean;
+  placement?: "fixed" | "anchor";
+  children?: ReactNode;
 };
 
 export function PreferencesMenu({
@@ -30,6 +32,8 @@ export function PreferencesMenu({
   onLanguageChange,
   className,
   forceRight = false,
+  placement = "fixed",
+  children,
 }: PreferencesMenuProps) {
   const { t, i18n } = useTranslation();
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -42,7 +46,15 @@ export function PreferencesMenu({
   };
 
   return (
-    <div className={cn("fixed top-4 z-50", forceRight ? "right-4" : isRTL ? "left-4" : "right-4", className)}>
+    <div
+      className={cn(
+        placement === "fixed"
+          ? "fixed top-4 z-50"
+          : "relative z-50",
+        placement === "fixed" && (forceRight ? "right-4" : isRTL ? "left-4" : "right-4"),
+        className,
+      )}
+    >
       <DropdownMenu modal={false} onOpenChange={setDropdownOpen}>
         <DropdownMenuTrigger asChild>
           <button
@@ -59,7 +71,16 @@ export function PreferencesMenu({
             />
           </button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent className={cn("mx-4 my-2 w-56", isRTL && "text-right")}>
+        <DropdownMenuContent
+          align={placement === "anchor" ? (isRTL ? "start" : "end") : undefined}
+          sideOffset={placement === "anchor" ? 8 : 4}
+          collisionPadding={placement === "anchor" ? 8 : undefined}
+          className={cn(
+            "mx-4 my-2 w-56",
+            placement === "anchor" && "mx-0 my-0 w-[min(20rem,calc(100vw-1rem))] max-w-[calc(100vw-1rem)]",
+            isRTL && "text-right",
+          )}
+        >
           <DropdownMenuLabel className="flex items-center gap-2 font-semibold text-md">
             <User className="h-4 w-4" />
             {t("navigation.welcomeToStoreManagement", "Welcome to Store Management")}
@@ -109,6 +130,12 @@ export function PreferencesMenu({
           >
             {t("navigation.arabic", "Arabic")}
           </DropdownMenuItem>
+          {children ? (
+            <>
+              <DropdownMenuSeparator />
+              {children}
+            </>
+          ) : null}
         </DropdownMenuContent>
       </DropdownMenu>
     </div>

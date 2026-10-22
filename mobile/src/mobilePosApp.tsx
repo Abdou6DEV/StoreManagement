@@ -8,13 +8,13 @@ import {
   Menu,
   RefreshCw,
   Search,
-  Settings,
   User,
   Wifi,
   WifiOff,
 } from "lucide-react";
 import { Card } from "../../src/lib/components/card";
 import { PreferencesMenu } from "../../src/lib/components/preferencesMenu";
+import { DropdownMenuItem } from "../../src/lib/components/dropdownMenu";
 import {
   MenuCardContent,
   PAGE_PRESENTATION,
@@ -70,6 +70,8 @@ type Copy = {
   loading: string;
   empty: string;
   offline: string;
+  onlineStatus: string;
+  offlineStatus: string;
   stale: string;
   lastUpdated: string;
   welcome: string;
@@ -159,6 +161,8 @@ const COPY: Record<MobileLanguage, Copy> = {
     loading: "Loading your store data…",
     empty: "No records to show.",
     offline: "You are offline. Previously loaded data is shown if available.",
+    onlineStatus: "Online",
+    offlineStatus: "Offline",
     stale: "The latest refresh failed. Displayed data may be stale.",
     lastUpdated: "Last refreshed",
     welcome: "Choose a section to view your store.",
@@ -315,6 +319,8 @@ const COPY: Record<MobileLanguage, Copy> = {
     loading: "Chargement des données…",
     empty: "Aucun enregistrement à afficher.",
     offline: "Vous êtes hors ligne. Les données déjà chargées restent affichées.",
+    onlineStatus: "En ligne",
+    offlineStatus: "Hors ligne",
     stale: "L’actualisation a échoué. Les données affichées peuvent être obsolètes.",
     lastUpdated: "Dernière actualisation",
     welcome: "Choisissez une section de votre magasin.",
@@ -471,6 +477,8 @@ const COPY: Record<MobileLanguage, Copy> = {
     loading: "جارٍ تحميل بيانات المتجر…",
     empty: "لا توجد سجلات للعرض.",
     offline: "أنت غير متصل. ستظهر البيانات المحملة سابقاً إن توفرت.",
+    onlineStatus: "متصل",
+    offlineStatus: "غير متصل",
     stale: "تعذر تحديث البيانات. قد تكون البيانات المعروضة قديمة.",
     lastUpdated: "آخر تحديث",
     welcome: "اختر قسماً لعرض بيانات متجرك.",
@@ -1066,7 +1074,6 @@ export function MobilePosApp({
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [online, setOnline] = useState(navigator.onLine);
   const [stale, setStale] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const direction = language === "ar" ? "rtl" : "ltr";
   const allowedSections = SECTIONS.filter((item) => user?.permissions[item.permission]);
   const primarySections = allowedSections.filter((item) =>
@@ -1165,14 +1172,12 @@ export function MobilePosApp({
     setStale(false);
     setSection("menu");
     setQuery("");
-    setSettingsOpen(false);
   };
 
   const selectSection = (next: Section) => {
     if (next !== "menu" && !allowedSections.some((item) => item.id === next)) return;
     setSection(next);
     setQuery("");
-    setSettingsOpen(false);
   };
 
   const changeLanguage = (next: MobileLanguage) => {
@@ -1197,44 +1202,52 @@ export function MobilePosApp({
               <PageIcon page={activePage} className="mobile-header-page-icon" aria-hidden="true" />
               <span>{title}</span>
             </h1>
-            <button
-              type="button"
-              className={`icon-button settings-button ${settingsOpen ? "active" : ""}`}
-              aria-label={copy.settings}
-              aria-expanded={settingsOpen}
-              onClick={() => setSettingsOpen((current) => !current)}
+            <PreferencesMenu
+              language={language}
+              onLanguageChange={changeLanguage}
+              placement="anchor"
+              className="mobile-preferences-header"
             >
-              <Settings size={19} />
-            </button>
-          </header>
-          {settingsOpen ? (
-            <Card className="mobile-settings" aria-label={copy.settings}>
-              <div className="mobile-settings-heading">
-                <h2>{copy.settings}</h2>
-                <span className={`connection-state ${online ? "is-online" : "is-offline"}`}>
+              <div className="mobile-settings-extra">
+                <p className="mobile-settings-user"><User size={16} />{user.username}</p>
+                <div
+                  className={`mobile-settings-connection ${online ? "is-online" : "is-offline"}`}
+                  role="status"
+                  aria-label={online ? copy.onlineStatus : copy.offlineStatus}
+                >
                   {online ? <Wifi size={16} /> : <WifiOff size={16} />}
-                </span>
+                  <span>{online ? copy.onlineStatus : copy.offlineStatus}</span>
+                </div>
+                {lastUpdated ? (
+                  <p className="last-updated">
+                    {copy.lastUpdated}: {formatTime(lastUpdated, language)}
+                  </p>
+                ) : null}
+                <div className="mobile-settings-actions">
+                  <DropdownMenuItem
+                    asChild
+                    disabled={refreshing || !online}
+                    onSelect={(event) => event.preventDefault()}
+                  >
+                    <button
+                      type="button"
+                      className="mobile-settings-action"
+                      disabled={refreshing || !online}
+                      onClick={() => void refresh()}
+                    >
+                      {refreshing ? <LoaderCircle className="spin" size={17} /> : <RefreshCw size={17} />}
+                      {refreshing ? copy.refreshing : copy.refresh}
+                    </button>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild onSelect={(event) => event.preventDefault()}>
+                    <button type="button" className="mobile-settings-action logout-button" onClick={() => void signOut()}>
+                      <LogOut size={17} />{copy.logout}
+                    </button>
+                  </DropdownMenuItem>
+                </div>
               </div>
-              <p className="mobile-settings-user"><User size={16} />{user.username}</p>
-              <div className="mobile-settings-languages" role="group" aria-label="Language">
-                {(["en", "fr", "ar"] as const).map((item) => (
-                  <button key={item} type="button" className={language === item ? "on" : ""} onClick={() => changeLanguage(item)}>
-                    {item === "en" ? "English" : item === "fr" ? "Français" : "العربية"}
-                  </button>
-                ))}
-              </div>
-              {lastUpdated ? <p className="last-updated">{copy.lastUpdated}: {formatTime(lastUpdated, language)}</p> : null}
-              <div className="mobile-settings-actions">
-                <button type="button" className="btn secondary" disabled={refreshing || !online} onClick={() => void refresh()}>
-                  {refreshing ? <LoaderCircle className="spin" size={17} /> : <RefreshCw size={17} />}
-                  {refreshing ? copy.refreshing : copy.refresh}
-                </button>
-                <button type="button" className="btn logout-button" onClick={() => void signOut()}>
-                  <LogOut size={17} />{copy.logout}
-                </button>
-              </div>
-            </Card>
-          ) : null}
+            </PreferencesMenu>
+          </header>
         </>
       ) : (
         <>
