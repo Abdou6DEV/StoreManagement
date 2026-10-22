@@ -79,7 +79,7 @@ export function PreferencesMenu({
           collisionPadding={placement === "anchor" ? 8 : undefined}
           className={cn(
             "mx-4 my-2 w-56",
-            placement === "anchor" && "mx-0 my-0 w-[min(20rem,calc(100vw-1rem))] max-w-[calc(100vw-1rem)]",
+            placement === "anchor" && "mx-0 my-0 w-56 max-w-[calc(100vw-1rem)]",
             isRTL && "text-right",
           )}
         >
