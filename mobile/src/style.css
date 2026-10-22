@@ -940,3 +940,48 @@ html.dark .error-banner { color: #fca5a5; background: rgb(153 27 27 / 24%); }
   border-radius: 0;
   box-shadow: none;
 }
+
+
+/* Native-feeling bottom navigation: edge-to-edge bar, with consistent rounded item states. */
+.mobile-bottom-nav {
+  right: 0;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
+  transform: none;
+  padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+  border: 0;
+  border-top: 1px solid var(--line);
+  border-radius: 0;
+  background: color-mix(in oklch, var(--bg) 92%, transparent);
+  box-shadow: none;
+  backdrop-filter: blur(18px) saturate(1.25);
+  -webkit-backdrop-filter: blur(18px) saturate(1.25);
+}
+
+.mobile-bottom-nav button {
+  min-height: 52px;
+  margin: 0 2px;
+  padding: 6px 3px;
+  border-radius: 14px;
+  transition: background-color 160ms ease, color 160ms ease;
+}
+
+.mobile-bottom-nav button:hover,
+.mobile-bottom-nav button:focus-visible,
+.mobile-bottom-nav button.selected {
+  border-radius: 14px;
+  background: var(--muted-bg);
+  color: var(--fg);
+}
+
+.mobile-bottom-nav button:focus-visible {
+  outline: 2px solid var(--line);
+  outline-offset: -2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mobile-bottom-nav button { transition: none; }
+}
