@@ -271,7 +271,7 @@ export function MobileDashboard({
     if (period === "month") {
       const day = Number(point.period);
       if (Number.isInteger(day) && day >= 1 && day <= 31) {
-        return new Date(now.getFullYear(), now.getMonth(), day, 12).toLocaleDateString("en-GB", {
+        return new Date(now.getFullYear(), now.getMonth(), day, 12).toLocaleDateString(language, {
           day: "2-digit",
           month: "long",
         });
@@ -280,7 +280,7 @@ export function MobileDashboard({
     if (period === "year") {
       const monthIndex = chartData.findIndex((entry) => entry.period === point.period);
       if (monthIndex >= 0) {
-        return new Date(now.getFullYear(), monthIndex, 1, 12).toLocaleDateString("en-GB", {
+        return new Date(now.getFullYear(), monthIndex, 1, 12).toLocaleDateString(language, {
           month: "long",
           year: "numeric",
         });
@@ -476,13 +476,12 @@ export function MobileDashboard({
                         );
                       }}
                       contentStyle={{ borderRadius: 12, borderColor: "var(--border)" }}
-                      cursor={false}
+                      cursor={{ fill: "var(--muted-foreground)", opacity: 0.12 }}
                     />
                     <Bar
                       dataKey="profit"
                       radius={[5, 5, 0, 0]}
                       maxBarSize={34}
-                      activeBar={false}
                     >
                       {chartData.map((point) => (
                         <Cell
@@ -560,7 +559,7 @@ export function MobileDashboard({
                         );
                       }}
                       contentStyle={{ borderRadius: 12, borderColor: "var(--border)" }}
-                      cursor={false}
+                      cursor={{ stroke: "var(--muted-foreground)", strokeDasharray: "4 4", strokeWidth: 1 }}
                     />
                     <Line
                       type="monotone"
