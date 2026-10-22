@@ -234,6 +234,16 @@ export function MobileDashboard({
     profitMinimum < 0 ? profitMinimum - profitPadding : 0,
     profitMaximum > 0 ? profitMaximum + profitPadding : 1,
   ];
+  const profitAxisStep = (() => {
+    const roughStep = (profitDomain[1] - profitDomain[0]) / 4;
+    const magnitude = 10 ** Math.floor(Math.log10(Math.max(roughStep, 1e-9)));
+    const normalized = roughStep / magnitude;
+    return (normalized <= 1 ? 1 : normalized <= 2 ? 2 : normalized <= 5 ? 5 : 10) * magnitude;
+  })();
+  const profitAxisTicks = Array.from(
+    { length: Math.round((Math.ceil(profitDomain[1] / profitAxisStep) - Math.floor(profitDomain[0] / profitAxisStep))) + 1 },
+    (_, index) => (Math.floor(profitDomain[0] / profitAxisStep) + index) * profitAxisStep,
+  );
   const averageOffset = Math.max(
     0,
     Math.min(
@@ -477,7 +487,9 @@ export function MobileDashboard({
                       tick={{ fontSize: 9, fill: "var(--foreground)", fontWeight: 700 }}
                       tickFormatter={(value: number) => new Intl.NumberFormat(language, { notation: "compact", maximumFractionDigits: 1 }).format(Number(value))}
                       domain={profitDomain}
+                      ticks={netProfitActive ? profitAxisTicks : undefined}
                     />
+                    {netProfitActive ? <ReferenceLine y={0} stroke="var(--foreground)" strokeWidth={1.5} /> : null}
                     {nonzeroProfits.length > 0 ? <ReferenceLine y={averageProfit} stroke="#64748b" strokeDasharray="4 4" /> : null}
                     <Tooltip
                       content={(props) => {
@@ -563,7 +575,9 @@ export function MobileDashboard({
                       tick={{ fontSize: 9, fill: "var(--foreground)", fontWeight: 700 }}
                       tickFormatter={(value: number) => new Intl.NumberFormat(language, { notation: "compact", maximumFractionDigits: 1 }).format(Number(value))}
                       domain={profitDomain}
+                      ticks={netProfitActive ? profitAxisTicks : undefined}
                     />
+                    {netProfitActive ? <ReferenceLine y={0} stroke="var(--foreground)" strokeWidth={1.5} /> : null}
                     {nonzeroProfits.length > 0 ? <ReferenceLine y={averageProfit} stroke="#64748b" strokeDasharray="4 4" /> : null}
                     <Tooltip
                       filterNull={false}
