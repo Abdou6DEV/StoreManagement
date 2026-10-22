@@ -276,8 +276,8 @@ export function ChartContainer({
   const DailyTick = ({ x, y, payload }: any) => {
     const raw: string = payload?.value ?? "";
     const parts = raw.split(" ");
-    const day = parts[0] ?? "";
-    const month = parts.slice(1).join(" ");
+    const day = (parts[0] ?? "").padStart(2, "0");
+    const month = parts.slice(1).join(" ").slice(0, 3).toLocaleLowerCase();
 
     const point = (currentPeriod?.data ?? []).find((d: any) => d?.period === raw);
     const value = point?.[dataKey] ?? 0;
@@ -723,10 +723,7 @@ export function ChartContainer({
               angle={0}
               textAnchor="middle"
               fontSize={isDailyView ? 10 : 14}
-              interval={0}
-              ticks={
-                isDailyView ? currentPeriod.data.map((d) => d.period) : undefined
-              }
+              interval="preserveStartEnd"
               height={isDailyView ? dailyXAxisHeight : 44}
               fill={isDark ? "#ffffff" : "#000000"}
               fontWeight={600}
@@ -869,11 +866,8 @@ export function ChartContainer({
             angle={0}
             textAnchor="middle"
             fontSize={isDailyView ? 10 : 14}
-            interval={0}
+            interval="preserveStartEnd"
             // Force render every tick for daily view to avoid skipped days (e.g. "2 Mars").
-            ticks={
-              isDailyView ? currentPeriod.data.map((d) => d.period) : undefined
-            }
             height={isDailyView ? dailyXAxisHeight : 44}
             fill={isDark ? "#ffffff" : "#000000"}
             fontWeight={600}
