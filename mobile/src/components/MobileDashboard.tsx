@@ -254,15 +254,43 @@ export function MobileDashboard({
     .toLocaleDateString(language, { month: "short" })
     .replace(/\.$/, "")
     .toLocaleLowerCase();
+  const axisTickColor = (value: unknown) => {
+    const point = chartData.find((entry) => entry.period === String(value));
+    return point && !point.future && point.profit !== 0 ? "var(--foreground)" : "var(--muted-foreground)";
+  };
   const dailyDateTick = (props: { x?: number; y?: number; payload?: { value?: string } }) => {
-    const day = String(props.payload?.value ?? "").padStart(2, "0");
+    const rawDay = String(props.payload?.value ?? "");
+    const day = rawDay.padStart(2, "0");
+    const color = axisTickColor(rawDay);
+    const active = color === "var(--foreground)";
     return (
       <g transform={`translate(${props.x ?? 0},${props.y ?? 0})`}>
-        <text x={0} y={0} textAnchor="middle" fill="var(--muted-foreground)" fontSize={9}>
+        <text x={0} y={0} textAnchor="middle" fill={color} fontSize={9} fontWeight={active ? 700 : 400}>
           {day}
         </text>
-        <text x={0} y={12} textAnchor="middle" fill="var(--muted-foreground)" fontSize={8}>
+        <text x={0} y={12} textAnchor="middle" fill={color} fontSize={8} fontWeight={active ? 700 : 400}>
           {dailyMonthLabel}
+        </text>
+      </g>
+    );
+  };
+  const chartPeriodTick = (props: { x?: number; y?: number; payload?: { value?: string } }) => {
+    const value = String(props.payload?.value ?? "");
+    const color = axisTickColor(value);
+    const active = color === "var(--foreground)";
+    const todayTick = period === "today";
+    return (
+      <g transform={`translate(${props.x ?? 0},${props.y ?? 0})`}>
+        <text
+          x={0}
+          y={0}
+          textAnchor={todayTick ? "end" : "middle"}
+          fill={color}
+          fontSize={period === "year" || todayTick ? 8 : 10}
+          fontWeight={active ? 700 : 400}
+          transform={todayTick ? "rotate(-45)" : undefined}
+        >
+          {value}
         </text>
       </g>
     );
@@ -433,19 +461,19 @@ export function MobileDashboard({
                       dataKey="period"
                       tickLine={{ stroke: "var(--line)", strokeWidth: 1 }}
                       axisLine={{ stroke: "var(--line)", strokeWidth: 1 }}
-                      interval="preserveStartEnd"
-                      angle={period === "month" ? 0 : period === "today" ? -45 : 0}
+                      interval={0}
+                      angle={0}
                       textAnchor={period === "month" ? "middle" : period === "today" ? "end" : "middle"}
                       height={period === "month" ? 36 : period === "today" ? 54 : 34}
                       tickMargin={8}
-                      tick={period === "month" ? dailyDateTick : { fontSize: period === "today" ? 8 : 10 }}
+                      tick={period === "month" ? dailyDateTick : chartPeriodTick}
                     />
                     <YAxis
                       tickLine={{ stroke: "var(--line)", strokeWidth: 1 }}
                       axisLine={{ stroke: "var(--line)", strokeWidth: 1 }}
                       width={58}
                       tickMargin={6}
-                      tick={{ fontSize: 9 }}
+                      tick={{ fontSize: 9, fill: "var(--foreground)", fontWeight: 700 }}
                       tickFormatter={(value: number) => new Intl.NumberFormat(language, { notation: "compact", maximumFractionDigits: 1 }).format(Number(value))}
                       domain={profitDomain}
                     />
@@ -454,6 +482,8 @@ export function MobileDashboard({
                       content={(props) => {
                         const point = props.payload?.[0]?.payload;
                         if (!props.active || !point) return null;
+                        const isZeroPeriod = point.future || Number(point.profit) === 0;
+                        const tooltipTextColor = isZeroPeriod ? "var(--muted-foreground)" : "var(--foreground)";
                         const rows = [
                           { label: labels.revenue, value: money(Number(point.revenue) || 0), color: "var(--primary)" },
                           { label: netProfitActive ? labels.netProfit : labels.profit, value: money(Number(point.profit) || 0), color: "#16a34a" },
@@ -462,14 +492,14 @@ export function MobileDashboard({
                         ];
                         return (
                           <div style={{ borderRadius: 12, border: "1px solid var(--border)", background: "var(--card)", padding: "10px 12px", boxShadow: "0 4px 12px rgba(0,0,0,0.12)" }}>
-                            <p style={{ marginBottom: 6, color: "var(--foreground)", fontWeight: 600 }}>{tooltipDateLabel(point, props.label)}</p>
+                            <p style={{ marginBottom: 6, color: tooltipTextColor, fontWeight: 600 }}>{tooltipDateLabel(point, props.label)}</p>
                             {rows.map((row) => (
                               <div key={row.label} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, fontSize: 12, lineHeight: 1.8 }}>
-                                <span style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "var(--muted-foreground)" }}>
+                                <span style={{ display: "inline-flex", alignItems: "center", gap: 6, color: tooltipTextColor }}>
                                   <span style={{ width: 7, height: 7, borderRadius: 999, background: row.color, flexShrink: 0 }} />
                                   {row.label}
                                 </span>
-                                <strong style={{ color: row.color, fontWeight: 600, whiteSpace: "nowrap" }}>{row.value}</strong>
+                                <strong style={{ color: isZeroPeriod ? "var(--muted-foreground)" : row.color, fontWeight: 600, whiteSpace: "nowrap" }}>{row.value}</strong>
                               </div>
                             ))}
                           </div>
@@ -516,19 +546,19 @@ export function MobileDashboard({
                       dataKey="period"
                       tickLine={{ stroke: "var(--line)", strokeWidth: 1 }}
                       axisLine={{ stroke: "var(--line)", strokeWidth: 1 }}
-                      interval={period === "year" ? 0 : "preserveStartEnd"}
-                      angle={period === "month" ? 0 : period === "today" ? -45 : 0}
+                      interval={0}
+                      angle={0}
                       textAnchor={period === "month" ? "middle" : period === "today" ? "end" : "middle"}
                       height={period === "month" ? 36 : period === "today" ? 54 : 34}
                       tickMargin={8}
-                      tick={period === "month" ? dailyDateTick : { fontSize: period === "today" || period === "year" ? 8 : 10 }}
+                      tick={period === "month" ? dailyDateTick : chartPeriodTick}
                     />
                     <YAxis
                       tickLine={{ stroke: "var(--line)", strokeWidth: 1 }}
                       axisLine={{ stroke: "var(--line)", strokeWidth: 1 }}
                       width={58}
                       tickMargin={6}
-                      tick={{ fontSize: 9 }}
+                      tick={{ fontSize: 9, fill: "var(--foreground)", fontWeight: 700 }}
                       tickFormatter={(value: number) => new Intl.NumberFormat(language, { notation: "compact", maximumFractionDigits: 1 }).format(Number(value))}
                       domain={profitDomain}
                     />
@@ -538,6 +568,8 @@ export function MobileDashboard({
                       content={(props) => {
                         const point = props.payload?.[0]?.payload;
                         if (!props.active || !point) return null;
+                        const isZeroPeriod = point.future || Number(point.profit) === 0;
+                        const tooltipTextColor = isZeroPeriod ? "var(--muted-foreground)" : "var(--foreground)";
                         const rows = [
                           { label: labels.revenue, value: money(Number(point.revenue) || 0), color: "var(--primary)" },
                           { label: netProfitActive ? labels.netProfit : labels.profit, value: money(Number(point.profit) || 0), color: "#16a34a" },
@@ -546,14 +578,14 @@ export function MobileDashboard({
                         ];
                         return (
                           <div style={{ borderRadius: 12, border: "1px solid var(--border)", background: "var(--card)", padding: "10px 12px", boxShadow: "0 4px 12px rgba(0,0,0,0.12)" }}>
-                            <p style={{ marginBottom: 6, color: "var(--foreground)", fontWeight: 600 }}>{tooltipDateLabel(point, props.label)}</p>
+                            <p style={{ marginBottom: 6, color: tooltipTextColor, fontWeight: 600 }}>{tooltipDateLabel(point, props.label)}</p>
                             {rows.map((row) => (
                               <div key={row.label} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, fontSize: 12, lineHeight: 1.8 }}>
-                                <span style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "var(--muted-foreground)" }}>
+                                <span style={{ display: "inline-flex", alignItems: "center", gap: 6, color: tooltipTextColor }}>
                                   <span style={{ width: 7, height: 7, borderRadius: 999, background: row.color, flexShrink: 0 }} />
                                   {row.label}
                                 </span>
-                                <strong style={{ color: row.color, fontWeight: 600, whiteSpace: "nowrap" }}>{row.value}</strong>
+                                <strong style={{ color: isZeroPeriod ? "var(--muted-foreground)" : row.color, fontWeight: 600, whiteSpace: "nowrap" }}>{row.value}</strong>
                               </div>
                             ))}
                           </div>
