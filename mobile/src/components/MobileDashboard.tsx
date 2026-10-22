@@ -461,8 +461,8 @@ export function MobileDashboard({
                       dataKey="period"
                       tickLine={{ stroke: "var(--line)", strokeWidth: 1 }}
                       axisLine={{ stroke: "var(--line)", strokeWidth: 1 }}
-                      interval={0}
-                      angle={0}
+                      interval={period === "month" ? "preserveStartEnd" : period === "year" ? 0 : "preserveStartEnd"}
+                      angle={period === "month" ? 0 : period === "today" ? -45 : 0}
                       textAnchor={period === "month" ? "middle" : period === "today" ? "end" : "middle"}
                       height={period === "month" ? 36 : period === "today" ? 54 : 34}
                       tickMargin={8}
@@ -546,8 +546,8 @@ export function MobileDashboard({
                       dataKey="period"
                       tickLine={{ stroke: "var(--line)", strokeWidth: 1 }}
                       axisLine={{ stroke: "var(--line)", strokeWidth: 1 }}
-                      interval={0}
-                      angle={0}
+                      interval={period === "month" ? "preserveStartEnd" : period === "year" ? 0 : "preserveStartEnd"}
+                      angle={period === "month" ? 0 : period === "today" ? -45 : 0}
                       textAnchor={period === "month" ? "middle" : period === "today" ? "end" : "middle"}
                       height={period === "month" ? 36 : period === "today" ? 54 : 34}
                       tickMargin={8}
