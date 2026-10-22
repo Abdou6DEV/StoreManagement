@@ -947,6 +947,8 @@ button:focus-visible, select:focus-visible, input:focus-visible {
   display: block;
   width: 100%;
   max-width: 100%;
+  padding-right: 6px;
+  box-sizing: border-box;
 }
 /* Let ResponsiveContainer control the generated Recharts wrapper dimensions. */
 
