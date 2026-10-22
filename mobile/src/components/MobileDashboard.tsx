@@ -282,7 +282,7 @@ export function MobileDashboard({
         <text x={0} y={12} textAnchor="middle" fill={color} fontSize={8} fontWeight={active ? 700 : 400}>
           {dailyMonthLabel}
         </text>
-        {isCurrentDay ? <rect x={-5} y={18} width={10} height={2.5} rx={1.25} fill="#3b82f6" /> : null}
+        {isCurrentDay ? <path d="M -4 3 L 0 -1 L 4 3" transform="translate(0, 18)" fill="none" stroke="#3b82f6" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" /> : null}
       </g>
     );
   };
@@ -305,7 +305,7 @@ export function MobileDashboard({
         >
           {value}
         </text>
-        {isCurrentMonth ? <rect x={-5} y={7} width={10} height={2.5} rx={1.25} fill="#3b82f6" /> : null}
+        {isCurrentMonth ? <path d="M -4 3 L 0 -1 L 4 3" transform="translate(0, 7)" fill="none" stroke="#3b82f6" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" /> : null}
       </g>
     );
   };
