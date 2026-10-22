@@ -516,12 +516,12 @@ export function MobileDashboard({
                       dataKey="period"
                       tickLine={{ stroke: "var(--line)", strokeWidth: 1 }}
                       axisLine={{ stroke: "var(--line)", strokeWidth: 1 }}
-                      interval="preserveStartEnd"
+                      interval={period === "year" ? 0 : "preserveStartEnd"}
                       angle={period === "month" ? 0 : period === "today" ? -45 : 0}
                       textAnchor={period === "month" ? "middle" : period === "today" ? "end" : "middle"}
                       height={period === "month" ? 36 : period === "today" ? 54 : 34}
                       tickMargin={8}
-                      tick={period === "month" ? dailyDateTick : { fontSize: period === "today" ? 8 : 10 }}
+                      tick={period === "month" ? dailyDateTick : { fontSize: period === "today" || period === "year" ? 8 : 10 }}
                     />
                     <YAxis
                       tickLine={{ stroke: "var(--line)", strokeWidth: 1 }}
@@ -534,6 +534,7 @@ export function MobileDashboard({
                     />
                     {nonzeroProfits.length > 0 ? <ReferenceLine y={averageProfit} stroke="#64748b" strokeDasharray="4 4" /> : null}
                     <Tooltip
+                      filterNull={false}
                       content={(props) => {
                         const point = props.payload?.[0]?.payload;
                         if (!props.active || !point) return null;
