@@ -33,21 +33,19 @@ import {
   MobileStockStats,
 } from "./MobileDashboardStats";
 
-type Period = "today" | "month" | "year" | "365";
+type Period = "today" | "month" | "year";
 type ChartStyle = "bar" | "line";
 type DashboardChartPoint = {
   period: string;
+  revenue: number;
   profits: number;
+  items: number;
   billPayments: number;
   future?: boolean;
 };
 
 function localDay(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-}
-
-function monthKey(date: Date): string {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
 }
 
 export type MobileDashboardLabels = {
@@ -101,15 +99,11 @@ export function MobileDashboard({
   );
   const now = new Date();
   const today = localDay(now);
-  const rollingStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12);
-  rollingStart.setDate(rollingStart.getDate() - 364);
-  const rollingStartDay = localDay(rollingStart);
   const selectedDays = days.filter((row) => {
     const day = String(row.local_day);
     if (period === "today") return day === today;
     if (period === "month") return day.slice(0, 7) === today.slice(0, 7);
-    if (period === "year") return day.slice(0, 4) === today.slice(0, 4);
-    return day >= rollingStartDay && day <= today;
+    return day.slice(0, 4) === today.slice(0, 4);
   });
   const totals = selectedDays.reduce<{ revenue: number; profit: number; items: number }>(
     (result, row) => ({
@@ -154,19 +148,21 @@ export function MobileDashboard({
       ? labels.today
       : period === "month"
         ? labels.thisMonth
-        : period === "year"
-          ? labels.thisYear
-          : labels.last365Days;
+        : labels.thisYear;
   const dailyByDay = new Map(days.map((row) => [String(row.local_day), row]));
   const chartPoints: DashboardChartPoint[] = [];
   if (period === "today") {
     if (hourlySalesAvailable) {
+      const hourlyRevenue = new Map<number, number>();
       const hourlyProfits = new Map<number, number>();
+      const hourlyItems = new Map<number, number>();
       for (const sale of data.sales) {
         const createdAt = new Date(String(sale.source_created_at ?? ""));
         if (!Number.isFinite(createdAt.getTime()) || localDay(createdAt) !== today) continue;
         const hour = createdAt.getHours();
+        hourlyRevenue.set(hour, (hourlyRevenue.get(hour) ?? 0) + (Number(sale.total_amount ?? sale.revenue) || 0));
         hourlyProfits.set(hour, (hourlyProfits.get(hour) ?? 0) + (Number(sale.total_profit) || 0));
+        hourlyItems.set(hour, (hourlyItems.get(hour) ?? 0) + (Number(sale.total_items ?? sale.items_sold ?? sale.quantity) || 0));
       }
       const hourlyBills = new Map<number, number>();
       if (hourlyBillsAvailable) {
@@ -180,7 +176,9 @@ export function MobileDashboard({
       for (let hour = 0; hour <= now.getHours(); hour += 1) {
         chartPoints.push({
           period: `${String(hour).padStart(2, "0")}:00`,
+          revenue: hourlyRevenue.get(hour) ?? 0,
           profits: hourlyProfits.get(hour) ?? 0,
+          items: hourlyItems.get(hour) ?? 0,
           billPayments: hourlyBills.get(hour) ?? 0,
         });
       }
@@ -195,7 +193,9 @@ export function MobileDashboard({
       const future = date > new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12);
       chartPoints.push({
         period: String(dayNumber).padStart(2, "0"),
+        revenue: future ? 0 : Number(row?.revenue) || 0,
         profits: future ? 0 : Number(row?.profit) || 0,
+        items: future ? 0 : Number(row?.total_items) || 0,
         billPayments: future ? 0 : (Number(row?.bill_payments) || 0) / 100,
         future,
       });
@@ -207,29 +207,17 @@ export function MobileDashboard({
       const monthRows = future ? [] : days.filter((row) => String(row.local_day).startsWith(key));
       chartPoints.push({
         period: new Date(now.getFullYear(), month, 1, 12).toLocaleString(language, { month: "short" }).replace(/\.$/, ""),
+        revenue: monthRows.reduce((sum, row) => sum + (Number(row.revenue) || 0), 0),
         profits: monthRows.reduce((sum, row) => sum + (Number(row.profit) || 0), 0),
+        items: monthRows.reduce((sum, row) => sum + (Number(row.total_items) || 0), 0),
         billPayments: monthRows.reduce((sum, row) => sum + (Number(row.bill_payments) || 0), 0) / 100,
         future,
-      });
-    }
-  } else {
-    const firstMonth = new Date(rollingStart.getFullYear(), rollingStart.getMonth(), 1, 12);
-    for (
-      let date = firstMonth;
-      date <= now;
-      date = new Date(date.getFullYear(), date.getMonth() + 1, 1, 12)
-    ) {
-      const key = monthKey(date);
-      const monthRows = selectedDays.filter((row) => String(row.local_day).startsWith(key));
-      chartPoints.push({
-        period: date.toLocaleString(language, { month: "short" }).replace(/\.$/, ""),
-        profits: monthRows.reduce((sum, row) => sum + (Number(row.profit) || 0), 0),
-        billPayments: monthRows.reduce((sum, row) => sum + (Number(row.bill_payments) || 0), 0) / 100,
       });
     }
   }
   const chartData = chartPoints.map(({ profits, billPayments, ...point }) => ({
     ...point,
+    billPayments,
     profit: profits - (netProfitActive ? billPayments : 0),
   }));
   const actualProfits = chartData
@@ -302,7 +290,6 @@ export function MobileDashboard({
               <option value="today">{labels.today}</option>
               <option value="month">{labels.thisMonth}</option>
               <option value="year">{labels.thisYear}</option>
-              <option value="365">{labels.last365Days}</option>
             </select>
           </label>
         </div>
@@ -443,8 +430,30 @@ export function MobileDashboard({
                     />
                     {nonzeroProfits.length > 0 ? <ReferenceLine y={averageProfit} stroke="#64748b" strokeDasharray="4 4" /> : null}
                     <Tooltip
-                      formatter={(value: unknown) => money(Number(Array.isArray(value) ? value[0] : value) || 0)}
-                      labelFormatter={(label) => String(label)}
+                      content={(props) => {
+                        const point = props.payload?.[0]?.payload;
+                        if (!props.active || !point) return null;
+                        const rows = [
+                          { label: labels.revenue, value: money(Number(point.revenue) || 0), color: "var(--primary)" },
+                          { label: netProfitActive ? labels.netProfit : labels.profit, value: money(Number(point.profit) || 0), color: "#16a34a" },
+                          { label: labels.items, value: number(Number(point.items) || 0), color: "#ea580c" },
+                          { label: labels.billPayments, value: money(Number(point.billPayments) || 0), color: "#9333ea" },
+                        ];
+                        return (
+                          <div style={{ borderRadius: 12, border: "1px solid var(--border)", background: "var(--card)", padding: "10px 12px", boxShadow: "0 4px 12px rgba(0,0,0,0.12)" }}>
+                            <p style={{ marginBottom: 6, color: "var(--foreground)", fontWeight: 600 }}>{String(props.label ?? "")}</p>
+                            {rows.map((row) => (
+                              <div key={row.label} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, fontSize: 12, lineHeight: 1.8 }}>
+                                <span style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "var(--muted-foreground)" }}>
+                                  <span style={{ width: 7, height: 7, borderRadius: 999, background: row.color, flexShrink: 0 }} />
+                                  {row.label}
+                                </span>
+                                <strong style={{ color: row.color, fontWeight: 600, whiteSpace: "nowrap" }}>{row.value}</strong>
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      }}
                       contentStyle={{ borderRadius: 12, borderColor: "var(--border)" }}
                       cursor={false}
                     />
@@ -505,8 +514,30 @@ export function MobileDashboard({
                     />
                     {nonzeroProfits.length > 0 ? <ReferenceLine y={averageProfit} stroke="#64748b" strokeDasharray="4 4" /> : null}
                     <Tooltip
-                      formatter={(value: unknown) => money(Number(Array.isArray(value) ? value[0] : value) || 0)}
-                      labelFormatter={(label) => String(label)}
+                      content={(props) => {
+                        const point = props.payload?.[0]?.payload;
+                        if (!props.active || !point) return null;
+                        const rows = [
+                          { label: labels.revenue, value: money(Number(point.revenue) || 0), color: "var(--primary)" },
+                          { label: netProfitActive ? labels.netProfit : labels.profit, value: money(Number(point.profit) || 0), color: "#16a34a" },
+                          { label: labels.items, value: number(Number(point.items) || 0), color: "#ea580c" },
+                          { label: labels.billPayments, value: money(Number(point.billPayments) || 0), color: "#9333ea" },
+                        ];
+                        return (
+                          <div style={{ borderRadius: 12, border: "1px solid var(--border)", background: "var(--card)", padding: "10px 12px", boxShadow: "0 4px 12px rgba(0,0,0,0.12)" }}>
+                            <p style={{ marginBottom: 6, color: "var(--foreground)", fontWeight: 600 }}>{String(props.label ?? "")}</p>
+                            {rows.map((row) => (
+                              <div key={row.label} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, fontSize: 12, lineHeight: 1.8 }}>
+                                <span style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "var(--muted-foreground)" }}>
+                                  <span style={{ width: 7, height: 7, borderRadius: 999, background: row.color, flexShrink: 0 }} />
+                                  {row.label}
+                                </span>
+                                <strong style={{ color: row.color, fontWeight: 600, whiteSpace: "nowrap" }}>{row.value}</strong>
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      }}
                       contentStyle={{ borderRadius: 12, borderColor: "var(--border)" }}
                       cursor={false}
                     />
