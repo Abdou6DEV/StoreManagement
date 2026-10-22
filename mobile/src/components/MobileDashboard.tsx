@@ -262,6 +262,23 @@ export function MobileDashboard({
 
   const summaryMoney = (value: number) => days.length > 0 ? money(value) : "—";
   const summaryNumber = (value: number) => days.length > 0 ? number(value) : "—";
+  const dailyMonthLabel = new Date(now.getFullYear(), now.getMonth(), 1, 12)
+    .toLocaleDateString(language, { month: "short" })
+    .replace(/\.$/, "")
+    .toLocaleLowerCase();
+  const dailyDateTick = (props: { x?: number; y?: number; payload?: { value?: string } }) => {
+    const day = String(props.payload?.value ?? "").padStart(2, "0");
+    return (
+      <g transform={`translate(${props.x ?? 0},${props.y ?? 0})`}>
+        <text x={0} y={0} textAnchor="middle" fill="var(--muted-foreground)" fontSize={9}>
+          {day}
+        </text>
+        <text x={0} y={12} textAnchor="middle" fill="var(--muted-foreground)" fontSize={8}>
+          {dailyMonthLabel}
+        </text>
+      </g>
+    );
+  };
 
   return (
     <div className="space-y-0">
@@ -408,12 +425,12 @@ export function MobileDashboard({
                       dataKey="period"
                       tickLine={{ stroke: "var(--line)", strokeWidth: 1 }}
                       axisLine={{ stroke: "var(--line)", strokeWidth: 1 }}
-                      interval={0}
-                      angle={period === "month" || period === "today" ? -45 : 0}
-                      textAnchor={period === "month" || period === "today" ? "end" : "middle"}
-                      height={period === "month" || period === "today" ? 54 : 34}
+                      interval="preserveStartEnd"
+                      angle={period === "month" ? 0 : period === "today" ? -45 : 0}
+                      textAnchor={period === "month" ? "middle" : period === "today" ? "end" : "middle"}
+                      height={period === "month" ? 36 : period === "today" ? 54 : 34}
                       tickMargin={8}
-                      tick={{ fontSize: period === "month" || period === "today" ? 8 : 10 }}
+                      tick={period === "month" ? dailyDateTick : { fontSize: period === "today" ? 8 : 10 }}
                     />
                     <YAxis
                       tickLine={{ stroke: "var(--line)", strokeWidth: 1 }}
@@ -470,12 +487,12 @@ export function MobileDashboard({
                       dataKey="period"
                       tickLine={{ stroke: "var(--line)", strokeWidth: 1 }}
                       axisLine={{ stroke: "var(--line)", strokeWidth: 1 }}
-                      interval={0}
-                      angle={period === "month" || period === "today" ? -45 : 0}
-                      textAnchor={period === "month" || period === "today" ? "end" : "middle"}
-                      height={period === "month" || period === "today" ? 54 : 34}
+                      interval="preserveStartEnd"
+                      angle={period === "month" ? 0 : period === "today" ? -45 : 0}
+                      textAnchor={period === "month" ? "middle" : period === "today" ? "end" : "middle"}
+                      height={period === "month" ? 36 : period === "today" ? 54 : 34}
                       tickMargin={8}
-                      tick={{ fontSize: period === "month" || period === "today" ? 8 : 10 }}
+                      tick={period === "month" ? dailyDateTick : { fontSize: period === "today" ? 8 : 10 }}
                     />
                     <YAxis
                       tickLine={{ stroke: "var(--line)", strokeWidth: 1 }}
