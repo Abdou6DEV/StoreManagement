@@ -273,6 +273,7 @@ export function MobileDashboard({
     const day = rawDay.padStart(2, "0");
     const color = axisTickColor(rawDay);
     const active = color === "var(--foreground)";
+    const isCurrentDay = Number(rawDay) === now.getDate();
     return (
       <g transform={`translate(${props.x ?? 0},${props.y ?? 0})`}>
         <text x={0} y={0} textAnchor="middle" fill={color} fontSize={9} fontWeight={active ? 700 : 400}>
@@ -281,6 +282,7 @@ export function MobileDashboard({
         <text x={0} y={12} textAnchor="middle" fill={color} fontSize={8} fontWeight={active ? 700 : 400}>
           {dailyMonthLabel}
         </text>
+        {isCurrentDay ? <rect x={-5} y={18} width={10} height={2.5} rx={1.25} fill="#3b82f6" /> : null}
       </g>
     );
   };
@@ -289,6 +291,7 @@ export function MobileDashboard({
     const color = axisTickColor(value);
     const active = color === "var(--foreground)";
     const todayTick = period === "today";
+    const isCurrentMonth = period === "year" && value.toLocaleLowerCase() === dailyMonthLabel;
     return (
       <g transform={`translate(${props.x ?? 0},${props.y ?? 0})`}>
         <text
@@ -302,6 +305,7 @@ export function MobileDashboard({
         >
           {value}
         </text>
+        {isCurrentMonth ? <rect x={-5} y={7} width={10} height={2.5} rx={1.25} fill="#3b82f6" /> : null}
       </g>
     );
   };
