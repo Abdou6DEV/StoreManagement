@@ -15,6 +15,7 @@ const MobilePosApp = lazy(() =>
 type Language = MobileLanguage;
 type Copy = {
   checkingSavedDevice: string;
+  loading: string;
   checkingSavedDeviceHelp: string;
   eyebrow: string;
   title: string;
@@ -39,6 +40,7 @@ type Copy = {
 const COPY: Record<Language, Copy> = {
   en: {
     checkingSavedDevice: "Checking this phone…",
+    loading: "Loading Data...",
     checkingSavedDeviceHelp: "Preparing your REDA TECH mobile workspace.",
     eyebrow: "REDA TECH · MOBILE",
     title: "Pair this phone",
@@ -61,6 +63,7 @@ const COPY: Record<Language, Copy> = {
   },
   fr: {
     checkingSavedDevice: "Vérification de ce téléphone…",
+    loading: "Chargement des données...",
     checkingSavedDeviceHelp: "Préparation de votre espace mobile REDA TECH.",
     eyebrow: "REDA TECH · MOBILE",
     title: "Associer ce téléphone",
@@ -83,6 +86,7 @@ const COPY: Record<Language, Copy> = {
   },
   ar: {
     checkingSavedDevice: "جارٍ التحقق من هذا الهاتف…",
+    loading: "جارٍ تحميل بيانات …",
     checkingSavedDeviceHelp: "جارٍ تجهيز مساحة ريدا تيك على الهاتف.",
     eyebrow: "REDA TECH · تطبيق الهاتف",
     title: "اربط هذا الهاتف",
@@ -272,6 +276,7 @@ export function MobilePairingApp() {
     <main className="mobile-shell mobile-initial-loading" dir={direction}>
       <div className="mobile-loading-brand">
         <img src={`${import.meta.env.BASE_URL}myapp_black.ico`} alt="REDA TECH" />
+        <h1>{copy.loading}</h1>
         <style>{`@keyframes mobile-loading-typing { 0%, 100% { transform: translateY(0); opacity: 0.5; } 50% { transform: translateY(-50%); opacity: 1; } }`}</style>
         <span role="status" className="mt-5 inline-flex h-3 w-12 items-center gap-[12%] text-[#ef4444]">
           {Array.from({ length: 3 }, (_, index) => (
