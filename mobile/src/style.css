@@ -950,15 +950,16 @@ button:focus-visible, select:focus-visible, input:focus-visible {
 }
 /* Let ResponsiveContainer control the generated Recharts wrapper dimensions. */
 
-/* Stretch the overview chart across the card and trim unused vertical space. */
+/* Stretch the overview chart to the card edges without overflowing its 16px padding. */
 .dashboard-overview > section {
   padding-top: 8px !important;
 }
 .dashboard-overview .dashboard-mobile-chart {
   box-sizing: border-box;
-  width: calc(100% + 48px);
+  min-width: 0;
+  width: calc(100% + 32px);
   max-width: none;
-  margin-inline: -24px;
+  margin-inline: -16px;
   padding: 0;
   height: clamp(280px, 76vw, 330px);
   border: 0;
