@@ -168,7 +168,7 @@ function InteractivePie({
             nameKey="name"
             innerRadius={0}
             outerRadius="74%"
-            paddingAngle={1}
+            paddingAngle={0}
             stroke="none"
             strokeWidth={0}
             isAnimationActive={false}
@@ -181,7 +181,7 @@ function InteractivePie({
               const x = centerX + radius * Math.cos(angle);
               const y = centerY + radius * Math.sin(angle);
               return (
-                <text x={x} y={y} fill="#111827" fontSize={11} fontWeight={800} textAnchor={x > centerX ? "start" : "end"} dominantBaseline="central" style={{ pointerEvents: "none", paintOrder: "stroke", stroke: "#ffffff", strokeWidth: 2, strokeLinejoin: "round" }}>
+                <text x={x} y={y} fill="var(--primary)" fontSize={11} fontWeight={800} textAnchor={x > centerX ? "start" : "end"} dominantBaseline="central" style={{ pointerEvents: "none", paintOrder: "stroke", stroke: "#ffffff", strokeWidth: 2, strokeLinejoin: "round" }}>
                   {`${(Number(percent) * 100).toFixed(1)}%`}
                 </text>
               );
@@ -193,6 +193,7 @@ function InteractivePie({
                 fill={row.fill}
                 stroke="none"
                 strokeWidth={0}
+                style={{ outline: "none" }}
                 onClick={(event) => {
                   event.stopPropagation();
                   setSelectedSlice(row);
