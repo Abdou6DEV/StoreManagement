@@ -56,7 +56,7 @@ type Copy = {
   login: string;
   signingIn: string;
   menu: string;
-  backToMenu: string;
+  returnLabel: string;
   dashboard: string;
   stock: string;
   history: string;
@@ -148,7 +148,7 @@ const COPY: Record<MobileLanguage, Copy> = {
     login: "Sign in",
     signingIn: "Signing in…",
     menu: "Main menu",
-    backToMenu: "Back to main menu",
+    returnLabel: "Return",
     dashboard: "Dashboard",
     stock: "Stock",
     history: "History",
@@ -307,7 +307,7 @@ const COPY: Record<MobileLanguage, Copy> = {
     login: "Se connecter",
     signingIn: "Connexion…",
     menu: "Menu principal",
-    backToMenu: "Retour au menu principal",
+    returnLabel: "Retour",
     dashboard: "Tableau de bord",
     stock: "Stock",
     history: "Historique",
@@ -466,7 +466,7 @@ const COPY: Record<MobileLanguage, Copy> = {
     login: "تسجيل الدخول",
     signingIn: "جارٍ تسجيل الدخول…",
     menu: "القائمة الرئيسية",
-    backToMenu: "العودة إلى القائمة الرئيسية",
+    returnLabel: "عودة",
     dashboard: "لوحة المعلومات",
     stock: "المخزون",
     history: "السجل",
@@ -1197,16 +1197,6 @@ export function MobilePosApp({
           <PreferencesMenu language={language} onLanguageChange={changeLanguage} className="mobile-login-preferences" forceRight showTooltipToggle={false} />
         </>
       )}
-      {user && section !== "menu" ? (
-        <button
-          type="button"
-          className="back-button mb-3 flex items-center gap-2 rounded-xl border border-[var(--line)] bg-[var(--card)] px-3 py-2 text-sm font-medium"
-          onClick={() => selectSection("menu")}
-        >
-          <ArrowLeft size={18} aria-hidden="true" />
-          <span>{copy.backToMenu}</span>
-        </button>
-      ) : null}
       {notice ? <div className="mobile-state-banner error-banner" role="alert"><AlertCircle size={17} />{notice}</div> : null}
 
       {!user ? (
@@ -1215,7 +1205,21 @@ export function MobilePosApp({
         <>
           {!online ? <div className="mobile-state-banner offline-banner"><WifiOff size={17} />{copy.offline}</div> : null}
           {stale && online ? <div className="mobile-state-banner stale-banner"><AlertCircle size={17} />{copy.stale}</div> : null}
-          {lastUpdated ? <p className="last-updated">{copy.lastUpdated}: {formatTime(lastUpdated, language)}</p> : null}
+          {section !== "menu" || lastUpdated ? (
+            <div className="mb-3 flex items-center justify-between gap-3">
+              {section !== "menu" ? (
+                <button
+                  type="button"
+                  className="back-button !mb-0 flex shrink-0 items-center gap-1.5 rounded-xl border border-[var(--line)] bg-[var(--card)] px-3 py-2 text-sm font-medium"
+                  onClick={() => selectSection("menu")}
+                >
+                  <ArrowLeft size={18} aria-hidden="true" />
+                  <span>{copy.returnLabel}</span>
+                </button>
+              ) : <span />}
+              {lastUpdated ? <p className="last-updated !mb-0">{copy.lastUpdated}: {formatTime(lastUpdated, language)}</p> : null}
+            </div>
+          ) : null}
 
           {section === "menu" ? (
             <section className="mobile-menu-view">
