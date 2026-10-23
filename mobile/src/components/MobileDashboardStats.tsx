@@ -218,7 +218,6 @@ function InteractivePie({
                 strokeWidth={0}
                 onClick={(event) => {
                   event.stopPropagation();
-                  const bounds = chartRef.current?.getBoundingClientRect();
                   setSelectedSlice(row);
                   const tooltipWidth = Math.min(246, window.innerWidth - 16);
                   const placeRight = event.clientX < window.innerWidth / 2;
@@ -600,7 +599,7 @@ export function MobileServiceStats({
     const key = `${name}|||${type}`;
     groupsByName.set(key, [...(groupsByName.get(key) ?? []), service]);
   }
-  const summarizeGroup = (key: string, name: string, rows: MobileRow[], index: number, extraDetail = ""): Slice & { profit: number } => {
+  const summarizeGroup = (key: string, name: string, rows: MobileRow[], index: number): Slice & { profit: number } => {
     const done = rows.filter((row) => row.is_completed === true);
     const revenue = done.reduce((sum, row) => sum + value(row, "service_price"), 0);
     const cost = done.reduce((sum, row) => sum + value(row, "cost_price"), 0);
@@ -626,8 +625,8 @@ export function MobileServiceStats({
     .sort((a, b) => b.rows.length - a.rows.length);
   const nameRows: Slice[] = sortedNameGroups.slice(0, 8)
     .map(({ key, rows }, index) => {
-      const [name, type] = key.split("|||");
-      return summarizeGroup(key, name || copy.others, rows, index, type ? `${type} | ` : "");
+      const [name] = key.split("|||");
+      return summarizeGroup(key, name || copy.others, rows, index);
     });
   const otherNameCount = sortedNameGroups.slice(8).reduce((sum, group) => sum + group.rows.length, 0);
   if (otherNameCount > 0) nameRows.push({ key: "others", name: copy.others, value: otherNameCount, fill: OTHER_COLOR });
