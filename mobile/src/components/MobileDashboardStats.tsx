@@ -161,13 +161,12 @@ function InteractivePie({
   return (
     <div ref={chartRef} className={`mobile-dashboard-pie-chart ${compact ? "h-[220px]" : "h-[230px]"} min-w-0`} style={{ outline: "none" }} onClick={() => { setSelectedSlice(null); setTooltipPosition(null); }}>
       <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-        <PieChart margin={{ top: 20, right: 22, bottom: 20, left: 22 }}>
+        <PieChart margin={{ top: 8, right: 10, bottom: 8, left: 10 }}>
           <Tooltip
             active={Boolean(selectedSlice)}
-            position={tooltipPosition ?? undefined}
             allowEscapeViewBox={{ x: true, y: true }}
             content={() => selectedSlice ? (
-              <div style={{ minWidth: 150, maxWidth: 230, border: "1px solid var(--border)", borderRadius: 12, background: "var(--card)", color: "var(--foreground)", padding: "11px 13px", boxShadow: "0 8px 24px rgba(0,0,0,0.18)", pointerEvents: "none" }}>
+              <div style={{ position: "fixed", left: tooltipPosition?.x ?? 8, top: tooltipPosition?.y ?? 8, zIndex: 1000, minWidth: 150, maxWidth: "min(230px, calc(100vw - 16px))", border: "1px solid var(--border)", borderRadius: 12, background: "var(--card)", color: "var(--foreground)", padding: "11px 13px", boxShadow: "0 8px 24px rgba(0,0,0,0.24)", pointerEvents: "none" }}>
                 <div style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 8 }}>
                   <span style={{ width: 10, height: 10, borderRadius: 3, background: selectedSlice.fill, flexShrink: 0, marginTop: 4 }} />
                   <strong style={{ fontSize: 13, lineHeight: 1.35, overflowWrap: "anywhere" }}>{selectedSlice.name}</strong>
@@ -189,16 +188,18 @@ function InteractivePie({
             dataKey="value"
             nameKey="name"
             innerRadius={0}
-            outerRadius="62%"
+            outerRadius="74%"
             paddingAngle={1}
             stroke="none"
             strokeWidth={0}
             isAnimationActive={false}
-            labelLine={{ stroke: "#111827", strokeWidth: 1 }}
+            labelLine={false}
             label={({ cx, cy, midAngle, outerRadius, percent }) => {
+              // Tiny slices cannot fit readable labels without collisions; keep labels for slices large enough to read.
+              if (Number(percent) < 0.045) return null;
               const centerX = Number(cx) || 0;
               const centerY = Number(cy) || 0;
-              const radius = (Number(outerRadius) || 0) + 16;
+              const radius = (Number(outerRadius) || 0) + 8;
               const angle = -(Number(midAngle) || 0) * Math.PI / 180;
               const x = centerX + radius * Math.cos(angle);
               const y = centerY + radius * Math.sin(angle);
@@ -219,10 +220,12 @@ function InteractivePie({
                   event.stopPropagation();
                   const bounds = chartRef.current?.getBoundingClientRect();
                   setSelectedSlice(row);
-                  setTooltipPosition(bounds ? {
-                    x: Math.max(4, Math.min(event.clientX - bounds.left, bounds.width - 238)),
-                    y: Math.max(4, Math.min(event.clientY - bounds.top, bounds.height - 95)),
-                  } : null);
+                  const tooltipWidth = Math.min(246, window.innerWidth - 16);
+                  const placeRight = event.clientX < window.innerWidth / 2;
+                  setTooltipPosition({
+                    x: Math.max(8, Math.min(placeRight ? event.clientX + 14 : event.clientX - tooltipWidth - 14, window.innerWidth - tooltipWidth - 8)),
+                    y: Math.max(8, Math.min(event.clientY + 12, window.innerHeight - 170)),
+                  });
                 }}
               />
             ))}
@@ -607,7 +610,8 @@ export function MobileServiceStats({
       name,
       value: rows.length,
       fill: DASHBOARD_SERIES_COLORS[index % DASHBOARD_SERIES_COLORS.length],
-      detail: `${extraDetail}${number(averagePrice, language)} DA avg. | ${number(revenue, language)} DA ${copy.revenue} | ${number(revenue - cost, language)} DA ${copy.profit}`,
+      // Keep service pie tooltips concise; the detailed service totals are already shown above the chart.
+      detail: "",
       profit: revenue - cost,
     };
   };
