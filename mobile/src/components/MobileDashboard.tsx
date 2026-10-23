@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   BarChart3,
   ChartColumnIncreasing,
@@ -90,6 +90,21 @@ export function MobileDashboard({
   const [period, setPeriod] = useState<Period>("today");
   const [chartStyle, setChartStyle] = useState<ChartStyle>("bar");
   const [subtractBillPayments, setSubtractBillPayments] = useState(false);
+  const [chartTooltipActive, setChartTooltipActive] = useState(false);
+  const chartContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const dismissTooltipOutsideChart = (event: PointerEvent) => {
+      if (!chartContainerRef.current?.contains(event.target as Node)) {
+        setChartTooltipActive(false);
+      }
+    };
+
+    document.addEventListener("pointerdown", dismissTooltipOutsideChart, true);
+    return () => {
+      document.removeEventListener("pointerdown", dismissTooltipOutsideChart, true);
+    };
+  }, []);
   const days = useMemo(
     () =>
       [...data.dashboard_daily]
@@ -443,7 +458,7 @@ export function MobileDashboard({
                 : labels.empty}
             </p>
           ) : (
-            <div className={`mobile-chart dashboard-mobile-chart dashboard-period-${period}`} role="img" aria-label={`${labels.recentDays}, ${rangeTitle}`}>
+            <div ref={chartContainerRef} className={`mobile-chart dashboard-mobile-chart dashboard-period-${period}`} role="img" aria-label={`${labels.recentDays}, ${rangeTitle}`} onTouchStart={() => setChartTooltipActive(true)} onTouchMove={() => setChartTooltipActive(true)}>
               <ResponsiveContainer
                 width="100%"
                 height="100%"
@@ -454,6 +469,7 @@ export function MobileDashboard({
                 {chartStyle === "bar" ? (
                     <BarChart
                     data={chartData}
+                    onMouseMove={() => setChartTooltipActive(true)}
                     margin={{ top: 16, right: 14, bottom: 1, left: 1 }}
                   >
                     <defs>
@@ -496,6 +512,7 @@ export function MobileDashboard({
                     {netProfitActive ? <ReferenceLine y={0} stroke="var(--foreground)" strokeWidth={1.5} /> : null}
                     {nonzeroProfits.length > 0 ? <ReferenceLine y={averageProfit} stroke="#64748b" strokeDasharray="4 4" /> : null}
                     <Tooltip
+                      active={chartTooltipActive}
                       content={(props) => {
                         const point = props.payload?.[0]?.payload;
                         if (!props.active || !point) return null;
@@ -544,6 +561,7 @@ export function MobileDashboard({
                 ) : (
                   <RechartsLineChart
                     data={chartData}
+                    onMouseMove={() => setChartTooltipActive(true)}
                     margin={{ top: 16, right: 14, bottom: 1, left: 1 }}
                   >
                     <defs>
@@ -584,6 +602,7 @@ export function MobileDashboard({
                     {netProfitActive ? <ReferenceLine y={0} stroke="var(--foreground)" strokeWidth={1.5} /> : null}
                     {nonzeroProfits.length > 0 ? <ReferenceLine y={averageProfit} stroke="#64748b" strokeDasharray="4 4" /> : null}
                     <Tooltip
+                      active={chartTooltipActive}
                       filterNull={false}
                       content={(props) => {
                         const point = props.payload?.[0]?.payload;
