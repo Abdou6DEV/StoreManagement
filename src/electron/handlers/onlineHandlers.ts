@@ -12,6 +12,7 @@ import {
 import { onMobileSyncChange } from "../utils/mobileSyncEvents";
 import { prisma, prismaPromise } from "../../lib/database/prismaClient";
 import { buildMobileSyncSnapshot } from "../utils/mobileSnapshot";
+import type { MobileSyncSnapshot } from "../utils/mobileSnapshot";
 import type { MobileSyncNowResult, MobileSyncStatus } from "../types/mobileSync";
 import { getOption, setOption } from "../../lib/database/options";
 import {
@@ -104,6 +105,36 @@ let mobileSyncEligible: boolean | null = null;
 let mobileSyncLastSuccessAt: string | null = null;
 let mobileSyncLastError: string | null = null;
 
+const MOBILE_SYNC_ERROR_CODES = new Set([
+  "invalid_json",
+  "invalid_sync_request",
+  "incomplete_snapshot",
+  "invalid_snapshot",
+  "unauthorized",
+  "licensing_unavailable",
+  "desktop_not_licensed",
+  "mobile_not_enabled",
+  "sync_batch_too_large",
+  "sync_failed",
+  "invalid_response",
+  "sync_unconfirmed",
+  "count_mismatch",
+]);
+
+function mobileSyncFailure(code: string): Error {
+  return new Error(`mobile_sync:${code}`);
+}
+
+function mobileSyncErrorCode(error: unknown): string {
+  if (!(error instanceof Error)) return "sync_failed";
+  const match = /^mobile_sync:([a-z0-9_]+)$/.exec(error.message);
+  if (!match) return "sync_failed";
+  if (MOBILE_SYNC_ERROR_CODES.has(match[1]) || /^http_[1-5]\d{2}$/.test(match[1])) {
+    return match[1];
+  }
+  return "sync_failed";
+}
+
 function getMobileSyncStatus(): MobileSyncStatus {
   return {
     inProgress: mobileSyncInProgress,
@@ -139,11 +170,15 @@ async function uploadMobileSnapshot(
 ): Promise<void> {
   await prismaPromise;
   const snapshot = await buildMobileSyncSnapshot(prisma, customerId);
-  const snapshotLimits: Record<string, number> = {
+  const snapshotLimits: Record<keyof MobileSyncSnapshot, number> = {
     users: 10_000,
     permissions: 10_000,
     categories: 10_000,
     products: 10_000,
+    manual_products: 10_000,
+    suppliers: 10_000,
+    purchases: 10_000,
+    purchase_items: 10_000,
     clients: 10_000,
     services: 10_000,
     service_appointments: 10_000,
@@ -154,7 +189,11 @@ async function uploadMobileSnapshot(
     bill_payments: 10_000,
     dashboard_daily: 5_000,
   };
-  for (const [table, rows] of Object.entries(snapshot)) {
+  for (
+    const [table, rows] of Object.entries(snapshot) as Array<
+      [keyof MobileSyncSnapshot, Record<string, unknown>[]]
+    >
+  ) {
     if (rows.length > snapshotLimits[table]) {
       throw new Error(`The initial mobile sync exceeds the supported ${table} record limit.`);
     }
@@ -178,8 +217,19 @@ async function uploadMobileSnapshot(
   } catch {
     payload = null;
   }
-  if (!response.ok || !payload || typeof payload !== "object") {
-    throw new Error("The mobile data sync request failed.");
+  if (!response.ok) {
+    const serverError =
+      payload && typeof payload === "object" &&
+        "error" in payload && typeof payload.error === "string"
+        ? payload.error
+        : "";
+    const code = MOBILE_SYNC_ERROR_CODES.has(serverError)
+      ? serverError
+      : `http_${response.status}`;
+    throw mobileSyncFailure(code);
+  }
+  if (!payload || typeof payload !== "object") {
+    throw mobileSyncFailure("invalid_response");
   }
 
   const result = payload as Record<string, unknown>;
@@ -188,14 +238,18 @@ async function uploadMobileSnapshot(
       ? (result.counts as Record<string, unknown>)
       : null;
   if (result.ok !== true || typeof result.synced_at !== "string" || !counts) {
-    throw new Error("The mobile data sync was not confirmed by the server.");
+    throw mobileSyncFailure("sync_unconfirmed");
   }
 
-  const expectedCounts: Record<string, number> = {
+  const expectedCounts: Record<keyof MobileSyncSnapshot, number> = {
     users: snapshot.users.length,
     permissions: snapshot.permissions.length,
     categories: snapshot.categories.length,
     products: snapshot.products.length,
+    manual_products: snapshot.manual_products.length,
+    suppliers: snapshot.suppliers.length,
+    purchases: snapshot.purchases.length,
+    purchase_items: snapshot.purchase_items.length,
     clients: snapshot.clients.length,
     services: snapshot.services.length,
     service_appointments: snapshot.service_appointments.length,
@@ -204,20 +258,19 @@ async function uploadMobileSnapshot(
     payments: snapshot.payments.length,
     bills: snapshot.bills.length,
     bill_payments: snapshot.bill_payments.length,
+    dashboard_daily: snapshot.dashboard_daily.length,
   };
-  for (const [table, expected] of Object.entries(expectedCounts)) {
+  for (
+    const [table, expected] of Object.entries(expectedCounts) as Array<
+      [keyof typeof expectedCounts, number]
+    >
+  ) {
     if (counts[table] !== expected) {
-      throw new Error("The mobile data sync did not confirm every desktop record.");
+      throw mobileSyncFailure("count_mismatch");
     }
   }
-  if (
-    counts.dashboard_daily !== undefined &&
-    counts.dashboard_daily !== snapshot.dashboard_daily.length
-  ) {
-    throw new Error("The mobile data sync did not confirm dashboard aggregates.");
-  }
   if (expectedCounts.users < 1) {
-    throw new Error("No desktop users were confirmed in the mobile data sync.");
+    throw mobileSyncFailure("count_mismatch");
   }
 }
 
@@ -277,11 +330,14 @@ async function syncMobileSnapshotNow(
         mobileSyncRetryAttempt = 0;
       }
       return synced;
-    } catch {
+    } catch (error) {
       mobileSyncPending = true;
       mobileSyncRetryAttempt += 1;
-      mobileSyncLastError = "Mobile sync failed. It will retry automatically.";
-      logger.warn("Mobile data sync failed; retry scheduled.", "Mobile Sync");
+      const code = mobileSyncErrorCode(error);
+      mobileSyncLastError = `Mobile sync failed (${code}). It will retry automatically.`;
+      logger.warn("Mobile data sync failed; retry scheduled.", "Mobile Sync", {
+        errorCode: code,
+      });
       const delay = Math.min(
         MOBILE_SYNC_INITIAL_RETRY_MS *
           2 ** Math.min(mobileSyncRetryAttempt - 1, 10),
@@ -1339,7 +1395,7 @@ export function setupOnlineHandlers(): void {
       } catch {
         return {
           success: false,
-          error:
+          error: mobileSyncLastError ??
             "Initial mobile data sync failed or was not confirmed. No pairing QR was issued. Check the connection and retry.",
           code: "edge",
         };

@@ -238,6 +238,17 @@ function fail(table: string, reason: string): never {
   throw new Error(`invalid_snapshot:${table}:${reason}`);
 }
 
+export function staleMobileSyncIds(
+  existingRows: readonly { customer_id: string; source_id: string }[],
+  customerId: string,
+  includedIds: ReadonlySet<string>,
+): string[] {
+  return existingRows
+    .filter((row) => row.customer_id === customerId)
+    .map((row) => row.source_id)
+    .filter((id) => !includedIds.has(id));
+}
+
 export function validateMobileSyncSnapshot(
   snapshot: unknown,
   customerId: string,

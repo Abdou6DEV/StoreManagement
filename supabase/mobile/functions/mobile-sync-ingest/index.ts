@@ -6,6 +6,7 @@ import {
 } from "../_shared/licensing.ts";
 import {
   readAllPages,
+  staleMobileSyncIds,
   validateMobileSyncSnapshot,
 } from "../_shared/mobileSyncSnapshot.ts";
 
@@ -72,8 +73,8 @@ Deno.serve(async (req) => {
   let license;
   try {
     license = await checkLicensingDesktop(desktopDeviceId);
-  } catch (error) {
-    console.error("mobile sync licensing check failed", error);
+  } catch {
+    console.error("mobile sync licensing check failed");
     return json(503, { ok: false, error: "licensing_unavailable" }, cors);
   }
   if (!license?.allowed || !license.customer_id) {
@@ -107,8 +108,8 @@ Deno.serve(async (req) => {
         .order("source_id", { ascending: true })
         .range(from, to)
     );
-  } catch (error) {
-    console.error("mobile sync user lookup failed", error);
+  } catch {
+    console.error("mobile sync user lookup failed");
     return json(500, { ok: false, error: "sync_failed" }, cors);
   }
   const users = snapshot.users as Array<Record<string, unknown>>;
@@ -166,30 +167,32 @@ Deno.serve(async (req) => {
         onConflict: "customer_id,source_id",
       });
       if (error) {
-        console.error(`mobile sync failed for ${table}`, error);
+        console.error(`mobile sync failed for ${table}`);
         return json(500, { ok: false, error: "sync_failed", table }, cors);
       }
     }
 
-    let existing: Array<{ source_id: string }>;
+    let existing: Array<{ customer_id: string; source_id: string }>;
     try {
       existing = await readAllPages(async (from, to) =>
         db
           .from(table)
-          .select("source_id")
+          .select("customer_id, source_id")
           .eq("customer_id", license.customer_id)
           .is("deleted_at", null)
           .order("source_id", { ascending: true })
           .range(from, to)
       );
-    } catch (error) {
-      console.error(`mobile sync reconcile lookup failed for ${table}`, error);
+    } catch {
+      console.error(`mobile sync reconcile lookup failed for ${table}`);
       return json(500, { ok: false, error: "sync_failed", table }, cors);
     }
     const includedIds = new Set(rows.map((row) => row.source_id as string));
-    const staleIds = existing
-      .map((row) => row.source_id as string)
-      .filter((id) => !includedIds.has(id));
+    const staleIds = staleMobileSyncIds(
+      existing,
+      license.customer_id,
+      includedIds,
+    );
     for (const staleBatch of chunks(staleIds, BATCH_SIZE)) {
       const { error } = await db
         .from(table)
@@ -197,7 +200,7 @@ Deno.serve(async (req) => {
         .eq("customer_id", license.customer_id)
         .in("source_id", staleBatch);
       if (error) {
-        console.error(`mobile sync reconcile failed for ${table}`, error);
+        console.error(`mobile sync reconcile failed for ${table}`);
         return json(500, { ok: false, error: "sync_failed", table }, cors);
       }
     }
@@ -212,7 +215,7 @@ Deno.serve(async (req) => {
       .is("revoked_at", null)
       .in("user_source_id", [...new Set(changedCredentialIds)]);
     if (error) {
-      console.error("mobile sync session revocation failed", error);
+      console.error("mobile sync session revocation failed");
       return json(500, { ok: false, error: "sync_failed" }, cors);
     }
   }
@@ -242,7 +245,7 @@ Deno.serve(async (req) => {
       onConflict: "customer_id,local_day",
     });
     if (error) {
-      console.error("mobile dashboard aggregate sync failed", error);
+      console.error("mobile dashboard aggregate sync failed");
       return json(500, {
         ok: false,
         error: "sync_failed",
@@ -259,7 +262,7 @@ Deno.serve(async (req) => {
       .order("local_day", { ascending: true })
       .range(offset, offset + BATCH_SIZE - 1);
     if (error) {
-      console.error("mobile dashboard reconciliation lookup failed", error);
+      console.error("mobile dashboard reconciliation lookup failed");
       return json(500, {
         ok: false,
         error: "sync_failed",
@@ -281,7 +284,7 @@ Deno.serve(async (req) => {
       .eq("customer_id", license.customer_id)
       .in("local_day", staleBatch);
     if (error) {
-      console.error("mobile dashboard reconciliation failed", error);
+      console.error("mobile dashboard reconciliation failed");
       return json(500, {
         ok: false,
         error: "sync_failed",
