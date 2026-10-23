@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   Cell,
   Pie,
   PieChart,
   ResponsiveContainer,
-  Tooltip,
 } from "recharts";
 import {
   DashboardMetric,
@@ -162,27 +162,6 @@ function InteractivePie({
     <div ref={chartRef} className={`mobile-dashboard-pie-chart ${compact ? "h-[220px]" : "h-[230px]"} min-w-0`} style={{ outline: "none" }} onClick={() => { setSelectedSlice(null); setTooltipPosition(null); }}>
       <ResponsiveContainer width="100%" height="100%" minWidth={0}>
         <PieChart margin={{ top: 8, right: 10, bottom: 8, left: 10 }}>
-          <Tooltip
-            active={Boolean(selectedSlice)}
-            allowEscapeViewBox={{ x: true, y: true }}
-            content={() => selectedSlice ? (
-              <div style={{ position: "fixed", left: tooltipPosition?.x ?? 8, top: tooltipPosition?.y ?? 8, zIndex: 1000, minWidth: 150, maxWidth: "min(230px, calc(100vw - 16px))", border: "1px solid var(--border)", borderRadius: 12, background: "var(--card)", color: "var(--foreground)", padding: "11px 13px", boxShadow: "0 8px 24px rgba(0,0,0,0.24)", pointerEvents: "none" }}>
-                <div style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 8 }}>
-                  <span style={{ width: 10, height: 10, borderRadius: 3, background: selectedSlice.fill, flexShrink: 0, marginTop: 4 }} />
-                  <strong style={{ fontSize: 13, lineHeight: 1.35, overflowWrap: "anywhere" }}>{selectedSlice.name}</strong>
-                </div>
-                <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, fontSize: 12 }}>
-                  <span style={{ color: "var(--muted-foreground)" }}>{copy.valueLabel}</span>
-                  <strong style={{ fontSize: 15, fontVariantNumeric: "tabular-nums" }}>{displayValue(selectedSlice.value)}</strong>
-                </div>
-                <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, marginTop: 4, fontSize: 12 }}>
-                  <span style={{ color: "var(--muted-foreground)" }}>{copy.share}</span>
-                  <strong style={{ fontSize: 13, fontVariantNumeric: "tabular-nums" }}>{total > 0 ? `${(selectedSlice.value / total * 100).toFixed(1)}%` : "0%"}</strong>
-                </div>
-                {selectedSlice.detail ? <p style={{ marginTop: 8, paddingTop: 7, borderTop: "1px solid var(--border)", color: "var(--muted-foreground)", fontSize: 11, lineHeight: 1.5, overflowWrap: "anywhere" }}>{selectedSlice.detail}</p> : null}
-              </div>
-            ) : null}
-          />
           <Pie
             data={data}
             dataKey="value"
@@ -195,8 +174,6 @@ function InteractivePie({
             isAnimationActive={false}
             labelLine={false}
             label={({ cx, cy, midAngle, outerRadius, percent }) => {
-              // Tiny slices cannot fit readable labels without collisions; keep labels for slices large enough to read.
-              if (Number(percent) < 0.045) return null;
               const centerX = Number(cx) || 0;
               const centerY = Number(cy) || 0;
               const radius = (Number(outerRadius) || 0) + 8;
@@ -220,10 +197,13 @@ function InteractivePie({
                   event.stopPropagation();
                   setSelectedSlice(row);
                   const tooltipWidth = Math.min(246, window.innerWidth - 16);
-                  const placeRight = event.clientX < window.innerWidth / 2;
+                  const chartBounds = chartRef.current?.getBoundingClientRect();
+                  const chartCenterX = chartBounds ? chartBounds.left + chartBounds.width / 2 : window.innerWidth / 2;
+                  const placeRight = event.clientX < chartCenterX;
+                  const tooltipHeight = selectedSlice?.detail ? 190 : 125;
                   setTooltipPosition({
-                    x: Math.max(8, Math.min(placeRight ? event.clientX + 14 : event.clientX - tooltipWidth - 14, window.innerWidth - tooltipWidth - 8)),
-                    y: Math.max(8, Math.min(event.clientY + 12, window.innerHeight - 170)),
+                    x: Math.max(8, Math.min(placeRight ? Math.max(event.clientX + 14, chartBounds?.right ?? 0) : Math.min(event.clientX - tooltipWidth - 14, (chartBounds?.left ?? window.innerWidth) - tooltipWidth), window.innerWidth - tooltipWidth - 8)),
+                    y: Math.max(8, Math.min(event.clientY + 12, window.innerHeight - tooltipHeight - 8)),
                   });
                 }}
               />
@@ -231,6 +211,24 @@ function InteractivePie({
           </Pie>
         </PieChart>
       </ResponsiveContainer>
+      {selectedSlice && tooltipPosition ? createPortal(
+        <div style={{ position: "fixed", left: tooltipPosition.x, top: tooltipPosition.y, zIndex: 10000, minWidth: 150, maxWidth: "min(230px, calc(100vw - 16px))", border: "1px solid var(--border)", borderRadius: 12, background: "var(--card)", color: "var(--foreground)", padding: "11px 13px", boxShadow: "0 8px 24px rgba(0,0,0,0.24)", pointerEvents: "none" }}>
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 8 }}>
+            <span style={{ width: 10, height: 10, borderRadius: 3, background: selectedSlice.fill, flexShrink: 0, marginTop: 4 }} />
+            <strong style={{ fontSize: 13, lineHeight: 1.35, overflowWrap: "anywhere" }}>{selectedSlice.name}</strong>
+          </div>
+          <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, fontSize: 12 }}>
+            <span style={{ color: "var(--muted-foreground)" }}>{copy.valueLabel}</span>
+            <strong style={{ fontSize: 15, fontVariantNumeric: "tabular-nums" }}>{displayValue(selectedSlice.value)}</strong>
+          </div>
+          <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, marginTop: 4, fontSize: 12 }}>
+            <span style={{ color: "var(--muted-foreground)" }}>{copy.share}</span>
+            <strong style={{ fontSize: 13, fontVariantNumeric: "tabular-nums" }}>{total > 0 ? `${(selectedSlice.value / total * 100).toFixed(1)}%` : "0%"}</strong>
+          </div>
+          {selectedSlice.detail ? <p style={{ marginTop: 8, paddingTop: 7, borderTop: "1px solid var(--border)", color: "var(--muted-foreground)", fontSize: 11, lineHeight: 1.5, overflowWrap: "anywhere" }}>{selectedSlice.detail}</p> : null}
+        </div>,
+        document.body,
+      ) : null}
     </div>
   );
 }
