@@ -1,5 +1,6 @@
 import {
   AlertCircle,
+  ArrowLeft,
   Eye,
   EyeOff,
   LoaderCircle,
@@ -55,6 +56,7 @@ type Copy = {
   login: string;
   signingIn: string;
   menu: string;
+  backToMenu: string;
   dashboard: string;
   stock: string;
   history: string;
@@ -146,6 +148,7 @@ const COPY: Record<MobileLanguage, Copy> = {
     login: "Sign in",
     signingIn: "Signing in…",
     menu: "Main menu",
+    backToMenu: "Back to main menu",
     dashboard: "Dashboard",
     stock: "Stock",
     history: "History",
@@ -304,6 +307,7 @@ const COPY: Record<MobileLanguage, Copy> = {
     login: "Se connecter",
     signingIn: "Connexion…",
     menu: "Menu principal",
+    backToMenu: "Retour au menu principal",
     dashboard: "Tableau de bord",
     stock: "Stock",
     history: "Historique",
@@ -462,6 +466,7 @@ const COPY: Record<MobileLanguage, Copy> = {
     login: "تسجيل الدخول",
     signingIn: "جارٍ تسجيل الدخول…",
     menu: "القائمة الرئيسية",
+    backToMenu: "العودة إلى القائمة الرئيسية",
     dashboard: "لوحة المعلومات",
     stock: "المخزون",
     history: "السجل",
@@ -1192,6 +1197,16 @@ export function MobilePosApp({
           <PreferencesMenu language={language} onLanguageChange={changeLanguage} className="mobile-login-preferences" forceRight showTooltipToggle={false} />
         </>
       )}
+      {user && section !== "menu" ? (
+        <button
+          type="button"
+          className="back-button mb-3 flex items-center gap-2 rounded-xl border border-[var(--line)] bg-[var(--card)] px-3 py-2 text-sm font-medium"
+          onClick={() => selectSection("menu")}
+        >
+          <ArrowLeft size={18} aria-hidden="true" />
+          <span>{copy.backToMenu}</span>
+        </button>
+      ) : null}
       {notice ? <div className="mobile-state-banner error-banner" role="alert"><AlertCircle size={17} />{notice}</div> : null}
 
       {!user ? (
