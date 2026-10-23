@@ -110,14 +110,14 @@ function StatGrid({
   items,
   language,
 }: {
-  items: Array<{ label: string; value: string | number }>;
+  items: Array<{ label: string; value: string | number; valueClassName?: string }>;
   language: MobileLanguage;
 }) {
   return (
     <div className="grid grid-cols-2 gap-x-4 gap-y-5 sm:grid-cols-3">
       {items.map((item) => (
         <DashboardMetric key={item.label} label={item.label} labelClassName="!text-xs">
-          <strong className="text-lg font-bold tabular-nums text-foreground sm:text-xl">
+          <strong className={`text-lg font-bold tabular-nums sm:text-xl ${item.valueClassName ?? "text-foreground"}`}>
             {typeof item.value === "number" ? number(item.value, language) : item.value}
           </strong>
         </DashboardMetric>
@@ -402,8 +402,8 @@ export function MobileStockStats({
             { label: copy.totalQuantity, value: stats.totalQuantity },
             { label: copy.stockCost, value: money(stats.inventoryCost, language) },
             { label: copy.stockValue, value: money(stats.inventoryValue, language) },
-            { label: copy.profitPotential, value: money(stats.profitPotential, language) },
-            { label: copy.outOfStock, value: stats.outOfStock },
+            { label: copy.profitPotential, value: money(stats.profitPotential, language), valueClassName: "text-green-600 dark:text-green-400" },
+            { label: copy.outOfStock, value: stats.outOfStock, valueClassName: "text-red-600" },
             { label: copy.averageMargin, value: money(stats.averageMargin, language) },
             { label: copy.marginPercent, value: `${stats.averageMarginPercentage.toFixed(1)}%` },
             { label: copy.averageRoi, value: `${stats.averageRoi.toFixed(1)}%` },
@@ -526,12 +526,12 @@ export function MobileClientStats({
         <>
           <StatGrid language={language} items={[
             { label: copy.clientsTotal, value: data.clients.length },
-            { label: copy.newClients, value: newClients },
-            { label: copy.activeClients, value: clientActivityComplete ? activeIds.size : "—" },
-            { label: copy.retention, value: clientActivityComplete && data.clients.length ? `${(activeIds.size / data.clients.length * 100).toFixed(1)}%` : "—" },
-            { label: copy.unpaidCredit, value: paymentMetricsAvailable ? money(unpaidCredit, language) : "—" },
-            { label: copy.unpaidVersement, value: paymentsComplete ? money(unpaidVersement, language) : "—" },
-            { label: copy.paymentRate, value: paymentMetricsAvailable ? `${paymentRate.toFixed(1)}%` : "—" },
+            { label: copy.newClients, value: newClients, valueClassName: "text-blue-600" },
+            { label: copy.activeClients, value: clientActivityComplete ? activeIds.size : "—", valueClassName: "text-green-600" },
+            { label: copy.retention, value: clientActivityComplete && data.clients.length ? `${(activeIds.size / data.clients.length * 100).toFixed(1)}%` : "—", valueClassName: "text-purple-600" },
+            { label: copy.unpaidCredit, value: paymentMetricsAvailable ? money(unpaidCredit, language) : "—", valueClassName: "text-red-600" },
+            { label: copy.unpaidVersement, value: paymentsComplete ? money(unpaidVersement, language) : "—", valueClassName: "text-orange-600" },
+            { label: copy.paymentRate, value: paymentMetricsAvailable ? `${paymentRate.toFixed(1)}%` : "—", valueClassName: "text-green-600" },
             { label: copy.averageClientValue, value: paymentMetricsAvailable ? money(averageClientValue, language) : "—" },
           ]} />
           {!clientActivityComplete ? <DataNotice>{copy.clientsActivityUnavailable}</DataNotice> : null}
@@ -637,14 +637,14 @@ export function MobileServiceStats({
         <>
           <StatGrid language={language} items={[
             { label: copy.totalServices, value: services.length },
-            { label: copy.completed, value: completed.length },
-            { label: copy.pending, value: pending.length },
-            { label: copy.overdue, value: overdue.length },
+            { label: copy.completed, value: completed.length, valueClassName: "text-green-600" },
+            { label: copy.pending, value: pending.length, valueClassName: "text-orange-600" },
+            { label: copy.overdue, value: overdue.length, valueClassName: "text-red-600" },
             { label: copy.revenue, value: money(totalRevenue, language) },
             { label: copy.cost, value: money(totalCost, language) },
-            { label: copy.profit, value: money(totalRevenue - totalCost, language) },
+            { label: copy.profit, value: money(totalRevenue - totalCost, language), valueClassName: "text-green-600" },
             { label: copy.turnaround, value: `${averageTurnaround} ${copy.days}` },
-            { label: copy.completionRate, value: `${services.length ? (completed.length / services.length * 100).toFixed(1) : "0.0"}%` },
+            { label: copy.completionRate, value: `${services.length ? (completed.length / services.length * 100).toFixed(1) : "0.0"}%`, valueClassName: "text-blue-600" },
           ]} />
           <div className="mobile-dashboard-toggle" data-columns="2" role="group">
             <button type="button" className={view === "types" ? "selected" : ""} onClick={() => setView("types")}>{copy.serviceTypes}</button>
