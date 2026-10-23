@@ -145,7 +145,7 @@ body {
 
 button, select, input { -webkit-tap-highlight-color: transparent; }
 button:focus-visible, select:focus-visible, input:focus-visible {
-  outline: 3px solid rgb(239 68 68 / 30%);
+  outline: 3px solid rgba(57, 123, 247, 0.3);
   outline-offset: 2px;
 }
 
@@ -197,7 +197,7 @@ button:focus-visible, select:focus-visible, input:focus-visible {
 
 .mobile-eyebrow {
   margin: 12px 0 0;
-  color: #ef4444;
+  color: #44a1ee;
   font-size: .72rem;
   font-weight: 800;
   letter-spacing: .14em;
