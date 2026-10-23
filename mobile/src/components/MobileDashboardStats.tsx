@@ -1,12 +1,8 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Cell,
-  Label,
   Pie,
   PieChart,
-  PolarRadiusAxis,
-  RadialBar,
-  RadialBarChart,
   ResponsiveContainer,
   Tooltip,
 } from "recharts";
@@ -40,7 +36,7 @@ const COPY = {
     trends: "Trends", sixMonths: "6 months", twelveMonths: "12 months", allTime: "All time", currentMonthOnly: "Current month only",
     servicesUnavailable: "Service summary unavailable: the API's appointment limit was reached.",
     incomplete: "Summary hidden because the API record limit may have truncated this data.",
-    count: "Count", monthlyRevenue: "Revenue", monthlyProfit: "Profit", monthlyCompleted: "Completed",
+    count: "Count", valueLabel: "Value", share: "Share", salesCount: "sales", productsCount: "products", monthlyRevenue: "Revenue", monthlyProfit: "Profit", monthlyCompleted: "Completed",
     last365Days: "Last 365 days", chartEmpty: "No chart data to show.",
   },
   fr: {
@@ -63,7 +59,7 @@ const COPY = {
     trends: "Tendances", sixMonths: "6 mois", twelveMonths: "12 mois", allTime: "Tout", currentMonthOnly: "Mois en cours uniquement",
     servicesUnavailable: "Résumé indisponible : la limite de rendez-vous de l’API est atteinte.",
     incomplete: "Résumé masqué car la limite de l’API peut avoir tronqué les données.",
-    count: "Nombre", monthlyRevenue: "Chiffre d’affaires", monthlyProfit: "Bénéfice", monthlyCompleted: "Terminés",
+    count: "Nombre", valueLabel: "Valeur", share: "Part", salesCount: "ventes", productsCount: "produits", monthlyRevenue: "Chiffre d’affaires", monthlyProfit: "Bénéfice", monthlyCompleted: "Terminés",
     last365Days: "365 derniers jours", chartEmpty: "Aucune donnée graphique.",
   },
   ar: {
@@ -86,7 +82,7 @@ const COPY = {
     trends: "الاتجاهات", sixMonths: "6 أشهر", twelveMonths: "12 شهراً", allTime: "كل الوقت", currentMonthOnly: "الشهر الحالي فقط",
     servicesUnavailable: "الملخص غير متاح: تم بلوغ حد المواعيد في API.",
     incomplete: "أُخفي الملخص لاحتمال اقتطاع البيانات عند حد API.",
-    count: "العدد", monthlyRevenue: "الإيرادات", monthlyProfit: "الربح", monthlyCompleted: "مكتمل",
+    count: "العدد", valueLabel: "القيمة", share: "النسبة", salesCount: "مبيعات", productsCount: "منتجات", monthlyRevenue: "الإيرادات", monthlyProfit: "الربح", monthlyCompleted: "مكتمل",
     last365Days: "آخر 365 يوماً", chartEmpty: "لا توجد بيانات للمخطط.",
   },
 } as const;
@@ -130,45 +126,140 @@ function StatGrid({
   );
 }
 
+function InteractivePie({
+  data,
+  language,
+  valueFormat = "number",
+  compact = false,
+}: {
+  data: Slice[];
+  language: MobileLanguage;
+  valueFormat?: "number" | "money";
+  compact?: boolean;
+}) {
+  const [selectedSlice, setSelectedSlice] = useState<Slice | null>(null);
+  const [tooltipPosition, setTooltipPosition] = useState<{ x: number; y: number } | null>(null);
+  const chartRef = useRef<HTMLDivElement>(null);
+  const total = data.reduce((sum, row) => sum + row.value, 0);
+  const copy = COPY[language];
+
+  useEffect(() => {
+    const dismissOutside = (event: PointerEvent) => {
+      if (!chartRef.current?.contains(event.target as Node)) {
+        setSelectedSlice(null);
+        setTooltipPosition(null);
+      }
+    };
+    document.addEventListener("pointerdown", dismissOutside, true);
+    return () => document.removeEventListener("pointerdown", dismissOutside, true);
+  }, []);
+
+  const displayValue = (amount: number) => valueFormat === "money"
+    ? money(amount, language)
+    : number(amount, language);
+
+  return (
+    <div ref={chartRef} className={`mobile-dashboard-pie-chart ${compact ? "h-[220px]" : "h-[230px]"} min-w-0`} style={{ outline: "none" }} onClick={() => { setSelectedSlice(null); setTooltipPosition(null); }}>
+      <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+        <PieChart margin={{ top: 20, right: 22, bottom: 20, left: 22 }}>
+          <Tooltip
+            active={Boolean(selectedSlice)}
+            position={tooltipPosition ?? undefined}
+            allowEscapeViewBox={{ x: true, y: true }}
+            content={() => selectedSlice ? (
+              <div style={{ minWidth: 150, maxWidth: 230, border: "1px solid var(--border)", borderRadius: 12, background: "var(--card)", color: "var(--foreground)", padding: "11px 13px", boxShadow: "0 8px 24px rgba(0,0,0,0.18)", pointerEvents: "none" }}>
+                <div style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 8 }}>
+                  <span style={{ width: 10, height: 10, borderRadius: 3, background: selectedSlice.fill, flexShrink: 0, marginTop: 4 }} />
+                  <strong style={{ fontSize: 13, lineHeight: 1.35, overflowWrap: "anywhere" }}>{selectedSlice.name}</strong>
+                </div>
+                <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, fontSize: 12 }}>
+                  <span style={{ color: "var(--muted-foreground)" }}>{copy.valueLabel}</span>
+                  <strong style={{ fontSize: 15, fontVariantNumeric: "tabular-nums" }}>{displayValue(selectedSlice.value)}</strong>
+                </div>
+                <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, marginTop: 4, fontSize: 12 }}>
+                  <span style={{ color: "var(--muted-foreground)" }}>{copy.share}</span>
+                  <strong style={{ fontSize: 13, fontVariantNumeric: "tabular-nums" }}>{total > 0 ? `${(selectedSlice.value / total * 100).toFixed(1)}%` : "0%"}</strong>
+                </div>
+                {selectedSlice.detail ? <p style={{ marginTop: 8, paddingTop: 7, borderTop: "1px solid var(--border)", color: "var(--muted-foreground)", fontSize: 11, lineHeight: 1.5, overflowWrap: "anywhere" }}>{selectedSlice.detail}</p> : null}
+              </div>
+            ) : null}
+          />
+          <Pie
+            data={data}
+            dataKey="value"
+            nameKey="name"
+            innerRadius={0}
+            outerRadius="62%"
+            paddingAngle={1}
+            stroke="none"
+            strokeWidth={0}
+            isAnimationActive={false}
+            labelLine={{ stroke: "#111827", strokeWidth: 1 }}
+            label={({ cx, cy, midAngle, outerRadius, percent }) => {
+              const centerX = Number(cx) || 0;
+              const centerY = Number(cy) || 0;
+              const radius = (Number(outerRadius) || 0) + 16;
+              const angle = -(Number(midAngle) || 0) * Math.PI / 180;
+              const x = centerX + radius * Math.cos(angle);
+              const y = centerY + radius * Math.sin(angle);
+              return (
+                <text x={x} y={y} fill="#111827" fontSize={11} fontWeight={800} textAnchor={x > centerX ? "start" : "end"} dominantBaseline="central" style={{ pointerEvents: "none", paintOrder: "stroke", stroke: "#ffffff", strokeWidth: 2, strokeLinejoin: "round" }}>
+                  {`${(Number(percent) * 100).toFixed(1)}%`}
+                </text>
+              );
+            }}
+          >
+            {data.map((row, index) => (
+              <Cell
+                key={row.key ?? `${row.name}-${index}`}
+                fill={row.fill}
+                stroke="none"
+                strokeWidth={0}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  const bounds = chartRef.current?.getBoundingClientRect();
+                  setSelectedSlice(row);
+                  setTooltipPosition(bounds ? {
+                    x: Math.max(4, Math.min(event.clientX - bounds.left, bounds.width - 238)),
+                    y: Math.max(4, Math.min(event.clientY - bounds.top, bounds.height - 95)),
+                  } : null);
+                }}
+              />
+            ))}
+          </Pie>
+        </PieChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
 function PieBreakdown({
   title,
   data,
   legendData,
   language,
   legendPercentageTotal,
+  valueFormat = "number",
+  compact = false,
 }: {
   title: string;
   data: Slice[];
   legendData?: Slice[];
   language: MobileLanguage;
   legendPercentageTotal?: number;
+  valueFormat?: "number" | "money";
+  compact?: boolean;
 }) {
   const dataTotal = data.reduce((sum, row) => sum + row.value, 0);
   const legendTotal = legendPercentageTotal ?? dataTotal;
   const legendRows = legendData ?? data;
   if (!data.length) return null;
   return (
-    <section className="mobile-dashboard-chart-section">
-      <h3 className="mb-2 text-base font-semibold text-foreground">{title}</h3>
-      <div className="grid min-w-0 gap-3 sm:grid-cols-2 sm:items-center">
-        <div className="mobile-dashboard-pie-chart h-[190px] min-w-0">
-          <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-            <PieChart>
-              <Tooltip formatter={(entry: unknown) => number(Number(Array.isArray(entry) ? entry[0] : entry) || 0, language)} />
-              <Pie
-                data={data}
-                dataKey="value"
-                nameKey="name"
-                innerRadius="45%"
-                outerRadius="60%"
-                paddingAngle={1}
-              >
-                {data.map((row, index) => <Cell key={row.key ?? `${row.name}-${index}`} fill={row.fill} />)}
-              </Pie>
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-        <div className="space-y-2">
+    <section className={compact ? "min-w-0" : "mobile-dashboard-chart-section"}>
+      <h3 className={`mb-2 text-base font-semibold text-foreground ${compact ? "text-center" : ""}`}>{title}</h3>
+      <div className={compact ? "grid min-w-0 gap-2" : "grid min-w-0 gap-3 sm:grid-cols-2 sm:items-center"}>
+        <InteractivePie data={data} language={language} valueFormat={valueFormat} compact={compact} />
+        <div className={compact ? "grid grid-cols-1 gap-2" : "space-y-2"}>
           {legendRows.map((row, index) => (
             <div key={row.key ?? `${row.name}-${index}`} className="flex min-w-0 items-center justify-between gap-3 text-sm">
               <div className="flex min-w-0 items-center gap-2">
@@ -179,7 +270,7 @@ function PieBreakdown({
                 </span>
               </div>
               <div className="shrink-0 text-right">
-                <strong className="tabular-nums">{number(row.value, language)}</strong>
+                <strong className="tabular-nums">{valueFormat === "money" ? money(row.value, language) : number(row.value, language)}</strong>
                 <span className="ml-2 text-xs text-muted-foreground">
                   {legendTotal > 0 ? `${((row.value / legendTotal) * 100).toFixed(1)}%` : "0%"}
                 </span>
@@ -201,50 +292,13 @@ function RadialBreakdown({
   rows: Array<{ key: string; label: string; value: number; color: string }>;
   language: MobileLanguage;
 }) {
-  const total = rows.reduce((sum, row) => sum + row.value, 0);
-  const chartRow = Object.fromEntries(rows.map((row) => [row.key, row.value]));
   return (
-    <section>
-      <h3 className="mb-2 text-center text-sm font-semibold text-foreground">{title}</h3>
-      <div className="mx-auto h-[190px] w-full max-w-[240px]">
-        <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-          <RadialBarChart data={[chartRow]} startAngle={90} endAngle={-270} innerRadius="56%" outerRadius="88%">
-            {rows.map((row) => (
-              <RadialBar key={row.key} dataKey={row.key} fill={row.color} stackId="a" cornerRadius={4} />
-            ))}
-            <PolarRadiusAxis tick={false} tickLine={false} axisLine={false}>
-              <Label content={({ viewBox }) => {
-                if (!viewBox || !("cx" in viewBox) || !("cy" in viewBox)) return null;
-                return (
-                  <text x={viewBox.cx} y={viewBox.cy} textAnchor="middle" dominantBaseline="middle">
-                    <tspan x={viewBox.cx} y={(viewBox.cy || 0) - 5} className="fill-foreground text-2xl font-bold">
-                      {number(total, language)}
-                    </tspan>
-                    <tspan x={viewBox.cx} y={(viewBox.cy || 0) + 17} className="fill-muted-foreground text-xs">
-                      {title}
-                    </tspan>
-                  </text>
-                );
-              }} />
-            </PolarRadiusAxis>
-          </RadialBarChart>
-        </ResponsiveContainer>
-      </div>
-      <div className="mx-auto mt-2 max-w-[240px] space-y-2">
-        {rows.map((row) => (
-          <div key={row.key} className="flex items-center justify-between gap-2 text-sm">
-            <span className="flex min-w-0 items-center gap-2">
-              <span className="h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: row.color }} />
-              <span className="truncate">{row.label}</span>
-            </span>
-            <span className="shrink-0 text-right">
-              <strong>{number(row.value, language)}</strong>
-              <span className="ml-2 text-xs text-muted-foreground">{total ? `${(row.value / total * 100).toFixed(1)}%` : "0%"}</span>
-            </span>
-          </div>
-        ))}
-      </div>
-    </section>
+    <PieBreakdown
+      title={title}
+      language={language}
+      compact
+      data={rows.map((row) => ({ key: row.key, name: row.label, value: row.value, fill: row.color }))}
+    />
   );
 }
 
@@ -282,9 +336,13 @@ export function MobileStockStats({
     })
     .sort((a, b) => b.sold - a.sold);
   const categories = new Map<string, number>();
+  const categoryProductCounts = new Map<string, number>();
   for (const row of rankedProducts) {
     const category = String(row.product.category_name ?? "");
-    if (category) categories.set(category, (categories.get(category) ?? 0) + row.sold);
+    if (category) {
+      categories.set(category, (categories.get(category) ?? 0) + row.sold);
+      categoryProductCounts.set(category, (categoryProductCounts.get(category) ?? 0) + 1);
+    }
   }
   const categoryRows = [...categories.entries()].sort((a, b) => b[1] - a[1]);
   const topCategories: Slice[] = categoryRows.slice(0, 5).map(([name, sold], index) => ({
@@ -292,6 +350,7 @@ export function MobileStockStats({
     name,
     value: sold,
     fill: DASHBOARD_SERIES_COLORS[index % DASHBOARD_SERIES_COLORS.length],
+    detail: `${number(categoryProductCounts.get(name) ?? 0, language)} ${copy.productsCount}`,
   }));
   const otherCategoryTotal = categoryRows.slice(5).reduce((sum, [, sold]) => sum + sold, 0);
   if (otherCategoryTotal > 0) topCategories.push({ key: "others", name: copy.others, value: otherCategoryTotal, fill: OTHER_COLOR });
@@ -359,7 +418,7 @@ export function MobileStockStats({
               title={view === "categories" ? copy.categories : copy.products}
               data={chartRows}
               language={language}
-              legendPercentageTotal={topCategories.reduce((sum, row) => sum + row.value, 0)}
+              legendPercentageTotal={chartRows.reduce((sum, row) => sum + row.value, 0)}
             />
           ) : <DataNotice>{copy.distributionNote}</DataNotice>}
         </>
@@ -428,24 +487,27 @@ export function MobileClientStats({
     }
   }
 
-  const spend = new Map<string, number>();
+  const spend = new Map<string, { revenue: number; sales: number }>();
   if (salesComplete) {
     for (const sale of data.sales) {
       if (!sale.client_source_id) continue;
       const id = String(sale.client_source_id);
-      spend.set(id, (spend.get(id) ?? 0) + value(sale, "total_amount_with_discount"));
+      const current = spend.get(id) ?? { revenue: 0, sales: 0 };
+      spend.set(id, { revenue: current.revenue + value(sale, "total_amount_with_discount"), sales: current.sales + 1 });
     }
   }
-  const rankedClients = [...spend.entries()].map(([id, revenue]) => ({
+  const rankedClients = [...spend.entries()].map(([id, totals]) => ({
     id,
     name: String(clientsById.get(id)?.name ?? "Unknown"),
-    revenue,
+    revenue: totals.revenue,
+    sales: totals.sales,
   })).sort((a, b) => b.revenue - a.revenue);
   const topClients: Slice[] = rankedClients.slice(0, 10).map((client, index) => ({
     key: client.id,
     name: client.name,
     value: client.revenue,
     fill: DASHBOARD_SERIES_COLORS[index % DASHBOARD_SERIES_COLORS.length],
+    detail: `${number(client.sales, language)} ${copy.salesCount}`,
   }));
   const otherRevenue = rankedClients.slice(10).reduce((sum, client) => sum + client.revenue, 0);
   if (otherRevenue > 0) topClients.push({ key: "others", name: copy.others, value: otherRevenue, fill: OTHER_COLOR });
@@ -488,7 +550,7 @@ export function MobileClientStats({
               { key: "unpaid", label: copy.unpaidCredits, value: unpaidCredits, color: "var(--chart-2)" },
             ]} language={language} /> : null}
           </div>
-          {salesComplete ? <PieBreakdown title={copy.topClients} data={topClients} language={language} /> : null}
+          {salesComplete ? <PieBreakdown title={copy.topClients} data={topClients} language={language} valueFormat="money" /> : null}
         </>
       )}
     </DashboardPanel>
@@ -549,15 +611,22 @@ export function MobileServiceStats({
       profit: revenue - cost,
     };
   };
-  const typeRows = [...groupsByType.entries()].map(([name, rows]) => ({ name, rows }))
-    .sort((a, b) => b.rows.length - a.rows.length).slice(0, 8)
-    .map(({ name, rows }, index) => summarizeGroup(name, name, rows, index));
-  const nameRows = [...groupsByName.entries()].map(([key, rows]) => ({ key, rows }))
-    .sort((a, b) => b.rows.length - a.rows.length).slice(0, 8)
+  const sortedTypeGroups = [...groupsByType.entries()].map(([name, rows]) => ({ name, rows }))
+    .sort((a, b) => b.rows.length - a.rows.length);
+  const typeRows: Slice[] = sortedTypeGroups.slice(0, 8)
+    .map(({ name, rows }, index) => summarizeGroup(name, name || copy.others, rows, index));
+  const otherTypeCount = sortedTypeGroups.slice(8).reduce((sum, group) => sum + group.rows.length, 0);
+  if (otherTypeCount > 0) typeRows.push({ key: "others", name: copy.others, value: otherTypeCount, fill: OTHER_COLOR });
+
+  const sortedNameGroups = [...groupsByName.entries()].map(([key, rows]) => ({ key, rows }))
+    .sort((a, b) => b.rows.length - a.rows.length);
+  const nameRows: Slice[] = sortedNameGroups.slice(0, 8)
     .map(({ key, rows }, index) => {
       const [name, type] = key.split("|||");
-      return summarizeGroup(key, name, rows, index, `${type} | `);
+      return summarizeGroup(key, name || copy.others, rows, index, type ? `${type} | ` : "");
     });
+  const otherNameCount = sortedNameGroups.slice(8).reduce((sum, group) => sum + group.rows.length, 0);
+  if (otherNameCount > 0) nameRows.push({ key: "others", name: copy.others, value: otherNameCount, fill: OTHER_COLOR });
 
   return (
     <DashboardPanel stats className="dashboard-overview !min-h-0 !space-y-4 !p-4 sm:!p-6">
