@@ -58,6 +58,24 @@ const TABLE_SCHEMAS: Record<string, TableSchema> = {
     source_created_at: "nullable_timestamp",
     source_updated_at: "timestamp",
   },
+  manual_products: {
+    customer_id: "string", source_id: "string", name: "string", type: "string",
+    cost_price: "integer", source_created_at: "nullable_timestamp", source_updated_at: "timestamp",
+  },
+  suppliers: {
+    customer_id: "string", source_id: "string", name: "string", phone: "nullable_string",
+    email: "nullable_string", address: "nullable_string", notes: "nullable_string",
+    source_created_at: "nullable_timestamp", source_updated_at: "timestamp",
+  },
+  purchases: {
+    customer_id: "string", source_id: "string", supplier_source_id: "nullable_string",
+    source_created_at: "nullable_timestamp", source_updated_at: "timestamp",
+  },
+  purchase_items: {
+    customer_id: "string", source_id: "string", purchase_source_id: "string",
+    product_source_id: "string", quantity: "integer", price: "integer",
+    source_created_at: "nullable_timestamp", source_updated_at: "timestamp",
+  },
   clients: {
     customer_id: "string",
     source_id: "string",
@@ -293,6 +311,15 @@ export function validateMobileSyncSnapshot(
     if (!users.has(String(permission.user_source_id))) {
       fail("permissions", "unknown_user");
     }
+  }
+  for (const purchase of rowsByTable.get("purchases")!.values()) {
+    if (purchase.supplier_source_id !== null && !rowsByTable.get("suppliers")!.has(String(purchase.supplier_source_id))) {
+      fail("purchases", "unknown_supplier");
+    }
+  }
+  for (const item of rowsByTable.get("purchase_items")!.values()) {
+    if (!rowsByTable.get("purchases")!.has(String(item.purchase_source_id))) fail("purchase_items", "unknown_purchase");
+    if (!rowsByTable.get("products")!.has(String(item.product_source_id))) fail("purchase_items", "unknown_product");
   }
   for (const item of rowsByTable.get("sale_items")!.values()) {
     if (!rowsByTable.get("sales")!.has(String(item.sale_source_id))) {

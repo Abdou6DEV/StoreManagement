@@ -29,6 +29,7 @@ import type {
 } from "../mobileApi";
 import {
   MobileClientStats,
+  MobilePurchaseStats,
   MobileServiceStats,
   MobileStockStats,
 } from "./MobileDashboardStats";
@@ -654,6 +655,9 @@ export function MobileDashboard({
         </section>
       </DashboardPanel>
 
+      {permissions.can_access_history ? (
+        <MobilePurchaseStats data={data} language={language} />
+      ) : null}
       {permissions.can_access_stock ? (
         <MobileStockStats data={data} permissions={permissions} language={language} />
       ) : null}

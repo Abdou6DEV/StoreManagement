@@ -42,6 +42,10 @@ const ADMIN_PERMISSIONS: PermissionSet = Object.fromEntries(
 
 const READ_COLUMNS: Record<string, string> = {
   pos_categories: "source_id,name,source_updated_at",
+  pos_manual_products: "source_id,name,type,cost_price,source_created_at,source_updated_at",
+  pos_suppliers: "source_id,name,phone,email,address,notes,source_created_at,source_updated_at",
+  pos_purchases: "source_id,supplier_source_id,source_created_at,source_updated_at",
+  pos_purchase_items: "source_id,purchase_source_id,product_source_id,quantity,price,source_created_at,source_updated_at",
   pos_products:
     "source_id,name,category_name,quantity,bought_price,selling_price,codebar,source_created_at,source_updated_at",
   pos_clients:
@@ -124,6 +128,10 @@ async function readBundle(
     daily,
     categories,
     products,
+    manualProducts,
+    suppliers,
+    purchases,
+    purchaseItems,
     clients,
     payments,
     appointments,
@@ -145,6 +153,18 @@ async function readBundle(
       : Promise.resolve([]),
     permissions.can_access_stock
       ? readRows(db, "pos_products", customerId, "name", 2000)
+      : Promise.resolve([]),
+    permissions.can_access_history
+      ? readRows(db, "pos_manual_products", customerId, "name", 5000)
+      : Promise.resolve([]),
+    permissions.can_access_clients
+      ? readRows(db, "pos_suppliers", customerId, "name", 2000)
+      : Promise.resolve([]),
+    permissions.can_access_history
+      ? readRows(db, "pos_purchases", customerId, "source_created_at", 5000, false)
+      : Promise.resolve([]),
+    permissions.can_access_history
+      ? readRows(db, "pos_purchase_items", customerId, "purchase_source_id", 10000)
       : Promise.resolve([]),
     permissions.can_access_clients
       ? readRows(db, "pos_clients", customerId, "name", 2000)
@@ -177,6 +197,10 @@ async function readBundle(
     dashboard_daily: daily.data ?? [],
     categories,
     products,
+    manual_products: manualProducts,
+    suppliers,
+    purchases,
+    purchase_items: purchaseItems,
     clients,
     payments,
     service_appointments: appointments,

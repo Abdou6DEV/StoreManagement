@@ -5,6 +5,10 @@ export type MobileSyncSnapshot = {
   permissions: Record<string, unknown>[];
   categories: Record<string, unknown>[];
   products: Record<string, unknown>[];
+  manual_products: Record<string, unknown>[];
+  suppliers: Record<string, unknown>[];
+  purchases: Record<string, unknown>[];
+  purchase_items: Record<string, unknown>[];
   clients: Record<string, unknown>[];
   services: Record<string, unknown>[];
   service_appointments: Record<string, unknown>[];
@@ -90,6 +94,10 @@ export async function buildMobileSyncSnapshot(
     permissions,
     categories,
     products,
+    manualProducts,
+    suppliers,
+    purchases,
+    purchaseItems,
     clients,
     services,
     serviceAppointments,
@@ -103,6 +111,10 @@ export async function buildMobileSyncSnapshot(
     db.userPermissions.findMany(),
     db.category.findMany(),
     db.product.findMany(),
+    db.manualProduct.findMany(),
+    db.seller.findMany(),
+    db.purchase.findMany(),
+    db.purchaseItem.findMany(),
     db.client.findMany(),
     db.service.findMany(),
     db.serviceAppointment.findMany(),
@@ -161,6 +173,24 @@ export async function buildMobileSyncSnapshot(
       codebar: product.codebar,
       source_created_at: iso(product.createdAt),
       source_updated_at: iso(product.updatedAt),
+    })),
+    manual_products: manualProducts.map((item) => ({
+      customer_id: customerId, source_id: item.id, name: item.name, type: item.type,
+      cost_price: item.costPrice, source_created_at: iso(item.createdAt), source_updated_at: iso(item.updatedAt),
+    })),
+    suppliers: suppliers.map((seller) => ({
+      customer_id: customerId, source_id: seller.id, name: seller.name, phone: seller.phone,
+      email: seller.email, address: seller.address, notes: seller.notes,
+      source_created_at: iso(seller.createdAt), source_updated_at: iso(seller.updatedAt),
+    })),
+    purchases: purchases.map((purchase) => ({
+      customer_id: customerId, source_id: purchase.id, supplier_source_id: purchase.sellerId,
+      source_created_at: iso(purchase.createdAt), source_updated_at: iso(purchase.updatedAt),
+    })),
+    purchase_items: purchaseItems.map((item) => ({
+      customer_id: customerId, source_id: item.id, purchase_source_id: item.purchaseId,
+      product_source_id: item.productId, quantity: item.quantity, price: item.price,
+      source_created_at: iso(item.createdAt), source_updated_at: iso(item.updatedAt),
     })),
     clients: clients.map((client) => ({
       customer_id: customerId,

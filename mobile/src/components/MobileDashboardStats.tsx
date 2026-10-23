@@ -322,17 +322,20 @@ export function MobileStockStats({
   const productsComplete = products.length < 2000;
   const salesComplete = permissions.can_access_history && data.sales_history_available && data.sales.length < 5000;
   const itemsComplete = salesComplete && data.sale_items.length < 10000;
-  const productMap = new Map(products.map((product) => [String(product.source_id), product]));
+  const productMap = new Map(products.map((product) => [`product:${String(product.source_id)}`, product]));
+  const manualProductMap = new Map(data.manual_products.map((product) => [`manual:${String(product.source_id)}`, { ...product, category_name: product.type }]));
   const saleIds = new Set(data.sales.map((sale) => String(sale.source_id)));
   const soldByProduct = new Map<string, number>();
   for (const item of data.sale_items) {
-    const productId = String(item.product_source_id ?? "");
-    if (!productId || !productMap.has(productId) || !saleIds.has(String(item.sale_source_id))) continue;
+    const regularId = item.product_source_id ? `product:${String(item.product_source_id)}` : "";
+    const manualId = item.manual_product_source_id ? `manual:${String(item.manual_product_source_id)}` : "";
+    const productId = regularId && productMap.has(regularId) ? regularId : manualId;
+    if (!productId || (!productMap.has(productId) && !manualProductMap.has(productId)) || !saleIds.has(String(item.sale_source_id))) continue;
     soldByProduct.set(productId, (soldByProduct.get(productId) ?? 0) + value(item, "quantity"));
   }
   const rankedProducts = [...soldByProduct.entries()]
     .flatMap(([id, sold]) => {
-      const product = productMap.get(id);
+      const product = productMap.get(id) ?? manualProductMap.get(id);
       return product ? [{ id, sold, product }] : [];
     })
     .sort((a, b) => b.sold - a.sold);
@@ -656,4 +659,41 @@ export function MobileServiceStats({
       )}
     </DashboardPanel>
   );
+}
+
+export function MobilePurchaseStats({ data, language }: { data: MobileBundle; language: MobileLanguage }) {
+  const labels = language === "ar"
+    ? { title: "المشتريات والموردون", purchases: "عدد المشتريات", suppliers: "عدد الموردين", total: "إجمالي تكلفة المشتريات", recent: "أحدث المشتريات", unknown: "مورد غير محدد", items: "عناصر" }
+    : language === "fr"
+      ? { title: "Achats et fournisseurs", purchases: "Nombre d’achats", suppliers: "Nombre de fournisseurs", total: "Coût total des achats", recent: "Achats récents", unknown: "Fournisseur inconnu", items: "articles" }
+      : { title: "Purchases & suppliers", purchases: "Purchase count", suppliers: "Suppliers", total: "Total purchase cost", recent: "Recent purchases", unknown: "Unknown supplier", items: "items" };
+  const supplierMap = new Map(data.suppliers.map((row) => [String(row.source_id), String(row.name ?? labels.unknown)]));
+  const itemsByPurchase = new Map<string, number>();
+  const costByPurchase = new Map<string, number>();
+  let totalCost = 0;
+  for (const item of data.purchase_items) {
+    const purchaseId = String(item.purchase_source_id ?? "");
+    if (!purchaseId) continue;
+    itemsByPurchase.set(purchaseId, (itemsByPurchase.get(purchaseId) ?? 0) + 1);
+    const itemCost = value(item, "quantity") * value(item, "price");
+    costByPurchase.set(purchaseId, (costByPurchase.get(purchaseId) ?? 0) + itemCost);
+    totalCost += itemCost;
+  }
+  const purchases = [...data.purchases].sort((a, b) => String(b.source_created_at ?? "").localeCompare(String(a.source_created_at ?? "")));
+  const limited = data.purchases.length >= 5000 || data.purchase_items.length >= 10000;
+  return <DashboardPanel stats className="dashboard-overview !min-h-0 !space-y-4 !p-4 sm:!p-6">
+    <h2 className="text-lg font-semibold text-foreground">{labels.title}</h2>
+    <StatGrid language={language} items={[
+      { label: labels.purchases, value: data.purchases.length },
+      { label: labels.suppliers, value: data.suppliers.length },
+      { label: labels.total, value: limited ? "—" : money(totalCost, language) },
+    ]} />
+    {limited ? <DataNotice>{COPY[language].incomplete}</DataNotice> : null}
+    {purchases.length ? <div className="space-y-2"><h3 className="text-sm font-semibold text-foreground">{labels.recent}</h3>
+      {purchases.slice(0, 8).map((purchase) => <div key={String(purchase.source_id)} className="flex items-center justify-between gap-3 border-b border-border/60 py-2 text-sm">
+        <div className="min-w-0"><div className="truncate font-medium">{supplierMap.get(String(purchase.supplier_source_id ?? "")) ?? labels.unknown}</div><div className="text-xs text-muted-foreground">{String(purchase.source_created_at ?? "").slice(0, 10)} · {itemsByPurchase.get(String(purchase.source_id)) ?? 0} {labels.items}</div></div>
+        <div className="shrink-0 font-semibold tabular-nums">{money(costByPurchase.get(String(purchase.source_id)) ?? 0, language)}</div>
+      </div>)}
+    </div> : null}
+  </DashboardPanel>;
 }
