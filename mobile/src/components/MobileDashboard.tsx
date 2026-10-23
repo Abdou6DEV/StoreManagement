@@ -359,17 +359,33 @@ export function MobileDashboard({
               <p className="mt-1 text-sm text-muted-foreground">{rangeTitle}</p>
             </div>
           </div>
-          <label className="mobile-select-control">
-            <span>{labels.overviewPeriod}</span>
-            <select
-              value={period}
-              onChange={(event) => setPeriod(event.target.value as Period)}
-            >
-              <option value="today">{labels.today}</option>
-              <option value="month">{labels.thisMonth}</option>
-              <option value="year">{labels.thisYear}</option>
-            </select>
-          </label>
+          <div className="flex items-end justify-between gap-3">
+            <label className="mobile-select-control min-w-0 flex-1">
+              <span>{labels.overviewPeriod}</span>
+              <select
+                value={period}
+                onChange={(event) => setPeriod(event.target.value as Period)}
+              >
+                <option value="today">{labels.today}</option>
+                <option value="month">{labels.thisMonth}</option>
+                <option value="year">{labels.thisYear}</option>
+              </select>
+            </label>
+            {canSubtractBillPayments ? (
+              <button
+                type="button"
+                className={`dashboard-net-toggle !mb-0 shrink-0 whitespace-nowrap ${subtractBillPayments ? "selected" : ""}`}
+                aria-pressed={subtractBillPayments}
+                onClick={() => setSubtractBillPayments((current) => !current)}
+              >
+                <span
+                  className={`dashboard-switch ${subtractBillPayments ? "on" : ""}`}
+                  aria-hidden="true"
+                />
+                {labels.netProfit}
+              </button>
+            ) : null}
+          </div>
         </div>
 
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
@@ -431,21 +447,6 @@ export function MobileDashboard({
               </button>
             </div>
           </div>
-
-          {canSubtractBillPayments ? (
-            <button
-              type="button"
-              className={`dashboard-net-toggle ${subtractBillPayments ? "selected" : ""}`}
-              aria-pressed={subtractBillPayments}
-              onClick={() => setSubtractBillPayments((current) => !current)}
-            >
-              <span
-                className={`dashboard-switch ${subtractBillPayments ? "on" : ""}`}
-                aria-hidden="true"
-              />
-              {labels.netProfit}
-            </button>
-          ) : null}
 
           {chartData.length === 0 ? (
             <p className="mobile-empty">
