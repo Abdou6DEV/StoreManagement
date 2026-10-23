@@ -181,7 +181,7 @@ function InteractivePie({
               const x = centerX + radius * Math.cos(angle);
               const y = centerY + radius * Math.sin(angle);
               return (
-                <text x={x} y={y} fill="var(--primary)" fontSize={11} fontWeight={800} textAnchor={x > centerX ? "start" : "end"} dominantBaseline="central" style={{ pointerEvents: "none", paintOrder: "stroke", stroke: "#ffffff", strokeWidth: 2, strokeLinejoin: "round" }}>
+                <text x={x} y={y} fill="var(--primary)" fontSize={11} fontWeight={800} textAnchor={x > centerX ? "start" : "end"} dominantBaseline="central" style={{ pointerEvents: "none", paintOrder: "stroke", strokeLinejoin: "round" }}>
                   {`${(Number(percent) * 100).toFixed(1)}%`}
                 </text>
               );
