@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  AlertTriangle, ArrowDownWideNarrow, ArrowUpDown, Eye, Filter, Folder, Package, PackageX, X,
+  AlertTriangle, ArrowDownWideNarrow, ArrowUpDown, Eye, Filter, Folder, Package, PackageX, Search, X,
 } from "lucide-react";
 import type { MobileBundle, MobileLanguage, MobileRow } from "../mobileApi";
 
 type ViewMode = "products" | "categories";
 type SortMode = "quantity" | "name" | "price";
 type Labels = {
-  products: string; categories: string; category: string; allCategories: string; filters: string; actualProfit: string;
+  products: string; search: string; categories: string; category: string; allCategories: string; filters: string; actualProfit: string;
   lowStock: string; outOfStock: string; noBarcode: string; bestSelling: string; worstSelling: string;
   clear: string; quantity: string; bought: string; selling: string; unitProfit: string; sold: string;
   actions: string; view: string; productCount: string; totalQuantity: string; stockCost: string;
@@ -17,7 +17,7 @@ type Labels = {
 };
 const LABELS: Record<MobileLanguage, Labels> = {
   en: {
-    products:"Products",categories:"Categories",category:"Category",allCategories:"All categories",filters:"Filters",
+    products:"Products",search:"Search",categories:"Categories",category:"Category",allCategories:"All categories",filters:"Filters",
     lowStock:"Low stock (≤5)",outOfStock:"Out of stock",noBarcode:"No barcode",bestSelling:"Best selling",worstSelling:"Worst selling",
     clear:"Clear filters",quantity:"Quantity",bought:"Bought price",selling:"Selling price",unitProfit:"Unit profit",sold:"Sold*",
     actions:"Sort",view:"View details",actualProfit:"Sales profit*",productCount:"Products",totalQuantity:"Total quantity",stockCost:"Stock cost",stockValue:"Selling value",
@@ -28,7 +28,7 @@ const LABELS: Record<MobileLanguage, Labels> = {
     availableHistory:"*Sold quantity and linked histories use only the sales records currently available in the PWA, not guaranteed lifetime totals.",
   },
   fr: {
-    products:"Produits",categories:"Catégories",category:"Catégorie",allCategories:"Toutes les catégories",filters:"Filtres",
+    products:"Produits",search:"Rechercher",categories:"Catégories",category:"Catégorie",allCategories:"Toutes les catégories",filters:"Filtres",
     lowStock:"Stock faible (≤5)",outOfStock:"Rupture de stock",noBarcode:"Sans code-barres",bestSelling:"Meilleures ventes",worstSelling:"Ventes les plus faibles",
     clear:"Effacer les filtres",quantity:"Quantité",bought:"Prix d’achat",selling:"Prix de vente",unitProfit:"Marge unitaire",sold:"Vendus*",
     actions:"Trier",view:"Voir les détails",actualProfit:"Bénéfice des ventes*",productCount:"Produits",totalQuantity:"Quantité totale",stockCost:"Coût du stock",stockValue:"Valeur de vente",
@@ -39,7 +39,7 @@ const LABELS: Record<MobileLanguage, Labels> = {
     availableHistory:"*Les quantités vendues et historiques liés utilisent uniquement les ventes disponibles dans la PWA ; le total historique complet n’est pas garanti.",
   },
   ar: {
-    products:"المنتجات",categories:"الفئات",category:"الفئة",allCategories:"كل الفئات",filters:"الفلاتر",
+    products:"المنتجات",search:"بحث",categories:"الفئات",category:"الفئة",allCategories:"كل الفئات",filters:"الفلاتر",
     lowStock:"مخزون منخفض (≤5)",outOfStock:"نفد المخزون",noBarcode:"بدون باركود",bestSelling:"الأكثر مبيعاً",worstSelling:"الأقل مبيعاً",
     clear:"مسح الفلاتر",quantity:"الكمية",bought:"سعر الشراء",selling:"سعر البيع",unitProfit:"ربح الوحدة",sold:"المباع*",
     actions:"ترتيب",view:"عرض التفاصيل",actualProfit:"ربح المبيعات*",productCount:"المنتجات",totalQuantity:"إجمالي الكمية",stockCost:"تكلفة المخزون",stockValue:"قيمة البيع",
@@ -59,7 +59,7 @@ const dateLabel = (value: unknown, language: MobileLanguage): string => {
   return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat(language, { dateStyle: "medium" }).format(date);
 };
 const productKey = (row: MobileRow): string => str(row.source_id ?? row.id);
-export function StockSection({ data, language, query }: { data: MobileBundle; language: MobileLanguage; query: string }) {
+export function StockSection({ data, language, query, onQueryChange }: { data: MobileBundle; language: MobileLanguage; query: string; onQueryChange: (query: string) => void }) {
   const t = LABELS[language];
   const [view, setView] = useState<ViewMode>("products");
   const [category, setCategory] = useState("");
@@ -159,6 +159,10 @@ export function StockSection({ data, language, query }: { data: MobileBundle; la
         <button type="button" className={`stock-filter-chip ${salesSort === "worst" ? "selected" : ""}`} onClick={() => setSalesSort((v) => v === "worst" ? "none" : "worst")}><ArrowUpDown size={15} />{t.worstSelling}</button>
         {activeFilters ? <button type="button" className="stock-filter-chip stock-clear-filters" onClick={() => { setCategory(""); setLowStock(false); setOutOfStock(false); setNoBarcode(false); setSalesSort("none"); }}>{t.clear}<X size={14} /></button> : null}
       </div> : null}
+      <label className="mobile-search stock-search-row">
+        <Search size={18} />
+        <input value={query} onChange={(event) => onQueryChange(event.target.value)} placeholder={t.search} aria-label={t.search} />
+      </label>
       {lowStock ? <p className="stock-filter-note">{t.lowStockNote}</p> : null}
       {filteredProducts.length === 0 ? <p className="mobile-empty">{t.empty}</p> : <div className="stock-table-scroll" role="region" aria-label={t.products} tabIndex={0}>
         <table className="stock-data-table">
