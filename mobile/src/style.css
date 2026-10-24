@@ -1091,12 +1091,20 @@ html.dark .stock-negative { color:#f87171; }
   box-shadow: 0 0 0 2px color-mix(in oklch, var(--primary) 18%, transparent);
 }
 
-/* Stock filters stay in one horizontal toolbar on narrow screens. */
-.stock-filter-row { display:flex;align-items:center;gap:7px;min-width:0;margin:0 0 12px;padding:2px 1px 8px;overflow-x:auto;overscroll-behavior-inline:contain;scrollbar-width:thin; }
-.stock-filter-row > .mobile-select-control { display:flex;flex:0 0 145px;flex-direction:column;gap:3px;min-width:0;margin:0; }
-.stock-filter-row > .stock-filter-category { flex-basis:170px; }
-.stock-filter-row > .stock-filter-sort { flex-basis:125px; }
-.stock-filter-row > .stock-filter-pagesize { flex-basis:95px; }
+/* Stock controls use a compact primary row and collapsible secondary filters. */
+.stock-filter-row { display:flex;align-items:center;gap:7px;min-width:0;margin:0 0 8px;padding:2px 1px 4px; }
+.stock-filter-row > .mobile-select-control { display:flex;flex:1 1 0;flex-direction:column;gap:3px;min-width:0;margin:0; }
+.stock-filter-row > .stock-filter-category { flex:1.35 1 0; }
+.stock-filter-row > .stock-filter-sort { flex:1 1 0; }
+.stock-filter-row > .stock-filter-pagesize { flex:.9 1 0; }
+.stock-filter-row .mobile-select-control > span { overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.7rem; }
+.stock-filter-toggle-row { display:flex;align-items:center;margin:0 0 8px; }
+.stock-filter-toggle { display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:36px;padding:7px 11px;border:1px solid var(--line);border-radius:9px;color:var(--fg);background:var(--card);font-size:.8rem; }
+.stock-filter-toggle.active { border-color:color-mix(in oklch,var(--primary) 55%,var(--line)); }
+.stock-filter-toggle-count { color:var(--primary);font-size:1rem;line-height:1; }
+.stock-filter-toggle-chevron { display:inline-block;transition:transform .15s ease; }
+.stock-filter-toggle-chevron.open { transform:rotate(180deg); }
+.stock-filter-options-row { flex-wrap:wrap;margin-bottom:12px;padding-bottom:2px; }
 .stock-filter-chip { display:inline-flex;flex:0 0 auto;align-items:center;justify-content:center;gap:6px;min-height:38px;padding:7px 10px;border:1px solid var(--line);border-radius:9px;color:var(--fg);background:var(--card);white-space:nowrap;font-size:.75rem; }
 .stock-filter-chip.selected { border-color:color-mix(in oklch,var(--primary) 55%,var(--line));color:var(--primary);background:color-mix(in oklch,var(--primary) 9%,var(--card)); }
 .stock-filter-chip.selected.danger { border-color:#ef4444;color:#dc2626;background:color-mix(in oklch,#ef4444 8%,var(--card)); }
