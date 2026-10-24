@@ -173,7 +173,7 @@ export function StockSection({ data, language, query }: { data: MobileBundle; la
               <td><button type="button" className="stock-table-view" aria-label={t.view + ": " + str(product.name)} onClick={() => setSelected(product)}><Eye size={16} />{t.view}</button></td>
             </tr>;
           })}</tbody>
-          <tfoot><tr><td colSpan={2}>{t.products}: {new Intl.NumberFormat(language).format(filteredProducts.length)}</td><td>{new Intl.NumberFormat(language).format(totals.quantity)}</td><td className="stock-money-cell">{money(filteredProducts.reduce((sum, p) => sum + num(p.quantity) * num(p.bought_price), 0), language)}</td><td className="stock-money-cell">{money(filteredProducts.reduce((sum, p) => sum + num(p.quantity) * num(p.selling_price), 0), language)}</td><td colSpan={4}></td></tr></tfoot>
+          <tfoot><tr><td colSpan={2}>{t.products}: {new Intl.NumberFormat(language).format(filteredProducts.length)}</td><td>{new Intl.NumberFormat(language).format(filteredProducts.reduce((sum, product) => sum + num(product.quantity), 0))}</td><td className="stock-money-cell">{money(filteredProducts.reduce((sum, p) => sum + num(p.quantity) * num(p.bought_price), 0), language)}</td><td className="stock-money-cell">{money(filteredProducts.reduce((sum, p) => sum + num(p.quantity) * num(p.selling_price), 0), language)}</td><td colSpan={4}></td></tr></tfoot>
         </table>
       </div>}
       {filteredProducts.length > 0 ? <p className="stock-history-footnote">{t.availableHistory}</p> : null}
