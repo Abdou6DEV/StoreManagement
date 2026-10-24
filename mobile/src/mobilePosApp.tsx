@@ -893,6 +893,7 @@ function SectionContent({
   language,
   copy,
   query,
+  onQueryChange,
   permissions,
 }: {
   section: Exclude<Section, "menu">;
@@ -900,6 +901,7 @@ function SectionContent({
   language: MobileLanguage;
   copy: Copy;
   query: string;
+  onQueryChange: (query: string) => void;
   permissions: MobilePermissions;
 }) {
   const [serviceFilter, setServiceFilter] = useState<"all" | "pending" | "completed" | "overdue">("all");
@@ -940,7 +942,7 @@ function SectionContent({
     );
   }
   if (section === "stock") {
-    return <StockSection data={data} language={language} query={query} />;
+    return <StockSection data={data} language={language} query={query} onQueryChange={onQueryChange} />;
   }
   if (section === "clients") {
     return <RecordList rows={data.clients} language={language} copy={copy} query={query} />;
@@ -1206,7 +1208,7 @@ export function MobilePosApp({
             <p className="mobile-empty">{copy.noPermission}</p>
           ) : (
             <>
-              {needsSearch ? (
+              {needsSearch && section !== "stock" ? (
                 <label className="mobile-search">
                   <Search size={18} />
                   <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={copy.searchRecords} aria-label={copy.searchRecords} />
@@ -1222,6 +1224,7 @@ export function MobilePosApp({
                     language={language}
                     copy={copy}
                     query={query}
+                    onQueryChange={setQuery}
                     permissions={user.permissions}
                   />
                 ) : (
@@ -1236,6 +1239,7 @@ export function MobilePosApp({
                       language={language}
                       copy={copy}
                       query={query}
+                      onQueryChange={setQuery}
                       permissions={user.permissions}
                     />
                   </Card>
