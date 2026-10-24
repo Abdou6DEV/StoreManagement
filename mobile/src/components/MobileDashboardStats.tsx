@@ -12,6 +12,7 @@ import {
   DASHBOARD_SERIES_COLORS,
 } from "../../../src/lib/components/dashboardPresentation";
 import type { MobileBundle, MobileLanguage, MobilePermissions, MobileRow } from "../mobileApi";
+import { PageIcon } from "../../../src/lib/components/sharedPresentation";
 
 const OTHER_COLOR = "#6b7280";
 
@@ -397,7 +398,7 @@ export function MobileStockStats({
   const chartRows = view === "categories" ? topCategories : topProductRows;
   return (
     <DashboardPanel stats className="dashboard-overview !min-h-0 !space-y-4 !p-4 sm:!p-6">
-      <h2 className="text-lg font-semibold text-foreground">{copy.stock}</h2>
+      <div className="flex items-center gap-2"><PageIcon page="stock" className="h-5 w-5" aria-hidden="true" /><h2 className="text-lg font-semibold text-foreground">{copy.stock}</h2></div>
       {!productsComplete ? <DataNotice>{copy.incomplete}</DataNotice> : (
         <>
           <StatGrid language={language} items={[
@@ -524,7 +525,7 @@ export function MobileClientStats({
 
   return (
     <DashboardPanel stats className="dashboard-overview !min-h-0 !space-y-4 !p-4 sm:!p-6">
-      <h2 className="text-lg font-semibold text-foreground">{copy.clients}</h2>
+      <div className="flex items-center gap-2"><PageIcon page="clients" className="h-5 w-5" aria-hidden="true" /><h2 className="text-lg font-semibold text-foreground">{copy.clients}</h2></div>
       {!clientsComplete ? <DataNotice>{copy.incomplete}</DataNotice> : (
         <>
           <StatGrid language={language} items={[
@@ -635,7 +636,7 @@ export function MobileServiceStats({
 
   return (
     <DashboardPanel stats className="dashboard-overview !min-h-0 !space-y-4 !p-4 sm:!p-6">
-      <h2 className="text-lg font-semibold text-foreground">{copy.services}</h2>
+      <div className="flex items-center gap-2"><PageIcon page="services" className="h-5 w-5" aria-hidden="true" /><h2 className="text-lg font-semibold text-foreground">{copy.services}</h2></div>
       {!complete ? <DataNotice>{copy.servicesUnavailable}</DataNotice> : (
         <>
           <StatGrid language={language} items={[
