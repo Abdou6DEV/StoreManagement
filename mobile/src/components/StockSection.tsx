@@ -69,6 +69,7 @@ export function StockSection({ data, language, query }: { data: MobileBundle; la
   const [salesSort, setSalesSort] = useState<"none" | "best" | "worst">("none");
   const [sort, setSort] = useState<SortMode>("quantity");
   const [pageSize, setPageSize] = useState(10);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<MobileRow | null>(null);
   useEffect(() => setPage(1), [query, category, lowStock, outOfStock, noBarcode, salesSort, sort, pageSize, view]);
@@ -138,21 +139,26 @@ export function StockSection({ data, language, query }: { data: MobileBundle; la
       <button type="button" role="tab" aria-selected={view === "categories"} className={view === "categories" ? "active" : ""} onClick={() => setView("categories")}><Folder size={16} />{t.categories}</button>
     </div>
     {view === "products" ? <>
-      <div className="stock-filter-row" aria-label={t.filters}>
+      <div className="stock-filter-row stock-filter-primary-row" aria-label={t.filters}>
         <label className="mobile-select-control stock-filter-category"><span>{t.category}</span><select value={category} onChange={(event) => setCategory(event.target.value)}>
           <option value="">{t.allCategories}</option>
           {data.categories.map((row) => <option key={str(row.source_id ?? row.name)} value={str(row.name)}>{str(row.name)}</option>)}
           {!data.categories_available ? [...new Set(data.products.map((row) => str(row.category_name)).filter(Boolean))].map((name) => <option key={name} value={name}>{name}</option>) : null}
         </select></label>
+        <label className="mobile-select-control stock-filter-sort"><span>{t.actions}</span><select value={sort} onChange={(event) => setSort(event.target.value as SortMode)} disabled={salesSort !== "none"}><option value="quantity">{t.quantity} ↓</option><option value="name">A–Z</option><option value="price">{t.selling} ↓</option></select></label>
+        <label className="mobile-select-control stock-filter-pagesize"><span>{t.pageSize}</span><select value={pageSize} onChange={(event) => setPageSize(Number(event.target.value))}>{[5,10,25,50,100].map((size) => <option key={size} value={size}>{size}</option>)}</select></label>
+      </div>
+      <div className="stock-filter-toggle-row">
+        <button type="button" className={`stock-filter-toggle ${filtersOpen || activeFilters ? "active" : ""}`} aria-expanded={filtersOpen} onClick={() => setFiltersOpen((open) => !open)}><Filter size={16} />{t.filters}<span className="stock-filter-toggle-count">{activeFilters ? "•" : ""}</span><span aria-hidden="true" className={`stock-filter-toggle-chevron ${filtersOpen ? "open" : ""}`}>⌄</span></button>
+      </div>
+      {filtersOpen ? <div className="stock-filter-row stock-filter-options-row" aria-label={t.filters}>
         <button type="button" className={`stock-filter-chip ${lowStock ? "selected" : ""}`} onClick={() => { setLowStock((v) => !v); if (!lowStock) setOutOfStock(false); }}><AlertTriangle size={15} />{t.lowStock}</button>
         <button type="button" className={`stock-filter-chip ${outOfStock ? "selected danger" : ""}`} onClick={() => { setOutOfStock((v) => !v); if (!outOfStock) setLowStock(false); }}><PackageX size={15} />{t.outOfStock}</button>
         <button type="button" className={`stock-filter-chip ${noBarcode ? "selected" : ""}`} onClick={() => setNoBarcode((v) => !v)}><Filter size={15} />{t.noBarcode}</button>
         <button type="button" className={`stock-filter-chip ${salesSort === "best" ? "selected" : ""}`} onClick={() => setSalesSort((v) => v === "best" ? "none" : "best")}><ArrowDownWideNarrow size={15} />{t.bestSelling}</button>
         <button type="button" className={`stock-filter-chip ${salesSort === "worst" ? "selected" : ""}`} onClick={() => setSalesSort((v) => v === "worst" ? "none" : "worst")}><ArrowUpDown size={15} />{t.worstSelling}</button>
-        <label className="mobile-select-control stock-filter-sort"><span>{t.actions}</span><select value={sort} onChange={(event) => setSort(event.target.value as SortMode)} disabled={salesSort !== "none"}><option value="quantity">{t.quantity} ↓</option><option value="name">A–Z</option><option value="price">{t.selling} ↓</option></select></label>
-        <label className="mobile-select-control stock-filter-pagesize"><span>{t.pageSize}</span><select value={pageSize} onChange={(event) => setPageSize(Number(event.target.value))}>{[5,10,25,50,100].map((size) => <option key={size} value={size}>{size}</option>)}</select></label>
         {activeFilters ? <button type="button" className="stock-filter-chip stock-clear-filters" onClick={() => { setCategory(""); setLowStock(false); setOutOfStock(false); setNoBarcode(false); setSalesSort("none"); }}>{t.clear}<X size={14} /></button> : null}
-      </div>
+      </div> : null}
       {lowStock ? <p className="stock-filter-note">{t.lowStockNote}</p> : null}
       {filteredProducts.length === 0 ? <p className="mobile-empty">{t.empty}</p> : <div className="stock-table-scroll" role="region" aria-label={t.products} tabIndex={0}>
         <table className="stock-data-table">
