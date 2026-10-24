@@ -37,6 +37,7 @@ import type {
   MobileUser,
 } from "./mobileApi";
 import { MobileDashboard } from "./components/MobileDashboard";
+import { StockSection } from "./components/StockSection";
 
 type Section =
   | "menu"
@@ -901,7 +902,6 @@ function SectionContent({
   query: string;
   permissions: MobilePermissions;
 }) {
-  const [categoryFilter, setCategoryFilter] = useState("");
   const [serviceFilter, setServiceFilter] = useState<"all" | "pending" | "completed" | "overdue">("all");
   if (section === "dashboard") {
     return (
@@ -940,38 +940,7 @@ function SectionContent({
     );
   }
   if (section === "stock") {
-    const products = categoryFilter
-      ? data.products.filter((row) => row.category_name === categoryFilter)
-      : data.products;
-    return (
-      <>
-        <section className="mobile-subsection">
-          <h2>{copy.categories}</h2>
-          {!data.categories_available ? (
-            <div className="mobile-notice">
-              <AlertCircle size={18} />
-              <span>{copy.categoriesUnavailable}</span>
-            </div>
-          ) : null}
-          {data.categories_available && data.categories.length > 0 ? (
-            <label className="mobile-select-control filter-control">
-              <span>{copy.categoryFilter}</span>
-              <select value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)}>
-                <option value="">{copy.allCategories}</option>
-                {data.categories.map((category) => (
-                  <option key={String(category.source_id)} value={String(category.name)}>{String(category.name)}</option>
-                ))}
-              </select>
-            </label>
-          ) : null}
-          <RecordList rows={data.categories} language={language} copy={copy} query={query} emptyLabel={copy.noCategories} />
-        </section>
-        <section className="mobile-subsection">
-          <h2>{copy.stock}</h2>
-          <RecordList rows={products} language={language} copy={copy} query={query} />
-        </section>
-      </>
-    );
+    return <StockSection data={data} language={language} query={query} />;
   }
   if (section === "clients") {
     return <RecordList rows={data.clients} language={language} copy={copy} query={query} />;
