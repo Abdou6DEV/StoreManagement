@@ -52,7 +52,7 @@ const LABELS: Record<MobileLanguage, Labels> = {
 };
 const num = (value: unknown): number => { const parsed = typeof value === "number" ? value : Number(value ?? 0); return Number.isFinite(parsed) ? parsed : 0; };
 const str = (value: unknown): string => value == null ? "" : String(value);
-const money = (centimes: number, language: MobileLanguage): string => new Intl.NumberFormat(language === "ar" ? "ar-DZ" : language === "fr" ? "fr-DZ" : "en", { maximumFractionDigits: 2 }).format(centimes / 100) + " DA";
+const money = (amountDA: number, language: MobileLanguage): string => new Intl.NumberFormat(language === "ar" ? "ar-DZ" : language === "fr" ? "fr-DZ" : "en", { maximumFractionDigits: 2 }).format(amountDA) + " DA";
 const dateLabel = (value: unknown, language: MobileLanguage): string => {
   if (typeof value !== "string" || !value) return "—";
   const date = new Date(value);
@@ -115,8 +115,8 @@ export function StockSection({ data, language, query }: { data: MobileBundle; la
       const entry = grouped.get(name) ?? { count: 0, quantity: 0, bought: 0, selling: 0 };
       entry.count += 1;
       entry.quantity += num(product.quantity);
-      entry.bought += num(product.quantity) * num(product.bought_price) / 100;
-      entry.selling += num(product.quantity) * num(product.selling_price) / 100;
+      entry.bought += num(product.quantity) * num(product.bought_price);
+      entry.selling += num(product.quantity) * num(product.selling_price);
       grouped.set(name, entry);
     }
     return [...grouped.entries()].filter(([name]) => !term || name.toLocaleLowerCase().includes(term))
@@ -130,8 +130,8 @@ export function StockSection({ data, language, query }: { data: MobileBundle; la
   const visibleCategories = categories.slice((currentPage - 1) * pageSize, currentPage * pageSize);
   const totals = filteredProducts.reduce((sum, product) => ({
     quantity: sum.quantity + num(product.quantity),
-    bought: sum.bought + num(product.quantity) * num(product.bought_price) / 100,
-    selling: sum.selling + num(product.quantity) * num(product.selling_price) / 100,
+    bought: sum.bought + num(product.quantity) * num(product.bought_price),
+    selling: sum.selling + num(product.quantity) * num(product.selling_price),
   }), { quantity: 0, bought: 0, selling: 0 });
   const activeFilters = lowStock || outOfStock || noBarcode || Boolean(category) || salesSort !== "none";
   const linkedPurchaseItems = selected ? data.purchase_items.filter((item) => str(item.product_source_id) === productKey(selected)) : [];
@@ -167,43 +167,47 @@ export function StockSection({ data, language, query }: { data: MobileBundle; la
       <div className="stock-summary-grid">
         <div><span>{t.products}</span><strong>{new Intl.NumberFormat(language).format(filteredProducts.length)}</strong></div>
         <div><span>{t.totalQuantity}</span><strong>{new Intl.NumberFormat(language).format(totals.quantity)}</strong></div>
-        <div><span>{t.stockCost}</span><strong>{money(totals.bought * 100, language)}</strong></div>
-        <div><span>{t.stockValue}</span><strong>{money(totals.selling * 100, language)}</strong></div>
+        <div><span>{t.stockCost}</span><strong>{money(totals.bought, language)}</strong></div>
+        <div><span>{t.stockValue}</span><strong>{money(totals.selling, language)}</strong></div>
       </div>
-      {filteredProducts.length === 0 ? <p className="mobile-empty">{t.empty}</p> : <div className="stock-product-list">
-        {visibleProducts.map((product) => {
-          const quantity = num(product.quantity), bought = num(product.bought_price), selling = num(product.selling_price);
-          const metric = salesMetrics.get(productKey(product)) ?? { sold: 0, profit: 0 };
-          const sold = metric.sold;
-          const isOut = quantity === 0, isLow = quantity > 0 && quantity <= 5;
-          return <article className={"stock-product-card" + (isOut ? " is-out" : isLow ? " is-low" : "")} key={productKey(product)}>
-            <div className="stock-product-top"><div className="stock-product-title"><h3>{str(product.name) || "—"}</h3><span>{str(product.category_name) || "—"}</span></div>
-              <span className={"stock-quantity-badge" + (isOut ? " out" : isLow ? " low" : "")}>{new Intl.NumberFormat(language).format(quantity)} {t.quantity.toLocaleLowerCase()}</span></div>
-            <div className="stock-product-values">
-              <div><span>{t.bought}</span><strong>{money(bought, language)}</strong></div>
-              <div><span>{t.selling}</span><strong>{money(selling, language)}</strong></div>
-              <div><span>{t.unitProfit}</span><strong className={selling >= bought ? "stock-positive" : "stock-negative"}>{money(selling - bought, language)}</strong></div>
-              <div><span>{t.sold}</span><strong>{new Intl.NumberFormat(language).format(sold)}</strong></div>
-              <div><span>{t.actualProfit}</span><strong className={metric.profit >= 0 ? "stock-positive" : "stock-negative"}>{money(metric.profit, language)}</strong></div>
-            </div>
-            <div className="stock-product-footer"><span className="stock-barcode">{str(product.codebar) || t.noBarcode}</span><button type="button" onClick={() => setSelected(product)}><Eye size={16} />{t.view}</button></div>
-          </article>;
-        })}
+      {filteredProducts.length === 0 ? <p className="mobile-empty">{t.empty}</p> : <div className="stock-table-scroll" role="region" aria-label={t.products} tabIndex={0}>
+        <table className="stock-data-table">
+          <thead><tr><th>{t.products}</th><th>{t.category}</th><th>{t.quantity}</th><th>{t.bought}</th><th>{t.selling}</th><th>{t.unitProfit}</th><th>{t.sold}</th><th>{t.actualProfit}</th><th>{t.view}</th></tr></thead>
+          <tbody>{visibleProducts.map((product) => {
+            const quantity = num(product.quantity), bought = num(product.bought_price), selling = num(product.selling_price);
+            const metric = salesMetrics.get(productKey(product)) ?? { sold: 0, profit: 0 };
+            const isOut = quantity === 0, isLow = quantity > 0 && quantity <= 5;
+            return <tr className={isOut ? "is-out" : isLow ? "is-low" : ""} key={productKey(product)}>
+              <td><div className="stock-table-product-name">{str(product.name) || "—"}<small>{str(product.codebar) || t.noBarcode}</small></div></td>
+              <td>{str(product.category_name) || "—"}</td>
+              <td><span className={"stock-quantity-badge" + (isOut ? " out" : isLow ? " low" : "")}>{new Intl.NumberFormat(language).format(quantity)}</span></td>
+              <td className="stock-money-cell">{money(bought, language)}</td>
+              <td className="stock-money-cell">{money(selling, language)}</td>
+              <td className={selling >= bought ? "stock-positive stock-money-cell" : "stock-negative stock-money-cell"}>{money(selling - bought, language)}</td>
+              <td>{new Intl.NumberFormat(language).format(metric.sold)}</td>
+              <td className={(metric.profit >= 0 ? "stock-positive" : "stock-negative") + " stock-money-cell"}>{money(metric.profit, language)}</td>
+              <td><button type="button" className="stock-table-view" aria-label={t.view + ": " + str(product.name)} onClick={() => setSelected(product)}><Eye size={16} />{t.view}</button></td>
+            </tr>;
+          })}</tbody>
+          <tfoot><tr><td colSpan={2}>{t.products}: {new Intl.NumberFormat(language).format(filteredProducts.length)}</td><td>{new Intl.NumberFormat(language).format(totals.quantity)}</td><td className="stock-money-cell">{money(filteredProducts.reduce((sum, p) => sum + num(p.quantity) * num(p.bought_price), 0), language)}</td><td className="stock-money-cell">{money(filteredProducts.reduce((sum, p) => sum + num(p.quantity) * num(p.selling_price), 0), language)}</td><td colSpan={4}></td></tr></tfoot>
+        </table>
       </div>}
       {filteredProducts.length > 0 ? <p className="stock-history-footnote">{t.availableHistory}</p> : null}
     </> : <>
       <div className="stock-sort-row"><label className="mobile-select-control"><span>{t.pageSize}</span><select value={pageSize} onChange={(event) => setPageSize(Number(event.target.value))}>{[5,10,25,50,100].map((size) => <option key={size} value={size}>{size}</option>)}</select></label></div>
-      <div className="stock-category-list">{visibleCategories.map((item) => <article className="stock-category-card" key={item.name}>
-        <div className="stock-category-title"><Folder size={17} /><h3>{item.name}</h3></div>
-        <div className="stock-product-values">
-          <div><span>{t.productCount}</span><strong>{item.count}</strong></div>
-          <div><span>{t.totalQuantity}</span><strong>{new Intl.NumberFormat(language).format(item.quantity)}</strong></div>
-          <div><span>{t.stockCost}</span><strong>{money(item.bought * 100, language)}</strong></div>
-          <div><span>{t.stockValue}</span><strong>{money(item.selling * 100, language)}</strong></div>
-          <div><span>{t.potentialProfit}</span><strong className="stock-positive">{money(item.potential * 100, language)}</strong></div>
-        </div>
-        <button type="button" className="stock-category-view" onClick={() => { setCategory(item.name); setView("products"); }}><Eye size={15} />{t.view}</button>
-      </article>)}{categories.length === 0 ? <p className="mobile-empty">{t.empty}</p> : null}</div>
+      {categories.length === 0 ? <p className="mobile-empty">{t.empty}</p> : <div className="stock-table-scroll" role="region" aria-label={t.categories} tabIndex={0}>
+        <table className="stock-data-table stock-category-table">
+          <thead><tr><th>{t.category}</th><th>{t.productCount}</th><th>{t.totalQuantity}</th><th>{t.stockCost}</th><th>{t.stockValue}</th><th>{t.potentialProfit}</th><th>{t.view}</th></tr></thead>
+          <tbody>{visibleCategories.map((item) => <tr key={item.name}>
+            <td>{item.name}</td><td>{new Intl.NumberFormat(language).format(item.count)}</td><td>{new Intl.NumberFormat(language).format(item.quantity)}</td>
+            <td className="stock-money-cell">{money(item.bought, language)}</td><td className="stock-money-cell">{money(item.selling, language)}</td>
+            <td className="stock-positive stock-money-cell">{money(item.potential, language)}</td>
+            <td><button type="button" className="stock-table-view" onClick={() => { setCategory(item.name === "—" ? "" : item.name); setView("products"); }}><Eye size={16} />{t.view}</button></td>
+          </tr>)}</tbody>
+          <tfoot><tr><td>{t.categories}</td><td>{new Intl.NumberFormat(language).format(categories.length)}</td><td>{new Intl.NumberFormat(language).format(categories.reduce((sum, item) => sum + item.quantity, 0))}</td>
+            <td className="stock-money-cell">{money(categories.reduce((sum, item) => sum + item.bought, 0), language)}</td><td className="stock-money-cell">{money(categories.reduce((sum, item) => sum + item.selling, 0), language)}</td><td colSpan={2}></td></tr></tfoot>
+        </table>
+      </div>}
     </>}
     {(view === "products" ? filteredProducts.length : categories.length) > 0 ? <div className="mobile-pagination">
       <button type="button" disabled={currentPage === 1} onClick={() => setPage((v) => Math.max(1, v - 1))}>{t.previous}</button><span>{t.page} {currentPage} {t.of} {totalPages}</span>
