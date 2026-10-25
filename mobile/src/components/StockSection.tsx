@@ -193,7 +193,6 @@ export function StockSection({ data, language, query, onQueryChange }: { data: M
         <div><span>{t.stockCost}</span><strong>{money(filteredProducts.reduce((sum, product) => sum + num(product.quantity) * num(product.bought_price), 0), language)}</strong></div>
         <div><span>{t.stockValue}</span><strong>{money(filteredProducts.reduce((sum, product) => sum + num(product.quantity) * num(product.selling_price), 0), language)}</strong></div>
       </div> : null}
-      {filteredProducts.length > 0 ? <p className="stock-history-footnote">{t.availableHistory}</p> : null}
     </> : <>
       <div className="stock-sort-row"><label className="mobile-select-control"><span>{t.pageSize}</span><select value={pageSize} onChange={(event) => setPageSize(Number(event.target.value))}>{[5,10,25,50,100].map((size) => <option key={size} value={size}>{size}</option>)}</select></label></div>
       {categories.length === 0 ? <p className="mobile-empty">{t.empty}</p> : <div className="stock-table-scroll" role="region" aria-label={t.categories} tabIndex={0}>
