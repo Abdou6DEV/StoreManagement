@@ -1121,7 +1121,7 @@ html.dark .stock-negative { color:#f87171; }
 .mobile-metric strong{font-weight:750}
 .mobile-record dd{font-weight:650}
 .mobile-record-table tbody td{font-weight:550}
-.stock-data-table tbody td{font-weight:550}
+.stock-data-table tbody td{font-size:13.5px;font-weight:550}
 .stock-data-table tbody td.stock-money-cell{font-weight:600}
 .stock-summary-grid strong,.stock-product-values strong{font-weight:750}
 .stock-money-cell{font-variant-numeric:tabular-nums}
