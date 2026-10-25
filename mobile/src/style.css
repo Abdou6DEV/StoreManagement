@@ -1093,16 +1093,7 @@ html.dark .stock-negative { color:#f87171; }
 .stock-product-table-scroll .stock-data-table tbody tr:hover td:first-child {
   background: var(--muted-bg);
 }
-.stock-product-table-scroll .stock-data-table tfoot td:first-child {
-  position: sticky;
-  inset-inline-start: 0;
-  z-index: 3;
-  box-shadow: none;
-}
-.stock-product-table-scroll.is-horizontally-scrolled .stock-data-table tfoot td:first-child {
-  box-shadow: 3px 0 7px rgb(15 23 42 / 11%);
-}
-
+/* Keep the totals footer outside the frozen product-column scroll treatment. */\n
 .stock-table-scroll{width:100%;max-width:100%;overflow:auto;border:1px solid var(--line);border-radius:12px;background:var(--card);-webkit-overflow-scrolling:touch}
 .stock-data-table{width:100%;min-width:1050px;border-collapse:separate;border-spacing:0;text-align:start;font-size:13px}
 .stock-data-table th,.stock-data-table td{padding:11px 12px;border-bottom:1px solid var(--line);white-space:nowrap;vertical-align:middle}
