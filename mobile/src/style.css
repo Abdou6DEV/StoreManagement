@@ -1036,8 +1036,8 @@ html.dark .stock-negative { color:#f87171; }
 .stock-category-title { display:flex;align-items:center;gap:8px; }
 .stock-category-title svg { flex:none;color:var(--primary); }
 .stock-category-view { margin-top:12px; }
-.stock-modal-backdrop { position:fixed;z-index:30;inset:0;display:flex;align-items:flex-end;justify-content:center;padding:12px;background:rgb(0 0 0 / 55%); }
-.stock-detail-modal { width:min(100%,560px);max-height:min(88dvh,780px);overflow:auto;padding:16px;border:1px solid var(--line);border-radius:18px 18px 12px 12px;background:var(--card);color:var(--fg);box-shadow:0 20px 60px rgb(0 0 0 / 25%); }
+.stock-modal-backdrop { position:fixed;z-index:30;inset:0;display:flex;align-items:center;justify-content:center;padding:12px;background:rgb(0 0 0 / 55%); }
+.stock-detail-modal { width:min(100%,560px);max-height:min(88dvh,780px);overflow:auto;padding:16px;border:1px solid var(--line);border-radius:16px;background:var(--card);color:var(--fg);box-shadow:0 20px 60px rgb(0 0 0 / 25%); }
 .stock-detail-modal > header { display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px; }
 .stock-detail-modal > header span { color:var(--mobile-muted);font-size:.72rem; }
 .stock-detail-modal > header h2 { overflow-wrap:anywhere;margin:4px 0 0;font-size:1.05rem; }
