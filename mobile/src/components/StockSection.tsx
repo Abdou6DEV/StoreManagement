@@ -184,9 +184,15 @@ export function StockSection({ data, language, query, onQueryChange }: { data: M
               <td><button type="button" className="stock-table-view" aria-label={t.view + ": " + str(product.name)} onClick={() => setSelected(product)}><Eye size={16} />{t.view}</button></td>
             </tr>;
           })}</tbody>
-          <tfoot><tr><td colSpan={2}>{t.products}: {new Intl.NumberFormat(language).format(filteredProducts.length)}</td><td>{new Intl.NumberFormat(language).format(filteredProducts.reduce((sum, product) => sum + num(product.quantity), 0))}</td><td className="stock-money-cell">{money(filteredProducts.reduce((sum, p) => sum + num(p.quantity) * num(p.bought_price), 0), language)}</td><td className="stock-money-cell">{money(filteredProducts.reduce((sum, p) => sum + num(p.quantity) * num(p.selling_price), 0), language)}</td><td colSpan={4}></td></tr></tfoot>
+
         </table>
       </div>}
+      {filteredProducts.length > 0 ? <div className="stock-table-totals" aria-label={t.products + " " + t.totalQuantity}>
+        <div><span>{t.products}</span><strong>{new Intl.NumberFormat(language).format(filteredProducts.length)}</strong></div>
+        <div><span>{t.totalQuantity}</span><strong>{new Intl.NumberFormat(language).format(filteredProducts.reduce((sum, product) => sum + num(product.quantity), 0))}</strong></div>
+        <div><span>{t.stockCost}</span><strong>{money(filteredProducts.reduce((sum, product) => sum + num(product.quantity) * num(product.bought_price), 0), language)}</strong></div>
+        <div><span>{t.stockValue}</span><strong>{money(filteredProducts.reduce((sum, product) => sum + num(product.quantity) * num(product.selling_price), 0), language)}</strong></div>
+      </div> : null}
       {filteredProducts.length > 0 ? <p className="stock-history-footnote">{t.availableHistory}</p> : null}
     </> : <>
       <div className="stock-sort-row"><label className="mobile-select-control"><span>{t.pageSize}</span><select value={pageSize} onChange={(event) => setPageSize(Number(event.target.value))}>{[5,10,25,50,100].map((size) => <option key={size} value={size}>{size}</option>)}</select></label></div>
@@ -199,10 +205,15 @@ export function StockSection({ data, language, query, onQueryChange }: { data: M
             <td className="stock-positive stock-money-cell">{money(item.potential, language)}</td>
             <td><button type="button" className="stock-table-view" onClick={() => { setCategory(item.name === "—" ? "" : item.name); setView("products"); }}><Eye size={16} />{t.view}</button></td>
           </tr>)}</tbody>
-          <tfoot><tr><td>{t.categories}</td><td>{new Intl.NumberFormat(language).format(categories.length)}</td><td>{new Intl.NumberFormat(language).format(categories.reduce((sum, item) => sum + item.quantity, 0))}</td>
-            <td className="stock-money-cell">{money(categories.reduce((sum, item) => sum + item.bought, 0), language)}</td><td className="stock-money-cell">{money(categories.reduce((sum, item) => sum + item.selling, 0), language)}</td><td colSpan={2}></td></tr></tfoot>
+
         </table>
       </div>}
+      {categories.length > 0 ? <div className="stock-table-totals" aria-label={t.categories + " " + t.totalQuantity}>
+        <div><span>{t.categories}</span><strong>{new Intl.NumberFormat(language).format(categories.length)}</strong></div>
+        <div><span>{t.totalQuantity}</span><strong>{new Intl.NumberFormat(language).format(categories.reduce((sum, item) => sum + item.quantity, 0))}</strong></div>
+        <div><span>{t.stockCost}</span><strong>{money(categories.reduce((sum, item) => sum + item.bought, 0), language)}</strong></div>
+        <div><span>{t.stockValue}</span><strong>{money(categories.reduce((sum, item) => sum + item.selling, 0), language)}</strong></div>
+      </div> : null}
     </>}
     {(view === "products" ? filteredProducts.length : categories.length) > 0 ? <div className="mobile-pagination">
       <button type="button" disabled={currentPage === 1} onClick={() => setPage((v) => Math.max(1, v - 1))}>{t.previous}</button><span>{t.page} {currentPage} {t.of} {totalPages}</span>
