@@ -1182,3 +1182,12 @@ html.dark .stock-negative { color:#f87171; }
 }
 
 .stock-history-table-wrap{width:100%;max-width:100%;overflow-x:hidden;border:1px solid var(--line);border-radius:9px;background:var(--card)}.stock-history-table{width:100%;table-layout:fixed;border-collapse:separate;border-spacing:0;font-size:.68rem;text-align:start}.stock-history-table th{padding:8px 4px;background:color-mix(in oklch,var(--line) 24%,var(--card));border-bottom:1px solid var(--line);font-size:.63rem;font-weight:750;white-space:normal;overflow-wrap:anywhere;line-height:1.2;color:var(--foreground,var(--text))}.stock-history-table td{padding:8px 4px;border-bottom:1px solid var(--line);vertical-align:middle;white-space:normal;overflow-wrap:anywhere;line-height:1.25;font-variant-numeric:tabular-nums}.stock-history-table th:nth-child(1),.stock-history-table td:nth-child(1){width:24%}.stock-history-table th:nth-child(2),.stock-history-table td:nth-child(2){width:25%}.stock-history-table th:nth-child(3),.stock-history-table td:nth-child(3){width:14%}.stock-history-table th:nth-child(4),.stock-history-table td:nth-child(4){width:17%}.stock-history-table th:nth-child(5),.stock-history-table td:nth-child(5){width:20%}.stock-history-table tbody tr:last-child td{border-bottom:0}.stock-history-table tbody tr:hover{background:color-mix(in oklch,var(--primary) 4%,var(--card))}.stock-history-quantity{display:inline-flex;align-items:center;padding:2px 4px;border-radius:4px;font-size:.66rem;font-weight:750;font-variant-numeric:tabular-nums}.stock-history-quantity-in{background:color-mix(in oklch,#16a34a 12%,var(--card));color:#16a34a}.stock-history-quantity-out{background:color-mix(in oklch,#dc2626 12%,var(--card));color:#dc2626}.stock-history-total{font-weight:750;color:var(--primary)}.stock-history-total-sale{color:#16a34a}
+
+
+/* Slightly widen shared page panels on narrow screens without changing table widths. */
+@media (max-width: 560px) {
+  .mobile-page-panel {
+    width: calc(100% + clamp(8px, 2.5vw, 14px));
+    margin-inline: calc(-1 * clamp(4px, 1.25vw, 7px));
+  }
+}
