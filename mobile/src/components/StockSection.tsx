@@ -187,12 +187,6 @@ export function StockSection({ data, language, query, onQueryChange }: { data: M
 
         </table>
       </div>}
-      {filteredProducts.length > 0 ? <div className="stock-table-totals" aria-label={t.products + " " + t.totalQuantity}>
-        <div><span>{t.products}</span><strong>{new Intl.NumberFormat(language).format(filteredProducts.length)}</strong></div>
-        <div><span>{t.totalQuantity}</span><strong>{new Intl.NumberFormat(language).format(filteredProducts.reduce((sum, product) => sum + num(product.quantity), 0))}</strong></div>
-        <div><span>{t.stockCost}</span><strong>{money(filteredProducts.reduce((sum, product) => sum + num(product.quantity) * num(product.bought_price), 0), language)}</strong></div>
-        <div><span>{t.stockValue}</span><strong>{money(filteredProducts.reduce((sum, product) => sum + num(product.quantity) * num(product.selling_price), 0), language)}</strong></div>
-      </div> : null}
     </> : <>
       <div className="stock-sort-row"><label className="mobile-select-control"><span>{t.pageSize}</span><select value={pageSize} onChange={(event) => setPageSize(Number(event.target.value))}>{[5,10,25,50,100].map((size) => <option key={size} value={size}>{size}</option>)}</select></label></div>
       {categories.length === 0 ? <p className="mobile-empty">{t.empty}</p> : <div className="stock-table-scroll" role="region" aria-label={t.categories} tabIndex={0}>
@@ -207,16 +201,21 @@ export function StockSection({ data, language, query, onQueryChange }: { data: M
 
         </table>
       </div>}
-      {categories.length > 0 ? <div className="stock-table-totals" aria-label={t.categories + " " + t.totalQuantity}>
-        <div><span>{t.categories}</span><strong>{new Intl.NumberFormat(language).format(categories.length)}</strong></div>
-        <div><span>{t.totalQuantity}</span><strong>{new Intl.NumberFormat(language).format(categories.reduce((sum, item) => sum + item.quantity, 0))}</strong></div>
-        <div><span>{t.stockCost}</span><strong>{money(categories.reduce((sum, item) => sum + item.bought, 0), language)}</strong></div>
-        <div><span>{t.stockValue}</span><strong>{money(categories.reduce((sum, item) => sum + item.selling, 0), language)}</strong></div>
-      </div> : null}
     </>}
     {(view === "products" ? filteredProducts.length : categories.length) > 0 ? <div className="mobile-pagination">
       <button type="button" disabled={currentPage === 1} onClick={() => setPage((v) => Math.max(1, v - 1))}>{t.previous}</button><span>{t.page} {currentPage} {t.of} {totalPages}</span>
       <button type="button" disabled={currentPage === totalPages} onClick={() => setPage((v) => Math.min(totalPages, v + 1))}>{t.next}</button>
+    </div> : null}
+    {view === "products" && filteredProducts.length > 0 ? <div className="stock-table-totals" aria-label={t.products + " " + t.totalQuantity}>
+      <div><span>{t.products}:</span><strong>{new Intl.NumberFormat(language).format(filteredProducts.length)}</strong></div>
+      <div><span>{t.totalQuantity}:</span><strong>{new Intl.NumberFormat(language).format(filteredProducts.reduce((sum, product) => sum + num(product.quantity), 0))}</strong></div>
+      <div><span>{t.stockCost}:</span><strong>{money(filteredProducts.reduce((sum, p) => sum + num(p.quantity) * num(p.bought_price), 0), language)}</strong></div>
+      <div><span>{t.stockValue}:</span><strong>{money(filteredProducts.reduce((sum, p) => sum + num(p.quantity) * num(p.selling_price), 0), language)}</strong></div>
+    </div> : view === "categories" && categories.length > 0 ? <div className="stock-table-totals" aria-label={t.categories + " " + t.totalQuantity}>
+      <div><span>{t.categories}:</span><strong>{new Intl.NumberFormat(language).format(categories.length)}</strong></div>
+      <div><span>{t.totalQuantity}:</span><strong>{new Intl.NumberFormat(language).format(categories.reduce((sum, item) => sum + item.quantity, 0))}</strong></div>
+      <div><span>{t.stockCost}:</span><strong>{money(categories.reduce((sum, item) => sum + item.bought, 0), language)}</strong></div>
+      <div><span>{t.stockValue}:</span><strong>{money(categories.reduce((sum, item) => sum + item.selling, 0), language)}</strong></div>
     </div> : null}
     {selected ? <div className="stock-modal-backdrop" role="presentation" onClick={(event) => { if (event.target === event.currentTarget) setSelected(null); }}>
       <section className="stock-detail-modal" role="dialog" aria-modal="true" aria-labelledby="stock-detail-title">
