@@ -1072,7 +1072,7 @@ html.dark .stock-negative { color:#f87171; }
   transition: width 140ms ease, min-width 140ms ease, box-shadow 140ms ease;
 }
 .stock-product-table-scroll .stock-data-table thead th:first-child {
-  z-index: 4;
+  z-index: 2;
   background: var(--muted-bg);
 }
 .stock-product-table-scroll .stock-data-table tbody td:first-child { z-index: 2; }
