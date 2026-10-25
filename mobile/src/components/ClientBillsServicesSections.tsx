@@ -779,30 +779,32 @@ export function ServicesSection({
   const completedCount = appointments.filter((service) => service.is_completed === true).length;
   const totalCost = appointments.reduce((sum, service) => sum + valueNumber(service, "cost_price"), 0);
   const totalValue = appointments.reduce((sum, service) => sum + valueNumber(service, "service_price"), 0);
-  const typeStats = new Map<string, { count: number; completed: number; revenue: number; cost: number }>();
-  for (const service of appointments) {
-    const type = valueText(service, "service_type") || "—";
-    const stats = typeStats.get(type) ?? { count: 0, completed: 0, revenue: 0, cost: 0 };
-    stats.count += 1;
-    if (service.is_completed === true) stats.completed += 1;
-    stats.revenue += valueNumber(service, "service_price");
-    stats.cost += valueNumber(service, "cost_price");
-    typeStats.set(type, stats);
-  }
-  const sortedTypes: MobileRow[] = [...typeStats.entries()]
-    .map(([type, stats]) => ({
-      source_id: type,
-      service_type: type,
-      service_count: stats.count,
-      completed_count: stats.completed,
-      incomplete_count: stats.count - stats.completed,
-      completion_rate: stats.count > 0 ? (stats.completed / stats.count) * 100 : 0,
-      revenue: stats.revenue,
-      average_revenue: stats.count > 0 ? stats.revenue / stats.count : 0,
-      profit: stats.revenue - stats.cost,
-      average_profit: stats.count > 0 ? (stats.revenue - stats.cost) / stats.count : 0,
-    }))
-    .sort((a, b) => valueNumber(b, "revenue") - valueNumber(a, "revenue"));
+  const sortedTypes: MobileRow[] = useMemo(() => {
+    const typeStats = new Map<string, { count: number; completed: number; revenue: number; cost: number }>();
+    for (const service of appointments) {
+      const type = valueText(service, "service_type") || "—";
+      const stats = typeStats.get(type) ?? { count: 0, completed: 0, revenue: 0, cost: 0 };
+      stats.count += 1;
+      if (service.is_completed === true) stats.completed += 1;
+      stats.revenue += valueNumber(service, "service_price");
+      stats.cost += valueNumber(service, "cost_price");
+      typeStats.set(type, stats);
+    }
+    return [...typeStats.entries()]
+      .map(([type, stats]) => ({
+        source_id: type,
+        service_type: type,
+        service_count: stats.count,
+        completed_count: stats.completed,
+        incomplete_count: stats.count - stats.completed,
+        completion_rate: stats.count > 0 ? (stats.completed / stats.count) * 100 : 0,
+        revenue: stats.revenue,
+        average_revenue: stats.count > 0 ? stats.revenue / stats.count : 0,
+        profit: stats.revenue - stats.cost,
+        average_profit: stats.count > 0 ? (stats.revenue - stats.cost) / stats.count : 0,
+      }))
+      .sort((a, b) => valueNumber(b, "revenue") - valueNumber(a, "revenue"));
+  }, [appointments]);
   const allServiceCost = appointments.reduce((sum, service) => sum + valueNumber(service, "cost_price"), 0);
   const allServiceValue = appointments.reduce((sum, service) => sum + valueNumber(service, "service_price"), 0);
   const allServiceProfit = allServiceValue - allServiceCost;
