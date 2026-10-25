@@ -72,8 +72,18 @@ export function StockSection({ data, language, query, onQueryChange }: { data: M
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<MobileRow | null>(null);
+  const [activeProductName, setActiveProductName] = useState<string | null>(null);
   const [stockTableScrolled, setStockTableScrolled] = useState(false);
   useEffect(() => setPage(1), [query, category, lowStock, outOfStock, noBarcode, salesSort, sort, pageSize, view]);
+  useEffect(() => {
+    if (!activeProductName) return;
+    const dismissOnOutsideClick = (event: PointerEvent) => {
+      if (event.target instanceof Element && event.target.closest(".stock-product-name-wrap")) return;
+      setActiveProductName(null);
+    };
+    document.addEventListener("pointerdown", dismissOnOutsideClick);
+    return () => document.removeEventListener("pointerdown", dismissOnOutsideClick);
+  }, [activeProductName]);
 
   const salesMetrics = useMemo(() => {
     const productsById = new Map(data.products.map((product) => [productKey(product), product]));
@@ -173,7 +183,7 @@ export function StockSection({ data, language, query, onQueryChange }: { data: M
             const metric = salesMetrics.get(productKey(product)) ?? { sold: 0, profit: 0 };
             const isOut = quantity === 0, isLow = quantity > 0 && quantity <= 5;
             return <tr className={isOut ? "is-out" : isLow ? "is-low" : ""} key={productKey(product)}>
-              <td><div className="stock-table-product-name">{str(product.name) || "—"}<small>{str(product.codebar) || t.noBarcode}</small></div></td>
+              <td><div className="stock-table-product-name-wrap"><button type="button" className="stock-table-product-name" title={str(product.name)} aria-label={str(product.name) || "—"} aria-expanded={activeProductName === productKey(product)} onClick={() => setActiveProductName((active) => active === productKey(product) ? null : productKey(product))}>{str(product.name) || "—"}</button><small>{str(product.codebar) || t.noBarcode}</small>{activeProductName === productKey(product) ? <div className="stock-product-name-tooltip" role="tooltip">{str(product.name) || "—"}</div> : null}</div></td>
               <td>{str(product.category_name) || "—"}</td>
               <td><span className={"stock-quantity-badge" + (isOut ? " out" : isLow ? " low" : "")}>{new Intl.NumberFormat(language).format(quantity)}</span></td>
               <td className="stock-money-cell">{money(bought, language)}</td>
