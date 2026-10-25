@@ -19,6 +19,7 @@ type LabelKey =
   | "previous"
   | "next"
   | "newest"
+  | "defaultOrder"
   | "oldest"
   | "nameAZ"
   | "empty"
@@ -111,7 +112,7 @@ const LABELS: Record<MobileLanguage, Record<LabelKey, string>> = {
   en: {
     search: "Search", sort: "Sort by", pageSize: "Rows per page", view: "View",
     close: "Close", page: "Page", of: "of", previous: "Previous", next: "Next",
-    newest: "Newest first", oldest: "Oldest first", nameAZ: "Name A–Z",
+    newest: "Newest first", oldest: "Oldest first", defaultOrder: "Desktop default order", nameAZ: "Name A–Z",
     empty: "No records match these filters.", name: "Name", phone: "Phone",
     address: "Address", notes: "Notes", created: "Added", clients: "Clients",
     payments: "Payments", sales: "Sales", paymentType: "Type", amount: "Amount",
@@ -150,7 +151,7 @@ const LABELS: Record<MobileLanguage, Record<LabelKey, string>> = {
   fr: {
     search: "Rechercher", sort: "Trier par", pageSize: "Lignes par page", view: "Voir",
     close: "Fermer", page: "Page", of: "sur", previous: "Précédent", next: "Suivant",
-    newest: "Plus récent", oldest: "Plus ancien", nameAZ: "Nom A–Z",
+    newest: "Plus récent", oldest: "Plus ancien", defaultOrder: "Ordre par défaut du bureau", nameAZ: "Nom A–Z",
     empty: "Aucun résultat pour ces filtres.", name: "Nom", phone: "Téléphone",
     address: "Adresse", notes: "Notes", created: "Ajouté", clients: "Clients",
     payments: "Paiements", sales: "Ventes", paymentType: "Type", amount: "Montant",
@@ -190,7 +191,7 @@ const LABELS: Record<MobileLanguage, Record<LabelKey, string>> = {
   ar: {
     search: "بحث", sort: "ترتيب حسب", pageSize: "عدد الصفوف", view: "عرض",
     close: "إغلاق", page: "صفحة", of: "من", previous: "السابق", next: "التالي",
-    newest: "الأحدث أولاً", oldest: "الأقدم أولاً", nameAZ: "الاسم أ–ي",
+    newest: "الأحدث أولاً", oldest: "الأقدم أولاً", defaultOrder: "الترتيب الافتراضي لسطح المكتب", nameAZ: "الاسم أ–ي",
     empty: "لا توجد سجلات تطابق عوامل التصفية.", name: "الاسم", phone: "الهاتف",
     address: "العنوان", notes: "ملاحظات", created: "تاريخ الإضافة", clients: "العملاء",
     payments: "الدفعات", sales: "المبيعات", paymentType: "النوع", amount: "المبلغ",
@@ -281,6 +282,9 @@ function StockStyleTable<T extends MobileRow>({
   ariaLabel,
   footer,
   minWidth,
+  scrollClassName,
+  horizontallyScrolled,
+  onHorizontalScroll,
 }: {
   rows: T[];
   columns: Column<T>[];
@@ -291,6 +295,9 @@ function StockStyleTable<T extends MobileRow>({
   ariaLabel: string;
   footer?: ReactNode;
   minWidth: number;
+  scrollClassName?: string;
+  horizontallyScrolled?: boolean;
+  onHorizontalScroll?: (scrolled: boolean) => void;
 }) {
   const [sortId, setSortId] = useState(sorts[0]?.id ?? "");
   const [pageSize, setPageSize] = useState(10);
@@ -322,7 +329,7 @@ function StockStyleTable<T extends MobileRow>({
         </label>
       </div>
       {rows.length === 0 ? <p className="mobile-empty">{empty}</p> : (
-        <div className="stock-table-scroll" role="region" aria-label={ariaLabel} tabIndex={0}>
+        <div className={`stock-table-scroll${scrollClassName ? ` ${scrollClassName}${horizontallyScrolled ? " is-horizontally-scrolled" : ""}` : ""}`} onScroll={onHorizontalScroll ? (event) => onHorizontalScroll(event.currentTarget.scrollLeft !== 0) : undefined} role="region" aria-label={ariaLabel} tabIndex={0}>
           <table className="stock-data-table mobile-record-data-table" style={{ minWidth }}>
             <thead><tr>{columns.map((column) => <th key={column.key}>{column.label}</th>)}</tr></thead>
             <tbody>
@@ -742,7 +749,32 @@ export function ServicesSection({
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [selected, setSelected] = useState<MobileRow | null>(null);
-  const [selectedCatalog, setSelectedCatalog] = useState<MobileRow | null>(null);
+  const [activeServiceName, setActiveServiceName] = useState<string | null>(null);
+  const [activeServiceNamePosition, setActiveServiceNamePosition] = useState<{ top: number; left: number } | null>(null);
+  const [serviceTableScrolled, setServiceTableScrolled] = useState(false);
+  useEffect(() => {
+    if (!activeServiceName) return;
+    const dismissOnOutsideClick = (event: PointerEvent) => {
+      if (event.target instanceof Element && event.target.closest(".mobile-service-name-wrap")) return;
+      setActiveServiceName(null);
+      setActiveServiceNamePosition(null);
+    };
+    const dismissOnViewportChange = () => {
+      setActiveServiceName(null);
+      setActiveServiceNamePosition(null);
+    };
+    document.addEventListener("pointerdown", dismissOnOutsideClick);
+    window.addEventListener("scroll", dismissOnViewportChange, true);
+    window.addEventListener("resize", dismissOnViewportChange);
+    return () => {
+      document.removeEventListener("pointerdown", dismissOnOutsideClick);
+      window.removeEventListener("scroll", dismissOnViewportChange, true);
+      window.removeEventListener("resize", dismissOnViewportChange);
+    };
+  }, [activeServiceName]);
+  const soldServiceIds = useMemo(() => new Set(
+    data.sale_items.map((item) => valueText(item, "service_source_id")).filter(Boolean),
+  ), [data.sale_items]);
   const clientsById = useMemo(
     () => new Map(
       (permissions.can_access_clients ? data.clients : [])
@@ -779,43 +811,19 @@ export function ServicesSection({
   const completedCount = appointments.filter((service) => service.is_completed === true).length;
   const totalCost = appointments.reduce((sum, service) => sum + valueNumber(service, "cost_price"), 0);
   const totalValue = appointments.reduce((sum, service) => sum + valueNumber(service, "service_price"), 0);
-  const typeStats = new Map<string, { count: number; completed: number; revenue: number; cost: number }>();
-  for (const service of appointments) {
-    const type = valueText(service, "service_type") || "—";
-    const stats = typeStats.get(type) ?? { count: 0, completed: 0, revenue: 0, cost: 0 };
-    stats.count += 1;
-    if (service.is_completed === true) stats.completed += 1;
-    stats.revenue += valueNumber(service, "service_price");
-    stats.cost += valueNumber(service, "cost_price");
-    typeStats.set(type, stats);
-  }
-  const sortedTypes: MobileRow[] = [...typeStats.entries()]
-    .map(([type, stats]) => ({
-      source_id: type,
-      service_type: type,
-      service_count: stats.count,
-      completed_count: stats.completed,
-      incomplete_count: stats.count - stats.completed,
-      completion_rate: stats.count > 0 ? (stats.completed / stats.count) * 100 : 0,
-      revenue: stats.revenue,
-      average_revenue: stats.count > 0 ? stats.revenue / stats.count : 0,
-      profit: stats.revenue - stats.cost,
-      average_profit: stats.count > 0 ? (stats.revenue - stats.cost) / stats.count : 0,
-    }))
-    .sort((a, b) => valueNumber(b, "revenue") - valueNumber(a, "revenue"));
-  const allServiceCost = appointments.reduce((sum, service) => sum + valueNumber(service, "cost_price"), 0);
-  const allServiceValue = appointments.reduce((sum, service) => sum + valueNumber(service, "service_price"), 0);
-  const allServiceProfit = allServiceValue - allServiceCost;
-  const overallCompletionRate = appointments.length > 0
-    ? (appointments.filter((service) => service.is_completed === true).length / appointments.length) * 100
-    : 0;
-  const catalog = useMemo(() => data.services.filter((service) => matchesQuery(service, query, ["name", "description"])), [data.services, query]);
+  const compareDesktopDefault = (a: MobileRow, b: MobileRow) => {
+    const priority = (service: MobileRow) => {
+      if (service.is_completed !== true) return 0;
+      return valueNumber(service, "service_price") === 0 || soldServiceIds.has(valueText(service, "source_id")) ? 2 : 1;
+    };
+    return priority(a) - priority(b) || compareNewest(a, b);
+  };
   const selectedClient = selected ? clientsById.get(valueText(selected, "client_source_id")) : undefined;
 
   return (
     <>
       <SearchRow query={query} onQueryChange={onQueryChange} label={labels.search} />
-      {data.service_appointments.length >= 1000 || data.services.length >= 500 ? <LimitNotice>{labels.limitNotice}</LimitNotice> : null}
+      {data.service_appointments.length >= 1000 ? <LimitNotice>{labels.limitNotice}</LimitNotice> : null}
       <LimitNotice>{labels.dueSoonThresholdNote}</LimitNotice>
       <section className="mobile-subsection">
         <h2>{labels.appointments}</h2>
@@ -831,13 +839,29 @@ export function ServicesSection({
           pageSizeLabel={labels.pageSize}
           empty={labels.empty}
           minWidth={1100}
+          scrollClassName="mobile-service-table-scroll"
+          horizontallyScrolled={serviceTableScrolled}
+          onHorizontalScroll={setServiceTableScrolled}
           sorts={[
+            { id: "default", label: labels.defaultOrder, compare: compareDesktopDefault },
             { id: "due", label: labels.dueDate, compare: compareDue },
             { id: "newest", label: labels.created, compare: compareNewest },
             { id: "name", label: labels.name, compare: compareName },
           ]}
           columns={[
-            { key: "name", label: labels.name, render: (row) => <><strong>{valueText(row, "name") || "—"}</strong><br /><span>{valueText(row, "service_type") || "—"}</span></> },
+            { key: "name", label: labels.name, render: (row) => {
+              const key = valueText(row, "source_id") || valueText(row, "id");
+              const name = valueText(row, "name") || "—";
+              const type = valueText(row, "service_type") || "—";
+              return <div className="stock-table-product-name-wrap mobile-service-name-wrap"><button type="button" className="stock-table-product-name" title={name} aria-label={name} aria-expanded={activeServiceName === key} onClick={(event) => {
+                if (activeServiceName === key) { setActiveServiceName(null); setActiveServiceNamePosition(null); return; }
+                const rect = event.currentTarget.getBoundingClientRect();
+                const tooltipWidth = Math.min(window.innerWidth * 0.84, 290);
+                const left = Math.min(Math.max(rect.left + rect.width / 2, tooltipWidth / 2 + 8), window.innerWidth - tooltipWidth / 2 - 8);
+                setActiveServiceNamePosition({ top: rect.top - 8, left });
+                setActiveServiceName(key);
+              }}>{name}</button><small>{type}</small>{activeServiceName === key && activeServiceNamePosition ? <div className="stock-product-name-tooltip" role="tooltip" style={{ top: activeServiceNamePosition.top, left: activeServiceNamePosition.left }}><div className="stock-product-tooltip-title">{name}</div><div>{type}</div>{valueText(row, "description") ? <div style={{ marginTop: 5 }}>{valueText(row, "description")}</div> : null}</div> : null}</div>;
+            } },
             { key: "description", label: labels.description, render: (row) => valueText(row, "description") || "—" },
             { key: "notes", label: labels.notes, render: (row) => valueText(row, "notes") || "—" },
             { key: "status", label: labels.status, render: (row) => {
@@ -878,61 +902,6 @@ export function ServicesSection({
           <p className="stock-detail-muted">{labels.linkedPaymentUnavailable}</p>
         </ReadOnlyDetail>
       ) : null}
-      <section className="mobile-subsection">
-        <h2>{labels.catalog}</h2>
-        <StockStyleTable
-          rows={catalog}
-          labels={labels}
-          ariaLabel={labels.catalog}
-          pageSizeLabel={labels.pageSize}
-          empty={labels.catalogEmpty}
-          minWidth={640}
-          sorts={[
-            { id: "name", label: labels.name, compare: compareName },
-            { id: "cost", label: labels.cost, compare: (a, b) => valueNumber(a, "cost_price") - valueNumber(b, "cost_price") },
-          ]}
-          columns={[
-            { key: "name", label: labels.name, render: (row) => valueText(row, "name") || "—" },
-            { key: "description", label: labels.description, render: (row) => valueText(row, "description") || "—" },
-            { key: "cost", label: labels.cost, align: "end", render: (row) => displayMoney(valueNumber(row, "cost_price"), language) },
-            { key: "view", label: labels.view, render: (row) => <DetailButton label={labels.view} onClick={() => setSelectedCatalog(row)} /> },
-          ]}
-        />
-      </section>
-      <section className="mobile-subsection">
-        <h2>{labels.serviceTypes}</h2>
-        <StockStyleTable
-          rows={sortedTypes}
-          labels={labels}
-          ariaLabel={labels.serviceTypes}
-          pageSizeLabel={labels.pageSize}
-          empty={labels.empty}
-          minWidth={1120}
-          sorts={[
-            { id: "revenue", label: labels.revenue, compare: (a, b) => valueNumber(b, "revenue") - valueNumber(a, "revenue") },
-            { id: "name", label: labels.nameAZ, compare: (a, b) => valueText(a, "service_type").localeCompare(valueText(b, "service_type"), language) },
-          ]}
-          columns={[
-            { key: "type", label: labels.type, render: (row) => valueText(row, "service_type") },
-            { key: "total", label: labels.totalServices, align: "end", render: (row) => new Intl.NumberFormat(language).format(valueNumber(row, "service_count")) },
-            { key: "completed", label: labels.completed, align: "end", render: (row) => new Intl.NumberFormat(language).format(valueNumber(row, "completed_count")) },
-            { key: "incomplete", label: labels.incompleteServices, align: "end", render: (row) => new Intl.NumberFormat(language).format(valueNumber(row, "incomplete_count")) },
-            { key: "rate", label: labels.completionRate, align: "end", render: (row) => `${new Intl.NumberFormat(language, { maximumFractionDigits: 1 }).format(valueNumber(row, "completion_rate"))}%` },
-            { key: "revenue", label: labels.revenue, align: "end", render: (row) => <>{displayMoney(valueNumber(row, "revenue"), language)}<small className="stock-row-subtext">{displayMoney(valueNumber(row, "average_revenue"), language)} {labels.average}</small></> },
-            { key: "profit", label: labels.profit, align: "end", render: (row) => <>{displayMoney(valueNumber(row, "profit"), language)}<small className="stock-row-subtext">{displayMoney(valueNumber(row, "average_profit"), language)} {labels.average}</small></> },
-          ]}
-          footer={<div className="stock-table-totals">
-            <div><span>{labels.totalServices}</span><strong>{new Intl.NumberFormat(language).format(appointments.length)}</strong></div>
-            <div><span>{labels.completed}</span><strong>{new Intl.NumberFormat(language).format(completedCount)} · {new Intl.NumberFormat(language, { maximumFractionDigits: 1 }).format(overallCompletionRate)}%</strong></div>
-            <div><span>{labels.revenue}</span><strong>{displayMoney(allServiceValue, language)} · {displayMoney(appointments.length ? allServiceValue / appointments.length : 0, language)} {labels.average}</strong></div>
-            <div><span>{labels.profit}</span><strong>{displayMoney(allServiceProfit, language)} · {displayMoney(appointments.length ? allServiceProfit / appointments.length : 0, language)} {labels.average}</strong></div>
-          </div>}
-        />
-      </section>
-      {selectedCatalog ? <ReadOnlyDetail title={labels.catalog} subtitle={valueText(selectedCatalog, "name")} labels={labels} language={language} onClose={() => setSelectedCatalog(null)} fields={[
-        [labels.description, valueText(selectedCatalog, "description")],
-        [labels.cost, displayMoney(valueNumber(selectedCatalog, "cost_price"), language)],
-      ]} /> : null}
     </>
   );
 }

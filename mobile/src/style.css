@@ -1191,3 +1191,32 @@ html.dark .stock-negative { color:#f87171; }
     margin-inline: calc(-1 * clamp(5px, 1.5vw, 8px));
   }
 }
+
+
+/* Services table: keep the service-name column visible while the remaining columns scroll. */
+.mobile-service-table-scroll .mobile-record-data-table thead th:first-child,
+.mobile-service-table-scroll .mobile-record-data-table tbody td:first-child {
+  position: sticky;
+  inset-inline-start: 0;
+  min-width: 150px;
+  width: 150px;
+  max-width: 150px;
+  overflow: hidden;
+  background: var(--card);
+  z-index: 2;
+  transition: width 140ms ease, min-width 140ms ease, box-shadow 140ms ease;
+}
+.mobile-service-table-scroll .mobile-record-data-table thead th:first-child {
+  z-index: 3;
+  background: var(--muted-bg);
+}
+.mobile-service-table-scroll.is-horizontally-scrolled .mobile-record-data-table thead th:first-child,
+.mobile-service-table-scroll.is-horizontally-scrolled .mobile-record-data-table tbody td:first-child {
+  min-width: 112px;
+  width: 112px;
+  max-width: 112px;
+  box-shadow: 3px 0 7px -5px rgb(0 0 0 / 45%);
+}
+.mobile-service-name-wrap { min-width: 0; }
+.mobile-service-name-wrap .stock-table-product-name { font-weight: 650; }
+.mobile-service-name-wrap small { display: block; width: 100%; min-width: 0; max-width: 100%; margin-top: 3px; color: var(--mobile-muted); font-size: 11px; font-weight: 400; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
