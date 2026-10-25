@@ -1110,3 +1110,13 @@ html.dark .stock-negative { color:#f87171; }
 .stock-filter-chip.selected.danger { border-color:#ef4444;color:#dc2626;background:color-mix(in oklch,#ef4444 8%,var(--card)); }
 .stock-filter-row .stock-clear-filters { margin:0;padding-inline:10px; }
 .stock-filter-note { margin:-4px 0 10px;padding:0;color:var(--mobile-muted);font-size:.72rem;line-height:1.4; }
+
+/* Let the stock table use almost the full phone width without changing other pages. */
+@media (max-width: 560px) {
+  .mobile-stock-page-panel .stock-table-scroll {
+    width: calc(100% + 48px);
+    max-width: none;
+    margin-inline: -24px;
+    border-radius: 8px;
+  }
+}
