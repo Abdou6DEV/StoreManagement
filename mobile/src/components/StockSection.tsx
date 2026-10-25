@@ -166,11 +166,7 @@ export function StockSection({ data, language, query, onQueryChange }: { data: M
   const linkedPurchaseItems = useMemo(() => {
     if (!selected) return [];
     return data.purchase_items.filter((item) => str(item.product_source_id) === productKey(selected))
-      .sort((a, b) => {
-        const purchaseA = data.purchases.find((row) => str(row.source_id) === str(a.purchase_source_id));
-        const purchaseB = data.purchases.find((row) => str(row.source_id) === str(b.purchase_source_id));
-        return new Date(str(purchaseB?.source_created_at ?? b.source_created_at)).getTime() - new Date(str(purchaseA?.source_created_at ?? a.source_created_at)).getTime();
-      });
+      .sort((a, b) => new Date(str(b.source_created_at)).getTime() - new Date(str(a.source_created_at)).getTime());
   }, [selected, data.purchase_items, data.purchases]);
   const linkedSaleItems = useMemo(() => {
     if (!selected) return [];
@@ -306,7 +302,7 @@ export function StockSection({ data, language, query, onQueryChange }: { data: M
             const supplier = data.suppliers.find((row) => str(row.source_id) === str(purchase?.supplier_source_id));
             const qty = num(item.quantity), price = num(item.price);
             return <article className="stock-detail-history-card" key={str(item.source_id) || `${str(item.purchase_source_id)}-${index}`}>
-              <div className="stock-detail-history-top"><strong>#{str(purchase?.source_id || item.purchase_source_id).slice(-8) || "—"}</strong><time>{dateLabel(purchase?.source_created_at ?? item.source_created_at,language)}</time></div>
+              <div className="stock-detail-history-top"><strong>#{str(purchase?.source_id || item.purchase_source_id).slice(-8) || "—"}</strong><time>{dateLabel(item.source_created_at ?? purchase?.source_created_at,language)}</time></div>
               <div className="stock-detail-history-party"><span>{t.supplier}</span><strong>{str(supplier?.name) || t.noSupplier}</strong></div>
               <div className="stock-detail-history-values"><div><span>{t.quantity}</span><strong>{new Intl.NumberFormat(language).format(qty)}</strong></div><div><span>{t.price}</span><strong>{money(price,language)}</strong></div><div><span>{t.total}</span><strong>{money(qty * price,language)}</strong></div></div>
             </article>;
