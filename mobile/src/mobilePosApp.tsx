@@ -38,6 +38,11 @@ import type {
 } from "./mobileApi";
 import { MobileDashboard } from "./components/MobileDashboard";
 import { StockSection } from "./components/StockSection";
+import {
+  BillsSection,
+  ClientsSection,
+  ServicesSection,
+} from "./components/ClientBillsServicesSections";
 
 type Section =
   | "menu"
@@ -904,7 +909,6 @@ function SectionContent({
   onQueryChange: (query: string) => void;
   permissions: MobilePermissions;
 }) {
-  const [serviceFilter, setServiceFilter] = useState<"all" | "pending" | "completed" | "overdue">("all");
   if (section === "dashboard") {
     return (
       <MobileDashboard
@@ -945,7 +949,7 @@ function SectionContent({
     return <StockSection data={data} language={language} query={query} onQueryChange={onQueryChange} />;
   }
   if (section === "clients") {
-    return <RecordList rows={data.clients} language={language} copy={copy} query={query} />;
+    return <ClientsSection data={data} language={language} permissions={permissions} query={query} onQueryChange={onQueryChange} />;
   }
   if (section === "history") {
     const saleRows = data.sales.map((row, index) => ({
@@ -982,48 +986,9 @@ function SectionContent({
     );
   }
   if (section === "services") {
-    const appointments = data.service_appointments.filter((row) => {
-      if (serviceFilter === "completed") return row.is_completed === true;
-      if (serviceFilter === "pending") return row.is_completed === false;
-      if (serviceFilter === "overdue") {
-        return row.is_completed !== true && typeof row.due_date === "string" && Date.parse(row.due_date) < Date.now();
-      }
-      return true;
-    });
-    return (
-      <>
-        <section className="mobile-subsection">
-          <h2>{copy.appointments}</h2>
-          <label className="mobile-select-control filter-control">
-            <span>{copy.sortBy}</span>
-            <select value={serviceFilter} onChange={(event) => setServiceFilter(event.target.value as typeof serviceFilter)}>
-              <option value="all">{copy.allRecords}</option>
-              <option value="pending">{copy.pending}</option>
-              <option value="completed">{copy.completed}</option>
-              <option value="overdue">{copy.overdue}</option>
-            </select>
-          </label>
-          <RecordList rows={appointments} language={language} copy={copy} query={query} />
-        </section>
-        <section className="mobile-subsection">
-          <h2>{copy.serviceCatalog}</h2>
-          <RecordList rows={data.services} language={language} copy={copy} query={query} />
-        </section>
-      </>
-    );
+    return <ServicesSection data={data} language={language} permissions={permissions} query={query} onQueryChange={onQueryChange} />;
   }
-  return (
-    <>
-      <section className="mobile-subsection">
-        <h2>{copy.bills}</h2>
-        <RecordList rows={data.bills} language={language} copy={copy} query={query} moneyDivisor={100} />
-      </section>
-      <section className="mobile-subsection">
-        <h2>{copy.billPayments}</h2>
-        <RecordList rows={data.bill_payments} language={language} copy={copy} query={query} moneyDivisor={100} />
-      </section>
-    </>
-  );
+  return <BillsSection data={data} language={language} query={query} onQueryChange={onQueryChange} />;
 }
 
 export function MobilePosApp({
@@ -1053,7 +1018,7 @@ export function MobilePosApp({
   const title = section === "menu" ? copy.menu : copy[section];
   const activeSection = SECTIONS.find((item) => item.id === section);
   const activePage = activeSection?.id ?? "home";
-  const needsSearch = section === "stock" || section === "history" || section === "services" || section === "bills" || section === "clients";
+  const needsSearch = section === "stock" || section === "history";
 
   useEffect(() => {
     const onOnline = () => setOnline(true);
@@ -1228,7 +1193,7 @@ export function MobilePosApp({
                     permissions={user.permissions}
                   />
                 ) : (
-                  <Card className={`mobile-page-panel${section === "stock" ? " mobile-stock-page-panel" : ""}`}>
+                  <Card className={`mobile-page-panel${section === "stock" ? " mobile-stock-page-panel" : ""}${["clients", "bills", "services"].includes(section) ? " mobile-record-page-panel" : ""}`}>
                     <div className="mobile-panel-heading">
                       <PageIcon page={activePage} size={28} />
                       <h2>{title}</h2>
