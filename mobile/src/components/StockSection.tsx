@@ -73,6 +73,7 @@ export function StockSection({ data, language, query, onQueryChange }: { data: M
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<MobileRow | null>(null);
   const [activeProductName, setActiveProductName] = useState<string | null>(null);
+  const [activeProductNamePosition, setActiveProductNamePosition] = useState<{ top: number; left: number } | null>(null);
   const [stockTableScrolled, setStockTableScrolled] = useState(false);
   useEffect(() => setPage(1), [query, category, lowStock, outOfStock, noBarcode, salesSort, sort, pageSize, view]);
   useEffect(() => {
@@ -80,9 +81,20 @@ export function StockSection({ data, language, query, onQueryChange }: { data: M
     const dismissOnOutsideClick = (event: PointerEvent) => {
       if (event.target instanceof Element && event.target.closest(".stock-product-name-wrap")) return;
       setActiveProductName(null);
+      setActiveProductNamePosition(null);
+    };
+    const dismissOnViewportChange = () => {
+      setActiveProductName(null);
+      setActiveProductNamePosition(null);
     };
     document.addEventListener("pointerdown", dismissOnOutsideClick);
-    return () => document.removeEventListener("pointerdown", dismissOnOutsideClick);
+    window.addEventListener("scroll", dismissOnViewportChange, true);
+    window.addEventListener("resize", dismissOnViewportChange);
+    return () => {
+      document.removeEventListener("pointerdown", dismissOnOutsideClick);
+      window.removeEventListener("scroll", dismissOnViewportChange, true);
+      window.removeEventListener("resize", dismissOnViewportChange);
+    };
   }, [activeProductName]);
 
   const salesMetrics = useMemo(() => {
@@ -183,7 +195,7 @@ export function StockSection({ data, language, query, onQueryChange }: { data: M
             const metric = salesMetrics.get(productKey(product)) ?? { sold: 0, profit: 0 };
             const isOut = quantity === 0, isLow = quantity > 0 && quantity <= 5;
             return <tr className={isOut ? "is-out" : isLow ? "is-low" : ""} key={productKey(product)}>
-              <td><div className="stock-table-product-name-wrap"><button type="button" className="stock-table-product-name" title={str(product.name)} aria-label={str(product.name) || "—"} aria-expanded={activeProductName === productKey(product)} onClick={() => setActiveProductName((active) => active === productKey(product) ? null : productKey(product))}>{str(product.name) || "—"}</button><small>{str(product.codebar) || t.noBarcode}</small>{activeProductName === productKey(product) ? <div className="stock-product-name-tooltip" role="tooltip">{str(product.name) || "—"}</div> : null}</div></td>
+              <td><div className="stock-table-product-name-wrap"><button type="button" className="stock-table-product-name" title={str(product.name)} aria-label={str(product.name) || "—"} aria-expanded={activeProductName === productKey(product)} onClick={(event) => { const key = productKey(product); if (activeProductName === key) { setActiveProductName(null); setActiveProductNamePosition(null); return; } const rect = event.currentTarget.getBoundingClientRect(); const tooltipWidth = Math.min(window.innerWidth * 0.9, 420); const left = Math.min(Math.max(rect.left + rect.width / 2, tooltipWidth / 2 + 8), window.innerWidth - tooltipWidth / 2 - 8); setActiveProductNamePosition({ top: rect.top - 8, left }); setActiveProductName(key); }}>{str(product.name) || "—"}</button><small>{str(product.codebar) || t.noBarcode}</small>{activeProductName === productKey(product) && activeProductNamePosition ? <div className="stock-product-name-tooltip" role="tooltip" style={{ top: activeProductNamePosition.top, left: activeProductNamePosition.left }}>{str(product.name) || "—"}</div> : null}</div></td>
               <td>{str(product.category_name) || "—"}</td>
               <td><span className={"stock-quantity-badge" + (isOut ? " out" : isLow ? " low" : "")}>{new Intl.NumberFormat(language).format(quantity)}</span></td>
               <td className="stock-money-cell">{money(bought, language)}</td>
