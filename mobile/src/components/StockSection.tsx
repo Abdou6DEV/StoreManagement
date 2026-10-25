@@ -14,8 +14,8 @@ type Labels = {
   stockValue: string; potentialProfit: string; pageSize: string; page: string; of: string;
   previous: string; next: string; empty: string; productInfo: string; barcode: string; type: string;
   purchaseHistory: string; salesHistory: string; close: string; lowStockNote: string; availableHistory: string;
-  currentStock: string; profitPerUnit: string; totalProfit: string; profitAnalysis: string; potentialProfit: string;
-  actualProfit: string; profitMargin: string; roi: string; totalPurchases: string; totalQuantityPurchased: string;
+  currentStock: string; profitPerUnit: string; totalProfit: string; profitAnalysis: string;
+  profitMargin: string; roi: string; totalPurchases: string; totalQuantityPurchased: string;
   totalCost: string; totalSales: string; totalQuantitySold: string; totalRevenue: string; purchaseId: string; saleId: string;
   date: string; supplier: string; client: string; price: string; total: string; noSupplier: string; noClient: string;
   noPurchaseHistory: string; noSalesHistory: string; showMore: string; showLess: string; more: string;
