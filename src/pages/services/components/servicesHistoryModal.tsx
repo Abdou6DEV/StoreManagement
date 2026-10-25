@@ -87,7 +87,7 @@ export default function ServicesHistoryModal({
               {service.description && (
                 <div className="p-3 bg-muted/20 rounded-lg">
                   <div className="text-xs text-muted-foreground mb-1">
-                    {t("services.description", "Description")}
+                    {t("services.description", "Device Name")}
                   </div>
                   <div className="text-sm font-medium">
                     {service.description}

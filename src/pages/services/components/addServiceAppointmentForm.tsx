@@ -353,7 +353,7 @@ export default function AddServiceAppointmentForm({
         </div>
       </div>
 
-      {/* Description */}
+      {/* Device Name */}
       <div className="space-y-2">
         <label className="text-sm font-medium text-foreground flex items-center gap-2">
           <FileText className="w-4 h-4" />
@@ -363,7 +363,7 @@ export default function AddServiceAppointmentForm({
           value={formData.description}
           onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
           className="w-full px-3 py-2 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none"
-          placeholder={t("services.enterDescription", "Enter service description (optional)")}
+          placeholder={t("services.enterDescription", "Enter device name (optional)")}
           rows={3}
         />
       </div>

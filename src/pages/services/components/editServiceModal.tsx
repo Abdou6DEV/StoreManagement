@@ -231,7 +231,7 @@ export default function EditServiceModal({
       const changeLines: string[] = [];
       if (serviceData.name !== (service.name ?? "")) changeLines.push(`Name: ${service.name ?? ""} → ${serviceData.name}`);
       if (serviceData.serviceType !== (service.serviceType ?? "")) changeLines.push(`Service type: ${service.serviceType ?? ""} → ${serviceData.serviceType}`);
-      if ((serviceData.description ?? "") !== (service.description ?? "")) changeLines.push(`Description: ${service.description ?? ""} → ${serviceData.description ?? ""}`);
+      if ((serviceData.description ?? "") !== (service.description ?? "")) changeLines.push(`Device Name: ${service.description ?? ""} → ${serviceData.description ?? ""}`);
       if (serviceData.costPrice !== (service.costPrice ?? 0)) changeLines.push(`Cost price: ${service.costPrice ?? 0} → ${serviceData.costPrice}`);
       if (serviceData.servicePrice !== (service.servicePrice ?? 0)) changeLines.push(`Service price: ${service.servicePrice ?? 0} → ${serviceData.servicePrice}`);
       if (form.dueDate !== (service.dueDate ? new Date(service.dueDate).toISOString().split("T")[0] : "")) changeLines.push(`Due date: ${service.dueDate ?? ""} → ${form.dueDate}`);
@@ -781,10 +781,10 @@ export default function EditServiceModal({
               />
             </div>
 
-            {/* Description */}
+            {/* Device Name */}
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">
-                {t("services.description", "Description")}
+                {t("services.description", "Device Name")}
               </label>
               <input
                 type="text"

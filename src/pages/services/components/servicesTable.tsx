@@ -358,7 +358,7 @@ const ServicesTable: React.FC<ServicesTableProps> = ({
                 {t("services.name", "Service Name")}
               </th>
               <th className={`px-4 py-3 ${isRTL ? "text-right" : "text-left"}`}>
-                {t("services.description", "Description")}
+                {t("services.description", "Device Name")}
               </th>
               <th className={`px-4 py-3 ${isRTL ? "text-right" : "text-left"}`}>
                 {t("services.notes", "Problems/Breakdown")}
@@ -433,7 +433,7 @@ const ServicesTable: React.FC<ServicesTableProps> = ({
                     <div className="text-sm text-foreground whitespace-normal break-words max-w-xs">
                       {service.description || (
                         <span className="text-muted-foreground italic">
-                          {t("services.noDescription", "No description")}
+                          {t("services.noDescription", "No device name")}
                         </span>
                       )}
                     </div>

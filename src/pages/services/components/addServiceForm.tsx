@@ -1176,7 +1176,7 @@ export default function AddServiceForm({
         const changeLines: string[] = [];
         if (serviceData.name !== (editingService.name ?? "")) changeLines.push(`Name: ${editingService.name ?? ""} → ${serviceData.name}`);
         if (serviceData.serviceType !== (editingService.serviceType ?? "")) changeLines.push(`Service type: ${editingService.serviceType ?? ""} → ${serviceData.serviceType}`);
-        if ((serviceData.description ?? "") !== (editingService.description ?? "")) changeLines.push(`Description: ${editingService.description ?? ""} → ${serviceData.description ?? ""}`);
+        if ((serviceData.description ?? "") !== (editingService.description ?? "")) changeLines.push(`Device Name: ${editingService.description ?? ""} → ${serviceData.description ?? ""}`);
         if (serviceData.costPrice !== (editingService.costPrice ?? 0)) changeLines.push(`Cost price: ${editingService.costPrice ?? 0} → ${serviceData.costPrice}`);
         if (serviceData.servicePrice !== (editingService.servicePrice ?? 0)) changeLines.push(`Service price: ${editingService.servicePrice ?? 0} → ${serviceData.servicePrice}`);
         const oldDue = editingService.dueDate ? new Date(editingService.dueDate).toISOString().split("T")[0] : "";
@@ -1570,7 +1570,7 @@ export default function AddServiceForm({
             />
             </Legend>
             <Legend>
-              <label>{t("services.description", "Description")}</label>
+              <label>{t("services.description", "Device Name")}</label>
               <input
                 ref={descriptionRef}
                 type="text"

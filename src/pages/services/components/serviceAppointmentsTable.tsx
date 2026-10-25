@@ -127,7 +127,7 @@ export default function ServiceAppointmentsTable({
               {t("services.type", "Type")}
             </th>
             <th className="text-left p-4 font-medium text-muted-foreground">
-              {t("services.description", "Description")}
+              {t("services.description", "Device Name")}
             </th>
             <th className="text-left p-4 font-medium text-muted-foreground">
               {t("services.dueDate", "Due Date")}
@@ -182,12 +182,12 @@ export default function ServiceAppointmentsTable({
                 </span>
               </td>
 
-              {/* Description */}
+              {/* Device Name */}
               <td className="p-4">
                 <div className="text-sm text-foreground whitespace-normal break-words max-w-xs">
                   {appointment.description || (
                     <span className="text-muted-foreground italic">
-                      {t("services.noDescription", "No description")}
+                      {t("services.noDescription", "No device name")}
                     </span>
                   )}
                 </div>
