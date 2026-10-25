@@ -1098,6 +1098,9 @@ html.dark .stock-negative { color:#f87171; }
 .stock-table-scroll{width:100%;max-width:100%;overflow:auto;border:1px solid var(--line);border-radius:12px;background:var(--card);-webkit-overflow-scrolling:touch}
 .stock-data-table{width:100%;min-width:1050px;border-collapse:separate;border-spacing:0;text-align:start;font-size:13px}
 .stock-data-table th,.stock-data-table td{padding:11px 12px;border-bottom:1px solid var(--line);white-space:nowrap;vertical-align:middle}
+/* Keep descriptive columns left-aligned, but align stock figures for easier comparison. */
+.stock-data-table th:nth-child(n+3):not(:last-child),.stock-data-table td:nth-child(n+3):not(:last-child){text-align:right}
+.stock-data-table.stock-category-table th:nth-child(n+2):not(:last-child),.stock-data-table.stock-category-table td:nth-child(n+2):not(:last-child){text-align:right}
 .stock-data-table th{position:sticky;top:0;background:var(--muted-bg);color:var(--mobile-muted);font-weight:650;z-index:1}
 .stock-data-table tbody tr:last-child td{border-bottom:0}
 .stock-data-table tbody tr:hover{background:var(--muted-bg)}
