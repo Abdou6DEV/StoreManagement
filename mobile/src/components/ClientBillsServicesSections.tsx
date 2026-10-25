@@ -103,6 +103,7 @@ type LabelKey =
   | "itemUnavailable"
   | "average"
   | "profit"
+  | "showProfit"
   | "completionRate"
   | "incompleteServices"
   | "dueSoonThresholdNote";
@@ -144,7 +145,7 @@ const LABELS: Record<MobileLanguage, Record<LabelKey, string>> = {
     limitedBills: "Bill list", limitedBillPayments: "Bill payment history",
     limitedAppointments: "Service requests", limitedCatalog: "Service catalog",
     billPayments: "Bill payment history", billUnavailable: "Bill details unavailable",
-    itemUnavailable: "Item details unavailable", average: "average", profit: "Profit",
+    itemUnavailable: "Item details unavailable", average: "average", profit: "Profit", showProfit: "Show profit",
     completionRate: "Completion rate", incompleteServices: "Incomplete",
     dueSoonThresholdNote: "Due-soon uses the 2-day default; the desktop threshold setting is not synced to the PWA.",
   },
@@ -184,7 +185,7 @@ const LABELS: Record<MobileLanguage, Record<LabelKey, string>> = {
     limitedBillPayments: "Historique des paiements de factures",
     limitedAppointments: "Demandes de service", limitedCatalog: "Catalogue des services",
     billPayments: "Historique des paiements de factures", billUnavailable: "Détails de la facture indisponibles",
-    itemUnavailable: "Détails de l’article indisponibles", average: "moy.", profit: "Bénéfice",
+    itemUnavailable: "Détails de l’article indisponibles", average: "moy.", profit: "Bénéfice", showProfit: "Afficher le bénéfice",
     completionRate: "Taux de réalisation", incompleteServices: "Incomplets",
     dueSoonThresholdNote: "L’échéance proche utilise la valeur par défaut de 2 jours ; le réglage du bureau n’est pas synchronisé.",
   },
@@ -224,7 +225,7 @@ const LABELS: Record<MobileLanguage, Record<LabelKey, string>> = {
     limitedBillPayments: "سجل دفعات الفواتير",
     limitedAppointments: "طلبات الخدمة", limitedCatalog: "دليل الخدمات",
     billPayments: "سجل دفعات الفواتير", billUnavailable: "تفاصيل الفاتورة غير متاحة",
-    itemUnavailable: "تفاصيل العنصر غير متاحة", average: "متوسط", profit: "الربح",
+    itemUnavailable: "تفاصيل العنصر غير متاحة", average: "متوسط", profit: "الربح", showProfit: "إظهار الربح",
     completionRate: "معدل الإنجاز", incompleteServices: "غير مكتملة",
     dueSoonThresholdNote: "تستخدم حالة الاستحقاق القريب القيمة الافتراضية يومين؛ إعداد سطح المكتب غير متزامن مع التطبيق.",
   },
@@ -296,7 +297,7 @@ function StockStyleTable<T extends MobileRow>({
   stickyFirstColumn?: boolean;
 }) {
   const [sortId, setSortId] = useState(sorts[0]?.id ?? "");
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(7);
   const [page, setPage] = useState(1);
   const [tableScrolled, setTableScrolled] = useState(false);
   const sortedRows = useMemo(() => {
@@ -321,7 +322,7 @@ function StockStyleTable<T extends MobileRow>({
         <label className="mobile-select-control stock-filter-pagesize">
           <span>{pageSizeLabel}</span>
           <select value={pageSize} onChange={(event) => setPageSize(Number(event.target.value))}>
-            {[10, 20, 50, 100].map((size) => <option key={size} value={size}>{size}</option>)}
+            {[7, 10, 20, 50, 100].map((size) => <option key={size} value={size}>{size}</option>)}
           </select>
         </label>
       </div>
@@ -434,6 +435,7 @@ export function ClientsSection({
 }) {
   const labels = LABELS[language];
   const [selected, setSelected] = useState<MobileRow | null>(null);
+  const [showProfit, setShowProfit] = useState(false);
   const clients = useMemo(() => data.clients.filter((row) =>
     matchesQuery(row, query, ["name", "phone", "address", "notes"]),
   ), [data.clients, query]);
@@ -575,6 +577,7 @@ export function BillsSection({
   const [statusFilter, setStatusFilter] = useState("all");
   const [dueFilter, setDueFilter] = useState("all");
   const [selected, setSelected] = useState<MobileRow | null>(null);
+  const [showProfit, setShowProfit] = useState(false);
   const types = useMemo(() => [...new Set(data.bills.map((bill) => valueText(bill, "type")).filter(Boolean))].sort(), [data.bills]);
   const billTitles = useMemo(() => new Map(data.bills.map((bill) => [valueText(bill, "source_id"), valueText(bill, "title")])), [data.bills]);
   const bills = useMemo(() => data.bills.filter((bill) => {
@@ -746,6 +749,7 @@ export function ServicesSection({
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [selected, setSelected] = useState<MobileRow | null>(null);
+  const [showProfit, setShowProfit] = useState(false);
   const clientsById = useMemo(
     () => new Map(
       (permissions.can_access_clients ? data.clients : [])
@@ -798,23 +802,27 @@ export function ServicesSection({
 
   return (
     <>
-      <SearchRow query={query} onQueryChange={onQueryChange} label={labels.search} />
       {data.service_appointments.length >= 1000 || data.services.length >= 500 ? <LimitNotice>{labels.limitNotice}</LimitNotice> : null}
       <LimitNotice>{labels.dueSoonThresholdNote}</LimitNotice>
       <section className="mobile-subsection">
         <h2>{labels.appointments}</h2>
-        <div className="stock-filter-row">
+        <div className="stock-filter-row mobile-services-filters">
           <label className="mobile-select-control stock-filter-category"><span>{labels.status}</span><select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}><option value="all">{labels.allStatuses}</option><option value="completed">{labels.completed}</option><option value="incomplete">{labels.incomplete}</option><option value="overdue">{labels.overdue}</option><option value="dueSoon">{labels.dueSoon}</option></select></label>
-          <label className="mobile-select-control stock-filter-category"><span>{labels.from}</span><input type="date" value={fromDate} onChange={(event) => setFromDate(event.target.value)} /></label>
-          <label className="mobile-select-control stock-filter-category"><span>{labels.to}</span><input type="date" value={toDate} onChange={(event) => setToDate(event.target.value)} /></label>
+          <div className="mobile-services-date-range">
+            <label className="mobile-select-control"><span>{labels.from}</span><input type="date" value={fromDate} max={toDate || undefined} onChange={(event) => setFromDate(event.target.value)} /></label>
+            <span className="mobile-services-date-separator" aria-hidden="true">–</span>
+            <label className="mobile-select-control"><span>{labels.to}</span><input type="date" value={toDate} min={fromDate || undefined} onChange={(event) => setToDate(event.target.value)} /></label>
+          </div>
+          <label className="mobile-services-profit-toggle"><input type="checkbox" checked={showProfit} onChange={(event) => setShowProfit(event.target.checked)} /><span>{labels.showProfit}</span></label>
         </div>
+        <div className="mobile-services-search"><SearchRow query={query} onQueryChange={onQueryChange} label={labels.search} /></div>
         <StockStyleTable
           rows={appointments}
           labels={labels}
           ariaLabel={labels.appointments}
           pageSizeLabel={labels.pageSize}
           empty={labels.empty}
-          minWidth={1100}
+          minWidth={showProfit ? 1200 : 1100}
           stickyFirstColumn
           sorts={[
             { id: "desktop", label: labels.desktopDefault, compare: compareDesktopDefault },
@@ -823,9 +831,8 @@ export function ServicesSection({
             { id: "name", label: labels.name, compare: compareName },
           ]}
           columns={[
-            { key: "name", label: labels.name, render: (row) => <><strong>{valueText(row, "name") || "—"}</strong><br /><span>{valueText(row, "service_type") || "—"}</span></> },
+            { key: "name", label: labels.name, render: (row) => <div className="mobile-services-name-cell"><strong title={valueText(row, "name")}>{valueText(row, "name") || "—"}</strong><span title={valueText(row, "service_type")}>{valueText(row, "service_type") || "—"}</span></div> },
             { key: "description", label: labels.description, render: (row) => valueText(row, "description") || "—" },
-            { key: "notes", label: labels.notes, render: (row) => valueText(row, "notes") || "—" },
             { key: "status", label: labels.status, render: (row) => {
               const status = serviceStatus(row, language);
               return <><span className={`record-status ${status.className}`}>{status.label}</span>{isServiceDueSoon(row) ? <span className="record-status waiting">{labels.dueSoon}</span> : null}</>;
@@ -836,7 +843,8 @@ export function ServicesSection({
               const client = clientsById.get(linkedClientId);
               return client ? <>{valueText(client, "name") || "—"}{valueText(client, "phone") ? <small className="stock-row-subtext">{valueText(client, "phone")}</small> : null}</> : linkedClientId ? labels.clientUnavailable : labels.noClient;
             } },
-            { key: "price", label: labels.price, align: "end", render: (row) => displayMoney(valueNumber(row, "service_price"), language) },
+            { key: "price", label: labels.price, align: "end", render: (row) => <div className="mobile-services-price-cell"><strong>{displayMoney(valueNumber(row, "service_price"), language)}</strong>{showProfit ? (() => { const profit = valueNumber(row, "service_price") - valueNumber(row, "cost_price"); return <span className={profit >= 0 ? "mobile-services-profit" : "mobile-services-loss"}>{profit > 0 ? "+" : ""}{displayMoney(profit, language)}</span>; })() : null}</div> },
+            { key: "notes", label: labels.notes, render: (row) => valueText(row, "notes") || "—" },
             { key: "due", label: labels.dueDate, render: (row) => displayDate(valueText(row, "due_date"), language) },
             { key: "view", label: labels.view, render: (row) => <DetailButton label={labels.view} onClick={() => setSelected(row)} /> },
           ]}
