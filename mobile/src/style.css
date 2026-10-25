@@ -1104,11 +1104,11 @@ html.dark .stock-negative { color:#f87171; }
 .stock-data-table tbody tr.is-low{background:color-mix(in srgb,#f59e0b 7%,var(--card))}
 .stock-data-table tbody tr.is-out{background:color-mix(in srgb,#ef4444 7%,var(--card))}
 .stock-data-table tfoot td{position:sticky;bottom:0;background:var(--muted-bg);font-weight:700;border-top:1px solid var(--line);border-bottom:0}
-.stock-table-totals{display:flex;align-items:baseline;flex-wrap:nowrap;gap:18px;margin-top:10px;padding:8px 0;border-top:1px solid var(--line);overflow-x:auto;white-space:nowrap;-webkit-overflow-scrolling:touch}
-.stock-table-totals>div{display:flex;align-items:baseline;flex:0 0 auto;gap:5px;min-width:0}
-.stock-table-totals span{color:var(--mobile-muted);font-size:12px;font-weight:500}
-.stock-table-totals strong{font-size:13px;font-weight:750;font-variant-numeric:tabular-nums}
-@media(max-width:600px){.stock-table-totals{gap:14px}.stock-table-totals span{font-size:11px}.stock-table-totals strong{font-size:12px}}
+.stock-table-totals{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px 16px;margin-top:10px;padding:10px 0 2px;border-top:1px solid var(--line)}
+.stock-table-totals>div{display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-width:0}
+.stock-table-totals span{color:var(--mobile-muted);font-size:12px;font-weight:500;line-height:1.25}
+.stock-table-totals strong{font-size:13px;font-weight:750;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+@media(max-width:600px){.stock-table-totals{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.stock-table-totals span{font-size:11px}.stock-table-totals strong{font-size:12px}}
 .stock-table-product-name{display:block;font-weight:650;width:100%;min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .stock-table-product-name small{display:block;width:100%;min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:3px;color:var(--mobile-muted);font-weight:400;font-size:11px}
 .stock-money-cell{font-variant-numeric:tabular-nums}
