@@ -68,7 +68,7 @@ export function StockSection({ data, language, query, onQueryChange }: { data: M
   const [noBarcode, setNoBarcode] = useState(false);
   const [salesSort, setSalesSort] = useState<"none" | "best" | "worst">("none");
   const [sort, setSort] = useState<SortMode>("quantity");
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(7);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<MobileRow | null>(null);
@@ -147,7 +147,7 @@ export function StockSection({ data, language, query, onQueryChange }: { data: M
           {!data.categories_available ? [...new Set(data.products.map((row) => str(row.category_name)).filter(Boolean))].map((name) => <option key={name} value={name}>{name}</option>) : null}
         </select></label>
         <label className="mobile-select-control stock-filter-sort"><span>{t.actions}</span><select value={sort} onChange={(event) => setSort(event.target.value as SortMode)} disabled={salesSort !== "none"}><option value="quantity">{t.quantity} ↓</option><option value="name">A–Z</option><option value="price">{t.selling} ↓</option></select></label>
-        <label className="mobile-select-control stock-filter-pagesize"><span>{t.pageSize}</span><select value={pageSize} onChange={(event) => setPageSize(Number(event.target.value))}>{[5,10,25,50,100].map((size) => <option key={size} value={size}>{size}</option>)}</select></label>
+        <label className="mobile-select-control stock-filter-pagesize"><span>{t.pageSize}</span><select value={pageSize} onChange={(event) => setPageSize(Number(event.target.value))}>{[7,10,15,20,50].map((size) => <option key={size} value={size}>{size}</option>)}</select></label>
       </div>
       <div className="stock-filter-toggle-row">
         <button type="button" className={`stock-filter-toggle ${filtersOpen || activeFilters ? "active" : ""}`} aria-expanded={filtersOpen} onClick={() => setFiltersOpen((open) => !open)}><Filter size={16} />{t.filters}<span className="stock-filter-toggle-count">{activeFilters ? "•" : ""}</span><span aria-hidden="true" className={`stock-filter-toggle-chevron ${filtersOpen ? "open" : ""}`}>⌄</span></button>
@@ -188,7 +188,7 @@ export function StockSection({ data, language, query, onQueryChange }: { data: M
         </table>
       </div>}
     </> : <>
-      <div className="stock-sort-row"><label className="mobile-select-control"><span>{t.pageSize}</span><select value={pageSize} onChange={(event) => setPageSize(Number(event.target.value))}>{[5,10,25,50,100].map((size) => <option key={size} value={size}>{size}</option>)}</select></label></div>
+      <div className="stock-sort-row"><label className="mobile-select-control"><span>{t.pageSize}</span><select value={pageSize} onChange={(event) => setPageSize(Number(event.target.value))}>{[7,10,15,20,50].map((size) => <option key={size} value={size}>{size}</option>)}</select></label></div>
       {categories.length === 0 ? <p className="mobile-empty">{t.empty}</p> : <div className="stock-table-scroll" role="region" aria-label={t.categories} tabIndex={0}>
         <table className="stock-data-table stock-category-table">
           <thead><tr><th>{t.category}</th><th>{t.productCount}</th><th>{t.totalQuantity}</th><th>{t.stockCost}</th><th>{t.stockValue}</th><th>{t.potentialProfit}</th><th>{t.view}</th></tr></thead>
