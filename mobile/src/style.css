@@ -1224,17 +1224,31 @@ html.dark .stock-negative { color:#f87171; }
 
 
 /* Services table controls and compact sticky service identity. */
+.stock-table-toolbar {
+  min-width: 0;
+  margin: 0 0 10px;
+}
+.mobile-services-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+}
 .mobile-services-search {
   display: flex;
   justify-content: flex-end;
-  margin: 0 0 10px;
+  flex: 1 1 360px;
+  min-width: 0;
 }
 .mobile-services-search .stock-search-row {
   width: min(100%, 360px);
-  margin-inline-start: auto;
+  min-width: 0;
+  margin: 0;
 }
 .mobile-services-filters {
   align-items: end;
+  flex-wrap: wrap;
   gap: 10px;
 }
 .mobile-services-date-range {
@@ -1309,9 +1323,22 @@ html.dark .stock-negative { color:#f87171; }
 }
 @media (max-width: 640px) {
   .mobile-services-filters { align-items: stretch; }
-  .mobile-services-date-range { flex-basis: 100%; }
-  .mobile-services-profit-toggle { min-height: 34px; }
+  .mobile-services-filters > .stock-filter-category,
+  .mobile-services-date-range { flex: 1 1 100%; }
+  .mobile-services-date-range { gap: 6px; }
+  .mobile-services-date-range .mobile-select-control { flex: 1 1 0; }
+  .mobile-services-date-range input[type="date"] { min-height: 38px; font-size: 13px; }
+  .mobile-services-date-separator { flex: 0 0 auto; padding-bottom: 10px; }
+  .mobile-services-toolbar { gap: 8px; }
+  .mobile-services-profit-toggle { flex: 0 0 auto; min-height: 38px; font-size: 12px; }
+  .mobile-services-profit-toggle input { flex: 0 0 16px; margin: 0; }
+  .mobile-services-search { flex: 1 1 auto; }
   .mobile-services-search .stock-search-row { width: 100%; }
+}
+@media (max-width: 380px) {
+  .mobile-services-toolbar { align-items: stretch; flex-direction: column-reverse; }
+  .mobile-services-profit-toggle { align-self: flex-start; }
+  .mobile-services-search { flex-basis: auto; }
 }
 
 .mobile-services-loss { color: #dc2626; font-size: 12px; font-weight: 750; }

@@ -282,6 +282,7 @@ function StockStyleTable<T extends MobileRow>({
   labels,
   ariaLabel,
   footer,
+  toolbar,
   minWidth,
   stickyFirstColumn = false,
 }: {
@@ -293,6 +294,7 @@ function StockStyleTable<T extends MobileRow>({
   labels: Record<LabelKey, string>;
   ariaLabel: string;
   footer?: ReactNode;
+  toolbar?: ReactNode;
   minWidth: number;
   stickyFirstColumn?: boolean;
 }) {
@@ -326,6 +328,7 @@ function StockStyleTable<T extends MobileRow>({
           </select>
         </label>
       </div>
+      {toolbar ? <div className="stock-table-toolbar">{toolbar}</div> : null}
       {rows.length === 0 ? <p className="mobile-empty">{empty}</p> : (
         <div className={"stock-table-scroll" + (stickyFirstColumn ? " mobile-services-table-scroll" + (tableScrolled ? " is-horizontally-scrolled" : "") : "")} onScroll={stickyFirstColumn ? (event) => setTableScrolled(event.currentTarget.scrollLeft !== 0) : undefined} role="region" aria-label={ariaLabel} tabIndex={0}>
           <table className="stock-data-table mobile-record-data-table" style={{ minWidth }}>
@@ -813,9 +816,7 @@ export function ServicesSection({
             <span className="mobile-services-date-separator" aria-hidden="true">–</span>
             <label className="mobile-select-control"><span>{labels.to}</span><input type="date" value={toDate} min={fromDate || undefined} onChange={(event) => setToDate(event.target.value)} /></label>
           </div>
-          <label className="mobile-services-profit-toggle"><input type="checkbox" checked={showProfit} onChange={(event) => setShowProfit(event.target.checked)} /><span>{labels.showProfit}</span></label>
         </div>
-        <div className="mobile-services-search"><SearchRow query={query} onQueryChange={onQueryChange} label={labels.search} /></div>
         <StockStyleTable
           rows={appointments}
           labels={labels}
@@ -824,6 +825,7 @@ export function ServicesSection({
           empty={labels.empty}
           minWidth={showProfit ? 1200 : 1100}
           stickyFirstColumn
+          toolbar={<div className="mobile-services-toolbar"><label className="mobile-services-profit-toggle"><input type="checkbox" checked={showProfit} onChange={(event) => setShowProfit(event.target.checked)} /><span>{labels.showProfit}</span></label><div className="mobile-services-search"><SearchRow query={query} onQueryChange={onQueryChange} label={labels.search} /></div></div>}
           sorts={[
             { id: "desktop", label: labels.desktopDefault, compare: compareDesktopDefault },
             { id: "due", label: labels.dueDate, compare: compareDue },
