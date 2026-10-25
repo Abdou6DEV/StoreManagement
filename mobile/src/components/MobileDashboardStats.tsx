@@ -323,8 +323,15 @@ export function MobileStockStats({
   const productsComplete = products.length < 2000;
   const salesComplete = permissions.can_access_history && data.sales_history_available && data.sales.length < 5000;
   const itemsComplete = salesComplete && data.sale_items.length < 10000;
-  const productMap = new Map(products.map((product) => [`product:${String(product.source_id)}`, product]));
-  const manualProductMap = new Map(data.manual_products.map((product) => [`manual:${String(product.source_id)}`, { ...product, category_name: product.type }]));
+  const productMap = new Map<string, MobileRow>(
+    products.map((product) => [`product:${String(product.source_id)}`, product]),
+  );
+  const manualProductMap = new Map<string, MobileRow>(
+    data.manual_products.map((product) => [
+      `manual:${String(product.source_id)}`,
+      { ...product, category_name: product.type },
+    ]),
+  );
   const saleIds = new Set(data.sales.map((sale) => String(sale.source_id)));
   const soldByProduct = new Map<string, number>();
   for (const item of data.sale_items) {

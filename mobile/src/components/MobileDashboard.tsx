@@ -17,6 +17,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import type { XAxisTickContentProps } from "recharts";
 import {
   DashboardMetric,
   DashboardPanel,
@@ -283,7 +284,7 @@ export function MobileDashboard({
     const point = chartData.find((entry) => entry.period === String(value));
     return point && !point.future && point.profit !== 0 ? "var(--foreground)" : "var(--muted-foreground)";
   };
-  const dailyDateTick = (props: { x?: number; y?: number; payload?: { value?: string } }) => {
+  const dailyDateTick = (props: XAxisTickContentProps) => {
     const rawDay = String(props.payload?.value ?? "");
     const day = rawDay.padStart(2, "0");
     const color = axisTickColor(rawDay);
@@ -301,7 +302,7 @@ export function MobileDashboard({
       </g>
     );
   };
-  const chartPeriodTick = (props: { x?: number; y?: number; payload?: { value?: string } }) => {
+  const chartPeriodTick = (props: XAxisTickContentProps) => {
     const value = String(props.payload?.value ?? "");
     const color = axisTickColor(value);
     const active = color === "var(--foreground)";
