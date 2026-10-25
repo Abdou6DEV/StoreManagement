@@ -303,12 +303,11 @@ export function StockSection({ data, language, query, onQueryChange }: { data: M
         </section>
         <section className="stock-detail-history-section">
           <div className="stock-history-heading"><h3>{t.purchaseHistory}</h3><div><span>{t.totalPurchases}: {purchaseSummary.count}</span><span>{t.totalQuantityPurchased}: {new Intl.NumberFormat(language).format(purchaseSummary.quantity)}</span><span>{t.totalCost}: {money(purchaseSummary.cost, language)}</span></div></div>
-          {linkedPurchaseItems.length ? <div className="stock-history-table-wrap"><table className="stock-history-table"><thead><tr><th>{t.purchaseId}</th><th>{t.date}</th><th>{t.supplier}</th><th>{t.quantity}</th><th>{t.price}</th><th>{t.total}</th></tr></thead><tbody>{linkedPurchaseItems.slice(0,purchaseLimit).map((item,index) => {
+          {linkedPurchaseItems.length ? <div className="stock-history-table-wrap"><table className="stock-history-table"><thead><tr><th>{t.date}</th><th>{t.supplier}</th><th>{t.quantity}</th><th>{t.price}</th><th>{t.total}</th></tr></thead><tbody>{linkedPurchaseItems.slice(0,purchaseLimit).map((item,index) => {
             const purchase = data.purchases.find((row) => str(row.source_id) === str(item.purchase_source_id));
             const supplier = data.suppliers.find((row) => str(row.source_id) === str(purchase?.supplier_source_id));
             const qty = num(item.quantity), price = num(item.price);
             return <tr key={str(item.source_id) || `${str(item.purchase_source_id)}-${index}`}>
-              <td className="stock-history-id">#{str(purchase?.source_id || item.purchase_source_id).slice(-8) || "—"}</td>
               <td>{dateLabel(item.source_created_at ?? purchase?.source_created_at,language)}</td>
               <td>{str(supplier?.name) || t.noSupplier}</td>
               <td><span className="stock-history-quantity stock-history-quantity-in">+{new Intl.NumberFormat(language).format(qty)}</span></td>
@@ -319,12 +318,11 @@ export function StockSection({ data, language, query, onQueryChange }: { data: M
         </section>
         <section className="stock-detail-history-section">
           <div className="stock-history-heading"><h3>{t.salesHistory}</h3><div><span>{t.totalSales}: {saleSummary.count}</span><span>{t.totalQuantitySold}: {new Intl.NumberFormat(language).format(saleSummary.quantity)}</span><span>{t.totalRevenue}: {money(saleSummary.revenue, language)}</span></div></div>
-          {!data.sales_history_available ? <p className="stock-detail-muted">{t.salesHistoryUnavailable} {t.availableHistory}</p> : linkedSaleItems.length ? <div className="stock-history-table-wrap"><table className="stock-history-table"><thead><tr><th>{t.saleId}</th><th>{t.date}</th><th>{t.client}</th><th>{t.quantity}</th><th>{t.price}</th><th>{t.total}</th></tr></thead><tbody>{linkedSaleItems.slice(0,salesLimit).map((item,index) => {
+          {!data.sales_history_available ? <p className="stock-detail-muted">{t.salesHistoryUnavailable} {t.availableHistory}</p> : linkedSaleItems.length ? <div className="stock-history-table-wrap"><table className="stock-history-table"><thead><tr><th>{t.date}</th><th>{t.client}</th><th>{t.quantity}</th><th>{t.price}</th><th>{t.total}</th></tr></thead><tbody>{linkedSaleItems.slice(0,salesLimit).map((item,index) => {
             const sale = data.sales.find((row) => str(row.source_id) === str(item.sale_source_id));
             const client = data.clients.find((row) => str(row.source_id) === str(sale?.client_source_id));
             const qty = num(item.quantity), price = num(item.price);
             return <tr key={str(item.source_id) || `${str(item.sale_source_id)}-${index}`}>
-              <td className="stock-history-id">#{str(sale?.source_id || item.sale_source_id).slice(-8) || "—"}</td>
               <td>{dateLabel(sale?.source_created_at ?? item.source_updated_at,language)}</td>
               <td>{str(client?.name) || t.noClient}</td>
               <td><span className="stock-history-quantity stock-history-quantity-out">−{new Intl.NumberFormat(language).format(qty)}</span></td>
