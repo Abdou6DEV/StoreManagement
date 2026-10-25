@@ -1115,7 +1115,7 @@ html.dark .stock-negative { color:#f87171; }
 .stock-table-product-name-wrap{position:relative;display:block;width:100%;min-width:0;max-width:100%}
 .stock-table-product-name{display:block;width:100%;min-width:0;max-width:100%;padding:0;border:0;color:inherit;background:transparent;font:inherit;font-weight:650;text-align:start;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
 .stock-table-product-name:focus-visible{outline:2px solid color-mix(in oklch,var(--primary) 60%,transparent);outline-offset:2px;border-radius:2px}
-.stock-product-name-tooltip{position:fixed;z-index:60;top:18%;left:50%;width:min(90vw,420px);max-height:40dvh;overflow:auto;transform:translateX(-50%);padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--fg);box-shadow:0 10px 30px rgb(0 0 0 / 22%);font-size:14px;font-weight:650;line-height:1.45;white-space:normal;overflow-wrap:anywhere;pointer-events:none}
+.stock-product-name-tooltip{position:fixed;z-index:60;width:min(90vw,420px);max-height:40dvh;overflow:auto;transform:translate(-50%,-100%);padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--fg);box-shadow:0 10px 30px rgb(0 0 0 / 22%);font-size:14px;font-weight:650;line-height:1.45;white-space:normal;overflow-wrap:anywhere;pointer-events:none}
 .stock-table-product-name-wrap small{display:block;width:100%;min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:3px;color:var(--mobile-muted);font-weight:400;font-size:11px}
 /* Slightly stronger emphasis makes numeric and displayed values easier to scan across the PWA. */
 .mobile-metric strong{font-weight:750}
