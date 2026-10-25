@@ -14,6 +14,11 @@ type Labels = {
   stockValue: string; potentialProfit: string; pageSize: string; page: string; of: string;
   previous: string; next: string; empty: string; productInfo: string; barcode: string; type: string;
   purchaseHistory: string; salesHistory: string; close: string; lowStockNote: string; availableHistory: string;
+  currentStock: string; profitPerUnit: string; totalProfit: string; profitAnalysis: string; potentialProfit: string;
+  actualProfit: string; profitMargin: string; roi: string; totalPurchases: string; totalQuantityPurchased: string;
+  totalCost: string; totalSales: string; totalQuantitySold: string; totalRevenue: string; purchaseId: string; saleId: string;
+  date: string; supplier: string; client: string; price: string; total: string; noSupplier: string; noClient: string;
+  noPurchaseHistory: string; noSalesHistory: string; showMore: string; showLess: string; more: string;
 };
 const LABELS: Record<MobileLanguage, Labels> = {
   en: {
@@ -26,6 +31,7 @@ const LABELS: Record<MobileLanguage, Labels> = {
     purchaseHistory:"Purchase history",salesHistory:"Sales history",close:"Close",
     lowStockNote:"Low-stock threshold is set to 5 because the desktop setting isn't synced to the PWA.",
     availableHistory:"*Sold quantity and linked histories use only the sales records currently available in the PWA, not guaranteed lifetime totals.",
+    currentStock:"Current stock",profitPerUnit:"Profit per unit",totalProfit:"Total profit",profitAnalysis:"Profit analysis",potentialProfit:"Potential profit",actualProfit:"Actual profit",profitMargin:"Profit margin",roi:"ROI",totalPurchases:"Purchase entries",totalQuantityPurchased:"Quantity purchased",totalCost:"Total cost",totalSales:"Sale entries",totalQuantitySold:"Quantity sold",totalRevenue:"Total revenue",purchaseId:"Purchase ID",saleId:"Sale ID",date:"Date",supplier:"Supplier",client:"Client",price:"Unit price",total:"Total",noSupplier:"Supplier unavailable",noClient:"Client unavailable",noPurchaseHistory:"No purchase history available.",noSalesHistory:"No sales history available.",showMore:"Show more",showLess:"Show less",more:"more",
   },
   fr: {
     products:"Produits",search:"Rechercher",categories:"Catégories",category:"Catégorie",allCategories:"Toutes les catégories",filters:"Filtres",
@@ -37,6 +43,7 @@ const LABELS: Record<MobileLanguage, Labels> = {
     purchaseHistory:"Historique des achats",salesHistory:"Historique des ventes",close:"Fermer",
     lowStockNote:"Le seuil de stock faible est fixé à 5, car le réglage du bureau n’est pas synchronisé avec la PWA.",
     availableHistory:"*Les quantités vendues et historiques liés utilisent uniquement les ventes disponibles dans la PWA ; le total historique complet n’est pas garanti.",
+    currentStock:"Stock actuel",profitPerUnit:"Bénéfice par unité",totalProfit:"Bénéfice total",profitAnalysis:"Analyse du bénéfice",potentialProfit:"Bénéfice potentiel",actualProfit:"Bénéfice réel",profitMargin:"Marge bénéficiaire",roi:"ROI",totalPurchases:"Lignes d’achat",totalQuantityPurchased:"Quantité achetée",totalCost:"Coût total",totalSales:"Lignes de vente",totalQuantitySold:"Quantité vendue",totalRevenue:"Chiffre d’affaires total",purchaseId:"N° d’achat",saleId:"N° de vente",date:"Date",supplier:"Fournisseur",client:"Client",price:"Prix unitaire",total:"Total",noSupplier:"Fournisseur indisponible",noClient:"Client indisponible",noPurchaseHistory:"Aucun historique d’achat disponible.",noSalesHistory:"Aucun historique de vente disponible.",showMore:"Afficher plus",showLess:"Afficher moins",more:"de plus",
   },
   ar: {
     products:"المنتجات",search:"بحث",categories:"الفئات",category:"الفئة",allCategories:"كل الفئات",filters:"الفلاتر",
@@ -48,6 +55,7 @@ const LABELS: Record<MobileLanguage, Labels> = {
     purchaseHistory:"سجل المشتريات",salesHistory:"سجل المبيعات",close:"إغلاق",
     lowStockNote:"تم اعتماد حد 5 وحدات للمخزون المنخفض لأن إعداد سطح المكتب غير متاح في تطبيق الهاتف.",
     availableHistory:"*الكميات المباعة والسجلات المرتبطة تعتمد فقط على سجلات المبيعات المتاحة حالياً في التطبيق.",
+    currentStock:"المخزون الحالي",profitPerUnit:"الربح لكل وحدة",totalProfit:"إجمالي الربح",profitAnalysis:"تحليل الربح",potentialProfit:"الربح المحتمل",actualProfit:"الربح الفعلي",profitMargin:"هامش الربح",roi:"العائد على الاستثمار",totalPurchases:"عمليات الشراء",totalQuantityPurchased:"الكمية المشتراة",totalCost:"التكلفة الإجمالية",totalSales:"عمليات البيع",totalQuantitySold:"الكمية المباعة",totalRevenue:"إجمالي الإيرادات",purchaseId:"رقم الشراء",saleId:"رقم البيع",date:"التاريخ",supplier:"المورد",client:"الزبون",price:"سعر الوحدة",total:"الإجمالي",noSupplier:"بيانات المورد غير متاحة",noClient:"بيانات الزبون غير متاحة",noPurchaseHistory:"لا يوجد سجل مشتريات متاح.",noSalesHistory:"لا يوجد سجل مبيعات متاح.",showMore:"عرض المزيد",showLess:"عرض أقل",more:"المزيد",
   },
 };
 const num = (value: unknown): number => { const parsed = typeof value === "number" ? value : Number(value ?? 0); return Number.isFinite(parsed) ? parsed : 0; };
@@ -74,6 +82,8 @@ export function StockSection({ data, language, query, onQueryChange }: { data: M
   const [selected, setSelected] = useState<MobileRow | null>(null);
   const [activeProductName, setActiveProductName] = useState<string | null>(null);
   const [activeProductNamePosition, setActiveProductNamePosition] = useState<{ top: number; left: number } | null>(null);
+  const [purchaseLimit, setPurchaseLimit] = useState(5);
+  const [salesLimit, setSalesLimit] = useState(5);
   const [stockTableScrolled, setStockTableScrolled] = useState(false);
   useEffect(() => setPage(1), [query, category, lowStock, outOfStock, noBarcode, salesSort, sort, pageSize, view]);
   useEffect(() => {
@@ -153,8 +163,36 @@ export function StockSection({ data, language, query, onQueryChange }: { data: M
   const visibleProducts = filteredProducts.slice((currentPage - 1) * pageSize, currentPage * pageSize);
   const visibleCategories = categories.slice((currentPage - 1) * pageSize, currentPage * pageSize);
   const activeFilters = lowStock || outOfStock || noBarcode || Boolean(category) || salesSort !== "none";
-  const linkedPurchaseItems = selected ? data.purchase_items.filter((item) => str(item.product_source_id) === productKey(selected)) : [];
-  const linkedSaleItems = selected ? data.sale_items.filter((item) => str(item.product_source_id) === productKey(selected)) : [];
+  const linkedPurchaseItems = useMemo(() => {
+    if (!selected) return [];
+    return data.purchase_items.filter((item) => str(item.product_source_id) === productKey(selected))
+      .sort((a, b) => {
+        const purchaseA = data.purchases.find((row) => str(row.source_id) === str(a.purchase_source_id));
+        const purchaseB = data.purchases.find((row) => str(row.source_id) === str(b.purchase_source_id));
+        return new Date(str(purchaseB?.source_created_at ?? b.source_created_at)).getTime() - new Date(str(purchaseA?.source_created_at ?? a.source_created_at)).getTime();
+      });
+  }, [selected, data.purchase_items, data.purchases]);
+  const linkedSaleItems = useMemo(() => {
+    if (!selected) return [];
+    return data.sale_items.filter((item) => str(item.product_source_id) === productKey(selected))
+      .sort((a, b) => {
+        const saleA = data.sales.find((row) => str(row.source_id) === str(a.sale_source_id));
+        const saleB = data.sales.find((row) => str(row.source_id) === str(b.sale_source_id));
+        return new Date(str(saleB?.source_created_at ?? b.source_updated_at)).getTime() - new Date(str(saleA?.source_created_at ?? a.source_updated_at)).getTime();
+      });
+  }, [selected, data.sale_items, data.sales]);
+  const purchaseSummary = useMemo(() => ({
+    count: linkedPurchaseItems.length,
+    quantity: linkedPurchaseItems.reduce((sum, item) => sum + num(item.quantity), 0),
+    cost: linkedPurchaseItems.reduce((sum, item) => sum + num(item.quantity) * num(item.price), 0),
+  }), [linkedPurchaseItems]);
+  const saleSummary = useMemo(() => ({
+    count: linkedSaleItems.length,
+    quantity: linkedSaleItems.reduce((sum, item) => sum + num(item.quantity), 0),
+    revenue: linkedSaleItems.reduce((sum, item) => sum + num(item.quantity) * num(item.price), 0),
+    profit: linkedSaleItems.reduce((sum, item) => sum + (num(item.price) - (item.bought_price == null ? num(selected?.bought_price) : num(item.bought_price))) * num(item.quantity), 0),
+  }), [linkedSaleItems, selected]);
+  useEffect(() => { setPurchaseLimit(5); setSalesLimit(5); }, [selected]);
 
   return <div className="stock-replica" dir={language === "ar" ? "rtl" : "ltr"}>
     <div className="stock-view-switch" role="tablist" aria-label={t.products}>
@@ -240,26 +278,55 @@ export function StockSection({ data, language, query, onQueryChange }: { data: M
       <div><span>{t.stockValue}:</span><strong>{money(categories.reduce((sum, item) => sum + item.selling, 0), language)}</strong></div>
     </div> : null}
     {selected ? <div className="stock-modal-backdrop" role="presentation" onClick={(event) => { if (event.target === event.currentTarget) setSelected(null); }}>
-      <section className="stock-detail-modal" role="dialog" aria-modal="true" aria-labelledby="stock-detail-title">
+      <section className="stock-detail-modal" role="dialog" aria-modal="true" aria-labelledby="stock-detail-title" dir={language === "ar" ? "rtl" : "ltr"}>
         <header><div><span>{t.productInfo}</span><h2 id="stock-detail-title">{str(selected.name) || "—"}</h2></div><button type="button" aria-label={t.close} onClick={() => setSelected(null)}><X size={20} /></button></header>
         <dl className="stock-detail-grid">
           <div><dt>{t.category}</dt><dd>{str(selected.category_name) || "—"}</dd></div>
-          <div><dt>{t.quantity}</dt><dd>{new Intl.NumberFormat(language).format(num(selected.quantity))}</dd></div>
+          <div><dt>{t.currentStock}</dt><dd>{new Intl.NumberFormat(language).format(num(selected.quantity))}</dd></div>
           <div><dt>{t.bought}</dt><dd>{money(num(selected.bought_price), language)}</dd></div>
           <div><dt>{t.selling}</dt><dd>{money(num(selected.selling_price), language)}</dd></div>
+          <div><dt>{t.profitPerUnit}</dt><dd className={num(selected.selling_price) >= num(selected.bought_price) ? "stock-positive" : "stock-negative"}>{money(num(selected.selling_price) - num(selected.bought_price), language)}</dd></div>
           <div><dt>{t.barcode}</dt><dd>{str(selected.codebar) || "—"}</dd></div>
           <div><dt>{t.type}</dt><dd>{str(selected.type) || "Product"}</dd></div>
         </dl>
-        <h3>{t.purchaseHistory}</h3>
-        {linkedPurchaseItems.length ? <div className="stock-history-list">{linkedPurchaseItems.slice(0,12).map((item,index) => {
-          const purchase = data.purchases.find((row) => str(row.source_id) === str(item.purchase_source_id));
-          return <div key={str(item.source_id) || index}><span>{dateLabel(purchase?.source_created_at ?? item.source_created_at,language)}</span><strong>{new Intl.NumberFormat(language).format(num(item.quantity))} × {money(num(item.price),language)}</strong></div>;
-        })}</div> : <p className="stock-detail-muted">—</p>}
-        <h3>{t.salesHistory}</h3>
-        {linkedSaleItems.length ? <div className="stock-history-list">{linkedSaleItems.slice(0,12).map((item,index) => {
-          const sale = data.sales.find((row) => str(row.source_id) === str(item.sale_source_id));
-          return <div key={str(item.source_id) || index}><span>{dateLabel(sale?.source_created_at ?? item.source_updated_at,language)}</span><strong>{new Intl.NumberFormat(language).format(num(item.quantity))} × {money(num(item.price),language)}</strong></div>;
-        })}</div> : <p className="stock-detail-muted">—</p>}
+        <section className="stock-profit-panel">
+          <h3>{t.profitAnalysis}</h3>
+          <div className="stock-profit-grid">
+            <div><span>{t.potentialProfit}</span><strong>{money((num(selected.selling_price) - num(selected.bought_price)) * num(selected.quantity), language)}</strong></div>
+            <div><span>{t.actualProfit}*</span><strong>{money(saleSummary.profit, language)}</strong></div>
+            <div><span>{t.profitMargin}</span><strong>{num(selected.selling_price) > 0 ? (((num(selected.selling_price) - num(selected.bought_price)) / num(selected.selling_price)) * 100).toFixed(1) : "0.0"}%</strong></div>
+            <div><span>{t.roi}</span><strong>{num(selected.bought_price) > 0 ? (((num(selected.selling_price) - num(selected.bought_price)) / num(selected.bought_price)) * 100).toFixed(1) : "0.0"}%</strong></div>
+          </div>
+          <p className="stock-detail-muted">{t.availableHistory}</p>
+        </section>
+        <section className="stock-detail-history-section">
+          <div className="stock-history-heading"><h3>{t.purchaseHistory}</h3><div><span>{t.totalPurchases}: {purchaseSummary.count}</span><span>{t.totalQuantityPurchased}: {new Intl.NumberFormat(language).format(purchaseSummary.quantity)}</span><span>{t.totalCost}: {money(purchaseSummary.cost, language)}</span></div></div>
+          {linkedPurchaseItems.length ? <div className="stock-detail-history-cards">{linkedPurchaseItems.slice(0,purchaseLimit).map((item,index) => {
+            const purchase = data.purchases.find((row) => str(row.source_id) === str(item.purchase_source_id));
+            const supplier = data.suppliers.find((row) => str(row.source_id) === str(purchase?.supplier_source_id));
+            const qty = num(item.quantity), price = num(item.price);
+            return <article className="stock-detail-history-card" key={str(item.source_id) || `${str(item.purchase_source_id)}-${index}`}>
+              <div className="stock-detail-history-top"><strong>#{str(purchase?.source_id || item.purchase_source_id).slice(-8) || "—"}</strong><time>{dateLabel(purchase?.source_created_at ?? item.source_created_at,language)}</time></div>
+              <div className="stock-detail-history-party"><span>{t.supplier}</span><strong>{str(supplier?.name) || t.noSupplier}</strong></div>
+              <div className="stock-detail-history-values"><div><span>{t.quantity}</span><strong>{new Intl.NumberFormat(language).format(qty)}</strong></div><div><span>{t.price}</span><strong>{money(price,language)}</strong></div><div><span>{t.total}</span><strong>{money(qty * price,language)}</strong></div></div>
+            </article>;
+          })}</div> : <p className="stock-detail-muted">{t.noPurchaseHistory}</p>}
+          {linkedPurchaseItems.length > 5 ? <button type="button" className="stock-history-more" onClick={() => setPurchaseLimit((limit) => limit >= linkedPurchaseItems.length ? 5 : Math.min(limit + 5, linkedPurchaseItems.length))}>{purchaseLimit >= linkedPurchaseItems.length ? t.showLess : `${t.showMore} (${Math.min(5, linkedPurchaseItems.length - purchaseLimit)} ${t.more})`}</button> : null}
+        </section>
+        <section className="stock-detail-history-section">
+          <div className="stock-history-heading"><h3>{t.salesHistory}</h3><div><span>{t.totalSales}: {saleSummary.count}</span><span>{t.totalQuantitySold}: {new Intl.NumberFormat(language).format(saleSummary.quantity)}</span><span>{t.totalRevenue}: {money(saleSummary.revenue, language)}</span></div></div>
+          {!data.sales_history_available ? <p className="stock-detail-muted">{t.availableHistory}</p> : linkedSaleItems.length ? <div className="stock-detail-history-cards">{linkedSaleItems.slice(0,salesLimit).map((item,index) => {
+            const sale = data.sales.find((row) => str(row.source_id) === str(item.sale_source_id));
+            const client = data.clients.find((row) => str(row.source_id) === str(sale?.client_source_id));
+            const qty = num(item.quantity), price = num(item.price);
+            return <article className="stock-detail-history-card" key={str(item.source_id) || `${str(item.sale_source_id)}-${index}`}>
+              <div className="stock-detail-history-top"><strong>#{str(sale?.source_id || item.sale_source_id).slice(-8) || "—"}</strong><time>{dateLabel(sale?.source_created_at ?? item.source_updated_at,language)}</time></div>
+              <div className="stock-detail-history-party"><span>{t.client}</span><strong>{str(client?.name) || t.noClient}</strong></div>
+              <div className="stock-detail-history-values"><div><span>{t.quantity}</span><strong>{new Intl.NumberFormat(language).format(qty)}</strong></div><div><span>{t.price}</span><strong>{money(price,language)}</strong></div><div><span>{t.total}</span><strong>{money(qty * price,language)}</strong></div></div>
+            </article>;
+          })}</div> : <p className="stock-detail-muted">{t.noSalesHistory}</p>}
+          {data.sales_history_available && linkedSaleItems.length > 5 ? <button type="button" className="stock-history-more" onClick={() => setSalesLimit((limit) => limit >= linkedSaleItems.length ? 5 : Math.min(limit + 5, linkedSaleItems.length))}>{salesLimit >= linkedSaleItems.length ? t.showLess : `${t.showMore} (${Math.min(5, linkedSaleItems.length - salesLimit)} ${t.more})`}</button> : null}
+        </section>
         <button type="button" className="stock-modal-close" onClick={() => setSelected(null)}>{t.close}</button>
       </section>
     </div> : null}
