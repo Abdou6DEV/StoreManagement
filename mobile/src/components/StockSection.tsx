@@ -18,7 +18,7 @@ type Labels = {
   profitMargin: string; roi: string; totalPurchases: string; totalQuantityPurchased: string;
   totalCost: string; totalSales: string; totalQuantitySold: string; totalRevenue: string; purchaseId: string; saleId: string;
   date: string; supplier: string; client: string; price: string; total: string; noSupplier: string; noClient: string;
-  noPurchaseHistory: string; noSalesHistory: string; showMore: string; showLess: string; more: string;
+  noPurchaseHistory: string; noSalesHistory: string; salesHistoryUnavailable: string; showMore: string; showLess: string; more: string;
 };
 const LABELS: Record<MobileLanguage, Labels> = {
   en: {
@@ -31,7 +31,7 @@ const LABELS: Record<MobileLanguage, Labels> = {
     purchaseHistory:"Purchase history",salesHistory:"Sales history",close:"Close",
     lowStockNote:"Low-stock threshold is set to 5 because the desktop setting isn't synced to the PWA.",
     availableHistory:"*Sold quantity and linked histories use only the sales records currently available in the PWA, not guaranteed lifetime totals.",
-    currentStock:"Current stock",profitPerUnit:"Profit per unit",totalProfit:"Total profit",profitAnalysis:"Profit analysis",potentialProfit:"Potential profit",actualProfit:"Actual profit",profitMargin:"Profit margin",roi:"ROI",totalPurchases:"Purchase entries",totalQuantityPurchased:"Quantity purchased",totalCost:"Total cost",totalSales:"Sale entries",totalQuantitySold:"Quantity sold",totalRevenue:"Total revenue",purchaseId:"Purchase ID",saleId:"Sale ID",date:"Date",supplier:"Supplier",client:"Client",price:"Unit price",total:"Total",noSupplier:"Supplier unavailable",noClient:"Client unavailable",noPurchaseHistory:"No purchase history available.",noSalesHistory:"No sales history available.",showMore:"Show more",showLess:"Show less",more:"more",
+    currentStock:"Current stock",profitPerUnit:"Profit per unit",totalProfit:"Total profit",profitAnalysis:"Profit analysis",potentialProfit:"Potential profit",actualProfit:"Actual profit",profitMargin:"Profit margin",roi:"ROI",totalPurchases:"Purchase entries",totalQuantityPurchased:"Quantity purchased",totalCost:"Total cost",totalSales:"Sale entries",totalQuantitySold:"Quantity sold",totalRevenue:"Total revenue",purchaseId:"Purchase ID",saleId:"Sale ID",date:"Date",supplier:"Supplier",client:"Client",price:"Unit price",total:"Total",noSupplier:"Supplier unavailable",noClient:"Client unavailable",noPurchaseHistory:"No purchase history available.",noSalesHistory:"No sales history available.",salesHistoryUnavailable:"Sales history is not available from this server yet.",showMore:"Show more",showLess:"Show less",more:"more",
   },
   fr: {
     products:"Produits",search:"Rechercher",categories:"Catégories",category:"Catégorie",allCategories:"Toutes les catégories",filters:"Filtres",
@@ -43,7 +43,7 @@ const LABELS: Record<MobileLanguage, Labels> = {
     purchaseHistory:"Historique des achats",salesHistory:"Historique des ventes",close:"Fermer",
     lowStockNote:"Le seuil de stock faible est fixé à 5, car le réglage du bureau n’est pas synchronisé avec la PWA.",
     availableHistory:"*Les quantités vendues et historiques liés utilisent uniquement les ventes disponibles dans la PWA ; le total historique complet n’est pas garanti.",
-    currentStock:"Stock actuel",profitPerUnit:"Bénéfice par unité",totalProfit:"Bénéfice total",profitAnalysis:"Analyse du bénéfice",potentialProfit:"Bénéfice potentiel",actualProfit:"Bénéfice réel",profitMargin:"Marge bénéficiaire",roi:"ROI",totalPurchases:"Lignes d’achat",totalQuantityPurchased:"Quantité achetée",totalCost:"Coût total",totalSales:"Lignes de vente",totalQuantitySold:"Quantité vendue",totalRevenue:"Chiffre d’affaires total",purchaseId:"N° d’achat",saleId:"N° de vente",date:"Date",supplier:"Fournisseur",client:"Client",price:"Prix unitaire",total:"Total",noSupplier:"Fournisseur indisponible",noClient:"Client indisponible",noPurchaseHistory:"Aucun historique d’achat disponible.",noSalesHistory:"Aucun historique de vente disponible.",showMore:"Afficher plus",showLess:"Afficher moins",more:"de plus",
+    currentStock:"Stock actuel",profitPerUnit:"Bénéfice par unité",totalProfit:"Bénéfice total",profitAnalysis:"Analyse du bénéfice",potentialProfit:"Bénéfice potentiel",actualProfit:"Bénéfice réel",profitMargin:"Marge bénéficiaire",roi:"ROI",totalPurchases:"Lignes d’achat",totalQuantityPurchased:"Quantité achetée",totalCost:"Coût total",totalSales:"Lignes de vente",totalQuantitySold:"Quantité vendue",totalRevenue:"Chiffre d’affaires total",purchaseId:"N° d’achat",saleId:"N° de vente",date:"Date",supplier:"Fournisseur",client:"Client",price:"Prix unitaire",total:"Total",noSupplier:"Fournisseur indisponible",noClient:"Client indisponible",noPurchaseHistory:"Aucun historique d’achat disponible.",noSalesHistory:"Aucun historique de vente disponible.",salesHistoryUnavailable:"L’historique des ventes n’est pas encore disponible sur ce serveur.",showMore:"Afficher plus",showLess:"Afficher moins",more:"de plus",
   },
   ar: {
     products:"المنتجات",search:"بحث",categories:"الفئات",category:"الفئة",allCategories:"كل الفئات",filters:"الفلاتر",
@@ -55,7 +55,7 @@ const LABELS: Record<MobileLanguage, Labels> = {
     purchaseHistory:"سجل المشتريات",salesHistory:"سجل المبيعات",close:"إغلاق",
     lowStockNote:"تم اعتماد حد 5 وحدات للمخزون المنخفض لأن إعداد سطح المكتب غير متاح في تطبيق الهاتف.",
     availableHistory:"*الكميات المباعة والسجلات المرتبطة تعتمد فقط على سجلات المبيعات المتاحة حالياً في التطبيق.",
-    currentStock:"المخزون الحالي",profitPerUnit:"الربح لكل وحدة",totalProfit:"إجمالي الربح",profitAnalysis:"تحليل الربح",potentialProfit:"الربح المحتمل",actualProfit:"الربح الفعلي",profitMargin:"هامش الربح",roi:"العائد على الاستثمار",totalPurchases:"عمليات الشراء",totalQuantityPurchased:"الكمية المشتراة",totalCost:"التكلفة الإجمالية",totalSales:"عمليات البيع",totalQuantitySold:"الكمية المباعة",totalRevenue:"إجمالي الإيرادات",purchaseId:"رقم الشراء",saleId:"رقم البيع",date:"التاريخ",supplier:"المورد",client:"الزبون",price:"سعر الوحدة",total:"الإجمالي",noSupplier:"بيانات المورد غير متاحة",noClient:"بيانات الزبون غير متاحة",noPurchaseHistory:"لا يوجد سجل مشتريات متاح.",noSalesHistory:"لا يوجد سجل مبيعات متاح.",showMore:"عرض المزيد",showLess:"عرض أقل",more:"المزيد",
+    currentStock:"المخزون الحالي",profitPerUnit:"الربح لكل وحدة",totalProfit:"إجمالي الربح",profitAnalysis:"تحليل الربح",potentialProfit:"الربح المحتمل",actualProfit:"الربح الفعلي",profitMargin:"هامش الربح",roi:"العائد على الاستثمار",totalPurchases:"عمليات الشراء",totalQuantityPurchased:"الكمية المشتراة",totalCost:"التكلفة الإجمالية",totalSales:"عمليات البيع",totalQuantitySold:"الكمية المباعة",totalRevenue:"إجمالي الإيرادات",purchaseId:"رقم الشراء",saleId:"رقم البيع",date:"التاريخ",supplier:"المورد",client:"الزبون",price:"سعر الوحدة",total:"الإجمالي",noSupplier:"بيانات المورد غير متاحة",noClient:"بيانات الزبون غير متاحة",noPurchaseHistory:"لا يوجد سجل مشتريات متاح.",noSalesHistory:"لا يوجد سجل مبيعات متاح.",salesHistoryUnavailable:"سجل المبيعات غير متاح من هذا الخادم حالياً.",showMore:"عرض المزيد",showLess:"عرض أقل",more:"المزيد",
   },
 };
 const num = (value: unknown): number => { const parsed = typeof value === "number" ? value : Number(value ?? 0); return Number.isFinite(parsed) ? parsed : 0; };
@@ -311,7 +311,7 @@ export function StockSection({ data, language, query, onQueryChange }: { data: M
         </section>
         <section className="stock-detail-history-section">
           <div className="stock-history-heading"><h3>{t.salesHistory}</h3><div><span>{t.totalSales}: {saleSummary.count}</span><span>{t.totalQuantitySold}: {new Intl.NumberFormat(language).format(saleSummary.quantity)}</span><span>{t.totalRevenue}: {money(saleSummary.revenue, language)}</span></div></div>
-          {!data.sales_history_available ? <p className="stock-detail-muted">{t.availableHistory}</p> : linkedSaleItems.length ? <div className="stock-detail-history-cards">{linkedSaleItems.slice(0,salesLimit).map((item,index) => {
+          {!data.sales_history_available ? <p className="stock-detail-muted">{t.salesHistoryUnavailable} {t.availableHistory}</p> : linkedSaleItems.length ? <div className="stock-detail-history-cards">{linkedSaleItems.slice(0,salesLimit).map((item,index) => {
             const sale = data.sales.find((row) => str(row.source_id) === str(item.sale_source_id));
             const client = data.clients.find((row) => str(row.source_id) === str(sale?.client_source_id));
             const qty = num(item.quantity), price = num(item.price);
