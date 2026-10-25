@@ -72,6 +72,7 @@ export function StockSection({ data, language, query, onQueryChange }: { data: M
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<MobileRow | null>(null);
+  const [stockTableScrolled, setStockTableScrolled] = useState(false);
   useEffect(() => setPage(1), [query, category, lowStock, outOfStock, noBarcode, salesSort, sort, pageSize, view]);
 
   const salesMetrics = useMemo(() => {
@@ -164,7 +165,7 @@ export function StockSection({ data, language, query, onQueryChange }: { data: M
         <input value={query} onChange={(event) => onQueryChange(event.target.value)} placeholder={t.search} aria-label={t.search} />
       </label>
       {lowStock ? <p className="stock-filter-note">{t.lowStockNote}</p> : null}
-      {filteredProducts.length === 0 ? <p className="mobile-empty">{t.empty}</p> : <div className="stock-table-scroll" role="region" aria-label={t.products} tabIndex={0}>
+      {filteredProducts.length === 0 ? <p className="mobile-empty">{t.empty}</p> : <div className={"stock-table-scroll stock-product-table-scroll" + (stockTableScrolled ? " is-horizontally-scrolled" : "")} onScroll={(event) => setStockTableScrolled(event.currentTarget.scrollLeft !== 0)} role="region" aria-label={t.products} tabIndex={0}>
         <table className="stock-data-table">
           <thead><tr><th>{t.products}</th><th>{t.category}</th><th>{t.quantity}</th><th>{t.bought}</th><th>{t.selling}</th><th>{t.unitProfit}</th><th>{t.sold}</th><th>{t.actualProfit}</th><th>{t.view}</th></tr></thead>
           <tbody>{visibleProducts.map((product) => {
