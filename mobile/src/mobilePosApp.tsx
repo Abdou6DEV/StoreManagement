@@ -1193,7 +1193,7 @@ export function MobilePosApp({
                     permissions={user.permissions}
                   />
                 ) : (
-                  <Card className={`mobile-page-panel${section === "stock" ? " mobile-stock-page-panel" : ""}${["clients", "bills", "services"].includes(section) ? " mobile-record-page-panel" : ""}`}>
+                  <Card className="mobile-page-panel">
                     <div className="mobile-panel-heading">
                       <PageIcon page={activePage} size={28} />
                       <h2>{title}</h2>

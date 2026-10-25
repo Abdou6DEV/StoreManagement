@@ -620,8 +620,6 @@ html.dark .error-banner { color: #fca5a5; background: rgb(153 27 27 / 24%); }
   box-shadow: 0 1px 2px rgb(0 0 0 / 5%);
 }
 .mobile-page-panel { padding: 16px; }
-.mobile-stock-page-panel { width: calc(100% - 8px); margin-inline: auto; box-sizing: border-box; }
-.mobile-record-page-panel { width: calc(100% - 8px); margin-inline: auto; box-sizing: border-box; }
 .mobile-panel-heading {
   display: flex;
   align-items: center;
@@ -1179,9 +1177,6 @@ html.dark .stock-negative { color:#f87171; }
 /* Widen the entire stock section card to the phone content edges, not just its table. */
 @media (max-width: 560px) {
   .mobile-stock-page-panel {
-    margin-inline: calc(-1 * clamp(12px, 4vw, 20px));
-  }
-  .mobile-record-page-panel {
     margin-inline: calc(-1 * clamp(12px, 4vw, 20px));
   }
 }
