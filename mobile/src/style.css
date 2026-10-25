@@ -1187,7 +1187,7 @@ html.dark .stock-negative { color:#f87171; }
 /* Slightly widen shared page panels on narrow screens without changing table widths. */
 @media (max-width: 560px) {
   .mobile-page-panel {
-    width: calc(100% + clamp(8px, 2.5vw, 14px));
-    margin-inline: calc(-1 * clamp(4px, 1.25vw, 7px));
+    width: calc(100% + clamp(10px, 3vw, 16px));
+    margin-inline: calc(-1 * clamp(5px, 1.5vw, 8px));
   }
 }
