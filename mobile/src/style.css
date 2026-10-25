@@ -1111,12 +1111,9 @@ html.dark .stock-negative { color:#f87171; }
 .stock-filter-row .stock-clear-filters { margin:0;padding-inline:10px; }
 .stock-filter-note { margin:-4px 0 10px;padding:0;color:var(--mobile-muted);font-size:.72rem;line-height:1.4; }
 
-/* Let the stock table use almost the full phone width without changing other pages. */
+/* Widen the entire stock section card to the phone content edges, not just its table. */
 @media (max-width: 560px) {
-  .mobile-stock-page-panel .stock-table-scroll {
-    width: calc(100% + 48px);
-    max-width: none;
-    margin-inline: -24px;
-    border-radius: 8px;
+  .mobile-stock-page-panel {
+    margin-inline: calc(-1 * clamp(12px, 4vw, 22px));
   }
 }
