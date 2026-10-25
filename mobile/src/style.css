@@ -1057,6 +1057,40 @@ html.dark .stock-negative { color:#f87171; }
 @media (min-width:560px) { .stock-summary-grid { grid-template-columns:repeat(4,minmax(0,1fr)); } .stock-product-values { grid-template-columns:repeat(4,minmax(0,1fr)); } .stock-detail-modal { align-self:center;border-radius:16px; } .stock-modal-backdrop { align-items:center; } }
 
 /* Stock replica: keep real table rows and allow horizontal scrolling on phones. */
+/* Keep the product identity visible while the stock table scrolls horizontally.
+   Logical positioning also keeps the frozen column on the correct side in Arabic RTL. */
+.stock-data-table thead th:first-child {
+  position: sticky;
+  inset-inline-start: 0;
+  z-index: 4;
+  min-width: 180px;
+  background: var(--muted-bg);
+  box-shadow: 2px 0 5px rgb(15 23 42 / 9%);
+}
+.stock-data-table tbody td:first-child {
+  position: sticky;
+  inset-inline-start: 0;
+  z-index: 2;
+  min-width: 180px;
+  background: var(--card);
+  box-shadow: 2px 0 5px rgb(15 23 42 / 9%);
+}
+.stock-data-table tbody tr.is-low td:first-child {
+  background: color-mix(in srgb, #f59e0b 7%, var(--card));
+}
+.stock-data-table tbody tr.is-out td:first-child {
+  background: color-mix(in srgb, #ef4444 7%, var(--card));
+}
+.stock-data-table tbody tr:hover td:first-child {
+  background: var(--muted-bg);
+}
+.stock-data-table tfoot td:first-child {
+  position: sticky;
+  inset-inline-start: 0;
+  z-index: 3;
+  box-shadow: 2px 0 5px rgb(15 23 42 / 9%);
+}
+
 .stock-table-scroll{width:100%;max-width:100%;overflow:auto;border:1px solid var(--line);border-radius:12px;background:var(--card);-webkit-overflow-scrolling:touch}
 .stock-data-table{width:100%;min-width:1050px;border-collapse:separate;border-spacing:0;text-align:start;font-size:13px}
 .stock-data-table th,.stock-data-table td{padding:11px 12px;border-bottom:1px solid var(--line);white-space:nowrap;vertical-align:middle}
