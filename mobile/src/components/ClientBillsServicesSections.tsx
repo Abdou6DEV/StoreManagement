@@ -751,7 +751,12 @@ export function ServicesSection({
   const [statusFilter, setStatusFilter] = useState("all");
   const [fromDate, setFromDate] = useState(() => {
     const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+    const start = new Date(now);
+    start.setDate(1);
+    start.setMonth(start.getMonth() - 2);
+    const lastDay = new Date(start.getFullYear(), start.getMonth() + 1, 0).getDate();
+    start.setDate(Math.min(now.getDate(), lastDay));
+    return `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}-${String(start.getDate()).padStart(2, "0")}`;
   });
   const [toDate, setToDate] = useState(() => {
     const now = new Date();
