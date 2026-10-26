@@ -749,8 +749,14 @@ export function ServicesSection({
 }) {
   const labels = LABELS[language];
   const [statusFilter, setStatusFilter] = useState("all");
-  const [fromDate, setFromDate] = useState("");
-  const [toDate, setToDate] = useState("");
+  const [fromDate, setFromDate] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+  });
+  const [toDate, setToDate] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  });
   const [selected, setSelected] = useState<MobileRow | null>(null);
   const [showProfit, setShowProfit] = useState(false);
   const clientsById = useMemo(
@@ -825,7 +831,7 @@ export function ServicesSection({
           empty={labels.empty}
           minWidth={showProfit ? 1200 : 1100}
           stickyFirstColumn
-          toolbar={<div className="mobile-services-toolbar"><label className="mobile-services-profit-toggle"><input type="checkbox" checked={showProfit} onChange={(event) => setShowProfit(event.target.checked)} /><span>{labels.showProfit}</span></label><div className="mobile-services-search"><SearchRow query={query} onQueryChange={onQueryChange} label={labels.search} /></div></div>}
+          toolbar={<div className="mobile-services-toolbar"><div className="mobile-services-search"><SearchRow query={query} onQueryChange={onQueryChange} label={labels.search} /></div><label className="mobile-services-profit-toggle"><input type="checkbox" checked={showProfit} onChange={(event) => setShowProfit(event.target.checked)} /><span>{labels.profit}</span></label></div>}
           sorts={[
             { id: "desktop", label: labels.desktopDefault, compare: compareDesktopDefault },
             { id: "due", label: labels.dueDate, compare: compareDue },
