@@ -754,7 +754,7 @@ export function ServicesSection({
     const now = new Date();
     const start = new Date(now);
     start.setDate(1);
-    start.setMonth(start.getMonth() - 2);
+    start.setFullYear(start.getFullYear() - 1);
     const lastDay = new Date(start.getFullYear(), start.getMonth() + 1, 0).getDate();
     start.setDate(Math.min(now.getDate(), lastDay));
     return `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}-${String(start.getDate()).padStart(2, "0")}`;
@@ -779,14 +779,14 @@ export function ServicesSection({
     const queryMatches = matchesQuery(service, query, ["name", "service_type", "description", "notes"]) ||
       (linkedClient !== undefined && valueText(linkedClient, "name").toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()));
     if (!queryMatches) return false;
-    const dueDate = dateValue(service, "due_date");
-    if ((fromDate || toDate) && !Number.isFinite(dueDate)) return false;
-    const dueDay = Number.isFinite(dueDate) ? localDayStart(new Date(dueDate)) : NaN;
-    if (fromDate && dueDay < new Date(`${fromDate}T00:00:00`).getTime()) return false;
+    const createdAt = dateValue(service, "source_created_at");
+    if ((fromDate || toDate) && !Number.isFinite(createdAt)) return false;
+    const createdDay = Number.isFinite(createdAt) ? localDayStart(new Date(createdAt)) : NaN;
+    if (fromDate && createdDay < new Date(`${fromDate}T00:00:00`).getTime()) return false;
     if (toDate) {
       const endExclusive = new Date(`${toDate}T00:00:00`);
       endExclusive.setDate(endExclusive.getDate() + 1);
-      if (dueDay >= endExclusive.getTime()) return false;
+      if (createdDay >= endExclusive.getTime()) return false;
     }
     if (statusFilter === "all") return true;
     if (statusFilter === "completed") return service.is_completed === true;
