@@ -57,6 +57,7 @@ type LabelKey =
   | "nextPayment"
   | "duration"
   | "description"
+  | "deviceName"
   | "totalBills"
   | "activeBills"
   | "inactiveBills"
@@ -127,7 +128,7 @@ const LABELS: Record<MobileLanguage, Record<LabelKey, string>> = {
     title: "Title", type: "Type", status: "Status", active: "Active", inactive: "Not active",
     dueSoon: "Due soon", overdue: "Overdue", noNextPayment: "No next payment",
     lastPayment: "Last payment", nextPayment: "Next payment", duration: "Frequency",
-    description: "Description", totalBills: "Bills", activeBills: "Active bills",
+    description: "Description", deviceName: "Device name", totalBills: "Bills", activeBills: "Active bills",
     inactiveBills: "Inactive bills", totalPaid: "Paid in available records",
     allTypes: "All types", allStatuses: "All statuses", recurring: "Recurring",
     dueFilter: "Due status",
@@ -166,7 +167,7 @@ const LABELS: Record<MobileLanguage, Record<LabelKey, string>> = {
     title: "Titre", type: "Type", status: "Statut", active: "Active", inactive: "Inactive",
     dueSoon: "Bientôt due", overdue: "En retard", noNextPayment: "Aucun prochain paiement",
     lastPayment: "Dernier paiement", nextPayment: "Prochain paiement", duration: "Fréquence",
-    description: "Description", totalBills: "Factures", activeBills: "Factures actives",
+    description: "Description", deviceName: "Nom de l’appareil", totalBills: "Factures", activeBills: "Factures actives",
     inactiveBills: "Factures inactives", totalPaid: "Payé dans les données disponibles",
     allTypes: "Tous les types", allStatuses: "Tous les statuts", recurring: "Récurrente",
     dueFilter: "Échéance",
@@ -206,7 +207,7 @@ const LABELS: Record<MobileLanguage, Record<LabelKey, string>> = {
     title: "العنوان", type: "النوع", status: "الحالة", active: "نشطة", inactive: "غير نشطة",
     dueSoon: "مستحقة قريباً", overdue: "متأخرة", noNextPayment: "لا يوجد دفع قادم",
     lastPayment: "آخر دفعة", nextPayment: "الدفعة القادمة", duration: "التكرار",
-    description: "الوصف", totalBills: "الفواتير", activeBills: "الفواتير النشطة",
+    description: "الوصف", deviceName: "اسم الجهاز", totalBills: "الفواتير", activeBills: "الفواتير النشطة",
     inactiveBills: "الفواتير غير النشطة", totalPaid: "المدفوع ضمن السجلات المتاحة",
     allTypes: "كل الأنواع", allStatuses: "كل الحالات", recurring: "متكررة",
     dueFilter: "حالة الاستحقاق",
@@ -816,8 +817,6 @@ export function ServicesSection({
 
   return (
     <>
-      {data.service_appointments.length >= 1000 || data.services.length >= 500 ? <LimitNotice>{labels.limitNotice}</LimitNotice> : null}
-      <LimitNotice>{labels.dueSoonThresholdNote}</LimitNotice>
       <section className="mobile-subsection">
         <h2>{labels.appointments}</h2>
         <div className="stock-filter-row mobile-services-filters">
@@ -845,7 +844,7 @@ export function ServicesSection({
           ]}
           columns={[
             { key: "name", label: labels.name, render: (row) => <div className="mobile-services-name-cell"><strong title={valueText(row, "name")}>{valueText(row, "name") || "—"}</strong><span title={valueText(row, "service_type")}>{valueText(row, "service_type") || "—"}</span></div> },
-            { key: "description", label: labels.description, render: (row) => valueText(row, "description") || "—" },
+            { key: "description", label: labels.deviceName, render: (row) => valueText(row, "description") || "—" },
             { key: "status", label: labels.status, render: (row) => {
               const status = serviceStatus(row, language);
               return <><span className={`record-status ${status.className}`}>{status.label}</span>{isServiceDueSoon(row) ? <span className="record-status waiting">{labels.dueSoon}</span> : null}</>;
@@ -872,7 +871,7 @@ export function ServicesSection({
       {selected ? (
         <ReadOnlyDetail title={labels.appointments} subtitle={valueText(selected, "name")} labels={labels} language={language} onClose={() => setSelected(null)} fields={[
           [labels.type, valueText(selected, "service_type")],
-          [labels.description, valueText(selected, "description")],
+          [labels.deviceName, valueText(selected, "description")],
           [labels.notes, valueText(selected, "notes")],
           [labels.status, serviceStatus(selected, language).label],
           [labels.client, !permissions.can_access_clients ? labels.clientUnavailable : selectedClient ? valueText(selectedClient, "name") : valueText(selected, "client_source_id") ? labels.clientUnavailable : labels.noClient],
