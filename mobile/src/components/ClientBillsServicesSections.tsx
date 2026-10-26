@@ -833,7 +833,7 @@ export function ServicesSection({
           ariaLabel={labels.appointments}
           pageSizeLabel={labels.pageSize}
           empty={labels.empty}
-          minWidth={showProfit ? 1200 : 1100}
+          minWidth={showProfit ? 1140 : 1040}
           stickyFirstColumn
           toolbar={<div className="mobile-services-toolbar"><div className="mobile-services-search"><SearchRow query={query} onQueryChange={onQueryChange} label={labels.search} /></div><label className="mobile-services-profit-toggle"><input type="checkbox" checked={showProfit} onChange={(event) => setShowProfit(event.target.checked)} /><span>{labels.profit}</span></label></div>}
           sorts={[

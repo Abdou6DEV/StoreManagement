@@ -1193,6 +1193,12 @@ html.dark .stock-negative { color:#f87171; }
 }
 
 
+/* Compact Services table horizontal spacing without changing typography or truncation. */
+.mobile-services-table-scroll .stock-data-table th,
+.mobile-services-table-scroll .stock-data-table td {
+  padding-inline: 8px;
+}
+
 /* Services table: keep the service identity visible while the remaining columns scroll. */
 .mobile-services-table-scroll .stock-data-table thead th:first-child,
 .mobile-services-table-scroll .stock-data-table tbody td:first-child {
