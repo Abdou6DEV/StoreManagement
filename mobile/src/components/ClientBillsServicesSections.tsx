@@ -24,6 +24,9 @@ type LabelKey =
   | "nameAZ"
   | "sortCreditsVersements"
   | "sortTotalPurchases"
+  | "totalCredit"
+  | "totalVersement"
+  | "purchasesUnavailable"
   | "sortNotes"
   | "empty"
   | "name"
@@ -118,7 +121,7 @@ const LABELS: Record<MobileLanguage, Record<LabelKey, string>> = {
     search: "Search", sort: "Sort by", desktopDefault: "Desktop default", pageSize: "Rows per page", view: "View",
     close: "Close", page: "Page", of: "of", previous: "Previous", next: "Next",
     newest: "Newest first", oldest: "Oldest first", nameAZ: "Name A–Z",
-    sortCreditsVersements: "Credits / versements (default)", sortTotalPurchases: "Total purchases", sortNotes: "Clients with notes first",
+    sortCreditsVersements: "Credits / versements (default)", sortTotalPurchases: "Total purchases", totalCredit: "Total credit", totalVersement: "Total versement", purchasesUnavailable: "Purchase totals are not shown in this view.", sortNotes: "Clients with notes first",
     empty: "No records match these filters.", name: "Name", phone: "Phone",
     address: "Address", notes: "Notes", created: "Added", clients: "Clients",
     payments: "Payments", sales: "Sales", paymentType: "Type", amount: "Amount",
@@ -158,7 +161,7 @@ const LABELS: Record<MobileLanguage, Record<LabelKey, string>> = {
     search: "Rechercher", sort: "Trier par", desktopDefault: "Ordre du bureau", pageSize: "Lignes par page", view: "Voir",
     close: "Fermer", page: "Page", of: "sur", previous: "Précédent", next: "Suivant",
     newest: "Plus récent", oldest: "Plus ancien", nameAZ: "Nom A–Z",
-    sortCreditsVersements: "Crédits / versements (défaut)", sortTotalPurchases: "Total des achats", sortNotes: "Clients avec notes en premier",
+    sortCreditsVersements: "Crédits / versements (défaut)", sortTotalPurchases: "Total des achats", totalCredit: "Total crédit", totalVersement: "Total versement", purchasesUnavailable: "Le total des achats n’est pas affiché dans cette vue.", sortNotes: "Clients avec notes en premier",
     empty: "Aucun résultat pour ces filtres.", name: "Nom", phone: "Téléphone",
     address: "Adresse", notes: "Notes", created: "Ajouté", clients: "Clients",
     payments: "Paiements", sales: "Ventes", paymentType: "Type", amount: "Montant",
@@ -199,7 +202,7 @@ const LABELS: Record<MobileLanguage, Record<LabelKey, string>> = {
     search: "بحث", sort: "ترتيب حسب", desktopDefault: "ترتيب سطح المكتب", pageSize: "عدد الصفوف", view: "عرض",
     close: "إغلاق", page: "صفحة", of: "من", previous: "السابق", next: "التالي",
     newest: "الأحدث أولاً", oldest: "الأقدم أولاً", nameAZ: "الاسم أ–ي",
-    sortCreditsVersements: "الائتمان / الدفعات (افتراضي)", sortTotalPurchases: "إجمالي المشتريات", sortNotes: "العملاء الذين لديهم ملاحظات أولاً",
+    sortCreditsVersements: "الائتمان / الدفعات (افتراضي)", sortTotalPurchases: "إجمالي المشتريات", totalCredit: "إجمالي الائتمان", totalVersement: "إجمالي الدفعات", purchasesUnavailable: "إجمالي المشتريات غير معروض في هذه الشاشة.", sortNotes: "العملاء الذين لديهم ملاحظات أولاً",
     empty: "لا توجد سجلات تطابق عوامل التصفية.", name: "الاسم", phone: "الهاتف",
     address: "العنوان", notes: "ملاحظات", created: "تاريخ الإضافة", clients: "العملاء",
     payments: "الدفعات", sales: "المبيعات", paymentType: "النوع", amount: "المبلغ",
@@ -459,33 +462,42 @@ export function ClientsSection({
   const compareName = (a: MobileRow, b: MobileRow) => valueText(a, "name").localeCompare(valueText(b, "name"), language, { sensitivity: "base" });
   const compareCreated = (a: MobileRow, b: MobileRow) => sortTime(b, "source_created_at") - sortTime(a, "source_created_at");
   const compareOldest = (a: MobileRow, b: MobileRow) => -compareCreated(a, b);
+  const clientFinancials = useMemo(() => {
+    const totals = new Map<string, { credit: number; versement: number }>();
+    for (const client of data.clients) {
+      totals.set(valueText(client, "source_id"), { credit: 0, versement: 0 });
+    }
+    for (const payment of data.payments) {
+      const clientId = valueText(payment, "client_source_id") || valueText(payment, "clientSourceId");
+      if (!clientId || (valueText(payment, "paid_date") || valueText(payment, "paidDate"))) continue;
+      const paymentType = valueText(payment, "type").toUpperCase();
+      const totalsForClient = totals.get(clientId);
+      if (!totalsForClient) continue;
+      const givenAmount = valueNumber(payment, "given_amount") || valueNumber(payment, "givenAmount");
+      if (paymentType === "CREDIT") {
+        const rawRemaining = payment.remaining_amount ?? payment.remainingAmount;
+        const remainingAmount = typeof rawRemaining === "number" && Number.isFinite(rawRemaining) ? rawRemaining : 0;
+        // Match the desktop: use a positive remaining amount, otherwise fall back to given amount.
+        totalsForClient.credit += remainingAmount > 0 ? remainingAmount : Math.max(0, givenAmount);
+      } else if (paymentType === "VERSEMENT") {
+        totalsForClient.versement += Math.max(0, givenAmount);
+      }
+    }
+    return totals;
+  }, [data.clients, data.payments]);
+  const financialsFor = (client: MobileRow) => clientFinancials.get(valueText(client, "source_id")) ?? { credit: 0, versement: 0 };
   const compareCreditsVersements = (a: MobileRow, b: MobileRow) => {
-    const creditDiff = valueNumber(b, "total_credit") - valueNumber(a, "total_credit") ||
-      valueNumber(b, "totalCredit") - valueNumber(a, "totalCredit");
-    const versementDiff = valueNumber(b, "total_versement") - valueNumber(a, "total_versement") ||
-      valueNumber(b, "totalVersement") - valueNumber(a, "totalVersement");
-    return creditDiff || versementDiff || compareName(a, b);
-  };
-  const compareTotalPurchases = (a: MobileRow, b: MobileRow) => {
-    const purchasesDiff = valueNumber(b, "total_purchases") - valueNumber(a, "total_purchases") ||
-      valueNumber(b, "totalPurchases") - valueNumber(a, "totalPurchases");
-    return purchasesDiff || compareCreditsVersements(a, b);
+    const aTotals = financialsFor(a);
+    const bTotals = financialsFor(b);
+    return bTotals.credit - aTotals.credit || bTotals.versement - aTotals.versement || compareName(a, b);
   };
   const compareNotes = (a: MobileRow, b: MobileRow) => {
     const aHasNotes = valueText(a, "notes").trim().length > 0;
     const bHasNotes = valueText(b, "notes").trim().length > 0;
     return Number(bHasNotes) - Number(aHasNotes) || compareName(a, b);
   };
-  const hasCreditVersementSortData = clients.some((row) =>
-    row.total_credit != null || row.totalCredit != null ||
-    row.total_versement != null || row.totalVersement != null,
-  );
-  const hasPurchasesSortData = clients.some((row) =>
-    row.total_purchases != null || row.totalPurchases != null,
-  );
-  const defaultClientSort = hasCreditVersementSortData
-    ? "creditsVersements"
-    : hasPurchasesSortData ? "totalPurchases" : "name";
+  // Desktop defaults to ordering clients by outstanding credits, then versements.
+  const defaultClientSort = "creditsVersements";
   const clientId = selected ? valueText(selected, "source_id") : "";
   const payments = clientId && permissions.can_access_clients
     ? data.payments.filter((row) => valueText(row, "client_source_id") === clientId)
@@ -514,12 +526,7 @@ export function ClientsSection({
             {data.clients.length >= 2000 ? <LimitNotice>{labels.limitNotice} ({labels.limitedClients}: 2,000)</LimitNotice> : null}
           </>}
           sorts={[
-            ...(hasCreditVersementSortData ? [
-              { id: "creditsVersements", label: labels.sortCreditsVersements, compare: compareCreditsVersements },
-            ] : []),
-            ...(hasPurchasesSortData ? [
-              { id: "totalPurchases", label: labels.sortTotalPurchases, compare: compareTotalPurchases },
-            ] : []),
+            { id: "creditsVersements", label: labels.sortCreditsVersements, compare: compareCreditsVersements },
             { id: "name", label: labels.nameAZ, compare: compareName },
             { id: "newest", label: labels.newest, compare: compareCreated },
             { id: "oldest", label: labels.oldest, compare: compareOldest },
@@ -530,6 +537,8 @@ export function ClientsSection({
             { key: "phone", label: labels.phone, render: (row) => valueText(row, "phone") || "—" },
             { key: "address", label: labels.address, render: (row) => valueText(row, "address") || "—" },
             { key: "notes", label: labels.notes, render: (row) => valueText(row, "notes") || "—" },
+            { key: "totalCredit", label: labels.totalCredit, align: "end", render: (row) => displayMoney(financialsFor(row).credit, language) },
+            { key: "totalVersement", label: labels.totalVersement, align: "end", render: (row) => displayMoney(financialsFor(row).versement, language) },
             { key: "view", label: labels.view, render: (row) => <DetailButton label={labels.view} onClick={() => setSelected(row)} /> },
           ]}
           footer={<div className="stock-table-totals"><div><span>{labels.clients}</span><strong>{new Intl.NumberFormat(language).format(clients.length)}</strong></div></div>}
@@ -542,7 +551,7 @@ export function ClientsSection({
           [labels.notes, valueText(selected, "notes")],
           [labels.created, displayDate(valueText(selected, "source_created_at"), language, true)],
         ]}>
-          <p className="stock-detail-muted">{labels.totalsUnavailable}</p>
+          <p className="stock-detail-muted">{labels.purchasesUnavailable}</p>
           <section className="stock-detail-history-section">
             <h3>{labels.payments}{permissions.can_access_clients ? ` (${payments.length})` : ""}</h3>
             {!permissions.can_access_clients ? <p className="stock-detail-muted">{labels.historyUnavailable}</p> : payments.length === 0 ? <p className="stock-detail-muted">{labels.noPayments}</p> : (
