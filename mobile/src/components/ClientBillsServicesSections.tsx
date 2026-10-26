@@ -22,6 +22,9 @@ type LabelKey =
   | "newest"
   | "oldest"
   | "nameAZ"
+  | "sortCreditsVersements"
+  | "sortTotalPurchases"
+  | "sortNotes"
   | "empty"
   | "name"
   | "phone"
@@ -115,6 +118,7 @@ const LABELS: Record<MobileLanguage, Record<LabelKey, string>> = {
     search: "Search", sort: "Sort by", desktopDefault: "Desktop default", pageSize: "Rows per page", view: "View",
     close: "Close", page: "Page", of: "of", previous: "Previous", next: "Next",
     newest: "Newest first", oldest: "Oldest first", nameAZ: "Name A–Z",
+    sortCreditsVersements: "Credits / versements (default)", sortTotalPurchases: "Total purchases", sortNotes: "Clients with notes first",
     empty: "No records match these filters.", name: "Name", phone: "Phone",
     address: "Address", notes: "Notes", created: "Added", clients: "Clients",
     payments: "Payments", sales: "Sales", paymentType: "Type", amount: "Amount",
@@ -154,6 +158,7 @@ const LABELS: Record<MobileLanguage, Record<LabelKey, string>> = {
     search: "Rechercher", sort: "Trier par", desktopDefault: "Ordre du bureau", pageSize: "Lignes par page", view: "Voir",
     close: "Fermer", page: "Page", of: "sur", previous: "Précédent", next: "Suivant",
     newest: "Plus récent", oldest: "Plus ancien", nameAZ: "Nom A–Z",
+    sortCreditsVersements: "Crédits / versements (défaut)", sortTotalPurchases: "Total des achats", sortNotes: "Clients avec notes en premier",
     empty: "Aucun résultat pour ces filtres.", name: "Nom", phone: "Téléphone",
     address: "Adresse", notes: "Notes", created: "Ajouté", clients: "Clients",
     payments: "Paiements", sales: "Ventes", paymentType: "Type", amount: "Montant",
@@ -194,6 +199,7 @@ const LABELS: Record<MobileLanguage, Record<LabelKey, string>> = {
     search: "بحث", sort: "ترتيب حسب", desktopDefault: "ترتيب سطح المكتب", pageSize: "عدد الصفوف", view: "عرض",
     close: "إغلاق", page: "صفحة", of: "من", previous: "السابق", next: "التالي",
     newest: "الأحدث أولاً", oldest: "الأقدم أولاً", nameAZ: "الاسم أ–ي",
+    sortCreditsVersements: "الائتمان / الدفعات (افتراضي)", sortTotalPurchases: "إجمالي المشتريات", sortNotes: "العملاء الذين لديهم ملاحظات أولاً",
     empty: "لا توجد سجلات تطابق عوامل التصفية.", name: "الاسم", phone: "الهاتف",
     address: "العنوان", notes: "ملاحظات", created: "تاريخ الإضافة", clients: "العملاء",
     payments: "الدفعات", sales: "المبيعات", paymentType: "النوع", amount: "المبلغ",
@@ -286,6 +292,9 @@ function StockStyleTable<T extends MobileRow>({
   toolbar,
   minWidth,
   stickyFirstColumn = false,
+  initialSortId,
+  initialPageSize = 7,
+  pageSizes = [7, 10, 20, 50, 100],
 }: {
   rows: T[];
   columns: Column<T>[];
@@ -298,9 +307,12 @@ function StockStyleTable<T extends MobileRow>({
   toolbar?: ReactNode;
   minWidth: number;
   stickyFirstColumn?: boolean;
+  initialSortId?: string;
+  initialPageSize?: number;
+  pageSizes?: number[];
 }) {
-  const [sortId, setSortId] = useState(sorts[0]?.id ?? "");
-  const [pageSize, setPageSize] = useState(7);
+  const [sortId, setSortId] = useState(initialSortId ?? sorts[0]?.id ?? "");
+  const [pageSize, setPageSize] = useState(initialPageSize);
   const [page, setPage] = useState(1);
   const [tableScrolled, setTableScrolled] = useState(false);
   const sortedRows = useMemo(() => {
@@ -311,7 +323,8 @@ function StockStyleTable<T extends MobileRow>({
   const currentPage = Math.min(page, pageCount);
   const visibleRows = sortedRows.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
-  useEffect(() => setPage(1), [rows, pageSize]);
+  useEffect(() => setPage(1), [rows, pageSize, sortId]);
+  useEffect(() => { setSortId(initialSortId ?? sorts[0]?.id ?? ""); }, [initialSortId]);
 
   return (
     <>
@@ -325,7 +338,7 @@ function StockStyleTable<T extends MobileRow>({
         <label className="mobile-select-control stock-filter-pagesize">
           <span>{pageSizeLabel}</span>
           <select value={pageSize} onChange={(event) => setPageSize(Number(event.target.value))}>
-            {[7, 10, 20, 50, 100].map((size) => <option key={size} value={size}>{size}</option>)}
+            {pageSizes.map((size) => <option key={size} value={size}>{size}</option>)}
           </select>
         </label>
       </div>
@@ -443,9 +456,36 @@ export function ClientsSection({
   const clients = useMemo(() => data.clients.filter((row) =>
     matchesQuery(row, query, ["name", "phone", "address", "notes"]),
   ), [data.clients, query]);
-  const compareName = (a: MobileRow, b: MobileRow) => valueText(a, "name").localeCompare(valueText(b, "name"), language);
+  const compareName = (a: MobileRow, b: MobileRow) => valueText(a, "name").localeCompare(valueText(b, "name"), language, { sensitivity: "base" });
   const compareCreated = (a: MobileRow, b: MobileRow) => sortTime(b, "source_created_at") - sortTime(a, "source_created_at");
   const compareOldest = (a: MobileRow, b: MobileRow) => -compareCreated(a, b);
+  const compareCreditsVersements = (a: MobileRow, b: MobileRow) => {
+    const creditDiff = valueNumber(b, "total_credit") - valueNumber(a, "total_credit") ||
+      valueNumber(b, "totalCredit") - valueNumber(a, "totalCredit");
+    const versementDiff = valueNumber(b, "total_versement") - valueNumber(a, "total_versement") ||
+      valueNumber(b, "totalVersement") - valueNumber(a, "totalVersement");
+    return creditDiff || versementDiff || compareName(a, b);
+  };
+  const compareTotalPurchases = (a: MobileRow, b: MobileRow) => {
+    const purchasesDiff = valueNumber(b, "total_purchases") - valueNumber(a, "total_purchases") ||
+      valueNumber(b, "totalPurchases") - valueNumber(a, "totalPurchases");
+    return purchasesDiff || compareCreditsVersements(a, b);
+  };
+  const compareNotes = (a: MobileRow, b: MobileRow) => {
+    const aHasNotes = valueText(a, "notes").trim().length > 0;
+    const bHasNotes = valueText(b, "notes").trim().length > 0;
+    return Number(bHasNotes) - Number(aHasNotes) || compareName(a, b);
+  };
+  const hasCreditVersementSortData = clients.some((row) =>
+    row.total_credit != null || row.totalCredit != null ||
+    row.total_versement != null || row.totalVersement != null,
+  );
+  const hasPurchasesSortData = clients.some((row) =>
+    row.total_purchases != null || row.totalPurchases != null,
+  );
+  const defaultClientSort = hasCreditVersementSortData
+    ? "creditsVersements"
+    : hasPurchasesSortData ? "totalPurchases" : "name";
   const clientId = selected ? valueText(selected, "source_id") : "";
   const payments = clientId && permissions.can_access_clients
     ? data.payments.filter((row) => valueText(row, "client_source_id") === clientId)
@@ -456,8 +496,6 @@ export function ClientsSection({
 
   return (
     <>
-      <SearchRow query={query} onQueryChange={onQueryChange} label={labels.search} />
-      {data.clients.length >= 2000 ? <LimitNotice>{labels.limitNotice} ({labels.limitedClients}: 2,000)</LimitNotice> : null}
       <section className="mobile-subsection">
         <h2>{labels.clients}</h2>
         <StockStyleTable
@@ -467,17 +505,31 @@ export function ClientsSection({
           pageSizeLabel={labels.pageSize}
           empty={labels.empty}
           minWidth={760}
+          initialSortId={defaultClientSort}
+          initialPageSize={10}
+          pageSizes={[5, 10, 25, 50, 100]}
+          stickyFirstColumn
+          toolbar={<>
+            <SearchRow query={query} onQueryChange={onQueryChange} label={labels.search} />
+            {data.clients.length >= 2000 ? <LimitNotice>{labels.limitNotice} ({labels.limitedClients}: 2,000)</LimitNotice> : null}
+          </>}
           sorts={[
-            { id: "name", label: labels.name, compare: compareName },
+            ...(hasCreditVersementSortData ? [
+              { id: "creditsVersements", label: labels.sortCreditsVersements, compare: compareCreditsVersements },
+            ] : []),
+            ...(hasPurchasesSortData ? [
+              { id: "totalPurchases", label: labels.sortTotalPurchases, compare: compareTotalPurchases },
+            ] : []),
+            { id: "name", label: labels.nameAZ, compare: compareName },
             { id: "newest", label: labels.newest, compare: compareCreated },
             { id: "oldest", label: labels.oldest, compare: compareOldest },
+            { id: "notes", label: labels.sortNotes, compare: compareNotes },
           ]}
           columns={[
             { key: "name", label: labels.name, render: (row) => valueText(row, "name") || "—" },
             { key: "phone", label: labels.phone, render: (row) => valueText(row, "phone") || "—" },
             { key: "address", label: labels.address, render: (row) => valueText(row, "address") || "—" },
             { key: "notes", label: labels.notes, render: (row) => valueText(row, "notes") || "—" },
-            { key: "created", label: labels.created, render: (row) => displayDate(valueText(row, "source_created_at"), language) },
             { key: "view", label: labels.view, render: (row) => <DetailButton label={labels.view} onClick={() => setSelected(row)} /> },
           ]}
           footer={<div className="stock-table-totals"><div><span>{labels.clients}</span><strong>{new Intl.NumberFormat(language).format(clients.length)}</strong></div></div>}
