@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Search, X } from "lucide-react";
+import { CreditCard, Search, Users, X } from "lucide-react";
 import type { ReactNode } from "react";
 import type {
   MobileBundle,
@@ -37,6 +37,18 @@ type LabelKey =
   | "created"
   | "clients"
   | "payments"
+  | "allPaymentsTab"
+  | "credits"
+  | "versements"
+  | "paid"
+  | "unpaid"
+  | "paymentStatus"
+  | "paymentSearch"
+  | "totalPayments"
+  | "totalAmount"
+  | "paidAmount"
+  | "outstandingAmount"
+  | "overdueAmount"
   | "sales"
   | "paymentType"
   | "amount"
@@ -125,7 +137,7 @@ const LABELS: Record<MobileLanguage, Record<LabelKey, string>> = {
     sortCreditsVersements: "Credits / versements (default)", sortTotalPurchases: "Total purchases", totalPurchases: "Total purchases", totalCredit: "Total credit", totalVersement: "Total versement", purchasesUnavailable: "Purchase totals are not shown in this view.", sortNotes: "Clients with notes first",
     empty: "No records match these filters.", name: "Name", phone: "Phone",
     address: "Address", notes: "Notes", created: "Added", clients: "Clients",
-    payments: "Payments", sales: "Sales", paymentType: "Type", amount: "Amount",
+    payments: "Payments", allPaymentsTab: "All payments", credits: "Credits", versements: "Versements", paid: "Paid", unpaid: "Unpaid", paymentStatus: "Status", paymentSearch: "Search client, phone or reason...", totalPayments: "Total payments", totalAmount: "Total amount", paidAmount: "Paid amount", outstandingAmount: "Outstanding", overdueAmount: "Overdue", sales: "Sales", paymentType: "Type", amount: "Amount",
     givenAmount: "Given amount", creditAmount: "Credit amount", reason: "Reason",
     dueDate: "Due date", paidDate: "Paid date", saleDate: "Sale date",
     saleTotal: "Sale total", saleItems: "Sale items",
@@ -165,7 +177,7 @@ const LABELS: Record<MobileLanguage, Record<LabelKey, string>> = {
     sortCreditsVersements: "Crédits / versements (défaut)", sortTotalPurchases: "Total des achats", totalPurchases: "Total des achats", totalCredit: "Total crédit", totalVersement: "Total versement", purchasesUnavailable: "Le total des achats n’est pas affiché dans cette vue.", sortNotes: "Clients avec notes en premier",
     empty: "Aucun résultat pour ces filtres.", name: "Nom", phone: "Téléphone",
     address: "Adresse", notes: "Notes", created: "Ajouté", clients: "Clients",
-    payments: "Paiements", sales: "Ventes", paymentType: "Type", amount: "Montant",
+    payments: "Paiements", allPaymentsTab: "Tous les paiements", credits: "Crédits", versements: "Versements", paid: "Payé", unpaid: "Impayé", paymentStatus: "Statut", paymentSearch: "Rechercher client, téléphone ou motif...", totalPayments: "Nombre de paiements", totalAmount: "Montant total", paidAmount: "Montant payé", outstandingAmount: "Restant dû", overdueAmount: "En retard", sales: "Ventes", paymentType: "Type", amount: "Montant",
     givenAmount: "Montant versé", creditAmount: "Montant du crédit", reason: "Motif",
     dueDate: "Échéance", paidDate: "Date de paiement", saleDate: "Date de vente",
     saleTotal: "Total de la vente", saleItems: "Articles de vente",
@@ -206,7 +218,7 @@ const LABELS: Record<MobileLanguage, Record<LabelKey, string>> = {
     sortCreditsVersements: "الائتمان / الدفعات (افتراضي)", sortTotalPurchases: "إجمالي المشتريات", totalPurchases: "إجمالي المشتريات", totalCredit: "إجمالي الائتمان", totalVersement: "إجمالي الدفعات", purchasesUnavailable: "إجمالي المشتريات غير معروض في هذه الشاشة.", sortNotes: "العملاء الذين لديهم ملاحظات أولاً",
     empty: "لا توجد سجلات تطابق عوامل التصفية.", name: "الاسم", phone: "الهاتف",
     address: "العنوان", notes: "ملاحظات", created: "تاريخ الإضافة", clients: "العملاء",
-    payments: "الدفعات", sales: "المبيعات", paymentType: "النوع", amount: "المبلغ",
+    payments: "الدفعات", allPaymentsTab: "كل الدفعات", credits: "الائتمانات", versements: "الدفعات المستحقة", paid: "مدفوع", unpaid: "غير مدفوع", paymentStatus: "الحالة", paymentSearch: "ابحث باسم العميل أو الهاتف أو السبب...", totalPayments: "عدد الدفعات", totalAmount: "المبلغ الإجمالي", paidAmount: "المبلغ المدفوع", outstandingAmount: "المبلغ المتبقي", overdueAmount: "متأخر", sales: "المبيعات", paymentType: "النوع", amount: "المبلغ",
     givenAmount: "المبلغ المدفوع", creditAmount: "مبلغ الائتمان", reason: "السبب",
     dueDate: "تاريخ الاستحقاق", paidDate: "تاريخ الدفع", saleDate: "تاريخ البيع",
     saleTotal: "إجمالي البيع", saleItems: "عناصر البيع",
@@ -457,6 +469,10 @@ export function ClientsSection({
   const labels = LABELS[language];
   const [selected, setSelected] = useState<MobileRow | null>(null);
   const [showProfit, setShowProfit] = useState(false);
+  const [view, setView] = useState<"clients" | "payments">("clients");
+  const [paymentSearch, setPaymentSearch] = useState("");
+  const [paymentStatus, setPaymentStatus] = useState<"all" | "paid" | "unpaid">("unpaid");
+  const [paymentDueFilter, setPaymentDueFilter] = useState<"all" | "overdue" | "dueSoon">("all");
   const clients = useMemo(() => data.clients.filter((row) =>
     matchesQuery(row, query, ["name", "phone", "address", "notes"]),
   ), [data.clients, query]);
@@ -529,6 +545,94 @@ export function ClientsSection({
     return totals;
   }, [data.clients, data.payments, data.sales]);
   const financialsFor = (client: MobileRow) => clientFinancials.get(valueText(client, "source_id")) ?? { purchases: 0, credit: 0, versement: 0 };
+  const paymentRows = useMemo(() => {
+    if (!permissions.can_access_clients) return [] as MobileRow[];
+    const clientsById = new Map(data.clients.map((client) => [valueText(client, "source_id"), client]));
+    const salesById = new Map(data.sales.map((sale) => [valueText(sale, "source_id"), sale]));
+    return data.payments.map((payment) => {
+      const client = clientsById.get(valueText(payment, "client_source_id"));
+      const sale = salesById.get(valueText(payment, "sale_source_id"));
+      const givenAmount = valueNumber(payment, "given_amount");
+      const rawCreditAmount = payment.credit_amount;
+      const creditBase = rawCreditAmount !== null && rawCreditAmount !== undefined && rawCreditAmount !== ""
+        ? Number(rawCreditAmount)
+        : sale ? valueNumber(sale, "total_amount_with_discount") : 0;
+      const type = valueText(payment, "type").toUpperCase();
+      const paidDate = valueText(payment, "paid_date");
+      const remainingAmount = type === "CREDIT" ? creditBase - givenAmount : paidDate ? 0 : givenAmount;
+      return {
+        ...payment,
+        _client_name: valueText(client ?? {}, "name"),
+        _client_phone: valueText(client ?? {}, "phone"),
+        _remaining_amount: Number.isFinite(remainingAmount) ? remainingAmount : 0,
+      };
+    });
+  }, [data.clients, data.payments, data.sales, permissions.can_access_clients]);
+  const isPaymentOverdue = (payment: MobileRow) => {
+    const due = dateValue(payment, "due_date");
+    return !valueText(payment, "paid_date") && Number.isFinite(due) && due !== 0 && due < Date.now();
+  };
+  const isPaymentDueSoon = (payment: MobileRow) => {
+    const due = dateValue(payment, "due_date");
+    const days = Math.ceil((due - Date.now()) / 86_400_000);
+    return !valueText(payment, "paid_date") && Number.isFinite(due) && days > 0 && days <= 2;
+  };
+  const filteredPaymentRows = useMemo(() => paymentRows.filter((payment) => {
+    const term = paymentSearch.trim().toLocaleLowerCase();
+    const matchesSearch = !term || ["_client_name", "_client_phone", "reason"].some((key) => valueText(payment, key).toLocaleLowerCase().includes(term));
+    const paid = Boolean(valueText(payment, "paid_date"));
+    const matchesStatus = paymentStatus === "all" || (paymentStatus === "paid" ? paid : !paid);
+    const matchesDue = paymentDueFilter === "all" || (paymentDueFilter === "overdue" ? isPaymentOverdue(payment) : isPaymentDueSoon(payment));
+    return matchesSearch && matchesStatus && matchesDue;
+  }), [paymentRows, paymentSearch, paymentStatus, paymentDueFilter]);
+  const credits = filteredPaymentRows.filter((payment) => valueText(payment, "type").toUpperCase() === "CREDIT");
+  const versements = filteredPaymentRows.filter((payment) => valueText(payment, "type").toUpperCase() === "VERSEMENT");
+  const paymentAmount = (payment: MobileRow) => valueText(payment, "type").toUpperCase() === "CREDIT" ? valueNumber(payment, "_remaining_amount") : valueNumber(payment, "given_amount");
+  const paymentTotals = (rows: MobileRow[]) => ({
+    count: rows.length,
+    amount: rows.reduce((sum, payment) => sum + paymentAmount(payment), 0),
+    paid: rows.filter((payment) => Boolean(valueText(payment, "paid_date"))).reduce((sum, payment) => sum + paymentAmount(payment), 0),
+    outstanding: rows.filter((payment) => !valueText(payment, "paid_date")).reduce((sum, payment) => sum + paymentAmount(payment), 0),
+    overdue: rows.filter(isPaymentOverdue).reduce((sum, payment) => sum + paymentAmount(payment), 0),
+  });
+  const renderPaymentsTable = (rows: MobileRow[], type: "CREDIT" | "VERSEMENT") => {
+    const totals = paymentTotals(rows);
+    const isCredit = type === "CREDIT";
+    return <StockStyleTable
+      rows={rows}
+      labels={labels}
+      ariaLabel={isCredit ? labels.credits : labels.versements}
+      pageSizeLabel={labels.pageSize}
+      empty={labels.empty}
+      minWidth={760}
+      initialSortId="dueDate"
+      initialPageSize={7}
+      pageSizes={[7, 10, 25, 50, 100]}
+      stickyFirstColumn
+      sorts={[
+        { id: "dueDate", label: labels.dueDate, compare: (a, b) => dateValue(a, "due_date") - dateValue(b, "due_date") },
+        { id: "newest", label: labels.newest, compare: (a, b) => sortTime(b, "source_created_at") - sortTime(a, "source_created_at") },
+        { id: "oldest", label: labels.oldest, compare: (a, b) => sortTime(a, "source_created_at") - sortTime(b, "source_created_at") },
+        { id: "name", label: labels.nameAZ, compare: (a, b) => valueText(a, "_client_name").localeCompare(valueText(b, "_client_name"), language, { sensitivity: "base" }) },
+      ]}
+      columns={[
+        { key: "client", label: labels.client, render: (row) => <span className="block min-w-0"><strong className="block truncate">{valueText(row, "_client_name") || labels.clientUnavailable}</strong>{valueText(row, "_client_phone") ? <small className="block text-[11px] text-muted-foreground">{valueText(row, "_client_phone")}</small> : null}</span> },
+        { key: "reason", label: labels.reason, render: (row) => isCredit ? valueText(row, "reason") || "—" : "—" },
+        { key: "amount", label: labels.amount, align: "end", render: (row) => valueText(row, "paid_date") ? <span className="inline-flex rounded-full bg-green-100 px-2 py-1 text-xs font-semibold text-green-700 dark:bg-green-900/30 dark:text-green-400">{labels.paid}</span> : <span className={isCredit ? "font-semibold text-orange-600 dark:text-orange-400" : "font-semibold text-blue-600 dark:text-blue-400"}>{displayMoney(paymentAmount(row), language)}</span> },
+        { key: "dueDate", label: labels.dueDate, render: (row) => <span className="block"><span>{displayDate(valueText(row, "due_date"), language)}</span>{isPaymentOverdue(row) ? <small className="block font-semibold text-red-600 dark:text-red-400">{labels.overdue}</small> : !valueText(row, "paid_date") && isPaymentDueSoon(row) ? <small className="block font-semibold text-orange-600 dark:text-orange-400">{labels.dueSoon}</small> : null}</span> },
+        { key: "status", label: labels.paymentStatus, render: (row) => valueText(row, "paid_date") ? <span className="font-semibold text-green-600 dark:text-green-400">{labels.paid}</span> : isPaymentOverdue(row) ? <span className="font-semibold text-red-600 dark:text-red-400">{labels.overdue}</span> : isPaymentDueSoon(row) ? <span className="font-semibold text-orange-600 dark:text-orange-400">{labels.dueSoon}</span> : <span>{labels.unpaid}</span> },
+        { key: "created", label: labels.created, render: (row) => displayDate(valueText(row, "source_created_at"), language) },
+      ]}
+      footer={<div className="stock-table-totals" aria-label={isCredit ? labels.credits : labels.versements}>
+        <div><span>{labels.totalPayments}</span><strong>{new Intl.NumberFormat(language).format(totals.count)}</strong></div>
+        <div><span>{labels.totalAmount}</span><strong>{displayMoney(totals.amount, language)}</strong></div>
+        <div><span>{labels.paidAmount}</span><strong className="text-green-600 dark:text-green-400">{displayMoney(totals.paid, language)}</strong></div>
+        <div><span>{labels.outstandingAmount}</span><strong className={isCredit ? "text-orange-600 dark:text-orange-400" : "text-blue-600 dark:text-blue-400"}>{displayMoney(totals.outstanding, language)}</strong></div>
+        <div><span>{labels.overdueAmount}</span><strong className="text-red-600 dark:text-red-400">{displayMoney(totals.overdue, language)}</strong></div>
+      </div>}
+    />;
+  };
+
   const totalPurchases = clients.reduce((sum, client) => sum + financialsFor(client).purchases, 0);
   const totalCredits = clients.reduce((sum, client) => sum + Math.max(0, financialsFor(client).credit), 0);
   const totalVersements = clients.reduce((sum, client) => sum + Math.max(0, financialsFor(client).versement), 0);
@@ -554,6 +658,11 @@ export function ClientsSection({
 
   return (
     <>
+      <div className="stock-view-switch" role="tablist" aria-label={labels.clients}>
+        <button type="button" role="tab" aria-selected={view === "clients"} className={view === "clients" ? "active" : ""} onClick={() => setView("clients")}><Users size={16} />{labels.clients}</button>
+        <button type="button" role="tab" aria-selected={view === "payments"} className={view === "payments" ? "active" : ""} onClick={() => setView("payments")}><CreditCard size={16} />{labels.allPaymentsTab}</button>
+      </div>
+      {view === "clients" ? <>
       <section className="mobile-subsection">
         <h2>{labels.clients}</h2>
         <StockStyleTable
@@ -651,6 +760,26 @@ export function ClientsSection({
           </section>
         </ReadOnlyDetail>
       ) : null}
+      </> : <section className="mobile-subsection">
+        <h2>{labels.allPaymentsTab}</h2>
+        {!permissions.can_access_clients ? <p className="mobile-empty">{labels.historyUnavailable}</p> : <>
+          <div className="stock-filter-row" aria-label={labels.filters}>
+            <label className="mobile-select-control"><span>{labels.status}</span><select value={paymentStatus} onChange={(event) => setPaymentStatus(event.target.value as "all" | "paid" | "unpaid")}>
+              <option value="all">{labels.allStatuses}</option><option value="unpaid">{labels.unpaid}</option><option value="paid">{labels.paid}</option>
+            </select></label>
+            <label className="mobile-select-control"><span>{labels.dueFilter}</span><select value={paymentDueFilter} onChange={(event) => setPaymentDueFilter(event.target.value as "all" | "overdue" | "dueSoon")}>
+              <option value="all">{labels.all}</option><option value="overdue">{labels.overdue}</option><option value="dueSoon">{labels.dueSoon}</option>
+            </select></label>
+          </div>
+          <div className="stock-table-toolbar">
+            <SearchRow query={paymentSearch} onQueryChange={setPaymentSearch} label={labels.paymentSearch} />
+          </div>
+          {data.payments.length >= 3000 ? <LimitNotice>{labels.limitNotice} ({labels.limitedPayments}: 3,000)</LimitNotice> : null}
+          <section className="mobile-subsection"><h3>{labels.credits} ({credits.length})</h3>{credits.length ? renderPaymentsTable(credits, "CREDIT") : <p className="mobile-empty">{labels.empty}</p>}</section>
+          <section className="mobile-subsection"><h3>{labels.versements} ({versements.length})</h3>{versements.length ? renderPaymentsTable(versements, "VERSEMENT") : <p className="mobile-empty">{labels.empty}</p>}</section>
+          <p className="stock-detail-muted">{labels.dueSoonThresholdNote}</p>
+        </>}
+      </section>}
     </>
   );
 }
