@@ -24,6 +24,7 @@ type LabelKey =
   | "nameAZ"
   | "sortCreditsVersements"
   | "sortTotalPurchases"
+  | "totalPurchases"
   | "totalCredit"
   | "totalVersement"
   | "purchasesUnavailable"
@@ -121,7 +122,7 @@ const LABELS: Record<MobileLanguage, Record<LabelKey, string>> = {
     search: "Search", sort: "Sort by", desktopDefault: "Desktop default", pageSize: "Rows per page", view: "View",
     close: "Close", page: "Page", of: "of", previous: "Previous", next: "Next",
     newest: "Newest first", oldest: "Oldest first", nameAZ: "Name A–Z",
-    sortCreditsVersements: "Credits / versements (default)", sortTotalPurchases: "Total purchases", totalCredit: "Total credit", totalVersement: "Total versement", purchasesUnavailable: "Purchase totals are not shown in this view.", sortNotes: "Clients with notes first",
+    sortCreditsVersements: "Credits / versements (default)", sortTotalPurchases: "Total purchases", totalPurchases: "Total purchases", totalCredit: "Total credit", totalVersement: "Total versement", purchasesUnavailable: "Purchase totals are not shown in this view.", sortNotes: "Clients with notes first",
     empty: "No records match these filters.", name: "Name", phone: "Phone",
     address: "Address", notes: "Notes", created: "Added", clients: "Clients",
     payments: "Payments", sales: "Sales", paymentType: "Type", amount: "Amount",
@@ -161,7 +162,7 @@ const LABELS: Record<MobileLanguage, Record<LabelKey, string>> = {
     search: "Rechercher", sort: "Trier par", desktopDefault: "Ordre du bureau", pageSize: "Lignes par page", view: "Voir",
     close: "Fermer", page: "Page", of: "sur", previous: "Précédent", next: "Suivant",
     newest: "Plus récent", oldest: "Plus ancien", nameAZ: "Nom A–Z",
-    sortCreditsVersements: "Crédits / versements (défaut)", sortTotalPurchases: "Total des achats", totalCredit: "Total crédit", totalVersement: "Total versement", purchasesUnavailable: "Le total des achats n’est pas affiché dans cette vue.", sortNotes: "Clients avec notes en premier",
+    sortCreditsVersements: "Crédits / versements (défaut)", sortTotalPurchases: "Total des achats", totalPurchases: "Total des achats", totalCredit: "Total crédit", totalVersement: "Total versement", purchasesUnavailable: "Le total des achats n’est pas affiché dans cette vue.", sortNotes: "Clients avec notes en premier",
     empty: "Aucun résultat pour ces filtres.", name: "Nom", phone: "Téléphone",
     address: "Adresse", notes: "Notes", created: "Ajouté", clients: "Clients",
     payments: "Paiements", sales: "Ventes", paymentType: "Type", amount: "Montant",
@@ -202,7 +203,7 @@ const LABELS: Record<MobileLanguage, Record<LabelKey, string>> = {
     search: "بحث", sort: "ترتيب حسب", desktopDefault: "ترتيب سطح المكتب", pageSize: "عدد الصفوف", view: "عرض",
     close: "إغلاق", page: "صفحة", of: "من", previous: "السابق", next: "التالي",
     newest: "الأحدث أولاً", oldest: "الأقدم أولاً", nameAZ: "الاسم أ–ي",
-    sortCreditsVersements: "الائتمان / الدفعات (افتراضي)", sortTotalPurchases: "إجمالي المشتريات", totalCredit: "إجمالي الائتمان", totalVersement: "إجمالي الدفعات", purchasesUnavailable: "إجمالي المشتريات غير معروض في هذه الشاشة.", sortNotes: "العملاء الذين لديهم ملاحظات أولاً",
+    sortCreditsVersements: "الائتمان / الدفعات (افتراضي)", sortTotalPurchases: "إجمالي المشتريات", totalPurchases: "إجمالي المشتريات", totalCredit: "إجمالي الائتمان", totalVersement: "إجمالي الدفعات", purchasesUnavailable: "إجمالي المشتريات غير معروض في هذه الشاشة.", sortNotes: "العملاء الذين لديهم ملاحظات أولاً",
     empty: "لا توجد سجلات تطابق عوامل التصفية.", name: "الاسم", phone: "الهاتف",
     address: "العنوان", notes: "ملاحظات", created: "تاريخ الإضافة", clients: "العملاء",
     payments: "الدفعات", sales: "المبيعات", paymentType: "النوع", amount: "المبلغ",
@@ -463,13 +464,34 @@ export function ClientsSection({
   const compareCreated = (a: MobileRow, b: MobileRow) => sortTime(b, "source_created_at") - sortTime(a, "source_created_at");
   const compareOldest = (a: MobileRow, b: MobileRow) => -compareCreated(a, b);
   const clientFinancials = useMemo(() => {
-    const totals = new Map<string, { credit: number; versement: number }>();
+    const totals = new Map<string, { purchases: number; credit: number; versement: number }>();
     const salesById = new Map<string, MobileRow>();
+    const saleItemsBySaleId = new Map<string, MobileRow[]>();
     for (const client of data.clients) {
-      totals.set(valueText(client, "source_id"), { credit: 0, versement: 0 });
+      totals.set(valueText(client, "source_id"), { purchases: 0, credit: 0, versement: 0 });
     }
     for (const sale of data.sales) {
       salesById.set(valueText(sale, "source_id"), sale);
+    }
+    for (const item of data.sale_items) {
+      const saleId = valueText(item, "sale_source_id");
+      if (!saleId) continue;
+      const items = saleItemsBySaleId.get(saleId) ?? [];
+      items.push(item);
+      saleItemsBySaleId.set(saleId, items);
+    }
+    // Match desktop getAllClientsWithTotalPurchases(): sum each sale item's
+    // price * quantity, then subtract that sale's discount.
+    for (const sale of data.sales) {
+      const clientId = valueText(sale, "client_source_id");
+      const totalsForClient = totals.get(clientId);
+      if (!totalsForClient) continue;
+      const saleItems = saleItemsBySaleId.get(valueText(sale, "source_id")) ?? [];
+      const saleTotal = saleItems.reduce(
+        (sum, item) => sum + valueNumber(item, "price") * valueNumber(item, "quantity"),
+        0,
+      ) - valueNumber(sale, "discount");
+      totalsForClient.purchases += saleTotal;
     }
     for (const payment of data.payments) {
       const clientId = valueText(payment, "client_source_id") || valueText(payment, "clientSourceId");
@@ -506,7 +528,10 @@ export function ClientsSection({
     }
     return totals;
   }, [data.clients, data.payments, data.sales]);
-  const financialsFor = (client: MobileRow) => clientFinancials.get(valueText(client, "source_id")) ?? { credit: 0, versement: 0 };
+  const financialsFor = (client: MobileRow) => clientFinancials.get(valueText(client, "source_id")) ?? { purchases: 0, credit: 0, versement: 0 };
+  const totalPurchases = clients.reduce((sum, client) => sum + financialsFor(client).purchases, 0);
+  const totalCredits = clients.reduce((sum, client) => sum + Math.max(0, financialsFor(client).credit), 0);
+  const totalVersements = clients.reduce((sum, client) => sum + Math.max(0, financialsFor(client).versement), 0);
   const compareCreditsVersements = (a: MobileRow, b: MobileRow) => {
     const aTotals = financialsFor(a);
     const bTotals = financialsFor(b);
@@ -558,11 +583,17 @@ export function ClientsSection({
             { key: "phone", label: labels.phone, render: (row) => valueText(row, "phone") || "—" },
             { key: "address", label: labels.address, render: (row) => valueText(row, "address") || "—" },
             { key: "notes", label: labels.notes, render: (row) => valueText(row, "notes") || "—" },
-            { key: "totalCredit", label: labels.totalCredit, align: "end", render: (row) => displayMoney(financialsFor(row).credit, language) },
-            { key: "totalVersement", label: labels.totalVersement, align: "end", render: (row) => displayMoney(financialsFor(row).versement, language) },
+            { key: "totalPurchases", label: labels.totalPurchases, align: "end", render: (row) => displayMoney(financialsFor(row).purchases, language) },
+            { key: "totalCredit", label: labels.totalCredit, align: "end", render: (row) => <span className="font-medium text-orange-600 dark:text-orange-400">{displayMoney(financialsFor(row).credit, language)}</span> },
+            { key: "totalVersement", label: labels.totalVersement, align: "end", render: (row) => <span className="font-medium text-blue-600 dark:text-blue-400">{displayMoney(financialsFor(row).versement, language)}</span> },
             { key: "view", label: labels.view, render: (row) => <DetailButton label={labels.view} onClick={() => setSelected(row)} /> },
           ]}
-          footer={<div className="stock-table-totals"><div><span>{labels.clients}</span><strong>{new Intl.NumberFormat(language).format(clients.length)}</strong></div></div>}
+          footer={<div className="stock-table-totals">
+            <div><span>{labels.clients}</span><strong>{new Intl.NumberFormat(language).format(clients.length)}</strong></div>
+            <div><span>{labels.totalPurchases}</span><strong>{displayMoney(totalPurchases, language)}</strong></div>
+            <div><span>{labels.totalCredit}</span><strong className="text-orange-600 dark:text-orange-400">{displayMoney(totalCredits, language)}</strong></div>
+            <div><span>{labels.totalVersement}</span><strong className="text-blue-600 dark:text-blue-400">{displayMoney(totalVersements, language)}</strong></div>
+          </div>} 
         />
       </section>
       {selected ? (
