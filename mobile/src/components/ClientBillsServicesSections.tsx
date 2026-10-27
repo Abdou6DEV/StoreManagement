@@ -477,10 +477,11 @@ export function ClientsSection({
       const paymentType = valueText(payment, "type").toUpperCase();
       const totalsForClient = totals.get(clientId);
       if (!totalsForClient) continue;
+      const paidDate = valueText(payment, "paid_date") || valueText(payment, "paidDate");
       const givenAmount = valueNumber(payment, "given_amount") || valueNumber(payment, "givenAmount");
-      if (paymentType === "CREDIT") {
-        // Mirror desktop getAllPaymentsWithClientInfo(): calculate remaining balance
-        // from creditAmount, or from the linked sale's discounted total when absent.
+
+      // Match src/lib/database/clients.ts: the Clients table totals unpaid records only.
+      if (paymentType === "CREDIT" && !paidDate) {
         const rawCreditAmount = payment.credit_amount ?? payment.creditAmount;
         const saleId = valueText(payment, "sale_source_id") || valueText(payment, "saleId");
         const sale = salesById.get(saleId);
@@ -492,9 +493,14 @@ export function ClientsSection({
         } else {
           remainingAmount = valueNumber(payment, "credit_amount") - givenAmount;
         }
-        totalsForClient.credit += Number.isFinite(remainingAmount) ? remainingAmount : 0;
-      } else if (paymentType === "VERSEMENT") {
-        // Desktop Total Versement includes paid and unpaid records.
+
+        // Desktop falls back to givenAmount if remainingAmount is absent/non-positive.
+        if (remainingAmount > 0) {
+          totalsForClient.credit += remainingAmount;
+        } else if (givenAmount > 0) {
+          totalsForClient.credit += givenAmount;
+        }
+      } else if (paymentType === "VERSEMENT" && !paidDate) {
         totalsForClient.versement += givenAmount;
       }
     }
