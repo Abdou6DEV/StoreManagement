@@ -464,27 +464,42 @@ export function ClientsSection({
   const compareOldest = (a: MobileRow, b: MobileRow) => -compareCreated(a, b);
   const clientFinancials = useMemo(() => {
     const totals = new Map<string, { credit: number; versement: number }>();
+    const salesById = new Map<string, MobileRow>();
     for (const client of data.clients) {
       totals.set(valueText(client, "source_id"), { credit: 0, versement: 0 });
     }
+    for (const sale of data.sales) {
+      salesById.set(valueText(sale, "source_id"), sale);
+    }
     for (const payment of data.payments) {
       const clientId = valueText(payment, "client_source_id") || valueText(payment, "clientSourceId");
-      if (!clientId || (valueText(payment, "paid_date") || valueText(payment, "paidDate"))) continue;
+      if (!clientId) continue;
       const paymentType = valueText(payment, "type").toUpperCase();
       const totalsForClient = totals.get(clientId);
       if (!totalsForClient) continue;
       const givenAmount = valueNumber(payment, "given_amount") || valueNumber(payment, "givenAmount");
       if (paymentType === "CREDIT") {
-        const rawRemaining = payment.remaining_amount ?? payment.remainingAmount;
-        const remainingAmount = typeof rawRemaining === "number" && Number.isFinite(rawRemaining) ? rawRemaining : 0;
-        // Match the desktop: use a positive remaining amount, otherwise fall back to given amount.
-        totalsForClient.credit += remainingAmount > 0 ? remainingAmount : Math.max(0, givenAmount);
+        // Mirror desktop getAllPaymentsWithClientInfo(): calculate remaining balance
+        // from creditAmount, or from the linked sale's discounted total when absent.
+        const rawCreditAmount = payment.credit_amount ?? payment.creditAmount;
+        const saleId = valueText(payment, "sale_source_id") || valueText(payment, "saleId");
+        const sale = salesById.get(saleId);
+        let remainingAmount: number;
+        if (rawCreditAmount !== null && rawCreditAmount !== undefined && rawCreditAmount !== "") {
+          remainingAmount = Number(rawCreditAmount) - givenAmount;
+        } else if (saleId && sale) {
+          remainingAmount = valueNumber(sale, "total_amount_with_discount") - givenAmount;
+        } else {
+          remainingAmount = valueNumber(payment, "credit_amount") - givenAmount;
+        }
+        totalsForClient.credit += Number.isFinite(remainingAmount) ? remainingAmount : 0;
       } else if (paymentType === "VERSEMENT") {
-        totalsForClient.versement += Math.max(0, givenAmount);
+        // Desktop Total Versement includes paid and unpaid records.
+        totalsForClient.versement += givenAmount;
       }
     }
     return totals;
-  }, [data.clients, data.payments]);
+  }, [data.clients, data.payments, data.sales]);
   const financialsFor = (client: MobileRow) => clientFinancials.get(valueText(client, "source_id")) ?? { credit: 0, versement: 0 };
   const compareCreditsVersements = (a: MobileRow, b: MobileRow) => {
     const aTotals = financialsFor(a);
