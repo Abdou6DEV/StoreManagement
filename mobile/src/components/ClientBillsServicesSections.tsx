@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { CreditCard, Search, Users, X } from "lucide-react";
+import { CreditCard, Search, ShoppingCart, Users, Wrench, X } from "lucide-react";
 import type { ReactNode } from "react";
 import type {
   MobileBundle,
@@ -10,6 +10,7 @@ import type {
 
 type LabelKey =
   | "search"
+  | "filters"
   | "sort"
   | "desktopDefault"
   | "pageSize"
@@ -25,8 +26,20 @@ type LabelKey =
   | "sortCreditsVersements"
   | "sortTotalPurchases"
   | "totalPurchases"
+  | "totalSpent"
+  | "totalSales"
+  | "salesHistory"
+  | "paymentsHistory"
+  | "servicesHistory"
+  | "noServices"
+  | "showMore"
+  | "showLess"
+  | "more"
   | "totalCredit"
+  | "totalCredits"
   | "totalVersement"
+  | "totalVersements"
+  | "services"
   | "purchasesUnavailable"
   | "sortNotes"
   | "empty"
@@ -131,10 +144,10 @@ type LabelKey =
 
 const LABELS: Record<MobileLanguage, Record<LabelKey, string>> = {
   en: {
-    search: "Search", sort: "Sort by", desktopDefault: "Desktop default", pageSize: "Rows per page", view: "View",
+    search: "Search", filters: "Filters", sort: "Sort by", desktopDefault: "Desktop default", pageSize: "Rows per page", view: "View",
     close: "Close", page: "Page", of: "of", previous: "Previous", next: "Next",
     newest: "Newest first", oldest: "Oldest first", nameAZ: "Name A–Z",
-    sortCreditsVersements: "Credits / versements (default)", sortTotalPurchases: "Total purchases", totalPurchases: "Total purchases", totalCredit: "Total credit", totalVersement: "Total versement", purchasesUnavailable: "Purchase totals are not shown in this view.", sortNotes: "Clients with notes first",
+    sortCreditsVersements: "Credits / versements (default)", sortTotalPurchases: "Total purchases", totalPurchases: "Total purchases", totalSpent: "Total spent", totalSales: "Total sales", salesHistory: "Sales history", paymentsHistory: "Payments history", servicesHistory: "Services history", noServices: "No service history is available for this client.", showMore: "Show more", showLess: "Show less", more: "more", totalCredit: "Total credit", totalCredits: "Total credits", totalVersement: "Total versement", totalVersements: "Total versements", services: "Services", purchasesUnavailable: "Purchase totals are not shown in this view.", sortNotes: "Clients with notes first",
     empty: "No records match these filters.", name: "Name", phone: "Phone",
     address: "Address", notes: "Notes", created: "Added", clients: "Clients",
     payments: "Payments", allPaymentsTab: "All payments", credits: "Credits", versements: "Versements", paid: "Paid", unpaid: "Unpaid", paymentStatus: "Status", paymentSearch: "Search client, phone or reason...", totalPayments: "Total payments", totalAmount: "Total amount", paidAmount: "Paid amount", outstandingAmount: "Outstanding", overdueAmount: "Overdue", sales: "Sales", paymentType: "Type", amount: "Amount",
@@ -171,10 +184,10 @@ const LABELS: Record<MobileLanguage, Record<LabelKey, string>> = {
     dueSoonThresholdNote: "Due-soon uses the 2-day default; the desktop threshold setting is not synced to the PWA.",
   },
   fr: {
-    search: "Rechercher", sort: "Trier par", desktopDefault: "Ordre du bureau", pageSize: "Lignes par page", view: "Voir",
+    search: "Rechercher", filters: "Filtres", sort: "Trier par", desktopDefault: "Ordre du bureau", pageSize: "Lignes par page", view: "Voir",
     close: "Fermer", page: "Page", of: "sur", previous: "Précédent", next: "Suivant",
     newest: "Plus récent", oldest: "Plus ancien", nameAZ: "Nom A–Z",
-    sortCreditsVersements: "Crédits / versements (défaut)", sortTotalPurchases: "Total des achats", totalPurchases: "Total des achats", totalCredit: "Total crédit", totalVersement: "Total versement", purchasesUnavailable: "Le total des achats n’est pas affiché dans cette vue.", sortNotes: "Clients avec notes en premier",
+    sortCreditsVersements: "Crédits / versements (défaut)", sortTotalPurchases: "Total des achats", totalPurchases: "Total des achats", totalSpent: "Total dépensé", totalSales: "Total des ventes", salesHistory: "Historique des ventes", paymentsHistory: "Historique des paiements", servicesHistory: "Historique des services", noServices: "Aucun historique de service disponible pour ce client.", showMore: "Afficher plus", showLess: "Afficher moins", more: "de plus", totalCredit: "Total crédit", totalCredits: "Total des crédits", totalVersement: "Total versement", totalVersements: "Total des versements", services: "Services", purchasesUnavailable: "Le total des achats n’est pas affiché dans cette vue.", sortNotes: "Clients avec notes en premier",
     empty: "Aucun résultat pour ces filtres.", name: "Nom", phone: "Téléphone",
     address: "Adresse", notes: "Notes", created: "Ajouté", clients: "Clients",
     payments: "Paiements", allPaymentsTab: "Tous les paiements", credits: "Crédits", versements: "Versements", paid: "Payé", unpaid: "Impayé", paymentStatus: "Statut", paymentSearch: "Rechercher client, téléphone ou motif...", totalPayments: "Nombre de paiements", totalAmount: "Montant total", paidAmount: "Montant payé", outstandingAmount: "Restant dû", overdueAmount: "En retard", sales: "Ventes", paymentType: "Type", amount: "Montant",
@@ -212,10 +225,10 @@ const LABELS: Record<MobileLanguage, Record<LabelKey, string>> = {
     dueSoonThresholdNote: "L’échéance proche utilise la valeur par défaut de 2 jours ; le réglage du bureau n’est pas synchronisé.",
   },
   ar: {
-    search: "بحث", sort: "ترتيب حسب", desktopDefault: "ترتيب سطح المكتب", pageSize: "عدد الصفوف", view: "عرض",
+    search: "بحث", filters: "عوامل التصفية", sort: "ترتيب حسب", desktopDefault: "ترتيب سطح المكتب", pageSize: "عدد الصفوف", view: "عرض",
     close: "إغلاق", page: "صفحة", of: "من", previous: "السابق", next: "التالي",
     newest: "الأحدث أولاً", oldest: "الأقدم أولاً", nameAZ: "الاسم أ–ي",
-    sortCreditsVersements: "الائتمان / الدفعات (افتراضي)", sortTotalPurchases: "إجمالي المشتريات", totalPurchases: "إجمالي المشتريات", totalCredit: "إجمالي الائتمان", totalVersement: "إجمالي الدفعات", purchasesUnavailable: "إجمالي المشتريات غير معروض في هذه الشاشة.", sortNotes: "العملاء الذين لديهم ملاحظات أولاً",
+    sortCreditsVersements: "الائتمان / الدفعات (افتراضي)", sortTotalPurchases: "إجمالي المشتريات", totalPurchases: "إجمالي المشتريات", totalSpent: "إجمالي الإنفاق", totalSales: "إجمالي المبيعات", salesHistory: "سجل المبيعات", paymentsHistory: "سجل الدفعات", servicesHistory: "سجل الخدمات", noServices: "لا يوجد سجل خدمات متاح لهذا العميل.", showMore: "عرض المزيد", showLess: "عرض أقل", more: "أخرى", totalCredit: "إجمالي الائتمان", totalCredits: "إجمالي الائتمانات", totalVersement: "إجمالي الدفعات", totalVersements: "إجمالي الدفعات", services: "الخدمات", purchasesUnavailable: "إجمالي المشتريات غير معروض في هذه الشاشة.", sortNotes: "العملاء الذين لديهم ملاحظات أولاً",
     empty: "لا توجد سجلات تطابق عوامل التصفية.", name: "الاسم", phone: "الهاتف",
     address: "العنوان", notes: "ملاحظات", created: "تاريخ الإضافة", clients: "العملاء",
     payments: "الدفعات", allPaymentsTab: "كل الدفعات", credits: "الائتمانات", versements: "الدفعات المستحقة", paid: "مدفوع", unpaid: "غير مدفوع", paymentStatus: "الحالة", paymentSearch: "ابحث باسم العميل أو الهاتف أو السبب...", totalPayments: "عدد الدفعات", totalAmount: "المبلغ الإجمالي", paidAmount: "المبلغ المدفوع", outstandingAmount: "المبلغ المتبقي", overdueAmount: "متأخر", sales: "المبيعات", paymentType: "النوع", amount: "المبلغ",
@@ -468,6 +481,10 @@ export function ClientsSection({
 }) {
   const labels = LABELS[language];
   const [selected, setSelected] = useState<MobileRow | null>(null);
+  const [clientDetailTab, setClientDetailTab] = useState<"sales" | "payments" | "services">("sales");
+  const [clientSalesLimit, setClientSalesLimit] = useState(5);
+  const [clientPaymentsLimit, setClientPaymentsLimit] = useState(5);
+  const [clientServicesLimit, setClientServicesLimit] = useState(5);
   const [showProfit, setShowProfit] = useState(false);
   const [view, setView] = useState<"clients" | "payments">("clients");
   const [paymentSearch, setPaymentSearch] = useState("");
@@ -655,12 +672,57 @@ export function ClientsSection({
   // Desktop defaults to ordering clients by outstanding credits, then versements.
   const defaultClientSort = "creditsVersements";
   const clientId = selected ? valueText(selected, "source_id") : "";
-  const payments = clientId && permissions.can_access_clients
-    ? data.payments.filter((row) => valueText(row, "client_source_id") === clientId)
-    : [];
   const sales = clientId && permissions.can_access_history && data.sales_history_available
     ? data.sales.filter((row) => valueText(row, "client_source_id") === clientId)
+        .sort((a, b) => sortTime(b, "source_created_at") - sortTime(a, "source_created_at"))
     : [];
+  const payments = clientId && permissions.can_access_clients
+    ? data.payments.filter((row) => valueText(row, "client_source_id") === clientId)
+        .sort((a, b) => sortTime(b, "source_created_at") - sortTime(a, "source_created_at"))
+    : [];
+  const clientServices = clientId && permissions.can_access_services
+    ? data.service_appointments.filter((row) => valueText(row, "client_source_id") === clientId)
+        .sort((a, b) => sortTime(b, "source_created_at") - sortTime(a, "source_created_at"))
+    : [];
+  const totalSpentForClient = sales.reduce((sum, sale) => sum + valueNumber(sale, "total_amount_with_discount"), 0);
+  const salesByIdForClient = new Map(data.sales.map((sale) => [valueText(sale, "source_id"), sale]));
+  const totalCreditsForClient = payments.filter((payment) => valueText(payment, "type").toUpperCase() === "CREDIT")
+    .reduce((sum, payment) => {
+      const given = valueNumber(payment, "given_amount");
+      const rawCredit = payment.credit_amount ?? payment.creditAmount;
+      const sale = salesByIdForClient.get(valueText(payment, "sale_source_id") || valueText(payment, "saleId"));
+      const remaining = rawCredit !== null && rawCredit !== undefined && rawCredit !== ""
+        ? Number(rawCredit) - given
+        : sale ? valueNumber(sale, "total_amount_with_discount") - given : given;
+      return sum + (Number.isFinite(remaining) ? remaining : given);
+    }, 0);
+  const totalVersementsForClient = payments
+    .filter((payment) => valueText(payment, "type").toUpperCase() === "VERSEMENT")
+    .reduce((sum, payment) => sum + valueNumber(payment, "given_amount"), 0);
+  const paymentDetailAmount = (payment: MobileRow) => {
+    if (valueText(payment, "type").toUpperCase() !== "CREDIT") return valueNumber(payment, "given_amount");
+    const given = valueNumber(payment, "given_amount");
+    const rawCredit = payment.credit_amount ?? payment.creditAmount;
+    const sale = salesByIdForClient.get(valueText(payment, "sale_source_id") || valueText(payment, "saleId"));
+    if (rawCredit !== null && rawCredit !== undefined && rawCredit !== "") return Number(rawCredit) - given;
+    return sale ? valueNumber(sale, "total_amount_with_discount") - given : given;
+  };
+  const saleItemName = (item: MobileRow) => {
+    const productId = valueText(item, "product_source_id");
+    const manualId = valueText(item, "manual_product_source_id");
+    const serviceId = valueText(item, "service_source_id");
+    const product = data.products.find((row) => valueText(row, "source_id") === productId);
+    const manualProduct = data.manual_products.find((row) => valueText(row, "source_id") === manualId);
+    const service = data.services.find((row) => valueText(row, "source_id") === serviceId);
+    return valueText(product ?? manualProduct ?? service ?? {}, "name") || labels.itemUnavailable;
+  };
+  const openClientDetail = (client: MobileRow) => {
+    setSelected(client);
+    setClientDetailTab("sales");
+    setClientSalesLimit(5);
+    setClientPaymentsLimit(5);
+    setClientServicesLimit(5);
+  };
 
   return (
     <>
@@ -701,14 +763,14 @@ export function ClientsSection({
             { key: "totalPurchases", label: labels.totalPurchases, align: "end", render: (row) => displayMoney(financialsFor(row).purchases, language) },
             { key: "totalCredit", label: labels.totalCredit, align: "end", render: (row) => <span className="font-medium text-orange-600 dark:text-orange-400">{displayMoney(financialsFor(row).credit, language)}</span> },
             { key: "totalVersement", label: labels.totalVersement, align: "end", render: (row) => <span className="font-medium text-blue-600 dark:text-blue-400">{displayMoney(financialsFor(row).versement, language)}</span> },
-            { key: "view", label: labels.view, render: (row) => <DetailButton label={labels.view} onClick={() => setSelected(row)} /> },
+            { key: "view", label: labels.view, render: (row) => <DetailButton label={labels.view} onClick={() => openClientDetail(row)} /> },
           ]}
           footer={<div className="stock-table-totals">
             <div><span>{labels.clients}</span><strong>{new Intl.NumberFormat(language).format(clients.length)}</strong></div>
             <div><span>{labels.totalPurchases}</span><strong>{displayMoney(totalPurchases, language)}</strong></div>
             <div><span>{labels.totalCredit}</span><strong className="text-orange-600 dark:text-orange-400">{displayMoney(totalCredits, language)}</strong></div>
             <div><span>{labels.totalVersement}</span><strong className="text-blue-600 dark:text-blue-400">{displayMoney(totalVersements, language)}</strong></div>
-          </div>} 
+          </div>}
         />
       </section>
       {selected ? (
@@ -718,52 +780,65 @@ export function ClientsSection({
           [labels.notes, valueText(selected, "notes")],
           [labels.created, displayDate(valueText(selected, "source_created_at"), language, true)],
         ]}>
-          <p className="stock-detail-muted">{labels.purchasesUnavailable}</p>
-          <section className="stock-detail-history-section">
-            <h3>{labels.payments}{permissions.can_access_clients ? ` (${payments.length})` : ""}</h3>
-            {!permissions.can_access_clients ? <p className="stock-detail-muted">{labels.historyUnavailable}</p> : payments.length === 0 ? <p className="stock-detail-muted">{labels.noPayments}</p> : (
-              <div className="stock-history-table-wrap"><table className="stock-history-table">
-                <thead><tr><th>{labels.paymentType}</th><th>{labels.givenAmount}</th><th>{labels.creditAmount}</th><th>{labels.dueDate}</th><th>{labels.paidDate}</th><th>{labels.reason}</th></tr></thead>
-                <tbody>{payments.map((payment) => <tr key={valueText(payment, "source_id")}>
-                  <td>{valueText(payment, "type") || "—"}</td>
-                  <td>{displayMoney(valueNumber(payment, "given_amount"), language)}</td>
-                  <td>{payment.credit_amount == null ? "—" : displayMoney(valueNumber(payment, "credit_amount"), language)}</td>
-                  <td>{displayDate(valueText(payment, "due_date"), language)}</td>
-                  <td>{displayDate(valueText(payment, "paid_date"), language)}</td>
-                  <td>{valueText(payment, "reason") || "—"}</td>
-                </tr>)}</tbody>
-              </table></div>
-            )}
-            {data.payments.length >= 3000 ? <p className="stock-detail-muted">{labels.limitNotice} ({labels.limitedPayments}: 3,000)</p> : null}
+          <section className="client-detail-summary" aria-label={labels.totalSpent}>
+            <div><span>{labels.totalSpent}</span><strong className="text-green-600 dark:text-green-400">{permissions.can_access_history && data.sales_history_available ? displayMoney(totalSpentForClient, language) : "—"}</strong><small>{labels.totalSales}: {permissions.can_access_history && data.sales_history_available ? new Intl.NumberFormat(language).format(sales.length) : "—"}</small></div>
+            <div><span>{labels.totalCredits}</span><strong className="text-orange-600 dark:text-orange-400">{permissions.can_access_clients ? displayMoney(totalCreditsForClient, language) : "—"}</strong><small>{labels.payments}: {permissions.can_access_clients ? new Intl.NumberFormat(language).format(payments.filter((payment) => valueText(payment, "type").toUpperCase() === "CREDIT").length) : "—"}</small></div>
+            <div><span>{labels.totalVersements}</span><strong className="text-blue-600 dark:text-blue-400">{permissions.can_access_clients ? displayMoney(totalVersementsForClient, language) : "—"}</strong><small>{labels.payments}: {permissions.can_access_clients ? new Intl.NumberFormat(language).format(payments.filter((payment) => valueText(payment, "type").toUpperCase() === "VERSEMENT").length) : "—"}</small></div>
           </section>
-          <section className="stock-detail-history-section">
-            <h3>{labels.sales}{permissions.can_access_history && data.sales_history_available ? ` (${sales.length})` : ""}</h3>
-            {!permissions.can_access_history || !data.sales_history_available ? <p className="stock-detail-muted">{labels.historyUnavailable}</p> : sales.length === 0 ? <p className="stock-detail-muted">{labels.noSales}</p> : (
-              <div className="stock-history-table-wrap"><table className="stock-history-table">
-                <thead><tr><th>{labels.saleDate}</th><th>{labels.saleTotal}</th><th>{labels.saleItems}</th></tr></thead>
-                <tbody>{sales.map((sale) => {
-                  const items = data.sale_items.filter((item) => valueText(item, "sale_source_id") === valueText(sale, "source_id"));
-                  return <tr key={valueText(sale, "source_id")}>
-                    <td>{displayDate(valueText(sale, "source_created_at"), language)}</td>
-                    <td>{displayMoney(valueNumber(sale, "total_amount_with_discount"), language)}</td>
-                    <td>{items.length > 0 ? items.map((item) => {
-                      const productId = valueText(item, "product_source_id");
-                      const manualId = valueText(item, "manual_product_source_id");
-                      const serviceId = valueText(item, "service_source_id");
-                      const product = data.products.find((row) => valueText(row, "source_id") === productId);
-                      const manualProduct = data.manual_products.find((row) => valueText(row, "source_id") === manualId);
-                      const service = data.services.find((row) => valueText(row, "source_id") === serviceId);
-                      const itemName = valueText(product ?? manualProduct ?? service ?? {}, "name") || labels.itemUnavailable;
-                      return <div key={valueText(item, "source_id")}>
-                        {itemName} · {new Intl.NumberFormat(language).format(valueNumber(item, "quantity"))} × {displayMoney(valueNumber(item, "price"), language)}
-                      </div>;
-                    }) : "—"}</td>
-                  </tr>;
-                })}</tbody>
-              </table></div>
-            )}
+          <div className="client-detail-tabs" role="tablist" aria-label={labels.clients}>
+            <button type="button" role="tab" aria-selected={clientDetailTab === "sales"} className={clientDetailTab === "sales" ? "active" : ""} onClick={() => setClientDetailTab("sales")}><ShoppingCart size={15} /><span>{labels.sales}</span><b>{permissions.can_access_history && data.sales_history_available ? sales.length : "—"}</b></button>
+            <button type="button" role="tab" aria-selected={clientDetailTab === "payments"} className={clientDetailTab === "payments" ? "active" : ""} onClick={() => setClientDetailTab("payments")}><CreditCard size={15} /><span>{labels.payments}</span><b>{permissions.can_access_clients ? payments.length : "—"}</b></button>
+            <button type="button" role="tab" aria-selected={clientDetailTab === "services"} className={clientDetailTab === "services" ? "active" : ""} onClick={() => setClientDetailTab("services")}><Wrench size={15} /><span>{labels.services}</span><b>{permissions.can_access_services ? clientServices.length : "—"}</b></button>
+          </div>
+          {clientDetailTab === "sales" ? <section className="stock-detail-history-section">
+            <div className="stock-history-heading"><h3>{labels.salesHistory}</h3><div><span>{labels.totalSales}: {permissions.can_access_history && data.sales_history_available ? new Intl.NumberFormat(language).format(sales.length) : "—"}</span><span>{labels.totalSpent}: {permissions.can_access_history && data.sales_history_available ? displayMoney(totalSpentForClient, language) : "—"}</span></div></div>
+            {!permissions.can_access_history || !data.sales_history_available ? <p className="stock-detail-muted">{labels.historyUnavailable}</p> : sales.length === 0 ? <p className="stock-detail-muted">{labels.noSales}</p> : <div className="stock-detail-history-cards">
+              {sales.slice(0, clientSalesLimit).map((sale) => {
+                const items = data.sale_items.filter((item) => valueText(item, "sale_source_id") === valueText(sale, "source_id"));
+                return <article className="stock-detail-history-card" key={valueText(sale, "source_id")}>
+                  <div className="stock-detail-history-top"><strong className="stock-history-total stock-history-total-sale">{displayMoney(valueNumber(sale, "total_amount_with_discount"), language)}</strong><time>{displayDate(valueText(sale, "source_created_at"), language, true)}</time></div>
+                  <div className="client-detail-sale-items">{items.length ? items.slice(0, 3).map((item) => <div key={valueText(item, "source_id")}><span>{saleItemName(item)}</span><strong>{new Intl.NumberFormat(language).format(valueNumber(item, "quantity"))} × {displayMoney(valueNumber(item, "price"), language)}</strong></div>) : <p className="stock-detail-muted">{labels.itemUnavailable}</p>}{items.length > 3 ? <small>+{items.length - 3} {labels.more}</small> : null}</div>
+                </article>;
+              })}
+            </div>}
+            {permissions.can_access_history && sales.length > 5 ? <button type="button" className="stock-history-more" onClick={() => setClientSalesLimit((limit) => limit < sales.length ? Math.min(limit + 5, sales.length) : 5)}>{clientSalesLimit < sales.length ? `${labels.showMore} (${Math.min(5, sales.length - clientSalesLimit)} ${labels.more})` : labels.showLess}</button> : null}
             {data.sales.length >= 5000 || data.sale_items.length >= 10000 ? <p className="stock-detail-muted">{labels.limitNotice} ({labels.limitedSales}: 5,000)</p> : null}
-          </section>
+          </section> : null}
+          {clientDetailTab === "payments" ? <section className="stock-detail-history-section">
+            <div className="stock-history-heading"><h3>{labels.paymentsHistory}</h3><div><span>{labels.totalPayments}: {permissions.can_access_clients ? new Intl.NumberFormat(language).format(payments.length) : "—"}</span><span>{labels.totalCredits}: {permissions.can_access_clients ? displayMoney(totalCreditsForClient, language) : "—"}</span><span>{labels.totalVersements}: {permissions.can_access_clients ? displayMoney(totalVersementsForClient, language) : "—"}</span></div></div>
+            {!permissions.can_access_clients ? <p className="stock-detail-muted">{labels.historyUnavailable}</p> : payments.length === 0 ? <p className="stock-detail-muted">{labels.noPayments}</p> : <div className="stock-detail-history-cards">
+              {payments.slice(0, clientPaymentsLimit).map((payment) => {
+                const type = valueText(payment, "type").toUpperCase();
+                const paid = Boolean(valueText(payment, "paid_date"));
+                const amount = paymentDetailAmount(payment);
+                return <article className="stock-detail-history-card" key={valueText(payment, "source_id")}>
+                  <div className="stock-detail-history-top"><strong>{type === "CREDIT" ? labels.credits : labels.versements}</strong><time>{displayDate(valueText(payment, "source_created_at"), language, true)}</time></div>
+                  <div className="stock-detail-history-party"><span className={`record-status ${paid ? "completed" : "waiting"}`}>{paid ? labels.paid : labels.unpaid}</span><strong className={type === "CREDIT" ? "text-orange-600 dark:text-orange-400" : "text-blue-600 dark:text-blue-400"}>{displayMoney(Number.isFinite(amount) ? amount : 0, language)}</strong></div>
+                  <div className="stock-detail-history-values"><div><span>{labels.givenAmount}</span><strong>{displayMoney(valueNumber(payment, "given_amount"), language)}</strong></div><div><span>{labels.dueDate}</span><strong>{displayDate(valueText(payment, "due_date"), language)}</strong></div><div><span>{labels.paidDate}</span><strong>{displayDate(valueText(payment, "paid_date"), language)}</strong></div></div>
+                  {valueText(payment, "reason") ? <p className="client-detail-payment-reason">{labels.reason}: {valueText(payment, "reason")}</p> : null}
+                </article>;
+              })}
+            </div>}
+            {permissions.can_access_clients && payments.length > 5 ? <button type="button" className="stock-history-more" onClick={() => setClientPaymentsLimit((limit) => limit < payments.length ? Math.min(limit + 5, payments.length) : 5)}>{clientPaymentsLimit < payments.length ? `${labels.showMore} (${Math.min(5, payments.length - clientPaymentsLimit)} ${labels.more})` : labels.showLess}</button> : null}
+            {data.payments.length >= 3000 ? <p className="stock-detail-muted">{labels.limitNotice} ({labels.limitedPayments}: 3,000)</p> : null}
+          </section> : null}
+          {clientDetailTab === "services" ? <section className="stock-detail-history-section">
+            <div className="stock-history-heading"><h3>{labels.servicesHistory}</h3><div><span>{labels.totalServices}: {permissions.can_access_services ? new Intl.NumberFormat(language).format(clientServices.length) : "—"}</span><span>{labels.totalCost}: {permissions.can_access_services ? displayMoney(clientServices.reduce((sum, service) => sum + valueNumber(service, "cost_price"), 0), language) : "—"}</span></div></div>
+            {!permissions.can_access_services ? <p className="stock-detail-muted">{labels.historyUnavailable}</p> : clientServices.length === 0 ? <p className="stock-detail-muted">{labels.noServices}</p> : <div className="stock-detail-history-cards">
+              {clientServices.slice(0, clientServicesLimit).map((service) => {
+                const status = serviceStatus(service, language);
+                return <article className="stock-detail-history-card" key={valueText(service, "source_id")}>
+                  <div className="stock-detail-history-top"><strong>{valueText(service, "name") || labels.itemUnavailable}</strong><time>{displayDate(valueText(service, "source_created_at"), language, true)}</time></div>
+                  <div className="stock-detail-history-party"><span className={`record-status ${status.className}`}>{status.label}</span><strong className="text-blue-600 dark:text-blue-400">{displayMoney(valueNumber(service, "service_price"), language)}</strong></div>
+                  <div className="stock-detail-history-values"><div><span>{labels.cost}</span><strong>{displayMoney(valueNumber(service, "cost_price"), language)}</strong></div><div><span>{labels.dueDate}</span><strong>{displayDate(valueText(service, "due_date"), language)}</strong></div><div><span>{labels.completedAt}</span><strong>{displayDate(valueText(service, "completed_at"), language)}</strong></div></div>
+                  {valueText(service, "description") ? <p className="client-detail-payment-reason">{valueText(service, "description")}</p> : null}
+                  {valueText(service, "notes") ? <p className="client-detail-payment-reason">{labels.notes}: {valueText(service, "notes")}</p> : null}
+                </article>;
+              })}
+            </div>}
+            {permissions.can_access_services && clientServices.length > 5 ? <button type="button" className="stock-history-more" onClick={() => setClientServicesLimit((limit) => limit < clientServices.length ? Math.min(limit + 5, clientServices.length) : 5)}>{clientServicesLimit < clientServices.length ? `${labels.showMore} (${Math.min(5, clientServices.length - clientServicesLimit)} ${labels.more})` : labels.showLess}</button> : null}
+            {data.service_appointments.length >= 1000 ? <p className="stock-detail-muted">{labels.limitNotice} ({labels.limitedAppointments}: 1,000)</p> : null}
+          </section> : null}
         </ReadOnlyDetail>
       ) : null}
       </> : <section className="mobile-subsection">
