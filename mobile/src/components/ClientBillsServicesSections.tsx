@@ -496,17 +496,23 @@ export function ClientsSection({
       items.push(item);
       saleItemsBySaleId.set(saleId, items);
     }
-    // Match desktop getAllClientsWithTotalPurchases(): sum each sale item's
-    // price * quantity, then subtract that sale's discount.
+    // Desktop totals each sale as (sum of item price * quantity) - discount.
+    // Prefer the persisted discounted sale total when present: the PWA receives
+    // sale headers and sale items as separate bounded datasets, so a missing or
+    // truncated item list must not turn a real sale into a zero/partial total.
+    // Fall back to the desktop calculation for older rows without that field.
     for (const sale of data.sales) {
       const clientId = valueText(sale, "client_source_id");
       const totalsForClient = totals.get(clientId);
       if (!totalsForClient) continue;
       const saleItems = saleItemsBySaleId.get(valueText(sale, "source_id")) ?? [];
-      const saleTotal = saleItems.reduce(
-        (sum, item) => sum + valueNumber(item, "price") * valueNumber(item, "quantity"),
-        0,
-      ) - valueNumber(sale, "discount");
+      const storedTotal = sale.total_amount_with_discount;
+      const saleTotal = typeof storedTotal === "number" && Number.isFinite(storedTotal)
+        ? storedTotal
+        : saleItems.reduce(
+            (sum, item) => sum + valueNumber(item, "price") * valueNumber(item, "quantity"),
+            0,
+          ) - valueNumber(sale, "discount");
       totalsForClient.purchases += saleTotal;
     }
     for (const payment of data.payments) {
@@ -616,7 +622,7 @@ export function ClientsSection({
         { id: "name", label: labels.nameAZ, compare: (a, b) => valueText(a, "_client_name").localeCompare(valueText(b, "_client_name"), language, { sensitivity: "base" }) },
       ]}
       columns={[
-        { key: "client", label: labels.client, render: (row) => <span className="block min-w-0"><strong className="block truncate">{valueText(row, "_client_name") || labels.clientUnavailable}</strong>{valueText(row, "_client_phone") ? <small className="block text-[11px] text-muted-foreground">{valueText(row, "_client_phone")}</small> : null}</span> },
+        { key: "client", label: labels.client, render: (row) => <span className="block min-w-0"><strong className="block truncate" title={valueText(row, "_client_name") || labels.clientUnavailable}>{valueText(row, "_client_name") || labels.clientUnavailable}</strong>{valueText(row, "_client_phone") ? <small className="block truncate text-[11px] text-muted-foreground" title={valueText(row, "_client_phone")}>{valueText(row, "_client_phone")}</small> : null}</span> },
         { key: "reason", label: labels.reason, render: (row) => isCredit ? valueText(row, "reason") || "—" : "—" },
         { key: "amount", label: labels.amount, align: "end", render: (row) => valueText(row, "paid_date") ? <span className="inline-flex rounded-full bg-green-100 px-2 py-1 text-xs font-semibold text-green-700 dark:bg-green-900/30 dark:text-green-400">{labels.paid}</span> : <span className={isCredit ? "font-semibold text-orange-600 dark:text-orange-400" : "font-semibold text-blue-600 dark:text-blue-400"}>{displayMoney(paymentAmount(row), language)}</span> },
         { key: "dueDate", label: labels.dueDate, render: (row) => <span className="block"><span>{displayDate(valueText(row, "due_date"), language)}</span>{isPaymentOverdue(row) ? <small className="block font-semibold text-red-600 dark:text-red-400">{labels.overdue}</small> : !valueText(row, "paid_date") && isPaymentDueSoon(row) ? <small className="block font-semibold text-orange-600 dark:text-orange-400">{labels.dueSoon}</small> : null}</span> },
@@ -688,7 +694,7 @@ export function ClientsSection({
             { id: "notes", label: labels.sortNotes, compare: compareNotes },
           ]}
           columns={[
-            { key: "name", label: labels.name, render: (row) => valueText(row, "name") || "—" },
+            { key: "name", label: labels.name, render: (row) => { const name = valueText(row, "name") || "—"; return <span className="block truncate" title={name}>{name}</span>; } },
             { key: "phone", label: labels.phone, render: (row) => valueText(row, "phone") || "—" },
             { key: "address", label: labels.address, render: (row) => valueText(row, "address") || "—" },
             { key: "notes", label: labels.notes, render: (row) => valueText(row, "notes") || "—" },

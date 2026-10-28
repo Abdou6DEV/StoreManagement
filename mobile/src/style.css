@@ -1199,7 +1199,7 @@ html.dark .stock-negative { color:#f87171; }
   padding-inline: 8px;
 }
 
-/* Services table: keep the service identity visible while the remaining columns scroll. */
+/* Sticky first-column identity: truncate names as the frozen column narrows. */
 .mobile-services-table-scroll .stock-data-table thead th:first-child,
 .mobile-services-table-scroll .stock-data-table tbody td:first-child {
   position: sticky;
@@ -1208,6 +1208,8 @@ html.dark .stock-negative { color:#f87171; }
   width: 150px;
   max-width: 150px;
   overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   background: var(--card);
   box-shadow: none;
   transition: width 140ms ease, min-width 140ms ease, box-shadow 140ms ease;
