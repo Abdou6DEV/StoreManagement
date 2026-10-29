@@ -24,10 +24,11 @@ const monthEnd = (v: string) => { const a = v.split("-").map(Number); return loc
 const periodKey = (d: string, mode: Mode) => mode === "day" ? d : d.slice(0, 7);
 const inBounds = (d: string, b: Bounds) => Boolean(d) && d >= b.start && d <= b.end;
 const pageSlice = <T,>(items: T[], page: number, size: number) => items.slice((page - 1) * size, page * size);
+const purchaseAmount = (items: MobileRow[], id: string) => items.filter(i => str(i.purchase_source_id) === id).reduce((sum, i) => sum + num(i.price) * num(i.quantity), 0);
 const LABELS = {
-  en: { general:"General history", details:"Details history", daily:"Daily", monthly:"Monthly", from:"From", to:"To", sales:"Sales", revenue:"Revenue", profit:"Profit", purchases:"Purchases", bills:"Bills payments", avg:"Average %", highlight:"Highlight profits", net:"Calculate net profit", totals:"Show total", items:"Items per page", period:"Period", count:"Sales count", total:"Total", search:"Search sales, clients, products…", noData:"No history for this period.", noSales:"No sales found.", noPurchases:"No purchases found.", noBills:"No bill payments found.", back:"Back to general history", client:"Client", status:"Read-only details", list:"List view", grid:"Card view", sort:"Sort by", newest:"Newest first", oldest:"Oldest first", high:"Highest amount", low:"Lowest amount", previous:"Previous", next:"Next", page:"Page", of:"of", saleItems:"Sale items", supplier:"Supplier", title:"Bill", readOnly:"History is read-only on mobile." },
-  fr: { general:"Historique général", details:"Détails de l’historique", daily:"Par jour", monthly:"Par mois", from:"Du", to:"Au", sales:"Ventes", revenue:"Chiffre d’affaires", profit:"Bénéfice", purchases:"Achats", bills:"Paiements de factures", avg:"Moyenne %", highlight:"Mettre en évidence les bénéfices", net:"Calculer le bénéfice net", totals:"Afficher le total", items:"Lignes par page", period:"Période", count:"Nombre de ventes", total:"Total", search:"Rechercher ventes, clients, produits…", noData:"Aucun historique pour cette période.", noSales:"Aucune vente trouvée.", noPurchases:"Aucun achat trouvé.", noBills:"Aucun paiement trouvé.", back:"Retour à l’historique général", client:"Client", status:"Détails en lecture seule", list:"Vue liste", grid:"Vue cartes", sort:"Trier par", newest:"Plus récent", oldest:"Plus ancien", high:"Montant le plus élevé", low:"Montant le plus faible", previous:"Précédent", next:"Suivant", page:"Page", of:"sur", saleItems:"Articles vendus", supplier:"Fournisseur", title:"Facture", readOnly:"Historique en lecture seule sur mobile." },
-  ar: { general:"السجل العام", details:"تفاصيل السجل", daily:"يومي", monthly:"شهري", from:"من", to:"إلى", sales:"المبيعات", revenue:"الإيرادات", profit:"الربح", purchases:"المشتريات", bills:"مدفوعات الفواتير", avg:"متوسط %", highlight:"تمييز الأرباح", net:"حساب صافي الربح", totals:"إظهار الإجمالي", items:"عدد الصفوف", period:"الفترة", count:"عدد المبيعات", total:"الإجمالي", search:"ابحث عن المبيعات والعملاء والمنتجات…", noData:"لا توجد بيانات لهذه الفترة.", noSales:"لا توجد مبيعات.", noPurchases:"لا توجد مشتريات.", noBills:"لا توجد مدفوعات.", back:"العودة إلى السجل العام", client:"العميل", status:"تفاصيل للقراءة فقط", list:"عرض القائمة", grid:"عرض البطاقات", sort:"ترتيب حسب", newest:"الأحدث أولاً", oldest:"الأقدم أولاً", high:"الأعلى مبلغاً", low:"الأقل مبلغاً", previous:"السابق", next:"التالي", page:"صفحة", of:"من", saleItems:"عناصر البيع", supplier:"المورد", title:"الفاتورة", readOnly:"السجل للقراءة فقط على الهاتف." }
+  en: { general:"General history", details:"Details history", daily:"Daily", monthly:"Monthly", from:"From", to:"To", sales:"Sales", revenue:"Revenue", profit:"Profit", purchases:"Purchases", bills:"Bills payments", avg:"Average %", highlight:"Highlight profits", net:"Calculate net profit", totals:"Show total", items:"Items per page", period:"Period", count:"Sales count", total:"Total", search:"Search sales, clients, products…", noData:"No history for this period.", noSales:"No sales found.", noPurchases:"No purchases found.", noBills:"No bill payments found.", back:"Back to general history", client:"Client", status:"Read-only details", list:"List view", grid:"Card view", sort:"Sort by", newest:"Newest first", oldest:"Oldest first", high:"Highest amount", low:"Lowest amount", previous:"Previous", next:"Next", page:"Page", of:"of", saleItems:"Sale items", supplier:"Supplier", title:"Bill", readOnly:"History is read-only on mobile.", aboveAvg:"Above average", belowAvg:"Below average", historyUnavailable:"Sales history is not available from this server yet. Some history totals may be incomplete." },
+  fr: { general:"Historique général", details:"Détails de l’historique", daily:"Par jour", monthly:"Par mois", from:"Du", to:"Au", sales:"Ventes", revenue:"Chiffre d’affaires", profit:"Bénéfice", purchases:"Achats", bills:"Paiements de factures", avg:"Moyenne %", highlight:"Mettre en évidence les bénéfices", net:"Calculer le bénéfice net", totals:"Afficher le total", items:"Lignes par page", period:"Période", count:"Nombre de ventes", total:"Total", search:"Rechercher ventes, clients, produits…", noData:"Aucun historique pour cette période.", noSales:"Aucune vente trouvée.", noPurchases:"Aucun achat trouvé.", noBills:"Aucun paiement trouvé.", back:"Retour à l’historique général", client:"Client", status:"Détails en lecture seule", list:"Vue liste", grid:"Vue cartes", sort:"Trier par", newest:"Plus récent", oldest:"Plus ancien", high:"Montant le plus élevé", low:"Montant le plus faible", previous:"Précédent", next:"Suivant", page:"Page", of:"sur", saleItems:"Articles vendus", supplier:"Fournisseur", title:"Facture", readOnly:"Historique en lecture seule sur mobile.", aboveAvg:"Au-dessus de la moyenne", belowAvg:"Sous la moyenne", historyUnavailable:"L’historique des ventes n’est pas disponible sur ce serveur. Certains totaux peuvent être incomplets." },
+  ar: { general:"السجل العام", details:"تفاصيل السجل", daily:"يومي", monthly:"شهري", from:"من", to:"إلى", sales:"المبيعات", revenue:"الإيرادات", profit:"الربح", purchases:"المشتريات", bills:"مدفوعات الفواتير", avg:"متوسط %", highlight:"تمييز الأرباح", net:"حساب صافي الربح", totals:"إظهار الإجمالي", items:"عدد الصفوف", period:"الفترة", count:"عدد المبيعات", total:"الإجمالي", search:"ابحث عن المبيعات والعملاء والمنتجات…", noData:"لا توجد بيانات لهذه الفترة.", noSales:"لا توجد مبيعات.", noPurchases:"لا توجد مشتريات.", noBills:"لا توجد مدفوعات.", back:"العودة إلى السجل العام", client:"العميل", status:"تفاصيل للقراءة فقط", list:"عرض القائمة", grid:"عرض البطاقات", sort:"ترتيب حسب", newest:"الأحدث أولاً", oldest:"الأقدم أولاً", high:"الأعلى مبلغاً", low:"الأقل مبلغاً", previous:"السابق", next:"التالي", page:"صفحة", of:"من", saleItems:"عناصر البيع", supplier:"المورد", title:"الفاتورة", readOnly:"السجل للقراءة فقط على الهاتف.", aboveAvg:"أعلى من المتوسط", belowAvg:"أقل من المتوسط", historyUnavailable:"سجل المبيعات غير متاح من الخادم حالياً وقد تكون بعض الإجماليات غير مكتملة." }
 } as const;
 type Labels = typeof LABELS[keyof typeof LABELS];
 
@@ -48,11 +49,11 @@ export function HistorySection({ data, language }: Props) {
     const a = clamp(from, minMonth, maxMonth), b = clamp(to, minMonth, maxMonth), start = monthStart(a <= b ? a : b), end = monthEnd(a <= b ? b : a);
     return { start:start < cutoff ? cutoff : start, end:end > today ? today : end };
   }, [mode, from, to, cutoff, today, minMonth, maxMonth]);
-  const clients = useMemo(() => new Map(data.clients.map(r => [str(r.source_id), str(r.name)])), [data.clients]);
-  const suppliers = useMemo(() => new Map(data.suppliers.map(r => [str(r.source_id), str(r.name)])), [data.suppliers]);
-  const bills = useMemo(() => new Map(data.bills.map(r => [str(r.source_id), r])), [data.bills]);
-  const products = useMemo(() => new Map([...data.products, ...data.manual_products].map(r => [str(r.source_id), str(r.name)])), [data.products, data.manual_products]);
-  const services = useMemo(() => new Map(data.services.map(r => [str(r.source_id), str(r.name)])), [data.services]);
+  const clients = useMemo(() => new Map(data.clients.map(r => [str(r.source_id), str(r.name)] as const)), [data.clients]);
+  const suppliers = useMemo(() => new Map(data.suppliers.map(r => [str(r.source_id), str(r.name)] as const)), [data.suppliers]);
+  const bills = useMemo(() => new Map(data.bills.map(r => [str(r.source_id), r] as const)), [data.bills]);
+  const products = useMemo(() => new Map([...data.products, ...data.manual_products].map(r => [str(r.source_id), str(r.name)] as const)), [data.products, data.manual_products]);
+  const services = useMemo(() => new Map(data.services.map(r => [str(r.source_id), str(r.name)] as const)), [data.services]);
   const paymentsBySale = useMemo(() => { const m = new Map<string, MobileRow>(); data.payments.forEach(r => { if (r.sale_source_id != null) m.set(str(r.sale_source_id), r); }); return m; }, [data.payments]);
   const validSales = useMemo(() => data.sales.filter(s => {
     if (!inBounds(recordDate(s, "source_created_at"), { start:cutoff, end:today })) return false;
@@ -60,18 +61,20 @@ export function HistorySection({ data, language }: Props) {
   }), [data.sales, paymentsBySale, cutoff, today]);
   const validPurchases = useMemo(() => data.purchases.filter(p => inBounds(recordDate(p, "source_created_at"), { start:cutoff, end:today })), [data.purchases, cutoff, today]);
   const validBillPayments = useMemo(() => data.bill_payments.filter(p => inBounds(recordDate(p, "paid_date"), { start:cutoff, end:today })), [data.bill_payments, cutoff, today]);
-  const purchaseAmount = (id: string) => data.purchase_items.filter(i => str(i.purchase_source_id) === id).reduce((sum, i) => sum + num(i.price) * num(i.quantity), 0);
+
   const rows = useMemo(() => {
     const m = new Map<string, PeriodRow>();
     const get = (key: string) => { let r = m.get(key); if (!r) { r = { key, revenue:0, profit:0, purchases:0, bills:0, count:0 }; m.set(key, r); } return r; };
     validSales.forEach(s => { const d = recordDate(s, "source_created_at"); if (inBounds(d, dateBounds)) { const r = get(periodKey(d, mode)); r.revenue += num(s.total_amount_with_discount); r.profit += num(s.total_profit); r.count++; } });
-    validPurchases.forEach(p => { const d = recordDate(p, "source_created_at"); if (inBounds(d, dateBounds)) get(periodKey(d, mode)).purchases += purchaseAmount(str(p.source_id)); });
+    validPurchases.forEach(p => { const d = recordDate(p, "source_created_at"); if (inBounds(d, dateBounds)) get(periodKey(d, mode)).purchases += purchaseAmount(data.purchase_items, str(p.source_id)); });
     validBillPayments.forEach(p => { const d = recordDate(p, "paid_date"); if (inBounds(d, dateBounds)) get(periodKey(d, mode)).bills += num(p.amount); });
     return [...m.values()].sort((a,b) => b.key.localeCompare(a.key));
   }, [validSales, validPurchases, validBillPayments, dateBounds, mode, data.purchase_items]);
   const totalPages = Math.max(1, Math.ceil(rows.length / pageSize)), visibleRows = pageSlice(rows, Math.min(page, totalPages), pageSize);
-  const averageProfit = rows.length ? rows.reduce((sum,r) => sum + r.profit, 0) / rows.length : 0;
+  const averageProfit = rows.length ? rows.reduce((sum,r) => sum + (netProfit ? r.profit - r.bills : r.profit), 0) / rows.length : 0;
   const totals = rows.reduce((s,r) => ({ revenue:s.revenue+r.revenue, profit:s.profit+r.profit, purchases:s.purchases+r.purchases, bills:s.bills+r.bills, count:s.count+r.count }), { revenue:0, profit:0, purchases:0, bills:0, count:0 });
+  const aboveAverageCount = rows.filter(r => (netProfit ? r.profit - r.bills : r.profit) - averageProfit > 1e-6).length;
+  const belowAverageCount = rows.filter(r => averageProfit - (netProfit ? r.profit - r.bills : r.profit) > 1e-6).length;
   const openPeriod = (key: string) => { setSelected({ mode, key }); setTab("sales"); setDetailSearch(""); setDetailSort("newest"); setDetailPage(1); setView("cards"); };
   const periodBounds = (s: { mode:Mode; key:string }): Bounds => {
     if (s.mode === "day") return { start:s.key, end:s.key };
@@ -89,7 +92,7 @@ export function HistorySection({ data, language }: Props) {
   }, [selected?.mode, selected?.key, cutoff, today]);
   const previousSales = previousBounds ? validSales.filter(s => inBounds(recordDate(s, "source_created_at"), previousBounds)) : [];
   const salesTotal = detailSales.reduce((s,r) => s + num(r.total_amount_with_discount), 0), salesProfit = detailSales.reduce((s,r) => s + num(r.total_profit), 0);
-  const purchasesTotal = detailPurchases.reduce((s,r) => s + purchaseAmount(str(r.source_id)), 0), billsTotal = detailBills.reduce((s,r) => s + num(r.amount), 0);
+  const purchasesTotal = detailPurchases.reduce((s,r) => s + purchaseAmount(data.purchase_items, str(r.source_id)), 0), billsTotal = detailBills.reduce((s,r) => s + num(r.amount), 0);
   const previousRevenue = previousSales.reduce((s,r) => s + num(r.total_amount_with_discount), 0), previousProfit = previousSales.reduce((s,r) => s + num(r.total_profit), 0);
   const growth = (cur:number, prev:number) => prev > 0 ? (cur >= prev ? "+" : "") + ((cur-prev)/prev*100).toFixed(1) + "%" : "—";
   const detailRows = useMemo(() => {
@@ -104,7 +107,7 @@ export function HistorySection({ data, language }: Props) {
       if (tab === "purchases") { const names = data.purchase_items.filter(i => str(i.purchase_source_id) === id).map(i => products.get(str(i.product_source_id)) || "").join(" "); return [id, suppliers.get(str(r.supplier_source_id)), names, recordDate(r,"source_created_at")].join(" ").toLocaleLowerCase().includes(q); }
       const bill = bills.get(str(r.bill_source_id)); return [id, bill?.title, bill?.type, r.notes, recordDate(r,"paid_date")].join(" ").toLocaleLowerCase().includes(q);
     });
-    const amount = (r: MobileRow) => tab === "sales" ? num(r.total_amount_with_discount) : tab === "purchases" ? purchaseAmount(str(r.source_id)) : num(r.amount);
+    const amount = (r: MobileRow) => tab === "sales" ? num(r.total_amount_with_discount) : tab === "purchases" ? purchaseAmount(data.purchase_items, str(r.source_id)) : num(r.amount);
     return filtered.sort((a,b) => {
       const da = str(tab === "bills" ? a.paid_date : a.source_created_at), db = str(tab === "bills" ? b.paid_date : b.source_created_at);
       if (detailSort === "newest") return db.localeCompare(da); if (detailSort === "oldest") return da.localeCompare(db);
@@ -117,6 +120,7 @@ export function HistorySection({ data, language }: Props) {
   return <div className="mobile-history" dir={language === "ar" ? "rtl" : "ltr"}>
     {!selected ? <>
       <div className="mobile-history-heading"><div><h2>{t.general}</h2><p>{t.readOnly}</p></div><TrendingUp size={22}/></div>
+      {!data.sales_history_available ? <div className="mobile-history-warning">{t.historyUnavailable}</div> : null}
       <div className="mobile-history-panel">
         <div className="mobile-history-mode" role="group" aria-label={t.period}>
           <button type="button" className={mode === "day" ? "active" : ""} onClick={() => { const d=parseLocal(today); d.setDate(d.getDate()-29); const k=localKey(d); setMode("day"); setFrom(k<cutoff?cutoff:k); setTo(today); setPage(1); }}><CalendarDays size={16}/>{t.daily}</button>
@@ -136,11 +140,11 @@ export function HistorySection({ data, language }: Props) {
       <div className="mobile-history-table-wrap"><table className="mobile-history-table">
         <thead><tr><th>{t.period}</th><th>{t.count}</th><th>{t.revenue}</th><th>{netProfit?t.net:t.profit}</th><th>{t.purchases}</th><th>{t.bills}</th><th>{t.avg}</th></tr></thead>
         <tbody>
-          {visibleRows.map(r=>{const p=netProfit?r.profit-r.bills:r.profit, avg=r.revenue?r.profit/r.revenue*100:0; return <tr key={r.key} tabIndex={0} role="button" onClick={()=>openPeriod(r.key)} onKeyDown={e=>{if(e.key==="Enter"||e.key===" ")openPeriod(r.key);}}>
-            <td><button className="mobile-history-period-link" type="button" onClick={e=>{e.stopPropagation();openPeriod(r.key);}}>{dateLabel(r.key,language,mode==="month")}</button></td><td>{r.count}</td><td>{money(r.revenue,language)}</td><td className={highlight?(p>=averageProfit?"profit-high":"profit-low"):""}>{money(p,language)}</td><td>{money(r.purchases,language)}</td><td>{money(r.bills,language)}</td><td>{avg.toFixed(1)}%</td>
+          {visibleRows.map(r=>{const p=netProfit?r.profit-r.bills:r.profit, avg=averageProfit===0?(p>0?100:0):((p-averageProfit)/averageProfit)*100, diff=averageProfit===0?(p>0?100:0):((p-averageProfit)/Math.abs(averageProfit))*100, rowClass=highlight?(diff>=10?"highlight-high":diff<0?"highlight-low":""):""; return <tr className={rowClass} key={r.key} tabIndex={0} role="button" onClick={()=>openPeriod(r.key)} onKeyDown={e=>{if(e.key==="Enter"||e.key===" ")openPeriod(r.key);}}>
+            <td><button className="mobile-history-period-link" type="button" onClick={e=>{e.stopPropagation();openPeriod(r.key);}}>{dateLabel(r.key,language,mode==="month")}</button></td><td>{r.count}</td><td>{money(r.revenue,language)}</td><td className={highlight?(diff>=10?"profit-high":diff<0?"profit-low":""):""}>{money(p,language)}</td><td>{money(r.purchases,language)}</td><td>{money(r.bills,language)}</td><td className={avg>0?"profit-high":avg<0?"profit-low":""}>{avg>=0?"+":""}{avg.toFixed(1)}%</td>
           </tr>;})}
           {!visibleRows.length?<tr><td colSpan={7} className="mobile-history-empty">{t.noData}</td></tr>:null}
-          {showTotals&&rows.length?<tr className="mobile-history-total"><th>{t.total}</th><th>{totals.count}</th><th>{money(totals.revenue,language)}</th><th>{money(netProfit?totals.profit-totals.bills:totals.profit,language)}</th><th>{money(totals.purchases,language)}</th><th>{money(totals.bills,language)}</th><th>{totals.revenue?(totals.profit/totals.revenue*100).toFixed(1):"0.0"}%</th></tr>:null}
+          {showTotals&&rows.length?<tr className="mobile-history-total"><th>{t.total}</th><th>{totals.count}</th><th>{money(totals.revenue,language)}</th><th>{money(netProfit?totals.profit-totals.bills:totals.profit,language)}</th><th>{money(totals.purchases,language)}</th><th>{money(totals.bills,language)}</th><th><span className="mobile-history-total-comparison"><span title={t.aboveAvg}>▲ {aboveAverageCount}</span><span title={t.belowAvg}>▼ {belowAverageCount}</span></span></th></tr>:null}
         </tbody></table></div>
       <Pagination page={page} pageCount={totalPages} onPage={setPage} t={t}/>
     </> : <>
