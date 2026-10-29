@@ -164,7 +164,7 @@ const LABELS: Record<MobileLanguage, Record<LabelKey, string>> = {
     dueSoon: "Due soon", overdue: "Overdue", noNextPayment: "No next payment",
     lastPayment: "Last payment", nextPayment: "Next payment", duration: "Frequency",
     description: "Description", deviceName: "Device name", totalBills: "Bills", activeBills: "Active bills",
-    inactiveBills: "Inactive bills", totalPaid: "Paid in available records",
+    inactiveBills: "Inactive bills", totalPaid: "Total Paid",
     allTypes: "All types", allStatuses: "All statuses", recurring: "Recurring",
     dueFilter: "Due status",
     oneTime: "One-time", appointments: "Service requests", catalog: "Service catalog",
