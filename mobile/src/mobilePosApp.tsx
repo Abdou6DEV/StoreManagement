@@ -43,6 +43,7 @@ import {
   ClientsSection,
   ServicesSection,
 } from "./components/ClientBillsServicesSections";
+import { HistorySection } from "./components/HistorySection";
 
 type Section =
   | "menu"
@@ -952,38 +953,7 @@ function SectionContent({
     return <ClientsSection data={data} language={language} permissions={permissions} query={query} onQueryChange={onQueryChange} />;
   }
   if (section === "history") {
-    const saleRows = data.sales.map((row, index) => ({
-      ...row,
-      name: `${copy.sale} ${index + 1}`,
-    }));
-    const saleItemRows = data.sale_items.map((row, index) => ({
-      ...row,
-      name: `${copy.saleItems} ${index + 1}`,
-    }));
-    return (
-      <>
-        <div className="mobile-notice">
-          <AlertCircle size={18} />
-          <span>
-            {data.sales_history_available
-              ? copy.salesHistoryNote
-              : copy.salesHistoryUnavailable}
-          </span>
-        </div>
-        <section className="mobile-subsection">
-          <h2>{copy.sales}</h2>
-          <RecordList rows={saleRows} language={language} copy={copy} query={query} />
-        </section>
-        <section className="mobile-subsection">
-          <h2>{copy.saleItems}</h2>
-          <RecordList rows={saleItemRows} language={language} copy={copy} query={query} />
-        </section>
-        <section className="mobile-subsection">
-          <h2>{copy.paymentRecords}</h2>
-          <RecordList rows={data.payments} language={language} copy={copy} query={query} />
-        </section>
-      </>
-    );
+    return <HistorySection data={data} language={language} />;
   }
   if (section === "services") {
     return <ServicesSection data={data} language={language} permissions={permissions} query={query} onQueryChange={onQueryChange} />;
@@ -1018,7 +988,7 @@ export function MobilePosApp({
   const title = section === "menu" ? copy.menu : copy[section];
   const activeSection = SECTIONS.find((item) => item.id === section);
   const activePage = activeSection?.id ?? "home";
-  const needsSearch = section === "stock" || section === "history";
+  const needsSearch = section === "stock";
 
   useEffect(() => {
     const onOnline = () => setOnline(true);
