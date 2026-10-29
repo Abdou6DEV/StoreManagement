@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { CreditCard, ExternalLink, Search, ShoppingCart, Users, Wrench, X } from "lucide-react";
+import { CreditCard, ExternalLink, Filter, Search, ShoppingCart, Users, Wrench, X } from "lucide-react";
 import type { ReactNode } from "react";
 import type {
   MobileBundle,
@@ -11,6 +11,7 @@ import type {
 type LabelKey =
   | "search"
   | "filters"
+  | "clearFilters"
   | "sort"
   | "desktopDefault"
   | "pageSize"
@@ -145,7 +146,7 @@ type LabelKey =
 
 const LABELS: Record<MobileLanguage, Record<LabelKey, string>> = {
   en: {
-    search: "Search", filters: "Filters", sort: "Sort by", desktopDefault: "Desktop default", pageSize: "Rows per page", view: "View",
+    search: "Search", filters: "Filters", clearFilters: "Clear filters", sort: "Sort by", desktopDefault: "Desktop default", pageSize: "Rows per page", view: "View",
     close: "Close", page: "Page", of: "of", previous: "Previous", next: "Next",
     newest: "Newest first", oldest: "Oldest first", nameAZ: "Name A–Z",
     sortCreditsVersements: "Credits / versements (default)", sortTotalPurchases: "Total purchases", totalPurchases: "Total purchases", totalSpent: "Total spent", totalSales: "Total sales", salesHistory: "Sales history", paymentsHistory: "Payments history", servicesHistory: "Services history", noServices: "No service history is available for this client.", showMore: "Show more", showLess: "Show less", more: "more", totalCredit: "Total credit", totalCredits: "Total credits", totalVersement: "Total versement", totalVersements: "Total versements", services: "Services", purchasesUnavailable: "Purchase totals are not shown in this view.", sortNotes: "Clients with notes first",
@@ -185,7 +186,7 @@ const LABELS: Record<MobileLanguage, Record<LabelKey, string>> = {
     dueSoonThresholdNote: "Due-soon uses the 2-day default; the desktop threshold setting is not synced to the PWA.",
   },
   fr: {
-    search: "Rechercher", filters: "Filtres", sort: "Trier par", desktopDefault: "Ordre du bureau", pageSize: "Lignes par page", view: "Voir",
+    search: "Rechercher", filters: "Filtres", clearFilters: "Effacer les filtres", sort: "Trier par", desktopDefault: "Ordre du bureau", pageSize: "Lignes par page", view: "Voir",
     close: "Fermer", page: "Page", of: "sur", previous: "Précédent", next: "Suivant",
     newest: "Plus récent", oldest: "Plus ancien", nameAZ: "Nom A–Z",
     sortCreditsVersements: "Crédits / versements (défaut)", sortTotalPurchases: "Total des achats", totalPurchases: "Total des achats", totalSpent: "Total dépensé", totalSales: "Total des ventes", salesHistory: "Historique des ventes", paymentsHistory: "Historique des paiements", servicesHistory: "Historique des services", noServices: "Aucun historique de service disponible pour ce client.", showMore: "Afficher plus", showLess: "Afficher moins", more: "de plus", totalCredit: "Total crédit", totalCredits: "Total des crédits", totalVersement: "Total versement", totalVersements: "Total des versements", services: "Services", purchasesUnavailable: "Le total des achats n’est pas affiché dans cette vue.", sortNotes: "Clients avec notes en premier",
@@ -226,7 +227,7 @@ const LABELS: Record<MobileLanguage, Record<LabelKey, string>> = {
     dueSoonThresholdNote: "L’échéance proche utilise la valeur par défaut de 2 jours ; le réglage du bureau n’est pas synchronisé.",
   },
   ar: {
-    search: "بحث", filters: "عوامل التصفية", sort: "ترتيب حسب", desktopDefault: "ترتيب سطح المكتب", pageSize: "عدد الصفوف", view: "عرض",
+    search: "بحث", filters: "عوامل التصفية", clearFilters: "مسح عوامل التصفية", sort: "ترتيب حسب", desktopDefault: "ترتيب سطح المكتب", pageSize: "عدد الصفوف", view: "عرض",
     close: "إغلاق", page: "صفحة", of: "من", previous: "السابق", next: "التالي",
     newest: "الأحدث أولاً", oldest: "الأقدم أولاً", nameAZ: "الاسم أ–ي",
     sortCreditsVersements: "الائتمان / الدفعات (افتراضي)", sortTotalPurchases: "إجمالي المشتريات", totalPurchases: "إجمالي المشتريات", totalSpent: "إجمالي الإنفاق", totalSales: "إجمالي المبيعات", salesHistory: "سجل المبيعات", paymentsHistory: "سجل الدفعات", servicesHistory: "سجل الخدمات", noServices: "لا يوجد سجل خدمات متاح لهذا العميل.", showMore: "عرض المزيد", showLess: "عرض أقل", more: "أخرى", totalCredit: "إجمالي الائتمان", totalCredits: "إجمالي الائتمانات", totalVersement: "إجمالي الدفعات", totalVersements: "إجمالي الدفعات", services: "الخدمات", purchasesUnavailable: "إجمالي المشتريات غير معروض في هذه الشاشة.", sortNotes: "العملاء الذين لديهم ملاحظات أولاً",
@@ -915,11 +916,12 @@ export function BillsSection({
   onQueryChange: (query: string) => void;
 }) {
   const labels = LABELS[language];
+  const [view, setView] = useState<"bills" | "payments">("bills");
   const [typeFilter, setTypeFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [dueFilter, setDueFilter] = useState("all");
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [selected, setSelected] = useState<MobileRow | null>(null);
-  const [showProfit, setShowProfit] = useState(false);
   const types = useMemo(() => [...new Set(data.bills.map((bill) => valueText(bill, "type")).filter(Boolean))].sort(), [data.bills]);
   const billTitles = useMemo(() => new Map(data.bills.map((bill) => [valueText(bill, "source_id"), valueText(bill, "title")])), [data.bills]);
   const bills = useMemo(() => data.bills.filter((bill) => {
@@ -952,58 +954,106 @@ export function BillsSection({
     .filter((payment) => matchesQuery(payment, query, ["bill_title", "notes", "paid_date"])),
   [data.bill_payments, billTitles, query]);
   const billPaymentTotal = billPaymentRows.reduce((sum, payment) => sum + valueNumber(payment, "amount"), 0);
+  const activeFilters = typeFilter !== "all" || statusFilter !== "all" || dueFilter !== "all";
+  const resetFilters = () => {
+    setTypeFilter("all");
+    setStatusFilter("all");
+    setDueFilter("all");
+  };
 
   return (
-    <>
-      <SearchRow query={query} onQueryChange={onQueryChange} label={labels.search} />
+    <div className="stock-replica" dir={language === "ar" ? "rtl" : "ltr"}>
+      <div className="stock-view-switch" role="tablist" aria-label={labels.totalBills}>
+        <button type="button" role="tab" aria-selected={view === "bills"} className={view === "bills" ? "active" : ""} onClick={() => { setSelected(null); setView("bills"); }}><ShoppingCart size={16} />{labels.totalBills}</button>
+        <button type="button" role="tab" aria-selected={view === "payments"} className={view === "payments" ? "active" : ""} onClick={() => { setSelected(null); setView("payments"); }}><CreditCard size={16} />{labels.payments}</button>
+      </div>
       {data.bills.length >= 1000 || data.bill_payments.length >= 3000 ? <LimitNotice>{labels.limitNotice}</LimitNotice> : null}
-      <LimitNotice>{labels.dueSoonThresholdNote}</LimitNotice>
-      <section className="mobile-subsection">
-        <h2>{labels.title}</h2>
-        <div className="stock-filter-row">
-          <label className="mobile-select-control stock-filter-category"><span>{labels.type}</span><select value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)}><option value="all">{labels.allTypes}</option>{types.map((type) => <option value={type} key={type}>{type}</option>)}</select></label>
-          <label className="mobile-select-control stock-filter-category"><span>{labels.status}</span><select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}><option value="all">{labels.allStatuses}</option><option value="recurring">{labels.recurring}</option><option value="oneTime">{labels.oneTime}</option></select></label>
-          <label className="mobile-select-control stock-filter-category"><span>{labels.dueFilter}</span><select value={dueFilter} onChange={(event) => setDueFilter(event.target.value)}><option value="all">{labels.allStatuses}</option><option value="overdue">{labels.overdue}</option><option value="soon">{labels.dueSoon}</option></select></label>
-        </div>
+      {view === "bills" ? (
+        <>
+          <LimitNotice>{labels.dueSoonThresholdNote}</LimitNotice>
+          <StockStyleTable
+            rows={bills}
+            labels={labels}
+            ariaLabel={labels.totalBills}
+            pageSizeLabel={labels.pageSize}
+            empty={labels.empty}
+            minWidth={910}
+            toolbar={
+              <>
+                <div className="stock-filter-row stock-filter-primary-row" aria-label={labels.filters}>
+                  <label className="mobile-select-control stock-filter-category"><span>{labels.type}</span><select value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)}><option value="all">{labels.allTypes}</option>{types.map((type) => <option value={type} key={type}>{type}</option>)}</select></label>
+                </div>
+                <div className="stock-filter-toggle-row">
+                  <button type="button" className={`stock-filter-toggle ${filtersOpen || activeFilters ? "active" : ""}`} aria-expanded={filtersOpen} onClick={() => setFiltersOpen((open) => !open)}><Filter size={16} />{labels.filters}<span className="stock-filter-toggle-count">{activeFilters ? "•" : ""}</span><span aria-hidden="true" className={`stock-filter-toggle-chevron ${filtersOpen ? "open" : ""}`}>⌄</span></button>
+                </div>
+                {filtersOpen ? (
+                  <div className="stock-filter-row stock-filter-options-row" aria-label={labels.filters}>
+                    <label className="mobile-select-control stock-filter-category"><span>{labels.status}</span><select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}><option value="all">{labels.allStatuses}</option><option value="recurring">{labels.recurring}</option><option value="oneTime">{labels.oneTime}</option></select></label>
+                    <label className="mobile-select-control stock-filter-category"><span>{labels.dueFilter}</span><select value={dueFilter} onChange={(event) => setDueFilter(event.target.value)}><option value="all">{labels.allStatuses}</option><option value="overdue">{labels.overdue}</option><option value="soon">{labels.dueSoon}</option></select></label>
+                    {activeFilters ? <button type="button" className="stock-filter-chip stock-clear-filters" onClick={resetFilters}>{labels.clearFilters}<X size={14} /></button> : null}
+                  </div>
+                ) : null}
+                <SearchRow query={query} onQueryChange={onQueryChange} label={labels.search} />
+              </>
+            }
+            sorts={[
+              { id: "due", label: labels.nextPayment, compare: compareDate },
+              { id: "title", label: labels.nameAZ, compare: compareTitle },
+            ]}
+            columns={[
+              { key: "title", label: labels.title, render: (bill) => valueText(bill, "title") || "—" },
+              { key: "type", label: labels.type, render: (bill) => valueText(bill, "type") || "—" },
+              { key: "status", label: labels.status, render: (bill) => <span className={`record-status ${valueText(bill, "duration") === "NO_NEXT" ? "waiting" : "done"}`}>{valueText(bill, "duration") === "NO_NEXT" ? labels.inactive : labels.active}</span> },
+              { key: "paid", label: labels.totalPaid, align: "end", render: (bill) => displayMoney(billPaidTotal(bill), language, 100) },
+              { key: "last", label: labels.lastPayment, render: (bill) => {
+                const last = data.bill_payments.filter((payment) => valueText(payment, "bill_source_id") === valueText(bill, "source_id")).reduce((latest, payment) => {
+                  const time = dateValue(payment, "paid_date");
+                  return Number.isFinite(time) && time > latest ? time : latest;
+                }, 0);
+                return last ? displayDate(new Date(last).toISOString(), language) : "—";
+              } },
+              { key: "next", label: labels.nextPayment, render: (bill) => {
+                if (valueText(bill, "duration") === "NO_NEXT") return labels.noNextPayment;
+                const status = billDueStatus(bill);
+                return <>{displayDate(valueText(bill, "next_bill_date"), language)}{status === "overdue" ? <span className="record-status late">{labels.overdue}</span> : status === "soon" ? <span className="record-status waiting">{labels.dueSoon}</span> : null}</>;
+              } },
+              { key: "view", label: labels.view, render: (bill) => <DetailButton label={labels.view} onClick={() => setSelected(bill)} /> },
+            ]}
+            footer={<div className="stock-table-totals">
+              <div><span>{labels.totalBills}</span><strong>{new Intl.NumberFormat(language).format(bills.length)}</strong></div>
+              <div><span>{labels.activeBills}</span><strong>{new Intl.NumberFormat(language).format(activeCount)}</strong></div>
+              <div><span>{labels.inactiveBills}</span><strong>{new Intl.NumberFormat(language).format(inactiveCount)}</strong></div>
+              <div><span>{labels.totalPaid}</span><strong>{displayMoney(paidTotal, language, 100)}</strong></div>
+            </div>}
+          />
+        </>
+      ) : (
         <StockStyleTable
-          rows={bills}
+          rows={billPaymentRows}
           labels={labels}
-          ariaLabel={labels.title}
+          ariaLabel={labels.billPayments}
           pageSizeLabel={labels.pageSize}
           empty={labels.empty}
-          minWidth={910}
+          minWidth={660}
+          toolbar={<SearchRow query={query} onQueryChange={onQueryChange} label={labels.search} />}
           sorts={[
-            { id: "due", label: labels.nextPayment, compare: compareDate },
-            { id: "title", label: labels.name, compare: compareTitle },
+            { id: "recent", label: labels.newest, compare: (a, b) => sortTime(b, "paid_date") - sortTime(a, "paid_date") },
+            { id: "oldest", label: labels.oldest, compare: (a, b) => sortTime(a, "paid_date") - sortTime(b, "paid_date") },
+            { id: "amount", label: labels.amount, compare: (a, b) => valueNumber(b, "amount") - valueNumber(a, "amount") },
           ]}
           columns={[
-            { key: "title", label: labels.title, render: (bill) => valueText(bill, "title") || "—" },
-            { key: "type", label: labels.type, render: (bill) => valueText(bill, "type") || "—" },
-            { key: "status", label: labels.status, render: (bill) => <span className={`record-status ${valueText(bill, "duration") === "NO_NEXT" ? "waiting" : "done"}`}>{valueText(bill, "duration") === "NO_NEXT" ? labels.inactive : labels.active}</span> },
-            { key: "paid", label: labels.totalPaid, align: "end", render: (bill) => displayMoney(billPaidTotal(bill), language, 100) },
-            { key: "last", label: labels.lastPayment, render: (bill) => {
-              const last = data.bill_payments.filter((payment) => valueText(payment, "bill_source_id") === valueText(bill, "source_id")).reduce((latest, payment) => {
-                const time = dateValue(payment, "paid_date");
-                return Number.isFinite(time) && time > latest ? time : latest;
-              }, 0);
-              return last ? displayDate(new Date(last).toISOString(), language) : "—";
-            } },
-            { key: "next", label: labels.nextPayment, render: (bill) => {
-              if (valueText(bill, "duration") === "NO_NEXT") return labels.noNextPayment;
-              const status = billDueStatus(bill);
-              return <>{displayDate(valueText(bill, "next_bill_date"), language)}{status === "overdue" ? <span className="record-status late">{labels.overdue}</span> : status === "soon" ? <span className="record-status waiting">{labels.dueSoon}</span> : null}</>;
-            } },
-            { key: "view", label: labels.view, render: (bill) => <DetailButton label={labels.view} onClick={() => setSelected(bill)} /> },
+            { key: "bill", label: labels.title, render: (payment) => valueText(payment, "bill_title") || labels.billUnavailable },
+            { key: "paid", label: labels.paidDate, render: (payment) => displayDate(valueText(payment, "paid_date"), language, true) },
+            { key: "amount", label: labels.amount, align: "end", render: (payment) => displayMoney(valueNumber(payment, "amount"), language, 100) },
+            { key: "notes", label: labels.notes, render: (payment) => valueText(payment, "notes") || "—" },
           ]}
           footer={<div className="stock-table-totals">
-            <div><span>{labels.totalBills}</span><strong>{new Intl.NumberFormat(language).format(bills.length)}</strong></div>
-            <div><span>{labels.activeBills}</span><strong>{new Intl.NumberFormat(language).format(activeCount)}</strong></div>
-            <div><span>{labels.inactiveBills}</span><strong>{new Intl.NumberFormat(language).format(inactiveCount)}</strong></div>
-            <div><span>{labels.totalPaid}</span><strong>{displayMoney(paidTotal, language, 100)}</strong></div>
+            <div><span>{labels.payments}</span><strong>{new Intl.NumberFormat(language).format(billPaymentRows.length)}</strong></div>
+            <div><span>{labels.totalPaid}</span><strong>{displayMoney(billPaymentTotal, language, 100)}</strong></div>
           </div>}
         />
-      </section>
-      {selected ? (
+      )}
+      {selected && view === "bills" ? (
         <ReadOnlyDetail title={labels.payments} subtitle={valueText(selected, "title")} labels={labels} language={language} onClose={() => setSelected(null)} fields={[
           [labels.type, valueText(selected, "type")],
           [labels.status, valueText(selected, "duration") === "NO_NEXT" ? labels.inactive : labels.active],
@@ -1028,33 +1078,7 @@ export function BillsSection({
           </section>
         </ReadOnlyDetail>
       ) : null}
-      <section className="mobile-subsection">
-        <h2>{labels.billPayments}</h2>
-        <StockStyleTable
-          rows={billPaymentRows}
-          labels={labels}
-          ariaLabel={labels.billPayments}
-          pageSizeLabel={labels.pageSize}
-          empty={labels.empty}
-          minWidth={660}
-          sorts={[
-            { id: "recent", label: labels.newest, compare: (a, b) => sortTime(b, "paid_date") - sortTime(a, "paid_date") },
-            { id: "oldest", label: labels.oldest, compare: (a, b) => sortTime(a, "paid_date") - sortTime(b, "paid_date") },
-            { id: "amount", label: labels.amount, compare: (a, b) => valueNumber(b, "amount") - valueNumber(a, "amount") },
-          ]}
-          columns={[
-            { key: "bill", label: labels.title, render: (payment) => valueText(payment, "bill_title") || labels.billUnavailable },
-            { key: "paid", label: labels.paidDate, render: (payment) => displayDate(valueText(payment, "paid_date"), language, true) },
-            { key: "amount", label: labels.amount, align: "end", render: (payment) => displayMoney(valueNumber(payment, "amount"), language, 100) },
-            { key: "notes", label: labels.notes, render: (payment) => valueText(payment, "notes") || "—" },
-          ]}
-          footer={<div className="stock-table-totals">
-            <div><span>{labels.payments}</span><strong>{new Intl.NumberFormat(language).format(billPaymentRows.length)}</strong></div>
-            <div><span>{labels.totalPaid}</span><strong>{displayMoney(billPaymentTotal, language, 100)}</strong></div>
-          </div>}
-        />
-      </section>
-    </>
+    </div>
   );
 }
 
