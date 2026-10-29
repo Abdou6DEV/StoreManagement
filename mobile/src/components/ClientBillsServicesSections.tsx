@@ -204,7 +204,7 @@ const LABELS: Record<MobileLanguage, Record<LabelKey, string>> = {
     dueSoon: "Bientôt due", overdue: "En retard", noNextPayment: "Aucun prochain paiement",
     lastPayment: "Dernier paiement", nextPayment: "Prochain paiement", duration: "Fréquence",
     description: "Description", deviceName: "Nom de l’appareil", totalBills: "Factures", activeBills: "Factures actives",
-    inactiveBills: "Factures inactives", totalPaid: "Payé dans les données disponibles",
+    inactiveBills: "Factures inactives", totalPaid: "Total payé",
     allTypes: "Tous les types", allStatuses: "Tous les statuts", recurring: "Récurrente",
     dueFilter: "Échéance",
     oneTime: "Unique", appointments: "Demandes de service", catalog: "Catalogue des services",
@@ -245,7 +245,7 @@ const LABELS: Record<MobileLanguage, Record<LabelKey, string>> = {
     dueSoon: "مستحقة قريباً", overdue: "متأخرة", noNextPayment: "لا يوجد دفع قادم",
     lastPayment: "آخر دفعة", nextPayment: "الدفعة القادمة", duration: "التكرار",
     description: "الوصف", deviceName: "اسم الجهاز", totalBills: "الفواتير", activeBills: "الفواتير النشطة",
-    inactiveBills: "الفواتير غير النشطة", totalPaid: "المدفوع ضمن السجلات المتاحة",
+    inactiveBills: "الفواتير غير النشطة", totalPaid: "إجمالي المدفوع",
     allTypes: "كل الأنواع", allStatuses: "كل الحالات", recurring: "متكررة",
     dueFilter: "حالة الاستحقاق",
     oneTime: "مرة واحدة", appointments: "طلبات الخدمة", catalog: "دليل الخدمات",
@@ -1005,7 +1005,7 @@ export function BillsSection({
               { key: "title", label: labels.title, render: (bill) => valueText(bill, "title") || "—" },
               { key: "type", label: labels.type, render: (bill) => valueText(bill, "type") || "—" },
               { key: "status", label: labels.status, render: (bill) => <span className={`record-status ${valueText(bill, "duration") === "NO_NEXT" ? "waiting" : "done"}`}>{valueText(bill, "duration") === "NO_NEXT" ? labels.inactive : labels.active}</span> },
-              { key: "paid", label: labels.totalPaid, align: "end", render: (bill) => displayMoney(billPaidTotal(bill), language, 100) },
+              { key: "paid", label: labels.totalPaid, align: "end", render: (bill) => <span className="font-semibold text-purple-500">{displayMoney(billPaidTotal(bill), language, 100)}</span> },
               { key: "last", label: labels.lastPayment, render: (bill) => {
                 const last = data.bill_payments.filter((payment) => valueText(payment, "bill_source_id") === valueText(bill, "source_id")).reduce((latest, payment) => {
                   const time = dateValue(payment, "paid_date");
@@ -1021,10 +1021,10 @@ export function BillsSection({
               { key: "view", label: labels.view, render: (bill) => <DetailButton label={labels.view} onClick={() => setSelected(bill)} /> },
             ]}
             footer={<div className="stock-table-totals">
-              <div><span>{labels.totalBills}</span><strong>{new Intl.NumberFormat(language).format(bills.length)}</strong></div>
-              <div><span>{labels.activeBills}</span><strong>{new Intl.NumberFormat(language).format(activeCount)}</strong></div>
-              <div><span>{labels.inactiveBills}</span><strong>{new Intl.NumberFormat(language).format(inactiveCount)}</strong></div>
-              <div><span>{labels.totalPaid}</span><strong>{displayMoney(paidTotal, language, 100)}</strong></div>
+              <div><span>{labels.totalBills}</span><strong className="text-purple-500">{new Intl.NumberFormat(language).format(bills.length)}</strong></div>
+              <div><span>{labels.activeBills}</span><strong className="text-purple-500">{new Intl.NumberFormat(language).format(activeCount)}</strong></div>
+              <div><span>{labels.inactiveBills}</span><strong className="text-purple-500">{new Intl.NumberFormat(language).format(inactiveCount)}</strong></div>
+              <div><span>{labels.totalPaid}</span><strong className="text-purple-500">{displayMoney(paidTotal, language, 100)}</strong></div>
             </div>}
           />
         </>
@@ -1046,12 +1046,12 @@ export function BillsSection({
           columns={[
             { key: "bill", label: labels.title, render: (payment) => valueText(payment, "bill_title") || labels.billUnavailable },
             { key: "paid", label: labels.paidDate, render: (payment) => displayDate(valueText(payment, "paid_date"), language, true) },
-            { key: "amount", label: labels.amount, align: "end", render: (payment) => displayMoney(valueNumber(payment, "amount"), language, 100) },
+            { key: "amount", label: labels.amount, align: "end", render: (payment) => <span className="font-semibold text-purple-500">{displayMoney(valueNumber(payment, "amount"), language, 100)}</span> },
             { key: "notes", label: labels.notes, render: (payment) => valueText(payment, "notes") || "—" },
           ]}
           footer={<div className="stock-table-totals">
-            <div><span>{labels.payments}</span><strong>{new Intl.NumberFormat(language).format(billPaymentRows.length)}</strong></div>
-            <div><span>{labels.totalPaid}</span><strong>{displayMoney(billPaymentTotal, language, 100)}</strong></div>
+            <div><span>{labels.payments}</span><strong className="text-purple-500">{new Intl.NumberFormat(language).format(billPaymentRows.length)}</strong></div>
+            <div><span>{labels.totalPaid}</span><strong className="text-purple-500">{displayMoney(billPaymentTotal, language, 100)}</strong></div>
           </div>}
         />
       )}
@@ -1072,7 +1072,7 @@ export function BillsSection({
                 <thead><tr><th>{labels.paidDate}</th><th>{labels.amount}</th><th>{labels.notes}</th></tr></thead>
                 <tbody>{selectedPayments.map((payment) => <tr key={valueText(payment, "source_id")}>
                   <td>{displayDate(valueText(payment, "paid_date"), language, true)}</td>
-                  <td>{displayMoney(valueNumber(payment, "amount"), language, 100)}</td>
+                  <td><span className="font-semibold text-purple-500">{displayMoney(valueNumber(payment, "amount"), language, 100)}</span></td>
                   <td>{valueText(payment, "notes") || "—"}</td>
                 </tr>)}</tbody>
               </table></div>
