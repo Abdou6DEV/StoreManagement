@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { CreditCard, ExternalLink, Filter, Search, ShoppingCart, Users, Wrench, X } from "lucide-react";
+import { CreditCard, ExternalLink, Search, ShoppingCart, Users, Wrench, X } from "lucide-react";
 import type { ReactNode } from "react";
 import type {
   MobileBundle,
@@ -920,7 +920,6 @@ export function BillsSection({
   const [typeFilter, setTypeFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [dueFilter, setDueFilter] = useState("all");
-  const [filtersOpen, setFiltersOpen] = useState(false);
   const [selected, setSelected] = useState<MobileRow | null>(null);
   const types = useMemo(() => [...new Set(data.bills.map((bill) => valueText(bill, "type")).filter(Boolean))].sort(), [data.bills]);
   const billTitles = useMemo(() => new Map(data.bills.map((bill) => [valueText(bill, "source_id"), valueText(bill, "title")])), [data.bills]);
@@ -970,7 +969,6 @@ export function BillsSection({
       {data.bills.length >= 1000 || data.bill_payments.length >= 3000 ? <LimitNotice>{labels.limitNotice}</LimitNotice> : null}
       {view === "bills" ? (
         <>
-          <LimitNotice>{labels.dueSoonThresholdNote}</LimitNotice>
           <StockStyleTable
             rows={bills}
             labels={labels}
@@ -984,16 +982,11 @@ export function BillsSection({
                 <div className="stock-filter-row stock-filter-primary-row" aria-label={labels.filters}>
                   <label className="mobile-select-control stock-filter-category"><span>{labels.type}</span><select value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)}><option value="all">{labels.allTypes}</option>{types.map((type) => <option value={type} key={type}>{type}</option>)}</select></label>
                 </div>
-                <div className="stock-filter-toggle-row">
-                  <button type="button" className={`stock-filter-toggle ${filtersOpen || activeFilters ? "active" : ""}`} aria-expanded={filtersOpen} onClick={() => setFiltersOpen((open) => !open)}><Filter size={16} />{labels.filters}<span className="stock-filter-toggle-count">{activeFilters ? "•" : ""}</span><span aria-hidden="true" className={`stock-filter-toggle-chevron ${filtersOpen ? "open" : ""}`}>⌄</span></button>
+                <div className="stock-filter-row stock-filter-options-row" aria-label={labels.filters}>
+                  <label className="mobile-select-control stock-filter-category"><span>{labels.status}</span><select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}><option value="all">{labels.allStatuses}</option><option value="recurring">{labels.recurring}</option><option value="oneTime">{labels.oneTime}</option></select></label>
+                  <label className="mobile-select-control stock-filter-category"><span>{labels.dueFilter}</span><select value={dueFilter} onChange={(event) => setDueFilter(event.target.value)}><option value="all">{labels.allStatuses}</option><option value="overdue">{labels.overdue}</option><option value="soon">{labels.dueSoon}</option></select></label>
+                  {activeFilters ? <button type="button" className="stock-filter-chip stock-clear-filters" onClick={resetFilters}>{labels.clearFilters}<X size={14} /></button> : null}
                 </div>
-                {filtersOpen ? (
-                  <div className="stock-filter-row stock-filter-options-row" aria-label={labels.filters}>
-                    <label className="mobile-select-control stock-filter-category"><span>{labels.status}</span><select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}><option value="all">{labels.allStatuses}</option><option value="recurring">{labels.recurring}</option><option value="oneTime">{labels.oneTime}</option></select></label>
-                    <label className="mobile-select-control stock-filter-category"><span>{labels.dueFilter}</span><select value={dueFilter} onChange={(event) => setDueFilter(event.target.value)}><option value="all">{labels.allStatuses}</option><option value="overdue">{labels.overdue}</option><option value="soon">{labels.dueSoon}</option></select></label>
-                    {activeFilters ? <button type="button" className="stock-filter-chip stock-clear-filters" onClick={resetFilters}>{labels.clearFilters}<X size={14} /></button> : null}
-                  </div>
-                ) : null}
                 <SearchRow query={query} onQueryChange={onQueryChange} label={labels.search} />
               </>
             }
