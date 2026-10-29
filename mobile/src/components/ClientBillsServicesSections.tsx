@@ -978,6 +978,7 @@ export function BillsSection({
             pageSizeLabel={labels.pageSize}
             empty={labels.empty}
             minWidth={910}
+            stickyFirstColumn
             toolbar={
               <>
                 <div className="stock-filter-row stock-filter-primary-row" aria-label={labels.filters}>
@@ -1035,6 +1036,7 @@ export function BillsSection({
           pageSizeLabel={labels.pageSize}
           empty={labels.empty}
           minWidth={660}
+          stickyFirstColumn
           toolbar={<SearchRow query={query} onQueryChange={onQueryChange} label={labels.search} />}
           sorts={[
             { id: "recent", label: labels.newest, compare: (a, b) => sortTime(b, "paid_date") - sortTime(a, "paid_date") },
