@@ -14,7 +14,7 @@ const localKey = (d: Date) => d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-
 const parseLocal = (key: string) => { const a = key.split("-").map(Number); return new Date(a[0], (a[1] || 1) - 1, a[2] || 1); };
 const monthKey = (d: Date) => d.getFullYear() + "-" + pad(d.getMonth() + 1);
 const recordDate = (row: MobileRow, field: string) => { const v = row[field]; if (typeof v !== "string" || !v) return ""; const d = new Date(v); return Number.isNaN(d.getTime()) ? "" : localKey(d); };
-const money = (v: number, lang: MobileLanguage) => new Intl.NumberFormat(lang === "ar" ? "ar-DZ" : lang === "fr" ? "fr-DZ" : "en", { maximumFractionDigits: 2 }).format(v / 100) + " DA";
+const money = (v: number, lang: MobileLanguage) => new Intl.NumberFormat(lang === "ar" ? "ar-DZ" : lang === "fr" ? "fr-DZ" : "en", { maximumFractionDigits: 2 }).format(v) + " DA";
 const dateLabel = (key: string, lang: MobileLanguage, month = false) => !key ? "—" : new Intl.DateTimeFormat(lang === "ar" ? "ar-DZ" : lang === "fr" ? "fr-DZ" : "en", month ? { month: "long", year: "numeric" } : { day: "numeric", month: "short", year: "numeric" }).format(parseLocal(key.length === 7 ? key + "-01" : key));
 const clamp = (v: string, min: string, max: string) => v < min ? min : v > max ? max : v;
 const cutoffDate = () => { const d = new Date(); d.setFullYear(d.getFullYear() - 1); return localKey(d); };
@@ -40,6 +40,7 @@ export function HistorySection({ data, language }: Props) {
   const [to, setTo] = useState(today);
   const [highlight, setHighlight] = useState(false), [netProfit, setNetProfit] = useState(false), [showTotals, setShowTotals] = useState(true);
   const [pageSize, setPageSize] = useState(10), [page, setPage] = useState(1);
+  const [tableScrolled, setTableScrolled] = useState(false);
   const [selected, setSelected] = useState<{ mode: Mode; key: string } | null>(null);
   const [tab, setTab] = useState<Tab>("sales"), [detailSearch, setDetailSearch] = useState("");
   const [detailSort, setDetailSort] = useState<"newest" | "oldest" | "high" | "low">("newest");
@@ -119,7 +120,6 @@ export function HistorySection({ data, language }: Props) {
 
   return <div className="mobile-history" dir={language === "ar" ? "rtl" : "ltr"}>
     {!selected ? <>
-      <div className="mobile-history-heading"><div><h2>{t.general}</h2><p>{t.readOnly}</p></div><TrendingUp size={22}/></div>
       {!data.sales_history_available ? <div className="mobile-history-warning">{t.historyUnavailable}</div> : null}
       <div className="mobile-history-panel">
         <div className="mobile-history-mode" role="group" aria-label={t.period}>
@@ -137,14 +137,14 @@ export function HistorySection({ data, language }: Props) {
           <label className="mobile-history-check"><input type="checkbox" checked={showTotals} onChange={e=>setShowTotals(e.target.checked)}/><span>{t.totals}</span></label>
         </div>
       </div>
-      <div className="mobile-history-table-wrap"><table className="mobile-history-table">
+      <div className={`mobile-history-table-wrap${tableScrolled ? " is-horizontally-scrolled" : ""}`} onScroll={e=>setTableScrolled(Math.abs(e.currentTarget.scrollLeft)>1)}><table className="mobile-history-table">
         <thead><tr><th>{t.period}</th><th>{t.count}</th><th>{t.revenue}</th><th>{netProfit?t.net:t.profit}</th><th>{t.purchases}</th><th>{t.bills}</th><th>{t.avg}</th></tr></thead>
         <tbody>
           {visibleRows.map(r=>{const p=netProfit?r.profit-r.bills:r.profit, avg=averageProfit===0?(p>0?100:0):((p-averageProfit)/averageProfit)*100, diff=averageProfit===0?(p>0?100:0):((p-averageProfit)/Math.abs(averageProfit))*100, rowClass=highlight?(diff>=10?"highlight-high":diff<0?"highlight-low":""):""; return <tr className={rowClass} key={r.key} tabIndex={0} role="button" onClick={()=>openPeriod(r.key)} onKeyDown={e=>{if(e.key==="Enter"||e.key===" ")openPeriod(r.key);}}>
-            <td><button className="mobile-history-period-link" type="button" onClick={e=>{e.stopPropagation();openPeriod(r.key);}}>{dateLabel(r.key,language,mode==="month")}</button></td><td>{r.count}</td><td>{money(r.revenue,language)}</td><td className={highlight?(diff>=10?"profit-high":diff<0?"profit-low":""):""}>{money(p,language)}</td><td>{money(r.purchases,language)}</td><td>{money(r.bills,language)}</td><td className={avg>0?"profit-high":avg<0?"profit-low":""}>{avg>=0?"+":""}{avg.toFixed(1)}%</td>
+            <td><button className="mobile-history-period-link" type="button" title={dateLabel(r.key,language,mode==="month")} aria-label={dateLabel(r.key,language,mode==="month")} onClick={e=>{e.stopPropagation();openPeriod(r.key);}}>{dateLabel(r.key,language,mode==="month")}</button></td><td>{r.count}</td><td>{money(r.revenue,language)}</td><td className={highlight?(diff>=10?"profit-high":diff<0?"profit-low":""):""}>{money(p,language)}</td><td>{money(r.purchases,language)}</td><td>{money(r.bills,language)}</td><td className={avg>0?"profit-high":avg<0?"profit-low":""}>{avg>=0?"+":""}{avg.toFixed(1)}%</td>
           </tr>;})}
           {!visibleRows.length?<tr><td colSpan={7} className="mobile-history-empty">{t.noData}</td></tr>:null}
-          {showTotals&&rows.length?<tr className="mobile-history-total"><th>{t.total}</th><th>{totals.count}</th><th>{money(totals.revenue,language)}</th><th>{money(netProfit?totals.profit-totals.bills:totals.profit,language)}</th><th>{money(totals.purchases,language)}</th><th>{money(totals.bills,language)}</th><th><span className="mobile-history-total-comparison"><span title={t.aboveAvg}>▲ {aboveAverageCount}</span><span title={t.belowAvg}>▼ {belowAverageCount}</span></span></th></tr>:null}
+          {showTotals&&rows.length?<tr className="mobile-history-total"><th>{t.total}</th><th>{totals.count}</th><th>{money(totals.revenue,language)}</th><th className={highlight?((netProfit?totals.profit-totals.bills:totals.profit)>=0?"total-positive":"total-negative"):""}>{money(netProfit?totals.profit-totals.bills:totals.profit,language)}</th><th>{money(totals.purchases,language)}</th><th>{money(totals.bills,language)}</th><th><span className="mobile-history-total-comparison"><span title={t.aboveAvg}>▲ {aboveAverageCount}</span><span title={t.belowAvg}>▼ {belowAverageCount}</span></span></th></tr>:null}
         </tbody></table></div>
       <Pagination page={page} pageCount={totalPages} onPage={setPage} t={t}/>
     </> : <>
