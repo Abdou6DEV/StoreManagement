@@ -68,7 +68,7 @@ export function HistorySection({ data, language }: Props) {
     const get = (key: string) => { let r = m.get(key); if (!r) { r = { key, revenue:0, profit:0, purchases:0, bills:0, count:0 }; m.set(key, r); } return r; };
     validSales.forEach(s => { const d = recordDate(s, "source_created_at"); if (inBounds(d, dateBounds)) { const r = get(periodKey(d, mode)); r.revenue += num(s.total_amount_with_discount); r.profit += num(s.total_profit); r.count++; } });
     validPurchases.forEach(p => { const d = recordDate(p, "source_created_at"); if (inBounds(d, dateBounds)) get(periodKey(d, mode)).purchases += purchaseAmount(data.purchase_items, str(p.source_id)); });
-    validBillPayments.forEach(p => { const d = recordDate(p, "paid_date"); if (inBounds(d, dateBounds)) get(periodKey(d, mode)).bills += num(p.amount); });
+    validBillPayments.forEach(p => { const d = recordDate(p, "paid_date"); if (inBounds(d, dateBounds)) get(periodKey(d, mode)).bills += num(p.amount) / 100; });
     return [...m.values()].sort((a,b) => b.key.localeCompare(a.key));
   }, [validSales, validPurchases, validBillPayments, dateBounds, mode, data.purchase_items]);
   const totalPages = Math.max(1, Math.ceil(rows.length / pageSize)), visibleRows = pageSlice(rows, Math.min(page, totalPages), pageSize);
@@ -93,7 +93,7 @@ export function HistorySection({ data, language }: Props) {
   }, [selected?.mode, selected?.key, cutoff, today]);
   const previousSales = previousBounds ? validSales.filter(s => inBounds(recordDate(s, "source_created_at"), previousBounds)) : [];
   const salesTotal = detailSales.reduce((s,r) => s + num(r.total_amount_with_discount), 0), salesProfit = detailSales.reduce((s,r) => s + num(r.total_profit), 0);
-  const purchasesTotal = detailPurchases.reduce((s,r) => s + purchaseAmount(data.purchase_items, str(r.source_id)), 0), billsTotal = detailBills.reduce((s,r) => s + num(r.amount), 0);
+  const purchasesTotal = detailPurchases.reduce((s,r) => s + purchaseAmount(data.purchase_items, str(r.source_id)), 0), billsTotal = detailBills.reduce((s,r) => s + num(r.amount) / 100, 0);
   const previousRevenue = previousSales.reduce((s,r) => s + num(r.total_amount_with_discount), 0), previousProfit = previousSales.reduce((s,r) => s + num(r.total_profit), 0);
   const growth = (cur:number, prev:number) => prev > 0 ? (cur >= prev ? "+" : "") + ((cur-prev)/prev*100).toFixed(1) + "%" : "—";
   const detailRows = useMemo(() => {
@@ -177,7 +177,7 @@ export function HistorySection({ data, language }: Props) {
         {shownDetailRows.map(p=>{const id=str(p.source_id), items=data.purchase_items.filter(i=>str(i.purchase_source_id)===id);return <article className="mobile-history-record-card" key={id}><div className="mobile-history-sale-top"><strong>{suppliers.get(str(p.supplier_source_id))||t.supplier}</strong><time>{dateLabel(recordDate(p,"source_created_at"),language)}</time></div><div className="mobile-history-sale-values"><span>{items.length+" "+t.saleItems.toLowerCase()}</span><strong>{money(purchaseAmount(data.purchase_items,id),language)}</strong></div>{items.map((it,i)=><div className="mobile-history-record-line" key={str(it.source_id)||i}><span>{products.get(str(it.product_source_id))||"—"} × {num(it.quantity)}</span><span>{money(num(it.price)*num(it.quantity),language)}</span></div>)}</article>;})}
         {!shownDetailRows.length?<p className="mobile-history-empty">{t.noPurchases}</p>:null}
       </div>:<div className="mobile-history-record-list">
-        {shownDetailRows.map(p=>{const bill=bills.get(str(p.bill_source_id));return <article className="mobile-history-record-card" key={str(p.source_id)}><div className="mobile-history-sale-top"><strong>{str(bill?.title)||t.title}</strong><time>{dateLabel(recordDate(p,"paid_date"),language)}</time></div><div className="mobile-history-sale-values"><span>{str(bill?.type)||"—"}</span><strong>{money(num(p.amount),language)}</strong></div>{p.notes?<p className="mobile-history-notes">{str(p.notes)}</p>:null}</article>;})}
+        {shownDetailRows.map(p=>{const bill=bills.get(str(p.bill_source_id));return <article className="mobile-history-record-card" key={str(p.source_id)}><div className="mobile-history-sale-top"><strong>{str(bill?.title)||t.title}</strong><time>{dateLabel(recordDate(p,"paid_date"),language)}</time></div><div className="mobile-history-sale-values"><span>{str(bill?.type)||"—"}</span><strong>{money(num(p.amount) / 100,language)}</strong></div>{p.notes?<p className="mobile-history-notes">{str(p.notes)}</p>:null}</article>;})}
         {!shownDetailRows.length?<p className="mobile-history-empty">{t.noBills}</p>:null}
       </div>}
       <Pagination page={detailPage} pageCount={detailPageCount} onPage={setDetailPage} t={t}/>
