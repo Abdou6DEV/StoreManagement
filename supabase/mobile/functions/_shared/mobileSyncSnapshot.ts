@@ -249,6 +249,32 @@ export function staleMobileSyncIds(
     .filter((id) => !includedIds.has(id));
 }
 
+
+export function validateMobileSyncChunk(
+  table: string,
+  values: unknown,
+  customerId: string,
+): asserts values is Record<string, unknown>[] {
+  const schema = TABLE_SCHEMAS[table];
+  if (!schema || !Array.isArray(values)) fail(table, "invalid_chunk");
+  const seen = new Set<string>();
+  for (const value of values) {
+    if (!isRecord(value)) fail(table, "row_not_an_object");
+    const keys = Object.keys(value);
+    if (keys.length !== Object.keys(schema).length || keys.some((key) => !(key in schema))) {
+      fail(table, "unexpected_or_missing_field");
+    }
+    if (value.customer_id !== customerId) fail(table, "customer_mismatch");
+    for (const [field, type] of Object.entries(schema)) {
+      if (!validField(value[field], type)) fail(table, `invalid_${field}`);
+    }
+    const idField = table === "dashboard_daily" ? "local_day" : "source_id";
+    const id = value[idField];
+    if (typeof id !== "string" || seen.has(id)) fail(table, "duplicate_identity");
+    seen.add(id);
+  }
+}
+
 export function validateMobileSyncSnapshot(
   snapshot: unknown,
   customerId: string,
@@ -266,7 +292,7 @@ export function validateMobileSyncSnapshot(
   const rowsByTable = new Map<string, Map<string, Record<string, unknown>>>();
   for (const table of REQUIRED_TABLES) {
     const values = snapshot[table];
-    if (!Array.isArray(values) || values.length > 10_000) {
+    if (!Array.isArray(values)) {
       fail(table, "invalid_row_collection");
     }
 
@@ -341,9 +367,6 @@ export function validateMobileSyncSnapshot(
     if (!rowsByTable.get("bills")!.has(String(payment.bill_source_id))) {
       fail("bill_payments", "unknown_bill");
     }
-  }
-  if ((snapshot.dashboard_daily as unknown[]).length > 5_000) {
-    fail("dashboard_daily", "row_limit_exceeded");
   }
 }
 

@@ -95,17 +95,65 @@ function userView(user: Record<string, unknown>, permissions: PermissionSet) {
   };
 }
 
+async function readSnapshotRows(
+  db: ReturnType<typeof mobileAdminClient>,
+  customerId: string,
+  snapshotId: string,
+  entity: string,
+  ascending = true,
+) {
+  const pageSize = 1000;
+  const rows: Record<string, unknown>[] = [];
+  for (let offset = 0;; offset += pageSize) {
+    const { data, error } = await db.from("mobile_sync_snapshot_rows")
+      .select("source_key,payload")
+      .eq("customer_id", customerId)
+      .eq("snapshot_id", snapshotId)
+      .eq("entity", entity)
+      .order("source_key", { ascending })
+      .range(offset, offset + pageSize - 1);
+    if (error) throw new Error("data_unavailable");
+    const page = data ?? [];
+    rows.push(...page.map((row) => row.payload as Record<string, unknown>));
+    if (page.length < pageSize) break;
+  }
+  return rows;
+}
+
 async function readRows(
   db: ReturnType<typeof mobileAdminClient>,
   table: string,
   customerId: string,
   order: string,
   limit: number,
+  snapshotId: string | null = null,
   ascending = true,
 ) {
+  void limit; // Reads are exhaustive; the legacy argument is kept for call-site compatibility.
+  if (snapshotId) {
+    const entity = table === "pos_user_permissions" ? "permissions" : table.replace(/^pos_/, "");
+    const rows = await readSnapshotRows(db, customerId, snapshotId, entity, true);
+    rows.sort((left, right) => {
+      const a = left[order];
+      const b = right[order];
+      let comparison = 0;
+      if (a == null && b != null) comparison = 1;
+      else if (a != null && b == null) comparison = -1;
+      else if (typeof a === "number" && typeof b === "number") comparison = a - b;
+      else if (typeof a === "string" && typeof b === "string") {
+        const aTime = order.includes("date") || order.includes("created_at") ? Date.parse(a) : Number.NaN;
+        const bTime = order.includes("date") || order.includes("created_at") ? Date.parse(b) : Number.NaN;
+        comparison = Number.isFinite(aTime) && Number.isFinite(bTime)
+          ? aTime - bTime
+          : a.localeCompare(b);
+      }
+      if (comparison === 0) comparison = String(left.source_id ?? "").localeCompare(String(right.source_id ?? ""));
+      return ascending ? comparison : -comparison;
+    });
+    return rows;
+  }
   const columns = READ_COLUMNS[table];
   if (!columns) throw new Error("data_unavailable");
-  void limit; // Retained temporarily for call-site compatibility; reads are exhaustive.
   const pageSize = 1000;
   const rows: Record<string, unknown>[] = [];
   for (let offset = 0;; offset += pageSize) {
@@ -130,11 +178,12 @@ async function readBundle(
   db: ReturnType<typeof mobileAdminClient>,
   customerId: string,
   permissions: PermissionSet,
+  snapshotId: string | null,
 ) {
   const dashboardCutoff = new Date();
   dashboardCutoff.setUTCDate(dashboardCutoff.getUTCDate() - 364);
   const dashboardStartDay = dashboardCutoff.toISOString().slice(0, 10);
-  const retentionCutoff = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString();
+  const retentionCutoff = Date.now() - 365 * 24 * 60 * 60 * 1000;
   const [
     daily,
     categories,
@@ -153,70 +202,74 @@ async function readBundle(
     saleItems,
   ] = await Promise.all([
     permissions.can_access_dashboard
-      ? db.from("pos_dashboard_daily").select(
-        "local_day,sales_count,revenue,profit,total_items,bill_payments",
-      )
-        .eq("customer_id", customerId).gte("local_day", dashboardStartDay)
-        .order("local_day", { ascending: false }).limit(365)
+      ? snapshotId
+        ? readSnapshotRows(db, customerId, snapshotId, "dashboard_daily", false)
+          .then((rows) => ({ data: rows.filter((row) => String(row.local_day) >= dashboardStartDay)
+            .sort((a, b) => String(b.local_day).localeCompare(String(a.local_day))).slice(0, 365), error: null }))
+        : db.from("pos_dashboard_daily").select(
+          "local_day,sales_count,revenue,profit,total_items,bill_payments",
+        )
+          .eq("customer_id", customerId).gte("local_day", dashboardStartDay)
+          .order("local_day", { ascending: false }).limit(365)
       : Promise.resolve({ data: [], error: null }),
     permissions.can_access_stock
-      ? readRows(db, "pos_categories", customerId, "name", 2000)
+      ? readRows(db, "pos_categories", customerId, "name", 2000, snapshotId)
       : Promise.resolve([]),
     permissions.can_access_stock
-      ? readRows(db, "pos_products", customerId, "name", 2000)
+      ? readRows(db, "pos_products", customerId, "name", 2000, snapshotId)
       : Promise.resolve([]),
     permissions.can_access_history
-      ? readRows(db, "pos_manual_products", customerId, "name", 5000)
+      ? readRows(db, "pos_manual_products", customerId, "name", 5000, snapshotId)
       : Promise.resolve([]),
     permissions.can_access_clients
-      ? readRows(db, "pos_suppliers", customerId, "name", 2000)
+      ? readRows(db, "pos_suppliers", customerId, "name", 2000, snapshotId)
       : Promise.resolve([]),
     permissions.can_access_history
-      ? readRows(db, "pos_purchases", customerId, "source_created_at", 5000, false)
+      ? readRows(db, "pos_purchases", customerId, "source_created_at", 5000, snapshotId, false)
       : Promise.resolve([]),
     permissions.can_access_history
-      ? readRows(db, "pos_purchase_items", customerId, "purchase_source_id", 10000)
+      ? readRows(db, "pos_purchase_items", customerId, "purchase_source_id", 10000, snapshotId)
       : Promise.resolve([]),
     permissions.can_access_clients
-      ? readRows(db, "pos_clients", customerId, "name", 2000)
+      ? readRows(db, "pos_clients", customerId, "name", 2000, snapshotId)
       : Promise.resolve([]),
     permissions.can_access_clients
-      ? readRows(db, "pos_payments", customerId, "due_date", 3000)
+      ? readRows(db, "pos_payments", customerId, "due_date", 3000, snapshotId)
       : Promise.resolve([]),
     permissions.can_access_services
-      ? readRows(db, "pos_service_appointments", customerId, "due_date", 1000)
+      ? readRows(db, "pos_service_appointments", customerId, "due_date", 1000, snapshotId)
       : Promise.resolve([]),
     permissions.can_access_bills
-      ? readRows(db, "pos_bills", customerId, "next_bill_date", 1000)
+      ? readRows(db, "pos_bills", customerId, "next_bill_date", 1000, snapshotId)
       : Promise.resolve([]),
     permissions.can_access_bills
-      ? readRows(db, "pos_bill_payments", customerId, "paid_date", 3000)
+      ? readRows(db, "pos_bill_payments", customerId, "paid_date", 3000, snapshotId)
       : Promise.resolve([]),
     permissions.can_access_services
-      ? readRows(db, "pos_services", customerId, "name", 500)
+      ? readRows(db, "pos_services", customerId, "name", 500, snapshotId)
       : Promise.resolve([]),
     permissions.can_access_history
-      ? readRows(db, "pos_sales", customerId, "source_created_at", 5000, false)
+      ? readRows(db, "pos_sales", customerId, "source_created_at", 5000, snapshotId, false)
       : Promise.resolve([]),
     permissions.can_access_history
-      ? readRows(db, "pos_sale_items", customerId, "sale_source_id", 10000)
+      ? readRows(db, "pos_sale_items", customerId, "sale_source_id", 10000, snapshotId)
       : Promise.resolve([]),
   ]);
 
   if (daily.error) throw new Error("data_unavailable");
   const retainedSales = sales.filter((row) =>
-    typeof row.source_created_at === "string" && row.source_created_at >= retentionCutoff
+    typeof row.source_created_at === "string" && Date.parse(row.source_created_at) >= retentionCutoff
   );
   const retainedSaleIds = new Set(retainedSales.map((row) => row.source_id));
   const retainedPurchases = purchases.filter((row) =>
-    typeof row.source_created_at === "string" && row.source_created_at >= retentionCutoff
+    typeof row.source_created_at === "string" && Date.parse(row.source_created_at) >= retentionCutoff
   );
   const retainedPurchaseIds = new Set(retainedPurchases.map((row) => row.source_id));
   const retainedAppointments = appointments.filter((row) =>
-    typeof row.source_created_at === "string" && row.source_created_at >= retentionCutoff
+    typeof row.source_created_at === "string" && Date.parse(row.source_created_at) >= retentionCutoff
   );
   const retainedBillPayments = billPayments.filter((row) =>
-    typeof row.paid_date === "string" && row.paid_date >= retentionCutoff
+    typeof row.paid_date === "string" && Date.parse(row.paid_date) >= retentionCutoff
   );
   return {
     dashboard_daily: daily.data ?? [],
@@ -255,29 +308,46 @@ async function sessionData(sessionCode: string) {
 
   const [
     { data: device, error: deviceError },
-    { data: user, error: userError },
-    { data: permission, error: permissionError },
+    { data: activeSnapshot, error: snapshotError },
   ] = await Promise.all([
     db.from("mobile_devices")
-      .select(
-        "id,customer_id,device_id,active,revoked_at,paired_by_desktop_device_id",
-      )
+      .select("id,customer_id,device_id,active,revoked_at,paired_by_desktop_device_id")
       .eq("id", session.mobile_device_id)
       .maybeSingle(),
-    db.from("pos_users")
-      .select("source_id,username,role,is_active,deleted_at")
+    db.from("mobile_sync_snapshots")
+      .select("snapshot_id")
       .eq("customer_id", session.customer_id)
-      .eq("source_id", session.user_source_id)
-      .maybeSingle(),
-    db.from("pos_user_permissions")
-      .select("*")
-      .eq("customer_id", session.customer_id)
-      .eq("user_source_id", session.user_source_id)
-      .is("deleted_at", null)
+      .eq("status", "active")
       .maybeSingle(),
   ]);
-  if (deviceError || userError || permissionError) {
-    throw new Error("session_unavailable");
+  if (deviceError || snapshotError) throw new Error("session_unavailable");
+
+  let user: Record<string, unknown> | null = null;
+  let permission: Record<string, unknown> | null = null;
+  if (activeSnapshot?.snapshot_id) {
+    const [{ data: userRow, error: userError }, { data: permissionRow, error: permissionError }] = await Promise.all([
+      db.from("mobile_sync_snapshot_rows").select("payload")
+        .eq("customer_id", session.customer_id).eq("snapshot_id", activeSnapshot.snapshot_id)
+        .eq("entity", "users").eq("source_key", session.user_source_id).maybeSingle(),
+      db.from("mobile_sync_snapshot_rows").select("payload")
+        .eq("customer_id", session.customer_id).eq("snapshot_id", activeSnapshot.snapshot_id)
+        .eq("entity", "permissions").eq("payload->>user_source_id", session.user_source_id)
+        .maybeSingle(),
+    ]);
+    if (userError || permissionError) throw new Error("session_unavailable");
+    user = (userRow?.payload as Record<string, unknown> | undefined) ?? null;
+    permission = (permissionRow?.payload as Record<string, unknown> | undefined) ?? null;
+  } else {
+    const [{ data: legacyUser, error: userError }, { data: legacyPermission, error: permissionError }] = await Promise.all([
+      db.from("pos_users").select("source_id,username,role,is_active,deleted_at")
+        .eq("customer_id", session.customer_id).eq("source_id", session.user_source_id).maybeSingle(),
+      db.from("pos_user_permissions").select("*")
+        .eq("customer_id", session.customer_id).eq("user_source_id", session.user_source_id)
+        .is("deleted_at", null).maybeSingle(),
+    ]);
+    if (userError || permissionError) throw new Error("session_unavailable");
+    user = legacyUser as Record<string, unknown> | null;
+    permission = legacyPermission as Record<string, unknown> | null;
   }
   if (
     !device ||
@@ -312,7 +382,7 @@ async function sessionData(sessionCode: string) {
     String(user.role),
     permission as Record<string, unknown> | null,
   );
-  const data = await readBundle(db, session.customer_id, permissions);
+  const data = await readBundle(db, session.customer_id, permissions, activeSnapshot?.snapshot_id ?? null);
   await db.from("mobile_sessions").update({
     last_used_at: now.toISOString(),
     license_checked_at: new Date(licenseCheckedAt).toISOString(),

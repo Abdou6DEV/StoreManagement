@@ -2,6 +2,7 @@ import { app, ipcMain, type IpcMainInvokeEvent } from "electron";
 import { broadcastToAllApps } from "../utils/appWebContents";
 import fs from "fs";
 import path from "path";
+import { createHash, randomUUID } from "node:crypto";
 import { finished } from "node:stream/promises";
 import { getMachineGuid } from "../utils/validationKey";
 import { getStoreOnlineConfig, type StoreOnlineConfig } from "../utils/onlineConfig";
@@ -95,6 +96,9 @@ const MOBILE_SYNC_TRANSACTION_DEBOUNCE_MS = 5_000;
 const MOBILE_SYNC_INITIAL_RETRY_MS = 5_000;
 const MOBILE_SYNC_MAX_RETRY_MS = 5 * 60_000;
 const MOBILE_SYNC_LAST_SUCCESS_OPTION = "mobile_sync_last_success_at";
+const MOBILE_SYNC_CHECKPOINT_OPTION = "mobile_sync_snapshot_checkpoint";
+const MOBILE_SYNC_CHUNK_SIZE = 100;
+const MOBILE_SYNC_MAX_CHUNK_BYTES = 256 * 1024;
 
 let mobileSyncTimer: ReturnType<typeof setTimeout> | null = null;
 let mobileSyncInFlight: Promise<boolean> | null = null;
@@ -119,6 +123,14 @@ const MOBILE_SYNC_ERROR_CODES = new Set([
   "invalid_response",
   "sync_unconfirmed",
   "count_mismatch",
+  "invalid_manifest",
+  "snapshot_start_failed",
+  "invalid_chunk",
+  "chunk_checksum_mismatch",
+  "chunk_stage_failed",
+  "snapshot_incomplete_or_invalid",
+  "snapshot_activation_unconfirmed",
+  "unknown_sync_action",
 ]);
 
 function mobileSyncFailure(code: string): Error {
@@ -170,108 +182,133 @@ async function uploadMobileSnapshot(
 ): Promise<void> {
   await prismaPromise;
   const snapshot = await buildMobileSyncSnapshot(prisma, customerId);
-  const snapshotLimits: Record<keyof MobileSyncSnapshot, number> = {
-    users: 10_000,
-    permissions: 10_000,
-    categories: 10_000,
-    products: 10_000,
-    manual_products: 10_000,
-    suppliers: 10_000,
-    purchases: 10_000,
-    purchase_items: 10_000,
-    clients: 10_000,
-    services: 10_000,
-    service_appointments: 10_000,
-    sales: 10_000,
-    sale_items: 10_000,
-    payments: 10_000,
-    bills: 10_000,
-    bill_payments: 10_000,
-    dashboard_daily: 5_000,
+  const entries = (Object.entries(snapshot) as Array<
+    [keyof MobileSyncSnapshot, Record<string, unknown>[]]
+  >).map(([entity, rows]) => [
+    entity,
+    [...rows].sort((left, right) =>
+      String(left.source_id ?? left.local_day ?? "").localeCompare(
+        String(right.source_id ?? right.local_day ?? ""),
+      )
+    ),
+  ] as const);
+  const chunkedEntries = entries.map(([entity, rows]) => {
+    const chunks: Record<string, unknown>[][] = [];
+    let current: Record<string, unknown>[] = [];
+    for (const row of rows) {
+      if (Buffer.byteLength(JSON.stringify(row), "utf8") > MOBILE_SYNC_MAX_CHUNK_BYTES) {
+        throw mobileSyncFailure("sync_batch_too_large");
+      }
+      const candidate = [...current, row];
+      const candidateBytes = Buffer.byteLength(JSON.stringify(candidate), "utf8");
+      if (candidate.length > MOBILE_SYNC_CHUNK_SIZE || candidateBytes > MOBILE_SYNC_MAX_CHUNK_BYTES) {
+        chunks.push(current);
+        current = [row];
+      } else {
+        current = candidate;
+      }
+    }
+    if (current.length > 0) chunks.push(current);
+    return [entity, rows.length, chunks] as const;
+  });
+  const expectedCounts = Object.fromEntries(
+    chunkedEntries.map(([entity, count]) => [entity, count]),
+  );
+  const expectedChunks = Object.fromEntries(
+    chunkedEntries.map(([entity, , chunks]) => [entity, chunks.length]),
+  );
+  const snapshotHash = createHash("sha256").update(JSON.stringify(Object.fromEntries(entries))).digest("hex");
+  let snapshotId = randomUUID();
+  const savedCheckpoint = await getOption(MOBILE_SYNC_CHECKPOINT_OPTION);
+  if (savedCheckpoint) {
+    try {
+      const checkpoint = JSON.parse(savedCheckpoint) as { snapshotId?: unknown; snapshotHash?: unknown };
+      if (typeof checkpoint.snapshotId === "string" && checkpoint.snapshotHash === snapshotHash) {
+        snapshotId = checkpoint.snapshotId;
+      }
+    } catch {
+      // A malformed local checkpoint is discarded by replacing it below.
+    }
+  }
+  await setOption(MOBILE_SYNC_CHECKPOINT_OPTION, JSON.stringify({ snapshotId, snapshotHash }));
+
+  const send = async (body: Record<string, unknown>): Promise<Record<string, unknown>> => {
+    let lastError: unknown;
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      try {
+        const response = await fetch(mobileSyncIngestUrl(config.supabaseUrl), {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            apikey: config.publishableKey,
+            "x-mobile-desktop-secret": config.desktopSecret,
+          },
+          body: JSON.stringify({ device_id: deviceId, snapshot_id: snapshotId, ...body }),
+          signal: AbortSignal.timeout(45_000),
+        });
+        const responseText = await response.text();
+        let payload: unknown;
+        try { payload = responseText ? JSON.parse(responseText) : null; } catch { payload = null; }
+        if (!response.ok) {
+          const serverError = payload && typeof payload === "object" &&
+              "error" in payload && typeof payload.error === "string"
+            ? payload.error
+            : `http_${response.status}`;
+          if (response.status >= 500 && attempt < 2) {
+            lastError = mobileSyncFailure(`http_${response.status}`);
+            await new Promise((resolve) => setTimeout(resolve, 500 * (attempt + 1)));
+            continue;
+          }
+          throw mobileSyncFailure(response.status >= 500
+            ? `http_${response.status}`
+            : MOBILE_SYNC_ERROR_CODES.has(serverError) ? serverError : `http_${response.status}`);
+        } else if (!payload || typeof payload !== "object" || (payload as Record<string, unknown>).ok !== true) {
+          throw mobileSyncFailure("invalid_response");
+        } else {
+          return payload as Record<string, unknown>;
+        }
+      } catch (error) {
+        lastError = error;
+        if (error instanceof Error && error.message.startsWith("mobile_sync:") &&
+          !/^mobile_sync:http_5\d{2}$/.test(error.message)) throw error;
+        if (attempt === 2) break;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 500 * (attempt + 1)));
+    }
+    throw lastError instanceof Error ? lastError : mobileSyncFailure("sync_failed");
   };
-  for (
-    const [table, rows] of Object.entries(snapshot) as Array<
-      [keyof MobileSyncSnapshot, Record<string, unknown>[]]
-    >
-  ) {
-    if (rows.length > snapshotLimits[table]) {
-      throw new Error(`The initial mobile sync exceeds the supported ${table} record limit.`);
+
+  let started: Record<string, unknown>;
+  try {
+    started = await send({ action: "start", expected_counts: expectedCounts, expected_chunks: expectedChunks });
+  } catch (error) {
+    if (!(error instanceof Error) || !error.message.includes("snapshot_start_failed")) throw error;
+    snapshotId = randomUUID();
+    await setOption(MOBILE_SYNC_CHECKPOINT_OPTION, JSON.stringify({ snapshotId, snapshotHash }));
+    started = await send({ action: "start", expected_counts: expectedCounts, expected_chunks: expectedChunks });
+  }
+  if (started.status !== "active") {
+    for (const [entity, , chunks] of chunkedEntries) {
+      for (let chunkIndex = 0; chunkIndex < chunks.length; chunkIndex += 1) {
+        const chunk = chunks[chunkIndex];
+        const checksum = createHash("sha256").update(JSON.stringify(chunk)).digest("hex");
+        await send({ action: "chunk", entity, chunk_index: chunkIndex, checksum, rows: chunk });
+      }
     }
   }
 
-  const response = await fetch(mobileSyncIngestUrl(config.supabaseUrl), {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      apikey: config.publishableKey,
-      "x-mobile-desktop-secret": config.desktopSecret,
-    },
-    body: JSON.stringify({ device_id: deviceId, snapshot }),
-    signal: AbortSignal.timeout(120_000),
-  });
-
-  const responseText = await response.text();
-  let payload: unknown;
-  try {
-    payload = responseText ? JSON.parse(responseText) : null;
-  } catch {
-    payload = null;
-  }
-  if (!response.ok) {
-    const serverError =
-      payload && typeof payload === "object" &&
-        "error" in payload && typeof payload.error === "string"
-        ? payload.error
-        : "";
-    const code = MOBILE_SYNC_ERROR_CODES.has(serverError)
-      ? serverError
-      : `http_${response.status}`;
-    throw mobileSyncFailure(code);
-  }
-  if (!payload || typeof payload !== "object") {
-    throw mobileSyncFailure("invalid_response");
-  }
-
-  const result = payload as Record<string, unknown>;
-  const counts =
-    result.counts && typeof result.counts === "object"
-      ? (result.counts as Record<string, unknown>)
-      : null;
-  if (result.ok !== true || typeof result.synced_at !== "string" || !counts) {
+  const result = await send({ action: "finalize" });
+  const counts = result.counts && typeof result.counts === "object"
+    ? result.counts as Record<string, unknown>
+    : null;
+  if (typeof result.synced_at !== "string" || !counts) {
     throw mobileSyncFailure("sync_unconfirmed");
   }
-
-  const expectedCounts: Record<keyof MobileSyncSnapshot, number> = {
-    users: snapshot.users.length,
-    permissions: snapshot.permissions.length,
-    categories: snapshot.categories.length,
-    products: snapshot.products.length,
-    manual_products: snapshot.manual_products.length,
-    suppliers: snapshot.suppliers.length,
-    purchases: snapshot.purchases.length,
-    purchase_items: snapshot.purchase_items.length,
-    clients: snapshot.clients.length,
-    services: snapshot.services.length,
-    service_appointments: snapshot.service_appointments.length,
-    sales: snapshot.sales.length,
-    sale_items: snapshot.sale_items.length,
-    payments: snapshot.payments.length,
-    bills: snapshot.bills.length,
-    bill_payments: snapshot.bill_payments.length,
-    dashboard_daily: snapshot.dashboard_daily.length,
-  };
-  for (
-    const [table, expected] of Object.entries(expectedCounts) as Array<
-      [keyof typeof expectedCounts, number]
-    >
-  ) {
-    if (counts[table] !== expected) {
-      throw mobileSyncFailure("count_mismatch");
-    }
+  for (const [entity, expected] of Object.entries(expectedCounts)) {
+    if (counts[entity] !== expected) throw mobileSyncFailure("count_mismatch");
   }
-  if (expectedCounts.users < 1) {
-    throw mobileSyncFailure("count_mismatch");
-  }
+  if (expectedCounts.users < 1) throw mobileSyncFailure("count_mismatch");
+  await setOption(MOBILE_SYNC_CHECKPOINT_OPTION, "");
 }
 
 async function syncCurrentMobileSnapshot(): Promise<boolean> {
