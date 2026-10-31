@@ -40,31 +40,6 @@ const ADMIN_PERMISSIONS: PermissionSet = Object.fromEntries(
   Object.keys(EMPTY_PERMISSIONS).map((key) => [key, true]),
 ) as PermissionSet;
 
-const READ_COLUMNS: Record<string, string> = {
-  pos_categories: "source_id,name,source_updated_at",
-  pos_manual_products: "source_id,name,type,cost_price,source_created_at,source_updated_at",
-  pos_suppliers: "source_id,name,phone,email,address,notes,source_created_at,source_updated_at",
-  pos_purchases: "source_id,supplier_source_id,source_created_at,source_updated_at",
-  pos_purchase_items: "source_id,purchase_source_id,product_source_id,quantity,price,source_created_at,source_updated_at",
-  pos_products:
-    "source_id,name,category_name,quantity,bought_price,selling_price,codebar,source_created_at,source_updated_at",
-  pos_clients:
-    "source_id,name,phone,address,notes,source_created_at,source_updated_at",
-  pos_payments:
-    "source_id,sale_source_id,client_source_id,given_amount,credit_amount,reason,due_date,paid_date,type,pending_sale_items,discount,source_created_at,source_updated_at",
-  pos_service_appointments:
-    "source_id,name,service_type,description,cost_price,service_price,client_source_id,due_date,notes,is_completed,completed_at,source_created_at,source_updated_at",
-  pos_bills:
-    "source_id,title,description,type,amount,next_bill_date,duration,notes,source_created_at,source_updated_at",
-  pos_bill_payments:
-    "source_id,bill_source_id,amount,paid_date,notes,source_created_at,source_updated_at",
-  pos_services: "source_id,name,description,cost_price,source_updated_at",
-  pos_sales:
-    "source_id,client_source_id,discount,total_amount,total_amount_with_discount,total_items,total_cost,total_profit,source_created_at,source_updated_at",
-  pos_sale_items:
-    "source_id,sale_source_id,product_source_id,manual_product_source_id,service_source_id,quantity,price,bought_price,source_updated_at",
-};
-
 function permissionsFor(
   role: string,
   row: Record<string, unknown> | null,
@@ -121,54 +96,23 @@ async function readSnapshotRows(
 }
 
 async function readRows(
-  db: ReturnType<typeof mobileAdminClient>,
-  table: string,
-  customerId: string,
-  order: string,
-  snapshotId: string | null = null,
-  ascending = true,
+  db: ReturnType<typeof mobileAdminClient>, entity: string, customerId: string,
+  order: string, snapshotId: string, ascending = true,
 ) {
-  if (snapshotId) {
-    const entity = table === "pos_user_permissions" ? "permissions" : table.replace(/^pos_/, "");
-    const rows = await readSnapshotRows(db, customerId, snapshotId, entity, true);
-    rows.sort((left, right) => {
-      const a = left[order];
-      const b = right[order];
-      let comparison = 0;
-      if (a == null && b != null) comparison = 1;
-      else if (a != null && b == null) comparison = -1;
-      else if (typeof a === "number" && typeof b === "number") comparison = a - b;
-      else if (typeof a === "string" && typeof b === "string") {
-        const aTime = order.includes("date") || order.includes("created_at") ? Date.parse(a) : Number.NaN;
-        const bTime = order.includes("date") || order.includes("created_at") ? Date.parse(b) : Number.NaN;
-        comparison = Number.isFinite(aTime) && Number.isFinite(bTime)
-          ? aTime - bTime
-          : a.localeCompare(b);
-      }
-      if (comparison === 0) comparison = String(left.source_id ?? "").localeCompare(String(right.source_id ?? ""));
-      return ascending ? comparison : -comparison;
-    });
-    return rows;
-  }
-  const columns = READ_COLUMNS[table];
-  if (!columns) throw new Error("data_unavailable");
-  const pageSize = 1000;
-  const rows: Record<string, unknown>[] = [];
-  for (let offset = 0;; offset += pageSize) {
-    const end = offset + pageSize - 1;
-    const { data, error } = await db
-      .from(table)
-      .select(columns)
-      .eq("customer_id", customerId)
-      .is("deleted_at", null)
-      .order(order, { ascending })
-      .order("source_id", { ascending: true })
-      .range(offset, end);
-    if (error) throw new Error("data_unavailable");
-    const page = data ?? [];
-    rows.push(...page);
-    if (page.length < pageSize) break;
-  }
+  const rows = await readSnapshotRows(db, customerId, snapshotId, entity, true);
+  rows.sort((left, right) => {
+    const a = left[order]; const b = right[order]; let comparison = 0;
+    if (a == null && b != null) comparison = 1;
+    else if (a != null && b == null) comparison = -1;
+    else if (typeof a === "number" && typeof b === "number") comparison = a - b;
+    else if (typeof a === "string" && typeof b === "string") {
+      const at = order.includes("date") || order.includes("created_at") ? Date.parse(a) : Number.NaN;
+      const bt = order.includes("date") || order.includes("created_at") ? Date.parse(b) : Number.NaN;
+      comparison = Number.isFinite(at) && Number.isFinite(bt) ? at - bt : a.localeCompare(b);
+    }
+    if (comparison === 0) comparison = String(left.source_id ?? "").localeCompare(String(right.source_id ?? ""));
+    return ascending ? comparison : -comparison;
+  });
   return rows;
 }
 
@@ -176,7 +120,7 @@ async function readBundle(
   db: ReturnType<typeof mobileAdminClient>,
   customerId: string,
   permissions: PermissionSet,
-  snapshotId: string | null,
+  snapshotId: string,
 ) {
   const dashboardCutoff = new Date();
   dashboardCutoff.setUTCDate(dashboardCutoff.getUTCDate() - 364);
@@ -200,57 +144,51 @@ async function readBundle(
     saleItems,
   ] = await Promise.all([
     permissions.can_access_dashboard
-      ? snapshotId
-        ? readSnapshotRows(db, customerId, snapshotId, "dashboard_daily", false)
-          .then((rows) => ({ data: rows.filter((row) => String(row.local_day) >= dashboardStartDay)
-            .sort((a, b) => String(b.local_day).localeCompare(String(a.local_day))).slice(0, 365), error: null }))
-        : db.from("pos_dashboard_daily").select(
-          "local_day,sales_count,revenue,profit,total_items,bill_payments",
-        )
-          .eq("customer_id", customerId).gte("local_day", dashboardStartDay)
-          .order("local_day", { ascending: false }).limit(365)
+      ? readSnapshotRows(db, customerId, snapshotId, "dashboard_daily", false)
+        .then((rows) => ({ data: rows.filter((row) => String(row.local_day) >= dashboardStartDay)
+          .sort((x, y) => String(y.local_day).localeCompare(String(x.local_day))).slice(0, 365), error: null }))
       : Promise.resolve({ data: [], error: null }),
     permissions.can_access_stock
-      ? readRows(db, "pos_categories", customerId, "name", snapshotId)
+      ? readRows(db, "categories", customerId, "name", snapshotId)
       : Promise.resolve([]),
     permissions.can_access_stock
-      ? readRows(db, "pos_products", customerId, "name", snapshotId)
+      ? readRows(db, "products", customerId, "name", snapshotId)
       : Promise.resolve([]),
     permissions.can_access_history
-      ? readRows(db, "pos_manual_products", customerId, "name", snapshotId)
+      ? readRows(db, "manual_products", customerId, "name", snapshotId)
       : Promise.resolve([]),
     permissions.can_access_clients
-      ? readRows(db, "pos_suppliers", customerId, "name", snapshotId)
+      ? readRows(db, "suppliers", customerId, "name", snapshotId)
       : Promise.resolve([]),
     permissions.can_access_history
-      ? readRows(db, "pos_purchases", customerId, "source_created_at", snapshotId, false)
+      ? readRows(db, "purchases", customerId, "source_created_at", snapshotId, false)
       : Promise.resolve([]),
     permissions.can_access_history
-      ? readRows(db, "pos_purchase_items", customerId, "purchase_source_id", snapshotId)
+      ? readRows(db, "purchase_items", customerId, "purchase_source_id", snapshotId)
       : Promise.resolve([]),
     permissions.can_access_clients
-      ? readRows(db, "pos_clients", customerId, "name", snapshotId)
+      ? readRows(db, "clients", customerId, "name", snapshotId)
       : Promise.resolve([]),
     permissions.can_access_clients
-      ? readRows(db, "pos_payments", customerId, "due_date", snapshotId)
+      ? readRows(db, "payments", customerId, "due_date", snapshotId)
       : Promise.resolve([]),
     permissions.can_access_services
-      ? readRows(db, "pos_service_appointments", customerId, "due_date", snapshotId)
+      ? readRows(db, "service_appointments", customerId, "due_date", snapshotId)
       : Promise.resolve([]),
     permissions.can_access_bills
-      ? readRows(db, "pos_bills", customerId, "next_bill_date", snapshotId)
+      ? readRows(db, "bills", customerId, "next_bill_date", snapshotId)
       : Promise.resolve([]),
     permissions.can_access_bills
-      ? readRows(db, "pos_bill_payments", customerId, "paid_date", snapshotId)
+      ? readRows(db, "bill_payments", customerId, "paid_date", snapshotId)
       : Promise.resolve([]),
     permissions.can_access_services
-      ? readRows(db, "pos_services", customerId, "name", snapshotId)
+      ? readRows(db, "services", customerId, "name", snapshotId)
       : Promise.resolve([]),
     permissions.can_access_history
-      ? readRows(db, "pos_sales", customerId, "source_created_at", snapshotId, false)
+      ? readRows(db, "sales", customerId, "source_created_at", snapshotId, false)
       : Promise.resolve([]),
     permissions.can_access_history
-      ? readRows(db, "pos_sale_items", customerId, "sale_source_id", snapshotId)
+      ? readRows(db, "sale_items", customerId, "sale_source_id", snapshotId)
       : Promise.resolve([]),
   ]);
 
@@ -320,33 +258,18 @@ async function sessionData(sessionCode: string) {
   ]);
   if (deviceError || snapshotError) throw new Error("session_unavailable");
 
-  let user: Record<string, unknown> | null = null;
-  let permission: Record<string, unknown> | null = null;
-  if (activeSnapshot?.snapshot_id) {
-    const [{ data: userRow, error: userError }, { data: permissionRow, error: permissionError }] = await Promise.all([
-      db.from("mobile_sync_snapshot_rows").select("payload")
-        .eq("customer_id", session.customer_id).eq("snapshot_id", activeSnapshot.snapshot_id)
-        .eq("entity", "users").eq("source_key", session.user_source_id).maybeSingle(),
-      db.from("mobile_sync_snapshot_rows").select("payload")
-        .eq("customer_id", session.customer_id).eq("snapshot_id", activeSnapshot.snapshot_id)
-        .eq("entity", "permissions").eq("payload->>user_source_id", session.user_source_id)
-        .maybeSingle(),
-    ]);
-    if (userError || permissionError) throw new Error("session_unavailable");
-    user = (userRow?.payload as Record<string, unknown> | undefined) ?? null;
-    permission = (permissionRow?.payload as Record<string, unknown> | undefined) ?? null;
-  } else {
-    const [{ data: legacyUser, error: userError }, { data: legacyPermission, error: permissionError }] = await Promise.all([
-      db.from("pos_users").select("source_id,username,role,is_active,deleted_at")
-        .eq("customer_id", session.customer_id).eq("source_id", session.user_source_id).maybeSingle(),
-      db.from("pos_user_permissions").select("*")
-        .eq("customer_id", session.customer_id).eq("user_source_id", session.user_source_id)
-        .is("deleted_at", null).maybeSingle(),
-    ]);
-    if (userError || permissionError) throw new Error("session_unavailable");
-    user = legacyUser as Record<string, unknown> | null;
-    permission = legacyPermission as Record<string, unknown> | null;
-  }
+  if (!activeSnapshot?.snapshot_id) throw new Error("snapshot_unavailable");
+  const [{ data: userRow, error: userError }, { data: permissionRow, error: permissionError }] = await Promise.all([
+    db.from("mobile_sync_snapshot_rows").select("payload")
+      .eq("customer_id", session.customer_id).eq("snapshot_id", activeSnapshot.snapshot_id)
+      .eq("entity", "users").eq("source_key", session.user_source_id).maybeSingle(),
+    db.from("mobile_sync_snapshot_rows").select("payload")
+      .eq("customer_id", session.customer_id).eq("snapshot_id", activeSnapshot.snapshot_id)
+      .eq("entity", "permissions").eq("payload->>user_source_id", session.user_source_id).maybeSingle(),
+  ]);
+  if (userError || permissionError) throw new Error("session_unavailable");
+  const user = (userRow?.payload as Record<string, unknown> | undefined) ?? null;
+  const permission = (permissionRow?.payload as Record<string, unknown> | undefined) ?? null;
   if (
     !device ||
     device.customer_id !== session.customer_id ||
@@ -380,7 +303,7 @@ async function sessionData(sessionCode: string) {
     String(user.role),
     permission as Record<string, unknown> | null,
   );
-  const data = await readBundle(db, session.customer_id, permissions, activeSnapshot?.snapshot_id ?? null);
+  const data = await readBundle(db, session.customer_id, permissions, activeSnapshot.snapshot_id);
   await db.from("mobile_sessions").update({
     last_used_at: now.toISOString(),
     license_checked_at: new Date(licenseCheckedAt).toISOString(),
@@ -456,15 +379,15 @@ Deno.serve(async (req) => {
       return json(500, { ok: false, error: "login_unavailable" }, cors);
     }
 
-    const { data: user, error: userError } = await db
-      .from("pos_users")
-      .select("source_id,username,password_hash,role,is_active,deleted_at")
-      .eq("customer_id", device.customer_id)
-      .eq("username", username)
-      .maybeSingle();
-    if (userError) {
-      return json(500, { ok: false, error: "login_unavailable" }, cors);
-    }
+    const { data: activeSnapshot, error: snapshotError } = await db.from("mobile_sync_snapshots")
+      .select("snapshot_id").eq("customer_id", device.customer_id).eq("status", "active").maybeSingle();
+    if (snapshotError) return json(500, { ok: false, error: "login_unavailable" }, cors);
+    if (!activeSnapshot?.snapshot_id) return json(503, { ok: false, error: "data_not_synced" }, cors);
+    const { data: userRows, error: userError } = await db.from("mobile_sync_snapshot_rows").select("payload")
+      .eq("customer_id", device.customer_id).eq("snapshot_id", activeSnapshot.snapshot_id)
+      .eq("entity", "users").eq("payload->>username", username).limit(1);
+    if (userError) return json(500, { ok: false, error: "login_unavailable" }, cors);
+    const user = (userRows?.[0]?.payload as Record<string, unknown> | undefined) ?? null;
     if (!user || !user.is_active || user.deleted_at) {
       return json(401, { ok: false, error: "invalid_credentials" }, cors);
     }
@@ -477,16 +400,11 @@ Deno.serve(async (req) => {
     const sessionHash = await sha256Hex(sessionCode);
     const now = new Date();
     const expiresAt = new Date(now.getTime() + 60 * 60 * 1000);
-    const { data: permission, error: permissionError } = await db
-      .from("pos_user_permissions")
-      .select("*")
-      .eq("customer_id", device.customer_id)
-      .eq("user_source_id", user.source_id)
-      .is("deleted_at", null)
-      .maybeSingle();
-    if (permissionError) {
-      return json(500, { ok: false, error: "login_unavailable" }, cors);
-    }
+    const { data: permissionRows, error: permissionError } = await db.from("mobile_sync_snapshot_rows").select("payload")
+      .eq("customer_id", device.customer_id).eq("snapshot_id", activeSnapshot.snapshot_id)
+      .eq("entity", "permissions").eq("payload->>user_source_id", user.source_id).limit(1);
+    if (permissionError) return json(500, { ok: false, error: "login_unavailable" }, cors);
+    const permission = (permissionRows?.[0]?.payload as Record<string, unknown> | undefined) ?? null;
 
     const { error: sessionError } = await db.from("mobile_sessions").insert({
       session_hash: sessionHash,
@@ -507,7 +425,7 @@ Deno.serve(async (req) => {
         String(user.role),
         permission as Record<string, unknown> | null,
       );
-      const data = await readBundle(db, device.customer_id, permissions);
+      const data = await readBundle(db, device.customer_id, permissions, activeSnapshot.snapshot_id);
       return json(200, {
         ok: true,
         session_code: sessionCode,
