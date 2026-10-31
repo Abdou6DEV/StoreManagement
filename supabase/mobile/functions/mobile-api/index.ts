@@ -125,11 +125,9 @@ async function readRows(
   table: string,
   customerId: string,
   order: string,
-  limit: number,
   snapshotId: string | null = null,
   ascending = true,
 ) {
-  void limit; // Reads are exhaustive; the legacy argument is kept for call-site compatibility.
   if (snapshotId) {
     const entity = table === "pos_user_permissions" ? "permissions" : table.replace(/^pos_/, "");
     const rows = await readSnapshotRows(db, customerId, snapshotId, entity, true);
@@ -213,46 +211,46 @@ async function readBundle(
           .order("local_day", { ascending: false }).limit(365)
       : Promise.resolve({ data: [], error: null }),
     permissions.can_access_stock
-      ? readRows(db, "pos_categories", customerId, "name", 2000, snapshotId)
+      ? readRows(db, "pos_categories", customerId, "name", snapshotId)
       : Promise.resolve([]),
     permissions.can_access_stock
-      ? readRows(db, "pos_products", customerId, "name", 2000, snapshotId)
+      ? readRows(db, "pos_products", customerId, "name", snapshotId)
       : Promise.resolve([]),
     permissions.can_access_history
-      ? readRows(db, "pos_manual_products", customerId, "name", 5000, snapshotId)
+      ? readRows(db, "pos_manual_products", customerId, "name", snapshotId)
       : Promise.resolve([]),
     permissions.can_access_clients
-      ? readRows(db, "pos_suppliers", customerId, "name", 2000, snapshotId)
+      ? readRows(db, "pos_suppliers", customerId, "name", snapshotId)
       : Promise.resolve([]),
     permissions.can_access_history
-      ? readRows(db, "pos_purchases", customerId, "source_created_at", 5000, snapshotId, false)
+      ? readRows(db, "pos_purchases", customerId, "source_created_at", snapshotId, false)
       : Promise.resolve([]),
     permissions.can_access_history
-      ? readRows(db, "pos_purchase_items", customerId, "purchase_source_id", 10000, snapshotId)
+      ? readRows(db, "pos_purchase_items", customerId, "purchase_source_id", snapshotId)
       : Promise.resolve([]),
     permissions.can_access_clients
-      ? readRows(db, "pos_clients", customerId, "name", 2000, snapshotId)
+      ? readRows(db, "pos_clients", customerId, "name", snapshotId)
       : Promise.resolve([]),
     permissions.can_access_clients
-      ? readRows(db, "pos_payments", customerId, "due_date", 3000, snapshotId)
+      ? readRows(db, "pos_payments", customerId, "due_date", snapshotId)
       : Promise.resolve([]),
     permissions.can_access_services
-      ? readRows(db, "pos_service_appointments", customerId, "due_date", 1000, snapshotId)
+      ? readRows(db, "pos_service_appointments", customerId, "due_date", snapshotId)
       : Promise.resolve([]),
     permissions.can_access_bills
-      ? readRows(db, "pos_bills", customerId, "next_bill_date", 1000, snapshotId)
+      ? readRows(db, "pos_bills", customerId, "next_bill_date", snapshotId)
       : Promise.resolve([]),
     permissions.can_access_bills
-      ? readRows(db, "pos_bill_payments", customerId, "paid_date", 3000, snapshotId)
+      ? readRows(db, "pos_bill_payments", customerId, "paid_date", snapshotId)
       : Promise.resolve([]),
     permissions.can_access_services
-      ? readRows(db, "pos_services", customerId, "name", 500, snapshotId)
+      ? readRows(db, "pos_services", customerId, "name", snapshotId)
       : Promise.resolve([]),
     permissions.can_access_history
-      ? readRows(db, "pos_sales", customerId, "source_created_at", 5000, snapshotId, false)
+      ? readRows(db, "pos_sales", customerId, "source_created_at", snapshotId, false)
       : Promise.resolve([]),
     permissions.can_access_history
-      ? readRows(db, "pos_sale_items", customerId, "sale_source_id", 10000, snapshotId)
+      ? readRows(db, "pos_sale_items", customerId, "sale_source_id", snapshotId)
       : Promise.resolve([]),
   ]);
 
