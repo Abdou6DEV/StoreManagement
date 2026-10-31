@@ -116,6 +116,7 @@ async function readRows(
       .eq("customer_id", customerId)
       .is("deleted_at", null)
       .order(order, { ascending })
+      .order("source_id", { ascending: true })
       .range(offset, end);
     if (error) throw new Error("data_unavailable");
     const page = data ?? [];
