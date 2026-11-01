@@ -6,6 +6,7 @@ import { useAuth } from "../contexts/authContext";
 import { useLicense } from "../contexts/licenseContext";
 import { useActiveTrial } from "../hooks/useActiveTrial";
 import { readLicenseGraceSnapshot } from "../license/offlineGrace";
+import rendererLogger from "../logger/rendererLogger";
 
 function resolveAuthPageLabel(pathname: string, t: TFunction): string {
   const segment = pathname.slice(1).split("/")[0] ?? "";
@@ -59,6 +60,7 @@ export default function ElectronTitleBarCenter() {
   const [snapshotAiEnabled, setSnapshotAiEnabled] = useState<
     boolean | undefined
   >(undefined);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   useEffect(() => {
     const sync = () => setIsOnline(navigator.onLine);
@@ -85,6 +87,29 @@ export default function ElectronTitleBarCenter() {
       cancelled = true;
     };
   }, [lastDeviceCheckResult]);
+
+  useEffect(() => {
+    let active = true;
+    let receivedStatusUpdate = false;
+    const unsubscribe = window.api.online.onMobileSyncStatusChanged((status) => {
+      receivedStatusUpdate = true;
+      if (active) setIsSyncing(status.inProgress);
+    });
+
+    void window.api.online
+      .mobileSyncStatus()
+      .then((status) => {
+        if (active && !receivedStatusUpdate) setIsSyncing(status.inProgress);
+      })
+      .catch((error: unknown) => {
+        rendererLogger.warn("Could not load mobile sync status.", "Mobile Sync", error);
+      });
+
+    return () => {
+      active = false;
+      unsubscribe();
+    };
+  }, []);
 
   const aiEnabled =
     lastDeviceCheckResult?.success === true &&
@@ -135,6 +160,8 @@ export default function ElectronTitleBarCenter() {
       statusLicenseKind: license.kind,
       statusOnline: onlineLabel,
       statusOnlineKind: onlineKind,
+      statusSyncing: isSyncing,
+      statusSyncingLabel: isSyncing ? t("admin.mobileApp.syncing", "Syncing...") : "",
     });
   }, [
     appName,
@@ -146,6 +173,8 @@ export default function ElectronTitleBarCenter() {
     license.kind,
     onlineLabel,
     onlineKind,
+    isSyncing,
+    t,
   ]);
 
   return null;

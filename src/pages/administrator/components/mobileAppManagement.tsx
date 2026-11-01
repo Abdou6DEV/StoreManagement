@@ -73,6 +73,7 @@ export function MobileAppManagement() {
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [mobileUserName, setMobileUserName] = useState("");
   const [expiresAt, setExpiresAt] = useState<string | null>(null);
+  const [remainingSeconds, setRemainingSeconds] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [devices, setDevices] = useState<MobileDevice[]>([]);
@@ -126,6 +127,36 @@ export function MobileAppManagement() {
       active = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (!expiresAt) {
+      setRemainingSeconds(null);
+      return;
+    }
+
+    const expiresAtMs = Date.parse(expiresAt);
+    let expiryTimeout: ReturnType<typeof setTimeout> | null = null;
+    const updateCountdown = () => {
+      const seconds = Number.isFinite(expiresAtMs)
+        ? Math.max(0, Math.ceil((expiresAtMs - Date.now()) / 1000))
+        : 0;
+      setRemainingSeconds(seconds);
+      if (seconds === 0) {
+        clearInterval(interval);
+        expiryTimeout = setTimeout(() => {
+          setQrDataUrl(null);
+          setExpiresAt(null);
+          setRemainingSeconds(null);
+        }, 8000);
+      }
+    };
+    const interval = setInterval(updateCountdown, 1000);
+    updateCountdown();
+    return () => {
+      clearInterval(interval);
+      if (expiryTimeout !== null) clearTimeout(expiryTimeout);
+    };
+  }, [expiresAt]);
 
   useEffect(() => {
     let active = true;
@@ -226,10 +257,29 @@ export function MobileAppManagement() {
   const activeDeviceCount = devices.filter(
     (device) => device.active && !device.revokedAt,
   ).length;
+  const hasPairingCode = qrDataUrl !== null && expiresAt !== null;
+  const countdownLabel =
+    remainingSeconds === null
+      ? ""
+      : remainingSeconds === 0
+        ? t("admin.mobileApp.expired")
+        : t("admin.mobileApp.expiresIn", {
+            time: `${Math.floor(remainingSeconds / 60)
+              .toString()
+              .padStart(2, "0")}:${(remainingSeconds % 60)
+              .toString()
+              .padStart(2, "0")}`,
+          });
 
   const pairingSteps = [
     {
       number: "01",
+      title: t("admin.mobileApp.pwaQrTitle"),
+      description: t("admin.mobileApp.pwaQrStep"),
+      Icon: Smartphone,
+    },
+    {
+      number: "02",
       title: t("admin.mobileApp.nameLabel"),
       description: t(
         "admin.mobileApp.namePlaceholder",
@@ -238,7 +288,7 @@ export function MobileAppManagement() {
       Icon: Smartphone,
     },
     {
-      number: "02",
+      number: "03",
       title: t("admin.mobileApp.createCode"),
       description: t(
         "admin.mobileApp.generateHelp",
@@ -247,19 +297,13 @@ export function MobileAppManagement() {
       Icon: QrCode,
     },
     {
-      number: "03",
+      number: "04",
       title: t("admin.mobileApp.scanStep", "Scan and connect"),
       description: t(
         "admin.mobileApp.scanInstruction",
         "Scan the QR code with your phone",
       ),
       Icon: ScanLine,
-    },
-    {
-      number: "04",
-      title: t("admin.mobileApp.pwaQrTitle"),
-      description: t("admin.mobileApp.pwaQrStep"),
-      Icon: Smartphone,
     },
   ];
 
@@ -299,84 +343,63 @@ export function MobileAppManagement() {
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       ) : null}
-      {/* Status and pairing */}
-      <div className="grid items-start gap-5 xl:grid-cols-[0.85fr_1.4fr]">
-        {/* Mobile access status */}
-        <Card className="h-full border-border shadow-sm">
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <ShieldCheck className="h-4 w-4 text-orange-600" />
-              {t("admin.mobileApp.status")}
-            </CardTitle>
-          </CardHeader>
-
-          <CardContent className="space-y-4">
-            <div className="rounded-xl border border-border/70 bg-muted/20 p-4">
-              <div className="mb-3 flex items-center justify-between gap-3">
-                <span className="text-sm text-muted-foreground">
+      {/* Mobile access status and pairing */}
+      <div className="space-y-5">
+        <Card className="border-border shadow-sm">
+          <CardContent className="grid gap-4 p-4 md:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] md:items-center">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <ShieldCheck className="h-4 w-4 shrink-0 text-orange-600" />
+                <span className="text-sm font-semibold">
                   {t("admin.mobileApp.status")}
                 </span>
-
-                {deviceCheck?.success === true &&
-                deviceCheck.allowed &&
-                mobileEnabled ? (
-                  <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-                ) : (
-                  <AlertCircle className="h-5 w-5 text-muted-foreground" />
-                )}
+                {!(deviceCheck?.success === true &&
+                  deviceCheck.allowed &&
+                  mobileEnabled) ? (
+                  <AlertCircle className="h-5 w-5 shrink-0 text-muted-foreground" />
+                ) : null}
+                <Badge
+                  variant="outline"
+                  className={`max-w-full whitespace-normal ${statusBadgeClass}`}
+                >
+                  {statusText}
+                </Badge>
               </div>
-
-              <Badge
-                variant="outline"
-                className={`max-w-full whitespace-normal ${statusBadgeClass}`}
-              >
-                {statusText}
-              </Badge>
-
-              <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
+              <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
                 {t("admin.mobileApp.entitlementHelp")}
               </p>
             </div>
 
             {deviceCheck?.success === true && deviceCheck.allowed ? (
               <div className="grid grid-cols-2 gap-3">
-                <div className="rounded-xl border border-border/70 p-3">
-                  <div className="mb-2 flex items-center gap-2 text-muted-foreground">
-                    <Smartphone className="h-4 w-4 text-orange-600" />
-                    <span className="text-xs">
-                      {t(
-                        "admin.mobileApp.pairedDevices",
-                        "Paired phones",
-                      )}
-                    </span>
+                <div className="flex min-w-0 items-center gap-3 rounded-xl border border-border/70 bg-muted/20 px-3 py-2.5">
+                  <Smartphone className="h-4 w-4 shrink-0 text-orange-600" />
+                  <div className="min-w-0">
+                    <p className="text-xs text-muted-foreground">
+                      {t("admin.mobileApp.pairedDevices", "Paired phones")}
+                    </p>
+                    <p className="text-lg font-bold tabular-nums">
+                      {activeDeviceCount}
+                      <span className="ml-1 text-xs font-normal text-muted-foreground">
+                        {t("admin.mobileApp.deviceActive", "Active")}
+                      </span>
+                    </p>
                   </div>
-                  <p className="text-2xl font-bold tabular-nums">
-                    {activeDeviceCount}
-                  </p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {t("admin.mobileApp.deviceActive", "Active")}
-                  </p>
                 </div>
 
-                <div className="rounded-xl border border-border/70 p-3">
-                  <div className="mb-2 flex items-center gap-2 text-muted-foreground">
-                    <ShieldCheck className="h-4 w-4 text-orange-600" />
-                    <span className="text-xs">
-                      {t(
-                        "admin.mobileApp.deviceLimitLabel",
-                        "Phone limit",
-                      )}
-                    </span>
+                <div className="flex min-w-0 items-center gap-3 rounded-xl border border-border/70 bg-muted/20 px-3 py-2.5">
+                  <ShieldCheck className="h-4 w-4 shrink-0 text-orange-600" />
+                  <div className="min-w-0">
+                    <p className="text-xs text-muted-foreground">
+                      {t("admin.mobileApp.deviceLimitLabel", "Phone limit")}
+                    </p>
+                    <p className="text-lg font-bold tabular-nums">
+                      {deviceCheck.mobileDeviceLimit ?? 0}
+                      <span className="ml-1 text-xs font-normal text-muted-foreground">
+                        {t("admin.mobileApp.deviceLimitHelp", "Allowed")}
+                      </span>
+                    </p>
                   </div>
-                  <p className="text-2xl font-bold tabular-nums">
-                    {deviceCheck.mobileDeviceLimit ?? 0}
-                  </p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {t(
-                      "admin.mobileApp.deviceLimitHelp",
-                      "Allowed devices",
-                    )}
-                  </p>
                 </div>
               </div>
             ) : null}
@@ -408,41 +431,49 @@ export function MobileAppManagement() {
           </CardHeader>
 
           <CardContent className="relative grid gap-5 pt-3">
-            <div className="grid gap-2">
-              <label
-                htmlFor="mobile-user-name"
-                className="text-sm font-medium"
+            <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-end">
+              <div className="grid w-full max-w-sm gap-2">
+                <label
+                  htmlFor="mobile-user-name"
+                  className="text-sm font-medium"
+                >
+                  {t("admin.mobileApp.nameLabel")}
+                </label>
+
+                <input
+                  id="mobile-user-name"
+                  value={mobileUserName}
+                  onChange={(event) => setMobileUserName(event.target.value)}
+                  maxLength={60}
+                  autoComplete="off"
+                  disabled={hasPairingCode}
+                  className="h-11 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none transition focus-visible:ring-2 focus-visible:ring-orange-500/50"
+                  placeholder={t("admin.mobileApp.namePlaceholder")}
+                />
+              </div>
+
+              <Button
+                type="button"
+                onClick={() => void createPairingCode()}
+                disabled={
+                  !mobileEnabled ||
+                  busy ||
+                  !mobileUserName.trim() ||
+                  hasPairingCode
+                }
+                className="h-11 w-fit bg-orange-600 font-semibold text-white hover:bg-orange-700"
               >
-                {t("admin.mobileApp.nameLabel")}
-              </label>
+                {busy ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <QrCode className="mr-2 h-4 w-4" />
+                )}
 
-              <input
-                id="mobile-user-name"
-                value={mobileUserName}
-                onChange={(event) => setMobileUserName(event.target.value)}
-                maxLength={60}
-                autoComplete="off"
-                className="h-11 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none transition focus-visible:ring-2 focus-visible:ring-orange-500/50"
-                placeholder={t("admin.mobileApp.namePlaceholder")}
-              />
+                {busy
+                  ? t("admin.mobileApp.syncingData")
+                  : t("admin.mobileApp.createCode")}
+              </Button>
             </div>
-
-            <Button
-              type="button"
-              onClick={() => void createPairingCode()}
-              disabled={!mobileEnabled || busy || !mobileUserName.trim()}
-              className="h-11 w-full bg-orange-600 font-semibold text-white hover:bg-orange-700"
-            >
-              {busy ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <QrCode className="mr-2 h-4 w-4" />
-              )}
-
-              {busy
-                ? t("admin.mobileApp.syncingData")
-                : t("admin.mobileApp.createCode")}
-            </Button>
 
             {!mobileEnabled && deviceCheck !== null ? (
               <div className="flex items-start gap-2 rounded-lg border border-border bg-muted/30 p-3 text-sm text-muted-foreground">
@@ -480,83 +511,109 @@ export function MobileAppManagement() {
               })}
             </div>
 
-            <div className="grid gap-4 rounded-xl border border-border/70 bg-muted/20 p-4 sm:grid-cols-[minmax(0,1fr)_164px] sm:items-center">
-              <div className="min-w-0 space-y-2">
-                <p className="text-sm font-semibold">
-                  {t("admin.mobileApp.pwaQrTitle")}
-                </p>
-                <p className="text-xs leading-relaxed text-muted-foreground">
-                  {t("admin.mobileApp.pwaQrHelp")}
-                </p>
+            <div
+              className={`grid gap-4 ${
+                qrDataUrl && expiresAt ? "lg:grid-cols-2" : ""
+              }`}
+            >
+              <div className="flex flex-col items-center gap-4 rounded-xl border border-border/70 bg-muted/20 p-5 text-center">
+                <div className="space-y-1">
+                  <p className="text-sm font-semibold text-foreground">
+                    {t("admin.mobileApp.pwaQrTitle")}
+                  </p>
+                  <p className="mx-auto max-w-md text-xs leading-relaxed text-muted-foreground">
+                    {t("admin.mobileApp.pwaQrHelp")}
+                  </p>
+                </div>
+
                 <a
                   href={MOBILE_APP_URL}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="break-all text-sm font-medium text-orange-700 underline decoration-orange-500/40 underline-offset-4 dark:text-orange-300"
+                  aria-label={t("admin.mobileApp.pwaQrAlt")}
+                  className="block w-full max-w-[164px] rounded-xl border border-border bg-white p-2 shadow-sm"
+                >
+                  {mobileAppQrDataUrl ? (
+                    <img
+                      src={mobileAppQrDataUrl}
+                      alt={t("admin.mobileApp.pwaQrAlt")}
+                      className="block aspect-square w-full rounded-md"
+                    />
+                  ) : mobileAppQrFailed ? (
+                    <div className="flex aspect-square items-center justify-center p-3 text-center text-xs text-muted-foreground">
+                      {t("admin.mobileApp.pwaQrUnavailable")}
+                    </div>
+                  ) : (
+                    <div className="flex aspect-square items-center justify-center">
+                      <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                    </div>
+                  )}
+                </a>
+
+                <a
+                  href={MOBILE_APP_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="break-all text-xs font-medium text-orange-700 underline decoration-orange-500/40 underline-offset-4 dark:text-orange-300"
                 >
                   {MOBILE_APP_URL}
                 </a>
               </div>
 
-              <a
-                href={MOBILE_APP_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={t("admin.mobileApp.pwaQrAlt")}
-                className="mx-auto block w-full max-w-[164px] rounded-lg border border-border bg-white p-2"
-              >
-                {mobileAppQrDataUrl ? (
-                  <img
-                    src={mobileAppQrDataUrl}
-                    alt={t("admin.mobileApp.pwaQrAlt")}
-                    className="block aspect-square w-full rounded-md"
-                  />
-                ) : mobileAppQrFailed ? (
-                  <div className="flex aspect-square items-center justify-center p-3 text-center text-xs text-muted-foreground">
-                    {t("admin.mobileApp.pwaQrUnavailable")}
-                  </div>
-                ) : (
-                  <div className="flex aspect-square items-center justify-center">
-                    <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-                  </div>
-                )}
-              </a>
-            </div>
-
-            {/* Generated QR code */}
-            {qrDataUrl && expiresAt ? (
-              <div className="overflow-hidden rounded-xl border border-orange-500/20 bg-muted/20">
-                <div className="flex items-center gap-2 border-b border-border/70 px-4 py-3">
-                  <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
-
-                  <span className="text-sm font-semibold">
-                    {t(
-                      "admin.mobileApp.qrReady",
-                      "Pairing code ready",
+              {hasPairingCode && qrDataUrl && expiresAt ? (
+                <div className="flex flex-col items-center gap-4 rounded-xl border border-orange-500/20 bg-muted/20 p-5">
+                  <div className="flex w-full items-center gap-2">
+                    {remainingSeconds === 0 ? (
+                      <AlertCircle className="h-4 w-4 shrink-0 text-red-600" />
+                    ) : (
+                      <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
                     )}
-                  </span>
 
-                  <Badge variant="outline" className="ml-auto shrink-0">
-                    <Clock3 className="mr-1 h-3 w-3" />
-                    {t("admin.mobileApp.temporary", "Temporary")}
-                  </Badge>
-                </div>
+                    <span className="text-sm font-semibold">
+                      {remainingSeconds === 0
+                        ? t("admin.mobileApp.expired")
+                        : t("admin.mobileApp.qrReady")}
+                    </span>
 
-                <div className="grid gap-4 p-4 sm:grid-cols-[220px_minmax(0,1fr)] sm:items-center">
-                  <div className="mx-auto w-full max-w-[220px] rounded-xl border border-border bg-white p-2 shadow-sm">
+                    <Badge
+                      variant="outline"
+                      className={`ml-auto shrink-0 ${
+                        remainingSeconds === 0
+                          ? "border-red-500/30 bg-red-500/10 text-red-700 dark:text-red-300"
+                          : ""
+                      }`}
+                    >
+                      <Clock3 className="mr-1 h-3 w-3" />
+                      {remainingSeconds === 0
+                        ? t("admin.mobileApp.expired")
+                        : t("admin.mobileApp.temporary")}
+                    </Badge>
+                  </div>
+
+                  <div className="w-full max-w-[164px] rounded-xl border border-border bg-white p-2 shadow-sm">
                     <img
                       src={qrDataUrl}
                       alt={t("admin.mobileApp.qrAlt")}
-                      className="block aspect-square w-full rounded-md"
+                      className={`block aspect-square w-full rounded-md ${
+                        remainingSeconds === 0
+                          ? "grayscale opacity-40"
+                          : ""
+                      }`}
                     />
                   </div>
 
-                  <div className="min-w-0 space-y-3 text-center sm:text-left">
-                    <p className="text-sm font-semibold text-foreground">
-                      {t("admin.mobileApp.scanInstruction")}
-                    </p>
+                  <p
+                    className={`text-center text-xs leading-relaxed ${
+                      remainingSeconds === 0
+                        ? "text-muted-foreground/60"
+                        : "text-muted-foreground"
+                    }`}
+                  >
+                    {t("admin.mobileApp.scanInstruction")}
+                  </p>
 
-                    <div className="rounded-lg border border-border/70 bg-background/70 p-3">
+                  <div className="grid w-full gap-3 sm:grid-cols-2">
+                    <div className="min-w-0 rounded-lg border border-border/70 bg-background/70 p-3 text-center">
                       <p className="text-xs text-muted-foreground">
                         {t("admin.mobileApp.nameLabel")}
                       </p>
@@ -565,33 +622,37 @@ export function MobileAppManagement() {
                       </p>
                     </div>
 
-                    <div className="flex items-start gap-2 rounded-lg border border-orange-500/20 bg-orange-500/5 p-3 text-left">
-                      <Clock3 className="mt-0.5 h-4 w-4 shrink-0 text-orange-600" />
-                      <div className="min-w-0">
-                        <p className="text-xs font-medium">
-                          {t(
-                            "admin.mobileApp.expiryLabel",
-                            "Code expiry",
-                          )}
-                        </p>
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          {t("admin.mobileApp.expiresAt", {
-                            time: new Date(expiresAt).toLocaleTimeString(),
-                          })}
-                        </p>
-                      </div>
+                    <div
+                      className={`min-w-0 rounded-lg border p-3 text-center ${
+                        remainingSeconds === 0
+                          ? "border-red-500/30 bg-red-500/10"
+                          : "border-orange-500/20 bg-orange-500/5"
+                      }`}
+                    >
+                      <p className="flex items-center justify-center gap-1.5 text-xs font-medium">
+                        <Clock3
+                          className={`h-3.5 w-3.5 ${
+                            remainingSeconds === 0
+                              ? "text-red-600"
+                              : "text-orange-600"
+                          }`}
+                        />
+                        {t("admin.mobileApp.expiryLabel")}
+                      </p>
+                      <p
+                        className={`mt-1 text-xs ${
+                          remainingSeconds === 0
+                            ? "font-semibold text-red-700 dark:text-red-300"
+                            : "text-muted-foreground"
+                        }`}
+                      >
+                        {countdownLabel}
+                      </p>
                     </div>
-
-                    <p className="text-xs leading-relaxed text-muted-foreground">
-                      {t(
-                        "admin.mobileApp.qrSecurityHelp",
-                        "Scan this code using the mobile pairing page to connect the phone.",
-                      )}
-                    </p>
                   </div>
                 </div>
-              </div>
-            ) : null}
+              ) : null}
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -599,16 +660,22 @@ export function MobileAppManagement() {
       {/* Paired device management */}
       <Card className="border-border shadow-sm">
         <CardHeader className="pb-3">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-orange-500/20 bg-orange-500/10">
                 <Smartphone className="h-5 w-5 text-orange-600" />
               </div>
 
               <div>
-                <CardTitle className="text-base">
-                  {t("admin.mobileApp.pairedDevices", "Paired phones")}
-                </CardTitle>
+                <div className="flex flex-wrap items-center gap-2">
+                  <CardTitle className="text-base">
+                    {t("admin.mobileApp.pairedDevices", "Paired phones")}
+                  </CardTitle>
+                  <Badge variant="outline" className="w-fit">
+                    {activeDeviceCount}{" "}
+                    {t("admin.mobileApp.activeCount", "active")}
+                  </Badge>
+                </div>
                 <p className="mt-1 text-xs text-muted-foreground">
                   {t(
                     "admin.mobileApp.deviceManagementHelp",
@@ -617,11 +684,6 @@ export function MobileAppManagement() {
                 </p>
               </div>
             </div>
-
-            <Badge variant="outline" className="w-fit">
-              {activeDeviceCount}{" "}
-              {t("admin.mobileApp.activeCount", "active")}
-            </Badge>
           </div>
         </CardHeader>
 

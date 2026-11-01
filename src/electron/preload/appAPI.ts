@@ -20,6 +20,8 @@ export const appAPI = {
     statusLicenseKind?: "trial" | "premium" | "standard" | "";
     statusOnline?: string;
     statusOnlineKind?: "online" | "offline" | "";
+    statusSyncing?: boolean;
+    statusSyncingLabel?: string;
   }) => ipcRenderer.invoke("app:setTitleBarContent", payload),
   onTitleBarUpdate: (
     callback: (payload: {
@@ -35,6 +37,8 @@ export const appAPI = {
       statusLicenseKind?: "trial" | "premium" | "standard" | "";
       statusOnline?: string;
       statusOnlineKind?: "online" | "offline" | "";
+      statusSyncing?: boolean;
+      statusSyncingLabel?: string;
     }) => void,
   ) => {
     const handler = (
@@ -52,6 +56,8 @@ export const appAPI = {
         statusLicenseKind?: "trial" | "premium" | "standard" | "";
         statusOnline?: string;
         statusOnlineKind?: "online" | "offline" | "";
+        statusSyncing?: boolean;
+        statusSyncingLabel?: string;
       },
     ) => {
       callback(payload ?? {});

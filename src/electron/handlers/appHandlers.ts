@@ -128,6 +128,8 @@ export function setupAppHandlers() {
         statusLicenseKind?: "trial" | "premium" | "standard" | "";
         statusOnline?: string;
         statusOnlineKind?: "online" | "offline" | "";
+        statusSyncing?: boolean;
+        statusSyncingLabel?: string;
       },
     ) => {
       const win = browserWindowFromEventSender(event.sender);

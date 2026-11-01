@@ -1,5 +1,5 @@
 import { useEffect, useState, type CSSProperties } from "react";
-import { User } from "lucide-react";
+import { Loader2, User } from "lucide-react";
 import { Badge } from "@/lib/components/ui/badge";
 import {
   Status,
@@ -22,6 +22,8 @@ type TitleBarUpdate = {
   statusLicenseKind?: LicenseKind;
   statusOnline?: string;
   statusOnlineKind?: "online" | "offline" | "";
+  statusSyncing?: boolean;
+  statusSyncingLabel?: string;
 };
 
 function licenseBadgeClass(kind: LicenseKind): string {
@@ -61,6 +63,8 @@ export function TitleBarApp() {
       statusLicenseKind: "",
       statusOnline: "",
       statusOnlineKind: "",
+      statusSyncing: false,
+      statusSyncingLabel: "",
       dir: "ltr",
       visible: true,
     };
@@ -191,6 +195,18 @@ export function TitleBarApp() {
           </div>
         )}
       </div>
+
+      {state.statusSyncing ? (
+        <div
+          className="flex shrink-0 items-center gap-1.5 pr-3 text-[11px] font-medium"
+          style={noDragStyle}
+          role="status"
+          aria-live="polite"
+        >
+          <Loader2 className="size-3.5 animate-spin text-orange-500" aria-hidden />
+          <span>{state.statusSyncingLabel || "Syncing..."}</span>
+        </div>
+      ) : null}
 
       <div className="h-full w-[140px] shrink-0" style={noDragStyle} aria-hidden />
     </div>

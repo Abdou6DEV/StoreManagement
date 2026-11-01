@@ -100,7 +100,6 @@ const MOBILE_SYNC_MAX_RETRY_MS = 5 * 60_000;
 const MOBILE_SYNC_LAST_SUCCESS_OPTION = "mobile_sync_last_success_at";
 const MOBILE_SYNC_CHECKPOINT_OPTION = "mobile_sync_snapshot_checkpoint";
 const MOBILE_MANAGEMENT_SNAPSHOT_OPTION = "mobile_management_snapshot";
-const MOBILE_MANAGEMENT_REFRESH_INTERVAL_MS = 5 * 60_000;
 const MOBILE_SYNC_CHUNK_SIZE = 100;
 const MOBILE_SYNC_MAX_CHUNK_BYTES = 256 * 1024;
 
@@ -219,6 +218,12 @@ function publishMobileManagementSnapshot(): void {
   broadcastToAllApps("online:mobileManagementSnapshotChanged", mobileManagementSnapshot);
 }
 
+function hasActivePairedMobileDevice(): boolean {
+  return mobileManagementSnapshot.devices.some(
+    (device) => device.active && !device.revokedAt,
+  );
+}
+
 async function persistMobileManagementSnapshot(
   snapshot: Omit<MobileManagementSnapshot, "updatedAt">,
 ): Promise<MobileManagementSnapshot> {
@@ -242,8 +247,12 @@ async function loadMobileManagementSnapshot(): Promise<void> {
 }
 
 function scheduleMobileSnapshotSync(delayMs = MOBILE_SYNC_DEBOUNCE_MS): void {
-  if (mobileSyncEligible === false) {
+  if (mobileSyncEligible === false || !hasActivePairedMobileDevice()) {
     mobileSyncPending = false;
+    if (mobileSyncTimer) {
+      clearTimeout(mobileSyncTimer);
+      mobileSyncTimer = null;
+    }
     publishMobileSyncStatus();
     return;
   }
@@ -490,7 +499,7 @@ function updateMobileSyncEligibility(check: DeviceCheckResult): void {
     (check.mobileDeviceLimit ?? 0) > 0;
   if (mobileSyncEligible && !wasEligible) {
     scheduleMobileSnapshotSync(0);
-  } else if (!mobileSyncEligible) {
+  } else if (!mobileSyncEligible || !hasActivePairedMobileDevice()) {
     mobileSyncPending = false;
     if (mobileSyncTimer) {
       clearTimeout(mobileSyncTimer);
@@ -1477,13 +1486,14 @@ async function refreshMobileManagementSnapshot(): Promise<MobileManagementSnapsh
 
   const operation = (async () => {
     const deviceCheck = await runDeviceCheckInternal();
-    updateMobileSyncEligibility(deviceCheck);
 
     if (!deviceCheck.success) {
-      return persistMobileManagementSnapshot({
+      const snapshot = await persistMobileManagementSnapshot({
         ...mobileManagementSnapshot,
         deviceCheck,
       });
+      updateMobileSyncEligibility(deviceCheck);
+      return snapshot;
     }
 
     const mobileEnabled =
@@ -1491,19 +1501,23 @@ async function refreshMobileManagementSnapshot(): Promise<MobileManagementSnapsh
       deviceCheck.mobileEnabled === true &&
       (deviceCheck.mobileDeviceLimit ?? 0) > 0;
     if (!mobileEnabled) {
-      return persistMobileManagementSnapshot({
+      const snapshot = await persistMobileManagementSnapshot({
         deviceCheck,
         devices: [],
         devicesError: null,
       });
+      updateMobileSyncEligibility(deviceCheck);
+      return snapshot;
     }
 
     const result = await loadMobileDeviceListInternal();
-    return persistMobileManagementSnapshot({
+    const snapshot = await persistMobileManagementSnapshot({
       deviceCheck,
       devices: result.success === true ? result.devices : mobileManagementSnapshot.devices,
       devicesError: result.success === true ? null : result.error,
     });
+    updateMobileSyncEligibility(deviceCheck);
+    return snapshot;
   })().catch((error) => {
     logger.warn("Could not refresh mobile management status.", "Mobile Sync", { error });
     return mobileManagementSnapshot;
@@ -1520,11 +1534,6 @@ export function setupOnlineHandlers(): void {
     logger.warn("Could not load saved mobile management status.", "Mobile Sync", { error });
   });
   void mobileManagementCacheReady.then(() => refreshMobileManagementSnapshot());
-  const mobileManagementRefreshTimer = setInterval(
-    () => void refreshMobileManagementSnapshot(),
-    MOBILE_MANAGEMENT_REFRESH_INTERVAL_MS,
-  );
-  mobileManagementRefreshTimer.unref?.();
 
   void getOption(MOBILE_SYNC_LAST_SUCCESS_OPTION).then((lastSuccessAt) => {
     if (lastSuccessAt && Number.isFinite(Date.parse(lastSuccessAt))) {

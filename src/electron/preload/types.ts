@@ -267,6 +267,8 @@ export type AppAPI = {
     statusLicenseKind?: "trial" | "premium" | "standard" | "";
     statusOnline?: string;
     statusOnlineKind?: "online" | "offline" | "";
+    statusSyncing?: boolean;
+    statusSyncingLabel?: string;
   }) => Promise<{ success: boolean }>;
   onTitleBarUpdate: (
     callback: (payload: {
@@ -282,6 +284,8 @@ export type AppAPI = {
       statusLicenseKind?: "trial" | "premium" | "standard" | "";
       statusOnline?: string;
       statusOnlineKind?: "online" | "offline" | "";
+      statusSyncing?: boolean;
+      statusSyncingLabel?: string;
     }) => void,
   ) => () => void;
   isFullScreen: () => Promise<boolean>;
