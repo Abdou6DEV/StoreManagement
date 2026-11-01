@@ -2,6 +2,7 @@ import { ipcRenderer } from "electron";
 import type { DeviceRequestPayload, DeviceRequestResult } from "../types/deviceRequest";
 import type { DeviceLinkExistingPayload, DeviceLinkExistingResult } from "../types/deviceLinkExisting";
 import type { DeviceCheckResult } from "../types/deviceCheck";
+import type { MobileManagementSnapshot } from "../types/mobileManagement";
 import type {
   MobileDeviceListResult,
   MobileDeviceRevokeResult,
@@ -31,6 +32,17 @@ export const onlineAPI = {
     ipcRenderer.invoke("online:mobilePairingCreate", deviceName) as Promise<MobilePairingCreateResult>,
   mobileDeviceList: () =>
     ipcRenderer.invoke("online:mobileDeviceList") as Promise<MobileDeviceListResult>,
+  mobileManagementSnapshot: () =>
+    ipcRenderer.invoke("online:mobileManagementSnapshot") as Promise<MobileManagementSnapshot>,
+  mobileManagementRefresh: () =>
+    ipcRenderer.invoke("online:mobileManagementRefresh") as Promise<MobileManagementSnapshot>,
+  onMobileManagementSnapshotChanged: (callback: (snapshot: MobileManagementSnapshot) => void) => {
+    const handler = (_event: unknown, snapshot: MobileManagementSnapshot) => callback(snapshot);
+    ipcRenderer.on("online:mobileManagementSnapshotChanged", handler);
+    return () => {
+      ipcRenderer.removeListener("online:mobileManagementSnapshotChanged", handler);
+    };
+  },
   mobileDeviceRevoke: (deviceId: string) =>
     ipcRenderer.invoke("online:mobileDeviceRevoke", deviceId) as Promise<MobileDeviceRevokeResult>,
   mobileSyncStatus: () =>

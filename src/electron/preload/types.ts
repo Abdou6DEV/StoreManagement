@@ -13,6 +13,7 @@ import { LogLevel } from "../../lib/logger/common";
 import type { DeviceRequestPayload, DeviceRequestResult } from "../types/deviceRequest";
 import type { DeviceLinkExistingPayload, DeviceLinkExistingResult } from "../types/deviceLinkExisting";
 import type { DeviceCheckResult } from "../types/deviceCheck";
+import type { MobileManagementSnapshot } from "../types/mobileManagement";
 import type {
   MobileDeviceListResult,
   MobileDeviceRevokeResult,
@@ -537,6 +538,11 @@ export type OnlineAPI = {
   deviceCheck: () => Promise<DeviceCheckResult>;
   mobilePairingCreate: (deviceName: string) => Promise<MobilePairingCreateResult>;
   mobileDeviceList: () => Promise<MobileDeviceListResult>;
+  mobileManagementSnapshot: () => Promise<MobileManagementSnapshot>;
+  mobileManagementRefresh: () => Promise<MobileManagementSnapshot>;
+  onMobileManagementSnapshotChanged: (
+    callback: (snapshot: MobileManagementSnapshot) => void,
+  ) => () => void;
   mobileDeviceRevoke: (deviceId: string) => Promise<MobileDeviceRevokeResult>;
   mobileSyncStatus: () => Promise<MobileSyncStatus>;
   mobileSyncNow: () => Promise<MobileSyncNowResult>;

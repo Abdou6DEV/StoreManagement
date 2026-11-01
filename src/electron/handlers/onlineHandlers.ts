@@ -27,9 +27,11 @@ import type { DeviceLinkExistingPayload, DeviceLinkExistingResult } from "../typ
 import type { DeviceCheckResult } from "../types/deviceCheck";
 import type {
   MobileDeviceListResult,
+  MobileDevice,
   MobileDeviceRevokeResult,
   MobilePairingCreateResult,
 } from "../types/mobilePairing";
+import type { MobileManagementSnapshot } from "../types/mobileManagement";
 import { AI_OFFLINE } from "../../lib/ai/aiMessageLimits";
 import { resolvePaidCloudBackupAccess } from "../../lib/license/paidCloudBackupAccess";
 import { resolvePremiumAccess } from "../../lib/license/premiumAccess";
@@ -97,6 +99,8 @@ const MOBILE_SYNC_INITIAL_RETRY_MS = 5_000;
 const MOBILE_SYNC_MAX_RETRY_MS = 5 * 60_000;
 const MOBILE_SYNC_LAST_SUCCESS_OPTION = "mobile_sync_last_success_at";
 const MOBILE_SYNC_CHECKPOINT_OPTION = "mobile_sync_snapshot_checkpoint";
+const MOBILE_MANAGEMENT_SNAPSHOT_OPTION = "mobile_management_snapshot";
+const MOBILE_MANAGEMENT_REFRESH_INTERVAL_MS = 5 * 60_000;
 const MOBILE_SYNC_CHUNK_SIZE = 100;
 const MOBILE_SYNC_MAX_CHUNK_BYTES = 256 * 1024;
 
@@ -108,6 +112,14 @@ let mobileSyncRetryAttempt = 0;
 let mobileSyncEligible: boolean | null = null;
 let mobileSyncLastSuccessAt: string | null = null;
 let mobileSyncLastError: string | null = null;
+let mobileManagementSnapshot: MobileManagementSnapshot = {
+  deviceCheck: null,
+  devices: [],
+  devicesError: null,
+  updatedAt: null,
+};
+let mobileManagementCacheReady: Promise<void> = Promise.resolve();
+let mobileManagementRefreshInFlight: Promise<MobileManagementSnapshot> | null = null;
 
 const MOBILE_SYNC_ERROR_CODES = new Set([
   "invalid_json",
@@ -158,6 +170,75 @@ function getMobileSyncStatus(): MobileSyncStatus {
 
 function publishMobileSyncStatus(): void {
   broadcastToAllApps("online:mobileSyncStatusChanged", getMobileSyncStatus());
+}
+
+function isDeviceCheckResult(value: unknown): value is DeviceCheckResult {
+  if (!value || typeof value !== "object") return false;
+  const result = value as Record<string, unknown>;
+  return result.success === true
+    ? typeof result.allowed === "boolean"
+    : result.success === false && typeof result.error === "string";
+}
+
+function parseMobileManagementSnapshot(value: string): MobileManagementSnapshot | null {
+  try {
+    const parsed: unknown = JSON.parse(value);
+    if (!parsed || typeof parsed !== "object") return null;
+    const record = parsed as Record<string, unknown>;
+    if (record.deviceCheck !== null && !isDeviceCheckResult(record.deviceCheck)) return null;
+    if (!Array.isArray(record.devices)) return null;
+    const devices: MobileDevice[] = [];
+    for (const value of record.devices) {
+      if (!value || typeof value !== "object") continue;
+      const device = value as Record<string, unknown>;
+      if (
+        typeof device.id !== "string" ||
+        typeof device.deviceName !== "string" ||
+        typeof device.platform !== "string" ||
+        typeof device.pairedAt !== "string" ||
+        (device.lastSeenAt !== null && typeof device.lastSeenAt !== "string") ||
+        typeof device.active !== "boolean" ||
+        (device.revokedAt !== null && typeof device.revokedAt !== "string")
+      ) continue;
+      devices.push(device as unknown as MobileDevice);
+    }
+    if (record.devicesError !== null && typeof record.devicesError !== "string") return null;
+    if (record.updatedAt !== null && typeof record.updatedAt !== "string") return null;
+    return {
+      deviceCheck: record.deviceCheck as DeviceCheckResult | null,
+      devices,
+      devicesError: record.devicesError as string | null,
+      updatedAt: record.updatedAt as string | null,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function publishMobileManagementSnapshot(): void {
+  broadcastToAllApps("online:mobileManagementSnapshotChanged", mobileManagementSnapshot);
+}
+
+async function persistMobileManagementSnapshot(
+  snapshot: Omit<MobileManagementSnapshot, "updatedAt">,
+): Promise<MobileManagementSnapshot> {
+  mobileManagementSnapshot = { ...snapshot, updatedAt: new Date().toISOString() };
+  try {
+    await setOption(MOBILE_MANAGEMENT_SNAPSHOT_OPTION, JSON.stringify(mobileManagementSnapshot));
+  } catch (error) {
+    logger.warn("Could not persist mobile management status.", "Mobile Sync", { error });
+  }
+  publishMobileManagementSnapshot();
+  return mobileManagementSnapshot;
+}
+
+async function loadMobileManagementSnapshot(): Promise<void> {
+  const saved = await getOption(MOBILE_MANAGEMENT_SNAPSHOT_OPTION);
+  if (!saved) return;
+  const parsed = parseMobileManagementSnapshot(saved);
+  if (!parsed) return;
+  mobileManagementSnapshot = parsed;
+  publishMobileManagementSnapshot();
 }
 
 function scheduleMobileSnapshotSync(delayMs = MOBILE_SYNC_DEBOUNCE_MS): void {
@@ -402,13 +483,14 @@ function updateMobileSyncEligibility(check: DeviceCheckResult): void {
     scheduleMobileSnapshotSync(MOBILE_SYNC_INITIAL_RETRY_MS);
     return;
   }
+  const wasEligible = mobileSyncEligible === true;
   mobileSyncEligible =
     check.allowed === true &&
     check.mobileEnabled === true &&
     (check.mobileDeviceLimit ?? 0) > 0;
-  if (mobileSyncEligible) {
+  if (mobileSyncEligible && !wasEligible) {
     scheduleMobileSnapshotSync(0);
-  } else {
+  } else if (!mobileSyncEligible) {
     mobileSyncPending = false;
     if (mobileSyncTimer) {
       clearTimeout(mobileSyncTimer);
@@ -1327,7 +1409,123 @@ export async function runAiQuotaPeekInternal(): Promise<AiConsumeResult> {
   }
 }
 
+async function loadMobileDeviceListInternal(): Promise<MobileDeviceListResult> {
+  const cfg = getStoreMobileConfig();
+  if ("error" in cfg) {
+    return {
+      success: false,
+      error:
+        "Mobile pairing needs STORE_MOBILE_APP_SECRET in the app .env file. Use the same value as MOBILE_DESKTOP_SECRET in Mobile Supabase, then restart the app.",
+    };
+  }
+
+  let deviceId: string;
+  try {
+    deviceId = getMachineGuid();
+  } catch (e) {
+    return { success: false, error: (e as Error).message };
+  }
+
+  try {
+    const response = await fetch(`${cfg.supabaseUrl}/functions/v1/mobile-device-list`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: cfg.publishableKey,
+        "x-mobile-desktop-secret": cfg.desktopSecret,
+      },
+      body: JSON.stringify({ device_id: deviceId }),
+    });
+    const text = await response.text();
+    let body: unknown;
+    try {
+      body = text ? JSON.parse(text) : null;
+    } catch {
+      body = null;
+    }
+    if (!response.ok) {
+      return { success: false, error: readEdgeError(body, response.status) };
+    }
+    const rows = body && typeof body === "object"
+      ? (body as Record<string, unknown>).devices
+      : null;
+    if (!Array.isArray(rows)) {
+      return { success: false, error: "Invalid mobile device list response." };
+    }
+    const devices = rows.flatMap((row) => {
+      if (!row || typeof row !== "object") return [];
+      const record = row as Record<string, unknown>;
+      if (typeof record.id !== "string" || typeof record.paired_at !== "string") return [];
+      return [{
+        id: record.id,
+        deviceName: typeof record.device_name === "string" ? record.device_name : "",
+        platform: typeof record.platform === "string" ? record.platform : "",
+        pairedAt: record.paired_at,
+        lastSeenAt: typeof record.last_seen_at === "string" ? record.last_seen_at : null,
+        active: record.active === true,
+        revokedAt: typeof record.revoked_at === "string" ? record.revoked_at : null,
+      }];
+    });
+    return { success: true, devices };
+  } catch (e) {
+    return { success: false, error: (e as Error).message || "Network error" };
+  }
+}
+
+async function refreshMobileManagementSnapshot(): Promise<MobileManagementSnapshot> {
+  if (mobileManagementRefreshInFlight) return mobileManagementRefreshInFlight;
+
+  const operation = (async () => {
+    const deviceCheck = await runDeviceCheckInternal();
+    updateMobileSyncEligibility(deviceCheck);
+
+    if (!deviceCheck.success) {
+      return persistMobileManagementSnapshot({
+        ...mobileManagementSnapshot,
+        deviceCheck,
+      });
+    }
+
+    const mobileEnabled =
+      deviceCheck.allowed &&
+      deviceCheck.mobileEnabled === true &&
+      (deviceCheck.mobileDeviceLimit ?? 0) > 0;
+    if (!mobileEnabled) {
+      return persistMobileManagementSnapshot({
+        deviceCheck,
+        devices: [],
+        devicesError: null,
+      });
+    }
+
+    const result = await loadMobileDeviceListInternal();
+    return persistMobileManagementSnapshot({
+      deviceCheck,
+      devices: result.success === true ? result.devices : mobileManagementSnapshot.devices,
+      devicesError: result.success === true ? null : result.error,
+    });
+  })().catch((error) => {
+    logger.warn("Could not refresh mobile management status.", "Mobile Sync", { error });
+    return mobileManagementSnapshot;
+  });
+
+  mobileManagementRefreshInFlight = operation;
+  const result = await operation;
+  mobileManagementRefreshInFlight = null;
+  return result;
+}
+
 export function setupOnlineHandlers(): void {
+  mobileManagementCacheReady = loadMobileManagementSnapshot().catch((error) => {
+    logger.warn("Could not load saved mobile management status.", "Mobile Sync", { error });
+  });
+  void mobileManagementCacheReady.then(() => refreshMobileManagementSnapshot());
+  const mobileManagementRefreshTimer = setInterval(
+    () => void refreshMobileManagementSnapshot(),
+    MOBILE_MANAGEMENT_REFRESH_INTERVAL_MS,
+  );
+  mobileManagementRefreshTimer.unref?.();
+
   void getOption(MOBILE_SYNC_LAST_SUCCESS_OPTION).then((lastSuccessAt) => {
     if (lastSuccessAt && Number.isFinite(Date.parse(lastSuccessAt))) {
       mobileSyncLastSuccessAt = lastSuccessAt;
@@ -1341,18 +1539,31 @@ export function setupOnlineHandlers(): void {
         : MOBILE_SYNC_DEBOUNCE_MS,
     );
   });
-  void runDeviceCheckInternal().then(updateMobileSyncEligibility).catch(() => {
-    scheduleMobileSnapshotSync(MOBILE_SYNC_INITIAL_RETRY_MS);
-  });
-
   ipcMain.handle("online:deviceCheck", async (): Promise<DeviceCheckResult> => {
     const result = await runDeviceCheckInternal();
     updateMobileSyncEligibility(result);
+    const mobileEnabled = result.success && result.allowed && result.mobileEnabled === true &&
+      (result.mobileDeviceLimit ?? 0) > 0;
+    await persistMobileManagementSnapshot({
+      deviceCheck: result,
+      devices: mobileEnabled ? mobileManagementSnapshot.devices : [],
+      devicesError: mobileEnabled ? mobileManagementSnapshot.devicesError : null,
+    });
     if (result.success === true && result.customerId?.trim()) {
       await syncOnlineCustomerIdFromServer(result.customerId);
     }
     return result;
   });
+
+  ipcMain.handle("online:mobileManagementSnapshot", async (): Promise<MobileManagementSnapshot> => {
+    await mobileManagementCacheReady;
+    return mobileManagementSnapshot;
+  });
+
+  ipcMain.handle(
+    "online:mobileManagementRefresh",
+    (): Promise<MobileManagementSnapshot> => refreshMobileManagementSnapshot(),
+  );
 
   ipcMain.handle("online:mobileSyncStatus", (): MobileSyncStatus => {
     return getMobileSyncStatus();
@@ -1501,66 +1712,13 @@ export function setupOnlineHandlers(): void {
   );
 
   ipcMain.handle("online:mobileDeviceList", async (): Promise<MobileDeviceListResult> => {
-    const cfg = getStoreMobileConfig();
-    if ("error" in cfg) {
-      return {
-        success: false,
-        error:
-          "Mobile pairing needs STORE_MOBILE_APP_SECRET in the app .env file. Use the same value as MOBILE_DESKTOP_SECRET in Mobile Supabase, then restart the app.",
-      };
-    }
-
-    let deviceId: string;
-    try {
-      deviceId = getMachineGuid();
-    } catch (e) {
-      return { success: false, error: (e as Error).message };
-    }
-
-    try {
-      const response = await fetch(`${cfg.supabaseUrl}/functions/v1/mobile-device-list`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          apikey: cfg.publishableKey,
-          "x-mobile-desktop-secret": cfg.desktopSecret,
-        },
-        body: JSON.stringify({ device_id: deviceId }),
-      });
-      const text = await response.text();
-      let body: unknown;
-      try {
-        body = text ? JSON.parse(text) : null;
-      } catch {
-        body = null;
-      }
-      if (!response.ok) {
-        return { success: false, error: readEdgeError(body, response.status) };
-      }
-      const rows = body && typeof body === "object" ? (body as Record<string, unknown>).devices : null;
-      if (!Array.isArray(rows)) {
-        return { success: false, error: "Invalid mobile device list response." };
-      }
-      const devices = rows.flatMap((row) => {
-        if (!row || typeof row !== "object") return [];
-        const r = row as Record<string, unknown>;
-        if (typeof r.id !== "string" || typeof r.paired_at !== "string") return [];
-        return [
-          {
-            id: r.id,
-            deviceName: typeof r.device_name === "string" ? r.device_name : "",
-            platform: typeof r.platform === "string" ? r.platform : "",
-            pairedAt: r.paired_at,
-            lastSeenAt: typeof r.last_seen_at === "string" ? r.last_seen_at : null,
-            active: r.active === true,
-            revokedAt: typeof r.revoked_at === "string" ? r.revoked_at : null,
-          },
-        ];
-      });
-      return { success: true, devices };
-    } catch (e) {
-      return { success: false, error: (e as Error).message || "Network error" };
-    }
+    const result = await loadMobileDeviceListInternal();
+    await persistMobileManagementSnapshot({
+      ...mobileManagementSnapshot,
+      devices: result.success === true ? result.devices : mobileManagementSnapshot.devices,
+      devicesError: result.success === true ? null : result.error,
+    });
+    return result;
   });
 
   ipcMain.handle(
@@ -1606,6 +1764,7 @@ export function setupOnlineHandlers(): void {
           body = null;
         }
         if (!response.ok) return { success: false, error: readEdgeError(body, response.status) };
+        await refreshMobileManagementSnapshot();
         return { success: true };
       } catch (e) {
         return { success: false, error: (e as Error).message || "Network error" };

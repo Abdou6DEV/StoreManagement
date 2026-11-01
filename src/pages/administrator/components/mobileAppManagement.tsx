@@ -18,7 +18,6 @@ import type {
   MobileDevice,
   MobilePairingCreateResult,
 } from "../../../electron/types/mobilePairing";
-import type { MobileSyncStatus } from "../../../electron/types/mobileSync";
 import { Button } from "../../../lib/components/button";
 import {
   Card,
@@ -32,6 +31,8 @@ import {
   AlertDescription,
 } from "../../../lib/components/alert";
 import { ConfirmDialog } from "../../../lib/components/confirmDialog";
+
+const MOBILE_APP_URL = "https://www.redatechpos.com/mobile/";
 
 function InfoRow({
   label,
@@ -67,6 +68,8 @@ export function MobileAppManagement() {
   const { t } = useTranslation();
   const [deviceCheck, setDeviceCheck] =
     useState<DeviceCheckResult | null>(null);
+  const [mobileAppQrDataUrl, setMobileAppQrDataUrl] = useState<string | null>(null);
+  const [mobileAppQrFailed, setMobileAppQrFailed] = useState(false);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [mobileUserName, setMobileUserName] = useState("");
   const [expiresAt, setExpiresAt] = useState<string | null>(null);
@@ -74,55 +77,18 @@ export function MobileAppManagement() {
   const [error, setError] = useState<string | null>(null);
   const [devices, setDevices] = useState<MobileDevice[]>([]);
   const [devicesError, setDevicesError] = useState<string | null>(null);
-  const [mobileSyncStatus, setMobileSyncStatus] =
-    useState<MobileSyncStatus | null>(null);
-  const [mobileSyncBusy, setMobileSyncBusy] = useState(false);
-  const [mobileSyncMessage, setMobileSyncMessage] = useState<string | null>(null);
   const [revokingDeviceId, setRevokingDeviceId] = useState<string | null>(
     null,
   );
   const [deviceToRevoke, setDeviceToRevoke] =
     useState<MobileDevice | null>(null);
 
-  const refreshDevices = useCallback(async () => {
-    const result = await window.api.online.mobileDeviceList();
-
-    if (result.success === true) {
-      setDevices(result.devices);
-      setDevicesError(null);
-    } else {
-      setDevicesError(result.error);
-    }
-  }, []);
-
   const refreshStatus = useCallback(async () => {
-    const result = await window.api.online.deviceCheck();
-    setDeviceCheck(result);
-    await refreshDevices();
-    setMobileSyncStatus(await window.api.online.mobileSyncStatus());
-  }, [refreshDevices]);
-
-  const refreshMobileSyncStatus = useCallback(async () => {
-    setMobileSyncStatus(await window.api.online.mobileSyncStatus());
+    const snapshot = await window.api.online.mobileManagementRefresh();
+    setDeviceCheck(snapshot.deviceCheck);
+    setDevices(snapshot.devices);
+    setDevicesError(snapshot.devicesError);
   }, []);
-
-  const retryMobileSync = async () => {
-    setMobileSyncBusy(true);
-    setMobileSyncMessage(null);
-    try {
-      const result = await window.api.online.mobileSyncNow();
-      setMobileSyncStatus(result.status);
-      setMobileSyncMessage(
-        result.success === true
-          ? t("admin.mobileApp.syncSucceeded")
-          : result.error,
-      );
-    } catch {
-      setMobileSyncMessage(t("admin.mobileApp.syncRequestFailed"));
-    } finally {
-      setMobileSyncBusy(false);
-    }
-  };
 
   const revokeDevice = async () => {
     if (!deviceToRevoke) return;
@@ -140,22 +106,56 @@ export function MobileAppManagement() {
       }
 
       setDeviceToRevoke(null);
-      await refreshDevices();
     } finally {
       setRevokingDeviceId(null);
     }
   };
 
   useEffect(() => {
-    void refreshStatus();
-  }, [refreshStatus]);
+    let active = true;
+    void QRCode.toDataURL(MOBILE_APP_URL, {
+      width: 180,
+      margin: 2,
+      errorCorrectionLevel: "M",
+    }).then((dataUrl) => {
+      if (active) setMobileAppQrDataUrl(dataUrl);
+    }).catch(() => {
+      if (active) setMobileAppQrFailed(true);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
+    let active = true;
+    const applySnapshot = (snapshot: {
+      deviceCheck: DeviceCheckResult | null;
+      devices: MobileDevice[];
+      devicesError: string | null;
+    }) => {
+      setDeviceCheck(snapshot.deviceCheck);
+      setDevices(snapshot.devices);
+      setDevicesError(snapshot.devicesError);
+    };
     const unsubscribe =
-      window.api.online.onMobileSyncStatusChanged(setMobileSyncStatus);
-    void refreshMobileSyncStatus();
-    return unsubscribe;
-  }, [refreshMobileSyncStatus]);
+      window.api.online.onMobileManagementSnapshotChanged(applySnapshot);
+    void window.api.online.mobileManagementSnapshot().then((snapshot) => {
+      if (active) applySnapshot(snapshot);
+    }).catch((cause: unknown) => {
+      if (active) {
+        setError(
+          cause instanceof Error
+            ? cause.message
+            : t("admin.mobileApp.syncRequestFailed"),
+        );
+      }
+    });
+    return () => {
+      active = false;
+      unsubscribe();
+    };
+  }, []);
 
   const createPairingCode = async () => {
     const name = mobileUserName.trim();
@@ -255,6 +255,12 @@ export function MobileAppManagement() {
       ),
       Icon: ScanLine,
     },
+    {
+      number: "04",
+      title: t("admin.mobileApp.pwaQrTitle"),
+      description: t("admin.mobileApp.pwaQrStep"),
+      Icon: Smartphone,
+    },
   ];
 
   return (
@@ -293,17 +299,6 @@ export function MobileAppManagement() {
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       ) : null}
-      {mobileSyncMessage ? (
-        <Alert variant={mobileSyncStatus?.lastError ? "destructive" : "default"}>
-          {mobileSyncStatus?.lastError ? (
-            <AlertCircle className="h-4 w-4" />
-          ) : (
-            <CheckCircle2 className="h-4 w-4" />
-          )}
-          <AlertDescription>{mobileSyncMessage}</AlertDescription>
-        </Alert>
-      ) : null}
-
       {/* Status and pairing */}
       <div className="grid items-start gap-5 xl:grid-cols-[0.85fr_1.4fr]">
         {/* Mobile access status */}
@@ -341,48 +336,6 @@ export function MobileAppManagement() {
               <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
                 {t("admin.mobileApp.entitlementHelp")}
               </p>
-            </div>
-
-            <div className="space-y-3 rounded-xl border border-border/70 p-4">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-sm font-semibold">
-                    {t("admin.mobileApp.syncTitle")}
-                  </p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {mobileSyncStatus?.inProgress
-                      ? t("admin.mobileApp.syncing")
-                      : mobileSyncStatus?.pending
-                        ? t("admin.mobileApp.syncPending")
-                        : mobileSyncStatus?.lastSuccessAt
-                          ? `${t("admin.mobileApp.syncLastSuccess")}: ${new Date(
-                              mobileSyncStatus.lastSuccessAt,
-                            ).toLocaleString()}`
-                          : t("admin.mobileApp.syncNever")}
-                  </p>
-                </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  disabled={!mobileEnabled || mobileSyncBusy || mobileSyncStatus?.inProgress}
-                  onClick={() => void retryMobileSync()}
-                >
-                  {mobileSyncBusy || mobileSyncStatus?.inProgress ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <RefreshCw className="mr-2 h-4 w-4" />
-                  )}
-                  {mobileSyncBusy || mobileSyncStatus?.inProgress
-                    ? t("admin.mobileApp.syncing")
-                    : t("admin.mobileApp.syncNow")}
-                </Button>
-              </div>
-              {mobileSyncStatus?.lastError ? (
-                <p className="text-xs text-destructive">
-                  {t("admin.mobileApp.syncError")}: {mobileSyncStatus.lastError}
-                </p>
-              ) : null}
             </div>
 
             {deviceCheck?.success === true && deviceCheck.allowed ? (
@@ -487,7 +440,7 @@ export function MobileAppManagement() {
               )}
 
               {busy
-                ? t("admin.mobileApp.creating")
+                ? t("admin.mobileApp.syncingData")
                 : t("admin.mobileApp.createCode")}
             </Button>
 
@@ -499,7 +452,7 @@ export function MobileAppManagement() {
             ) : null}
 
             {/* Three-step guide */}
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
               {pairingSteps.map((step) => {
                 const StepIcon = step.Icon;
 
@@ -525,6 +478,49 @@ export function MobileAppManagement() {
                   </div>
                 );
               })}
+            </div>
+
+            <div className="grid gap-4 rounded-xl border border-border/70 bg-muted/20 p-4 sm:grid-cols-[minmax(0,1fr)_164px] sm:items-center">
+              <div className="min-w-0 space-y-2">
+                <p className="text-sm font-semibold">
+                  {t("admin.mobileApp.pwaQrTitle")}
+                </p>
+                <p className="text-xs leading-relaxed text-muted-foreground">
+                  {t("admin.mobileApp.pwaQrHelp")}
+                </p>
+                <a
+                  href={MOBILE_APP_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="break-all text-sm font-medium text-orange-700 underline decoration-orange-500/40 underline-offset-4 dark:text-orange-300"
+                >
+                  {MOBILE_APP_URL}
+                </a>
+              </div>
+
+              <a
+                href={MOBILE_APP_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={t("admin.mobileApp.pwaQrAlt")}
+                className="mx-auto block w-full max-w-[164px] rounded-lg border border-border bg-white p-2"
+              >
+                {mobileAppQrDataUrl ? (
+                  <img
+                    src={mobileAppQrDataUrl}
+                    alt={t("admin.mobileApp.pwaQrAlt")}
+                    className="block aspect-square w-full rounded-md"
+                  />
+                ) : mobileAppQrFailed ? (
+                  <div className="flex aspect-square items-center justify-center p-3 text-center text-xs text-muted-foreground">
+                    {t("admin.mobileApp.pwaQrUnavailable")}
+                  </div>
+                ) : (
+                  <div className="flex aspect-square items-center justify-center">
+                    <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                  </div>
+                )}
+              </a>
             </div>
 
             {/* Generated QR code */}
