@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ArrowLeft, Banknote, Calendar, CalendarDays, ChevronLeft, ChevronRight, Clock, Copy, CreditCard, DollarSign, Eye, LayoutGrid, List, Receipt, Search, ShoppingBag, Trash2, TrendingUp, User, X } from "lucide-react";
+import { ArrowLeft, Banknote, Calendar, CalendarDays, ChevronLeft, ChevronRight, Clock, Copy, CreditCard, DollarSign, Eye, Receipt, Search, ShoppingBag, Trash2, TrendingUp, User, X } from "lucide-react";
 import type { MobileBundle, MobileLanguage, MobileRow } from "../mobileApi";
 import "./HistorySection.css";
 type Props = { data: MobileBundle; language: MobileLanguage };
@@ -45,8 +45,7 @@ export function HistorySection({ data, language }: Props) {
   const [selected, setSelected] = useState<{ mode: Mode; key: string } | null>(null);
   const [selectedSale, setSelectedSale] = useState<MobileRow | null>(null);
   const [tab, setTab] = useState<Tab>("sales"), [detailSearch, setDetailSearch] = useState("");
-  const [detailSort, setDetailSort] = useState<"newest" | "oldest" | "high" | "low">("newest");
-  const [view, setView] = useState<"cards" | "list">("cards"), [detailPage, setDetailPage] = useState(1);
+  const [detailPage, setDetailPage] = useState(1);
   const dateBounds = useMemo<Bounds>(() => {
     if (mode === "day") { const a = clamp(from, cutoff, today), b = clamp(to, cutoff, today); return a <= b ? { start:a, end:b } : { start:b, end:a }; }
     const a = clamp(from, minMonth, maxMonth), b = clamp(to, minMonth, maxMonth), start = monthStart(a <= b ? a : b), end = monthEnd(a <= b ? b : a);
@@ -79,7 +78,7 @@ export function HistorySection({ data, language }: Props) {
   const totals = rows.reduce((s,r) => ({ revenue:s.revenue+r.revenue, profit:s.profit+r.profit, purchases:s.purchases+r.purchases, bills:s.bills+r.bills, count:s.count+r.count }), { revenue:0, profit:0, purchases:0, bills:0, count:0 });
   const aboveAverageCount = rows.filter(r => (netProfit ? r.profit - r.bills : r.profit) - averageProfit > 1e-6).length;
   const belowAverageCount = rows.filter(r => averageProfit - (netProfit ? r.profit - r.bills : r.profit) > 1e-6).length;
-  const openPeriod = (key: string) => { setSelected({ mode, key }); setTab("sales"); setDetailSearch(""); setDetailSort("newest"); setDetailPage(1); setView("cards"); };
+  const openPeriod = (key: string) => { setSelected({ mode, key }); setTab("sales"); setDetailSearch(""); setDetailPage(1); };
   const periodBounds = (s: { mode:Mode; key:string }): Bounds => {
     if (s.mode === "day") return { start:s.key, end:s.key };
     const start = monthStart(s.key), end = monthEnd(s.key); return { start:start < cutoff ? cutoff : start, end:end > today ? today : end };
@@ -111,15 +110,13 @@ export function HistorySection({ data, language }: Props) {
       if (tab === "purchases") { const names = data.purchase_items.filter(i => str(i.purchase_source_id) === id).map(i => products.get(str(i.product_source_id)) || "").join(" "); return [id, suppliers.get(str(r.supplier_source_id)), names, recordDate(r,"source_created_at")].join(" ").toLocaleLowerCase().includes(q); }
       const bill = bills.get(str(r.bill_source_id)); return [id, bill?.title, bill?.type, r.notes, recordDate(r,"paid_date")].join(" ").toLocaleLowerCase().includes(q);
     });
-    const amount = (r: MobileRow) => tab === "sales" ? num(r.total_amount_with_discount) : tab === "purchases" ? purchaseAmount(data.purchase_items, str(r.source_id)) : num(r.amount);
     return filtered.sort((a,b) => {
       const da = str(tab === "bills" ? a.paid_date : a.source_created_at), db = str(tab === "bills" ? b.paid_date : b.source_created_at);
-      if (detailSort === "newest") return db.localeCompare(da); if (detailSort === "oldest") return da.localeCompare(db);
-      return detailSort === "high" ? amount(b)-amount(a) : amount(a)-amount(b);
+      return db.localeCompare(da);
     });
-  }, [tab, detailSales, detailPurchases, detailBills, detailSearch, detailSort, data.sale_items, data.purchase_items, products, services, clients, suppliers, bills]);
+  }, [tab, detailSales, detailPurchases, detailBills, detailSearch, data.sale_items, data.purchase_items, products, services, clients, suppliers, bills]);
   const detailPageCount = Math.max(1, Math.ceil(detailRows.length / 10)), shownDetailRows = pageSlice(detailRows, Math.min(detailPage, detailPageCount), 10);
-  const resetDetail = (next:Tab) => { setTab(next); setDetailPage(1); setDetailSearch(""); setDetailSort("newest"); };
+  const resetDetail = (next:Tab) => { setTab(next); setDetailPage(1); setDetailSearch(""); };
 
   return <div className="mobile-history" dir={language === "ar" ? "rtl" : "ltr"}>
     {!selected ? <>
@@ -166,10 +163,8 @@ export function HistorySection({ data, language }: Props) {
       </div>
       <div className="mobile-history-detail-toolbar">
         <label className="mobile-history-search"><Search size={16}/><input value={detailSearch} onChange={e=>{setDetailSearch(e.target.value);setDetailPage(1);}} placeholder={t.search}/></label>
-        <label className="mobile-history-sort"><span>{t.sort}</span><select value={detailSort} onChange={e=>{setDetailSort(e.target.value as typeof detailSort);setDetailPage(1);}}><option value="newest">{t.newest}</option><option value="oldest">{t.oldest}</option><option value="high">{t.high}</option><option value="low">{t.low}</option></select></label>
-        {tab==="sales"?<div className="mobile-history-view-toggle"><button type="button" aria-label={t.grid} className={view==="cards"?"active":""} onClick={()=>setView("cards")}><LayoutGrid size={16}/></button><button type="button" aria-label={t.list} className={view==="list"?"active":""} onClick={()=>setView("list")}><List size={16}/></button></div>:null}
       </div>
-      {tab==="sales"?<div className={"mobile-history-sale-list "+(view==="list"?"is-list":"")}>
+      {tab==="sales"?<div className="mobile-history-sale-list">
         {shownDetailRows.map(s=>{
           const id=str(s.source_id), items=data.sale_items.filter(i=>str(i.sale_source_id)===id), client=clients.get(str(s.client_source_id))||"", payment=paymentsBySale.get(id);
           const paymentLabel=payment ? payment.type==="CREDIT" ? (payment.paid_date?t.creditPaid:t.creditUnpaid) : payment.type==="VERSEMENT" ? (payment.paid_date?t.versementPaid:t.versementUnpaid) : "" : "";
