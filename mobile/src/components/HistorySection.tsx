@@ -179,7 +179,7 @@ export function HistorySection({ data, language }: Props) {
               <div className="mobile-history-desktop-sale-money"><strong>{money(num(s.total_amount_with_discount),language)}</strong><strong>{money(num(s.total_profit),language)}</strong></div>
             </div>
             <div className="mobile-history-desktop-item-preview" title={tokens.join(", ")}>{tokens.slice(0,2).join(", ")}{tokens.length>2?` +${tokens.length-2} more`:""}</div>
-            <div className="mobile-history-desktop-sale-footer"><span className="mobile-history-desktop-item-count"><ShoppingBag size={16}/>{totalItems} {t.itemsLabel}</span><div className="mobile-history-desktop-actions"><button type="button" disabled title={t.readOnly} className="mobile-history-delete-button"><Trash2 size={13}/>{t.delete}</button><button type="button" onClick={e=>{e.stopPropagation();setSelectedSale(s);}} className="mobile-history-view-button"><Eye size={13}/>{t.view}</button></div></div>
+            <div className="mobile-history-desktop-sale-footer"><span className="mobile-history-desktop-item-count"><ShoppingBag size={16}/>{totalItems} {t.itemsLabel}</span><div className="mobile-history-desktop-actions"><button type="button" onClick={e=>{e.stopPropagation();setSelectedSale(s);}} className="mobile-history-view-button"><Eye size={13}/>{t.view}</button></div></div>
           </article>;
         })}
         {!shownDetailRows.length?<p className="mobile-history-empty">{t.noSales}</p>:null}
