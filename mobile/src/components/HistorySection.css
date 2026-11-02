@@ -205,3 +205,9 @@
 .dark .mobile-history-desktop-sale-money strong:last-child,.theme-dark .mobile-history-desktop-sale-money strong:last-child,[data-theme="dark"] .mobile-history-desktop-sale-money strong:last-child{color:#4ade80}
 .dark .mobile-history-desktop-record-header>.is-purchase-total,.theme-dark .mobile-history-desktop-record-header>.is-purchase-total,[data-theme="dark"] .mobile-history-desktop-record-header>.is-purchase-total{color:#4ade80}
 .dark .mobile-history-desktop-bill-info b,.theme-dark .mobile-history-desktop-bill-info b,[data-theme="dark"] .mobile-history-desktop-bill-info b{color:#60a5fa}
+
+
+/* Sale summary modal: true vertical centering and clearer receipt typography. */
+@media(max-width:680px){.mobile-history-sale-modal-backdrop{align-items:center;padding:10px}.mobile-history-sale-modal{max-height:92dvh;border-radius:15px}.mobile-history-payment-table-wrap th{font-size:12px;font-weight:800;padding:11px 7px}.mobile-history-payment-table-wrap td{font-size:13px;font-weight:650;padding:11px 7px}.mobile-history-payment-table-wrap td:first-child{font-weight:750}.mobile-history-payment-bottom{font-size:13px;font-weight:650}.mobile-history-payment-bottom .is-total{font-size:15px;font-weight:850}}
+@media(max-width:390px){.mobile-history-sale-modal-backdrop{align-items:center;padding:8px}}
+.mobile-history-payment-table-wrap th{font-size:12px;font-weight:800}.mobile-history-payment-table-wrap td{font-size:13px;font-weight:650}.mobile-history-payment-table-wrap td:first-child{font-weight:750}
