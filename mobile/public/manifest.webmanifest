@@ -1,9 +1,25 @@
 {
+  "id": "/mobile/",
   "name": "REDA TECH Mobile",
   "short_name": "REDA TECH",
+  "description": "View your REDA TECH store from your phone.",
   "start_url": "/mobile/",
   "scope": "/mobile/",
   "display": "standalone",
-  "background_color": "#f7f8f5",
-  "theme_color": "#f7f8f5"
+  "background_color": "#FFFFFF",
+  "theme_color": "#f7f8f5",
+  "icons": [
+    {
+      "src": "myapp_192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "myapp_512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
 }
