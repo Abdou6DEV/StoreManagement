@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content="#f8f8f8" />
+    <meta name="theme-color" content="#000000" />
     <meta name="color-scheme" content="light dark" />
     <meta name="description" content="View your REDA TECH store from your phone." />
     <link rel="manifest" href="manifest.webmanifest" />
@@ -15,8 +15,9 @@
           const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
           const isDark = savedTheme === "dark" || (savedTheme !== "light" && prefersDark);
           if (isDark) document.documentElement.classList.add("dark");
+          // Keep Android's installed-app system chrome black in both app themes.
           const themeColor = document.querySelector('meta[name="theme-color"]');
-          if (themeColor) themeColor.setAttribute("content", isDark ? "#000000" : "#f8f8f8");
+          if (themeColor) themeColor.setAttribute("content", "#000000");
         } catch {
           // The app theme provider applies the saved theme after startup if storage is unavailable.
         }
