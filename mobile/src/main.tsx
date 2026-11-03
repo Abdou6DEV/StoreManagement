@@ -10,16 +10,21 @@ const root = document.getElementById("root");
 if (!root) throw new Error("Mobile application root element is missing");
 
 // Keep Android/Chrome's browser UI colors aligned with the PWA's active theme.
-// Read the resolved CSS background so the system bars use the same surface color.
+// Read the resolved page background from body and fall back when it is transparent.
 function syncMobileBrowserTheme() {
   const isDark = document.documentElement.classList.contains("dark");
   const themeColor = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
   if (!themeColor) return;
 
-  const backgroundColor = getComputedStyle(document.documentElement).backgroundColor;
+  const backgroundColor = getComputedStyle(document.body).backgroundColor;
+  const isTransparent =
+    !backgroundColor ||
+    backgroundColor === "transparent" ||
+    backgroundColor === "rgba(0, 0, 0, 0)";
+
   themeColor.setAttribute(
     "content",
-    backgroundColor || (isDark ? "#000000" : "#f8f8f8"),
+    isTransparent ? (isDark ? "#000000" : "#f8f8f8") : backgroundColor,
   );
 }
 
