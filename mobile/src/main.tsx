@@ -9,10 +9,19 @@ import "./style.css";
 const root = document.getElementById("root");
 if (!root) throw new Error("Mobile application root element is missing");
 
-// Keep Android/Chrome system UI black in both light and dark app themes.
+const appBaseUrl = new URL(import.meta.env.BASE_URL, window.location.origin);
+
+// Keep Android/Chrome system UI and the PWA launch manifest aligned with the active app theme.
 function syncMobileBrowserTheme() {
+  const isDark = document.documentElement.classList.contains("dark");
   const themeColor = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
-  themeColor?.setAttribute("content", "#000000");
+  themeColor?.setAttribute("content", isDark ? "#000000" : "#FFFFFF");
+
+  const manifest = document.querySelector<HTMLLinkElement>('link[rel="manifest"]');
+  manifest?.setAttribute(
+    "href",
+    new URL(isDark ? "manifest.webmanifest" : "manifest-light.webmanifest", appBaseUrl).href,
+  );
 }
 
 const themeObserver = new MutationObserver(syncMobileBrowserTheme);
@@ -24,6 +33,8 @@ window.addEventListener("pageshow", syncMobileBrowserTheme);
 document.addEventListener("visibilitychange", () => {
   if (!document.hidden) syncMobileBrowserTheme();
 });
+
+syncMobileBrowserTheme();
 
 createRoot(root).render(
   <React.StrictMode>
@@ -39,10 +50,9 @@ createRoot(root).render(
 requestAnimationFrame(syncMobileBrowserTheme);
 
 if (import.meta.env.PROD && "serviceWorker" in navigator) {
-  const baseUrl = new URL(import.meta.env.BASE_URL, window.location.origin);
   navigator.serviceWorker
-    .register(new URL("sw.js", baseUrl), {
-      scope: baseUrl.pathname,
+    .register(new URL("sw.js", appBaseUrl), {
+      scope: appBaseUrl.pathname,
     })
     .catch((error: unknown) => {
       console.error("Mobile service worker registration failed", error);

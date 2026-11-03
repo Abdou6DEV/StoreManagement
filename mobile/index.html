@@ -14,10 +14,17 @@
           const savedTheme = localStorage.getItem("theme");
           const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
           const isDark = savedTheme === "dark" || (savedTheme !== "light" && prefersDark);
-          if (isDark) document.documentElement.classList.add("dark");
-          // Keep Android's installed-app system chrome black in both app themes.
+          document.documentElement.classList.toggle("dark", isDark);
+
           const themeColor = document.querySelector('meta[name="theme-color"]');
-          if (themeColor) themeColor.setAttribute("content", "#000000");
+          themeColor?.setAttribute("content", isDark ? "#000000" : "#FFFFFF");
+
+          // Select the matching launch-screen manifest before the installed PWA renders.
+          const manifest = document.querySelector('link[rel="manifest"]');
+          manifest?.setAttribute(
+            "href",
+            isDark ? "manifest.webmanifest" : "manifest-light.webmanifest",
+          );
         } catch {
           // The app theme provider applies the saved theme after startup if storage is unavailable.
         }
