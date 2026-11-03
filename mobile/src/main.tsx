@@ -11,12 +11,12 @@ if (!root) throw new Error("Mobile application root element is missing");
 
 const appBaseUrl = new URL(import.meta.env.BASE_URL, window.location.origin);
 
-// Keep Android/Chrome system UI and the PWA launch manifest aligned with the active app theme.
+// Request transparent Android/Chrome system chrome; the page paints the area behind it.
 function syncMobileBrowserTheme() {
-  const isDark = document.documentElement.classList.contains("dark");
   const themeColor = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
-  themeColor?.setAttribute("content", isDark ? "#000000" : "#FFFFFF");
+  themeColor?.setAttribute("content", "rgba(0, 0, 0, 0)");
 
+  const isDark = document.documentElement.classList.contains("dark");
   const manifest = document.querySelector<HTMLLinkElement>('link[rel="manifest"]');
   manifest?.setAttribute(
     "href",
