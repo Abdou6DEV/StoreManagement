@@ -11,12 +11,18 @@ if (!root) throw new Error("Mobile application root element is missing");
 
 const appBaseUrl = new URL(import.meta.env.BASE_URL, window.location.origin);
 
-// Request transparent Android/Chrome system chrome; the page paints the area behind it.
+// Keep Android's system navigation area matched to the page background.
 function syncMobileBrowserTheme() {
   const themeColor = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
-  themeColor?.setAttribute("content", "rgba(0, 0, 0, 0)");
-
   const isDark = document.documentElement.classList.contains("dark");
+  const pageBackground = getComputedStyle(document.body).backgroundColor;
+  themeColor?.setAttribute(
+    "content",
+    pageBackground === "rgba(0, 0, 0, 0)"
+      ? isDark ? "#000000" : "#F8F8F8"
+      : pageBackground,
+  );
+
   const manifest = document.querySelector<HTMLLinkElement>('link[rel="manifest"]');
   manifest?.setAttribute(
     "href",
