@@ -14,14 +14,7 @@ const appBaseUrl = new URL(import.meta.env.BASE_URL, window.location.origin);
 // Keep Android's installed PWA system chrome black in both app themes.
 function syncMobileBrowserTheme() {
   const themeColor = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
-  const isDark = document.documentElement.classList.contains("dark");
   themeColor?.setAttribute("content", "#000000");
-
-  const manifest = document.querySelector<HTMLLinkElement>('link[rel="manifest"]');
-  manifest?.setAttribute(
-    "href",
-    new URL(isDark ? "manifest.webmanifest" : "manifest-light.webmanifest", appBaseUrl).href,
-  );
 }
 
 const themeObserver = new MutationObserver(syncMobileBrowserTheme);

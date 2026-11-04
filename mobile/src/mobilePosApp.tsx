@@ -7,6 +7,7 @@ import {
   Lock,
   LogOut,
   Menu,
+  RefreshCw,
   Search,
   User,
   WifiOff,
@@ -22,12 +23,13 @@ import {
 } from "../../src/lib/components/sharedPresentation";
 import { LOGO_ICON, LOGO_ICON_DARK } from "../../src/lib/assets";
 import { useTheme } from "../../src/lib/contexts/themeContext";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import {
   loginMobile,
   logoutMobile,
   MobileApiError,
+  refreshMobile,
 } from "./mobileApi";
 import type {
   MobileBundle,
@@ -972,6 +974,9 @@ export function MobilePosApp({
 }) {
   const copy = COPY[language];
   const [sessionCode, setSessionCode] = useState<string | null>(null);
+  const sessionCodeRef = useRef<string | null>(null);
+  const refreshInFlightRef = useRef(false);
+  const wasOfflineRef = useRef(!navigator.onLine);
   const [user, setUser] = useState<MobileUser | null>(null);
   const [data, setData] = useState<MobileBundle | null>(null);
   const [section, setSection] = useState<Section>("menu");
@@ -980,6 +985,7 @@ export function MobilePosApp({
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [online, setOnline] = useState(navigator.onLine);
   const [stale, setStale] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const direction = language === "ar" ? "rtl" : "ltr";
   const allowedSections = SECTIONS.filter((item) => user?.permissions[item.permission]);
   const primarySections = allowedSections.filter((item) =>
@@ -1014,13 +1020,82 @@ export function MobilePosApp({
     return () => window.clearInterval(timer);
   }, [lastUpdated]);
 
-  const applyResponse = (response: { user: MobileUser; data: MobileBundle }) => {
+  const applyResponse = useCallback((response: { user: MobileUser; data: MobileBundle }) => {
     setUser(response.user);
     setData(response.data);
     setLastUpdated(new Date());
     setStale(false);
     setNotice(null);
-  };
+  }, []);
+
+  const refreshData = useCallback(async () => {
+    if (!sessionCode || !online || refreshInFlightRef.current) return;
+    refreshInFlightRef.current = true;
+    setRefreshing(true);
+    try {
+      const response = await refreshMobile(sessionCode);
+      if (sessionCodeRef.current !== sessionCode) return;
+      if (response.session_code) {
+        sessionCodeRef.current = response.session_code;
+        setSessionCode(response.session_code);
+      }
+      applyResponse(response);
+    } catch (cause) {
+      if (sessionCodeRef.current !== sessionCode) return;
+      if (cause instanceof MobileApiError && cause.code === "session_expired") {
+        sessionCodeRef.current = null;
+        setSessionCode(null);
+        setUser(null);
+        setData(null);
+        setLastUpdated(null);
+        setStale(false);
+        setSection("menu");
+        setQuery("");
+        setNotice(copy.errors.session_expired);
+      } else if (cause instanceof MobileApiError && cause.code === "device_revoked") {
+        sessionCodeRef.current = null;
+        onDeviceInvalid();
+      } else {
+        setStale(true);
+      }
+    } finally {
+      refreshInFlightRef.current = false;
+      setRefreshing(false);
+    }
+  }, [sessionCode, online, applyResponse, copy.errors.session_expired, onDeviceInvalid]);
+
+  useEffect(() => {
+    if (!online) {
+      wasOfflineRef.current = true;
+      return;
+    }
+    if (!wasOfflineRef.current) return;
+    wasOfflineRef.current = false;
+    if (sessionCode) void refreshData();
+  }, [online, sessionCode, refreshData]);
+
+  useEffect(() => {
+    if (!sessionCode) return;
+    const refreshWhenForegrounded = () => {
+      if (
+        !document.hidden &&
+        lastUpdated &&
+        Date.now() - lastUpdated.getTime() >= 60_000
+      ) {
+        void refreshData();
+      }
+    };
+    const timer = window.setInterval(() => {
+      if (!document.hidden) void refreshData();
+    }, 5 * 60 * 1000);
+    document.addEventListener("visibilitychange", refreshWhenForegrounded);
+    window.addEventListener("pageshow", refreshWhenForegrounded);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", refreshWhenForegrounded);
+      window.removeEventListener("pageshow", refreshWhenForegrounded);
+    };
+  }, [sessionCode, lastUpdated, refreshData]);
 
   const signIn = async (username: string, password: string) => {
     const credential = localStorage.getItem("reda-mobile-device-credential");
@@ -1029,12 +1104,14 @@ export function MobilePosApp({
       throw new MobileApiError("device_revoked", 403);
     }
     const result = await loginMobile(credential, username, password);
+    sessionCodeRef.current = result.session_code;
     setSessionCode(result.session_code);
     applyResponse(result);
     setSection("menu");
   };
 
   const signOut = async () => {
+    sessionCodeRef.current = null;
     if (sessionCode) {
       try {
         await logoutMobile(sessionCode);
@@ -1088,6 +1165,17 @@ export function MobilePosApp({
             >
               <div className="mobile-settings-extra">
                 <div className="mobile-settings-actions">
+                  <DropdownMenuItem asChild onSelect={(event) => event.preventDefault()}>
+                    <button
+                      type="button"
+                      className="mobile-settings-action"
+                      disabled={!online || refreshing}
+                      onClick={() => void refreshData()}
+                    >
+                      <RefreshCw className={refreshing ? "spin" : ""} size={17} />
+                      {refreshing ? copy.refreshing : copy.refresh}
+                    </button>
+                  </DropdownMenuItem>
                   <DropdownMenuItem asChild onSelect={(event) => event.preventDefault()}>
                     <button type="button" className="mobile-settings-action logout-button" onClick={() => void signOut()}>
                       <LogOut size={17} />{copy.logout}
