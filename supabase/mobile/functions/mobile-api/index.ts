@@ -391,6 +391,10 @@ Deno.serve(async (req) => {
     if (!user || !user.is_active || user.deleted_at) {
       return json(401, { ok: false, error: "invalid_credentials" }, cors);
     }
+    if (typeof user.password_hash !== "string") {
+      console.error("mobile login snapshot is missing a valid password hash");
+      return json(500, { ok: false, error: "login_unavailable" }, cors);
+    }
     const passwordMatches = await bcrypt.compare(password, user.password_hash);
     if (!passwordMatches) {
       return json(401, { ok: false, error: "invalid_credentials" }, cors);
