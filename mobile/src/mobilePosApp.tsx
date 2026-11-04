@@ -7,7 +7,6 @@ import {
   Lock,
   LogOut,
   Menu,
-  RefreshCw,
   Search,
   User,
   WifiOff,
@@ -29,6 +28,7 @@ import {
   loginMobile,
   logoutMobile,
   MobileApiError,
+  MOBILE_SESSION_CODE_KEY,
   refreshMobile,
 } from "./mobileApi";
 import type {
@@ -72,8 +72,6 @@ type Copy = {
   services: string;
   bills: string;
   clients: string;
-  refresh: string;
-  refreshing: string;
   logout: string;
   search: string;
   loading: string;
@@ -81,6 +79,7 @@ type Copy = {
   offline: string;
   onlineStatus: string;
   offlineStatus: string;
+  retry: string;
   stale: string;
   lastUpdated: string;
   welcome: string;
@@ -164,8 +163,6 @@ const COPY: Record<MobileLanguage, Copy> = {
     services: "Services",
     bills: "Bills",
     clients: "Clients",
-    refresh: "Refresh data",
-    refreshing: "Refreshing…",
     logout: "Sign out",
     search: "Search",
     loading: "Loading your store data…",
@@ -173,6 +170,7 @@ const COPY: Record<MobileLanguage, Copy> = {
     offline: "You are offline. Previously loaded data is shown if available.",
     onlineStatus: "Online",
     offlineStatus: "Offline",
+    retry: "Try again",
     stale: "The latest refresh failed. Displayed data may be stale.",
     lastUpdated: "Last refreshed",
     welcome: "Choose a section to view your store.",
@@ -323,8 +321,6 @@ const COPY: Record<MobileLanguage, Copy> = {
     services: "Services",
     bills: "Factures",
     clients: "Clients",
-    refresh: "Actualiser",
-    refreshing: "Actualisation…",
     logout: "Déconnexion",
     search: "Rechercher",
     loading: "Chargement des données…",
@@ -332,6 +328,7 @@ const COPY: Record<MobileLanguage, Copy> = {
     offline: "Vous êtes hors ligne. Les données déjà chargées restent affichées.",
     onlineStatus: "En ligne",
     offlineStatus: "Hors ligne",
+    retry: "Réessayer",
     stale: "L’actualisation a échoué. Les données affichées peuvent être obsolètes.",
     lastUpdated: "Dernière actualisation",
     welcome: "Choisissez une section de votre magasin.",
@@ -482,8 +479,6 @@ const COPY: Record<MobileLanguage, Copy> = {
     services: "الخدمات",
     bills: "الفواتير",
     clients: "العملاء",
-    refresh: "تحديث البيانات",
-    refreshing: "جارٍ التحديث…",
     logout: "تسجيل الخروج",
     search: "بحث",
     loading: "جارٍ تحميل بيانات المتجر…",
@@ -491,6 +486,7 @@ const COPY: Record<MobileLanguage, Copy> = {
     offline: "أنت غير متصل. ستظهر البيانات المحملة سابقاً إن توفرت.",
     onlineStatus: "متصل",
     offlineStatus: "غير متصل",
+    retry: "حاول مجدداً",
     stale: "تعذر تحديث البيانات. قد تكون البيانات المعروضة قديمة.",
     lastUpdated: "آخر تحديث",
     welcome: "اختر قسماً لعرض بيانات متجرك.",
@@ -973,8 +969,14 @@ export function MobilePosApp({
   onDeviceInvalid: () => void;
 }) {
   const copy = COPY[language];
-  const [sessionCode, setSessionCode] = useState<string | null>(null);
-  const sessionCodeRef = useRef<string | null>(null);
+  const { theme } = useTheme();
+  const [sessionCode, setSessionCode] = useState<string | null>(() =>
+    sessionStorage.getItem(MOBILE_SESSION_CODE_KEY),
+  );
+  const sessionCodeRef = useRef<string | null>(sessionCode);
+  const [restoringSession, setRestoringSession] = useState(() =>
+    Boolean(sessionStorage.getItem(MOBILE_SESSION_CODE_KEY)),
+  );
   const refreshInFlightRef = useRef(false);
   const wasOfflineRef = useRef(!navigator.onLine);
   const [user, setUser] = useState<MobileUser | null>(null);
@@ -985,7 +987,6 @@ export function MobilePosApp({
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [online, setOnline] = useState(navigator.onLine);
   const [stale, setStale] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
   const direction = language === "ar" ? "rtl" : "ltr";
   const allowedSections = SECTIONS.filter((item) => user?.permissions[item.permission]);
   const primarySections = allowedSections.filter((item) =>
@@ -1025,44 +1026,58 @@ export function MobilePosApp({
     setData(response.data);
     setLastUpdated(new Date());
     setStale(false);
+    setRestoringSession(false);
     setNotice(null);
   }, []);
 
   const refreshData = useCallback(async () => {
     if (!sessionCode || !online || refreshInFlightRef.current) return;
     refreshInFlightRef.current = true;
-    setRefreshing(true);
     try {
       const response = await refreshMobile(sessionCode);
       if (sessionCodeRef.current !== sessionCode) return;
       if (response.session_code) {
         sessionCodeRef.current = response.session_code;
         setSessionCode(response.session_code);
+        sessionStorage.setItem(MOBILE_SESSION_CODE_KEY, response.session_code);
       }
       applyResponse(response);
     } catch (cause) {
       if (sessionCodeRef.current !== sessionCode) return;
-      if (cause instanceof MobileApiError && cause.code === "session_expired") {
+      if (
+        cause instanceof MobileApiError &&
+        ["session_expired", "user_inactive"].includes(cause.code)
+      ) {
         sessionCodeRef.current = null;
+        sessionStorage.removeItem(MOBILE_SESSION_CODE_KEY);
         setSessionCode(null);
         setUser(null);
         setData(null);
         setLastUpdated(null);
         setStale(false);
+        setRestoringSession(false);
         setSection("menu");
         setQuery("");
-        setNotice(copy.errors.session_expired);
+        setNotice(copy.errors[cause.code] ?? copy.errors.session_expired);
       } else if (cause instanceof MobileApiError && cause.code === "device_revoked") {
         sessionCodeRef.current = null;
+        sessionStorage.removeItem(MOBILE_SESSION_CODE_KEY);
+        setRestoringSession(false);
         onDeviceInvalid();
       } else {
         setStale(true);
+        if (restoringSession) {
+          setNotice(errorMessage(cause, copy));
+        }
       }
     } finally {
       refreshInFlightRef.current = false;
-      setRefreshing(false);
     }
-  }, [sessionCode, online, applyResponse, copy.errors.session_expired, onDeviceInvalid]);
+  }, [sessionCode, online, applyResponse, copy, onDeviceInvalid, restoringSession]);
+
+  useEffect(() => {
+    if (restoringSession && sessionCode && online) void refreshData();
+  }, [restoringSession, sessionCode, online, refreshData]);
 
   useEffect(() => {
     if (!online) {
@@ -1105,6 +1120,7 @@ export function MobilePosApp({
     }
     const result = await loginMobile(credential, username, password);
     sessionCodeRef.current = result.session_code;
+    sessionStorage.setItem(MOBILE_SESSION_CODE_KEY, result.session_code);
     setSessionCode(result.session_code);
     applyResponse(result);
     setSection("menu");
@@ -1112,6 +1128,7 @@ export function MobilePosApp({
 
   const signOut = async () => {
     sessionCodeRef.current = null;
+    sessionStorage.removeItem(MOBILE_SESSION_CODE_KEY);
     if (sessionCode) {
       try {
         await logoutMobile(sessionCode);
@@ -1139,6 +1156,35 @@ export function MobilePosApp({
     onLanguageChange(next);
   };
 
+  if (restoringSession && !user) {
+    return (
+      <main className="mobile-shell mobile-initial-loading" dir={direction}>
+        <div className="mobile-loading-brand">
+          <img src={theme === "dark" ? LOGO_ICON : LOGO_ICON_DARK} alt="REDA TECH" />
+          <h1>{copy.loading}</h1>
+          {online ? (
+            <LoaderCircle className="spin" size={22} role="status" aria-label={copy.loading} />
+          ) : (
+            <p className="mobile-state-banner offline-banner"><WifiOff size={17} />{copy.offline}</p>
+          )}
+          {notice ? <p className="msg err" role="alert">{notice}</p> : null}
+          {notice && online ? (
+            <button
+              type="button"
+              className="btn secondary"
+              onClick={() => {
+                setNotice(null);
+                void refreshData();
+              }}
+            >
+              {copy.retry}
+            </button>
+          ) : null}
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="mobile-shell mobile-app" dir={direction}>
       {user ? (
@@ -1165,17 +1211,6 @@ export function MobilePosApp({
             >
               <div className="mobile-settings-extra">
                 <div className="mobile-settings-actions">
-                  <DropdownMenuItem asChild onSelect={(event) => event.preventDefault()}>
-                    <button
-                      type="button"
-                      className="mobile-settings-action"
-                      disabled={!online || refreshing}
-                      onClick={() => void refreshData()}
-                    >
-                      <RefreshCw className={refreshing ? "spin" : ""} size={17} />
-                      {refreshing ? copy.refreshing : copy.refresh}
-                    </button>
-                  </DropdownMenuItem>
                   <DropdownMenuItem asChild onSelect={(event) => event.preventDefault()}>
                     <button type="button" className="mobile-settings-action logout-button" onClick={() => void signOut()}>
                       <LogOut size={17} />{copy.logout}

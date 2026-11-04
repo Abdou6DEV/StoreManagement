@@ -51,6 +51,7 @@ export type MobileSessionResponse = {
 };
 
 export const MOBILE_DEVICE_CREDENTIAL_KEY = "reda-mobile-device-credential";
+export const MOBILE_SESSION_CODE_KEY = "reda-mobile-session-code";
 
 export const MOBILE_SUPABASE_URL = (
   import.meta.env.VITE_MOBILE_SUPABASE_URL ??
