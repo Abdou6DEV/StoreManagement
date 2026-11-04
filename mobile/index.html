@@ -16,9 +16,9 @@
           const isDark = savedTheme === "dark" || (savedTheme !== "light" && prefersDark);
           document.documentElement.classList.toggle("dark", isDark);
 
-          // Match Android's system navigation area to the selected app theme.
+          // Keep the installed PWA system chrome black in both app themes.
           const themeColor = document.querySelector('meta[name="theme-color"]');
-          themeColor?.setAttribute("content", isDark ? "#000000" : "#F8F8F8");
+          themeColor?.setAttribute("content", "#000000");
 
           // Keep the launch-screen background matched to the saved theme.
           const manifest = document.querySelector('link[rel="manifest"]');

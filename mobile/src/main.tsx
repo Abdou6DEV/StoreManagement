@@ -11,17 +11,11 @@ if (!root) throw new Error("Mobile application root element is missing");
 
 const appBaseUrl = new URL(import.meta.env.BASE_URL, window.location.origin);
 
-// Keep Android's system navigation area matched to the page background.
+// Keep Android's installed PWA system chrome black in both app themes.
 function syncMobileBrowserTheme() {
   const themeColor = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
   const isDark = document.documentElement.classList.contains("dark");
-  const pageBackground = getComputedStyle(document.body).backgroundColor;
-  themeColor?.setAttribute(
-    "content",
-    pageBackground === "rgba(0, 0, 0, 0)"
-      ? isDark ? "#000000" : "#F8F8F8"
-      : pageBackground,
-  );
+  themeColor?.setAttribute("content", "#000000");
 
   const manifest = document.querySelector<HTMLLinkElement>('link[rel="manifest"]');
   manifest?.setAttribute(
