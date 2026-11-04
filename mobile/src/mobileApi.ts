@@ -50,8 +50,66 @@ export type MobileSessionResponse = {
   data: MobileBundle;
 };
 
+export type MobileAppSection =
+  | "menu"
+  | "dashboard"
+  | "stock"
+  | "history"
+  | "services"
+  | "bills"
+  | "clients";
+
+export type MobileSessionCache = {
+  session_code: string;
+  expires_at: string;
+  last_updated_at: string;
+  section: MobileAppSection;
+  query: string;
+  user: MobileUser;
+  data: MobileBundle;
+};
+
+export type MobileSessionSnapshot = Omit<MobileSessionCache, "section" | "query">;
+
 export const MOBILE_DEVICE_CREDENTIAL_KEY = "reda-mobile-device-credential";
 export const MOBILE_SESSION_CODE_KEY = "reda-mobile-session-code";
+export const MOBILE_SESSION_CACHE_KEY = "reda-mobile-session-cache-v1";
+export const MOBILE_SESSION_VIEW_KEY = "reda-mobile-session-view-v1";
+
+export function getStoredMobileSessionCode(): string | null {
+  try {
+    return sessionStorage.getItem(MOBILE_SESSION_CODE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function storeMobileSessionCode(sessionCode: string): void {
+  try {
+    sessionStorage.setItem(MOBILE_SESSION_CODE_KEY, sessionCode);
+  } catch {
+    // Keep the in-memory session usable when browser storage is unavailable.
+  }
+}
+
+export function clearStoredMobileSession(): void {
+  try {
+    sessionStorage.removeItem(MOBILE_SESSION_CODE_KEY);
+    sessionStorage.removeItem(MOBILE_SESSION_CACHE_KEY);
+    sessionStorage.removeItem(MOBILE_SESSION_VIEW_KEY);
+  } catch {
+    // Session state still clears in memory when browser storage is unavailable.
+  }
+}
+
+function clearMobileSessionCache(): void {
+  try {
+    sessionStorage.removeItem(MOBILE_SESSION_CACHE_KEY);
+    sessionStorage.removeItem(MOBILE_SESSION_VIEW_KEY);
+  } catch {
+    // Ignore unavailable browser storage.
+  }
+}
 
 export const MOBILE_SUPABASE_URL = (
   import.meta.env.VITE_MOBILE_SUPABASE_URL ??
@@ -160,6 +218,103 @@ function validateSessionResponse(value: unknown): MobileSessionResponse {
     user,
     data,
   };
+}
+
+const MOBILE_APP_SECTIONS: MobileAppSection[] = [
+  "menu",
+  "dashboard",
+  "stock",
+  "history",
+  "services",
+  "bills",
+  "clients",
+];
+
+export function readMobileSessionCache(
+  sessionCode: string,
+): MobileSessionCache | null {
+  let serialized: string | null;
+  try {
+    serialized = sessionStorage.getItem(MOBILE_SESSION_CACHE_KEY);
+  } catch {
+    return null;
+  }
+  if (!serialized) return null;
+
+  try {
+    const value: unknown = JSON.parse(serialized);
+    if (
+      !isRecord(value) ||
+      value.session_code !== sessionCode ||
+      typeof value.expires_at !== "string" ||
+      typeof value.last_updated_at !== "string" ||
+      !Number.isFinite(Date.parse(value.last_updated_at))
+    ) {
+      clearMobileSessionCache();
+      return null;
+    }
+    if (Date.parse(value.expires_at) <= Date.now()) {
+      clearMobileSessionCache();
+      return null;
+    }
+
+    const response = validateSessionResponse({
+      ok: true,
+      session_code: sessionCode,
+      expires_at: value.expires_at,
+      user: value.user,
+      data: value.data,
+    });
+    let section: MobileAppSection = "menu";
+    let query = "";
+    try {
+      const savedView = sessionStorage.getItem(MOBILE_SESSION_VIEW_KEY);
+      const parsedView: unknown = savedView ? JSON.parse(savedView) : null;
+      if (isRecord(parsedView) && parsedView.session_code === sessionCode) {
+        if (MOBILE_APP_SECTIONS.includes(parsedView.section as MobileAppSection)) {
+          section = parsedView.section as MobileAppSection;
+        }
+        if (typeof parsedView.query === "string") query = parsedView.query;
+      }
+    } catch {
+      // Restore the data at the main menu if the small view-state record is invalid.
+    }
+    return {
+      session_code: sessionCode,
+      expires_at: value.expires_at,
+      last_updated_at: value.last_updated_at,
+      section,
+      query,
+      user: response.user,
+      data: response.data,
+    };
+  } catch {
+    clearMobileSessionCache();
+    return null;
+  }
+}
+
+export function saveMobileSessionCache(cache: MobileSessionSnapshot): void {
+  try {
+    sessionStorage.setItem(MOBILE_SESSION_CACHE_KEY, JSON.stringify(cache));
+  } catch {
+    clearMobileSessionCache();
+  }
+}
+
+export function saveMobileSessionView(
+  sessionCode: string,
+  section: MobileAppSection,
+  query: string,
+): void {
+  try {
+    sessionStorage.setItem(
+      MOBILE_SESSION_VIEW_KEY,
+      JSON.stringify({ session_code: sessionCode, section, query }),
+    );
+  } catch {
+    // View restoration is best-effort and must not interrupt normal navigation.
+  }
 }
 
 export async function callMobileApi(

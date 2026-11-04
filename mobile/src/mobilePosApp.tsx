@@ -25,13 +25,19 @@ import { useTheme } from "../../src/lib/contexts/themeContext";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import {
+  clearStoredMobileSession,
+  getStoredMobileSessionCode,
   loginMobile,
   logoutMobile,
   MobileApiError,
-  MOBILE_SESSION_CODE_KEY,
+  readMobileSessionCache,
   refreshMobile,
+  saveMobileSessionCache,
+  saveMobileSessionView,
+  storeMobileSessionCode,
 } from "./mobileApi";
 import type {
+  MobileAppSection,
   MobileBundle,
   MobileLanguage,
   MobilePermissions,
@@ -47,14 +53,7 @@ import {
 } from "./components/ClientBillsServicesSections";
 import { HistorySection } from "./components/HistorySection";
 
-type Section =
-  | "menu"
-  | "dashboard"
-  | "stock"
-  | "history"
-  | "services"
-  | "bills"
-  | "clients";
+type Section = MobileAppSection;
 
 type Copy = {
   appName: string;
@@ -970,21 +969,25 @@ export function MobilePosApp({
 }) {
   const copy = COPY[language];
   const { theme } = useTheme();
-  const [sessionCode, setSessionCode] = useState<string | null>(() =>
-    sessionStorage.getItem(MOBILE_SESSION_CODE_KEY),
+  const [sessionCode, setSessionCode] = useState<string | null>(getStoredMobileSessionCode);
+  const [cachedSession] = useState(() =>
+    sessionCode ? readMobileSessionCache(sessionCode) : null,
+  );
+  const [sessionExpiresAt, setSessionExpiresAt] = useState<string | null>(
+    cachedSession?.expires_at ?? null,
   );
   const sessionCodeRef = useRef<string | null>(sessionCode);
-  const [restoringSession, setRestoringSession] = useState(() =>
-    Boolean(sessionStorage.getItem(MOBILE_SESSION_CODE_KEY)),
-  );
+  const [restoringSession, setRestoringSession] = useState(Boolean(sessionCode));
   const refreshInFlightRef = useRef(false);
   const wasOfflineRef = useRef(!navigator.onLine);
-  const [user, setUser] = useState<MobileUser | null>(null);
-  const [data, setData] = useState<MobileBundle | null>(null);
-  const [section, setSection] = useState<Section>("menu");
-  const [query, setQuery] = useState("");
+  const [user, setUser] = useState<MobileUser | null>(cachedSession?.user ?? null);
+  const [data, setData] = useState<MobileBundle | null>(cachedSession?.data ?? null);
+  const [section, setSection] = useState<Section>(cachedSession?.section ?? "menu");
+  const [query, setQuery] = useState(cachedSession?.query ?? "");
   const [notice, setNotice] = useState<string | null>(null);
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(() =>
+    cachedSession ? new Date(cachedSession.last_updated_at) : null,
+  );
   const [online, setOnline] = useState(navigator.onLine);
   const [stale, setStale] = useState(false);
   const direction = language === "ar" ? "rtl" : "ltr";
@@ -1030,6 +1033,22 @@ export function MobilePosApp({
     setNotice(null);
   }, []);
 
+  useEffect(() => {
+    if (!sessionCode || !sessionExpiresAt || !user || !data || !lastUpdated) return;
+    saveMobileSessionCache({
+      session_code: sessionCode,
+      expires_at: sessionExpiresAt,
+      last_updated_at: lastUpdated.toISOString(),
+      user,
+      data,
+    });
+  }, [sessionCode, sessionExpiresAt, user, data, lastUpdated]);
+
+  useEffect(() => {
+    if (!sessionCode || !user) return;
+    saveMobileSessionView(sessionCode, section, query);
+  }, [sessionCode, user, section, query]);
+
   const refreshData = useCallback(async () => {
     if (!sessionCode || !online || refreshInFlightRef.current) return;
     refreshInFlightRef.current = true;
@@ -1039,18 +1058,20 @@ export function MobilePosApp({
       if (response.session_code) {
         sessionCodeRef.current = response.session_code;
         setSessionCode(response.session_code);
-        sessionStorage.setItem(MOBILE_SESSION_CODE_KEY, response.session_code);
+        storeMobileSessionCode(response.session_code);
       }
+      if (response.expires_at) setSessionExpiresAt(response.expires_at);
       applyResponse(response);
     } catch (cause) {
       if (sessionCodeRef.current !== sessionCode) return;
       if (
         cause instanceof MobileApiError &&
-        ["session_expired", "user_inactive"].includes(cause.code)
+        ["session_expired", "user_inactive", "mobile_access_disabled"].includes(cause.code)
       ) {
         sessionCodeRef.current = null;
-        sessionStorage.removeItem(MOBILE_SESSION_CODE_KEY);
+        clearStoredMobileSession();
         setSessionCode(null);
+        setSessionExpiresAt(null);
         setUser(null);
         setData(null);
         setLastUpdated(null);
@@ -1061,19 +1082,26 @@ export function MobilePosApp({
         setNotice(copy.errors[cause.code] ?? copy.errors.session_expired);
       } else if (cause instanceof MobileApiError && cause.code === "device_revoked") {
         sessionCodeRef.current = null;
-        sessionStorage.removeItem(MOBILE_SESSION_CODE_KEY);
+        clearStoredMobileSession();
+        setSessionCode(null);
+        setSessionExpiresAt(null);
+        setUser(null);
+        setData(null);
+        setLastUpdated(null);
+        setStale(false);
         setRestoringSession(false);
         onDeviceInvalid();
       } else {
         setStale(true);
         if (restoringSession) {
-          setNotice(errorMessage(cause, copy));
+          if (user) setRestoringSession(false);
+          else setNotice(errorMessage(cause, copy));
         }
       }
     } finally {
       refreshInFlightRef.current = false;
     }
-  }, [sessionCode, online, applyResponse, copy, onDeviceInvalid, restoringSession]);
+  }, [sessionCode, online, applyResponse, copy, onDeviceInvalid, restoringSession, user]);
 
   useEffect(() => {
     if (restoringSession && sessionCode && online) void refreshData();
@@ -1120,7 +1148,8 @@ export function MobilePosApp({
     }
     const result = await loginMobile(credential, username, password);
     sessionCodeRef.current = result.session_code;
-    sessionStorage.setItem(MOBILE_SESSION_CODE_KEY, result.session_code);
+    storeMobileSessionCode(result.session_code);
+    setSessionExpiresAt(result.expires_at ?? null);
     setSessionCode(result.session_code);
     applyResponse(result);
     setSection("menu");
@@ -1128,7 +1157,7 @@ export function MobilePosApp({
 
   const signOut = async () => {
     sessionCodeRef.current = null;
-    sessionStorage.removeItem(MOBILE_SESSION_CODE_KEY);
+    clearStoredMobileSession();
     if (sessionCode) {
       try {
         await logoutMobile(sessionCode);
@@ -1137,6 +1166,7 @@ export function MobilePosApp({
       }
     }
     setSessionCode(null);
+    setSessionExpiresAt(null);
     setUser(null);
     setData(null);
     setLastUpdated(null);

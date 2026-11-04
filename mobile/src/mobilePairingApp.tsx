@@ -1,7 +1,10 @@
 import type { BrowserQRCodeReader } from "@zxing/browser";
 import { AlertCircle, Camera, LoaderCircle, ScanLine, WifiOff, X } from "lucide-react";
-import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { MobilePosApp } from "./mobilePosApp";
 import {
+  clearStoredMobileSession,
+  getStoredMobileSessionCode,
   MOBILE_DEVICE_CREDENTIAL_KEY,
   MOBILE_PUBLISHABLE_KEY,
   MOBILE_SUPABASE_URL,
@@ -9,10 +12,6 @@ import {
 import type { MobileLanguage } from "./mobileApi";
 import { LOGO_ICON, LOGO_ICON_DARK } from "../../src/lib/assets";
 import { useTheme } from "../../src/lib/contexts/themeContext";
-
-const MobilePosApp = lazy(() =>
-  import("./mobilePosApp").then((module) => ({ default: module.MobilePosApp })),
-);
 
 type Language = MobileLanguage;
 type Copy = {
@@ -121,6 +120,17 @@ function getInitialLanguage(): Language {
   return browserLanguage === "fr" || browserLanguage === "ar" ? browserLanguage : "en";
 }
 
+function hasSavedMobileSession(): boolean {
+  try {
+    return Boolean(
+      getStoredMobileSessionCode() &&
+      localStorage.getItem(MOBILE_DEVICE_CREDENTIAL_KEY),
+    );
+  } catch {
+    return false;
+  }
+}
+
 async function postFunction<T>(name: string, body: unknown): Promise<T> {
   const response = await fetch(`${MOBILE_SUPABASE_URL}/functions/v1/${name}`, {
     method: "POST",
@@ -147,11 +157,13 @@ export function MobilePairingApp() {
   const [busy, setBusy] = useState(false);
   const [cameraActive, setCameraActive] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [paired, setPaired] = useState(false);
+  const [paired, setPaired] = useState(hasSavedMobileSession);
   const [hasSavedCredential, setHasSavedCredential] = useState(() =>
     Boolean(localStorage.getItem(MOBILE_DEVICE_CREDENTIAL_KEY)),
   );
-  const [checkingSavedDevice, setCheckingSavedDevice] = useState(true);
+  const [checkingSavedDevice, setCheckingSavedDevice] = useState(
+    () => !hasSavedMobileSession(),
+  );
   const [checkingDevice, setCheckingDevice] = useState(false);
   const [online, setOnline] = useState(navigator.onLine);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -162,6 +174,7 @@ export function MobilePairingApp() {
   const checkSavedDevice = useCallback(async () => {
     const credential = localStorage.getItem(MOBILE_DEVICE_CREDENTIAL_KEY);
     if (!credential) {
+      clearStoredMobileSession();
       setHasSavedCredential(false);
       setCheckingSavedDevice(false);
       return;
@@ -176,6 +189,7 @@ export function MobilePairingApp() {
         setPaired(true);
         setError(null);
       } else {
+        clearStoredMobileSession();
         localStorage.removeItem(MOBILE_DEVICE_CREDENTIAL_KEY);
         setHasSavedCredential(false);
         setPaired(false);
@@ -208,6 +222,7 @@ export function MobilePairingApp() {
         }
         throw new Error("pair_failed");
       }
+      clearStoredMobileSession();
       localStorage.setItem(MOBILE_DEVICE_CREDENTIAL_KEY, result.device_credential);
       setHasSavedCredential(true);
       setPaired(true);
@@ -225,6 +240,7 @@ export function MobilePairingApp() {
   }, [busy, copy.invalidCode, copy.pairFailed]);
 
   useEffect(() => {
+    if (hasSavedMobileSession()) return;
     void checkSavedDevice();
   }, [checkSavedDevice]);
 
@@ -300,18 +316,17 @@ export function MobilePairingApp() {
 
   if (paired) {
     return (
-      <Suspense fallback={loadingScreen}>
-        <MobilePosApp
-          language={language}
-          onLanguageChange={setLanguage}
-          onDeviceInvalid={() => {
-            localStorage.removeItem(MOBILE_DEVICE_CREDENTIAL_KEY);
-            setHasSavedCredential(false);
-            setPaired(false);
-            setError(copy.revoked);
-          }}
-        />
-      </Suspense>
+      <MobilePosApp
+        language={language}
+        onLanguageChange={setLanguage}
+        onDeviceInvalid={() => {
+          clearStoredMobileSession();
+          localStorage.removeItem(MOBILE_DEVICE_CREDENTIAL_KEY);
+          setHasSavedCredential(false);
+          setPaired(false);
+          setError(copy.revoked);
+        }}
+      />
     );
   }
 

@@ -237,26 +237,34 @@ async function sessionData(sessionCode: string) {
     )
     .eq("session_hash", sessionHash)
     .is("revoked_at", null)
-    .gt("expires_at", now.toISOString())
     .maybeSingle();
   if (sessionError) throw new Error("session_unavailable");
   if (!session) throw new Error("session_expired");
 
-  const [
-    { data: device, error: deviceError },
-    { data: activeSnapshot, error: snapshotError },
-  ] = await Promise.all([
-    db.from("mobile_devices")
-      .select("id,customer_id,device_id,active,revoked_at,paired_by_desktop_device_id")
-      .eq("id", session.mobile_device_id)
-      .maybeSingle(),
-    db.from("mobile_sync_snapshots")
-      .select("snapshot_id")
-      .eq("customer_id", session.customer_id)
-      .eq("status", "active")
-      .maybeSingle(),
-  ]);
-  if (deviceError || snapshotError) throw new Error("session_unavailable");
+  const { data: device, error: deviceError } = await db.from("mobile_devices")
+    .select("id,customer_id,device_id,active,revoked_at,paired_by_desktop_device_id")
+    .eq("id", session.mobile_device_id)
+    .maybeSingle();
+  if (deviceError) throw new Error("session_unavailable");
+  if (
+    !device ||
+    device.customer_id !== session.customer_id ||
+    !device.active ||
+    device.revoked_at
+  ) {
+    throw new Error("device_revoked");
+  }
+  if (Date.parse(session.expires_at) <= now.getTime()) {
+    throw new Error("session_expired");
+  }
+
+  const { data: activeSnapshot, error: snapshotError } = await db
+    .from("mobile_sync_snapshots")
+    .select("snapshot_id")
+    .eq("customer_id", session.customer_id)
+    .eq("status", "active")
+    .maybeSingle();
+  if (snapshotError) throw new Error("session_unavailable");
 
   if (!activeSnapshot?.snapshot_id) throw new Error("snapshot_unavailable");
   const [{ data: userRow, error: userError }, { data: permissionRow, error: permissionError }] = await Promise.all([
@@ -270,14 +278,6 @@ async function sessionData(sessionCode: string) {
   if (userError || permissionError) throw new Error("session_unavailable");
   const user = (userRow?.payload as Record<string, unknown> | undefined) ?? null;
   const permission = (permissionRow?.payload as Record<string, unknown> | undefined) ?? null;
-  if (
-    !device ||
-    device.customer_id !== session.customer_id ||
-    !device.active ||
-    device.revoked_at
-  ) {
-    throw new Error("device_revoked");
-  }
   if (!user || !user.is_active || user.deleted_at) {
     throw new Error("user_inactive");
   }
