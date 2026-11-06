@@ -109,6 +109,7 @@ let mobileSyncPending = false;
 let mobileSyncInProgress = false;
 let mobileSyncRetryAttempt = 0;
 let mobileSyncEligible: boolean | null = null;
+let mobileSyncAuthorizationReady = false;
 let mobileSyncLastSuccessAt: string | null = null;
 let mobileSyncLastError: string | null = null;
 let mobileManagementSnapshot: MobileManagementSnapshot = {
@@ -141,6 +142,7 @@ const MOBILE_SYNC_ERROR_CODES = new Set([
   "chunk_stage_failed",
   "snapshot_incomplete_or_invalid",
   "snapshot_activation_unconfirmed",
+  "sync_authorization_unavailable",
   "unknown_sync_action",
 ]);
 
@@ -247,7 +249,7 @@ async function loadMobileManagementSnapshot(): Promise<void> {
 }
 
 function scheduleMobileSnapshotSync(delayMs = MOBILE_SYNC_DEBOUNCE_MS): void {
-  if (mobileSyncEligible === false || !hasActivePairedMobileDevice()) {
+  if (mobileSyncEligible === false || !mobileSyncAuthorizationReady || !hasActivePairedMobileDevice()) {
     mobileSyncPending = false;
     if (mobileSyncTimer) {
       clearTimeout(mobileSyncTimer);
@@ -402,11 +404,15 @@ async function uploadMobileSnapshot(
 }
 
 async function syncCurrentMobileSnapshot(): Promise<boolean> {
-  const check = await runDeviceCheckInternal();
-  if (!check.success) throw new Error("Could not verify mobile sync authorization.");
+  await mobileManagementCacheReady;
+  if (mobileManagementRefreshInFlight) await mobileManagementRefreshInFlight;
+  if (!mobileSyncAuthorizationReady) return false;
+  const check = mobileManagementSnapshot.deviceCheck;
+  const checkedCustomerId = check?.success ? check.customerId?.trim() : undefined;
   if (
+    !check?.success ||
     !check.allowed ||
-    !check.customerId ||
+    !checkedCustomerId ||
     !check.mobileEnabled ||
     (check.mobileDeviceLimit ?? 0) < 1
   ) {
@@ -420,8 +426,8 @@ async function syncCurrentMobileSnapshot(): Promise<boolean> {
   const config = getStoreMobileConfig();
   if ("error" in config) throw new Error(config.error);
   const deviceId = getMachineGuid();
-  const customerId = await syncOnlineCustomerIdFromServer(check.customerId);
-  if (!customerId || customerId !== check.customerId) {
+  const customerId = await getStoredOnlineCustomerId();
+  if (!customerId || customerId !== checkedCustomerId) {
     throw new Error("The licensed shop identity could not be confirmed for mobile sync.");
   }
   await uploadMobileSnapshot(config, deviceId, customerId);
@@ -495,8 +501,10 @@ function updateMobileSyncEligibility(check: DeviceCheckResult): void {
   const wasEligible = mobileSyncEligible === true;
   mobileSyncEligible =
     check.allowed === true &&
+    Boolean(check.customerId?.trim()) &&
     check.mobileEnabled === true &&
-    (check.mobileDeviceLimit ?? 0) > 0;
+    (check.mobileDeviceLimit ?? 0) > 0 &&
+    mobileSyncAuthorizationReady;
   if (mobileSyncEligible && !wasEligible) {
     scheduleMobileSnapshotSync(0);
   } else if (!mobileSyncEligible || !hasActivePairedMobileDevice()) {
@@ -1488,6 +1496,7 @@ async function refreshMobileManagementSnapshot(): Promise<MobileManagementSnapsh
     const deviceCheck = await runDeviceCheckInternal();
 
     if (!deviceCheck.success) {
+      mobileSyncAuthorizationReady = false;
       const snapshot = await persistMobileManagementSnapshot({
         ...mobileManagementSnapshot,
         deviceCheck,
@@ -1498,9 +1507,11 @@ async function refreshMobileManagementSnapshot(): Promise<MobileManagementSnapsh
 
     const mobileEnabled =
       deviceCheck.allowed &&
+      Boolean(deviceCheck.customerId?.trim()) &&
       deviceCheck.mobileEnabled === true &&
       (deviceCheck.mobileDeviceLimit ?? 0) > 0;
     if (!mobileEnabled) {
+      mobileSyncAuthorizationReady = false;
       const snapshot = await persistMobileManagementSnapshot({
         deviceCheck,
         devices: [],
@@ -1511,10 +1522,11 @@ async function refreshMobileManagementSnapshot(): Promise<MobileManagementSnapsh
     }
 
     const result = await loadMobileDeviceListInternal();
+    mobileSyncAuthorizationReady = result.success;
     const snapshot = await persistMobileManagementSnapshot({
       deviceCheck,
-      devices: result.success === true ? result.devices : mobileManagementSnapshot.devices,
-      devicesError: result.success === true ? null : result.error,
+      devices: result.success ? result.devices : mobileManagementSnapshot.devices,
+      devicesError: result.success ? null : result.error,
     });
     updateMobileSyncEligibility(deviceCheck);
     return snapshot;
@@ -1549,15 +1561,38 @@ export function setupOnlineHandlers(): void {
     );
   });
   ipcMain.handle("online:deviceCheck", async (): Promise<DeviceCheckResult> => {
+    await mobileManagementCacheReady;
     const result = await runDeviceCheckInternal();
-    updateMobileSyncEligibility(result);
     const mobileEnabled = result.success && result.allowed && result.mobileEnabled === true &&
-      (result.mobileDeviceLimit ?? 0) > 0;
+      Boolean(result.customerId?.trim()) && (result.mobileDeviceLimit ?? 0) > 0;
+    const previousCheck = mobileManagementSnapshot.deviceCheck;
+    const authorizationUnchanged = previousCheck?.success === true && result.success === true &&
+      previousCheck.allowed === result.allowed &&
+      previousCheck.customerId?.trim() === result.customerId?.trim() &&
+      previousCheck.mobileEnabled === result.mobileEnabled &&
+      previousCheck.mobileDeviceLimit === result.mobileDeviceLimit;
+    let devices = mobileManagementSnapshot.devices;
+    let devicesError = mobileManagementSnapshot.devicesError;
+    if (result.success && mobileEnabled && (!mobileSyncAuthorizationReady || !authorizationUnchanged)) {
+      const deviceList = await loadMobileDeviceListInternal();
+      mobileSyncAuthorizationReady = deviceList.success;
+      if (deviceList.success) {
+        devices = deviceList.devices;
+        devicesError = null;
+      } else {
+        devicesError = deviceList.error;
+      }
+    } else if (!result.success || !mobileEnabled) {
+      mobileSyncAuthorizationReady = false;
+      devices = [];
+      devicesError = null;
+    }
     await persistMobileManagementSnapshot({
       deviceCheck: result,
-      devices: mobileEnabled ? mobileManagementSnapshot.devices : [],
-      devicesError: mobileEnabled ? mobileManagementSnapshot.devicesError : null,
+      devices,
+      devicesError,
     });
+    updateMobileSyncEligibility(result);
     if (result.success === true && result.customerId?.trim()) {
       await syncOnlineCustomerIdFromServer(result.customerId);
     }
@@ -1722,11 +1757,15 @@ export function setupOnlineHandlers(): void {
 
   ipcMain.handle("online:mobileDeviceList", async (): Promise<MobileDeviceListResult> => {
     const result = await loadMobileDeviceListInternal();
+    mobileSyncAuthorizationReady = result.success;
     await persistMobileManagementSnapshot({
       ...mobileManagementSnapshot,
       devices: result.success === true ? result.devices : mobileManagementSnapshot.devices,
       devicesError: result.success === true ? null : result.error,
     });
+    if (mobileManagementSnapshot.deviceCheck) {
+      updateMobileSyncEligibility(mobileManagementSnapshot.deviceCheck);
+    }
     return result;
   });
 

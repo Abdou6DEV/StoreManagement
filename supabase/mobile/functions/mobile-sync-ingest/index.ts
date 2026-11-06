@@ -1,5 +1,4 @@
 import {
-  checkLicensingDesktop,
   corsHeaders,
   json,
   mobileAdminClient,
@@ -62,16 +61,34 @@ Deno.serve(async (req) => {
     }
     customerId = owner.customer_id;
   } else if (action === "start" || action === "finalize") {
-    let license;
-    try {
-      license = await checkLicensingDesktop(deviceId);
-    } catch {
-      console.error("mobile sync licensing check failed");
-      return json(503, { ok: false, error: "licensing_unavailable" }, cors);
+    const { data: authorization, error: authorizationError } = await db
+      .from("mobile_desktop_sync_authorizations")
+      .select("customer_id,is_active")
+      .eq("desktop_device_id", deviceId)
+      .maybeSingle();
+    if (authorizationError) {
+      console.error("mobile sync authorization lookup failed", authorizationError);
+      return json(503, { ok: false, error: "sync_authorization_unavailable" }, cors);
     }
-    if (!license?.allowed || !license.customer_id) return json(403, { ok: false, error: "desktop_not_licensed" }, cors);
-    if (!license.mobile_enabled || license.mobile_device_limit < 1) return json(403, { ok: false, error: "mobile_not_enabled" }, cors);
-    customerId = license.customer_id;
+    if (!authorization?.is_active || !authorization.customer_id) {
+      return json(403, { ok: false, error: "desktop_not_licensed" }, cors);
+    }
+    customerId = authorization.customer_id;
+    if (action === "finalize") {
+      const { data: snapshot, error: snapshotError } = await db
+        .from("mobile_sync_snapshots")
+        .select("customer_id")
+        .eq("snapshot_id", snapshotId)
+        .eq("device_id", deviceId)
+        .maybeSingle();
+      if (snapshotError) {
+        console.error("mobile sync snapshot ownership lookup failed", snapshotError);
+        return json(503, { ok: false, error: "sync_authorization_unavailable" }, cors);
+      }
+      if (!snapshot || snapshot.customer_id !== customerId) {
+        return json(403, { ok: false, error: "snapshot_not_owned" }, cors);
+      }
+    }
   } else {
     return json(400, { ok: false, error: "unknown_sync_action" }, cors);
   }
