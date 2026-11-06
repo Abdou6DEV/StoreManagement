@@ -132,9 +132,9 @@ export function HistorySection({ data, language }: Props) {
         </div>
         <div className="mobile-history-options">
           <div className="mobile-history-toggles">
-            <div className="mobile-history-check"><span>{t.highlight}</span><button type="button" className={`mobile-history-switch${highlight ? " is-on" : ""}`} role="switch" aria-checked={highlight} aria-label={t.highlight} onClick={()=>setHighlight(v=>!v)}><span /></button></div>
-            <div className="mobile-history-check"><span>{t.net}</span><button type="button" className={`mobile-history-switch${netProfit ? " is-on" : ""}`} role="switch" aria-checked={netProfit} aria-label={t.net} onClick={()=>setNetProfit(v=>!v)}><span /></button></div>
-            <div className="mobile-history-check"><span>{t.totals}</span><button type="button" className={`mobile-history-switch${showTotals ? " is-on" : ""}`} role="switch" aria-checked={showTotals} aria-label={t.totals} onClick={()=>setShowTotals(v=>!v)}><span /></button></div>
+            <div className="mobile-history-check"><span title={t.highlight}>{t.highlight}</span><button type="button" className={`mobile-history-switch${highlight ? " is-on" : ""}`} role="switch" aria-checked={highlight} aria-label={t.highlight} onClick={()=>setHighlight(v=>!v)}><span /></button></div>
+            <div className="mobile-history-check"><span title={t.net}>{t.net}</span><button type="button" className={`mobile-history-switch${netProfit ? " is-on" : ""}`} role="switch" aria-checked={netProfit} aria-label={t.net} onClick={()=>setNetProfit(v=>!v)}><span /></button></div>
+            <div className="mobile-history-check"><span title={t.totals}>{t.totals}</span><button type="button" className={`mobile-history-switch${showTotals ? " is-on" : ""}`} role="switch" aria-checked={showTotals} aria-label={t.totals} onClick={()=>setShowTotals(v=>!v)}><span /></button></div>
           </div>
           <label><span>{t.items}</span><select value={pageSize} onChange={e=>{setPageSize(Number(e.target.value));setPage(1);}}>{[5,10,30,50,100].map(n=><option key={n} value={n}>{n}</option>)}</select></label>
         </div>

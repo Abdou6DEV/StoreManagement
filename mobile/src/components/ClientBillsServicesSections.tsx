@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { CreditCard, ExternalLink, Search, ShoppingCart, Users, Wrench, X } from "lucide-react";
+import { CreditCard, ExternalLink, Package, Search, ShoppingCart, Users, Wrench, X } from "lucide-react";
 import type { ReactNode } from "react";
 import type {
   MobileBundle,
@@ -482,13 +482,17 @@ export function ClientsSection({
   onQueryChange: (query: string) => void;
 }) {
   const labels = LABELS[language];
+  const supplierLabels = SUPPLIER_LABELS[language];
   const [selected, setSelected] = useState<MobileRow | null>(null);
+  const [selectedSupplier, setSelectedSupplier] = useState<MobileRow | null>(null);
   const [clientDetailTab, setClientDetailTab] = useState<"sales" | "payments" | "services">("sales");
   const [clientSalesLimit, setClientSalesLimit] = useState(5);
   const [clientPaymentsLimit, setClientPaymentsLimit] = useState(5);
   const [clientServicesLimit, setClientServicesLimit] = useState(5);
+  const [supplierPurchaseLimit, setSupplierPurchaseLimit] = useState(10);
   const [showProfit, setShowProfit] = useState(false);
-  const [view, setView] = useState<"clients" | "payments">("clients");
+  const [view, setView] = useState<"clients" | "payments" | "suppliers">("clients");
+  const [supplierSearch, setSupplierSearch] = useState("");
   const [paymentSearch, setPaymentSearch] = useState("");
   const [selectedPaymentClientId, setSelectedPaymentClientId] = useState<string | null>(null);
   const [paymentStatus, setPaymentStatus] = useState<"all" | "paid" | "unpaid">("unpaid");
@@ -496,6 +500,44 @@ export function ClientsSection({
   const clients = useMemo(() => data.clients.filter((row) =>
     matchesQuery(row, query, ["name", "phone", "address", "notes"]),
   ), [data.clients, query]);
+  const supplierPurchaseStats = useMemo(() => {
+    const stats = new Map<string, { count: number; quantity: number; cost: number }>();
+    const supplierByPurchaseId = new Map<string, string>();
+    for (const purchase of data.purchases) {
+      const purchaseId = valueText(purchase, "source_id");
+      const supplierId = valueText(purchase, "supplier_source_id");
+      if (!purchaseId || !supplierId) continue;
+      supplierByPurchaseId.set(purchaseId, supplierId);
+      const current = stats.get(supplierId) ?? { count: 0, quantity: 0, cost: 0 };
+      current.count += 1;
+      stats.set(supplierId, current);
+    }
+    for (const item of data.purchase_items) {
+      const supplierId = supplierByPurchaseId.get(valueText(item, "purchase_source_id"));
+      if (!supplierId) continue;
+      const current = stats.get(supplierId);
+      if (!current) continue;
+      const quantity = valueNumber(item, "quantity");
+      current.quantity += quantity;
+      current.cost += valueNumber(item, "price") * quantity;
+    }
+    return stats;
+  }, [data.purchases, data.purchase_items]);
+  const supplierCredit = (supplier: MobileRow) =>
+    Math.max(0, Number.parseFloat(valueText(supplier, "email")) || 0);
+  const filteredSuppliers = useMemo(() => data.suppliers.filter((supplier) =>
+    matchesQuery(supplier, supplierSearch, ["name", "phone", "address", "notes", "email"]),
+  ), [data.suppliers, supplierSearch]);
+  const supplierSorts: SortOption<MobileRow>[] = [
+    {
+      id: "credit",
+      label: supplierLabels.sortCredit,
+      compare: (a, b) => supplierCredit(b) - supplierCredit(a) || compareName(a, b),
+    },
+    { id: "name", label: labels.nameAZ, compare: compareName },
+    { id: "newest", label: labels.newest, compare: compareCreated },
+    { id: "oldest", label: labels.oldest, compare: compareOldest },
+  ];
   const compareName = (a: MobileRow, b: MobileRow) => valueText(a, "name").localeCompare(valueText(b, "name"), language, { sensitivity: "base" });
   const compareCreated = (a: MobileRow, b: MobileRow) => sortTime(b, "source_created_at") - sortTime(a, "source_created_at");
   const compareOldest = (a: MobileRow, b: MobileRow) => -compareCreated(a, b);
@@ -739,12 +781,29 @@ export function ClientsSection({
     setClientPaymentsLimit(5);
     setClientServicesLimit(5);
   };
+  const supplierTotals = useMemo(() => filteredSuppliers.reduce((totals, supplier) => {
+    const stats = supplierPurchaseStats.get(valueText(supplier, "source_id"));
+    return {
+      credit: totals.credit + supplierCredit(supplier),
+      purchases: totals.purchases + (stats?.count ?? 0),
+      quantity: totals.quantity + (stats?.quantity ?? 0),
+      cost: totals.cost + (stats?.cost ?? 0),
+    };
+  }, { credit: 0, purchases: 0, quantity: 0, cost: 0 }), [filteredSuppliers, supplierPurchaseStats]);
+  const selectedSupplierPurchases = useMemo(() => {
+    if (!selectedSupplier || !permissions.can_access_history) return [];
+    const supplierId = valueText(selectedSupplier, "source_id");
+    return data.purchases
+      .filter((purchase) => valueText(purchase, "supplier_source_id") === supplierId)
+      .sort((a, b) => sortTime(b, "source_created_at") - sortTime(a, "source_created_at"));
+  }, [selectedSupplier, permissions.can_access_history, data.purchases]);
 
   return (
     <>
-      <div className="stock-view-switch" role="tablist" aria-label={labels.clients}>
+      <div className="stock-view-switch" role="tablist" aria-label={supplierLabels.suppliers} style={{ gridTemplateColumns: "repeat(3, minmax(0, 1fr))" }}>
         <button type="button" role="tab" aria-selected={view === "clients"} className={view === "clients" ? "active" : ""} onClick={() => setView("clients")}><Users size={16} />{labels.clients}</button>
         <button type="button" role="tab" aria-selected={view === "payments"} className={view === "payments" ? "active" : ""} onClick={() => setView("payments")}><CreditCard size={16} />{labels.allPaymentsTab}</button>
+        <button type="button" role="tab" aria-selected={view === "suppliers"} className={view === "suppliers" ? "active" : ""} onClick={() => setView("suppliers")}><Package size={16} />{supplierLabels.suppliers}</button>
       </div>
       {view === "clients" ? <>
       <section className="mobile-subsection">
@@ -857,7 +916,7 @@ export function ClientsSection({
           </section> : null}
         </ReadOnlyDetail>
       ) : null}
-      </> : <section className="mobile-subsection">
+      </> : view === "payments" ? <section className="mobile-subsection">
         <h2>{labels.allPaymentsTab}</h2>
         {!permissions.can_access_clients ? <p className="mobile-empty">{labels.historyUnavailable}</p> : <>
           <div className="stock-filter-row" aria-label={labels.filters}>
@@ -876,7 +935,109 @@ export function ClientsSection({
           <section className="mobile-subsection"><h3>{labels.versements} ({versements.length})</h3>{versements.length ? renderPaymentsTable(versements, "VERSEMENT") : <p className="mobile-empty">{labels.empty}</p>}</section>
           <p className="stock-detail-muted">{labels.dueSoonThresholdNote}</p>
         </>}
+      </section> : <section className="mobile-subsection">
+        <h2>{supplierLabels.suppliers}</h2>
+        <StockStyleTable
+          rows={filteredSuppliers}
+          labels={labels}
+          ariaLabel={supplierLabels.suppliers}
+          pageSizeLabel={labels.pageSize}
+          empty={labels.empty}
+          minWidth={permissions.can_access_history ? 1020 : 680}
+          initialSortId="credit"
+          initialPageSize={10}
+          pageSizes={[5, 10, 25, 50, 100]}
+          stickyFirstColumn
+          toolbar={<>
+            <SearchRow query={supplierSearch} onQueryChange={setSupplierSearch} label={supplierLabels.search} />
+            {permissions.can_access_history && (data.purchases.length >= 5000 || data.purchase_items.length >= 10000)
+              ? <LimitNotice>{labels.limitNotice} ({labels.limitedPurchases}: 5,000)</LimitNotice>
+              : null}
+            {!permissions.can_access_history ? <LimitNotice>{supplierLabels.purchaseHistoryUnavailable}</LimitNotice> : null}
+          </>}
+          sorts={supplierSorts}
+          columns={[
+            { key: "name", label: labels.name, render: (row) => valueText(row, "name") || "—" },
+            { key: "phone", label: labels.phone, render: (row) => valueText(row, "phone") || "—" },
+            { key: "address", label: labels.address, render: (row) => valueText(row, "address") || "—" },
+            { key: "notes", label: labels.notes, render: (row) => valueText(row, "notes") || "—" },
+            { key: "credit", label: labels.totalCredit, align: "end", render: (row) => <span className="font-medium text-orange-600 dark:text-orange-400">{displayMoney(supplierCredit(row), language)}</span> },
+            ...(permissions.can_access_history ? [
+              { key: "purchases", label: supplierLabels.purchaseCount, align: "end" as const, render: (row: MobileRow) => new Intl.NumberFormat(language).format(supplierPurchaseStats.get(valueText(row, "source_id"))?.count ?? 0) },
+              { key: "quantity", label: supplierLabels.purchaseQuantity, align: "end" as const, render: (row: MobileRow) => new Intl.NumberFormat(language).format(supplierPurchaseStats.get(valueText(row, "source_id"))?.quantity ?? 0) },
+              { key: "cost", label: supplierLabels.purchaseCost, align: "end" as const, render: (row: MobileRow) => displayMoney(supplierPurchaseStats.get(valueText(row, "source_id"))?.cost ?? 0, language) },
+            ] : []),
+            { key: "view", label: labels.view, render: (row) => <DetailButton label={labels.view} onClick={() => { setSelectedSupplier(row); setSupplierPurchaseLimit(10); }} /> },
+          ]}
+          footer={<div className="stock-table-totals">
+            <div><span>{supplierLabels.suppliers}</span><strong>{new Intl.NumberFormat(language).format(filteredSuppliers.length)}</strong></div>
+            <div><span>{labels.totalCredit}</span><strong className="text-orange-600 dark:text-orange-400">{displayMoney(supplierTotals.credit, language)}</strong></div>
+            {permissions.can_access_history ? <>
+              <div><span>{supplierLabels.purchaseCount}</span><strong>{new Intl.NumberFormat(language).format(supplierTotals.purchases)}</strong></div>
+              <div><span>{supplierLabels.purchaseQuantity}</span><strong>{new Intl.NumberFormat(language).format(supplierTotals.quantity)}</strong></div>
+              <div><span>{supplierLabels.purchaseCost}</span><strong>{displayMoney(supplierTotals.cost, language)}</strong></div>
+            </> : null}
+          </div>}
+        />
+        {permissions.can_access_history ? <p className="stock-detail-muted">{supplierLabels.purchaseWindowLimit}</p> : null}
       </section>}
+      {selectedSupplier ? (
+        <ReadOnlyDetail
+          title={supplierLabels.suppliers}
+          subtitle={valueText(selectedSupplier, "name")}
+          labels={labels}
+          language={language}
+          onClose={() => setSelectedSupplier(null)}
+          fields={[
+            [labels.phone, valueText(selectedSupplier, "phone")],
+            [labels.address, valueText(selectedSupplier, "address")],
+            [labels.notes, valueText(selectedSupplier, "notes")],
+            [labels.totalCredit, displayMoney(supplierCredit(selectedSupplier), language)],
+          ]}
+        >
+          <section className="stock-detail-history-section">
+            <div className="stock-history-heading">
+              <h3>{supplierLabels.purchaseHistory}</h3>
+              {permissions.can_access_history ? <div>
+                <span>{supplierLabels.purchaseCount}: {new Intl.NumberFormat(language).format(supplierPurchaseStats.get(valueText(selectedSupplier, "source_id"))?.count ?? 0)}</span>
+                <span>{supplierLabels.purchaseQuantity}: {new Intl.NumberFormat(language).format(supplierPurchaseStats.get(valueText(selectedSupplier, "source_id"))?.quantity ?? 0)}</span>
+                <span>{supplierLabels.purchaseCost}: {displayMoney(supplierPurchaseStats.get(valueText(selectedSupplier, "source_id"))?.cost ?? 0, language)}</span>
+              </div> : null}
+            </div>
+            {permissions.can_access_history ? <p className="stock-detail-muted">{supplierLabels.purchaseWindowLimit}</p> : null}
+            {!permissions.can_access_history ? <p className="stock-detail-muted">{supplierLabels.purchaseHistoryUnavailable}</p> : selectedSupplierPurchases.length === 0 ? <p className="stock-detail-muted">{labels.empty}</p> : <div className="stock-detail-history-cards">
+              {selectedSupplierPurchases.slice(0, supplierPurchaseLimit).map((purchase) => {
+                const purchaseId = valueText(purchase, "source_id");
+                const items = data.purchase_items.filter((item) => valueText(item, "purchase_source_id") === purchaseId);
+                return <article className="stock-detail-history-card" key={purchaseId}>
+                  <div className="stock-detail-history-top">
+                    <strong>{supplierLabels.purchaseCount}: #{purchaseId.slice(-8)}</strong>
+                    <time>{displayDate(valueText(purchase, "source_created_at"), language, true)}</time>
+                  </div>
+                  <div className="stock-history-list">
+                    {items.length ? items.map((item) => {
+                      const product = data.products.find((row) => valueText(row, "source_id") === valueText(item, "product_source_id"));
+                      const quantity = valueNumber(item, "quantity");
+                      return <div key={valueText(item, "source_id")}>
+                        <span>{valueText(product ?? {}, "name") || labels.itemUnavailable}{valueText(product ?? {}, "category_name") ? ` (${valueText(product ?? {}, "category_name")})` : ""} × {new Intl.NumberFormat(language).format(quantity)}</span>
+                        <strong>{displayMoney(valueNumber(item, "price") * quantity, language)}</strong>
+                      </div>;
+                    }) : <p className="stock-detail-muted">{labels.itemUnavailable}</p>}
+                  </div>
+                </article>;
+              })}
+            </div>}
+            {permissions.can_access_history && selectedSupplierPurchases.length > 10 ? (
+              <button type="button" className="stock-history-more" onClick={() => setSupplierPurchaseLimit((limit) => limit < selectedSupplierPurchases.length ? Math.min(limit + 10, selectedSupplierPurchases.length) : 10)}>
+                {supplierPurchaseLimit < selectedSupplierPurchases.length ? `${labels.showMore} (${Math.min(10, selectedSupplierPurchases.length - supplierPurchaseLimit)} ${labels.more})` : labels.showLess}
+              </button>
+            ) : null}
+            {permissions.can_access_history && (data.purchases.length >= 5000 || data.purchase_items.length >= 10000)
+              ? <p className="stock-detail-muted">{labels.limitNotice} ({labels.limitedPurchases}: 5,000)</p>
+              : null}
+          </section>
+        </ReadOnlyDetail>
+      ) : null}
     </>
   );
 }

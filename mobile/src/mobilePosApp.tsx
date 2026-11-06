@@ -1282,7 +1282,6 @@ export function MobilePosApp({
 
           {section === "menu" ? (
             <section className="mobile-menu-view">
-              <p className="sub">{copy.welcome}</p>
               <div className="mobile-menu-grid">
                 {allowedSections.map(({ id }) => (
                   <button type="button" className="mobile-menu-tile group" key={id} onClick={() => selectSection(id)}>
