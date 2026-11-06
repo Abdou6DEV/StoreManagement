@@ -142,7 +142,11 @@ Deno.serve(async (req) => {
       if (await sha256(rows) !== checksum) return json(400, { ok: false, error: "chunk_checksum_mismatch" }, cors);
       try {
         validateMobileSyncChunk(entity, rows, customerId);
-      } catch {
+      } catch (error) {
+        console.error("mobile sync chunk validation failed", {
+          entity,
+          error: error instanceof Error ? error.message : "unknown_validation_error",
+        });
         return json(400, { ok: false, error: "invalid_chunk" }, cors);
       }
       const { data, error } = await db.rpc("stage_mobile_sync_chunk", {

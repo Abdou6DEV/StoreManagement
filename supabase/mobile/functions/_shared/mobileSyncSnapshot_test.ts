@@ -1,5 +1,6 @@
 import {
   staleMobileSyncIds,
+  validateMobileSyncChunk,
   validateMobileSyncSnapshot,
 } from "./mobileSyncSnapshot.ts";
 
@@ -98,6 +99,25 @@ Deno.test("accepts the exact 17-array desktop snapshot including new entities", 
     throw new Error(`Expected 17 snapshot arrays, got ${Object.keys(snapshot).length}`);
   }
   validateMobileSyncSnapshot(snapshot, customerId);
+});
+
+Deno.test("accepts service appointments with null notes", () => {
+  validateMobileSyncChunk("service_appointments", [{
+    customer_id: customerId,
+    source_id: "appointment-1",
+    name: "Repair",
+    service_type: "Repair",
+    description: null,
+    cost_price: 100,
+    service_price: 150,
+    client_source_id: null,
+    due_date: timestamp,
+    notes: null,
+    is_completed: false,
+    completed_at: null,
+    source_created_at: timestamp,
+    source_updated_at: timestamp,
+  }], customerId);
 });
 
 Deno.test("accepts empty snapshots for the four newer entities", () => {
