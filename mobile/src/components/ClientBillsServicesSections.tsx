@@ -127,6 +127,7 @@ type LabelKey =
   | "quantity"
   | "limitNotice"
   | "limitedClients"
+  | "limitedPurchases"
   | "limitedPayments"
   | "limitedSales"
   | "limitedBills"
@@ -177,7 +178,7 @@ const LABELS: Record<MobileLanguage, Record<LabelKey, string>> = {
     catalogEmpty: "No service catalog records are available.", typeCount: "Requests",
     from: "From", to: "To",
     revenue: "Revenue", quantity: "Quantity", limitNotice: "The PWA data limit was reached; totals and history include only records currently available.",
-    limitedClients: "Client list", limitedPayments: "Payment history", limitedSales: "Sales history",
+    limitedClients: "Client list", limitedPurchases: "Purchase history", limitedPayments: "Payment history", limitedSales: "Sales history",
     limitedBills: "Bill list", limitedBillPayments: "Bill payment history",
     limitedAppointments: "Service requests", limitedCatalog: "Service catalog",
     billPayments: "Bill payment history", billUnavailable: "Bill details unavailable",
@@ -217,7 +218,7 @@ const LABELS: Record<MobileLanguage, Record<LabelKey, string>> = {
     catalogEmpty: "Aucun service du catalogue disponible.", typeCount: "Demandes",
     from: "Du", to: "Au",
     revenue: "Revenu", quantity: "Quantité", limitNotice: "La limite de données PWA est atteinte ; les totaux et historiques couvrent uniquement les données disponibles.",
-    limitedClients: "Liste des clients", limitedPayments: "Historique des paiements",
+    limitedClients: "Liste des clients", limitedPurchases: "Historique des achats", limitedPayments: "Historique des paiements",
     limitedSales: "Historique des ventes", limitedBills: "Liste des factures",
     limitedBillPayments: "Historique des paiements de factures",
     limitedAppointments: "Demandes de service", limitedCatalog: "Catalogue des services",
@@ -258,7 +259,7 @@ const LABELS: Record<MobileLanguage, Record<LabelKey, string>> = {
     catalogEmpty: "لا توجد خدمات متاحة في الدليل.", typeCount: "الطلبات",
     from: "من", to: "إلى",
     revenue: "الإيرادات", quantity: "الكمية", limitNotice: "تم بلوغ حد بيانات التطبيق؛ تشمل الإجماليات والسجلات البيانات المتاحة فقط.",
-    limitedClients: "قائمة العملاء", limitedPayments: "سجل الدفعات",
+    limitedClients: "قائمة العملاء", limitedPurchases: "سجل المشتريات", limitedPayments: "سجل الدفعات",
     limitedSales: "سجل المبيعات", limitedBills: "قائمة الفواتير",
     limitedBillPayments: "سجل دفعات الفواتير",
     limitedAppointments: "طلبات الخدمة", limitedCatalog: "دليل الخدمات",
@@ -266,6 +267,37 @@ const LABELS: Record<MobileLanguage, Record<LabelKey, string>> = {
     itemUnavailable: "تفاصيل العنصر غير متاحة", average: "متوسط", profit: "الربح", showProfit: "إظهار الربح",
     completionRate: "معدل الإنجاز", incompleteServices: "غير مكتملة",
     dueSoonThresholdNote: "تستخدم حالة الاستحقاق القريب القيمة الافتراضية يومين؛ إعداد سطح المكتب غير متزامن مع التطبيق.",
+  },
+};
+
+const SUPPLIER_LABELS: Record<MobileLanguage, {
+  suppliers: string;
+  sortCredit: string;
+  search: string;
+  purchaseCount: string;
+  purchaseQuantity: string;
+  purchaseCost: string;
+  purchaseHistory: string;
+  purchaseHistoryUnavailable: string;
+  purchaseWindowLimit: string;
+}> = {
+  en: {
+    suppliers: "Suppliers", sortCredit: "Highest credit", search: "Search suppliers...",
+    purchaseCount: "Purchases", purchaseQuantity: "Quantity purchased", purchaseCost: "Purchase cost",
+    purchaseHistory: "Purchase history", purchaseHistoryUnavailable: "Purchase history is unavailable for this account.",
+    purchaseWindowLimit: "Supplier totals include only purchase records currently available in the PWA.",
+  },
+  fr: {
+    suppliers: "Fournisseurs", sortCredit: "Crédit le plus élevé", search: "Rechercher des fournisseurs...",
+    purchaseCount: "Achats", purchaseQuantity: "Quantité achetée", purchaseCost: "Coût des achats",
+    purchaseHistory: "Historique des achats", purchaseHistoryUnavailable: "L’historique des achats n’est pas disponible pour ce compte.",
+    purchaseWindowLimit: "Les totaux des fournisseurs couvrent uniquement les achats disponibles dans la PWA.",
+  },
+  ar: {
+    suppliers: "الموردون", sortCredit: "أعلى رصيد", search: "ابحث عن الموردين...",
+    purchaseCount: "المشتريات", purchaseQuantity: "الكمية المشتراة", purchaseCost: "تكلفة المشتريات",
+    purchaseHistory: "سجل المشتريات", purchaseHistoryUnavailable: "سجل المشتريات غير متاح لهذا الحساب.",
+    purchaseWindowLimit: "تشمل إجماليات الموردين سجلات المشتريات المتاحة حالياً في التطبيق فقط.",
   },
 };
 
@@ -528,6 +560,9 @@ export function ClientsSection({
   const filteredSuppliers = useMemo(() => data.suppliers.filter((supplier) =>
     matchesQuery(supplier, supplierSearch, ["name", "phone", "address", "notes", "email"]),
   ), [data.suppliers, supplierSearch]);
+  const compareName = (a: MobileRow, b: MobileRow) => valueText(a, "name").localeCompare(valueText(b, "name"), language, { sensitivity: "base" });
+  const compareCreated = (a: MobileRow, b: MobileRow) => sortTime(b, "source_created_at") - sortTime(a, "source_created_at");
+  const compareOldest = (a: MobileRow, b: MobileRow) => -compareCreated(a, b);
   const supplierSorts: SortOption<MobileRow>[] = [
     {
       id: "credit",
@@ -538,9 +573,6 @@ export function ClientsSection({
     { id: "newest", label: labels.newest, compare: compareCreated },
     { id: "oldest", label: labels.oldest, compare: compareOldest },
   ];
-  const compareName = (a: MobileRow, b: MobileRow) => valueText(a, "name").localeCompare(valueText(b, "name"), language, { sensitivity: "base" });
-  const compareCreated = (a: MobileRow, b: MobileRow) => sortTime(b, "source_created_at") - sortTime(a, "source_created_at");
-  const compareOldest = (a: MobileRow, b: MobileRow) => -compareCreated(a, b);
   const clientFinancials = useMemo(() => {
     const totals = new Map<string, { purchases: number; credit: number; versement: number }>();
     const salesById = new Map<string, MobileRow>();
@@ -781,7 +813,12 @@ export function ClientsSection({
     setClientPaymentsLimit(5);
     setClientServicesLimit(5);
   };
-  const supplierTotals = useMemo(() => filteredSuppliers.reduce((totals, supplier) => {
+  const supplierTotals = useMemo(() => filteredSuppliers.reduce<{
+    credit: number;
+    purchases: number;
+    quantity: number;
+    cost: number;
+  }>((totals, supplier) => {
     const stats = supplierPurchaseStats.get(valueText(supplier, "source_id"));
     return {
       credit: totals.credit + supplierCredit(supplier),
