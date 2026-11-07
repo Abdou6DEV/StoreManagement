@@ -1,7 +1,6 @@
 import {
   AlertCircle,
   ArrowLeft,
-  ChevronRight,
   CreditCard,
   Crown,
   Eye,
@@ -49,6 +48,7 @@ import type {
   MobileUser,
 } from "./mobileApi";
 import { MobileDashboard } from "./components/MobileDashboard";
+import { MobileHomeDashboard } from "./components/MobileHomeDashboard";
 import { StockSection } from "./components/StockSection";
 import {
   BillsSection,
@@ -77,6 +77,17 @@ type Copy = {
   bills: string;
   clients: string;
   clientsSuppliers: string;
+  greeting: string;
+  businessOverview: string;
+  todaySales: string;
+  salesCount: string;
+  outstandingCredit: string;
+  quickActions: string;
+  storeSections: string;
+  recentActivity: string;
+  noRecentSales: string;
+  noPermission: string;
+  sale: string;
   suppliers: string;
   allPayments: string;
   backToClients: string;
@@ -91,13 +102,11 @@ type Copy = {
   stale: string;
   lastUpdated: string;
   welcome: string;
-  noPermission: string;
   salesHistoryNote: string;
   salesHistoryUnavailable: string;
   categories: string;
   categoriesUnavailable: string;
   saleItems: string;
-  sale: string;
   recentDays: string;
   revenue: string;
   sales: string;
@@ -150,9 +159,6 @@ type Copy = {
   allRecords: string;
   yes: string;
   no: string;
-  overviewGroup: string;
-  managementGroup: string;
-  recordsGroup: string;
   errors: Record<string, string>;
   columnLabels: Record<string, string>;
 };
@@ -175,6 +181,15 @@ const COPY: Record<MobileLanguage, Copy> = {
     bills: "Bills",
     clients: "Clients",
     clientsSuppliers: "Clients & Suppliers",
+    greeting: "Welcome back",
+    businessOverview: "Business overview",
+    todaySales: "Today's sales",
+    salesCount: "Sales",
+    outstandingCredit: "Outstanding credit",
+    quickActions: "Quick access",
+    storeSections: "Store sections",
+    recentActivity: "Recent activity",
+    noRecentSales: "No recent sales.",
     suppliers: "Suppliers",
     allPayments: "All payments",
     backToClients: "Go back",
@@ -251,9 +266,6 @@ const COPY: Record<MobileLanguage, Copy> = {
     allRecords: "All",
     yes: "Yes",
     no: "No",
-    overviewGroup: "Overview",
-    managementGroup: "Store management",
-    recordsGroup: "Records",
     errors: {
       invalid_credentials: "Incorrect username or password.",
       credentials_required: "Enter both your username and password.",
@@ -340,6 +352,15 @@ const COPY: Record<MobileLanguage, Copy> = {
     bills: "Factures",
     clients: "Clients",
     clientsSuppliers: "Clients et fournisseurs",
+    greeting: "Bienvenue",
+    businessOverview: "Aperçu de l’activité",
+    todaySales: "Ventes du jour",
+    salesCount: "Ventes",
+    outstandingCredit: "Crédit impayé",
+    quickActions: "Accès rapide",
+    storeSections: "Sections du magasin",
+    recentActivity: "Activité récente",
+    noRecentSales: "Aucune vente récente.",
     suppliers: "Fournisseurs",
     allPayments: "Tous les paiements",
     backToClients: "Retour aux clients",
@@ -416,9 +437,6 @@ const COPY: Record<MobileLanguage, Copy> = {
     allRecords: "Tous",
     yes: "Oui",
     no: "Non",
-    overviewGroup: "Aperçu",
-    managementGroup: "Gestion du magasin",
-    recordsGroup: "Historique",
     errors: {
       invalid_credentials: "Nom d’utilisateur ou mot de passe incorrect.",
       credentials_required: "Saisissez le nom d’utilisateur et le mot de passe.",
@@ -505,6 +523,15 @@ const COPY: Record<MobileLanguage, Copy> = {
     bills: "الفواتير",
     clients: "العملاء",
     clientsSuppliers: "العملاء والموردون",
+    greeting: "مرحباً",
+    businessOverview: "ملخص النشاط التجاري",
+    todaySales: "مبيعات اليوم",
+    salesCount: "المبيعات",
+    outstandingCredit: "الائتمان المستحق",
+    quickActions: "وصول سريع",
+    storeSections: "أقسام المتجر",
+    recentActivity: "النشاط الأخير",
+    noRecentSales: "لا توجد مبيعات حديثة.",
     suppliers: "الموردون",
     allPayments: "كل الدفعات",
     backToClients: "العودة إلى العملاء",
@@ -579,9 +606,6 @@ const COPY: Record<MobileLanguage, Copy> = {
     allRecords: "الكل",
     yes: "نعم",
     no: "لا",
-    overviewGroup: "نظرة عامة",
-    managementGroup: "إدارة المتجر",
-    recordsGroup: "السجلات",
     errors: {
       invalid_credentials: "اسم المستخدم أو كلمة المرور غير صحيحة.",
       credentials_required: "أدخل اسم المستخدم وكلمة المرور.",
@@ -1030,22 +1054,6 @@ export function MobilePosApp({
   const [stale, setStale] = useState(false);
   const direction = language === "ar" ? "rtl" : "ltr";
   const allowedSections = SECTIONS.filter((item) => user?.permissions[item.permission]);
-  const menuGroups = [
-    {
-      label: copy.overviewGroup,
-      sections: allowedSections.filter(({ id }) => id === "dashboard"),
-    },
-    {
-      label: copy.managementGroup,
-      sections: allowedSections.filter(({ id }) =>
-        ["stock", "services", "bills", "clients"].includes(id),
-      ),
-    },
-    {
-      label: copy.recordsGroup,
-      sections: allowedSections.filter(({ id }) => id === "history"),
-    },
-  ];
   const primarySections = allowedSections.filter((item) =>
     ["dashboard", "stock", "services"].includes(item.id),
   );
@@ -1345,23 +1353,37 @@ export function MobilePosApp({
           ) : null}
 
           {section === "menu" ? (
-            <section className="mobile-menu-view">
-              {menuGroups.filter(({ sections }) => sections.length > 0).map(({ label, sections }) => (
-                <section className="mobile-menu-group" key={label}>
-                  <h2>{label}</h2>
-                  <div className="mobile-menu-group-list">
-                    {sections.map(({ id }) => (
-                      <button type="button" className="mobile-menu-tile" key={id} onClick={() => selectSection(id)}>
-                        <PageIcon page={id} size={21} aria-hidden="true" />
-                        <span>{id === "clients" ? copy.clientsSuppliers : copy[id]}</span>
-                        <ChevronRight className="mobile-menu-chevron" size={18} aria-hidden="true" />
-                      </button>
-                    ))}
-                  </div>
-                </section>
-              ))}
-              {allowedSections.length === 0 ? <p className="mobile-empty">{copy.noPermission}</p> : null}
-            </section>
+            data ? (
+              <MobileHomeDashboard
+                data={data}
+                language={language}
+                permissions={user.permissions}
+                username={user.username}
+                theme={theme}
+                labels={{
+                  greeting: copy.greeting,
+                  overview: copy.businessOverview,
+                  todaySales: copy.todaySales,
+                  salesCount: copy.salesCount,
+                  outstandingCredit: copy.outstandingCredit,
+                  profit: copy.profit,
+                  quickActions: copy.quickActions,
+                  storeSections: copy.storeSections,
+                  recentActivity: copy.recentActivity,
+                  noRecentSales: copy.noRecentSales,
+                  noPermission: copy.noPermission,
+                  sale: copy.sale,
+                  clientsSuppliers: copy.clientsSuppliers,
+                  stock: copy.stock,
+                  history: copy.history,
+                  services: copy.services,
+                  bills: copy.bills,
+                }}
+                onNavigate={selectSection}
+              />
+            ) : (
+              <p className="mobile-empty"><LoaderCircle className="spin" size={18} />{copy.loading}</p>
+            )
           ) : activeSection && !user.permissions[activeSection.permission] ? (
             <p className="mobile-empty">{copy.noPermission}</p>
           ) : (
