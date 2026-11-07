@@ -19,6 +19,7 @@ import { Card } from "../../src/lib/components/card";
 import { PreferencesMenu } from "../../src/lib/components/preferencesMenu";
 import { DropdownMenuItem } from "../../src/lib/components/dropdownMenu";
 import {
+  MenuCardContent,
   PAGE_PRESENTATION,
   PageIcon,
   UserBadgeAvatar,
@@ -48,7 +49,6 @@ import type {
   MobileUser,
 } from "./mobileApi";
 import { MobileDashboard } from "./components/MobileDashboard";
-import { MobileHomeDashboard } from "./components/MobileHomeDashboard";
 import { StockSection } from "./components/StockSection";
 import {
   BillsSection,
@@ -76,18 +76,6 @@ type Copy = {
   services: string;
   bills: string;
   clients: string;
-  clientsSuppliers: string;
-  greeting: string;
-  businessOverview: string;
-  todaySales: string;
-  salesCount: string;
-  outstandingCredit: string;
-  quickActions: string;
-  storeSections: string;
-  recentActivity: string;
-  noRecentSales: string;
-  noPermission: string;
-  sale: string;
   suppliers: string;
   allPayments: string;
   backToClients: string;
@@ -102,11 +90,13 @@ type Copy = {
   stale: string;
   lastUpdated: string;
   welcome: string;
+  noPermission: string;
   salesHistoryNote: string;
   salesHistoryUnavailable: string;
   categories: string;
   categoriesUnavailable: string;
   saleItems: string;
+  sale: string;
   recentDays: string;
   revenue: string;
   sales: string;
@@ -180,16 +170,6 @@ const COPY: Record<MobileLanguage, Copy> = {
     services: "Services",
     bills: "Bills",
     clients: "Clients",
-    clientsSuppliers: "Clients & Suppliers",
-    greeting: "Welcome back",
-    businessOverview: "Business overview",
-    todaySales: "Today's sales",
-    salesCount: "Sales",
-    outstandingCredit: "Outstanding credit",
-    quickActions: "Quick access",
-    storeSections: "Store sections",
-    recentActivity: "Recent activity",
-    noRecentSales: "No recent sales.",
     suppliers: "Suppliers",
     allPayments: "All payments",
     backToClients: "Go back",
@@ -351,16 +331,6 @@ const COPY: Record<MobileLanguage, Copy> = {
     services: "Services",
     bills: "Factures",
     clients: "Clients",
-    clientsSuppliers: "Clients et fournisseurs",
-    greeting: "Bienvenue",
-    businessOverview: "Aperçu de l’activité",
-    todaySales: "Ventes du jour",
-    salesCount: "Ventes",
-    outstandingCredit: "Crédit impayé",
-    quickActions: "Accès rapide",
-    storeSections: "Sections du magasin",
-    recentActivity: "Activité récente",
-    noRecentSales: "Aucune vente récente.",
     suppliers: "Fournisseurs",
     allPayments: "Tous les paiements",
     backToClients: "Retour aux clients",
@@ -522,16 +492,6 @@ const COPY: Record<MobileLanguage, Copy> = {
     services: "الخدمات",
     bills: "الفواتير",
     clients: "العملاء",
-    clientsSuppliers: "العملاء والموردون",
-    greeting: "مرحباً",
-    businessOverview: "ملخص النشاط التجاري",
-    todaySales: "مبيعات اليوم",
-    salesCount: "المبيعات",
-    outstandingCredit: "الائتمان المستحق",
-    quickActions: "وصول سريع",
-    storeSections: "أقسام المتجر",
-    recentActivity: "النشاط الأخير",
-    noRecentSales: "لا توجد مبيعات حديثة.",
     suppliers: "الموردون",
     allPayments: "كل الدفعات",
     backToClients: "العودة إلى العملاء",
@@ -1060,7 +1020,7 @@ export function MobilePosApp({
   const title = section === "menu"
     ? copy.menu
     : section === "clients"
-      ? copy.clientsSuppliers
+      ? copy.clients
       : copy[section];
   const activeSection = SECTIONS.find((item) => item.id === section);
   const activePage = activeSection?.id ?? "home";
@@ -1353,37 +1313,16 @@ export function MobilePosApp({
           ) : null}
 
           {section === "menu" ? (
-            data ? (
-              <MobileHomeDashboard
-                data={data}
-                language={language}
-                permissions={user.permissions}
-                username={user.username}
-                theme={theme}
-                labels={{
-                  greeting: copy.greeting,
-                  overview: copy.businessOverview,
-                  todaySales: copy.todaySales,
-                  salesCount: copy.salesCount,
-                  outstandingCredit: copy.outstandingCredit,
-                  profit: copy.profit,
-                  quickActions: copy.quickActions,
-                  storeSections: copy.storeSections,
-                  recentActivity: copy.recentActivity,
-                  noRecentSales: copy.noRecentSales,
-                  noPermission: copy.noPermission,
-                  sale: copy.sale,
-                  clientsSuppliers: copy.clientsSuppliers,
-                  stock: copy.stock,
-                  history: copy.history,
-                  services: copy.services,
-                  bills: copy.bills,
-                }}
-                onNavigate={selectSection}
-              />
-            ) : (
-              <p className="mobile-empty"><LoaderCircle className="spin" size={18} />{copy.loading}</p>
-            )
+            <section className="mobile-menu-view">
+              <div className="mobile-menu-grid">
+                {allowedSections.map(({ id }) => (
+                  <button type="button" className="mobile-menu-tile group" key={id} onClick={() => selectSection(id)}>
+                    <MenuCardContent page={id} title={copy[id]} compact />
+                  </button>
+                ))}
+              </div>
+              {allowedSections.length === 0 ? <p className="mobile-empty">{copy.noPermission}</p> : null}
+            </section>
           ) : activeSection && !user.permissions[activeSection.permission] ? (
             <p className="mobile-empty">{copy.noPermission}</p>
           ) : (
