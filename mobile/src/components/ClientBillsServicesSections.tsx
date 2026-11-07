@@ -856,9 +856,6 @@ export function ClientsSection({
           pageSizes={[5, 10, 25, 50, 100]}
           stickyFirstColumn
           toolbar={<>
-            <button type="button" className="clients-all-payments-action" onClick={() => onViewChange("payments")}>
-              <CreditCard size={16} aria-hidden="true" />{labels.allPaymentsTab}
-            </button>
             <SearchRow query={query} onQueryChange={onQueryChange} label={labels.search} />
             {data.clients.length >= 2000 ? <LimitNotice>{labels.limitNotice} ({labels.limitedClients}: 2,000)</LimitNotice> : null}
           </>}

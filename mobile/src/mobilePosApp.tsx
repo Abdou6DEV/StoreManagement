@@ -1,6 +1,7 @@
 import {
   AlertCircle,
   ArrowLeft,
+  CreditCard,
   Eye,
   EyeOff,
   LoaderCircle,
@@ -76,6 +77,7 @@ type Copy = {
   clients: string;
   suppliers: string;
   allPayments: string;
+  backToClients: string;
   logout: string;
   search: string;
   loading: string;
@@ -169,6 +171,7 @@ const COPY: Record<MobileLanguage, Copy> = {
     clients: "Clients",
     suppliers: "Suppliers",
     allPayments: "All payments",
+    backToClients: "Go back",
     logout: "Sign out",
     search: "Search",
     loading: "Loading your store data…",
@@ -329,6 +332,7 @@ const COPY: Record<MobileLanguage, Copy> = {
     clients: "Clients",
     suppliers: "Fournisseurs",
     allPayments: "Tous les paiements",
+    backToClients: "Retour aux clients",
     logout: "Déconnexion",
     search: "Rechercher",
     loading: "Chargement des données…",
@@ -489,6 +493,7 @@ const COPY: Record<MobileLanguage, Copy> = {
     clients: "العملاء",
     suppliers: "الموردون",
     allPayments: "كل الدفعات",
+    backToClients: "العودة إلى العملاء",
     logout: "تسجيل الخروج",
     search: "بحث",
     loading: "جارٍ تحميل بيانات المتجر…",
@@ -1351,6 +1356,17 @@ export function MobilePosApp({
                     <div className="mobile-panel-heading">
                       <PageIcon page={activePage} size={28} />
                       <h2>{title}</h2>
+                      {section === "clients" ? (
+                        <button
+                          type="button"
+                          className={`clients-page-action${clientsView === "payments" ? "" : " clients-page-action-payment"}`}
+                          onClick={() => onClientsViewChange(clientsView === "payments" ? "clients" : "payments")}
+                          aria-label={clientsView === "payments" ? copy.backToClients : copy.allPayments}
+                        >
+                          {clientsView === "payments" ? <ArrowLeft size={16} aria-hidden="true" /> : <CreditCard size={16} aria-hidden="true" />}
+                          <span>{clientsView === "payments" ? copy.backToClients : copy.allPayments}</span>
+                        </button>
+                      ) : null}
                     </div>
                     <SectionContent
                       section={section as Exclude<Section, "menu">}

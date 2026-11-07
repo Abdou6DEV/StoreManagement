@@ -629,6 +629,24 @@ html.dark .error-banner { color: #fca5a5; background: rgb(153 27 27 / 24%); }
   border-bottom: 1px solid var(--line);
 }
 .mobile-panel-heading h2 { margin: 0; font-size: 1.2rem; font-weight: 700; }
+.clients-page-action {
+  display: inline-flex;
+  min-height: 40px;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  margin-inline-start: auto;
+  padding: 7px 10px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  color: var(--fg);
+  background: var(--card);
+  font-size: .83rem;
+  font-weight: 650;
+}
+.clients-page-action:hover { background: var(--muted-bg); }
+.clients-page-action-payment svg { color: #dc2626; }
 .mobile-page-panel .mobile-subsection { margin: 16px 0 0; }
 .mobile-page-panel .mobile-subsection + .mobile-subsection { padding-top: 16px; border-top: 1px solid var(--line); }
 .mobile-subsection > h2 { font-size: 1rem; font-weight: 600; }
@@ -1258,21 +1276,6 @@ html.dark .stock-negative { color:#f87171; }
   min-width: 0;
   margin: 0 0 10px;
 }
-.clients-all-payments-action {
-  display: inline-flex;
-  min-height: 40px;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  padding: 7px 10px;
-  border: 1px solid var(--line);
-  border-radius: 9px;
-  color: var(--fg);
-  background: var(--card);
-  font-size: .83rem;
-  font-weight: 650;
-}
-.clients-all-payments-action:hover { background: var(--muted-bg); }
 .mobile-services-toolbar {
   display: flex;
   align-items: center;
