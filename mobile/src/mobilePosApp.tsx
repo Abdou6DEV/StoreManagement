@@ -2,6 +2,7 @@ import {
   AlertCircle,
   ArrowLeft,
   CreditCard,
+  Crown,
   Eye,
   EyeOff,
   LoaderCircle,
@@ -1247,12 +1248,17 @@ export function MobilePosApp({
         <>
           <header className="mobile-app-header">
             <div className="mobile-user-badge" title={user.username}>
-              <UserBadgeAvatar
-                className="mobile-user-badge-avatar"
-                isAdmin={user.role.toUpperCase() === "ADMIN"}
-                size="sm"
-              />
-              <span>{user.username}<small>{user.role}</small></span>
+              <span className="mobile-user-badge-profile">
+                <UserBadgeAvatar
+                  className="mobile-user-badge-avatar"
+                  isAdmin={user.role.toUpperCase() === "ADMIN"}
+                  size="sm"
+                />
+                {user.role.toUpperCase() === "ADMIN" ? (
+                  <Crown className="mobile-user-badge-crown" size={15} aria-label="Admin" role="img" />
+                ) : null}
+              </span>
+              <strong className="mobile-user-badge-name">{user.username}</strong>
             </div>
             <h1>
               <PageIcon page={activePage} className="mobile-header-page-icon" aria-hidden="true" />

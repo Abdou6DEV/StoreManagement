@@ -306,6 +306,7 @@ button:focus-visible, select:focus-visible, input:focus-visible {
   display: flex;
   width: fit-content;
   max-width: 100%;
+  min-width: 0;
   min-height: 38px;
   align-items: center;
   gap: 7px;
@@ -320,7 +321,25 @@ button:focus-visible, select:focus-visible, input:focus-visible {
 }
 .mobile-user-badge-avatar { width: 2.25rem; height: 2.25rem; }
 .mobile-user-badge-avatar svg { width: 1.1rem; height: 1.1rem; }
-.mobile-user-badge span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mobile-user-badge-profile { position: relative; flex: 0 0 auto; }
+.mobile-user-badge-crown {
+  position: absolute;
+  top: -5px;
+  inset-inline-end: -7px;
+  color: #d3a323;
+  fill: #d3a323;
+  stroke: var(--card);
+  stroke-width: 1.5;
+}
+.mobile-user-badge-name {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .mobile-app-header h1 {
   overflow: hidden;
   margin: 0;
@@ -578,8 +597,7 @@ html.dark .error-banner { color: #fca5a5; background: rgb(153 27 27 / 24%); }
   background: transparent;
   font-size: .8rem;
 }
-.mobile-user-badge > span { display: grid; gap: 1px; }
-.mobile-user-badge small { color: var(--mobile-muted); font-size: .68rem; font-weight: 400; }
+.mobile-user-badge-profile { display: block; }
 .mobile-app-header h1 {
   display: flex;
   position: static;
