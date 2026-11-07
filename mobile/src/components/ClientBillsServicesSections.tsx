@@ -343,6 +343,8 @@ function matchesQuery(row: MobileRow, query: string, keys: string[]): boolean {
 type Column<T> = { key: string; label: string; render: (row: T) => ReactNode; align?: "start" | "end" };
 type SortOption<T> = { id: string; label: string; compare: (a: T, b: T) => number };
 
+export type ClientsSectionView = "clients" | "payments" | "suppliers";
+
 function StockStyleTable<T extends MobileRow>({
   rows,
   columns,
@@ -506,12 +508,16 @@ export function ClientsSection({
   permissions,
   query,
   onQueryChange,
+  view,
+  onViewChange,
 }: {
   data: MobileBundle;
   language: MobileLanguage;
   permissions: MobilePermissions;
   query: string;
   onQueryChange: (query: string) => void;
+  view: ClientsSectionView;
+  onViewChange: (view: ClientsSectionView) => void;
 }) {
   const labels = LABELS[language];
   const supplierLabels = SUPPLIER_LABELS[language];
@@ -523,7 +529,6 @@ export function ClientsSection({
   const [clientServicesLimit, setClientServicesLimit] = useState(5);
   const [supplierPurchaseLimit, setSupplierPurchaseLimit] = useState(10);
   const [showProfit, setShowProfit] = useState(false);
-  const [view, setView] = useState<"clients" | "payments" | "suppliers">("clients");
   const [supplierSearch, setSupplierSearch] = useState("");
   const [paymentSearch, setPaymentSearch] = useState("");
   const [selectedPaymentClientId, setSelectedPaymentClientId] = useState<string | null>(null);
@@ -694,7 +699,7 @@ export function ClientsSection({
     if (!clientId) return;
     setSelectedPaymentClientId(clientId);
     setPaymentSearch(valueText(client, "name"));
-    setView("payments");
+    onViewChange("payments");
   };
   const handlePaymentSearchChange = (nextQuery: string) => {
     setSelectedPaymentClientId(null);
@@ -837,14 +842,8 @@ export function ClientsSection({
 
   return (
     <>
-      <div className="stock-view-switch" role="tablist" aria-label={supplierLabels.suppliers} style={{ gridTemplateColumns: "repeat(3, minmax(0, 1fr))" }}>
-        <button type="button" role="tab" aria-selected={view === "clients"} className={view === "clients" ? "active" : ""} onClick={() => setView("clients")}><Users size={16} />{labels.clients}</button>
-        <button type="button" role="tab" aria-selected={view === "payments"} className={view === "payments" ? "active" : ""} onClick={() => setView("payments")}><CreditCard size={16} />{labels.allPaymentsTab}</button>
-        <button type="button" role="tab" aria-selected={view === "suppliers"} className={view === "suppliers" ? "active" : ""} onClick={() => setView("suppliers")}><Package size={16} />{supplierLabels.suppliers}</button>
-      </div>
       {view === "clients" ? <>
       <section className="mobile-subsection">
-        <h2>{labels.clients}</h2>
         <StockStyleTable
           rows={clients}
           labels={labels}
@@ -857,6 +856,9 @@ export function ClientsSection({
           pageSizes={[5, 10, 25, 50, 100]}
           stickyFirstColumn
           toolbar={<>
+            <button type="button" className="clients-all-payments-action" onClick={() => onViewChange("payments")}>
+              <CreditCard size={16} aria-hidden="true" />{labels.allPaymentsTab}
+            </button>
             <SearchRow query={query} onQueryChange={onQueryChange} label={labels.search} />
             {data.clients.length >= 2000 ? <LimitNotice>{labels.limitNotice} ({labels.limitedClients}: 2,000)</LimitNotice> : null}
           </>}
@@ -954,7 +956,6 @@ export function ClientsSection({
         </ReadOnlyDetail>
       ) : null}
       </> : view === "payments" ? <section className="mobile-subsection">
-        <h2>{labels.allPaymentsTab}</h2>
         {!permissions.can_access_clients ? <p className="mobile-empty">{labels.historyUnavailable}</p> : <>
           <div className="stock-filter-row" aria-label={labels.filters}>
             <label className="mobile-select-control"><span>{labels.status}</span><select value={paymentStatus} onChange={(event) => setPaymentStatus(event.target.value as "all" | "paid" | "unpaid")}>
@@ -973,7 +974,6 @@ export function ClientsSection({
           <p className="stock-detail-muted">{labels.dueSoonThresholdNote}</p>
         </>}
       </section> : <section className="mobile-subsection">
-        <h2>{supplierLabels.suppliers}</h2>
         <StockStyleTable
           rows={filteredSuppliers}
           labels={labels}

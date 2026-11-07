@@ -7,8 +7,10 @@ import {
   Lock,
   LogOut,
   Menu,
+  Package,
   Search,
   User,
+  Users,
   WifiOff,
 } from "lucide-react";
 import { Card } from "../../src/lib/components/card";
@@ -51,6 +53,7 @@ import {
   ClientsSection,
   ServicesSection,
 } from "./components/ClientBillsServicesSections";
+import type { ClientsSectionView } from "./components/ClientBillsServicesSections";
 import { HistorySection } from "./components/HistorySection";
 
 type Section = MobileAppSection;
@@ -71,6 +74,8 @@ type Copy = {
   services: string;
   bills: string;
   clients: string;
+  suppliers: string;
+  allPayments: string;
   logout: string;
   search: string;
   loading: string;
@@ -162,6 +167,8 @@ const COPY: Record<MobileLanguage, Copy> = {
     services: "Services",
     bills: "Bills",
     clients: "Clients",
+    suppliers: "Suppliers",
+    allPayments: "All payments",
     logout: "Sign out",
     search: "Search",
     loading: "Loading your store data…",
@@ -320,6 +327,8 @@ const COPY: Record<MobileLanguage, Copy> = {
     services: "Services",
     bills: "Factures",
     clients: "Clients",
+    suppliers: "Fournisseurs",
+    allPayments: "Tous les paiements",
     logout: "Déconnexion",
     search: "Rechercher",
     loading: "Chargement des données…",
@@ -478,6 +487,8 @@ const COPY: Record<MobileLanguage, Copy> = {
     services: "الخدمات",
     bills: "الفواتير",
     clients: "العملاء",
+    suppliers: "الموردون",
+    allPayments: "كل الدفعات",
     logout: "تسجيل الخروج",
     search: "بحث",
     loading: "جارٍ تحميل بيانات المتجر…",
@@ -898,6 +909,8 @@ function SectionContent({
   query,
   onQueryChange,
   permissions,
+  clientsView,
+  onClientsViewChange,
 }: {
   section: Exclude<Section, "menu">;
   data: MobileBundle;
@@ -906,6 +919,8 @@ function SectionContent({
   query: string;
   onQueryChange: (query: string) => void;
   permissions: MobilePermissions;
+  clientsView: ClientsSectionView;
+  onClientsViewChange: (view: ClientsSectionView) => void;
 }) {
   if (section === "dashboard") {
     return (
@@ -947,7 +962,7 @@ function SectionContent({
     return <StockSection data={data} language={language} query={query} onQueryChange={onQueryChange} />;
   }
   if (section === "clients") {
-    return <ClientsSection data={data} language={language} permissions={permissions} query={query} onQueryChange={onQueryChange} />;
+    return <ClientsSection data={data} language={language} permissions={permissions} query={query} onQueryChange={onQueryChange} view={clientsView} onViewChange={onClientsViewChange} />;
   }
   if (section === "history") {
     return <HistorySection data={data} language={language} />;
@@ -983,6 +998,7 @@ export function MobilePosApp({
   const [user, setUser] = useState<MobileUser | null>(cachedSession?.user ?? null);
   const [data, setData] = useState<MobileBundle | null>(cachedSession?.data ?? null);
   const [section, setSection] = useState<Section>(cachedSession?.section ?? "menu");
+  const [clientsView, setClientsView] = useState<ClientsSectionView>("clients");
   const [query, setQuery] = useState(cachedSession?.query ?? "");
   const [notice, setNotice] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(() =>
@@ -995,7 +1011,13 @@ export function MobilePosApp({
   const primarySections = allowedSections.filter((item) =>
     ["dashboard", "stock", "services"].includes(item.id),
   );
-  const title = section === "menu" ? copy.menu : copy[section];
+  const title = section === "menu"
+    ? copy.menu
+    : section === "clients"
+      ? clientsView === "suppliers"
+        ? copy.suppliers
+        : clientsView === "payments" ? copy.allPayments : copy.clients
+      : copy[section];
   const activeSection = SECTIONS.find((item) => item.id === section);
   const activePage = activeSection?.id ?? "home";
   const needsSearch = section === "stock";
@@ -1178,6 +1200,7 @@ export function MobilePosApp({
   const selectSection = (next: Section) => {
     if (next !== "menu" && !allowedSections.some((item) => item.id === next)) return;
     setSection(next);
+    setClientsView("clients");
     setQuery("");
   };
 
@@ -1313,8 +1336,17 @@ export function MobilePosApp({
                     query={query}
                     onQueryChange={setQuery}
                     permissions={user.permissions}
+                    clientsView={clientsView}
+                    onClientsViewChange={setClientsView}
                   />
                 ) : (
+                  <>
+                  {section === "clients" ? (
+                    <div className="stock-view-switch clients-suppliers-switch" role="tablist" aria-label={`${copy.clients} / ${copy.suppliers}`}>
+                      <button type="button" role="tab" aria-selected={clientsView !== "suppliers"} className={clientsView !== "suppliers" ? "active" : ""} onClick={() => setClientsView("clients")}><Users size={16} aria-hidden="true" />{copy.clients}</button>
+                      <button type="button" role="tab" aria-selected={clientsView === "suppliers"} className={clientsView === "suppliers" ? "active" : ""} onClick={() => setClientsView("suppliers")}><Package size={16} aria-hidden="true" />{copy.suppliers}</button>
+                    </div>
+                  ) : null}
                   <Card className="mobile-page-panel">
                     <div className="mobile-panel-heading">
                       <PageIcon page={activePage} size={28} />
@@ -1328,8 +1360,11 @@ export function MobilePosApp({
                       query={query}
                       onQueryChange={setQuery}
                       permissions={user.permissions}
+                      clientsView={clientsView}
+                      onClientsViewChange={setClientsView}
                     />
                   </Card>
+                  </>
                 )
               )}
             </>

@@ -1258,6 +1258,21 @@ html.dark .stock-negative { color:#f87171; }
   min-width: 0;
   margin: 0 0 10px;
 }
+.clients-all-payments-action {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 7px 10px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  color: var(--fg);
+  background: var(--card);
+  font-size: .83rem;
+  font-weight: 650;
+}
+.clients-all-payments-action:hover { background: var(--muted-bg); }
 .mobile-services-toolbar {
   display: flex;
   align-items: center;
