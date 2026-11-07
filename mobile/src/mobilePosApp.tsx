@@ -1,6 +1,7 @@
 import {
   AlertCircle,
   ArrowLeft,
+  ChevronRight,
   CreditCard,
   Crown,
   Eye,
@@ -19,7 +20,6 @@ import { Card } from "../../src/lib/components/card";
 import { PreferencesMenu } from "../../src/lib/components/preferencesMenu";
 import { DropdownMenuItem } from "../../src/lib/components/dropdownMenu";
 import {
-  MenuCardContent,
   PAGE_PRESENTATION,
   PageIcon,
   UserBadgeAvatar,
@@ -76,6 +76,7 @@ type Copy = {
   services: string;
   bills: string;
   clients: string;
+  clientsSuppliers: string;
   suppliers: string;
   allPayments: string;
   backToClients: string;
@@ -149,6 +150,9 @@ type Copy = {
   allRecords: string;
   yes: string;
   no: string;
+  overviewGroup: string;
+  managementGroup: string;
+  recordsGroup: string;
   errors: Record<string, string>;
   columnLabels: Record<string, string>;
 };
@@ -170,6 +174,7 @@ const COPY: Record<MobileLanguage, Copy> = {
     services: "Services",
     bills: "Bills",
     clients: "Clients",
+    clientsSuppliers: "Clients & Suppliers",
     suppliers: "Suppliers",
     allPayments: "All payments",
     backToClients: "Go back",
@@ -246,6 +251,9 @@ const COPY: Record<MobileLanguage, Copy> = {
     allRecords: "All",
     yes: "Yes",
     no: "No",
+    overviewGroup: "Overview",
+    managementGroup: "Store management",
+    recordsGroup: "Records",
     errors: {
       invalid_credentials: "Incorrect username or password.",
       credentials_required: "Enter both your username and password.",
@@ -331,6 +339,7 @@ const COPY: Record<MobileLanguage, Copy> = {
     services: "Services",
     bills: "Factures",
     clients: "Clients",
+    clientsSuppliers: "Clients et fournisseurs",
     suppliers: "Fournisseurs",
     allPayments: "Tous les paiements",
     backToClients: "Retour aux clients",
@@ -407,6 +416,9 @@ const COPY: Record<MobileLanguage, Copy> = {
     allRecords: "Tous",
     yes: "Oui",
     no: "Non",
+    overviewGroup: "Aperçu",
+    managementGroup: "Gestion du magasin",
+    recordsGroup: "Historique",
     errors: {
       invalid_credentials: "Nom d’utilisateur ou mot de passe incorrect.",
       credentials_required: "Saisissez le nom d’utilisateur et le mot de passe.",
@@ -492,6 +504,7 @@ const COPY: Record<MobileLanguage, Copy> = {
     services: "الخدمات",
     bills: "الفواتير",
     clients: "العملاء",
+    clientsSuppliers: "العملاء والموردون",
     suppliers: "الموردون",
     allPayments: "كل الدفعات",
     backToClients: "العودة إلى العملاء",
@@ -566,6 +579,9 @@ const COPY: Record<MobileLanguage, Copy> = {
     allRecords: "الكل",
     yes: "نعم",
     no: "لا",
+    overviewGroup: "نظرة عامة",
+    managementGroup: "إدارة المتجر",
+    recordsGroup: "السجلات",
     errors: {
       invalid_credentials: "اسم المستخدم أو كلمة المرور غير صحيحة.",
       credentials_required: "أدخل اسم المستخدم وكلمة المرور.",
@@ -1014,13 +1030,29 @@ export function MobilePosApp({
   const [stale, setStale] = useState(false);
   const direction = language === "ar" ? "rtl" : "ltr";
   const allowedSections = SECTIONS.filter((item) => user?.permissions[item.permission]);
+  const menuGroups = [
+    {
+      label: copy.overviewGroup,
+      sections: allowedSections.filter(({ id }) => id === "dashboard"),
+    },
+    {
+      label: copy.managementGroup,
+      sections: allowedSections.filter(({ id }) =>
+        ["stock", "services", "bills", "clients"].includes(id),
+      ),
+    },
+    {
+      label: copy.recordsGroup,
+      sections: allowedSections.filter(({ id }) => id === "history"),
+    },
+  ];
   const primarySections = allowedSections.filter((item) =>
     ["dashboard", "stock", "services"].includes(item.id),
   );
   const title = section === "menu"
     ? copy.menu
     : section === "clients"
-      ? copy.clients
+      ? copy.clientsSuppliers
       : copy[section];
   const activeSection = SECTIONS.find((item) => item.id === section);
   const activePage = activeSection?.id ?? "home";
@@ -1314,13 +1346,20 @@ export function MobilePosApp({
 
           {section === "menu" ? (
             <section className="mobile-menu-view">
-              <div className="mobile-menu-grid">
-                {allowedSections.map(({ id }) => (
-                  <button type="button" className="mobile-menu-tile group" key={id} onClick={() => selectSection(id)}>
-                    <MenuCardContent page={id} title={copy[id]} compact />
-                  </button>
-                ))}
-              </div>
+              {menuGroups.filter(({ sections }) => sections.length > 0).map(({ label, sections }) => (
+                <section className="mobile-menu-group" key={label}>
+                  <h2>{label}</h2>
+                  <div className="mobile-menu-group-list">
+                    {sections.map(({ id }) => (
+                      <button type="button" className="mobile-menu-tile" key={id} onClick={() => selectSection(id)}>
+                        <PageIcon page={id} size={21} aria-hidden="true" />
+                        <span>{id === "clients" ? copy.clientsSuppliers : copy[id]}</span>
+                        <ChevronRight className="mobile-menu-chevron" size={18} aria-hidden="true" />
+                      </button>
+                    ))}
+                  </div>
+                </section>
+              ))}
               {allowedSections.length === 0 ? <p className="mobile-empty">{copy.noPermission}</p> : null}
             </section>
           ) : activeSection && !user.permissions[activeSection.permission] ? (
