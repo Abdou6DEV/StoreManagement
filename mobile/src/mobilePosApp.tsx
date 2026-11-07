@@ -1019,9 +1019,7 @@ export function MobilePosApp({
   const title = section === "menu"
     ? copy.menu
     : section === "clients"
-      ? clientsView === "suppliers"
-        ? copy.suppliers
-        : clientsView === "payments" ? copy.allPayments : copy.clients
+      ? copy.clients
       : copy[section];
   const activeSection = SECTIONS.find((item) => item.id === section);
   const activePage = activeSection?.id ?? "home";
