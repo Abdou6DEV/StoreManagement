@@ -1360,7 +1360,7 @@ export function MobilePosApp({
                         <button
                           type="button"
                           className={`clients-page-action${clientsView === "payments" ? "" : " clients-page-action-payment"}`}
-                          onClick={() => onClientsViewChange(clientsView === "payments" ? "clients" : "payments")}
+                          onClick={() => setClientsView(clientsView === "payments" ? "clients" : "payments")}
                           aria-label={clientsView === "payments" ? copy.backToClients : copy.allPayments}
                         >
                           {clientsView === "payments" ? <ArrowLeft size={16} aria-hidden="true" /> : <CreditCard size={16} aria-hidden="true" />}
