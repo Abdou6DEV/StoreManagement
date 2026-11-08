@@ -1875,28 +1875,3 @@ html.dark .stock-negative { color:#f87171; }
   background: transparent;
   box-shadow: none;
 }
-
-
-/* Subtle Home signature: a fine, theme-aware ring around the centered icon. */
-.mobile-bottom-nav button.mobile-bottom-nav-main {
-  gap: 3px;
-}
-.mobile-bottom-nav-home-icon {
-  display: grid;
-  width: 32px;
-  height: 32px;
-  place-items: center;
-  border: 1px solid color-mix(in oklch, var(--fg) 18%, var(--line));
-  border-radius: 50%;
-  color: inherit;
-  transition: border-color 160ms ease, background-color 160ms ease;
-}
-.mobile-bottom-nav button.mobile-bottom-nav-main.selected .mobile-bottom-nav-home-icon,
-.mobile-bottom-nav button.mobile-bottom-nav-main:hover .mobile-bottom-nav-home-icon,
-.mobile-bottom-nav button.mobile-bottom-nav-main:focus-visible .mobile-bottom-nav-home-icon {
-  border-color: color-mix(in oklch, var(--fg) 32%, var(--line));
-  background: color-mix(in oklch, var(--fg) 5%, transparent);
-}
-@media (prefers-reduced-motion: reduce) {
-  .mobile-bottom-nav-home-icon { transition: none; }
-}

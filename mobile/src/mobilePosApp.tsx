@@ -1497,9 +1497,7 @@ export function MobilePosApp({
                     className={`mobile-bottom-nav-main${section === "menu" ? " selected" : ""}`}
                     onClick={() => selectSection("menu")}
                   >
-                    <span className="mobile-bottom-nav-home-icon">
-                      <PageIcon page="home" size={19} />
-                    </span>
+                    <PageIcon page="home" size={22} />
                     <span>{language === "fr" ? "Accueil" : language === "ar" ? "الرئيسية" : "Home"}</span>
                   </button>
                 );
