@@ -1489,10 +1489,10 @@ html.dark .stock-negative { color:#f87171; }
   position: relative;
   grid-column: 1 / -1;
   display: grid;
-  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.35fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   align-items: center;
   justify-content: stretch;
-  gap: 14px;
+  gap: 0;
   min-height: 168px;
   padding: 22px 16px 16px;
   text-align: start;
@@ -1547,9 +1547,24 @@ html.dark .stock-negative { color:#f87171; }
   flex-direction: column;
   align-items: stretch;
   justify-content: center;
+  position: relative;
   gap: 8px;
   padding-inline-start: 14px;
-  border-inline-start: 1px solid var(--mobile-border, var(--border));
+}
+.mobile-menu-dashboard-summary::before {
+  position: absolute;
+  inset-block: 12%;
+  inset-inline-start: 0;
+  width: 1px;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    color-mix(in oklch, var(--mobile-border, var(--border)) 68%, transparent) 24%,
+    color-mix(in oklch, var(--mobile-border, var(--border)) 68%, transparent) 76%,
+    transparent 100%
+  );
+  content: "";
+  pointer-events: none;
 }
 .mobile-menu-dashboard-period {
   display: inline-flex;
@@ -1607,7 +1622,7 @@ html.dark .stock-negative { color:#f87171; }
 .mobile-menu-dashboard-metric > strong.revenue { color: var(--primary); }
 .mobile-menu-dashboard-metric > strong.profit { color: #16a34a; }
 @media (max-width: 380px) {
-  .mobile-menu-dashboard-tile { grid-template-columns: minmax(0, .9fr) minmax(0, 1.25fr); gap: 9px; padding: 22px 10px 12px; }
+  .mobile-menu-dashboard-tile { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0; padding: 22px 10px 12px; }
   .mobile-menu-dashboard-heading > svg.mobile-menu-dashboard-icon { width: 32px; height: 32px; }
   .mobile-menu-dashboard-heading h2 { font-size: .78rem; }
   .mobile-menu-dashboard-info .mobile-menu-description { font-size: .64rem; }
