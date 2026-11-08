@@ -88,7 +88,6 @@ type Copy = {
   offlineStatus: string;
   retry: string;
   stale: string;
-  lastUpdated: string;
   welcome: string;
   dashboardDesc: string;
   stockDesc: string;
@@ -188,7 +187,6 @@ const COPY: Record<MobileLanguage, Copy> = {
     offlineStatus: "Offline",
     retry: "Try again",
     stale: "The latest refresh failed. Displayed data may be stale.",
-    lastUpdated: "Last refreshed",
     welcome: "Choose a section to view your store.",
     dashboardDesc: "Get a quick overview of your store.",
     stockDesc: "Manage products and stock levels.",
@@ -355,7 +353,6 @@ const COPY: Record<MobileLanguage, Copy> = {
     offlineStatus: "Hors ligne",
     retry: "Réessayer",
     stale: "L’actualisation a échoué. Les données affichées peuvent être obsolètes.",
-    lastUpdated: "Dernière actualisation",
     welcome: "Choisissez une section de votre magasin.",
     dashboardDesc: "Consultez un aperçu de votre magasin.",
     stockDesc: "Gérez les produits et les stocks.",
@@ -522,7 +519,6 @@ const COPY: Record<MobileLanguage, Copy> = {
     offlineStatus: "غير متصل",
     retry: "حاول مجدداً",
     stale: "تعذر تحديث البيانات. قد تكون البيانات المعروضة قديمة.",
-    lastUpdated: "آخر تحديث",
     welcome: "اختر قسماً لعرض بيانات متجرك.",
     dashboardDesc: "اطّلع على ملخص متجرك.",
     stockDesc: "أدر المنتجات وتابع مستويات المخزون.",
@@ -1323,19 +1319,16 @@ export function MobilePosApp({
         <>
           {!online ? <div className="mobile-state-banner offline-banner"><WifiOff size={17} />{copy.offline}</div> : null}
           {stale && online ? <div className="mobile-state-banner stale-banner"><AlertCircle size={17} />{copy.stale}</div> : null}
-          {section !== "menu" || lastUpdated ? (
-            <div className="mb-3 flex items-center justify-between gap-3">
-              {section !== "menu" ? (
-                <button
-                  type="button"
-                  className="back-button !mb-0 flex shrink-0 items-center gap-1.5 rounded-xl border border-[var(--line)] bg-[var(--card)] px-3 py-2 text-sm font-medium"
-                  onClick={() => selectSection("menu")}
-                >
-                  <ArrowLeft size={18} aria-hidden="true" />
-                  <span>{copy.returnLabel}</span>
-                </button>
-              ) : <span />}
-              {lastUpdated ? <p className="last-updated !mb-0">{copy.lastUpdated}: {formatTime(lastUpdated, language)}</p> : null}
+          {section !== "menu" ? (
+            <div className="mb-3 flex items-center">
+              <button
+                type="button"
+                className="back-button !mb-0 flex shrink-0 items-center gap-1.5 rounded-xl border border-[var(--line)] bg-[var(--card)] px-3 py-2 text-sm font-medium"
+                onClick={() => selectSection("menu")}
+              >
+                <ArrowLeft size={18} aria-hidden="true" />
+                <span>{copy.returnLabel}</span>
+              </button>
             </div>
           ) : null}
 
