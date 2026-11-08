@@ -1747,3 +1747,16 @@ html.dark .stock-negative { color:#f87171; }
   .mobile-login-spinner { animation-duration: 1.5s; }
   .mobile-login-exit { animation-duration: 1ms !important; }
 }
+/* Keep browser autofill from painting a second grey surface inside login fields. */
+.mobile-login-form .mobile-input-wrap > input:-webkit-autofill,
+.mobile-login-form .mobile-input-wrap > input:-webkit-autofill:hover,
+.mobile-login-form .mobile-input-wrap > input:-webkit-autofill:focus,
+.mobile-login-form .mobile-input-wrap > input:-webkit-autofill:active,
+.mobile-login-form .mobile-input-wrap > input:autofill {
+  -webkit-box-shadow: 0 0 0 1000px var(--card) inset !important;
+  box-shadow: 0 0 0 1000px var(--card) inset !important;
+  -webkit-text-fill-color: var(--fg) !important;
+  caret-color: var(--fg);
+  background-color: transparent !important;
+  transition: background-color 99999s ease-out 0s;
+}
