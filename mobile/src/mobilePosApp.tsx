@@ -1340,7 +1340,7 @@ export function MobilePosApp({
           ) : null}
 
           {section === "menu" ? (
-            <section className="mobile-menu-view">
+            <section className="mobile-menu-view mobile-page-enter">
               <div className="mobile-menu-grid">
                 {allowedSections.map(({ id }) => {
                   const description = {
@@ -1406,17 +1406,19 @@ export function MobilePosApp({
                 <p className="mobile-empty"><LoaderCircle className="spin" size={18} />{copy.loading}</p>
               ) : (
                 section === "dashboard" ? (
-                  <SectionContent
-                    section="dashboard"
-                    data={data}
-                    language={language}
-                    copy={copy}
-                    query={query}
-                    onQueryChange={setQuery}
-                    permissions={user.permissions}
-                    clientsView={clientsView}
-                    onClientsViewChange={setClientsView}
-                  />
+                  <div className="mobile-page-enter">
+                    <SectionContent
+                      section="dashboard"
+                      data={data}
+                      language={language}
+                      copy={copy}
+                      query={query}
+                      onQueryChange={setQuery}
+                      permissions={user.permissions}
+                      clientsView={clientsView}
+                      onClientsViewChange={setClientsView}
+                    />
+                  </div>
                 ) : (
                   <>
                   {section === "clients" ? (
@@ -1425,7 +1427,7 @@ export function MobilePosApp({
                       <button type="button" role="tab" aria-selected={clientsView === "suppliers"} className={clientsView === "suppliers" ? "active" : ""} onClick={() => setClientsView("suppliers")}><Package size={16} aria-hidden="true" />{copy.suppliers}</button>
                     </div>
                   ) : null}
-                  <Card className="mobile-page-panel">
+                  <Card className="mobile-page-panel mobile-page-enter">
                     <div className="mobile-panel-heading">
                       <PageIcon page={activePage} size={28} />
                       <h2>{title}</h2>
