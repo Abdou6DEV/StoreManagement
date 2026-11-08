@@ -1083,19 +1083,13 @@ html.dark .error-banner { color: #fca5a5; background: rgb(153 27 27 / 24%); }
 }
 
 
-/* Scroll-aware app chrome: both bars move out of the way together without affecting layout. */
-.mobile-app-header,
-.mobile-bottom-nav {
+/* Hide only the top header while scrolling down; keep bottom navigation visible. */
+.mobile-app-header {
   transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1), opacity 200ms ease;
   will-change: transform;
 }
 .mobile-app[data-chrome-hidden="true"] .mobile-app-header {
   transform: translate3d(0, calc(-100% - env(safe-area-inset-top) - 12px), 0);
-  opacity: 0;
-  pointer-events: none;
-}
-.mobile-app[data-chrome-hidden="true"] .mobile-bottom-nav {
-  transform: translate3d(0, calc(100% + 12px), 0);
   opacity: 0;
   pointer-events: none;
 }
