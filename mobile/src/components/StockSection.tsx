@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   AlertTriangle, ArrowDownWideNarrow, ArrowUpDown, Eye, Filter, Folder, Package, PackageX, Search, X,
 } from "lucide-react";
@@ -80,6 +81,12 @@ export function StockSection({ data, language, query, onQueryChange }: { data: M
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<MobileRow | null>(null);
+  useEffect(() => {
+    if (!selected) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = previousOverflow; };
+  }, [selected]);
   const [activeProductName, setActiveProductName] = useState<string | null>(null);
   const [activeProductNamePosition, setActiveProductNamePosition] = useState<{ top: number; left: number } | null>(null);
   const [purchaseLimit, setPurchaseLimit] = useState(5);
@@ -279,7 +286,7 @@ export function StockSection({ data, language, query, onQueryChange }: { data: M
       <div><span>{t.stockCost}:</span><strong>{money(categories.reduce((sum, item) => sum + item.bought, 0), language)}</strong></div>
       <div><span>{t.stockValue}:</span><strong>{money(categories.reduce((sum, item) => sum + item.selling, 0), language)}</strong></div>
     </div> : null}
-    {selected ? <div className="stock-modal-backdrop" role="presentation" onClick={(event) => { if (event.target === event.currentTarget) setSelected(null); }}>
+    {selected ? createPortal(<div className="stock-modal-backdrop" role="presentation" onClick={(event) => { if (event.target === event.currentTarget) setSelected(null); }}>
       <section className="stock-detail-modal" role="dialog" aria-modal="true" aria-labelledby="stock-detail-title" dir={language === "ar" ? "rtl" : "ltr"}>
         <header><div><span>{t.productInfo}</span><h2 id="stock-detail-title">{str(selected.name) || "—"}</h2></div><button type="button" aria-label={t.close} onClick={() => setSelected(null)}><X size={20} /></button></header>
         <dl className="stock-detail-grid">
@@ -333,6 +340,6 @@ export function StockSection({ data, language, query, onQueryChange }: { data: M
         </section>
         <button type="button" className="stock-modal-close" onClick={() => setSelected(null)}>{t.close}</button>
       </section>
-    </div> : null}
+    </div>, document.body) : null}
   </div>;
 }

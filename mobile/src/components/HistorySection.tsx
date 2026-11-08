@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { ArrowLeft, Banknote, Calendar, CalendarDays, ChevronLeft, ChevronRight, Clock, Copy, CreditCard, DollarSign, Eye, Receipt, Search, ShoppingBag, Trash2, TrendingUp, User, X } from "lucide-react";
 import type { MobileBundle, MobileLanguage, MobileRow } from "../mobileApi";
 import "./HistorySection.css";
@@ -223,7 +224,8 @@ function SaleSummaryModal({ sale, data, language, labels:t, products, services, 
   const remaining=Math.max(0,total-paidAmount), itemCount=cart.reduce((sum,item)=>sum+item.qty,0);
   const formatFullDate=(v:unknown)=>{const d=new Date(str(v));return v&&!Number.isNaN(d.getTime())?new Intl.DateTimeFormat(language==="ar"?"ar-DZ":language==="fr"?"fr-DZ":"en",{dateStyle:"short",timeStyle:"medium"}).format(d):"—";};
   const copyId=()=>{void navigator.clipboard?.writeText(id);};
-  return <div className="mobile-history-sale-modal-backdrop" onClick={onClose} role="presentation"><section className="mobile-history-sale-modal" role="dialog" aria-modal="true" aria-label={t.saleDetails} dir={language==="ar"?"rtl":"ltr"} onClick={e=>e.stopPropagation()}>
+  useEffect(()=>{const previousOverflow=document.body.style.overflow;document.body.style.overflow="hidden";return()=>{document.body.style.overflow=previousOverflow;};},[]);
+  return createPortal(<div className="mobile-history-sale-modal-backdrop" onClick={onClose} role="presentation"><section className="mobile-history-sale-modal" role="dialog" aria-modal="true" aria-label={t.saleDetails} dir={language==="ar"?"rtl":"ltr"} onClick={e=>e.stopPropagation()}>
     <header className="mobile-history-sale-modal-header"><div className="mobile-history-sale-modal-title"><span><Receipt size={19}/></span><div><h3>{t.saleDetails}</h3><div><small>{id}</small><button type="button" onClick={copyId} aria-label="Copy sale ID"><Copy size={13}/></button></div></div></div><button type="button" className="mobile-history-modal-close" onClick={onClose} aria-label="Close"><X size={19}/></button></header>
     <div className="mobile-history-sale-modal-content">
       <section className="mobile-history-sale-info-panel"><div><h4><Calendar size={16}/>{t.saleInformation}</h4><div className="mobile-history-sale-info-box"><small>{t.date}</small><strong>{formatFullDate(sale.source_created_at)}</strong></div>{client?<div className="mobile-history-sale-info-box"><small><User size={12}/>{t.client}</small><strong>{str(client.name)}</strong></div>:null}</div>
@@ -235,5 +237,5 @@ function SaleSummaryModal({ sale, data, language, labels:t, products, services, 
         <div className="mobile-history-payment-bottom"><div><span>{t.nbrItems}</span><span>{itemCount}</span></div>{discount>0?<div><span>{t.subtotal}</span><span>{subtotal.toLocaleString()} {t.currency}</span></div>:null}{paymentType==="credit"?<div><span>{t.paid}</span><span>{paidAmount.toLocaleString()} {t.currency}</span></div>:null}{paymentType==="versement"&&paidAmount>0?<div><span>{t.versement}</span><span>{paidAmount.toLocaleString()} {t.currency}</span></div>:null}{discount>0?<div><span>{t.discount}</span><span>-{discount.toLocaleString()} {t.currency}</span></div>:null}{(paymentType==="credit"||(paymentType==="versement"&&paidAmount>0))?<div className="is-remaining"><strong>{t.remaining}</strong><strong>{remaining.toLocaleString()} {t.currency}</strong></div>:null}<div className="is-total"><strong>{t.totalLabel}</strong><strong>{total.toLocaleString()} {t.currency}</strong></div></div>
       </div></section>
     </div>
-  </section></div>;
+  </section></div>,document.body);
 }

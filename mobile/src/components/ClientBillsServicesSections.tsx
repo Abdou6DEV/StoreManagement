@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { CreditCard, ExternalLink, Package, Search, ShoppingCart, Users, Wrench, X } from "lucide-react";
 import type { ReactNode } from "react";
 import type {
@@ -460,7 +461,12 @@ function ReadOnlyDetail({
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [onClose]);
-  return (
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = previousOverflow; };
+  }, []);
+  return createPortal((
     <div className="stock-modal-backdrop" role="presentation" onClick={(event) => { if (event.target === event.currentTarget) onClose(); }}>
       <section className="stock-detail-modal" role="dialog" aria-modal="true" aria-label={title} dir={language === "ar" ? "rtl" : "ltr"}>
         <header>
@@ -474,7 +480,7 @@ function ReadOnlyDetail({
         <button type="button" className="stock-modal-close" onClick={onClose}>{labels.close}</button>
       </section>
     </div>
-  );
+  ), document.body);
 }
 
 function DetailButton({ label, onClick }: { label: string; onClick: () => void }) {
