@@ -616,6 +616,7 @@ html.dark .error-banner { color: #fca5a5; background: rgb(153 27 27 / 24%); }
   max-width: calc(100% - 100px);
   margin: 0;
   transform: translate(-50%, -50%);
+  overflow: visible;
   pointer-events: none;
   font-size: clamp(.9rem, 4vw, 1.18rem);
   font-weight: 700;
@@ -639,7 +640,12 @@ html.dark .error-banner { color: #fca5a5; background: rgb(153 27 27 / 24%); }
   transform: translateY(-50%);
 }
 .mobile-preferences-header {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  z-index: 2;
   justify-self: end;
+  transform: translateY(-50%);
 }
 .mobile-preferences-header > button {
   display: grid;
