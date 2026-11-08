@@ -81,6 +81,7 @@ type Copy = {
   allPayments: string;
   backToClients: string;
   logout: string;
+  signingOut: string;
   search: string;
   loading: string;
   empty: string;
@@ -180,6 +181,7 @@ const COPY: Record<MobileLanguage, Copy> = {
     allPayments: "All payments",
     backToClients: "Go back",
     logout: "Sign out",
+    signingOut: "Signing out…",
     search: "Search",
     loading: "Loading your store data…",
     empty: "No records to show.",
@@ -346,6 +348,7 @@ const COPY: Record<MobileLanguage, Copy> = {
     allPayments: "Tous les paiements",
     backToClients: "Retour aux clients",
     logout: "Déconnexion",
+    signingOut: "Déconnexion…",
     search: "Rechercher",
     loading: "Chargement des données…",
     empty: "Aucun enregistrement à afficher.",
@@ -512,6 +515,7 @@ const COPY: Record<MobileLanguage, Copy> = {
     allPayments: "كل الدفعات",
     backToClients: "العودة إلى العملاء",
     logout: "تسجيل الخروج",
+    signingOut: "جارٍ تسجيل الخروج…",
     search: "بحث",
     loading: "جارٍ تحميل بيانات المتجر…",
     empty: "لا توجد سجلات للعرض.",
@@ -1049,6 +1053,7 @@ export function MobilePosApp({
   const [data, setData] = useState<MobileBundle | null>(cachedSession?.data ?? null);
   const [section, setSection] = useState<Section>(cachedSession?.section ?? "menu");
   const [chromeHidden, setChromeHidden] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
   const chromeHiddenRef = useRef(false);
   const scrollPositionRef = useRef(0);
   const scrollDeltaRef = useRef(0);
@@ -1293,6 +1298,8 @@ export function MobilePosApp({
   };
 
   const signOut = async () => {
+    if (signingOut) return;
+    setSigningOut(true);
     sessionCodeRef.current = null;
     clearStoredMobileSession();
     if (sessionCode) {
@@ -1385,8 +1392,15 @@ export function MobilePosApp({
               <div className="mobile-settings-extra">
                 <div className="mobile-settings-actions">
                   <DropdownMenuItem asChild onSelect={(event) => event.preventDefault()}>
-                    <button type="button" className="mobile-settings-action logout-button" onClick={() => void signOut()}>
-                      <LogOut size={17} />{copy.logout}
+                    <button
+                      type="button"
+                      className="mobile-settings-action logout-button"
+                      onClick={() => void signOut()}
+                      disabled={signingOut}
+                      aria-busy={signingOut}
+                    >
+                      {signingOut ? <LoaderCircle size={17} className="spin" aria-hidden="true" /> : <LogOut size={17} />}
+                      {signingOut ? copy.signingOut : copy.logout}
                     </button>
                   </DropdownMenuItem>
                 </div>
