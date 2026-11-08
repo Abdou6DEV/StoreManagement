@@ -1553,9 +1553,10 @@ html.dark .stock-negative { color:#f87171; }
   display: grid;
   min-width: 0;
   min-height: 92px;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: repeat(2, minmax(0, 1fr));
   align-items: center;
-  gap: 12px;
+  gap: 7px;
   padding-inline-start: 14px;
   border-inline-start: 1px solid var(--mobile-border, var(--border));
 }
@@ -1564,22 +1565,23 @@ html.dark .stock-negative { color:#f87171; }
   min-width: 0;
   flex-direction: column;
   justify-content: center;
-  gap: 7px;
+  gap: 2px;
   padding: 0;
   border-radius: 0;
   background: transparent;
 }
 .mobile-menu-dashboard-metric > span {
   color: var(--mobile-muted);
-  font-size: .76rem;
+  font-size: .7rem;
   font-weight: 600;
-  line-height: 1.25;
+  line-height: 1.2;
+  white-space: nowrap;
 }
 .mobile-menu-dashboard-metric > strong {
   overflow-wrap: anywhere;
-  font-size: clamp(1.1rem, 4vw, 1.45rem);
+  font-size: clamp(1.3rem, 4.6vw, 1.65rem);
   font-weight: 850;
-  line-height: 1.15;
+  line-height: 1.12;
   font-variant-numeric: tabular-nums;
   letter-spacing: -.025em;
 }
@@ -1591,7 +1593,7 @@ html.dark .stock-negative { color:#f87171; }
   .mobile-menu-dashboard-heading h2 { font-size: .78rem; }
   .mobile-menu-dashboard-info .mobile-menu-description { font-size: .64rem; }
   .mobile-menu-dashboard-period { top: 8px; inset-inline-end: 10px; }
-  .mobile-menu-dashboard-metrics { min-height: 84px; gap: 7px; padding-inline-start: 9px; }
-  .mobile-menu-dashboard-metric > span { font-size: .66rem; }
-  .mobile-menu-dashboard-metric > strong { font-size: clamp(.95rem, 3.8vw, 1.18rem); }
+  .mobile-menu-dashboard-metrics { min-height: 84px; gap: 6px; padding-inline-start: 9px; }
+  .mobile-menu-dashboard-metric > span { font-size: .62rem; }
+  .mobile-menu-dashboard-metric > strong { font-size: clamp(1.15rem, 4.3vw, 1.4rem); }
 }
