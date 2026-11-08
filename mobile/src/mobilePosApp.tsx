@@ -1048,6 +1048,10 @@ export function MobilePosApp({
   const [user, setUser] = useState<MobileUser | null>(cachedSession?.user ?? null);
   const [data, setData] = useState<MobileBundle | null>(cachedSession?.data ?? null);
   const [section, setSection] = useState<Section>(cachedSession?.section ?? "menu");
+  const [chromeHidden, setChromeHidden] = useState(false);
+  const chromeHiddenRef = useRef(false);
+  const scrollPositionRef = useRef(0);
+  const scrollDeltaRef = useRef(0);
   const [clientsView, setClientsView] = useState<ClientsSectionView>("clients");
   const [query, setQuery] = useState(cachedSession?.query ?? "");
   const [notice, setNotice] = useState<string | null>(null);
@@ -1057,6 +1061,7 @@ export function MobilePosApp({
   const [online, setOnline] = useState(navigator.onLine);
   const [stale, setStale] = useState(false);
   const direction = language === "ar" ? "rtl" : "ltr";
+  const isAuthenticated = Boolean(user);
   const allowedSections = SECTIONS.filter((item) => user?.permissions[item.permission]);
   const todayDashboardTotals = data ? getMobileDashboardTodayTotals(data) : null;
   const formatMenuMoney = (value: number) =>
@@ -1083,6 +1088,60 @@ export function MobilePosApp({
       window.removeEventListener("offline", onOffline);
     };
   }, []);
+
+  useEffect(() => {
+    chromeHiddenRef.current = false;
+    scrollDeltaRef.current = 0;
+    scrollPositionRef.current = window.scrollY;
+    setChromeHidden(false);
+    if (!isAuthenticated) return;
+
+    const handleScroll = () => {
+      const currentY = window.scrollY;
+      const delta = currentY - scrollPositionRef.current;
+      scrollPositionRef.current = currentY;
+
+      if (currentY <= 24) {
+        scrollDeltaRef.current = 0;
+        if (chromeHiddenRef.current) {
+          chromeHiddenRef.current = false;
+          setChromeHidden(false);
+        }
+        return;
+      }
+
+      const activeElement = document.activeElement;
+      if (activeElement instanceof HTMLElement && activeElement.matches("input, textarea, select, [contenteditable='true']")) {
+        scrollDeltaRef.current = 0;
+        if (chromeHiddenRef.current) {
+          chromeHiddenRef.current = false;
+          setChromeHidden(false);
+        }
+        return;
+      }
+
+      if (delta > 0) {
+        if (chromeHiddenRef.current) return;
+        scrollDeltaRef.current = Math.max(0, scrollDeltaRef.current) + delta;
+        if (scrollDeltaRef.current >= 14) {
+          chromeHiddenRef.current = true;
+          scrollDeltaRef.current = 0;
+          setChromeHidden(true);
+        }
+      } else if (delta < 0) {
+        if (!chromeHiddenRef.current) return;
+        scrollDeltaRef.current = Math.min(0, scrollDeltaRef.current) + delta;
+        if (scrollDeltaRef.current <= -10) {
+          chromeHiddenRef.current = false;
+          scrollDeltaRef.current = 0;
+          setChromeHidden(false);
+        }
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [isAuthenticated, section]);
 
   useEffect(() => {
     document.documentElement.lang = language;
@@ -1295,7 +1354,7 @@ export function MobilePosApp({
   }
 
   return (
-    <main className="mobile-shell mobile-app" dir={direction}>
+    <main className="mobile-shell mobile-app" dir={direction} data-chrome-hidden={chromeHidden ? "true" : "false"}>
       {user ? (
         <>
           <header className="mobile-app-header">
