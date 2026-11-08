@@ -1859,3 +1859,19 @@ html.dark .stock-negative { color:#f87171; }
 .mobile-bottom-nav button.mobile-bottom-nav-main svg {
   stroke-width: 2;
 }
+
+
+/* Keep permission-restricted pages visible in the fixed navigation, but inactive. */
+.mobile-bottom-nav button:disabled,
+.mobile-bottom-nav button.disabled {
+  color: var(--mobile-muted);
+  opacity: .42;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.mobile-bottom-nav button:disabled:hover,
+.mobile-bottom-nav button:disabled:focus-visible {
+  background: transparent;
+  box-shadow: none;
+}

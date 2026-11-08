@@ -1061,7 +1061,7 @@ export function MobilePosApp({
   const todayDashboardTotals = data ? getMobileDashboardTodayTotals(data) : null;
   const formatMenuMoney = (value: number) =>
     `${new Intl.NumberFormat(language, { maximumFractionDigits: 2 }).format(value)} DA`;
-  const primarySections = allowedSections.filter((item) =>
+  const primarySections = SECTIONS.filter((item) =>
     ["dashboard", "stock", "history", "services"].includes(item.id),
   );
   const title = section === "menu"
@@ -1504,14 +1504,19 @@ export function MobilePosApp({
               }
 
               const item = primarySections.find((candidate) => candidate.id === id);
-              if (!item) return <span key={id} className="mobile-bottom-nav-placeholder" aria-hidden="true" />;
+              if (!item) return null;
+              const hasAccess = allowedSections.some((candidate) => candidate.id === id);
 
               return (
                 <button
                   type="button"
-                  className={section === id ? `selected ${PAGE_PRESENTATION[id].color}` : ""}
+                  className={(section === id ? "selected " + PAGE_PRESENTATION[id].color : "") + (hasAccess ? "" : " disabled")}
                   key={id}
-                  onClick={() => selectSection(id)}
+                  disabled={!hasAccess}
+                  aria-disabled={!hasAccess}
+                  onClick={() => {
+                    if (hasAccess) selectSection(id);
+                  }}
                 >
                   <PageIcon page={id} size={20} /><span>{copy[id]}</span>
                 </button>
