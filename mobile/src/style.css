@@ -607,21 +607,37 @@ html.dark .error-banner { color: #fca5a5; background: rgb(153 27 27 / 24%); }
 .mobile-user-badge-profile { display: block; }
 .mobile-user-badge-name { font-size: .62rem; line-height: .7rem; }
 .mobile-app-header h1 {
-  display: flex;
-  position: static;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: block;
+  width: calc(100% - 100px);
   min-width: 0;
-  max-width: 100%;
-  align-items: center;
-  justify-self: center;
-  gap: 8px;
-  width: fit-content;
-  max-width: 100%;
+  max-width: calc(100% - 100px);
+  margin: 0;
+  transform: translate(-50%, -50%);
   pointer-events: none;
   font-size: clamp(.9rem, 4vw, 1.18rem);
   font-weight: 700;
   letter-spacing: normal;
+  text-align: center;
 }
-.mobile-header-page-icon { width: 25px; height: 25px; flex: none; }
+.mobile-app-header h1 > span {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mobile-header-page-icon {
+  position: absolute;
+  top: 50%;
+  left: -30px;
+  width: 25px;
+  height: 25px;
+  transform: translateY(-50%);
+}
 .mobile-preferences-header {
   justify-self: end;
 }
@@ -813,7 +829,7 @@ html.dark .error-banner { color: #fca5a5; background: rgb(153 27 27 / 24%); }
 @media (max-width: 360px) {
   .mobile-shell { padding-inline: 12px; }
   .mobile-app-header { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 38px; padding-inline: 8px; }
-  .mobile-app-header h1 { gap: 5px; font-size: .86rem; }
+  .mobile-app-header h1 { font-size: .86rem; }
   .mobile-header-page-icon { width: 21px; height: 21px; }
   .mobile-user-badge { padding-inline: 4px; }
   .mobile-metrics { grid-template-columns: 1fr; }
