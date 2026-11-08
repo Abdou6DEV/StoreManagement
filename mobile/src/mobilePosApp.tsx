@@ -1062,7 +1062,7 @@ export function MobilePosApp({
   const formatMenuMoney = (value: number) =>
     `${new Intl.NumberFormat(language, { maximumFractionDigits: 2 }).format(value)} DA`;
   const primarySections = allowedSections.filter((item) =>
-    ["dashboard", "stock", "services"].includes(item.id),
+    ["dashboard", "stock", "history", "services"].includes(item.id),
   );
   const title = section === "menu"
     ? copy.menu
@@ -1486,21 +1486,37 @@ export function MobilePosApp({
           <nav
             className="mobile-bottom-nav"
             aria-label={copy.menu}
-            style={{ gridTemplateColumns: `repeat(${primarySections.length + 1}, minmax(0, 1fr))` }}
+            style={{ gridTemplateColumns: "repeat(5, minmax(0, 1fr))" }}
           >
-            {primarySections.map(({ id }) => (
-              <button
-                type="button"
-                className={section === id ? `selected ${PAGE_PRESENTATION[id].color}` : ""}
-                key={id}
-                onClick={() => selectSection(id)}
-              >
-                <PageIcon page={id} size={20} /><span>{copy[id]}</span>
-              </button>
-            ))}
-            <button type="button" className={section === "menu" ? "selected" : ""} onClick={() => selectSection("menu")}>
-              <Menu size={20} /><span>{copy.menu}</span>
-            </button>
+            {(["dashboard", "stock", "menu", "history", "services"] as const).map((id) => {
+              if (id === "menu") {
+                return (
+                  <button
+                    type="button"
+                    key={id}
+                    className={`mobile-bottom-nav-main${section === "menu" ? " selected" : ""}`}
+                    onClick={() => selectSection("menu")}
+                  >
+                    <PageIcon page="home" size={22} />
+                    <span>{copy.menu}</span>
+                  </button>
+                );
+              }
+
+              const item = primarySections.find((candidate) => candidate.id === id);
+              if (!item) return <span key={id} className="mobile-bottom-nav-placeholder" aria-hidden="true" />;
+
+              return (
+                <button
+                  type="button"
+                  className={section === id ? `selected ${PAGE_PRESENTATION[id].color}` : ""}
+                  key={id}
+                  onClick={() => selectSection(id)}
+                >
+                  <PageIcon page={id} size={20} /><span>{copy[id]}</span>
+                </button>
+              );
+            })}
           </nav>
         </>
       )}

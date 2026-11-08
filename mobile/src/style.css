@@ -1123,6 +1123,43 @@ html.dark .error-banner { color: #fca5a5; background: rgb(153 27 27 / 24%); }
   outline-offset: -2px;
 }
 
+/* Five-slot PWA navigation with a raised, centered Main Menu action. */
+.mobile-bottom-nav {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  align-items: end;
+  overflow: visible;
+}
+.mobile-bottom-nav button.selected,
+.mobile-bottom-nav button:hover,
+.mobile-bottom-nav button:focus-visible {
+  background: color-mix(in oklch, var(--primary) 14%, var(--card));
+  box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--primary) 22%, transparent);
+  color: var(--fg);
+}
+.mobile-bottom-nav .mobile-bottom-nav-placeholder {
+  display: block;
+  min-width: 0;
+}
+.mobile-bottom-nav button.mobile-bottom-nav-main {
+  position: relative;
+  z-index: 1;
+  min-height: 58px;
+  transform: translateY(-8px);
+  border-radius: 16px;
+  background: var(--primary);
+  box-shadow: 0 5px 14px color-mix(in oklch, var(--primary) 30%, transparent);
+  color: white;
+  font-weight: 750;
+}
+.mobile-bottom-nav button.mobile-bottom-nav-main:hover,
+.mobile-bottom-nav button.mobile-bottom-nav-main:focus-visible,
+.mobile-bottom-nav button.mobile-bottom-nav-main.selected {
+  background: color-mix(in oklch, var(--primary) 90%, black);
+  box-shadow: 0 5px 16px color-mix(in oklch, var(--primary) 38%, transparent);
+  color: white;
+}
+.mobile-bottom-nav button.mobile-bottom-nav-main svg { stroke-width: 2.4; }
+
 @media (prefers-reduced-motion: reduce) {
   .mobile-bottom-nav button { transition: none; }
 }
