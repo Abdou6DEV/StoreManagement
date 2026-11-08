@@ -611,11 +611,12 @@ html.dark .error-banner { color: #fca5a5; background: rgb(153 27 27 / 24%); }
   position: static;
   display: flex;
   min-width: 0;
-  max-width: min(52vw, 360px);
+  max-width: min(42vw, 300px);
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 6px;
   margin: 0;
+  padding-block: 2px;
   transform: none;
   overflow: hidden;
   pointer-events: none;
@@ -634,8 +635,8 @@ html.dark .error-banner { color: #fca5a5; background: rgb(153 27 27 / 24%); }
 .mobile-header-page-icon {
   position: static;
   flex: 0 0 auto;
-  width: 25px;
-  height: 25px;
+  width: 22px;
+  height: 22px;
   transform: none;
 }
 .mobile-preferences-header {
@@ -834,7 +835,7 @@ html.dark .error-banner { color: #fca5a5; background: rgb(153 27 27 / 24%); }
 @media (max-width: 360px) {
   .mobile-shell { padding-inline: 12px; }
   .mobile-app-header { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 38px; padding-inline: 8px; }
-  .mobile-app-header h1 { max-width: min(52vw, 360px); font-size: .86rem; }
+  .mobile-app-header h1 { max-width: min(42vw, 300px); font-size: .86rem; }
   .mobile-header-page-icon { width: 21px; height: 21px; }
   .mobile-user-badge { padding-inline: 4px; }
   .mobile-metrics { grid-template-columns: 1fr; }
