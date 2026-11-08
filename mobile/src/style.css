@@ -669,21 +669,62 @@ html.dark .error-banner { color: #fca5a5; background: rgb(153 27 27 / 24%); }
 .mobile-page-panel .mobile-subsection + .mobile-subsection { padding-top: 16px; border-top: 1px solid var(--line); }
 .mobile-subsection > h2 { font-size: 1rem; font-weight: 600; }
 
-.mobile-menu-grid { grid-template-columns: 1fr; gap: 16px; }
-.mobile-menu-tile {
-  min-height: 82px;
-  flex-direction: row;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 16px;
-  padding: 16px 20px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  box-shadow: none;
-  font-size: 1rem;
+.mobile-menu-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
 }
-.mobile-menu-tile:hover { border-color: #f87171; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 10%); transform: translateY(-1px); }
-.mobile-menu-card-content h2 { font-size: 1rem; }
+.mobile-menu-tile {
+  display: flex;
+  min-width: 0;
+  min-height: 120px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  padding: 14px 10px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  color: var(--fg);
+  background: var(--card);
+  box-shadow: none;
+  text-align: center;
+  transition: border-color .18s ease, background-color .18s ease, transform .18s ease;
+}
+.mobile-menu-card-content {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 0;
+}
+.mobile-menu-card-content > svg {
+  width: 32px;
+  height: 32px;
+  flex: none;
+}
+.mobile-menu-card-content h2 {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: .9rem;
+  font-weight: 650;
+  line-height: 1.25;
+  text-align: center;
+}
+.mobile-menu-tile:active { transform: scale(.98); }
+.mobile-menu-tile:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--primary) 35%, transparent);
+  outline-offset: 2px;
+}
+@media (hover: hover) and (pointer: fine) {
+  .mobile-menu-tile:hover {
+    border-color: color-mix(in srgb, var(--primary) 35%, var(--line));
+    background: var(--muted-bg);
+  }
+}
 
 .mobile-search {
   min-height: 42px;
