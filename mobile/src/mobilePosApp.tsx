@@ -1366,8 +1366,8 @@ export function MobilePosApp({
                           </div>
                           <p className="mobile-menu-description">{description}</p>
                         </div>
+                        <p className="mobile-menu-dashboard-period">{copy.today}</p>
                         <div className="mobile-menu-dashboard-metrics">
-                          <p className="mobile-menu-dashboard-period">{copy.today}</p>
                           <div className="mobile-menu-dashboard-metric">
                             <span>{copy.revenue}</span>
                             <strong className="revenue">{todayDashboardTotals ? formatMenuMoney(todayDashboardTotals.revenue) : "—"}</strong>
