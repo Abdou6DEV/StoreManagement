@@ -49,6 +49,21 @@ function localDay(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
 
+export function getMobileDashboardTodayTotals(data: MobileBundle, now = new Date()) {
+  const today = localDay(now);
+  const days = data.dashboard_daily.filter((row) => typeof row.local_day === "string");
+  if (days.length === 0) return null;
+  return days
+    .filter((row) => String(row.local_day) === today)
+    .reduce(
+      (totals, row) => ({
+        revenue: totals.revenue + (Number(row.revenue) || 0),
+        profit: totals.profit + (Number(row.profit) || 0),
+      }),
+      { revenue: 0, profit: 0 },
+    );
+}
+
 export type MobileDashboardLabels = {
   dashboard: string;
   overviewPeriod: string;

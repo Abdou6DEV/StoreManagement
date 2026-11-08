@@ -1483,3 +1483,39 @@ html.dark .stock-negative { color:#f87171; }
   text-align: center;
   overflow-wrap: anywhere;
 }
+
+/* Full-width dashboard card with today's live summary */
+.mobile-menu-dashboard-tile {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  align-items: center;
+  justify-content: stretch;
+  gap: 14px;
+  min-height: 112px;
+  padding: 14px 16px;
+  text-align: start;
+}
+.mobile-menu-dashboard-info { min-width: 0; text-align: start; }
+.mobile-menu-dashboard-heading { display: flex; min-width: 0; align-items: center; gap: 10px; }
+.mobile-menu-dashboard-heading > svg { width: 30px; height: 30px; flex: none; color: var(--primary); }
+.mobile-menu-dashboard-heading h2 { min-width: 0; margin: 0; overflow-wrap: anywhere; font-size: .98rem; font-weight: 700; line-height: 1.25; }
+.mobile-menu-dashboard-info .mobile-menu-description { margin: 8px 0 0; text-align: start; }
+.mobile-menu-dashboard-metrics { display: grid; min-width: 0; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: stretch; gap: 8px; }
+.mobile-menu-dashboard-period { grid-column: 1 / -1; margin: 0 0 -2px; color: var(--mobile-muted); font-size: .7rem; font-weight: 600; }
+.mobile-menu-dashboard-metric { display: flex; min-width: 0; flex-direction: column; justify-content: center; gap: 4px; padding: 9px 8px; border-radius: 11px; background: var(--muted-bg); }
+.mobile-menu-dashboard-metric > span { color: var(--mobile-muted); font-size: .7rem; line-height: 1.2; }
+.mobile-menu-dashboard-metric > strong { overflow-wrap: anywhere; font-size: .88rem; font-weight: 750; line-height: 1.25; font-variant-numeric: tabular-nums; }
+.mobile-menu-dashboard-metric > strong.revenue { color: var(--primary); }
+.mobile-menu-dashboard-metric > strong.profit { color: #16a34a; }
+@media (max-width: 380px) {
+  .mobile-menu-dashboard-tile { grid-template-columns: minmax(0, .9fr) minmax(0, 1.5fr); gap: 9px; padding: 12px 10px; }
+  .mobile-menu-dashboard-heading { gap: 7px; }
+  .mobile-menu-dashboard-heading > svg { width: 26px; height: 26px; }
+  .mobile-menu-dashboard-heading h2 { font-size: .88rem; }
+  .mobile-menu-dashboard-info .mobile-menu-description { font-size: .7rem; }
+  .mobile-menu-dashboard-metrics { gap: 6px; }
+  .mobile-menu-dashboard-metric { padding: 8px 6px; }
+  .mobile-menu-dashboard-metric > strong { font-size: .78rem; }
+}
+

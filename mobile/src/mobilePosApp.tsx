@@ -48,7 +48,7 @@ import type {
   MobileRow,
   MobileUser,
 } from "./mobileApi";
-import { MobileDashboard } from "./components/MobileDashboard";
+import { getMobileDashboardTodayTotals, MobileDashboard } from "./components/MobileDashboard";
 import { StockSection } from "./components/StockSection";
 import {
   BillsSection,
@@ -1038,6 +1038,9 @@ export function MobilePosApp({
   const [stale, setStale] = useState(false);
   const direction = language === "ar" ? "rtl" : "ltr";
   const allowedSections = SECTIONS.filter((item) => user?.permissions[item.permission]);
+  const todayDashboardTotals = data ? getMobileDashboardTodayTotals(data) : null;
+  const formatMenuMoney = (value: number) =>
+    `${new Intl.NumberFormat(language, { maximumFractionDigits: 2 }).format(value)} DA`;
   const primarySections = allowedSections.filter((item) =>
     ["dashboard", "stock", "services"].includes(item.id),
   );
@@ -1339,19 +1342,51 @@ export function MobilePosApp({
           {section === "menu" ? (
             <section className="mobile-menu-view">
               <div className="mobile-menu-grid">
-                {allowedSections.map(({ id }) => (
-                  <button type="button" className="mobile-menu-tile group" key={id} onClick={() => selectSection(id)}>
-                    <MenuCardContent page={id} title={copy[id]} compact />
-                    <p className="mobile-menu-description">{{
-                      dashboard: copy.dashboardDesc,
-                      stock: copy.stockDesc,
-                      history: copy.historyDesc,
-                      services: copy.servicesDesc,
-                      bills: copy.billsDesc,
-                      clients: copy.clientsDesc,
-                    }[id]}</p>
-                  </button>
-                ))}
+                {allowedSections.map(({ id }) => {
+                  const description = {
+                    dashboard: copy.dashboardDesc,
+                    stock: copy.stockDesc,
+                    history: copy.historyDesc,
+                    services: copy.servicesDesc,
+                    bills: copy.billsDesc,
+                    clients: copy.clientsDesc,
+                  }[id];
+                  if (id === "dashboard") {
+                    return (
+                      <button
+                        type="button"
+                        className="mobile-menu-tile mobile-menu-dashboard-tile group"
+                        key={id}
+                        onClick={() => selectSection(id)}
+                      >
+                        <div className="mobile-menu-dashboard-info">
+                          <div className="mobile-menu-dashboard-heading">
+                            <PageIcon page="dashboard" size={30} />
+                            <h2>{copy.dashboard}</h2>
+                          </div>
+                          <p className="mobile-menu-description">{description}</p>
+                        </div>
+                        <div className="mobile-menu-dashboard-metrics">
+                          <p className="mobile-menu-dashboard-period">{copy.today}</p>
+                          <div className="mobile-menu-dashboard-metric">
+                            <span>{copy.revenue}</span>
+                            <strong className="revenue">{todayDashboardTotals ? formatMenuMoney(todayDashboardTotals.revenue) : "—"}</strong>
+                          </div>
+                          <div className="mobile-menu-dashboard-metric">
+                            <span>{copy.profit}</span>
+                            <strong className="profit">{todayDashboardTotals ? formatMenuMoney(todayDashboardTotals.profit) : "—"}</strong>
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  }
+                  return (
+                    <button type="button" className="mobile-menu-tile group" key={id} onClick={() => selectSection(id)}>
+                      <MenuCardContent page={id} title={copy[id]} compact />
+                      <p className="mobile-menu-description">{description}</p>
+                    </button>
+                  );
+                })}
               </div>
               {allowedSections.length === 0 ? <p className="mobile-empty">{copy.noPermission}</p> : null}
             </section>
