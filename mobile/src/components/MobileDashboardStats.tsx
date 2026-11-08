@@ -118,7 +118,7 @@ function StatGrid({
     <div className="grid grid-cols-2 gap-x-4 gap-y-5 sm:grid-cols-3">
       {items.map((item) => (
         <DashboardMetric key={item.label} label={item.label} labelClassName="!text-xs">
-          <strong className={`text-lg font-bold tabular-nums sm:text-xl ${item.valueClassName ?? "text-foreground"}`}>
+          <strong className={`text-lg font-bold tabular-nums sm:text-xl mobile-dashboard-value ${item.valueClassName ?? "text-foreground"}`}>
             {typeof item.value === "number" ? number(item.value, language) : item.value}
           </strong>
         </DashboardMetric>

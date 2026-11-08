@@ -1761,3 +1761,30 @@ html.dark .stock-negative { color:#f87171; }
   background-color: transparent !important;
   transition: background-color 99999s ease-out 0s;
 }
+
+/* Consistent value typography across PWA overview, stock, services and clients. */
+.mobile-dashboard-value {
+  font-family: inherit;
+  font-weight: 850;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -.025em;
+}
+.stock-table-totals strong,
+.stock-summary-grid strong,
+.stock-product-values strong,
+.stock-product-tooltip-grid strong,
+.stock-profit-panel strong,
+.stock-data-table tbody td.stock-money-cell,
+.mobile-services-price-cell > strong,
+.mobile-services-profit,
+.client-detail-summary strong,
+.stock-detail-history-party strong,
+.stock-detail-history-values strong,
+.client-detail-sale-items strong,
+.stock-history-total,
+.stock-history-list strong {
+  font-weight: 850;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -.025em;
+}
+

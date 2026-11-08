@@ -33,6 +33,7 @@ import {
   MobileServiceStats,
   MobileStockStats,
 } from "./MobileDashboardStats";
+import { AnimatedValue } from "./AnimatedValue";
 
 type Period = "today" | "month" | "year";
 type ChartStyle = "bar" | "line";
@@ -406,26 +407,26 @@ export function MobileDashboard({
 
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
           <DashboardMetric label={labels.revenue} labelClassName="!text-xs">
-            <strong className="text-xl font-bold tabular-nums leading-tight text-primary sm:text-2xl">
-              {summaryMoney(totals.revenue)}
+            <strong className="text-xl font-bold tabular-nums leading-tight text-primary sm:text-2xl mobile-dashboard-value">
+              <AnimatedValue value={totals.revenue} locale={language} format={summaryMoney} />
             </strong>
           </DashboardMetric>
           <DashboardMetric
             label={netProfitActive ? labels.netProfit : labels.profit}
             labelClassName="!text-xs"
           >
-            <strong className="text-xl font-bold tabular-nums leading-tight text-green-600 sm:text-2xl">
-              {summaryMoney(adjustedProfit)}
+            <strong className="text-xl font-bold tabular-nums leading-tight text-green-600 sm:text-2xl mobile-dashboard-value">
+              <AnimatedValue value={adjustedProfit} locale={language} format={summaryMoney} />
             </strong>
           </DashboardMetric>
           <DashboardMetric label={labels.items} labelClassName="!text-xs">
-            <strong className="text-xl font-bold tabular-nums leading-tight text-orange-600 sm:text-2xl">
-              {summaryNumber(totals.items)}
+            <strong className="text-xl font-bold tabular-nums leading-tight text-orange-600 sm:text-2xl mobile-dashboard-value">
+              <AnimatedValue value={totals.items} locale={language} format={summaryNumber} />
             </strong>
           </DashboardMetric>
           <DashboardMetric label={labels.billPayments} labelClassName="!text-xs">
-            <strong className="text-xl font-bold tabular-nums leading-tight text-purple-600 sm:text-2xl">
-              {summaryMoney(selectedBillPayments)}
+            <strong className="text-xl font-bold tabular-nums leading-tight text-purple-600 sm:text-2xl mobile-dashboard-value">
+              <AnimatedValue value={selectedBillPayments} locale={language} format={summaryMoney} />
             </strong>
           </DashboardMetric>
         </div>

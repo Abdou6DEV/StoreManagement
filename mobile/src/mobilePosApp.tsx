@@ -49,6 +49,7 @@ import type {
   MobileUser,
 } from "./mobileApi";
 import { getMobileDashboardTodayTotals, MobileDashboard } from "./components/MobileDashboard";
+import { AnimatedValue } from "./components/AnimatedValue";
 import { StockSection } from "./components/StockSection";
 import {
   BillsSection,
@@ -1392,11 +1393,11 @@ export function MobilePosApp({
                           <div className="mobile-menu-dashboard-metrics">
                             <div className="mobile-menu-dashboard-metric">
                               <span>{copy.revenue}</span>
-                              <strong className="revenue">{todayDashboardTotals ? formatMenuMoney(todayDashboardTotals.revenue) : "—"}</strong>
+                              <strong className="revenue mobile-dashboard-value">{todayDashboardTotals ? <AnimatedValue value={todayDashboardTotals.revenue} locale={language} format={formatMenuMoney} /> : "—"}</strong>
                             </div>
                             <div className="mobile-menu-dashboard-metric">
                               <span>{copy.netProfit}</span>
-                              <strong className="profit">{todayDashboardTotals ? formatMenuMoney(todayDashboardTotals.profit) : "—"}</strong>
+                              <strong className="profit mobile-dashboard-value">{todayDashboardTotals ? <AnimatedValue value={todayDashboardTotals.profit} locale={language} format={formatMenuMoney} /> : "—"}</strong>
                             </div>
                           </div>
                         </div>
