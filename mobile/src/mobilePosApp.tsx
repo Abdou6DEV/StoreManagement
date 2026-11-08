@@ -1498,7 +1498,7 @@ export function MobilePosApp({
                     onClick={() => selectSection("menu")}
                   >
                     <PageIcon page="home" size={22} />
-                    <span>{copy.menu}</span>
+                    <span>{language === "fr" ? "Accueil" : language === "ar" ? "الرئيسية" : "Home"}</span>
                   </button>
                 );
               }
