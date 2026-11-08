@@ -1162,6 +1162,7 @@ export function MobilePosApp({
   }, [lastUpdated]);
 
   const applyResponse = useCallback((response: { user: MobileUser; data: MobileBundle }) => {
+    setSigningOut(false);
     setUser(response.user);
     setData(response.data);
     setLastUpdated(new Date());
@@ -1317,6 +1318,7 @@ export function MobilePosApp({
     setStale(false);
     setSection("menu");
     setQuery("");
+    setSigningOut(false);
   };
 
   const selectSection = (next: Section) => {
