@@ -1578,7 +1578,7 @@ html.dark .stock-negative { color:#f87171; }
 }
 .mobile-menu-dashboard-summary::before {
   position: absolute;
-  inset-block: 6%;
+  inset-block: 3%;
   inset-inline-start: 0;
   width: 1px;
   background: linear-gradient(
