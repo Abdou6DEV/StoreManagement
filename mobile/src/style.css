@@ -1632,7 +1632,7 @@ html.dark .stock-negative { color:#f87171; }
 }
 .mobile-menu-dashboard-period {
   display: inline-flex;
-  align-self: flex-start;
+  align-self: center;
   align-items: center;
   justify-content: center;
   margin: 0;
