@@ -2,7 +2,6 @@ import {
   AlertCircle,
   ArrowLeft,
   CreditCard,
-  Crown,
   Eye,
   EyeOff,
   LoaderCircle,
@@ -1374,9 +1373,6 @@ export function MobilePosApp({
                   isAdmin={user.role.toUpperCase() === "ADMIN"}
                   size="sm"
                 />
-                {user.role.toUpperCase() === "ADMIN" ? (
-                  <Crown className="mobile-user-badge-crown" size={15} aria-label="Admin" role="img" />
-                ) : null}
               </span>
               <strong className="mobile-user-badge-name">{user.username}</strong>
             </div>
