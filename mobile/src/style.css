@@ -278,6 +278,39 @@ button:focus-visible, select:focus-visible, input:focus-visible {
   margin-top: 2px;
   border-radius: 10px;
 }
+.mobile-login-submit {
+  gap: 9px;
+  transition: background-color 200ms ease, color 200ms ease, opacity 200ms ease, transform 200ms ease;
+}
+.mobile-login-submit.is-success {
+  color: #fff;
+  background: #16a34a;
+}
+.mobile-login-submit.is-error {
+  color: #fff;
+  background: var(--danger);
+  cursor: default;
+}
+.mobile-login-submit.is-error span { min-width: 0; overflow-wrap: anywhere; }
+.mobile-login-spinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  flex: none;
+  border: 2px solid transparent;
+  border-bottom-color: currentColor;
+  border-radius: 50%;
+  animation: mobile-login-spin 800ms linear infinite;
+}
+@keyframes mobile-login-spin { to { transform: rotate(360deg); } }
+.mobile-login-exit {
+  pointer-events: none;
+  animation: mobile-login-fade-out 500ms ease-out both !important;
+}
+@keyframes mobile-login-fade-out {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(-7px); }
+}
 
 .mobile-app {
   position: relative;
@@ -1708,4 +1741,9 @@ html.dark .stock-negative { color:#f87171; }
 }
 [data-slot="dropdown-menu-content"].w-56[data-state="closed"] {
   animation: mobile-preferences-close 140ms ease-in both !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mobile-login-spinner { animation-duration: 1.5s; }
+  .mobile-login-exit { animation-duration: 1ms !important; }
 }

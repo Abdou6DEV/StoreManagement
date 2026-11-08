@@ -748,7 +748,7 @@ function LoginScreen({
   onLanguageChange,
 }: {
   copy: Copy;
-  onLogin: (username: string, password: string) => Promise<void>;
+  onLogin: (username: string, password: string, onAuthenticated: () => Promise<void>) => Promise<void>;
   language: MobileLanguage;
   onLanguageChange: (language: MobileLanguage) => void;
 }) {
@@ -756,25 +756,41 @@ function LoginScreen({
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
+  const [buttonState, setButtonState] = useState<"idle" | "loading" | "success" | "fade" | "error">("idle");
   const [showPassword, setShowPassword] = useState(false);
+
+  useEffect(() => {
+    if (buttonState !== "error") return;
+    const timer = window.setTimeout(() => {
+      setError(null);
+      setButtonState("idle");
+    }, 5500);
+    return () => window.clearTimeout(timer);
+  }, [buttonState]);
+
+  const playSuccessTransition = async () => {
+    setButtonState("success");
+    await new Promise<void>((resolve) => window.setTimeout(resolve, 1000));
+    setButtonState("fade");
+    await new Promise<void>((resolve) => window.setTimeout(resolve, 500));
+  };
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setBusy(true);
+    if (buttonState === "loading" || buttonState === "success" || buttonState === "fade") return;
+    setButtonState("loading");
     setError(null);
     try {
-      await onLogin(username.trim(), password);
+      await onLogin(username.trim(), password, playSuccessTransition);
       setPassword("");
     } catch (cause) {
       setError(errorMessage(cause, copy));
-    } finally {
-      setBusy(false);
+      setButtonState("error");
     }
   };
 
   return (
-    <section className="mobile-login-screen mobile-page-enter">
+    <section className={`mobile-login-screen mobile-page-enter${buttonState === "fade" ? " mobile-login-exit" : ""}`}>
       <div className="mobile-login-brand">
         <img src={theme === "dark" ? LOGO_ICON : LOGO_ICON_DARK} alt="REDA TECH" />
         <h1>{copy.loginTitle}</h1>
@@ -815,10 +831,17 @@ function LoginScreen({
               </button>
             </div>
           </label>
-          {error ? <p className="msg err" role="alert"><AlertCircle size={17} />{error}</p> : null}
-          <button className="btn primary" type="submit" disabled={busy}>
-            {busy ? <LoaderCircle className="spin" size={18} /> : null}
-            {busy ? copy.signingIn : copy.login}
+          <button
+            className={`btn primary mobile-login-submit${buttonState === "success" || buttonState === "fade" ? " is-success" : ""}${buttonState === "error" ? " is-error" : ""}`}
+            type="submit"
+            disabled={buttonState !== "idle" && buttonState !== "error"}
+            aria-live="polite"
+          >
+            {buttonState === "error" ? (
+              <><AlertCircle size={20} aria-hidden="true" /><span>{error}</span></>
+            ) : buttonState === "loading" || buttonState === "success" || buttonState === "fade" ? (
+              <><span className="mobile-login-spinner" aria-hidden="true" /><span>{copy.signingIn}</span></>
+            ) : copy.login}
           </button>
         </form>
       </Card>
@@ -1189,7 +1212,11 @@ export function MobilePosApp({
     };
   }, [sessionCode, lastUpdated, refreshData]);
 
-  const signIn = async (username: string, password: string) => {
+  const signIn = async (
+    username: string,
+    password: string,
+    onAuthenticated: () => Promise<void>,
+  ) => {
     const credential = localStorage.getItem("reda-mobile-device-credential");
     if (!credential) {
       onDeviceInvalid();
@@ -1200,6 +1227,7 @@ export function MobilePosApp({
     storeMobileSessionCode(result.session_code);
     setSessionExpiresAt(result.expires_at ?? null);
     setSessionCode(result.session_code);
+    await onAuthenticated();
     applyResponse(result);
     setSection("menu");
   };
