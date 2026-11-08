@@ -90,6 +90,12 @@ type Copy = {
   stale: string;
   lastUpdated: string;
   welcome: string;
+  dashboardDesc: string;
+  stockDesc: string;
+  historyDesc: string;
+  servicesDesc: string;
+  billsDesc: string;
+  clientsDesc: string;
   noPermission: string;
   salesHistoryNote: string;
   salesHistoryUnavailable: string;
@@ -168,8 +174,8 @@ const COPY: Record<MobileLanguage, Copy> = {
     stock: "Stock",
     history: "History",
     services: "Services",
-    bills: "Bills",
-    clients: "Clients",
+    bills: "Bills & Expenses",
+    clients: "Clients & Suppliers",
     suppliers: "Suppliers",
     allPayments: "All payments",
     backToClients: "Go back",
@@ -184,6 +190,12 @@ const COPY: Record<MobileLanguage, Copy> = {
     stale: "The latest refresh failed. Displayed data may be stale.",
     lastUpdated: "Last refreshed",
     welcome: "Choose a section to view your store.",
+    dashboardDesc: "Get a quick overview of your store.",
+    stockDesc: "Manage products and stock levels.",
+    historyDesc: "Review sales and purchase history.",
+    servicesDesc: "Manage service requests and track progress.",
+    billsDesc: "Track bills and store expenses.",
+    clientsDesc: "Manage customer and supplier records.",
     noPermission: "You don't have permission to view this section.",
     salesHistoryNote:
       "Sales, items, and payments are shown as read-only records.",
@@ -329,8 +341,8 @@ const COPY: Record<MobileLanguage, Copy> = {
     stock: "Stock",
     history: "Historique",
     services: "Services",
-    bills: "Factures",
-    clients: "Clients",
+    bills: "Factures & dépenses",
+    clients: "Clients & fournisseurs",
     suppliers: "Fournisseurs",
     allPayments: "Tous les paiements",
     backToClients: "Retour aux clients",
@@ -345,6 +357,12 @@ const COPY: Record<MobileLanguage, Copy> = {
     stale: "L’actualisation a échoué. Les données affichées peuvent être obsolètes.",
     lastUpdated: "Dernière actualisation",
     welcome: "Choisissez une section de votre magasin.",
+    dashboardDesc: "Consultez un aperçu de votre magasin.",
+    stockDesc: "Gérez les produits et les stocks.",
+    historyDesc: "Consultez l’historique des ventes et achats.",
+    servicesDesc: "Gérez les demandes et leur suivi.",
+    billsDesc: "Suivez les factures et dépenses.",
+    clientsDesc: "Gérez les clients et fournisseurs.",
     noPermission: "Vous n’avez pas accès à cette section.",
     salesHistoryNote:
       "Les ventes, articles et paiements sont affichés en lecture seule.",
@@ -490,8 +508,8 @@ const COPY: Record<MobileLanguage, Copy> = {
     stock: "المخزون",
     history: "السجل",
     services: "الخدمات",
-    bills: "الفواتير",
-    clients: "العملاء",
+    bills: "الفواتير والمصروفات",
+    clients: "العملاء والموردون",
     suppliers: "الموردون",
     allPayments: "كل الدفعات",
     backToClients: "العودة إلى العملاء",
@@ -506,6 +524,12 @@ const COPY: Record<MobileLanguage, Copy> = {
     stale: "تعذر تحديث البيانات. قد تكون البيانات المعروضة قديمة.",
     lastUpdated: "آخر تحديث",
     welcome: "اختر قسماً لعرض بيانات متجرك.",
+    dashboardDesc: "اطّلع على ملخص متجرك.",
+    stockDesc: "أدر المنتجات وتابع مستويات المخزون.",
+    historyDesc: "راجع سجل المبيعات والمشتريات.",
+    servicesDesc: "أدر طلبات الخدمة وتابع تقدمها.",
+    billsDesc: "تابع الفواتير ومصروفات المتجر.",
+    clientsDesc: "أدر بيانات العملاء والموردين.",
     noPermission: "ليست لديك صلاحية لعرض هذا القسم.",
     salesHistoryNote: "تُعرض المبيعات والعناصر والمدفوعات للقراءة فقط.",
     salesHistoryUnavailable:
@@ -1318,6 +1342,14 @@ export function MobilePosApp({
                 {allowedSections.map(({ id }) => (
                   <button type="button" className="mobile-menu-tile group" key={id} onClick={() => selectSection(id)}>
                     <MenuCardContent page={id} title={copy[id]} compact />
+                    <p className="mobile-menu-description">{{
+                      dashboard: copy.dashboardDesc,
+                      stock: copy.stockDesc,
+                      history: copy.historyDesc,
+                      services: copy.servicesDesc,
+                      bills: copy.billsDesc,
+                      clients: copy.clientsDesc,
+                    }[id]}</p>
                   </button>
                 ))}
               </div>
