@@ -1361,7 +1361,7 @@ export function MobilePosApp({
                       >
                         <div className="mobile-menu-dashboard-info">
                           <div className="mobile-menu-dashboard-heading">
-                            <PageIcon page="dashboard" size={30} />
+                            <PageIcon page="dashboard" size={38} className="mobile-menu-dashboard-icon" />
                             <h2>{copy.dashboard}</h2>
                           </div>
                           <p className="mobile-menu-description">{description}</p>
@@ -1373,7 +1373,7 @@ export function MobilePosApp({
                             <strong className="revenue">{todayDashboardTotals ? formatMenuMoney(todayDashboardTotals.revenue) : "—"}</strong>
                           </div>
                           <div className="mobile-menu-dashboard-metric">
-                            <span>{copy.profit}</span>
+                            <span>{copy.netProfit}</span>
                             <strong className="profit">{todayDashboardTotals ? formatMenuMoney(todayDashboardTotals.profit) : "—"}</strong>
                           </div>
                         </div>
