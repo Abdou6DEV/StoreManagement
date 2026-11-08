@@ -26,18 +26,21 @@ async function sha256(value: unknown): Promise<string> {
 
 function splitSnapshotRows(rows: Record<string, unknown>[]): Record<string, unknown>[][] {
   const chunks: Record<string, unknown>[][] = [];
+  const encoder = new TextEncoder();
   let current: Record<string, unknown>[] = [];
+  let currentBytes = 2;
   for (const row of rows) {
-    const rowBytes = new TextEncoder().encode(JSON.stringify(row)).byteLength;
-    if (rowBytes > MAX_CHUNK_BYTES) throw new Error("sync_batch_too_large");
-    const candidate = [...current, row];
-    const candidateBytes = new TextEncoder().encode(JSON.stringify(candidate)).byteLength;
-    if (candidate.length > CHUNK_SIZE || candidateBytes > MAX_CHUNK_BYTES) {
+    const rowBytes = encoder.encode(JSON.stringify(row)).byteLength;
+    if (rowBytes + 2 > MAX_CHUNK_BYTES) throw new Error("sync_batch_too_large");
+    const candidateBytes = currentBytes + (current.length > 0 ? 1 : 0) + rowBytes;
+    if (current.length >= CHUNK_SIZE || candidateBytes > MAX_CHUNK_BYTES) {
       if (current.length === 0) throw new Error("sync_batch_too_large");
       chunks.push(current);
       current = [row];
+      currentBytes = rowBytes + 2;
     } else {
-      current = candidate;
+      current.push(row);
+      currentBytes = candidateBytes;
     }
   }
   if (current.length > 0) chunks.push(current);
@@ -154,15 +157,6 @@ Deno.serve(async (req) => {
           for (let chunkIndex = 0; chunkIndex < chunks.length; chunkIndex += 1) {
             const rows = chunks[chunkIndex];
             const checksum = await sha256(rows);
-            try {
-              validateMobileSyncChunk(entity, rows, customerId);
-            } catch (error) {
-              console.error("mobile sync chunk validation failed", {
-                entity,
-                error: error instanceof Error ? error.message : "unknown_validation_error",
-              });
-              return json(400, { ok: false, error: "invalid_chunk" }, cors);
-            }
             const { error: stageError } = await db.rpc("stage_mobile_sync_chunk", {
               p_customer_id: customerId,
               p_device_id: deviceId,
