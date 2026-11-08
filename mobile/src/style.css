@@ -1635,7 +1635,7 @@ html.dark .stock-negative { color:#f87171; }
   align-self: center;
   align-items: center;
   justify-content: center;
-  margin: 0;
+  margin: 0 0 4px;
   padding: 3px 10px;
   border-radius: 999px;
   background: color-mix(in oklch, var(--primary) 12%, var(--card));
@@ -1654,7 +1654,7 @@ html.dark .stock-negative { color:#f87171; }
   grid-template-rows: repeat(2, minmax(0, 1fr));
   align-items: center;
   justify-items: center;
-  gap: 7px;
+  gap: 3px;
 }
 .mobile-menu-dashboard-metric {
   display: flex;
@@ -1692,7 +1692,7 @@ html.dark .stock-negative { color:#f87171; }
   .mobile-menu-dashboard-info .mobile-menu-description { font-size: .64rem; }
   .mobile-menu-dashboard-summary { padding-inline-start: 9px; gap: 6px; }
   .mobile-menu-dashboard-period { padding: 3px 8px; font-size: .64rem; }
-  .mobile-menu-dashboard-metrics { min-height: 0; gap: 6px; }
+  .mobile-menu-dashboard-metrics { min-height: 0; gap: 2px; }
   .mobile-menu-dashboard-metric > span { font-size: .62rem; }
   .mobile-menu-dashboard-metric > strong { font-size: clamp(1.15rem, 4.3vw, 1.4rem); }
 }
