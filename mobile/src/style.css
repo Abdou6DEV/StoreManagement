@@ -1690,3 +1690,22 @@ html.dark .stock-negative { color:#f87171; }
 .mobile-menu-grid > .mobile-menu-tile:nth-child(4) { animation-delay: 165ms; }
 .mobile-menu-grid > .mobile-menu-tile:nth-child(5) { animation-delay: 220ms; }
 .mobile-menu-grid > .mobile-menu-tile:nth-child(6) { animation-delay: 275ms; }
+
+/* Preferences dropdown: subtle open/close motion in login and the app. */
+@keyframes mobile-preferences-open {
+  from { opacity: 0; transform: translateY(-5px) scale(.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes mobile-preferences-close {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to { opacity: 0; transform: translateY(-3px) scale(.99); }
+}
+[data-slot="dropdown-menu-content"].w-56 {
+  border-color: transparent !important;
+}
+[data-slot="dropdown-menu-content"].w-56[data-state="open"] {
+  animation: mobile-preferences-open 190ms cubic-bezier(.2, .75, .25, 1) both !important;
+}
+[data-slot="dropdown-menu-content"].w-56[data-state="closed"] {
+  animation: mobile-preferences-close 140ms ease-in both !important;
+}
