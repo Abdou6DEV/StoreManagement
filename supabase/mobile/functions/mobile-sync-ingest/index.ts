@@ -3,9 +3,13 @@ import {
   json,
   mobileAdminClient,
 } from "../_shared/licensing.ts";
-import { validateMobileSyncChunk } from "../_shared/mobileSyncSnapshot.ts";
+import {
+  validateMobileSyncChunk,
+  validateMobileSyncSnapshot,
+} from "../_shared/mobileSyncSnapshot.ts";
 
 const CHUNK_SIZE = 100;
+const MAX_CHUNK_BYTES = 256 * 1024;
 const ENTITIES = [
   "users", "permissions", "categories", "products", "manual_products",
   "suppliers", "purchases", "purchase_items", "clients", "services",
@@ -18,6 +22,26 @@ async function sha256(value: unknown): Promise<string> {
   const bytes = new TextEncoder().encode(JSON.stringify(value));
   const digest = await crypto.subtle.digest("SHA-256", bytes);
   return [...new Uint8Array(digest)].map((part) => part.toString(16).padStart(2, "0")).join("");
+}
+
+function splitSnapshotRows(rows: Record<string, unknown>[]): Record<string, unknown>[][] {
+  const chunks: Record<string, unknown>[][] = [];
+  let current: Record<string, unknown>[] = [];
+  for (const row of rows) {
+    const rowBytes = new TextEncoder().encode(JSON.stringify(row)).byteLength;
+    if (rowBytes > MAX_CHUNK_BYTES) throw new Error("sync_batch_too_large");
+    const candidate = [...current, row];
+    const candidateBytes = new TextEncoder().encode(JSON.stringify(candidate)).byteLength;
+    if (candidate.length > CHUNK_SIZE || candidateBytes > MAX_CHUNK_BYTES) {
+      if (current.length === 0) throw new Error("sync_batch_too_large");
+      chunks.push(current);
+      current = [row];
+    } else {
+      current = candidate;
+    }
+  }
+  if (current.length > 0) chunks.push(current);
+  return chunks;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -60,7 +84,7 @@ Deno.serve(async (req) => {
       return json(403, { ok: false, error: "snapshot_not_owned" }, cors);
     }
     customerId = owner.customer_id;
-  } else if (action === "start" || action === "finalize") {
+  } else if (action === "start" || action === "finalize" || action === "snapshot") {
     const { data: authorization, error: authorizationError } = await db
       .from("mobile_desktop_sync_authorizations")
       .select("customer_id,is_active")
@@ -94,6 +118,92 @@ Deno.serve(async (req) => {
   }
 
   try {
+    if (action === "snapshot") {
+      try {
+        validateMobileSyncSnapshot(body.snapshot, customerId);
+      } catch (error) {
+        console.error("mobile sync snapshot validation failed", {
+          error: error instanceof Error ? error.message : "unknown_validation_error",
+        });
+        return json(400, { ok: false, error: "invalid_snapshot" }, cors);
+      }
+
+      const snapshot = body.snapshot as Record<string, Record<string, unknown>[]>;
+      const chunkedEntries = ENTITIES.map((entity) => [entity, splitSnapshotRows(snapshot[entity])] as const);
+      const expectedCounts = Object.fromEntries(
+        ENTITIES.map((entity) => [entity, snapshot[entity].length]),
+      );
+      const expectedChunks = Object.fromEntries(
+        chunkedEntries.map(([entity, chunks]) => [entity, chunks.length]),
+      );
+
+      const { data: started, error: startError } = await db.rpc("begin_mobile_sync_snapshot", {
+        p_customer_id: customerId,
+        p_device_id: deviceId,
+        p_snapshot_id: snapshotId,
+        p_expected_counts: expectedCounts,
+        p_expected_chunks: expectedChunks,
+      });
+      if (startError) {
+        console.error("mobile snapshot start failed");
+        return json(409, { ok: false, error: "snapshot_start_failed" }, cors);
+      }
+
+      if (started?.status !== "active") {
+        for (const [entity, chunks] of chunkedEntries) {
+          for (let chunkIndex = 0; chunkIndex < chunks.length; chunkIndex += 1) {
+            const rows = chunks[chunkIndex];
+            const checksum = await sha256(rows);
+            try {
+              validateMobileSyncChunk(entity, rows, customerId);
+            } catch (error) {
+              console.error("mobile sync chunk validation failed", {
+                entity,
+                error: error instanceof Error ? error.message : "unknown_validation_error",
+              });
+              return json(400, { ok: false, error: "invalid_chunk" }, cors);
+            }
+            const { error: stageError } = await db.rpc("stage_mobile_sync_chunk", {
+              p_customer_id: customerId,
+              p_device_id: deviceId,
+              p_snapshot_id: snapshotId,
+              p_entity: entity,
+              p_chunk_index: chunkIndex,
+              p_checksum: checksum,
+              p_rows: rows,
+            });
+            if (stageError) {
+              console.error("mobile snapshot chunk staging failed", { entity, chunk_index: chunkIndex });
+              return json(409, { ok: false, error: "chunk_stage_failed" }, cors);
+            }
+          }
+        }
+      }
+
+      const { error: finalizeError } = await db.rpc("finalize_mobile_sync_snapshot", {
+        p_customer_id: customerId,
+        p_device_id: deviceId,
+        p_snapshot_id: snapshotId,
+      });
+      if (finalizeError) {
+        console.error("mobile snapshot finalization failed");
+        return json(409, { ok: false, error: "snapshot_incomplete_or_invalid" }, cors);
+      }
+      const { data: completed, error: completedError } = await db.from("mobile_sync_snapshots")
+        .select("expected_counts,status,completed_at")
+        .eq("customer_id", customerId)
+        .eq("snapshot_id", snapshotId)
+        .maybeSingle();
+      if (completedError || completed?.status !== "active") {
+        return json(500, { ok: false, error: "snapshot_activation_unconfirmed" }, cors);
+      }
+      return json(200, {
+        ok: true,
+        synced_at: completed.completed_at ?? new Date().toISOString(),
+        counts: completed.expected_counts ?? expectedCounts,
+      }, cors);
+    }
+
     if (action === "start") {
       const counts = body.expected_counts;
       const chunks = body.expected_chunks;
@@ -188,7 +298,10 @@ Deno.serve(async (req) => {
       }, cors);
     }
     return json(400, { ok: false, error: "unknown_sync_action" }, cors);
-  } catch {
+  } catch (error) {
+    if (error instanceof Error && error.message === "sync_batch_too_large") {
+      return json(413, { ok: false, error: "sync_batch_too_large" }, cors);
+    }
     console.error("mobile sync request failed unexpectedly");
     return json(500, { ok: false, error: "sync_failed" }, cors);
   }

@@ -100,8 +100,6 @@ const MOBILE_SYNC_MAX_RETRY_MS = 5 * 60_000;
 const MOBILE_SYNC_LAST_SUCCESS_OPTION = "mobile_sync_last_success_at";
 const MOBILE_SYNC_CHECKPOINT_OPTION = "mobile_sync_snapshot_checkpoint";
 const MOBILE_MANAGEMENT_SNAPSHOT_OPTION = "mobile_management_snapshot";
-const MOBILE_SYNC_CHUNK_SIZE = 100;
-const MOBILE_SYNC_MAX_CHUNK_BYTES = 256 * 1024;
 
 let mobileSyncTimer: ReturnType<typeof setTimeout> | null = null;
 let mobileSyncInFlight: Promise<boolean> | null = null;
@@ -284,32 +282,13 @@ async function uploadMobileSnapshot(
       )
     ),
   ] as const);
-  const chunkedEntries = entries.map(([entity, rows]) => {
-    const chunks: Record<string, unknown>[][] = [];
-    let current: Record<string, unknown>[] = [];
-    for (const row of rows) {
-      if (Buffer.byteLength(JSON.stringify(row), "utf8") > MOBILE_SYNC_MAX_CHUNK_BYTES) {
-        throw mobileSyncFailure("sync_batch_too_large");
-      }
-      const candidate = [...current, row];
-      const candidateBytes = Buffer.byteLength(JSON.stringify(candidate), "utf8");
-      if (candidate.length > MOBILE_SYNC_CHUNK_SIZE || candidateBytes > MOBILE_SYNC_MAX_CHUNK_BYTES) {
-        chunks.push(current);
-        current = [row];
-      } else {
-        current = candidate;
-      }
-    }
-    if (current.length > 0) chunks.push(current);
-    return [entity, rows.length, chunks] as const;
-  });
+  const orderedSnapshot = Object.fromEntries(entries) as MobileSyncSnapshot;
   const expectedCounts = Object.fromEntries(
-    chunkedEntries.map(([entity, count]) => [entity, count]),
+    entries.map(([entity, rows]) => [entity, rows.length]),
   );
-  const expectedChunks = Object.fromEntries(
-    chunkedEntries.map(([entity, , chunks]) => [entity, chunks.length]),
-  );
-  const snapshotHash = createHash("sha256").update(JSON.stringify(Object.fromEntries(entries))).digest("hex");
+  const snapshotHash = createHash("sha256")
+    .update(JSON.stringify(orderedSnapshot))
+    .digest("hex");
   let snapshotId = randomUUID();
   const savedCheckpoint = await getOption(MOBILE_SYNC_CHECKPOINT_OPTION);
   if (savedCheckpoint) {
@@ -324,7 +303,7 @@ async function uploadMobileSnapshot(
   }
   await setOption(MOBILE_SYNC_CHECKPOINT_OPTION, JSON.stringify({ snapshotId, snapshotHash }));
 
-  const send = async (body: Record<string, unknown>): Promise<Record<string, unknown>> => {
+  const sendSnapshot = async (): Promise<Record<string, unknown>> => {
     let lastError: unknown;
     for (let attempt = 0; attempt < 3; attempt += 1) {
       try {
@@ -335,8 +314,13 @@ async function uploadMobileSnapshot(
             apikey: config.publishableKey,
             "x-mobile-desktop-secret": config.desktopSecret,
           },
-          body: JSON.stringify({ device_id: deviceId, snapshot_id: snapshotId, ...body }),
-          signal: AbortSignal.timeout(45_000),
+          body: JSON.stringify({
+            action: "snapshot",
+            device_id: deviceId,
+            snapshot_id: snapshotId,
+            snapshot: orderedSnapshot,
+          }),
+          signal: AbortSignal.timeout(120_000),
         });
         const responseText = await response.text();
         let payload: unknown;
@@ -354,11 +338,11 @@ async function uploadMobileSnapshot(
           throw mobileSyncFailure(response.status >= 500
             ? `http_${response.status}`
             : MOBILE_SYNC_ERROR_CODES.has(serverError) ? serverError : `http_${response.status}`);
-        } else if (!payload || typeof payload !== "object" || (payload as Record<string, unknown>).ok !== true) {
-          throw mobileSyncFailure("invalid_response");
-        } else {
-          return payload as Record<string, unknown>;
         }
+        if (!payload || typeof payload !== "object" || (payload as Record<string, unknown>).ok !== true) {
+          throw mobileSyncFailure("invalid_response");
+        }
+        return payload as Record<string, unknown>;
       } catch (error) {
         lastError = error;
         if (error instanceof Error && error.message.startsWith("mobile_sync:") &&
@@ -370,26 +354,16 @@ async function uploadMobileSnapshot(
     throw lastError instanceof Error ? lastError : mobileSyncFailure("sync_failed");
   };
 
-  let started: Record<string, unknown>;
+  let result: Record<string, unknown>;
   try {
-    started = await send({ action: "start", expected_counts: expectedCounts, expected_chunks: expectedChunks });
+    result = await sendSnapshot();
   } catch (error) {
     if (!(error instanceof Error) || !error.message.includes("snapshot_start_failed")) throw error;
     snapshotId = randomUUID();
     await setOption(MOBILE_SYNC_CHECKPOINT_OPTION, JSON.stringify({ snapshotId, snapshotHash }));
-    started = await send({ action: "start", expected_counts: expectedCounts, expected_chunks: expectedChunks });
-  }
-  if (started.status !== "active") {
-    for (const [entity, , chunks] of chunkedEntries) {
-      for (let chunkIndex = 0; chunkIndex < chunks.length; chunkIndex += 1) {
-        const chunk = chunks[chunkIndex];
-        const checksum = createHash("sha256").update(JSON.stringify(chunk)).digest("hex");
-        await send({ action: "chunk", entity, chunk_index: chunkIndex, checksum, rows: chunk });
-      }
-    }
+    result = await sendSnapshot();
   }
 
-  const result = await send({ action: "finalize" });
   const counts = result.counts && typeof result.counts === "object"
     ? result.counts as Record<string, unknown>
     : null;
