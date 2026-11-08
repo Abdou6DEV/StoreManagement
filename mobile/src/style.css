@@ -353,12 +353,15 @@ button:focus-visible, select:focus-visible, input:focus-visible {
   font-weight: 650;
 }
 .mobile-user-badge-avatar { width: 2.25rem; height: 2.25rem; }
-.mobile-user-badge-avatar svg { width: 1.1rem; height: 1.1rem; }
+.mobile-user-badge-avatar svg { width: 1.65rem; height: 1.65rem; }
 .mobile-user-badge-profile { position: relative; flex: 0 0 auto; }
 .mobile-user-badge-crown {
   position: absolute;
-  top: -5px;
-  inset-inline-end: -7px;
+  top: -8px;
+  left: 50%;
+  right: auto;
+  inset-inline-end: auto;
+  transform: translateX(-50%);
   color: #d3a323;
   fill: #d3a323;
   stroke: var(--card);
