@@ -1540,33 +1540,51 @@ html.dark .stock-negative { color:#f87171; }
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
 }
+.mobile-menu-dashboard-summary {
+  display: flex;
+  min-width: 0;
+  height: 100%;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding-inline-start: 14px;
+  border-inline-start: 1px solid var(--mobile-border, var(--border));
+}
 .mobile-menu-dashboard-period {
-  position: absolute;
-  top: 10px;
-  inset-inline-end: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   margin: 0;
-  color: var(--mobile-muted);
-  font-size: .72rem;
-  font-weight: 650;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: color-mix(in oklch, var(--primary) 12%, var(--card));
+  color: var(--primary);
+  font-size: .68rem;
+  font-weight: 750;
+  line-height: 1.2;
 }
 .mobile-menu-dashboard-metrics {
   display: grid;
+  width: 100%;
   min-width: 0;
-  min-height: 92px;
+  min-height: 0;
+  flex: 1 1 auto;
   grid-template-columns: minmax(0, 1fr);
   grid-template-rows: repeat(2, minmax(0, 1fr));
   align-items: center;
+  justify-items: center;
   gap: 7px;
-  padding-inline-start: 14px;
-  border-inline-start: 1px solid var(--mobile-border, var(--border));
 }
 .mobile-menu-dashboard-metric {
   display: flex;
   min-width: 0;
   flex-direction: column;
+  align-items: center;
   justify-content: center;
   gap: 2px;
   padding: 0;
+  text-align: center;
   border-radius: 0;
   background: transparent;
 }
@@ -1592,8 +1610,9 @@ html.dark .stock-negative { color:#f87171; }
   .mobile-menu-dashboard-heading > svg.mobile-menu-dashboard-icon { width: 32px; height: 32px; }
   .mobile-menu-dashboard-heading h2 { font-size: .78rem; }
   .mobile-menu-dashboard-info .mobile-menu-description { font-size: .64rem; }
-  .mobile-menu-dashboard-period { top: 8px; inset-inline-end: 10px; }
-  .mobile-menu-dashboard-metrics { min-height: 84px; gap: 6px; padding-inline-start: 9px; }
+  .mobile-menu-dashboard-summary { padding-inline-start: 9px; gap: 6px; }
+  .mobile-menu-dashboard-period { padding: 3px 8px; font-size: .64rem; }
+  .mobile-menu-dashboard-metrics { min-height: 0; gap: 6px; }
   .mobile-menu-dashboard-metric > span { font-size: .62rem; }
   .mobile-menu-dashboard-metric > strong { font-size: clamp(1.15rem, 4.3vw, 1.4rem); }
 }

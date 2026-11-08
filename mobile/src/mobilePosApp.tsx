@@ -1366,15 +1366,17 @@ export function MobilePosApp({
                           </div>
                           <p className="mobile-menu-description">{description}</p>
                         </div>
-                        <p className="mobile-menu-dashboard-period">{copy.today}</p>
-                        <div className="mobile-menu-dashboard-metrics">
-                          <div className="mobile-menu-dashboard-metric">
-                            <span>{copy.revenue}</span>
-                            <strong className="revenue">{todayDashboardTotals ? formatMenuMoney(todayDashboardTotals.revenue) : "—"}</strong>
-                          </div>
-                          <div className="mobile-menu-dashboard-metric">
-                            <span>{copy.netProfit}</span>
-                            <strong className="profit">{todayDashboardTotals ? formatMenuMoney(todayDashboardTotals.profit) : "—"}</strong>
+                        <div className="mobile-menu-dashboard-summary">
+                          <span className="mobile-menu-dashboard-period">{copy.today}</span>
+                          <div className="mobile-menu-dashboard-metrics">
+                            <div className="mobile-menu-dashboard-metric">
+                              <span>{copy.revenue}</span>
+                              <strong className="revenue">{todayDashboardTotals ? formatMenuMoney(todayDashboardTotals.revenue) : "—"}</strong>
+                            </div>
+                            <div className="mobile-menu-dashboard-metric">
+                              <span>{copy.netProfit}</span>
+                              <strong className="profit">{todayDashboardTotals ? formatMenuMoney(todayDashboardTotals.profit) : "—"}</strong>
+                            </div>
                           </div>
                         </div>
                       </button>
