@@ -774,7 +774,7 @@ function LoginScreen({
   };
 
   return (
-    <section className="mobile-login-screen">
+    <section className="mobile-login-screen mobile-page-enter">
       <div className="mobile-login-brand">
         <img src={theme === "dark" ? LOGO_ICON : LOGO_ICON_DARK} alt="REDA TECH" />
         <h1>{copy.loginTitle}</h1>
