@@ -1734,7 +1734,8 @@ html.dark .stock-negative { color:#f87171; }
   to { opacity: 0; transform: translateY(-3px) scale(.99); }
 }
 [data-slot="dropdown-menu-content"].w-56 {
-  border-color: transparent !important;
+  border-color: color-mix(in srgb, var(--fg) 22%, var(--line)) !important;
+  box-shadow: 0 6px 20px rgb(0 0 0 / 12%), 0 1px 3px rgb(0 0 0 / 8%) !important;
 }
 [data-slot="dropdown-menu-content"].w-56[data-state="open"] {
   animation: mobile-preferences-open 190ms cubic-bezier(.2, .75, .25, 1) both !important;
