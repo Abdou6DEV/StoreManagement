@@ -361,6 +361,7 @@ function StockStyleTable<T extends MobileRow>({
   initialSortId,
   initialPageSize = 7,
   pageSizes = [7, 10, 20, 50, 100],
+  onRowClick,
 }: {
   rows: T[];
   columns: Column<T>[];
@@ -376,6 +377,7 @@ function StockStyleTable<T extends MobileRow>({
   initialSortId?: string;
   initialPageSize?: number;
   pageSizes?: number[];
+  onRowClick?: (row: T) => void;
 }) {
   const [sortId, setSortId] = useState(initialSortId ?? sorts[0]?.id ?? "");
   const [pageSize, setPageSize] = useState(initialPageSize);
@@ -415,7 +417,21 @@ function StockStyleTable<T extends MobileRow>({
             <thead><tr>{columns.map((column) => <th key={column.key}>{column.label}</th>)}</tr></thead>
             <tbody>
               {visibleRows.map((row, index) => (
-                <tr key={String(row.source_id ?? `${currentPage}-${index}`)}>
+                <tr
+                  key={String(row.source_id ?? `${currentPage}-${index}`)}
+                  className={onRowClick ? "mobile-record-row-clickable" : undefined}
+                  onClick={onRowClick ? (event) => {
+                    const target = event.target;
+                    if (target instanceof Element && target.closest("button, a, input, select, textarea")) return;
+                    onRowClick(row);
+                  } : undefined}
+                  onKeyDown={onRowClick ? (event) => {
+                    if (event.target !== event.currentTarget || (event.key !== "Enter" && event.key !== " ")) return;
+                    event.preventDefault();
+                    onRowClick(row);
+                  } : undefined}
+                  tabIndex={onRowClick ? 0 : undefined}
+                >
                   {columns.map((column) => <td className={column.align === "end" ? "record-align-end" : undefined} key={column.key}>{column.render(row)}</td>)}
                 </tr>
               ))}
@@ -861,6 +877,7 @@ export function ClientsSection({
           initialPageSize={10}
           pageSizes={[5, 10, 25, 50, 100]}
           stickyFirstColumn
+          onRowClick={openClientDetail}
           toolbar={<>
             <SearchRow query={query} onQueryChange={onQueryChange} label={labels.search} />
             {data.clients.length >= 2000 ? <LimitNotice>{labels.limitNotice} ({labels.limitedClients}: 2,000)</LimitNotice> : null}
@@ -988,6 +1005,7 @@ export function ClientsSection({
           initialPageSize={10}
           pageSizes={[5, 10, 25, 50, 100]}
           stickyFirstColumn
+          onRowClick={(row) => { setSelectedSupplier(row); setSupplierPurchaseLimit(10); }}
           toolbar={<>
             <SearchRow query={supplierSearch} onQueryChange={setSupplierSearch} label={supplierLabels.search} />
             {permissions.can_access_history && (data.purchases.length >= 5000 || data.purchase_items.length >= 10000)
@@ -1178,6 +1196,7 @@ export function BillsSection({
             empty={labels.empty}
             minWidth={910}
             stickyFirstColumn
+            onRowClick={setSelected}
             toolbar={
               <>
                 <div className="stock-filter-row stock-filter-primary-row" aria-label={labels.filters}>
@@ -1393,6 +1412,7 @@ export function ServicesSection({
           empty={labels.empty}
           minWidth={showProfit ? 1140 : 1040}
           stickyFirstColumn
+          onRowClick={setSelected}
           toolbar={<div className="mobile-services-toolbar"><div className="mobile-services-search"><SearchRow query={query} onQueryChange={onQueryChange} label={labels.search} /></div><label className="mobile-services-profit-toggle"><input type="checkbox" checked={showProfit} onChange={(event) => setShowProfit(event.target.checked)} /><span>{labels.profit}</span></label></div>}
           sorts={[
             { id: "desktop", label: labels.desktopDefault, compare: compareDesktopDefault },

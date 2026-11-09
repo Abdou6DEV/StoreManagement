@@ -87,33 +87,10 @@ export function StockSection({ data, language, query, onQueryChange }: { data: M
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = previousOverflow; };
   }, [selected]);
-  const [activeProductName, setActiveProductName] = useState<string | null>(null);
-  const [activeProductNamePosition, setActiveProductNamePosition] = useState<{ top: number; left: number } | null>(null);
   const [purchaseLimit, setPurchaseLimit] = useState(5);
   const [salesLimit, setSalesLimit] = useState(5);
   const [stockTableScrolled, setStockTableScrolled] = useState(false);
   useEffect(() => setPage(1), [query, category, lowStock, outOfStock, noBarcode, salesSort, sort, pageSize, view]);
-  useEffect(() => {
-    if (!activeProductName) return;
-    const dismissOnOutsideClick = (event: PointerEvent) => {
-      if (event.target instanceof Element && event.target.closest(".stock-product-name-wrap")) return;
-      setActiveProductName(null);
-      setActiveProductNamePosition(null);
-    };
-    const dismissOnViewportChange = () => {
-      setActiveProductName(null);
-      setActiveProductNamePosition(null);
-    };
-    document.addEventListener("pointerdown", dismissOnOutsideClick);
-    window.addEventListener("scroll", dismissOnViewportChange, true);
-    window.addEventListener("resize", dismissOnViewportChange);
-    return () => {
-      document.removeEventListener("pointerdown", dismissOnOutsideClick);
-      window.removeEventListener("scroll", dismissOnViewportChange, true);
-      window.removeEventListener("resize", dismissOnViewportChange);
-    };
-  }, [activeProductName]);
-
   const salesMetrics = useMemo(() => {
     const productsById = new Map(data.products.map((product) => [productKey(product), product]));
     const metrics = new Map<string, { sold: number; profit: number }>();
@@ -241,8 +218,8 @@ export function StockSection({ data, language, query, onQueryChange }: { data: M
             const quantity = num(product.quantity), bought = num(product.bought_price), selling = num(product.selling_price);
             const metric = salesMetrics.get(productKey(product)) ?? { sold: 0, profit: 0 };
             const isOut = quantity === 0, isLow = quantity > 0 && quantity <= 5;
-            return <tr className={isOut ? "is-out" : isLow ? "is-low" : ""} key={productKey(product)}>
-              <td><div className="stock-table-product-name-wrap"><button type="button" className="stock-table-product-name" title={str(product.name)} aria-label={str(product.name) || "—"} aria-expanded={activeProductName === productKey(product)} onClick={(event) => { const key = productKey(product); if (activeProductName === key) { setActiveProductName(null); setActiveProductNamePosition(null); return; } const rect = event.currentTarget.getBoundingClientRect(); const tooltipWidth = Math.min(window.innerWidth * 0.84, 290); const left = Math.min(Math.max(rect.left + rect.width / 2, tooltipWidth / 2 + 8), window.innerWidth - tooltipWidth / 2 - 8); setActiveProductNamePosition({ top: rect.top - 8, left }); setActiveProductName(key); }}>{str(product.name) || "—"}</button><small>{str(product.codebar) || t.noBarcode}</small>{activeProductName === productKey(product) && activeProductNamePosition ? <div className="stock-product-name-tooltip" role="tooltip" style={{ top: activeProductNamePosition.top, left: activeProductNamePosition.left }}><div className="stock-product-tooltip-title">{str(product.name) || "—"}</div><div className="stock-product-tooltip-grid"><div><span>{t.quantity}</span><strong>{new Intl.NumberFormat(language).format(quantity)}</strong></div><div><span>{t.bought}</span><strong>{money(bought, language)}</strong></div><div><span>{t.selling}</span><strong>{money(selling, language)}</strong></div><div><span>{t.unitProfit}</span><strong className={selling >= bought ? "stock-positive" : "stock-negative"}>{money(selling - bought, language)}</strong></div></div></div> : null}</div></td>
+            return <tr className={(isOut ? "is-out" : isLow ? "is-low" : "") + " stock-clickable-row"} key={productKey(product)} onClick={() => setSelected(product)}>
+              <td><div className="stock-table-product-name-wrap"><span className="stock-table-product-name" title={str(product.name)}>{str(product.name) || "—"}</span><small>{str(product.codebar) || t.noBarcode}</small></div></td>
               <td>{str(product.category_name) || "—"}</td>
               <td><span className={"stock-quantity-badge" + (isOut ? " out" : isLow ? " low" : "")}>{new Intl.NumberFormat(language).format(quantity)}</span></td>
               <td className="stock-money-cell">{money(bought, language)}</td>
