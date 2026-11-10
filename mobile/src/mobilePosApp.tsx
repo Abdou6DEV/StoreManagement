@@ -1371,6 +1371,7 @@ export function MobilePosApp({
                 <UserBadgeAvatar
                   className="mobile-user-badge-avatar"
                   isAdmin={user.role.toUpperCase() === "ADMIN"}
+                  username={user.username}
                   size="sm"
                 />
               </span>
