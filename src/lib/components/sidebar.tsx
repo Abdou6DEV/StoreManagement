@@ -32,6 +32,7 @@ import { BadgeNotification } from "./badgeNotification";
 import Orb from "./assistant-ui/orb";
 import { useAuiState } from "@assistant-ui/react";
 import { getAiUnreadReply } from "./ai/aiUnread";
+import { HoverScale } from "./sharedPresentation";
 
 const menuItems = [
   { key: "title", path: "/", icon: Home, color: "text-primary" },
@@ -368,10 +369,15 @@ export default function Sidebar() {
         style={{ height: "100%" }}
       >
         {filteredMenuItems.map((item) => (
+          <HoverScale
+            key={item.key}
+            className="w-full"
+            whileHover={{ scale: 1.07 }}
+            whileTap={{ scale: 0.96 }}
+          >
           <Link
             data-is-active={location.pathname === item.path}
             to={item.path}
-            key={item.key}
             className="max-w-full gap-4 flex items-center rounded-xl m-2 p-2 -mt-1 capitalize hover:bg-secondary data-[is-active=true]:bg-secondary font-semibold data-[is-active=true]:font-bold relative"
           >
             <div className="relative">
@@ -467,6 +473,7 @@ export default function Sidebar() {
               <span className="truncate">{t(`mainMenu.${item.key}`)}</span>
             )}
           </Link>
+          </HoverScale>
         ))}
 
         <div
@@ -474,6 +481,11 @@ export default function Sidebar() {
           className="pointer-events-none min-h-0 flex-1 max-h-16 short:max-h-0"
         />
 
+        <HoverScale
+          className="w-full"
+          whileHover={{ scale: 1.07 }}
+          whileTap={{ scale: 0.96 }}
+        >
         <button
           type="button"
           data-is-active={aiOpen}
@@ -503,15 +515,22 @@ export default function Sidebar() {
             <span className="truncate">{t("mainMenu.ai", "REDA AI")}</span>
           )}
         </button>
+        </HoverScale>
 
         {/* Logout Button */}
+        <HoverScale
+          className="w-full mt-auto"
+          whileHover={{ scale: 1.07 }}
+          whileTap={{ scale: 0.96 }}
+        >
         <button
-          className="max-w-full flex gap-4 items-center rounded-xl m-2 p-2 hover:bg-red-100 hover:text-red-600 font-semibold transition-all duration-300 mt-auto"
+          className="max-w-full flex gap-4 items-center rounded-xl m-2 p-2 hover:bg-red-100 hover:text-red-600 font-semibold transition-all duration-300"
           onClick={logout}
         >
           <LogOut className="text-red-500" />
           {showText && <span className="truncate">Logout</span>}
         </button>
+        </HoverScale>
 
         <button
           className="max-w-full flex gap-4 items-center rounded-xl self-end m-2 p-2 hover:bg-secondary font-semibold transition-all duration-300"

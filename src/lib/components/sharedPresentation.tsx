@@ -11,8 +11,8 @@ import {
   ShoppingCart,
   Users,
   Wrench,
-  User,
 } from "lucide-react";
+import { motion, useReducedMotion, type HTMLMotionProps } from "motion/react";
 import { cn } from "../utils";
 
 export const PAGE_PRESENTATION = {
@@ -30,6 +30,24 @@ export const PAGE_PRESENTATION = {
 } as const;
 
 export type PresentationPage = keyof typeof PAGE_PRESENTATION;
+
+export function HoverScale({
+  whileHover,
+  whileTap,
+  transition,
+  ...props
+}: HTMLMotionProps<"div">) {
+  const reduceMotion = useReducedMotion();
+
+  return (
+    <motion.div
+      {...props}
+      whileHover={reduceMotion ? undefined : whileHover}
+      whileTap={reduceMotion ? undefined : whileTap}
+      transition={transition ?? { type: "spring", stiffness: 340, damping: 20 }}
+    />
+  );
+}
 
 export function PageIcon({
   page,
@@ -69,37 +87,38 @@ export function MenuCardContent({
 
 export function UserBadgeAvatar({
   isAdmin,
+  username,
   size = "md",
   className,
 }: {
   isAdmin: boolean;
+  username: string;
   size?: "sm" | "md" | "lg";
   className?: string;
 }) {
   const config = {
-    sm: { avatar: "w-9 h-19", icon: "w-6 h-6" },
-    md: { avatar: "w-11 h-11", icon: "w-8 h-8" },
-    lg: { avatar: "w-12 h-12", icon: "w-8 h-8" },
+    sm: { avatar: "w-9 h-19", initial: "text-base" },
+    md: { avatar: "w-11 h-11", initial: "text-lg" },
+    lg: { avatar: "w-12 h-12", initial: "text-xl" },
   }[size];
 
   return (
-    <div
+    <HoverScale
       className={cn(
-        "flex shrink-0 items-center justify-center rounded-full",
-        isAdmin ? "bg-orange-500/15 dark:bg-orange-500/20" : "bg-primary/15 text-primary",
+        "flex shrink-0 items-center justify-center overflow-hidden rounded-full border font-semibold shadow-sm",
+        isAdmin
+          ? "border-orange-300/70 bg-gradient-to-br from-orange-400 via-orange-500 to-amber-700 text-white dark:border-orange-400/40"
+          : "border-primary/20 bg-gradient-to-br from-primary/70 to-primary text-primary-foreground",
         config.avatar,
         className,
       )}
+      whileHover={{ scale: 1.06 }}
+      whileTap={{ scale: 0.96 }}
       aria-hidden="true"
     >
-      <User
-        className={cn(
-          "shrink-0",
-          config.icon,
-          isAdmin ? "text-orange-500 dark:text-orange-400" : "text-primary",
-        )}
-        strokeWidth={2}
-      />
-    </div>
+      <span className={cn("select-none font-bold leading-none", config.initial)}>
+        {username.trim().charAt(0).toLocaleUpperCase() || "?"}
+      </span>
+    </HoverScale>
   );
 }

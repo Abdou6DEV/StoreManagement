@@ -520,7 +520,7 @@ export default function ChatBox() {
                       : t("ai.open", "Open REDA AI")
                   }
                   tabIndex={open ? -1 : 0}
-                  className="group relative h-16 w-16 rounded-full border border-border/50 bg-black shadow-xl shadow-primary/20 transition-all duration-500 ease-out hover:scale-105 hover:shadow-2xl hover:shadow-primary/30"
+                  className="group relative h-16 w-16 rounded-full border border-border/50 bg-black shadow-xl shadow-primary/20 transition-[scale,box-shadow] duration-150 ease-out hover:scale-105 active:scale-[0.92] hover:shadow-2xl hover:shadow-primary/30 motion-reduce:hover:scale-100 motion-reduce:active:scale-100 motion-reduce:transition-none"
                 >
                   <div className="absolute inset-0 overflow-hidden rounded-full">
                     <Orb

@@ -251,7 +251,7 @@ export default function PendingProductsList({
             const name = String(value ?? "");
             setMultiSellerName(name);
             const match = sellers.find(
-              (s) => s.name.toLowerCase() === name.trim().toLowerCase(),
+              (s) => s.name.trim().toLowerCase() === name.trim().toLowerCase(),
             );
             setMultiSellerId(match?.id ?? "");
           }}

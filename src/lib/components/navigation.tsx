@@ -28,6 +28,7 @@ import { cn } from "../utils";
 import { useEffect, useRef } from "react";
 import { Bell } from "../../components/animate-ui/icons/bell";
 import {
+  HoverScale,
   PAGE_PRESENTATION,
   PageIcon,
   type PresentationPage,
@@ -38,12 +39,101 @@ export default function Navigation() {
   const navigate = useNavigate();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [headerVisible, setHeaderVisible] = useState(true);
   const { t, i18n } = useTranslation();
   const { user, logout, loading } = useAuth();
   const { notifications, totalCount } = useNotifications();
 
   const isCashierPage = location.pathname.startsWith("/cashier");
   const isRTL = i18n.language === "ar";
+
+  useEffect(() => {
+    setHeaderVisible(true);
+    if (isCashierPage) return;
+
+    let previousScrollY = window.scrollY;
+    let revealTimer: number | undefined;
+    let hideTimer: number | undefined;
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      const scrollDelta = currentScrollY - previousScrollY;
+
+      if (currentScrollY <= 80 || dropdownOpen || notificationsOpen) {
+        setHeaderVisible(true);
+        if (hideTimer !== undefined) {
+          window.clearTimeout(hideTimer);
+          hideTimer = undefined;
+        }
+      } else if (scrollDelta > 6) {
+        setHeaderVisible(false);
+      }
+
+      previousScrollY = currentScrollY;
+    };
+    const handleMouseMove = (event: MouseEvent) => {
+      if (dropdownOpen || notificationsOpen || window.scrollY <= 80) {
+        if (hideTimer !== undefined) {
+          window.clearTimeout(hideTimer);
+          hideTimer = undefined;
+        }
+        return;
+      }
+
+      if (event.clientY <= 10 && window.scrollY > 80) {
+        if (hideTimer !== undefined) {
+          window.clearTimeout(hideTimer);
+          hideTimer = undefined;
+        }
+        if (revealTimer === undefined) {
+          revealTimer = window.setTimeout(() => {
+            setHeaderVisible(true);
+            revealTimer = undefined;
+          }, 150);
+        }
+      } else if (revealTimer !== undefined) {
+        window.clearTimeout(revealTimer);
+        revealTimer = undefined;
+      }
+
+      if (event.clientY > 110) {
+        if (hideTimer === undefined) {
+          hideTimer = window.setTimeout(() => {
+            setHeaderVisible(false);
+            hideTimer = undefined;
+          }, 220);
+        }
+      } else if (hideTimer !== undefined) {
+        window.clearTimeout(hideTimer);
+        hideTimer = undefined;
+      }
+    };
+    const handleFocusIn = (event: FocusEvent) => {
+      if (
+        event.target instanceof Element &&
+        event.target.closest("[data-app-navigation-header]")
+      ) {
+        setHeaderVisible(true);
+      }
+    };
+    const handleTouchStart = (event: TouchEvent) => {
+      if (event.touches[0]?.clientY <= 10 && window.scrollY > 80) {
+        setHeaderVisible(true);
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("focusin", handleFocusIn);
+    window.addEventListener("touchstart", handleTouchStart, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("focusin", handleFocusIn);
+      window.removeEventListener("touchstart", handleTouchStart);
+      if (revealTimer !== undefined) window.clearTimeout(revealTimer);
+      if (hideTimer !== undefined) window.clearTimeout(hideTimer);
+    };
+  }, [isCashierPage, dropdownOpen, notificationsOpen, location.pathname]);
 
   // Animate header only when it appears after leaving cashier.
   const prevIsCashierPage = useRef(isCashierPage);
@@ -56,8 +146,10 @@ export default function Navigation() {
   if (loading) {
     return (
       <div
+        data-app-navigation-header
         className={cn(
-          "w-full px-4 pt-4",
+          "fixed inset-x-0 top-0 z-50 w-full px-4 pt-4 transition-transform duration-300 ease-in-out",
+          !headerVisible && "-translate-y-full",
           shouldAnimateHeader && "nav-transition-enter",
         )}
       >
@@ -163,8 +255,10 @@ export default function Navigation() {
 
   return (
     <div
+      data-app-navigation-header
       className={cn(
-        "w-full px-4 pt-4",
+        "fixed inset-x-0 top-0 z-50 w-full px-4 pt-4 transition-transform duration-300 ease-in-out",
+        !headerVisible && "-translate-y-full",
         shouldAnimateHeader && "nav-transition-enter",
       )}
     >
@@ -199,8 +293,13 @@ export default function Navigation() {
           <PaidExpiryHeaderBanner className="hidden md:inline-flex" />
           {/* Notifications Dropdown */}
           <DropdownMenu onOpenChange={setNotificationsOpen}>
+            <HoverScale
+              className="inline-flex shrink-0"
+              whileHover={{ scale: notificationsOpen ? 1 : 1.07 }}
+              whileTap={{ scale: 1 }}
+            >
             <DropdownMenuTrigger asChild>
-              <button className="relative rounded-xl outline-none ring-0 hover:bg-primary/10 transition-all duration-300 p-2 group">
+              <button className="relative rounded-xl outline-none ring-0 hover:bg-primary/10 transition-[scale,background-color] duration-100 ease-out p-2 group active:scale-[0.9] motion-reduce:active:scale-100">
               <Bell
                 size={22}
                 animate={totalCount > 0}
@@ -214,6 +313,7 @@ export default function Navigation() {
                 )}
               </button>
             </DropdownMenuTrigger>
+            </HoverScale>
             <DropdownMenuContent
               className={`ml-0 mr-20 my-0 min-w-80 w-max max-w-md max-h-96 overflow-y-auto p-1 ${isRTL ? "text-right" : ""}`}
             >
@@ -288,15 +388,21 @@ export default function Navigation() {
 
           {/* Settings Dropdown */}
           <DropdownMenu onOpenChange={setDropdownOpen}>
+            <HoverScale
+              className="inline-flex shrink-0"
+              whileHover={{ scale: dropdownOpen ? 1 : 1.07 }}
+              whileTap={{ scale: 1 }}
+            >
             <DropdownMenuTrigger asChild>
-              <button className="rounded-xl outline-none ring-0 hover:bg-primary/10 transition-all duration-300 p-2 group">
+              <button className="rounded-xl outline-none ring-0 hover:bg-primary/10 transition-[scale,background-color] duration-100 ease-out p-2 group active:scale-[0.9] motion-reduce:active:scale-100">
                 <Settings
-                  className={`w-5 h-5 transition-all duration-300 group-hover:scale-110 ${
+                  className={`w-5 h-5 transition-all duration-300 ${
                     dropdownOpen ? "rotate-180 scale-110" : ""
                   }`}
                 />
               </button>
             </DropdownMenuTrigger>
+            </HoverScale>
             <DropdownMenuContent
               className={`mx-4 my-2 w-56 ${isRTL ? "text-right" : ""}`}
             >

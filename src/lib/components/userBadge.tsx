@@ -254,7 +254,11 @@ export function UserBadge({
         className
       )}
     >
-      <UserBadgeAvatar isAdmin={isAdminRole} size={size} />
+      <UserBadgeAvatar
+        isAdmin={isAdminRole}
+        username={user.username || ""}
+        size={size}
+      />
       <div className="flex w-[261px] shrink-0 items-center overflow-hidden">
         <div
           className={cn(

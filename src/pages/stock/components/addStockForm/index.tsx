@@ -480,7 +480,9 @@ export default function AddStockForm({
       const sellerName = form.sellerName.trim();
       if (
         sellerName &&
-        !sellers.find((s) => s.name.toLowerCase() === sellerName.toLowerCase())
+        !sellers.find(
+          (s) => s.name.trim().toLowerCase() === sellerName.toLowerCase(),
+        )
       ) {
         try {
           const newSeller = await window.api.database.sellers.create({
@@ -937,7 +939,7 @@ export default function AddStockForm({
     if (!sellerName) return undefined;
 
     const existing = sellers.find(
-      (s) => s.name.toLowerCase() === sellerName.toLowerCase(),
+      (s) => s.name.trim().toLowerCase() === sellerName.toLowerCase(),
     );
     if (existing) return existing.id;
 

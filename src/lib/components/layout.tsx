@@ -49,6 +49,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   }, []);
 
   const location = useLocation();
+  const isCashierPage = location.pathname.startsWith("/cashier");
 
   return (
     <>
@@ -57,7 +58,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       {/* === Main Content === */}
       <main
-        className={`px-2 md:px-4 py-8 md:py-12 min-h-screen ${
+        className={`px-2 md:px-4 pb-8 md:pb-12 ${
+          isCashierPage ? "pt-8 md:pt-12" : "pt-32 md:pt-36"
+        } min-h-screen ${
           animateMargin ? "transition-[margin-left] duration-500 ease-in-out" : ""
         }`}
         style={{

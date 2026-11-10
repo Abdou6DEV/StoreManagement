@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Trash2, X, Calendar, Package, AlertTriangle } from "lucide-react";
 import { Modal } from "./modal";
@@ -46,51 +46,52 @@ export const CleanUnusedProductsModal: React.FC<CleanUnusedProductsModalProps> =
   const { showToast } = useToast();
   
   const [selectedPeriod, setSelectedPeriod] = useState<PeriodOption>("3_months");
-  const [unusedProducts, setUnusedProducts] = useState<UnusedProduct[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<UnusedProduct[]>([]);
   const [productsToDelete, setProductsToDelete] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
+  const [hasLoadedProducts, setHasLoadedProducts] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deletionProgress, setDeletionProgress] = useState({ current: 0, total: 0 });
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const fetchRequestId = useRef(0);
   
   const ITEMS_PER_PAGE = 5;
 
   // Fetch unused products when period changes or modal opens
   useEffect(() => {
     if (open) {
-      fetchUnusedProducts();
+      void fetchUnusedProducts(selectedPeriod);
     }
+    return () => {
+      fetchRequestId.current += 1;
+    };
   }, [open, selectedPeriod]);
 
-  // Auto-select all products when they're loaded
-  useEffect(() => {
-    if (filteredProducts.length > 0) {
-      const allProductIds = new Set(filteredProducts.map(p => p.id));
-      setProductsToDelete(allProductIds);
-    }
-  }, [filteredProducts]);
-
-  // Update filtered products and pagination when products change
-  useEffect(() => {
-    setFilteredProducts(unusedProducts);
-    setTotalPages(Math.ceil(unusedProducts.length / ITEMS_PER_PAGE));
-    setCurrentPage(1);
-    setProductsToDelete(new Set());
-  }, [unusedProducts]);
-
-  const fetchUnusedProducts = async () => {
+  const fetchUnusedProducts = async (period: PeriodOption = selectedPeriod) => {
+    const requestId = ++fetchRequestId.current;
     setLoading(true);
     try {
-      const periodMonths = PERIOD_OPTIONS.find(p => p.value === selectedPeriod)?.months || 3;
+      const periodMonths = PERIOD_OPTIONS.find(p => p.value === period)?.months || 3;
       const products = await window.api.database.products.getUnusedProducts(periodMonths);
-      setUnusedProducts(products);
+      if (requestId !== fetchRequestId.current) return;
+      setFilteredProducts(products);
+      setTotalPages(Math.ceil(products.length / ITEMS_PER_PAGE));
+      setCurrentPage(1);
+      setProductsToDelete(
+        new Set(products.map((product: UnusedProduct) => product.id)),
+      );
+      setHasLoadedProducts(true);
     } catch (error) {
+      if (requestId !== fetchRequestId.current) return;
+      setFilteredProducts([]);
+      setProductsToDelete(new Set());
+      setCurrentPage(1);
+      setTotalPages(1);
       console.error("Error fetching unused products:", error);
       showToast(t("stock.fetchUnusedProductsError", "Failed to fetch unused products"), "error");
     } finally {
-      setLoading(false);
+      if (requestId === fetchRequestId.current) setLoading(false);
     }
   };
 
@@ -225,7 +226,7 @@ export const CleanUnusedProductsModal: React.FC<CleanUnusedProductsModalProps> =
       onClick: handleDeleteSelected,
       variant: "destructive" as const,
       loading: deleting,
-      disabled: selectedCount === 0 || deleting,
+      disabled: selectedCount === 0 || deleting || loading,
       icon: <Trash2 className="w-4 h-4" />,
     },
   ];
@@ -242,7 +243,7 @@ export const CleanUnusedProductsModal: React.FC<CleanUnusedProductsModalProps> =
       actions={modalActions}
       preventClose={deleting}
     >
-      <div className="space-y-4">
+      <div className="relative space-y-4" aria-busy={loading}>
         {/* Period Selection */}
         <div className="space-y-2">
           <label className="text-sm font-medium text-foreground">
@@ -299,7 +300,7 @@ export const CleanUnusedProductsModal: React.FC<CleanUnusedProductsModalProps> =
         </div>
 
                {/* Loading State */}
-               {loading ? (
+               {loading && !hasLoadedProducts ? (
                  <div className="flex items-center justify-center py-8">
                    <div className="flex items-center gap-2 text-muted-foreground">
                      <div className="w-4 h-4 animate-spin rounded-full border-2 border-muted-foreground border-t-transparent" />
@@ -530,6 +531,14 @@ export const CleanUnusedProductsModal: React.FC<CleanUnusedProductsModalProps> =
               </div>
             )}
           </>
+        )}
+        {loading && hasLoadedProducts && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center rounded-md bg-background/70 backdrop-blur-[1px]">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <div className="w-4 h-4 animate-spin rounded-full border-2 border-muted-foreground border-t-transparent" />
+              {t("stock.loadingUnusedProducts", "Loading unused products...")}
+            </div>
+          </div>
         )}
       </div>
     </Modal>

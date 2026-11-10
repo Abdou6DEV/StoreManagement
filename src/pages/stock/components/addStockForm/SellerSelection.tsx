@@ -172,8 +172,8 @@ export default function SellerSelection({
 
   // Enhanced seller selection with auto-advance
   const selectSeller = (seller: any) => {
-    onSellerSelect(seller.id);
     onFormChange("sellerName", seller.name);
+    onSellerSelect(seller.id);
     setShowSellerDropdown(false);
     setSelectedIndex(-1);
     // DON'T lock the field - user can still type and change it
