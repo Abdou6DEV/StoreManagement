@@ -18,6 +18,7 @@ import { useTranslation } from "react-i18next";
 import { DEV_OPEN_WELCOME_EVENT } from "../lib/onboarding/constants";
 import { LOGO_ICON, LOGO_ICON_DARK } from "../lib/assets";
 import { AnimatedHeight } from "../lib/components/animatedHeight";
+import { HoverScale } from "../lib/components/sharedPresentation";
 
 export default function Login() {
   const [username, setUsername] = useState("");
@@ -111,6 +112,12 @@ export default function Login() {
       : isFirstAdminSetup
         ? !username.trim() || !password.trim() || !confirmPassword.trim()
         : !username.trim() || !password.trim();
+  const isSubmitDisabled =
+    initialAdminSetupRequired === null ||
+    isLoading ||
+    !!error ||
+    successPhase !== "idle" ||
+    credentialsIncomplete;
 
   const usernameRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
@@ -811,50 +818,50 @@ export default function Login() {
             )}
 
             {/* Submit Button */}
-            <button
-              ref={submitButtonRef}
-              type="submit"
-              disabled={
-                initialAdminSetupRequired === null ||
-                isLoading ||
-                !!error ||
-                successPhase !== "idle" ||
-                credentialsIncomplete
-              }
-              className={`group relative w-full flex justify-center items-center min-h-[3rem] py-3 px-4 border border-transparent text-sm font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed transition-all duration-200 ${
-                successPhase === 'green_hold' || successPhase === 'fade_out'
-                  ? "bg-green-600 text-white hover:bg-green-600"
-                  : error
-                    ? "bg-destructive text-white hover:bg-destructive/90"
-                    : "text-primary-foreground bg-primary hover:bg-primary/90"
-              } ${!error && successPhase === 'idle' && (isLoading || credentialsIncomplete) ? "disabled:opacity-50" : ""}`}
+            <HoverScale
+              className="w-full"
+              whileHover={isSubmitDisabled ? undefined : { scale: 1.03 }}
+              whileTap={isSubmitDisabled ? undefined : { scale: 0.96 }}
             >
-              {error ? (
-                <span className="flex items-center gap-2 text-white">
-                  <AlertCircle className="h-5 w-5 flex-shrink-0" aria-hidden />
-                  {t(error, error)}
-                </span>
-              ) : successPhase === 'green_hold' || successPhase === 'fade_out' ? (
-                <div className="flex items-center">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                  {t("login.signingIn", "Signing in...")}
-                </div>
-              ) : isLoading && awaitingLicenseCheck ? (
-                <div className="flex items-center">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary-foreground mr-2"></div>
-                  {t("license.checking", "Checking license…")}
-                </div>
-              ) : isLoading ? (
-                <div className="flex items-center">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary-foreground mr-2"></div>
-                  {t("login.signingIn", "Signing in...")}
-                </div>
-              ) : isFirstAdminSetup ? (
-                t("login.createAdminAccount", "Create account")
-              ) : (
-                t("login.signIn", "Sign In")
-              )}
-            </button>
+              <button
+                ref={submitButtonRef}
+                type="submit"
+                disabled={isSubmitDisabled}
+                className={`group relative w-full flex justify-center items-center min-h-[3rem] py-3 px-4 border border-transparent text-sm font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed transition-all duration-200 ${
+                  successPhase === 'green_hold' || successPhase === 'fade_out'
+                    ? "bg-green-600 text-white hover:bg-green-600"
+                    : error
+                      ? "bg-destructive text-white hover:bg-destructive/90"
+                      : "text-primary-foreground bg-primary hover:bg-primary/90"
+                } ${!error && successPhase === 'idle' && (isLoading || credentialsIncomplete) ? "disabled:opacity-50" : ""}`}
+              >
+                {error ? (
+                  <span className="flex items-center gap-2 text-white">
+                    <AlertCircle className="h-5 w-5 flex-shrink-0" aria-hidden />
+                    {t(error, error)}
+                  </span>
+                ) : successPhase === 'green_hold' || successPhase === 'fade_out' ? (
+                  <div className="flex items-center">
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                    {t("login.signingIn", "Signing in...")}
+                  </div>
+                ) : isLoading && awaitingLicenseCheck ? (
+                  <div className="flex items-center">
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary-foreground mr-2"></div>
+                    {t("license.checking", "Checking license…")}
+                  </div>
+                ) : isLoading ? (
+                  <div className="flex items-center">
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary-foreground mr-2"></div>
+                    {t("login.signingIn", "Signing in...")}
+                  </div>
+                ) : isFirstAdminSetup ? (
+                  t("login.createAdminAccount", "Create account")
+                ) : (
+                  t("login.signIn", "Sign In")
+                )}
+              </button>
+            </HoverScale>
 
             {showDevLoginButton &&
             !useActivationKey &&

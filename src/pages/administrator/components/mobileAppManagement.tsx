@@ -31,8 +31,10 @@ import {
   AlertDescription,
 } from "../../../lib/components/alert";
 import { ConfirmDialog } from "../../../lib/components/confirmDialog";
+import { useToast } from "../../../lib/contexts/toastContext";
 
 const MOBILE_APP_URL = "https://www.redatechpos.com/mobile/";
+const MOBILE_REFRESH_COOLDOWN_MS = 60_000;
 
 function InfoRow({
   label,
@@ -66,6 +68,7 @@ function InfoRow({
 
 export function MobileAppManagement() {
   const { t } = useTranslation();
+  const { showToast } = useToast();
   const [deviceCheck, setDeviceCheck] =
     useState<DeviceCheckResult | null>(null);
   const [mobileAppQrDataUrl, setMobileAppQrDataUrl] = useState<string | null>(null);
@@ -81,15 +84,65 @@ export function MobileAppManagement() {
   const [revokingDeviceId, setRevokingDeviceId] = useState<string | null>(
     null,
   );
+  const [refreshing, setRefreshing] = useState(false);
+  const [lastRefreshAtMs, setLastRefreshAtMs] = useState<number | null>(null);
+  const [nowMs, setNowMs] = useState(() => Date.now());
   const [deviceToRevoke, setDeviceToRevoke] =
     useState<MobileDevice | null>(null);
 
   const refreshStatus = useCallback(async () => {
-    const snapshot = await window.api.online.mobileManagementRefresh();
-    setDeviceCheck(snapshot.deviceCheck);
-    setDevices(snapshot.devices);
-    setDevicesError(snapshot.devicesError);
-  }, []);
+    if (
+      refreshing ||
+      (lastRefreshAtMs !== null &&
+        Date.now() < lastRefreshAtMs + MOBILE_REFRESH_COOLDOWN_MS)
+    ) {
+      return;
+    }
+
+    setRefreshing(true);
+    try {
+      const snapshot = await window.api.online.mobileManagementRefresh();
+      setDeviceCheck(snapshot.deviceCheck);
+      setDevices(snapshot.devices);
+      setDevicesError(snapshot.devicesError);
+      const refreshedAtMs = Date.now();
+      setLastRefreshAtMs(refreshedAtMs);
+      setNowMs(refreshedAtMs);
+    } catch {
+      showToast(
+        t("admin.mobileApp.refreshFailed", "Could not refresh mobile access."),
+        "error",
+      );
+    } finally {
+      setRefreshing(false);
+    }
+  }, [lastRefreshAtMs, refreshing, showToast, t]);
+
+  useEffect(() => {
+    if (lastRefreshAtMs === null) return;
+
+    const cooldownEndsAt = lastRefreshAtMs + MOBILE_REFRESH_COOLDOWN_MS;
+    if (Date.now() >= cooldownEndsAt) {
+      setNowMs(Date.now());
+      return;
+    }
+
+    const interval = window.setInterval(() => {
+      const currentTime = Date.now();
+      setNowMs(currentTime);
+      if (currentTime >= cooldownEndsAt) window.clearInterval(interval);
+    }, 1000);
+
+    return () => window.clearInterval(interval);
+  }, [lastRefreshAtMs]);
+
+  const refreshCooldownRemainingMs =
+    lastRefreshAtMs === null
+      ? 0
+      : Math.max(
+          0,
+          lastRefreshAtMs + MOBILE_REFRESH_COOLDOWN_MS - nowMs,
+        );
 
   const revokeDevice = async () => {
     if (!deviceToRevoke) return;
@@ -103,10 +156,26 @@ export function MobileAppManagement() {
 
       if (result.success === false) {
         setError(result.error);
+        showToast(
+          t("admin.mobileApp.revokeFailed", "Could not revoke this phone."),
+          "error",
+        );
         return;
       }
 
       setDeviceToRevoke(null);
+      showToast(
+        t("admin.mobileApp.revokeSuccess", "{{name}} was revoked.", {
+          name: device.deviceName,
+        }),
+        "success",
+      );
+    } catch {
+      setError(t("admin.mobileApp.revokeFailed", "Could not revoke this phone."));
+      showToast(
+        t("admin.mobileApp.revokeFailed", "Could not revoke this phone."),
+        "error",
+      );
     } finally {
       setRevokingDeviceId(null);
     }
@@ -207,6 +276,10 @@ export function MobileAppManagement() {
 
       if (result.success === false) {
         setError(result.error);
+        showToast(
+          t("admin.mobileApp.createFailed", "Could not create a pairing code."),
+          "error",
+        );
         return;
       }
 
@@ -218,11 +291,22 @@ export function MobileAppManagement() {
 
       setExpiresAt(result.expiresAt);
       setQrDataUrl(qr);
+      showToast(
+        t(
+          "admin.mobileApp.pairingCreated",
+          "Pairing QR code created. Scan it with the mobile app.",
+        ),
+        "success",
+      );
     } catch (cause) {
-      setError(
+      const message =
         cause instanceof Error
           ? cause.message
-          : t("admin.mobileApp.createFailed"),
+          : t("admin.mobileApp.createFailed");
+      setError(message);
+      showToast(
+        t("admin.mobileApp.createFailed", "Could not create a pairing code."),
+        "error",
       );
     } finally {
       setBusy(false);
@@ -330,10 +414,21 @@ export function MobileAppManagement() {
           type="button"
           variant="outline"
           onClick={() => void refreshStatus()}
+          disabled={refreshing || refreshCooldownRemainingMs > 0}
           className="shrink-0"
         >
-          <RefreshCw className="mr-2 h-4 w-4" />
-          {t("admin.mobileApp.refresh")}
+          {refreshing ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <RefreshCw className="mr-2 h-4 w-4" />
+          )}
+          {refreshCooldownRemainingMs > 0
+            ? t("admin.mobileApp.refreshCooldown", "Refresh ({{seconds}}s)", {
+                seconds: Math.ceil(refreshCooldownRemainingMs / 1000),
+              })
+            : refreshing
+              ? t("admin.mobileApp.refreshing", "Refreshing...")
+              : t("admin.mobileApp.refresh")}
         </Button>
       </div>
 
@@ -717,6 +812,12 @@ export function MobileAppManagement() {
             <div className="space-y-3">
               {devices.map((device) => {
                 const isActive = device.active && !device.revokedAt;
+                const platformLabel =
+                  device.platform === "ios"
+                    ? "iPhone"
+                    : device.platform === "android"
+                      ? "Android"
+                      : device.platform;
 
                 return (
                   <div
@@ -744,6 +845,11 @@ export function MobileAppManagement() {
                         <p className="break-words text-sm font-semibold">
                           {device.deviceName}
                         </p>
+                        {platformLabel ? (
+                          <Badge variant="outline" className="text-xs font-normal">
+                            {platformLabel}
+                          </Badge>
+                        ) : null}
 
                         <Badge
                           variant="outline"
