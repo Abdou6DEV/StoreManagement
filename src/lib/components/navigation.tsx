@@ -9,7 +9,6 @@ import {
 } from "./dropdownMenu";
 import {
   Settings,
-  User,
   LogOut,
   ExternalLink,
 } from "lucide-react";
@@ -41,7 +40,7 @@ export default function Navigation() {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [headerVisible, setHeaderVisible] = useState(true);
   const { t, i18n } = useTranslation();
-  const { user, logout, loading } = useAuth();
+  const { logout, loading } = useAuth();
   const { notifications, totalCount } = useNotifications();
 
   const isCashierPage = location.pathname.startsWith("/cashier");
@@ -107,16 +106,28 @@ export default function Navigation() {
         hideTimer = undefined;
       }
     };
+    const handleTouchStart = (event: TouchEvent) => {
+      const touch = event.touches[0];
+      if (!touch) return;
+
+      if (
+        dropdownOpen ||
+        notificationsOpen ||
+        window.scrollY <= 80 ||
+        touch.clientY <= 10
+      ) {
+        setHeaderVisible(true);
+        if (hideTimer !== undefined) {
+          window.clearTimeout(hideTimer);
+          hideTimer = undefined;
+        }
+      }
+    };
     const handleFocusIn = (event: FocusEvent) => {
       if (
         event.target instanceof Element &&
         event.target.closest("[data-app-navigation-header]")
       ) {
-        setHeaderVisible(true);
-      }
-    };
-    const handleTouchStart = (event: TouchEvent) => {
-      if (event.touches[0]?.clientY <= 10 && window.scrollY > 80) {
         setHeaderVisible(true);
       }
     };
@@ -181,11 +192,6 @@ export default function Navigation() {
           <DropdownMenuContent
             className={`mx-4 my-2 w-56 ${isRTL ? "text-right" : ""}`}
           >
-            <DropdownMenuLabel className="font-semibold text-md flex items-center gap-2">
-              <User className="w-4 h-4" />
-              {t("navigation.welcome", "Welcome")}, {user?.username || t("navigation.user", "User")}
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
             <DropdownMenuLabel className="font-semibold text-md">
               {t("navigation.preferences")}
             </DropdownMenuLabel>
@@ -406,13 +412,6 @@ export default function Navigation() {
             <DropdownMenuContent
               className={`mx-4 my-2 w-56 ${isRTL ? "text-right" : ""}`}
             >
-              {/* User Info */}
-              <DropdownMenuLabel className="font-semibold text-md flex items-center gap-2">
-                <User className="w-4 h-4" />
-                Welcome, {user?.username || "User"}
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-
               <DropdownMenuLabel className="font-semibold text-md">
                 {t("navigation.preferences")}
               </DropdownMenuLabel>
