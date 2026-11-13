@@ -161,7 +161,7 @@ export default function OrdersSection({ isActive = true, notificationAction, not
     event.preventDefault();
     if (busyRef.current || !product.trim() || !selectedClient || !dueDate) return;
     const paidAmount = upfront.trim() === "" ? null : Math.round(Number(upfront) * 100);
-    if (upfront && (!/^\d+(?:\.\d{1,2})?$/.test(upfront) || !Number.isSafeInteger(paidAmount) || paidAmount > 2147483647)) {
+    if (upfront && (!/^\d+(?:\.\d{1,2})?$/.test(upfront) || paidAmount === null || !Number.isSafeInteger(paidAmount) || paidAmount > 2147483647)) {
       showToast(t("orders.invalidAmount", "Enter a valid paid amount with at most two decimal places."), "error");
       return;
     }
@@ -315,9 +315,8 @@ export default function OrdersSection({ isActive = true, notificationAction, not
             <PopoverContent className="w-[160px] p-0 z-50"><Command shouldFilter={false}><CommandList><CommandGroup>{dateOptions.map((option) => <CommandItem key={option.value} value={option.value} className={cn(((option.value === "overdue" && overdueCount > 0) || (option.value === "dueSoon" && dueSoonCount > 0)) && "pr-12")} onSelect={() => { setDateFilter(option.value); setHighlightedOrders(new Set()); setDateDropdownOpen(false); }}><span className="flex-1">{option.label}</span><Check className={cn("h-4 w-4", dateFilter === option.value ? "opacity-100" : "opacity-0")} />{option.value === "overdue" && overdueCount > 0 && <BadgeNotification count={overdueCount} variant="red" className="pointer-events-none top-0 right-1 translate-x-0 translate-y-0 rtl:right-1 rtl:left-auto rtl:translate-x-0" />}{option.value === "dueSoon" && dueSoonCount > 0 && <BadgeNotification count={dueSoonCount} variant="orange" className="pointer-events-none top-0 right-1 translate-x-0 translate-y-0 rtl:right-1 rtl:left-auto rtl:translate-x-0" />}</CommandItem>)}</CommandGroup></CommandList></Command></PopoverContent>
           </Popover>
         </div>
-        <div className="relative overflow-auto rounded-lg border border-muted">
-          <table className={`w-full min-w-[1250px] table-fixed text-sm ${i18n.language === "ar" ? "text-right" : "text-left"}`}>
-            <colgroup><col className="w-[180px]" /><col className="w-[220px]" /><col className="w-[80px]" /><col className="w-[150px]" /><col className="w-[115px]" /><col className="w-[185px]" /><col className="w-[130px]" /><col className="w-[190px]" /></colgroup>
+        <div className="table-container relative overflow-auto rounded-lg border border-muted">
+          <table className={`min-w-full text-sm ${i18n.language === "ar" ? "text-right" : "text-left"}`}>
             <thead className="bg-muted text-muted-foreground"><tr>{[t("stock.product", "Product Name"), t("orders.details", "Details"), t("stock.quantity", "Quantity"), t("services.client", "Client"), t("services.status", "Status"), t("services.dueDate", "Due Date"), t("orders.upfrontPayment", "Paid Amount"), t("services.actions", "Actions")].map((heading) => <th key={heading} className="px-4 py-3">{heading}</th>)}</tr></thead>
             <tbody className="divide-y divide-border">
               {loadingOrders || loadError ? <tr><td colSpan={8} className="px-4 py-12 text-center"><p>{loadingOrders ? t("common.loading", "Loading...") : t("orders.loadError", "Could not load orders.")}</p>{loadError && <Button type="button" variant="outline" className="mt-3" onClick={() => void loadOrders()}>{t("common.retry", "Retry")}</Button>}</td></tr> : filteredOrders.length === 0 ? <tr><td colSpan={8} className="p-0 text-center align-middle"><div className="flex flex-col items-center justify-center gap-3 px-4 py-16"><ClipboardList className="w-12 h-12 text-green-600 mb-1" /><h3 className="text-xl font-semibold text-foreground">{t("orders.empty", "No orders found")}</h3></div></td></tr> : visibleOrders.map((order) => {

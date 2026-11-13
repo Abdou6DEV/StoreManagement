@@ -83,7 +83,7 @@ export default function EditOrderModal({ order, onClose, onSaved }: { order: Edi
   const save = async () => {
     if (busyRef.current || !product.trim() || !dueDate || !Number.isInteger(Number(quantity)) || Number(quantity) < 1 || Number(quantity) > 2147483647) return;
     const paidAmount = upfront.trim() === "" ? null : Math.round(Number(upfront) * 100);
-    if (upfront && (!/^\d+(?:\.\d{1,2})?$/.test(upfront) || !Number.isSafeInteger(paidAmount) || paidAmount > 2147483647)) {
+    if (upfront && (!/^\d+(?:\.\d{1,2})?$/.test(upfront) || paidAmount === null || !Number.isSafeInteger(paidAmount) || paidAmount > 2147483647)) {
       showToast(t("orders.invalidAmount", "Enter a valid paid amount with at most two decimal places."), "error");
       return;
     }
