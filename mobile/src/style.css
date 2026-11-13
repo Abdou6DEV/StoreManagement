@@ -1191,12 +1191,6 @@ html.dark .error-banner { color: #fca5a5; background: rgb(153 27 27 / 24%); }
 .stock-summary-grid span,.stock-product-values span { color:var(--mobile-muted);font-size:.7rem; }
 .stock-summary-grid strong { overflow-wrap:anywhere;font-size:.95rem;font-weight:750; }
 .stock-product-list,.stock-category-list { display:grid;gap:10px; }
-.mobile-order-list { display:grid;gap:10px;min-width:0; }
-.mobile-order-card { min-width:0;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--card); }
-.mobile-order-heading { display:flex;align-items:flex-start;justify-content:space-between;gap:10px;min-width:0; }
-.mobile-order-product { min-width:0; }
-.mobile-order-product h3 { overflow-wrap:anywhere;margin:0;font-size:.92rem;font-weight:750; }
-.mobile-order-product p { overflow-wrap:anywhere;margin:5px 0 0;color:var(--mobile-muted);font-size:.76rem; }
 .mobile-order-status { flex:none;max-width:48%;overflow-wrap:anywhere;padding:5px 8px;border-radius:999px;font-size:.68rem;font-weight:750;text-align:center; }
 .mobile-order-status.pending { color:#92400e;background:#fef3c7; }
 .mobile-order-status.stocked { color:#1e40af;background:#dbeafe; }
@@ -1204,11 +1198,6 @@ html.dark .error-banner { color: #fca5a5; background: rgb(153 27 27 / 24%); }
 html.dark .mobile-order-status.pending { color:#fde68a;background:rgb(146 64 14 / 28%); }
 html.dark .mobile-order-status.stocked { color:#bfdbfe;background:rgb(30 64 175 / 30%); }
 html.dark .mobile-order-status.completed { color:#bbf7d0;background:rgb(22 101 52 / 30%); }
-.mobile-order-meta { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 12px;margin:12px 0 0;padding-top:10px;border-top:1px solid var(--line); }
-.mobile-order-meta > div { display:grid;align-content:start;gap:3px;min-width:0; }
-.mobile-order-meta dt { color:var(--mobile-muted);font-size:.68rem; }
-.mobile-order-meta dd { display:grid;gap:2px;min-width:0;margin:0;overflow-wrap:anywhere;font-size:.78rem;font-weight:650; }
-.mobile-order-meta dd small { color:var(--mobile-muted);font-size:.7rem;font-weight:450; }
 .stock-product-card,.stock-category-card { min-width:0;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--card); }
 .stock-product-card.is-low { border-inline-start:3px solid #f59e0b; }
 .stock-product-card.is-out { border-inline-start:3px solid #ef4444; }
@@ -1323,6 +1312,18 @@ html.dark .stock-negative { color:#f87171; }
 
 .stock-table-scroll{width:100%;max-width:100%;overflow:auto;border:1px solid var(--line);border-radius:12px;background:var(--card);-webkit-overflow-scrolling:touch}
 .stock-data-table{width:100%;min-width:1050px;border-collapse:separate;border-spacing:0;text-align:start;font-size:13px}
+.stock-data-table.stock-order-table{min-width:980px;table-layout:fixed}
+.stock-order-table th,.stock-order-table td{text-align:start!important}
+.stock-order-table th:nth-child(1),.stock-order-table td:nth-child(1){width:150px}
+.stock-order-table th:nth-child(2),.stock-order-table td:nth-child(2){width:170px}
+.stock-order-table th:nth-child(3),.stock-order-table td:nth-child(3){width:80px;text-align:end!important}
+.stock-order-table th:nth-child(4),.stock-order-table td:nth-child(4){width:170px}
+.stock-order-table th:nth-child(5),.stock-order-table td:nth-child(5){width:130px}
+.stock-order-table th:nth-child(6),.stock-order-table td:nth-child(6){width:140px}
+.stock-order-table th:nth-child(7),.stock-order-table td:nth-child(7){width:140px;text-align:end!important}
+.stock-order-table .mobile-order-status{max-width:100%}
+.stock-order-cell-text{overflow-wrap:anywhere;white-space:normal;line-height:1.35}
+.stock-order-cell-text small{display:block;margin-top:3px;color:var(--mobile-muted);font-size:.72rem}
 .stock-data-table th,.stock-data-table td{padding:11px 12px;border-bottom:1px solid var(--line);white-space:nowrap;vertical-align:middle}
 /* Keep descriptive columns left-aligned, but align stock figures for easier comparison. */
 .stock-data-table th:nth-child(n+3):not(:last-child),.stock-data-table td:nth-child(n+3):not(:last-child){text-align:right}

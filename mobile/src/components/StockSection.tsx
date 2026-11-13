@@ -265,19 +265,24 @@ export function StockSection({ data, language, query, onQueryChange }: { data: M
       </div>}
     </> : <>
       <div className="stock-sort-row"><label className="mobile-select-control"><span>{t.pageSize}</span><select value={pageSize} onChange={(event) => setPageSize(Number(event.target.value))}>{[7,10,15,20,50].map((size) => <option key={size} value={size}>{size}</option>)}</select></label></div>
-      {filteredOrders.length === 0 ? <p className="mobile-empty">{t.emptyOrders}</p> : <div className="mobile-order-list">{visibleOrders.map((order) => {
-        const status = str(order.status);
-        const statusLabel = status === "pending" ? t.pending : status === "stocked" ? t.stocked : status === "completed" ? t.completed : status;
-        return <article className="mobile-order-card" key={str(order.source_id)}>
-          <div className="mobile-order-heading"><div className="mobile-order-product"><h3 title={str(order.product_name)}>{str(order.product_name) || "—"}</h3>{order.details ? <p title={str(order.details)}>{str(order.details)}</p> : null}</div><span className={`mobile-order-status ${status}`}>{statusLabel}</span></div>
-          <dl className="mobile-order-meta">
-            <div><dt>{t.quantity}</dt><dd>{new Intl.NumberFormat(language).format(num(order.quantity))}</dd></div>
-            <div><dt>{t.client}</dt><dd><strong>{str(order.client_name) || "—"}</strong>{order.client_phone ? <small>{str(order.client_phone)}</small> : null}</dd></div>
-            <div><dt>{t.dueDate}</dt><dd>{dateLabel(order.due_date, language)}</dd></div>
-            <div><dt>{t.paidAmount}</dt><dd>{order.paid_amount == null ? "—" : money(num(order.paid_amount) / 100, language)}</dd></div>
-          </dl>
-        </article>;
-      })}</div>}
+      {filteredOrders.length === 0 ? <p className="mobile-empty">{t.emptyOrders}</p> : <div className="stock-table-scroll" role="region" aria-label={t.orders} tabIndex={0}>
+        <table className="stock-data-table stock-order-table">
+          <thead><tr><th>{t.orderProduct}</th><th>{t.orderDetails}</th><th>{t.quantity}</th><th>{t.client}</th><th>{t.orderStatus}</th><th>{t.dueDate}</th><th>{t.paidAmount}</th></tr></thead>
+          <tbody>{visibleOrders.map((order) => {
+            const status = str(order.status);
+            const statusLabel = status === "pending" ? t.pending : status === "stocked" ? t.stocked : status === "completed" ? t.completed : status;
+            return <tr key={str(order.source_id)}>
+              <td><div className="stock-order-cell-text" title={str(order.product_name)}>{str(order.product_name) || "—"}</div></td>
+              <td><div className="stock-order-cell-text" title={str(order.details)}>{str(order.details) || "—"}</div></td>
+              <td>{new Intl.NumberFormat(language).format(num(order.quantity))}</td>
+              <td><div className="stock-order-cell-text" title={str(order.client_name)}>{str(order.client_name) || "—"}{order.client_phone ? <small>{str(order.client_phone)}</small> : null}</div></td>
+              <td><span className={`mobile-order-status ${status}`}>{statusLabel}</span></td>
+              <td>{dateLabel(order.due_date, language)}</td>
+              <td>{order.paid_amount == null ? "—" : money(num(order.paid_amount) / 100, language)}</td>
+            </tr>;
+          })}</tbody>
+        </table>
+      </div>}
     </>}
     {viewCount > 0 ? <div className="mobile-pagination">
       <button type="button" disabled={currentPage === 1} onClick={() => setPage((v) => Math.max(1, v - 1))}>{t.previous}</button><span>{t.page} {currentPage} {t.of} {totalPages}</span>
