@@ -97,6 +97,7 @@ import {
   getServicesByClient,
 } from "../../lib/database/services";
 import { bills } from "../../lib/database/bills";
+import { orders } from "../../lib/database/orders";
 import {
   createServiceAppointment,
   getAllServiceAppointments,
@@ -120,6 +121,13 @@ import {
 } from "../../lib/database/serviceAppointments";
 
 export function setupDatabaseHandlers() {
+  ipcMain.handle("db:orders:getAll", async () => orders.getAll());
+  ipcMain.handle("db:orders:create", async (_event, data) => orders.save(data));
+  ipcMain.handle("db:orders:update", async (_event, { id, data }) => orders.save(data, id));
+  ipcMain.handle("db:orders:setStatus", async (_event, { id, status }) => orders.setStatus(id, status));
+  ipcMain.handle("db:orders:cancelCompletion", async (_event, id) => orders.cancelCompletion(id));
+  ipcMain.handle("db:orders:cancelStocked", async (_event, id) => orders.cancelStocked(id));
+  ipcMain.handle("db:orders:delete", async (_event, id) => orders.remove(id));
   // Products handlers
   ipcMain.handle("db:products:getAll", async () => {
     return await getAllProducts();

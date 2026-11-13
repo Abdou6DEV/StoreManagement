@@ -298,7 +298,7 @@ export default function ActivityLogs() {
     s = s.replace(/ Credit$/gm, " " + t("activityLog.detailsLabels.creditLabel", "Credit"));
     s = s.replace(/ Versement$/gm, " " + t("activityLog.detailsLabels.versementLabel", "Versement"));
     // Admin: settings option keys (option.lowStockThreshold -> translated label)
-    const optionKeys = ["lowStockThreshold", "enableLowStockBadge", "enableOutOfStockBadge", "enableOverduePaymentsBadge", "enableDueSoonPaymentsBadge", "enableOverdueBillsBadge", "enableDueSoonBillsBadge", "enableOverdueServicesBadge", "enableDueSoonServicesBadge", "dueSoonThresholdDays", "dueSoonBillsThresholdDays", "dueSoonServicesThresholdDays", "cashierSalesHistoryDays", "enableCashierHistory", "enableCompletedServicesBadge", "enableProductCardImageSlide", "categoriesRequiringInfo"];
+    const optionKeys = ["lowStockThreshold", "enableLowStockBadge", "enableOutOfStockBadge", "enableOverduePaymentsBadge", "enableDueSoonPaymentsBadge", "enableOverdueBillsBadge", "enableDueSoonBillsBadge", "enableOverdueServicesBadge", "enableDueSoonServicesBadge", "enableOverdueOrdersBadge", "enableDueSoonOrdersBadge", "dueSoonThresholdDays", "dueSoonBillsThresholdDays", "dueSoonServicesThresholdDays", "dueSoonOrdersThresholdDays", "cashierSalesHistoryDays", "enableCashierHistory", "enableCompletedServicesBadge", "enableProductCardImageSlide", "categoriesRequiringInfo"];
     optionKeys.forEach((key) => {
       const labelKey = "option" + key.charAt(0).toUpperCase() + key.slice(1);
       s = s.replace(new RegExp("option\\." + key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g"), t("activityLog.detailsLabels." + labelKey, key));

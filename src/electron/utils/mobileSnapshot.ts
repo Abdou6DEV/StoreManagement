@@ -10,6 +10,7 @@ export type MobileSyncSnapshot = {
   purchases: Record<string, unknown>[];
   purchase_items: Record<string, unknown>[];
   clients: Record<string, unknown>[];
+  orders: Record<string, unknown>[];
   services: Record<string, unknown>[];
   service_appointments: Record<string, unknown>[];
   sales: Record<string, unknown>[];
@@ -100,6 +101,7 @@ export async function buildMobileSyncSnapshot(
     purchases,
     purchaseItems,
     clients,
+    orders,
     services,
     serviceAppointments,
     sales,
@@ -117,6 +119,7 @@ export async function buildMobileSyncSnapshot(
     db.purchase.findMany({ where: { createdAt: { gte: retentionCutoff } } }),
     db.purchaseItem.findMany({ where: { purchase: { createdAt: { gte: retentionCutoff } } } }),
     db.client.findMany(),
+    db.customerOrder.findMany(),
     db.service.findMany(),
     db.serviceAppointment.findMany({ where: { createdAt: { gte: retentionCutoff } } }),
     db.sale.findMany({ where: { createdAt: { gte: retentionCutoff } } }),
@@ -202,6 +205,21 @@ export async function buildMobileSyncSnapshot(
       notes: client.notes,
       source_created_at: iso(client.createdAt),
       source_updated_at: iso(client.updatedAt),
+    })),
+    orders: orders.map((order) => ({
+      customer_id: customerId,
+      source_id: order.id,
+      product_name: order.productName,
+      details: order.details,
+      quantity: order.quantity,
+      client_source_id: order.clientId,
+      client_name: order.clientName,
+      client_phone: order.clientPhone,
+      due_date: order.dueDate,
+      paid_amount: order.paidAmount,
+      status: order.status,
+      source_created_at: iso(order.createdAt),
+      source_updated_at: iso(order.updatedAt),
     })),
     services: services.map((service) => ({
       customer_id: customerId,

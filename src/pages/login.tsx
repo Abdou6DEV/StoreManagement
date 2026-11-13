@@ -490,13 +490,6 @@ export default function Login() {
           <DropdownMenuContent
             className={`mx-4 my-2 w-56 ${isRTL ? "text-right" : ""}`}
           >
-            {/* User Info */}
-            <DropdownMenuLabel className="font-semibold text-md flex items-center gap-2">
-              <User className="w-4 h-4" />
-              {t("navigation.welcomeToStoreManagement", "Welcome to Store Management")}
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-
             <DropdownMenuLabel className="font-semibold text-md">
               {t("navigation.preferences")}
             </DropdownMenuLabel>

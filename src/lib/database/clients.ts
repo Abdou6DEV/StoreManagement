@@ -83,6 +83,7 @@ export async function deleteClient(id: string) {
     where: { clientId: id },
     data: { clientId: null },
   });
+  await prisma.customerOrder.updateMany({ where: { clientId: id }, data: { clientId: null } });
   return await prisma.client.delete({ where: { id } });
 }
 

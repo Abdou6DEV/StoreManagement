@@ -2,6 +2,7 @@ import path from "path";
 import { app } from "electron";
 import logger from "../logger";
 import { notifyMobileSyncChange } from "../../electron/utils/mobileSyncEvents";
+import { ensureOrdersSchema } from "./ordersSchema";
 
 const isDev = process.env.NODE_ENV === "development";
 const dbPath = isDev
@@ -26,6 +27,7 @@ const MOBILE_SYNC_MODELS = new Set([
   "Purchase",
   "PurchaseItem",
   "Client",
+  "CustomerOrder",
   "Service",
   "ServiceAppointment",
   "Sale",
@@ -512,6 +514,14 @@ async function initializeDatabase() {
       console.log("✅ Database schema already exists");
       logger.info("Database schema already exists", "Database");
     } catch (error) {
+      const existingUserTable = await prismaClientInstance.$queryRawUnsafe<Array<{ name: string }>>(
+        `SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'User'`
+      );
+      if (existingUserTable.length > 0) throw error;
+      const existingTables = await prismaClientInstance.$queryRawUnsafe<Array<{ name: string }>>(
+        `SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' AND name != 'ActivityLog'`
+      );
+      if (existingTables.length > 0) throw error;
       // If the query fails, it likely means tables don't exist
       console.log("🔍 Database schema not found, running migrations...");
       console.log("🔍 Error details:", error);
@@ -531,7 +541,7 @@ async function initializeDatabase() {
         
         // Run prisma db push
         try {
-          execSync('npx prisma db push --force-reset --accept-data-loss', {
+          execSync('npx prisma db push --skip-generate', {
             cwd: process.cwd(),
             stdio: 'pipe',
             env: { ...process.env, DATABASE_URL: `file:${dbPath}` }
@@ -551,6 +561,7 @@ async function initializeDatabase() {
         throw schemaError;
       }
     }
+    await ensureOrdersSchema(prismaClientInstance);
   } catch (error) {
     logger.error("Database initialization failed", "Database", error);
     throw error;

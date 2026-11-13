@@ -86,6 +86,21 @@ const TABLE_SCHEMAS: Record<string, TableSchema> = {
     source_created_at: "nullable_timestamp",
     source_updated_at: "timestamp",
   },
+  orders: {
+    customer_id: "string",
+    source_id: "string",
+    product_name: "string",
+    details: "nullable_string",
+    quantity: "integer",
+    client_source_id: "nullable_string",
+    client_name: "string",
+    client_phone: "nullable_string",
+    due_date: "day",
+    paid_amount: "nullable_integer",
+    status: "string",
+    source_created_at: "nullable_timestamp",
+    source_updated_at: "timestamp",
+  },
   services: {
     customer_id: "string",
     source_id: "string",
@@ -249,6 +264,41 @@ export function staleMobileSyncIds(
     .filter((id) => !includedIds.has(id));
 }
 
+export function normalizeLegacyOrdersSnapshot(
+  snapshot: unknown,
+  preservedOrders: Record<string, unknown>[],
+): unknown {
+  if (!isRecord(snapshot) || Object.prototype.hasOwnProperty.call(snapshot, "orders")) {
+    return snapshot;
+  }
+  const clientIds = new Set(
+    Array.isArray(snapshot.clients)
+      ? snapshot.clients.filter(isRecord).map((client) => String(client.source_id))
+      : [],
+  );
+  const orders = preservedOrders.map((order) =>
+    typeof order.client_source_id === "string" && !clientIds.has(order.client_source_id)
+      ? { ...order, client_source_id: null }
+      : order
+  );
+  return { ...snapshot, orders };
+}
+
+export async function deriveLegacyOrdersSnapshotId(
+  originalSnapshotId: string,
+  orders: Record<string, unknown>[],
+): Promise<string> {
+  const hash = new Uint8Array(await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(JSON.stringify({ originalSnapshotId, orders })),
+  ));
+  const bytes = hash.slice(0, 16);
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  const hex = [...bytes].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
+
 
 export function validateMobileSyncChunk(
   table: string,
@@ -321,6 +371,11 @@ export function validateMobileSyncSnapshot(
       for (const [field, type] of Object.entries(schema)) {
         if (!validField(value[field], type)) fail(table, `invalid_${field}`);
       }
+      if (table === "orders") {
+        if (!Number.isSafeInteger(value.quantity) || Number(value.quantity) < 1) fail(table, "invalid_quantity");
+        if (value.paid_amount !== null && Number(value.paid_amount) < 0) fail(table, "invalid_paid_amount");
+        if (!new Set(["pending", "stocked", "completed"]).has(String(value.status))) fail(table, "invalid_status");
+      }
 
       const idField = table === "dashboard_daily" ? "local_day" : "source_id";
       const id = value[idField];
@@ -357,6 +412,11 @@ export function validateMobileSyncSnapshot(
   for (const item of rowsByTable.get("purchase_items")!.values()) {
     if (!rowsByTable.get("purchases")!.has(String(item.purchase_source_id))) fail("purchase_items", "unknown_purchase");
     if (!rowsByTable.get("products")!.has(String(item.product_source_id))) fail("purchase_items", "unknown_product");
+  }
+  for (const order of rowsByTable.get("orders")!.values()) {
+    if (order.client_source_id !== null && !rowsByTable.get("clients")!.has(String(order.client_source_id))) {
+      fail("orders", "unknown_client");
+    }
   }
   for (const item of rowsByTable.get("sale_items")!.values()) {
     if (!rowsByTable.get("sales")!.has(String(item.sale_source_id))) {

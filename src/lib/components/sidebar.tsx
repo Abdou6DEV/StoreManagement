@@ -26,6 +26,7 @@ import { useOverdueBills } from "../contexts/overdueBillsContext";
 import { useDueSoonBills } from "../contexts/dueSoonBillsContext";
 import { useOverdueServices } from "../contexts/overdueServicesContext";
 import { useDueSoonServices } from "../contexts/dueSoonServicesContext";
+import { useOrderNotifications } from "../contexts/orderNotificationsContext";
 import { useCompletedServices } from "../contexts/completedServicesContext";
 import { useUpdateContext } from "../contexts/updateContext";
 import { BadgeNotification } from "./badgeNotification";
@@ -99,6 +100,7 @@ export default function Sidebar() {
   const { unseenDueSoonBillsCount } = useDueSoonBills();
   const { unseenOverdueServicesCount, enableBadge: enableOverdueServicesBadge, badgeLoaded: overdueServicesBadgeLoaded } = useOverdueServices();
   const { unseenDueSoonServicesCount, enableBadge: enableDueSoonServicesBadge, badgeLoaded: dueSoonServicesBadgeLoaded } = useDueSoonServices();
+  const { overdueCount: overdueOrdersCount, dueSoonCount: dueSoonOrdersCount } = useOrderNotifications();
   const { completedServicesCount, isBadgeEnabled: enableCompletedServicesBadge } = useCompletedServices();
   const { state: updateState } = useUpdateContext();
   const savedCollapsedState = localStorage.getItem("sidebarCollapsed");
@@ -112,6 +114,8 @@ export default function Sidebar() {
   const [badgeLoaded, setBadgeLoaded] = useState(false);
   const [enableOutOfStockBadge, setEnableOutOfStockBadge] = useState(false); // Start as false to prevent flash
   const [outOfStockBadgeLoaded, setOutOfStockBadgeLoaded] = useState(false);
+  const stockRedCount = (enableOutOfStockBadge && outOfStockBadgeLoaded ? unseenOutOfStockCount : 0) + overdueOrdersCount;
+  const stockOrangeCount = (enableBadge && badgeLoaded ? unseenLowStockCount : 0) + dueSoonOrdersCount;
   const [showOverdueBadge, setShowOverdueBadge] = useState(true); // Start with overdue badge
   const [showOverdueBillsBadge, setShowOverdueBillsBadge] = useState(true); // Start with overdue bills badge
   const [showOverdueServicesBadge, setShowOverdueServicesBadge] = useState(true); // Start with overdue services badge
@@ -241,8 +245,8 @@ export default function Sidebar() {
 
   // Cycling badge logic for stock - alternate between out of stock and low stock every 10 seconds
   useEffect(() => {
-    const hasOutOfStock = (unseenOutOfStockCount > 0 && enableOutOfStockBadge && outOfStockBadgeLoaded);
-    const hasLowStock = (unseenLowStockCount > 0 && enableBadge && badgeLoaded);
+    const hasOutOfStock = stockRedCount > 0;
+    const hasLowStock = stockOrangeCount > 0;
     
     // Only cycle if both badges exist
     if (hasOutOfStock && hasLowStock) {
@@ -268,7 +272,7 @@ export default function Sidebar() {
         clearInterval(stockBadgeCycleRef.current);
       }
     }
-  }, [unseenOutOfStockCount, unseenLowStockCount, enableBadge, badgeLoaded, enableOutOfStockBadge, outOfStockBadgeLoaded]);
+  }, [stockRedCount, stockOrangeCount]);
 
   useEffect(() => {
     const onOpenChange = (event: Event) => {
@@ -382,20 +386,20 @@ export default function Sidebar() {
           >
             <div className="relative">
               <item.icon className={`${item.color}`} />
-              {item.key === "stock" && ((unseenLowStockCount > 0 && enableBadge && badgeLoaded) || (unseenOutOfStockCount > 0 && enableOutOfStockBadge && outOfStockBadgeLoaded)) && (
+              {item.key === "stock" && (stockRedCount > 0 || stockOrangeCount > 0) && (
                 <>
                   {/* Out of Stock Badge (Red) - Show when cycling to out of stock or when only out of stock exists */}
-                  {showOutOfStockBadge && unseenOutOfStockCount > 0 && enableOutOfStockBadge && outOfStockBadgeLoaded && (
+                  {showOutOfStockBadge && stockRedCount > 0 && (
                     <BadgeNotification 
-                      count={unseenOutOfStockCount} 
+                      count={stockRedCount} 
                       variant="red"
                       className="transition-all duration-500 ease-in-out"
                     />
                   )}
                   {/* Low Stock Badge (Orange) - Show when cycling to low stock or when only low stock exists */}
-                  {!showOutOfStockBadge && unseenLowStockCount > 0 && enableBadge && badgeLoaded && (
+                  {!showOutOfStockBadge && stockOrangeCount > 0 && (
                     <BadgeNotification 
-                      count={unseenLowStockCount} 
+                      count={stockOrangeCount} 
                       variant="orange"
                       className="transition-all duration-500 ease-in-out"
                     />

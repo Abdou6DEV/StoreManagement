@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import {
-  AlertTriangle, ArrowDownWideNarrow, ArrowUpDown, Eye, Filter, Folder, Package, PackageX, Search, X,
+  AlertTriangle, ArrowDownWideNarrow, ArrowUpDown, ClipboardList, Eye, Filter, Folder, Package, PackageX, Search, X,
 } from "lucide-react";
 import type { MobileBundle, MobileLanguage, MobileRow } from "../mobileApi";
 
-type ViewMode = "products" | "categories";
+type ViewMode = "products" | "categories" | "orders";
 type SortMode = "quantity" | "name" | "price";
 type Labels = {
   products: string; search: string; categories: string; category: string; allCategories: string; filters: string; actualProfit: string;
@@ -15,11 +15,13 @@ type Labels = {
   stockValue: string; potentialProfit: string; pageSize: string; page: string; of: string;
   previous: string; next: string; empty: string; productInfo: string; barcode: string; type: string;
   purchaseHistory: string; salesHistory: string; close: string; lowStockNote: string; availableHistory: string;
-  currentStock: string; profitPerUnit: string; totalProfit: string; profitAnalysis: string;
+  currentStock: string; profitPerUnit: string; totalProfit: string; profitAnalysis: string; actualProfitDetail: string;
   profitMargin: string; roi: string; totalPurchases: string; totalQuantityPurchased: string;
   totalCost: string; totalSales: string; totalQuantitySold: string; totalRevenue: string; purchaseId: string; saleId: string;
   date: string; supplier: string; client: string; price: string; total: string; noSupplier: string; noClient: string;
   noPurchaseHistory: string; noSalesHistory: string; salesHistoryUnavailable: string; showMore: string; showLess: string; more: string;
+  orders: string; orderProduct: string; orderDetails: string; orderStatus: string; pending: string; stocked: string; completed: string;
+  dueDate: string; paidAmount: string; emptyOrders: string;
 };
 const LABELS: Record<MobileLanguage, Labels> = {
   en: {
@@ -30,9 +32,10 @@ const LABELS: Record<MobileLanguage, Labels> = {
     potentialProfit:"Potential profit",pageSize:"Rows per page",page:"Page",of:"of",previous:"Previous",next:"Next",
     empty:"No products match these filters.",productInfo:"Product information",barcode:"Barcode",type:"Type",
     purchaseHistory:"Purchase history",salesHistory:"Sales history",close:"Close",
+    orders:"Orders",orderProduct:"Product",orderDetails:"Details",orderStatus:"Status",pending:"Pending",stocked:"Stocked",completed:"Completed",dueDate:"Due date",paidAmount:"Paid amount",emptyOrders:"No orders found.",
     lowStockNote:"Low-stock threshold is set to 5 because the desktop setting isn't synced to the PWA.",
     availableHistory:"*Sold quantity and linked histories use only the sales records currently available in the PWA, not guaranteed lifetime totals.",
-    currentStock:"Current stock",profitPerUnit:"Profit per unit",totalProfit:"Total profit",profitAnalysis:"Profit analysis",potentialProfit:"Potential profit",actualProfit:"Actual profit",profitMargin:"Profit margin",roi:"ROI",totalPurchases:"Purchase entries",totalQuantityPurchased:"Quantity purchased",totalCost:"Total cost",totalSales:"Sale entries",totalQuantitySold:"Quantity sold",totalRevenue:"Total revenue",purchaseId:"Purchase ID",saleId:"Sale ID",date:"Date",supplier:"Supplier",client:"Client",price:"Unit price",total:"Total",noSupplier:"Supplier unavailable",noClient:"Client unavailable",noPurchaseHistory:"No purchase history available.",noSalesHistory:"No sales history available.",salesHistoryUnavailable:"Sales history is not available from this server yet.",showMore:"Show more",showLess:"Show less",more:"more",
+    currentStock:"Current stock",profitPerUnit:"Profit per unit",totalProfit:"Total profit",profitAnalysis:"Profit analysis",actualProfitDetail:"Actual profit",profitMargin:"Profit margin",roi:"ROI",totalPurchases:"Purchase entries",totalQuantityPurchased:"Quantity purchased",totalCost:"Total cost",totalSales:"Sale entries",totalQuantitySold:"Quantity sold",totalRevenue:"Total revenue",purchaseId:"Purchase ID",saleId:"Sale ID",date:"Date",supplier:"Supplier",client:"Client",price:"Unit price",total:"Total",noSupplier:"Supplier unavailable",noClient:"Client unavailable",noPurchaseHistory:"No purchase history available.",noSalesHistory:"No sales history available.",salesHistoryUnavailable:"Sales history is not available from this server yet.",showMore:"Show more",showLess:"Show less",more:"more",
   },
   fr: {
     products:"Produits",search:"Rechercher",categories:"Catégories",category:"Catégorie",allCategories:"Toutes les catégories",filters:"Filtres",
@@ -42,9 +45,10 @@ const LABELS: Record<MobileLanguage, Labels> = {
     potentialProfit:"Bénéfice potentiel",pageSize:"Lignes par page",page:"Page",of:"sur",previous:"Précédent",next:"Suivant",
     empty:"Aucun produit ne correspond à ces filtres.",productInfo:"Informations produit",barcode:"Code-barres",type:"Type",
     purchaseHistory:"Historique des achats",salesHistory:"Historique des ventes",close:"Fermer",
+    orders:"Commandes",orderProduct:"Produit",orderDetails:"Détails",orderStatus:"Statut",pending:"En attente",stocked:"En stock",completed:"Terminée",dueDate:"Date prévue",paidAmount:"Versement",emptyOrders:"Aucune commande.",
     lowStockNote:"Le seuil de stock faible est fixé à 5, car le réglage du bureau n’est pas synchronisé avec la PWA.",
     availableHistory:"*Les quantités vendues et historiques liés utilisent uniquement les ventes disponibles dans la PWA ; le total historique complet n’est pas garanti.",
-    currentStock:"Stock actuel",profitPerUnit:"Bénéfice par unité",totalProfit:"Bénéfice total",profitAnalysis:"Analyse du bénéfice",potentialProfit:"Bénéfice potentiel",actualProfit:"Bénéfice réel",profitMargin:"Marge bénéficiaire",roi:"ROI",totalPurchases:"Lignes d’achat",totalQuantityPurchased:"Quantité achetée",totalCost:"Coût total",totalSales:"Lignes de vente",totalQuantitySold:"Quantité vendue",totalRevenue:"Chiffre d’affaires total",purchaseId:"N° d’achat",saleId:"N° de vente",date:"Date",supplier:"Fournisseur",client:"Client",price:"Prix unitaire",total:"Total",noSupplier:"Fournisseur indisponible",noClient:"Client indisponible",noPurchaseHistory:"Aucun historique d’achat disponible.",noSalesHistory:"Aucun historique de vente disponible.",salesHistoryUnavailable:"L’historique des ventes n’est pas encore disponible sur ce serveur.",showMore:"Afficher plus",showLess:"Afficher moins",more:"de plus",
+    currentStock:"Stock actuel",profitPerUnit:"Bénéfice par unité",totalProfit:"Bénéfice total",profitAnalysis:"Analyse du bénéfice",actualProfitDetail:"Bénéfice réel",profitMargin:"Marge bénéficiaire",roi:"ROI",totalPurchases:"Lignes d’achat",totalQuantityPurchased:"Quantité achetée",totalCost:"Coût total",totalSales:"Lignes de vente",totalQuantitySold:"Quantité vendue",totalRevenue:"Chiffre d’affaires total",purchaseId:"N° d’achat",saleId:"N° de vente",date:"Date",supplier:"Fournisseur",client:"Client",price:"Prix unitaire",total:"Total",noSupplier:"Fournisseur indisponible",noClient:"Client indisponible",noPurchaseHistory:"Aucun historique d’achat disponible.",noSalesHistory:"Aucun historique de vente disponible.",salesHistoryUnavailable:"L’historique des ventes n’est pas encore disponible sur ce serveur.",showMore:"Afficher plus",showLess:"Afficher moins",more:"de plus",
   },
   ar: {
     products:"المنتجات",search:"بحث",categories:"الفئات",category:"الفئة",allCategories:"كل الفئات",filters:"الفلاتر",
@@ -54,9 +58,10 @@ const LABELS: Record<MobileLanguage, Labels> = {
     potentialProfit:"الربح المحتمل",pageSize:"عدد الصفوف",page:"صفحة",of:"من",previous:"السابق",next:"التالي",
     empty:"لا توجد منتجات تطابق الفلاتر.",productInfo:"معلومات المنتج",barcode:"الباركود",type:"النوع",
     purchaseHistory:"سجل المشتريات",salesHistory:"سجل المبيعات",close:"إغلاق",
+    orders:"الطلبات",orderProduct:"المنتج",orderDetails:"التفاصيل",orderStatus:"الحالة",pending:"قيد الانتظار",stocked:"متوفر في المخزون",completed:"مكتمل",dueDate:"موعد الاستلام",paidAmount:"المبلغ المدفوع",emptyOrders:"لا توجد طلبات.",
     lowStockNote:"تم اعتماد حد 5 وحدات للمخزون المنخفض لأن إعداد سطح المكتب غير متاح في تطبيق الهاتف.",
     availableHistory:"*الكميات المباعة والسجلات المرتبطة تعتمد فقط على سجلات المبيعات المتاحة حالياً في التطبيق.",
-    currentStock:"المخزون الحالي",profitPerUnit:"الربح لكل وحدة",totalProfit:"إجمالي الربح",profitAnalysis:"تحليل الربح",potentialProfit:"الربح المحتمل",actualProfit:"الربح الفعلي",profitMargin:"هامش الربح",roi:"العائد على الاستثمار",totalPurchases:"عمليات الشراء",totalQuantityPurchased:"الكمية المشتراة",totalCost:"التكلفة الإجمالية",totalSales:"عمليات البيع",totalQuantitySold:"الكمية المباعة",totalRevenue:"إجمالي الإيرادات",purchaseId:"رقم الشراء",saleId:"رقم البيع",date:"التاريخ",supplier:"المورد",client:"الزبون",price:"سعر الوحدة",total:"الإجمالي",noSupplier:"بيانات المورد غير متاحة",noClient:"بيانات الزبون غير متاحة",noPurchaseHistory:"لا يوجد سجل مشتريات متاح.",noSalesHistory:"لا يوجد سجل مبيعات متاح.",salesHistoryUnavailable:"سجل المبيعات غير متاح من هذا الخادم حالياً.",showMore:"عرض المزيد",showLess:"عرض أقل",more:"المزيد",
+    currentStock:"المخزون الحالي",profitPerUnit:"الربح لكل وحدة",totalProfit:"إجمالي الربح",profitAnalysis:"تحليل الربح",actualProfitDetail:"الربح الفعلي",profitMargin:"هامش الربح",roi:"العائد على الاستثمار",totalPurchases:"عمليات الشراء",totalQuantityPurchased:"الكمية المشتراة",totalCost:"التكلفة الإجمالية",totalSales:"عمليات البيع",totalQuantitySold:"الكمية المباعة",totalRevenue:"إجمالي الإيرادات",purchaseId:"رقم الشراء",saleId:"رقم البيع",date:"التاريخ",supplier:"المورد",client:"الزبون",price:"سعر الوحدة",total:"الإجمالي",noSupplier:"بيانات المورد غير متاحة",noClient:"بيانات الزبون غير متاحة",noPurchaseHistory:"لا يوجد سجل مشتريات متاح.",noSalesHistory:"لا يوجد سجل مبيعات متاح.",salesHistoryUnavailable:"سجل المبيعات غير متاح من هذا الخادم حالياً.",showMore:"عرض المزيد",showLess:"عرض أقل",more:"المزيد",
   },
 };
 const num = (value: unknown): number => { const parsed = typeof value === "number" ? value : Number(value ?? 0); return Number.isFinite(parsed) ? parsed : 0; };
@@ -64,7 +69,7 @@ const str = (value: unknown): string => value == null ? "" : String(value);
 const money = (amountDA: number, language: MobileLanguage): string => new Intl.NumberFormat(language === "ar" ? "ar-DZ" : language === "fr" ? "fr-DZ" : "en", { maximumFractionDigits: 2 }).format(amountDA) + " DA";
 const dateLabel = (value: unknown, language: MobileLanguage): string => {
   if (typeof value !== "string" || !value) return "—";
-  const date = new Date(value);
+  const date = new Date(/^\d{4}-\d{2}-\d{2}$/.test(value) ? `${value}T12:00:00` : value);
   return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat(language, { dateStyle: "medium" }).format(date);
 };
 const productKey = (row: MobileRow): string => str(row.source_id ?? row.id);
@@ -142,10 +147,20 @@ export function StockSection({ data, language, query, onQueryChange }: { data: M
       .map(([name, values]) => ({ name, ...values, potential: values.selling - values.bought }));
   }, [data.products, query]);
 
-  const totalPages = Math.max(1, Math.ceil((view === "products" ? filteredProducts.length : categories.length) / pageSize));
+  const filteredOrders = useMemo(() => {
+    const term = query.trim().toLocaleLowerCase();
+    const statusRank: Record<string, number> = { pending: 0, stocked: 1, completed: 2 };
+    return data.orders.filter((order) => [order.product_name, order.details, order.client_name, order.client_phone]
+      .some((value) => str(value).toLocaleLowerCase().includes(term)))
+      .sort((a, b) => (statusRank[str(a.status)] ?? 3) - (statusRank[str(b.status)] ?? 3));
+  }, [data.orders, query]);
+
+  const viewCount = view === "products" ? filteredProducts.length : view === "categories" ? categories.length : filteredOrders.length;
+  const totalPages = Math.max(1, Math.ceil(viewCount / pageSize));
   const currentPage = Math.min(page, totalPages);
   const visibleProducts = filteredProducts.slice((currentPage - 1) * pageSize, currentPage * pageSize);
   const visibleCategories = categories.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const visibleOrders = filteredOrders.slice((currentPage - 1) * pageSize, currentPage * pageSize);
   const activeFilters = lowStock || outOfStock || noBarcode || Boolean(category) || salesSort !== "none";
   const linkedPurchaseItems = useMemo(() => {
     if (!selected) return [];
@@ -184,6 +199,7 @@ export function StockSection({ data, language, query, onQueryChange }: { data: M
     <div className="stock-view-switch" role="tablist" aria-label={t.products}>
       <button type="button" role="tab" aria-selected={view === "products"} className={view === "products" ? "active" : ""} onClick={() => setView("products")}><Package size={16} />{t.products}</button>
       <button type="button" role="tab" aria-selected={view === "categories"} className={view === "categories" ? "active" : ""} onClick={() => setView("categories")}><Folder size={16} />{t.categories}</button>
+      <button type="button" role="tab" aria-selected={view === "orders"} className={view === "orders" ? "active" : ""} onClick={() => setView("orders")}><ClipboardList size={16} />{t.orders}</button>
     </div>
     {view === "products" ? <>
       <div className="stock-filter-row stock-filter-primary-row" aria-label={t.filters}>
@@ -233,7 +249,7 @@ export function StockSection({ data, language, query, onQueryChange }: { data: M
 
         </table>
       </div>}
-    </> : <>
+    </> : view === "categories" ? <>
       <div className="stock-sort-row"><label className="mobile-select-control"><span>{t.pageSize}</span><select value={pageSize} onChange={(event) => setPageSize(Number(event.target.value))}>{[7,10,15,20,50].map((size) => <option key={size} value={size}>{size}</option>)}</select></label></div>
       {categories.length === 0 ? <p className="mobile-empty">{t.empty}</p> : <div className="stock-table-scroll" role="region" aria-label={t.categories} tabIndex={0}>
         <table className="stock-data-table stock-category-table">
@@ -247,8 +263,23 @@ export function StockSection({ data, language, query, onQueryChange }: { data: M
 
         </table>
       </div>}
+    </> : <>
+      <div className="stock-sort-row"><label className="mobile-select-control"><span>{t.pageSize}</span><select value={pageSize} onChange={(event) => setPageSize(Number(event.target.value))}>{[7,10,15,20,50].map((size) => <option key={size} value={size}>{size}</option>)}</select></label></div>
+      {filteredOrders.length === 0 ? <p className="mobile-empty">{t.emptyOrders}</p> : <div className="mobile-order-list">{visibleOrders.map((order) => {
+        const status = str(order.status);
+        const statusLabel = status === "pending" ? t.pending : status === "stocked" ? t.stocked : status === "completed" ? t.completed : status;
+        return <article className="mobile-order-card" key={str(order.source_id)}>
+          <div className="mobile-order-heading"><div className="mobile-order-product"><h3 title={str(order.product_name)}>{str(order.product_name) || "—"}</h3>{order.details ? <p title={str(order.details)}>{str(order.details)}</p> : null}</div><span className={`mobile-order-status ${status}`}>{statusLabel}</span></div>
+          <dl className="mobile-order-meta">
+            <div><dt>{t.quantity}</dt><dd>{new Intl.NumberFormat(language).format(num(order.quantity))}</dd></div>
+            <div><dt>{t.client}</dt><dd><strong>{str(order.client_name) || "—"}</strong>{order.client_phone ? <small>{str(order.client_phone)}</small> : null}</dd></div>
+            <div><dt>{t.dueDate}</dt><dd>{dateLabel(order.due_date, language)}</dd></div>
+            <div><dt>{t.paidAmount}</dt><dd>{order.paid_amount == null ? "—" : money(num(order.paid_amount) / 100, language)}</dd></div>
+          </dl>
+        </article>;
+      })}</div>}
     </>}
-    {(view === "products" ? filteredProducts.length : categories.length) > 0 ? <div className="mobile-pagination">
+    {viewCount > 0 ? <div className="mobile-pagination">
       <button type="button" disabled={currentPage === 1} onClick={() => setPage((v) => Math.max(1, v - 1))}>{t.previous}</button><span>{t.page} {currentPage} {t.of} {totalPages}</span>
       <button type="button" disabled={currentPage === totalPages} onClick={() => setPage((v) => Math.min(totalPages, v + 1))}>{t.next}</button>
     </div> : null}
@@ -279,7 +310,7 @@ export function StockSection({ data, language, query, onQueryChange }: { data: M
           <h3>{t.profitAnalysis}</h3>
           <div className="stock-profit-grid">
             <div><span>{t.potentialProfit}</span><strong>{money((num(selected.selling_price) - num(selected.bought_price)) * num(selected.quantity), language)}</strong></div>
-            <div><span>{t.actualProfit}*</span><strong>{money(saleSummary.profit, language)}</strong></div>
+            <div><span>{t.actualProfitDetail}*</span><strong>{money(saleSummary.profit, language)}</strong></div>
             <div><span>{t.profitMargin}</span><strong>{num(selected.selling_price) > 0 ? (((num(selected.selling_price) - num(selected.bought_price)) / num(selected.selling_price)) * 100).toFixed(1) : "0.0"}%</strong></div>
             <div><span>{t.roi}</span><strong>{num(selected.bought_price) > 0 ? (((num(selected.selling_price) - num(selected.bought_price)) / num(selected.bought_price)) * 100).toFixed(1) : "0.0"}%</strong></div>
           </div>

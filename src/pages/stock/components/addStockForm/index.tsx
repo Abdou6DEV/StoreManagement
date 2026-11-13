@@ -98,9 +98,11 @@ interface PendingProduct {
 export default function AddStockForm({
   openPanel,
   setOpenPanel,
+  isActive = true,
 }: {
   openPanel: "add" | null;
   setOpenPanel: React.Dispatch<React.SetStateAction<"add" | null>>;
+  isActive?: boolean;
 }) {
   const { t } = useTranslation();
   const { user } = useAuth();
@@ -361,6 +363,7 @@ export default function AddStockForm({
 
   // Global Enter key handler to focus on product name when no input is focused
   React.useEffect(() => {
+    if (!isActive) return;
     const handleGlobalKeyDown = (event: KeyboardEvent) => {
       // Only handle Enter key
       if (event.key !== "Enter") return;
@@ -389,7 +392,7 @@ export default function AddStockForm({
 
     document.addEventListener("keydown", handleGlobalKeyDown);
     return () => document.removeEventListener("keydown", handleGlobalKeyDown);
-  }, []);
+  }, [isActive]);
 
   // Compute paginated products
   const paginatedProducts = filteredProducts.slice(0, productPage * PAGE_SIZE);

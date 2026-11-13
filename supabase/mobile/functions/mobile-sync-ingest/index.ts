@@ -4,6 +4,8 @@ import {
   mobileAdminClient,
 } from "../_shared/licensing.ts";
 import {
+  deriveLegacyOrdersSnapshotId,
+  normalizeLegacyOrdersSnapshot,
   validateMobileSyncChunk,
   validateMobileSyncSnapshot,
 } from "../_shared/mobileSyncSnapshot.ts";
@@ -13,7 +15,7 @@ const MAX_CHUNK_BYTES = 256 * 1024;
 const ENTITIES = [
   "users", "permissions", "categories", "products", "manual_products",
   "suppliers", "purchases", "purchase_items", "clients", "services",
-  "service_appointments", "sales", "sale_items", "payments", "bills",
+  "orders", "service_appointments", "sales", "sale_items", "payments", "bills",
   "bill_payments", "dashboard_daily",
 ] as const;
 type Entity = typeof ENTITIES[number];
@@ -49,6 +51,43 @@ function splitSnapshotRows(rows: Record<string, unknown>[]): Record<string, unkn
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+async function preserveOrdersForLegacySnapshot(
+  db: ReturnType<typeof mobileAdminClient>,
+  customerId: string,
+  snapshot: unknown,
+) {
+  if (!isRecord(snapshot) || Object.prototype.hasOwnProperty.call(snapshot, "orders")) {
+    return snapshot;
+  }
+
+  const { data: active, error: activeError } = await db.from("mobile_sync_snapshots")
+    .select("snapshot_id")
+    .eq("customer_id", customerId)
+    .eq("status", "active")
+    .maybeSingle();
+  if (activeError) throw new Error("active_snapshot_unavailable");
+
+  const preservedOrders: Record<string, unknown>[] = [];
+  if (active?.snapshot_id) {
+    const pageSize = 1000;
+    for (let offset = 0;; offset += pageSize) {
+      const { data, error } = await db.from("mobile_sync_snapshot_rows")
+        .select("payload")
+        .eq("customer_id", customerId)
+        .eq("snapshot_id", active.snapshot_id)
+        .eq("entity", "orders")
+        .order("source_key", { ascending: true })
+        .range(offset, offset + pageSize - 1);
+      if (error) throw new Error("active_orders_unavailable");
+      const page = data ?? [];
+      preservedOrders.push(...page.map((row) => row.payload as Record<string, unknown>));
+      if (page.length < pageSize) break;
+    }
+  }
+
+  return normalizeLegacyOrdersSnapshot(snapshot, preservedOrders);
 }
 
 Deno.serve(async (req) => {
@@ -122,8 +161,15 @@ Deno.serve(async (req) => {
 
   try {
     if (action === "snapshot") {
+      let normalizedSnapshot: unknown;
       try {
-        validateMobileSyncSnapshot(body.snapshot, customerId);
+        normalizedSnapshot = await preserveOrdersForLegacySnapshot(db, customerId, body.snapshot);
+      } catch (error) {
+        console.error("legacy order snapshot preservation failed", error);
+        return json(503, { ok: false, error: "order_snapshot_preservation_unavailable" }, cors);
+      }
+      try {
+        validateMobileSyncSnapshot(normalizedSnapshot, customerId);
       } catch (error) {
         console.error("mobile sync snapshot validation failed", {
           error: error instanceof Error ? error.message : "unknown_validation_error",
@@ -131,7 +177,11 @@ Deno.serve(async (req) => {
         return json(400, { ok: false, error: "invalid_snapshot" }, cors);
       }
 
-      const snapshot = body.snapshot as Record<string, Record<string, unknown>[]>;
+      const snapshot = normalizedSnapshot as Record<string, Record<string, unknown>[]>;
+      const isLegacySnapshot = isRecord(body.snapshot) && !Object.prototype.hasOwnProperty.call(body.snapshot, "orders");
+      const effectiveSnapshotId = isLegacySnapshot
+        ? await deriveLegacyOrdersSnapshotId(snapshotId, snapshot.orders)
+        : snapshotId;
       const chunkedEntries = ENTITIES.map((entity) => [entity, splitSnapshotRows(snapshot[entity])] as const);
       const expectedCounts = Object.fromEntries(
         ENTITIES.map((entity) => [entity, snapshot[entity].length]),
@@ -143,7 +193,7 @@ Deno.serve(async (req) => {
       const { data: started, error: startError } = await db.rpc("begin_mobile_sync_snapshot", {
         p_customer_id: customerId,
         p_device_id: deviceId,
-        p_snapshot_id: snapshotId,
+        p_snapshot_id: effectiveSnapshotId,
         p_expected_counts: expectedCounts,
         p_expected_chunks: expectedChunks,
       });
@@ -160,7 +210,7 @@ Deno.serve(async (req) => {
             const { error: stageError } = await db.rpc("stage_mobile_sync_chunk", {
               p_customer_id: customerId,
               p_device_id: deviceId,
-              p_snapshot_id: snapshotId,
+              p_snapshot_id: effectiveSnapshotId,
               p_entity: entity,
               p_chunk_index: chunkIndex,
               p_checksum: checksum,
@@ -177,7 +227,7 @@ Deno.serve(async (req) => {
       const { error: finalizeError } = await db.rpc("finalize_mobile_sync_snapshot", {
         p_customer_id: customerId,
         p_device_id: deviceId,
-        p_snapshot_id: snapshotId,
+        p_snapshot_id: effectiveSnapshotId,
       });
       if (finalizeError) {
         console.error("mobile snapshot finalization failed");
@@ -186,7 +236,7 @@ Deno.serve(async (req) => {
       const { data: completed, error: completedError } = await db.from("mobile_sync_snapshots")
         .select("expected_counts,status,completed_at")
         .eq("customer_id", customerId)
-        .eq("snapshot_id", snapshotId)
+        .eq("snapshot_id", effectiveSnapshotId)
         .maybeSingle();
       if (completedError || completed?.status !== "active") {
         return json(500, { ok: false, error: "snapshot_activation_unconfirmed" }, cors);

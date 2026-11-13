@@ -27,6 +27,7 @@ export type MobileBundle = {
   categories_available: boolean;
   categories: MobileRow[];
   products: MobileRow[];
+  orders: MobileRow[];
   manual_products: MobileRow[];
   suppliers: MobileRow[];
   purchases: MobileRow[];
@@ -189,6 +190,7 @@ function validateSessionResponse(value: unknown): MobileSessionResponse {
     categories_available: categoriesAvailable,
     categories: rows(categoriesAvailable ? value.data.categories : []),
     products: rows(value.data.products),
+    orders: rows(Array.isArray(value.data.orders) ? value.data.orders : []),
     manual_products: rows(Array.isArray(value.data.manual_products) ? value.data.manual_products : []),
     suppliers: rows(Array.isArray(value.data.suppliers) ? value.data.suppliers : []),
     purchases: rows(Array.isArray(value.data.purchases) ? value.data.purchases : []),

@@ -4,7 +4,8 @@ type WarmupKey =
   | "clients"
   | "payments"
   | "bills"
-  | "services";
+  | "services"
+  | "orders";
 
 export type WarmupSnapshot = {
   options: Record<string, string | null>;
@@ -16,6 +17,7 @@ export type WarmupSnapshot = {
   bills: any[] | null;
   services: any[] | null;
   completedServices: any[] | null;
+  orders: import("../database/orderTypes").OrderRecord[] | null;
 };
 
 type WarmupUpdateDetail = { key: WarmupKey; snapshot: WarmupSnapshot };
@@ -33,6 +35,7 @@ const snapshot: WarmupSnapshot = {
   bills: null,
   services: null,
   completedServices: null,
+  orders: null,
 };
 
 let intervals: number[] = [];
@@ -67,6 +70,9 @@ async function loadOptionsOnce() {
     "dueSoonThresholdDays",
     "dueSoonBillsThresholdDays",
     "dueSoonServicesThresholdDays",
+    "enableDueSoonOrdersBadge",
+    "enableOverdueOrdersBadge",
+    "dueSoonOrdersThresholdDays",
     "enableCompletedServicesBadge",
   ];
 
@@ -114,6 +120,18 @@ async function loadServicesOnce() {
   emit("services");
 }
 
+export async function refreshOrdersWarmup() {
+  const orders = await safe(() => window.api.database.orders.getAll());
+  if (orders !== null) {
+    snapshot.orders = orders;
+    emit("orders");
+  }
+}
+
+export async function refreshOptionsWarmup() {
+  await loadOptionsOnce();
+}
+
 export function getWarmupSnapshot() {
   return snapshot;
 }
@@ -139,6 +157,7 @@ export function startAppWarmup() {
   void loadPaymentsOnce();
   void loadBillsOnce();
   void loadServicesOnce();
+  void refreshOrdersWarmup();
 
   // Background refresh (keep the UI stable; no 1s polling)
   intervals = [
@@ -146,6 +165,7 @@ export function startAppWarmup() {
     window.setInterval(loadPaymentsOnce, 10_000),
     window.setInterval(loadBillsOnce, 10_000),
     window.setInterval(loadServicesOnce, 30_000),
+    window.setInterval(refreshOrdersWarmup, 30_000),
     window.setInterval(loadStockOnce, 30_000),
   ];
 }
@@ -160,5 +180,6 @@ export async function runAppWarmupOnce() {
   await loadPaymentsOnce();
   await loadBillsOnce();
   await loadServicesOnce();
+  await refreshOrdersWarmup();
 }
 

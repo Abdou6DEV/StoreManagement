@@ -3,6 +3,7 @@ import { broadcastToAllApps } from "../utils/appWebContents";
 import fs from "fs";
 import path from "path";
 import { prisma } from "../../lib/database/prismaClient";
+import { ensureOrdersSchema } from "../../lib/database/ordersSchema";
 import logger from "../../lib/logger";
 import { notifyMobileSyncChange } from "../utils/mobileSyncEvents";
 import { getOption, setOption } from "../../lib/database/options";
@@ -739,6 +740,7 @@ const restoreBackup = async (backupPath: string) => {
       await prisma.$connect();
       // Test a simple query to ensure database is working
       await prisma.$queryRaw`SELECT 1`;
+      await ensureOrdersSchema(prisma);
     } catch (connectError) {
       throw new Error(
         `Database connection failed after restore: ${errorMessage(connectError)}`,

@@ -4,7 +4,8 @@ import {
   PackageSearch, 
   Users, 
   FileText, 
-  Wrench 
+  Wrench,
+  ClipboardList,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useLowStock } from '../contexts/lowStockContext';
@@ -16,10 +17,11 @@ import { useDueSoonPayments } from '../contexts/dueSoonPaymentsContext';
 import { useDueSoonBills } from '../contexts/dueSoonBillsContext';
 import { useOverdueServices } from '../contexts/overdueServicesContext';
 import { useDueSoonServices } from '../contexts/dueSoonServicesContext';
+import { useOrderNotifications } from '../contexts/orderNotificationsContext';
 
 export interface Notification {
   id: string;
-  type: 'outOfStock' | 'lowStock' | 'overduePayment' | 'dueSoonPayment' | 'overdueBill' | 'dueSoonBill' | 'overdueService' | 'dueSoonService';
+  type: 'outOfStock' | 'lowStock' | 'overduePayment' | 'dueSoonPayment' | 'overdueBill' | 'dueSoonBill' | 'overdueService' | 'dueSoonService' | 'overdueOrder' | 'dueSoonOrder';
   count: number;
   message: string;
   path: string;
@@ -39,6 +41,7 @@ export function useNotifications() {
   const { unseenDueSoonBillsCount } = useDueSoonBills();
   const { unseenOverdueServicesCount } = useOverdueServices();
   const { unseenDueSoonServicesCount } = useDueSoonServices();
+  const { overdueCount: overdueOrdersCount, dueSoonCount: dueSoonOrdersCount } = useOrderNotifications();
 
   // Aggregate all notifications
   const notifications = useMemo<Notification[]>(() => {
@@ -214,6 +217,12 @@ export function useNotifications() {
       });
     }
 
+    if (overdueOrdersCount > 0) {
+      notifs.push({ id: 'overdueOrders', type: 'overdueOrder', count: overdueOrdersCount, message: overdueOrdersCount === 1 ? t('notifications.oneOverdueOrder', '1 overdue order') : t('notifications.overdueOrders', '{{count}} overdue orders', { count: overdueOrdersCount }), path: '/stock', action: 'overdueOrders', icon: ClipboardList, iconColor: 'text-green-600', importance: 'high' });
+    }
+    if (dueSoonOrdersCount > 0) {
+      notifs.push({ id: 'dueSoonOrders', type: 'dueSoonOrder', count: dueSoonOrdersCount, message: dueSoonOrdersCount === 1 ? t('notifications.oneOrderDueSoon', '1 order due soon') : t('notifications.ordersDueSoon', '{{count}} orders due soon', { count: dueSoonOrdersCount }), path: '/stock', action: 'dueSoonOrders', icon: ClipboardList, iconColor: 'text-green-600', importance: 'medium' });
+    }
     return notifs;
   }, [
     t,
@@ -227,6 +236,8 @@ export function useNotifications() {
     unseenDueSoonBillsCount,
     unseenOverdueServicesCount,
     unseenDueSoonServicesCount,
+    overdueOrdersCount,
+    dueSoonOrdersCount,
   ]);
 
   const totalCount = useMemo(() => {

@@ -72,6 +72,7 @@ function createSnapshot(): Record<string, unknown[]> {
       source_updated_at: timestamp,
     }],
     clients: [],
+    orders: [],
     services: [],
     service_appointments: [],
     sales: [],
@@ -93,10 +94,10 @@ function assertRejected(snapshot: unknown, reason: string): void {
   throw new Error(`Expected snapshot rejection: ${reason}`);
 }
 
-Deno.test("accepts the exact 17-array desktop snapshot including new entities", () => {
+Deno.test("accepts the exact 18-array desktop snapshot including orders", () => {
   const snapshot = createSnapshot();
-  if (Object.keys(snapshot).length !== 17) {
-    throw new Error(`Expected 17 snapshot arrays, got ${Object.keys(snapshot).length}`);
+  if (Object.keys(snapshot).length !== 18) {
+    throw new Error(`Expected 18 snapshot arrays, got ${Object.keys(snapshot).length}`);
   }
   validateMobileSyncSnapshot(snapshot, customerId);
 });

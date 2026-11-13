@@ -1,7 +1,17 @@
 import { ipcRenderer } from "electron";
 import { Product } from "@prisma/client";
+import type { OrderInput, OrderStatus } from "../../lib/database/orderTypes";
 
 export const databaseAPI = {
+  orders: {
+    getAll: () => ipcRenderer.invoke("db:orders:getAll"),
+    create: (data: OrderInput) => ipcRenderer.invoke("db:orders:create", data),
+    update: (id: string, data: OrderInput) => ipcRenderer.invoke("db:orders:update", { id, data }),
+    setStatus: (id: string, status: OrderStatus) => ipcRenderer.invoke("db:orders:setStatus", { id, status }),
+    cancelCompletion: (id: string) => ipcRenderer.invoke("db:orders:cancelCompletion", id),
+    cancelStocked: (id: string) => ipcRenderer.invoke("db:orders:cancelStocked", id),
+    delete: (id: string) => ipcRenderer.invoke("db:orders:delete", id),
+  },
   cashier: {
     getBootstrap: () => ipcRenderer.invoke("db:cashier:getBootstrap"),
   },

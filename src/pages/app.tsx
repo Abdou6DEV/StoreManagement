@@ -12,6 +12,7 @@ import { OverdueBillsProvider } from "../lib/contexts/overdueBillsContext";
 import { DueSoonBillsProvider } from "../lib/contexts/dueSoonBillsContext";
 import { OverdueServicesProvider } from "../lib/contexts/overdueServicesContext";
 import { DueSoonServicesProvider } from "../lib/contexts/dueSoonServicesContext";
+import { OrderNotificationsProvider } from "../lib/contexts/orderNotificationsContext";
 import { CashierHistoryProvider } from "../lib/contexts/cashierHistoryContext";
 import { ProductCardImageSlideProvider } from "../lib/contexts/productCardImageSlideContext";
 import { CompletedServicesProvider } from "../lib/contexts/completedServicesContext";
@@ -265,6 +266,7 @@ export default function App() {
                           <DueSoonBillsProvider>
                           <OverdueServicesProvider>
                           <DueSoonServicesProvider>
+                          <OrderNotificationsProvider>
                           <CashierHistoryProvider>
                           <ProductCardImageSlideProvider>
                           <CompletedServicesProvider>
@@ -371,6 +373,7 @@ export default function App() {
                         </CompletedServicesProvider>
                         </ProductCardImageSlideProvider>
                         </CashierHistoryProvider>
+                        </OrderNotificationsProvider>
                         </DueSoonServicesProvider>
                         </OverdueServicesProvider>
                         </DueSoonBillsProvider>

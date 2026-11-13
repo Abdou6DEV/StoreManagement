@@ -358,7 +358,7 @@ export default function Navigation() {
                           setNotificationsOpen(false);
 
                           // If we're already on the target page, don't navigate
-                          if (location.pathname === notification.path) {
+                          if (location.pathname === notification.path && notification.action !== "overdueOrders" && notification.action !== "dueSoonOrders") {
                             // Page is already active, just close the dropdown
                             return;
                           }

@@ -16,6 +16,7 @@ export default function AddClientModal({
   setClientNotes,
   t,
   onConfirm,
+  subtitle,
 }: {
   open: boolean;
   onClose: () => void;
@@ -29,6 +30,7 @@ export default function AddClientModal({
   setClientNotes: (val: string) => void;
   t: TFunction;
   onConfirm: () => void;
+  subtitle?: string;
 }) {
   const nameInputRef = useRef<HTMLInputElement>(null);
   const phoneInputRef = useRef<HTMLInputElement>(null);
@@ -125,7 +127,7 @@ export default function AddClientModal({
       hasUnsavedChanges={hasDraft}
       onDiscard={onClose}
       title={t("cashier.addNewClient", "Add New Client")}
-      subtitle={t(
+      subtitle={subtitle ?? t(
         "cashier.addClientDesc",
         "Enter client information to add them to your database",
       )}

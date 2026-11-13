@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import { useToast } from "../../../lib/contexts/toastContext";
 import { useCompletedServices } from "../../../lib/contexts/completedServicesContext";
 import { useAuth } from "../../../lib/contexts/authContext";
+import { refreshOptionsWarmup } from "../../../lib/warmup/appWarmup";
 import {
   Shield,
   Loader2,
@@ -37,6 +38,7 @@ const OPTION_KEYS = [
   "dueSoonThresholdDays", "dueSoonBillsThresholdDays", "dueSoonServicesThresholdDays",
   "cashierSalesHistoryDays", "enableCashierHistory", "enableCompletedServicesBadge",
   "categoriesRequiringInfo", "enableProductCardImageSlide",
+  "enableOverdueOrdersBadge", "enableDueSoonOrdersBadge", "dueSoonOrdersThresholdDays",
 ] as const;
 
 export const OptionsList: React.FC = () => {
@@ -57,6 +59,9 @@ export const OptionsList: React.FC = () => {
   const [dueSoonThresholdDays, setDueSoonThresholdDays] = useState(2);
   const [dueSoonBillsThresholdDays, setDueSoonBillsThresholdDays] = useState(2);
   const [dueSoonServicesThresholdDays, setDueSoonServicesThresholdDays] = useState(2);
+  const [enableOverdueOrdersBadge, setEnableOverdueOrdersBadge] = useState(true);
+  const [enableDueSoonOrdersBadge, setEnableDueSoonOrdersBadge] = useState(true);
+  const [dueSoonOrdersThresholdDays, setDueSoonOrdersThresholdDays] = useState(2);
   const [cashierSalesHistoryDays, setCashierSalesHistoryDays] = useState(7);
   const [enableCashierHistory, setEnableCashierHistory] = useState(true);
   const [enableCompletedServicesBadge, setEnableCompletedServicesBadge] = useState(true);
@@ -86,9 +91,12 @@ export const OptionsList: React.FC = () => {
       window.api.database.options.get("enableCompletedServicesBadge"),
       window.api.database.options.get("enableProductCardImageSlide"),
       window.api.database.options.get("categoriesRequiringInfo"),
+      window.api.database.options.get("enableOverdueOrdersBadge"),
+      window.api.database.options.get("enableDueSoonOrdersBadge"),
+      window.api.database.options.get("dueSoonOrdersThresholdDays"),
       window.api.database.categories.getAll(),
     ])
-      .then(([lowStockVal, enableBadgeVal, enableOutOfStockBadgeVal, enableOverdueVal, enableDueSoonVal, enableOverdueBillsVal, enableDueSoonBillsVal, enableOverdueServicesVal, enableDueSoonServicesVal, dueSoonThresholdVal, dueSoonBillsThresholdVal, dueSoonServicesThresholdVal, cashierSalesHistoryDaysVal, enableCashierHistoryVal, enableCompletedServicesBadgeVal, enableProductCardImageSlideVal, categoriesRequiringInfoVal, categoriesData]) => {
+      .then(([lowStockVal, enableBadgeVal, enableOutOfStockBadgeVal, enableOverdueVal, enableDueSoonVal, enableOverdueBillsVal, enableDueSoonBillsVal, enableOverdueServicesVal, enableDueSoonServicesVal, dueSoonThresholdVal, dueSoonBillsThresholdVal, dueSoonServicesThresholdVal, cashierSalesHistoryDaysVal, enableCashierHistoryVal, enableCompletedServicesBadgeVal, enableProductCardImageSlideVal, categoriesRequiringInfoVal, enableOverdueOrdersVal, enableDueSoonOrdersVal, dueSoonOrdersThresholdVal, categoriesData]) => {
         setLowStock(lowStockVal ? Number(lowStockVal) : 0);
         setEnableLowStockBadge(enableBadgeVal !== "false"); // Default to true if not set
         setEnableOutOfStockBadge(enableOutOfStockBadgeVal !== "false"); // Default to true if not set
@@ -101,6 +109,9 @@ export const OptionsList: React.FC = () => {
         setDueSoonThresholdDays(dueSoonThresholdVal ? Number(dueSoonThresholdVal) : 2); // Default to 2 days
         setDueSoonBillsThresholdDays(dueSoonBillsThresholdVal ? Number(dueSoonBillsThresholdVal) : 2); // Default to 2 days
         setDueSoonServicesThresholdDays(dueSoonServicesThresholdVal ? Number(dueSoonServicesThresholdVal) : 2); // Default to 2 days
+        setEnableOverdueOrdersBadge(enableOverdueOrdersVal !== "false");
+        setEnableDueSoonOrdersBadge(enableDueSoonOrdersVal !== "false");
+        setDueSoonOrdersThresholdDays(dueSoonOrdersThresholdVal ? Number(dueSoonOrdersThresholdVal) : 2);
         setCashierSalesHistoryDays(cashierSalesHistoryDaysVal ? Number(cashierSalesHistoryDaysVal) : 7); // Default to 7 days
         setEnableCashierHistory(enableCashierHistoryVal !== "false"); // Default to true if not set
         setEnableCompletedServicesBadge(enableCompletedServicesBadgeVal !== "false"); // Default to true if not set
@@ -120,6 +131,9 @@ export const OptionsList: React.FC = () => {
           dueSoonThresholdDays: String(dueSoonThresholdVal ?? 2),
           dueSoonBillsThresholdDays: String(dueSoonBillsThresholdVal ?? 2),
           dueSoonServicesThresholdDays: String(dueSoonServicesThresholdVal ?? 2),
+          enableOverdueOrdersBadge: enableOverdueOrdersVal !== "false" ? "true" : "false",
+          enableDueSoonOrdersBadge: enableDueSoonOrdersVal !== "false" ? "true" : "false",
+          dueSoonOrdersThresholdDays: String(dueSoonOrdersThresholdVal ?? 2),
           cashierSalesHistoryDays: String(cashierSalesHistoryDaysVal ?? 7),
           enableCashierHistory: enableCashierHistoryVal !== "false" ? "true" : "false",
           enableCompletedServicesBadge: enableCompletedServicesBadgeVal !== "false" ? "true" : "false",
@@ -151,6 +165,9 @@ export const OptionsList: React.FC = () => {
         dueSoonThresholdDays: String(dueSoonThresholdDays),
         dueSoonBillsThresholdDays: String(dueSoonBillsThresholdDays),
         dueSoonServicesThresholdDays: String(dueSoonServicesThresholdDays),
+        enableOverdueOrdersBadge: String(enableOverdueOrdersBadge),
+        enableDueSoonOrdersBadge: String(enableDueSoonOrdersBadge),
+        dueSoonOrdersThresholdDays: String(dueSoonOrdersThresholdDays),
         cashierSalesHistoryDays: String(cashierSalesHistoryDays),
         enableCashierHistory: String(enableCashierHistory),
         enableCompletedServicesBadge: String(enableCompletedServicesBadge),
@@ -170,6 +187,9 @@ export const OptionsList: React.FC = () => {
         window.api.database.options.set("dueSoonThresholdDays", newValues.dueSoonThresholdDays),
         window.api.database.options.set("dueSoonBillsThresholdDays", newValues.dueSoonBillsThresholdDays),
         window.api.database.options.set("dueSoonServicesThresholdDays", newValues.dueSoonServicesThresholdDays),
+        window.api.database.options.set("enableOverdueOrdersBadge", newValues.enableOverdueOrdersBadge),
+        window.api.database.options.set("enableDueSoonOrdersBadge", newValues.enableDueSoonOrdersBadge),
+        window.api.database.options.set("dueSoonOrdersThresholdDays", newValues.dueSoonOrdersThresholdDays),
         window.api.database.options.set("cashierSalesHistoryDays", newValues.cashierSalesHistoryDays),
         window.api.database.options.set("enableCashierHistory", newValues.enableCashierHistory),
         window.api.database.options.set("enableCompletedServicesBadge", newValues.enableCompletedServicesBadge),
@@ -196,6 +216,7 @@ export const OptionsList: React.FC = () => {
         }).catch((): undefined => undefined);
       }
       initialValuesRef.current = newValues;
+      await refreshOptionsWarmup();
 
       // Refresh completed services count immediately if the setting changed
       refreshCompletedServicesCount();
@@ -664,6 +685,24 @@ export const OptionsList: React.FC = () => {
                   </span>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <div className="flex items-center gap-3 mb-4"><Package className="w-6 h-6 text-muted-foreground" /><h3 className="text-lg font-semibold text-muted-foreground">{t("admin.ordersNotifications", "Orders Notifications")}</h3></div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="flex flex-col md:flex-row items-start md:items-center gap-4 bg-muted/40 border border-border rounded-lg p-6">
+              <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center"><Bell className="w-6 h-6 text-red-600" /></div>
+              <div className="flex-1 w-full"><label className="block text-base font-semibold mb-2" htmlFor="enableOverdueOrdersBadge">{t("admin.enableOverdueOrdersBadge", "Enable Overdue Orders Notification Badge")}</label><p className="text-sm text-muted-foreground mb-3">{t("admin.enableOverdueOrdersBadgeDesc", "Show notifications for overdue orders")}</p><div className="flex items-center gap-3"><Switch id="enableOverdueOrdersBadge" checked={enableOverdueOrdersBadge} onCheckedChange={setEnableOverdueOrdersBadge} disabled={loading || saving} aria-label={t("admin.enableOverdueOrdersBadge", "Enable Overdue Orders Notification Badge")} /><span className="text-sm font-medium">{enableOverdueOrdersBadge ? t("admin.enabled", "Enabled") : t("admin.disabled", "Disabled")}</span></div></div>
+            </div>
+            <div className="flex flex-col md:flex-row items-start md:items-center gap-4 bg-muted/40 border border-border rounded-lg p-6">
+              <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg flex items-center justify-center"><Bell className="w-6 h-6 text-orange-600" /></div>
+              <div className="flex-1 w-full"><label className="block text-base font-semibold mb-2" htmlFor="enableDueSoonOrdersBadge">{t("admin.enableDueSoonOrdersBadge", "Enable Due Soon Orders Notification Badge")}</label><p className="text-sm text-muted-foreground mb-3">{t("admin.enableDueSoonOrdersBadgeDesc", "Show notifications for orders due soon")}</p><div className="flex items-center gap-3"><Switch id="enableDueSoonOrdersBadge" checked={enableDueSoonOrdersBadge} onCheckedChange={setEnableDueSoonOrdersBadge} disabled={loading || saving} aria-label={t("admin.enableDueSoonOrdersBadge", "Enable Due Soon Orders Notification Badge")} /><span className="text-sm font-medium">{enableDueSoonOrdersBadge ? t("admin.enabled", "Enabled") : t("admin.disabled", "Disabled")}</span></div></div>
+            </div>
+            <div className="flex flex-col md:flex-row items-start md:items-center gap-4 bg-muted/40 border border-border rounded-lg p-6">
+              <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center"><Package className="w-6 h-6 text-blue-600" /></div>
+              <div className="flex-1 w-full"><label className="block text-base font-semibold mb-2" htmlFor="dueSoonOrdersThreshold">{t("admin.dueSoonOrdersThreshold", "Due Soon Orders Threshold (Days)")}</label><p className="text-sm text-muted-foreground mb-3">{t("admin.dueSoonOrdersThresholdDesc", "Number of days before the due date to show an order notification")}</p><div className="flex items-center gap-3"><Input id="dueSoonOrdersThreshold" type="number" min={1} max={30} required value={dueSoonOrdersThresholdDays} onChange={(event) => setDueSoonOrdersThresholdDays(Number(event.target.value))} disabled={loading || saving} className="w-20" aria-label={t("admin.dueSoonOrdersThreshold", "Due Soon Orders Threshold (Days)")} /><span className="text-sm text-muted-foreground">{t("admin.days", "days")}</span></div></div>
             </div>
           </div>
         </div>

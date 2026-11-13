@@ -130,6 +130,7 @@ async function readBundle(
     daily,
     categories,
     products,
+    orders,
     manualProducts,
     suppliers,
     purchases,
@@ -153,6 +154,9 @@ async function readBundle(
       : Promise.resolve([]),
     permissions.can_access_stock
       ? readRows(db, "products", customerId, "name", snapshotId)
+      : Promise.resolve([]),
+    permissions.can_access_stock
+      ? readRows(db, "orders", customerId, "due_date", snapshotId, false)
       : Promise.resolve([]),
     permissions.can_access_history
       ? readRows(db, "manual_products", customerId, "name", snapshotId)
@@ -211,6 +215,7 @@ async function readBundle(
     dashboard_daily: daily.data ?? [],
     categories,
     products,
+    orders,
     manual_products: manualProducts,
     suppliers,
     purchases: retainedPurchases,

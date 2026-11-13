@@ -10,6 +10,7 @@ import {
   UserRole,
 } from "@prisma/client";
 import { LogLevel } from "../../lib/logger/common";
+import type { OrderInput, OrderRecord, OrderStatus } from "../../lib/database/orderTypes";
 import type { DeviceRequestPayload, DeviceRequestResult } from "../types/deviceRequest";
 import type { DeviceLinkExistingPayload, DeviceLinkExistingResult } from "../types/deviceLinkExisting";
 import type { DeviceCheckResult } from "../types/deviceCheck";
@@ -51,6 +52,15 @@ export type SaleWithDetails = Sale & {
 };
 
 export type DatabaseAPI = {
+  orders: {
+    getAll: () => Promise<OrderRecord[]>;
+    create: (data: OrderInput) => Promise<OrderRecord>;
+    update: (id: string, data: OrderInput) => Promise<OrderRecord>;
+    setStatus: (id: string, status: OrderStatus) => Promise<void>;
+    cancelCompletion: (id: string) => Promise<void>;
+    cancelStocked: (id: string) => Promise<void>;
+    delete: (id: string) => Promise<void>;
+  };
   cashier: {
     getBootstrap: () => Promise<{
       products: Product[];
