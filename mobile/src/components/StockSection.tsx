@@ -86,15 +86,17 @@ export function StockSection({ data, language, query, onQueryChange }: { data: M
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<MobileRow | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<MobileRow | null>(null);
   useEffect(() => {
-    if (!selected) return;
+    if (!selected && !selectedOrder) return;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = previousOverflow; };
-  }, [selected]);
+  }, [selected, selectedOrder]);
   const [purchaseLimit, setPurchaseLimit] = useState(5);
   const [salesLimit, setSalesLimit] = useState(5);
   const [stockTableScrolled, setStockTableScrolled] = useState(false);
+  const [orderTableScrolled, setOrderTableScrolled] = useState(false);
   useEffect(() => setPage(1), [query, category, lowStock, outOfStock, noBarcode, salesSort, sort, pageSize, view]);
   const salesMetrics = useMemo(() => {
     const productsById = new Map(data.products.map((product) => [productKey(product), product]));
@@ -165,7 +167,7 @@ export function StockSection({ data, language, query, onQueryChange }: { data: M
   const linkedPurchaseItems = useMemo(() => {
     if (!selected) return [];
     const items = data.purchase_items.filter((item) => str(item.product_source_id) === productKey(selected));
-    const timestamp = (item) => {
+    const timestamp = (item: MobileRow) => {
       const purchase = data.purchases.find((row) => str(row.source_id) === str(item.purchase_source_id));
       const value = item.source_created_at ?? purchase?.source_created_at;
       const time = value ? new Date(str(value)).getTime() : 0;
@@ -265,13 +267,13 @@ export function StockSection({ data, language, query, onQueryChange }: { data: M
       </div>}
     </> : <>
       <div className="stock-sort-row"><label className="mobile-select-control"><span>{t.pageSize}</span><select value={pageSize} onChange={(event) => setPageSize(Number(event.target.value))}>{[7,10,15,20,50].map((size) => <option key={size} value={size}>{size}</option>)}</select></label></div>
-      {filteredOrders.length === 0 ? <p className="mobile-empty">{t.emptyOrders}</p> : <div className="stock-table-scroll" role="region" aria-label={t.orders} tabIndex={0}>
+      {filteredOrders.length === 0 ? <p className="mobile-empty">{t.emptyOrders}</p> : <div className={"stock-table-scroll stock-order-table-scroll" + (orderTableScrolled ? " is-horizontally-scrolled" : "")} onScroll={(event) => setOrderTableScrolled(event.currentTarget.scrollLeft !== 0)} role="region" aria-label={t.orders} tabIndex={0}>
         <table className="stock-data-table stock-order-table">
-          <thead><tr><th>{t.orderProduct}</th><th>{t.orderDetails}</th><th>{t.quantity}</th><th>{t.client}</th><th>{t.orderStatus}</th><th>{t.dueDate}</th><th>{t.paidAmount}</th></tr></thead>
+          <thead><tr><th>{t.orderProduct}</th><th>{t.orderDetails}</th><th>{t.quantity}</th><th>{t.client}</th><th>{t.orderStatus}</th><th>{t.dueDate}</th><th>{t.paidAmount}</th><th>{t.view}</th></tr></thead>
           <tbody>{visibleOrders.map((order) => {
             const status = str(order.status);
             const statusLabel = status === "pending" ? t.pending : status === "stocked" ? t.stocked : status === "completed" ? t.completed : status;
-            return <tr key={str(order.source_id)}>
+            return <tr className="stock-clickable-row" key={str(order.source_id)} onClick={() => setSelectedOrder(order)}>
               <td><div className="stock-order-cell-text" title={str(order.product_name)}>{str(order.product_name) || "—"}</div></td>
               <td><div className="stock-order-cell-text" title={str(order.details)}>{str(order.details) || "—"}</div></td>
               <td>{new Intl.NumberFormat(language).format(num(order.quantity))}</td>
@@ -279,6 +281,7 @@ export function StockSection({ data, language, query, onQueryChange }: { data: M
               <td><span className={`mobile-order-status ${status}`}>{statusLabel}</span></td>
               <td>{dateLabel(order.due_date, language)}</td>
               <td>{order.paid_amount == null ? "—" : money(num(order.paid_amount) / 100, language)}</td>
+              <td><button type="button" className="stock-table-view" aria-label={t.view + ": " + str(order.product_name)} onClick={() => setSelectedOrder(order)}><Eye size={16} />{t.view}</button></td>
             </tr>;
           })}</tbody>
         </table>
@@ -352,6 +355,20 @@ export function StockSection({ data, language, query, onQueryChange }: { data: M
           {data.sales_history_available && linkedSaleItems.length > 5 ? <button type="button" className="stock-history-more" onClick={() => setSalesLimit((limit) => limit >= linkedSaleItems.length ? 5 : Math.min(limit + 5, linkedSaleItems.length))}>{salesLimit >= linkedSaleItems.length ? t.showLess : `${t.showMore} (${Math.min(5, linkedSaleItems.length - salesLimit)} ${t.more})`}</button> : null}
         </section>
         <button type="button" className="stock-modal-close" onClick={() => setSelected(null)}>{t.close}</button>
+      </section>
+    </div>, document.body) : null}
+    {selectedOrder ? createPortal(<div className="stock-modal-backdrop" role="presentation" onClick={(event) => { if (event.target === event.currentTarget) setSelectedOrder(null); }}>
+      <section className="stock-detail-modal" role="dialog" aria-modal="true" aria-labelledby="order-detail-title" dir={language === "ar" ? "rtl" : "ltr"}>
+        <header><div><span>{t.orders}</span><h2 id="order-detail-title">{str(selectedOrder.product_name) || "—"}</h2></div><button type="button" aria-label={t.close} onClick={() => setSelectedOrder(null)}><X size={20} /></button></header>
+        <dl className="stock-detail-grid">
+          <div><dt>{t.orderDetails}</dt><dd>{str(selectedOrder.details) || "—"}</dd></div>
+          <div><dt>{t.quantity}</dt><dd>{new Intl.NumberFormat(language).format(num(selectedOrder.quantity))}</dd></div>
+          <div><dt>{t.client}</dt><dd>{str(selectedOrder.client_name) || "—"}{selectedOrder.client_phone ? <small>{str(selectedOrder.client_phone)}</small> : null}</dd></div>
+          <div><dt>{t.orderStatus}</dt><dd><span className={`mobile-order-status ${str(selectedOrder.status)}`}>{str(selectedOrder.status) === "pending" ? t.pending : str(selectedOrder.status) === "stocked" ? t.stocked : str(selectedOrder.status) === "completed" ? t.completed : str(selectedOrder.status)}</span></dd></div>
+          <div><dt>{t.dueDate}</dt><dd>{dateLabel(selectedOrder.due_date, language)}</dd></div>
+          <div><dt>{t.paidAmount}</dt><dd>{selectedOrder.paid_amount == null ? "—" : money(num(selectedOrder.paid_amount) / 100, language)}</dd></div>
+        </dl>
+        <button type="button" className="stock-modal-close" onClick={() => setSelectedOrder(null)}>{t.close}</button>
       </section>
     </div>, document.body) : null}
   </div>;
